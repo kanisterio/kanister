@@ -1,0 +1,30 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: time-logger
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: time-logger
+    spec:
+      containers:
+        - name: test-container
+          image: containerlabs/aws-sdk
+          command: ["sh", "-c"]
+          args: ["while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"]
+          # TODO: Use Kanister to resolve secrets.
+          env:
+          - name: KANISTER_BUCKET
+            value: mongo.kasten.io
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                key: cloud_access_key_id
+                name: e2e-kanister-mongodb-replicaset-kanister-creds
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                key: cloud_secret_access_key
+                name: e2e-kanister-mongodb-replicaset-kanister-creds
