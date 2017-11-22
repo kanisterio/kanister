@@ -1,0 +1,27 @@
+language: go
+
+go:
+- 1.9
+
+branches:
+  only:
+    - master
+
+build:
+
+  pre_ci_boot:
+    image_name: kanisterio/build
+    image_tag: latest
+    pull: true
+    
+  ci:
+    - make build
+  
+  post_ci:
+    - echo "Post ci action"
+  
+  on_success:
+    - echo "On_success ci action"
+    
+  on_failure:
+    - echo "On_failure ci action"
