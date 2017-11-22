@@ -3,17 +3,12 @@ language: go
 go:
 - 1.9
 
-branches:
-  only:
-    - master
-
 build:
 
-  pre_ci_boot:
-    image_name: kanisterio/build
-    image_tag: latest
-    pull: true
-    
+  pre_ci:
+    - glide --version && true
+    - sudo apt-get install -y golang-glide
+
   ci:
     - make build
   
