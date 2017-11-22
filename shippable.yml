@@ -6,7 +6,6 @@ go:
 build:
 
   pre_ci:
-    - glide --version && true
     - sudo apt-get install -y golang-glide
 
   ci:
