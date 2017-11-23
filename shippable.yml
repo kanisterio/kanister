@@ -3,12 +3,17 @@ language: go
 go:
 - 1.9
 
+branches:		
+  only:		
+    - master
+
 build:
 
   ci:
     - add-apt-repository -y ppa:masterminds/glide && apt-get update -y 2> /dev/null
     - apt-get install -y glide
-    - make build
+    - make build DOCKER_BUILD=false
+    - make test DOCKER_BUILD=false
   
   post_ci:
     - echo "Post ci action"
