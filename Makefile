@@ -62,7 +62,7 @@ IMAGE_NAME := $(BIN)
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
 #TODO(tom) We can consider open sourcing this repo.
-BUILD_IMAGE ?= 036776340102.dkr.ecr.us-west-2.amazonaws.com/build:build-image-c7935dc
+BUILD_IMAGE ?= kanisterio/build:0.13.1-go1.9
 
 DEFAULT_PATH := /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
@@ -111,7 +111,7 @@ shell: build-dirs
 	    -v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
 	    -w /go/src/$(PKG)                                                  \
 	    $(BUILD_IMAGE)                                                     \
-		/bin/bash -l
+		ash -l
 
 .vendor:
 	@$(MAKE) run CMD='-c "              \
@@ -124,7 +124,7 @@ DOTFILE_IMAGE = $(subst :,_,$(subst /,_,$(IMAGE))-$(VERSION))
 
 container: .container-$(DOTFILE_IMAGE) container-name
 .container-$(DOTFILE_IMAGE): bin/$(ARCH)/$(BIN) Dockerfile.in
-	@/bin/bash -c "              \
+	@ash -c "              \
 		BIN=$(BIN)               \
 		ARCH=$(ARCH)             \
 		BASEIMAGE=$(BASEIMAGE)   \
@@ -184,9 +184,9 @@ ifeq ($(DOCKER_BUILD),"true")
 		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
 		-w /go/src/$(PKG)                                                  \
 		$(BUILD_IMAGE)                                                     \
-		/bin/bash $(CMD)
+		ash $(CMD)
 else
-	@/bin/bash $(CMD)
+	@ash $(CMD)
 endif
 
 clean: dotfile-clean bin-clean vendor-clean
