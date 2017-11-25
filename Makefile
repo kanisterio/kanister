@@ -111,7 +111,7 @@ shell: build-dirs
 	    -v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
 	    -w /go/src/$(PKG)                                                  \
 	    $(BUILD_IMAGE)                                                     \
-		ash -l
+		bash -l
 
 .vendor:
 	@$(MAKE) run CMD='-c "              \
@@ -124,7 +124,7 @@ DOTFILE_IMAGE = $(subst :,_,$(subst /,_,$(IMAGE))-$(VERSION))
 
 container: .container-$(DOTFILE_IMAGE) container-name
 .container-$(DOTFILE_IMAGE): bin/$(ARCH)/$(BIN) Dockerfile.in
-	@ash -c "              \
+	@bash -c "              \
 		BIN=$(BIN)               \
 		ARCH=$(ARCH)             \
 		BASEIMAGE=$(BASEIMAGE)   \
@@ -184,9 +184,9 @@ ifeq ($(DOCKER_BUILD),"true")
 		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
 		-w /go/src/$(PKG)                                                  \
 		$(BUILD_IMAGE)                                                     \
-		ash $(CMD)
+		bash $(CMD)
 else
-	@ash $(CMD)
+	@bash $(CMD)
 endif
 
 clean: dotfile-clean bin-clean vendor-clean
