@@ -20,7 +20,7 @@ build:
   
   on_success:
     - export IMAGE_TAG="${BUILD_NUMBER}.${COMMIT}"
-    - if [ "${IS_PULL_REQUEST}" == "false" ] && [ "${BRANCH}" == "master" ]; then make push ${IMAGE_TAG}; fi 
+    #- if [ "${IS_PULL_REQUEST}" == "false" ] && [ "${BRANCH}" == "master" ]; then make push ${IMAGE_TAG} DOCKER_BUILD=false; fi 
     
   on_failure:
     - echo "On_failure ci action"
