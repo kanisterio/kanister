@@ -31,7 +31,7 @@ start_minikube() {
     fi
 
     ./minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5
-    wait_for_all
+    wait_for_pods
 }
 
 stop_minikube() {
@@ -42,23 +42,22 @@ get_minikube() {
     mkdir $HOME/.kube || true
     touch $HOME/.kube/config
     curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
-    curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl
     ln -sf $(pwd)/minikube /usr/bin/minikube
 }
 
-wait_for_all() {
-    local all_status=$(kubectl get all --namespace=kube-system -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
+wait_for_pods() {
+    local pod_status=$(kubectl get pod --namespace=kube-system -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
     local retries=10
-    while [[  ${all_status} == *false* ]]
+    while [[  ${pod_status} == *false* ]] || [[ ${pod_status} == '' ]]
     do
         if [[ ${retries} -le 0 ]]
         then
             echo "Error some objects are not ready"
-            kubectl get all --namespace=kube-system
+            kubectl get pod --namespace=kube-system
             return 1
         fi
         sleep 10
-        all_status=$(kubectl get all --namespace=kube-system -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
+        pod_status=$(kubectl get pod --namespace=kube-system -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
         retries=$((retries-1))
     done
     kubectl cluster-info
