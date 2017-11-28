@@ -18,7 +18,7 @@ declare -a REQUIRED_BINS=( iptables docker sudo jq )
 
 if command -v apt-get
 then
-    lin_repo_pre_cmd="apt-get insatll -y "
+    lin_repo_pre_cmd="apt-get install -y "
 elif command -v apk
 then 
     lin_repo_pre_cmd="apk add --update "
