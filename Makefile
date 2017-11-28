@@ -111,8 +111,7 @@ shell: build-dirs
 	    -v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)"            \
 	    -v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
 		-v /var/run/docker.sock:/var/run/docker.sock                       \
-		-v /usr/bin/docker:/usr/bin/docker                                 \
-	    -w /go/src/$(PKG)                                                  \
+		-w /go/src/$(PKG)                                                  \
 	    $(BUILD_IMAGE)                                                     \
 		bash -l
 
