@@ -12,7 +12,7 @@ readonly BASE_DIR=$(dirname ${0})
 readonly K8S_COMPILE_TIME=15m
 readonly HACK_K8S_CONFIG=/var/run/kubernetes/admin.kubeconfig
 hack_cluster_up_cmd="hack/local-up-cluster.sh"
-WAIT_FOR_KUBE="while [ ! -f ${HACK_K8S_CONFIG} ];do sleep 1; done"
+WAIT_FOR_KUBE="while [ ! -f ${HACK_K8S_CONFIG} ];do sleep 1;done"
 
 start_local_kube() {
     if [[ ! -d ${BASE_DIR}/../kubernetes ]]
@@ -34,12 +34,13 @@ start_local_kube() {
     (${hack_cluster_up_cmd}) &
     kube_pid=${!}
     popd
-    timeout ${K8S_COMPILE_TIME} bash -c ${WAIT_FOR_KUBE} 
-    cp /var/run/kubernetes/admin.kubeconfig ~/.kube/config
+    timeout ${K8S_COMPILE_TIME} bash -c "$WAIT_FOR_KUBE" 
+    cp ${HACK_K8S_CONFIG} ~/.kube/config
 }
 
 stop_local_kube() {
    kill $(ps -ef | grep ${hack_cluster_up_cmd} | grep -v grep | awk '{print $2}') 
+   rm -f ${HACK_K8S_CONFIG}
 }
 
 get_etcd() {
