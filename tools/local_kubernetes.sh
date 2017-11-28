@@ -31,16 +31,20 @@ start_local_kube() {
     fi
 
     pushd ${BASE_DIR}/../kubernetes
-    (${hack_cluster_up_cmd}) &
-    kube_pid=${!}
+    export ENABLE_DAEMON=true 
+    output=$(${hack_cluster_up_cmd} &)
     popd
     timeout ${K8S_COMPILE_TIME} bash -c "$WAIT_FOR_KUBE" 
     cp ${HACK_K8S_CONFIG} ~/.kube/config
+    wait_for_pods
+    echo ${output} 
 }
 
 stop_local_kube() {
-   kill $(ps -ef | grep ${hack_cluster_up_cmd} | grep -v grep | awk '{print $2}') 
+   #kill $(ps -ef | grep ${hack_cluster_up_cmd} | grep -v grep | awk '{print $2}') 
    rm -f ${HACK_K8S_CONFIG}
+   killall hyperkube
+   killall etcd
 }
 
 get_etcd() {
@@ -58,6 +62,25 @@ get_etcd() {
     ln -s /tmp/etcd-download-test/etcd /usr/bin/etcd
     etcd --version
 }
+
+wait_for_pods() {
+    local pods_status=$(kubectl get pods --namespace=kube-system -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
+    local retries=10
+    while [[  ${pods_status} == *false* ]]
+    do
+        if [[ ${retries} -le 0 ]]
+        then
+            echo "Error some pods are not ready"
+            kubectl get pods --namespace=kube-system
+            return 1
+        fi
+        sleep 10
+        pods_status=$(kubectl get pods --namespace=kube-system -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
+        retries=$((retries-1))
+    done
+    kubectl cluster-info
+}
+
 
 usage() {
     cat <<EOM
