@@ -9,14 +9,38 @@ set -o xtrace
 set -o pipefail
 
 readonly BASE_DIR=$(dirname ${0})
-readonly K8S_COMPILE_TIME=15m
-readonly HACK_K8S_CONFIG=/var/run/kubernetes/admin.kubeconfig
 export MINIKUBE_WANTUPDATENOTIFICATION=false
 export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true 
-
 export KUBECONFIG=$HOME/.kube/config
+declare -a REQUIRED_BINS=( iptables docker sudo jq )
+
+if command -v apt-get
+then
+    lin_repo_pre_cmd="apt-get insatll -y "
+elif command -v apk
+then 
+    lin_repo_pre_cmd="apk add --update "
+else
+    echo "apk or apt-get is supported at this moment"
+    exit 1
+fi
+    
+check_or_get_dependencies() {
+    for dep in ${REQUIRED_BINS[@]}
+    do
+        if ! command -v ${dep}
+        then
+            echo "Missing ${dep}. Trying to install"
+            if ! err=$(${lin_repo_pre_cmd} ${dep} 2>&1)
+            then
+                echo "Insatlletion failed with $err"
+                exit 1                
+            fi
+        fi
+    done
+}    
 
 start_minikube() {
     
@@ -25,20 +49,16 @@ start_minikube() {
         get_minikube
     fi
 
-    if ! command -v iptables
-    then
-        apt-get install -y iptables
-    fi
-
-    ./minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5
+    minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5
     wait_for_pods
 }
 
 stop_minikube() {
-   ./minikube stop
+   minikube stop
 }
 
 get_minikube() {
+    check_or_get_dependencies
     mkdir $HOME/.kube || true
     touch $HOME/.kube/config
     curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
@@ -62,7 +82,6 @@ wait_for_pods() {
     done
     kubectl cluster-info
 }
-
 
 usage() {
     cat <<EOM

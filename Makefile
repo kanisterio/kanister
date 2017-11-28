@@ -102,13 +102,16 @@ shell: build-dirs
 	@docker run                                                            \
 	    -ti                                                                \
 	    --rm                                                               \
-	    -e GOPATH=/go                                                      \
+		--privileged                                                       \
+        -e GOPATH=/go                                                      \
 	    -e GOROOT=/usr/local/go                                            \
 	    -v "$(PWD)/.go:/go"                                                \
 	    -v "$(PWD):/go/src/$(PKG)"                                         \
 	    -v "$(PWD)/bin/$(ARCH):/go/bin"                                    \
 	    -v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)"            \
 	    -v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
+		-v /var/run/docker.sock:/var/run/docker.sock                       \
+		-v /usr/bin/docker:/usr/bin/docker                                 \
 	    -w /go/src/$(PKG)                                                  \
 	    $(BUILD_IMAGE)                                                     \
 		bash -l
@@ -182,6 +185,7 @@ ifeq ($(DOCKER_BUILD),"true")
 		-v "$(PWD)/bin/$(ARCH):/go/bin"                                    \
 		-v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)"            \
 		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
+		-v /var/run/docker.sock:/var/run/docker.sock                       \
 		-w /go/src/$(PKG)                                                  \
 		$(BUILD_IMAGE)                                                     \
 		bash $(CMD)
