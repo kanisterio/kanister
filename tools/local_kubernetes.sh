@@ -30,7 +30,7 @@ start_minikube() {
         apt-get install -y iptables
     fi
 
-    ./minikube start --vm-driver=none
+    ./minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5
     wait_for_all
 }
 
@@ -43,7 +43,7 @@ get_minikube() {
     touch $HOME/.kube/config
     curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
     curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl
-    ln -s ${BASE_DIR}/minikube /usr/bin/minikube
+    ln -sf $(pwd)/minikube /usr/bin/minikube
 }
 
 wait_for_all() {
