@@ -25,7 +25,3 @@ build:
     
   on_failure:
     - echo "On_failure ci action"
-  
-  cache: true
-  cache_dir_list:
-    - ${SHIPPABLE_BUILD_DIR}/kubernetes
