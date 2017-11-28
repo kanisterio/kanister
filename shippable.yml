@@ -13,11 +13,11 @@ build:
     - add-apt-repository -y ppa:masterminds/glide && apt-get update -y 2> /dev/null
     - apt-get install -y glide
     - make build DOCKER_BUILD=false
-    - bash tools/local_kubernetes.sh start_local_kube
+    - bash tools/local_kubernetes.sh start_minikube
     - make test DOCKER_BUILD=false
   
   post_ci:
-    - bash tools/local_kubernetes.sh stop_local_kube
+    - bash tools/local_kubernetes.sh stop_minikube
   
   on_success:
     - export IMAGE_TAG="${BUILD_NUMBER}.${COMMIT}"

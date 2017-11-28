@@ -11,71 +11,54 @@ set -o pipefail
 readonly BASE_DIR=$(dirname ${0})
 readonly K8S_COMPILE_TIME=15m
 readonly HACK_K8S_CONFIG=/var/run/kubernetes/admin.kubeconfig
-hack_cluster_up_cmd="hack/local-up-cluster.sh"
-WAIT_FOR_KUBE="while [ ! -f ${HACK_K8S_CONFIG} ];do sleep 1;done"
+export MINIKUBE_WANTUPDATENOTIFICATION=false
+export MINIKUBE_WANTREPORTERRORPROMPT=false
+export MINIKUBE_HOME=$HOME
+export CHANGE_MINIKUBE_NONE_USER=true 
 
-start_local_kube() {
-    if [[ ! -d ${BASE_DIR}/../kubernetes ]]
+export KUBECONFIG=$HOME/.kube/config
+
+start_minikube() {
+    
+    if ! command -v minikube 
     then
-        git clone https://github.com/kubernetes/kubernetes.git
+        get_minikube
     fi
 
-    if [[ -d ${BASE_DIR}/../kubernetes/_output ]]
+    if ! command -v iptables
     then
-        hack_cluster_up_cmd="${hack_cluster_up_cmd} -O"
+        apt-get install -y iptables
     fi
 
-    if ! command -v etcd 
-    then
-        get_etcd
-    fi
-
-    pushd ${BASE_DIR}/../kubernetes
-    export ENABLE_DAEMON=true 
-    output=$(${hack_cluster_up_cmd} &)
-    popd
-    timeout ${K8S_COMPILE_TIME} bash -c "$WAIT_FOR_KUBE" 
-    cp ${HACK_K8S_CONFIG} ~/.kube/config
-    wait_for_pods
-    echo ${output} 
+    ./minikube start --vm-driver=none
+    wait_for_all
 }
 
-stop_local_kube() {
-   #kill $(ps -ef | grep ${hack_cluster_up_cmd} | grep -v grep | awk '{print $2}') 
-   rm -f ${HACK_K8S_CONFIG}
-   killall hyperkube
-   killall etcd
+stop_minikube() {
+   ./minikube stop
 }
 
-get_etcd() {
-    #all credits to https://github.com/coreos/etcd/releases/
-
-    ETCD_VER=v3.2.10
-    GOOGLE_URL=https://storage.googleapis.com/etcd
-    GITHUB_URL=https://github.com/coreos/etcd/releases/download
-    DOWNLOAD_URL=${GOOGLE_URL}
-    rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-    rm -rf /tmp/etcd-download-test && mkdir -p /tmp/etcd-download-test
-    curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-    tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
-    rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-    ln -s /tmp/etcd-download-test/etcd /usr/bin/etcd
-    etcd --version
+get_minikube() {
+    mkdir $HOME/.kube || true
+    touch $HOME/.kube/config
+    curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
+    curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl
+    ln -s ${BASE_DIR}/minikube /usr/bin/minikube
 }
 
-wait_for_pods() {
-    local pods_status=$(kubectl get pods --namespace=kube-system -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
+wait_for_all() {
+    local all_status=$(kubectl get all --namespace=kube-system -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
     local retries=10
-    while [[  ${pods_status} == *false* ]]
+    while [[  ${all_status} == *false* ]]
     do
         if [[ ${retries} -le 0 ]]
         then
-            echo "Error some pods are not ready"
-            kubectl get pods --namespace=kube-system
+            echo "Error some objects are not ready"
+            kubectl get all --namespace=kube-system
             return 1
         fi
         sleep 10
-        pods_status=$(kubectl get pods --namespace=kube-system -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
+        all_status=$(kubectl get all --namespace=kube-system -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
         retries=$((retries-1))
     done
     kubectl cluster-info
@@ -86,9 +69,9 @@ usage() {
     cat <<EOM
 Usage: ${0} <operation> 
 Where operation is one of the following:
-  get_etcd : Intalls etcd v3.2.10
-  start_local_kube : Check for required foolders. Intalls etcd, clones k8s repo, execute ${hack_cluster_up_cmd} 
-  stop_local_kube : Kills pid for ${hack_cluster_up_cmd}
+  get_minikube: installs minikube
+  start_minikube : minikube start 
+  stop_minikube : minikube stop
 EOM
     exit 1
 }
@@ -96,14 +79,14 @@ EOM
 [ ${#@} -gt 0 ] || usage
 case "${1}" in
         # Alphabetically sorted
-        get_etcd)
-            time -p get_etcd
+        get_minikube)
+            time -p get_minikube
             ;;
-        start_local_kube)
-            time -p start_local_kube
+        start_minikube)
+            time -p start_minikube
             ;;
-        stop_local_kube)
-            time -p stop_local_kube
+        stop_minikube)
+            time -p stop_minikube
             ;;
         *)
             usage
