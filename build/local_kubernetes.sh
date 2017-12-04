@@ -81,7 +81,7 @@ wait_for_pods() {
             return 1
         fi
         sleep 10
-        pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
+        pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready") || ''
         retries=$((retries-1))
     done
     kubectl cluster-info
