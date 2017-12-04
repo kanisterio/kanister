@@ -1,3 +1,5 @@
+![Kanister Logo](./graphic/graphic.png)
+
 # Kanister
 
 [![Run Status](https://api.shippable.com/projects/5a18e8649f19c90600633402/badge?branch=master)](https://app.shippable.com/github/kanisterio/kanister)
