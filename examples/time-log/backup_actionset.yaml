@@ -1,0 +1,20 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: s3backup-
+spec:
+  actions:
+    - name: backup
+      blueprint: time-log-bp
+      object:
+        kind: deployment
+        name: time-logger
+        namespace: default
+      configMaps:
+        location:
+          name: s3-location
+          namespace: default
+      secrets:
+        aws:
+          name: aws-creds
+          namespace: default

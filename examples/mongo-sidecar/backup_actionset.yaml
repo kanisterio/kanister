@@ -1,0 +1,16 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: mongo-backup
+spec:
+  actions:
+    - name: backup
+      blueprint: mongo-sidecar
+      object:
+        kind: statefulset
+        name: e2e-kanister-mongodb-replicaset
+        namespace: default
+      configMaps:
+        location:
+          namespace: default
+          name: mongo-s3-location

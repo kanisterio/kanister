@@ -1,0 +1,16 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: time-logger
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: time-logger
+    spec:
+      containers:
+      - name: test-container
+        image: containerlabs/aws-sdk
+        command: ["sh", "-c"]
+        args: ["while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"]

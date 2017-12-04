@@ -1,0 +1,15 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: mongo-restore
+spec:
+  actions:
+    - name: restore
+      blueprint: mongo-sidecar
+      object:
+        kind: statefulset
+        name: e2e-kanister-mongodb-replicaset
+        namespace: default
+      artifacts:
+        cloudObject:
+          path: s3://mongo.kasten.io/backups/e2e-kanister-mongodb-replicaset/2017-11-20T02-22-43/rs0.tar
