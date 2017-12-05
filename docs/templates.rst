@@ -24,8 +24,8 @@ The TemplateParam struct is defined as:
 Rendering Templates
 -------------------
 
-Output Artifacts and templates in BlueprintPhases are rendered using `go's
-templating engine < https://golang.org/pkg/text/template/>`_. In addition to the
+Output Artifacts and templates in BlueprintPhases are rendered using `go
+templating engine <https://golang.org/pkg/text/template/>`_. In addition to the
 standard go template functions, Kanister imports all the `sprig
 <http://masterminds.github.io/sprig/>`_ functions.
 

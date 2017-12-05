@@ -484,9 +484,6 @@ ConfigMap because the `inputArtifact` contains the fully specified path.
 We can check the controller logs to see that the time log was restored
 successfully.
 
-.. note:: 
-
-  We've omitted the backup action from the above Blueprint for brevity.
 
 Time
 ----
@@ -507,7 +504,9 @@ For more on using the time template parameter, see :ref:`templates` .
 Using kanctl to Chain ActionSets
 -------------
 
-.. todo:: 
-
-  Pull example on using kanctl from the README.
-
+So far in this tutorial, we have shown you how to manually create action
+sets via yaml files. In some cases, an action depends on a previous action,
+and manually updating the action set to use artifacts created by the 
+previous action set can be cumbersome. In situations like this, it is 
+useful to instead use `kanctl`. To learn how to leverage `kanctl` to
+create action sets, see :ref:`operator` .
