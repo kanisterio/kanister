@@ -4,6 +4,8 @@
 
 [![Run Status](https://api.shippable.com/projects/5a18e8649f19c90600633402/badge?branch=master)](https://app.shippable.com/github/kanisterio/kanister)
 
+<img src="https://github.com/kanisterio/kanister/tree/master/graphic/graphic.png">
+
 ## Overview
 Kanister is a framework that enables application-level data management on Kubernetes. It allows domain experts to capture application specific data management tasks via blueprints, which can be easily shared and extended. The framework takes care of the tedious details surrounding execution on Kubernetes and presents a homogeneous operational experience across applications at scale.
 
