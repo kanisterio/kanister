@@ -35,12 +35,12 @@ rules:
   - create
   - update
   - delete
-- apiGroups: 
+- apiGroups:
   - batch
   - extensions
-  resources: 
+  resources:
   - "*"
-  verbs: 
+  verbs:
   - "*"
 - apiGroups:
   - cr.kanister.io
@@ -84,4 +84,4 @@ spec:
       serviceAccountName: kanister-operator
       containers:
       - name: kanister-operator
-        image: kanisterio/controller:0.1.0
+        image: kanisterio/controller:0.1.1
