@@ -1,0 +1,16 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: s3restore-
+spec:
+  actions:
+    - name: restore
+      blueprint: time-log-bp
+      object:
+        kind: Deployment
+        name: time-logger
+        namespace: default
+      artifacts:
+        timeLog:
+          path: s3://mongo.kanister.io/simple
+

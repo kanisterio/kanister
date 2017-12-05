@@ -1,0 +1,45 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: time-log-bp
+actions:
+  backup:
+    type: Deployment
+    configMapNames:
+    - location
+    secretNames:
+    - aws
+    outputArtifacts:
+      timeLog:
+        path: '{{ .ConfigMaps.location.Data.path }}/time-log/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02" }}'
+    phases:
+    - func: KubeExec
+      name: backupToS3
+      args:
+      - "{{ .Deployment.Namespace }}"
+      - "{{ index .Deployment.Pods 0 }}"
+      - test-container
+      - sh
+      - -c
+      - |
+        AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
+        AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+        aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.path | quote }}
+  restore:
+    type: Deployment
+    inputArtifactNames:
+    - timeLog
+    phases:
+    - func: KubeExec
+      name: restoreFromS3
+      args:
+      - "{{ .Deployment.Namespace }}"
+      - "{{ index .Deployment.Pods 0 }}"
+      - test-container
+      - sh
+      - -c
+      - |
+        AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
+        AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+        aws s3 cp {{ .ArtifactsIn.timeLog.path | quote }} /var/log/time.log
+
