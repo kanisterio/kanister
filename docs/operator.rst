@@ -50,10 +50,6 @@ The definition of a `BlueprintAction` is:
       Phases             []BlueprintPhase    `json:"phases"`
   }
 
-.. todo::
-
-  Name is redundant in BluerintAction since we already specify it in the Blueprint Actions map
-
 - `Kind` is the type of object we'll act on. Currently we support `Deployment` or
   `Statefulset`
 - `ConfigMapNames`, `SecretNames`, `InputArtifactNames` are lists of named
@@ -214,7 +210,5 @@ from`".
   # restore from the backup we just created
   $ kanctl  perform from restore s3backup-j4z6f 
 
-.. todo::
-
-  Add resulting action set.
-
+  # View the actionset
+  kubectl get actionset restore-s3backup-j4z6f-s1wb7 -oyaml

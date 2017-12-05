@@ -36,7 +36,7 @@ Getting Started
 ---------------
 
 Kanister is open source and more information can be found on `github
-<github.com:kanisterio/kanister.>`_.
+<https://github.com/kanisterio/kanister>`_.
 
 .. code-block:: bash
 

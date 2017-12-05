@@ -1,8 +1,8 @@
+![Kanister Logo](./graphic/graphic.png)
+
 # Kanister
 
 [![Run Status](https://api.shippable.com/projects/5a18e8649f19c90600633402/badge?branch=master)](https://app.shippable.com/github/kanisterio/kanister)
-
-<img src="https://github.com/kanisterio/master/logo/logo.png">
 
 ## Overview
 Kanister is a framework that enables application-level data management on Kubernetes. It allows domain experts to capture application specific data management tasks via blueprints, which can be easily shared and extended. The framework takes care of the tedious details surrounding execution on Kubernetes and presents a homogeneous operational experience across applications at scale.
@@ -64,10 +64,7 @@ Since Kanister follows the operator pattern, other useful kubectl commands work 
 $ kubectl logs -l app=kanister-operator
 ```
 
-In addition to installing the Kanister controller, please also install kanctl:
-```bash
-TODO: Kanctl installation commands
-```
+In addition to installing the Kanister controller, please also install the appropriate kanctl binary from [releases](https://github.com/kanisterio/kanister/releases).
 
 ## Walkthrough of an Example Application - MongoDB
 
@@ -169,11 +166,11 @@ $ kubectl delete crd {actionsets,blueprints}.cr.kanister.io
 
 ## Additional Example Applications
 
-Check out additional examples [here](https://github.com/kanisterio/tree/master/examples). TODO: Verify examples link.
+Check out additional examples [here](https://github.com/kanisterio/kanister/tree/master/examples).
 
 ## Support
-For troubleshooting help, you can email the [Kanister Google Group](https://groups.google.com/forum/#!forum/kanisterio), reach out to us on [Slack](https://kasten.typeform.com/to/QBcw8T), or file an [issue](https://github.com/kanisterio/issues). TODO: Verify issues link.
+For troubleshooting help, you can email the [Kanister Google Group](https://groups.google.com/forum/#!forum/kanisterio), reach out to us on [Slack](https://kasten.typeform.com/to/QBcw8T), or file an [issue](https://github.com/kanisterio/kanister/issues).
 
 
 ## License
-Apache License 2.0, see [LICENSE](https://github.com/kanisterio/master/LICENSE). TODO: Verify license link.
+Apache License 2.0, see [LICENSE](https://github.com/kanisterio/kanister/blob/master/LICENSE).
