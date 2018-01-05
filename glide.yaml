@@ -11,7 +11,9 @@ import:
 - package: github.com/pkg/errors
   version: v0.8.0
 - package: github.com/rook/operator-kit
-  version: 6a5cd622d3343b0c68e381b2be52471f8d197951
+  vcs: git
+  version: rm-tpr
+  repo: https://github.com/kastenhq/operator-kit.git
 - package: github.com/sirupsen/logrus
   version: v1.0.3
 - package: github.com/stretchr/testify
@@ -19,41 +21,17 @@ import:
 - package: gopkg.in/check.v1
   version: 64131543e7896d5bcc6bd5a76287eb75ea96c673
 - package: k8s.io/api
-  version: 6c6dac0277229b9e9578c5ca3f74a4345d35cdc2
-  subpackages:
-  - apps/v1beta1
-  - batch/v1
-  - core/v1
-  - extensions/v1beta1
+  version: 11147472b7c934c474a2c484af3c0c5210b7a3af
 - package: k8s.io/apiextensions-apiserver
-  version: 89b2a556a65053a90552eaed26f810df4a266367
-  subpackages:
-  - pkg/apis/apiextensions/v1beta1
-  - pkg/client/clientset/clientset
+  version: 98ecf7bbd60f9f11a72000e4f05203f542136219
 - package: k8s.io/apimachinery
-  version: 019ae5ada31de202164b118aee88ee2d14075c31
-  subpackages:
-  - pkg/api/resource
-  - pkg/apis/meta/v1
-  - pkg/runtime
-  - pkg/runtime/schema
-  - pkg/runtime/serializer
-  - pkg/types
-  - pkg/util/remotecommand
+  version: 180eddb345a5be3a157cea1c624700ad5bd27b8f
 - package: k8s.io/client-go
-  version: v5.0.0
-  subpackages:
-  - kubernetes
-  - kubernetes/scheme
-  - plugin/pkg/client/auth/gcp
-  - rest
-  - tools/cache
-  - tools/clientcmd
-  - tools/remotecommand
+  version: v6.0.0
 - package: k8s.io/code-generator
-  version: kubernetes-1.8.2
+  version: kubernetes-1.9.0
 - package: k8s.io/gengo
-  version: 70ad626ed2d7a483d89d2c4c56364d60b48ee8fc
+  version: 1ef560bbde5195c01629039ad3b337ce63e7b321
 - package: github.com/spf13/cobra
   version: v0.0.1
 - package: github.com/spf13/pflag

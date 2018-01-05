@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"k8s.io/api/core/v1"
-	remocommandconsts "k8s.io/apimachinery/pkg/util/remotecommand"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
@@ -76,7 +75,7 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 }
 
 func execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {
-	exec, err := remotecommand.NewSPDYExecutorForProtocols(config, method, url, remocommandconsts.SupportedStreamingProtocols...)
+	exec, err := remotecommand.NewSPDYExecutor(config, method, url)
 	if err != nil {
 		return err
 	}
