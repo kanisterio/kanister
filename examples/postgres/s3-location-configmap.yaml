@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-s3-location
+data:
+  bucket: s3://<BUCKETNAMEHERE>
+
