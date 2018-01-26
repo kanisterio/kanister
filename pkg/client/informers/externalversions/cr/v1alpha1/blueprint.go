@@ -3,6 +3,8 @@
 package v1alpha1
 
 import (
+	time "time"
+
 	cr_v1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	versioned "github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/kanisterio/kanister/pkg/client/informers/externalversions/internalinterfaces"
@@ -11,7 +13,6 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	time "time"
 )
 
 // BlueprintInformer provides access to a shared informer and lister for

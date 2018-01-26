@@ -178,8 +178,12 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 		},
 	}
 	artsTpl := map[string]crv1alpha1.Artifact{
-		"my-art":  crv1alpha1.Artifact{"my-key": "{{ .ConfigMaps.myCM.Data.someKey }}"},
-		"my-time": crv1alpha1.Artifact{"my-time": "{{ .Time }}"},
+		"my-art": crv1alpha1.Artifact{KeyValue: map[string]string{
+			"my-key": "{{ .ConfigMaps.myCM.Data.someKey }}"},
+		},
+		"my-time": crv1alpha1.Artifact{KeyValue: map[string]string{
+			"my-time": "{{ .Time }}"},
+		},
 	}
 	tp, err := New(ctx, s.cli, as)
 	c.Assert(err, IsNil)
@@ -187,7 +191,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 
 	arts, err := RenderArtifacts(artsTpl, *tp)
 	c.Assert(err, IsNil)
-	c.Assert(arts["my-art"], DeepEquals, crv1alpha1.Artifact{"my-key": "some-value"})
-	_, err = time.Parse(timeFormat, arts["my-time"]["my-time"])
+	c.Assert(arts["my-art"], DeepEquals, crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": "some-value"}})
+	_, err = time.Parse(timeFormat, arts["my-time"].KeyValue["my-time"])
 	c.Assert(err, IsNil)
 }

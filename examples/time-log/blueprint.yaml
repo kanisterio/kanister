@@ -11,7 +11,8 @@ actions:
     - aws
     outputArtifacts:
       timeLog:
-        path: '{{ .ConfigMaps.location.Data.path }}/time-log/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02" }}'
+        keyValue:
+          path: '{{ .ConfigMaps.location.Data.path }}/time-log/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02" }}'
     phases:
     - func: KubeExec
       name: backupToS3
@@ -24,7 +25,7 @@ actions:
       - |
         AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
         AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-        aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.path | quote }}
+        aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}
   restore:
     type: Deployment
     inputArtifactNames:
@@ -41,5 +42,5 @@ actions:
       - |
         AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
         AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-        aws s3 cp {{ .ArtifactsIn.timeLog.path | quote }} /var/log/time.log
+        aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log
 

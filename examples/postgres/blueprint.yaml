@@ -12,7 +12,8 @@ actions:
       - postgres
     outputArtifacts:
       cloudObject:
-        path: '{{ .ConfigMaps.location.Data.bucket }}/backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/pg_backup.tar'
+        keyValue:
+          path: '{{ .ConfigMaps.location.Data.bucket }}/backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/pg_backup.tar'
     phases:
     - func: KubeTask
       name: takeBackup
@@ -30,7 +31,7 @@ actions:
           export PGPORT=${{ .StatefulSet.Name | upper | replace "-" "_" }}_PORT_5432_TCP_PORT
           export PGPASSWORD={{ .Secrets.postgres.Data.password_superuser | toString }}
           pg_dumpall -U postgres -c -f backup.tar
-          aws s3 cp backup.tar "{{ .ArtifactsOut.cloudObject.path }}"
+          aws s3 cp backup.tar "{{ .ArtifactsOut.cloudObject.KeyValue.path }}"
   restore:
     type: StatefulSet
     secretNames:
@@ -54,5 +55,5 @@ actions:
           export PGHOST=${{ .StatefulSet.Name | upper | replace "-" "_" }}_SERVICE_HOST
           export PGPORT=${{ .StatefulSet.Name | upper | replace "-" "_" }}_PORT_5432_TCP_PORT
           export PGPASSWORD={{ .Secrets.postgres.Data.password_superuser | toString }}
-          aws s3 cp {{ .ArtifactsIn.cloudObject.path }} backup.tar
+          aws s3 cp {{ .ArtifactsIn.cloudObject.KeyValue.path }} backup.tar
           psql -U postgres -f backup.tar postgres

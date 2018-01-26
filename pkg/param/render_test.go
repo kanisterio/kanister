@@ -32,24 +32,28 @@ func (s *RenderSuite) TestRender(c *C) {
 		{
 			arg:     "-",
 			tp:      TemplateParams{},
-			out:     "",
+			out:     "-",
 			checker: IsNil,
 		},
 		{
-			arg: "{{ .ArtifactsOut.hello }}",
+			arg: "{{ .ArtifactsOut.hello.KeyValue }}",
 			tp: TemplateParams{
 				ArtifactsOut: map[string]crv1alpha1.Artifact{
 					"hello": crv1alpha1.Artifact{},
 				},
 			},
-			out:     "",
+			out:     "map[]",
 			checker: IsNil,
 		},
 		{
-			arg: "{{ .ArtifactsOut.hello.someKey }}",
+			arg: "{{ .ArtifactsOut.hello.KeyValue.someKey }}",
 			tp: TemplateParams{
 				ArtifactsOut: map[string]crv1alpha1.Artifact{
-					"hello": crv1alpha1.Artifact{"someKey": "someValue"},
+					"hello": crv1alpha1.Artifact{
+						KeyValue: map[string]string{
+							"someKey": "someValue",
+						},
+					},
 				},
 			},
 			out:     "someValue",
@@ -57,10 +61,14 @@ func (s *RenderSuite) TestRender(c *C) {
 		},
 		{
 			// `-` cannot be used in a template path.
-			arg: "{{ .ArtifactsOut.hello-world.someKey }}",
+			arg: "{{ .ArtifactsOut.hello-world.KeyValue.someKey }}",
 			tp: TemplateParams{
 				ArtifactsOut: map[string]crv1alpha1.Artifact{
-					"hello-world": crv1alpha1.Artifact{"someKey": "someValue"},
+					"hello-world": crv1alpha1.Artifact{
+						KeyValue: map[string]string{
+							"someKey": "someValue",
+						},
+					},
 				},
 			},
 			out:     "",
@@ -68,11 +76,19 @@ func (s *RenderSuite) TestRender(c *C) {
 		},
 		{
 			// `-` can exist in artifact keys, it just cannot be used in path.
-			arg: "{{ .ArtifactsOut.hello.someKey }}",
+			arg: "{{ .ArtifactsOut.hello.KeyValue.someKey }}",
 			tp: TemplateParams{
 				ArtifactsOut: map[string]crv1alpha1.Artifact{
-					"hello":       crv1alpha1.Artifact{"someKey": "someValue"},
-					"hello-world": crv1alpha1.Artifact{"someKey": "someValue"},
+					"hello": crv1alpha1.Artifact{
+						KeyValue: map[string]string{
+							"someKey": "someValue",
+						},
+					},
+					"hello-world": crv1alpha1.Artifact{
+						KeyValue: map[string]string{
+							"someKey": "someValue",
+						},
+					},
 				},
 			},
 			out:     "someValue",
@@ -81,6 +97,6 @@ func (s *RenderSuite) TestRender(c *C) {
 	} {
 		out, err := render(tc.arg, tc.tp)
 		c.Assert(err, tc.checker)
-		c.Assert(out, Equals, out)
+		c.Assert(out, Equals, tc.out)
 	}
 }
