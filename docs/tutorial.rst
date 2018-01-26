@@ -387,7 +387,7 @@ ConfigMap.
           - |
             AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
             AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-            aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.path | quote }}
+            aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}
   EOF  
 
 If you re-execute this Kanister Action, you'll be able to see the Artifact in the
@@ -459,7 +459,7 @@ ConfigMap because the `inputArtifact` contains the fully specified path.
           - |
             AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
             AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-            aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.path | quote }}  
+            aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}  
     restore:
       type: Deployment
       secretNames:
@@ -478,7 +478,7 @@ ConfigMap because the `inputArtifact` contains the fully specified path.
         - |
           AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
           AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-          aws s3 cp {{ .ArtifactsIn.timeLog.path | quote }} /var/log/time.log
+          aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log
   EOF 
 
 We can check the controller logs to see that the time log was restored

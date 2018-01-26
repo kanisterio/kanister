@@ -11,7 +11,8 @@ actions:
       - aws
     outputArtifacts:
       cloudObject:
-        path: '{{ .ConfigMaps.location.Data.bucket }}/backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs0.tar'
+        keyValue:
+          path: '{{ .ConfigMaps.location.Data.bucket }}/backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs0.tar'
     phases:
     - func: KubeExec
       name: takeConsistentBackup
@@ -30,13 +31,13 @@ actions:
             -l /var/lib/mongodb-consistent-backup 2> /var/log/kanister.log
           file="/var/lib/mongodb-consistent-backup/mongo-backup/latest/rs0.tar"
           export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
-          export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} 
+          export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
           cmd=(aws s3 cp)
           if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
           then
               cmd=(aws --endpoint https://storage.googleapis.com s3 cp)
           fi
-          ${cmd[@]} ${file} "{{ .ArtifactsOut.cloudObject.path }}"
+          ${cmd[@]} ${file} "{{ .ArtifactsOut.cloudObject.KeyValue.path }}"
   restore:
     type: StatefulSet
     inputArtifactNames:
@@ -55,13 +56,13 @@ actions:
         - |
           pushd $(mktemp -d)
           export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
-          export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} 
+          export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
           cmd=(aws s3 cp)
           if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
           then
               cmd=(aws --endpoint https://storage.googleapis.com s3 cp)
           fi
-          ${cmd[@]} {{ .ArtifactsIn.cloudObject.path }} .
+          ${cmd[@]} {{ .ArtifactsIn.cloudObject.KeyValue.path }} .
           tar xvf rs0.tar
           find . -name "*.gz" -exec gunzip {} \+ 2>> /var/log/kanister.log
           host="{{ index .StatefulSet.Pods 0 }}.{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"

@@ -35,9 +35,9 @@ func (s *PhaseSuite) TestExec(c *C) {
 	var output string
 	tf := &testFunc{output: &output}
 	tp := param.TemplateParams{
-		ArtifactsOut: map[string]crv1alpha1.Artifact{"test": crv1alpha1.Artifact{"in": "hello"}},
+		ArtifactsOut: map[string]crv1alpha1.Artifact{"test": crv1alpha1.Artifact{KeyValue: map[string]string{"in": "hello"}}},
 	}
-	args, err := param.RenderArgs([]string{"{{ .ArtifactsOut.test.in }}", "world"}, tp)
+	args, err := param.RenderArgs([]string{"{{ .ArtifactsOut.test.KeyValue.in }}", "world"}, tp)
 	p := Phase{
 		args: args,
 		f:    tf,
@@ -51,9 +51,9 @@ func (s *PhaseSuite) TestExecSprig(c *C) {
 	var output string
 	tf := &testFunc{output: &output}
 	tp := param.TemplateParams{
-		ArtifactsOut: map[string]crv1alpha1.Artifact{"test": crv1alpha1.Artifact{"in": "hello"}},
+		ArtifactsOut: map[string]crv1alpha1.Artifact{"test": crv1alpha1.Artifact{KeyValue: map[string]string{"in": "hello"}}},
 	}
-	args, err := param.RenderArgs([]string{"{{ .ArtifactsOut.test.in | lower}}", "world"}, tp)
+	args, err := param.RenderArgs([]string{"{{ .ArtifactsOut.test.KeyValue.in | lower}}", "world"}, tp)
 	p := Phase{
 		args: args,
 		f:    tf,

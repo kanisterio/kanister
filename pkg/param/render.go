@@ -26,12 +26,15 @@ func RenderArtifacts(arts map[string]crv1alpha1.Artifact, tp TemplateParams) (ma
 	rarts := make(map[string]crv1alpha1.Artifact, len(arts))
 	for name, a := range arts {
 		ra := crv1alpha1.Artifact{}
-		for k, v := range a {
+		for k, v := range a.KeyValue {
 			rv, err := render(v, tp)
 			if err != nil {
 				return nil, err
 			}
-			ra[k] = rv
+			if ra.KeyValue == nil {
+				ra.KeyValue = make(map[string]string, len(a.KeyValue))
+			}
+			ra.KeyValue[k] = rv
 		}
 		rarts[name] = ra
 	}
