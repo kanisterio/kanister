@@ -52,7 +52,7 @@ Kubernetes cluster. It will push the controller docker image to your docker repo
 Deploy a Released Version
 +++++++++++++++++++++++++
 
-To deploy a realeased version of the controller, issue the command below. Modify
+To deploy a released version of the controller, issue the command below. Modify
 the namespace fields in `bundle.yaml.in` to deploy in a namespace of your
 choice. By default, the controller will be deployed into the `default`
 namespace.

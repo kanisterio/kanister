@@ -57,7 +57,7 @@ Invoking Kanister Actions
 
 The first Kanister CustomResource we're going to deploy is a Blueprint.
 Blueprints are a set of instructions that tell the controller how to perform
-actions on an application. A action consists of one or more phases. Each phase
+actions on an application. An action consists of one or more phases. Each phase
 invokes a :doc:`Kanister Function </functions>`. All Kanister functions accept a
 list of strings. The `args` field in a Blueprint's phase is rendered and passed
 into the specified Function.
