@@ -146,8 +146,8 @@ Controller
 The Kanister controller is a Kubernetes Deployment and is installed easily using
 `kubectl`. See :ref:`install` for more information on deploying the controller.
 
-Exectution Walkthrough
-++++++++++++++++++++++
+Execution Walkthrough
++++++++++++++++++++++
 
 The controller watches for new/updated ActionSets in the same namespace in which
 it is deployed. When it sees an ActionSet without a nil status field, it 
@@ -178,7 +178,7 @@ another action. The canonical example is backup/restore. Manually creating a
 restore ACtionSet requires copying Artifacts from the status of the complete
 backup ActionSet, which is an error prone process. 
 
-`kanctl` helps make running dependant ActionSets more robust.  Kanctl is a
+`kanctl` helps make running dependent ActionSets more robust.  Kanctl is a
 command-line tool that makes it easier to create ActionSets.
 
 To demonstrate backup/restore ActionSet chaining, we'll perform "`kanctl perform
