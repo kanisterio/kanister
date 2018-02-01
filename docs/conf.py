@@ -120,7 +120,7 @@ html_extra_path = ['_extra']
 
 html_show_sourcelink = False
 
-html_favicon = "favicon.ico"
+html_favicon = "_static/favicon.ico"
 
 html_context = {
     'css_files': ['_static/custom.css'],
