@@ -9,7 +9,7 @@ Welcome to Kanister's documentation!
 Kanister allows domain experts to capture application specific data management
 tasks in Blueprints which can be easily shared and extended. The framework takes
 care of the tedious details around execution on Kubernetes and presents a
-homogeneous operational experience across applications at scale. 
+homogeneous operational experience across applications at scale.
 
 The design of Kanister was driven by the following main goals:
 
@@ -57,7 +57,7 @@ Kanister is open source and more information can be found on `github
 
 
 To get up an running using Kanister, we recommend :ref:`install` and working
-through the :ref:`tutorial` 
+through the :ref:`tutorial`
 
 Documentation
 -------------

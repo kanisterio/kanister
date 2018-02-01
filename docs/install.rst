@@ -6,7 +6,7 @@ Installing Kanister
 .. contents:: Installation Overview
   :local:
 
-Quickstart 
+Quickstart
 ----------
 
 This will install the controller in the default namespace
