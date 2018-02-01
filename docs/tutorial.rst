@@ -492,7 +492,7 @@ It is often useful to include the current time as parameters to an action.
 Kanister provides the job's start time in UTC. We can modify the Blueprint's
 output artifact to include the day the backup was taken:
 
-.. code-block:: go
+.. code-block:: yaml
 
   outputArtifacts:
     timeLog:
