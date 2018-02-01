@@ -23,7 +23,7 @@ Prerequisites
 * Access to an S3 bucket and credentials.
 
 Example Application
------------------
+-------------------
 
 This tutorial begins by deploying a sample application. The application is
 contrived, but useful for demonstrating Kanister's features. The application
@@ -53,7 +53,7 @@ includes the aws command-line client which we'll use later in the tutorial.
 
 
 Invoking Kanister Actions
---------------------
+-------------------------
 
 The first Kanister CustomResource we're going to deploy is a Blueprint.
 Blueprints are a set of instructions that tell the controller how to perform
@@ -235,7 +235,7 @@ You can check the controller logs to see if your bucket path rendered
 successfully.
 
 Consuming Secrets
-----------------
+-----------------
 
 In order for us to actually push the time log to S3, we'll need to use AWS
 credentials. In Kubernetes, credentials are stored in secrets. Kanister supports
@@ -502,7 +502,7 @@ For more on using the time template parameter, see :ref:`templates` .
 
 
 Using kanctl to Chain ActionSets
--------------
+--------------------------------
 
 So far in this tutorial, we have shown you how to manually create action
 sets via yaml files. In some cases, an action depends on a previous action,

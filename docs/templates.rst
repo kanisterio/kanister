@@ -269,6 +269,7 @@ secrets `Data` field has the type `[]byte`, we use sprig's `toString function
 usable strings.
 
 .. code-block:: yaml
+
   # We've named this secret `aws` in the Blueprint:
   secretNames:
     - aws

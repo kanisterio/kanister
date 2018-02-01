@@ -1,0 +1,15 @@
+Kanister
+Kubernetes
+repo
+namespace
+lifecycle
+kubectl
+kanctl
+prepopulated
+schemas
+params
+args
+Walkthrough
+Quickstart
+templating
+stdout

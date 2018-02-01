@@ -22,8 +22,8 @@ The design of Kanister was driven by the following main goals:
 2. API Driven: Data management tasks for each specific application may vary
    widely, and these tasks should be encapsulated by a well-defined API so as to
    provide a uniform data management experience. Each application expert can
-   provide an application-specific pluggable implementation that satisifes this
-   API, thus enabling a homogenous data management experience of diverse and
+   provide an application-specific pluggable implementation that satisfies this
+   API, thus enabling a homogeneous data management experience of diverse and
    evolving data services.
 
 3. Extensible: Any data management solution capable of managing a diverse set of
