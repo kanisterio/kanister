@@ -184,7 +184,7 @@ ifeq ($(DOCKER_BUILD),"true")
 	@docker run                               \
 		--entrypoint ''                   \
 		--rm                              \
-		-v "$(PWD):/repo"                 \
+		-v "$(PWD)/docs:/repo/docs"                 \
 		$(DOCS_BUILD_IMAGE)               \
 		/bin/bash -c $(DOCS_CMD)
 else
