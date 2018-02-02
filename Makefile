@@ -173,7 +173,7 @@ codegen:
 		./build/codegen.sh                       \
 	"'
 
-DOCS_CMD = "mount && ls -l && cd docs && make clean &&          \
+DOCS_CMD = "mount && ls -l && make clean &&          \
                 doc8 --max-line-length 90 --ignore D000 . && \
                 make spelling && make html           \
 	   "
@@ -186,7 +186,7 @@ ifeq ($(DOCKER_BUILD),"true")
 		--rm                              \
 		-v "$(PWD):/repo"                 \
 		$(DOCS_BUILD_IMAGE)               \
-		/bin/bash -c cd /repo && $(DOCS_CMD)
+		/bin/bash -c $(DOCS_CMD)
 else
 	@/bin/bash -c $(DOCS_CMD)
 endif
