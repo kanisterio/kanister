@@ -177,6 +177,11 @@ DOCS_CMD = "mount && ls -l && cd docs && make clean &&          \
                 doc8 --max-line-length 90 --ignore D000 . && \
                 make spelling && make html           \
 	   "
+ifeq ($(origin SHIPPABLE_CONTAINER_NAME), undefined)
+	MOUNT_CMD = -v "$(PWD):/repo"
+else
+	MOUNT_CMD = --volumes-from $(SHIPPABLE_CONTAINER_NAME)
+endif
 
 docs:
 ifeq ($(DOCKER_BUILD),"true")
@@ -184,9 +189,7 @@ ifeq ($(DOCKER_BUILD),"true")
 	@docker run                               \
 		--entrypoint ''                   \
 		--rm                              \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-        -v /usr/bin/docker:/usr/bin/docker \
-		-v "$(PWD):/repo"                 \
+		$(MOUNT_CMD)                      \
 		-w /repo                          \
 		$(DOCS_BUILD_IMAGE)               \
 		/bin/bash -c $(DOCS_CMD)
