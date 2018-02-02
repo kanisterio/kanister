@@ -185,9 +185,8 @@ ifeq ($(DOCKER_BUILD),"true")
 		--entrypoint ''                   \
 		--rm                              \
 		-v "$(PWD):/repo"                 \
-		-w /repo                          \
 		$(DOCS_BUILD_IMAGE)               \
-		/bin/bash -c $(DOCS_CMD)
+		/bin/bash -c cd /repo && $(DOCS_CMD)
 else
 	@/bin/bash -c $(DOCS_CMD)
 endif
