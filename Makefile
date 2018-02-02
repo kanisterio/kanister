@@ -173,7 +173,7 @@ codegen:
 		./build/codegen.sh                       \
 	"'
 
-DOCS_CMD = "mount && ls -l && make clean &&          \
+DOCS_CMD = "mount && ls -l && cd /repo/docs && make clean && \
                 doc8 --max-line-length 90 --ignore D000 . && \
                 make spelling && make html           \
 	   "
@@ -184,7 +184,8 @@ ifeq ($(DOCKER_BUILD),"true")
 	@docker run                               \
 		--entrypoint ''                   \
 		--rm                              \
-		-v "$(PWD)/docs:/repo/docs"                 \
+		-v "$(PWD)/.:/repo"                \
+		-w /repo/                         \
 		$(DOCS_BUILD_IMAGE)               \
 		/bin/bash -c $(DOCS_CMD)
 else
