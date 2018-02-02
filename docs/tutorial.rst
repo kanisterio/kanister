@@ -5,7 +5,7 @@ Tutorial
 
 In this tutorial you'll deploy a simple application in Kubernetes. We'll start
 by invoking by invoking a trivial Kanister action, then incrementally use more
-of Kanister's features to manage the application's data. 
+of Kanister's features to manage the application's data.
 
 .. contents:: Tutorial Overview
   :local:
@@ -18,12 +18,12 @@ Prerequisites
 * `kubectl <https://kubernetes.io/docs/tasks/tools/install-kubectl/>`_ installed
   and setup
 
-* A running Kanister controller. See :ref:`install` 
+* A running Kanister controller. See :ref:`install`
 
 * Access to an S3 bucket and credentials.
 
 Example Application
------------------
+-------------------
 
 This tutorial begins by deploying a sample application. The application is
 contrived, but useful for demonstrating Kanister's features. The application
@@ -53,7 +53,7 @@ includes the aws command-line client which we'll use later in the tutorial.
 
 
 Invoking Kanister Actions
---------------------
+-------------------------
 
 The first Kanister CustomResource we're going to deploy is a Blueprint.
 Blueprints are a set of instructions that tell the controller how to perform
@@ -95,7 +95,7 @@ First Blueprint
         - test-container
         - sh
         - -c
-        - echo /var/log/time.log 
+        - echo /var/log/time.log
   EOF
 
 The next CustomResource we'll deploy is an ActionSet. An ActionSet is created
@@ -182,7 +182,7 @@ map through Argument templating. For now we'll just print the path name to
 stdout, but eventually we'll backup the time log to that path.
 
 .. code-block:: yaml
-  
+
   cat <<EOF | kubectl apply -f -
   apiVersion: cr.kanister.io/v1alpha1
   kind: Blueprint
@@ -203,7 +203,7 @@ stdout, but eventually we'll backup the time log to that path.
         - sh
         - -c
         - |
-          echo /var/log/time.log 
+          echo /var/log/time.log
           echo "{{ .ConfigMaps.location.Data.path }}"
   EOF
 
@@ -235,12 +235,12 @@ You can check the controller logs to see if your bucket path rendered
 successfully.
 
 Consuming Secrets
-----------------
+-----------------
 
 In order for us to actually push the time log to S3, we'll need to use AWS
 credentials. In Kubernetes, credentials are stored in secrets. Kanister supports
 Secrets in the same way it supports ConfigMaps. The secret is named and rendered
-in the Blueprint. The name to reference mapping is created in the ActionSet. 
+in the Blueprint. The name to reference mapping is created in the ActionSet.
 
 In our example, we'll need to use secrets to push the time log to S3.
 
@@ -251,7 +251,7 @@ In our example, we'll need to use secrets to push the time log to S3.
 
 This step requires a bit of homework. You'll need to create aws credentials that
 have read/write access to the bucket you specified in the ConfigMap.
-Base64 credentials and put them below. 
+Base64 credentials and put them below.
 
 .. code-block:: bash
 
@@ -276,10 +276,10 @@ variables. Because we now have access to the bucket in the ConfigMap, we can
 also push the log to S3. In this Secret, we store the credentials as binary
 data. We can use the templating engine `toString` and `quote` functions, courtesy of sprig.
 
-For more on this templating, see :ref:`templates` 
+For more on this templating, see :ref:`templates`
 
 .. code-block:: yaml
-  
+
   cat <<EOF | kubectl apply -f -
   apiVersion: cr.kanister.io/v1alpha1
   kind: Blueprint
@@ -311,7 +311,7 @@ Create a new ActionSet that has the name-to-Secret reference in its action's
 `secrets` field.
 
 .. code-block:: yaml
-  
+
   cat <<EOF | kubectl create -f -
   apiVersion: cr.kanister.io/v1alpha1
   kind: ActionSet
@@ -356,10 +356,10 @@ Output Artifacts
 
 In our example, we'll create an outputArtifact called `timeLog` that contains
 the full path of our data in S3. This path's base will be configured using a
-ConfigMap. 
+ConfigMap.
 
 .. code-block:: yaml
-  
+
   cat <<EOF | kubectl apply -f -
   apiVersion: cr.kanister.io/v1alpha1
   kind: Blueprint
@@ -388,7 +388,7 @@ ConfigMap.
             AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
             AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
             aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}
-  EOF  
+  EOF
 
 If you re-execute this Kanister Action, you'll be able to see the Artifact in the
 ActionSet status.
@@ -408,7 +408,7 @@ We create a new ActionSet on our `time-logger` deployment with the action name
 `restore`. This time we also include the full path in S3 as an Artifact.
 
 .. code-block:: yaml
-  
+
   cat <<EOF | kubectl create -f -
   apiVersion: cr.kanister.io/v1alpha1
   kind: ActionSet
@@ -428,7 +428,7 @@ We create a new ActionSet on our `time-logger` deployment with the action name
   EOF
 
 We add a restore action to the Blueprint. This action does not need the
-ConfigMap because the `inputArtifact` contains the fully specified path. 
+ConfigMap because the `inputArtifact` contains the fully specified path.
 
 .. code-block:: yaml
 
@@ -459,7 +459,7 @@ ConfigMap because the `inputArtifact` contains the fully specified path.
           - |
             AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
             AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-            aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}  
+            aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}
     restore:
       type: Deployment
       secretNames:
@@ -479,7 +479,7 @@ ConfigMap because the `inputArtifact` contains the fully specified path.
           AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
           AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
           aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log
-  EOF 
+  EOF
 
 We can check the controller logs to see that the time log was restored
 successfully.
@@ -492,7 +492,7 @@ It is often useful to include the current time as parameters to an action.
 Kanister provides the job's start time in UTC. We can modify the Blueprint's
 output artifact to include the day the backup was taken:
 
-.. code-block:: go
+.. code-block:: yaml
 
   outputArtifacts:
     timeLog:
@@ -502,11 +502,11 @@ For more on using the time template parameter, see :ref:`templates` .
 
 
 Using kanctl to Chain ActionSets
--------------
+--------------------------------
 
 So far in this tutorial, we have shown you how to manually create action
 sets via yaml files. In some cases, an action depends on a previous action,
-and manually updating the action set to use artifacts created by the 
-previous action set can be cumbersome. In situations like this, it is 
+and manually updating the action set to use artifacts created by the
+previous action set can be cumbersome. In situations like this, it is
 useful to instead use `kanctl`. To learn how to leverage `kanctl` to
 create action sets, see :ref:`operator` .

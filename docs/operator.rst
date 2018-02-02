@@ -22,13 +22,13 @@ were introduced in Kubernetes 1.7 and replaced TPRs. The lifecycle of these
 objects can be managed entirely through kubectl. Kanister uses Kubernetes' code
 generation tools to create go client libraries for its CRs.
 
-The schemas of the Kanisters CRDs can be found in `types.go
+The schemas of the Kanister CRDs can be found in `types.go
 <https://github.com/kanisterio/kanister/tree/master/pkg/apis/cr/v1alpha1/types.go>`_
 
 Blueprints
 ++++++++++
 
-Blueprint CRs are a set of instructions that tell the controller how to perform 
+Blueprint CRs are a set of instructions that tell the controller how to perform
 actions on a specific application.
 
 A Blueprint contains a field called `Actions` which is a mapping of Action Name
@@ -55,7 +55,7 @@ The definition of a `BlueprintAction` is:
 - `ConfigMapNames`, `SecretNames`, `InputArtifactNames` are lists of named
   parameters that must be included by the ActionSet.
 - `Phases` are a list of `BlueprintPhases`. These phases are invoked in order
-  when executing this Action. 
+  when executing this Action.
 
 .. code-block:: go
   :linenos:
@@ -146,17 +146,17 @@ Controller
 The Kanister controller is a Kubernetes Deployment and is installed easily using
 `kubectl`. See :ref:`install` for more information on deploying the controller.
 
-Exectution Walkthrough
-++++++++++++++++++++++
+Execution Walkthrough
++++++++++++++++++++++
 
 The controller watches for new/updated ActionSets in the same namespace in which
-it is deployed. When it sees an ActionSet without a nil status field, it 
+it is deployed. When it sees an ActionSet without a nil status field, it
 immediately initializes the ActionSet's status to the Pending State. The status is
 also prepopulated with the pending phases.
 
 Execution begins by resolving all the :ref:`templates`. If any required
 object references or artifacts are missing from the ActionSet, the ActionSet
-status is marked as failed. Otherwise, the template params are used to render the 
+status is marked as failed. Otherwise, the template params are used to render the
 output Artifacts, and then the args in the Blueprint.
 
 For each action, all phases are executed in-order. The rendered args are
@@ -176,9 +176,9 @@ Although all Kanister actions can be run using kubectl, there are situations
 where this may be cumbersome. Many actions depend on the Artifacts created by
 another action. The canonical example is backup/restore. Manually creating a
 restore ACtionSet requires copying Artifacts from the status of the complete
-backup ActionSet, which is an error prone process. 
+backup ActionSet, which is an error prone process.
 
-`kanctl` helps make running dependant ActionSets more robust.  Kanctl is a
+`kanctl` helps make running dependent ActionSets more robust.  Kanctl is a
 command-line tool that makes it easier to create ActionSets.
 
 To demonstrate backup/restore ActionSet chaining, we'll perform "`kanctl perform
@@ -208,7 +208,7 @@ from`".
   actionset "s3backup-j4z6f" created
 
   # restore from the backup we just created
-  $ kanctl  perform from restore s3backup-j4z6f 
+  $ kanctl  perform from restore s3backup-j4z6f
 
   # View the actionset
   kubectl get actionset restore-s3backup-j4z6f-s1wb7 -oyaml
