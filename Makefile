@@ -173,7 +173,7 @@ codegen:
 		./build/codegen.sh                       \
 	"'
 
-DOCS_CMD = "cd docs && make clean &&          \
+DOCS_CMD = "mount && ls -l && cd docs && make clean &&          \
                 doc8 --max-line-length 90 --ignore D000 . && \
                 make spelling && make html           \
 	   "
