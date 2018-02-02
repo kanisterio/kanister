@@ -32,13 +32,13 @@ that provide integration with Kubernetes:
 KubeExec
 ++++++++
 
-KubeExec is similar to running  
+KubeExec is similar to running
 
 .. code-block:: bash
 
   `kubectl exec -it --namespace <NAMESPACE> <POD> -c <CONTAINER> [CMD LIST...]
 
-It requires at least four arguments. The first three arguments are used to  
+It requires at least four arguments. The first three arguments are used to
 determine the container to exec into. The remaining arguments are grouped and
 executed as a command.
 
@@ -65,7 +65,7 @@ KubeTask takes the following three arguments:
 Registering Functions
 ---------------------
 
-Kanister can be extended by registering new Kanister Functions. 
+Kanister can be extended by registering new Kanister Functions.
 
 Kanister Functions are registered using a similar mechanism to `database/sql
 <https://golang.org/pkg/database/sql/>`_ drivers. To register new Kanister
