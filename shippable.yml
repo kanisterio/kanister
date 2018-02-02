@@ -13,6 +13,7 @@ build:
     - add-apt-repository -y ppa:masterminds/glide && apt-get update -y 2> /dev/null
     - apt-get install -y glide
     - make build DOCKER_BUILD=false
+    - make docs
     - bash build/local_kubernetes.sh start_minikube
     - make test DOCKER_BUILD=false
   
