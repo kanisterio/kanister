@@ -13,3 +13,6 @@ Walkthrough
 Quickstart
 templating
 stdout
+param
+aws
+outputArtifact
