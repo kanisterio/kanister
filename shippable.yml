@@ -9,7 +9,7 @@ branches:
 
 build:
   pre_ci_boot:
-        options: "-v $SHIPPABLE_BUILD_DIR:$SHIPPABLE_BUILD_DIR"
+    options: "-v $SHIPPABLE_BUILD_DIR:$SHIPPABLE_BUILD_DIR"
 
   ci:
     - add-apt-repository -y ppa:masterminds/glide && apt-get update -y 2> /dev/null
