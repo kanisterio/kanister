@@ -80,8 +80,7 @@ wait_for_pods() {
 
     while [[  ${pod_status} == *false* ]] || [[ ${pod_status} == '' ]]
     do
-        ps -ef | grep kube
-        kubectl get nodes || true
+        systemctl status -l localkube
         if [[ ${retries} -le 0 ]]
         then
             echo "Error some objects are not ready"
@@ -97,6 +96,8 @@ wait_for_pods() {
         fi
         retries=$((retries-1))
     done
+    minikube status
+    minikube logs
     kubectl cluster-info
 }
 
