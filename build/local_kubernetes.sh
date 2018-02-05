@@ -49,12 +49,12 @@ start_minikube() {
         get_minikube
     fi
 
-    minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5 -v=7 --logtostderr=true > /var/lib/localkube/localkube.out 2> /var/lib/localkube/localkube.err
+    minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5 -v=7 --logtostderr=true > /tmp/localkube.out 2> /tmp/localkube.err
     wait_for_pods
 
-    cat /var/lib/localkube/localkube.err
+    cat /tmp/localkube.err
 
-    cat /var/lib/localkube/localkube.out
+    cat /tmp/localkube.out
 
     #kubectl run hello-minikube --image=gcr.io/google_containers/echoserver:1.4 --hostport=8000 --port=8080
     #wait_for_pods default
