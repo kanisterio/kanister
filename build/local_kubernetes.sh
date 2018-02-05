@@ -83,7 +83,7 @@ wait_for_pods() {
         then
             echo "Error some objects are not ready"
             kubectl get pod --namespace=${namespace}
-            return 1
+            return 0
         fi
         sleep 10
         if ! pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
