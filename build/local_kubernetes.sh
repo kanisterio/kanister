@@ -80,6 +80,7 @@ wait_for_pods() {
 
     while [[  ${pod_status} == *false* ]] || [[ ${pod_status} == '' ]]
     do
+        ps -ef | grep kube
         if [[ ${retries} -le 0 ]]
         then
             echo "Error some objects are not ready"
