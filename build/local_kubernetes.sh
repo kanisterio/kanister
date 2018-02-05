@@ -49,9 +49,7 @@ start_minikube() {
         get_minikube
     fi
 
-    #minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5 -v 7 --logtostderr=true > /tmp/localkube.out 2> /tmp/localkube.err
-    sh -c 'PATH=/usr/local/sbin:$PATH GODEBUG=netdns=go nohup /usr/local/bin/localkube   --v 7 --dns-domain=cluster.local --node-ip=172.17.0.2 --generate-certs=false --logtostderr=true --enable-dns=false > /tmp/localkube.out 2> /tmp/localkube.err < /dev/null & echo $! > /var/run/localkube.pid &'
-
+    minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5 -v 7 --logtostderr=true > /tmp/localkube.out 2> /tmp/localkube.err
 
     wait_for_pods
 
