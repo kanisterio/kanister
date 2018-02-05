@@ -51,6 +51,7 @@ start_minikube() {
 
     minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5 -v 7 --logtostderr=true > /tmp/localkube.out 2> /tmp/localkube.err
 
+
     wait_for_pods
 
     cat  /tmp/localkube.out
