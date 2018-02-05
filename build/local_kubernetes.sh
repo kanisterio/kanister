@@ -49,7 +49,7 @@ start_minikube() {
         get_minikube
     fi
 
-    minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5 --logtostderr=true > /tmp/localkube.out 2> /tmp/localkube.err
+    minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5 -v 7 --logtostderr=true > /tmp/localkube.out 2> /tmp/localkube.err
 
     wait_for_pods
 
@@ -81,6 +81,7 @@ wait_for_pods() {
     while [[  ${pod_status} == *false* ]] || [[ ${pod_status} == '' ]]
     do
         ps -ef | grep kube
+        kubectl get nodes
         if [[ ${retries} -le 0 ]]
         then
             echo "Error some objects are not ready"
