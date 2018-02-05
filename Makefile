@@ -33,7 +33,7 @@ VERSION := $(shell git describe --tags --always --dirty)
 PWD := $$(pwd)
 
 # Whether to build inside a containerized build environment
-DOCKER_BUILD="true"
+DOCKER_BUILD ?= "true"
 
 ###
 ### These variables should not need tweaking.
@@ -62,6 +62,7 @@ IMAGE_NAME := $(BIN)
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
 BUILD_IMAGE ?= kanisterio/build:0.13.1-go1.9
+DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
 
 DEFAULT_PATH := /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
@@ -153,7 +154,7 @@ push-name:
 version:
 	@echo $(VERSION)
 
-.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean vendor-clean
+.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean vendor-clean docs
 
 deploy: push .deploy-$(DOTFILE_IMAGE)
 .deploy-$(DOTFILE_IMAGE):
@@ -171,6 +172,26 @@ codegen:
 		PATH=$$GOPATH/bin:$$GOROOT/bin::$${PATH} \
 		./build/codegen.sh                       \
 	"'
+
+DOCS_CMD = "cd docs && make clean &&          \
+                doc8 --max-line-length 90 --ignore D000 . && \
+                make spelling && make html           \
+	   "
+
+docs:
+ifeq ($(DOCKER_BUILD),"true")
+	@echo "running DOCS_CMD in the containerized build environment"
+	@docker run                               \
+		--entrypoint ''                   \
+		--rm                              \
+		-v "$(PWD):/repo"                 \
+		-w /repo                          \
+		$(DOCS_BUILD_IMAGE)               \
+		/bin/bash -c $(DOCS_CMD)
+else
+	@/bin/bash -c $(DOCS_CMD)
+endif
+
 build-dirs:
 	@mkdir -p bin/$(ARCH)
 	@mkdir -p .go/src/$(PKG) .go/pkg .go/bin .go/std/$(ARCH)
