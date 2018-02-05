@@ -50,6 +50,7 @@ start_minikube() {
     fi
 
     minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5 --logtostderr=true > /tmp/localkube.out 2> /tmp/localkube.err
+
     wait_for_pods
 
     cat  /tmp/localkube.out
@@ -82,6 +83,8 @@ wait_for_pods() {
         if [[ ${retries} -le 0 ]]
         then
             echo "Error some objects are not ready"
+            cat  /tmp/localkube.out
+            cat  /tmp/localkube.err
             kubectl get pod --namespace=${namespace}
             return 0
         fi
