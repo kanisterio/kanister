@@ -27,5 +27,5 @@ build:
     #- if [ "${IS_PULL_REQUEST}" == "false" ] && [ "${BRANCH}" == "master" ]; then make push ${IMAGE_TAG} DOCKER_BUILD=false; fi
 
   on_failure:
-    - minikube status
-    - minikube logs
+    - echo $(minikube status)
+    - echo $(minikube logs)
