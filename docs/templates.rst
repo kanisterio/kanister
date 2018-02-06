@@ -37,15 +37,15 @@ standard go template functions, Kanister imports all the `sprig
 Protected Objects
 -----------------
 Kanister operates on the granularity of a `ProtectedObject`. As of the current
-release, a Protected Object is a workload, specifically, a Deployment or 
+release, a Protected Object is a workload, specifically, a Deployment or
 StatefulSet. The TemplateParams struct has one field for each potential protected
 object, which is effectively a union in go.
 
 Each ProtectedObject param struct is a set of useful fields related to the
-ProtectedObject. 
+ProtectedObject.
 
-StatefulSet  
-+++++++++++  
+StatefulSet
++++++++++++
 
 StatefulSetParams include the names of the Pods, Containers, and PVCs that
 belong to the StatefulSet being acted on.
@@ -55,8 +55,8 @@ belong to the StatefulSet being acted on.
   :language: go
   :lines: 30-36
 
-Deployment   
-++++++++++   
+Deployment
+++++++++++
 
 DeploymentParams are identical to StatefulSetParams.
 
@@ -69,7 +69,7 @@ Artifacts
 ---------
 
 Artifacts reference data that Kanister has externalized. Kanister can use them
-as inputs or outputs to Actions. 
+as inputs or outputs to Actions.
 
 Artifacts are key-value pairs. In go this looks like:
 
@@ -80,7 +80,7 @@ Artifacts are key-value pairs. In go this looks like:
 
 Go's templating engine allows us to easily access the values inside the
 artifact. This functionality is documented `here
-<https://golang.org/pkg/text/template/#hdr-Arguments>`_. 
+<https://golang.org/pkg/text/template/#hdr-Arguments>`_.
 
 .. note::
 
@@ -141,7 +141,7 @@ A Blueprint contains actions for a specific application - it should not need to
 change unless the application itself changes. The ActionSet provides all the
 necessary information to resolve the runtime configuration.
 
-Time         
+Time
 +++++++++++++
 
 Time is provided as a template parameter. It is evaluated before any of the
@@ -152,27 +152,27 @@ The time field is the current time in UTC, in the RFC3339Nano format. Using the
 you can parse this string convert it to your desired precision and format.
 
 For example, if you only care about the "kitchen" time, use the following
-template string: 
+template string:
 
 .. code-block:: go
 
   "{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "3:04PM" }}"
 
-ConfigMaps   
+ConfigMaps
 +++++++++++++
 
 Like input Artifacts, ConfigMaps are named in Blueprints. Unlike input
 Artifacts, ConfigMaps are not fully specified in the ActionSet. Rather, the
 ActionSet contains a namespace/name reference to the ConfigMap. When creating
 the template parameters, the controller will query the Kubernetes API server for
-the ConfigMaps and adds them to the template params. 
+the ConfigMaps and adds them to the template params.
 
 The name given by the Blueprint is different than the Kubernetes API Object
 name. An ActionSet action may map any ConfigMap to the name specified in the
 Blueprint. This level of indirection allows configuration changes every time an
 action is invoked.
 
-Templating makes consuming the ConfigMaps easy. The example below illustrates a 
+Templating makes consuming the ConfigMaps easy. The example below illustrates a
 Blueprint that requires a ConfigMap named location.
 
 First, we create a ConfigMap that contains configuration information about an S3
@@ -219,7 +219,7 @@ templating:
   "{{ .ConfigMaps.location.Data.bucket }}"
   "{{ .ConfigMaps.location.Data.region }}"
 
-Secrets      
+Secrets
 +++++++++++++
 
 Secrets are handled the same way as ConfigMaps. They are named in a Blueprint.
@@ -269,11 +269,12 @@ secrets `Data` field has the type `[]byte`, we use sprig's `toString function
 usable strings.
 
 .. code-block:: yaml
+
   # We've named this secret `aws` in the Blueprint:
   secretNames:
     - aws
 
-  ...  
+  ...
 
   # We access the secret values via templating:
   "{{ .Secrets.aws.Data.aws_access_key_id | toString }}"

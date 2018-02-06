@@ -132,6 +132,30 @@ func (s *ControllerSuite) TestEmptyActionSetStatus(c *C) {
 	c.Assert(err, IsNil)
 }
 
+func (s *ControllerSuite) TestSynchronousFailure(c *C) {
+	as := &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "testactionset-",
+		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				crv1alpha1.ActionSpec{
+					Blueprint: "NONEXISTANT_BLUEPRINT",
+				},
+			},
+		},
+	}
+	as, err := s.crCli.ActionSets(s.namespace).Create(as)
+	c.Assert(err, IsNil)
+	defer func() {
+		err := s.crCli.ActionSets(s.namespace).Delete(as.GetName(), nil)
+		c.Assert(err, IsNil)
+	}()
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
+	c.Assert(err, IsNil)
+}
+
 func (s *ControllerSuite) TestExecActionSet(c *C) {
 	for _, pok := range []string{"StatefulSet", "Deployment"} {
 		for _, tc := range []struct {

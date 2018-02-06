@@ -3,25 +3,28 @@ language: go
 go:
 - 1.9.1
 
-branches:		
-  only:		
+branches:
+  only:
     - master
 
 build:
+  pre_ci_boot:
+    options: "-v $SHIPPABLE_BUILD_DIR:$SHIPPABLE_BUILD_DIR --privileged=true"
 
   ci:
     - add-apt-repository -y ppa:masterminds/glide && apt-get update -y 2> /dev/null
     - apt-get install -y glide
     - make build DOCKER_BUILD=false
+    - make docs
     - bash build/local_kubernetes.sh start_minikube
     - make test DOCKER_BUILD=false
-  
+
   post_ci:
     - bash build/local_kubernetes.sh stop_minikube
-  
+
   on_success:
     - export IMAGE_TAG="${BUILD_NUMBER}.${COMMIT}"
-    #- if [ "${IS_PULL_REQUEST}" == "false" ] && [ "${BRANCH}" == "master" ]; then make push ${IMAGE_TAG} DOCKER_BUILD=false; fi 
-    
+    #- if [ "${IS_PULL_REQUEST}" == "false" ] && [ "${BRANCH}" == "master" ]; then make push ${IMAGE_TAG} DOCKER_BUILD=false; fi
+
   on_failure:
     - echo "On_failure ci action"

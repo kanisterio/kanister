@@ -281,7 +281,12 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) error {
 	}
 	for i := range as.Status.Actions {
 		if err := c.runAction(context.TODO(), as, i); err != nil {
-			return err
+			// If runAction returns an error, it is a failure in the synchronous
+			// part of running the action.
+			log.Errorf("Failed launch Action %s: %#v", as.GetName(), err)
+			as.Status.State = crv1alpha1.StateFailed
+			_, err = c.crClient.ActionSets(as.GetNamespace()).Update(as)
+			return errors.WithStack(err)
 		}
 	}
 	log.Infof("Started all actions %s", as.GetName())

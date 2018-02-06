@@ -37,7 +37,8 @@ compat.make_admonition = BaseAdmonition
 # ones.
 extensions = ['sphinx.ext.todo',
     'sphinx.ext.ifconfig',
-    'sphinx.ext.githubpages']
+    'sphinx.ext.githubpages',
+    'sphinxcontrib.spelling']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -53,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'kanister'
-copyright = '2017, Kanister'
+copyright = '2017-2018, Kanister'
 author = 'Kanister'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -119,7 +120,7 @@ html_extra_path = ['_extra']
 
 html_show_sourcelink = False
 
-html_favicon = "favicon.ico"
+html_favicon = "_static/favicon.ico"
 
 html_context = {
     'css_files': ['_static/custom.css'],
