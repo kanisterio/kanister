@@ -78,8 +78,6 @@ wait_for_pods() {
         then
             echo "Error some objects are not ready"
             kubectl get pod --namespace=${namespace}
-            minikube status
-            minikube logs
             return 1
         fi
         sleep 10
