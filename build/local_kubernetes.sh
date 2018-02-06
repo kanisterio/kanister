@@ -70,7 +70,7 @@ get_minikube() {
 wait_for_pods() {
     local namespace=${1:-"kube-system"}
     local pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
-    local retries=10
+    local retries=15
 
     while [[  ${pod_status} == *false* ]] || [[ ${pod_status} == '' ]]
     do
@@ -80,7 +80,7 @@ wait_for_pods() {
             kubectl get pod --namespace=${namespace}
             return 1
         fi
-        sleep 10
+        sleep 20
         if ! pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
         then
              pod_status=''
