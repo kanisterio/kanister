@@ -12,7 +12,7 @@ readonly BASE_DIR=$(dirname ${0})
 export MINIKUBE_WANTUPDATENOTIFICATION=false
 export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
-export CHANGE_MINIKUBE_NONE_USER=true 
+export CHANGE_MINIKUBE_NONE_USER=true
 export KUBECONFIG=$HOME/.kube/config
 declare -a REQUIRED_BINS=( iptables docker sudo jq )
 
@@ -20,13 +20,13 @@ if command -v apt-get
 then
     lin_repo_pre_cmd="apt-get install -y "
 elif command -v apk
-then 
+then
     lin_repo_pre_cmd="apk add --update "
 else
     echo "apk or apt-get is supported at this moment"
     exit 1
 fi
-    
+
 check_or_get_dependencies() {
     for dep in ${REQUIRED_BINS[@]}
     do
@@ -36,15 +36,15 @@ check_or_get_dependencies() {
             if ! err=$(${lin_repo_pre_cmd} ${dep} 2>&1)
             then
                 echo "Insatlletion failed with $err"
-                exit 1                
+                exit 1
             fi
         fi
     done
-}    
+}
 
 start_minikube() {
-    
-    if ! command -v minikube 
+
+    if ! command -v minikube
     then
         get_minikube
     fi
@@ -71,7 +71,7 @@ wait_for_pods() {
     local namespace=${1:-"kube-system"}
     local pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
     local retries=10
-    
+
     while [[  ${pod_status} == *false* ]] || [[ ${pod_status} == '' ]]
     do
         if [[ ${retries} -le 0 ]]
@@ -80,7 +80,7 @@ wait_for_pods() {
             kubectl get pod --namespace=${namespace}
             return 1
         fi
-        sleep 10
+        sleep 20
         if ! pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
         then
              pod_status=''
@@ -92,10 +92,10 @@ wait_for_pods() {
 
 usage() {
     cat <<EOM
-Usage: ${0} <operation> 
+Usage: ${0} <operation>
 Where operation is one of the following:
   get_minikube: installs minikube
-  start_minikube : minikube start 
+  start_minikube : minikube start
   stop_minikube : minikube stop
 EOM
     exit 1
@@ -115,5 +115,5 @@ case "${1}" in
             ;;
         *)
             usage
-            exit 1    
+            exit 1
 esac
