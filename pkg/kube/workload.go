@@ -109,10 +109,11 @@ func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, d 
 	}
 }
 
-// TODO(tom): We should figure out why these helm labels are not getting passed on.
+// We omit helm specific labels.
 var labelBlackList = map[string]struct{}{
 	"chart":    struct{}{},
 	"heritage": struct{}{},
+	"release":  struct{}{},
 }
 
 func labelSelector(labels map[string]string) string {
