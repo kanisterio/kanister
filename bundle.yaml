@@ -84,4 +84,4 @@ spec:
       serviceAccountName: kanister-operator
       containers:
       - name: kanister-operator
-        image: kanisterio/controller:0.1.1
+        image: kanisterio/controller:v0.2.0
