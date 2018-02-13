@@ -65,6 +65,11 @@ $ kubectl logs -l app=kanister-operator
 ```
 
 In addition to installing the Kanister controller, please also install the appropriate kanctl binary from [releases](https://github.com/kanisterio/kanister/releases).
+Alternatively, you can also install kanctl by using the following command. Make sure your GOPATH is set.
+```bash
+go install -v github.com/kanisterio/kanister/cmd/kanctl
+```
+
 
 ## Walkthrough of an Example Application - MongoDB
 
@@ -96,9 +101,12 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 
 ### 2. Protect the Application
 
-Next create a blueprint which describes how backup and restore actions can be executed on this application. The blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the blueprint references the S3 location specified in the config map in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update secrets.yaml to include AWS credentials that have read/write access to the S3 bucket.
+Next create a blueprint which describes how backup and restore actions can be executed on this application. The blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the blueprint references the S3 location specified in the config map in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update secrets.yaml to include AWS credentials that have read/write access to the S3 bucket. In secrets.yaml, you have to provide your aws_access_key_id and aws_secret_access_key which must be base64 encoded.
 
 ```bash
+#Get base64 encoded aws keys
+echo "YOUR_KEY" | base64
+
 # Create the ConfigMap with an S3 path
 $ kubectl apply -f ./examples/mongo-sidecar/s3-location-configmap.yaml
 configmap "mongo-s3-location" created
