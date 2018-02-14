@@ -153,7 +153,7 @@ func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, 
 	return nil, fmt.Errorf("Could not find a single replicaset for deployment")
 }
 
-// FetchPods fetches the pods matching the specified labels and owner UID
+// FetchPods fetches the running pods matching the specified labels and owner UID
 func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID, labels map[string]string) ([]v1.Pod, error) {
 	sel := labelSelector(labels)
 	opts := metav1.ListOptions{LabelSelector: sel}
@@ -165,6 +165,9 @@ func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID, labels
 	for _, pod := range pods.Items {
 		if len(pod.OwnerReferences) != 1 ||
 			pod.OwnerReferences[0].UID != uid {
+			continue
+		}
+		if pod.Status.Phase != v1.PodRunning {
 			continue
 		}
 		ps = append(ps, pod)
