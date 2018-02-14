@@ -1,9 +1,8 @@
 package kube
 
 import (
-	"fmt"
-
 	"context"
+	"fmt"
 
 	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -125,7 +124,13 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 	for {
 		select {
 		case event := <-events:
-			k8sJob := event.Object.(*batch.Job)
+			if event.Object == nil {
+				return fmt.Errorf("Result channel closed for Job %s", job.name)
+			}
+			k8sJob, ok := event.Object.(*batch.Job)
+			if !ok {
+				return fmt.Errorf("Invalid Job event object: %T", event.Object)
+			}
 			conditions := k8sJob.Status.Conditions
 			for _, condition := range conditions {
 				if condition.Type == batch.JobComplete {
