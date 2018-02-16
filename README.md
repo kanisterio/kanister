@@ -101,10 +101,10 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 
 ### 2. Protect the Application
 
-Next create a blueprint which describes how backup and restore actions can be executed on this application. The blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the blueprint references the S3 location specified in the config map in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update secrets.yaml to include AWS credentials that have read/write access to the S3 bucket. In secrets.yaml, you have to provide your aws_access_key_id and aws_secret_access_key which must be base64 encoded.
+Next create a blueprint which describes how backup and restore actions can be executed on this application. The blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the blueprint references the S3 location specified in the config map in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update secrets.yaml to include AWS credentials that have read/write access to the S3 bucket. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in secrets.yaml. These are encoded using base64.
 
 ```bash
-#Get base64 encoded aws keys
+# Get base64 encoded aws keys
 echo "YOUR_KEY" | base64
 
 # Create the ConfigMap with an S3 path

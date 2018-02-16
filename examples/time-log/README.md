@@ -14,9 +14,12 @@ deployment "time-logger" created
 
 ### 2. Protect the Application
 
-Next we use a blueprint to protect the application. Since this blueprint references a config map and secrets, we first need to create those. You should update s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update secrets.yaml to include your AWS credentials that provide read/write access to the bucket you specified in s3-location-configmap.yaml. TODO: Add secrets yaml file
+Next we use a blueprint to protect the application. Since this blueprint references a config map and secrets, we first need to create those. You should update s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update secrets.yaml to include your AWS credentials that provide read/write access to the bucket you specified in s3-location-configmap.yaml. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in secrets.yaml. These are encoded using base64. TODO: Add secrets yaml file
 
 ```bash
+# Get base64 encoded aws keys
+echo "YOUR_KEY" | base64
+
 # Create a configmap that will dictate where the log is written
 $ kubectl apply -f examples/time-log/s3-location-configmap.yaml
 configmap "s3-location" created
