@@ -37,7 +37,7 @@ $ kubectl create -f examples/time-log/backup-actionset.yaml
 actionset "s3backup-f4c4q" created
 
 # View the status of the actionset
-kubectl get actionset s3backup-f4c4q -oyaml
+$ kubectl get actionset s3backup-f4c4q -oyaml
 ```
 
 ### 3. Restore the Application
@@ -47,12 +47,24 @@ $ kanctl perform from restore "s3backup-f4c4q"
 actionset "restore-s3restore-g235d-23d2f" created
 
 # View the status of the actionset
-kubectl get actionset restore-s3restore-g235d-23d2f -oyaml
+$ kubectl get actionset restore-s3restore-g235d-23d2f -oyaml
+```
+
+### 4. Delete the Artifacts
+
+The artifacts created by the backup action can be cleaned up using the following command:
+
+```bash
+$ kanctl perform from delete "s3backup-f4c4q"
+actionset "delete-s3backup-f4c4q-2jj9n" created
+
+# View the status of the actionset
+$ kubectl get actionset delete-s3backup-f4c4q-2jj9n -oyaml
 ```
 
 ### Troubleshooting
 
 If you run into any issues with the above commands, you can check the logs of the controller using:
 ```bash
-kubectl logs -l app=kanister-operator
+$ kubectl logs -l app=kanister-operator
 ```
