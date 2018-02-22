@@ -21,11 +21,6 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-# Workaround https://github.com/spinus/sphinxcontrib-images/issues/41
-from docutils.parsers.rst.directives.admonitions import BaseAdmonition
-from sphinx.util import compat
-compat.make_admonition = BaseAdmonition
-
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
