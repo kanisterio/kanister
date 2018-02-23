@@ -122,7 +122,7 @@ blueprint "mongo-sidecar" created
 
 You can now take a backup of MongoDB's data using an action set defining backup for this application:
 ```bash
-$ kubectl create -f ./examples/mongo-sidecar/backup-actionset.yaml
+$ kubectl apply -f ./examples/mongo-sidecar/backup-actionset.yaml
 actionset "mongo-backup-12046" created
 
 $ kubectl get actionsets.cr.kanister.io
