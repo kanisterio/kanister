@@ -268,7 +268,7 @@ func (c *Controller) initialActionStatus(namespace string, a crv1alpha1.ActionSp
 
 }
 
-func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) error {
+func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	if as.Status == nil {
 		return errors.New("ActionSet was not initialized")
 	}
@@ -276,11 +276,11 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) error {
 		return nil
 	}
 	as.Status.State = crv1alpha1.StateRunning
-	if _, err := c.crClient.ActionSets(as.GetNamespace()).Update(as); err != nil {
+	if as, err = c.crClient.ActionSets(as.GetNamespace()).Update(as); err != nil {
 		return errors.WithStack(err)
 	}
 	for i := range as.Status.Actions {
-		if err := c.runAction(context.TODO(), as, i); err != nil {
+		if err = c.runAction(context.TODO(), as, i); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
 			log.Errorf("Failed launch Action %s: %#v", as.GetName(), err)
