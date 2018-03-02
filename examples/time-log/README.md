@@ -18,7 +18,7 @@ Next we use a blueprint to protect the application. Since this blueprint referen
 
 ```bash
 # Get base64 encoded aws keys
-echo "YOUR_KEY" | base64
+$ echo "YOUR_KEY" | base64
 
 # Create a configmap that will dictate where the log is written
 $ kubectl apply -f examples/time-log/s3-location-configmap.yaml

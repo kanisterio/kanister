@@ -72,3 +72,27 @@ actions:
               --port 27017         \
               --drop --oplogReplay \
               --dir ./rs0/dump
+  delete:
+    type: StatefulSet
+    inputArtifactNames:
+      - cloudObject
+    phases:
+    - func: KubeExec
+      name: deleteFromBlobStore
+      args:
+        - "{{ .StatefulSet.Namespace }}"
+        - "{{ index .StatefulSet.Pods 0 }}"
+        - mongo-tools-sidecar
+        - bash
+        - -o
+        - errexit
+        - -c
+        - |
+          export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
+          export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
+          cmd=(aws s3 rm)
+          if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
+          then
+              cmd=(aws --endpoint https://storage.googleapis.com s3 rm)
+          fi
+          ${cmd[@]} "{{ .ArtifactsIn.cloudObject.KeyValue.path }}"

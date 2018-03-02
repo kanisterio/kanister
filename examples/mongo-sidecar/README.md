@@ -32,7 +32,7 @@ Next create a blueprint which describes how backup and restore actions can be ex
 
 ```bash
 # Get base64 encoded aws keys
-echo "YOUR_KEY" | base64
+$ echo "YOUR_KEY" | base64
 
 # Create the ConfigMap with an S3 path
 $ kubectl apply -f ./examples/mongo-sidecar/s3-location-configmap.yaml
@@ -77,14 +77,27 @@ $
 To restore the missing data, we want to use the backup created in step 2. An easy way to do this is to leverage kanctl, a command-line tool that helps create action sets that depend on other action sets:
 
 ```bash
-$ kanctl perform from restore "mongo-backup-12046-s1wb7"
+$ kanctl perform from restore "mongo-backup-12046"
+actionset restore-mongo-backup-12046-s1wb7 created
 
 # View the status of the actionset
-kubectl get actionset restore-mongo-backup-12046-s1wb7 -oyaml
+$ kubectl get actionset restore-mongo-backup-12046-s1wb7 -oyaml
 ```
 
 You should now see that the data has been successfully restored to MongoDB!
 ```bash
 $ mongo test --quiet --eval "db.restaurants.find()"
 { "_id" : ObjectId("5a1dd0719dcbfd513fecf87c"), "name" : "Roys", "cuisine" : "Hawaiian", "id" : "8675309" }
+```
+
+### 5. Delete the Artifacts
+
+The artifacts created by the backup action can be cleaned up using the following command:
+
+```bash
+$ kanctl perform from delete "mongo-backup-12046"
+actionset "delete-mongo-backup-12046-kf8mt" created
+
+# View the status of the actionset
+$ kubectl get actionset delete-mongo-backup-12046-kf8mt -oyaml
 ```
