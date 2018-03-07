@@ -13,10 +13,14 @@ of Kanister's features to manage the application's data.
 Prerequisites
 -------------
 
-* Kubernetes 1.7 or higher
+* Kubernetes 1.8 or higher with Beta APIs enabled
 
 * `kubectl <https://kubernetes.io/docs/tasks/tools/install-kubectl/>`_ installed
   and setup
+
+* `helm <https://helm.sh>`_ installed and initialized using the command `helm init`
+
+* docker
 
 * A running Kanister controller. See :ref:`install`
 

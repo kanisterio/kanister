@@ -37,14 +37,14 @@ Getting Started
 
 Kanister is open source and more information can be found on `github
 <https://github.com/kanisterio/kanister>`_.
+The Kanister operator controller can be installed on a
+`Kubernetes <https://kubernetes.io>`_ cluster using
+the `helm <https://helm.sh>`_ package manager.
 
 .. code-block:: bash
 
-   # clone the Kanister git repo
-   $ git clone git@github.com:kanisterio/kanister.git
-
-   # install Kanister operator controller
-   $ kubectl apply -f bundle.yaml
+   # install Kanister operator controller using helm
+   $ helm install stable/kanister-operator
 
    # install your application
    $ kubectl apply -f examples/mongo-sidecar/mongo-cluster.yaml
