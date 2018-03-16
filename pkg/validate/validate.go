@@ -98,3 +98,11 @@ func Blueprint(bp *crv1alpha1.Blueprint) error {
 	// TODO: Add blueprint validation.
 	return nil
 }
+
+// CloudObjectProvider returns an error if op is not a known provider
+func CloudObjectProvider(op crv1alpha1.CloudObjectProvider) error {
+	if op != crv1alpha1.CloudObjectProviderGCS && op != crv1alpha1.CloudObjectProviderS3 {
+		return errorf("Invalid cloud object provider %s", op)
+	}
+	return nil
+}

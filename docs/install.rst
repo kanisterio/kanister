@@ -13,20 +13,23 @@ This will install the controller in the default namespace
 
 .. code-block:: bash
 
-   # pull the kanister repo
-   $ git clone git@github.com:kanisterio/kanister.git
+   # install Kanister operator controller using helm
+   $ helm install stable/kanister-operator
 
-   # install Kanister operator controller in the default namepsace
-   $ kubectl apply -f kanister/bundle.yaml
+To install the chart with a release name `"my-release"`, use the following command:
+.. code-block:: bash
 
+   $ helm install --name my-release stable/kanister-operator
 
 Prerequisites
 -------------
 
-* Kubernetes 1.7 or higher
+* Kubernetes 1.8 or higher with Beta APIs enabled
 
 * `kubectl <https://kubernetes.io/docs/tasks/tools/install-kubectl/>`_ installed
   and setup
+
+* `helm <https://helm.sh>`_ installed and initialized using the command `helm init`
 
 * docker
 

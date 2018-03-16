@@ -168,21 +168,28 @@ func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) error {
 }
 
 func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error {
-	log.Infof("Updated ActionSet '%s'", newAS.Name)
 	if err := validate.ActionSet(newAS); err != nil {
+		log.Infof("Updated ActionSet '%s'", newAS.Name)
 		return err
 	}
 	if newAS.Status == nil || newAS.Status.State != crv1alpha1.StateRunning {
+		if newAS.Status == nil {
+			log.Infof("Updated ActionSet '%s' Status->nil", newAS.Name)
+		} else {
+			log.Infof("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State)
+		}
 		return nil
 	}
 	for _, as := range newAS.Status.Actions {
 		for _, p := range as.Phases {
 			if p.State != crv1alpha1.StateComplete {
+				log.Infof("Updated ActionSet '%s' Status->%s, Phase: %s->%s", newAS.Name, newAS.Status.State, p.Name, p.State)
 				return nil
 			}
 		}
 	}
 	newAS.Status.State = crv1alpha1.StateComplete
+	log.Infof("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State)
 	as, err := c.crClient.ActionSets(newAS.GetNamespace()).Update(newAS)
 	if err != nil {
 		return err
@@ -289,14 +296,14 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 			return errors.WithStack(err)
 		}
 	}
-	log.Infof("Started all actions %s", as.GetName())
+	log.Infof("Created actionset %s and started executing actions", as.GetName())
 	return nil
 }
 
 func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aIDX int) error {
-	log.Infof("Executing action %#v", as.Spec.Actions[aIDX])
-	bpName := as.Spec.Actions[aIDX].Blueprint
 	action := as.Spec.Actions[aIDX]
+	log.Infof("Executing action %s", action.Name)
+	bpName := as.Spec.Actions[aIDX].Blueprint
 	bp, err := c.crClient.Blueprints(as.GetNamespace()).Get(bpName, v1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)

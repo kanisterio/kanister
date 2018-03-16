@@ -16,3 +16,5 @@ stdout
 param
 aws
 outputArtifact
+helm
+kanister
