@@ -12,7 +12,7 @@ import:
   version: v0.8.0
 - package: github.com/rook/operator-kit
   vcs: git
-  version: rm-tpr
+  version: rm-k8s-dep
   repo: https://github.com/kastenhq/operator-kit.git
 - package: github.com/sirupsen/logrus
   version: v1.0.3
