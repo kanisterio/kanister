@@ -17,6 +17,7 @@ This will install the controller in the default namespace
    $ helm install stable/kanister-operator
 
 To install the chart with a release name `"my-release"`, use the following command:
+
 .. code-block:: bash
 
    $ helm install --name my-release stable/kanister-operator
