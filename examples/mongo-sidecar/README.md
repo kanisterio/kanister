@@ -77,7 +77,7 @@ $
 To restore the missing data, we want to use the backup created in step 2. An easy way to do this is to leverage kanctl, a command-line tool that helps create action sets that depend on other action sets:
 
 ```bash
-$ kanctl perform from restore "mongo-backup-12046"
+$ kanctl perform restore --from "mongo-backup-12046"
 actionset restore-mongo-backup-12046-s1wb7 created
 
 # View the status of the actionset
@@ -95,7 +95,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl perform from delete "mongo-backup-12046"
+$ kanctl perform delete --from "mongo-backup-12046"
 actionset "delete-mongo-backup-12046-kf8mt" created
 
 # View the status of the actionset
