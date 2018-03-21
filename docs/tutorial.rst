@@ -66,7 +66,7 @@ invokes a :doc:`Kanister Function </functions>`. All Kanister functions accept a
 list of strings. The `args` field in a Blueprint's phase is rendered and passed
 into the specified Function.
 
-For more on CustomResources in Kanister, see :ref:`operator`.
+For more on CustomResources in Kanister, see :ref:`architecture`.
 
 
 The Blueprint we'll create has a single action called `backup`.  The action
@@ -513,4 +513,4 @@ sets via yaml files. In some cases, an action depends on a previous action,
 and manually updating the action set to use artifacts created by the
 previous action set can be cumbersome. In situations like this, it is
 useful to instead use `kanctl`. To learn how to leverage `kanctl` to
-create action sets, see :ref:`operator` .
+create action sets, see :ref:`architecture` .

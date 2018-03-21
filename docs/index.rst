@@ -36,10 +36,18 @@ Getting Started
 ---------------
 
 Kanister is open source and more information can be found on `github
-<https://github.com/kanisterio/kanister>`_.
-The Kanister operator controller can be installed on a
-`Kubernetes <https://kubernetes.io>`_ cluster using
-the `helm <https://helm.sh>`_ package manager.
+<https://github.com/kanisterio/kanister>`_. We encourage you to start
+with the :ref:`architecture` first.
+
+To get up and running using Kanister, we recommend :ref:`install` and
+then working through the :ref:`tutorial`.
+
+
+Quick Start
+-----------
+The Kanister operator controller can be installed on a `Kubernetes
+<https://kubernetes.io>`_ cluster using the `helm <https://helm.sh>`_
+package manager.
 
 .. code-block:: bash
 
@@ -56,18 +64,13 @@ the `helm <https://helm.sh>`_ package manager.
    $ kubectl apply -f examples/mongo-sidecar/backup-actionset.yaml
 
 
-To get up an running using Kanister, we recommend :ref:`install` and working
-through the :ref:`tutorial`
-
-Documentation
--------------
 
 .. toctree::
-   :maxdepth: 2
+   :hidden:
 
    self
+   architecture
    install
    tutorial
-   operator
    functions
    templates

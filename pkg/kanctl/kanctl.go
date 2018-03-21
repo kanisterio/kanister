@@ -27,7 +27,7 @@ func newRootCommand() *cobra.Command {
 		Short: "A set of helpers to help with creating ActionSets",
 	}
 	rootCmd.PersistentFlags().StringP(namespaceFlagName, "n", "", "Override namespace obtained from kubectl context")
-	rootCmd.AddCommand(newPerformCommand())
+	rootCmd.AddCommand(newPerformFromCommand())
 	return rootCmd
 }
 
