@@ -5,7 +5,7 @@
 [![Run Status](https://api.shippable.com/projects/5a18e8649f19c90600633402/badge?branch=master)](https://app.shippable.com/github/kanisterio/kanister)
 
 ## Overview
-Kanister is a framework that enables application-level data management on Kubernetes. It allows domain experts to capture application specific data management tasks via blueprints, which can be easily shared and extended. The framework takes care of the tedious details surrounding execution on Kubernetes and presents a homogeneous operational experience across applications at scale.
+Kanister is a framework that enables application-level data management on Kubernetes. It allows domain experts to capture application specific data management tasks via Blueprints, which can be easily shared and extended. The framework takes care of the tedious details surrounding execution on Kubernetes and presents a homogeneous operational experience across applications at scale.
 
 ### Design Goals
 
@@ -126,22 +126,22 @@ actionsets.cr.kanister.io   30m
 blueprints.cr.kanister.io   30m
 ```
 
-As shown above, two custom resources are defined - blueprints and actionsets. A blueprint specifies a set of actions that can be executed on an application. An actionset provides the necessary runtime information to trigger taking an action on the application.
+As shown above, two custom resources are defined - Blueprints and ActionSets. A Blueprint specifies a set of actions that can be executed on an application. An ActionSet provides the necessary runtime information to trigger taking an action on the application.
 
 Since Kanister follows the operator pattern, other useful kubectl commands work with the Kanister controller as well, such as fetching the logs:
 ```bash
 $ kubectl --namespace kanister logs -l app=kanister-operator
 ```
 
-In addition to installing the Kanister controller, please also install the appropriate kanctl binary from [releases](https://github.com/kanisterio/kanister/releases).
-Alternatively, you can also install kanctl by using the following command. Make sure your GOPATH is set.
+In addition to installing the Kanister controller, please also install the appropriate `kanctl` binary from [releases](https://github.com/kanisterio/kanister/releases).
+Alternatively, you can also install `kanctl` by using the following command. Make sure your GOPATH is set.
 ```bash
 $ go install -v github.com/kanisterio/kanister/cmd/kanctl
 ```
 
 ## Example Application: Helm-Deployed MySQL
 
-[This](https://github.com/kanisterio/blueprint-helm-charts) git repo contains Helm charts of stateful applications from the stable chart repo, modified to include Kanister blueprints. These applications can be easily backed-up and restored.
+[This](https://github.com/kanisterio/blueprint-helm-charts) git repo contains Helm charts of stateful applications from the stable chart repo, modified to include Kanister Blueprints. These applications can be easily backed-up and restored.
 
 The following commands will install MySQL and configure Kanister to backup to an S3 bucket named `mysql-backup-bucket`.
 
@@ -149,7 +149,7 @@ The following commands will install MySQL and configure Kanister to backup to an
 # Add Kanister charts
 helm repo add kanister http://charts.kanister.io
 
-# Install MySQL and configure its Kanister blueprint.
+# Install MySQL and configure its Kanister Blueprint.
 helm install kanister/kanister-mysql                        \
     --name mysql-release --namespace mysql-ns               \
     --set kanister.s3_bucket="mysql-backup-bucket"          \
@@ -157,7 +157,7 @@ helm install kanister/kanister-mysql                        \
     --set kanister.s3_api_secret="${AWS_SECRET_ACCESS_KEY}" \
     --set kanister.controller_namespace=kanister
 ```
-To backup this application's data, we create a Kanister actionset. The command to create an actionset is included in the Helm notes, which can be displayed with `helm status mysql-release`.
+To backup this application's data, we create a Kanister ActionSet. The command to create an ActionSet is included in the Helm notes, which can be displayed with `helm status mysql-release`.
 
 ```bash
 $ cat << EOF | kubectl create -f -
@@ -178,7 +178,7 @@ EOF
 actionset "mysql-backup-qgx06" created
 ```
 
-We can now restore this backup by chaining a restore off the actionset we just created using `kanctl`.
+We can now restore this backup by chaining a restore off the ActionSet we just created using `kanctl`.
 
 ```bash
 $ kanctl --namespace kanister perform restore --from mysql-backup-qgx06
@@ -201,7 +201,7 @@ statefulset "mongo-cluster" created
 
 Once MongoDB is running, you can populate it with some data. Let's add a collection called "restaurants" to a test database:
 ```bash
-# Connect to MongoDB by running a shell inside Mongo's pod
+# Connect to MongoDB by running a shell inside MongoDB's pod
 $ kubectl exec -i -t mongo-cluster-0 -- bash -l
 
 # From inside the shell, use the mongo CLI to insert some data into the test database
@@ -215,7 +215,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 
 ### 2. Protect the Application
 
-Next create a blueprint which describes how backup and restore actions can be executed on this application. The blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the blueprint references the S3 location specified in the config map in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update secrets.yaml to include AWS credentials that have read/write access to the S3 bucket. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in secrets.yaml. These are encoded using base64.
+Next create a Blueprint which describes how backup and restore actions can be executed on this application. The Blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the Blueprint references the S3 location specified in the ConfigMap in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update `secrets.yaml` to include AWS credentials that have read/write access to the S3 bucket. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in `secrets.yaml`. These are encoded using base64.
 
 ```bash
 # Get base64 encoded aws keys
@@ -229,12 +229,12 @@ configmap "mongo-s3-location" created
 $ kubectl apply -f ./examples/mongo-sidecar/secrets.yaml
 secrets "aws-creds" created
 
-# Create the blueprint for MongoDB
+# Create the Blueprint for MongoDB
 $ kubectl apply -f ./examples/mongo-sidecar/blueprint.yaml
 blueprint "mongo-sidecar" created
 ```
 
-You can now take a backup of MongoDB's data using an actionset defining backup for this application. Create an actionset in the same namespace as the controller:
+You can now take a backup of MongoDB's data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller:
 ```bash
 $ kubectl --namepsace kanister apply -f ./examples/mongo-sidecar/backup-actionset.yaml
 actionset "mongo-backup-12046" created
@@ -261,13 +261,13 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 
 ### 4. Restore the Application
 
-To restore the missing data, we want to use the backup created in step 2. An easy way to do this is to leverage kanctl, a command-line tool that helps create actionsets that depend on other actionsets:
+To restore the missing data, we want to use the backup created in step 2. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
 
 ```bash
 $ kanctl --namespace kanister perform restore --from "mongo-backup-12046"
 actionset restore-mongo-backup-12046-s1wb7 created
 
-# View the status of the actionset
+# View the status of the ActionSet
 kubectl get actionset restore-mongo-backup-12046-s1wb7 -oyaml
 ```
 
@@ -285,7 +285,7 @@ The artifacts created by the backup action can be cleaned up using the following
 $ kanctl --namespace kanister perform delete --from "mongo-backup-12046"
 actionset "delete-mongo-backup-12046-kf8mt" created
 
-# View the status of the actionset
+# View the status of the ActionSet
 $ kubectl get actionset delete-mongo-backup-12046-kf8mt -oyaml
 ```
 
