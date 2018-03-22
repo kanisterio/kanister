@@ -13,7 +13,7 @@ The design of Kanister was driven by the following main goals:
 
 1. **Application-Centric:** Given the increasingly complex and distributed nature of cloud-native data services, there is a growing need for data management tasks to be at the *application* level. Experts who possess domain knowledge of a specific application's needs should be able to capture these needs when performing data operations on that application.
 
-2. **API Driven:** Data management tasks for each specific application may vary widely, and these tasks should be encapsulated by a well-defined API so as to provide a uniform data management experience. Each application expert can provide an application-specific pluggable implementation that satisifes this API, thus enabling a homogenous data management experience of diverse and evolving data services.
+2. **API Driven:** Data management tasks for each specific application may vary widely, and these tasks should be encapsulated by a well-defined API so as to provide a uniform data management experience. Each application expert can provide an application-specific pluggable implementation that satisfies this API, thus enabling a homogeneous data management experience of diverse and evolving data services.
 
 3. **Extensible:** Any data management solution capable of managing a diverse set of applications must be flexible enough to capture the needs of custom data services running in a variety of environments. Such flexibility can only be provided if the solution itself can easily be extended.
 
@@ -28,40 +28,83 @@ This README provides the basic set of information to get up and running with Kan
 In order to use Kanister, you will first need to have the following setup:
 - Kubernetes version 1.7 or higher
 - kubectl
-- docker
+- Docker
+- Helm
 
 ### Kanister Installation
 
-Kanister is based on the operator pattern. The first step to using Kanister is to deploy the Kanister controller:
+Kanister is based on the operator pattern. The first step to using Kanister is to deploy the Kanister controller. The Kanister controller can be configured and installed using Helm.  See [this](https://hub.kubeapps.com/charts/stable/kanister-operator) for more information on the controller's Helm chart. Once Helm is initialized, install the controller with:
 
 ```bash
-$ git clone git@github.com:kanisterio/kanister.git
-
-# Install Kanister operator controller
-$ kubectl apply -f bundle.yaml
+helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.3.0
 ```
 
-This will install a controller in the default namespace. If you wish to build and deploy the controller from source, instructions to do so can be found [here](https://docs.kanister.io/install.html#building-and-deploying-from-source).
+If you wish to build and deploy the controller from source, instructions to do so can be found [here](https://docs.kanister.io/install.html#building-and-deploying-from-source).
 
-Let's check to make sure the controller is running with the following commands:
+Helm can give us the status of the objects we've installed:
 ```bash
-# Wait for the pod status to be Running
-$ kubectl get pod -l app=kanister-operator
+$ helm status myrelease
+LAST DEPLOYED: Wed Mar 21 16:40:43 2018
+NAMESPACE: kanister
+STATUS: DEPLOYED
+
+RESOURCES:
+==> v1/ServiceAccount
+NAME                         SECRETS  AGE
+myrelease-kanister-operator  1        9s
+
+==> v1beta1/ClusterRole
+NAME                                      AGE
+myrelease-kanister-operator-cluster-role  9s
+
+==> v1beta1/ClusterRoleBinding
+NAME                                   AGE
+myrelease-kanister-operator-edit-role  9s
+myrelease-kanister-operator-cr-role    9s
+
+==> v1beta1/Deployment
+NAME                         DESIRED  CURRENT  UP-TO-DATE  AVAILABLE  AGE
+myrelease-kanister-operator  1        1        1           1          9s
+
+==> v1/Pod(related)
+NAME                                          READY  STATUS   RESTARTS  AGE
+myrelease-kanister-operator-1484730505-2s279  1/1    Running  0         9s
+
+
+NOTES:
+Kanister-operator is installed.
+
+Getting Started is available: https://github.com/kanisterio/kanister
+
+Documentation is available: https://docs.kanister.io/
+
+Please report any issues: https://github.com/kanisterio/kanister/issues
+
+Thank you for trying Kanister.
+
+```
+
+To check the status of the controller's pod:
+```bash
+# Check the pod's status.
+$ kubectl --namespace kanister get pod -l app=kanister-operator
 NAME                                 READY     STATUS    RESTARTS   AGE
 kanister-operator-2733194401-l79mg   1/1       Running   1          12m
+```
 
-# Look at the CRDs
+The Kanister will create CRDs on startup if they don't already exist. We can verify that they exist:
+```bash
 $ kubectl get crd
 NAME                        AGE
 actionsets.cr.kanister.io   30m
 blueprints.cr.kanister.io   30m
 ```
 
-As shown above, two custom resources are defined - blueprints and action sets. A blueprint specifies a set of actions that can be executed on an application. An action set provides the necessary runtime information to trigger taking an action on the application.
+As shown above, two custom resources are defined - blueprints and actionsets. A blueprint specifies a set of actions that can be executed on an application. An actionset provides the necessary runtime information to trigger taking an action on the application.
 
 Since Kanister follows the operator pattern, other useful kubectl commands work with the Kanister controller as well, such as fetching the logs:
 ```bash
-$ kubectl logs -l app=kanister-operator
+$ kubectl --namespace kanister logs -l app=kanister-operator
 ```
 
 In addition to installing the Kanister controller, please also install the appropriate kanctl binary from [releases](https://github.com/kanisterio/kanister/releases).
@@ -70,10 +113,55 @@ Alternatively, you can also install kanctl by using the following command. Make 
 $ go install -v github.com/kanisterio/kanister/cmd/kanctl
 ```
 
+## Example Application: Helm Deployed MySQL
 
-## Walkthrough of an Example Application - MongoDB
+[This](https://github.com/kanisterio/blueprint-helm-charts) git repo contains Helm charts of stateful applications from the stable chart repo, modified to include Kanister blueprints. These applications can be easily backed-up and restored.
 
-Let's walk through an example of using Kanister to backup and restore MongoDB. In this example, we will deploy MongoDB with a sidecar container. This sidecar container will include the necessary tools to store protected data from MongoDB into an S3 bucket in AWS. Note that a sidecar container is not required to use Kanister, but rather is just one of several ways to access tools needed to protect the application (see Additional Example Applications below for alternative ways).
+The following commands will install MySQL and configure Kanister to backup to our s3 bucket `mysql-backup-bucket`.
+
+```bash
+# Add kanister charts
+helm repo add kanister http://charts.kanister.io
+
+# Install MySQL and configure its Kanister blueprint.
+helm install kanister/kanister-mysql                        \
+    --name mysql-release --namespace mysql-ns               \
+    --set kanister.s3_bucket="mysql-backup-bucket"          \
+    --set kanister.s3_api_key="${AWS_ACCESS_KEY_ID}"        \
+    --set kanister.s3_api_secret="${AWS_SECRET_ACCESS_KEY}" \
+    --set kanister.controller_namespace=kanister
+```
+To backup this application's data, we create a Kanister actionset. The command to create an actionset is included in the Helm notes, which can be displayed with `helm status mysql-release`.
+
+```bash
+$ cat << EOF | kubectl create -f -
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: mysql-backup-
+  namespace: kanister
+spec:
+  actions:
+  - name: backup
+    blueprint: mysql-release-kanister-mysql-blueprint
+    object:
+      kind: Deployment
+      name: mysql-release-kanister-mysql
+      namespace: mysql-ns
+EOF
+actionset "mysql-backup-qgx06" created
+```
+
+We can now restore this backup by chaining a restore off the actionset we just created using kanctl.
+
+```bash
+$ kanctl --namespace kanister perform restore --from mysql-backup-qgx06
+actionset restore-mysql-backup-qgx06-bd4mq created
+```
+
+## Example Application: MongoDB
+
+Let's walk through an example of using Kanister to backup and restore MongoDB. In this example, we will deploy MongoDB with a sidecar container. This sidecar container will include the necessary tools to store protected data from MongoDB into an S3 bucket in AWS. Note that a sidecar container is not required to use Kanister, but is just one of several ways to access tools needed to protect the application.
 
 ### 1. Deploy the Application
 
@@ -120,12 +208,12 @@ $ kubectl apply -f ./examples/mongo-sidecar/blueprint.yaml
 blueprint "mongo-sidecar" created
 ```
 
-You can now take a backup of MongoDB's data using an action set defining backup for this application:
+You can now take a backup of MongoDB's data using an actionset defining backup for this application. Create an actionset in the same namespace as the controller:
 ```bash
-$ kubectl apply -f ./examples/mongo-sidecar/backup-actionset.yaml
+$ kubectl --namepsace kanister apply -f ./examples/mongo-sidecar/backup-actionset.yaml
 actionset "mongo-backup-12046" created
 
-$ kubectl get actionsets.cr.kanister.io
+$ kubectl --namespace kanister get actionsets.cr.kanister.io
 NAME                KIND
 mongo-backup-12046   ActionSet.v1alpha1.cr.kanister.io
 ```
@@ -147,10 +235,10 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 
 ### 4. Restore the Application
 
-To restore the missing data, we want to use the backup created in step 2. An easy way to do this is to leverage kanctl, a command-line tool that helps create action sets that depend on other action sets:
+To restore the missing data, we want to use the backup created in step 2. An easy way to do this is to leverage kanctl, a command-line tool that helps create actionsets that depend on other actionsets:
 
 ```bash
-$ kanctl perform restore --from "mongo-backup-12046"
+$ kanctl --namespace kanister perform restore --from "mongo-backup-12046"
 actionset restore-mongo-backup-12046-s1wb7 created
 
 # View the status of the actionset
@@ -168,7 +256,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl perform delete --from "mongo-backup-12046"
+$ kanctl --namespace kanister perform delete --from "mongo-backup-12046"
 actionset "delete-mongo-backup-12046-kf8mt" created
 
 # View the status of the actionset
@@ -184,9 +272,9 @@ $ kubectl delete -f bundle.yaml
 $ kubectl delete crd {actionsets,blueprints}.cr.kanister.io
 ```
 
-## Additional Example Applications
+## More Applications
 
-Check out additional examples [here](https://github.com/kanisterio/kanister/tree/master/examples).
+Example applications deployed through yaml can be found in the [examples directory](https://github.com/kanisterio/kanister/tree/master/examples).
 
 ## Support
 For troubleshooting help, you can email the [Kanister Google Group](https://groups.google.com/forum/#!forum/kanisterio), reach out to us on [Slack](https://kasten.typeform.com/to/QBcw8T), or file an [issue](https://github.com/kanisterio/kanister/issues).
