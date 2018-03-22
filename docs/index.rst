@@ -97,3 +97,4 @@ and backup to an AWS S3 bucket.
    tutorial
    functions
    templates
+   troubleshooting
