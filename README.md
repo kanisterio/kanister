@@ -21,12 +21,50 @@ The design of Kanister was driven by the following main goals:
 
 This README provides the basic set of information to get up and running with Kanister. For further information, please refer to the [Kanister Documentation](https://docs.kanister.io).
 
+## Quick Start
+
+The following commands will install Kanister, Kanister-enabled MySQL and
+backup to an S3 bucket.
+
+```bash
+# Install the Kanister Controller
+helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.3.0
+
+# Add Kanister charts
+helm repo add kanister http://charts.kanister.io
+
+# Install MySQL and configure its Kanister blueprint.
+helm install kanister/kanister-mysql                        \
+    --name mysql-release --namespace mysql-ns               \
+    --set kanister.s3_bucket="mysql-backup-bucket"          \
+    --set kanister.s3_api_key="${AWS_ACCESS_KEY_ID}"        \
+    --set kanister.s3_api_secret="${AWS_SECRET_ACCESS_KEY}" \
+    --set kanister.controller_namespace=kanister
+
+# Perform a backup by creating an ActionSet
+cat << EOF | kubectl create -f -
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: mysql-backup-
+  namespace: kanister
+spec:
+  actions:
+  - name: backup
+    blueprint: mysql-release-kanister-mysql-blueprint
+    object:
+      kind: Deployment
+      name: mysql-release-kanister-mysql
+      namespace: mysql-ns
+EOF
+```
+
 ## Getting Started
 
 ### Prerequisites
 
 In order to use Kanister, you will first need to have the following setup:
-- Kubernetes version 1.7 or higher
+- Kubernetes version 1.8 or higher
 - kubectl
 - Docker
 - Helm
@@ -102,14 +140,14 @@ Alternatively, you can also install kanctl by using the following command. Make 
 $ go install -v github.com/kanisterio/kanister/cmd/kanctl
 ```
 
-## Example Application: Helm Deployed MySQL
+## Example Application: Helm-Deployed MySQL
 
 [This](https://github.com/kanisterio/blueprint-helm-charts) git repo contains Helm charts of stateful applications from the stable chart repo, modified to include Kanister blueprints. These applications can be easily backed-up and restored.
 
-The following commands will install MySQL and configure Kanister to backup to our s3 bucket `mysql-backup-bucket`.
+The following commands will install MySQL and configure Kanister to backup to an S3 bucket named `mysql-backup-bucket`.
 
 ```bash
-# Add kanister charts
+# Add Kanister charts
 helm repo add kanister http://charts.kanister.io
 
 # Install MySQL and configure its Kanister blueprint.
@@ -141,7 +179,7 @@ EOF
 actionset "mysql-backup-qgx06" created
 ```
 
-We can now restore this backup by chaining a restore off the actionset we just created using kanctl.
+We can now restore this backup by chaining a restore off the actionset we just created using `kanctl`.
 
 ```bash
 $ kanctl --namespace kanister perform restore --from mysql-backup-qgx06
@@ -150,7 +188,7 @@ actionset restore-mysql-backup-qgx06-bd4mq created
 
 ## Example Application: MongoDB
 
-Let's walk through an example of using Kanister to backup and restore MongoDB. In this example, we will deploy MongoDB with a sidecar container. This sidecar container will include the necessary tools to store protected data from MongoDB into an S3 bucket in AWS. Note that a sidecar container is not required to use Kanister, but is just one of several ways to access tools needed to protect the application.
+To get a more detailed overview of Kanister's components, let's walk through a non-Helm example of using Kanister to backup and restore MongoDB. In this example, we will deploy MongoDB with a sidecar container. This sidecar container will include the necessary tools to store protected data from MongoDB into an S3 bucket in AWS. Note that a sidecar container is not required to use Kanister, but is just one of several ways to access tools needed to protect the application.
 
 ### 1. Deploy the Application
 
