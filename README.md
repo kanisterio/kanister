@@ -291,7 +291,7 @@ $ kubectl get actionset delete-mongo-backup-12046-kf8mt -oyaml
 
 ## Cleanup
 
-The Kanister components can be cleaned up with the follwoing commands
+The Kanister components can be cleaned up with the following commands
 
 ```bash
 $ helm delete --purge myrelease
