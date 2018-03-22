@@ -52,7 +52,7 @@ The Kanister operator controller can be installed on a `Kubernetes
 package manager.
 
 The following commands will install Kanister, Kanister-enabled MySQL
-and backup to an S3 bucket.
+and backup to an AWS S3 bucket.
 
 .. code-block:: bash
 
@@ -85,6 +85,7 @@ and backup to an S3 bucket.
         kind: Deployment
         name: mysql-release-kanister-mysql
         namespace: mysql-ns
+  EOF
 
 
 .. toctree::
@@ -96,3 +97,4 @@ and backup to an S3 bucket.
    tutorial
    functions
    templates
+   troubleshooting
