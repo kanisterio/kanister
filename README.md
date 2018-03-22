@@ -70,18 +70,7 @@ myrelease-kanister-operator  1        1        1           1          9s
 NAME                                          READY  STATUS   RESTARTS  AGE
 myrelease-kanister-operator-1484730505-2s279  1/1    Running  0         9s
 
-
-NOTES:
-Kanister-operator is installed.
-
-Getting Started is available: https://github.com/kanisterio/kanister
-
-Documentation is available: https://docs.kanister.io/
-
-Please report any issues: https://github.com/kanisterio/kanister/issues
-
-Thank you for trying Kanister.
-
+...
 ```
 
 To check the status of the controller's pod:
@@ -265,11 +254,12 @@ $ kubectl get actionset delete-mongo-backup-12046-kf8mt -oyaml
 
 ## Cleanup
 
-The Kanister controller and CRDs can easily be cleaned up with the following commands:
+The Kanister components can be cleaned up with the follwoing commands
 
 ```bash
-$ kubectl delete -f bundle.yaml
+$ helm delete --purge myrelease
 $ kubectl delete crd {actionsets,blueprints}.cr.kanister.io
+$ kubectl --namespace kanister delete actionset --all
 ```
 
 ## More Applications
