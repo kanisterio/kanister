@@ -24,7 +24,7 @@ This README provides the basic set of information to get up and running with Kan
 ## Quick Start
 
 The following commands will install Kanister, Kanister-enabled MySQL and
-backup to an S3 bucket.
+backup to an AWS S3 bucket.
 
 ```bash
 # Install the Kanister Controller
