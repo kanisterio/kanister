@@ -2,6 +2,8 @@ package function
 
 import (
 	"context"
+	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -32,10 +34,20 @@ func (*kubeExecFunc) Exec(ctx context.Context, args ...string) error {
 	namespace, pod, container, cmd := args[0], args[1], args[2], args[3:]
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
 	if stdout != "" {
-		log.Info(stdout)
+		logs := regexp.MustCompile("[\r\n]").Split(stdout, -1)
+		for _, stdoutLog := range logs {
+			if strings.TrimSpace(stdoutLog) != "" {
+				log.Info(stdoutLog)
+			}
+		}
 	}
 	if stderr != "" {
-		log.Info(stderr)
+		logs := regexp.MustCompile("[\r\n]").Split(stderr, -1)
+		for _, stderrLog := range logs {
+			if strings.TrimSpace(stderrLog) != "" {
+				log.Info(stderrLog)
+			}
+		}
 	}
 	return err
 }
