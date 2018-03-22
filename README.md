@@ -118,7 +118,7 @@ NAME                                 READY     STATUS    RESTARTS   AGE
 kanister-operator-2733194401-l79mg   1/1       Running   1          12m
 ```
 
-The Kanister will create CRDs on startup if they don't already exist. We can verify that they exist:
+The Kanister controller will create CRDs on startup if they don't already exist. We can verify that they exist:
 ```bash
 $ kubectl get crd
 NAME                        AGE
