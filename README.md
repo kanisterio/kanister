@@ -30,10 +30,10 @@ backup to an S3 bucket.
 # Install the Kanister Controller
 helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.3.0
 
-# Add Kanister charts
+# Add Kanister Charts
 helm repo add kanister http://charts.kanister.io
 
-# Install MySQL and configure its Kanister blueprint.
+# Install MySQL and configure its Kanister Blueprint.
 helm install kanister/kanister-mysql                        \
     --name mysql-release --namespace mysql-ns               \
     --set kanister.s3_bucket="mysql-backup-bucket"          \
@@ -63,10 +63,9 @@ EOF
 
 ### Prerequisites
 
-In order to use Kanister, you will first need to have the following setup:
+In order to use Kanister, you will need to have the following set up:
 - Kubernetes version 1.8 or higher
 - kubectl
-- Docker
 - Helm
 
 ### Kanister Installation

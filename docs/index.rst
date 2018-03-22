@@ -35,34 +35,56 @@ The design of Kanister was driven by the following main goals:
 Getting Started
 ---------------
 
-Kanister is open source and more information can be found on `github
-<https://github.com/kanisterio/kanister>`_. We encourage you to start
-with the :ref:`architecture` first.
+To get up and running using Kanister, we encourage you to start with
+the :ref:`architecture` section first. :ref:`install` will then allow
+you to work through the :ref:`tutorial`.
 
-To get up and running using Kanister, we recommend :ref:`install` and
-then working through the :ref:`tutorial`.
+Kanister is an open-source project and the source, this documentation,
+and more examples can be found on `GitHub
+<https://github.com/kanisterio/kanister>`_.
+
 
 
 Quick Start
 -----------
 The Kanister operator controller can be installed on a `Kubernetes
-<https://kubernetes.io>`_ cluster using the `helm <https://helm.sh>`_
+<https://kubernetes.io>`_ cluster using the `Helm <https://helm.sh>`_
 package manager.
+
+The following commands will install Kanister, Kanister-enabled MySQL
+and backup to an S3 bucket.
 
 .. code-block:: bash
 
-   # install Kanister operator controller using helm
-   $ helm install stable/kanister-operator
+  # Install the Kanister Controller
+  helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.3.0
 
-   # install your application
-   $ kubectl apply -f examples/mongo-sidecar/mongo-cluster.yaml
+  # Add Kanister Charts
+  helm repo add kanister http://charts.kanister.io
 
-   # use an existing Blueprint, tweak one, or create one yourself
-   $ kubectl apply -f examples/mongo-sidecar/blueprint.yaml
+  # Install MySQL and configure its Kanister Blueprint.
+  helm install kanister/kanister-mysql                        \
+      --name mysql-release --namespace mysql-ns               \
+      --set kanister.s3_bucket="mysql-backup-bucket"          \
+      --set kanister.s3_api_key="${AWS_ACCESS_KEY_ID}"        \
+      --set kanister.s3_api_secret="${AWS_SECRET_ACCESS_KEY}" \
+      --set kanister.controller_namespace=kanister
 
-   # perform operations
-   $ kubectl apply -f examples/mongo-sidecar/backup-actionset.yaml
-
+  # Perform a backup by creating an ActionSet
+  cat << EOF | kubectl create -f -
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: ActionSet
+  metadata:
+    generateName: mysql-backup-
+    namespace: kanister
+  spec:
+    actions:
+    - name: backup
+      blueprint: mysql-release-kanister-mysql-blueprint
+      object:
+        kind: Deployment
+        name: mysql-release-kanister-mysql
+        namespace: mysql-ns
 
 
 .. toctree::

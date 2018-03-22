@@ -6,21 +6,6 @@ Installing Kanister
 .. contents:: Installation Overview
   :local:
 
-Quickstart
-----------
-
-This will install the controller in the default namespace
-
-.. code-block:: bash
-
-   # install Kanister operator controller using helm
-   $ helm install stable/kanister-operator
-
-To install the chart with a release name `"my-release"`, use the following command:
-
-.. code-block:: bash
-
-   $ helm install --name my-release stable/kanister-operator
 
 Prerequisites
 -------------
@@ -32,7 +17,19 @@ Prerequisites
 
 * `helm <https://helm.sh>`_ installed and initialized using the command `helm init`
 
-* docker
+* Docker (for source-based installs only)
+
+
+Deploying via Helm
+------------------
+
+This will install the Kanister controller in the `kanister` namespace
+
+.. code-block:: bash
+
+   # Install the Kanister operator controller using helm
+   $ helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.3.0
+
 
 Building and Deploying from Source
 ----------------------------------
@@ -43,13 +40,13 @@ Kubernetes cluster. It will push the controller docker image to your docker repo
 
 .. code-block:: bash
 
-   # build controller binary
+   # Build controller binary
    $ make build
 
-   # package the binary in a docker image and push it to your image registry
+   # Package the binary in a docker image and push it to your image registry
    $ make push REGISTRY=<MY REGISTRY>
 
-   # deploy the controller to your Kubernetes repo
+   # Deploy the controller to your Kubernetes repo
    $ make deploy REGISTRY=<MY REGISTRY>
 
 
@@ -63,5 +60,5 @@ namespace.
 
 .. code-block:: bash
 
-   # deploy controller version 0.1.0 to Kubernetes
+   # Deploy controller version 0.1.0 to Kubernetes
    $ make deploy VERSION="0.1.0"
