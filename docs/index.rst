@@ -3,10 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Kanister's documentation!
-====================================
+Kanister: Application-Specific Data Management
+==============================================
 
-Kanister allows domain experts to capture application specific data management
+Kanister allows domain experts to capture application-specific data management
 tasks in Blueprints which can be easily shared and extended. The framework takes
 care of the tedious details around execution on Kubernetes and presents a
 homogeneous operational experience across applications at scale.
@@ -95,6 +95,7 @@ and backup to an AWS S3 bucket.
    architecture
    install
    tutorial
+   helm
    functions
    templates
    troubleshooting

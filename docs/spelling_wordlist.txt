@@ -18,5 +18,6 @@ params
 prepopulated
 repo
 schemas
+stateful
 stdout
 templating

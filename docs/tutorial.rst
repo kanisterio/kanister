@@ -343,9 +343,9 @@ Artifacts
 ---------
 
 At this point, we have successfully backed up our application's data to S3. In
-order to retrieve the information we've pushed to S3, we must store a reference
+order to retrieve the information we have pushed to S3, we must store a reference
 to that data. In Kanister we call these references Artifacts. Kanister's
-Artifact mechanism manages data we've externalized.  Once an artifact has been
+Artifact mechanism manages data we have externalized.  Once an artifact has been
 created, it can be consumed in a Blueprint to retrieve data from external
 sources.  Any time Kanister is used to protect data, it creates a corresponding
 Artifact.
@@ -404,7 +404,7 @@ Kanister can consume artifacts it creates using `inputArtifacts`.
 `inputArtifacts` are named in Blueprints and are explicitly listed in the
 ActionSet.
 
-In our example we'll restore an older time log. We've already pushed one to S3
+In our example we'll restore an older time log. We have already pushed one to S3
 and created an Artifact using the backup action. We'll now restore that time log
 by using a new restore action.
 
