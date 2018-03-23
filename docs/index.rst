@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Kanister: Application-Specific Data Management
-==============================================
+**********************************************
 
 Kanister allows domain experts to capture application-specific data management
 tasks in Blueprints which can be easily shared and extended. The framework takes
@@ -33,7 +33,7 @@ The design of Kanister was driven by the following main goals:
 
 
 Getting Started
----------------
+===============
 
 To get up and running using Kanister, we encourage you to start with
 the :ref:`architecture` section first. :ref:`install` will then allow
@@ -46,7 +46,8 @@ and more examples can be found on `GitHub
 
 
 Quick Start
------------
+===========
+
 The Kanister operator controller can be installed on a `Kubernetes
 <https://kubernetes.io>`_ cluster using the `Helm <https://helm.sh>`_
 package manager.

@@ -1,7 +1,7 @@
 .. _functions:
 
 Kanister Functions
-==================
+******************
 
 Kanister Functions are written in go and are compiled when building the
 controller. They are referenced by Blueprints phases. A Kanister Function
@@ -24,13 +24,13 @@ a `BlueprintPhase` is used to lookup a Kanister Function.  After
 `Exec()` method.
 
 Existing Functions
-------------------
+==================
 
 The Kanister controller ships with the following Kanister Functions out-of-the-box
 that provide integration with Kubernetes:
 
 KubeExec
-++++++++
+--------
 
 KubeExec is similar to running
 

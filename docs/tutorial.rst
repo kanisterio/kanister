@@ -1,7 +1,7 @@
 .. _tutorial:
 
 Tutorial
-========
+********
 
 In this tutorial you'll deploy a simple application in Kubernetes. We'll start
 by invoking by invoking a trivial Kanister action, then incrementally use more
@@ -11,7 +11,7 @@ of Kanister's features to manage the application's data.
   :local:
 
 Prerequisites
--------------
+=============
 
 * Kubernetes 1.8 or higher with Beta APIs enabled
 
@@ -27,7 +27,7 @@ Prerequisites
 * Access to an S3 bucket and credentials.
 
 Example Application
--------------------
+===================
 
 This tutorial begins by deploying a sample application. The application is
 contrived, but useful for demonstrating Kanister's features. The application
@@ -57,7 +57,7 @@ includes the aws command-line client which we'll use later in the tutorial.
 
 
 Invoking Kanister Actions
--------------------------
+=========================
 
 The first Kanister CustomResource we're going to deploy is a Blueprint.
 Blueprints are a set of instructions that tell the controller how to perform
@@ -78,7 +78,7 @@ with our log.
 
 
 First Blueprint
-++++++++++++++++
+---------------
 
 .. code-block:: yaml
 
@@ -111,7 +111,7 @@ created earlier and selects the `backup` action inside our Blueprint.
 
 
 First ActionSet
-++++++++++++++++
+---------------
 
 .. code-block:: yaml
 
@@ -131,7 +131,7 @@ First ActionSet
   EOF
 
 Get the Action's Status
-+++++++++++++++++++++++
+-----------------------
 
 The controller watches its namespace for any ActionSets we create.  Once it
 sees a new ActionSet, it will start executing each action. Since our example is
@@ -148,7 +148,7 @@ look at the updated status of the ActionSet and tail the controller logs.
 
 
 Consuming ConfigMaps
---------------------
+====================
 
 Congrats on running your first Kanister action! We were able to get data out of
 time-logger, but if we want to really protect time-logger's precious log,
@@ -239,7 +239,7 @@ You can check the controller logs to see if your bucket path rendered
 successfully.
 
 Consuming Secrets
------------------
+=================
 
 In order for us to actually push the time log to S3, we'll need to use AWS
 credentials. In Kubernetes, credentials are stored in secrets. Kanister supports
@@ -340,7 +340,7 @@ Create a new ActionSet that has the name-to-Secret reference in its action's
   EOF
 
 Artifacts
----------
+=========
 
 At this point, we have successfully backed up our application's data to S3. In
 order to retrieve the information we have pushed to S3, we must store a reference
@@ -356,7 +356,7 @@ Blueprints are Input Artifacts and Artifacts created by Blueprints are output
 Artifacts.
 
 Output Artifacts
-++++++++++++++++
+----------------
 
 In our example, we'll create an outputArtifact called `timeLog` that contains
 the full path of our data in S3. This path's base will be configured using a
@@ -398,7 +398,7 @@ If you re-execute this Kanister Action, you'll be able to see the Artifact in th
 ActionSet status.
 
 Input Artifacts
-+++++++++++++++
+---------------
 
 Kanister can consume artifacts it creates using `inputArtifacts`.
 `inputArtifacts` are named in Blueprints and are explicitly listed in the
@@ -490,7 +490,7 @@ successfully.
 
 
 Time
-----
+====
 
 It is often useful to include the current time as parameters to an action.
 Kanister provides the job's start time in UTC. We can modify the Blueprint's
@@ -506,7 +506,7 @@ For more on using the time template parameter, see :ref:`templates` .
 
 
 Using kanctl to Chain ActionSets
---------------------------------
+================================
 
 So far in this tutorial, we have shown you how to manually create action
 sets via yaml files. In some cases, an action depends on a previous action,

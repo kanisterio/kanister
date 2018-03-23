@@ -1,5 +1,5 @@
 S3 Configuration
-----------------
+================
 
 The Kanister blueprints provided use an S3-compatible object store
 to manage data artifacts. You will need to do the following before

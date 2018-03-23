@@ -1,7 +1,7 @@
 .. _architecture:
 
 Kanister Architecture Overview
-==============================
+******************************
 
 .. contents:: Kanister Architecture Overview
   :local:
@@ -20,7 +20,7 @@ together:
    .. image:: ./_static/kanister_workflow.png
 
 Kanister Workflow
------------------
+=================
 
 As seen in the above diagram and described in detail below, all
 Kanister operations are declarative and require an ActionSet to be
@@ -35,7 +35,8 @@ execution.
 
 
 Custom Resources
-----------------
+================
+
 Users interact with Kanister through Kubernetes resources known as
 CustomResources (CRs). When the controller starts, it creates the CR
 definitions called CustomResourceDefinitions (CRDs).  `CRDs
@@ -48,7 +49,7 @@ The schemas of the Kanister CRDs can be found in `types.go
 <https://github.com/kanisterio/kanister/tree/master/pkg/apis/cr/v1alpha1/types.go>`_
 
 Blueprints
-++++++++++
+----------
 
 Blueprint CRs are a set of instructions that tell the controller how to perform
 actions on a specific application.
@@ -98,7 +99,7 @@ The definition of a `BlueprintAction` is:
 
 
 ActionSets
-++++++++++
+----------
 
 Creating an ActionSet instructs the controller to run an action now.
 The user specifies the runtime parameters inside the spec of the ActionSet.
@@ -163,13 +164,13 @@ Blueprint phase and its state of execution.
 
 
 Controller
-----------
+==========
 
 The Kanister controller is a Kubernetes Deployment and is installed easily using
 `kubectl`. See :ref:`install` for more information on deploying the controller.
 
 Execution Walkthrough
-+++++++++++++++++++++
+---------------------
 
 The controller watches for new/updated ActionSets in the same namespace in which
 it is deployed. When it sees an ActionSet without a nil status field, it
@@ -192,7 +193,7 @@ Within an ActionSet, individual Actions are run in parallel.
 Currently the user is responsible for cleaning up ActionSets once they complete.
 
 Kanctl
-----------
+======
 
 Although all Kanister actions can be run using kubectl, there are situations
 where this may be cumbersome. Many actions depend on the Artifacts created by

@@ -1,7 +1,7 @@
 .. _templates:
 
 Template Parameters
-====================
+*******************
 
 Template Parameters are use to render templates in Blueprints. A `TemplateParam`
 struct is constructed based on fields in an ActionSet.
@@ -22,7 +22,7 @@ The TemplateParam struct is defined as:
   }
 
 Rendering Templates
--------------------
+===================
 
 Output Artifacts and templates in BlueprintPhases are rendered using `go
 templating engine <https://golang.org/pkg/text/template/>`_. In addition to the
@@ -35,7 +35,8 @@ standard go template functions, Kanister imports all the `sprig
   :lines: 41-51
 
 Protected Objects
------------------
+=================
+
 Kanister operates on the granularity of a `ProtectedObject`. As of the current
 release, a Protected Object is a workload, specifically, a Deployment or
 StatefulSet. The TemplateParams struct has one field for each potential protected
@@ -45,7 +46,7 @@ Each ProtectedObject param struct is a set of useful fields related to the
 ProtectedObject.
 
 StatefulSet
-+++++++++++
+-----------
 
 StatefulSetParams include the names of the Pods, Containers, and PVCs that
 belong to the StatefulSet being acted on.
@@ -56,7 +57,7 @@ belong to the StatefulSet being acted on.
   :lines: 30-36
 
 Deployment
-++++++++++
+----------
 
 DeploymentParams are identical to StatefulSetParams.
 
@@ -66,7 +67,7 @@ DeploymentParams are identical to StatefulSetParams.
   :lines: 39-45
 
 Artifacts
----------
+=========
 
 Artifacts reference data that Kanister has externalized. Kanister can use them
 as inputs or outputs to Actions.
@@ -90,7 +91,7 @@ artifact. This functionality is documented `here
 
 
 Input Artifacts
-+++++++++++++++
+---------------
 
 A Blueprint consumes parameters through template strings. If any template
 parameters are absent at render time, the controller will log a rendering error
@@ -106,18 +107,16 @@ must be present in any ActionSetAction that uses that Blueprint.
 
 For example:
 
-+++++++++
 Blueprint
-+++++++++
+^^^^^^^^^
 
 .. literalinclude:: ../examples/time-log/blueprint.yaml
   :linenos:
   :language: yaml
   :lines: 1-5,28-42
 
-+++++++++
 ActionSet
-+++++++++
+^^^^^^^^^
 
 .. literalinclude:: ../examples/time-log/restore-actionset.yaml
   :linenos:
@@ -125,7 +124,7 @@ ActionSet
 
 
 Output Artifacts
-++++++++++++++++
+----------------
 
 Output Artifacts are the only template parameter that themselves are rendered.
 This allows users to customize them based on runtime configuration. Once an
@@ -135,14 +134,14 @@ A common reason for templating an output Artifact is to choose a location using
 values from a ConfigMap.
 
 Configuration
--------------
+=============
 
 A Blueprint contains actions for a specific application - it should not need to
 change unless the application itself changes. The ActionSet provides all the
 necessary information to resolve the runtime configuration.
 
 Time
-+++++++++++++
+----
 
 Time is provided as a template parameter. It is evaluated before any of the
 phases begin execution and remains the unchanged between phases.
@@ -159,7 +158,7 @@ template string:
   "{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "3:04PM" }}"
 
 ConfigMaps
-+++++++++++++
+----------
 
 Like input Artifacts, ConfigMaps are named in Blueprints. Unlike input
 Artifacts, ConfigMaps are not fully specified in the ActionSet. Rather, the
@@ -220,7 +219,7 @@ templating:
   "{{ .ConfigMaps.location.Data.region }}"
 
 Secrets
-+++++++++++++
+-------
 
 Secrets are handled the same way as ConfigMaps. They are named in a Blueprint.
 This name is mapped to a reference in an ActionSet, and that reference is resolved

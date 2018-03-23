@@ -1,7 +1,7 @@
 .. _helm:
 
 Kanister Helm Charts
-====================
+********************
 
 .. contents:: Kanister Helm Charts
   :local:
@@ -14,7 +14,7 @@ the application via Helm.
 
 
 Kanister Helm Setup
--------------------
+===================
 
 Prior to install you will need to have the Kanister Helm repository added to your
 local setup. To do so, please run the following command.
@@ -24,7 +24,7 @@ local setup. To do so, please run the following command.
    $ helm repo add kanister https://charts.kanister.io/
 
 Kanister-Enabled Applications
------------------------------
+=============================
 
 The following application specific instructions are available:
 
