@@ -3,10 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Kanister's documentation!
-====================================
+Kanister: Application-Specific Data Management
+**********************************************
 
-Kanister allows domain experts to capture application specific data management
+Kanister allows domain experts to capture application-specific data management
 tasks in Blueprints which can be easily shared and extended. The framework takes
 care of the tedious details around execution on Kubernetes and presents a
 homogeneous operational experience across applications at scale.
@@ -33,11 +33,16 @@ The design of Kanister was driven by the following main goals:
 
 
 Getting Started
----------------
+===============
 
 To get up and running using Kanister, we encourage you to start with
 the :ref:`architecture` section first. :ref:`install` will then allow
 you to work through the :ref:`tutorial`.
+
+Alternatively, you can start by installing :ref:`Kanister-enabled Helm
+applications<helm>` and then using Kanister to manipulate them. See
+the Quick Start section below and the documentation on :ref:`helm` for
+more information.
 
 Kanister is an open-source project and the source, this documentation,
 and more examples can be found on `GitHub
@@ -46,7 +51,8 @@ and more examples can be found on `GitHub
 
 
 Quick Start
------------
+===========
+
 The Kanister operator controller can be installed on a `Kubernetes
 <https://kubernetes.io>`_ cluster using the `Helm <https://helm.sh>`_
 package manager.
@@ -95,6 +101,7 @@ and backup to an AWS S3 bucket.
    architecture
    install
    tutorial
+   helm
    functions
    templates
    troubleshooting

@@ -1,14 +1,14 @@
 .. _install:
 
 Installing Kanister
-===================
+*******************
 
 .. contents:: Installation Overview
   :local:
 
 
 Prerequisites
--------------
+=============
 
 * Kubernetes 1.8 or higher with Beta APIs enabled
 
@@ -21,7 +21,7 @@ Prerequisites
 
 
 Deploying via Helm
-------------------
+==================
 
 This will install the Kanister controller in the `kanister` namespace
 
@@ -32,7 +32,7 @@ This will install the Kanister controller in the `kanister` namespace
 
 
 Building and Deploying from Source
-----------------------------------
+==================================
 
 Use the following commands to build, package, and deploy the controller to your
 Kubernetes cluster. It will push the controller docker image to your docker repo
@@ -51,7 +51,7 @@ Kubernetes cluster. It will push the controller docker image to your docker repo
 
 
 Deploy a Released Version
-+++++++++++++++++++++++++
+-------------------------
 
 To deploy a released version of the controller, issue the command below. Modify
 the namespace fields in `bundle.yaml.in` to deploy in a namespace of your

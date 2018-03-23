@@ -1,7 +1,7 @@
 .. _troubleshooting:
 
 Troubleshooting
-===============
+***************
 
 If you ever need to debug a live Kanister system and the information
 available in ActionSets you might have created is not enough, looking
