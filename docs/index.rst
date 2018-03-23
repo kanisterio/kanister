@@ -39,6 +39,11 @@ To get up and running using Kanister, we encourage you to start with
 the :ref:`architecture` section first. :ref:`install` will then allow
 you to work through the :ref:`tutorial`.
 
+Alternatively, you can start by installing :ref:`Kanister-enabled Helm
+applications<helm>` and then using Kanister to manipulate them. See
+the Quick Start section below and the documentation on :ref:`helm` for
+more information.
+
 Kanister is an open-source project and the source, this documentation,
 and more examples can be found on `GitHub
 <https://github.com/kanisterio/kanister>`_.
