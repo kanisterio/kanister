@@ -4,6 +4,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
+// ActionSet function validates the ActionSet and returns an error if it is invalid.
 func ActionSet(as *crv1alpha1.ActionSet) error {
 	if err := actionSetSpec(as.Spec); err != nil {
 		return err
@@ -94,6 +95,7 @@ func actionSetStatusActions(as []crv1alpha1.ActionStatus) error {
 	return nil
 }
 
+// Blueprint function validates the Blueprint and returns an error if it is invalid.
 func Blueprint(bp *crv1alpha1.Blueprint) error {
 	// TODO: Add blueprint validation.
 	return nil

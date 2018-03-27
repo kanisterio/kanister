@@ -17,6 +17,7 @@ func homeConfig() string {
 	return filepath.Join(os.Getenv("HOME"), ".kube/config")
 }
 
+// ConfigNamespace returns the namespace from config
 func ConfigNamespace() (string, error) {
 	cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: homeConfig()},

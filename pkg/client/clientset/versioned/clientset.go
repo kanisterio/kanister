@@ -8,6 +8,7 @@ import (
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
 )
 
+// Interface defines the DiscoveryClient, CrV1alpha1Client and CrClient
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	CrV1alpha1() crv1alpha1.CrV1alpha1Interface

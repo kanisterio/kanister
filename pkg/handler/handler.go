@@ -13,6 +13,7 @@ const (
 	healthCheckAddr = ":8000"
 )
 
+// Info provides information about kanister controller
 type Info struct {
 	Alive   bool   `json:"alive"`
 	Version string `json:"version"`
@@ -22,6 +23,7 @@ var _ http.Handler = (*healthCheckHandler)(nil)
 
 type healthCheckHandler struct{}
 
+//NewHealthCheckHandler function returns pointer to an empty healthCheckHandler
 func NewHealthCheckHandler() *healthCheckHandler {
 	return &healthCheckHandler{}
 }
@@ -39,6 +41,7 @@ func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, string(js))
 }
 
+// NewServer returns a pointer to the http Server
 func NewServer() *http.Server {
 	m := &http.ServeMux{}
 	m.Handle(healthCheckPath, &healthCheckHandler{})

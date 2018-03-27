@@ -13,6 +13,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
+// CreateCustomResources creates the given custom resources and waits for them to initialize
 func CreateCustomResources(ctx context.Context, config *rest.Config) error {
 	opKitCTX, err := newOpKitContext(config)
 	if err != nil {

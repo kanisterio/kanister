@@ -45,6 +45,7 @@ type DeploymentParams struct {
 	PersistentVolumeClaims [][]string
 }
 
+// New function fetches and returns the desired params
 func New(ctx context.Context, cli kubernetes.Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
 	secrets, err := fetchSecrets(ctx, cli, as.Secrets)
 	if err != nil {

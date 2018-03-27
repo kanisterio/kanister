@@ -145,7 +145,7 @@ type CloudObjectProvider string
 const (
 	// CloudObjectProviderGCS means this provider is Google Cloud Storage.
 	CloudObjectProviderGCS CloudObjectProvider = "GCS"
-	// CloudObjectProviderGCS means this provider is AWS S3.
+	// CloudObjectProviderS3 means this provider is AWS S3.
 	CloudObjectProviderS3 CloudObjectProvider = "S3"
 )
 

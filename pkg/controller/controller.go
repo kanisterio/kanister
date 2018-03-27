@@ -114,7 +114,7 @@ func (c *Controller) onAdd(obj interface{}) {
 			log.Errorf("Callback onAddBlueprint() failed: %+v", err)
 		}
 	default:
-		log.Errorf("Unkown object type <%T>", o)
+		log.Errorf("Unknown object type <%T>", o)
 	}
 }
 
@@ -131,7 +131,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			log.Errorf("Callback onUpdateBlueprint() failed: %+v", err)
 		}
 	default:
-		log.Errorf("Unkown object type <%T>", oldObj)
+		log.Errorf("Unknown object type <%T>", oldObj)
 	}
 }
 
@@ -146,7 +146,7 @@ func (c *Controller) onDelete(obj interface{}) {
 			log.Errorf("Callback onDeleteBlueprint() failed: %+v", err)
 		}
 	default:
-		log.Errorf("Unkown object type <%T>", obj)
+		log.Errorf("Unknown object type <%T>", obj)
 	}
 }
 
