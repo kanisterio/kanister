@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"time"
 
@@ -11,9 +12,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/scheme"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
@@ -30,6 +34,7 @@ type ControllerSuite struct {
 	ss         *v1beta1.StatefulSet
 	deployment *v1beta1.Deployment
 	confimap   *v1.ConfigMap
+	recorder   record.EventRecorder
 }
 
 var _ = Suite(&ControllerSuite{})
@@ -47,6 +52,8 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 
 	s.cli = cli
 	s.crCli = crCli
+
+	s.recorder = eventer.NewEventRecorder(s.cli, "Controller Test")
 
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -227,11 +234,39 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			err = s.waitOnActionSetState(c, as, final)
 			c.Assert(err, IsNil)
 
-			// Clean up temporary objects.
 			err = s.crCli.Blueprints(s.namespace).Delete(bp.GetName(), nil)
 			c.Assert(err, IsNil)
 			err = s.crCli.ActionSets(s.namespace).Delete(as.GetName(), nil)
 			c.Assert(err, IsNil)
 		}
 	}
+}
+
+func (s *ControllerSuite) TestActionSetEventLogs(c *C) {
+	as := &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "testactionset-",
+		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				crv1alpha1.ActionSpec{
+					Blueprint: "NONEXISTANT_BLUEPRINT",
+				},
+			},
+		},
+	}
+	as, err := s.crCli.ActionSets(s.namespace).Create(as)
+	c.Assert(err, IsNil)
+
+	if as.Kind == "" {
+		as.Kind = reflect.TypeOf(crv1alpha1.ActionSet{}).Name()
+	}
+	msg := "Unit testing event logs"
+	s.recorder.Event(as, v1.EventTypeWarning, "Error", msg)
+
+	events, err := s.cli.CoreV1().Events(as.Namespace).Search(scheme.Scheme, as)
+	c.Assert(err, IsNil)
+	c.Assert(events, NotNil)
+	c.Assert(len(events.Items) > 0, Equals, true)
+	c.Assert(events.Items[0].Message, Equals, msg)
 }
