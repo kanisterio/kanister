@@ -2,6 +2,7 @@
 
 # Kanister
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/kanisterio/kanister)](https://goreportcard.com/report/github.com/kanisterio/kanister)
 [![Run Status](https://api.shippable.com/projects/5a18e8649f19c90600633402/badge?branch=master)](https://app.shippable.com/github/kanisterio/kanister)
 
 ## Overview
