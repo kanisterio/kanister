@@ -22,19 +22,24 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 
 	"github.com/pkg/errors"
 	opkit "github.com/rook/operator-kit"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/validate"
 )
@@ -44,6 +49,7 @@ type Controller struct {
 	config    *rest.Config
 	crClient  crclientv1alpha1.CrV1alpha1Interface
 	clientset kubernetes.Interface
+	recorder  record.EventRecorder
 }
 
 // New create controller for watching kanister custom resources created
@@ -66,6 +72,7 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 	}
 	c.crClient = crClient
 	c.clientset = clientset
+	c.recorder = eventer.NewEventRecorder(c.clientset, "Kanister Controller")
 
 	for cr, o := range map[opkit.CustomResource]runtime.Object{
 		crv1alpha1.ActionSetResource: &crv1alpha1.ActionSet{},
@@ -116,7 +123,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	case *crv1alpha1.ActionSet:
 		new := newObj.(*crv1alpha1.ActionSet)
 		if err := c.onUpdateActionSet(old, new); err != nil {
-			log.Errorf("Callback onUpdateActionSet() failed: %+v", err)
+			c.logAndEvent("Callback onUpdateActionSet() failed:", err, new)
 		}
 	case *crv1alpha1.Blueprint:
 		new := newObj.(*crv1alpha1.Blueprint)
@@ -229,7 +236,7 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 		var actionStatus *crv1alpha1.ActionStatus
 		actionStatus, err = c.initialActionStatus(as.GetNamespace(), a)
 		if err != nil {
-			log.Errorf("Could not get initial action: %#v", err)
+			c.logAndEvent("Could not get initial action:", err, as)
 			break
 		}
 		actions = append(actions, *actionStatus)
@@ -241,7 +248,7 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 		as.Status.Actions = actions
 	}
 	if _, err = c.crClient.ActionSets(as.GetNamespace()).Update(as); err != nil {
-		log.Errorf("Could not update ActionSet: %#v", err)
+		c.logAndEvent("Could not update ActionSet:", err, as)
 	}
 }
 
@@ -290,7 +297,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 		if err = c.runAction(context.TODO(), as, i); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
-			log.Errorf("Failed launch Action %s: %#v", as.GetName(), err)
+			c.logAndEvent(fmt.Sprintf("Failed launch Action %s:", as.GetName()), err, as)
 			as.Status.State = crv1alpha1.StateFailed
 			_, err = c.crClient.ActionSets(as.GetNamespace()).Update(as)
 			return errors.WithStack(err)
@@ -327,17 +334,17 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			log.Debugf("Executing phase: %s", p.Name())
 			err = p.Exec(ctx)
 			if err != nil {
-				log.Errorf("Failed to run phase %d of action %s: %+v", i, as.Spec.Actions[aIDX].Name, err)
+				c.logAndEvent(fmt.Sprintf("Failed to run phase %d of action %s:", i, as.Spec.Actions[aIDX].Name), err, as)
 			}
 			// We need to refresh the actionset in case there were other updates.
 			// TODO: We should retry, backoff here to make this more robust.
 			as, getErr := c.crClient.ActionSets(as.Namespace).Get(as.GetName(), v1.GetOptions{})
 			if getErr != nil {
-				log.Errorf("Failed to get recent ActionSet: %s, Cause: %#v", as.GetName(), err)
+				c.logAndEvent(fmt.Sprintf("Failed to get recent ActionSet: %s, Cause:", as.GetName()), getErr, as)
 				return
 			}
 			if valErr := validate.ActionSet(as); valErr != nil {
-				log.Errorf("Validation Failed: %+v", valErr)
+				c.logAndEvent("Validation Failed:", valErr, as)
 				return
 			}
 			// This means another action in this action set failed. We bail as this is a terminal state.
@@ -348,17 +355,32 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				as.Status.State = crv1alpha1.StateFailed
 				as.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateFailed
 				if _, err := c.crClient.ActionSets(as.GetNamespace()).Update(as); err != nil {
-					log.Errorf("Failed to update %#v: %#v", as.Status.Actions[aIDX].Phases[i], err)
+					c.logAndEvent(fmt.Sprintf("Failed to update %#v:", as.Status.Actions[aIDX].Phases[i]), err, as)
 				}
 				return
 			}
 			as.Status.Actions[aIDX].Artifacts = arts
 			as.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateComplete
 			if _, err := c.crClient.ActionSets(as.GetNamespace()).Update(as); err != nil {
-				log.Errorf("Failed to update phase: %#v: %#v", as.Status.Actions[aIDX].Phases[i], err)
+				c.logAndEvent(fmt.Sprintf("Failed to update phase: %#v:", as.Status.Actions[aIDX].Phases[i]), err, as)
 				return
 			}
 		}
 	}()
 	return nil
+}
+
+func (c *Controller) logAndEvent(msg string, err error, as *crv1alpha1.ActionSet) {
+	log.Errorf("%s %+v", msg, err)
+
+	if as == nil {
+		return
+	}
+	as = as.DeepCopy()
+
+	if as.Kind == "" {
+		as.Kind = reflect.TypeOf(crv1alpha1.ActionSet{}).Name()
+	}
+	c.recorder.Event(as, corev1.EventTypeWarning, "Error", fmt.Sprintf("%s %s", msg, err))
+
 }
