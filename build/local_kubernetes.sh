@@ -14,6 +14,7 @@ export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true
 export KUBECONFIG=$HOME/.kube/config
+export KUBE_VERSION=${KUBE_VERSION:-v1.8.0}
 declare -a REQUIRED_BINS=( iptables docker sudo jq )
 
 if command -v apt-get
@@ -49,7 +50,7 @@ start_minikube() {
         get_minikube
     fi
 
-    minikube start --vm-driver=none --mount --kubernetes-version=v1.7.5
+    minikube start --vm-driver=none --mount --kubernetes-version=${KUBE_VERSION}
     wait_for_pods
     kubectl run hello-minikube --image=gcr.io/google_containers/echoserver:1.4 --hostport=8000 --port=8080
     wait_for_pods default
