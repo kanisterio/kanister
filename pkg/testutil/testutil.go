@@ -10,6 +10,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
+// NewTestNamespace function returns a pointer to a new Namespace test object
 func NewTestNamespace() *v1.Namespace {
 	return &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -18,6 +19,7 @@ func NewTestNamespace() *v1.Namespace {
 	}
 }
 
+// NewTestDeployment function returns a pointer to a new Deployment test object
 func NewTestDeployment() *v1beta1.Deployment {
 	var replicas int32 = 1
 	return &v1beta1.Deployment{
@@ -31,6 +33,7 @@ func NewTestDeployment() *v1beta1.Deployment {
 	}
 }
 
+// NewTestStatefulSet function returns a pointer to a new StatefulSet test object
 func NewTestStatefulSet() *v1beta1.StatefulSet {
 	var replicas int32 = 1
 	return &v1beta1.StatefulSet{
@@ -65,6 +68,7 @@ func newTestPodTemplateSpec() v1.PodTemplateSpec {
 	}
 }
 
+// NewTestActionSet function returns a pointer to a new ActionSet test object
 func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace string) *crv1alpha1.ActionSet {
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -87,6 +91,7 @@ func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace stri
 	}
 }
 
+// NewTestConfigMap function returns a pointer to a new ConfigMap test object
 func NewTestConfigMap() *v1.ConfigMap {
 	cm := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -99,6 +104,7 @@ func NewTestConfigMap() *v1.ConfigMap {
 
 const actionName = "myAction"
 
+// NewTestBlueprint function returns a pointer to a new Blueprint test object
 func NewTestBlueprint(poKind string, phaseFuncs ...string) *crv1alpha1.Blueprint {
 	bp := &crv1alpha1.Blueprint{
 		ObjectMeta: metav1.ObjectMeta{
@@ -122,6 +128,7 @@ func NewTestBlueprint(poKind string, phaseFuncs ...string) *crv1alpha1.Blueprint
 	return bp
 }
 
+// ActionSetWithConfigMap function returns a pointer to a new ActionSet test object with CongigMap
 func ActionSetWithConfigMap(as *crv1alpha1.ActionSet, name string) *crv1alpha1.ActionSet {
 	as.Spec.Actions[0].ConfigMaps = map[string]crv1alpha1.ObjectReference{
 		"myCM": crv1alpha1.ObjectReference{
@@ -132,6 +139,7 @@ func ActionSetWithConfigMap(as *crv1alpha1.ActionSet, name string) *crv1alpha1.A
 	return as
 }
 
+// BlueprintWithConfigMap function returns a pointer to a new Blueprint test object with CongigMap
 func BlueprintWithConfigMap(bp *crv1alpha1.Blueprint) *crv1alpha1.Blueprint {
 	cmArgs := []string{"{{ .ConfigMaps.myCM.Data.myKey  }}"}
 	for i := range bp.Actions[actionName].Phases {

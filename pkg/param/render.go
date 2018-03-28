@@ -10,6 +10,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
+// RenderArgs function renders the arguments required for execution
 func RenderArgs(args []string, tp TemplateParams) ([]string, error) {
 	ras := make([]string, 0, len(args))
 	for _, a := range args {
@@ -22,6 +23,7 @@ func RenderArgs(args []string, tp TemplateParams) ([]string, error) {
 	return ras, nil
 }
 
+// RenderArtifacts function renders the artifacts required for execution
 func RenderArtifacts(arts map[string]crv1alpha1.Artifact, tp TemplateParams) (map[string]crv1alpha1.Artifact, error) {
 	rarts := make(map[string]crv1alpha1.Artifact, len(arts))
 	for name, a := range arts {

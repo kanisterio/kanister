@@ -67,7 +67,7 @@ func performFrom(ctx context.Context, cmd *cobra.Command, namespace string, acti
 
 func childActionSet(childActionName string, parent *crv1alpha1.ActionSet) (*crv1alpha1.ActionSet, error) {
 	if parent.Status == nil || parent.Status.State != crv1alpha1.StateComplete {
-		return nil, errors.Errorf("Request parent ActionSet %s has not been exectued", parent.GetName())
+		return nil, errors.Errorf("Request parent ActionSet %s has not been executed", parent.GetName())
 	}
 	actions := make([]crv1alpha1.ActionSpec, 0, len(parent.Status.Actions))
 	for aidx, pa := range parent.Status.Actions {

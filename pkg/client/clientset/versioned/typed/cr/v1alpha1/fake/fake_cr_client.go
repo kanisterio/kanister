@@ -6,14 +6,17 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
+// FakeCrV1alpha1 is used to create fake ActionSets and Bluepritns
 type FakeCrV1alpha1 struct {
 	*testing.Fake
 }
 
+// Actionsets function returns instance of FakeActionSets that implements ActionSetInterface
 func (c *FakeCrV1alpha1) ActionSets(namespace string) v1alpha1.ActionSetInterface {
 	return &FakeActionSets{c, namespace}
 }
 
+// Blueprints function returns instance of FakeBlueprints that implements BlueprintInterface
 func (c *FakeCrV1alpha1) Blueprints(namespace string) v1alpha1.BlueprintInterface {
 	return &FakeBlueprints{c, namespace}
 }
