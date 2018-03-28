@@ -51,9 +51,8 @@ start_minikube() {
     fi
 
     minikube start --vm-driver=none --mount --kubernetes-version=${KUBE_VERSION}
+    wait_for_minikube_nodes
     wait_for_pods
-    kubectl run hello-minikube --image=gcr.io/google_containers/echoserver:1.4 --hostport=8000 --port=8080
-    wait_for_pods default
 }
 
 stop_minikube() {
@@ -66,6 +65,25 @@ get_minikube() {
     touch $HOME/.kube/config
     curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
     ln -sf $(pwd)/minikube /usr/bin/minikube
+}
+
+wait_for_minikube_nodes() {
+    local nodes_ready=$(kubectl get nodes 2>/dev/null | grep -c Ready)
+    local retries=10
+    while [[  ${nodes_ready} == 0 ]]
+    do
+        if [[ ${retries} -le 0 ]]
+        then
+            echo "Minikube nodes are not ready"
+            kubectl get nodes
+            minikube status
+            return 1
+        fi
+        sleep 20
+        nodes_ready=$(kubectl get nodes 2>/dev/null | grep -c Ready)
+        retries=$((retries-1))
+    done
+    kubectl get nodes
 }
 
 wait_for_pods() {
