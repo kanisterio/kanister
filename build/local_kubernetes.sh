@@ -69,8 +69,8 @@ get_minikube() {
 
 wait_for_minikube_nodes() {
     local nodes_ready=$(kubectl get nodes 2>/dev/null | grep -c Ready)
-    local retries=10
-    while [[  ${nodes_ready} == 0 ]]
+    local retries=20
+    while [[  ${nodes_ready} -eq 0 ]]
     do
         if [[ ${retries} -le 0 ]]
         then
@@ -79,8 +79,11 @@ wait_for_minikube_nodes() {
             minikube status
             return 1
         fi
-        sleep 20
-        nodes_ready=$(kubectl get nodes 2>/dev/null | grep -c Ready)
+        sleep 5
+        if ! nodes_ready=$(kubectl get nodes 2>/dev/null | grep -c Ready)
+        then
+            nodes_ready=0
+        fi
         retries=$((retries-1))
     done
     kubectl get nodes
@@ -89,7 +92,7 @@ wait_for_minikube_nodes() {
 wait_for_pods() {
     local namespace=${1:-"kube-system"}
     local pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
-    local retries=10
+    local retries=20
 
     while [[  ${pod_status} == *false* ]] || [[ ${pod_status} == '' ]]
     do
@@ -99,7 +102,7 @@ wait_for_pods() {
             kubectl get pod --namespace=${namespace}
             return 1
         fi
-        sleep 20
+        sleep 5
         if ! pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
         then
              pod_status=''
