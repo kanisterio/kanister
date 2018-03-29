@@ -32,7 +32,8 @@ Example Application
 This tutorial begins by deploying a sample application. The application is
 contrived, but useful for demonstrating Kanister's features. The application
 appends the current time to a log file every second. The application's container
-includes the aws command-line client which we'll use later in the tutorial.
+includes the aws command-line client which we'll use later in the tutorial. The
+application is installed in the `default` namespace.
 
 .. code-block:: yaml
 
@@ -58,6 +59,9 @@ includes the aws command-line client which we'll use later in the tutorial.
 
 Invoking Kanister Actions
 =========================
+
+Kanister CustomResources are created in the same namespace as
+the Kanister controller.
 
 The first Kanister CustomResource we're going to deploy is a Blueprint.
 Blueprints are a set of instructions that tell the controller how to perform
@@ -87,6 +91,7 @@ First Blueprint
   kind: Blueprint
   metadata:
     name: time-log-bp
+    namespace: kanister
   actions:
     backup:
       type: Deployment
@@ -120,6 +125,7 @@ First ActionSet
   kind: ActionSet
   metadata:
     generateName: s3backup-
+    namespace: kanister
   spec:
     actions:
     - name: backup
@@ -141,10 +147,10 @@ look at the updated status of the ActionSet and tail the controller logs.
 .. code-block:: bash
 
   # get the ActionSet status
-  $ kubectl get actionsets.cr.kanister.io -o yaml
+  $ kubectl --namespace kanister get actionsets.cr.kanister.io -o yaml
 
   # check the controller log
-  $ kubectl get pod -l app=kanister-operator
+  $ kubectl --namespace kanister get pod -l app=kanister-operator
 
 
 Consuming ConfigMaps
@@ -176,6 +182,7 @@ have access to.
   kind: ConfigMap
   metadata:
     name: s3-location
+    namespace: kanister
   data:
     path: s3://time-log-test-bucket/tutorial
   EOF
@@ -192,6 +199,7 @@ stdout, but eventually we'll backup the time log to that path.
   kind: Blueprint
   metadata:
     name: time-log-bp
+    namespace: kanister
   actions:
     backup:
       type: Deployment
@@ -221,6 +229,7 @@ a reference to the ConfigMap we just created.
   kind: ActionSet
   metadata:
     generateName: s3backup-
+    namespace: kanister
   spec:
     actions:
     - name: backup
@@ -232,7 +241,7 @@ a reference to the ConfigMap we just created.
       configMaps:
         location:
           name: s3-location
-          namespace: default
+          namespace: kanister
   EOF
 
 You can check the controller logs to see if your bucket path rendered
@@ -268,6 +277,7 @@ Base64 credentials and put them below.
   kind: Secret
   metadata:
     name: aws-creds
+    namespace: kanister
   type: Opaque
   data:
     aws_access_key_id: XXXX
@@ -289,6 +299,7 @@ For more on this templating, see :ref:`templates`
   kind: Blueprint
   metadata:
     name: time-log-bp
+    namespace: kanister
   actions:
     backup:
       type: Deployment
@@ -321,6 +332,7 @@ Create a new ActionSet that has the name-to-Secret reference in its action's
   kind: ActionSet
   metadata:
     generateName: s3backup-
+    namespace: kanister
   spec:
     actions:
     - name: backup
@@ -332,11 +344,11 @@ Create a new ActionSet that has the name-to-Secret reference in its action's
       configMaps:
         location:
           name: s3-location
-          namespace: default
+          namespace: kanister
       secrets:
         aws:
           name: aws-creds
-          namespace: default
+          namespace: kanister
   EOF
 
 Artifacts
@@ -369,6 +381,7 @@ ConfigMap.
   kind: Blueprint
   metadata:
     name: time-log-bp
+    namespace: kanister
   actions:
     backup:
       type: Deployment
@@ -418,6 +431,7 @@ We create a new ActionSet on our `time-logger` deployment with the action name
   kind: ActionSet
   metadata:
     generateName: s3restore
+    namespace: kanister
   spec:
     actions:
       - name: restore
@@ -441,6 +455,7 @@ ConfigMap because the `inputArtifact` contains the fully specified path.
   kind: Blueprint
   metadata:
     name: time-log-bp
+    namespace: kanister
   actions:
     backup:
       type: Deployment

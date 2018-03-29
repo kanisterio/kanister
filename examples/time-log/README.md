@@ -6,6 +6,7 @@ Note: This application is used in the Kanister tutorial, for a detailed walkthro
 
 ### 1. Deploy the Application
 
+The following command deploys the example Time Log application in `default` namespace:
 ```bash
 # Create a deployment whose log we'll ship to s3
 $ kubectl apply -f ./examples/time-log/time-logger-deployment.yaml
@@ -14,7 +15,7 @@ deployment "time-logger" created
 
 ### 2. Protect the Application
 
-Next we use a blueprint to protect the application. Since this blueprint references a config map and secrets, we first need to create those. You should update s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update secrets.yaml to include your AWS credentials that provide read/write access to the bucket you specified in s3-location-configmap.yaml. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in secrets.yaml. These are encoded using base64. TODO: Add secrets yaml file
+Next create a Blueprint which describes how backup and restore actions can be executed on this application. The Blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the Blueprint references the S3 location specified in the ConfigMap in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update `secrets.yaml` to include AWS credentials that have read/write access to the S3 bucket. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in `secrets.yaml`. These are encoded using base64. The following commands will create a ConfigMap, Secrets and a Blueprint in controller's namespace:
 
 ```bash
 # Get base64 encoded aws keys
@@ -32,22 +33,26 @@ secret "aws-creds" created
 $ kubectl apply -f examples/time-log/blueprint.yaml
 blueprint "time-log-bp" created
 
-# Create that actionset that causes the controller to kick off the backup
-$ kubectl create -f examples/time-log/backup-actionset.yaml
+```
+
+You can now take a backup of Time Log's data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
+```
+# Create the actionset that causes the controller to kick off the backup
+$ kubectl --namepsace kanister create -f examples/time-log/backup-actionset.yaml
 actionset "s3backup-f4c4q" created
 
 # View the status of the actionset
-$ kubectl get actionset s3backup-f4c4q -oyaml
+$ kubectl --namepsace kanister get actionset s3backup-f4c4q -oyaml
 ```
 
 ### 3. Restore the Application
 
 ```bash
-$ kanctl perform restore --from "s3backup-f4c4q"
+$ kanctl --namespace kanister perform restore --from "s3backup-f4c4q"
 actionset "restore-s3restore-g235d-23d2f" created
 
 # View the status of the actionset
-$ kubectl get actionset restore-s3restore-g235d-23d2f -oyaml
+$ kubectl --namespace kanister get actionset restore-s3restore-g235d-23d2f -oyaml
 ```
 
 ### 4. Delete the Artifacts
@@ -55,16 +60,16 @@ $ kubectl get actionset restore-s3restore-g235d-23d2f -oyaml
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl perform delete --from "s3backup-f4c4q"
+$ kanctl --namespace kanister perform delete --from "s3backup-f4c4q"
 actionset "delete-s3backup-f4c4q-2jj9n" created
 
 # View the status of the actionset
-$ kubectl get actionset delete-s3backup-f4c4q-2jj9n -oyaml
+$ kubectl --namespace kanister get actionset delete-s3backup-f4c4q-2jj9n -oyaml
 ```
 
 ### Troubleshooting
 
 If you run into any issues with the above commands, you can check the logs of the controller using:
 ```bash
-$ kubectl logs -l app=kanister-operator
+$ kubectl --namespace kanister logs -l app=kanister-operator
 ```

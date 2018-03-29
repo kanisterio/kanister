@@ -56,7 +56,11 @@ start_minikube() {
 }
 
 stop_minikube() {
-   minikube stop
+ if !  minikube stop
+ then
+     systemctl stop localkube
+     docker rm -f $(docker ps -aq --filter name=k8s)
+ fi
 }
 
 get_minikube() {

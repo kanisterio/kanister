@@ -2,6 +2,7 @@ apiVersion: cr.kanister.io/v1alpha1
 kind: ActionSet
 metadata:
   generateName: mongo-restore-
+  namespace: kanister
 spec:
   actions:
     - name: restore
