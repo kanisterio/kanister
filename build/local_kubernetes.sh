@@ -70,7 +70,7 @@ get_minikube() {
 wait_for_minikube_nodes() {
     local nodes_ready=$(kubectl get nodes 2>/dev/null | grep -c Ready)
     local retries=20
-    while [[  ${nodes_ready} == 0 ]]
+    while [[  ${nodes_ready} -eq 0 ]]
     do
         if [[ ${retries} -le 0 ]]
         then
@@ -80,7 +80,10 @@ wait_for_minikube_nodes() {
             return 1
         fi
         sleep 5
-        nodes_ready=$(kubectl get nodes 2>/dev/null | grep -c Ready)
+        if ! nodes_ready=$(kubectl get nodes 2>/dev/null | grep -c Ready)
+        then
+            nodes_ready=0
+        fi
         retries=$((retries-1))
     done
     kubectl get nodes
