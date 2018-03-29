@@ -225,23 +225,23 @@ To demonstrate backup/restore ActionSet chaining, we'll perform "`kanctl perform
 .. code-block:: bash
 
   # perform backup
-  $ kubectl create -f examples/time-log/backup-actionset.yaml
+  $ kubectl --namespace kanister create -f examples/time-log/backup-actionset.yaml
   actionset "s3backup-j4z6f" created
 
   # restore from the backup we just created
-  $ kanctl perform restore --from s3backup-j4z6f
+  $ kanctl --namespace kanister perform restore --from s3backup-j4z6f
   actionset "restore-s3backup-j4z6f-s1wb7" created
 
   # View the actionset
-  kubectl get actionset restore-s3backup-j4z6f-s1wb7 -oyaml
+  kubectl --namespace kanister get actionset restore-s3backup-j4z6f-s1wb7 -oyaml
 
 Similarly, we can also delete the backup file using the following `kanctl` command
 
 .. code-block:: bash
 
   # delete the backup we just created
-  $ kanctl perform delete --from s3backup-j4z6f
+  $ kanctl --namespace kanister perform delete --from s3backup-j4z6f
   actionset "delete-s3backup-j4z6f-2jj9n" created
 
   # View the actionset
-  kubectl get actionset delete-s3backup-j4z6f-2jj9n -oyaml
+  $ kubectl --namespace kanister get actionset delete-s3backup-j4z6f-2jj9n -oyaml

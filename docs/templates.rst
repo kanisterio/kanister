@@ -103,7 +103,8 @@ one such type of dependency.
 
 Any input Artifacts required by a Blueprint are added to the
 `inputArtifactNames` field in Blueprint actions. These named Artifacts
-must be present in any ActionSetAction that uses that Blueprint.
+must be present in any ActionSetAction that uses that Blueprint. Always
+create ActionSet in the same namespace as the controller.
 
 For example:
 
@@ -174,8 +175,8 @@ action is invoked.
 Templating makes consuming the ConfigMaps easy. The example below illustrates a
 Blueprint that requires a ConfigMap named location.
 
-First, we create a ConfigMap that contains configuration information about an S3
-bucket:
+First, in the kanister controller's namespace, we create a ConfigMap that
+contains configuration information about an S3 bucket:
 
 .. code-block:: yaml
 
@@ -183,7 +184,7 @@ bucket:
   kind: ConfigMap
   metadata:
     name: backup-s3-location
-    namespace: default
+    namespace: kanister
   data:
     bucket: s3://my.backup.bucket
     region: us-west-1
@@ -196,6 +197,7 @@ We can then reference this ConfigMap from the ActionSet as follows:
   kind: ActionSet
   metadata:
     generateName: s3backup-
+    namespace: kanister
   spec:
     actions:
     - name: backup
@@ -207,7 +209,7 @@ We can then reference this ConfigMap from the ActionSet as follows:
       configMaps:
         location:
           name: backup-s3-location # The ConfigMap API object name
-          namespace: default
+          namespace: kanister
 
 
 Finally, we can access the ConfigMap's data inside the Blueprint using
@@ -235,7 +237,7 @@ an S3 bucket:
   kind: Secret
   metadata:
     name: aws-creds
-    namespace: default
+    namespace: kanister
   type: Opaque
   data:
     aws_access_key_id: MY_BASE64_ENCODED_AWS_ACCESS_KEY_ID
@@ -249,6 +251,7 @@ We create an ActionSet that has a reference to the Secret:
   kind: ActionSet
   metadata:
     generateName: s3backup-
+    namespace: kanister
   spec:
     actions:
     - name: backup
@@ -260,7 +263,7 @@ We create an ActionSet that has a reference to the Secret:
       secrets:
         aws:
           name: aws-creds # The Secret API object name
-          namespace: default
+          namespace: kanister
 
 We can access the Secret's data inside the Blueprint using templating. Since
 secrets `Data` field has the type `[]byte`, we use sprig's `toString function

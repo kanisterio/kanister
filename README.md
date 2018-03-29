@@ -192,7 +192,7 @@ To get a more detailed overview of Kanister's components, let's walk through a n
 
 ### 1. Deploy the Application
 
-Deploy the example MongoDB application using the following command:
+The following command deploys the example MongoDB application in `default` namespace:
 ```bash
 $ kubectl apply -f ./examples/mongo-sidecar/mongo-cluster.yaml
 configmap "mongo-cluster" created
@@ -216,7 +216,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 
 ### 2. Protect the Application
 
-Next create a Blueprint which describes how backup and restore actions can be executed on this application. The Blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the Blueprint references the S3 location specified in the ConfigMap in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update `secrets.yaml` to include AWS credentials that have read/write access to the S3 bucket. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in `secrets.yaml`. These are encoded using base64.
+Next create a Blueprint which describes how backup and restore actions can be executed on this application. The Blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the Blueprint references the S3 location specified in the ConfigMap in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update `secrets.yaml` to include AWS credentials that have read/write access to the S3 bucket. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in `secrets.yaml`. These are encoded using base64. The following commands will create a ConfigMap, Secrets and a Blueprint in controller's namespace:
 
 ```bash
 # Get base64 encoded aws keys
@@ -235,7 +235,7 @@ $ kubectl apply -f ./examples/mongo-sidecar/blueprint.yaml
 blueprint "mongo-sidecar" created
 ```
 
-You can now take a backup of MongoDB's data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller:
+You can now take a backup of MongoDB's data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
 ```bash
 $ kubectl --namepsace kanister apply -f ./examples/mongo-sidecar/backup-actionset.yaml
 actionset "mongo-backup-12046" created
@@ -269,7 +269,7 @@ $ kanctl --namespace kanister perform restore --from "mongo-backup-12046"
 actionset restore-mongo-backup-12046-s1wb7 created
 
 # View the status of the ActionSet
-kubectl get actionset restore-mongo-backup-12046-s1wb7 -oyaml
+kubectl --namespace kanister get actionset restore-mongo-backup-12046-s1wb7 -oyaml
 ```
 
 You should now see that the data has been successfully restored to MongoDB!
@@ -287,7 +287,7 @@ $ kanctl --namespace kanister perform delete --from "mongo-backup-12046"
 actionset "delete-mongo-backup-12046-kf8mt" created
 
 # View the status of the ActionSet
-$ kubectl get actionset delete-mongo-backup-12046-kf8mt -oyaml
+$ kubectl --namespace kanister get actionset delete-mongo-backup-12046-kf8mt -oyaml
 ```
 
 ## Cleanup

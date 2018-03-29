@@ -2,7 +2,7 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: kanister-operator
-  namespace: default
+  namespace: kanister
 rules:
 - apiGroups:
   - ""
@@ -53,13 +53,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kanister-operator
-  namespace: default
+  namespace: kanister
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: kanister-operator
-  namespace: default
+  namespace: kanister
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -67,13 +67,13 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: kanister-operator
-  namespace: default
+  namespace: kanister
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: kanister-operator
-  namespace: default
+  namespace: kanister
 spec:
   replicas: 1
   template:

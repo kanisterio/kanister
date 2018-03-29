@@ -2,6 +2,7 @@ apiVersion: cr.kanister.io/v1alpha1
 kind: ActionSet
 metadata:
   generateName: s3backup-
+  namespace: kanister
 spec:
   actions:
     - name: backup
@@ -13,8 +14,8 @@ spec:
       configMaps:
         location:
           name: s3-location
-          namespace: default
+          namespace: kanister
       secrets:
         aws:
           name: aws-creds
-          namespace: default
+          namespace: kanister

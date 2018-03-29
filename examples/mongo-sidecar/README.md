@@ -4,7 +4,7 @@ This is an example of using Kanister to backup and restore MongoDB. In this exam
 
 ### 1. Deploy the Application
 
-Deploy the example MongoDB application using the following command:
+The following command deploys the example MongoDB application in `default` namespace:
 ```bash
 $ kubectl apply -f ./examples/mongo-sidecar/mongo-cluster.yaml
 configmap "mongo-cluster" created
@@ -14,7 +14,7 @@ statefulset "mongo-cluster" created
 
 Once MongoDB is running, you can populate it with some data. Let's add a collection called "restaurants" to a test database:
 ```bash
-# Connect to MongoDB by running a shell inside Mongo's pod
+# Connect to MongoDB by running a shell inside MongoDB's pod
 $ kubectl exec -i -t mongo-cluster-0 -- bash -l
 
 # From inside the shell, use the mongo CLI to insert some data into the test database
@@ -28,7 +28,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 
 ### 2. Protect the Application
 
-Next create a blueprint which describes how backup and restore actions can be executed on this application. The blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the blueprint references the S3 location specified in the config map in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update secrets.yaml to contain the necessary AWS credentials to access this bucket. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in secrets.yaml. These are encoded using base64.
+Next create a Blueprint which describes how backup and restore actions can be executed on this application. The Blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the Blueprint references the S3 location specified in the ConfigMap in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update `secrets.yaml` to include AWS credentials that have read/write access to the S3 bucket. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in `secrets.yaml`. These are encoded using base64. The following commands will create a ConfigMap, Secrets and a Blueprint in controller's namespace:
 
 ```bash
 # Get base64 encoded aws keys
@@ -38,22 +38,23 @@ $ echo "YOUR_KEY" | base64
 $ kubectl apply -f ./examples/mongo-sidecar/s3-location-configmap.yaml
 configmap "mongo-s3-location" created
 
-# Create secrets containing the necessary AWS credentials
-$ kubectl apply -f examples/mongo-sidecar/secrets.yaml
+# Create the secrets with the AWS credentials
+$ kubectl apply -f ./examples/mongo-sidecar/secrets.yaml
+secrets "aws-creds" created
 
-# Create the blueprint for MongoDB
+# Create the Blueprint for MongoDB
 $ kubectl apply -f ./examples/mongo-sidecar/blueprint.yaml
 blueprint "mongo-sidecar" created
 ```
 
-You can now take a backup of MongoDB's data using an action set defining backup for this application:
+You can now take a backup of MongoDB's data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
 ```bash
-$ kubectl create -f ./examples/mongo-sidecar/backup-actionset.yaml
+$ kubectl --namepsace kanister apply -f ./examples/mongo-sidecar/backup-actionset.yaml
 actionset "mongo-backup-12046" created
 
-$ kubectl get actionsets.cr.kanister.io
+$ kubectl --namespace kanister get actionsets.cr.kanister.io
 NAME                KIND
-mongo-backup12046   ActionSet.v1alpha1.cr.kanister.io
+mongo-backup-12046   ActionSet.v1alpha1.cr.kanister.io
 ```
 
 ### 3. Disaster strikes!
@@ -67,21 +68,20 @@ true
 
 If you try to access this data in the database, you should see that it is no longer there:
 ```bash
-# No entries should be found in the restaurants collection
 $ mongo test --quiet --eval "db.restaurants.find()"
-$
+# No entries should be found in the restaurants collection
 ```
 
 ### 4. Restore the Application
 
-To restore the missing data, we want to use the backup created in step 2. An easy way to do this is to leverage kanctl, a command-line tool that helps create action sets that depend on other action sets:
+To restore the missing data, we want to use the backup created in step 2. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
 
 ```bash
-$ kanctl perform restore --from "mongo-backup-12046"
+$ kanctl --namespace kanister perform restore --from "mongo-backup-12046"
 actionset restore-mongo-backup-12046-s1wb7 created
 
-# View the status of the actionset
-$ kubectl get actionset restore-mongo-backup-12046-s1wb7 -oyaml
+# View the status of the ActionSet
+kubectl --namespace kanister get actionset restore-mongo-backup-12046-s1wb7 -oyaml
 ```
 
 You should now see that the data has been successfully restored to MongoDB!
@@ -95,9 +95,9 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl perform delete --from "mongo-backup-12046"
+$ kanctl --namespace kanister perform delete --from "mongo-backup-12046"
 actionset "delete-mongo-backup-12046-kf8mt" created
 
-# View the status of the actionset
-$ kubectl get actionset delete-mongo-backup-12046-kf8mt -oyaml
+# View the status of the ActionSet
+$ kubectl --namespace kanister get actionset delete-mongo-backup-12046-kf8mt -oyaml
 ```
