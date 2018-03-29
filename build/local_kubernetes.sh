@@ -53,6 +53,8 @@ start_minikube() {
     minikube start --vm-driver=none --mount --kubernetes-version=${KUBE_VERSION}
     wait_for_minikube_nodes
     wait_for_pods
+    kubectl run hello-minikube --image=gcr.io/google_containers/echoserver:1.4 --hostport=8000 --port=8080
+    wait_for_pods default
 }
 
 stop_minikube() {
@@ -69,7 +71,7 @@ get_minikube() {
 
 wait_for_minikube_nodes() {
     local nodes_ready=$(kubectl get nodes 2>/dev/null | grep -c Ready)
-    local retries=10
+    local retries=20
     while [[  ${nodes_ready} == 0 ]]
     do
         if [[ ${retries} -le 0 ]]
@@ -79,7 +81,7 @@ wait_for_minikube_nodes() {
             minikube status
             return 1
         fi
-        sleep 20
+        sleep 5
         nodes_ready=$(kubectl get nodes 2>/dev/null | grep -c Ready)
         retries=$((retries-1))
     done
@@ -89,7 +91,7 @@ wait_for_minikube_nodes() {
 wait_for_pods() {
     local namespace=${1:-"kube-system"}
     local pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
-    local retries=10
+    local retries=15
 
     while [[  ${pod_status} == *false* ]] || [[ ${pod_status} == '' ]]
     do
@@ -99,7 +101,7 @@ wait_for_pods() {
             kubectl get pod --namespace=${namespace}
             return 1
         fi
-        sleep 20
+        sleep 10
         if ! pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
         then
              pod_status=''
