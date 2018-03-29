@@ -15,6 +15,9 @@ func (s *ExecSuite) TestExecEcho(c *C) {
 	cli := NewClient()
 	pods, err := cli.Core().Pods(defaultNamespace).List(emptyListOptions)
 	c.Assert(err, IsNil)
+	if len(pods.Items) == 0 {
+		c.Skip("Test requires a running pod")
+	}
 	p := pods.Items[0] // We run on all containers in a single pod.
 	for _, cs := range p.Status.ContainerStatuses {
 		stdout, stderr, err := Exec(cli, p.Namespace, p.Name, cs.Name, cmd)
