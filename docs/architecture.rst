@@ -173,7 +173,7 @@ Execution Walkthrough
 ---------------------
 
 The controller watches for new/updated ActionSets in the same namespace in which
-it is deployed. When it sees an ActionSet without a nil status field, it
+it is deployed. When it sees an ActionSet with a nil status field, it
 immediately initializes the ActionSet's status to the Pending State. The status is
 also prepopulated with the pending phases.
 
