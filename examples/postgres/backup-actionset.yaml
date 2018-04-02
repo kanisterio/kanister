@@ -9,15 +9,15 @@ spec:
       object:
         kind: StatefulSet
         name: my-release-patroni
-        namespace: default
+        namespace: kanister
       configMaps:
         location:
           name: postgres-s3-location
-          namespace: default
+          namespace: kanister
       secrets:
         aws:
           name: aws-creds
-          namespace: default
+          namespace: kanister
         postgres:
-          name: patroni-creds
-          namespace: default
+          name: my-release-patroni
+          namespace: kanister
