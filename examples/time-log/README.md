@@ -38,11 +38,11 @@ blueprint "time-log-bp" created
 You can now take a backup of Time Log's data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
 ```
 # Create the actionset that causes the controller to kick off the backup
-$ kubectl --namepsace kanister create -f examples/time-log/backup-actionset.yaml
+$ kubectl --namespace kanister create -f examples/time-log/backup-actionset.yaml
 actionset "s3backup-f4c4q" created
 
 # View the status of the actionset
-$ kubectl --namepsace kanister get actionset s3backup-f4c4q -oyaml
+$ kubectl --namespace kanister get actionset s3backup-f4c4q -oyaml
 ```
 
 ### 3. Restore the Application
