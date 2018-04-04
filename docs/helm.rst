@@ -41,4 +41,5 @@ The following application-specific instructions are available:
    :maxdepth: 1
 
    helm_instructions/mysql_instructions.rst
+   helm_instructions/pgsql_instructions.rst
    helm_instructions/mongodb_instructions.rst
