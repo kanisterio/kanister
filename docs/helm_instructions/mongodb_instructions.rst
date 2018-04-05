@@ -15,17 +15,35 @@ Then install the sample MongoDB replica set application in its own namespace.
 
 .. For some reason using 'console' or 'bash' highlights the snippet weirdly
 
-.. code-block:: rst
+.. only:: kanister
 
-   # Install Kanister-enabled MongoDB Replica Set
-   $ helm install kanister/kanister-mongodb-replicaset -n mongodb \
-        --namespace mongodb-test \
-        --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
-        --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
-        --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
-        --set kanister.s3_bucket="kanister-bucket" \
-        --set resplicas=1 \
-        --set persistentVolume.size=2Gi
+  .. code-block:: rst
+
+     # Install Kanister-enabled MongoDB Replica Set
+     $ helm install kanister/kanister-mongodb-replicaset -n mongodb \
+          --namespace mongodb-test \
+          --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
+          --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
+          --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
+          --set kanister.s3_bucket="kanister-bucket" \
+          --set kanister.controller_namespace="kanister" \
+          --set resplicas=1 \
+          --set persistentVolume.size=2Gi
+
+.. only:: defaultns
+
+  .. code-block:: rst
+
+     # Install Kanister-enabled MongoDB Replica Set
+     $ helm install kanister/kanister-mongodb-replicaset -n mongodb \
+          --namespace mongodb-test \
+          --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
+          --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
+          --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
+          --set kanister.s3_bucket="kanister-bucket" \
+          --set resplicas=1 \
+          --set persistentVolume.size=2Gi
+
 
 The settings in the command above represent the minimum recommended set for
 your installation of a single node replica set.
