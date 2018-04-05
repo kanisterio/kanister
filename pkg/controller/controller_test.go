@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	"github.com/pkg/errors"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -242,8 +242,9 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 	}
 }
 
-func (s *ControllerSuite) TestActionSetEventLogs(c *C) {
+func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	c.Skip("This may not work in MiniKube")
+	// Create ActionSet
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "testactionset-",
@@ -258,16 +259,45 @@ func (s *ControllerSuite) TestActionSetEventLogs(c *C) {
 	}
 	as, err := s.crCli.ActionSets(s.namespace).Create(as)
 	c.Assert(err, IsNil)
-
-	if as.Kind == "" {
-		as.Kind = reflect.TypeOf(crv1alpha1.ActionSet{}).Name()
-	}
 	msg := "Unit testing event logs"
-	s.recorder.Event(as, v1.EventTypeWarning, "Error", msg)
 
+	//Create nil ActionSet
+	var nilAs = (*crv1alpha1.ActionSet)(nil)
+
+	// Create Blueprint
+	bp := testutil.NewTestBlueprint("StatefulSet", testutil.WaitFuncName)
+	bp, err = s.crCli.Blueprints(s.namespace).Create(bp)
+	c.Assert(err, IsNil)
+
+	//Test the logAndErrorEvent function
+	config, err := kube.LoadConfig()
+	c.Assert(err, IsNil)
+	ctlr := New(config)
+	ctlr.logAndErrorEvent(msg, errors.New("Testing Event Logs"), as, nilAs, bp)
+
+	// Test ActionSet error event logging
 	events, err := s.cli.CoreV1().Events(as.Namespace).Search(scheme.Scheme, as)
 	c.Assert(err, IsNil)
 	c.Assert(events, NotNil)
 	c.Assert(len(events.Items) > 0, Equals, true)
 	c.Assert(events.Items[0].Message, Equals, msg)
+
+	//Testing nil ActionSet error event logging
+	events, err = s.cli.CoreV1().Events(as.Namespace).Search(scheme.Scheme, nilAs)
+	c.Assert(err, NotNil)
+	c.Assert(len(events.Items), Equals, 0)
+
+	//Testing Blueprint error event logging
+	events, err = s.cli.CoreV1().Events(bp.Namespace).Search(scheme.Scheme, bp)
+	c.Assert(err, IsNil)
+	c.Assert(events, NotNil)
+	c.Assert(len(events.Items) > 0, Equals, true)
+	c.Assert(events.Items[0].Message, Equals, msg)
+
+	//Testing empty Blueprint
+	testbp := &crv1alpha1.Blueprint{}
+	ctlr.logAndErrorEvent(msg, errors.New("Testing Event Logs"), testbp)
+	events, err = s.cli.CoreV1().Events(bp.Namespace).Search(scheme.Scheme, testbp)
+	c.Assert(err, NotNil)
+	c.Assert(len(events.Items), Equals, 0)
 }
