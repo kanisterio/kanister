@@ -35,9 +35,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/reference"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/scheme"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -170,7 +172,7 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 }
 
 func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) error {
-	log.Infof("Added blueprint %s", bp.GetName())
+	c.logAndSuccessEvent(fmt.Sprintf("Added blueprint %s", bp.GetName()), "Added", bp)
 	return nil
 }
 
@@ -196,7 +198,7 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 		}
 	}
 	newAS.Status.State = crv1alpha1.StateComplete
-	log.Infof("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State)
+	c.logAndSuccessEvent(fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State), "Update Complete", newAS)
 	as, err := c.crClient.ActionSets(newAS.GetNamespace()).Update(newAS)
 	if err != nil {
 		return err
@@ -309,7 +311,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 
 func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aIDX int) error {
 	action := as.Spec.Actions[aIDX]
-	log.Infof("Executing action %s", action.Name)
+	c.logAndSuccessEvent(fmt.Sprintf("Executing action %s", action.Name), "Started Action", as)
 	bpName := as.Spec.Actions[aIDX].Blueprint
 	bp, err := c.crClient.Blueprints(as.GetNamespace()).Get(bpName, v1.GetOptions{})
 	if err != nil {
@@ -332,6 +334,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	go func() {
 		for i, p := range phases {
 			log.Debugf("Executing phase: %s", p.Name())
+			c.logAndSuccessEvent(fmt.Sprintf("Executing phase %s", p.Name()), "Started Phase", as)
 			err = p.Exec(ctx)
 			if err != nil {
 				c.logAndEvent(fmt.Sprintf("Failed to run phase %d of action %s:", i, as.Spec.Actions[aIDX].Name), err, as)
@@ -365,6 +368,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				c.logAndEvent(fmt.Sprintf("Failed to update phase: %#v:", as.Status.Actions[aIDX].Phases[i]), err, as)
 				return
 			}
+			c.logAndSuccessEvent(fmt.Sprintf("Completed phase %s", p.Name()), "Ended Phase", as)
 		}
 	}()
 	return nil
@@ -383,4 +387,28 @@ func (c *Controller) logAndEvent(msg string, err error, as *crv1alpha1.ActionSet
 	}
 	c.recorder.Event(as, corev1.EventTypeWarning, "Error", fmt.Sprintf("%s %s", msg, err))
 
+}
+
+func (c *Controller) logAndSuccessEvent(msg, reason string, objects ...runtime.Object) {
+	log.Info(msg)
+	if len(objects) == 0 {
+		return
+	}
+	for _, object := range objects {
+		o := object.DeepCopyObject()
+		setObjectKind(o)
+		if _, refErr := reference.GetReference(scheme.Scheme, o); refErr != nil {
+			continue
+		}
+		c.recorder.Event(o, corev1.EventTypeNormal, reason, msg)
+	}
+}
+
+func setObjectKind(obj runtime.Object) {
+	ok := obj.GetObjectKind()
+	gvk := ok.GroupVersionKind()
+	if gvk.Kind == "" {
+		gvk.Kind = reflect.TypeOf(obj).Elem().Name()
+	}
+	ok.SetGroupVersionKind(gvk)
 }
