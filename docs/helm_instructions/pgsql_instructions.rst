@@ -18,15 +18,32 @@ Then install the sample PostgreSQL application in its own namespace.
 
 .. For some reason using 'console' or 'bash' highlights the snippet weirdly
 
-.. code-block:: rst
+.. only:: kanister
 
-   # Install Kanister-enabled PostgreSQL
-   $ helm install kanister/kanister-postgresql -n postgresql \
-        --namespace postgresql-test \
-        --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
-        --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
-        --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
-        --set kanister.s3_bucket="kanister-bucket"
+  .. code-block:: rst
+
+     # Install Kanister-enabled PostgreSQL
+     $ helm install kanister/kanister-postgresql -n postgresql \
+          --namespace postgresql-test \
+          --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
+          --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
+          --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
+          --set kanister.s3_bucket="kanister-bucket" \
+          --set kanister.controller_namespace="kanister"
+
+
+.. only:: defaultns
+
+  .. code-block:: rst
+
+     # Install Kanister-enabled PostgreSQL
+     $ helm install kanister/kanister-postgresql -n postgresql \
+          --namespace postgresql-test \
+          --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
+          --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
+          --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
+          --set kanister.s3_bucket="kanister-bucket"
+
 
 The settings in the command above represent the minimum recommended set for
 your installation.

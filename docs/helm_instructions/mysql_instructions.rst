@@ -15,16 +15,33 @@ Then install the sample MySQL application in its own namespace.
 
 .. For some reason using 'console' or 'bash' highlights the snippet weirdly
 
-.. code-block:: rst
+.. only:: kanister
 
-   # Install Kanister-enabled MySQL
-   $ helm install kanister/kanister-mysql -n mysql --namespace mysql-test \
-        --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
-        --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
-        --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
-        --set kanister.s3_bucket="kanister-bucket" \
-        --set mysqlRootPassword="asd#45@mysqlEXAMPLE" \
-        --set persistence.size=10Gi
+  .. code-block:: rst
+
+     # Install Kanister-enabled MySQL
+     $ helm install kanister/kanister-mysql -n mysql --namespace mysql-test \
+          --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
+          --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
+          --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
+          --set kanister.s3_bucket="kanister-bucket" \
+          --set kanister.controller_namespace="kanister" \
+          --set mysqlRootPassword="asd#45@mysqlEXAMPLE" \
+          --set persistence.size=10Gi
+
+.. only:: defaultns
+
+  .. code-block:: rst
+
+     # Install Kanister-enabled MySQL
+     $ helm install kanister/kanister-mysql -n mysql --namespace mysql-test \
+          --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
+          --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
+          --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
+          --set kanister.s3_bucket="kanister-bucket" \
+          --set mysqlRootPassword="asd#45@mysqlEXAMPLE" \
+          --set persistence.size=10Gi
+
 
 The settings in the command above represent the minimum recommended set for
 your installation.
