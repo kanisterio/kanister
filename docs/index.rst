@@ -63,7 +63,7 @@ and backup to an AWS S3 bucket.
 .. code-block:: bash
 
   # Install the Kanister Controller
-  helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.3.0
+  helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.4.0
 
   # Add Kanister Charts
   helm repo add kanister http://charts.kanister.io

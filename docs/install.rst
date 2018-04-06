@@ -28,7 +28,7 @@ This will install the Kanister controller in the `kanister` namespace
 .. code-block:: bash
 
    # Install the Kanister operator controller using helm
-   $ helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.3.0
+   $ helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.4.0
 
 
 Building and Deploying from Source

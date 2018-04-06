@@ -29,7 +29,7 @@ backup to an AWS S3 bucket.
 
 ```bash
 # Install the Kanister Controller
-helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.3.0
+helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.4.0
 
 # Add Kanister Charts
 helm repo add kanister http://charts.kanister.io
@@ -74,7 +74,7 @@ In order to use Kanister, you will need to have the following set up:
 Kanister is based on the operator pattern. The first step to using Kanister is to deploy the Kanister controller. The Kanister controller can be configured and installed using Helm.  See [this](https://hub.kubeapps.com/charts/stable/kanister-operator) for more information on the controller's Helm chart. Once Helm is initialized, install the controller with:
 
 ```bash
-helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.3.0
+helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=v0.4.0
 ```
 
 If you wish to build and deploy the controller from source, instructions to do so can be found [here](https://docs.kanister.io/install.html#building-and-deploying-from-source).
