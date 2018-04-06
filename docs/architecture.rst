@@ -245,3 +245,18 @@ Similarly, we can also delete the backup file using the following `kanctl` comma
 
   # View the actionset
   $ kubectl --namespace kanister get actionset delete-s3backup-j4z6f-2jj9n -oyaml
+
+During execution, Kanister controller emits events to the respective ActionSets.
+In above example, the execution transitions of ActionSet `s3backup-j4z6f` can be
+seen by using the following command:
+
+.. code-block:: bash
+
+  $ kubectl --namespace kanister describe actionset s3backup-j4z6f
+  Events:
+    Type    Reason           Age   From                 Message
+    ----    ------           ----  ----                 -------
+    Normal  Started Action   23s   Kanister Controller  Executing action backup
+    Normal  Started Phase    23s   Kanister Controller  Executing phase backupToS3
+    Normal  Update Complete  19s   Kanister Controller  Updated ActionSet 's3backup-j4z6f' Status->complete
+    Normal  Ended Phase      19s   Kanister Controller  Completed phase backupToS3

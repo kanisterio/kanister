@@ -59,6 +59,10 @@ your installation.
     available logs after that. Using Point-In-Time-Recovery (PITR)
     values will be supported in an upcoming release.
 
+  * If ``kanister.s3_endpoint`` is not specified, you are using AWS S3, and the
+    S3 bucket is not in the default ``us-east-1`` region, you'll need to include
+    the bucket's region using the ``kanister.s3_region`` parameter.
+
   * More hardening and error-checking is being implemented
 
 .. note:: The ``s3_endpoint`` parameter is only required if you are using an

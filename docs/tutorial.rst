@@ -107,6 +107,16 @@ First Blueprint
         - echo /var/log/time.log
   EOF
 
+Once we create a Blueprint, we can see its events by using the following command:
+
+.. code-block:: yaml
+
+  $ kubectl --namespace kanister describe Blueprint time-log-bp
+  Events:
+    Type     Reason    Age   From                 Message
+    ----     ------    ----  ----                 -------
+    Normal   Added      4m   Kanister Controller  Added blueprint time-log-bp
+
 The next CustomResource we'll deploy is an ActionSet. An ActionSet is created
 each time you want to execute any Kanister actions. The ActionSet contains all
 the runtime information the controller needs during execution. It may contain
@@ -152,6 +162,22 @@ look at the updated status of the ActionSet and tail the controller logs.
   # check the controller log
   $ kubectl --namespace kanister get pod -l app=kanister-operator
 
+During execution, Kanister controller emits events to the respective ActionSets.
+The execution transitions of an ActionSet can be seen by using the following command:
+
+.. code-block:: bash
+
+  $ kubectl --namespace kanister describe actionset <ActionSet Name>
+  Events:
+    Type    Reason           Age   From                 Message
+    ----    ------           ----  ----                 -------
+    Normal  Started Action   23s   Kanister Controller  Executing action backup
+    Normal  Started Phase    23s   Kanister Controller  Executing phase backupToS3
+    Normal  Update Complete  19s   Kanister Controller  Updated ActionSet 'ActionSet Name' Status->complete
+    Normal  Ended Phase      19s   Kanister Controller  Completed phase backupToS3
+
+In case of an action failure, the Kanister controller will emit failure events to both
+the ActionSet and its associated Blueprint.
 
 Consuming ConfigMaps
 ====================
