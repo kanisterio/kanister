@@ -43,6 +43,7 @@ import (
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/reconcile"
 	"github.com/kanisterio/kanister/pkg/validate"
 )
 
@@ -204,12 +205,10 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 	}
 	newAS.Status.State = crv1alpha1.StateComplete
 	c.logAndSuccessEvent(fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State), "Update Complete", newAS)
-	as, err := c.crClient.ActionSets(newAS.GetNamespace()).Update(newAS)
-	if err != nil {
-		return err
-	}
-	err = validate.ActionSet(as)
-	return err
+	return reconcile.ActionSet(context.TODO(), c.crClient, newAS.GetNamespace(), newAS.GetName(), func(ras *crv1alpha1.ActionSet) error {
+		ras.Status.State = crv1alpha1.StateComplete
+		return nil
+	})
 }
 
 func (c *Controller) onUpdateBlueprint(oldBP, newBP *crv1alpha1.Blueprint) error {
@@ -341,49 +340,34 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	if err != nil {
 		return err
 	}
+	ns, name := as.GetNamespace(), as.GetName()
 	go func() {
 		for i, p := range phases {
-			log.Debugf("Executing phase: %s", p.Name())
 			c.logAndSuccessEvent(fmt.Sprintf("Executing phase %s", p.Name()), "Started Phase", as)
 			err = p.Exec(ctx)
+			var rf func(*crv1alpha1.ActionSet) error
 			if err != nil {
-				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
-				msg := fmt.Sprintf("Failed to run phase %d of action %s:", i, as.Spec.Actions[aIDX].Name)
-				c.logAndErrorEvent(msg, reason, err, as, bp)
-			}
-			// We need to refresh the actionset in case there were other updates.
-			// TODO: We should retry, backoff here to make this more robust.
-			as, getErr := c.crClient.ActionSets(as.Namespace).Get(as.GetName(), v1.GetOptions{})
-			if getErr != nil {
-				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
-				msg := fmt.Sprintf("Failed to get recent ActionSet: %s, Cause:", as.GetName())
-				c.logAndErrorEvent(msg, reason, getErr, as, bp)
-				return
-			}
-			if valErr := validate.ActionSet(as); valErr != nil {
-				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
-				c.logAndErrorEvent("Validation Failed:", reason, valErr, as, bp)
-				return
-			}
-			// This means another action in this action set failed. We bail as this is a terminal state.
-			if as.Status.State == crv1alpha1.StateFailed {
-				return
-			}
-			if err != nil {
-				as.Status.State = crv1alpha1.StateFailed
-				as.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateFailed
-				if _, err := c.crClient.ActionSets(as.GetNamespace()).Update(as); err != nil {
-					reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
-					msg := fmt.Sprintf("Failed to update %#v:", as.Status.Actions[aIDX].Phases[i])
-					c.logAndErrorEvent(msg, reason, err, as, bp)
+				rf = func(ras *crv1alpha1.ActionSet) error {
+					ras.Status.State = crv1alpha1.StateFailed
+					ras.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateFailed
+					return nil
 				}
-				return
+			} else {
+				rf = func(ras *crv1alpha1.ActionSet) error {
+					ras.Status.Actions[aIDX].Artifacts = arts
+					ras.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateComplete
+					return nil
+				}
 			}
-			as.Status.Actions[aIDX].Artifacts = arts
-			as.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateComplete
-			if _, err := c.crClient.ActionSets(as.GetNamespace()).Update(as); err != nil {
+			if rErr := reconcile.ActionSet(ctx, c.crClient, ns, name, rf); rErr != nil {
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
 				msg := fmt.Sprintf("Failed to update phase: %#v:", as.Status.Actions[aIDX].Phases[i])
+				c.logAndErrorEvent(msg, reason, rErr, as, bp)
+				return
+			}
+			if err != nil {
+				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
+				msg := fmt.Sprintf("Failed to execute phase: %#v:", as.Status.Actions[aIDX].Phases[i])
 				c.logAndErrorEvent(msg, reason, err, as, bp)
 				return
 			}
