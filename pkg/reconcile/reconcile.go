@@ -11,6 +11,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/poll"
+	"github.com/kanisterio/kanister/pkg/validate"
 )
 
 // ActionSet attempts to reconcile the modifications made by `f` with the
@@ -21,7 +22,13 @@ func ActionSet(ctx context.Context, cli crclientv1alpha1.CrV1alpha1Interface, ns
 		if err != nil {
 			return false, errors.WithStack(err)
 		}
+		if err = validate.ActionSet(as); err != nil {
+			return false, err
+		}
 		if err = f(as); err != nil {
+			return false, err
+		}
+		if err = validate.ActionSet(as); err != nil {
 			return false, err
 		}
 		_, err = cli.ActionSets(as.GetNamespace()).Update(as)
