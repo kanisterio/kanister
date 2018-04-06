@@ -58,6 +58,11 @@ func (s *ReconcileSuite) SetUpSuite(c *C) {
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "reconciletest-",
 		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				crv1alpha1.ActionSpec{},
+			},
+		},
 		Status: &crv1alpha1.ActionSetStatus{
 			Actions: []crv1alpha1.ActionStatus{
 				crv1alpha1.ActionStatus{
@@ -88,6 +93,7 @@ func (s *ReconcileSuite) TearDownSuite(c *C) {
 func (s *ReconcileSuite) TestSetFailed(c *C) {
 	ctx := context.Background()
 	err := ActionSet(ctx, s.crCli, s.namespace, s.as.GetName(), func(as *crv1alpha1.ActionSet) error {
+		as.Status.Actions[0].Phases[0].State = crv1alpha1.StateFailed
 		as.Status.State = crv1alpha1.StateFailed
 		return nil
 	})
@@ -110,6 +116,7 @@ func (s *ReconcileSuite) TestHandleConflict(c *C) {
 		go func() {
 			defer wg.Done()
 			err := ActionSet(ctx, s.crCli, s.namespace, s.as.GetName(), func(as *crv1alpha1.ActionSet) error {
+				as.Status.Actions[0].Phases[0].State = crv1alpha1.StateFailed
 				as.Status.State = crv1alpha1.StateFailed
 				return nil
 			})
