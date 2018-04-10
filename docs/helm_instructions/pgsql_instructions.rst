@@ -50,8 +50,8 @@ your installation.
 
 .. warning:: This chart is still in alpha and has known limitations including:
 
-  * Fetching logs and applying them has a timeout value of 100
-    minutes. If all logs haven't been fetched and applied in that time
+  * Fetching logs and applying them has a timeout value of 10
+    hours. If all logs haven't been fetched and applied in that time
     frame, it is possible for the database to restart with only a
     partial restore.
 
