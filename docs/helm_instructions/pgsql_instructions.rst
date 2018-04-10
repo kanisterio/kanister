@@ -50,8 +50,8 @@ your installation.
 
 .. warning:: This chart is still in alpha and has known limitations including:
 
-  * Fetching logs and applying them has a timeout value of 100
-    minutes. If all logs haven't been fetched and applied in that time
+  * Fetching logs and applying them has a timeout value of 10
+    hours. If all logs haven't been fetched and applied in that time
     frame, it is possible for the database to restart with only a
     partial restore.
 
@@ -59,14 +59,15 @@ your installation.
     available logs after that. Using Point-In-Time-Recovery (PITR)
     values will be supported in an upcoming release.
 
-  * If ``kanister.s3_endpoint`` is not specified, you are using AWS S3, and the
-    S3 bucket is not in the default ``us-east-1`` region, you'll need to include
-    the bucket's region using the ``kanister.s3_region`` parameter.
-
   * More hardening and error-checking is being implemented
 
 .. note:: The ``s3_endpoint`` parameter is only required if you are using an
   S3-compatible provider different from AWS.
+
+  If ``kanister.s3_endpoint`` is not specified, you are using AWS S3,
+  and the S3 bucket is not in the default ``us-east-1`` region, you'll
+  need to include the bucket's region using the ``kanister.s3_region``
+  parameter.
 
   If you are using an on-premises s3 provider, the endpoint specified needs be
   accessible from within your Kubernetes cluster.
