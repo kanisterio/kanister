@@ -7,12 +7,11 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-// CrV1alpha1Interface is an interface that provides pointers to access the methods of
-// ActionSetInterface and BlueprintInterface.
 type CrV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	ActionSetsGetter
 	BlueprintsGetter
+	ProfilesGetter
 }
 
 // CrV1alpha1Client is used to interact with features provided by the cr group.
@@ -20,14 +19,16 @@ type CrV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-// ActionSets returns instance of ActionSetInterface
 func (c *CrV1alpha1Client) ActionSets(namespace string) ActionSetInterface {
 	return newActionSets(c, namespace)
 }
 
-// Blueprints returns instance of BlueprintInterface
 func (c *CrV1alpha1Client) Blueprints(namespace string) BlueprintInterface {
 	return newBlueprints(c, namespace)
+}
+
+func (c *CrV1alpha1Client) Profiles(namespace string) ProfileInterface {
+	return newProfiles(c, namespace)
 }
 
 // NewForConfig creates a new CrV1alpha1Client for the given config.

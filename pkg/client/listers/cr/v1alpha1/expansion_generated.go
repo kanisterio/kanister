@@ -17,3 +17,11 @@ type BlueprintListerExpansion interface{}
 // BlueprintNamespaceListerExpansion allows custom methods to be added to
 // BlueprintNamespaceLister.
 type BlueprintNamespaceListerExpansion interface{}
+
+// ProfileListerExpansion allows custom methods to be added to
+// ProfileLister.
+type ProfileListerExpansion interface{}
+
+// ProfileNamespaceListerExpansion allows custom methods to be added to
+// ProfileNamespaceLister.
+type ProfileNamespaceListerExpansion interface{}
