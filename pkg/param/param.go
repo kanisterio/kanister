@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
@@ -25,7 +26,7 @@ type TemplateParams struct {
 	ConfigMaps   map[string]v1.ConfigMap
 	Secrets      map[string]v1.Secret
 	Time         string
-	Profile      Profile
+	Profile      *Profile
 }
 
 // StatefulSetParams are params for stateful sets.
@@ -73,7 +74,7 @@ type KeyPair struct {
 }
 
 // New function fetches and returns the desired params
-func New(ctx context.Context, cli kubernetes.Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
+func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
 	secrets, err := fetchSecrets(ctx, cli, as.Secrets)
 	if err != nil {
 		return nil, err
@@ -82,11 +83,16 @@ func New(ctx context.Context, cli kubernetes.Interface, as crv1alpha1.ActionSpec
 	if err != nil {
 		return nil, err
 	}
+	prof, err := fetchProfile(ctx, cli, crCli, as.Profile)
+	if err != nil {
+		return nil, err
+	}
 	now := time.Now().UTC()
 	tp := TemplateParams{
 		ArtifactsIn: as.Artifacts,
 		ConfigMaps:  cms,
 		Secrets:     secrets,
+		Profile:     prof,
 		Time:        now.Format(timeFormat),
 	}
 	switch strings.ToLower(as.Object.Kind) {
@@ -106,6 +112,25 @@ func New(ctx context.Context, cli kubernetes.Interface, as crv1alpha1.ActionSpec
 		return nil, errors.Errorf("Resource '%s' not supported", as.Object.Kind)
 	}
 	return &tp, nil
+}
+
+func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*Profile, error) {
+	if ref == nil {
+		return nil, nil
+	}
+	p, err := crCli.CrV1alpha1().Profiles(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	cred, err := fetchCredential(ctx, cli, p.Credential)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return &Profile{
+		Location:      p.Location,
+		Credential:    *cred,
+		SkipSSLVerify: p.SkipSSLVerify,
+	}, nil
 }
 
 func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1.Credential) (*Credential, error) {

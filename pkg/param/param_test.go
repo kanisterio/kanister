@@ -186,7 +186,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 			"my-time": "{{ .Time }}"},
 		},
 	}
-	tp, err := New(ctx, s.cli, as)
+	tp, err := New(ctx, s.cli, nil, as)
 	c.Assert(err, IsNil)
 	c.Assert(tp.ConfigMaps["myCM"].Data, DeepEquals, map[string]string{"someKey": "some-value"})
 
