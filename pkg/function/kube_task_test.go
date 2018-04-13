@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"os"
 
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
@@ -23,6 +24,7 @@ type KubeTaskSuite struct {
 
 func (s *KubeTaskSuite) SetUpSuite(c *C) {
 	s.cli = kube.NewClient()
+
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanisterdeletetest-",
@@ -31,6 +33,9 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 	cns, err := s.cli.Core().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
+	os.Setenv("POD_NAMESPACE", cns.Name)
+	os.Setenv("POD_SERVICE_ACCOUNT", "default")
+
 }
 
 func (s *KubeTaskSuite) TearDownSuite(c *C) {
@@ -42,24 +47,22 @@ func (s *KubeTaskSuite) TearDownSuite(c *C) {
 func newTaskBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"test": &crv1alpha1.BlueprintAction{
+			"test": {
 				Kind: "StatefulSet",
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "test",
 						Func: "KubeTask",
 						Args: []string{
-							"{{ .StatefulSet.Namespace }}",
 							"busybox",
 							"sleep",
 							"2",
 						},
 					},
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "test2",
 						Func: "KubeTask",
 						Args: []string{
-							"{{ .StatefulSet.Namespace }}",
 							"ubuntu:latest",
 							"sleep",
 							"2",
