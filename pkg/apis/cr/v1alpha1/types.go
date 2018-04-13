@@ -217,6 +217,12 @@ type BlueprintList struct {
 	Items           []*Blueprint `json:"items"`
 }
 
+// These names are used to query Profile API objects.
+const (
+	ProfileResourceName       = "profile"
+	ProfileResourceNamePlural = "profiles"
+)
+
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -52,6 +52,16 @@ var BlueprintResource = opkit.CustomResource{
 	Kind:    reflect.TypeOf(Blueprint{}).Name(),
 }
 
+// ProfileResource is a CRD for blueprints.
+var ProfileResource = opkit.CustomResource{
+	Name:    ProfileResourceName,
+	Plural:  ProfileResourceNamePlural,
+	Group:   ResourceGroup,
+	Version: SchemeVersion,
+	Scope:   apiextensionsv1beta1.NamespaceScoped,
+	Kind:    reflect.TypeOf(Profile{}).Name(),
+}
+
 // Kind takes an unqualified kind and returns back a Group qualified GroupKind
 func Kind(kind string) schema.GroupKind {
 	return SchemeGroupVersion.WithKind(kind).GroupKind()
@@ -69,6 +79,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ActionSetList{},
 		&Blueprint{},
 		&BlueprintList{},
+		&Profile{},
+		&ProfileList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
