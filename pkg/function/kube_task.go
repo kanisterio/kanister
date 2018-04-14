@@ -30,11 +30,11 @@ func generateJobName(jobPrefix string) string {
 }
 
 func (*kubeTaskFunc) Exec(ctx context.Context, args ...string) error {
-	if len(args) <= 2 {
-		return errors.Errorf("kubeTaskFunc requires at least 2 arguments. Got: %#v", args)
+	if len(args) <= 3 {
+		return errors.Errorf("kubeTaskFunc requires at least 3 arguments. Got: %#v", args)
 	}
 
-	image, command := args[0], args[1:]
+	image, command := args[1], args[2:]
 	namespace, err := kube.GetControllerNamespace()
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get controller namespace")

@@ -54,6 +54,7 @@ func newTaskBlueprint() *crv1alpha1.Blueprint {
 						Name: "test",
 						Func: "KubeTask",
 						Args: []string{
+							"namespace",
 							"busybox",
 							"sleep",
 							"2",
@@ -63,6 +64,7 @@ func newTaskBlueprint() *crv1alpha1.Blueprint {
 						Name: "test2",
 						Func: "KubeTask",
 						Args: []string{
+							"test-namespace",
 							"ubuntu:latest",
 							"sleep",
 							"2",

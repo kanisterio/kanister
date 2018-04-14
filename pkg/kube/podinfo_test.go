@@ -26,7 +26,7 @@ func (s *PodInfoSuite) TestGetControllerNamespaceFromEnv(c *C) {
 
 func (s *PodInfoSuite) TestGetControllerNamespaceFromFile(c *C) {
 	if _, err := os.Stat(nsFile); os.IsNotExist(err) {
-		c.Skip("Nmasepace file is not presented. Skipping")
+		c.Skip("Namespace file is not presented. Skipping")
 	}
 	nsFromFile, err := ioutil.ReadFile(nsFile)
 	c.Assert(err, IsNil)
