@@ -38,7 +38,6 @@ type Clientset struct {
 	discovery *fakediscovery.FakeDiscovery
 }
 
-// Discovery returns an instance of FakeDiscovery struct that implements discovery.DiscoveryInterface
 func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 	return c.discovery
 }

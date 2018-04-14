@@ -33,10 +33,20 @@ func (*kubeTaskFunc) Exec(ctx context.Context, args ...string) error {
 	if len(args) <= 3 {
 		return errors.Errorf("kubeTaskFunc requires at least 3 arguments. Got: %#v", args)
 	}
-	namespace, image, command := args[0], args[1], args[2:]
+
+	image, command := args[1], args[2:]
+	namespace, err := kube.GetControllerNamespace()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get controller namespace")
+	}
+
 	jobName := generateJobName(jobPrefix)
 	clientset := kube.NewClient()
-	job, err := kube.NewJob(clientset, jobName, namespace, image, command...)
+	serviceAccount, err := kube.GetControllerServiceAccount(clientset)
+	if err != nil {
+		return errors.Wrap(err, "Failed to get Controller Service Account")
+	}
+	job, err := kube.NewJob(clientset, jobName, namespace, serviceAccount, image, command...)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create job")
 	}

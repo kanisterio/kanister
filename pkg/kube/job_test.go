@@ -20,6 +20,7 @@ var _ = Suite(&JobSuite{})
 const testJobName = "kanister-test-job"
 const testJobNamespace = "default"
 const testJobImage = "busybox"
+const testJobServiceAccount = "default"
 
 func (s *JobSuite) SetUpSuite(c *C) {
 	c.Skip("Too slow")
@@ -29,7 +30,7 @@ func (s *JobSuite) SetUpSuite(c *C) {
 func (s *JobSuite) TestJobsNoName(c *C) {
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, "", "sleep", "10")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, "", "sleep", "10")
 	c.Assert(job, IsNil)
 	c.Assert(err, NotNil)
 }
@@ -38,7 +39,7 @@ func (s *JobSuite) TestJobsNoName(c *C) {
 func (s *JobSuite) TestJobsNoImage(c *C) {
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, "", "sleep", "10")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, "", "sleep", "10")
 	c.Assert(job, IsNil)
 	c.Assert(err, NotNil)
 }
@@ -47,14 +48,14 @@ func (s *JobSuite) TestJobsNoImage(c *C) {
 func (s *JobSuite) TestJobsNoNamespace(c *C) {
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, "", testJobImage, "sleep", "10")
+	job, err := NewJob(clientset, testJobName, "", testJobServiceAccount, testJobImage, "sleep", "10")
 	c.Assert(job.namespace, Equals, "default")
 	c.Assert(err, IsNil)
 }
 
 // Verifies that the Job object is not created if the clientset is nil.
 func (s *JobSuite) TestJobsNoClientset(c *C) {
-	job, err := NewJob(nil, testJobName, testJobNamespace, testJobImage, "sleep", "10")
+	job, err := NewJob(nil, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, "sleep", "10")
 	c.Assert(job, IsNil)
 	c.Assert(err, NotNil)
 }
@@ -67,7 +68,7 @@ func (s *JobSuite) TestJobsNoCommand(c *C) {
 	c.Assert(job, IsNil)
 	c.Assert(err, NotNil)
 
-	job, err = NewJob(clientset, testJobName, testJobNamespace, testJobImage)
+	job, err = NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage)
 	c.Assert(job, IsNil)
 	c.Assert(err, NotNil)
 }
@@ -111,7 +112,7 @@ func (s *JobSuite) TestJobsBasic(c *C) {
 
 	images := [2]string{"ubuntu:latest", "perl"}
 	for _, image := range images {
-		job, err := NewJob(clientset, testJobName, testJobNamespace, image, "sleep", "2")
+		job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, image, "sleep", "2")
 
 		c.Assert(job, NotNil)
 		c.Assert(err, IsNil)
@@ -138,7 +139,7 @@ func (s *JobSuite) TestJobsDeleteWhileRunning(c *C) {
 	namespace := "default"
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobImage, "sleep", "300")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, "sleep", "300")
 
 	c.Assert(job, NotNil)
 	c.Assert(err, IsNil)
@@ -163,7 +164,7 @@ func cancelLater(cancel func()) {
 func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobImage, "sleep", "300")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, "sleep", "300")
 
 	c.Assert(job, NotNil)
 	c.Assert(err, IsNil)
@@ -186,7 +187,7 @@ func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
 func (s *JobSuite) TestJobsWaitOnNonExistentJob(c *C) {
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobImage, "sleep", "300")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, "sleep", "300")
 
 	c.Assert(job, NotNil)
 	c.Assert(err, IsNil)

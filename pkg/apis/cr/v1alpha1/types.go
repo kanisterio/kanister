@@ -89,6 +89,9 @@ type ActionSpec struct {
 	ConfigMaps map[string]ObjectReference `json:"configMaps"`
 	// Secrets that we'll get and pass into the blueprint.
 	Secrets map[string]ObjectReference `json:"secrets"`
+	// Profile is use to specify the location where store artifacts and the
+	// credentials authorized to  access them.
+	Profile *ObjectReference `json:"profile"`
 }
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
@@ -212,4 +215,73 @@ type BlueprintList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 	Items           []*Blueprint `json:"items"`
+}
+
+// These names are used to query Profile API objects.
+const (
+	ProfileResourceName       = "profile"
+	ProfileResourceNamePlural = "profiles"
+)
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// Profile
+type Profile struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata"`
+	Location          Location   `json:"location"`
+	Credential        Credential `json:"credential"`
+	SkipSSLVerify     bool       `json:"skipSSLVerify"`
+}
+
+// LocationType
+type LocationType string
+
+const (
+	LocationTypeS3Compliant LocationType = "s3Compliant"
+)
+
+// Location
+type Location struct {
+	Type        LocationType         `json:"type"`
+	S3Compliant *S3CompliantLocation `json:"s3Compliant"`
+}
+
+// S3Compliant
+type S3CompliantLocation struct {
+	Bucket   string `json:"bucket"`
+	Endpoint string `json:"endpoint"`
+	Prefix   string `json:"prefix"`
+	Region   string `json:"region"`
+}
+
+// CredentialType
+type CredentialType string
+
+const (
+	CredentialTypeKeyPair CredentialType = "keyPair"
+)
+
+// Credential
+type Credential struct {
+	Type    CredentialType `json:"type"`
+	KeyPair *KeyPair       `json:"keyPair"`
+}
+
+// KeyPair
+type KeyPair struct {
+	IDField     string          `json:"idField"`
+	SecretField string          `json:"secretField"`
+	Secret      ObjectReference `json:"secret"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ProfileList is the definition of a list of Profiles
+type ProfileList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+	Items           []*Profile `json:"items"`
 }

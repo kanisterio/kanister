@@ -11,6 +11,7 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -185,7 +186,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 			"my-time": "{{ .Time }}"},
 		},
 	}
-	tp, err := New(ctx, s.cli, as)
+	tp, err := New(ctx, s.cli, nil, as)
 	c.Assert(err, IsNil)
 	c.Assert(tp.ConfigMaps["myCM"].Data, DeepEquals, map[string]string{"someKey": "some-value"})
 
@@ -194,4 +195,46 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 	c.Assert(arts["my-art"], DeepEquals, crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": "some-value"}})
 	_, err = time.Parse(timeFormat, arts["my-time"].KeyValue["my-time"])
 	c.Assert(err, IsNil)
+}
+
+func (s *ParamsSuite) TestfetchKVSecretCredential(c *C) {
+	ctx := context.Background()
+	for _, tc := range []struct {
+		secret  *v1.Secret
+		kvs     *crv1alpha1.KeyPair
+		checker Checker
+		cred    *Credential
+	}{
+		{
+			secret:  &v1.Secret{},
+			kvs:     &crv1alpha1.KeyPair{},
+			cred:    nil,
+			checker: NotNil,
+		},
+		{
+			secret: &v1.Secret{
+				Data: map[string][]byte{
+					"myKey":   []byte("foo"),
+					"myValue": []byte("bar"),
+				},
+			},
+			kvs: &crv1alpha1.KeyPair{
+				IDField:     "myKey",
+				SecretField: "myValue",
+				Secret:      crv1alpha1.ObjectReference{},
+			},
+			cred: &Credential{
+				KeyPair: &KeyPair{
+					ID:     "foo",
+					Secret: "bar",
+				},
+			},
+			checker: IsNil,
+		},
+	} {
+		cli := fake.NewSimpleClientset(tc.secret)
+		cred, err := fetchKeyPairCredential(ctx, cli, tc.kvs)
+		c.Assert(err, tc.checker)
+		c.Assert(cred, DeepEquals, tc.cred)
+	}
 }

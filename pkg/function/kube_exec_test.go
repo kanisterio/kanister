@@ -104,7 +104,7 @@ func (s *KubeExecTest) TestKubeExec(c *C) {
 			Namespace: s.namespace,
 		},
 	}
-	tp, err := param.New(ctx, s.cli, as)
+	tp, err := param.New(ctx, s.cli, nil, as)
 	c.Assert(err, IsNil)
 
 	action := "echo"
