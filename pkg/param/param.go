@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
@@ -74,7 +74,7 @@ type KeyPair struct {
 }
 
 // New function fetches and returns the desired params
-func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
+func New(ctx context.Context, cli kubernetes.Interface, crCli crclientv1alpha1.CrV1alpha1Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
 	secrets, err := fetchSecrets(ctx, cli, as.Secrets)
 	if err != nil {
 		return nil, err
@@ -114,11 +114,11 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 	return &tp, nil
 }
 
-func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*Profile, error) {
+func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli crclientv1alpha1.CrV1alpha1Interface, ref *crv1alpha1.ObjectReference) (*Profile, error) {
 	if ref == nil {
 		return nil, nil
 	}
-	p, err := crCli.CrV1alpha1().Profiles(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+	p, err := crCli.Profiles(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
