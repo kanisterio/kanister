@@ -224,6 +224,7 @@ func (s *ParamsSuite) TestfetchKVSecretCredential(c *C) {
 				Secret:      crv1alpha1.ObjectReference{},
 			},
 			cred: &Credential{
+				Type: CredentialTypeKeyPair,
 				KeyPair: &KeyPair{
 					ID:     "foo",
 					Secret: "bar",
