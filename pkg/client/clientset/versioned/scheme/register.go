@@ -8,14 +8,8 @@ import (
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
-// Scheme is a variable that holds the new scheme returned by function NewScheme().
 var Scheme = runtime.NewScheme()
-
-// Codecs provides methods for retrieving codecs and serializers for specific
-// versions and content types.
 var Codecs = serializer.NewCodecFactory(Scheme)
-
-// ParameterCodec is capable of transforming url values into versioned objects and back.
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 
 func init() {

@@ -65,7 +65,6 @@ func New(c *rest.Config) *Controller {
 // StartWatch watches for instances of ActionSets and Blueprints acts on them.
 func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 	crClient, err := crclientv1alpha1.NewForConfig(c.config)
-	//crClient, err := crv1alpha1.NewForConfig(c.config)
 	if err != nil {
 		return errors.Wrap(err, "failed to get a CustomResource client")
 	}
@@ -326,7 +325,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	tp, err := param.New(ctx, c.clientset, action)
+	tp, err := param.New(ctx, c.clientset, c.crClient, action)
 	if err != nil {
 		return err
 	}

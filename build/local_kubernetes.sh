@@ -15,6 +15,7 @@ export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true
 export KUBECONFIG=$HOME/.kube/config
 export KUBE_VERSION=${KUBE_VERSION:-v1.8.0}
+export MINIKUBE_VERSION=${MINIKUBE_VERSION:-v0.25.1}
 declare -a REQUIRED_BINS=( iptables docker sudo jq )
 
 if command -v apt-get
@@ -44,30 +45,28 @@ check_or_get_dependencies() {
 }
 
 start_minikube() {
-
     if ! command -v minikube
     then
         get_minikube
     fi
-
-    minikube start --vm-driver=none --mount --kubernetes-version=${KUBE_VERSION}
+    minikube start --vm-driver=none --mount --kubernetes-version=${KUBE_VERSION} --extra-config=apiserver.GenericServerRunOptions.AuthorizationMode=RBAC
     wait_for_minikube_nodes
     wait_for_pods
 }
 
 stop_minikube() {
- if !  minikube stop
- then
-     systemctl stop localkube
-     docker rm -f $(docker ps -aq --filter name=k8s)
- fi
+    if !  minikube stop
+    then
+        systemctl stop localkube
+        docker rm -f $(docker ps -aq --filter name=k8s)
+    fi
 }
 
 get_minikube() {
     check_or_get_dependencies
     mkdir $HOME/.kube || true
     touch $HOME/.kube/config
-    curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
+    curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube
     ln -sf $(pwd)/minikube /usr/bin/minikube
 }
 

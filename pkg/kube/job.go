@@ -8,6 +8,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/pkg/errors"
 )
 
 const defautlJobPodName = "kanister-job-pod"
@@ -20,12 +22,13 @@ type Job struct {
 
 	namespace string
 	name      string
+	sa        string
 
 	clientset kubernetes.Interface
 }
 
 // NewJob creates a new Job object.
-func NewJob(clientset kubernetes.Interface, jobName string, namespace string, image string, command ...string) (*Job, error) {
+func NewJob(clientset kubernetes.Interface, jobName string, namespace string, serviceAccount string, image string, command ...string) (*Job, error) {
 	if jobName == "" {
 		return nil, fmt.Errorf("Job name is required")
 	}
@@ -40,20 +43,19 @@ func NewJob(clientset kubernetes.Interface, jobName string, namespace string, im
 	}
 
 	if clientset == nil {
-		return nil, fmt.Errorf("No clientset object provided")
+		return nil, errors.New("No clientset object provided")
 	}
 
 	if len(command) == 0 || command[0] == "" {
-		return nil, fmt.Errorf("Command needs to be passed")
+		return nil, errors.New("Command needs to be passed")
 	}
 
-	return &Job{image, command, namespace, jobName, clientset}, nil
+	return &Job{image, command, namespace, jobName, serviceAccount, clientset}, nil
 }
 
 // Create creates the Job in Kubernetes.
 func (job *Job) Create() error {
 	falseVal := false
-
 	k8sJob := &batch.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: job.name,
@@ -69,6 +71,7 @@ func (job *Job) Create() error {
 					Labels: make(map[string]string),
 				},
 				Spec: v1.PodSpec{
+					ServiceAccountName: job.sa,
 					Containers: []v1.Container{
 						{
 							Name:    defaultJobPodContainer,
@@ -91,8 +94,7 @@ func (job *Job) Create() error {
 
 	newJob, err := jobsClient.Create(k8sJob)
 	if err != nil {
-		fmt.Printf("Failed to create job: %s\n", err)
-		return err
+		return errors.Wrapf(err, "Failed to create job %s", job.name)
 	}
 	job.name = newJob.Name
 	fmt.Printf("New job %s created\n", job.name)
@@ -106,18 +108,18 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 	jobsClient := batchClient.Jobs(job.namespace)
 	watch, err := jobsClient.Watch(metav1.ListOptions{LabelSelector: "job-name=" + job.name})
 	if err != nil {
-		return fmt.Errorf("Failed to create watch object: %s", err)
+		return errors.Wrap(err, "Failed to create watch object")
 	}
 
 	// Before getting into the loop of watching events, confirm that the job is actually present
 	// in Kubernetes.
 	k8sjob, err := jobsClient.Get(job.name, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("Failed to get job %s", job.name)
+		return errors.Wrapf(err, "Failed to get job %s", job.name)
 	}
 
 	if k8sjob == nil {
-		return fmt.Errorf("Couldn't find job %s", job.name)
+		return errors.Wrapf(err, "Couldn't find job %s", job.name)
 	}
 
 	events := watch.ResultChan()
@@ -125,11 +127,11 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 		select {
 		case event := <-events:
 			if event.Object == nil {
-				return fmt.Errorf("Result channel closed for Job %s", job.name)
+				return errors.Errorf("Result channel closed for Job %s", job.name)
 			}
 			k8sJob, ok := event.Object.(*batch.Job)
 			if !ok {
-				return fmt.Errorf("Invalid Job event object: %T", event.Object)
+				return errors.Errorf("Invalid Job event object: %T", event.Object)
 			}
 			conditions := k8sJob.Status.Conditions
 			for _, condition := range conditions {
@@ -138,11 +140,11 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 					return nil
 				} else if condition.Type == batch.JobFailed {
 					fmt.Printf("Job %s reported Failed\n", job.name)
-					return fmt.Errorf("Job %s failed", job.name)
+					return errors.Errorf("Job %s failed", job.name)
 				}
 			}
 		case <-ctx.Done():
-			return fmt.Errorf("Cancellation received")
+			return errors.New("Cancellation received")
 		}
 	}
 }
@@ -155,7 +157,7 @@ func (job *Job) Delete() error {
 	deletePropagation = metav1.DeletePropagationForeground
 	err := jobsClient.Delete(job.name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
-		return fmt.Errorf("Failed to delete job %s: %s", job.name, err)
+		return errors.Wrapf(err, "Failed to delete job %s: %s", job.name)
 	}
 	fmt.Printf("Deleted job %s\n", job.name)
 

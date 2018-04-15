@@ -22,7 +22,6 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,11 +32,9 @@ import (
 	"github.com/kanisterio/kanister/pkg/controller"
 	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/handler"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/resource"
 )
-
-// See https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/#accessing-the-api-from-a-pod
-const nsFile = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
 func main() {
 	ctx := context.Background()
@@ -64,8 +61,7 @@ func main() {
 	// Make sure the CRD's exist.
 	resource.CreateCustomResources(ctx, config)
 
-	// Get this this controller's namespace.
-	ns, err := ioutil.ReadFile(nsFile)
+	ns, err := kube.GetControllerNamespace()
 	if err != nil {
 		log.Fatalf("Failed to determine this pod's namespace %+v", err)
 	}
@@ -73,7 +69,7 @@ func main() {
 	// Create and start the watcher.
 	ctx, cancel := context.WithCancel(ctx)
 	c := controller.New(config)
-	err = c.StartWatch(ctx, string(ns))
+	err = c.StartWatch(ctx, ns)
 	if err != nil {
 		log.Fatalf("Failed to start controller. %+v", err)
 	}
