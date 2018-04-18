@@ -22,6 +22,7 @@ func CreateCustomResources(ctx context.Context, config *rest.Config) error {
 	resources := []opkit.CustomResource{
 		crv1alpha1.ActionSetResource,
 		crv1alpha1.BlueprintResource,
+		crv1alpha1.ProfileResource,
 	}
 	return opkit.CreateCustomResources(*opKitCTX, resources)
 }
