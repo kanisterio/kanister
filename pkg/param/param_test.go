@@ -8,12 +8,14 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
+	"k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crfake "github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
@@ -238,4 +240,99 @@ func (s *ParamsSuite) TestfetchKVSecretCredential(c *C) {
 		c.Assert(err, tc.checker)
 		c.Assert(cred, DeepEquals, tc.cred)
 	}
+}
+
+func (s *ParamsSuite) TestProfile(c *C) {
+	ss := &v1beta1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ssName",
+			Namespace: s.namespace,
+			Labels:    map[string]string{"app": "fake-app"},
+		},
+	}
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "podName",
+			Namespace: s.namespace,
+			Labels:    map[string]string{"app": "fake-app"},
+		},
+	}
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secretName",
+			Namespace: s.namespace,
+			Labels:    map[string]string{"app": "fake-app"},
+		},
+		Data: map[string][]byte{
+			"key":   []byte("myKey"),
+			"value": []byte("myValue"),
+		},
+	}
+	cli := fake.NewSimpleClientset(ss, pod, secret)
+	_, err := cli.AppsV1beta1().StatefulSets("").Get("", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	_, err = cli.CoreV1().Pods("").Get("", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	_, err = cli.CoreV1().Secrets("").Get("", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	prof := &crv1alpha1.Profile{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "profName",
+			Namespace: s.namespace,
+		},
+		Credential: crv1alpha1.Credential{
+			Type: crv1alpha1.CredentialTypeKeyPair,
+			KeyPair: &crv1alpha1.KeyPair{
+				IDField:     "key",
+				SecretField: "value",
+				Secret: crv1alpha1.ObjectReference{
+					Name:      "secretName",
+					Namespace: s.namespace,
+				},
+			},
+		},
+	}
+	as := &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "asName",
+			Namespace: s.namespace,
+		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				crv1alpha1.ActionSpec{
+					Object: crv1alpha1.ObjectReference{
+						Kind:      "StatefulSet",
+						Name:      "ssName",
+						Namespace: s.namespace,
+					},
+					Profile: &crv1alpha1.ObjectReference{},
+				},
+			},
+		},
+	}
+	crCli := crfake.NewSimpleClientset(as, prof)
+	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).Create(as)
+	c.Assert(err, IsNil)
+	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).Get("", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
+	c.Assert(err, IsNil)
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	ctx := context.Background()
+	tp, err := New(ctx, cli, crCli, as.Spec.Actions[0])
+	c.Assert(err, IsNil)
+	c.Assert(tp.Profile, NotNil)
+	c.Assert(tp.Profile, DeepEquals, &Profile{
+		Location: crv1alpha1.Location{},
+		Credential: Credential{
+			Type: CredentialTypeKeyPair,
+			KeyPair: &KeyPair{
+				ID:     "myKey",
+				Secret: "myValue",
+			},
+		},
+	})
 }
