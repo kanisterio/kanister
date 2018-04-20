@@ -52,7 +52,7 @@ func performFrom(ctx context.Context, cmd *cobra.Command, namespace string, acti
 	}
 	cli, err := crclientv1alpha1.NewForConfig(config)
 	if err != nil {
-		errors.Wrap(err, "Could not get CRD client")
+		return errors.Wrap(err, "Could not get CRD client")
 	}
 	pas, err := cli.ActionSets(namespace).Get(parentName, metav1.GetOptions{})
 	if err != nil {
