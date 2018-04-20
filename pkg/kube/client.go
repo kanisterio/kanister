@@ -6,6 +6,7 @@ import (
 	// Load the GCP plugin - required to authenticate against
 	// GKE clusters
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
