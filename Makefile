@@ -66,6 +66,8 @@ DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
 
 DEFAULT_PATH := /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
+DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
+
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
 # If you want to build AND push all containers, see the 'all-push' rule.
@@ -226,3 +228,17 @@ bin-clean:
 
 vendor-clean:
 	rm -rf vendor
+
+release-docs: docs
+	@if [ -z ${AWS_ACCESS_KEY_ID} ] || [ -z ${AWS_SECRET_ACCESS_KEY} ]; then\
+	    echo "Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. Exiting.";\
+	    exit 1;\
+	fi;\
+	
+	@if [ -f "docs/_build/html/index.html" ]; then\
+	    aws s3 sync docs/_build/html $(DOCS_RELEASE_BUCKET) --delete;\
+	    echo "Success";\
+	else\
+	    echo "No built docs found";\
+	    exit 1;\
+	fi;\
