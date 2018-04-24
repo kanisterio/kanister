@@ -1,0 +1,11 @@
+description: Kanister-enabled NoSQL document-oriented database that stores JSON-like documents with
+  dynamic schemas, simplifying the integration of data in content-driven applications.
+home: https://github.com/mongodb/mongo
+icon: https://webassets.mongodb.com/_com_assets/cms/mongodb-logo-rgb-j6w271g1xn.jpg
+maintainers:
+- email: ilya@kasten.io
+  name: Ilya Kislenko
+name: kanister-mongodb-replicaset
+sources:
+- https://github.com/mongodb/mongo
+version: 2.1.2

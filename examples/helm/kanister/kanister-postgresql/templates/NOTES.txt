@@ -1,0 +1,76 @@
+PostgreSQL can be accessed via port 5432 on the following DNS name from within your cluster:
+{{ template "postgresql.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+
+To get your user password run:
+
+    PGPASSWORD=$(kubectl get secret --namespace {{ .Release.Namespace }} {{ template "postgresql.fullname" . }} -o jsonpath="{.data.postgres-password}" | base64 --decode; echo)
+
+To connect to your database run the following command (using the env variable from above):
+
+   kubectl run --namespace {{ .Release.Namespace }} {{ template "postgresql.fullname" . }}-client --restart=Never --rm --tty -i --image postgres \
+   --env "PGPASSWORD=$PGPASSWORD" \{{- if and (.Values.networkPolicy.enabled) (not .Values.networkPolicy.allowExternal) }}
+   --labels="{{ template "postgresql.fullname" . }}-client=true" \{{- end }}
+   --command -- psql -U {{ default "postgres" .Values.postgresUser }} \
+   -h {{ template "postgresql.fullname" . }} {{ default "postgres" .Values.postgresDatabase }}
+
+{{ if and (.Values.networkPolicy.enabled) (not .Values.networkPolicy.allowExternal) }}
+Note: Since NetworkPolicy is enabled, only pods with label
+{{ template "postgresql.fullname" . }}-client=true"
+will be able to connect to this PostgreSQL cluster.
+{{- end }}
+
+To connect to your database directly from outside the K8s cluster:
+   {{- if contains "NodePort" .Values.service.type }}
+     PGHOST=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath='{.items[0].status.addresses[0].address}')
+     PGPORT=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ template "postgresql.fullname" . }} -o jsonpath='{.spec.ports[0].nodePort}')
+
+   {{- else if contains "ClusterIP" .Values.service.type }}
+     PGHOST=127.0.0.1
+     PGPORT={{ default "5432" .Values.service.port }}
+
+     # Execute the following commands to route the connection:
+     export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app={{ template "postgresql.fullname" . }}" -o jsonpath="{.items[0].metadata.name}")
+     kubectl port-forward --namespace {{ .Release.Namespace }} $POD_NAME {{ default "5432" .Values.service.port }}:{{ default "5432" .Values.service.port }}
+
+   {{- end }}
+
+This instance has been configured to use Kanister for backup and recovery.
+WALs are pushed to an S3 compliant object store as soon as they are created. A
+base backup is required before these logs are usable.
+
+To create a base backup using kanister, simply create a backup ActionSet:
+
+    $ cat << EOF | kubectl create -f -
+        apiVersion: cr.kanister.io/v1alpha1
+        kind: ActionSet
+        metadata:
+          generateName: postgres-backup-
+          namespace: {{ .Values.kanister.controller_namespace }}
+        spec:
+          actions:
+            - name: backup
+              blueprint: {{ template "postgresql.fullname" . }}-blueprint
+              object:
+                kind: Deployment
+                name: {{ template "postgresql.fullname" . }}
+                namespace: {{ .Release.Namespace }}
+    EOF
+
+Once a base backup has been taken, you can recover up to the most recent WAL
+file in the latest timeline by creating a restore ActionSet.
+
+    $ cat << EOF | kubectl create -f -
+        apiVersion: cr.kanister.io/v1alpha1
+        kind: ActionSet
+        metadata:
+          generateName: postgres-restore-
+          namespace: {{ .Values.kanister.controller_namespace }}
+        spec:
+          actions:
+            - name: restore
+              blueprint: {{ template "postgresql.fullname" . }}-blueprint
+              object:
+                kind: Deployment
+                name: {{ template "postgresql.fullname" . }}
+                namespace: {{ .Release.Namespace }}
+    EOF

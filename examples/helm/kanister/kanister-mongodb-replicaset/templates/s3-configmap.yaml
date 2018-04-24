@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "mongodb-replicaset.fullname" . }}-backup-config
+data:
+  s3_bucket: {{ required "S3 compatible bucket is required." .Values.kanister.s3_bucket |  quote }}
+  {{- if .Values.kanister.s3_verify_ssl }}
+  s3_verify_ssl: ""
+  {{- else }}
+  s3_verify_ssl: {{ "--no-verify-ssl" | quote }}
+  {{- end }}
+  {{- if .Values.kanister.s3_endpoint }}
+  s3_endpoint: {{ .Values.kanister.s3_endpoint | quote }}
+  {{- end }}

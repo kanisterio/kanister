@@ -242,3 +242,6 @@ release-docs: docs
 	    echo "No built docs found";\
 	    exit 1;\
 	fi;\
+
+release-helm:
+	@/bin/bash -c ./build/release_helm.sh

@@ -1,0 +1,84 @@
+actions:
+  backup:
+    type: Deployment
+    phases:
+    - func: KubeExec
+      name: baseBackup
+      args:
+        - "{{ .Deployment.Namespace }}"
+        - "{{ index .Deployment.Pods 0 }}"
+        - postgresql
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          # TODO: An Artifact should be created to reference this backup-base.
+          wal-e backup-push "${PGDATA}"
+  restore:
+    type: Deployment
+    phases:
+    - func: KubeExec
+      name: fetchBase
+      args:
+        - "{{ .Deployment.Namespace }}"
+        - "{{ index .Deployment.Pods 0 }}"
+        - postgresql
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          recover_dir="${PGDATA}/kanister-restore"
+          # TODO: Accept restore parameters to select a PIT and base-backup.
+          # For example, use a KeyValue Artifact and configure restore.conf.
+          # {
+          #   "base": "base_000000010000000000000004_00000040",
+          #   "type": "recovery_target_name",
+          #   "value": "myCheckpoint",
+          #   "s3_prefix": "s3://abucket/apath",
+          # }
+          wal-e backup-fetch "${recover_dir}" LATEST
+          cat << EOF > "${recover_dir}"/recovery.conf
+          restore_command = 'wal-e wal-fetch "%f" "%p"'
+          recovery_target_action = 'shutdown'
+          recovery_end_command = 'rm -fr $PGDATA/recovery.conf'
+          EOF
+          sync
+    - func: KubeTask
+      name: restartPod
+      args:
+        - "{{ .Deployment.Namespace }}"
+        - lachlanevenson/k8s-kubectl:v1.8.10
+        - sh
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -o
+        - xtrace
+        - -c
+        - |
+          # Recreate (scale down and up) the pod so it can be recreated forcing init containers
+          # to run again. One of the init containers will move the restored files to the
+          # correct data location.
+          # Need to wait for terminating pod instance to complete before
+          # scaling back up to avoid writing to the same volume from the PG shutdown sequence
+          # in the terminating pod and the restore completion init container simultaneously.
+          #
+          # TODO: Should have a kanister function to abstract the termination sync
+          # or should incorporate in any function that replaces data files under the
+          # application
+          namespace="{{ .Deployment.Namespace }}"
+          deployment="{{ .Deployment.Name }}"
+          pod="{{ index .Deployment.Pods 0 }}"
+          kubectl scale --namespace $namespace deployment $deployment --replicas=0
+          while [ ! -z "$(kubectl -n $namespace get pod | grep $pod | grep Terminating)" ]
+          do
+            sleep 1
+          done
+          kubectl scale --namespace $namespace deployment $deployment --replicas=1
