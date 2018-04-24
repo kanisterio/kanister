@@ -1,0 +1,18 @@
+# Build customization
+project_name: kanctl
+builds:
+  - main:  cmd/kanctl/main.go
+    binary: kanctl
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+
+# Archive customization
+archive:
+  format: tar.gz
+  format_overrides:
+    - goos: windows
+      format: zip

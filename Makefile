@@ -245,3 +245,6 @@ release-docs: docs
 
 release-helm:
 	@/bin/bash -c ./build/release_helm.sh
+
+release-kanctl:
+	@/bin/bash -c ./build/release_kanctl.sh
