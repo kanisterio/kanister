@@ -1,0 +1,6 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: {{ template "mongodb-replicaset.fullname" . }}-blueprint
+  namespace: {{ .Values.kanister.controller_namespace }}
+{{ .Files.Get "kanister/mongodb-blueprint.yaml" }}

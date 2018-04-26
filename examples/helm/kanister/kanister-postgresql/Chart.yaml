@@ -1,0 +1,20 @@
+appVersion: 9.6.2
+description: PostgreSQL w/ Kanister support based on stable/postgresql
+engine: gotpl
+home: https://www.postgresql.org/
+icon: https://www.postgresql.org/media/img/about/press/elephant.png
+keywords:
+- postgresql
+- postgres
+- database
+- sql
+maintainers:
+- name: depohmel
+- name: tdmanv
+name: kanister-postgresql
+sources:
+- https://github.com/kansiterio/kanister
+- https://github.com/kansiterio/blueprint-helm-charts
+- https://github.com/kubernetes/charts
+- https://github.com/docker-library/postgres
+version: 9.6.2
