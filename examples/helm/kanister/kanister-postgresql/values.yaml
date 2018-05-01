@@ -3,7 +3,7 @@ image: "kanisterio/postgres"
 ## postgres image version
 ## ref: https://hub.docker.com/r/library/postgres/tags/
 ##
-imageTag: "v0.1.0"
+imageTag: "v0.3.0"
 
 ## Specify a imagePullPolicy
 ## 'Always' if imageTag is 'latest', else set to 'IfNotPresent'
@@ -42,7 +42,7 @@ imageTag: "v0.1.0"
 postgresConfig:
   wal_level: archive
   archive_mode: on
-  archive_command: 'wal-e wal-push %p'
+  archive_command: 'envdir "${PGDATA}/env" wal-e wal-push %p'
   archive_timeout: 60
 
 ## Persist data to a persitent volume

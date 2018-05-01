@@ -54,7 +54,7 @@ spec:
                 #
                 # TODO: Currently .conf files unchanged. Include in backup in future
                 ls -d ${PGDATA}/kanister-restore/* | sed 's/kanister-restore\///' | xargs -t rm -fr
-                mv ${PGDATA}/kanister-restore/* ${PGDATA}/.
+                mv ${PGDATA}/kanister-restore/* ${PGDATA}/
                 rm -fr ${PGDATA}/kanister-restore
                 chown postgres:postgres -R ${PGDATA}/*
                 # Complete the recovery based on recovery.conf
@@ -88,7 +88,7 @@ spec:
               secretKeyRef:
                 name: {{ template "postgresql.fullname" . }}-backup-creds
                 key: s3_secret_access_key
-          - name: WALE_S3_PREFIX
+          - name: S3_BUCKET
             valueFrom:
               configMapKeyRef:
                 name: {{ template "postgresql.fullname" . }}-backup-config
@@ -145,7 +145,7 @@ spec:
             secretKeyRef:
               name: {{ template "postgresql.fullname" . }}-backup-creds
               key: s3_secret_access_key
-        - name: WALE_S3_PREFIX
+        - name: S3_BUCKET
           valueFrom:
             configMapKeyRef:
               name: {{ template "postgresql.fullname" . }}-backup-config
