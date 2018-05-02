@@ -44,7 +44,7 @@ Kubernetes cluster. It will push the controller docker image to your docker repo
    $ make build
 
    # Package the binary in a docker image and push it to your image registry
-   $ make push REGISTRY=<MY REGISTRY>
+   $ make release-controller REGISTRY=<MY REGISTRY>
 
    # Deploy the controller to your Kubernetes repo
    $ make deploy REGISTRY=<MY REGISTRY>

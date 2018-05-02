@@ -1,6 +1,10 @@
 actions:
   backup:
     type: Deployment
+    outputArtifacts:
+      manifest:
+        KeyValue:
+          path: '/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt'
     phases:
     - func: KubeExec
       name: baseBackup
@@ -13,12 +17,44 @@ actions:
         - errexit
         - -o
         - pipefail
+        - -o
+        - nounset
+        - -o
+        - xtrace
         - -c
         - |
-          # TODO: An Artifact should be created to reference this backup-base.
-          wal-e backup-push "${PGDATA}"
+          env_dir="${PGDATA}/env"
+          mkdir -p "${env_dir}"
+          env_wal_prefix="${env_dir}/WALE_S3_PREFIX"
+
+          # We check for an existing timeline. If one does not exist, we create it based on the current time.
+          if [[ ! -e "${env_wal_prefix}" ]]
+          then
+            timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
+            wale_s3_prefix="${S3_BUCKET}/${timeline}"
+            echo "${wale_s3_prefix}" > "${env_wal_prefix}"
+          fi
+
+          # Create and push a base-backup to the object store.
+          envdir "${env_dir}" wal-e backup-push "${PGDATA}"
+          backup_name=$(envdir "${env_dir}" wal-e backup-list | tail -n +2 | sort -k2 | tail -n 1 | awk '{print $1}')
+
+          # Create a manifest that references the backup we created and the current timeline.
+          s3_path="${S3_BUCKET}{{ .ArtifactsOut.manifest.KeyValue.path }}"
+          s3_cmd=(aws)
+          if [[ -n "${WALE_S3_ENDPOINT+set}" ]]
+          then
+              s3_cmd+=(--endpoint "${WALE_S3_ENDPOINT}")
+          fi
+          s3_cmd+=(s3 cp - "${s3_path}")
+          cat << EOF | ${s3_cmd[@]}
+          backup_name=${backup_name}
+          wale_s3_prefix=$(cat "${env_wal_prefix}")
+          EOF
   restore:
     type: Deployment
+    inputArtifactNames:
+      - manifest
     phases:
     - func: KubeExec
       name: fetchBase
@@ -33,18 +69,34 @@ actions:
         - pipefail
         - -c
         - |
+          # Get and parse artifact manifest to discover the timeline and the base-backup name.
+          s3_path="${S3_BUCKET}{{ .ArtifactsIn.manifest.KeyValue.path }}"
+          s3_cmd=(aws)
+          if [[ -n "${WALE_S3_ENDPOINT+set}" ]]
+          then
+              s3_cmd+=(--endpoint "${WALE_S3_ENDPOINT}")
+          fi
+          s3_cmd+=(s3 cp "${s3_path}" -)
+          backup_name=$(${s3_cmd[@]} | grep 'backup_name' | cut -d'=' -f2)
+          old_wale_prefix=$(${s3_cmd[@]} | grep 'wale_s3_prefix' | cut -d'=' -f2)
+
+          # Fetch base backup using the old WALE_S3_PREFIX.
           recover_dir="${PGDATA}/kanister-restore"
-          # TODO: Accept restore parameters to select a PIT and base-backup.
-          # For example, use a KeyValue Artifact and configure restore.conf.
-          # {
-          #   "base": "base_000000010000000000000004_00000040",
-          #   "type": "recovery_target_name",
-          #   "value": "myCheckpoint",
-          #   "s3_prefix": "s3://abucket/apath",
-          # }
-          wal-e backup-fetch "${recover_dir}" LATEST
+          wal-e --s3-prefix "${old_wale_prefix}" backup-fetch "${recover_dir}" "${backup_name}"
+
+          # Prepare the environment variable directory.
+          env_dir="${recover_dir}/env"
+          mkdir -p  "${env_dir}"
+
+          # Create a new timeline and write it to the environment variable file.
+          wale_env_file="${env_dir}/WALE_S3_PREFIX"
+          timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
+          wal_s3_prefix="${S3_BUCKET}/${timeline}"
+          echo "${wal_s3_prefix}" > "${wale_env_file}"
+
+          # Create the recovery file that will apply the WAL files.
           cat << EOF > "${recover_dir}"/recovery.conf
-          restore_command = 'wal-e wal-fetch "%f" "%p"'
+          restore_command = 'wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
           recovery_target_action = 'shutdown'
           recovery_end_command = 'rm -fr $PGDATA/recovery.conf'
           EOF

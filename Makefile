@@ -141,7 +141,7 @@ container: .container-$(DOTFILE_IMAGE) container-name
 container-name:
 	@echo "container: $(IMAGE):$(VERSION)"
 
-push: .push-$(DOTFILE_IMAGE) push-name
+release-controller: .push-$(DOTFILE_IMAGE) push-name
 .push-$(DOTFILE_IMAGE): .container-$(DOTFILE_IMAGE)
 ifeq ($(findstring gcr.io,$(REGISTRY)),gcr.io)
 	@gcloud docker -- push $(IMAGE):$(VERSION)
@@ -158,7 +158,7 @@ version:
 
 .PHONY: deploy test codegen build-dirs run clean container-clean bin-clean vendor-clean docs
 
-deploy: push .deploy-$(DOTFILE_IMAGE)
+deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 .deploy-$(DOTFILE_IMAGE):
 	@sed                        \
 	    -e 's|IMAGE|$(IMAGE)|g' \
