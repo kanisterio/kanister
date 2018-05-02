@@ -4,6 +4,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
@@ -23,8 +24,9 @@ func Execute() {
 func newRootCommand() *cobra.Command {
 	// RootCmd represents the base command when called without any subcommands
 	rootCmd := &cobra.Command{
-		Use:   "kanctl [common options...] <command>",
-		Short: "A set of helpers to help with creating ActionSets",
+		Use:     "kanctl [common options...] <command>",
+		Short:   "A set of helpers to help with creating ActionSets",
+		Version: kanister.VERSION,
 	}
 	rootCmd.PersistentFlags().StringP(namespaceFlagName, "n", "", "Override namespace obtained from kubectl context")
 	rootCmd.AddCommand(newPerformFromCommand())
