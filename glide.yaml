@@ -4,8 +4,6 @@ import:
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   vcs: git
   repo: https://github.com/GoogleCloudPlatform/google-cloud-go.git
-- package: github.com/golang/groupcache
-  version: 02826c3e79038b59d737d3b1c0a1d937f71a4433  
 - package: github.com/Masterminds/sprig
   version: v2.14.0
 - package: github.com/jpillora/backoff
@@ -35,6 +33,6 @@ import:
 - package: k8s.io/gengo
   version: 1ef560bbde5195c01629039ad3b337ce63e7b321
 - package: github.com/spf13/cobra
-  version: v0.0.1
+  version: v0.0.2
 - package: github.com/spf13/pflag
   version: v1.0.0
