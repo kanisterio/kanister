@@ -18,7 +18,7 @@ type FakeActionSets struct {
 
 var actionsetsResource = schema.GroupVersionResource{Group: "cr", Version: "v1alpha1", Resource: "actionsets"}
 
-var actionsetsKind = schema.GroupVersionKind{Group: "cr", Version: "v1alpha1", Kind: "ActionSet"}
+var actionsetsKind = schema.GroupVersionKind{Group: "cr.kanister.io", Version: "v1alpha1", Kind: "ActionSet"}
 
 // Get takes name of the actionSet, and returns the corresponding actionSet object, and an error if there is any.
 func (c *FakeActionSets) Get(name string, options v1.GetOptions) (result *v1alpha1.ActionSet, err error) {
