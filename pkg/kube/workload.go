@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jpillora/backoff"
+	"github.com/pkg/errors"
 	"k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
 	v1beta1ext "k8s.io/api/extensions/v1beta1"
@@ -81,6 +82,16 @@ func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, s
 	}
 }
 
+// DeploymentReady checks to see if the deployment has the desired number of
+// available replicas.
+func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, error) {
+	d, err := kubeCli.AppsV1beta1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	return d.Status.AvailableReplicas == *d.Spec.Replicas, nil
+}
+
 // WaitOnDeploymentReady waits for the deployment to be ready
 func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, d *v1beta1.Deployment) bool {
 	boff := backoff.Backoff{
@@ -91,16 +102,13 @@ func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, d 
 	}
 
 	for {
-		var err error
-		options := metav1.GetOptions{}
-		d, err = kubeCli.AppsV1beta1().Deployments(d.Namespace).Get(d.Name, options)
+		ok, err := DeploymentReady(ctx, kubeCli, d.GetNamespace(), d.GetName())
 		if err != nil {
 			return false
 		}
-		if d.Status.AvailableReplicas == *d.Spec.Replicas {
+		if ok {
 			return true
 		}
-
 		//Bail if we hit the max backoff
 		if boff.ForAttempt(boff.Attempt()) == boff.Max {
 			return false
@@ -173,4 +181,20 @@ func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID, labels
 		ps = append(ps, pod)
 	}
 	return ps, nil
+}
+
+func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
+	d, err := kubeCli.AppsV1beta1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Could not get Deployment %s", name)
+	}
+	d.Spec.Replicas = &replicas
+	d, err = kubeCli.AppsV1beta1().Deployments(namespace).Update(d)
+	if err != nil {
+		return errors.Wrapf(err, "Could not update Deployment %s", name)
+	}
+	if !WaitOnDeploymentReady(ctx, kubeCli, d) {
+		return errors.New(fmt.Sprintf("Failed to scale Deployment %s\n", name))
+	}
+	return nil
 }
