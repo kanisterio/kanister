@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"fmt"
 
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
@@ -15,14 +16,14 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
-type ScaleDeploymentTest struct {
+type ScaleSuite struct {
 	cli       kubernetes.Interface
 	namespace string
 }
 
-var _ = Suite(&ScaleDeploymentTest{})
+var _ = Suite(&ScaleSuite{})
 
-func (s *ScaleDeploymentTest) SetUpSuite(c *C) {
+func (s *ScaleSuite) SetUpSuite(c *C) {
 	s.cli = kube.NewClient()
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -34,39 +35,39 @@ func (s *ScaleDeploymentTest) SetUpSuite(c *C) {
 	s.namespace = cns.Name
 }
 
-func (s *ScaleDeploymentTest) TearDownSuite(c *C) {
+func (s *ScaleSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
 		s.cli.Core().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
-func newScaleDeploymentBlueprint() *crv1alpha1.Blueprint {
+func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"scaleDown": &crv1alpha1.BlueprintAction{
-				Kind: "Deployment",
+				Kind: kind,
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
-						Func: "ScaleDeployment",
+						Func: "Scale" + kind,
 						Args: []string{
-							"{{ .Deployment.Namespace }}",
-							"{{ .Deployment.Name }}",
+							fmt.Sprintf("{{ .%s.Namespace }}", kind),
+							fmt.Sprintf("{{ .%s.Name }}", kind),
 							"2",
 						},
 					},
 				},
 			},
 			"scaleUp": &crv1alpha1.BlueprintAction{
-				Kind: "Deployment",
+				Kind: kind,
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
-						Func: "ScaleDeployment",
+						Func: "Scale" + kind,
 						Args: []string{
-							"{{ .Deployment.Namespace }}",
-							"{{ .Deployment.Name }}",
-							"0",
+							fmt.Sprintf("{{ .%s.Namespace }}", kind),
+							fmt.Sprintf("{{ .%s.Name }}", kind),
+							"1",
 						},
 					},
 				},
@@ -75,7 +76,7 @@ func newScaleDeploymentBlueprint() *crv1alpha1.Blueprint {
 	}
 }
 
-func (s *ScaleDeploymentTest) TestScaleDeployment(c *C) {
+func (s *ScaleSuite) TestScaleDeployment(c *C) {
 	ctx := context.Background()
 	d := testutil.NewTestDeployment()
 	d, err := s.cli.AppsV1beta1().Deployments(s.namespace).Create(d)
@@ -96,13 +97,47 @@ func (s *ScaleDeploymentTest) TestScaleDeployment(c *C) {
 	c.Assert(err, IsNil)
 
 	for _, action := range []string{"scaleUp", "scaleDown"} {
-		phases, err := kanister.GetPhases(*newScaleDeploymentBlueprint(), action, *tp)
+		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			err := p.Exec(context.Background())
 			c.Assert(err, IsNil)
 		}
 		ok, err := kube.DeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
+		c.Assert(err, IsNil)
+		c.Assert(ok, Equals, true)
+	}
+}
+
+func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
+	ctx := context.Background()
+	ss := testutil.NewTestStatefulSet()
+	ss, err := s.cli.AppsV1beta1().StatefulSets(s.namespace).Create(ss)
+	c.Assert(err, IsNil)
+
+	ok := kube.WaitOnStatefulSetReady(ctx, s.cli, ss)
+	c.Assert(ok, Equals, true)
+
+	kind := "StatefulSet"
+	as := crv1alpha1.ActionSpec{
+		Object: crv1alpha1.ObjectReference{
+			Kind:      kind,
+			Name:      ss.GetName(),
+			Namespace: s.namespace,
+		},
+	}
+	tp, err := param.New(ctx, s.cli, nil, as)
+	c.Assert(err, IsNil)
+
+	for _, action := range []string{"scaleUp", "scaleDown"} {
+		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)
+		c.Assert(err, IsNil)
+		for _, p := range phases {
+			err := p.Exec(context.Background())
+			c.Assert(err, IsNil)
+
+		}
+		ok, err := kube.StatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 		c.Assert(err, IsNil)
 		c.Assert(ok, Equals, true)
 	}

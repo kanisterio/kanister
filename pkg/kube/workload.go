@@ -53,6 +53,16 @@ func CreateStatefulSet(ctx context.Context, cli kubernetes.Interface, namespace 
 	return cli.AppsV1beta1().StatefulSets(namespace).Create(ss)
 }
 
+// StatefulSetReady checks if a statefulset has the desired number of ready
+// replicas.
+func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, error) {
+	ss, err := kubeCli.AppsV1beta1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return false, errors.Wrapf(err, "could not get StatefulSet{Namespace: %s, Name: %s}", namespace, name)
+	}
+	return ss.Status.ReadyReplicas == *ss.Spec.Replicas, nil
+}
+
 // WaitOnStatefulSetReady waits for the stateful set to be ready
 func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, ss *v1beta1.StatefulSet) bool {
 	boff := backoff.Backoff{
@@ -63,17 +73,13 @@ func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, s
 	}
 
 	for {
-		var err error
-		options := metav1.GetOptions{}
-		ss, err = kubeCli.AppsV1beta1().StatefulSets(ss.Namespace).Get(ss.Name, options)
+		ok, err := StatefulSetReady(ctx, kubeCli, ss.GetNamespace(), ss.GetName())
 		if err != nil {
 			return false
 		}
-
-		if ss.Status.ReadyReplicas == *ss.Spec.Replicas {
+		if ok {
 			return true
 		}
-
 		// Bail if we hit the max backoff
 		if boff.ForAttempt(boff.Attempt()) == boff.Max {
 			return false
@@ -181,6 +187,22 @@ func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID, labels
 		ps = append(ps, pod)
 	}
 	return ps, nil
+}
+
+func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespace string, statefulSetName string, scaleNumber int32) error {
+	ss, err := kubeCli.AppsV1beta1().StatefulSets(namespace).Get(statefulSetName, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Could not get Statefulset %s", statefulSetName)
+	}
+	ss.Spec.Replicas = &scaleNumber
+	ss, err = kubeCli.AppsV1beta1().StatefulSets(namespace).Update(ss)
+	if err != nil {
+		return errors.Wrapf(err, "Could not update Statefulset %s", statefulSetName)
+	}
+	if !WaitOnStatefulSetReady(ctx, kubeCli, ss) {
+		return errors.New(fmt.Sprintf("Failed to scale Statefulset %s\n", statefulSetName))
+	}
+	return nil
 }
 
 func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
