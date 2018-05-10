@@ -4,9 +4,10 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/pkg/errors"
 )
 
 func init() {

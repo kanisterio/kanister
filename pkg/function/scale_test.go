@@ -44,6 +44,22 @@ func (s *ScaleSuite) TearDownSuite(c *C) {
 func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"echoHello": &crv1alpha1.BlueprintAction{
+				Kind: kind,
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testScale",
+						Func: "KubeExec",
+						Args: []string{
+							fmt.Sprintf("{{ .%s.Namespace }}", kind),
+							fmt.Sprintf("{{ index .%s.Pods 1 }}", kind),
+							fmt.Sprintf("{{ index .%s.Containers 0 0 }}", kind),
+							"echo",
+							"hello",
+						},
+					},
+				},
+			},
 			"scaleDown": &crv1alpha1.BlueprintAction{
 				Kind: kind,
 				Phases: []crv1alpha1.BlueprintPhase{
@@ -53,7 +69,7 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 						Args: []string{
 							fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							fmt.Sprintf("{{ .%s.Name }}", kind),
-							"2",
+							"0",
 						},
 					},
 				},
@@ -67,7 +83,7 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 						Args: []string{
 							fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							fmt.Sprintf("{{ .%s.Name }}", kind),
-							"1",
+							"2",
 						},
 					},
 				},
@@ -79,24 +95,32 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 func (s *ScaleSuite) TestScaleDeployment(c *C) {
 	ctx := context.Background()
 	d := testutil.NewTestDeployment()
+	d.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
+		PreStop: &v1.Handler{
+			Exec: &v1.ExecAction{
+				Command: []string{"sleep", "30"},
+			},
+		},
+	}
+
 	d, err := s.cli.AppsV1beta1().Deployments(s.namespace).Create(d)
 	c.Assert(err, IsNil)
 
-	ok := kube.WaitOnDeploymentReady(ctx, s.cli, d)
-	c.Assert(ok, Equals, true)
+	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
+	c.Assert(err, IsNil)
 
 	kind := "Deployment"
 	as := crv1alpha1.ActionSpec{
 		Object: crv1alpha1.ObjectReference{
 			Kind:      kind,
-			Name:      d.GetName(),
 			Namespace: s.namespace,
+			Name:      d.GetName(),
 		},
 	}
-	tp, err := param.New(ctx, s.cli, nil, as)
-	c.Assert(err, IsNil)
+	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
+		tp, err := param.New(ctx, s.cli, nil, as)
+		c.Assert(err, IsNil)
 
-	for _, action := range []string{"scaleUp", "scaleDown"} {
 		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
@@ -107,16 +131,27 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 		c.Assert(err, IsNil)
 		c.Assert(ok, Equals, true)
 	}
+
+	pods, err := s.cli.CoreV1().Pods(s.namespace).List(metav1.ListOptions{})
+	c.Assert(err, IsNil)
+	c.Assert(pods.Items, HasLen, 0)
 }
 
 func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 	ctx := context.Background()
 	ss := testutil.NewTestStatefulSet()
+	ss.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
+		PreStop: &v1.Handler{
+			Exec: &v1.ExecAction{
+				Command: []string{"sleep", "30"},
+			},
+		},
+	}
 	ss, err := s.cli.AppsV1beta1().StatefulSets(s.namespace).Create(ss)
 	c.Assert(err, IsNil)
 
-	ok := kube.WaitOnStatefulSetReady(ctx, s.cli, ss)
-	c.Assert(ok, Equals, true)
+	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
+	c.Assert(err, IsNil)
 
 	kind := "StatefulSet"
 	as := crv1alpha1.ActionSpec{
@@ -126,10 +161,11 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 			Namespace: s.namespace,
 		},
 	}
-	tp, err := param.New(ctx, s.cli, nil, as)
-	c.Assert(err, IsNil)
 
-	for _, action := range []string{"scaleUp", "scaleDown"} {
+	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
+		tp, err := param.New(ctx, s.cli, nil, as)
+		c.Assert(err, IsNil)
+
 		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
@@ -140,5 +176,13 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		ok, err := kube.StatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 		c.Assert(err, IsNil)
 		c.Assert(ok, Equals, true)
+	}
+
+	pods, err := s.cli.CoreV1().Pods(s.namespace).List(metav1.ListOptions{})
+	c.Assert(err, IsNil)
+	for _, pod := range pods.Items {
+		for _, cs := range pod.Status.ContainerStatuses {
+			c.Assert(cs.State.Terminated, NotNil)
+		}
 	}
 }

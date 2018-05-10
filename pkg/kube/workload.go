@@ -3,24 +3,19 @@ package kube
 import (
 	"context"
 	"fmt"
-	"strings"
-	"time"
 
-	"github.com/jpillora/backoff"
 	"github.com/pkg/errors"
 	"k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
 	v1beta1ext "k8s.io/api/extensions/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-)
 
-const (
-	workloadMaxBackoff = 10 * time.Minute
-	workloadMinBackoff = 10 * time.Millisecond
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 // CreateConfigMap creates a configmap set from a yaml spec.
@@ -60,32 +55,25 @@ func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespa
 	if err != nil {
 		return false, errors.Wrapf(err, "could not get StatefulSet{Namespace: %s, Name: %s}", namespace, name)
 	}
-	return ss.Status.ReadyReplicas == *ss.Spec.Replicas, nil
+	if ss.Status.ReadyReplicas != *ss.Spec.Replicas {
+		return false, nil
+	}
+	pods, err := FetchRunningPods(kubeCli, namespace, ss.GetUID())
+	if err != nil {
+		return false, err
+	}
+	return len(pods) == int(*ss.Spec.Replicas), nil
 }
 
 // WaitOnStatefulSetReady waits for the stateful set to be ready
-func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, ss *v1beta1.StatefulSet) bool {
-	boff := backoff.Backoff{
-		Factor: 2,
-		Jitter: false,
-		Min:    workloadMinBackoff,
-		Max:    workloadMaxBackoff,
-	}
-
-	for {
-		ok, err := StatefulSetReady(ctx, kubeCli, ss.GetNamespace(), ss.GetName())
-		if err != nil {
-			return false
+func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) error {
+	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		ok, err := StatefulSetReady(ctx, kubeCli, namespace, name)
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			return false, nil
 		}
-		if ok {
-			return true
-		}
-		// Bail if we hit the max backoff
-		if boff.ForAttempt(boff.Attempt()) == boff.Max {
-			return false
-		}
-		time.Sleep(boff.Duration())
-	}
+		return ok, err
+	})
 }
 
 // DeploymentReady checks to see if the deployment has the desired number of
@@ -93,61 +81,41 @@ func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, s
 func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, error) {
 	d, err := kubeCli.AppsV1beta1().Deployments(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
+		return false, errors.Wrapf(err, "could not get Deployment{Namespace: %s, Name: %s}", namespace, name)
+	}
+	if d.Status.AvailableReplicas != *d.Spec.Replicas {
+		return false, nil
+	}
+	rs, err := FetchReplicaSet(kubeCli, namespace, d.GetUID())
+	if err != nil {
 		return false, err
 	}
-	return d.Status.AvailableReplicas == *d.Spec.Replicas, nil
+	pods, err := FetchRunningPods(kubeCli, namespace, rs.GetUID())
+	if err != nil {
+		return false, err
+	}
+	return len(pods) == int(d.Status.AvailableReplicas), nil
 }
 
 // WaitOnDeploymentReady waits for the deployment to be ready
-func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, d *v1beta1.Deployment) bool {
-	boff := backoff.Backoff{
-		Factor: 2,
-		Jitter: false,
-		Min:    workloadMinBackoff,
-		Max:    workloadMaxBackoff,
-	}
-
-	for {
-		ok, err := DeploymentReady(ctx, kubeCli, d.GetNamespace(), d.GetName())
-		if err != nil {
-			return false
+func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) error {
+	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		ok, err := DeploymentReady(ctx, kubeCli, namespace, name)
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			return false, nil
 		}
-		if ok {
-			return true
-		}
-		//Bail if we hit the max backoff
-		if boff.ForAttempt(boff.Attempt()) == boff.Max {
-			return false
-		}
-		time.Sleep(boff.Duration())
-	}
+		return ok, err
+	})
 }
 
-// We omit helm specific labels.
-var labelBlackList = map[string]struct{}{
-	"chart":    struct{}{},
-	"heritage": struct{}{},
-	"release":  struct{}{},
-}
+var errNotFound = fmt.Errorf("not found")
 
-func labelSelector(labels map[string]string) string {
-	ls := make([]string, 0, len(labels))
-	for k, v := range labels {
-		if _, ok := labelBlackList[k]; ok {
-			continue
-		}
-		ls = append(ls, fmt.Sprintf("%s=%s", k, v))
-	}
-	return strings.Join(ls, ",")
-}
-
-// FetchReplicaSet fetches the replicaset matching the specified labels and owner UID
-func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, labels map[string]string) (*v1beta1ext.ReplicaSet, error) {
-	sel := labelSelector(labels)
-	opts := metav1.ListOptions{LabelSelector: sel}
+// FetchReplicaSet fetches the replicaset matching the specified owner UID
+func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID) (*v1beta1ext.ReplicaSet, error) {
+	opts := metav1.ListOptions{}
 	rss, err := cli.Extensions().ReplicaSets(namespace).List(opts)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Could not list ReplicaSets")
 	}
 	for _, rs := range rss.Items {
 		// We ignore ReplicaSets without a single owner.
@@ -158,22 +126,17 @@ func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, 
 		if rs.OwnerReferences[0].UID != uid {
 			continue
 		}
-		// We ignore ReplicaSets that have been scaled down.
-		if rs.Status.Replicas == 0 {
-			continue
-		}
 		return &rs, nil
 	}
-	return nil, fmt.Errorf("Could not find a single replicaset for deployment")
+	return nil, errors.Wrap(errNotFound, "Could not find a ReplicaSet for Deployment")
 }
 
-// FetchPods fetches the running pods matching the specified labels and owner UID
-func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID, labels map[string]string) ([]v1.Pod, error) {
-	sel := labelSelector(labels)
-	opts := metav1.ListOptions{LabelSelector: sel}
+// FetchRunningPods fetches the running pods matching the specified owner UID
+func FetchRunningPods(cli kubernetes.Interface, namespace string, uid types.UID) ([]v1.Pod, error) {
+	opts := metav1.ListOptions{}
 	pods, err := cli.Core().Pods(namespace).List(opts)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Could not list Pods")
 	}
 	ps := make([]v1.Pod, 0, len(pods.Items))
 	for _, pod := range pods.Items {
@@ -189,34 +152,28 @@ func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID, labels
 	return ps, nil
 }
 
-func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespace string, statefulSetName string, scaleNumber int32) error {
-	ss, err := kubeCli.AppsV1beta1().StatefulSets(namespace).Get(statefulSetName, metav1.GetOptions{})
+func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
+	ss, err := kubeCli.AppsV1beta1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Could not get Statefulset %s", statefulSetName)
+		return errors.Wrapf(err, "Could not get Statefulset{Namespace %s, Name: %s}", namespace, name)
 	}
-	ss.Spec.Replicas = &scaleNumber
+	ss.Spec.Replicas = &replicas
 	ss, err = kubeCli.AppsV1beta1().StatefulSets(namespace).Update(ss)
 	if err != nil {
-		return errors.Wrapf(err, "Could not update Statefulset %s", statefulSetName)
+		return errors.Wrapf(err, "Could not update Statefulset{Namespace %s, Name: %s}", namespace, name)
 	}
-	if !WaitOnStatefulSetReady(ctx, kubeCli, ss) {
-		return errors.New(fmt.Sprintf("Failed to scale Statefulset %s\n", statefulSetName))
-	}
-	return nil
+	return WaitOnStatefulSetReady(ctx, kubeCli, namespace, name)
 }
 
 func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
 	d, err := kubeCli.AppsV1beta1().Deployments(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Could not get Deployment %s", name)
+		return errors.Wrapf(err, "Could not get Deployment{Namespace %s, Name: %s}", namespace, name)
 	}
 	d.Spec.Replicas = &replicas
 	d, err = kubeCli.AppsV1beta1().Deployments(namespace).Update(d)
 	if err != nil {
-		return errors.Wrapf(err, "Could not update Deployment %s", name)
+		return errors.Wrapf(err, "Could not update Deployment{Namespace %s, Name: %s}", namespace, name)
 	}
-	if !WaitOnDeploymentReady(ctx, kubeCli, d) {
-		return errors.New(fmt.Sprintf("Failed to scale Deployment %s\n", name))
-	}
-	return nil
+	return WaitOnDeploymentReady(ctx, kubeCli, namespace, name)
 }
