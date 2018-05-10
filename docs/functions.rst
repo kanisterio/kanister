@@ -49,6 +49,23 @@ The arguments are:
 #. `container`
 #. [`command`]
 
+KubeExecAll
+-----------
+
+KubeExecAll is similar to running KubeExec on multiple containers on
+multiple pods in parallel.
+
+It requires at least four arguments. The first three arguments are used to
+determine one or more containers to exec into. The remaining arguments are grouped and
+executed as a command.
+
+The arguments are:
+
+#. `namespace`
+#. `pod(s)`
+#. `container(s)`
+#. [`command`]
+
 KubeTask
 ++++++++
 
@@ -61,6 +78,37 @@ KubeTask takes the following three arguments:
 #. `image`
 #. [`command`]
 
+ScaleDeployment
+---------------
+
+ScaleDeployment is used to scale up or scale down a deployment.
+It is similar to running
+
+.. code-block:: bash
+
+  `kubectl scale deployment <DEPLOYMENT-NAME> --replicas=<NUMBER OF REPLICAS> --namespace <NAMESPACE>
+
+It requires the following three arguments:
+
+#. `namespace`
+#. `deployment name`
+#. `number of replicas`
+
+ScaleStatefulSet
+----------------
+
+ScaleStatefulSet is used to scale up or scale down a stateful-set.
+It is similar to running
+
+.. code-block:: bash
+
+  `kubectl scale statefulsets <STATEFUL-SET-NAME> --replicas=<NUMBER OF REPLICAS> --namespace <NAMESPACE>
+
+It requires the following three arguments:
+
+#. `namespace`
+#. `statefulset name`
+#. `number of replicas`
 
 Registering Functions
 ---------------------
