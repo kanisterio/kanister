@@ -11,6 +11,7 @@ readonly TMP_DIR=$(mktemp -d /tmp/kanister_build.XXXX);
 
 release_helm_charts() {
     local chart_path=${1:?"Helm chart is not specified"}
+    local version=${2:?"chart version not specified"}
     local package_folder=${TMP_DIR}/helm_package
 
     if [[ -d ${package_folder} ]]
@@ -21,7 +22,7 @@ release_helm_charts() {
     mkdir ${package_folder}
     helm init --client-only
     helm dep update ${chart_path}
-    local out=$(helm package ${chart_path} -d ${package_folder})
+    local out=$(helm package ${chart_path} --version ${version} -d ${package_folder})
     [[ ${out} =~ ^.*/(.*\.tgz)$ ]]
     local chart_tar=${BASH_REMATCH[1]}
     local repo_args=""
@@ -47,11 +48,12 @@ release_helm_charts() {
 }
 
 main() {
+    version=${1:?"chart version not specified"}
     local -a kanister_charts=( "kanister-mongodb-replicaset" "kanister-mysql" "kanister-postgresql")
     for chart_name in "${kanister_charts[@]}"
     do
-        release_helm_charts examples/helm/kanister/${chart_name}
+        release_helm_charts examples/helm/kanister/${chart_name} "${version}"
     done
 }
 
-main
+main $@
