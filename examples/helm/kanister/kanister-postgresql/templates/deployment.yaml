@@ -57,14 +57,13 @@ spec:
                 mv ${PGDATA}/kanister-restore/* ${PGDATA}/
                 rm -fr ${PGDATA}/kanister-restore
                 chown postgres:postgres -R ${PGDATA}/*
-                # Complete the recovery based on recovery.conf
-                # Currently applies all available logs until done, first error, or timeout
-                # Don't want to hit timeout so make really long. Currently 10hrs
+                # Complete the recovery based on recovery.conf.
+                # The timeout for applying the WALs is currently 10 hours.
+                # Once the WALs have been applied, we shutdown the database.
                 cat ${PGDATA}/recovery.conf
                 PG_CTL="$(which pg_ctl)"
                 su - postgres --preserve-environment -c "${PG_CTL} -D ${PGDATA} -w start -t 36000"
-                # Should have recovered to recovery.conf settings. Current version instructs
-                # postgress to shutdown when recovery is complete
+                su - postgres --preserve-environment -c "${PG_CTL} -D ${PGDATA} -w stop -t 300 --mode fast"
             fi
           env:
           - name: POSTGRES_USER
