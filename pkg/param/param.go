@@ -200,7 +200,7 @@ func fetchStatefulSetParams(ctx context.Context, cli kubernetes.Interface, names
 		Pods:       []string{},
 		Containers: [][]string{},
 	}
-	pods, err := kube.FetchPods(cli, namespace, ss.UID, ss.GetLabels())
+	pods, err := kube.FetchRunningPods(cli, namespace, ss.UID)
 	if err != nil {
 		return nil, err
 	}
@@ -223,11 +223,11 @@ func fetchDeploymentParams(ctx context.Context, cli kubernetes.Interface, namesp
 		Pods:       []string{},
 		Containers: [][]string{},
 	}
-	rs, err := kube.FetchReplicaSet(cli, namespace, d.UID, d.GetLabels())
+	rs, err := kube.FetchReplicaSet(cli, namespace, d.UID)
 	if err != nil {
 		return nil, err
 	}
-	pods, err := kube.FetchPods(cli, namespace, rs.UID, d.GetLabels())
+	pods, err := kube.FetchRunningPods(cli, namespace, rs.UID)
 	if err != nil {
 		return nil, err
 	}

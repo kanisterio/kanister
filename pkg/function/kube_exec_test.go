@@ -92,8 +92,8 @@ func (s *KubeExecTest) TestKubeExec(c *C) {
 	spec := fmt.Sprintf(ssSpec, name)
 	ss, err := kube.CreateStatefulSet(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
-	ok := kube.WaitOnStatefulSetReady(ctx, s.cli, ss)
-	c.Assert(ok, Equals, true)
+	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
+	c.Assert(err, IsNil)
 
 	kind := "Statefulset"
 	// Run the delete action.
