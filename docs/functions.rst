@@ -81,7 +81,7 @@ KubeTask takes the following three arguments:
 ScaleDeployment
 ---------------
 
-ScaleDeployment is used to scale up or scale down a deployment.
+ScaleDeployment is used to scale up or scale down a Deployment.
 It is similar to running
 
 .. code-block:: bash
@@ -97,7 +97,7 @@ It requires the following three arguments:
 ScaleStatefulSet
 ----------------
 
-ScaleStatefulSet is used to scale up or scale down a stateful-set.
+ScaleStatefulSet is used to scale up or scale down a StatefulSet.
 It is similar to running
 
 .. code-block:: bash
