@@ -10,12 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	jobPrefix            = "kanister-job-"
-	KubeTaskNamespaceArg = "namespace"
-	KubeTaskImageArg     = "image"
-	KubeTaskCommandArg   = "command"
-)
+const jobPrefix = "kanister-job-"
 
 func init() {
 	kanister.Register(&kubeTaskFunc{})
@@ -34,21 +29,13 @@ func generateJobName(jobPrefix string) string {
 	return jobPrefix + jobNameSuffix
 }
 
-func (ktf *kubeTaskFunc) Exec(ctx context.Context, args map[string]interface{}) error {
-	var namespace, image string
-	var command []string
-	var err error
-	if err = Arg(args, KubeTaskNamespaceArg, &namespace); err != nil {
-		return err
-	}
-	if err = Arg(args, KubeTaskImageArg, &image); err != nil {
-		return err
-	}
-	if err = Arg(args, KubeTaskCommandArg, &command); err != nil {
-		return err
+func (*kubeTaskFunc) Exec(ctx context.Context, args ...string) error {
+	if len(args) <= 3 {
+		return errors.Errorf("kubeTaskFunc requires at least 3 arguments. Got: %#v", args)
 	}
 
-	namespace, err = kube.GetControllerNamespace()
+	image, command := args[1], args[2:]
+	namespace, err := kube.GetControllerNamespace()
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get controller namespace")
 	}
@@ -71,8 +58,4 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, args map[string]interface{}) 
 		return errors.Wrapf(err, "Failed while waiting for job %s to complete", jobName)
 	}
 	return nil
-}
-
-func (*kubeTaskFunc) RequiredArgs() []string {
-	return []string{KubeTaskNamespaceArg, KubeTaskImageArg, KubeTaskCommandArg}
 }

@@ -12,9 +12,9 @@ var _ = Suite(&RenderSuite{})
 
 func (s *RenderSuite) TestRender(c *C) {
 	for _, tc := range []struct {
-		arg     interface{}
+		arg     string
 		tp      TemplateParams
-		out     interface{}
+		out     string
 		checker Checker
 	}{
 		{
@@ -94,36 +94,9 @@ func (s *RenderSuite) TestRender(c *C) {
 			out:     "someValue",
 			checker: IsNil,
 		},
-		{
-			arg:     "{{ upper `hello` }}",
-			tp:      TemplateParams{},
-			out:     "HELLO",
-			checker: IsNil,
-		},
-		{
-			arg:     []string{"{{ upper `hello` }}"},
-			tp:      TemplateParams{},
-			out:     []interface{}{"HELLO"},
-			checker: IsNil,
-		},
-		{
-			arg:     map[string]string{"name": "{{ upper `hello` }}"},
-			tp:      TemplateParams{},
-			out:     map[interface{}]interface{}{"name": "HELLO"},
-			checker: IsNil,
-		},
-		{
-			arg:     map[string][]string{"name": {"{{ upper `hello` }}"}},
-			tp:      TemplateParams{},
-			out:     map[interface{}]interface{}{"name": []interface{}{"HELLO"}},
-			checker: IsNil,
-		},
 	} {
-		inArgs := map[string]interface{}{"arg": tc.arg}
-		out, err := RenderArgs(inArgs, tc.tp)
+		out, err := render(tc.arg, tc.tp)
 		c.Assert(err, tc.checker)
-		if err == nil {
-			c.Assert(out["arg"], DeepEquals, tc.out)
-		}
+		c.Assert(out, Equals, tc.out)
 	}
 }

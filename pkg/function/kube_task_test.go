@@ -53,25 +53,21 @@ func newTaskBlueprint() *crv1alpha1.Blueprint {
 					{
 						Name: "test",
 						Func: "KubeTask",
-						Args: map[string]interface{}{
-							KubeTaskNamespaceArg: "namespace",
-							KubeTaskImageArg:     "busybox",
-							KubeTaskCommandArg: []string{
-								"sleep",
-								"2",
-							},
+						Args: []string{
+							"namespace",
+							"busybox",
+							"sleep",
+							"2",
 						},
 					},
 					{
 						Name: "test2",
 						Func: "KubeTask",
-						Args: map[string]interface{}{
-							KubeTaskNamespaceArg: "test-namespace",
-							KubeTaskImageArg:     "ubuntu:latest",
-							KubeTaskCommandArg: []string{
-								"sleep",
-								"2",
-							},
+						Args: []string{
+							"test-namespace",
+							"ubuntu:latest",
+							"sleep",
+							"2",
 						},
 					},
 				},

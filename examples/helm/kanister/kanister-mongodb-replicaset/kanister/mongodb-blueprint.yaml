@@ -9,33 +9,32 @@ actions:
     - func: KubeExec
       name: takeConsistentBackup
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
-        pod: "{{ index .StatefulSet.Pods 0 }}"
-        container: kanister-sidecar
-        cmd:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -c
-          - |
-            host_sfx=".{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
-            host="${REPLICA_SET}/{{ range $i,$p :=.StatefulSet.Pods }}{{- if $i }},{{- end }}{{- $p -}}${host_sfx}{{ end }}"
-            dump_cmd=(mongodump --oplog --gzip --archive --readPreference=secondaryPreferred)
-            dump_cmd+=(--host "${host}")
-            if [[ -n "${MONGO_ADMIN_USER+set}" ]]
-            then
-                dump_cmd+=(-u "${MONGO_ADMIN_USER}" -p "${MONGO_ADMIN_PASSWORD}")
-            fi
-            s3_path="s3://${S3_BUCKET}{{ .ArtifactsOut.cloudObject.KeyValue.path }}"
-            s3_cmd=(aws "${S3_VERIFY_SSL}")
-            if [[ -n "${S3_ENDPOINT+set}" ]]
-            then
-                s3_cmd+=(--endpoint "${S3_ENDPOINT}")
-            fi
-            s3_cmd+=(s3 cp - "${s3_path}")
-            ${dump_cmd[@]} | ${s3_cmd[@]}
+        - "{{ .StatefulSet.Namespace }}"
+        - "{{ index .StatefulSet.Pods 0 }}"
+        - kanister-sidecar
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          host_sfx=".{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
+          host="${REPLICA_SET}/{{ range $i,$p :=.StatefulSet.Pods }}{{- if $i }},{{- end }}{{- $p -}}${host_sfx}{{ end }}"
+          dump_cmd=(mongodump --oplog --gzip --archive --readPreference=secondaryPreferred)
+          dump_cmd+=(--host "${host}")
+          if [[ -n "${MONGO_ADMIN_USER+set}" ]]
+          then
+              dump_cmd+=(-u "${MONGO_ADMIN_USER}" -p "${MONGO_ADMIN_PASSWORD}")
+          fi
+          s3_path="s3://${S3_BUCKET}{{ .ArtifactsOut.cloudObject.KeyValue.path }}"
+          s3_cmd=(aws "${S3_VERIFY_SSL}")
+          if [[ -n "${S3_ENDPOINT+set}" ]]
+          then
+              s3_cmd+=(--endpoint "${S3_ENDPOINT}")
+          fi
+          s3_cmd+=(s3 cp - "${s3_path}")
+          ${dump_cmd[@]} | ${s3_cmd[@]}
   restore:
     type: StatefulSet
     inputArtifactNames:
@@ -44,33 +43,32 @@ actions:
     - func: KubeExec
       name: pullFromBlobStore
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
-        pod: "{{ index .StatefulSet.Pods 0 }}"
-        container: kanister-sidecar
-        cmd:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -c
-          - |
-            host_sfx=".{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
-            host="${REPLICA_SET}/{{ range $i,$p :=.StatefulSet.Pods }}{{- if $i }},{{- end }}{{- $p -}}${host_sfx}{{ end }}"
-            restore_cmd=(mongorestore --gzip --archive --oplogReplay --drop)
-            restore_cmd+=(--host "${host}")
-            if [[ -n "${MONGO_ADMIN_USER+set}" ]]
-            then
-                restore_cmd+=(-u "${MONGO_ADMIN_USER}" -p "${MONGO_ADMIN_PASSWORD}")
-            fi
-            s3_path="s3://${S3_BUCKET}{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
-            s3_cmd=(aws "${S3_VERIFY_SSL}")
-            if [[ -n "${S3_ENDPOINT+set}" ]]
-            then
-                s3_cmd+=(--endpoint "${S3_ENDPOINT}")
-            fi
-            s3_cmd+=(s3 cp "${s3_path}" -)
-            ${s3_cmd[@]} | ${restore_cmd[@]}
+        - "{{ .StatefulSet.Namespace }}"
+        - "{{ index .StatefulSet.Pods 0 }}"
+        - kanister-sidecar
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          host_sfx=".{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
+          host="${REPLICA_SET}/{{ range $i,$p :=.StatefulSet.Pods }}{{- if $i }},{{- end }}{{- $p -}}${host_sfx}{{ end }}"
+          restore_cmd=(mongorestore --gzip --archive --oplogReplay --drop)
+          restore_cmd+=(--host "${host}")
+          if [[ -n "${MONGO_ADMIN_USER+set}" ]]
+          then
+              restore_cmd+=(-u "${MONGO_ADMIN_USER}" -p "${MONGO_ADMIN_PASSWORD}")
+          fi
+          s3_path="s3://${S3_BUCKET}{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
+          s3_cmd=(aws "${S3_VERIFY_SSL}")
+          if [[ -n "${S3_ENDPOINT+set}" ]]
+          then
+              s3_cmd+=(--endpoint "${S3_ENDPOINT}")
+          fi
+          s3_cmd+=(s3 cp "${s3_path}" -)
+          ${s3_cmd[@]} | ${restore_cmd[@]}
   delete:
     type: StatefulSet
     inputArtifactNames:
@@ -79,22 +77,21 @@ actions:
     - func: KubeExec
       name: deleteFromBlobStore
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
-        pod: "{{ index .StatefulSet.Pods 0 }}"
-        container: kanister-sidecar
-        cmd:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -c
-          - |
-            s3_path="s3://${S3_BUCKET}{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
-            s3_cmd=(aws "${S3_VERIFY_SSL}")
-            if [[ -n "${S3_ENDPOINT+set}" ]]
-            then
-                s3_cmd+=(--endpoint "${S3_ENDPOINT}")
-            fi
-            s3_cmd+=(s3 rm "${s3_path}")
-            ${s3_cmd[@]}
+        - "{{ .StatefulSet.Namespace }}"
+        - "{{ index .StatefulSet.Pods 0 }}"
+        - kanister-sidecar
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          s3_path="s3://${S3_BUCKET}{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
+          s3_cmd=(aws "${S3_VERIFY_SSL}")
+          if [[ -n "${S3_ENDPOINT+set}" ]]
+          then
+              s3_cmd+=(--endpoint "${S3_ENDPOINT}")
+          fi
+          s3_cmd+=(s3 rm "${s3_path}")
+          ${s3_cmd[@]}

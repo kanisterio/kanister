@@ -9,49 +9,48 @@ actions:
     - func: KubeExec
       name: baseBackup
       args:
-        namespace: "{{ .Deployment.Namespace }}"
-        pod: "{{ index .Deployment.Pods 0 }}"
-        container: postgresql
-        cmd:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -o
-          - nounset
-          - -o
-          - xtrace
-          - -c
-          - |
-            env_dir="${PGDATA}/env"
-            mkdir -p "${env_dir}"
-            env_wal_prefix="${env_dir}/WALE_S3_PREFIX"
+        - "{{ .Deployment.Namespace }}"
+        - "{{ index .Deployment.Pods 0 }}"
+        - postgresql
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -o
+        - nounset
+        - -o
+        - xtrace
+        - -c
+        - |
+          env_dir="${PGDATA}/env"
+          mkdir -p "${env_dir}"
+          env_wal_prefix="${env_dir}/WALE_S3_PREFIX"
 
-            # We check for an existing timeline. If one does not exist, we create it based on the current time.
-            if [[ ! -e "${env_wal_prefix}" ]]
-            then
-              timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
-              wale_s3_prefix="${S3_BUCKET}/${timeline}"
-              echo "${wale_s3_prefix}" > "${env_wal_prefix}"
-            fi
+          # We check for an existing timeline. If one does not exist, we create it based on the current time.
+          if [[ ! -e "${env_wal_prefix}" ]]
+          then
+            timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
+            wale_s3_prefix="${S3_BUCKET}/${timeline}"
+            echo "${wale_s3_prefix}" > "${env_wal_prefix}"
+          fi
 
-            # Create and push a base-backup to the object store.
-            envdir "${env_dir}" wal-e backup-push "${PGDATA}"
-            backup_name=$(envdir "${env_dir}" wal-e backup-list | tail -n +2 | sort -k2 | tail -n 1 | awk '{print $1}')
+          # Create and push a base-backup to the object store.
+          envdir "${env_dir}" wal-e backup-push "${PGDATA}"
+          backup_name=$(envdir "${env_dir}" wal-e backup-list | tail -n +2 | sort -k2 | tail -n 1 | awk '{print $1}')
 
-            # Create a manifest that references the backup we created and the current timeline.
-            s3_path="${S3_BUCKET}{{ .ArtifactsOut.manifest.KeyValue.path }}"
-            s3_cmd=(aws)
-            if [[ -n "${WALE_S3_ENDPOINT+set}" ]]
-            then
-                s3_cmd+=(--endpoint "${WALE_S3_ENDPOINT}")
-            fi
-            s3_cmd+=(s3 cp - "${s3_path}")
-            cat << EOF | ${s3_cmd[@]}
-            backup_name=${backup_name}
-            wale_s3_prefix=$(cat "${env_wal_prefix}")
-            EOF
+          # Create a manifest that references the backup we created and the current timeline.
+          s3_path="${S3_BUCKET}{{ .ArtifactsOut.manifest.KeyValue.path }}"
+          s3_cmd=(aws)
+          if [[ -n "${WALE_S3_ENDPOINT+set}" ]]
+          then
+              s3_cmd+=(--endpoint "${WALE_S3_ENDPOINT}")
+          fi
+          s3_cmd+=(s3 cp - "${s3_path}")
+          cat << EOF | ${s3_cmd[@]}
+          backup_name=${backup_name}
+          wale_s3_prefix=$(cat "${env_wal_prefix}")
+          EOF
   restore:
     type: Deployment
     inputArtifactNames:
@@ -61,81 +60,79 @@ actions:
     - func: KubeExec
       name: fetchBase
       args:
-        namespace: "{{ .Deployment.Namespace }}"
-        pod: "{{ index .Deployment.Pods 0 }}"
-        container: postgresql
-        cmd:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -c
-          - |
-            # Get and parse artifact manifest to discover the timeline and the base-backup name.
-            s3_path="${S3_BUCKET}{{ .ArtifactsIn.manifest.KeyValue.path }}"
-            s3_cmd=(aws)
-            if [[ -n "${WALE_S3_ENDPOINT+set}" ]]
-            then
-                s3_cmd+=(--endpoint "${WALE_S3_ENDPOINT}")
-            fi
-            s3_cmd+=(s3 cp "${s3_path}" -)
-            backup_name=$(${s3_cmd[@]} | grep 'backup_name' | cut -d'=' -f2)
-            old_wale_prefix=$(${s3_cmd[@]} | grep 'wale_s3_prefix' | cut -d'=' -f2)
+        - "{{ .Deployment.Namespace }}"
+        - "{{ index .Deployment.Pods 0 }}"
+        - postgresql
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          # Get and parse artifact manifest to discover the timeline and the base-backup name.
+          s3_path="${S3_BUCKET}{{ .ArtifactsIn.manifest.KeyValue.path }}"
+          s3_cmd=(aws)
+          if [[ -n "${WALE_S3_ENDPOINT+set}" ]]
+          then
+              s3_cmd+=(--endpoint "${WALE_S3_ENDPOINT}")
+          fi
+          s3_cmd+=(s3 cp "${s3_path}" -)
+          backup_name=$(${s3_cmd[@]} | grep 'backup_name' | cut -d'=' -f2)
+          old_wale_prefix=$(${s3_cmd[@]} | grep 'wale_s3_prefix' | cut -d'=' -f2)
 
-            # Fetch base backup using the old WALE_S3_PREFIX.
-            recover_dir="${PGDATA}/kanister-restore"
-            wal-e --s3-prefix "${old_wale_prefix}" backup-fetch "${recover_dir}" "${backup_name}"
+          # Fetch base backup using the old WALE_S3_PREFIX.
+          recover_dir="${PGDATA}/kanister-restore"
+          wal-e --s3-prefix "${old_wale_prefix}" backup-fetch "${recover_dir}" "${backup_name}"
 
-            # Prepare the environment variable directory.
-            env_dir="${recover_dir}/env"
-            mkdir -p  "${env_dir}"
+          # Prepare the environment variable directory.
+          env_dir="${recover_dir}/env"
+          mkdir -p  "${env_dir}"
 
-            # Create a new timeline and write it to the environment variable file.
-            wale_env_file="${env_dir}/WALE_S3_PREFIX"
-            timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
-            wal_s3_prefix="${S3_BUCKET}/${timeline}"
-            echo "${wal_s3_prefix}" > "${wale_env_file}"
+          # Create a new timeline and write it to the environment variable file.
+          wale_env_file="${env_dir}/WALE_S3_PREFIX"
+          timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
+          wal_s3_prefix="${S3_BUCKET}/${timeline}"
+          echo "${wal_s3_prefix}" > "${wale_env_file}"
 
-            # Create the recovery file that will apply the WAL files.
-            cat << EOF > "${recover_dir}"/recovery.conf
-            restore_command = 'wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
-            {{- if .ArtifactsIn.pitr }}
-            recovery_target_time = '{{ toDate "2006-01-02T15:04:05.000Z07:00" .ArtifactsIn.pitr.KeyValue.time | date "2006-01-02 15:04:05 MST" }}'
-            {{- end }}
-            EOF
-            sync
+          # Create the recovery file that will apply the WAL files.
+          cat << EOF > "${recover_dir}"/recovery.conf
+          restore_command = 'wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
+          {{- if .ArtifactsIn.pitr }}
+          recovery_target_time = '{{ toDate "2006-01-02T15:04:05.000Z07:00" .ArtifactsIn.pitr.KeyValue.time | date "2006-01-02 15:04:05 MST" }}'
+          {{- end }}
+          EOF
+          sync
     - func: KubeTask
       name: restartPod
       args:
-        namespace: "{{ .Deployment.Namespace }}"
-        image: lachlanevenson/k8s-kubectl:v1.8.10
-        cmd:
-          - sh
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -o
-          - xtrace
-          - -c
-          - |
-            # Recreate (scale down and up) the pod so it can be recreated forcing init containers
-            # to run again. One of the init containers will move the restored files to the
-            # correct data location.
-            # Need to wait for terminating pod instance to complete before
-            # scaling back up to avoid writing to the same volume from the PG shutdown sequence
-            # in the terminating pod and the restore completion init container simultaneously.
-            #
-            # TODO: Should have a kanister function to abstract the termination sync
-            # or should incorporate in any function that replaces data files under the
-            # application
-            namespace="{{ .Deployment.Namespace }}"
-            deployment="{{ .Deployment.Name }}"
-            pod="{{ index .Deployment.Pods 0 }}"
-            kubectl scale --namespace $namespace deployment $deployment --replicas=0
-            while [ ! -z "$(kubectl -n $namespace get pod | grep $pod | grep Terminating)" ]
-            do
-              sleep 1
-            done
-            kubectl scale --namespace $namespace deployment $deployment --replicas=1
+        - "{{ .Deployment.Namespace }}"
+        - lachlanevenson/k8s-kubectl:v1.8.10
+        - sh
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -o
+        - xtrace
+        - -c
+        - |
+          # Recreate (scale down and up) the pod so it can be recreated forcing init containers
+          # to run again. One of the init containers will move the restored files to the
+          # correct data location.
+          # Need to wait for terminating pod instance to complete before
+          # scaling back up to avoid writing to the same volume from the PG shutdown sequence
+          # in the terminating pod and the restore completion init container simultaneously.
+          #
+          # TODO: Should have a kanister function to abstract the termination sync
+          # or should incorporate in any function that replaces data files under the
+          # application
+          namespace="{{ .Deployment.Namespace }}"
+          deployment="{{ .Deployment.Name }}"
+          pod="{{ index .Deployment.Pods 0 }}"
+          kubectl scale --namespace $namespace deployment $deployment --replicas=0
+          while [ ! -z "$(kubectl -n $namespace get pod | grep $pod | grep Terminating)" ]
+          do
+            sleep 1
+          done
+          kubectl scale --namespace $namespace deployment $deployment --replicas=1

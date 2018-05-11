@@ -227,7 +227,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				case testutil.WaitFuncName:
 					testutil.ReleaseWaitFunc()
 				case testutil.ArgFuncName:
-					c.Assert(testutil.ArgFuncArgs(), DeepEquals, map[string]string{"key": "myValue"})
+					c.Assert(testutil.ArgFuncArgs(), DeepEquals, []string{"myValue"})
 				}
 			}
 

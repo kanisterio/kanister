@@ -21,43 +21,21 @@ var (
 	_ kanister.Func = (*kubeExecAllFunc)(nil)
 )
 
-const (
-	KubeExecAllNamespaceArg      = "namespace"
-	KubeExecAllPodsNameArg       = "pods"
-	KubeExecAllContainersNameArg = "containers"
-	KubeExecAllCommandArg        = "command"
-)
-
 type kubeExecAllFunc struct{}
 
 func (*kubeExecAllFunc) Name() string {
 	return "KubeExecAll"
 }
 
-func (*kubeExecAllFunc) Exec(ctx context.Context, args map[string]interface{}) error {
+func (*kubeExecAllFunc) Exec(ctx context.Context, args ...string) error {
+	if len(args) <= 4 {
+		return errors.Errorf("KubeExecAll requires at least 4 arguments. Got: %#v", args)
+	}
 	cli := kube.NewClient()
-	var namespace, pods, containers string
-	var cmd []string
-	var err error
-	if err = Arg(args, KubeExecAllNamespaceArg, &namespace); err != nil {
-		return err
-	}
-	if err = Arg(args, KubeExecAllPodsNameArg, &pods); err != nil {
-		return err
-	}
-	if err = Arg(args, KubeExecAllContainersNameArg, &containers); err != nil {
-		return err
-	}
-	if err = Arg(args, KubeExecAllCommandArg, &cmd); err != nil {
-		return err
-	}
+	namespace, pods, containers, cmd := args[0], args[1], args[2], args[3:]
 	ps := strings.Fields(pods)
 	cs := strings.Fields(containers)
 	return execAll(cli, namespace, ps, cs, cmd)
-}
-
-func (*kubeExecAllFunc) RequiredArgs() []string {
-	return []string{KubeExecAllNamespaceArg, KubeExecAllPodsNameArg, KubeExecAllContainersNameArg, KubeExecAllCommandArg}
 }
 
 func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []string, cmd []string) error {

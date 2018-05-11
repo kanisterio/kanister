@@ -19,7 +19,7 @@ func (s *FuncSuite) TearDownSuite(c *C) {
 
 func (s *FuncSuite) TestFailFunc(c *C) {
 	ctx := context.Background()
-	err := failFunc(ctx, nil)
+	err := failFunc(ctx)
 	c.Assert(err, NotNil)
 }
 
@@ -27,7 +27,7 @@ func (s *FuncSuite) TestWaitFunc(c *C) {
 	ctx := context.Background()
 	done := make(chan bool)
 	go func() {
-		err := waitFunc(ctx, nil)
+		err := waitFunc(ctx)
 		c.Assert(err, IsNil)
 		close(done)
 	}()
@@ -42,9 +42,9 @@ func (s *FuncSuite) TestWaitFunc(c *C) {
 
 func (s *FuncSuite) TestArgsFunc(c *C) {
 	ctx := context.Background()
-	args := map[string]interface{}{"arg1": []string{"foo", "bar"}}
+	args := []string{"foo", "bar"}
 	go func() {
-		err := argsFunc(ctx, args)
+		err := argsFunc(ctx, args...)
 		c.Assert(err, IsNil)
 	}()
 	c.Assert(ArgFuncArgs(), DeepEquals, args)

@@ -203,9 +203,9 @@ type BlueprintAction struct {
 
 // BlueprintPhase is a an individual unit of execution.
 type BlueprintPhase struct {
-	Func string                 `json:"func"`
-	Name string                 `json:"name"`
-	Args map[string]interface{} `json:"args"`
+	Func string   `json:"func"`
+	Name string   `json:"name"`
+	Args []string `json:"args"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

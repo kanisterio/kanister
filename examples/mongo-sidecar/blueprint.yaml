@@ -18,28 +18,27 @@ actions:
     - func: KubeExec
       name: takeConsistentBackup
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
-        pod: "{{ index .StatefulSet.Pods 0 }}"
-        container: mongo-tools-sidecar
-        cmd:
-          - bash
-          - -o
-          - errexit
-          - -c
-          - |
-            host="{{ index .StatefulSet.Pods 0 }}.{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
-            primary=$(mongo --host ${host} --eval "db.isMaster()['primary']" | tail -n1 | cut -d ':' -f1)
-            mongodb-consistent-backup -H ${primary} -P 27017 -n mongo-backup \
-              -l /var/lib/mongodb-consistent-backup 2> /var/log/kanister.log
-            file="/var/lib/mongodb-consistent-backup/mongo-backup/latest/rs0.tar"
-            export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
-            export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
-            cmd=(aws s3 cp)
-            if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
-            then
-                cmd=(aws --endpoint https://storage.googleapis.com s3 cp)
-            fi
-            ${cmd[@]} ${file} "{{ .ArtifactsOut.cloudObject.KeyValue.path }}"
+        - "{{ .StatefulSet.Namespace }}"
+        - "{{ index .StatefulSet.Pods 0 }}"
+        - mongo-tools-sidecar
+        - bash
+        - -o
+        - errexit
+        - -c
+        - |
+          host="{{ index .StatefulSet.Pods 0 }}.{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
+          primary=$(mongo --host ${host} --eval "db.isMaster()['primary']" | tail -n1 | cut -d ':' -f1)
+          mongodb-consistent-backup -H ${primary} -P 27017 -n mongo-backup \
+            -l /var/lib/mongodb-consistent-backup 2> /var/log/kanister.log
+          file="/var/lib/mongodb-consistent-backup/mongo-backup/latest/rs0.tar"
+          export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
+          export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
+          cmd=(aws s3 cp)
+          if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
+          then
+              cmd=(aws --endpoint https://storage.googleapis.com s3 cp)
+          fi
+          ${cmd[@]} ${file} "{{ .ArtifactsOut.cloudObject.KeyValue.path }}"
   restore:
     type: StatefulSet
     inputArtifactNames:
@@ -48,33 +47,32 @@ actions:
     - func: KubeExec
       name: pullFromBlobStore
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
-        pod: "{{ index .StatefulSet.Pods 0 }}"
-        container: mongo-tools-sidecar
-        cmd:
-          - bash
-          - -o
-          - errexit
-          - -c
-          - |
-            pushd $(mktemp -d)
-            export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
-            export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
-            cmd=(aws s3 cp)
-            if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
-            then
-                cmd=(aws --endpoint https://storage.googleapis.com s3 cp)
-            fi
-            ${cmd[@]} {{ .ArtifactsIn.cloudObject.KeyValue.path }} .
-            tar xvf rs0.tar
-            find . -name "*.gz" -exec gunzip {} \+ 2>> /var/log/kanister.log
-            host="{{ index .StatefulSet.Pods 0 }}.{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
-            primary=$(mongo --host ${host} --eval "db.isMaster()['primary']" | tail -n1 | cut -f 1 -d ':')
-            mongorestore             \
-                --host ${primary}    \
-                --port 27017         \
-                --drop --oplogReplay \
-                --dir ./rs0/dump
+        - "{{ .StatefulSet.Namespace }}"
+        - "{{ index .StatefulSet.Pods 0 }}"
+        - mongo-tools-sidecar
+        - bash
+        - -o
+        - errexit
+        - -c
+        - |
+          pushd $(mktemp -d)
+          export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
+          export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
+          cmd=(aws s3 cp)
+          if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
+          then
+              cmd=(aws --endpoint https://storage.googleapis.com s3 cp)
+          fi
+          ${cmd[@]} {{ .ArtifactsIn.cloudObject.KeyValue.path }} .
+          tar xvf rs0.tar
+          find . -name "*.gz" -exec gunzip {} \+ 2>> /var/log/kanister.log
+          host="{{ index .StatefulSet.Pods 0 }}.{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
+          primary=$(mongo --host ${host} --eval "db.isMaster()['primary']" | tail -n1 | cut -f 1 -d ':')
+          mongorestore             \
+              --host ${primary}    \
+              --port 27017         \
+              --drop --oplogReplay \
+              --dir ./rs0/dump
   delete:
     type: StatefulSet
     inputArtifactNames:
@@ -83,20 +81,19 @@ actions:
     - func: KubeExec
       name: deleteFromBlobStore
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
-        pod: "{{ index .StatefulSet.Pods 0 }}"
-        container: mongo-tools-sidecar
-        cmd:
-          - bash
-          - -o
-          - errexit
-          - -c
-          - |
-            export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
-            export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
-            cmd=(aws s3 rm)
-            if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
-            then
-                cmd=(aws --endpoint https://storage.googleapis.com s3 rm)
-            fi
-            ${cmd[@]} "{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
+        - "{{ .StatefulSet.Namespace }}"
+        - "{{ index .StatefulSet.Pods 0 }}"
+        - mongo-tools-sidecar
+        - bash
+        - -o
+        - errexit
+        - -c
+        - |
+          export AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}
+          export AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }}
+          cmd=(aws s3 rm)
+          if [[ ${AWS_ACCESS_KEY_ID} =~ GOOG*  ]]
+          then
+              cmd=(aws --endpoint https://storage.googleapis.com s3 rm)
+          fi
+          ${cmd[@]} "{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
