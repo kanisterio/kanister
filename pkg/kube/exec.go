@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -70,6 +71,9 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 
 	var stdout, stderr bytes.Buffer
 	err = execute("POST", req.URL(), config, options.Stdin, &stdout, &stderr, tty)
+	if err != nil {
+		err = errors.Wrapf(err, "Failed to execute %#v", options)
+	}
 
 	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
 }
