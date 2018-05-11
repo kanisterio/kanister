@@ -15,7 +15,8 @@ var (
 // Func allows custom actions to be executed.
 type Func interface {
 	Name() string
-	Exec(context.Context, ...string) error
+	RequiredArgs() []string
+	Exec(context.Context, map[string]interface{}) error
 }
 
 // Register allows Funcs to be references by User Defined YAMLs

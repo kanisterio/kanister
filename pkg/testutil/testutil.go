@@ -141,7 +141,7 @@ func ActionSetWithConfigMap(as *crv1alpha1.ActionSet, name string) *crv1alpha1.A
 
 // BlueprintWithConfigMap function returns a pointer to a new Blueprint test object with CongigMap
 func BlueprintWithConfigMap(bp *crv1alpha1.Blueprint) *crv1alpha1.Blueprint {
-	cmArgs := []string{"{{ .ConfigMaps.myCM.Data.myKey  }}"}
+	cmArgs := map[string]interface{}{"key": "{{ .ConfigMaps.myCM.Data.myKey  }}"}
 	for i := range bp.Actions[actionName].Phases {
 		bp.Actions[actionName].Phases[i].Args = cmArgs
 	}

@@ -50,12 +50,11 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
 						Func: "KubeExec",
-						Args: []string{
-							fmt.Sprintf("{{ .%s.Namespace }}", kind),
-							fmt.Sprintf("{{ index .%s.Pods 1 }}", kind),
-							fmt.Sprintf("{{ index .%s.Containers 0 0 }}", kind),
-							"echo",
-							"hello",
+						Args: map[string]interface{}{
+							KubeExecNamespaceArg:     fmt.Sprintf("{{ .%s.Namespace }}", kind),
+							KubeExecPodNameArg:       fmt.Sprintf("{{ index .%s.Pods 1 }}", kind),
+							KubeExecContainerNameArg: fmt.Sprintf("{{ index .%s.Containers 0 0 }}", kind),
+							KubeExecCommandArg:       []string{"echo", "hello"},
 						},
 					},
 				},
@@ -66,10 +65,10 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
 						Func: "Scale" + kind,
-						Args: []string{
-							fmt.Sprintf("{{ .%s.Namespace }}", kind),
-							fmt.Sprintf("{{ .%s.Name }}", kind),
-							"0",
+						Args: map[string]interface{}{
+							ScaleSSNamespaceArg: fmt.Sprintf("{{ .%s.Namespace }}", kind),
+							ScaleSSAppNameArg:   fmt.Sprintf("{{ .%s.Name }}", kind),
+							ScaleSSReplicas:     0,
 						},
 					},
 				},
@@ -80,10 +79,10 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
 						Func: "Scale" + kind,
-						Args: []string{
-							fmt.Sprintf("{{ .%s.Namespace }}", kind),
-							fmt.Sprintf("{{ .%s.Name }}", kind),
-							"2",
+						Args: map[string]interface{}{
+							ScaleSSNamespaceArg: fmt.Sprintf("{{ .%s.Namespace }}", kind),
+							ScaleSSAppNameArg:   fmt.Sprintf("{{ .%s.Name }}", kind),
+							ScaleSSReplicas:     2,
 						},
 					},
 				},
