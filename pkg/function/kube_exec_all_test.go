@@ -71,8 +71,8 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 	d, err := s.cli.AppsV1beta1().Deployments(s.namespace).Create(d)
 	c.Assert(err, IsNil)
 
-	ok := kube.WaitOnDeploymentReady(ctx, s.cli, d)
-	c.Assert(ok, Equals, true)
+	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.Namespace, d.Name)
+	c.Assert(err, IsNil)
 
 	kind := "Deployment"
 	as := crv1alpha1.ActionSpec{
@@ -94,14 +94,14 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 	}
 }
 
-func (s *ScaleSuite) TestKubeExecAllStatefulSet(c *C) {
+func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 	ctx := context.Background()
 	ss := testutil.NewTestStatefulSet()
 	ss, err := s.cli.AppsV1beta1().StatefulSets(s.namespace).Create(ss)
 	c.Assert(err, IsNil)
 
-	ok := kube.WaitOnStatefulSetReady(ctx, s.cli, ss)
-	c.Assert(ok, Equals, true)
+	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.Namespace, ss.Name)
+	c.Assert(err, IsNil)
 
 	kind := "StatefulSet"
 	as := crv1alpha1.ActionSpec{

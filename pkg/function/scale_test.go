@@ -23,7 +23,7 @@ type ScaleSuite struct {
 
 var _ = Suite(&ScaleSuite{})
 
-func (s *ScaleSuite) SetUpSuite(c *C) {
+func (s *ScaleSuite) SetUpTest(c *C) {
 	s.cli = kube.NewClient()
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -35,7 +35,7 @@ func (s *ScaleSuite) SetUpSuite(c *C) {
 	s.namespace = cns.Name
 }
 
-func (s *ScaleSuite) TearDownSuite(c *C) {
+func (s *ScaleSuite) TearDownTest(c *C) {
 	if s.namespace != "" {
 		s.cli.Core().Namespaces().Delete(s.namespace, nil)
 	}

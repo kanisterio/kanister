@@ -74,8 +74,8 @@ func (s *ParamsSuite) TestFetchStatefulSetParams(c *C) {
 	spec := fmt.Sprintf(ssSpec, name)
 	ss, err := kube.CreateStatefulSet(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
-	ok := kube.WaitOnStatefulSetReady(ctx, s.cli, ss)
-	c.Assert(ok, Equals, true)
+	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.Namespace, ss.Name)
+	c.Assert(err, IsNil)
 
 	ssp, err := fetchStatefulSetParams(ctx, s.cli, s.namespace, name)
 	c.Assert(err, IsNil)
@@ -115,8 +115,8 @@ func (s *ParamsSuite) TestFetchDeploymentParams(c *C) {
 	spec := fmt.Sprintf(deploySpec, name)
 	d, err := kube.CreateDeployment(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
-	ok := kube.WaitOnDeploymentReady(ctx, s.cli, d)
-	c.Assert(ok, Equals, true)
+	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.Namespace, d.Name)
+	c.Assert(err, IsNil)
 
 	dp, err := fetchDeploymentParams(ctx, s.cli, s.namespace, name)
 	c.Assert(err, IsNil)
@@ -142,8 +142,8 @@ func (s *ParamsSuite) TestNewTemplateParamsDeployment(c *C) {
 	spec := fmt.Sprintf(deploySpec, name)
 	d, err := kube.CreateDeployment(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
-	ok := kube.WaitOnDeploymentReady(ctx, s.cli, d)
-	c.Assert(ok, Equals, true)
+	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.Namespace, d.Name)
+	c.Assert(err, IsNil)
 
 	s.testNewTemplateParams(ctx, c, name, "Deployment")
 }
@@ -155,8 +155,8 @@ func (s *ParamsSuite) TestNewTemplateParamsStatefulSet(c *C) {
 	spec := fmt.Sprintf(ssSpec, name)
 	ss, err := kube.CreateStatefulSet(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
-	ok := kube.WaitOnStatefulSetReady(ctx, s.cli, ss)
-	c.Assert(ok, Equals, true)
+	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.Namespace, ss.Name)
+	c.Assert(err, IsNil)
 
 	s.testNewTemplateParams(ctx, c, name, "Statefulset")
 }
