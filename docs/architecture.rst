@@ -87,7 +87,7 @@ The definition of a `BlueprintAction` is:
   type BlueprintPhase struct {
       Func string   `json:"func"`
       Name string   `json:"name"`
-      Args []string `json:"args"`
+      Args map[string]interface{} `json:"args"`
   }
 
 - `Func` is the name of the registered Kanister function. By default, the
@@ -95,8 +95,11 @@ The definition of a `BlueprintAction` is:
   `"KubeTask"`, `"ScaleDeployment"` and `"ScaleStatefulSet"`.
 - `Name` is mostly cosmetic. It is useful in quickly identifying which
   phases the controller has finished executing.
-- `Args` are a list of argument templates that the controller will render using the
-  template parameters. Each argument is rendered individually.
+- `Args` is a map of named arguments that the controller will pass to
+   the Kanister function.
+   String argument values can be templates that the controller will
+   render using the template parameters. Each argument is rendered
+   individually.
 
 
 ActionSets

@@ -12,7 +12,7 @@ import (
 // Phase is an atomic unit of execution.
 type Phase struct {
 	name string
-	args []string
+	args map[string]interface{}
 	f    Func
 }
 
@@ -24,7 +24,7 @@ func (p *Phase) Name() string {
 // Exec renders the argument templates in this Phase's Func and executes with
 // those arguments.
 func (p *Phase) Exec(ctx context.Context) error {
-	return p.f.Exec(ctx, p.args...)
+	return p.f.Exec(ctx, p.args)
 }
 
 // GetPhases renders the returns a list of Phases with pre-rendered arguments.
@@ -47,6 +47,9 @@ func GetPhases(bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) 
 		if err != nil {
 			return nil, err
 		}
+		if err = checkRequiredArgs(funcs[p.Func].RequiredArgs(), args); err != nil {
+			return nil, errors.Wrapf(err, "Reqired args missing for function %s", funcs[p.Func].Name())
+		}
 		phases = append(phases, &Phase{
 			name: p.Name,
 			args: args,
@@ -54,4 +57,13 @@ func GetPhases(bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) 
 		})
 	}
 	return phases, nil
+}
+
+func checkRequiredArgs(reqArgs []string, args map[string]interface{}) error {
+	for _, a := range reqArgs {
+		if _, ok := args[a]; !ok {
+			return errors.Errorf("Required arg missing: %s", a)
+		}
+	}
+	return nil
 }

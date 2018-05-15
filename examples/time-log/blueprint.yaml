@@ -18,15 +18,16 @@ actions:
     - func: KubeExec
       name: backupToS3
       args:
-      - "{{ .Deployment.Namespace }}"
-      - "{{ index .Deployment.Pods 0 }}"
-      - test-container
-      - sh
-      - -c
-      - |
-        AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
-        AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-        aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: test-container
+        command:
+          - sh
+          - -c
+          - |
+            AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
+            AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+            aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}
   restore:
     type: Deployment
     inputArtifactNames:
@@ -35,15 +36,16 @@ actions:
     - func: KubeExec
       name: restoreFromS3
       args:
-      - "{{ .Deployment.Namespace }}"
-      - "{{ index .Deployment.Pods 0 }}"
-      - test-container
-      - sh
-      - -c
-      - |
-        AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
-        AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-        aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: test-container
+        command:
+          - sh
+          - -c
+          - |
+            AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
+            AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+            aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log
   delete:
     type: Deployment
     inputArtifactNames:
@@ -52,12 +54,13 @@ actions:
     - func: KubeExec
       name: deleteFromS3
       args:
-        - "{{ .Deployment.Namespace }}"
-        - "{{ index .Deployment.Pods 0 }}"
-        - test-container
-        - sh
-        - -c
-        - |
-          AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
-          AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-          aws s3 rm {{ .ArtifactsIn.timeLog.KeyValue.path | quote }}    
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: test-container
+        command:
+          - sh
+          - -c
+          - |
+            AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
+            AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+            aws s3 rm {{ .ArtifactsIn.timeLog.KeyValue.path | quote }}

@@ -9,24 +9,25 @@ actions:
     - func: KubeExec
       name: dumpToObjectStore
       args:
-        - "{{ .Deployment.Namespace }}"
-        - "{{ index .Deployment.Pods 0 }}"
-        - kanister-sidecar
-        - bash
-        - -o
-        - errexit
-        - -o
-        - pipefail
-        - -c
-        - |
-          s3_path="s3://${S3_BUCKET}{{ .ArtifactsOut.mysqlCloudDump.KeyValue.path }}"
-          s3_cmd=(aws "${S3_VERIFY_SSL}")
-          if [[ -n "${S3_ENDPOINT+set}" ]]
-          then
-              s3_cmd+=(--endpoint "${S3_ENDPOINT}")
-          fi
-          s3_cmd+=(s3 cp - "${s3_path}")
-          mysqldump -u root --password="${MYSQL_ROOT_PASSWORD}" --single-transaction --all-databases | gzip - | ${s3_cmd[@]}
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: kanister-sidecar
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            s3_path="s3://${S3_BUCKET}{{ .ArtifactsOut.mysqlCloudDump.KeyValue.path }}"
+            s3_cmd=(aws "${S3_VERIFY_SSL}")
+            if [[ -n "${S3_ENDPOINT+set}" ]]
+            then
+                s3_cmd+=(--endpoint "${S3_ENDPOINT}")
+            fi
+            s3_cmd+=(s3 cp - "${s3_path}")
+            mysqldump -u root --password="${MYSQL_ROOT_PASSWORD}" --single-transaction --all-databases | gzip - | ${s3_cmd[@]}
   restore:
     type: Deployment
     inputArtifactNames:
@@ -35,24 +36,25 @@ actions:
     - func: KubeExec
       name: restoreFromBlobStore
       args:
-        - "{{ .Deployment.Namespace }}"
-        - "{{ index .Deployment.Pods 0 }}"
-        - kanister-sidecar
-        - bash
-        - -o
-        - errexit
-        - -o
-        - pipefail
-        - -c
-        - |
-          s3_path="s3://${S3_BUCKET}{{ .ArtifactsIn.mysqlCloudDump.KeyValue.path }}"
-          s3_cmd=(aws "${S3_VERIFY_SSL}")
-          if [[ -n "${S3_ENDPOINT+set}" ]]
-          then
-              s3_cmd+=(--endpoint "${S3_ENDPOINT}")
-          fi
-          s3_cmd+=(s3 cp "${s3_path}" -)
-          ${s3_cmd[@]} | gunzip -c - | mysql -u root --password="${MYSQL_ROOT_PASSWORD}"
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: kanister-sidecar
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            s3_path="s3://${S3_BUCKET}{{ .ArtifactsIn.mysqlCloudDump.KeyValue.path }}"
+            s3_cmd=(aws "${S3_VERIFY_SSL}")
+            if [[ -n "${S3_ENDPOINT+set}" ]]
+            then
+                s3_cmd+=(--endpoint "${S3_ENDPOINT}")
+            fi
+            s3_cmd+=(s3 cp "${s3_path}" -)
+            ${s3_cmd[@]} | gunzip -c - | mysql -u root --password="${MYSQL_ROOT_PASSWORD}"
   delete:
     type: Deployment
     inputArtifactNames:
@@ -61,22 +63,23 @@ actions:
     - func: KubeExec
       name: deleteFromBlobStore
       args:
-        - "{{ .Deployment.Namespace }}"
-        - "{{ index .Deployment.Pods 0 }}"
-        - kanister-sidecar
-        - bash
-        - -o
-        - errexit
-        - -o
-        - pipefail
-        - -c
-        - |
-          s3_path="s3://${S3_BUCKET}{{ .ArtifactsIn.mysqlCloudDump.KeyValue.path }}"
-          s3_cmd=(aws "${S3_VERIFY_SSL}")
-          if [[ -n "${S3_ENDPOINT+set}" ]]
-          then
-              s3_cmd+=(--endpoint "${S3_ENDPOINT}")
-          fi
-          s3_cmd+=(s3 rm "${s3_path}")
-          ${s3_cmd[@]}
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: kanister-sidecar
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            s3_path="s3://${S3_BUCKET}{{ .ArtifactsIn.mysqlCloudDump.KeyValue.path }}"
+            s3_cmd=(aws "${S3_VERIFY_SSL}")
+            if [[ -n "${S3_ENDPOINT+set}" ]]
+            then
+                s3_cmd+=(--endpoint "${S3_ENDPOINT}")
+            fi
+            s3_cmd+=(s3 rm "${s3_path}")
+            ${s3_cmd[@]}
 
