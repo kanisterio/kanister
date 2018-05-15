@@ -17,18 +17,18 @@ const defaultJobPodContainer = "kanister-job-container"
 
 // Job object is used for running the user specified container as a Kubernetes job.
 type Job struct {
-	image   string
-	command []string
-
+	image     string
+	command   []string
 	namespace string
 	name      string
 	sa        string
-
+	// vols is a map of PVC->Mount points to add to the job pod spec
+	vols      map[string]string
 	clientset kubernetes.Interface
 }
 
 // NewJob creates a new Job object.
-func NewJob(clientset kubernetes.Interface, jobName string, namespace string, serviceAccount string, image string, command ...string) (*Job, error) {
+func NewJob(clientset kubernetes.Interface, jobName string, namespace string, serviceAccount string, image string, vols map[string]string, command ...string) (*Job, error) {
 	if jobName == "" {
 		return nil, fmt.Errorf("Job name is required")
 	}
@@ -50,12 +50,13 @@ func NewJob(clientset kubernetes.Interface, jobName string, namespace string, se
 		return nil, errors.New("Command needs to be passed")
 	}
 
-	return &Job{image, command, namespace, jobName, serviceAccount, clientset}, nil
+	return &Job{image, command, namespace, jobName, serviceAccount, vols, clientset}, nil
 }
 
 // Create creates the Job in Kubernetes.
 func (job *Job) Create() error {
 	falseVal := false
+	volumeMounts, podVolumes := createVolumeSpecs(job.vols)
 	k8sJob := &batch.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: job.name,
@@ -81,9 +82,11 @@ func (job *Job) Create() error {
 								Privileged: &falseVal,
 							},
 							ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+							VolumeMounts:    volumeMounts,
 						},
 					},
 					RestartPolicy: v1.RestartPolicyOnFailure,
+					Volumes:       podVolumes,
 				},
 			},
 		},
@@ -100,6 +103,25 @@ func (job *Job) Create() error {
 	fmt.Printf("New job %s created\n", job.name)
 
 	return nil
+}
+
+func createVolumeSpecs(vols map[string]string) (volumeMounts []v1.VolumeMount, podVolumes []v1.Volume) {
+	// Build volume specs
+	for pvc, mountPath := range vols {
+		podVolName := fmt.Sprintf("vol-%s", pvc)
+		volumeMounts = append(volumeMounts, v1.VolumeMount{Name: podVolName, MountPath: mountPath})
+		podVolumes = append(podVolumes,
+			v1.Volume{
+				Name: podVolName,
+				VolumeSource: v1.VolumeSource{
+					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						ClaimName: pvc,
+					},
+				},
+			},
+		)
+	}
+	return volumeMounts, podVolumes
 }
 
 // WaitForCompletion waits for the job to run to completion.

@@ -9,8 +9,11 @@ import (
 
 	"github.com/jpillora/backoff"
 	. "gopkg.in/check.v1"
+	batch "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 type JobSuite struct{}
@@ -23,14 +26,14 @@ const testJobImage = "busybox"
 const testJobServiceAccount = "default"
 
 func (s *JobSuite) SetUpSuite(c *C) {
-	c.Skip("Too slow")
+	// c.Skip("Too slow")
 }
 
 // Verifies that the Job object is not created if the job name is not specified.
 func (s *JobSuite) TestJobsNoName(c *C) {
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, "", "sleep", "10")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, "", nil, "sleep", "10")
 	c.Assert(job, IsNil)
 	c.Assert(err, NotNil)
 }
@@ -39,7 +42,7 @@ func (s *JobSuite) TestJobsNoName(c *C) {
 func (s *JobSuite) TestJobsNoImage(c *C) {
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, "", "sleep", "10")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, "", nil, "sleep", "10")
 	c.Assert(job, IsNil)
 	c.Assert(err, NotNil)
 }
@@ -48,14 +51,14 @@ func (s *JobSuite) TestJobsNoImage(c *C) {
 func (s *JobSuite) TestJobsNoNamespace(c *C) {
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, "", testJobServiceAccount, testJobImage, "sleep", "10")
+	job, err := NewJob(clientset, testJobName, "", testJobServiceAccount, testJobImage, nil, "sleep", "10")
 	c.Assert(job.namespace, Equals, "default")
 	c.Assert(err, IsNil)
 }
 
 // Verifies that the Job object is not created if the clientset is nil.
 func (s *JobSuite) TestJobsNoClientset(c *C) {
-	job, err := NewJob(nil, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, "sleep", "10")
+	job, err := NewJob(nil, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sleep", "10")
 	c.Assert(job, IsNil)
 	c.Assert(err, NotNil)
 }
@@ -64,11 +67,11 @@ func (s *JobSuite) TestJobsNoClientset(c *C) {
 func (s *JobSuite) TestJobsNoCommand(c *C) {
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobImage, "")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "")
 	c.Assert(job, IsNil)
 	c.Assert(err, NotNil)
 
-	job, err = NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage)
+	job, err = NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil)
 	c.Assert(job, IsNil)
 	c.Assert(err, NotNil)
 }
@@ -112,7 +115,7 @@ func (s *JobSuite) TestJobsBasic(c *C) {
 
 	images := [2]string{"ubuntu:latest", "perl"}
 	for _, image := range images {
-		job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, image, "sleep", "2")
+		job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, image, nil, "sleep", "2")
 
 		c.Assert(job, NotNil)
 		c.Assert(err, IsNil)
@@ -139,7 +142,7 @@ func (s *JobSuite) TestJobsDeleteWhileRunning(c *C) {
 	namespace := "default"
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, "sleep", "300")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sleep", "300")
 
 	c.Assert(job, NotNil)
 	c.Assert(err, IsNil)
@@ -164,7 +167,7 @@ func cancelLater(cancel func()) {
 func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, "sleep", "300")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sleep", "300")
 
 	c.Assert(job, NotNil)
 	c.Assert(err, IsNil)
@@ -187,7 +190,7 @@ func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
 func (s *JobSuite) TestJobsWaitOnNonExistentJob(c *C) {
 	clientset := NewClient()
 
-	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, "sleep", "300")
+	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sleep", "300")
 
 	c.Assert(job, NotNil)
 	c.Assert(err, IsNil)
@@ -195,4 +198,24 @@ func (s *JobSuite) TestJobsWaitOnNonExistentJob(c *C) {
 	// Call WaitForCompletion on non-existent kubernetes job.
 	err = job.WaitForCompletion(context.Background())
 	c.Assert(c, NotNil)
+}
+
+func (s *JobSuite) TestJobsVolumes(c *C) {
+	cli := fake.NewSimpleClientset()
+	vols := map[string]string{"pvc-test": "/mnt/data1"}
+	job, err := NewJob(cli, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, vols, "sleep", "300")
+	c.Assert(err, IsNil)
+	c.Assert(job.Create(), IsNil)
+
+	a := cli.Actions()
+	c.Assert(a, HasLen, 1)
+	createAction := a[0]
+	createdJob, ok := createAction.(k8stesting.CreateAction).GetObject().(*batch.Job)
+	c.Assert(ok, Equals, true)
+
+	c.Assert(createdJob.Name, Equals, testJobName)
+	podSpec := createdJob.Spec.Template.Spec
+	c.Assert(podSpec.Volumes, HasLen, 1)
+	c.Assert(podSpec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, "pvc-test")
+	c.Assert(podSpec.Containers[0].VolumeMounts[0].MountPath, Equals, "/mnt/data1")
 }

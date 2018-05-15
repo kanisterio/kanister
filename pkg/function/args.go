@@ -16,3 +16,12 @@ func Arg(args map[string]interface{}, argName string, result interface{}) error 
 	}
 	return errors.New("Argument missing " + argName)
 }
+
+// OptArg returns the value of the specified argument if it exists
+// It will return the default value if the argument does not exist
+func OptArg(args map[string]interface{}, argName string, result interface{}, defaultValue interface{}) error {
+	if _, ok := args[argName]; ok {
+		return Arg(args, argName, result)
+	}
+	return mapstructure.Decode(defaultValue, result)
+}

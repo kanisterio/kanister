@@ -59,7 +59,7 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, args map[string]interface{}) 
 	if err != nil {
 		return errors.Wrap(err, "Failed to get Controller Service Account")
 	}
-	job, err := kube.NewJob(clientset, jobName, namespace, serviceAccount, image, command...)
+	job, err := kube.NewJob(clientset, jobName, namespace, serviceAccount, image, nil, command...)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create job")
 	}

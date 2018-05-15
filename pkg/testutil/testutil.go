@@ -5,10 +5,28 @@ import (
 
 	"k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
+
+// NewTestPVC function returns a pointer to a new PVC test object
+func NewTestPVC() *v1.PersistentVolumeClaim {
+	return &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "kanistercontrollertest",
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: *resource.NewQuantity(1, resource.BinarySI),
+				},
+			},
+		},
+	}
+}
 
 // NewTestNamespace function returns a pointer to a new Namespace test object
 func NewTestNamespace() *v1.Namespace {
