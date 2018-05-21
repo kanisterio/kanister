@@ -123,7 +123,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			err := p.Exec(context.Background())
+			err := p.Exec(context.Background(), *tp)
 			c.Assert(err, IsNil)
 		}
 		ok, err := kube.DeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
@@ -168,7 +168,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			err := p.Exec(context.Background())
+			err := p.Exec(context.Background(), *tp)
 			c.Assert(err, IsNil)
 
 		}

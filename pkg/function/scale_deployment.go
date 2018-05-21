@@ -5,6 +5,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 const (
@@ -27,7 +28,7 @@ func (*scaleDeploymentFunc) Name() string {
 	return "ScaleDeployment"
 }
 
-func (*scaleDeploymentFunc) Exec(ctx context.Context, args map[string]interface{}) error {
+func (*scaleDeploymentFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
 	var namespace, appName string
 	var replicas int32
 	err := Arg(args, ScaleSSNamespaceArg, &namespace)

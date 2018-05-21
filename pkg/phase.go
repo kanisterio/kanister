@@ -23,8 +23,8 @@ func (p *Phase) Name() string {
 
 // Exec renders the argument templates in this Phase's Func and executes with
 // those arguments.
-func (p *Phase) Exec(ctx context.Context) error {
-	return p.f.Exec(ctx, p.args)
+func (p *Phase) Exec(ctx context.Context, tp param.TemplateParams) error {
+	return p.f.Exec(ctx, tp, p.args)
 }
 
 // GetPhases renders the returns a list of Phases with pre-rendered arguments.

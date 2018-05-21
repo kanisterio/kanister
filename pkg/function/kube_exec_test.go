@@ -112,7 +112,7 @@ func (s *KubeExecTest) TestKubeExec(c *C) {
 	phases, err := kanister.GetPhases(*newKubeExecBlueprint(), action, *tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
-		err := p.Exec(context.Background())
+		err := p.Exec(context.Background(), *tp)
 		c.Assert(err, IsNil)
 	}
 }

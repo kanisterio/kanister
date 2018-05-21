@@ -92,7 +92,7 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 	phases, err := kanister.GetPhases(*newTaskBlueprint(), action, tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
-		err := p.Exec(ctx)
+		err := p.Exec(ctx, tp)
 		c.Assert(err, IsNil)
 	}
 }

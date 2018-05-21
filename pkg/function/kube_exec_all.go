@@ -11,6 +11,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 func init() {
@@ -34,7 +35,7 @@ func (*kubeExecAllFunc) Name() string {
 	return "KubeExecAll"
 }
 
-func (*kubeExecAllFunc) Exec(ctx context.Context, args map[string]interface{}) error {
+func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
 	cli := kube.NewClient()
 	var namespace, pods, containers string
 	var cmd []string

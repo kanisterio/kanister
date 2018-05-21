@@ -5,6 +5,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -29,7 +30,7 @@ func (*prepareDataFunc) Name() string {
 	return "PrepareData"
 }
 
-func (*prepareDataFunc) Exec(ctx context.Context, args map[string]interface{}) error {
+func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
 	var namespace, image, serviceAccount string
 	var command []string
 	var vols map[string]string

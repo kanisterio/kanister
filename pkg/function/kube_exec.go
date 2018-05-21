@@ -9,6 +9,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 func init() {
@@ -32,7 +33,7 @@ func (*kubeExecFunc) Name() string {
 	return "KubeExec"
 }
 
-func (kef *kubeExecFunc) Exec(ctx context.Context, args map[string]interface{}) error {
+func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
 	cli := kube.NewClient()
 	var namespace, pod, container string
 	var cmd []string

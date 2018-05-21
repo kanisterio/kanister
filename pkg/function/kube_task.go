@@ -7,6 +7,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/pkg/errors"
 )
 
@@ -34,7 +35,7 @@ func generateJobName(jobPrefix string) string {
 	return jobPrefix + jobNameSuffix
 }
 
-func (ktf *kubeTaskFunc) Exec(ctx context.Context, args map[string]interface{}) error {
+func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
 	var namespace, image string
 	var command []string
 	var err error

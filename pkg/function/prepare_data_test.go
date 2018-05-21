@@ -97,7 +97,7 @@ func (s *PrepareDataSuite) TestPrepareData(c *C) {
 	phases, err := kanister.GetPhases(*bp, action, tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
-		err := p.Exec(ctx)
+		err := p.Exec(ctx, tp)
 		c.Assert(err, IsNil)
 	}
 }
