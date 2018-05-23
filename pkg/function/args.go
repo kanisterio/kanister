@@ -25,3 +25,9 @@ func OptArg(args map[string]interface{}, argName string, result interface{}, def
 	}
 	return mapstructure.Decode(defaultValue, result)
 }
+
+// ArgPresent checks if the argument exists
+func ArgExists(args map[string]interface{}, argName string) bool {
+	_, ok := args[argName]
+	return ok
+}
