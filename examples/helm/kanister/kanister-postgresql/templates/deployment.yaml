@@ -9,6 +9,7 @@ metadata:
     heritage: "{{ .Release.Service }}"
   annotations:
     kanister.kasten.io/blueprint: {{ template "postgresql.fullname" . }}-blueprint
+    kanister.kasten.io/pitr: "true"
 spec:
   template:
     metadata:
