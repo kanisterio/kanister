@@ -35,7 +35,10 @@ To connect to your database directly from outside the K8s cluster:
 
     mysql -h ${MYSQL_HOST} -P${MYSQL_PORT} -u root -p${MYSQL_ROOT_PASSWORD}
 
-. To perform a backup using kanister, simply create an ActionSet:
+To perform a backup using Kanister, simply create an ActionSet:
+{{- if not .Values.kanister.create_profile }}
+(Assuming you previously created profiles.cr.kanister.io CR <kanister-profile> in namespace <kanister>)
+{{- end }}
     $ cat << EOF | kubectl create -f -
         apiVersion: cr.kanister.io/v1alpha1
         kind: ActionSet
@@ -50,4 +53,18 @@ To connect to your database directly from outside the K8s cluster:
                 kind: Deployment
                 name: {{ template "mysql.fullname" . }}
                 namespace: {{ .Release.Namespace }}
+              profile:
+                apiVersion: v1alpha1
+                kind: Profile
+                {{- if .Values.kanister.create_profile }}
+                name: {{ template "mysql.fullname" . }}-profile
+                  {{- if .Values.kanister.profile_namespace }}
+                namespace: {{ .Values.kanister.profile_namespace }}
+                  {{- else }}
+                namespace: {{ .Release.Namespace }}
+                  {{- end }}
+                {{- else }}
+                name: <kanister-profile>
+                namespace: <kanister>
+                {{- end }}
     EOF

@@ -10,33 +10,54 @@ This chart bootstraps a single node MySQL deployment on a [Kubernetes](http://ku
 
 - Kubernetes 1.6+ with Beta APIs enabled
 - PV provisioner support in the underlying infrastructure
+- Kanister version 0.7.0 with `profiles.cr.kanister.io` CRD installed
 
 ## Installing the Chart
 
 Installing Kanister Enabled MySQL
-For basic installation, you can install using a Kasten-provided Helm chart that will install an instance of MySQL (a deployment with a persistent volume) as well as a Kanister blueprint to be used with it.
+For basic installation, you can install using the provided Helm chart that will install an instance of MySQL (a deployment with a persistent volume) as well as a Kanister blueprint to be used with it.
 
-Prior to install you will need to have the Kasten Helm repository added to your local setup.
+Prior to install you will need to have the Kanister Helm repository added to your local setup.
+
 ```bash
-$ helm repo add kasten https://charts.kasten.io/
+$ helm repo add kanister http://charts.kanister.io
 ```
+
 Then install the sample MySQL application in its own namespace.
 
 ```bash
-$ helm install kasten/kanister-mysql -n my-release --namespace mysql-test \
-     --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
-     --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
-     --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
-     --set kanister.s3_bucket="kanister-bucket" \
-     --set mysqlRootPassword="asd#45@mysqlEXAMPLE" \
+$ helm install kanister/kanister-mysql -n my-release --namespace mysql-test \
+     --set kanister.create_profile='true' \
+     --set kanister.s3_endpoint='https://my-custom-s3-provider:9000' \
+     --set kanister.s3_api_key='AKIAIOSFODNN7EXAMPLE' \
+     --set kanister.s3_api_secret='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
+     --set kanister.s3_bucket='kanister-bucket' \
+     --set mysqlRootPassword='asd#45@mysqlEXAMPLE' \
      --set persistence.size=10Gi
 ```
 
 The settings in the command above represent the minimum recommended set for your installation.
-The command deploys MySQL on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
+The command deploys MySQL on the Kubernetes cluster in the default configuration. The
+[configuration](#configuration) section lists the parameters that can be configured during
+installation.
 
-By default a random password will be generated for the root user. If you'd like to set your own password change the mysqlRootPassword
-in the values.yaml.
+The command will also configure a location where artifacts resulting from Kanister
+data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
+*CustomResource (CR)* which is then referenced in Kanister ActionSets. Every ActionSet
+requires a Profile reference whether one created as part of the application install or
+not. Support for creating an ActionSet as part of install is simply for convenience.
+This CR can be shared between Kanister-enabled application instances so one option is to
+only create as part of the first instance.
+
+If not creating a Profile CR, it is possible to use an even simpler command.
+
+```bash
+$ helm install kanister/kanister-mysql -n my-release --namespace mysql-test \
+     --set mysqlRootPassword='asd#45@mysqlEXAMPLE' \
+     --set persistence.size=10Gi
+```
+
+By default a random password will be generated for the root user. If you'd like to set your own password change the mysqlRootPassword in the values.yaml.
 
 You can retrieve your root password by running the following command. Make sure to replace [YOUR_RELEASE_NAME]:
 
@@ -53,20 +74,24 @@ $ helm delete my-release
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
+To completely remove the release include the `--purge` flag.
 
 ## Configuration
 
-The following table lists the configurable MySQL Kanister blueprint parameters and their default values.
+The following table lists the configurable MySQL Kanister blueprint and Profile CR parameters and their
+default values.
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `kanister.s3_api_key` | (Required) API Key for an s3 compatible object store. | `nil`|
-| `kanister.s3_api_secret` | (Required) Corresponding secret for `s3_api_key`. | `nil` |
-| `kanister.s3_bucket` | (Required) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `None` |
-| `kanister.s3_endpoint` | (Optional) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
-| `kanister.s3_verify_ssl` | (Optional) Set to ``false`` to disable SSL verification on the s3 endpoint. | `true` |
+| `kanister.create_profile` | (Optional) Specify if a Profile CR should be created as part of install. | ``false`` |
+| `kanister.s3_api_key` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
+| `kanister.s3_api_secret` | (Required if creating profile) Corresponding secret for `s3_api_key`. | `nil` |
+| `kanister.s3_bucket` | (Required if creating profile) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `nil` |
+| `kanister.s3_region` | (Optional if creating profile) Region to be used for the bucket. | `nil` |
+| `kanister.s3_endpoint` | (Optional if creating profile) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
+| `kanister.s3_verify_ssl` | (Optional if creating profile) Set to ``false`` to disable SSL verification on the s3 endpoint. | `true` |
+| `kanister.profile_namespace` | (Optional if creating profile) Specify the namespace where the created Profile CR and associated credentials will be stored. Suitable for creating a the first instance of a shared Profile CR. | Application namespace |
 | `kanister.controller_namespace` | (Optional) Specify the namespace where the Kanister controller is running. | kasten-io |
-
 
 The following table lists the configurable parameters of the MySQL chart and their default values.
 
@@ -98,6 +123,7 @@ The following table lists the configurable parameters of the MySQL chart and the
 | `configurationFiles`                 | List of mysql configuration files         | `nil`                                                |
 
 ## Using Configuration Parameters
+
 Some of the parameters above map to the env variables defined in the [MySQL DockerHub image](https://hub.docker.com/_/mysql/).
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
@@ -105,7 +131,7 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 ```bash
 $ helm install --name my-release \
   --set mysqlRootPassword=secretpassword,mysqlUser=my-user,mysqlPassword=my-password,mysqlDatabase=my-database \
-    kasten/kanister-mysql
+    kanister/kanister-mysql
 ```
 
 The above command sets the MySQL `root` account password to `secretpassword`. Additionally it creates a standard database user named `my-user`, with the password `my-password`, who has access to a database named `my-database`.
@@ -113,7 +139,7 @@ The above command sets the MySQL `root` account password to `secretpassword`. Ad
 Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
 
 ```bash
-$ helm install --name my-release -f values.yaml kasten/kanister-mysql
+$ helm install --name my-release -f values.yaml kanister/kanister-mysql
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
