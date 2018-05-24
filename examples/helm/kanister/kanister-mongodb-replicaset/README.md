@@ -1,13 +1,17 @@
 # StatefulSet MongoDB + Kanister sidecar Helm Chart
 
 ## Prerequisites Details
+
 * Kubernetes 1.6+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
+* Kanister version 0.7.0 with `profiles.cr.kanister.io` CRD installed
 
 ## StatefulSet Details
+
 * https://kubernetes.io/docs/concepts/abstractions/controllers/statefulsets/
 
 ## StatefulSet Caveats
+
 * https://kubernetes.io/docs/concepts/abstractions/controllers/statefulsets/#limitations
 
 ## Chart Details
@@ -17,30 +21,72 @@ using Kubernetes StatefulSets and Init Containers.
 
 ## Installing the Chart
 
-To install the chart with the release name `my-release`:
+For basic installation, you can install using a the provided Helm chart that will install an instance of a
+MongoDB ReplicaSet (a StatefulSet with a persistent volumes) as well as a Kanister blueprint to be used with it.
 
-### AWS use case
-```console
-$ helm install --name my-release kanister-mongodb-replicaset/ --set kanister.bucket_name=${KANISTER_BUCKET_NAME},kanister.cloud_api_key="${AWS_ACCESS_KEY_ID}",kanister.cloud_api_secret="${AWS_SECRET_ACCESS_KEY}"
+Prior to install you will need to have the Kanister Helm repository added to your local setup.
+
+```bash
+$ helm repo add kanister http://charts.kanister.io
 ```
 
-### GKE use case
-You have to obtain a pair of Developer Keys for GoogleStorage
-https://cloud.google.com/storage/docs/migrating#keys
+Then install the sample MongoDB application with the release name `my-release` in its own namespace
+`mongo-test` use the following:
+
+```bash
+$ helm install kanister/kanister-mongodb-replicaset -n my-release --namespace mongo-test \
+     --set kanister.create_profile='true' \
+     --set kanister.s3_endpoint='https://my-custom-s3-provider:9000' \
+     --set kanister.s3_api_key='AKIAIOSFODNN7EXAMPLE' \
+     --set kanister.s3_api_secret='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
+     --set kanister.s3_bucket='kanister-bucket'
+```
+
+The command deploys MongoDB ReplicaSet on the Kubernetes cluster in the default
+configuration. The [configuration](#configuration) section lists the parameters that can be
+configured during installation.
+
+The command will also configure a location where artifacts resulting from Kanister
+data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
+*CustomResource (CR)* which is then referenced in Kanister ActionSets. Every ActionSet
+requires a Profile reference whether one created as part of the application install or
+not. Support for creating an ActionSet as part of install is simply for convenience.
+This CR can be shared between Kanister-enabled application instances so one option is to
+only create as part of the first instance.
+
+If not creating a Profile CR, it is possible to use an even simpler command.
+
+```bash
+$ helm install kanister/kanister-mongodb-replicaset -n my-release --namespace mongo-test
+```
+
+## Uninstalling the Chart
+
+To uninstall/delete the `my-release` deployment:
+
+```bash
+$ helm delete my-release
+```
+
+The command removes all the Kubernetes components associated with the chart and deletes the release.
+To completely remove the release include the `--purge` flag.
 
 ## Configuration
 
-The following table lists the configurable Kanister blueprint parameters and their default values.
+The following table lists the configurable MongoDB Kanister blueprint and Profile CR parameters and their
+default values.
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `kanister.s3_api_key` | (Required) API Key for an s3 compatible object store. | `nil`|
-| `kanister.s3_api_secret` | (Required) Corresponding secret for `s3_api_key`. | `nil` |
-| `kanister.s3_bucket` | (Required) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `None` |
-| `kanister.s3_endpoint` | (Optional) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
-| `kanister.s3_verify_ssl` | (Optional) Set to ``false`` to disable SSL verification on the s3 endpoint. | `true` |
+| `kanister.create_profile` | (Optional) Specify if a Profile CR should be created as part of install. | ``false`` |
+| `kanister.s3_api_key` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
+| `kanister.s3_api_secret` | (Required if creating profile) Corresponding secret for `s3_api_key`. | `nil` |
+| `kanister.s3_bucket` | (Required if creating profile) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `nil` |
+| `kanister.s3_region` | (Optional if creating profile) Region to be used for the bucket. | `nil` |
+| `kanister.s3_endpoint` | (Optional if creating profile) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
+| `kanister.s3_verify_ssl` | (Optional if creating profile) Set to ``false`` to disable SSL verification on the s3 endpoint. | `true` |
+| `kanister.profile_namespace` | (Optional if creating profile) Specify the namespace where the created Profile CR and associated credentials will be stored. Suitable for creating a the first instance of a shared Profile CR. | Application namespace |
 | `kanister.controller_namespace` | (Optional) Specify the namespace where the Kanister controller is running. | kasten-io |
-
 
 The following tables lists the configurable parameters of the mongodb chart and their default values.
 

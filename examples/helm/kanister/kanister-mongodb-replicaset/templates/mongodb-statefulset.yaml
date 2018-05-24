@@ -86,33 +86,6 @@ spec:
           args:
           - "tail -f /dev/null"
           env:
-          - name: AWS_ACCESS_KEY_ID
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "mongodb-replicaset.fullname" . }}-backup-creds
-                key: s3_access_key_id
-          - name: AWS_SECRET_ACCESS_KEY
-            valueFrom:
-              secretKeyRef:
-                name: {{ template "mongodb-replicaset.fullname" . }}-backup-creds
-                key: s3_secret_access_key
-          - name: S3_BUCKET
-            valueFrom:
-              configMapKeyRef:
-                name: {{ template "mongodb-replicaset.fullname" . }}-backup-config
-                key: s3_bucket
-          - name: S3_VERIFY_SSL
-            valueFrom:
-              configMapKeyRef:
-                name: {{ template "mongodb-replicaset.fullname" . }}-backup-config
-                key: s3_verify_ssl
-          {{- if .Values.kanister.s3_endpoint }}
-          - name: S3_ENDPOINT
-            valueFrom:
-              configMapKeyRef:
-                name: {{ template "mongodb-replicaset.fullname" . }}-backup-config
-                key: s3_endpoint
-          {{- end }}
           {{- if .Values.auth.enabled }}
           - name: MONGO_ADMIN_USER
             valueFrom:
