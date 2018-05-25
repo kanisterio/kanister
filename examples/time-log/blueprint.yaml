@@ -32,6 +32,8 @@ actions:
     type: Deployment
     inputArtifactNames:
     - timeLog
+    secretNames:
+    - aws
     phases:
     - func: KubeExec
       name: restoreFromS3

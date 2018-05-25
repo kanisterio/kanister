@@ -11,7 +11,12 @@ spec:
         kind: Deployment
         name: time-logger
         namespace: default
+      secrets:
+        aws:
+          name: aws-creds
+          namespace: kanister
       artifacts:
         timeLog:
-          path: s3://mongo.kanister.io/simple
+          keyValue:
+            path: s3://time-log-test-bucket/tutorial/time-log/time.log
 

@@ -4,5 +4,5 @@ metadata:
   name: s3-location
   namespace: kanister
 data:
-  path: s3://mongo.kanister.io
+  path: s3://time-log-test-bucket/tutorial
 

@@ -417,7 +417,8 @@ ConfigMap.
       - aws
       outputArtifacts:
         timeLog:
-          path: '{{ .ConfigMaps.location.Data.path }}/time-log/'
+          keyValue:
+            path: '{{ .ConfigMaps.location.Data.path }}/time-log/'
       phases:
         - func: KubeExec
           name: backupToS3
@@ -466,9 +467,14 @@ We create a new ActionSet on our `time-logger` deployment with the action name
           kind: Deployment
           name: time-logger
           namespace: default
+        secrets:
+          aws:
+            name: aws-creds
+            namespace: kanister
         artifacts:
           timeLog:
-            path: s3://time-log-test-bucket/tutorial/time.log
+            keyValue:
+              path: s3://time-log-test-bucket/tutorial/time-log/time.log
   EOF
 
 We add a restore action to the Blueprint. This action does not need the
@@ -491,7 +497,8 @@ ConfigMap because the `inputArtifact` contains the fully specified path.
       - aws
       outputArtifacts:
         timeLog:
-        path: '{{ .ConfigMaps.location.Data.path }}/time-log/'
+          keyValue:
+            path: '{{ .ConfigMaps.location.Data.path }}/time-log/'
       phases:
         - func: KubeExec
           name: backupToS3
