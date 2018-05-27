@@ -43,11 +43,15 @@ func render(arg interface{}, tp TemplateParams) (interface{}, error) {
 	case reflect.Map:
 		ras := make(map[interface{}]interface{}, val.Len())
 		for _, k := range val.MapKeys() {
+			rk, err := render(k.Interface(), tp)
+			if err != nil {
+				return nil, err
+			}
 			rv, err := render(val.MapIndex(k).Interface(), tp)
 			if err != nil {
 				return nil, err
 			}
-			ras[k.Interface()] = rv
+			ras[rk] = rv
 		}
 		return ras, nil
 	default:

@@ -113,9 +113,9 @@ func (s *RenderSuite) TestRender(c *C) {
 			checker: IsNil,
 		},
 		{
-			arg:     map[string][]string{"name": {"{{ upper `hello` }}"}},
+			arg:     map[string][]string{"{{ upper `hello` }}": {"{{ upper `hello` }}"}},
 			tp:      TemplateParams{},
-			out:     map[interface{}]interface{}{"name": []interface{}{"HELLO"}},
+			out:     map[interface{}]interface{}{"HELLO": []interface{}{"HELLO"}},
 			checker: IsNil,
 		},
 	} {
