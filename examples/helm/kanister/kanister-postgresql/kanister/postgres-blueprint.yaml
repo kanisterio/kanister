@@ -4,7 +4,8 @@ actions:
     outputArtifacts:
       manifest:
         KeyValue:
-          path: '/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt'
+          prefix: 'postgres-backups/{{ .Deployment.Name }}'
+          path: 'postgres-backups/{{ .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt'
     phases:
     - func: KubeExec
       name: baseBackup
@@ -31,23 +32,71 @@ actions:
             # We check for an existing timeline. If one does not exist, we create it based on the current time.
             if [[ ! -e "${env_wal_prefix}" ]]
             then
+              # Setup wal-e s3 connection parameters.
               timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
-              wale_s3_prefix="${S3_BUCKET}/${timeline}"
+              wale_s3_prefix="s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .ArtifactsOut.manifest.KeyValue.prefix }}/${timeline}"
               echo "${wale_s3_prefix}" > "${env_wal_prefix}"
             fi
+
+            # Setup the other S3 parameters for wal-e
+            env_wal_endpoint="${env_dir}/WALE_S3_ENDPOINT"
+            env_wal_region="${env_dir}/AWS_REGION"
+            env_wal_access_key_id="${env_dir}/AWS_ACCESS_KEY_ID"
+            env_wal_secret_access_key="${env_dir}/AWS_SECRET_ACCESS_KEY"
+
+            {{- if .Profile.Location.S3Compliant.Endpoint }}
+              wale_s3_endpoint="{{ .Profile.Location.S3Compliant.Endpoint | quote }}"
+              wale_s3_endpoint=${wale_s3_endpoint,,}
+              {{- if .Profile.SkipSSLVerify }}
+                # Since wal-e does not support skip-ssl-verify switch to http://
+                wale_s3_endpoint="${wale_s3_endpoint/https/http}"
+              {{- end }}
+
+              #add the scheme that wal-e requires
+              wale_s3_endpoint="${wale_s3_endpoint//https\:\/\//https+path://}"
+              wale_s3_endpoint="${wale_s3_endpoint//http\:\/\//http+path://}"
+
+              echo "${wale_s3_endpoint}" > "${env_wal_endpoint}"
+
+              # Region will be ignored for S3 compatible object store so skipping.
+              rm -rf ${env_wal_region}
+            {{- else }}
+              # Region is required when no endpoint is used (AWS S3).
+              wale_s3_region="us-east-1"
+              {{- if .Profile.Location.S3Compliant.Region }}
+                wale_s3_region="{{ .Profile.Location.S3Compliant.Region | quote}}"
+              {{- end }}
+              echo "${wale_s3_region}" > "${env_wal_region}"
+            {{- end }}
+
+            set +o xtrace
+            echo "{{ .Profile.Credential.KeyPair.Secret }}" > "${env_wal_secret_access_key}"
+            echo "{{ .Profile.Credential.KeyPair.ID }}" > "${env_wal_access_key_id}"
+            set -o xtrace
 
             # Create and push a base-backup to the object store.
             envdir "${env_dir}" wal-e backup-push "${PGDATA}"
             backup_name=$(envdir "${env_dir}" wal-e backup-list | tail -n +2 | sort -k2 | tail -n 1 | awk '{print $1}')
 
             # Create a manifest that references the backup we created and the current timeline.
-            s3_path="${S3_BUCKET}{{ .ArtifactsOut.manifest.KeyValue.path }}"
             s3_cmd=(aws)
-            if [[ -n "${WALE_S3_ENDPOINT+set}" ]]
-            then
-                s3_cmd+=(--endpoint "${WALE_S3_ENDPOINT}")
-            fi
+            {{- if .Profile.SkipSSLVerify }}
+              s3_cmd+=("--no-verify-ssl")
+            {{- end }}
+            {{- if .Profile.Location.S3Compliant.Endpoint }}
+              s3_cmd+=(--endpoint "{{ .Profile.Location.S3Compliant.Endpoint }}")
+            {{- end }}
+            {{- if .Profile.Location.S3Compliant.Region }}
+              s3_cmd+=(--region "{{ .Profile.Location.S3Compliant.Region | quote}}")
+            {{- end }}
+            s3_path="s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .ArtifactsOut.manifest.KeyValue.path }}"
             s3_cmd+=(s3 cp - "${s3_path}")
+
+            set +o xtrace
+            export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+            export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
+            set -o xtrace
+
             cat << EOF | ${s3_cmd[@]}
             backup_name=${backup_name}
             wale_s3_prefix=$(cat "${env_wal_prefix}")
@@ -58,84 +107,131 @@ actions:
       - manifest
       - pitr
     phases:
-    - func: KubeExec
-      name: fetchBase
+    - func: ScaleWorkload
+      name: shutdownPod
       args:
         namespace: "{{ .Deployment.Namespace }}"
-        pod: "{{ index .Deployment.Pods 0 }}"
-        container: postgresql
+        name: "{{ .Deployment.Name }}"
+        kind: deployment
+        replicas: 0
+    - func: PrepareData
+      name: performRestore
+      args:
+        image: kanisterio/postgres:v0.3.0
+        namespace: "{{ .Deployment.Namespace }}"
+        volumes:
+          "{{ .Deployment.Name }}": "/pg"
         command:
           - bash
           - -o
           - errexit
           - -o
           - pipefail
-          - -c
-          - |
-            # Get and parse artifact manifest to discover the timeline and the base-backup name.
-            s3_path="${S3_BUCKET}{{ .ArtifactsIn.manifest.KeyValue.path }}"
-            s3_cmd=(aws)
-            if [[ -n "${WALE_S3_ENDPOINT+set}" ]]
-            then
-                s3_cmd+=(--endpoint "${WALE_S3_ENDPOINT}")
-            fi
-            s3_cmd+=(s3 cp "${s3_path}" -)
-            backup_name=$(${s3_cmd[@]} | grep 'backup_name' | cut -d'=' -f2)
-            old_wale_prefix=$(${s3_cmd[@]} | grep 'wale_s3_prefix' | cut -d'=' -f2)
-
-            # Fetch base backup using the old WALE_S3_PREFIX.
-            recover_dir="${PGDATA}/kanister-restore"
-            wal-e --s3-prefix "${old_wale_prefix}" backup-fetch "${recover_dir}" "${backup_name}"
-
-            # Prepare the environment variable directory.
-            env_dir="${recover_dir}/env"
-            mkdir -p  "${env_dir}"
-
-            # Create a new timeline and write it to the environment variable file.
-            wale_env_file="${env_dir}/WALE_S3_PREFIX"
-            timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
-            wal_s3_prefix="${S3_BUCKET}/${timeline}"
-            echo "${wal_s3_prefix}" > "${wale_env_file}"
-
-            # Create the recovery file that will apply the WAL files.
-            cat << EOF > "${recover_dir}"/recovery.conf
-            restore_command = 'wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
-            {{- if .ArtifactsIn.pitr }}
-            recovery_target_time = '{{ toDate "2006-01-02T15:04:05.000Z07:00" .ArtifactsIn.pitr.KeyValue.time | date "2006-01-02 15:04:05 MST" }}'
-            {{- end }}
-            EOF
-            sync
-    - func: KubeTask
-      name: restartPod
-      args:
-        namespace: "{{ .Deployment.Namespace }}"
-        image: lachlanevenson/k8s-kubectl:v1.8.10
-        command:
-          - sh
           - -o
-          - errexit
-          - -o
-          - pipefail
+          - nounset
           - -o
           - xtrace
           - -c
           - |
-            # Recreate (scale down and up) the pod so it can be recreated forcing init containers
-            # to run again. One of the init containers will move the restored files to the
-            # correct data location.
-            # Need to wait for terminating pod instance to complete before
-            # scaling back up to avoid writing to the same volume from the PG shutdown sequence
-            # in the terminating pod and the restore completion init container simultaneously.
-            #
-            # TODO: Should have a kanister function to abstract the termination sync
-            # or should incorporate in any function that replaces data files under the
-            # application
-            namespace="{{ .Deployment.Namespace }}"
-            deployment="{{ .Deployment.Name }}"
-            pod="{{ index .Deployment.Pods 0 }}"
-            kubectl scale --namespace $namespace deployment $deployment --replicas=0
-            while [ ! -z "$(kubectl -n $namespace get pod | grep $pod | grep Terminating)" ]
-            do
-              sleep 1
-            done
-            kubectl scale --namespace $namespace deployment $deployment --replicas=1
+            # The PG PVC maybe mounted under a subpath
+            pgdata="/pg/postgresql-db"
+
+            # Prepare the environment variable directory.
+            # Bring the backup to a separate folder first
+            recover_dir="${pgdata}/kanister-restore"
+            env_dir="${recover_dir}/env"
+            mkdir -p  "${env_dir}"
+
+            # Get and parse artifact manifest to discover the timeline and the base-backup name.
+            s3_cmd=(aws)
+            {{- if .Profile.SkipSSLVerify }}
+              s3_cmd+=(" --no-verify-ssl")
+            {{- end }}
+            {{- if .Profile.Location.S3Compliant.Endpoint }}
+              s3_cmd+=(--endpoint "{{ .Profile.Location.S3Compliant.Endpoint }}")
+            {{- end }}
+            {{- if .Profile.Location.S3Compliant.Region }}
+              s3_cmd+=(--region "{{ .Profile.Location.S3Compliant.Region | quote}}")
+            {{- end }}
+            s3_path="s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.path }}"
+            s3_cmd+=(s3 cp "${s3_path}" -)
+
+            set +o xtrace
+            export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+            export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
+            set -o xtrace
+
+            backup_name=$(${s3_cmd[@]} | grep 'backup_name' | cut -d'=' -f2)
+            old_wale_prefix=$(${s3_cmd[@]} | grep 'wale_s3_prefix' | cut -d'=' -f2)
+
+            # Fetch base backup using the old WALE_S3_PREFIX.
+            # First need to setup wal-e conf as env vars
+            {{- if .Profile.Location.S3Compliant.Endpoint }}
+              wale_s3_endpoint="{{ .Profile.Location.S3Compliant.Endpoint | quote}}"
+              wale_s3_endpoint-${wale_s3_endpoint,,}
+              {{- if .Profile.SkipSSLVerify }}
+                # Since wal-e does not support skip-ssl-verify switch to http://
+                wale_s3_endpoint="${wale_s3_endpoint/https/http}"
+              {{- end }}
+
+              # Add the scheme that wal-e requires
+              wale_s3_endpoint="${wale_s3_endpoint/https\:\/\//https+path://}"
+              wale_s3_endpoint="${wale_s3_endpoint/http\:\/\//http+path://}"
+
+              export WALE_S3_ENDPOINT="${wale_s3_endpoint}"
+
+              # Region will be ignored for S3 compatible object store so skipping.
+            {{- else }}
+              # Region is required when no endpoint is used (AWS S3).
+              {{- if .Profile.Location.S3Compliant.Region }}
+                wale_s3_region="{{ .Profile.Location.S3Compliant.Region | quote}}"
+              {{- else }}
+                wale_s3_region="us-east-1"
+              {{- end }}
+              export AWS_REGION="${wale_s3_region}"
+            {{- end }}
+
+            # Can now get the backup with the old prefix
+            wal-e --s3-prefix "${old_wale_prefix}" backup-fetch "${recover_dir}" "${backup_name}"
+
+            # Move the files to the data directory
+
+            # TODO: Currently .conf files unchanged. Include in backup in future
+            ls -d ${pgdata}/kanister-restore/* | sed 's/kanister-restore\///' | xargs -t rm -fr
+            mv ${pgdata}/kanister-restore/* ${pgdata}/
+            rm -fr ${pgdata}/kanister-restore
+            chown postgres:postgres -R ${pgdata}/*
+
+            # Create the recovery file that will apply the WAL files.
+            cat << EOF > "${pgdata}"/recovery.conf
+            restore_command = 'wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
+            {{- if and (and .ArtifactsIn.pitr .ArtifactsIn.pitr.KeyValue) .ArtifactsIn.pitr.KeyValue.time }}
+            recovery_target_time = '{{ toDate "2006-01-02T15:04:05.000Z07:00" .ArtifactsIn.pitr.KeyValue.time | date "2006-01-02 15:04:05 MST" }}'
+            {{- end }}
+            EOF
+            sync
+
+            # Complete the recovery based on recovery.conf.
+            # The timeout for applying the WALs is currently 10 hours.
+            # Starting this instance with WAL archival off so that we don't pollute the current timeline
+            # Once the WALs have been applied, we shutdown the database.
+            cat ${pgdata}/recovery.conf
+            PG_CTL="$(which pg_ctl)"
+            su - postgres --preserve-environment -c "${PG_CTL} -D ${pgdata} -w start -t 36000 -o '-c archive_mode=off'"
+
+            echo "Recovery succeeded!"
+            # Gracefully shutdown to complete
+            su - postgres --preserve-environment -c "${PG_CTL} -D ${pgdata} -w stop -t 300 --mode fast"
+
+            # Recovery is now complete and can switch to new WAL timeline
+            env_wal_prefix="${pgdata}/env/WALE_S3_PREFIX"
+            timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
+            wale_s3_prefix="s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.prefix }}/${timeline}"
+            echo "${wale_s3_prefix}" > "${env_wal_prefix}"
+    - func: ScaleWorkload
+      name: restartPod
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        name: "{{ .Deployment.Name }}"
+        kind: deployment
+        replicas: 1

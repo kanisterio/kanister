@@ -128,10 +128,12 @@ affinity: {}
 
 # Configure Kanister
 kanister:
+  create_profile: false
   s3_api_key:
   s3_api_secret:
   s3_bucket:
   s3_endpoint:
   s3_verify_ssl: true
   s3_region:
+  profile_namespace:
   controller_namespace: kasten-io
