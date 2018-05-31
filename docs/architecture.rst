@@ -91,8 +91,8 @@ The definition of a `BlueprintAction` is:
   }
 
 - `Func` is the name of the registered Kanister function. By default, the
-  controller includes five Kanister functions `"KubeExec"`, `"KubeExecAll"`,
-  `"KubeTask"`, `"ScaleDeployment"` and `"ScaleStatefulSet"`.
+  controller includes a number of Kanister functions such as `"KubeExec"`,
+  `"KubeExecAll"`, `"KubeTask"`, and `"ScaleWorkload"`.
 - `Name` is mostly cosmetic. It is useful in quickly identifying which
   phases the controller has finished executing.
 - `Args` is a map of named arguments that the controller will pass to

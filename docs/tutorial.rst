@@ -99,12 +99,13 @@ First Blueprint
       - func: KubeExec
         name: backupToS3
         args:
-        - "{{ .Deployment.Namespace }}"
-        - "{{ index .Deployment.Pods 0 }}"
-        - test-container
-        - sh
-        - -c
-        - echo /var/log/time.log
+          namespace: "{{ .Deployment.Namespace }}"
+          pod: "{{ index .Deployment.Pods 0 }}"
+          container: test-container
+          command:
+            - sh
+            - -c
+            - echo /var/log/time.log
   EOF
 
 Once we create a Blueprint, we can see its events by using the following command:
@@ -235,14 +236,15 @@ stdout, but eventually we'll backup the time log to that path.
       - func: KubeExec
         name: backupToS3
         args:
-        - "{{ .Deployment.Namespace }}"
-        - "{{ index .Deployment.Pods 0 }}"
-        - test-container
-        - sh
-        - -c
-        - |
-          echo /var/log/time.log
-          echo "{{ .ConfigMaps.location.Data.path }}"
+          namespace: "{{ .Deployment.Namespace }}"
+          pod:  "{{ index .Deployment.Pods 0 }}"
+          container: test-container
+          command:
+            - sh
+            - -c
+            - |
+              echo /var/log/time.log
+              echo "{{ .ConfigMaps.location.Data.path }}"
   EOF
 
 We create a new ActionSet that maps the name in the Blueprint, `location`, to
@@ -337,15 +339,16 @@ For more on this templating, see :ref:`templates`
       - func: KubeExec
         name: backupToS3
         args:
-        - "{{ .Deployment.Namespace }}"
-        - "{{ index .Deployment.Pods 0 }}"
-        - test-container
-        - sh
-        - -c
-        - |
-          AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
-          AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-          aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path | quote }}
+          namespace: "{{ .Deployment.Namespace }}"
+          pod: "{{ index .Deployment.Pods 0 }}"
+          container: test-container
+          command:
+            - sh
+            - -c
+            - |
+              AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
+              AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+              aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path | quote }}
   EOF
 
 Create a new ActionSet that has the name-to-Secret reference in its action's
@@ -423,15 +426,16 @@ ConfigMap.
         - func: KubeExec
           name: backupToS3
           args:
-          - "{{ .Deployment.Namespace }}"
-          - "{{ index .Deployment.Pods 0 }}"
-          - test-container
-          - sh
-          - -c
-          - |
-            AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
-            AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-            aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}
+            namespace: "{{ .Deployment.Namespace }}"
+            pod: "{{ index .Deployment.Pods 0 }}"
+            container: test-container
+            command:
+              - sh
+              - -c
+              - |
+                AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
+                AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+                aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}
   EOF
 
 If you re-execute this Kanister Action, you'll be able to see the Artifact in the
@@ -503,15 +507,16 @@ ConfigMap because the `inputArtifact` contains the fully specified path.
         - func: KubeExec
           name: backupToS3
           args:
-          - "{{ .Deployment.Namespace }}"
-          - "{{ index .Deployment.Pods 0 }}"
-          - test-container
-          - sh
-          - -c
-          - |
-            AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
-            AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-            aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}
+            namespace: "{{ .Deployment.Namespace }}"
+            pod: "{{ index .Deployment.Pods 0 }}"
+            container: test-container
+            command:
+              - sh
+              - -c
+              - |
+                AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
+                AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+                aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}
     restore:
       type: Deployment
       secretNames:
@@ -522,15 +527,16 @@ ConfigMap because the `inputArtifact` contains the fully specified path.
       - func: KubeExec
         name: restoreFromS3
         args:
-        - "{{ .Deployment.Namespace }}"
-        - "{{ index .Deployment.Pods 0 }}"
-        - test-container
-        - sh
-        - -c
-        - |
-          AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
-          AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-          aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log
+          namespace: "{{ .Deployment.Namespace }}"
+          pod: "{{ index .Deployment.Pods 0 }}"
+          container: test-container
+          command:
+            - sh
+            - -c
+            - |
+              AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
+              AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+              aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log
   EOF
 
 We can check the controller logs to see that the time log was restored

@@ -47,10 +47,10 @@ executed as a command.
 
 The arguments are:
 
-#. `namespace`
-#. `pod`
-#. `container`
-#. [`command`]
+:namespace: `namespace`
+:pod: `pod`
+:container: `container`
+:command: [`command`]
 
 KubeExecAll
 -----------
@@ -64,10 +64,10 @@ executed as a command.
 
 The arguments are:
 
-#. `namespace`
-#. `pod(s)`
-#. `container(s)`
-#. [`command`]
+:namespace: `namespace`
+:pod: `pod(s)`
+:container: `container(s)`
+:command: [`command`]
 
 KubeTask
 ++++++++
@@ -77,41 +77,26 @@ This allows you to run a new Pod from a Blueprint.
 
 KubeTask takes the following three arguments:
 
-#. `namespace`
-#. `image`
-#. [`command`]
+:namespace: `namespace`
+:image: `image`
+:command: [`command`]
 
-ScaleDeployment
+ScaleWorkload
 ---------------
 
-ScaleDeployment is used to scale up or scale down a Deployment.
+ScaleDeployment is used to scale up or scale down a workload (StatefulSet or Deployment).
 It is similar to running
 
 .. code-block:: bash
 
   `kubectl scale deployment <DEPLOYMENT-NAME> --replicas=<NUMBER OF REPLICAS> --namespace <NAMESPACE>
 
-It requires the following three arguments:
+It requires the following arguments:
 
-#. `namespace`
-#. `deployment name`
-#. `number of replicas`
-
-ScaleStatefulSet
-----------------
-
-ScaleStatefulSet is used to scale up or scale down a StatefulSet.
-It is similar to running
-
-.. code-block:: bash
-
-  `kubectl scale statefulsets <STATEFUL-SET-NAME> --replicas=<NUMBER OF REPLICAS> --namespace <NAMESPACE>
-
-It requires the following three arguments:
-
-#. `namespace`
-#. `statefulset name`
-#. `number of replicas`
+:replicas: `number of replicas` (required)
+:namespace: `namespace` (optional)
+:kind: `workload type` (optional)
+:name: `workload name` (optional)
 
 Registering Functions
 ---------------------
