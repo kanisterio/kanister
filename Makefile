@@ -244,7 +244,7 @@ release-docs: docs
 	fi;\
 
 release-helm:
-	@/bin/bash -c ./build/release_helm.sh
+	@/bin/bash ./build/release_helm.sh $(VERSION)
 
 release-kanctl:
 	@/bin/bash -c ./build/release_kanctl.sh

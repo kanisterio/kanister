@@ -13,6 +13,7 @@ implements the following go interface:
   type Func interface {
       Name() string
       Exec(ctx context.Context, args ...string) error
+      RequiredArgs() []string
   }
 
 Kanister Functions are registered by the return value of `Name()`, which must be
@@ -22,6 +23,8 @@ Each phase in a Blueprint executes a Kanister Function.  The `Func` field in
 a `BlueprintPhase` is used to lookup a Kanister Function.  After
 `BlueprintPhase.Args` are rendered, they are passed into the Kanister Function's
 `Exec()` method.
+
+The `RequiredArgs` method returns the list of argument names that are required.
 
 Existing Functions
 ==================

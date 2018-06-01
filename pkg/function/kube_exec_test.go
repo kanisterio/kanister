@@ -50,13 +50,14 @@ func newKubeExecBlueprint() *crv1alpha1.Blueprint {
 					crv1alpha1.BlueprintPhase{
 						Name: "echoSomething",
 						Func: "KubeExec",
-						Args: []string{
-							"{{ .StatefulSet.Namespace }}",
-							"{{ index .StatefulSet.Pods 0 }}",
-							"{{ index .StatefulSet.Containers 0 0 }}",
-							"echo",
-							"hello",
-							"world",
+						Args: map[string]interface{}{
+							KubeExecNamespaceArg:     "{{ .StatefulSet.Namespace }}",
+							KubeExecPodNameArg:       "{{ index .StatefulSet.Pods 0 }}",
+							KubeExecContainerNameArg: "{{ index .StatefulSet.Containers 0 0 }}",
+							KubeExecCommandArg: []string{
+								"echo",
+								"hello",
+								"world"},
 						},
 					},
 				},

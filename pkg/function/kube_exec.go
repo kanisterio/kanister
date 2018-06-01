@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -20,18 +19,37 @@ var (
 	_ kanister.Func = (*kubeExecFunc)(nil)
 )
 
+const (
+	KubeExecNamespaceArg     = "namespace"
+	KubeExecPodNameArg       = "pod"
+	KubeExecContainerNameArg = "container"
+	KubeExecCommandArg       = "command"
+)
+
 type kubeExecFunc struct{}
 
 func (*kubeExecFunc) Name() string {
 	return "KubeExec"
 }
 
-func (*kubeExecFunc) Exec(ctx context.Context, args ...string) error {
-	if len(args) <= 4 {
-		return errors.Errorf("KubeExec requires at least 4 arguments. Got: %#v", args)
-	}
+func (kef *kubeExecFunc) Exec(ctx context.Context, args map[string]interface{}) error {
 	cli := kube.NewClient()
-	namespace, pod, container, cmd := args[0], args[1], args[2], args[3:]
+	var namespace, pod, container string
+	var cmd []string
+	var err error
+	if err = Arg(args, KubeExecNamespaceArg, &namespace); err != nil {
+		return err
+	}
+	if err = Arg(args, KubeExecPodNameArg, &pod); err != nil {
+		return err
+	}
+	if err = Arg(args, KubeExecContainerNameArg, &container); err != nil {
+		return err
+	}
+	if err = Arg(args, KubeExecCommandArg, &cmd); err != nil {
+		return err
+	}
+
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
 	if stdout != "" {
 		logs := regexp.MustCompile("[\r\n]").Split(stdout, -1)
@@ -50,4 +68,8 @@ func (*kubeExecFunc) Exec(ctx context.Context, args ...string) error {
 		}
 	}
 	return err
+}
+
+func (*kubeExecFunc) RequiredArgs() []string {
+	return []string{KubeExecNamespaceArg, KubeExecPodNameArg, KubeExecContainerNameArg, KubeExecCommandArg}
 }
