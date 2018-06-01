@@ -4,6 +4,8 @@ import (
 	"context"
 
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 type FuncSuite struct {
@@ -19,7 +21,7 @@ func (s *FuncSuite) TearDownSuite(c *C) {
 
 func (s *FuncSuite) TestFailFunc(c *C) {
 	ctx := context.Background()
-	err := failFunc(ctx, nil)
+	err := failFunc(ctx, param.TemplateParams{}, nil)
 	c.Assert(err, NotNil)
 }
 
@@ -27,7 +29,7 @@ func (s *FuncSuite) TestWaitFunc(c *C) {
 	ctx := context.Background()
 	done := make(chan bool)
 	go func() {
-		err := waitFunc(ctx, nil)
+		err := waitFunc(ctx, param.TemplateParams{}, nil)
 		c.Assert(err, IsNil)
 		close(done)
 	}()
@@ -44,7 +46,7 @@ func (s *FuncSuite) TestArgsFunc(c *C) {
 	ctx := context.Background()
 	args := map[string]interface{}{"arg1": []string{"foo", "bar"}}
 	go func() {
-		err := argsFunc(ctx, args)
+		err := argsFunc(ctx, param.TemplateParams{}, args)
 		c.Assert(err, IsNil)
 	}()
 	c.Assert(ArgFuncArgs(), DeepEquals, args)
