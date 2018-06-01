@@ -13,9 +13,6 @@ how to install these Kanister-enabled Helm charts. Once installed, you
 will need to create :ref:`ActionSets <tutorial>` to perform data
 management actions on the data service.
 
-.. include:: s3_config.rst
-
-
 Kanister Helm Setup
 ===================
 
