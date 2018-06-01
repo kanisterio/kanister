@@ -50,12 +50,11 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
 						Func: "KubeExec",
-						Args: []string{
-							fmt.Sprintf("{{ .%s.Namespace }}", kind),
-							fmt.Sprintf("{{ index .%s.Pods 1 }}", kind),
-							fmt.Sprintf("{{ index .%s.Containers 0 0 }}", kind),
-							"echo",
-							"hello",
+						Args: map[string]interface{}{
+							KubeExecNamespaceArg:     fmt.Sprintf("{{ .%s.Namespace }}", kind),
+							KubeExecPodNameArg:       fmt.Sprintf("{{ index .%s.Pods 1 }}", kind),
+							KubeExecContainerNameArg: fmt.Sprintf("{{ index .%s.Containers 0 0 }}", kind),
+							KubeExecCommandArg:       []string{"echo", "hello"},
 						},
 					},
 				},
@@ -65,11 +64,9 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
-						Func: "Scale" + kind,
-						Args: []string{
-							fmt.Sprintf("{{ .%s.Namespace }}", kind),
-							fmt.Sprintf("{{ .%s.Name }}", kind),
-							"0",
+						Func: "ScaleWorkload",
+						Args: map[string]interface{}{
+							ScaleWorkloadReplicas: 0,
 						},
 					},
 				},
@@ -79,11 +76,9 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
-						Func: "Scale" + kind,
-						Args: []string{
-							fmt.Sprintf("{{ .%s.Namespace }}", kind),
-							fmt.Sprintf("{{ .%s.Name }}", kind),
-							"2",
+						Func: "ScaleWorkload",
+						Args: map[string]interface{}{
+							ScaleWorkloadReplicas: 2,
 						},
 					},
 				},
@@ -124,7 +119,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			err := p.Exec(context.Background())
+			err := p.Exec(context.Background(), *tp)
 			c.Assert(err, IsNil)
 		}
 		ok, err := kube.DeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
@@ -169,7 +164,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			err := p.Exec(context.Background())
+			err := p.Exec(context.Background(), *tp)
 			c.Assert(err, IsNil)
 
 		}
@@ -184,5 +179,98 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		for _, cs := range pod.Status.ContainerStatuses {
 			c.Assert(cs.State.Terminated, NotNil)
 		}
+	}
+}
+
+func (s *ScaleSuite) TestGetArgs(c *C) {
+	for _, tc := range []struct {
+		tp            param.TemplateParams
+		args          map[string]interface{}
+		wantNamespace string
+		wantKind      string
+		wantName      string
+		wantReplicas  int32
+		check         Checker
+	}{
+		{
+			tp:    param.TemplateParams{},
+			args:  map[string]interface{}{ScaleWorkloadReplicas: 2},
+			check: NotNil,
+		},
+		{
+			tp: param.TemplateParams{},
+			args: map[string]interface{}{
+				ScaleWorkloadReplicas:     2,
+				ScaleWorkloadNamespaceArg: "foo",
+				ScaleWorkloadNameArg:      "app",
+				ScaleWorkloadKindArg:      StatefulSetKind,
+			},
+			wantKind:      StatefulSetKind,
+			wantName:      "app",
+			wantNamespace: "foo",
+			wantReplicas:  int32(2),
+			check:         IsNil,
+		},
+		{
+			tp: param.TemplateParams{
+				StatefulSet: &param.StatefulSetParams{
+					Name:      "app",
+					Namespace: "foo",
+				},
+			},
+			args: map[string]interface{}{
+				ScaleWorkloadReplicas: 2,
+			},
+			wantKind:      StatefulSetKind,
+			wantName:      "app",
+			wantNamespace: "foo",
+			wantReplicas:  int32(2),
+			check:         IsNil,
+		},
+		{
+			tp: param.TemplateParams{
+				Deployment: &param.DeploymentParams{
+					Name:      "app",
+					Namespace: "foo",
+				},
+			},
+			args: map[string]interface{}{
+				ScaleWorkloadReplicas: 2,
+			},
+			wantKind:      DeploymentKind,
+			wantName:      "app",
+			wantNamespace: "foo",
+			wantReplicas:  int32(2),
+			check:         IsNil,
+		},
+		{
+			tp: param.TemplateParams{
+				StatefulSet: &param.StatefulSetParams{
+					Name:      "app",
+					Namespace: "foo",
+				},
+			},
+			args: map[string]interface{}{
+				ScaleWorkloadReplicas:     2,
+				ScaleWorkloadNamespaceArg: "notfoo",
+				ScaleWorkloadNameArg:      "notapp",
+				ScaleWorkloadKindArg:      DeploymentKind,
+			},
+			wantKind:      DeploymentKind,
+			wantName:      "notapp",
+			wantNamespace: "notfoo",
+			wantReplicas:  int32(2),
+			check:         IsNil,
+		},
+	} {
+		namespace, kind, name, replicas, err := getArgs(tc.tp, tc.args)
+		c.Assert(err, tc.check)
+		if err != nil {
+			continue
+		}
+		c.Assert(namespace, Equals, tc.wantNamespace)
+		c.Assert(name, Equals, tc.wantName)
+		c.Assert(kind, Equals, tc.wantKind)
+		c.Assert(replicas, Equals, tc.wantReplicas)
 	}
 }

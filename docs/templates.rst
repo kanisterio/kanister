@@ -16,6 +16,7 @@ The TemplateParam struct is defined as:
       Deployment   DeploymentParams
       ArtifactsIn  map[string]crv1alpha1.Artifact // A Kanister Artifact
       ArtifactsOut map[string]crv1alpha1.Artifact
+      Profile      *Profile
       ConfigMaps   map[string]v1.ConfigMap
       Secrets      map[string]v1.Secret
       Time         string
@@ -29,10 +30,24 @@ templating engine <https://golang.org/pkg/text/template/>`_. In addition to the
 standard go template functions, Kanister imports all the `sprig
 <http://masterminds.github.io/sprig/>`_ functions.
 
-.. literalinclude:: ../pkg/param/render.go
+.. code-block:: go
   :linenos:
-  :language: go
-  :lines: 41-51
+
+  case reflect.Map:
+    ras := make(map[interface{}]interface{}, val.Len())
+    for _, k := range val.MapKeys() {
+      rk, err := render(k.Interface(), tp)
+      if err != nil {
+        return nil, err
+      }
+      rv, err := render(val.MapIndex(k).Interface(), tp)
+      if err != nil {
+        return nil, err
+      }
+      ras[rk] = rv
+    }
+    return ras, nil
+
 
 Protected Objects
 =================
@@ -51,20 +66,46 @@ StatefulSet
 StatefulSetParams include the names of the Pods, Containers, and PVCs that
 belong to the StatefulSet being acted on.
 
-.. literalinclude:: ../pkg/param/param.go
+.. code-block:: go
   :linenos:
-  :language: go
-  :lines: 30-36
+
+  // StatefulSetParams are params for stateful sets.
+  type StatefulSetParams struct {
+    Name                   string
+    Namespace              string
+    Pods                   []string
+    Containers             [][]string
+    PersistentVolumeClaims [][]string
+  }
+
+For example, to access the first pod of a StatefulSet use:
+
+.. code-block:: go
+
+  "{{ index .StatefulSet.Pods 0 }}"
 
 Deployment
 ----------
 
 DeploymentParams are identical to StatefulSetParams.
 
-.. literalinclude:: ../pkg/param/param.go
+.. code-block:: go
   :linenos:
-  :language: go
-  :lines: 39-45
+
+  // DeploymentParams are params for deployments
+  type DeploymentParams struct {
+    Name                   string
+    Namespace              string
+    Pods                   []string
+    Containers             [][]string
+    PersistentVolumeClaims [][]string
+  }
+
+For example, to access the Name of a Deployment use:
+
+.. code-block:: go
+
+  "{{ index .Deployment.Name }}"
 
 Artifacts
 =========
@@ -74,10 +115,15 @@ as inputs or outputs to Actions.
 
 Artifacts are key-value pairs. In go this looks like:
 
-.. literalinclude:: ../pkg/apis/cr/v1alpha1/types.go
+.. code-block:: go
   :linenos:
-  :language: go
-  :lines: 134-135
+
+  // Artifact tracks objects produced by an action.
+  type Artifact struct {
+    KeyValue    map[string]string   `json:"keyValue"`
+  }
+
+The specific schema that Artifacts use is up to the Blueprint author.
 
 Go's templating engine allows us to easily access the values inside the
 artifact. This functionality is documented `here
@@ -98,30 +144,69 @@ parameters are absent at render time, the controller will log a rendering error
 and fail that action.  In order to make a Blueprint's dependencies clear, some
 types of template parameters are named explicitly as dependencies. If a
 dependency is named in the Blueprint, then Kanister will validate that an
-artifact  matching that name is present in the ActionSet.  Input Artifacts are
+artifact  matching that name is present in the ActionSet. Input Artifacts are
 one such type of dependency.
 
-Any input Artifacts required by a Blueprint are added to the
+Any Input Artifacts required by a Blueprint are added to the
 `inputArtifactNames` field in Blueprint actions. These named Artifacts
 must be present in any ActionSetAction that uses that Blueprint. Always
 create ActionSet in the same namespace as the controller.
 
-For example:
+For example, with the following snippet from the time-log example Blueprint:
 
-Blueprint
-^^^^^^^^^
-
-.. literalinclude:: ../examples/time-log/blueprint.yaml
+.. code-block:: yaml
   :linenos:
-  :language: yaml
-  :lines: 1-5,28-42
 
-ActionSet
-^^^^^^^^^
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: Blueprint
+  metadata:
+    name: time-log-bp
+    namespace: kanister
+  actions:
+    backup:
+      type: Deployment
+      configMapNames:
+      - location
+      secretNames:
+      - aws
+      outputArtifacts:
+        timeLog:
+          keyValue:
+            path: 's3://{{ .ConfigMaps.location.Data.path }}/time-log/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02" }}'
 
-.. literalinclude:: ../examples/time-log/restore-actionset.yaml
+      ...
+    restore:
+      type: Deployment
+      inputArtifactNames:
+        - exampleArtifact
+      ...
+
+The ActionSet for restore will need to look like:
+
+.. code-block:: yaml
   :linenos:
-  :language: yaml
+
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: ActionSet
+  metadata:
+    generateName: time-log-restore-
+    namespace: kanister
+  spec:
+    actions:
+    - name: restore
+      blueprint: time-log-bp
+      object:
+        kind: Deployment
+        name: time-logger
+        namespace: default
+      secrets:
+        aws:
+          name: aws-creds
+          namespace: kanister
+      artifacts:
+        timeLog:
+          keyValue:
+            path: s3://time-log-test-bucket/tutorial/time-log/time.log
 
 
 Output Artifacts
@@ -179,6 +264,7 @@ First, in the kanister controller's namespace, we create a ConfigMap that
 contains configuration information about an S3 bucket:
 
 .. code-block:: yaml
+  :linenos:
 
   apiVersion: v1
   kind: ConfigMap
@@ -192,6 +278,7 @@ contains configuration information about an S3 bucket:
 We can then reference this ConfigMap from the ActionSet as follows:
 
 .. code-block:: yaml
+  :linenos:
 
   apiVersion: cr.kanister.io/v1alpha1
   kind: ActionSet
@@ -228,10 +315,11 @@ This name is mapped to a reference in an ActionSet, and that reference is resolv
 by the controller. This resolution consequently makes the Secret available to templates
 in the Blueprint.
 
-For example, let's say we have a secret which contains AWS credentials needed to access
-an S3 bucket:
+For example, consider the following secret which contains AWS credentials
+needed to access an S3 bucket:
 
 .. code-block:: yaml
+  :linenos:
 
   apiVersion: v1
   kind: Secret
@@ -243,9 +331,10 @@ an S3 bucket:
     aws_access_key_id: MY_BASE64_ENCODED_AWS_ACCESS_KEY_ID
     aws_secret_access_key: MY_BASE64_ENCODED_AWS_SECRET_ACCESS_KEY
 
-We create an ActionSet that has a reference to the Secret:
+When creating an ActionSet include a reference to the Secret:
 
 .. code-block:: yaml
+  :linenos:
 
   apiVersion: cr.kanister.io/v1alpha1
   kind: ActionSet
@@ -265,19 +354,92 @@ We create an ActionSet that has a reference to the Secret:
           name: aws-creds # The Secret API object name
           namespace: kanister
 
-We can access the Secret's data inside the Blueprint using templating. Since
-secrets `Data` field has the type `[]byte`, we use sprig's `toString function
-<http://masterminds.github.io/sprig/conversion.html>`_ to cast the values to
-usable strings.
+The data of the Secret is then available inside the Blueprint using
+templating. Since secrets `Data` field has the type `[]byte`, use
+sprig's
+`toString function <http://masterminds.github.io/sprig/conversion.html>`_
+to cast the values to usable strings.
 
 .. code-block:: yaml
 
-  # We've named this secret `aws` in the Blueprint:
+  # This secret is named `aws` in the Blueprint:
   secretNames:
     - aws
 
   ...
 
-  # We access the secret values via templating:
+  # Access the secret values via templating:
   "{{ .Secrets.aws.Data.aws_access_key_id | toString }}"
   "{{ .Secrets.aws.Data.aws_secret_access_key | toString }}"
+
+Profiles
+--------
+
+Profiles are a Kanister CustomResource and capture information about a location
+for data operation artifacts and corresponding credentials that will be made
+available to a Blueprint.
+
+Unlike Secrets and ConfigMaps, only a single profile can optionally be
+referenced by an ActionSet. As a result, there it is not necessary to
+name the Profiles in the Blueprint.
+
+The following examples should be helpful.
+
+.. code-block:: yaml
+
+  # Access the Profile s3 location bucket
+  "{{ .Profile.Location.S3Compliant.Bucket }}"
+
+  # Access the associated secret credential
+  # Assuming "{{ .Profile.Credential.KeyPair.SecretField }}" is 'Secret'
+  "{{ .Profile.Credential.KeyPair.Secret }}"
+
+The currently supported Profile template is based on the following definitions
+
+.. code-block:: go
+  :linenos:
+
+  type Profile struct {
+    Location          Location
+    Credential        Credential
+    SkipSSLVerify     bool
+  }
+
+  type LocationType string
+
+  const (
+    LocationTypeS3Compliant LocationType = "s3Compliant"
+  )
+
+  // Only supporting S3 compatible locations currently
+  type Location struct {
+    Type        LocationType
+    S3Compliant *S3CompliantLocation
+  }
+
+  type S3CompliantLocation struct {
+    Bucket   string
+    Endpoint string
+    Prefix   string
+    Region   string
+  }
+
+  type CredentialType string
+
+  const (
+    CredentialTypeKeyPair CredentialType = "keyPair"
+  )
+
+  // Only supporting KeyPair credentials currently
+  type Credential struct {
+    Type    CredentialType
+    KeyPair *KeyPair
+  }
+
+  type KeyPair struct {
+    IDField     string
+    SecretField string
+    Secret      ObjectReference
+  }
+
+
