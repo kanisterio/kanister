@@ -78,6 +78,7 @@ func childActionSet(childActionName string, parent *crv1alpha1.ActionSet) (*crv1
 			Artifacts:  pa.Artifacts,
 			Secrets:    parent.Spec.Actions[aidx].Secrets,
 			ConfigMaps: parent.Spec.Actions[aidx].ConfigMaps,
+			Profile:    parent.Spec.Actions[aidx].Profile,
 		})
 	}
 	name := fmt.Sprintf("%s-%s-", childActionName, parent.GetName())
