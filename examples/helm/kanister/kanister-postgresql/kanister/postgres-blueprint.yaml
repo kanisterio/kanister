@@ -55,6 +55,7 @@ actions:
     type: Deployment
     inputArtifactNames:
       - manifest
+      - pitr
     phases:
     - func: KubeExec
       name: fetchBase
@@ -97,8 +98,9 @@ actions:
           # Create the recovery file that will apply the WAL files.
           cat << EOF > "${recover_dir}"/recovery.conf
           restore_command = 'wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
-          recovery_target_action = 'shutdown'
-          recovery_end_command = 'rm -fr $PGDATA/recovery.conf'
+          {{- if .ArtifactsIn.pitr }}
+          recovery_target_time = '{{ toDate "2006-01-02T15:04:05.000Z07:00" .ArtifactsIn.pitr.KeyValue.time | date "2006-01-02 15:04:05 MST" }}'
+          {{- end }}
           EOF
           sync
     - func: KubeTask
