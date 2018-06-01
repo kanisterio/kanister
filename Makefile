@@ -61,12 +61,14 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= kanisterio/build:0.13.1-go1.10
+BUILD_IMAGE ?= kanisterio/build:0.13.1-go1.9
 DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
 
 DEFAULT_PATH := /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
+
+GITHUB_TOKEN ?= ""
 
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
@@ -205,6 +207,7 @@ ifeq ($(DOCKER_BUILD),"true")
 		--rm                                                               \
 		-e GOPATH=/go                                                      \
 		-e GOROOT=/usr/local/go                                            \
+		-e GITHUB_TOKEN=$(GITHUB_TOKEN)                                    \
 		-v "${HOME}/.kube:/root/.kube"                                     \
 		-v "$(PWD)/.go:/go"                                                \
 		-v "$(PWD):/go/src/$(PKG)"                                         \
@@ -234,7 +237,7 @@ release-docs: docs
 	    echo "Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. Exiting.";\
 	    exit 1;\
 	fi;\
-	
+
 	@if [ -f "docs/_build/html/index.html" ]; then\
 	    aws s3 sync docs/_build/html $(DOCS_RELEASE_BUCKET) --delete;\
 	    echo "Success";\
@@ -244,7 +247,7 @@ release-docs: docs
 	fi;\
 
 release-helm:
-	@/bin/bash -c ./build/release_helm.sh
+	@/bin/bash ./build/release_helm.sh $(VERSION)
 
 release-kanctl:
-	@/bin/bash -c ./build/release_kanctl.sh
+	@$(MAKE) run CMD='-c "./build/release_kanctl.sh"'

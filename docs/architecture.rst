@@ -73,12 +73,15 @@ The definition of a `BlueprintAction` is:
       Phases             []BlueprintPhase    `json:"phases"`
   }
 
-- `Kind` is the type of object we'll act on. Currently we support `Deployment` or
-  `Statefulset`
-- `ConfigMapNames`, `SecretNames`, `InputArtifactNames` are lists of named
-  parameters that must be included by the ActionSet.
-- `Phases` are a list of `BlueprintPhases`. These phases are invoked in order
-  when executing this Action.
+- `Kind` is required as and represents the type of object to act on.
+   Currently the supported values are `Deployment` or `Statefulset`.
+- `ConfigMapNames`, `SecretNames`, `InputArtifactNames` are optional
+  but, if specified, they list named parameters that must be included by
+  the `ActionSet`.
+- `OutputArtifacts` is an optional map of rendered parameters made available
+  to the `BlueprintAction`.
+- `Phases` is a required list of `BlueprintPhases`. These phases are invoked
+  in order when executing this Action.
 
 .. code-block:: go
   :linenos:
@@ -87,17 +90,39 @@ The definition of a `BlueprintAction` is:
   type BlueprintPhase struct {
       Func string   `json:"func"`
       Name string   `json:"name"`
-      Args []string `json:"args"`
+      Args map[string]interface{} `json:"args"`
   }
 
-- `Func` is the name of the registered Kanister function. By default, the
-  controller includes five Kanister functions `"KubeExec"`, `"KubeExecAll"`,
-  `"KubeTask"`, `"ScaleDeployment"` and `"ScaleStatefulSet"`.
+- `Func` is required as the name of a registered Kanister function.
+  See :ref:`functions` for the list of  functions supported by the controller.
 - `Name` is mostly cosmetic. It is useful in quickly identifying which
   phases the controller has finished executing.
-- `Args` are a list of argument templates that the controller will render using the
-  template parameters. Each argument is rendered individually.
+- `Args` is a map of named arguments that the controller will pass to
+  the Kanister function.
+  String argument values can be templates that the controller will
+  render using the template parameters. Each argument is rendered
+  individually.
 
+As a reference, below is an example of a BlueprintAction.
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    example-action:
+      type: Deployment
+      phases:
+      - func: KubeExec
+        name: examplePhase
+        args:
+          namespace: "{{ .Deployment.Namespace }}"
+          pod: "{{ index .Deployment.Pods 0 }}"
+          container: kanister-sidecar
+          command:
+            - bash
+            - -c
+            - |
+              echo "Example Action"
 
 ActionSets
 ----------
@@ -121,19 +146,43 @@ as follows:
       Artifacts map[string]Artifact         `json:"artifacts,omitempty"`
       ConfigMaps map[string]ObjectReference `json:"configMaps"`
       Secrets map[string]ObjectReference    `json:"secrets"`
+      Profile *ObjectReference              `json:"profile"`
   }
 
-- `Name` chooses the action in the Blueprint.
-- `Object` is the Kubernetes reference to the object we're performing the action
-  on.
-- `Blueprint` is the name of the Blueprint that contains the action we're going
-  to run
-- `Artifacts` are input Artifacts that we pass into the Blueprint. This must
-  contain an Artifact for each name listed in the BlueprintAction's InputArtifacts.
-- `ConfigMaps` and `Secrets` are a mappings of names specified in the Blueprint
-  to Kubernetes references.
+- `Name` is required and specifies the action in the Blueprint.
+- `Object` is a required reference to the Kubernetes object on which
+  the action will be performed.
+- `Blueprint` is a required name of the Blueprint that contains the
+   action to run.
+- `Artifacts` are input Artifacts passed to the Blueprint. This must
+  contain an Artifact for each name listed in the BlueprintAction's
+  InputArtifacts.
+- `ConfigMaps` and `Secrets`, similar to `Artifacts`, are a mappings of names
+  specified in the Blueprint referencing the Kubernetes object to be used.
+- `Profile` is a reference to a :ref:`Profile<profiles>` Kubernetes
+  CustomResource that will be made available to the Blueprint.
 
-An ActionSetStatus mirrors the Spec, but contains the phases of execution, their
+As a reference, below is an example of a ActionSpec.
+
+.. code-block:: yaml
+  :linenos:
+
+  spec:
+    actions:
+    - name: example-action
+      blueprint: example-blueprint
+      object:
+        kind: Deployment
+        name: example-deployment
+        namespace: example-namespace
+      profile:
+        apiVersion: v1alpha1
+        kind: profile
+        name: example-profile
+        namespace: example-namespace
+
+In addition the Spec, an ActionSet also contains an ActionSetStatus
+which mirrors the Spec, but contains the phases of execution, their
 state, and the overall execution progress.
 
 .. code-block:: go
@@ -162,6 +211,132 @@ Blueprint phase and its state of execution.
       Name  string `json:"name"`
       State State  `json:"state"`
   }
+
+.. _profiles:
+
+Profiles
+--------
+
+Profile CRs capture information about a location for data operation artifacts
+and corresponding credentials that will be made available to a Blueprint.
+
+The definition of a `Profile` is:
+
+.. code-block:: go
+  :linenos:
+
+  // Profile
+  type Profile struct {
+    Location          Location   `json:"location"`
+    Credential        Credential `json:"credential"`
+    SkipSSLVerify     bool       `json:"skipSSLVerify"`
+  }
+
+- `SkipSSLVerify` is boolean and specifies whether skipping SkipSSLVerify
+  verification is allowed when operating with the `Location`. If omitted from
+  a CR definition it default to `false`
+- `Location` is required and used to specify the location that the Blueprint
+  can use. Currently, only s3 compliant locations are supported. If any of
+  the sub-components are omitted, they will be treated as "".
+
+  The definition of `Location` is as follows:
+
+.. code-block:: go
+  :linenos:
+
+  // LocationType
+  type LocationType string
+
+  const (
+    LocationTypeS3Compliant LocationType = "s3Compliant"
+  )
+
+  // Location
+  type Location struct {
+    Type        LocationType         `json:"type"`
+    S3Compliant *S3CompliantLocation `json:"s3Compliant"`
+  }
+
+  // S3Compliant
+  type S3CompliantLocation struct {
+    Bucket   string `json:"bucket"`
+    Endpoint string `json:"endpoint"`
+    Prefix   string `json:"prefix"`
+    Region   string `json:"region"`
+  }
+
+- `Credential` is required and used to specify the credentials associated with
+  the `Location`. Currently, only key pair s3 location credentials are
+  supported.
+
+  The definition of `Credential` is as follows:
+
+.. code-block:: go
+  :linenos:
+
+  // CredentialType
+  type CredentialType string
+
+  const (
+    CredentialTypeKeyPair CredentialType = "keyPair"
+  )
+
+  // Credential
+  type Credential struct {
+    Type    CredentialType `json:"type"`
+    KeyPair *KeyPair       `json:"keyPair"`
+  }
+
+  // KeyPair
+  type KeyPair struct {
+    IDField     string          `json:"idField"`
+    SecretField string          `json:"secretField"`
+    Secret      ObjectReference `json:"secret"`
+  }
+
+- `IDField` and `SecretField` are required and specify the corresponding
+  keys in the secret under which the `KeyPair` credentials are stored.
+- `Secret` is required reference to a Kubernetes Secret object storing the
+  `KeyPair` credentials.
+
+As a reference, below is an example of a Profile and the corresponding secret.
+
+.. code-block:: yaml
+  :linenos:
+
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: Profile
+  metadata:
+    name: example-profile
+    namespace: example-namespace
+  location:
+    type: s3Compliant
+    s3Compliant:
+      bucket: example-bucket
+      endpoint: <endpoint URL>:<port>
+      prefix: ""
+      region: ""
+  credential:
+    type: keyPair
+    keyPair:
+      idField: example_key_id
+      secretField: example_secret_access_key
+      secret:
+        apiVersion: v1
+        kind: Secret
+        name: example-secret
+        namespace: example-namespace
+  skipSSLVerify: true
+  ---
+  apiVersion: v1
+  kind: Secret
+  type: Opaque
+  metadata:
+    name: example-secret
+    namespace: example-namespace
+  data:
+    example_key_id: <access key>
+    example_secret_access_key: <access secret>
 
 
 Controller

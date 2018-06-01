@@ -80,9 +80,12 @@ service:
 
 # Configure Kanister
 kanister:
+  create_profile: false
   s3_api_key:
   s3_api_secret:
   s3_bucket:
+  s3_region:
   s3_endpoint:
   s3_verify_ssl: true
+  profile_namespace:
   controller_namespace: kasten-io

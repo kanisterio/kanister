@@ -16,18 +16,50 @@ This chart bootstraps a [PostgreSQL](https://github.com/docker-library/postgres)
 
 ## Prerequisites
 
-- Kubernetes 1.4+ with Beta APIs enabled
+- Kubernetes 1.7+ with Beta APIs enabled or 1.9+ without Beta APIs.
 - PV provisioner support in the underlying infrastructure (Only when persisting data)
+- Kanister version 0.7.0 with `profiles.cr.kanister.io` CRD installed
 
 ## Installing the Chart
 
-To install the chart with the release name `my-release`:
+For basic installation, you can install using the provided Helm chart that will install an instance of
+Postgres (a deployment with a persistent volume) as well as a Kanister blueprint to be used with it.
+
+Prior to install you will need to have the Kanister Helm repository added to your local setup.
 
 ```bash
-$ helm install --name my-release stable/postgresql
+$ helm repo add kanister http://charts.kanister.io
 ```
 
-The command deploys PostgreSQL on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
+Then install the sample Postrges application in its own namespace.
+
+```bash
+$ helm install kanister/kanister-postgresql -n my-postgres --namespace postgres-test \
+     --set kanister.create_profile='true' \
+     --set kanister.s3_endpoint='https://my-custom-s3-provider:9000' \
+     --set kanister.s3_api_key='AKIAIOSFODNN7EXAMPLE' \
+     --set kanister.s3_api_secret='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
+     --set kanister.s3_bucket='kanister-bucket'
+```
+
+The settings in the command above represent the minimum recommended set for your installation.
+The command deploys Postgres on the Kubernetes cluster in the default configuration. The
+[configuration](#configuration) section lists the parameters that can be configured during
+installation.
+
+The command will also configure a location where artifacts resulting from Kanister
+data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
+*CustomResource (CR)* which is then referenced in Kanister ActionSets. Every ActionSet
+requires a Profile reference whether one created as part of the application install or
+not. Support for creating an ActionSet as part of install is simply for convenience.
+This CR can be shared between Kanister-enabled application instances so one option is to
+only create as part of the first instance.
+
+If not creating a Profile CR, it is possible to use an even simpler command.
+
+```bash
+$ helm install kanister/kanister-postgresql -n my-postgres --namespace postgres-test
+```
 
 > **Tip**: List all releases using `helm list`
 
@@ -44,6 +76,21 @@ The command removes all the Kubernetes components associated with the chart and 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
 
 ## Configuration
+
+The following table lists the configurable PostgreSQL Kanister blueprint and Profile CR parameters and their
+default values.
+
+| Parameter | Description | Default |
+| --- | --- | --- |
+| `kanister.create_profile` | (Optional) Specify if a Profile CR should be created as part of install. | ``false`` |
+| `kanister.s3_api_key` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
+| `kanister.s3_api_secret` | (Required if creating profile) Corresponding secret for `s3_api_key`. | `nil` |
+| `kanister.s3_bucket` | (Required if creating profile) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `nil` |
+| `kanister.s3_region` | (Optional if creating profile) Region to be used for the bucket. | `nil` |
+| `kanister.s3_endpoint` | (Optional if creating profile) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
+| `kanister.s3_verify_ssl` | (Optional if creating profile) Set to ``false`` to disable SSL verification on the s3 endpoint. | `true` |
+| `kanister.profile_namespace` | (Optional if creating profile) Specify the namespace where the created Profile CR and associated credentials will be stored. Suitable for creating a the first instance of a shared Profile CR. | Application namespace |
+| `kanister.controller_namespace` | (Optional) Specify the namespace where the Kanister controller is running. | kasten-io |
 
 The following table lists the configurable parameters of the PostgreSQL chart and their default values.
 
@@ -83,12 +130,6 @@ The following table lists the configurable parameters of the PostgreSQL chart an
 | `nodeSelector`             | Node labels for pod assignment                  | {}                                                         |
 | `affinity`                 | Affinity settings for pod assignment            | {}                                                         |
 | `tolerations`              | Toleration labels for pod assignment            | []                                                         |
-| `kanister.s3_api_key`      | (Required) API Key for an s3 compatible object store | `nil`                                                 |
-| `kanister.s3_api_secret`   | (Required) Corresponding secret for `s3_api_key` | `nil`                                                     |
-| `kanister.s3_bucket`       | (Required) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `nil` |
-| `kanister.s3_endpoint`     | (Optional) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
-| `kanister.s3_verify_ssl`   | (Optional) Set to ``false`` to disable SSL verification on the s3 endpoint | `true`                          |
-| `kanister.controller_namespace` | (Optional) Specify the namespace where the Kanister controller is running | kasten-io                   |
 
 The above parameters map to the env variables defined in [postgres](http://github.com/docker-library/postgres). For more information please refer to the [postgres](http://github.com/docker-library/postgres) image documentation.
 

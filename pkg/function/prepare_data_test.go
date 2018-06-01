@@ -2,7 +2,6 @@ package function
 
 import (
 	"context"
-	"os"
 
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
@@ -13,38 +12,36 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
-var _ = Suite(&KubeTaskSuite{})
+var _ = Suite(&PrepareDataSuite{})
 
-type KubeTaskSuite struct {
+type PrepareDataSuite struct {
 	cli       kubernetes.Interface
 	namespace string
 }
 
-func (s *KubeTaskSuite) SetUpSuite(c *C) {
+func (s *PrepareDataSuite) SetUpSuite(c *C) {
 	s.cli = kube.NewClient()
 
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "kanisterdeletetest-",
+			GenerateName: "preparedatatest-",
 		},
 	}
 	cns, err := s.cli.Core().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
-	os.Setenv("POD_NAMESPACE", cns.Name)
-	os.Setenv("POD_SERVICE_ACCOUNT", "default")
-
 }
 
-func (s *KubeTaskSuite) TearDownSuite(c *C) {
+func (s *PrepareDataSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
 		s.cli.Core().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
-func newTaskBlueprint() *crv1alpha1.Blueprint {
+func newPrepareDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"test": {
@@ -52,26 +49,29 @@ func newTaskBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
 						Name: "test",
-						Func: "KubeTask",
+						Func: "PrepareData",
 						Args: map[string]interface{}{
-							KubeTaskNamespaceArg: "namespace",
-							KubeTaskImageArg:     "busybox",
-							KubeTaskCommandArg: []string{
-								"sleep",
-								"2",
+							PrepareDataNamespaceArg: "{{ .StatefulSet.Namespace }}",
+							PrepareDataImageArg:     "busybox",
+							PrepareDataCommandArg: []string{
+								"touch",
+								"/mnt/data1/foo.txt",
 							},
+							PrepareDataVolumes: map[string]string{pvc: "/mnt/data1"},
 						},
 					},
 					{
 						Name: "test2",
-						Func: "KubeTask",
+						Func: "PrepareData",
 						Args: map[string]interface{}{
-							KubeTaskNamespaceArg: "test-namespace",
-							KubeTaskImageArg:     "ubuntu:latest",
-							KubeTaskCommandArg: []string{
-								"sleep",
-								"2",
+							PrepareDataNamespaceArg: "{{ .StatefulSet.Namespace }}",
+							PrepareDataImageArg:     "busybox",
+							PrepareDataCommandArg: []string{
+								"ls",
+								"-l",
+								"/mnt/data1/foo.txt",
 							},
+							PrepareDataVolumes: map[string]string{pvc: "/mnt/data1"},
 						},
 					},
 				},
@@ -80,7 +80,11 @@ func newTaskBlueprint() *crv1alpha1.Blueprint {
 	}
 }
 
-func (s *KubeTaskSuite) TestKubeTask(c *C) {
+func (s *PrepareDataSuite) TestPrepareData(c *C) {
+	pvc := testutil.NewTestPVC()
+	createdPVC, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+	c.Assert(err, IsNil)
+
 	ctx := context.Background()
 	tp := param.TemplateParams{
 		StatefulSet: &param.StatefulSetParams{
@@ -89,7 +93,8 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 	}
 
 	action := "test"
-	phases, err := kanister.GetPhases(*newTaskBlueprint(), action, tp)
+	bp := newPrepareDataBlueprint(createdPVC.Name)
+	phases, err := kanister.GetPhases(*bp, action, tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
 		err := p.Exec(ctx, tp)

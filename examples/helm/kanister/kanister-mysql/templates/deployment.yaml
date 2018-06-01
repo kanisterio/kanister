@@ -120,33 +120,6 @@ spec:
               name: {{ template "mysql.fullname" . }}
               key: mysql-password
         {{- end }}
-        - name: AWS_ACCESS_KEY_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "mysql.fullname" . }}-backup-creds
-              key: s3_access_key_id
-        - name: AWS_SECRET_ACCESS_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ template "mysql.fullname" . }}-backup-creds
-              key: s3_secret_access_key
-        - name: S3_BUCKET
-          valueFrom:
-            configMapKeyRef:
-              name: {{ template "mysql.fullname" . }}-backup-config
-              key: s3_bucket
-        - name: S3_VERIFY_SSL
-          valueFrom:
-            configMapKeyRef:
-              name: {{ template "mysql.fullname" . }}-backup-config
-              key: s3_verify_ssl
-        {{- if .Values.kanister.s3_endpoint }}
-        - name: S3_ENDPOINT
-          valueFrom:
-            configMapKeyRef:
-              name: {{ template "mysql.fullname" . }}-backup-config
-              key: s3_endpoint
-        {{- end }}
         volumeMounts:
         - name: var-run-mysql
           mountPath: /var/run/mysqld/

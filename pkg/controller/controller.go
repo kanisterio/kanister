@@ -343,7 +343,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	go func() {
 		for i, p := range phases {
 			c.logAndSuccessEvent(fmt.Sprintf("Executing phase %s", p.Name()), "Started Phase", as)
-			err = p.Exec(ctx)
+			err = p.Exec(ctx, *tp)
 			var rf func(*crv1alpha1.ActionSet) error
 			if err != nil {
 				rf = func(ras *crv1alpha1.ActionSet) error {
