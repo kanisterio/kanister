@@ -25,6 +25,7 @@ Then install the sample PostgreSQL application in its own namespace.
      # Install Kanister-enabled PostgreSQL
      $ helm install kanister/kanister-postgresql -n postgresql \
           --namespace postgresql-test \
+          --set kanister.create_profile='true' \
           --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
           --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
           --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
@@ -39,11 +40,6 @@ Then install the sample PostgreSQL application in its own namespace.
      # Install Kanister-enabled PostgreSQL
      $ helm install kanister/kanister-postgresql -n postgresql \
           --namespace postgresql-test \
-          --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
-          --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
-          --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
-          --set kanister.s3_bucket="kanister-bucket"
-
 
 The settings in the command above represent the minimum recommended set for
 your installation.
@@ -55,26 +51,19 @@ your installation.
     frame, it is possible for the database to restart with only a
     partial restore.
 
-  * Currently, it only fetches the latest base backup and applies all
-    available logs after that. Using Point-In-Time-Recovery (PITR)
-    values will be supported in an upcoming release.
-
   * More hardening and error-checking is being implemented
 
-.. note:: The ``s3_endpoint`` parameter is only required if you are using an
-  S3-compatible provider different from AWS.
+.. only:: kanister
 
-  If ``kanister.s3_endpoint`` is not specified, you are using AWS S3,
-  and the S3 bucket is not in the default ``us-east-1`` region, you'll
-  need to include the bucket's region using the ``kanister.s3_region``
-  parameter.
+  .. include:: ./create_profile.rst
 
-  If you are using an on-premises s3 provider, the endpoint specified needs be
-  accessible from within your Kubernetes cluster.
+  If not creating a Profile CR, it is possible to use an even simpler command.
 
-  If, in your environment, the endpoint has a self-signed SSL certificate, include
-  ``--set kanister.s3_verify_ssl=false`` in the above command to disable SSL
-  verification for the S3 operations in the blueprint.
+  .. code-block:: rst
+
+     # Install Kanister-enabled PostgreSQL
+     $ helm install kanister/kanister-postgresql -n postgresql \
+          --namespace postgresql-test \
 
 .. note:: The above command will attempt to use dynamic storage provisioning
    based on the the default storage class for your cluster. You will to need to
