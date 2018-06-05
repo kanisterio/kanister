@@ -39,7 +39,7 @@ Then install the sample PostgreSQL application in its own namespace.
 
      # Install Kanister-enabled PostgreSQL
      $ helm install kanister/kanister-postgresql -n postgresql \
-          --namespace postgresql-test \
+          --namespace postgresql-test
 
 The settings in the command above represent the minimum recommended set for
 your installation.
