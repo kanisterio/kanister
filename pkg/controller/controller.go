@@ -68,6 +68,9 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get a CustomResource client")
 	}
+	if err := checkCRAccess(crClient, namespace); err != nil {
+		return err
+	}
 	clientset, err := kubernetes.NewForConfig(c.config)
 	if err != nil {
 		return errors.Wrap(err, "failed to get a k8s client")
@@ -95,6 +98,19 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 			}
 		}()
 		go watcher.Watch(o, chTmp)
+	}
+	return nil
+}
+
+func checkCRAccess(cli versioned.Interface, ns string) error {
+	if _, err := cli.CrV1alpha1().ActionSets(ns).List(v1.ListOptions{}); err != nil {
+		return errors.Wrap(err, "Could not list ActionSets")
+	}
+	if _, err := cli.CrV1alpha1().Blueprints(ns).List(v1.ListOptions{}); err != nil {
+		return errors.Wrap(err, "Could not list Blueprints")
+	}
+	if _, err := cli.CrV1alpha1().Profiles(ns).List(v1.ListOptions{}); err != nil {
+		return errors.Wrap(err, "Could not list Profiles")
 	}
 	return nil
 }
