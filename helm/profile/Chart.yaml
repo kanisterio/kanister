@@ -1,8 +1,11 @@
 apiVersion: v1
 description: A helm chart to create profile custom resource for kanister
 engine: gotpl
-name: kanister-profile
+name: profile
 version: 0.1.0
 maintainers:
-  - email: gautham@kasten.io
-    name: gauthamsunjay
+  - email: tom@kasten.io
+    name: tdmanv
+  - email: ilya@kasten.io
+    name: depohmel
+
