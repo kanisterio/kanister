@@ -116,7 +116,7 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 
 func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*Profile, error) {
 	if ref == nil {
-		return nil, nil
+		return nil, errors.New("Cannot execute action without a profile. Specify a profile in the action set")
 	}
 	p, err := crCli.CrV1alpha1().Profiles(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
 	if err != nil {
