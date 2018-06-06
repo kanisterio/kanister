@@ -55,12 +55,12 @@ func main() {
 	log.Infof("Getting kubernetes context")
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.Errorf("Failed to get k8s config. %+v", err)
+		log.Fatalf("Failed to get k8s config. %+v", err)
 	}
 
 	// Make sure the CRD's exist.
 	if err := resource.CreateCustomResources(ctx, config); err != nil {
-		log.Errorf("Failed to create CustomResources. %+v", err)
+		log.Fatalf("Failed to create CustomResources. %+v", err)
 	}
 
 	ns, err := kube.GetControllerNamespace()
