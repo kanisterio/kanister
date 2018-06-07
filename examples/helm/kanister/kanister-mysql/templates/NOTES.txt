@@ -37,7 +37,7 @@ To connect to your database directly from outside the K8s cluster:
 
 To perform a backup using Kanister, simply create an ActionSet:
 {{- if not .Values.kanister.create_profile }}
-(Assuming you previously created profiles.cr.kanister.io CR <kanister-profile> in namespace <kanister>)
+(Assuming you previously created profiles.cr.kanister.io CR 'default-profile' in namespace 'kanister')
 {{- end }}
     $ cat << EOF | kubectl create -f -
         apiVersion: cr.kanister.io/v1alpha1
@@ -64,7 +64,7 @@ To perform a backup using Kanister, simply create an ActionSet:
                 namespace: {{ .Release.Namespace }}
                   {{- end }}
                 {{- else }}
-                name: <kanister-profile>
-                namespace: <kanister>
+                name: default-profile
+                namespace: kanister
                 {{- end }}
     EOF
