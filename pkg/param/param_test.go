@@ -167,6 +167,47 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 	c.Assert(err, IsNil)
 	c.Assert(cm, NotNil)
 
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secret-name",
+			Namespace: s.namespace,
+			Labels:    map[string]string{"app": "fake-app"},
+		},
+		Data: map[string][]byte{
+			"key":   []byte("myKey"),
+			"value": []byte("myValue"),
+		},
+	}
+	prof := &crv1alpha1.Profile{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "profName",
+			Namespace: s.namespace,
+		},
+		Credential: crv1alpha1.Credential{
+			Type: crv1alpha1.CredentialTypeKeyPair,
+			KeyPair: &crv1alpha1.KeyPair{
+				IDField:     "key",
+				SecretField: "value",
+				Secret: crv1alpha1.ObjectReference{
+					Name:      "secret-name",
+					Namespace: s.namespace,
+				},
+			},
+		},
+	}
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Create(secret)
+	c.Assert(err, IsNil)
+	defer s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{})
+
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	crCli := crfake.NewSimpleClientset(prof)
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
+	c.Assert(err, IsNil)
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("profName", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
 	as := crv1alpha1.ActionSpec{
 		Object: crv1alpha1.ObjectReference{
 			Kind:      kind,
@@ -179,7 +220,12 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 				Namespace: s.namespace,
 			},
 		},
+		Profile: &crv1alpha1.ObjectReference{
+			Name:      "profName",
+			Namespace: s.namespace,
+		},
 	}
+
 	artsTpl := map[string]crv1alpha1.Artifact{
 		"my-art": crv1alpha1.Artifact{KeyValue: map[string]string{
 			"my-key": "{{ .ConfigMaps.myCM.Data.someKey }}"},
@@ -188,7 +234,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 			"my-time": "{{ .Time }}"},
 		},
 	}
-	tp, err := New(ctx, s.cli, nil, as)
+	tp, err := New(ctx, s.cli, crCli, as)
 	c.Assert(err, IsNil)
 	c.Assert(tp.ConfigMaps["myCM"].Data, DeepEquals, map[string]string{"someKey": "some-value"})
 

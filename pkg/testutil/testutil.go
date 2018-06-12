@@ -86,6 +86,47 @@ func newTestPodTemplateSpec() v1.PodTemplateSpec {
 	}
 }
 
+const TestProfileName = "test-profile"
+
+// NewTestProfileSecret function returns a pointer to a new Secret test object.
+func NewTestProfileSecret() *v1.Secret {
+	return &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-secret-",
+		},
+		StringData: map[string]string{
+			"id":     "foo",
+			"secret": "bar",
+		},
+	}
+}
+
+// NewTestProfile function returns a pointer to a new Profile test object that
+// passes validation.
+func NewTestProfile(namespace string, secretName string) *crv1alpha1.Profile {
+	return &crv1alpha1.Profile{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      TestProfileName,
+			Namespace: namespace,
+		},
+		Location: crv1alpha1.Location{
+			Type:        crv1alpha1.LocationTypeS3Compliant,
+			S3Compliant: &crv1alpha1.S3CompliantLocation{},
+		},
+		Credential: crv1alpha1.Credential{
+			Type: crv1alpha1.CredentialTypeKeyPair,
+			KeyPair: &crv1alpha1.KeyPair{
+				Secret: crv1alpha1.ObjectReference{
+					Name:      secretName,
+					Namespace: namespace,
+				},
+				IDField:     "id",
+				SecretField: "secret",
+			},
+		},
+	}
+}
+
 // NewTestActionSet function returns a pointer to a new ActionSet test object
 func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace string) *crv1alpha1.ActionSet {
 	return &crv1alpha1.ActionSet{
@@ -102,6 +143,11 @@ func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace stri
 						Kind:      poKind,
 						Name:      poName,
 						Namespace: poNamespace,
+					},
+					Profile: &crv1alpha1.ObjectReference{
+						Kind:      crv1alpha1.ProfileResourceName,
+						Name:      TestProfileName,
+						Namespace: namespace,
 					},
 				},
 			},
