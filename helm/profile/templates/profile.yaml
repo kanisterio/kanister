@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ .Values.name }}-profile-creds
+  name: {{ template "profile.profileName" . }}-creds
   namespace: {{ .Release.Namespace }}
   labels:
-{{ include "kanister-profile.helmLabels" . | indent 4 }}
+{{ include "profile.helmLabels" . | indent 4 }}
 type: Opaque
 data:
   access_key_id: {{ required "Cloud provider API key is required when configuring a profile." .Values.s3.accessKey | b64enc | quote }}
@@ -13,10 +13,10 @@ data:
 apiVersion: cr.kanister.io/v1alpha1
 kind: Profile
 metadata:
-  name: {{ .Values.name }}-profile
+  name: {{ template "profile.profileName" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-{{ include "kanister-profile.helmLabels" . | indent 4 }}
+{{ include "profile.helmLabels" . | indent 4 }}
 location:
   type: s3Compliant
   s3Compliant:
@@ -31,6 +31,6 @@ credential:
     secretField: secret_access_key
     secret:
       apiVersion: v1
-      name: {{ .Values.name }}-profile-creds
+      name: {{ template "profile.profileName" . }}-creds
       namespace: {{ .Release.Namespace }}
 skipSSLVerify: {{ not .Values.verifySSL }}
