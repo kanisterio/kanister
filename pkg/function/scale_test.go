@@ -11,20 +11,35 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 type ScaleSuite struct {
 	cli       kubernetes.Interface
+	crCli     versioned.Interface
 	namespace string
 }
 
 var _ = Suite(&ScaleSuite{})
 
 func (s *ScaleSuite) SetUpTest(c *C) {
-	s.cli = kube.NewClient()
+	config, err := kube.LoadConfig()
+	c.Assert(err, IsNil)
+	cli, err := kubernetes.NewForConfig(config)
+	c.Assert(err, IsNil)
+	crCli, err := versioned.NewForConfig(config)
+	c.Assert(err, IsNil)
+
+	s.cli = cli
+	s.crCli = crCli
+
+	err = resource.CreateCustomResources(context.Background(), config)
+	c.Assert(err, IsNil)
+
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanister-scale-test-",
@@ -33,6 +48,14 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 	cns, err := s.cli.Core().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
+
+	sec := testutil.NewTestProfileSecret()
+	sec, err = s.cli.Core().Secrets(s.namespace).Create(sec)
+	c.Assert(err, IsNil)
+
+	p := testutil.NewTestProfile(s.namespace, sec.GetName())
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(p)
+	c.Assert(err, IsNil)
 }
 
 func (s *ScaleSuite) TearDownTest(c *C) {
@@ -111,9 +134,13 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 			Namespace: s.namespace,
 			Name:      d.GetName(),
 		},
+		Profile: &crv1alpha1.ObjectReference{
+			Name:      testutil.TestProfileName,
+			Namespace: s.namespace,
+		},
 	}
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
-		tp, err := param.New(ctx, s.cli, nil, as)
+		tp, err := param.New(ctx, s.cli, s.crCli, as)
 		c.Assert(err, IsNil)
 
 		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)
@@ -155,10 +182,14 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 			Name:      ss.GetName(),
 			Namespace: s.namespace,
 		},
+		Profile: &crv1alpha1.ObjectReference{
+			Name:      testutil.TestProfileName,
+			Namespace: s.namespace,
+		},
 	}
 
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
-		tp, err := param.New(ctx, s.cli, nil, as)
+		tp, err := param.New(ctx, s.cli, s.crCli, as)
 		c.Assert(err, IsNil)
 
 		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)

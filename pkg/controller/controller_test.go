@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
@@ -18,6 +18,7 @@ import (
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
 	"github.com/pkg/errors"
@@ -63,6 +64,14 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	cns, err := s.cli.Core().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
+
+	sec := testutil.NewTestProfileSecret()
+	sec, err = s.cli.Core().Secrets(s.namespace).Create(sec)
+	c.Assert(err, IsNil)
+
+	p := testutil.NewTestProfile(s.namespace, sec.GetName())
+	_, err = s.crCli.Profiles(s.namespace).Create(p)
+	c.Assert(err, IsNil)
 
 	ss := testutil.NewTestStatefulSet()
 	ss, err = s.cli.AppsV1beta1().StatefulSets(s.namespace).Create(ss)
@@ -110,13 +119,30 @@ func (s *ControllerSuite) TestWatch(c *C) {
 }
 
 func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
-	return wait.Poll(100*time.Millisecond, 10*time.Second, func() (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err := poll.Wait(ctx, func(context.Context) (bool, error) {
 		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(as.GetName(), metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
-		return as.Status != nil && as.Status.State == state, nil
+		if as.Status == nil {
+			return false, nil
+		}
+		if as.Status.State == state {
+			return true, nil
+		}
+		// These are non-terminal states.
+		if as.Status.State == crv1alpha1.StatePending || as.Status.State == crv1alpha1.StateRunning {
+			return false, nil
+		}
+		return false, errors.New(fmt.Sprintf("Unexpected state: %s", state))
+
 	})
+	if err == nil {
+		return nil
+	}
+	return errors.Wrapf(err, "State '%s' never reached", state)
 }
 
 func (s *ControllerSuite) TestEmptyActionSetStatus(c *C) {

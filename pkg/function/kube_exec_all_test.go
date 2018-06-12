@@ -11,12 +11,15 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 type KubeExecAllTest struct {
+	crCli     versioned.Interface
 	cli       kubernetes.Interface
 	namespace string
 }
@@ -24,7 +27,20 @@ type KubeExecAllTest struct {
 var _ = Suite(&KubeExecAllTest{})
 
 func (s *KubeExecAllTest) SetUpSuite(c *C) {
-	s.cli = kube.NewClient()
+	config, err := kube.LoadConfig()
+	c.Assert(err, IsNil)
+	cli, err := kubernetes.NewForConfig(config)
+	c.Assert(err, IsNil)
+	crCli, err := versioned.NewForConfig(config)
+	c.Assert(err, IsNil)
+
+	// Make sure the CRD's exist.
+	err = resource.CreateCustomResources(context.Background(), config)
+	c.Assert(err, IsNil)
+
+	s.cli = cli
+	s.crCli = crCli
+
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kubeexecall-",
@@ -33,6 +49,14 @@ func (s *KubeExecAllTest) SetUpSuite(c *C) {
 	cns, err := s.cli.Core().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
+
+	sec := testutil.NewTestProfileSecret()
+	sec, err = s.cli.Core().Secrets(s.namespace).Create(sec)
+	c.Assert(err, IsNil)
+
+	p := testutil.NewTestProfile(s.namespace, sec.GetName())
+	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(p)
+	c.Assert(err, IsNil)
 }
 
 func (s *KubeExecAllTest) TearDownSuite(c *C) {
@@ -54,10 +78,7 @@ func newExecAllBlueprint(kind string) *crv1alpha1.Blueprint {
 							KubeExecAllNamespaceArg:      fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							KubeExecAllPodsNameArg:       fmt.Sprintf("{{ range .%s.Pods }} {{.}}{{ end }}", kind),
 							KubeExecAllContainersNameArg: fmt.Sprintf("{{ index .%s.Containers 0 0 }}", kind),
-							KubeExecAllCommandArg: []string{
-								"echo",
-								"hello",
-								"world"},
+							KubeExecAllCommandArg:        []string{"echo", "hello", "world"},
 						},
 					},
 				},
@@ -82,8 +103,12 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 			Name:      d.GetName(),
 			Namespace: s.namespace,
 		},
+		Profile: &crv1alpha1.ObjectReference{
+			Name:      testutil.TestProfileName,
+			Namespace: s.namespace,
+		},
 	}
-	tp, err := param.New(ctx, s.cli, nil, as)
+	tp, err := param.New(ctx, s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
 
 	action := "echo"
@@ -111,8 +136,12 @@ func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 			Name:      ss.GetName(),
 			Namespace: s.namespace,
 		},
+		Profile: &crv1alpha1.ObjectReference{
+			Name:      testutil.TestProfileName,
+			Namespace: s.namespace,
+		},
 	}
-	tp, err := param.New(ctx, s.cli, nil, as)
+	tp, err := param.New(ctx, s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
 
 	action := "echo"

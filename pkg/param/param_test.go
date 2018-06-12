@@ -203,7 +203,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 	c.Assert(err, IsNil)
 
 	crCli := crfake.NewSimpleClientset(prof)
-	_,err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
 	c.Assert(err, IsNil)
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("profName", metav1.GetOptions{})
 	c.Assert(err, IsNil)
@@ -221,7 +221,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 			},
 		},
 		Profile: &crv1alpha1.ObjectReference{
-			Name: "profName",
+			Name:      "profName",
 			Namespace: s.namespace,
 		},
 	}
