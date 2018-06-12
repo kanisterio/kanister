@@ -30,7 +30,9 @@ type ParamsSuite struct {
 var _ = Suite(&ParamsSuite{})
 
 func (s *ParamsSuite) SetUpSuite(c *C) {
-	s.cli = kube.NewClient()
+	cli, err := kube.NewClient()
+	c.Assert(err, IsNil)
+	s.cli = cli
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanisterparamstest-",

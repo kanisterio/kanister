@@ -50,7 +50,10 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = OptArg(args, PrepareDataServiceAccount, &serviceAccount, ""); err != nil {
 		return err
 	}
-	cli := kube.NewClient()
+	cli, err := kube.NewClient()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create Kubernetes client")
+	}
 	// Validate volumes
 	for pvc := range vols {
 		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvc, metav1.GetOptions{}); err != nil {

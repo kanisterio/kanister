@@ -43,7 +43,10 @@ func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		return err
 	}
 
-	cli := kube.NewClient()
+	cli, err := kube.NewClient()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create Kubernetes client")
+	}
 	switch strings.ToLower(kind) {
 	case "statefulset":
 		return kube.ScaleStatefulSet(ctx, cli, namespace, name, replicas)

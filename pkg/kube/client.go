@@ -36,17 +36,17 @@ func LoadConfig() (*rest.Config, error) {
 	return newClientConfig().ClientConfig()
 }
 
-// NewClient returns a k8 client configured by the k10 environment.
-func NewClient() kubernetes.Interface {
+// NewClient returns a k8 client configured by the kanister environment.
+func NewClient() (kubernetes.Interface, error) {
 	config, err := LoadConfig()
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-	return clientset
+	return clientset, nil
 }

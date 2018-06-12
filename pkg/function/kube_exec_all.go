@@ -36,10 +36,12 @@ func (*kubeExecAllFunc) Name() string {
 }
 
 func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
-	cli := kube.NewClient()
+	cli, err := kube.NewClient()
+	if err != nil {
+		return err
+	}
 	var namespace, pods, containers string
 	var cmd []string
-	var err error
 	if err = Arg(args, KubeExecAllNamespaceArg, &namespace); err != nil {
 		return err
 	}

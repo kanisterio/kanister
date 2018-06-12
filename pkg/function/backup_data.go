@@ -91,7 +91,10 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = validateProfile(tp.Profile); err != nil {
 		return errors.Wrapf(err, "Failed to validate Profile")
 	}
-	cli := kube.NewClient()
+	cli, err := kube.NewClient()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create Kubernetes client")
+	}
 	// Create backup and dump it on the object store
 	cmd := generateBackupCommand(includePath, backupArtifact, tp.Profile)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)

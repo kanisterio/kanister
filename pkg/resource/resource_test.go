@@ -25,7 +25,9 @@ type ResourceSuite struct {
 var _ = Suite(&ResourceSuite{})
 
 func (s *ResourceSuite) SetUpSuite(c *C) {
-	s.cli = kube.NewClient()
+	cli, err := kube.NewClient()
+	c.Assert(err, IsNil)
+	s.cli = cli
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanistercontrollertest-",

@@ -55,7 +55,10 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	}
 
 	jobName := generateJobName(jobPrefix)
-	clientset := kube.NewClient()
+	clientset, err := kube.NewClient()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create Kubernetes client")
+	}
 	serviceAccount, err := kube.GetControllerServiceAccount(clientset)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get Controller Service Account")
