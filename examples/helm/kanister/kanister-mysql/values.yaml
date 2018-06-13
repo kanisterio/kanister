@@ -78,14 +78,13 @@ service:
   type: ClusterIP
   port: 3306
 
-# Configure Kanister
+# Configure profile for mysql, the profile CR is installed in the release namespace
+profile:
+  create: false
+  defaultProfile: false
+  defaultProfileName: default-profile
+  profileName:
+
+# Configure Kanister - the blueprint CR is installed in the controller namespace
 kanister:
-  create_profile: false
-  s3_api_key:
-  s3_api_secret:
-  s3_bucket:
-  s3_region:
-  s3_endpoint:
-  s3_verify_ssl: true
-  profile_namespace:
-  controller_namespace: kasten-io
+  controller_namespace: kanister

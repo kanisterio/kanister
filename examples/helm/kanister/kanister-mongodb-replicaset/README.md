@@ -35,11 +35,12 @@ Then install the sample MongoDB application with the release name `my-release` i
 
 ```bash
 $ helm install kanister/kanister-mongodb-replicaset -n my-release --namespace mongo-test \
-     --set kanister.create_profile='true' \
-     --set kanister.s3_endpoint='https://my-custom-s3-provider:9000' \
-     --set kanister.s3_api_key='AKIAIOSFODNN7EXAMPLE' \
-     --set kanister.s3_api_secret='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
-     --set kanister.s3_bucket='kanister-bucket'
+     --set profile.create='true' \
+     --set profile.profileName='mongo-test-profile' \
+     --set profile.s3.endpoint='https://my-custom-s3-provider:9000' \
+     --set profile.s3.accessKey='AKIAIOSFODNN7EXAMPLE' \
+     --set profile.s3.secretKey='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
+     --set profile.s3.bucket='kanister-bucket'
 ```
 
 The command deploys MongoDB ReplicaSet on the Kubernetes cluster in the default
@@ -74,19 +75,20 @@ To completely remove the release include the `--purge` flag.
 ## Configuration
 
 The following table lists the configurable MongoDB Kanister blueprint and Profile CR parameters and their
-default values.
+default values. The Profile CR parameters are passed to the profile sub-chart.
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| `kanister.create_profile` | (Optional) Specify if a Profile CR should be created as part of install. | ``false`` |
-| `kanister.s3_api_key` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
-| `kanister.s3_api_secret` | (Required if creating profile) Corresponding secret for `s3_api_key`. | `nil` |
-| `kanister.s3_bucket` | (Required if creating profile) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `nil` |
-| `kanister.s3_region` | (Optional if creating profile) Region to be used for the bucket. | `nil` |
-| `kanister.s3_endpoint` | (Optional if creating profile) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
-| `kanister.s3_verify_ssl` | (Optional if creating profile) Set to ``false`` to disable SSL verification on the s3 endpoint. | `true` |
-| `kanister.profile_namespace` | (Optional if creating profile) Specify the namespace where the created Profile CR and associated credentials will be stored. Suitable for creating a the first instance of a shared Profile CR. | Application namespace |
-| `kanister.controller_namespace` | (Optional) Specify the namespace where the Kanister controller is running. | kasten-io |
+| `profile.create` | (Optional) Specify if a Profile CR should be created as part of install. | ``false`` |
+| `profile.defaultProfile` | (Optional if not creating a default Profile) Set to ``true`` to create a profile with name `default-profile` | ``false`` | 
+| `profile.profileName` | (Required if not creating a default Profile) Name for the profile that is created | `nil` |
+| `profile.s3.accessKey` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
+| `profile.s3.secretKey` | (Required if creating profile) Corresponding secret for `accessKey`. | `nil` |
+| `profile.s3.bucket` | (Required if creating profile) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `nil` |
+| `profile.s3.region` | (Optional if creating profile) Region to be used for the bucket. | `nil` |
+| `profile.s3.endpoint` | (Optional if creating profile) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
+| `profile.verifySSL` | (Optional if creating profile) Set to ``false`` to disable SSL verification on the s3 endpoint. | `true` |
+| `kanister.controller_namespace` | (Optional) Specify the namespace where the Kanister controller is running. | kanister |
 
 The following tables lists the configurable parameters of the mongodb chart and their default values.
 

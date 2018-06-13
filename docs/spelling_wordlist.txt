@@ -21,3 +21,4 @@ schemas
 stateful
 stdout
 templating
+defaultProfile
