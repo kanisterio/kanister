@@ -35,7 +35,7 @@ type StatefulSetParams struct {
 	Namespace              string
 	Pods                   []string
 	Containers             [][]string
-	PersistentVolumeClaims [][]string
+	PersistentVolumeClaims []map[string]string
 }
 
 // DeploymentParams are params for deployments
@@ -44,7 +44,7 @@ type DeploymentParams struct {
 	Namespace              string
 	Pods                   []string
 	Containers             [][]string
-	PersistentVolumeClaims [][]string
+	PersistentVolumeClaims map[string]map[string]string
 }
 
 // Profile contains where to store artifacts and how to access them.
@@ -204,10 +204,14 @@ func fetchStatefulSetParams(ctx context.Context, cli kubernetes.Interface, names
 	if err != nil {
 		return nil, err
 	}
+	volToPvc := make(map[string]string)
+	if len(pods) > 0 {
+		volToPvc = kube.StatefulSetVolumes(cli, ss)
+	}
 	for _, p := range pods {
 		ssp.Pods = append(ssp.Pods, p.Name)
 		ssp.Containers = append(ssp.Containers, containerNames(p))
-		ssp.PersistentVolumeClaims = append(ssp.PersistentVolumeClaims, volumeNames(p))
+		ssp.PersistentVolumeClaims = append(ssp.PersistentVolumeClaims, volumes(p, volToPvc))
 	}
 	return ssp, nil
 }
@@ -231,10 +235,19 @@ func fetchDeploymentParams(ctx context.Context, cli kubernetes.Interface, namesp
 	if err != nil {
 		return nil, err
 	}
+	volToPvc := make(map[string]string)
+	if len(pods) > 0 {
+		volToPvc = kube.DeploymentVolumes(cli, d)
+	}
 	for _, p := range pods {
 		dp.Pods = append(dp.Pods, p.Name)
 		dp.Containers = append(dp.Containers, containerNames(p))
-		dp.PersistentVolumeClaims = append(dp.PersistentVolumeClaims, volumeNames(p))
+		pvcToMountPath := volumes(p, volToPvc)
+		if len(pvcToMountPath) > 0 {
+			dp.PersistentVolumeClaims = make(map[string]map[string]string)
+			dp.PersistentVolumeClaims[p.Name] = make(map[string]string)
+			dp.PersistentVolumeClaims[p.Name] = pvcToMountPath
+		}
 	}
 	return dp, nil
 }
@@ -247,12 +260,14 @@ func containerNames(pod v1.Pod) []string {
 	return cs
 }
 
-func volumeNames(pod v1.Pod) []string {
-	vs := make([]string, 0, len(pod.Status.ContainerStatuses))
-	for _, v := range pod.Spec.Volumes {
-		if v.PersistentVolumeClaim != nil {
-			vs = append(vs, v.Name)
+func volumes(pod v1.Pod, volToPvc map[string]string) map[string]string {
+	pvcToMountPath := make(map[string]string)
+	for _, c := range pod.Spec.Containers {
+		for _, v := range c.VolumeMounts {
+			if pvc, ok := volToPvc[v.Name]; ok {
+				pvcToMountPath[pvc] = v.MountPath
+			}
 		}
 	}
-	return vs
+	return pvcToMountPath
 }

@@ -40,10 +40,8 @@ func (*backupDataFunc) Name() string {
 
 func generateBackupCommand(includePath, destArtifact string, profile *param.Profile) []string {
 	// Command to export credentials
-	cmd := []string{"set", "+o", "xtrace"}
-	cmd = append(cmd, "export", fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", profile.Credential.KeyPair.Secret))
-	cmd = append(cmd, "export", fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", profile.Credential.KeyPair.ID))
-	cmd = append(cmd, "set", "-o", "xtrace")
+	cmd := []string{"export", fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s\n", profile.Credential.KeyPair.Secret)}
+	cmd = append(cmd, "export", fmt.Sprintf("AWS_ACCESS_KEY_ID=%s\n", profile.Credential.KeyPair.ID))
 	// Command to tar and compress
 	cmd = append(cmd, "tar", "-cf", "-", "-C", includePath, ".", "|", "gzip", "-", "|")
 	// Command to dump on the object store

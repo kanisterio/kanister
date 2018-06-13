@@ -177,3 +177,50 @@ func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespac
 	}
 	return WaitOnDeploymentReady(ctx, kubeCli, namespace, name)
 }
+
+// DeploymentVolumes returns the PVCs referenced by this deployment as a [pods spec volume name]->[PVC name] map
+func DeploymentVolumes(cli kubernetes.Interface, d *v1beta1.Deployment) (volNameToPvc map[string]string) {
+	volNameToPvc = make(map[string]string)
+	for _, v := range d.Spec.Template.Spec.Volumes {
+		// We only care about persistent volume claims for now.
+		if v.PersistentVolumeClaim == nil {
+			continue
+		}
+		volNameToPvc[v.Name] = v.PersistentVolumeClaim.ClaimName
+	}
+	return volNameToPvc
+}
+
+// From getPersistentVolumeClaimName() in stateful_set_utils.go in the K8s repository
+// Format is "<claim name>-<stateful set name>-<ordinal>"
+const ssetVolumeClaimFmt = "%s-%s-%d"
+
+// StatefulSetVolumes returns the PVCs referenced by this statefulset as a [pod spec volume name]->[PVC name] map
+func StatefulSetVolumes(cli kubernetes.Interface, sset *v1beta1.StatefulSet) (volNameToPvc map[string]string) {
+	replicas := int(*sset.Spec.Replicas)
+	claimTemplateNameToPodVolumeName := make(map[string]string)
+	for _, v := range sset.Spec.Template.Spec.Volumes {
+		if v.PersistentVolumeClaim == nil {
+			continue
+		}
+		claimTemplateNameToPodVolumeName[v.PersistentVolumeClaim.ClaimName] = v.Name
+	}
+	// Check if there are any PVC claims in the `volumeClaimTemplates` section not directly referenced in
+	// the pod template
+	for _, vct := range sset.Spec.VolumeClaimTemplates {
+		if _, ok := claimTemplateNameToPodVolumeName[vct.Name]; !ok {
+			// The StatefulSet controller automagically generates references for claims not explicitly
+			// referenced and uses the claim template name as the pod volume name
+			// to account for these.
+			claimTemplateNameToPodVolumeName[vct.Name] = vct.Name
+		}
+	}
+	volNameToPvc = make(map[string]string)
+	for claimTemplateName, podVolName := range claimTemplateNameToPodVolumeName {
+		for i := 0; i < replicas; i++ {
+			claimName := fmt.Sprintf(ssetVolumeClaimFmt, claimTemplateName, sset.Name, i)
+			volNameToPvc[podVolName] = claimName
+		}
+	}
+	return volNameToPvc
+}
