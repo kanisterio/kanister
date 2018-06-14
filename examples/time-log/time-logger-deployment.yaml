@@ -1,3 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: time-log-pvc
+  labels:
+    app: time-logger
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
@@ -11,6 +24,13 @@ spec:
     spec:
       containers:
       - name: test-container
-        image: containerlabs/aws-sdk
+        image: kanisterio/kanister-tools:0.0.1
         command: ["sh", "-c"]
         args: ["while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"]
+        volumeMounts:
+        - name: data
+          mountPath: /var/log
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: time-log-pvc
