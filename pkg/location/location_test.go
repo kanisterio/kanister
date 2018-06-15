@@ -55,7 +55,45 @@ func (s *LocationSuite) TestWrite(c *C) {
 		},
 	} {
 
-		err := write(ctx, tc.in, tc.bin, tc.args, tc.env)
+		err := writeExec(ctx, tc.in, tc.bin, tc.args, tc.env)
 		c.Check(err, tc.checker)
+	}
+}
+
+func (s *LocationSuite) TestRead(c *C) {
+	ctx := context.Background()
+	for _, tc := range []struct {
+		out     string
+		bin     string
+		args    []string
+		env     []string
+		checker Checker
+	}{
+		{
+			out:     "",
+			bin:     "",
+			args:    nil,
+			env:     nil,
+			checker: NotNil,
+		},
+		{
+			out:     "",
+			bin:     "echo",
+			args:    []string{"-n"},
+			env:     nil,
+			checker: IsNil,
+		},
+		{
+			out:     "hello",
+			bin:     "echo",
+			args:    []string{"-n", "hello"},
+			env:     nil,
+			checker: IsNil,
+		},
+	} {
+		buf := bytes.NewBuffer(nil)
+		err := readExec(ctx, buf, tc.bin, tc.args, tc.env)
+		c.Check(err, tc.checker)
+		c.Check(buf.String(), Equals, tc.out)
 	}
 }

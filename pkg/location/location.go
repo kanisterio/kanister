@@ -14,17 +14,57 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
-// Write pipes data from `r` into the location specified by `profile` and `suffix`.
-func Write(ctx context.Context, r io.Reader, profile param.Profile, suffix string) error {
-	b := bin(profile)
-	a := args(profile, suffix)
-	e := env(profile)
-	return write(ctx, r, b, a, e)
+// Write pipes data from `in` into the location specified by `profile` and `suffix`.
+func Write(ctx context.Context, in io.Reader, profile param.Profile, suffix string) error {
+	switch profile.Location.Type {
+	case crv1alpha1.LocationTypeS3Compliant:
+		bin := s3CompliantBin()
+		args := s3CompliantWriteArgs(profile, suffix)
+		env := s3CompliantEnv(profile)
+		return writeExec(ctx, in, bin, args, env)
+	}
+	return errors.Errorf("Unsupported Location type: %s", profile.Location.Type)
 }
 
-func write(ctx context.Context, input io.Reader, binary string, arguments []string, environment []string) error {
-	cmd := exec.CommandContext(ctx, binary, arguments...)
-	cmd.Env = environment
+// Read pipes data from `in` into the location specified by `profile` and `suffix`.
+func Read(ctx context.Context, out io.Writer, profile param.Profile, suffix string) error {
+	switch profile.Location.Type {
+	case crv1alpha1.LocationTypeS3Compliant:
+		bin := s3CompliantBin()
+		args := s3CompliantReadArgs(profile, suffix)
+		env := s3CompliantEnv(profile)
+		return readExec(ctx, out, bin, args, env)
+	}
+	return errors.Errorf("Unsupported Location type: %s", profile.Location.Type)
+}
+
+func readExec(ctx context.Context, output io.Writer, bin string, args []string, env []string) error {
+	cmd := exec.CommandContext(ctx, bin, args...)
+	cmd.Env = env
+	rc, err := cmd.StdoutPipe()
+	if err != nil {
+		return errors.Wrap(err, "Failed to setup data pipe")
+	}
+	if err := cmd.Start(); err != nil {
+		return errors.Wrap(err, "Failed to start read-data command")
+	}
+	go func() {
+		// We could introduce rate-limiting by calling io.CopyN() in a loop.
+		w, err := io.Copy(output, rc)
+		if err != nil {
+			log.WithError(err).Error("Failed to write data from pipe")
+		}
+		log.Infof("Read %d bytes", w)
+		if err := rc.Close(); err != nil {
+			log.WithError(err).Error("Failed to close pipe")
+		}
+	}()
+	return errors.Wrap(cmd.Wait(), "Failed to read data from location in profile")
+}
+
+func writeExec(ctx context.Context, input io.Reader, bin string, args []string, env []string) error {
+	cmd := exec.CommandContext(ctx, bin, args...)
+	cmd.Env = env
 	wc, err := cmd.StdinPipe()
 	if err != nil {
 		return errors.Wrap(err, "Failed to setup data pipe")
@@ -48,29 +88,29 @@ func write(ctx context.Context, input io.Reader, binary string, arguments []stri
 
 const awsBin = `aws`
 
-func bin(profile param.Profile) string {
-	if profile.Location.Type != crv1alpha1.LocationTypeS3Compliant {
-		panic("Unsupported Location type: " + profile.Location.Type)
-	}
+func s3CompliantBin() string {
 	return awsBin
 }
 
-func args(profile param.Profile, suffix string) []string {
-	if profile.Location.Type != crv1alpha1.LocationTypeS3Compliant {
-		panic("Unsupported Location type: " + profile.Location.Type)
-	}
-	dst := filepath.Join(
+func s3CompliantReadArgs(profile param.Profile, suffix string) []string {
+	src := s3CompliantPath(profile, suffix)
+	return awsS3CpArgs(profile, src, "-")
+}
+
+func s3CompliantWriteArgs(profile param.Profile, suffix string) []string {
+	dst := s3CompliantPath(profile, suffix)
+	return awsS3CpArgs(profile, "-", dst)
+}
+
+func s3CompliantPath(profile param.Profile, suffix string) string {
+	return filepath.Join(
 		profile.Location.S3Compliant.Bucket,
 		profile.Location.S3Compliant.Prefix,
 		suffix,
 	)
-	return awsS3CpArgs(profile, "-", dst)
 }
 
-func env(profile param.Profile) []string {
-	if profile.Location.Type != crv1alpha1.LocationTypeS3Compliant {
-		panic("Unsupported Location type: " + profile.Location.Type)
-	}
+func s3CompliantEnv(profile param.Profile) []string {
 	return awsCredsEnv(profile.Credential)
 }
 
