@@ -256,6 +256,94 @@ Example:
         - |
           cp /restore-data/file_to_replace.data /data/file.data
 
+BackupData
+-----------
+
+This function backs up data from a container into an S3 compatible object store.
+
+.. note::
+   It is important that the application includes a `kanister-tools`
+   sidecar container. This sidecar is necessary to run the
+   tools that capture path on a volume and store it on the object store.
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `pod`, Yes, `string`, pod in which to execute
+   `container`, Yes, `string`, container in which to execute
+   `includePath`, Yes, `string`, path of the data to be backed up
+   `backupArtifact`, Yes, `string`, path to store the backup on the object store
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: BackupData
+    name: BackupToObjectStore
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      pod: "{{ index .Deployment.Pods 0 }}"
+      container: kanister-tools
+      includePath: /mnt/data
+      backupArtifact: s3://bucket/path/artifact
+
+RestoreData
+-----------
+
+This function restores data backed up by the BackupData function.
+It creates a Kubernetes Job that mounts the PVCs referenced
+by the specified Pod and restores data to the specified path.
+
+.. note::
+   It is extremely important that, the PVCs are not be currently
+   in use by an active application container, as the Kubernetes Job
+   requires to mount the PVCs to a new Pod (ensure by using
+   ScaleWorkload with replicas=0 first).
+   For advanced use cases, it is possible to have concurrent access but
+   the PV needs to have RWX mode enabled and the volume needs to use a
+   clustered file system that supports concurrent access.
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `pod`, Yes, `string`, pod to which the volumes are attached
+   `image`, Yes, `string`, image to be used for running restore
+   `backupArtifact`, Yes, `string`, path to the backup on the object store
+   `restorePath`, Yes, `string`, path where data is restored
+
+.. note::
+   The `image` argument requires the use of `kanisterio/kanister-tools`
+   image since it includes the required tools to restore data from
+   the S3 compatible object store.
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: ScaleWorkload
+    name: ShutdownApplication
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
+      kind: deployment
+      replicas: 0
+  - func: RestoreData
+    name: RestoreFromObjectStore
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      pod: "{{ index .Deployment.Pods 0 }}"
+      image: kanisterio/kanister-tools:0.0.1
+      backupArtifact: s3://bucket/path/artifact
+      restorePath: /mnt/data
+
 Registering Functions
 ---------------------
 
