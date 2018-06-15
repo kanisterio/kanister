@@ -10,6 +10,7 @@ import (
 	. "gopkg.in/check.v1"
 	"k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -25,12 +26,15 @@ func Test(t *testing.T) { TestingT(t) }
 type ParamsSuite struct {
 	cli       kubernetes.Interface
 	namespace string
+	pvc       string
 }
 
 var _ = Suite(&ParamsSuite{})
 
 func (s *ParamsSuite) SetUpSuite(c *C) {
-	s.cli = kube.NewClient()
+	cli, err := kube.NewClient()
+	c.Assert(err, IsNil)
+	s.cli = cli
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanisterparamstest-",
@@ -41,10 +45,34 @@ func (s *ParamsSuite) SetUpSuite(c *C) {
 	s.namespace = cns.Name
 }
 
+func (s *ParamsSuite) SetUpTest(c *C) {
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "kanisterparamtest-",
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: *resource.NewQuantity(1, resource.BinarySI),
+				},
+			},
+		},
+	}
+	cPVC, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+	c.Assert(err, IsNil)
+	s.pvc = cPVC.Name
+}
+
 func (s *ParamsSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
 		s.cli.Core().Namespaces().Delete(s.namespace, nil)
 	}
+}
+
+func (s *ParamsSuite) TearDownTest(c *C) {
+	err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Delete(s.pvc, &metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
 }
 
 const ssSpec = `
@@ -65,13 +93,20 @@ spec:
           image: alpine:3.6
           command: ["tail"]
           args: ["-f", "/dev/null"]
+          volumeMounts:
+            - name: test-vol
+              mountPath: /mnt/data/%s
+      volumes:
+        - name: test-vol
+          persistentVolumeClaim:
+            claimName: %s
 `
 
 func (s *ParamsSuite) TestFetchStatefulSetParams(c *C) {
 	ctx := context.Background()
 	name := strings.ToLower(c.TestName())
 	name = strings.Replace(name, ".", "", 1)
-	spec := fmt.Sprintf(ssSpec, name)
+	spec := fmt.Sprintf(ssSpec, name, name, s.pvc)
 	ss, err := kube.CreateStatefulSet(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.Namespace, ss.Name)
@@ -80,11 +115,15 @@ func (s *ParamsSuite) TestFetchStatefulSetParams(c *C) {
 	ssp, err := fetchStatefulSetParams(ctx, s.cli, s.namespace, name)
 	c.Assert(err, IsNil)
 	c.Assert(ssp, DeepEquals, &StatefulSetParams{
-		Name:                   name,
-		Namespace:              s.namespace,
-		Pods:                   []string{name + "-0"},
-		Containers:             [][]string{[]string{"test-container"}},
-		PersistentVolumeClaims: [][]string{[]string{}},
+		Name:       name,
+		Namespace:  s.namespace,
+		Pods:       []string{name + "-0"},
+		Containers: [][]string{[]string{"test-container"}},
+		PersistentVolumeClaims: []map[string]string{
+			map[string]string{
+				s.pvc + "-" + name + "-0": "/mnt/data/" + name,
+			},
+		},
 	})
 
 }
@@ -106,13 +145,20 @@ spec:
           image: alpine:3.6
           command: ["tail"]
           args: ["-f", "/dev/null"]
+          volumeMounts:
+            - name: test-vol
+              mountPath: /mnt/data/%s
+      volumes:
+        - name: test-vol
+          persistentVolumeClaim:
+            claimName: %s
 `
 
 func (s *ParamsSuite) TestFetchDeploymentParams(c *C) {
 	ctx := context.Background()
 	name := strings.ToLower(c.TestName())
 	name = strings.Replace(name, ".", "", 1)
-	spec := fmt.Sprintf(deploySpec, name)
+	spec := fmt.Sprintf(deploySpec, name, name, s.pvc)
 	d, err := kube.CreateDeployment(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.Namespace, d.Name)
@@ -123,7 +169,11 @@ func (s *ParamsSuite) TestFetchDeploymentParams(c *C) {
 	c.Assert(dp.Namespace, Equals, s.namespace)
 	c.Assert(dp.Pods, HasLen, 1)
 	c.Assert(dp.Containers, DeepEquals, [][]string{{"test-container"}})
-	c.Assert(dp.PersistentVolumeClaims, DeepEquals, [][]string{{}})
+	c.Assert(dp.PersistentVolumeClaims, DeepEquals, map[string]map[string]string{
+		dp.Pods[0]: map[string]string{
+			s.pvc: "/mnt/data/" + name,
+		},
+	})
 }
 
 const cmSpec = `
@@ -139,7 +189,7 @@ func (s *ParamsSuite) TestNewTemplateParamsDeployment(c *C) {
 	ctx := context.Background()
 	name := strings.ToLower(c.TestName())
 	name = strings.Replace(name, ".", "", 1)
-	spec := fmt.Sprintf(deploySpec, name)
+	spec := fmt.Sprintf(deploySpec, name, name, s.pvc)
 	d, err := kube.CreateDeployment(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.Namespace, d.Name)
@@ -152,7 +202,7 @@ func (s *ParamsSuite) TestNewTemplateParamsStatefulSet(c *C) {
 	ctx := context.Background()
 	name := strings.ToLower(c.TestName())
 	name = strings.Replace(name, ".", "", 1)
-	spec := fmt.Sprintf(ssSpec, name)
+	spec := fmt.Sprintf(ssSpec, name, name, s.pvc)
 	ss, err := kube.CreateStatefulSet(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.Namespace, ss.Name)

@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/pkg/errors"
 )
 
 const defautlJobPodName = "kanister-job-pod"
@@ -30,15 +30,15 @@ type Job struct {
 // NewJob creates a new Job object.
 func NewJob(clientset kubernetes.Interface, jobName string, namespace string, serviceAccount string, image string, vols map[string]string, command ...string) (*Job, error) {
 	if jobName == "" {
-		return nil, fmt.Errorf("Job name is required")
+		return nil, errors.New("Job name is required")
 	}
 
 	if image == "" {
-		return nil, fmt.Errorf("Container image needs to be passed")
+		return nil, errors.New("Container image needs to be passed")
 	}
 
 	if namespace == "" {
-		fmt.Printf("No namespace specified. Using \"default\".")
+		log.Debug("No namespace specified. Using \"default\".")
 		namespace = "default"
 	}
 
@@ -100,7 +100,7 @@ func (job *Job) Create() error {
 		return errors.Wrapf(err, "Failed to create job %s", job.name)
 	}
 	job.name = newJob.Name
-	fmt.Printf("New job %s created\n", job.name)
+	log.Infof("New job %s created\n", job.name)
 
 	return nil
 }
@@ -158,10 +158,9 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 			conditions := k8sJob.Status.Conditions
 			for _, condition := range conditions {
 				if condition.Type == batch.JobComplete {
-					fmt.Printf("Job %s reported complete\n", job.name)
+					log.Infof("Job %s reported complete\n", job.name)
 					return nil
 				} else if condition.Type == batch.JobFailed {
-					fmt.Printf("Job %s reported Failed\n", job.name)
 					return errors.Errorf("Job %s failed", job.name)
 				}
 			}

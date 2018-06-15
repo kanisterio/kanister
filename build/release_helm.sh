@@ -49,11 +49,15 @@ release_helm_charts() {
 
 main() {
     version=${1:?"chart version not specified"}
+    # from examples folder
     local -a kanister_charts=( "kanister-mongodb-replicaset" "kanister-mysql" "kanister-postgresql")
     for chart_name in "${kanister_charts[@]}"
     do
         release_helm_charts examples/helm/kanister/${chart_name} "${version}"
     done
+
+    # from helm folder
+    release_helm_charts helm/profile "${version}"
 }
 
 main $@

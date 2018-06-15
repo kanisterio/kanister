@@ -31,7 +31,8 @@ func (s *JobSuite) SetUpSuite(c *C) {
 
 // Verifies that the Job object is not created if the job name is not specified.
 func (s *JobSuite) TestJobsNoName(c *C) {
-	clientset := NewClient()
+	clientset, err := NewClient()
+	c.Assert(err, IsNil)
 
 	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, "", nil, "sleep", "10")
 	c.Assert(job, IsNil)
@@ -40,7 +41,8 @@ func (s *JobSuite) TestJobsNoName(c *C) {
 
 // Verifies that the Job object is not created if the image is not specified.
 func (s *JobSuite) TestJobsNoImage(c *C) {
-	clientset := NewClient()
+	clientset, err := NewClient()
+	c.Assert(err, IsNil)
 
 	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, "", nil, "sleep", "10")
 	c.Assert(job, IsNil)
@@ -49,7 +51,8 @@ func (s *JobSuite) TestJobsNoImage(c *C) {
 
 // Verifies that the Job object is not created if the namespace is not specified.
 func (s *JobSuite) TestJobsNoNamespace(c *C) {
-	clientset := NewClient()
+	clientset, err := NewClient()
+	c.Assert(err, IsNil)
 
 	job, err := NewJob(clientset, testJobName, "", testJobServiceAccount, testJobImage, nil, "sleep", "10")
 	c.Assert(job.namespace, Equals, "default")
@@ -65,7 +68,8 @@ func (s *JobSuite) TestJobsNoClientset(c *C) {
 
 // Verifies that the Job object is not created if the command is not passed.
 func (s *JobSuite) TestJobsNoCommand(c *C) {
-	clientset := NewClient()
+	clientset, err := NewClient()
+	c.Assert(err, IsNil)
 
 	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "")
 	c.Assert(job, IsNil)
@@ -109,7 +113,8 @@ func waitForJobCount(clientset kubernetes.Interface, namespace string, expectedC
 // Verifies that the basic Job creation and deletion completes successfully.
 func (s *JobSuite) TestJobsBasic(c *C) {
 	namespace := "default"
-	clientset := NewClient()
+	clientset, err := NewClient()
+	c.Assert(err, IsNil)
 
 	origJobCount := getK8sJobCount(clientset, namespace, c)
 
@@ -140,7 +145,8 @@ func (s *JobSuite) TestJobsBasic(c *C) {
 // Verifies that deleting the Job while it is running works.
 func (s *JobSuite) TestJobsDeleteWhileRunning(c *C) {
 	namespace := "default"
-	clientset := NewClient()
+	clientset, err := NewClient()
+	c.Assert(err, IsNil)
 
 	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sleep", "300")
 
@@ -165,7 +171,8 @@ func cancelLater(cancel func()) {
 
 // Verifies that cancelling the context results in WaitForCompletion finishing.
 func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
-	clientset := NewClient()
+	clientset, err := NewClient()
+	c.Assert(err, IsNil)
 
 	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sleep", "300")
 
@@ -188,7 +195,8 @@ func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
 }
 
 func (s *JobSuite) TestJobsWaitOnNonExistentJob(c *C) {
-	clientset := NewClient()
+	clientset, err := NewClient()
+	c.Assert(err, IsNil)
 
 	job, err := NewJob(clientset, testJobName, testJobNamespace, testJobServiceAccount, testJobImage, nil, "sleep", "300")
 

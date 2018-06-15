@@ -12,7 +12,8 @@ var _ = Suite(&ExecSuite{})
 
 func (s *ExecSuite) TestExecEcho(c *C) {
 	cmd := []string{"sh", "-c", "echo badabing"}
-	cli := NewClient()
+	cli, err := NewClient()
+	c.Assert(err, IsNil)
 	pods, err := cli.Core().Pods(defaultNamespace).List(emptyListOptions)
 	c.Assert(err, IsNil)
 	if len(pods.Items) == 0 {

@@ -15,19 +15,19 @@ deployment "time-logger" created
 
 ### 2. Protect the Application
 
-Next create a Blueprint which describes how backup and restore actions can be executed on this application. The Blueprint for this application can be found at `./examples/mongo-sidecar/blueprint.yaml`. Notice that the backup action of the Blueprint references the S3 location specified in the ConfigMap in `./examples/mongo-sidecar/s3-location-configmap.yaml`. In order for this example to work, you should update the path field of s3-location-configmap.yaml to point to an S3 bucket to which you have access. You should also update `secrets.yaml` to include AWS credentials that have read/write access to the S3 bucket. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in `secrets.yaml`. These are encoded using base64. The following commands will create a ConfigMap, Secrets and a Blueprint in controller's namespace:
+Next create a Blueprint which describes how backup and restore actions can be executed on this application. The Blueprint for this application can be found at `blueprint.yaml`. In order for this example to work, you should update the S3 compatible bucket details in `s3-profile.yaml` to point to an S3 bucket to which you have access. You should also update `secrets.yaml` to include AWS credentials that have read/write access to the S3 bucket. Provide your AWS credentials by setting the corresponding data values for `aws_access_key_id` and `aws_secret_access_key` in `secrets.yaml`. These are encoded using base64. The following commands will create a Secret, Profile and a Blueprint in controller's namespace:
 
 ```bash
 # Get base64 encoded aws keys
 $ echo "YOUR_KEY" | base64
 
-# Create a configmap that will dictate where the log is written
-$ kubectl apply -f examples/time-log/s3-location-configmap.yaml
-configmap "s3-location" created
-
 # Create secrets containing the necessary AWS credentials
 $ kubectl apply -f examples/time-log/secrets.yaml
 secret "aws-creds" created
+
+# Create a profile that will dictate where the backup is stored
+$ kubectl apply -f examples/time-log/s3-profile.yaml
+profile "s3-profile" created
 
 # Create the kanister blueprint that has instructions on how to backup the log
 $ kubectl apply -f examples/time-log/blueprint.yaml

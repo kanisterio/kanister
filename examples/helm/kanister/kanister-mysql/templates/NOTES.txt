@@ -7,16 +7,7 @@ To get your root password run:
 
 To connect to your database:
 
-1. Run an Ubuntu pod that you can use as a client:
-
-    kubectl run -i --tty ubuntu --image=ubuntu:16.04 --restart=Never -- bash -il
-
-2. Install the mysql client:
-
-    $ apt-get update && apt-get install mysql-client -y
-
-3. Connect using the mysql cli, then provide your password:
-    $ mysql -h {{ template "mysql.fullname" . }} -p
+    kubectl run --namespace {{ .Release.Namespace }} -it --rm --image=mysql:5.7.14 --restart=Never mysql-client -- mysql -h {{ template "mysql.fullname" . }} -p${MYSQL_ROOT_PASSWORD}
 
 To connect to your database directly from outside the K8s cluster:
     {{- if contains "NodePort" .Values.service.type }}
@@ -36,7 +27,7 @@ To connect to your database directly from outside the K8s cluster:
     mysql -h ${MYSQL_HOST} -P${MYSQL_PORT} -u root -p${MYSQL_ROOT_PASSWORD}
 
 To perform a backup using Kanister, simply create an ActionSet:
-{{- if not .Values.kanister.create_profile }}
+{{- if not .Values.profile.create }}
 (Assuming you previously created profiles.cr.kanister.io CR 'default-profile' in namespace 'kanister')
 {{- end }}
     $ cat << EOF | kubectl create -f -
@@ -56,13 +47,13 @@ To perform a backup using Kanister, simply create an ActionSet:
               profile:
                 apiVersion: v1alpha1
                 kind: Profile
-                {{- if .Values.kanister.create_profile }}
-                name: {{ template "mysql.fullname" . }}-profile
-                  {{- if .Values.kanister.profile_namespace }}
-                namespace: {{ .Values.kanister.profile_namespace }}
-                  {{- else }}
+                {{- if .Values.profile.create }}
+                    {{- if .Values.profile.defaultProfile }}
+                name: {{ .Values.profile.defaultProfileName }}
+                    {{- else }}
+                name: {{ .Values.profile.profileName }}
+                {{- end }}
                 namespace: {{ .Release.Namespace }}
-                  {{- end }}
                 {{- else }}
                 name: default-profile
                 namespace: kanister

@@ -23,7 +23,9 @@ type PrepareDataSuite struct {
 }
 
 func (s *PrepareDataSuite) SetUpSuite(c *C) {
-	s.cli = kube.NewClient()
+	cli, err := kube.NewClient()
+	c.Assert(err, IsNil)
+	s.cli = cli
 
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{

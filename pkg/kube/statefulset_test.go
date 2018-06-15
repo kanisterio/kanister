@@ -22,7 +22,9 @@ var _ = Suite(&StatefulSetSuite{})
 
 func (s *StatefulSetSuite) SetUpSuite(c *C) {
 	c.Skip("Too slow")
-	s.cli = NewClient()
+	cli, err := NewClient()
+	c.Assert(err, IsNil)
+	s.cli = cli
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "statefulsettest-",

@@ -13,7 +13,8 @@
     $ kubectl exec --namespace {{ .Release.Namespace }} POD_NAME -- mongo --eval="rs.slaveOk(); db.test.find().forEach(printjson)"
 
 4. To perform a backup using Kanister, simply create an ActionSet:
-{{- if not .Values.kanister.create_profile }}
+
+{{- if not .Values.profile.create }}
 (Assuming you previously created profiles.cr.kanister.io CR 'default-profile' in namespace 'kanister')
 {{- end }}
     $ cat << EOF | kubectl create -f -
@@ -33,13 +34,13 @@
               profile:
                 apiVersion: v1alpha1
                 kind: Profile
-                {{- if .Values.kanister.create_profile }}
-                name: {{ template "mongodb-replicaset.fullname" . }}-profile
-                  {{- if .Values.kanister.profile_namespace }}
-                namespace: {{ .Values.kanister.profile_namespace }}
+                {{- if .Values.profile.create }}
+                  {{- if .Values.profile.defaultProfile }}
+                name: {{ .Values.profile.defaultProfileName }}
                   {{- else }}
+                name: {{ .Values.profile.profileName }}
+                {{- end }}
                 namespace: {{ .Release.Namespace }}
-                  {{- end }}
                 {{- else }}
                 name: default-profile
                 namespace: kanister

@@ -40,10 +40,8 @@ func (*backupDataFunc) Name() string {
 
 func generateBackupCommand(includePath, destArtifact string, profile *param.Profile) []string {
 	// Command to export credentials
-	cmd := []string{"set", "+o", "xtrace"}
-	cmd = append(cmd, "export", fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", profile.Credential.KeyPair.Secret))
-	cmd = append(cmd, "export", fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", profile.Credential.KeyPair.ID))
-	cmd = append(cmd, "set", "-o", "xtrace")
+	cmd := []string{"export", fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s\n", profile.Credential.KeyPair.Secret)}
+	cmd = append(cmd, "export", fmt.Sprintf("AWS_ACCESS_KEY_ID=%s\n", profile.Credential.KeyPair.ID))
 	// Command to tar and compress
 	cmd = append(cmd, "tar", "-cf", "-", "-C", includePath, ".", "|", "gzip", "-", "|")
 	// Command to dump on the object store
@@ -91,7 +89,10 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = validateProfile(tp.Profile); err != nil {
 		return errors.Wrapf(err, "Failed to validate Profile")
 	}
-	cli := kube.NewClient()
+	cli, err := kube.NewClient()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create Kubernetes client")
+	}
 	// Create backup and dump it on the object store
 	cmd := generateBackupCommand(includePath, backupArtifact, tp.Profile)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)

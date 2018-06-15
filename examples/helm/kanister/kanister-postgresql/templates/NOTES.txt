@@ -40,7 +40,7 @@ base backup is required before these logs are usable.
 
 
 To create a base backup using Kanister, simply create a backup ActionSet:
-{{- if not .Values.kanister.create_profile }}
+{{- if not .Values.profile.create }}
 (Assuming you previously created profiles.cr.kanister.io CR 'default-profile' in namespace 'kanister')
 {{- end }}
 
@@ -61,13 +61,13 @@ To create a base backup using Kanister, simply create a backup ActionSet:
               profile:
                 apiVersion: v1alpha1
                 kind: Profile
-                {{- if .Values.kanister.create_profile }}
-                name: {{ template "postgresql.fullname" . }}-profile
-                  {{- if .Values.kanister.profile_namespace }}
-                namespace: {{ .Values.kanister.profile_namespace }}
+                {{- if .Values.profile.create }}
+                  {{- if .Values.profile.defaultProfile }}
+                name: {{ .Values.profile.defaultProfileName }}
                   {{- else }}
+                name: {{ .Values.profile.profileName }}
+                {{- end }}
                 namespace: {{ .Release.Namespace }}
-                  {{- end }}
                 {{- else }}
                 name: default-profile
                 namespace: kanister

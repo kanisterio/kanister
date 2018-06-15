@@ -6,48 +6,46 @@ metadata:
 actions:
   backup:
     type: Deployment
-    configMapNames:
-    - location
-    secretNames:
-    - aws
     outputArtifacts:
       timeLog:
         keyValue:
-          path: '{{ .ConfigMaps.location.Data.path }}/time-log/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02" }}'
+          path: 's3://{{ .Profile.Location.S3Compliant.Bucket }}/time-log/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02" }}.tgz'
     phases:
-    - func: KubeExec
+    - func: BackupData
       name: backupToS3
       args:
         namespace: "{{ .Deployment.Namespace }}"
         pod: "{{ index .Deployment.Pods 0 }}"
         container: test-container
-        command:
-          - sh
-          - -c
-          - |
-            AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
-            AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-            aws s3 cp /var/log/time.log {{ .ArtifactsOut.timeLog.KeyValue.path | quote }}
+        includePath: /var/log
+        backupArtifact: "{{ .ArtifactsOut.timeLog.KeyValue.path }}"
   restore:
     type: Deployment
     inputArtifactNames:
     - timeLog
-    secretNames:
-    - aws
     phases:
-    - func: KubeExec
+    - func: ScaleWorkload
+      name: shutdownPod
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        name: "{{ .Deployment.Name }}"
+        kind: Deployment
+        replicas: 0
+    - func: RestoreData
       name: restoreFromS3
       args:
         namespace: "{{ .Deployment.Namespace }}"
         pod: "{{ index .Deployment.Pods 0 }}"
-        container: test-container
-        command:
-          - sh
-          - -c
-          - |
-            AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
-            AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-            aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log
+        image: kanisterio/kanister-tools:0.0.1
+        backupArtifact: "{{ .ArtifactsIn.timeLog.KeyValue.path }}"
+        restorePath: /var/log
+    - func: ScaleWorkload
+      name: bringupPod
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        name: "{{ .Deployment.Name }}"
+        kind: Deployment
+        replicas: 1
   delete:
     type: Deployment
     inputArtifactNames:
@@ -60,9 +58,9 @@ actions:
         pod: "{{ index .Deployment.Pods 0 }}"
         container: test-container
         command:
-          - sh
+          - bash
           - -c
           - |
-            AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }} \
-            AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+            AWS_ACCESS_KEY_ID={{ .Profile.Credential.KeyPair.ID | toString }} \
+            AWS_SECRET_ACCESS_KEY={{ .Profile.Credential.KeyPair.Secret | toString }} \
             aws s3 rm {{ .ArtifactsIn.timeLog.KeyValue.path | quote }}

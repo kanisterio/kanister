@@ -235,3 +235,90 @@ actions:
         name: "{{ .Deployment.Name }}"
         kind: deployment
         replicas: 1
+  delete:
+    type: Deployment
+    inputArtifactNames:
+      - manifest
+    phases:
+    - func: KubeTask
+      name: deleteArtifact
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        image: "kanisterio/postgres:v0.3.0"
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - xtrace
+          - -o
+          - pipefail
+          - -c
+          - |
+            # Set S3 access keys.
+            set +o xtrace
+            export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+            export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
+            set -o xtrace
+
+            # Setup configuration for the S3 client.
+            s3_path="${S3_BUCKET}{{ .ArtifactsIn.manifest.KeyValue.path }}"
+            declare -a aws_args
+            {{- if .Profile.SkipSSLVerify }}
+              aws_args+=(" --no-verify-ssl")
+            {{- end }}
+            {{- if .Profile.Location.S3Compliant.Endpoint }}
+              aws_args+=(--endpoint "{{ .Profile.Location.S3Compliant.Endpoint }}")
+            {{- end }}
+            {{- if .Profile.Location.S3Compliant.Region }}
+              aws_args+=(--region "{{ .Profile.Location.S3Compliant.Region | quote}}")
+            {{- end }}
+            s3_path="s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.path }}"
+
+
+            # Get and parse artifact manifest to discover the timeline and the base-backup name.
+            manifest_s3_cmd=(aws "${aws_args[@]}" s3 cp "${s3_path}" -)
+            backup_name=$(${manifest_s3_cmd[@]} | grep 'backup_name' | cut -d'=' -f2)
+            wale_prefix=$(${manifest_s3_cmd[@]} | grep 'wale_s3_prefix' | cut -d'=' -f2)
+
+            # Use the AWS cli to remove the basebackup.
+            base_backup_path="${wale_prefix}/basebackup_005/${backup_name}"
+            aws "${aws_args[@]}" s3 rm --recursive "${base_backup_path}"
+
+            # Setup configuration for wal-e.
+            {{- if .Profile.Location.S3Compliant.Endpoint }}
+              wale_s3_endpoint="{{ .Profile.Location.S3Compliant.Endpoint | quote}}"
+              wale_s3_endpoint-${wale_s3_endpoint,,}
+              {{- if .Profile.SkipSSLVerify }}
+                # Since wal-e does not support skip-ssl-verify switch to http://
+                wale_s3_endpoint="${wale_s3_endpoint/https/http}"
+              {{- end }}
+
+              # Add the scheme that wal-e requires
+              wale_s3_endpoint="${wale_s3_endpoint/https\:\/\//https+path://}"
+              wale_s3_endpoint="${wale_s3_endpoint/http\:\/\//http+path://}"
+
+              export WALE_S3_ENDPOINT="${wale_s3_endpoint}"
+
+              # Region will be ignored for S3 compatible object store so skipping.
+            {{- else }}
+              # Region is required when no endpoint is used (AWS S3).
+              {{- if .Profile.Location.S3Compliant.Region }}
+                wale_s3_region="{{ .Profile.Location.S3Compliant.Region | quote}}"
+              {{- else }}
+                wale_s3_region="us-east-1"
+              {{- end }}
+              export AWS_REGION="${wale_s3_region}"
+            {{- end }}
+
+            # Count the number of backups. If there are none left, delete the WALs as well.
+            wal-e --s3-prefix "${wale_prefix}" backup-list
+            num_base_backups=$(( $(wal-e --s3-prefix "${wale_prefix}" backup-list | grep -v name | wc -l ) - 1 ))
+            if (( $num_base_backups == 0 ))
+            then
+                wal-e --s3-prefix "${wale_prefix}" delete --confirm everything
+            fi
+
+            # Remove manifest.
+            base_backup_path="${wale_prefix}/basebackup_005/${backup_name}"
+            aws "${aws_args[@]}" s3 rm --recursive "${base_backup_path}"
