@@ -46,7 +46,7 @@ func (s *KubeTaskSuite) TearDownSuite(c *C) {
 	}
 }
 
-func newTaskBlueprint() *crv1alpha1.Blueprint {
+func newTaskBlueprint(namespace string) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"test": {
@@ -56,7 +56,7 @@ func newTaskBlueprint() *crv1alpha1.Blueprint {
 						Name: "test",
 						Func: "KubeTask",
 						Args: map[string]interface{}{
-							KubeTaskNamespaceArg: "namespace",
+							KubeTaskNamespaceArg: namespace,
 							KubeTaskImageArg:     "busybox",
 							KubeTaskCommandArg: []string{
 								"sleep",
@@ -68,7 +68,7 @@ func newTaskBlueprint() *crv1alpha1.Blueprint {
 						Name: "test2",
 						Func: "KubeTask",
 						Args: map[string]interface{}{
-							KubeTaskNamespaceArg: "test-namespace",
+							KubeTaskNamespaceArg: namespace,
 							KubeTaskImageArg:     "ubuntu:latest",
 							KubeTaskCommandArg: []string{
 								"sleep",
@@ -91,7 +91,8 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 	}
 
 	action := "test"
-	phases, err := kanister.GetPhases(*newTaskBlueprint(), action, tp)
+	bp := newTaskBlueprint(s.namespace)
+	phases, err := kanister.GetPhases(*bp, action, tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
 		err := p.Exec(ctx, tp)
