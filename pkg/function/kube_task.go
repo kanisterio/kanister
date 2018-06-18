@@ -35,34 +35,24 @@ func generateJobName(jobPrefix string) string {
 	return jobPrefix + jobNameSuffix
 }
 
-func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
-	var namespace, image string
-	var command []string
+func kubeTask(ctx context.Context, namespace, image string, command []string) error {
+	var serviceAccount string
 	var err error
-	if err = Arg(args, KubeTaskNamespaceArg, &namespace); err != nil {
-		return err
-	}
-	if err = Arg(args, KubeTaskImageArg, &image); err != nil {
-		return err
-	}
-	if err = Arg(args, KubeTaskCommandArg, &command); err != nil {
-		return err
-	}
-
-	namespace, err = kube.GetControllerNamespace()
-	if err != nil {
-		return errors.Wrapf(err, "Failed to get controller namespace")
-	}
-
-	jobName := generateJobName(jobPrefix)
 	clientset, err := kube.NewClient()
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	serviceAccount, err := kube.GetControllerServiceAccount(clientset)
-	if err != nil {
-		return errors.Wrap(err, "Failed to get Controller Service Account")
+	if namespace == "" {
+		namespace, err = kube.GetControllerNamespace()
+		if err != nil {
+			return errors.Wrapf(err, "Failed to get controller namespace")
+		}
+		serviceAccount, err = kube.GetControllerServiceAccount(clientset)
+		if err != nil {
+			return errors.Wrap(err, "Failed to get Controller Service Account")
+		}
 	}
+	jobName := generateJobName(jobPrefix)
 	job, err := kube.NewJob(clientset, jobName, namespace, serviceAccount, image, nil, command...)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create job")
@@ -75,6 +65,22 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		return errors.Wrapf(err, "Failed while waiting for job %s to complete", jobName)
 	}
 	return nil
+}
+
+func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+	var namespace, image string
+	var command []string
+	var err error
+	if err = Arg(args, KubeTaskImageArg, &image); err != nil {
+		return err
+	}
+	if err = Arg(args, KubeTaskCommandArg, &command); err != nil {
+		return err
+	}
+	if err = OptArg(args, KubeTaskNamespaceArg, &namespace, ""); err != nil {
+		return err
+	}
+	return kubeTask(ctx, namespace, image, command)
 }
 
 func (*kubeTaskFunc) RequiredArgs() []string {

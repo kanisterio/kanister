@@ -51,16 +51,8 @@ actions:
     inputArtifactNames:
     - timeLog
     phases:
-    - func: KubeExec
+    - func: DeleteData
       name: deleteFromS3
       args:
         namespace: "{{ .Deployment.Namespace }}"
-        pod: "{{ index .Deployment.Pods 0 }}"
-        container: test-container
-        command:
-          - bash
-          - -c
-          - |
-            AWS_ACCESS_KEY_ID={{ .Profile.Credential.KeyPair.ID | toString }} \
-            AWS_SECRET_ACCESS_KEY={{ .Profile.Credential.KeyPair.Secret | toString }} \
-            aws s3 rm {{ .ArtifactsIn.timeLog.KeyValue.path | quote }}
+        artifact: "{{ .ArtifactsIn.timeLog.KeyValue.path }}"
