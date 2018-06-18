@@ -344,6 +344,36 @@ Example:
       backupArtifact: s3://bucket/path/artifact
       restorePath: /mnt/data
 
+DeleteData
+----------
+
+This function uses a Kubernetes Job to delete the specified artifact
+from an S3 compatible object store.
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, No, `string`, namespace in which to execute
+   `artifact`, Yes, `string`, artifact to be deleted from the object store
+
+.. note::
+   The Kubernetes job uses the `kanisterio/kanister-tools` image,
+   since it includes all the tools required to delete the artifact
+   from an S3 compatible object store.
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: DeleteData
+    name: DeleteFromObjectStore
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      artifact: s3://bucket/path/artifact
+
 Registering Functions
 ---------------------
 
