@@ -20,6 +20,7 @@ The TemplateParam struct is defined as:
       ConfigMaps   map[string]v1.ConfigMap
       Secrets      map[string]v1.Secret
       Time         string
+      Options      map[string]string
   }
 
 Rendering Templates
@@ -442,4 +443,36 @@ The currently supported Profile template is based on the following definitions
     Secret      ObjectReference
   }
 
+Options
+-------
+
+Options map can be used to render any additional parameters in Blueprints.
+
+For example, if you want to use a specific Pod to carry out actions in a Blueprint,
+the Pod name can be specified using the Options as follows:
+
+.. code-block:: yaml
+  :linenos:
+
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: ActionSet
+  metadata:
+    generateName: s3backup-
+    namespace: kanister
+  spec:
+    actions:
+    - name: backup
+      blueprint: my-blueprint
+      object:
+        kind: deployment
+        name: my-deployment
+        namespace: default
+      options:
+        podName: some-pod
+
+The Options can then be used in the Blueprint via templating:
+
+.. code-block:: go
+
+  "{{ .Options.podName }}"
 

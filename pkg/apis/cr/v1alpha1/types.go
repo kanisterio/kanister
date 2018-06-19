@@ -90,8 +90,11 @@ type ActionSpec struct {
 	// Secrets that we'll get and pass into the blueprint.
 	Secrets map[string]ObjectReference `json:"secrets"`
 	// Profile is use to specify the location where store artifacts and the
-	// credentials authorized to  access them.
+	// credentials authorized to access them.
 	Profile *ObjectReference `json:"profile"`
+	// Options will be used to specify additional values
+	// to be used in the Blueprint.
+	Options map[string]string `json:"options"`
 }
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.

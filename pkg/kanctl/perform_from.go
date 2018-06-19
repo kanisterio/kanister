@@ -79,6 +79,7 @@ func childActionSet(childActionName string, parent *crv1alpha1.ActionSet) (*crv1
 			Secrets:    parent.Spec.Actions[aidx].Secrets,
 			ConfigMaps: parent.Spec.Actions[aidx].ConfigMaps,
 			Profile:    parent.Spec.Actions[aidx].Profile,
+			Options:    parent.Spec.Actions[aidx].Options,
 		})
 	}
 	name := fmt.Sprintf("%s-%s-", childActionName, parent.GetName())
