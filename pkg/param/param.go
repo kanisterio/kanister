@@ -27,6 +27,7 @@ type TemplateParams struct {
 	Secrets      map[string]v1.Secret
 	Time         string
 	Profile      *Profile
+	Options      map[string]string
 }
 
 // StatefulSetParams are params for stateful sets.
@@ -94,6 +95,7 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 		Secrets:     secrets,
 		Profile:     prof,
 		Time:        now.Format(timeFormat),
+		Options:     as.Options,
 	}
 	switch strings.ToLower(as.Object.Kind) {
 	case "statefulset":

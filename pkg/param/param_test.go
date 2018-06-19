@@ -274,6 +274,9 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 			Name:      "profName",
 			Namespace: s.namespace,
 		},
+		Options: map[string]string{
+			"podName": "some-pod",
+		},
 	}
 
 	artsTpl := map[string]crv1alpha1.Artifact{
@@ -287,6 +290,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 	tp, err := New(ctx, s.cli, crCli, as)
 	c.Assert(err, IsNil)
 	c.Assert(tp.ConfigMaps["myCM"].Data, DeepEquals, map[string]string{"someKey": "some-value"})
+	c.Assert(tp.Options, DeepEquals, map[string]string{"podName": "some-pod"})
 
 	arts, err := RenderArtifacts(artsTpl, *tp)
 	c.Assert(err, IsNil)
