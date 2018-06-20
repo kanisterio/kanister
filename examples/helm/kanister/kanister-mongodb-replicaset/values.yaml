@@ -91,4 +91,4 @@ profile:
 
 # Configure Kanister - the blueprint CR is installed in the controller namespace
 kanister:
-  controller_namespace: kanister
+  controller_namespace: kasten-io
