@@ -56,6 +56,6 @@ To perform a backup using Kanister, simply create an ActionSet:
                 namespace: {{ .Release.Namespace }}
                 {{- else }}
                 name: default-profile
-                namespace: kanister
+                namespace: {{ .Values.kanister.controller_namespace }}
                 {{- end }}
     EOF
