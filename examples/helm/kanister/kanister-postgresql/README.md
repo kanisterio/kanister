@@ -31,7 +31,7 @@ Prior to install you will need to have the Kanister Helm repository added to you
 $ helm repo add kanister http://charts.kanister.io
 ```
 
-Then install the sample Postrges application in its own namespace.
+Then install the sample Postgres application in its own namespace.
 
 ```bash
 $ helm install kanister/kanister-postgresql -n my-release --namespace postgres-test \
@@ -83,7 +83,7 @@ default values. The Profile CR parameters are passed to the profile sub-chart.
 | Parameter | Description | Default |
 | --- | --- | --- |
 | `profile.create` | (Optional) Specify if a Profile CR should be created as part of install. | ``false`` |
-| `profile.defaultProfile` | (Optional if not creating a default Profile) Set to ``true`` to create a profile with name `default-profile` | ``false`` | 
+| `profile.defaultProfile` | (Optional) Set to ``true`` to create a profile with name `default-profile` | ``false`` |
 | `profile.profileName` | (Required if not creating a default Profile) Name for the profile that is created | `nil` |
 | `profile.s3.accessKey` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
 | `profile.s3.secretKey` | (Required if creating profile) Corresponding secret for `accessKey`. | `nil` |
