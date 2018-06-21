@@ -4,21 +4,83 @@
 
 [Kanister](https://kansiter.io) is a framework that enables application-level data management on Kubernetes.
 
-## TL;DR;
-
-```bash
-$ helm install stable/postgresql
-```
-
 ## Introduction
 
 This chart bootstraps a [PostgreSQL](https://github.com/docker-library/postgres) deployment on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
 ## Prerequisites
 
-- Kubernetes 1.7+ with Beta APIs enabled or 1.9+ without Beta APIs.
+- Kubernetes 1.7+ with Beta APIs enabled or 1.9+ without Beta APIs
+- [Helm](https://helm.sh)
 - PV provisioner support in the underlying infrastructure (Only when persisting data)
-- Kanister version 0.7.0 with `profiles.cr.kanister.io` CRD installed
+- AWS S3 (or S3 compatible) keys and bucket
+
+## Quick Start
+
+### Install the Kanister controller
+Follow the instructions [here](https://docs.kanister.io/helm.html) to install Kanister.
+The commands below assume the controller is installed in the `kanister` namespace.
+
+### Install Kanister-enabled PostgresSQL
+
+```bash
+# Add Kanister Charts
+helm repo add kanister http://charts.kanister.io
+
+# Install PostgresSQL and configure its Kanister Blueprint.
+helm install kanister/kanister-postgresql ---name postgres-test --namespace postgres-test \
+     --set profile.create='true' \
+     --set profile.profileName='postgres-test-profile' \
+     --set profile.s3.accessKey=${AWS_ACCESS_KEY_ID} \
+     --set profile.s3.secretKey=${AWS_SECRET_ACCESS_KEY} \
+     --set profile.s3.bucket='<BUCKET_NAME e.g kanister_bucket>' \
+     --set profile.s3.region='<BUCKET_REGION e.g. us-west-2>' \
+     --set kanister.controller_namespace=kanister
+```
+
+### Create a Base Backup
+Create an ActionSet to trigger a backup. This will also setup log shipping that enables restoring
+to point-in-time restore
+
+```bash
+# Create a base backup by creating an ActionSet
+cat << EOF | kubectl create -f -
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+    name: pg-base-backup
+    namespace: kanister
+spec:
+    actions:
+    - name: backup
+      blueprint: postgres-test-kanister-postgresql-blueprint
+      object:
+        kind: Deployment
+        name: postgres-test-kanister-postgresql
+        namespace: postgres-test
+      profile:
+        apiVersion: v1alpha1
+        kind: Profile
+        name: postgres-test-profile
+        namespace: postgres-test
+
+EOF
+```
+
+### Describe ActionSet status
+```bash
+kubectl describe actionset pg-base-backup --namespace kanister
+```
+
+### Restore using the base backup
+
+To restore Postgres using the base backup - use the [kanctl](https://docs.kanister.io/architecture.html#kanctl) tool which can be downloaded from the releases [page](https://github.com/kanisterio/kanister/releases)
+
+```bash
+kanctl perform restore --from pg-base-backup --namespace kanister
+```
+
+# Chart Details
 
 ## Installing the Chart
 
@@ -34,13 +96,14 @@ $ helm repo add kanister http://charts.kanister.io
 Then install the sample Postgres application in its own namespace.
 
 ```bash
-$ helm install kanister/kanister-postgresql -n my-release --namespace postgres-test \
+$ helm install kanister/kanister-postgresql --name postgres-test --namespace postgres-test \
      --set profile.create='true' \
      --set profile.profileName='postgres-test-profile' \
-     --set profile.s3.endpoint='https://my-custom-s3-provider:9000' \
-     --set profile.s3.accessKey='AKIAIOSFODNN7EXAMPLE' \
-     --set profile.s3.secretKey='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
-     --set profile.s3.bucket='kanister-bucket'
+     --set profile.s3.accessKey=${AWS_ACCESS_KEY_ID} \
+     --set profile.s3.secretKey=${AWS_SECRET_ACCESS_KEY} \
+     --set profile.s3.bucket='<BUCKET_NAME e.g kanister_bucket>' \
+     --set profile.s3.region='<BUCKET_REGION e.g. us-west-2>' \
+     --set kanister.controller_namespace=kanister
 ```
 
 The settings in the command above represent the minimum recommended set for your installation.
