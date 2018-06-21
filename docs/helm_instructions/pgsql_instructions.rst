@@ -63,7 +63,7 @@ your installation.
 
      # Install Kanister-enabled PostgreSQL
      $ helm install kanister/kanister-postgresql -n postgresql \
-          --namespace postgresql-test \
+          --namespace postgresql-test
 
 .. note:: The above command will attempt to use dynamic storage provisioning
    based on the the default storage class for your cluster. You will to need to
