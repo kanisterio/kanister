@@ -57,6 +57,7 @@ main() {
     done
 
     # from helm folder
+    release_helm_charts helm/kanister-operator "${version}"
     release_helm_charts helm/profile "${version}"
 }
 
