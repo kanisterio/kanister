@@ -80,7 +80,7 @@ default values. The Profile CR parameters are passed to the profile sub-chart.
 | Parameter | Description | Default |
 | --- | --- | --- |
 | `profile.create` | (Optional) Specify if a Profile CR should be created as part of install. | ``false`` |
-| `profile.defaultProfile` | (Optional if not creating a default Profile) Set to ``true`` to create a profile with name `default-profile` | ``false`` | 
+| `profile.defaultProfile` | (Optional if not creating a default Profile) Set to ``true`` to create a profile with name `default-profile` | ``false`` |
 | `profile.profileName` | (Required if not creating a default Profile) Name for the profile that is created | `nil` |
 | `profile.s3.accessKey` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
 | `profile.s3.secretKey` | (Required if creating profile) Corresponding secret for `accessKey`. | `nil` |
@@ -142,7 +142,7 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
 
 ```console
-$ helm install --name my-release -f values.yaml stable/kanister-mongodb-replicaset
+$ helm install --name my-release -f values.yaml kanister/kanister-mongodb-replicaset
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)

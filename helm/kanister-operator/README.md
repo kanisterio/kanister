@@ -7,7 +7,8 @@ Kanister is a framework that enables application-level data management on Kubern
 ## TL;DR
 
 ```console
-$ helm install stable/kanister-operator
+$ helm repo add kanister http://charts.kanister.io
+$ helm install kanister/kanister-operator
 ```
 
 ## Introduction
@@ -22,7 +23,7 @@ This chart bootstraps a kanister-operator deployment on a [Kubernetes](http://ku
 To install the chart with the release name `my-release`:
 
 ```console
-$ helm install --name my-release stable/kanister-operator
+$ helm install --name my-release kanister/kanister-operator
 ```
 
 The command deploys kanister-operator on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
@@ -58,6 +59,6 @@ Specify each parameter you'd like to override using a YAML file as described abo
 You can also specify any non-array parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
 ```console
-$ helm install stable/kanister-operator --name my-release \
+$ helm install kanister/kanister-operator --name my-release \
     --set rbac.create=false
 ```

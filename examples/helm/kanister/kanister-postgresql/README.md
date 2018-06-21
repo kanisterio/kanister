@@ -202,7 +202,7 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 ```bash
 $ helm install --name my-release \
   --set postgresUser=my-user,postgresPassword=secretpassword,postgresDatabase=my-database \
-    stable/postgresql
+    kanister/kanister-postgresql
 ```
 
 The above command creates a PostgreSQL user named `my-user` with password `secretpassword`. Additionally it creates a database named `my-database`.
@@ -210,7 +210,7 @@ The above command creates a PostgreSQL user named `my-user` with password `secre
 Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
 
 ```bash
-$ helm install --name my-release -f values.yaml stable/postgresql
+$ helm install --name my-release -f values.yaml kanister/kanister-postgresql
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)

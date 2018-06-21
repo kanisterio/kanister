@@ -62,11 +62,11 @@ and backup to an AWS S3 bucket.
 
 .. code-block:: bash
 
-  # Install the Kanister Controller
-  helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=0.8.0
-
   # Add Kanister Charts
   helm repo add kanister http://charts.kanister.io
+
+  # Install the Kanister Controller
+  helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.8.0
 
   # Install MySQL and configure its Kanister Blueprint.
   # Also create a Profile CR that can be used in ActionSets
