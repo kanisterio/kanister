@@ -27,7 +27,7 @@ You also need to install the Kanister controller
 
 .. code-block:: console
 
-   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.8.0
+   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.9.0
 
 Kanister-Enabled Applications
 =============================
