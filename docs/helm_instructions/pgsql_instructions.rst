@@ -1,12 +1,11 @@
 Kanister-Enabled PostgreSQL
 ---------------------------
 
-For basic installation, you can install using a Kanister-enabled Helm
-chart that will install an instance of PostgreSQL (a Deployment with
-persistent volumes) as well as a Kanister blueprint to be used with
-it. In particular, this chart uses `WAL-E
-<https://github.com/wal-e/wal-e>`_ for continuous archiving of
-PostgreSQL WAL files and base backups.
+This section describes the steps for a basic installation of an instance of
+PostgreSQL (a Deployment with persistent volumes) along with
+a Kanister Blueprint and a Profile via a Kanister-enabled Helm chart.
+In particular, this chart uses `WAL-E <https://github.com/wal-e/wal-e>`_
+for continuous archiving of PostgreSQL WAL files and base backups.
 
 
 .. code-block:: console
@@ -25,11 +24,12 @@ Then install the sample PostgreSQL application in its own namespace.
      # Install Kanister-enabled PostgreSQL
      $ helm install kanister/kanister-postgresql -n postgresql \
           --namespace postgresql-test \
-          --set kanister.create_profile='true' \
-          --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
-          --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
-          --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
-          --set kanister.s3_bucket="kanister-bucket" \
+          --set profile.create='true' \
+          --set profile.profileName='postgres-test-profile' \
+          --set profile.s3.bucket="kanister-bucket" \
+          --set profile.s3.endpoint="https://my-custom-s3-provider:9000" \
+          --set profile.s3.apiKey="AKIAIOSFODNN7EXAMPLE" \
+          --set profile.s3.secretKey="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
           --set kanister.controller_namespace="kanister"
 
 
