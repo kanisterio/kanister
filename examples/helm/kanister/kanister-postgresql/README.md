@@ -28,7 +28,7 @@ The commands below assume the controller is installed in the `kanister` namespac
 helm repo add kanister http://charts.kanister.io
 
 # Install PostgresSQL and configure its Kanister Blueprint.
-helm install kanister/kanister-postgresql ---name postgres-test --namespace postgres-test \
+helm install kanister/kanister-postgresql --name postgres-test --namespace postgres-test \
      --set profile.create='true' \
      --set profile.profileName='postgres-test-profile' \
      --set profile.s3.accessKey=${AWS_ACCESS_KEY_ID} \
