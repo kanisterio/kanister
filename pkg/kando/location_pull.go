@@ -2,9 +2,12 @@ package kando
 
 import (
 	"context"
+	"io"
+	"os"
 
 	"github.com/spf13/cobra"
 
+	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -23,17 +26,26 @@ func newLocationPullCommand() *cobra.Command {
 }
 
 func runLocationPull(cmd *cobra.Command, args []string) error {
-	source := args[0]
+	target, err := targetWriter(args[0])
+	if err != nil {
+		return err
+	}
 	p, err := unmarshalProfileFlag(cmd)
 	if err != nil {
 		return err
 	}
 	s := pathFlag(cmd)
 	ctx := context.Background()
-	return locationPull(ctx, p, s, source)
+	return locationPull(ctx, p, s, target)
 }
 
-// TODO: Implement this function
-func locationPull(ctx context.Context, p *param.Profile, path string, source string) error {
-	return nil
+func targetWriter(target string) (io.Writer, error) {
+	if target != usePipeParam {
+		return os.Open(target)
+	}
+	return os.Stdout, nil
+}
+
+func locationPull(ctx context.Context, p *param.Profile, path string, target io.Writer) error {
+	return location.Read(ctx, target, *p, path)
 }
