@@ -221,8 +221,7 @@ ScaleWorkload.
 
    `namespace`, Yes, `string`, namespace in which to execute
    `image`, Yes, `string`, image to be used the command
-   `volumes`, Yes, `map[string]string`, Mapping of `pvcName`
-   to `mountPath` under which the volume will be available
+   `volumes`, Yes, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
    `command`, Yes, `[]string`,  command list to execute
 
 .. note::
@@ -313,15 +312,18 @@ by the specified Pod and restores data to the specified path.
    :widths: 5,5,5,15
 
    `namespace`, Yes, `string`, namespace in which to execute
-   `pod`, Yes, `string`, pod to which the volumes are attached
    `image`, Yes, `string`, image to be used for running restore
    `backupArtifact`, Yes, `string`, path to the backup on the object store
    `restorePath`, Yes, `string`, path where data is restored
+   `pod`, No, `string`, pod to which the volumes are attached
+   `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
 
 .. note::
    The `image` argument requires the use of `kanisterio/kanister-tools`
    image since it includes the required tools to restore data from
    the S3 compatible object store.
+   Between the `pod` and `volumes` arguments, exactly one argument
+   must be specified.
 
 Example:
 
