@@ -4,7 +4,7 @@ Tutorial
 ********
 
 In this tutorial you'll deploy a simple application in Kubernetes. We'll start
-by invoking by invoking a trivial Kanister action, then incrementally use more
+by invoking a trivial Kanister action, then incrementally use more
 of Kanister's features to manage the application's data.
 
 .. contents:: Tutorial Overview
