@@ -9,7 +9,7 @@ set -o nounset
 set -o xtrace
 set -o pipefail
 
-BIN_NAME="kanctl"
+BIN_NAME="kando"
 RELEASES_URL="https://github.com/kanisterio/kanister/releases"
 
 : ${KANISTER_INSTALL_DIR:="/usr/local/bin"}
@@ -131,7 +131,7 @@ cleanup() {
 }
 
 main() {
-    version="${1:-"0.9.0"}"
+    version="${1:-"0.10.0"}"
     initArch
     initOS
     verifySupported
