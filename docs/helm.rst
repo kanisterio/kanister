@@ -7,11 +7,10 @@ Kanister Helm Charts
   :local:
 
 To make it easier to experiment with Kanister, we have modified a few
-upstream Helm charts to add Kanister Blueprints as well as easily
-configure the application via Helm. The following sections document
-how to install these Kanister-enabled Helm charts. Once installed, you
-will need to create :ref:`ActionSets <tutorial>` to perform data
-management actions on the data service.
+upstream Helm charts to install a Kanister Blueprint and a Profile along with the
+application itself. The following sections document how to install these
+Kanister-enabled Helm charts. Once installed, you will need to create
+:ref:`ActionSets <tutorial>` to perform data management actions on the data service.
 
 Kanister Helm Setup
 ===================
@@ -27,7 +26,7 @@ You also need to install the Kanister controller
 
 .. code-block:: console
 
-   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.8.0
+   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.9.0
 
 Kanister-Enabled Applications
 =============================

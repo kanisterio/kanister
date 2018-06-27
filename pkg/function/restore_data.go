@@ -15,14 +15,16 @@ import (
 const (
 	// RestoreDataNamespaceArg provides the namespace
 	RestoreDataNamespaceArg = "namespace"
-	// RestoreDataPodArg provides the pod connected to the data volume
-	RestoreDataPodArg = "pod"
 	// RestoreDataImageArg provides the image of the container with required tools
 	RestoreDataImageArg = "image"
 	// RestoreDataBackupArtifactArg provides the path of the backed up artifact
 	RestoreDataBackupArtifactArg = "backupArtifact"
 	// RestoreDataRestorePathArg provides the path to restore backed up data
 	RestoreDataRestorePathArg = "restorePath"
+	// RestoreDataPodArg provides the pod connected to the data volume
+	RestoreDataPodArg = "pod"
+	// RestoreDataVolsArg provides a map of PVC->mountPaths to be attached
+	RestoreDataVolsArg = "volumes"
 )
 
 func init() {
@@ -35,6 +37,13 @@ type restoreDataFunc struct{}
 
 func (*restoreDataFunc) Name() string {
 	return "RestoreData"
+}
+
+func validateOptArgs(pod string, vols map[string]string) error {
+	if (pod != "") != (len(vols) > 0) {
+		return nil
+	}
+	return errors.Errorf("Require one argument: %s or %s", RestoreDataPodArg, RestoreDataVolsArg)
 }
 
 func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, error) {
@@ -80,11 +89,9 @@ func generateRestoreCommand(backupArtifact, restorePath string, profile *param.P
 
 func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
 	var namespace, pod, image, backupArtifact, restorePath string
+	var vols map[string]string
 	var err error
 	if err = Arg(args, RestoreDataNamespaceArg, &namespace); err != nil {
-		return err
-	}
-	if err = Arg(args, RestoreDataPodArg, &pod); err != nil {
 		return err
 	}
 	if err = Arg(args, RestoreDataImageArg, &image); err != nil {
@@ -96,6 +103,16 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = Arg(args, RestoreDataRestorePathArg, &restorePath); err != nil {
 		return err
 	}
+	if err = OptArg(args, RestoreDataPodArg, &pod, ""); err != nil {
+		return err
+	}
+	if err = OptArg(args, RestoreDataVolsArg, &vols, nil); err != nil {
+		return err
+	}
+	err = validateOptArgs(pod, vols)
+	if err != nil {
+		return err
+	}
 	// Validate profile
 	err = validateProfile(tp.Profile)
 	if err != nil {
@@ -103,10 +120,12 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	}
 	// Generate restore command
 	cmd := generateRestoreCommand(backupArtifact, restorePath, tp.Profile)
-	// Fetch Volumes
-	vols, err := fetchPodVolumes(pod, tp)
-	if err != nil {
-		return err
+	if len(vols) == 0 {
+		// Fetch Volumes
+		vols, err = fetchPodVolumes(pod, tp)
+		if err != nil {
+			return err
+		}
 	}
 	// Call PrepareData with generated command
 	cli, err := kube.NewClient()
@@ -117,6 +136,6 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 }
 
 func (*restoreDataFunc) RequiredArgs() []string {
-	return []string{RestoreDataNamespaceArg, RestoreDataPodArg, RestoreDataImageArg,
+	return []string{RestoreDataNamespaceArg, RestoreDataImageArg,
 		RestoreDataBackupArtifactArg, RestoreDataRestorePathArg}
 }

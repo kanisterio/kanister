@@ -2,9 +2,13 @@ package kando
 
 import (
 	"context"
+	"io"
+	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -23,7 +27,10 @@ func newLocationPushCommand() *cobra.Command {
 }
 
 func runLocationPush(cmd *cobra.Command, args []string) error {
-	source := args[0]
+	source, err := sourceReader(args[0])
+	if err != nil {
+		return err
+	}
 	p, err := unmarshalProfileFlag(cmd)
 	if err != nil {
 		return err
@@ -33,7 +40,22 @@ func runLocationPush(cmd *cobra.Command, args []string) error {
 	return locationPush(ctx, p, s, source)
 }
 
-// TODO: Implement this function
-func locationPush(ctx context.Context, p *param.Profile, path string, source string) error {
-	return nil
+const usePipeParam = `-`
+
+func sourceReader(source string) (io.Reader, error) {
+	if source != usePipeParam {
+		return os.Open(source)
+	}
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		errors.Wrap(err, "Failed to Stat stdin")
+	}
+	if fi.Mode()&os.ModeNamedPipe == 0 {
+		return nil, errors.New("Stdin must be piped when the source parameter is \"-\"")
+	}
+	return os.Stdin, nil
+}
+
+func locationPush(ctx context.Context, p *param.Profile, path string, source io.Reader) error {
+	return location.Write(ctx, source, *p, path)
 }

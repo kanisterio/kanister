@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+
+# This script is based off of the install script from helm, licensed under the
+# Apache License, Version 2.0. The script was found here
+# https://github.com/kubernetes/helm/blob/master/scripts/get
+
+set -o errexit
+set -o nounset
+set -o xtrace
+set -o pipefail
+
+BIN_NAME="kanctl"
+RELEASES_URL="https://github.com/kanisterio/kanister/releases"
+
+: ${KANISTER_INSTALL_DIR:="/usr/local/bin"}
+
+# initArch discovers the architecture for this system.
+initArch() {
+    ARCH=$(uname -m)
+    case $ARCH in
+        armv5*) ARCH="armv5";;
+        armv6*) ARCH="armv6";;
+        armv7*) ARCH="armv7";;
+        aarch64) ARCH="arm64";;
+        x86) ARCH="386";;
+        x86_64) ARCH="amd64";;
+        i686) ARCH="386";;
+        i386) ARCH="386";;
+    esac
+}
+
+# initOS discovers the operating system for this system.
+initOS() {
+    OS=$(uname | tr '[:upper:]' '[:lower:]')
+    case "$OS" in
+        # Minimalist GNU for Windows
+        mingw*) OS='windows';;
+    esac
+}
+
+# runs the given command as root (detects if we are root already)
+runAsRoot() {
+    local cmd="$*"
+    if [ $EUID -ne 0 ]; then
+        cmd="sudo ${cmd}"
+    fi
+    ${cmd}
+}
+
+# verifySupported checks that the os/arch combination is supported for
+# binary builds.
+verifySupported() {
+    local supported="\ndarwin-amd64\nlinux-amd64\nwindows-amd64"
+    if ! echo "${supported}" | grep -q "${OS}-${ARCH}"; then
+        echo "No prebuilt binary for ${OS}-${ARCH}."
+        echo "To build from source, go to https://github.com/kanisterio/kanister"
+        exit 1
+    fi
+
+    local required_tools=("curl")
+    for tool in "${required_tools[@]}"; do
+        if ! type "${tool}" > /dev/null; then
+            echo "${tool} is required"
+            exit 1
+        fi
+    done
+}
+
+# checkDesiredVersion checks if the desired version is available.
+checkDesiredVersion() {
+    local version="${1}"
+    # Use the GitHub releases webpage for the project to find the desired version for this project.
+    local release_url="${RELEASES_URL}/tag/${version}"
+    local tag=$(curl -SsL ${release_url} | awk '/\/tag\//' | grep -v no-underline | cut -d '"' -f 2 | awk '{n=split($NF,a,"/");print a[n]}' | awk 'a !~ $0{print}; {a=$0}')
+    if [ "x${tag}" == "x" ]; then
+        echo "Version tag ${version} not found."
+        exit 1
+    fi
+}
+
+# downloadFile downloads the binary and verifies the checksum.
+downloadFile() {
+    local version="${1}"
+
+    local release_url="${RELEASES_URL}/download/${version}"
+    local kanister_dist="${BIN_NAME}_${version}_${OS}_${ARCH}.tar.gz"
+    local kanister_checksum="${BIN_NAME}_${version}_checksums.txt"
+
+    local download_url="${release_url}/${kanister_dist}"
+    local checksum_url="${release_url}/${kanister_checksum}"
+
+    KANISTER_TMP_ROOT="$(mktemp -dt kanister-installer-XXXXXX)"
+    KANISTER_TMP_FILE="${KANISTER_TMP_ROOT}/${kanister_dist}"
+    kanister_sum_file="${KANISTER_TMP_ROOT}/${kanister_checksum}"
+
+    echo "Downloading $download_url"
+    curl -SsL "${checksum_url}" -o "${kanister_sum_file}"
+    curl -SsL "${download_url}" -o "$KANISTER_TMP_FILE"
+
+    echo "Checking hash of ${kanister_dist}"
+    pushd "${KANISTER_TMP_ROOT}"
+    local filtered_checksum="./${kanister_dist}.sha256"
+    grep "${kanister_dist}" < "${kanister_checksum}" > "${filtered_checksum}"
+    sha256sum -c "${filtered_checksum}"
+    popd
+}
+
+# installFile verifies the SHA256 for the file, then unpacks and
+# installs it.
+installFile() {
+  pushd "${KANISTER_TMP_ROOT}"
+  tar xvf "${KANISTER_TMP_FILE}"
+  echo "Preparing to install into ${KANISTER_INSTALL_DIR}"
+  runAsRoot cp "./${BIN_NAME}" "${KANISTER_INSTALL_DIR}"
+  popd
+}
+
+# testVersion tests the installed client to make sure it is working.
+testVersion() {
+    echo "${BIN_NAME} installed into ${KANISTER_INSTALL_DIR}/${BIN_NAME}"
+    if ! type "${BIN_NAME}" > /dev/null; then
+        echo "${BIN_NAME} not found. Is ${KANISTER_INSTALL_DIR} on your PATH?"
+        exit 1
+    fi
+}
+
+cleanup() {
+  if [[ -d "${KANISTER_TMP_ROOT:-}" ]]; then
+    rm -rf "$KANISTER_TMP_ROOT"
+  fi
+}
+
+main() {
+    version="${1:-"0.9.0"}"
+    initArch
+    initOS
+    verifySupported
+    checkDesiredVersion "${version}"
+    downloadFile "${version}"
+    installFile
+    testVersion
+    cleanup
+}
+
+main $@
+

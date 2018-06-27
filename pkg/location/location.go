@@ -6,6 +6,7 @@ import (
 	"io"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -55,9 +56,8 @@ func readExec(ctx context.Context, output io.Writer, bin string, args []string, 
 			log.WithError(err).Error("Failed to write data from pipe")
 		}
 		log.Infof("Read %d bytes", w)
-		if err := rc.Close(); err != nil {
-			log.WithError(err).Error("Failed to close pipe")
-		}
+		// rc may be closed allready. Swallow close errors.
+		_ = rc.Close()
 	}()
 	return errors.Wrap(cmd.Wait(), "Failed to read data from location in profile")
 }
@@ -79,9 +79,8 @@ func writeExec(ctx context.Context, input io.Reader, bin string, args []string, 
 			log.WithError(err).Error("Failed to write data from pipe")
 		}
 		log.Infof("Wrote %d bytes", w)
-		if err := wc.Close(); err != nil {
-			log.WithError(err).Error("Failed to close pipe")
-		}
+		// wc may be closed allready. Swallow close errors.
+		_ = wc.Close()
 	}()
 	return errors.Wrap(cmd.Wait(), "Failed to write data to location in profile")
 }
@@ -102,12 +101,18 @@ func s3CompliantWriteArgs(profile param.Profile, suffix string) []string {
 	return awsS3CpArgs(profile, "-", dst)
 }
 
+const s3Prefix = "s3://"
+
 func s3CompliantPath(profile param.Profile, suffix string) string {
-	return filepath.Join(
+	path := filepath.Join(
 		profile.Location.S3Compliant.Bucket,
 		profile.Location.S3Compliant.Prefix,
 		suffix,
 	)
+	if strings.HasPrefix(profile.Location.S3Compliant.Bucket, s3Prefix) {
+		return path
+	}
+	return s3Prefix + path
 }
 
 func s3CompliantEnv(profile param.Profile) []string {
@@ -126,8 +131,8 @@ func awsS3CpArgs(profile param.Profile, src string, dst string) (cmd []string) {
 }
 
 const (
-	awsAccessKeyID     = "AWS_ACCESS_KEY_ID"
-	awsSecretAccessKey = "AWS_SECRET_ACCESS_KEY"
+	AWSAccessKeyID     = "AWS_ACCESS_KEY_ID"
+	AWSSecretAccessKey = "AWS_SECRET_ACCESS_KEY"
 )
 
 func awsCredsEnv(cred param.Credential) []string {
@@ -135,7 +140,7 @@ func awsCredsEnv(cred param.Credential) []string {
 		panic("Unsupported Credential type: " + cred.Type)
 	}
 	return []string{
-		fmt.Sprintf("%s=%s", awsAccessKeyID, cred.KeyPair.ID),
-		fmt.Sprintf("%s=%s", awsSecretAccessKey, cred.KeyPair.Secret),
+		fmt.Sprintf("%s=%s", AWSAccessKeyID, cred.KeyPair.ID),
+		fmt.Sprintf("%s=%s", AWSSecretAccessKey, cred.KeyPair.Secret),
 	}
 }

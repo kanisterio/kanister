@@ -1,10 +1,9 @@
 Kanister-Enabled MongoDB Replica Set
 ------------------------------------
 
-For basic installation, you can install using a Kanister-enabled Helm
-chart that will install an instance of MongoDB Replica Set (a stateful set
-with persistent volumes) as well as a Kanister blueprint to be used with it.
-
+This section describes the steps for a basic installation of an instance of
+a MongoDB Replica Set (a stateful set with persistent volumes) along with
+a Kanister Blueprint and a Profile via a Kanister-enabled Helm chart.
 
 .. code-block:: console
 
@@ -22,11 +21,12 @@ Then install the sample MongoDB replica set application in its own namespace.
      # Install Kanister-enabled MongoDB Replica Set
      $ helm install kanister/kanister-mongodb-replicaset -n mongodb \
           --namespace mongodb-test \
-          --set kanister.create_profile='true' \
-          --set kanister.s3_endpoint="https://my-custom-s3-provider:9000" \
-          --set kanister.s3_api_key="AKIAIOSFODNN7EXAMPLE" \
-          --set kanister.s3_api_secret="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
-          --set kanister.s3_bucket="kanister-bucket" \
+          --set profile.create='true' \
+          --set profile.profileName='mongo-test-profile' \
+          --set profile.s3.bucket="kanister-bucket" \
+          --set profile.s3.endpoint="https://my-custom-s3-provider:9000" \
+          --set profile.s3.apiKey="AKIAIOSFODNN7EXAMPLE" \
+          --set profile.s3.secretKey="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
           --set kanister.controller_namespace="kanister" \
           --set resplicas=1 \
           --set persistentVolume.size=2Gi
@@ -58,8 +58,8 @@ your installation of a single node replica set.
 
 
 .. note:: The MongoDB replica set created by the above command will not be secured.
-   This is only acceptable for test purposes. If you would like to restrict access,
-   please use the ``auth.enabled`` option described below.
+   This is only acceptable for test purposes. Information to configure authentication can be found
+   `here <https://github.com/kanisterio/kanister/tree/master/examples/helm/kanister/kanister-mongodb-replicaset>`_.
 
 .. note:: The above command will attempt to use dynamic storage provisioning
    based on the the default storage class for your cluster. You will to need to

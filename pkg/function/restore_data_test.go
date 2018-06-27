@@ -6,9 +6,9 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
-type FetchPodVolumesSuite struct{}
+type RestoreDataTestSuite struct{}
 
-var _ = Suite(&FetchPodVolumesSuite{})
+var _ = Suite(&RestoreDataTestSuite{})
 
 func newValidDeploymentTP() param.TemplateParams {
 	return param.TemplateParams{
@@ -74,7 +74,7 @@ func newValidStatefulSetTP() param.TemplateParams {
 	}
 }
 
-func (s *FetchPodVolumesSuite) TestFetchPodVolumes(c *C) {
+func (s *RestoreDataTestSuite) TestFetchPodVolumesTest(c *C) {
 	testCases := []struct {
 		name       string
 		tp         param.TemplateParams
@@ -93,5 +93,25 @@ func (s *FetchPodVolumesSuite) TestFetchPodVolumes(c *C) {
 		vols, err := fetchPodVolumes(tc.pod, tc.tp)
 		c.Check(err, tc.errChecker, Commentf("Test: %s Failed!", tc.name))
 		c.Check(vols, DeepEquals, tc.vols, Commentf("Test: %s Failed!", tc.name))
+	}
+}
+
+func (s *RestoreDataTestSuite) TestValidateOptArgs(c *C) {
+	testCases := []struct {
+		name       string
+		pod        string
+		vols       map[string]string
+		errChecker Checker
+	}{
+		{"Pod with nil Vols", "some-pod", nil, IsNil},
+		{"Pod with empty Vols", "some-pod", map[string]string{}, IsNil},
+		{"Vols with empty Pod", "", map[string]string{"pvc": "mount"}, IsNil},
+		{"Empty Pod and Vols", "", map[string]string{}, NotNil},
+		{"Empty Pod and nil Vols", "", nil, NotNil},
+		{"Pod with Vols", "some-pod", map[string]string{"pvc": "mount"}, NotNil},
+	}
+	for _, tc := range testCases {
+		err := validateOptArgs(tc.pod, tc.vols)
+		c.Check(err, tc.errChecker, Commentf("Test: %s Failed!", tc.name))
 	}
 }
