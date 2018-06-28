@@ -1,8 +1,16 @@
 # Build customization
-project_name: kanctl
+project_name: kanister
 builds:
   - main:  cmd/kanctl/main.go
     binary: kanctl
+    goos:
+      - windows
+      - darwin
+      - linux
+    goarch:
+      - amd64
+  - main:  cmd/kando/main.go
+    binary: kando
     goos:
       - windows
       - darwin

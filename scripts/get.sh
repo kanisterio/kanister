@@ -9,7 +9,11 @@ set -o nounset
 set -o xtrace
 set -o pipefail
 
-BIN_NAME="kando"
+DIST_NAME="kanctl"
+BIN_NAMES=("kanctl")
+# TODO: Use these settings after the next release
+# DIST_NAME="kanister"
+# BIN_NAMES=("kanctl" "kando")
 RELEASES_URL="https://github.com/kanisterio/kanister/releases"
 
 : ${KANISTER_INSTALL_DIR:="/usr/local/bin"}
@@ -83,8 +87,8 @@ downloadFile() {
     local version="${1}"
 
     local release_url="${RELEASES_URL}/download/${version}"
-    local kanister_dist="${BIN_NAME}_${version}_${OS}_${ARCH}.tar.gz"
-    local kanister_checksum="${BIN_NAME}_${version}_checksums.txt"
+    local kanister_dist="${DIST_NAME}_${version}_${OS}_${ARCH}.tar.gz"
+    local kanister_checksum="${DIST_NAME}_${version}_checksums.txt"
 
     local download_url="${release_url}/${kanister_dist}"
     local checksum_url="${release_url}/${kanister_checksum}"
@@ -108,20 +112,25 @@ downloadFile() {
 # installFile verifies the SHA256 for the file, then unpacks and
 # installs it.
 installFile() {
-  pushd "${KANISTER_TMP_ROOT}"
-  tar xvf "${KANISTER_TMP_FILE}"
-  echo "Preparing to install into ${KANISTER_INSTALL_DIR}"
-  runAsRoot cp "./${BIN_NAME}" "${KANISTER_INSTALL_DIR}"
-  popd
+    pushd "${KANISTER_TMP_ROOT}"
+    tar xvf "${KANISTER_TMP_FILE}"
+    rm "${KANISTER_TMP_FILE}"
+    echo "Preparing to install into ${KANISTER_INSTALL_DIR}"
+    for bin_name in "${BIN_NAMES[@]}"; do
+        runAsRoot cp "./${bin_name}" "${KANISTER_INSTALL_DIR}"
+    done
+    popd
 }
 
-# testVersion tests the installed client to make sure it is working.
-testVersion() {
-    echo "${BIN_NAME} installed into ${KANISTER_INSTALL_DIR}/${BIN_NAME}"
-    if ! type "${BIN_NAME}" > /dev/null; then
-        echo "${BIN_NAME} not found. Is ${KANISTER_INSTALL_DIR} on your PATH?"
-        exit 1
-    fi
+# testBinaries tests the installed binaries make sure they're working.
+testBinaries() {
+    for bin_name in "${BIN_NAMES[@]}"; do
+        echo "${bin_name} installed into ${KANISTER_INSTALL_DIR}/${bin_name}"
+        if ! type "${bin_name}" > /dev/null; then
+            echo "${bin_name} not found. Is ${KANISTER_INSTALL_DIR} on your PATH?"
+            exit 1
+        fi
+    done
 }
 
 cleanup() {
@@ -131,14 +140,14 @@ cleanup() {
 }
 
 main() {
-    version="${1:-"0.10.0"}"
+    version="${1:-"0.9.0"}"
     initArch
     initOS
     verifySupported
     checkDesiredVersion "${version}"
     downloadFile "${version}"
     installFile
-    testVersion
+    testBinaries
     cleanup
 }
 
