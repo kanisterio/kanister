@@ -100,7 +100,7 @@ func (job *Job) Create() error {
 		return errors.Wrapf(err, "Failed to create job %s", job.name)
 	}
 	job.name = newJob.Name
-	log.Infof("New job %s created\n", job.name)
+	log.Infof("New job %s created", job.name)
 
 	return nil
 }
@@ -180,7 +180,7 @@ func (job *Job) Delete() error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete job %s: %s", job.name)
 	}
-	fmt.Printf("Deleted job %s\n", job.name)
+	log.Printf("Deleted job %s", job.name)
 
 	return nil
 }

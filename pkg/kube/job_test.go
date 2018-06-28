@@ -179,13 +179,16 @@ func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
 	c.Assert(job, NotNil)
 	c.Assert(err, IsNil)
 
-	// Start the job and then delete it!
+	// Start the job and then delete it immediately.
 	job.Create()
 	job.Delete()
-	// Wait for the job to be completely deleted.
-	time.Sleep(10 * time.Second)
-	jobCount := getK8sJobCount(clientset, testJobNamespace, c)
-	c.Assert(jobCount, Equals, 0)
+
+	lo := metav1.ListOptions{LabelSelector: "job-name=" + testJobName}
+	jl, err := clientset.BatchV1().Jobs(testJobNamespace).List(lo)
+	c.Assert(err, IsNil)
+	for _, j := range jl.Items {
+		c.Assert(j.GetDeletionTimestamp(), NotNil)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go cancelLater(cancel)
