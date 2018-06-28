@@ -176,6 +176,22 @@ func (s *ParamsSuite) TestFetchDeploymentParams(c *C) {
 	})
 }
 
+func (s *ParamsSuite) TestFetchPVCParams(c *C) {
+	ctx := context.Background()
+	testCases := []struct {
+		name       string
+		pvc        string
+		errChecker Checker
+	}{
+		{"Valid", s.pvc, IsNil},
+		{"Invalid", "foo-pvc", NotNil},
+	}
+	for _, tc := range testCases {
+		_, err := fetchPVCParams(ctx, s.cli, s.namespace, tc.pvc)
+		c.Check(err, tc.errChecker, Commentf("Test %s Failed!", tc.name))
+	}
+}
+
 const cmSpec = `
 apiVersion: v1
 kind: ConfigMap
@@ -209,6 +225,11 @@ func (s *ParamsSuite) TestNewTemplateParamsStatefulSet(c *C) {
 	c.Assert(err, IsNil)
 
 	s.testNewTemplateParams(ctx, c, name, "Statefulset")
+}
+
+func (s *ParamsSuite) TestNewTemplateParamsPVC(c *C) {
+	ctx := context.Background()
+	s.testNewTemplateParams(ctx, c, s.pvc, "PVC")
 }
 
 func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name string, kind string) {
