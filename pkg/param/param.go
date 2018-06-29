@@ -19,15 +19,16 @@ const timeFormat = time.RFC3339Nano
 
 // TemplateParams are the values that will change between separate runs of Phases.
 type TemplateParams struct {
-	StatefulSet  *StatefulSetParams
-	Deployment   *DeploymentParams
-	ArtifactsIn  map[string]crv1alpha1.Artifact
-	ArtifactsOut map[string]crv1alpha1.Artifact
-	ConfigMaps   map[string]v1.ConfigMap
-	Secrets      map[string]v1.Secret
-	Time         string
-	Profile      *Profile
-	Options      map[string]string
+	StatefulSet           *StatefulSetParams
+	Deployment            *DeploymentParams
+	PersistentVolumeClaim *PVCParams
+	ArtifactsIn           map[string]crv1alpha1.Artifact
+	ArtifactsOut          map[string]crv1alpha1.Artifact
+	ConfigMaps            map[string]v1.ConfigMap
+	Secrets               map[string]v1.Secret
+	Time                  string
+	Profile               *Profile
+	Options               map[string]string
 }
 
 // StatefulSetParams are params for stateful sets.
@@ -46,6 +47,12 @@ type DeploymentParams struct {
 	Pods                   []string
 	Containers             [][]string
 	PersistentVolumeClaims map[string]map[string]string
+}
+
+// PVCParams are params for persistent volume claims
+type PVCParams struct {
+	Name      string
+	Namespace string
 }
 
 // Profile contains where to store artifacts and how to access them.
@@ -110,6 +117,12 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 			return nil, err
 		}
 		tp.Deployment = dp
+	case "pvc":
+		pp, err := fetchPVCParams(ctx, cli, as.Object.Namespace, as.Object.Name)
+		if err != nil {
+			return nil, err
+		}
+		tp.PersistentVolumeClaim = pp
 	default:
 		return nil, errors.Errorf("Resource '%s' not supported", as.Object.Kind)
 	}
@@ -272,4 +285,15 @@ func volumes(pod v1.Pod, volToPvc map[string]string) map[string]string {
 		}
 	}
 	return pvcToMountPath
+}
+
+func fetchPVCParams(ctx context.Context, cli kubernetes.Interface, namespace, name string) (*PVCParams, error) {
+	_, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return &PVCParams{
+		Name:      name,
+		Namespace: namespace,
+	}, nil
 }
