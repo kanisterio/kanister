@@ -37,7 +37,7 @@ with the [S3 protocol](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.h
 ## Prerequisites
 
 - Kubernetes 1.7+ with Beta APIs enabled or 1.9+ without Beta APIs.
-- Kanister version 0.8.0 with `profiles.cr.kanister.io` CRD installed
+- Kanister version 0.10.0 with `profiles.cr.kanister.io` CRD installed
 
 > **Note**: The Kanister controller will create the Profile CRD at Startup.
 

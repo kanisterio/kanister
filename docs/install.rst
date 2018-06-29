@@ -63,5 +63,5 @@ namespace.
 
 .. code-block:: bash
 
-   # Deploy controller version 0.1.0 to Kubernetes
-   $ make deploy VERSION="0.1.0"
+   # Deploy controller version 0.10.0 to Kubernetes
+   $ make deploy VERSION="0.10.0"
