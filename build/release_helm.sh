@@ -20,6 +20,7 @@ release_helm_charts() {
     fi
 
     mkdir ${package_folder}
+    helm dep update ${chart_path}
     local out=$(helm package ${chart_path} --version ${version} -d ${package_folder})
     [[ ${out} =~ ^.*/(.*\.tgz)$ ]]
     local chart_tar=${BASH_REMATCH[1]}

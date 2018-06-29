@@ -31,7 +31,7 @@ This will install the Kanister controller in the `kanister` namespace
    $ helm repo add kanister https://charts.kanister.io/
 
    # Install the Kanister operator controller using helm
-   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.9.0
+   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.10.0
 
 
 Building and Deploying from Source
