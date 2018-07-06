@@ -16,9 +16,6 @@ const (
 	ScaleWorkloadNameArg      = "name"
 	ScaleWorkloadKindArg      = "kind"
 	ScaleWorkloadReplicas     = "replicas"
-
-	StatefulSetKind = "statefulset"
-	DeploymentKind  = "deployment"
 )
 
 func init() {
@@ -48,9 +45,9 @@ func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		return errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
 	switch strings.ToLower(kind) {
-	case "statefulset":
+	case param.StatefulSetKind:
 		return kube.ScaleStatefulSet(ctx, cli, namespace, name, replicas)
-	case "deployment":
+	case param.DeploymentKind:
 		return kube.ScaleDeployment(ctx, cli, namespace, name, replicas)
 	default:
 		return errors.New("Workload type not supported" + kind)
@@ -70,11 +67,11 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, k
 	// Populate default values for optional arguments from template parameters
 	switch {
 	case tp.StatefulSet != nil:
-		kind = StatefulSetKind
+		kind = param.StatefulSetKind
 		name = tp.StatefulSet.Name
 		namespace = tp.StatefulSet.Namespace
 	case tp.Deployment != nil:
-		kind = DeploymentKind
+		kind = param.DeploymentKind
 		name = tp.Deployment.Name
 		namespace = tp.Deployment.Namespace
 	default:

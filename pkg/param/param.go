@@ -81,6 +81,12 @@ type KeyPair struct {
 	Secret string
 }
 
+const (
+	DeploymentKind  = "deployment"
+	StatefulSetKind = "statefulset"
+	PVCKind         = "pvc"
+)
+
 // New function fetches and returns the desired params
 func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
 	secrets, err := fetchSecrets(ctx, cli, as.Secrets)
@@ -105,19 +111,19 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 		Options:     as.Options,
 	}
 	switch strings.ToLower(as.Object.Kind) {
-	case "statefulset":
+	case StatefulSetKind:
 		ssp, err := fetchStatefulSetParams(ctx, cli, as.Object.Namespace, as.Object.Name)
 		if err != nil {
 			return nil, err
 		}
 		tp.StatefulSet = ssp
-	case "deployment":
+	case DeploymentKind:
 		dp, err := fetchDeploymentParams(ctx, cli, as.Object.Namespace, as.Object.Name)
 		if err != nil {
 			return nil, err
 		}
 		tp.Deployment = dp
-	case "pvc":
+	case PVCKind:
 		pp, err := fetchPVCParams(ctx, cli, as.Object.Namespace, as.Object.Name)
 		if err != nil {
 			return nil, err
