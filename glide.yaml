@@ -4,10 +4,18 @@ import:
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   vcs: git
   repo: https://github.com/GoogleCloudPlatform/google-cloud-go.git
-- package: github.com/Masterminds/sprig
-  version: v2.14.0
+- package: github.com/aws/aws-sdk-go
+  version: v1.13.39
+- package: github.com/graymeta/stow
+  vcs: git
+  version: master
+  repo: https://github.com/kastenhq/stow.git
 - package: github.com/jpillora/backoff
   version: 06c7a16c845dc8e0bf575fafeeca0f5462f5eb4d
+- package: github.com/Masterminds/sprig
+  version: v2.14.0
+- package: github.com/mitchellh/mapstructure
+  version: 00c29f56e2386353d58c599509e8dc3801b0d716
 - package: github.com/pkg/errors
   version: v0.8.0
 - package: github.com/rook/operator-kit
@@ -16,8 +24,16 @@ import:
   repo: https://github.com/kastenhq/operator-kit.git
 - package: github.com/sirupsen/logrus
   version: v1.0.3
+- package: github.com/spf13/cobra
+  version: v0.0.2
+- package: github.com/spf13/pflag
+  version: v1.0.0
 - package: github.com/stretchr/testify
   version: v1.1.4
+- package: golang.org/x/oauth2
+  version: d89af98d7c6bba047c5a2622f36bc14b8766df85
+- package: google.golang.org/api
+  version: f5fa6a3eed6362c07f4e2e4425faeab907a041bd
 - package: gopkg.in/check.v1
   version: 64131543e7896d5bcc6bd5a76287eb75ea96c673
 - package: k8s.io/api
@@ -32,22 +48,3 @@ import:
   version: kubernetes-1.9.0
 - package: k8s.io/gengo
   version: 1ef560bbde5195c01629039ad3b337ce63e7b321
-- package: github.com/spf13/cobra
-  version: v0.0.2
-- package: github.com/spf13/pflag
-  version: v1.0.0
-- package: github.com/mitchellh/mapstructure
-  version: 00c29f56e2386353d58c599509e8dc3801b0d716
-- package: github.com/aws/aws-sdk-go
-  version: v1.13.39
-- package: github.com/graymeta/stow
-  vcs: git
-  version: master
-  repo: https://github.com/kastenhq/stow.git
-  subpackages:
-  - google
-  - s3
-- package: golang.org/x/oauth2
-  version: d89af98d7c6bba047c5a2622f36bc14b8766df85
-- package: google.golang.org/api
-  version: f5fa6a3eed6362c07f4e2e4425faeab907a041bd
