@@ -1,5 +1,5 @@
-hash: 3a64825fc19c366c132c50fe957771ad00b6a6dec517b6f515a5fbc3d9e01241
-updated: 2018-05-10T16:22:42.944914Z
+hash: a6af09e6bf58eccc8ee9688045f3379651e030624098389f655bab96e049692a
+updated: 2018-07-05T16:57:14.370333-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -10,10 +10,56 @@ imports:
   - internal
 - name: github.com/aokoli/goutils
   version: 3391d3790d23d03408670993e957e8f408993c34
+- name: github.com/aws/aws-sdk-go
+  version: 236a3fce423171d03ae327a8aa2512e6fb24df36
+  subpackages:
+  - aws
+  - aws/awserr
+  - aws/awsutil
+  - aws/client
+  - aws/client/metadata
+  - aws/corehandlers
+  - aws/credentials
+  - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
+  - aws/credentials/stscreds
+  - aws/defaults
+  - aws/ec2metadata
+  - aws/endpoints
+  - aws/request
+  - aws/session
+  - aws/signer/v4
+  - internal/sdkio
+  - internal/sdkrand
+  - internal/shareddefaults
+  - private/protocol
+  - private/protocol/query
+  - private/protocol/query/queryutil
+  - private/protocol/rest
+  - private/protocol/restxml
+  - private/protocol/xml/xmlutil
+  - service/s3
+  - service/s3/s3iface
+  - service/s3/s3manager
+  - service/sts
+- name: github.com/Azure/azure-sdk-for-go
+  version: 767429fcb996dad413936d682c28301e6739bade
+  subpackages:
+  - storage
+  - version
+- name: github.com/Azure/go-autorest
+  version: e14a70c556c8e0db173358d1a903dca345a8e75e
+  subpackages:
+  - autorest
+  - autorest/adal
+  - autorest/azure
+  - autorest/date
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
   - spew
+- name: github.com/dgrijalva/jwt-go
+  version: 01aeca54ebda6e0fbfafd0a524d234159c05ec20
 - name: github.com/docker/spdystream
   version: 449fdfce4d962303d702fec724ef0ad181c92528
   subpackages:
@@ -24,6 +70,8 @@ imports:
   - log
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
+- name: github.com/go-ini/ini
+  version: cec2bdc49009247305a260b082a18e802d0fe292
 - name: github.com/go-openapi/jsonpointer
   version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
@@ -61,6 +109,14 @@ imports:
   - OpenAPIv2
   - compiler
   - extensions
+- name: github.com/graymeta/stow
+  version: cdb6b5b32028c2a8cf25e213e1249e018c788967
+  repo: https://github.com/kastenhq/stow.git
+  vcs: git
+  subpackages:
+  - azure
+  - google
+  - s3
 - name: github.com/gregjones/httpcache
   version: 787624de3eb7bd915c329cba748687a3b22666a6
   subpackages:
@@ -72,11 +128,13 @@ imports:
 - name: github.com/howeyc/gopass
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
 - name: github.com/huandu/xstrings
-  version: 2bf18b218c51864a87384c06996e40ff9dcff8e1
+  version: 7bb0250b58e5c15670406e6f93ffda43281305b1
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/jmespath/go-jmespath
+  version: 3433f3ea46d9f8019119e7dd41274e112a2359a9
 - name: github.com/jpillora/backoff
   version: 06c7a16c845dc8e0bf575fafeeca0f5462f5eb4d
 - name: github.com/json-iterator/go
@@ -89,8 +147,10 @@ imports:
   - buffer
   - jlexer
   - jwriter
+- name: github.com/marstr/guid
+  version: 8bdf7d1a087ccc975cf37dd6507da50698fd19ca
 - name: github.com/Masterminds/semver
-  version: 3c560837130448941620d7694991d3ec440aefc0
+  version: 59c29afe1a994eacb71c833025ca7acf874bb1da
 - name: github.com/Masterminds/sprig
   version: efda631a76d70875162cdc25ffa0d0164bf69758
 - name: github.com/mitchellh/mapstructure
@@ -133,7 +193,7 @@ imports:
   - idna
   - lex/httplex
 - name: golang.org/x/oauth2
-  version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
+  version: d89af98d7c6bba047c5a2622f36bc14b8766df85
   subpackages:
   - google
   - internal
@@ -158,8 +218,16 @@ imports:
   - unicode/bidi
   - unicode/norm
   - width
+- name: google.golang.org/api
+  version: f5fa6a3eed6362c07f4e2e4425faeab907a041bd
+  subpackages:
+  - compute/v1
+  - gensupport
+  - googleapi
+  - googleapi/internal/uritemplates
+  - storage/v1
 - name: google.golang.org/appengine
-  version: 962cbd1200af94a5a35ba8d512e9f91271b4d01a
+  version: b1f26356af11148e710935ed1ac8a7f5702c7612
   subpackages:
   - internal
   - internal/app_identity

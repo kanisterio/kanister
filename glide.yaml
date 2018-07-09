@@ -38,3 +38,16 @@ import:
   version: v1.0.0
 - package: github.com/mitchellh/mapstructure
   version: 00c29f56e2386353d58c599509e8dc3801b0d716
+- package: github.com/aws/aws-sdk-go
+  version: v1.13.39
+- package: github.com/graymeta/stow
+  vcs: git
+  version: master
+  repo: https://github.com/kastenhq/stow.git
+  subpackages:
+  - google
+  - s3
+- package: golang.org/x/oauth2
+  version: d89af98d7c6bba047c5a2622f36bc14b8766df85
+- package: google.golang.org/api
+  version: f5fa6a3eed6362c07f4e2e4425faeab907a041bd
