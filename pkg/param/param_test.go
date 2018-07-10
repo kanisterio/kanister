@@ -211,7 +211,7 @@ func (s *ParamsSuite) TestNewTemplateParamsDeployment(c *C) {
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.Namespace, d.Name)
 	c.Assert(err, IsNil)
 
-	s.testNewTemplateParams(ctx, c, name, "Deployment")
+	s.testNewTemplateParams(ctx, c, name, DeploymentKind)
 }
 
 func (s *ParamsSuite) TestNewTemplateParamsStatefulSet(c *C) {
@@ -224,12 +224,12 @@ func (s *ParamsSuite) TestNewTemplateParamsStatefulSet(c *C) {
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.Namespace, ss.Name)
 	c.Assert(err, IsNil)
 
-	s.testNewTemplateParams(ctx, c, name, "Statefulset")
+	s.testNewTemplateParams(ctx, c, name, StatefulSetKind)
 }
 
 func (s *ParamsSuite) TestNewTemplateParamsPVC(c *C) {
 	ctx := context.Background()
-	s.testNewTemplateParams(ctx, c, s.pvc, "PVC")
+	s.testNewTemplateParams(ctx, c, s.pvc, PVCKind)
 }
 
 func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name string, kind string) {
