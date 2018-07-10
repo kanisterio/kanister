@@ -9,11 +9,8 @@ set -o nounset
 set -o xtrace
 set -o pipefail
 
-DIST_NAME="kanctl"
-BIN_NAMES=("kanctl")
-# TODO: Use these settings after the next release
-# DIST_NAME="kanister"
-# BIN_NAMES=("kanctl" "kando")
+DIST_NAME="kanister"
+BIN_NAMES=("kanctl" "kando")
 RELEASES_URL="https://github.com/kanisterio/kanister/releases"
 
 : ${KANISTER_INSTALL_DIR:="/usr/local/bin"}
