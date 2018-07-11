@@ -30,6 +30,7 @@ func newRootCommand() *cobra.Command {
 	}
 	rootCmd.PersistentFlags().StringP(namespaceFlagName, "n", "", "Override namespace obtained from kubectl context")
 	rootCmd.AddCommand(newPerformFromCommand())
+	rootCmd.AddCommand(newValidateCommand())
 	return rootCmd
 }
 
