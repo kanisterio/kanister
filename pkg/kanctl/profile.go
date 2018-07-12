@@ -70,10 +70,12 @@ func getProfileFromCmd(ctx context.Context, crCli versioned.Interface, p *params
 
 func getProfileFromFile(ctx context.Context, filename string) (*v1alpha1.Profile, error) {
 	var f *os.File
+	var err error
+
 	if filename == "-" {
 		f = os.Stdin
 	} else {
-		f, err := os.Open(filename)
+		f, err = os.Open(filename)
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +83,7 @@ func getProfileFromFile(ctx context.Context, filename string) (*v1alpha1.Profile
 	}
 	d := yaml.NewYAMLOrJSONDecoder(f, 4096)
 	prof := &v1alpha1.Profile{}
-	err := d.Decode(prof)
+	err = d.Decode(prof)
 	if err != nil {
 		return nil, err
 	}

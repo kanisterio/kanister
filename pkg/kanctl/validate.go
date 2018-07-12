@@ -30,8 +30,9 @@ const (
 
 const (
 	nameFlag                 = "name"
+	resourceNamespaceFlag    = "resource-namespace"
 	filenameFlag             = "filename"
-	schemaValidationOnlyFlag = "schema_validation_only"
+	schemaValidationOnlyFlag = "schema-validation-only"
 )
 
 func newValidateCommand() *cobra.Command {
@@ -45,6 +46,7 @@ func newValidateCommand() *cobra.Command {
 	}
 	cmd.Flags().String(nameFlag, "", "specify the K8s name of the custom resource to validate")
 	cmd.Flags().StringP(filenameFlag, "f", "", "yaml or json file of the custom resource to validate")
+	cmd.Flags().String(resourceNamespaceFlag, "default", "namespace of the custom resource. Used when validating resource specified using --name.")
 	cmd.Flags().Bool(schemaValidationOnlyFlag, false, "if set, only schema of resource will be validated")
 	return cmd
 }
@@ -85,21 +87,18 @@ func extractParams(cmd *cobra.Command, args []string) (*params, error) {
 		return nil, newArgsLengthError("expected 1 argument. got %#v", args)
 	}
 	resourceKind := args[0]
-	ns, err := resolveNamespace(cmd)
-	if err != nil {
-		return nil, err
-	}
 	name, _ := cmd.Flags().GetString(nameFlag)
 	filename, _ := cmd.Flags().GetString(filenameFlag)
 	if name == "" && filename == "" {
 		return nil, errors.New("neither name nor filename specified")
 	}
+	rns, _ := cmd.Flags().GetString(resourceNamespaceFlag)
 	schemaValidationOnly, _ := cmd.Flags().GetBool(schemaValidationOnlyFlag)
 	return &params{
 		resourceKind:         resourceKind,
 		name:                 name,
 		filename:             filename,
-		namespace:            ns,
+		namespace:            rns,
 		schemaValidationOnly: schemaValidationOnly,
 	}, nil
 }
