@@ -77,7 +77,7 @@ func newTestPodTemplateSpec() v1.PodTemplateSpec {
 			Containers: []v1.Container{
 				v1.Container{
 					Name:    "test-container",
-					Image:   "alpine:3.6",
+					Image:   "kanisterio/kanister-tools:0.10.0",
 					Command: []string{"tail"},
 					Args:    []string{"-f", "/dev/null"},
 				},
