@@ -13,9 +13,9 @@ sources:
 - https://github.com/clockworksoul/helm-elasticsearch
 - https://github.com/pires/kubernetes-elasticsearch-cluster
 maintainers:
-- name: simonswine
-  email: christian@jetstack.io
-- name: icereval
-  email: michael.haselton@gmail.com
-- name: rendhalver
-  email: pete.brown@powerhrg.com
+- name: Tom Manville
+  email: tom@kasten.io
+- name: Ilya Kislenko
+  email: ilya@kasten.io
+- name: Supriya Kharade
+  email: supriya@kasten.io
