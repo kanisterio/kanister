@@ -14,6 +14,7 @@ The TemplateParam struct is defined as:
   type TemplateParams struct {
       StatefulSet  StatefulSetParams
       Deployment   DeploymentParams
+      PVC          PVCParams
       ArtifactsIn  map[string]crv1alpha1.Artifact // A Kanister Artifact
       ArtifactsOut map[string]crv1alpha1.Artifact
       Profile      *Profile
@@ -107,6 +108,27 @@ For example, to access the Name of a Deployment use:
 .. code-block:: go
 
   "{{ index .Deployment.Name }}"
+
+PVC
+---
+
+PVCParams includes the name and namespace of the persistent volume claim
+that is being acted on.
+
+.. code-block:: go
+  :linenos:
+
+  // PVCParams are params for a PVC
+  type PVCParams struct {
+    Name                   string
+    Namespace              string
+  }
+
+For example, to access the Name of a persistent volume claim, use:
+
+.. code-block:: go
+
+  "{{ .PVC.Name }}"
 
 Artifacts
 =========
