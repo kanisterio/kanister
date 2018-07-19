@@ -21,7 +21,7 @@ const (
 	writeAccessValidation = "Validate write access to bucket specified in profile"
 )
 
-func performProfileValidation(p *params) error {
+func performProfileValidation(p *validateParams) error {
 	ctx := context.Background()
 	cli, crCli, err := initializeClients()
 	if err != nil {
@@ -61,7 +61,7 @@ func performProfileValidation(p *params) error {
 	return nil
 }
 
-func getProfileFromCmd(ctx context.Context, crCli versioned.Interface, p *params) (*v1alpha1.Profile, error) {
+func getProfileFromCmd(ctx context.Context, crCli versioned.Interface, p *validateParams) (*v1alpha1.Profile, error) {
 	if p.name != "" {
 		return crCli.CrV1alpha1().Profiles(p.namespace).Get(p.name, v1.GetOptions{})
 	}

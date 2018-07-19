@@ -6,13 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes"
-
-	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
-	"github.com/kanisterio/kanister/pkg/kube"
 )
 
-type params struct {
+type validateParams struct {
 	resourceKind         string
 	name                 string
 	filename             string
@@ -51,24 +47,8 @@ func newValidateCommand() *cobra.Command {
 	return cmd
 }
 
-func initializeClients() (kubernetes.Interface, versioned.Interface, error) {
-	config, err := kube.LoadConfig()
-	if err != nil {
-		return nil, nil, err
-	}
-	cli, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "could not get the kubernetes client")
-	}
-	crCli, err := versioned.NewForConfig(config)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "could not get the CRD client")
-	}
-	return cli, crCli, nil
-}
-
 func performValidation(cmd *cobra.Command, args []string) error {
-	p, err := extractParams(cmd, args)
+	p, err := extractValidateParams(cmd, args)
 	if err != nil {
 		return err
 	}
@@ -82,7 +62,7 @@ func performValidation(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func extractParams(cmd *cobra.Command, args []string) (*params, error) {
+func extractValidateParams(cmd *cobra.Command, args []string) (*validateParams, error) {
 	if len(args) != 1 {
 		return nil, newArgsLengthError("expected 1 argument. got %#v", args)
 	}
@@ -94,7 +74,7 @@ func extractParams(cmd *cobra.Command, args []string) (*params, error) {
 	}
 	rns, _ := cmd.Flags().GetString(resourceNamespaceFlag)
 	schemaValidationOnly, _ := cmd.Flags().GetBool(schemaValidationOnlyFlag)
-	return &params{
+	return &validateParams{
 		resourceKind:         resourceKind,
 		name:                 name,
 		filename:             filename,
