@@ -11,57 +11,203 @@ There are two command-line tools that are built within the Kanister repository.
 Kanctl
 ======
 
-Although all Kanister actions can be run using kubectl, there are situations
-where this may be cumbersome. Many actions depend on the Artifacts created by
-another action. The canonical example is backup/restore. Manually creating a
-restore ActionSet requires copying Artifacts from the status of the complete
-backup ActionSet, which is an error prone process.
+Although all Kanister custom resources can be managed using kubectl, there are
+situations where this may be cumbersome. A canonical example of this is
+backup/restore - Manually creating a restore ActionSet requires copying
+Artifacts from the status of the complete backup ActionSet, which is an error
+prone process. `kanctl` simplifies this process by allowing the user to
+create new independent ActionSets, override existing ones and validate profiles.
 
-`kanctl` helps make running dependent ActionSets more robust.  Kanctl is a
-command-line tool that makes it easier to create ActionSets.
+`kanctl` has two top level commands:
 
-To demonstrate backup/restore ActionSet chaining, we'll perform "`kanctl perform
-<action> --from`".
+* `perform`
+
+* `validate`
+
+The usage of these commands, with some examples, has been show below:
+
+kanctl perform
+--------------
 
 .. code-block:: bash
 
-  $ kanctl perform -h
-  Perform an action on the artifacts from <parent>
+  $ kanctl perform --help
+  Perform an action on the artifacts from <parent> or create a new ActionSet
 
   Usage:
-    kanctl perform <action> [flags]
+    kanctl perform [flags]
 
   Flags:
-    -f, --from string   specify name of the action set(required)
-    -h, --help          help for perform
+    -a, --action string                action for the action set (required if creating a new action set)
+    -b, --blueprint string             blueprint for the action set (required if creating a new action set)
+    -c, --config-maps strings          config maps for the action set, comma separated ref=namespace/name pairs
+                                       (eg: --config-maps ref1=namespace1/name1,ref2=namespace2/name2)
+    -d, --deployment strings           deployment for the action set, comma separated namespace/name pairs
+                                       (eg: --deployment namespace1/name1,namespace2/name2)
+        --dry-run                      if set, yaml of action set to be created is printed but action set is not created
+    -f, --from string                  specify name of the action set
+    -h, --help                         help for perform
+    -k, --kind string                  resource kind to apply selector on. Used along with the selector specified
+                                       using --selector/-l (default "all")
+    -o, --options strings              specify options for the action set, comma separated key=value pairs
+                                       (eg: --options key1=value1,key2=value2)
+    -p, --profile string               profile for the action set
+    -v, --pvc strings                  pvc for the action set, comma separated namespace/name pairs
+                                       (eg: --pvc namespace1/name1,namespace2/name2)
+    -s, --secrets strings              secrets for the action set, comma separated ref=namespace/name pairs
+                                       (eg: --secrets ref1=namespace1/name1,ref2=namespace2/name2)
+    -l, --selector string              k8s selector for objects
+        --selector-namespace string    namespace to apply selector on. Used along with the selector specified using
+                                       --selector/-l
+        --skip-resource-verification   if set, k8s check of resources will not be done
+    -t, --statefulset strings          statefulset for the action set, comma separated namespace/name pairs
+                                       (eg: --statefulset namespace1/name1,namespace2/name2)
 
   Global Flags:
     -n, --namespace string   Override namespace obtained from kubectl context
 
-.. code-block:: bash
+`kanctl perform` helps create ActionSets in a couple of different ways. A common
+backup/restore scenario is demonstrated below.
 
-  # perform backup
-  $ kubectl --namespace kanister create -f examples/time-log/backup-actionset.yaml
-  actionset "s3backup-j4z6f" created
-
-  # restore from the backup we just created
-  $ kanctl --namespace kanister perform restore --from s3backup-j4z6f
-  actionset "restore-s3backup-j4z6f-s1wb7" created
-
-  # View the actionset
-  kubectl --namespace kanister get actionset restore-s3backup-j4z6f-s1wb7 -oyaml
-
-Similarly, we can also delete the backup file using the following `kanctl` command
+Create a new Backup ActionSet
 
 .. code-block:: bash
 
-  # delete the backup we just created
-  $ kanctl --namespace kanister perform delete --from s3backup-j4z6f
-  actionset "delete-s3backup-j4z6f-2jj9n" created
+  # Action name and blueprint are required
+  $ kanctl perform --action backup --namespace kanister --blueprint time-log-bp \
+                   --deployment kanister/time-logger                            \
+                   --profile s3-profile
+  actionset backup-9gtmp created
 
-  # View the actionset
-  $ kubectl --namespace kanister get actionset delete-s3backup-j4z6f-2jj9n -oyaml
+  # View the progress of the ActionSet
+  $ kubectl --namespace kanister describe actionset backup-9gtmp
 
+Restore from the backup we just created
+
+.. code-block:: bash
+
+  # If necessary you can override the secrets, profile, config-maps, options etc obtained from the parent ActionSet
+  $ kanctl perform --action restore --from backup-9gtmp --namespace kanister
+  actionset restore-backup-9gtmp-4p6mc created
+
+  # View the progress of the ActionSet
+  $ kubectl --namespace kanister describe actionset restore-backup-9gtmp-4p6mc
+
+Delete the Backup we created
+
+.. code-block:: bash
+
+  $ kanctl perform --action delete --from backup-9gtmp --namespace kanister
+  actionset delete-backup-9gtmp-fc857 created
+
+  # View the progress of the ActionSet
+  $ kubectl --namespace kanister describe actionset delete-backup-9gtmp-fc857
+
+To make the selection of objects (resources on which actions are performed) easier,
+you can filter on K8s labels using `--selector`.
+
+.. code-block:: bash
+
+  # backup deployment time-logger in namespace kanister using selectors
+  # if --kind deployment is not specified, all deployments, statefulsets and pvc matching the
+  # selector will be chosen for the action. You can also narrow down the search by setting the
+  # --selector-namespace flag
+  $ kanctl perform --action backup --namespace kanister --blueprint time-log-bp \
+                   --selector app=time-logger                                   \
+                   --kind deployment                                            \
+                   --selector-namespace kanister --profile s3-profile
+  actionset backup-8f827 created
+
+The `--dry-run` flag will print the YAML of the ActionSet without actually creating it.
+
+.. code-block:: bash
+
+  # ActionSet creation with --dry-run
+  $ kanctl perform --action backup --namespace kanister --blueprint time-log-bp \
+                   --selector app=time-logger                                   \
+                   --kind deployment                                            \
+                   --selector-namespace kanister                                \
+                   --profile s3-profile                                         \
+                   --dry-run
+  metadata:
+    creationTimestamp: null
+    generateName: backup-
+  spec:
+    actions:
+    - blueprint: time-log-bp
+      configMaps: {}
+      name: backup
+      object:
+        apiVersion: ""
+        kind: deployment
+        name: time-logger
+        namespace: kanister
+      options: {}
+      profile:
+        apiVersion: ""
+        kind: ""
+        name: s3-profile
+        namespace: kanister
+      secrets: {}
+
+kanctl validate
+---------------
+
+.. code-block:: bash
+
+  $ kanctl validate --help
+  Validate custom Kanister resources
+
+  Usage:
+    kanctl validate <resource> [flags]
+
+  Flags:
+    -f, --filename string             yaml or json file of the custom resource to validate
+    -h, --help                        help for validate
+        --name string                 specify the K8s name of the custom resource to validate
+        --resource-namespace string   namespace of the custom resource. Used when validating resource specified using
+                                      --name. (default "default")
+        --schema-validation-only      if set, only schema of resource will be validated
+
+  Global Flags:
+    -n, --namespace string   Override namespace obtained from kubectl context
+
+Only profile validation is supported for now. You can either validate an existing
+profile in K8s or a new profile yet to be created.
+
+.. code-block:: bash
+
+  # validation of a yet to be created profile
+  $ cat << EOF | kanctl validate profile -f -
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: Profile
+  metadata:
+    name: s3-profile
+    namespace: kanister
+  location:
+    type: s3Compliant
+    s3Compliant:
+      bucket: XXXX
+      endpoint: XXXX
+      prefix: XXXX
+      region: XXXX
+  credential:
+    type: keyPair
+    keyPair:
+      idField: aws_access_key_id
+      secretField: aws_secret_access_key
+      secret:
+        apiVersion: v1
+        kind: Secret
+        name: aws-creds
+        namespace: kanister
+  skipSSLVerify: false
+  EOF
+  Passed the 'Validate Profile schema' check.. ✅
+  Passed the 'Validate bucket region specified in profile' check.. ✅
+  Passed the 'Validate read access to bucket specified in profile' check.. ✅
+  Passed the 'Validate write access to bucket specified in profile' check.. ✅
+  All checks passed.. ✅
 
 Kando
 =====
@@ -79,7 +225,7 @@ It has two commands:
 
 The usage for these commands can be displayed using the `--help` flag:
 
-.. code-block:: console
+.. code-block:: bash
 
   $ kando location pull --help
   Pull from s3-compliant object storage to a file or stdout
@@ -94,7 +240,7 @@ The usage for these commands can be displayed using the `--help` flag:
     -s, --path string      Specify a path suffix (optional)
     -p, --profile string   Pass a Profile as a JSON string (required)
 
-.. code-block:: console
+.. code-block:: bash
 
   $ kando location push --help
   Push a source file or stdin stream to s3-compliant object storage
