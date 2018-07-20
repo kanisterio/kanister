@@ -2,7 +2,7 @@ package function
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -38,23 +38,17 @@ func (*backupDataFunc) Name() string {
 	return "BackupData"
 }
 
-func generateBackupCommand(includePath, destArtifact string, profile *param.Profile) []string {
-	// Command to export credentials
-	cmd := []string{"export", fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s\n", profile.Credential.KeyPair.Secret)}
-	cmd = append(cmd, "export", fmt.Sprintf("AWS_ACCESS_KEY_ID=%s\n", profile.Credential.KeyPair.ID))
+func generateBackupCommand(includePath, destArtifact string, profile *param.Profile) ([]string, error) {
+	p, err := json.Marshal(profile)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to marshal profile")
+	}
 	// Command to tar and compress
-	cmd = append(cmd, "tar", "-cf", "-", "-C", includePath, ".", "|", "gzip", "-", "|")
+	cmd := []string{"tar", "-cf", "-", "-C", includePath, ".", "|", "gzip", "-", "|"}
 	// Command to dump on the object store
-	cmd = append(cmd, "aws")
-	if profile.Location.S3Compliant.Endpoint != "" {
-		cmd = append(cmd, "--endpoint", profile.Location.S3Compliant.Endpoint)
-	}
-	if profile.SkipSSLVerify {
-		cmd = append(cmd, "--no-verify-ssl")
-	}
-	cmd = append(cmd, "s3", "cp", "-", destArtifact)
+	cmd = append(cmd, "kando", "location", "push", "--profile", "'"+string(p)+"'", "--path", destArtifact, "-")
 	command := strings.Join(cmd, " ")
-	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}
+	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}, nil
 }
 
 func validateProfile(profile *param.Profile) error {
@@ -94,7 +88,10 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		return errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
 	// Create backup and dump it on the object store
-	cmd := generateBackupCommand(includePath, backupArtifact, tp.Profile)
+	cmd, err := generateBackupCommand(includePath, backupArtifact, tp.Profile)
+	if err != nil {
+		return err
+	}
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
 	formatAndLog(pod, container, stdout)
 	formatAndLog(pod, container, stderr)

@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/version"
 )
 
 const (
@@ -29,7 +29,7 @@ func NewHealthCheckHandler() *healthCheckHandler {
 }
 
 func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	version := kanister.VERSION
+	version := version.VERSION
 	info := Info{true, version}
 	js, err := json.Marshal(info)
 	if err != nil {

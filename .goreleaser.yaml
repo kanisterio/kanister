@@ -3,6 +3,9 @@ project_name: kanister
 builds:
   - main:  cmd/kanctl/main.go
     binary: kanctl
+    ldflags:
+      - -s -w -X github.com/kanisterio/kanister/pkg/version.VERSION={{.Version}} -X github.com/kanisterio/kanister/pkg/version.GIT_COMMIT={{.Commit}} -X github.com/kanisterio/kanister/pkg/version.BUILD_DATE={{.Date}}
+      - ./usemsan=-msan
     goos:
       - windows
       - darwin
@@ -11,6 +14,9 @@ builds:
       - amd64
   - main:  cmd/kando/main.go
     binary: kando
+    ldflags:
+      - -s -w -X github.com/kanisterio/kanister/pkg/version.VERSION={{.Version}} -X github.com/kanisterio/kanister/pkg/version.GIT_COMMIT={{.Commit}} -X github.com/kanisterio/kanister/pkg/version.BUILD_DATE={{.Date}}
+      - ./usemsan=-msan
     goos:
       - windows
       - darwin

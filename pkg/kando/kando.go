@@ -4,7 +4,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/version"
 )
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -21,7 +21,7 @@ func newRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:     "kando <command>",
 		Short:   "A set of tools used from Kanister Blueprints",
-		Version: kanister.VERSION,
+		Version: version.VersionString(),
 	}
 	rootCmd.AddCommand(newLocationCommand())
 	return rootCmd

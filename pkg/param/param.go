@@ -19,16 +19,16 @@ const timeFormat = time.RFC3339Nano
 
 // TemplateParams are the values that will change between separate runs of Phases.
 type TemplateParams struct {
-	StatefulSet           *StatefulSetParams
-	Deployment            *DeploymentParams
-	PersistentVolumeClaim *PVCParams
-	ArtifactsIn           map[string]crv1alpha1.Artifact
-	ArtifactsOut          map[string]crv1alpha1.Artifact
-	ConfigMaps            map[string]v1.ConfigMap
-	Secrets               map[string]v1.Secret
-	Time                  string
-	Profile               *Profile
-	Options               map[string]string
+	StatefulSet  *StatefulSetParams
+	Deployment   *DeploymentParams
+	PVC          *PVCParams
+	ArtifactsIn  map[string]crv1alpha1.Artifact
+	ArtifactsOut map[string]crv1alpha1.Artifact
+	ConfigMaps   map[string]v1.ConfigMap
+	Secrets      map[string]v1.Secret
+	Time         string
+	Profile      *Profile
+	Options      map[string]string
 }
 
 // StatefulSetParams are params for stateful sets.
@@ -128,7 +128,7 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 		if err != nil {
 			return nil, err
 		}
-		tp.PersistentVolumeClaim = pp
+		tp.PVC = pp
 	default:
 		return nil, errors.Errorf("Resource '%s' not supported", as.Object.Kind)
 	}

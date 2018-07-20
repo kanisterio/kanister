@@ -2,7 +2,7 @@ package function
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -68,23 +68,16 @@ func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, er
 	}
 }
 
-func generateRestoreCommand(backupArtifact, restorePath string, profile *param.Profile) []string {
-	// Command to export credentials
-	cmd := []string{"export", fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s\n", profile.Credential.KeyPair.Secret)}
-	cmd = append(cmd, "export", fmt.Sprintf("AWS_ACCESS_KEY_ID=%s\n", profile.Credential.KeyPair.ID))
-	// Command to retrieve from object store
-	cmd = append(cmd, "aws")
-	if profile.Location.S3Compliant.Endpoint != "" {
-		cmd = append(cmd, "--endpoint", profile.Location.S3Compliant.Endpoint)
+func generateRestoreCommand(backupArtifact, restorePath string, profile *param.Profile) ([]string, error) {
+	p, err := json.Marshal(profile)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to marshal profile")
 	}
-	if profile.SkipSSLVerify {
-		cmd = append(cmd, "--no-verify-ssl")
-	}
-	cmd = append(cmd, "s3", "cp", backupArtifact, "-", "|")
+	cmd := []string{"kando", "location", "pull", "--profile", "'" + string(p) + "'", "-", "|"}
 	// Command to extract
 	cmd = append(cmd, "gunzip", "-c", "-", "|", "tar", "-xf", "-", "-C", restorePath)
 	command := strings.Join(cmd, " ")
-	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}
+	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}, nil
 }
 
 func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
@@ -109,17 +102,18 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = OptArg(args, RestoreDataVolsArg, &vols, nil); err != nil {
 		return err
 	}
-	err = validateOptArgs(pod, vols)
-	if err != nil {
+	if err = validateOptArgs(pod, vols); err != nil {
 		return err
 	}
 	// Validate profile
-	err = validateProfile(tp.Profile)
-	if err != nil {
+	if err = validateProfile(tp.Profile); err != nil {
 		return err
 	}
 	// Generate restore command
-	cmd := generateRestoreCommand(backupArtifact, restorePath, tp.Profile)
+	cmd, err := generateRestoreCommand(backupArtifact, restorePath, tp.Profile)
+	if err != nil {
+		return err
+	}
 	if len(vols) == 0 {
 		// Fetch Volumes
 		vols, err = fetchPodVolumes(pod, tp)

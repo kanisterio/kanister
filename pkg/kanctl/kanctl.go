@@ -1,11 +1,14 @@
 package kanctl
 
 import (
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes"
 
-	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/version"
 )
 
 const (
@@ -26,10 +29,11 @@ func newRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:     "kanctl [common options...] <command>",
 		Short:   "A set of helpers to help with creating ActionSets",
-		Version: kanister.VERSION,
+		Version: version.VersionString(),
 	}
 	rootCmd.PersistentFlags().StringP(namespaceFlagName, "n", "", "Override namespace obtained from kubectl context")
 	rootCmd.AddCommand(newPerformFromCommand())
+	rootCmd.AddCommand(newValidateCommand())
 	return rootCmd
 }
 
@@ -38,4 +42,20 @@ func resolveNamespace(cmd *cobra.Command) (string, error) {
 		return ns, nil
 	}
 	return kube.ConfigNamespace()
+}
+
+func initializeClients() (kubernetes.Interface, versioned.Interface, error) {
+	config, err := kube.LoadConfig()
+	if err != nil {
+		return nil, nil, err
+	}
+	cli, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "could not get the kubernetes client")
+	}
+	crCli, err := versioned.NewForConfig(config)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "could not get the CRD client")
+	}
+	return cli, crCli, nil
 }

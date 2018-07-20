@@ -50,7 +50,7 @@ func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	case param.DeploymentKind:
 		return kube.ScaleDeployment(ctx, cli, namespace, name, replicas)
 	default:
-		return errors.New("Workload type not supported" + kind)
+		return errors.New("Workload type not supported " + kind)
 	}
 }
 
