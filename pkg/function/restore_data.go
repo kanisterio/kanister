@@ -73,7 +73,7 @@ func generateRestoreCommand(backupArtifact, restorePath string, profile *param.P
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to marshal profile")
 	}
-	cmd := []string{"kando", "location", "pull", "--profile", "'" + string(p) + "'", "-", "|"}
+	cmd := []string{"kando", "location", "pull", "--profile", "'" + string(p) + "'", "--path", backupArtifact, "-", "|"}
 	// Command to extract
 	cmd = append(cmd, "gunzip", "-c", "-", "|", "tar", "-xf", "-", "-C", restorePath)
 	command := strings.Join(cmd, " ")
