@@ -86,7 +86,7 @@ spec:
 EOF
 
 # Restore the Backup we just created
-$ kanctl --namespace kanister perform restore --from mysql-backup-june-1
+$ kanctl --namespace kanister perform --action restore --from mysql-backup-june-1
 
 ```
 
@@ -256,7 +256,7 @@ actionset "mysql-backup-qgx06" created
 We can now restore this backup by chaining a restore off the ActionSet we just created using `kanctl`.
 
 ```bash
-$ kanctl --namespace kanister perform restore --from mysql-backup-qgx06
+$ kanctl --namespace kanister perform --action restore --from mysql-backup-qgx06
 actionset restore-mysql-backup-qgx06-bd4mq created
 ```
 
@@ -365,7 +365,7 @@ easy way to do this is to leverage `kanctl`, a command-line tool that helps
 create ActionSets that depend on other ActionSets:
 
 ```bash
-$ kanctl --namespace kanister perform restore --from "mongo-backup-12046"
+$ kanctl --namespace kanister perform --action restore --from "mongo-backup-12046"
 actionset restore-mongo-backup-12046-s1wb7 created
 
 # View the status of the ActionSet
@@ -383,7 +383,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kanister perform delete --from "mongo-backup-12046"
+$ kanctl --namespace kanister perform --action delete --from "mongo-backup-12046"
 actionset "delete-mongo-backup-12046-kf8mt" created
 
 # View the status of the ActionSet

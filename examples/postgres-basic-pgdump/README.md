@@ -68,7 +68,7 @@ $ kubectl describe actionset pg-backup-bvwpr --namespace kanister
 To restore the missing data, we want to use the backup created in step 2. An easy way to do this is to leverage kanctl, a command-line tool that helps create action sets that depend on other action sets:
 
 ```bash
-$ kanctl perform restore --from "pg-backup-bvwpr" --namespace kanister
+$ kanctl perform --action restore --from "pg-backup-bvwpr" --namespace kanister
 actionset restore-pg-backup-bvwpr-shzq1 created
 
 # View the status of the actionset
