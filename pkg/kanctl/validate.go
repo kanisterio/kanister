@@ -2,8 +2,6 @@ package kanctl
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -26,8 +24,8 @@ const (
 
 const (
 	nameFlag                 = "name"
-	resourceNamespaceFlag    = "resource-namespace"
 	filenameFlag             = "filename"
+	resourceNamespaceFlag    = "resource-namespace"
 	schemaValidationOnlyFlag = "schema-validation-only"
 )
 
@@ -86,12 +84,12 @@ func extractValidateParams(cmd *cobra.Command, args []string) (*validateParams, 
 func printStage(description string, i indicator) {
 	switch i {
 	case pass:
-		fmt.Fprintf(os.Stdout, "Passed the '%s' check.. %s\n", description, i)
+		fmt.Printf("Passed the '%s' check.. %s\n", description, i)
 	case skip:
-		fmt.Fprintf(os.Stdout, "Skipping the '%s' check.. %s\n", description, i)
+		fmt.Printf("Skipping the '%s' check.. %s\n", description, i)
 	case fail:
-		fmt.Fprintf(os.Stdout, "Failed the '%s' check.. %s\n", description, i)
+		fmt.Printf("Failed the '%s' check.. %s\n", description, i)
 	default:
-		fmt.Fprintf(os.Stdout, description)
+		fmt.Printf(description)
 	}
 }

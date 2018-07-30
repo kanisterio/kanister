@@ -77,7 +77,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 To restore the missing data, we want to use the backup created in step 2. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
 
 ```bash
-$ kanctl --namespace kanister perform --action restore --from "mongo-backup-12046"
+$ kanctl --namespace kanister create actionset --action restore --from "mongo-backup-12046"
 actionset restore-mongo-backup-12046-s1wb7 created
 
 # View the status of the ActionSet
@@ -95,7 +95,7 @@ $ mongo test --quiet --eval "db.restaurants.find()"
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kanister perform --action delete --from "mongo-backup-12046"
+$ kanctl --namespace kanister create actionset --action delete --from "mongo-backup-12046"
 actionset "delete-mongo-backup-12046-kf8mt" created
 
 # View the status of the ActionSet

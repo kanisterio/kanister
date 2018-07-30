@@ -16,57 +16,75 @@ situations where this may be cumbersome. A canonical example of this is
 backup/restore - Manually creating a restore ActionSet requires copying
 Artifacts from the status of the complete backup ActionSet, which is an error
 prone process. `kanctl` simplifies this process by allowing the user to
-create new independent ActionSets, override existing ones and validate profiles.
+create custom Kanister resources - ActionSets and Profiles, override existing
+ActionSets and validate profiles.
 
 `kanctl` has two top level commands:
 
-* `perform`
+* `create`
 
 * `validate`
 
 The usage of these commands, with some examples, has been show below:
 
-kanctl perform
---------------
+kanctl create
+-------------
 
 .. code-block:: bash
 
-  $ kanctl perform --help
-  Perform an action on the artifacts from <parent> or create a new ActionSet
+  $ kanctl create --help
+  Create a custom kanister resource
 
   Usage:
-    kanctl perform [flags]
+    kanctl create [command]
+
+  Available Commands:
+    actionset   Create a new ActionSet or override a <parent> ActionSet
+    profile     Create a new profile
 
   Flags:
-    -a, --action string                action for the action set (required if creating a new action set)
-    -b, --blueprint string             blueprint for the action set (required if creating a new action set)
-    -c, --config-maps strings          config maps for the action set, comma separated ref=namespace/name pairs
-                                       (eg: --config-maps ref1=namespace1/name1,ref2=namespace2/name2)
-    -d, --deployment strings           deployment for the action set, comma separated namespace/name pairs
-                                       (eg: --deployment namespace1/name1,namespace2/name2)
-        --dry-run                      if set, yaml of action set to be created is printed but action set is not created
-    -f, --from string                  specify name of the action set
-    -h, --help                         help for perform
-    -k, --kind string                  resource kind to apply selector on. Used along with the selector specified
-                                       using --selector/-l (default "all")
-    -o, --options strings              specify options for the action set, comma separated key=value pairs
-                                       (eg: --options key1=value1,key2=value2)
-    -p, --profile string               profile for the action set
-    -v, --pvc strings                  pvc for the action set, comma separated namespace/name pairs
-                                       (eg: --pvc namespace1/name1,namespace2/name2)
-    -s, --secrets strings              secrets for the action set, comma separated ref=namespace/name pairs
-                                       (eg: --secrets ref1=namespace1/name1,ref2=namespace2/name2)
-    -l, --selector string              k8s selector for objects
-        --selector-namespace string    namespace to apply selector on. Used along with the selector specified using
-                                       --selector/-l
-        --skip-resource-verification   if set, k8s check of resources will not be done
-    -t, --statefulset strings          statefulset for the action set, comma separated namespace/name pairs
-                                       (eg: --statefulset namespace1/name1,namespace2/name2)
+        --dry-run           if set, resource YAML will be printed but not created
+    -h, --help              help for create
+        --skip-validation   if set, resource is not validated before creation
 
   Global Flags:
     -n, --namespace string   Override namespace obtained from kubectl context
 
-`kanctl perform` helps create ActionSets in a couple of different ways. A common
+  Use "kanctl create [command] --help" for more information about a command.
+
+
+As seen above, both ActionSets and profiles can be created using `kanctl create`
+
+.. code-block:: bash
+
+  $ kanctl create actionset --help
+  Create a new ActionSet or override a <parent> ActionSet
+
+  Usage:
+    kanctl create actionset [flags]
+
+  Flags:
+    -a, --action string               action for the action set (required if creating a new action set)
+    -b, --blueprint string            blueprint for the action set (required if creating a new action set)
+    -c, --config-maps strings         config maps for the action set, comma separated ref=namespace/name pairs (eg: --config-maps ref1=namespace1/name1,ref2=namespace2/name2)
+    -d, --deployment strings          deployment for the action set, comma separated namespace/name pairs (eg: --deployment namespace1/name1,namespace2/name2)
+    -f, --from string                 specify name of the action set
+    -h, --help                        help for actionset
+    -k, --kind string                 resource kind to apply selector on. Used along with the selector specified using --selector/-l (default "all")
+    -o, --options strings             specify options for the action set, comma separated key=value pairs (eg: --options key1=value1,key2=value2)
+    -p, --profile string              profile for the action set
+    -v, --pvc strings                 pvc for the action set, comma separated namespace/name pairs (eg: --pvc namespace1/name1,namespace2/name2)
+    -s, --secrets strings             secrets for the action set, comma separated ref=namespace/name pairs (eg: --secrets ref1=namespace1/name1,ref2=namespace2/name2)
+    -l, --selector string             k8s selector for objects
+        --selector-namespace string   namespace to apply selector on. Used along with the selector specified using --selector/-l
+    -t, --statefulset strings         statefulset for the action set, comma separated namespace/name pairs (eg: --statefulset namespace1/name1,namespace2/name2)
+
+  Global Flags:
+        --dry-run            if set, resource YAML will be printed but not created
+    -n, --namespace string   Override namespace obtained from kubectl context
+        --skip-validation    if set, resource is not validated before creation
+
+`kanctl create actionset` helps create ActionSets in a couple of different ways. A common
 backup/restore scenario is demonstrated below.
 
 Create a new Backup ActionSet
@@ -74,9 +92,9 @@ Create a new Backup ActionSet
 .. code-block:: bash
 
   # Action name and blueprint are required
-  $ kanctl perform --action backup --namespace kanister --blueprint time-log-bp \
-                   --deployment kanister/time-logger                            \
-                   --profile s3-profile
+  $ kanctl create actionset --action backup --namespace kanister --blueprint time-log-bp \
+                            --deployment kanister/time-logger                            \
+                            --profile s3-profile
   actionset backup-9gtmp created
 
   # View the progress of the ActionSet
@@ -87,7 +105,7 @@ Restore from the backup we just created
 .. code-block:: bash
 
   # If necessary you can override the secrets, profile, config-maps, options etc obtained from the parent ActionSet
-  $ kanctl perform --action restore --from backup-9gtmp --namespace kanister
+  $ kanctl create actionset --action restore --from backup-9gtmp --namespace kanister
   actionset restore-backup-9gtmp-4p6mc created
 
   # View the progress of the ActionSet
@@ -97,7 +115,7 @@ Delete the Backup we created
 
 .. code-block:: bash
 
-  $ kanctl perform --action delete --from backup-9gtmp --namespace kanister
+  $ kanctl create actionset --action delete --from backup-9gtmp --namespace kanister
   actionset delete-backup-9gtmp-fc857 created
 
   # View the progress of the ActionSet
@@ -112,10 +130,10 @@ you can filter on K8s labels using `--selector`.
   # if --kind deployment is not specified, all deployments, statefulsets and pvc matching the
   # selector will be chosen for the action. You can also narrow down the search by setting the
   # --selector-namespace flag
-  $ kanctl perform --action backup --namespace kanister --blueprint time-log-bp \
-                   --selector app=time-logger                                   \
-                   --kind deployment                                            \
-                   --selector-namespace kanister --profile s3-profile
+  $ kanctl create actionset --action backup --namespace kanister --blueprint time-log-bp \
+                            --selector app=time-logger                                   \
+                            --kind deployment                                            \
+                            --selector-namespace kanister --profile s3-profile
   actionset backup-8f827 created
 
 The `--dry-run` flag will print the YAML of the ActionSet without actually creating it.
@@ -123,12 +141,14 @@ The `--dry-run` flag will print the YAML of the ActionSet without actually creat
 .. code-block:: bash
 
   # ActionSet creation with --dry-run
-  $ kanctl perform --action backup --namespace kanister --blueprint time-log-bp \
-                   --selector app=time-logger                                   \
-                   --kind deployment                                            \
-                   --selector-namespace kanister                                \
-                   --profile s3-profile                                         \
-                   --dry-run
+  $ kanctl create actionset --action backup --namespace kanister --blueprint time-log-bp \
+                            --selector app=time-logger                                   \
+                            --kind deployment                                            \
+                            --selector-namespace kanister                                \
+                            --profile s3-profile                                         \
+                            --dry-run
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: ActionSet
   metadata:
     creationTimestamp: null
     generateName: backup-
@@ -149,6 +169,64 @@ The `--dry-run` flag will print the YAML of the ActionSet without actually creat
         name: s3-profile
         namespace: kanister
       secrets: {}
+
+Profile creation using `kanctl create`
+
+.. code-block:: bash
+
+  $ kanctl create profile --help
+  Create a new profile
+
+  Usage:
+    kanctl create profile [command]
+
+  Available Commands:
+    s3compliant Create new S3 compliant profile
+
+  Flags:
+    -h, --help                    help for profile
+        --skip-SSL-verification   if set, SSL verification is disabled for the profile
+
+  Global Flags:
+        --dry-run            if set, resource YAML will be printed but not created
+    -n, --namespace string   Override namespace obtained from kubectl context
+        --skip-validation    if set, resource is not validated before creation
+
+  Use "kanctl create profile [command] --help" for more information about a command.
+
+A new S3Compliant profile can be created using the s3compliant subcommand
+
+.. code-block:: bash
+
+  $ kanctl create profile s3compliant --help
+  Create new S3 compliant profile
+
+  Usage:
+    kanctl create profile s3compliant [flags]
+
+  Flags:
+    -a, --access-key string   access key of the s3 compliant bucket
+    -b, --bucket string       s3 bucket name
+    -e, --endpoint string     endpoint URL of the s3 bucket
+    -h, --help                help for s3compliant
+    -p, --prefix string       prefix URL of the s3 bucket
+    -r, --region string       region of the s3 bucket
+    -s, --secret-key string   secret key of the s3 compliant bucket
+
+  Global Flags:
+        --dry-run                 if set, resource YAML will be printed but not created
+    -n, --namespace string        Override namespace obtained from kubectl context
+        --skip-SSL-verification   if set, SSL verification is disabled for the profile
+        --skip-validation         if set, resource is not validated before creation
+
+.. code-block:: bash
+
+  $ kanctl create profile s3compliant --bucket <bucket> --access-key $AWS_ACCESS_KEY_ID \
+                                      --secret-key $AWS_SECRET_ACCESS_KEY               \
+                                      --region us-west-1                                \
+                                      --namespace kanister
+  secret 's3-secret-chst2' created
+  profile 's3-profile-5mmkj' created
 
 kanctl validate
 ---------------
