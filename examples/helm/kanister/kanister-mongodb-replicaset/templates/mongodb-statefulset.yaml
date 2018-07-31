@@ -81,7 +81,7 @@ spec:
           {{- end }}
       containers:
         - name: kanister-sidecar
-          image: kanisterio/mongo-sidecar:release-v0.1.0
+          image: kanisterio/mongo-sidecar:v0.10.0
           command: ["bash", "-c"]
           args:
           - "tail -f /dev/null"
