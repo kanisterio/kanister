@@ -1,6 +1,5 @@
-{{- if and (.Values.auth.enabled) (not .Values.auth.existingAdminSecret) -}}
 apiVersion: v1
-kind: Secret
+kind: ConfigMap
 metadata:
   labels:
     app: {{ template "mongodb-replicaset.name" . }}
@@ -10,9 +9,7 @@ metadata:
 {{- if .Values.extraLabels }}
 {{ toYaml .Values.extraLabels | indent 4 }}
 {{- end }}
-  name: {{ template "mongodb-replicaset.adminSecret" . }}
-type: Opaque
+  name: {{ template "mongodb-replicaset.fullname" . }}-init
 data:
-  user: {{ .Values.auth.adminUser | b64enc }}
-  password: {{ .Values.auth.adminPassword | b64enc }}
-{{- end -}}
+  on-start.sh: |
+{{ .Files.Get "init/on-start.sh" | indent 4 }}
