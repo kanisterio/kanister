@@ -108,6 +108,7 @@ and backup to an AWS S3 bucket.
    architecture
    install
    tutorial
+   tooling
    helm
    functions
    templates

@@ -48,7 +48,7 @@ $ kubectl --namespace kanister get actionset s3backup-f4c4q -oyaml
 ### 3. Restore the Application
 
 ```bash
-$ kanctl --namespace kanister perform restore --from "s3backup-f4c4q"
+$ kanctl --namespace kanister create actionset --action restore --from "s3backup-f4c4q"
 actionset "restore-s3restore-g235d-23d2f" created
 
 # View the status of the actionset
@@ -60,7 +60,7 @@ $ kubectl --namespace kanister get actionset restore-s3restore-g235d-23d2f -oyam
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kanister perform delete --from "s3backup-f4c4q"
+$ kanctl --namespace kanister create actionset --action delete --from "s3backup-f4c4q"
 actionset "delete-s3backup-f4c4q-2jj9n" created
 
 # View the status of the actionset

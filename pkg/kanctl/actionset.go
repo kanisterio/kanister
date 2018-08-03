@@ -3,7 +3,6 @@ package kanctl
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -34,9 +33,6 @@ const (
 	selectorFlagName      = "selector"
 	selectorKindFlag      = "kind"
 	selectorNamespaceFlag = "selector-namespace"
-
-	dryRunFlag                   = "dry-run"
-	skipResourceVerificationFlag = "skip-resource-verification"
 )
 
 type performParams struct {
@@ -52,10 +48,10 @@ type performParams struct {
 	configMaps map[string]crv1alpha1.ObjectReference
 }
 
-func newPerformFromCommand() *cobra.Command {
+func newActionSetCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "perform",
-		Short: "Perform an action on the artifacts from <parent> or create a new action set",
+		Use:   "actionset",
+		Short: "Create a new ActionSet or override a <parent> ActionSet",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(c *cobra.Command, args []string) error {
 			return initializeAndPerform(c, args)
@@ -75,9 +71,6 @@ func newPerformFromCommand() *cobra.Command {
 	cmd.Flags().StringP(selectorFlagName, "l", "", "k8s selector for objects")
 	cmd.Flags().StringP(selectorKindFlag, "k", "all", "resource kind to apply selector on. Used along with the selector specified using --selector/-l")
 	cmd.Flags().String(selectorNamespaceFlag, "", "namespace to apply selector on. Used along with the selector specified using --selector/-l")
-
-	cmd.Flags().Bool(dryRunFlag, false, "if set, yaml of action set to be created is printed but action set is not created")
-	cmd.Flags().Bool(skipResourceVerificationFlag, false, "if set, k8s check of resources will not be done")
 	return cmd
 }
 
@@ -92,8 +85,8 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 	ctx := context.Background()
-	verifyFlag, _ := cmd.Flags().GetBool(skipResourceVerificationFlag)
-	if !verifyFlag {
+	valFlag, _ := cmd.Flags().GetBool(skipValidationFlag)
+	if !valFlag {
 		err = verifyParams(ctx, params, cli, crCli)
 		if err != nil {
 			return err
@@ -219,17 +212,21 @@ func childActionSet(parent *crv1alpha1.ActionSet, params *performParams) (*crv1a
 func createActionSet(ctx context.Context, crCli versioned.Interface, namespace string, as *crv1alpha1.ActionSet) error {
 	as, err := crCli.CrV1alpha1().ActionSets(namespace).Create(as)
 	if err == nil {
-		fmt.Fprintf(os.Stdout, "actionset %s created\n", as.Name)
+		fmt.Printf("actionset %s created\n", as.Name)
 	}
 	return err
 }
 
 func printActionSet(as *crv1alpha1.ActionSet) error {
+	as.TypeMeta = metav1.TypeMeta{
+		Kind:       crv1alpha1.ActionSetResource.Kind,
+		APIVersion: crv1alpha1.SchemeGroupVersion.String(),
+	}
 	asYAML, err := yaml.Marshal(as)
 	if err != nil {
 		return errors.New("could not convert generated action set to YAML")
 	}
-	fmt.Fprintf(os.Stdout, string(asYAML))
+	fmt.Printf(string(asYAML))
 	return nil
 }
 
@@ -569,7 +566,7 @@ func verifyParams(ctx context.Context, p *performParams, cli kubernetes.Interfac
 	}
 
 	if vFail {
-		return errors.Errorf("verification failed")
+		return errors.Errorf("resource verification failed")
 	}
 	return nil
 }

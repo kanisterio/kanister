@@ -368,60 +368,6 @@ Within an ActionSet, individual Actions are run in parallel.
 
 Currently the user is responsible for cleaning up ActionSets once they complete.
 
-Kanctl
-======
-
-Although all Kanister actions can be run using kubectl, there are situations
-where this may be cumbersome. Many actions depend on the Artifacts created by
-another action. The canonical example is backup/restore. Manually creating a
-restore ActionSet requires copying Artifacts from the status of the complete
-backup ActionSet, which is an error prone process.
-
-`kanctl` helps make running dependent ActionSets more robust.  Kanctl is a
-command-line tool that makes it easier to create ActionSets.
-
-To demonstrate backup/restore ActionSet chaining, we'll perform "`kanctl perform
-<action> --from`".
-
-.. code-block:: bash
-
-  $ kanctl perform -h
-  Perform an action on the artifacts from <parent>
-
-  Usage:
-    kanctl perform <action> [flags]
-
-  Flags:
-    -f, --from string   specify name of the action set(required)
-    -h, --help          help for perform
-
-  Global Flags:
-    -n, --namespace string   Override namespace obtained from kubectl context
-
-.. code-block:: bash
-
-  # perform backup
-  $ kubectl --namespace kanister create -f examples/time-log/backup-actionset.yaml
-  actionset "s3backup-j4z6f" created
-
-  # restore from the backup we just created
-  $ kanctl --namespace kanister perform restore --from s3backup-j4z6f
-  actionset "restore-s3backup-j4z6f-s1wb7" created
-
-  # View the actionset
-  kubectl --namespace kanister get actionset restore-s3backup-j4z6f-s1wb7 -oyaml
-
-Similarly, we can also delete the backup file using the following `kanctl` command
-
-.. code-block:: bash
-
-  # delete the backup we just created
-  $ kanctl --namespace kanister perform delete --from s3backup-j4z6f
-  actionset "delete-s3backup-j4z6f-2jj9n" created
-
-  # View the actionset
-  $ kubectl --namespace kanister get actionset delete-s3backup-j4z6f-2jj9n -oyaml
-
 During execution, Kanister controller emits events to the respective ActionSets.
 In above example, the execution transitions of ActionSet `s3backup-j4z6f` can be
 seen by using the following command:

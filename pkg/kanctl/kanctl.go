@@ -28,12 +28,12 @@ func newRootCommand() *cobra.Command {
 	// RootCmd represents the base command when called without any subcommands
 	rootCmd := &cobra.Command{
 		Use:     "kanctl [common options...] <command>",
-		Short:   "A set of helpers to help with creating ActionSets",
+		Short:   "A set of helpers to help with management of Kanister custom resources",
 		Version: version.VersionString(),
 	}
 	rootCmd.PersistentFlags().StringP(namespaceFlagName, "n", "", "Override namespace obtained from kubectl context")
-	rootCmd.AddCommand(newPerformFromCommand())
 	rootCmd.AddCommand(newValidateCommand())
+	rootCmd.AddCommand(newCreateCommand())
 	return rootCmd
 }
 

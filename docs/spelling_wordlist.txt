@@ -22,3 +22,6 @@ stateful
 stdout
 templating
 defaultProfile
+Kando
+kando
+Dockerfile

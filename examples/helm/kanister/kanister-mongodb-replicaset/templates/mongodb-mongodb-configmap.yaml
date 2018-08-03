@@ -3,10 +3,13 @@ kind: ConfigMap
 metadata:
   labels:
     app: {{ template "mongodb-replicaset.name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    chart: {{ template "mongodb-replicaset.chart" . }}
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
-  name: {{ template "mongodb-replicaset.fullname" . }}
+{{- if .Values.extraLabels }}
+{{ toYaml .Values.extraLabels | indent 4 }}
+{{- end }}
+  name: {{ template "mongodb-replicaset.fullname" . }}-mongodb
 data:
   mongod.conf: |
 {{ toYaml .Values.configmap | indent 4 }}

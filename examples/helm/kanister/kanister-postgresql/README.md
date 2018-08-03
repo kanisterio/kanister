@@ -74,10 +74,10 @@ kubectl describe actionset pg-base-backup --namespace kanister
 
 ### Restore using the base backup
 
-To restore Postgres using the base backup - use the [kanctl](https://docs.kanister.io/architecture.html#kanctl) tool which can be downloaded from the releases [page](https://github.com/kanisterio/kanister/releases)
+To restore Postgres using the base backup - use the [kanctl](https://docs.kanister.io/tooling.html#kanctl) tool which can be downloaded from the releases [page](https://github.com/kanisterio/kanister/releases)
 
 ```bash
-kanctl perform restore --from pg-base-backup --namespace kanister
+kanctl create actionset --action restore --from pg-base-backup --namespace kanister
 ```
 
 # Chart Details
