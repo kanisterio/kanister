@@ -8,6 +8,8 @@ metadata:
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
   name: {{ template "elasticsearch.client.fullname" . }}
+  annotations:
+    kanister.kasten.io/blueprint: {{ template "elasticsearch.fullname" . }}-blueprint
 spec:
   replicas: {{ .Values.client.replicas }}
   template:

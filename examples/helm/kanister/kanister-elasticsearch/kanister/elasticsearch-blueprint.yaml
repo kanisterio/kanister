@@ -1,0 +1,86 @@
+actions:
+  backup:
+    type: StatefulSet
+    outputArtifacts:
+      esBackup:
+        keyValue:
+          path: '/elasticsearch-backups/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}'
+    phases:
+    - func: KubeExec
+      name: takeDataSnapshot
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        container: kanister-sidecar
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            snapshot_prefix="{{ .ArtifactsOut.esBackup.KeyValue.path }}"
+            list="$(curl -GET http://localhost:9200/_cat/indices | awk '{ print $3 }')"
+            for index in $list
+            do
+              elasticdump --bulk=true --input=http://localhost:9200/${index} --output=$ | gzip | kando location push --profile '{{ toJson .Profile }}' --path ${snapshot_prefix}/${index}.gz -
+            done
+            echo "${list}" | kando location push --profile '{{ toJson .Profile }}' --path ${snapshot_prefix}/manifest.txt -
+  restore:
+    type: StatefulSet
+    inputArtifactNames:
+      - esBackup
+    phases:
+    - func: KubeExec
+      name: restoreSnapshots
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        container: kanister-sidecar
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            snapshot_prefix="{{ .ArtifactsIn.esBackup.KeyValue.path }}"
+            list=$(kando location pull --profile '{{ toJson .Profile }}' --path ${snapshot_prefix}/manifest.txt -)
+            for index in $list
+            do
+              kando location pull --profile '{{ toJson .Profile }}' --path ${snapshot_prefix}/${index}.gz - | gunzip | elasticdump --bulk=true --input=$ --output=http://localhost:9200/${index}
+            done
+  delete:
+    type: StatefulSet
+    inputArtifactNames:
+      - esBackup
+    phases:
+    - func: KubeExec
+      name: deleteSnapshots
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        container: kanister-sidecar
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            snapshot_prefix="{{ .ArtifactsIn.esBackup.KeyValue.path }}"
+            export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+            export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
+            s3_cmd=(aws)
+            {{- if .Profile.SkipSSLVerify }}
+            s3_cmd+=(" --no-verify-ssl")
+            {{- end }}
+            {{- if .Profile.Location.S3Compliant.Endpoint }}
+            s3_cmd+=(" --endpoint {{ .Profile.Location.S3Compliant.Endpoint }}")
+            {{- end }}
+            s3_path="s3://{{ .Profile.Location.S3Compliant.Bucket }}"
+            s3_cmd+=(s3 rm "${s3_path}""${snapshot_prefix}"/ --recursive)
+            ${s3_cmd[@]}
