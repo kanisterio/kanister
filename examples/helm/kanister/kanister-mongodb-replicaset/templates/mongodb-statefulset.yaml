@@ -155,6 +155,9 @@ spec:
           {{- end }}
           - name: REPLICA_SET
             value: {{ .Values.replicaSet }}
+          volumeMounts:
+            - name: datadir
+              mountPath: /data/db
         - name: {{ template "mongodb-replicaset.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: "{{ .Values.image.pullPolicy }}"
