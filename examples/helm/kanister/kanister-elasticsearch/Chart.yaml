@@ -1,11 +1,11 @@
-name: elasticsearch
+name: kanister-elasticsearch
 home: https://www.elastic.co/products/elasticsearch
 version: 1.3.0
 appVersion: 6.3.1
-description: Flexible and powerful open source, distributed real-time search and analytics
-  engine.
+description: Elasticsearch w/ Kanister support based on incubator/elasticsearch
 icon: https://static-www.elastic.co/assets/blteb1c97719574938d/logo-elastic-elasticsearch-lt.svg
 sources:
+- https://github.com/kansiterio/kanister
 - https://www.elastic.co/products/elasticsearch
 - https://github.com/jetstack/elasticsearch-pet
 - https://github.com/giantswarm/kubernetes-elastic-stack

@@ -96,3 +96,14 @@ data:
   ## (dict) If specified, apply these annotations to each data Pod
   # podAnnotations:
   #   example: data-foo
+
+# Configure profile for elasticsearch, the profile CR is installed in the release namespace
+profile:
+  create: false
+  defaultProfile: false
+  defaultProfileName: default-profile
+  profileName:
+
+# Configure Kanister - the blueprint CR is installed in the controller namespace
+kanister:
+  controller_namespace: kasten-io
