@@ -65,7 +65,13 @@ func (s *KubeExecAllTest) TearDownSuite(c *C) {
 	}
 }
 
-func newExecAllBlueprint(kind string) *crv1alpha1.Blueprint {
+func newExecAllBlueprint(kind string, replicas int32) *crv1alpha1.Blueprint {
+	pods := make([]string, replicas)
+	for i := int32(0); i < replicas; i++ {
+		pods[i] = fmt.Sprintf("{{ index .%s.Pods %d }}", kind, i)
+	}
+	containers := []string{fmt.Sprintf("{{ index .%s.Containers 0 0 }}", kind)}
+
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"echo": &crv1alpha1.BlueprintAction{
@@ -76,8 +82,8 @@ func newExecAllBlueprint(kind string) *crv1alpha1.Blueprint {
 						Func: "KubeExecAll",
 						Args: map[string]interface{}{
 							KubeExecAllNamespaceArg:      fmt.Sprintf("{{ .%s.Namespace }}", kind),
-							KubeExecAllPodsNameArg:       fmt.Sprintf("{{ range .%s.Pods }} {{.}}{{ end }}", kind),
-							KubeExecAllContainersNameArg: fmt.Sprintf("{{ index .%s.Containers 0 0 }}", kind),
+							KubeExecAllPodsNameArg:       pods,
+							KubeExecAllContainersNameArg: containers,
 							KubeExecAllCommandArg:        []string{"echo", "hello", "world"},
 						},
 					},
@@ -112,7 +118,7 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 	c.Assert(err, IsNil)
 
 	action := "echo"
-	phases, err := kanister.GetPhases(*newExecAllBlueprint(kind), action, *tp)
+	phases, err := kanister.GetPhases(*newExecAllBlueprint(kind, *d.Spec.Replicas), action, *tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
 		err = p.Exec(ctx, *tp)
@@ -145,7 +151,7 @@ func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 	c.Assert(err, IsNil)
 
 	action := "echo"
-	phases, err := kanister.GetPhases(*newExecAllBlueprint(kind), action, *tp)
+	phases, err := kanister.GetPhases(*newExecAllBlueprint(kind, *ss.Spec.Replicas), action, *tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
 		err = p.Exec(ctx, *tp)
