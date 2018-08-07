@@ -6,6 +6,9 @@ builds:
     ldflags:
       - -s -w -X github.com/kanisterio/kanister/pkg/version.VERSION={{.Version}} -X github.com/kanisterio/kanister/pkg/version.GIT_COMMIT={{.Commit}} -X github.com/kanisterio/kanister/pkg/version.BUILD_DATE={{.Date}}
       - ./usemsan=-msan
+    env:
+      - CGO_ENABLED=0
+      - GO_EXTLINK_ENABLED=0
     goos:
       - windows
       - darwin
