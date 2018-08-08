@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -49,16 +50,20 @@ func readExec(ctx context.Context, output io.Writer, bin string, args []string, 
 	if err := cmd.Start(); err != nil {
 		return errors.Wrap(err, "Failed to start read-data command")
 	}
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		// We could introduce rate-limiting by calling io.CopyN() in a loop.
 		w, err := io.Copy(output, rc)
 		if err != nil {
 			log.WithError(err).Error("Failed to write data from pipe")
 		}
 		log.Infof("Read %d bytes", w)
-		// rc may be closed allready. Swallow close errors.
+		// rc may be closed already. Swallow close errors.
 		_ = rc.Close()
 	}()
+	wg.Wait()
 	return errors.Wrap(cmd.Wait(), "Failed to read data from location in profile")
 }
 
@@ -79,7 +84,7 @@ func writeExec(ctx context.Context, input io.Reader, bin string, args []string, 
 			log.WithError(err).Error("Failed to write data from pipe")
 		}
 		log.Infof("Wrote %d bytes", w)
-		// wc may be closed allready. Swallow close errors.
+		// wc may be closed already. Swallow close errors.
 		_ = wc.Close()
 	}()
 	return errors.Wrap(cmd.Wait(), "Failed to write data to location in profile")
