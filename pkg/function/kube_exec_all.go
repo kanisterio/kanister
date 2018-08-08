@@ -40,8 +40,8 @@ func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err != nil {
 		return err
 	}
-	var namespace string
-	var cmd, containers, pods []string
+	var namespace, pods, containers string
+	var cmd []string
 	if err = Arg(args, KubeExecAllNamespaceArg, &namespace); err != nil {
 		return err
 	}
@@ -54,7 +54,9 @@ func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = Arg(args, KubeExecAllCommandArg, &cmd); err != nil {
 		return err
 	}
-	return execAll(cli, namespace, pods, containers, cmd)
+	ps := strings.Fields(pods)
+	cs := strings.Fields(containers)
+	return execAll(cli, namespace, ps, cs, cmd)
 }
 
 func (*kubeExecAllFunc) RequiredArgs() []string {
