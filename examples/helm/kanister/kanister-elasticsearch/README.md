@@ -1,6 +1,6 @@
 # Elasticsearch Helm Chart
 
-This chart uses a standard Docker image of Elasticsearch (docker.elastic.co/elasticsearch/elasticsearch-oss) and uses a service pointing to the master's transport port for service discovery.
+This chart uses a standard Docker image of Elasticsearch (docker.elastic.co/elasticsearch/elasticsearch-oss) verison 6.3.1 and uses a service pointing to the master's transport port for service discovery.
 Elasticsearch does not communicate with the Kubernetes API, hence no need for RBAC permissions.
 
 ## Warning for previous users
@@ -11,8 +11,9 @@ If you want to avoid doing that upgrade to Elasticsearch 5.6 first before moving
 
 ## Prerequisites Details
 
-* Kubernetes 1.6+
-* PV dynamic provisioning support on the underlying infrastructure
+* Kubernetes 1.9+ with Beta APIs enabled.
+* PV support on the underlying infrastructure.
+* Kanister version 0.7.0 with `profiles.cr.kanister.io` CRD installed
 
 ## StatefulSets Details
 * https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
@@ -20,31 +21,157 @@ If you want to avoid doing that upgrade to Elasticsearch 5.6 first before moving
 ## StatefulSets Caveats
 * https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#limitations
 
-## Todo
-
-* Implement TLS/Auth/Security
-* Smarter upscaling/downscaling
-* Solution for memory locking
-
 ## Chart Details
 This chart will do the following:
 
-* Implemented a dynamically scalable elasticsearch cluster using Kubernetes StatefulSets/Deployments
+* Implement a dynamically scalable elasticsearch cluster using Kubernetes StatefulSets/Deployments and also add the kanister blueprint to be used with it.
 * Multi-role deployment: master, client (coordinating) and data nodes
 * Statefulset Supports scaling down without degrading the cluster
 
 ## Installing the Chart
 
-To install the chart with the release name `my-release`:
+For basic installation, you can install using the provided Helm chart that will install an instance of Elasticsearch as well as a Kanister blueprint to be used with it.
+
+Prior to install you will need to have the Kanister Helm repository added to your local setup.
 
 ```bash
-$ helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator
-$ helm install --name my-release incubator/elasticsearch
+$ helm repo add kanister http://charts.kanister.io
 ```
 
-## Deleting the Charts
+Then install the sample Elasticsearch application with the release name `my-release` in its own namespace
+`es-test` using the following command:
 
-Delete the Helm deployment as normal
+```bash
+$ helm install kanister/kanister-elasticsearch -n my-release --namespace es-test \
+     --set profile.create='true' \
+     --set profile.profileName='es-test-profile' \
+     --set profile.s3.endpoint='https://my-custom-s3-provider:9000' \
+     --set profile.s3.accessKey='AKIAIOSFODNN7EXAMPLE' \
+     --set profile.s3.secretKey='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
+     --set profile.s3.bucket='kanister-bucket'
+```
+
+The command deploys Elasticsearch on the Kubernetes cluster in the default
+configuration. The [configuration](#configuration) section lists the parameters that can be
+configured during installation.
+
+The command will also configure a location where artifacts resulting from Kanister
+data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
+*CustomResource (CR)* which is then referenced in Kanister ActionSets. Every ActionSet
+requires a Profile reference whether one created as part of the application install or
+not. Support for creating an ActionSet as part of install is simply for convenience.
+This CR can be shared between Kanister-enabled application instances so one option is to
+only create as part of the first instance.
+
+Make sure you have the kanister controller running in namespace `kasten-io` which is the default setting in Elasticsearch otherwise, you will also have to set the `kanister.controller_namespace` parameter value to the respective kanister controller namespace in the above command.
+
+If not creating a Profile CR, it is possible to use an even simpler command.
+
+```bash
+$ helm install kanister/kanister-elasticsearch -n my-release --namespace es-test
+```
+
+Once Elasticsearch is running, you can populate it with some data. Follow the instructions that get displayed by running command `helm status my-release` to connect to the application.
+
+```bash
+# Create index called customer
+$ curl -X PUT "localhost:9200/customer?pretty"
+
+# Add a customer named John Smith
+$ curl -X PUT "localhost:9200/customer/_doc/1?pretty" -H 'Content-Type: application/json' -d'
+{
+  "name": "John Smith"
+}
+'
+
+# View the data
+$ curl -X GET "localhost:9200/_cat/indices?v"
+health status index    uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+green  open   customer xbwj34pTSZOdDI7xVR0qIA   5   1          1            0      8.9kb          4.4kb
+```
+
+## Protect the Application
+
+You can now take a backup of the Elasticsearch data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
+
+```bash
+$ cat << EOF | kubectl create -f -
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  name: es-backup-1
+  namespace: kasten-io
+spec:
+  actions:
+  - name: backup
+    blueprint: my-release-kanister-elasticsearch-blueprint
+    object:
+      kind: StatefulSet
+      name: my-release-kanister-elasticsearch-data
+      namespace: es-test
+    profile:
+      apiVersion: v1alpha1
+      kind: Profile
+      name: default-profile
+      namespace: kasten-io
+EOF
+
+$ kubectl --namespace kanister get actionsets.cr.kanister.io
+NAME                AGE
+es-backup-1         2h
+```
+
+## Disaster strikes!
+
+Let's say someone with fat fingers accidentally deleted the customer index using the following command:
+
+```bash
+$ curl -X DELETE "localhost:9200/customer?pretty"
+{
+  "acknowledged" : true
+}
+```
+
+If you try to access this data in the database, you should see that it is no longer there:
+
+```bash
+$ curl -X GET "localhost:9200/_cat/indices?v"
+health status index uuid pri rep docs.count docs.deleted store.size pri.store.size
+```
+
+## Restore the Application
+
+To restore the missing data, we want to use the backup created earlier in the steps above. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
+
+```bash
+$ kanctl --namespace kasten-io create actionset --action restore --from "es-backup-1"
+actionset restore-es-backup-1-mqsm5 created
+
+# View the status of the ActionSet
+kubectl --namespace kasten-io get actionset restore-es-backup-1-mqsm5 -oyaml
+```
+
+You should now see that the data has been successfully restored to Elasticsearch!
+
+```bash
+$ curl -X GET "localhost:9200/_cat/indices?v"
+health status index    uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+green  open   customer xbwj34pTSZOdDI7xVR0qIA   5   1          1            0      8.9kb          4.4kb
+```
+
+## Delete the Artifacts
+
+The artifacts created by the backup action can be cleaned up using the following command:
+
+```bash
+$ kanctl --namespace kasten-io create actionset --action delete --from "es-backup-1"
+actionset "delete-es-backup-1-fnb9v" created
+
+# View the status of the ActionSet
+$ kubectl --namespace kasten-io get actionset delete-es-backup-1-fnb9v -oyaml
+```
+
+## Delete the Helm deployment as normal
 
 ```
 $ helm delete my-release
@@ -57,6 +184,22 @@ $ kubectl delete pvc -l release=my-release,component=data
 ```
 
 ## Configuration
+
+The following table lists the configurable Elasticsearch Kanister blueprint and Profile CR parameters and their
+default values. The Profile CR parameters are passed to the profile sub-chart.
+
+| Parameter | Description | Default |
+| --- | --- | --- |
+| `profile.create` | (Optional) Specify if a Profile CR should be created as part of install. | ``false`` |
+| `profile.defaultProfile` | (Optional if not creating a default Profile) Set to ``true`` to create a profile with name `default-profile` | ``false`` |
+| `profile.profileName` | (Required if not creating a default Profile) Name for the profile that is created | `nil` |
+| `profile.s3.accessKey` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
+| `profile.s3.secretKey` | (Required if creating profile) Corresponding secret for `accessKey`. | `nil` |
+| `profile.s3.bucket` | (Required if creating profile) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `nil` |
+| `profile.s3.region` | (Optional if creating profile) Region to be used for the bucket. | `nil` |
+| `profile.s3.endpoint` | (Optional if creating profile) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
+| `profile.verifySSL` | (Optional if creating profile) Set to ``false`` to disable SSL verification on the s3 endpoint. | `true` |
+| `kanister.controller_namespace` | (Optional) Specify the namespace where the Kanister controller is running. | kasten-io |
 
 The following table lists the configurable parameters of the elasticsearch chart and their default values.
 
@@ -183,6 +326,14 @@ EOF
 ```
 Create cluster with Storage class `ssd` on Kubernetes 1.5+
 
-```
-$ helm install incubator/elasticsearch --name my-release --set data.storageClass=ssd,data.storage=100Gi
+```bash
+$ helm install kanister/kanister-elasticsearch -n my-release --namespace es-test \
+     --set data.storageClass=ssd \
+     --set data.storage=100Gi \
+     --set profile.create='true' \
+     --set profile.profileName='es-test-profile' \
+     --set profile.s3.endpoint='https://my-custom-s3-provider:9000' \
+     --set profile.s3.accessKey='AKIAIOSFODNN7EXAMPLE' \
+     --set profile.s3.secretKey='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
+     --set profile.s3.bucket='kanister-bucket'
 ```
