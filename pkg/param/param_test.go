@@ -196,7 +196,7 @@ const cmSpec = `
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  Name: %s-cm
+  name: %s-cm
 data:
   someKey: some-value
 `
