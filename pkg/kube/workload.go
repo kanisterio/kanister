@@ -83,18 +83,9 @@ func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespac
 	if err != nil {
 		return false, errors.Wrapf(err, "could not get Deployment{Namespace: %s, Name: %s}", namespace, name)
 	}
-	if d.Status.AvailableReplicas != *d.Spec.Replicas {
-		return false, nil
-	}
-	rs, err := FetchReplicaSet(kubeCli, namespace, d.GetUID())
-	if err != nil {
-		return false, err
-	}
-	pods, err := FetchRunningPods(kubeCli, namespace, rs.GetUID())
-	if err != nil {
-		return false, err
-	}
-	return len(pods) == int(d.Status.AvailableReplicas), nil
+	return d.Status.UpdatedReplicas == *d.Spec.Replicas &&
+		d.Status.Replicas == *d.Spec.Replicas &&
+		d.Status.AvailableReplicas == *d.Spec.Replicas, nil
 }
 
 // WaitOnDeploymentReady waits for the deployment to be ready
