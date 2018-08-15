@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"fmt"
 
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
@@ -16,6 +17,11 @@ import (
 )
 
 var _ = Suite(&PrepareDataSuite{})
+
+const (
+	deployment  = "Deployment"
+	statefulset = "StatefulSet"
+)
 
 type PrepareDataSuite struct {
 	cli       kubernetes.Interface
@@ -43,17 +49,17 @@ func (s *PrepareDataSuite) TearDownSuite(c *C) {
 	}
 }
 
-func newPrepareDataBlueprint(pvc string) *crv1alpha1.Blueprint {
+func newPrepareDataBlueprint(kind, pvc string) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"test": {
-				Kind: "StatefulSet",
+				Kind: kind,
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
-						Name: "test",
+						Name: "test1",
 						Func: "PrepareData",
 						Args: map[string]interface{}{
-							PrepareDataNamespaceArg: "{{ .StatefulSet.Namespace }}",
+							PrepareDataNamespaceArg: fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							PrepareDataImageArg:     "busybox",
 							PrepareDataCommandArg: []string{
 								"touch",
@@ -66,7 +72,7 @@ func newPrepareDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 						Name: "test2",
 						Func: "PrepareData",
 						Args: map[string]interface{}{
-							PrepareDataNamespaceArg: "{{ .StatefulSet.Namespace }}",
+							PrepareDataNamespaceArg: fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							PrepareDataImageArg:     "busybox",
 							PrepareDataCommandArg: []string{
 								"ls",
@@ -74,6 +80,18 @@ func newPrepareDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 								"/mnt/data1/foo.txt",
 							},
 							PrepareDataVolumes: map[string]string{pvc: "/mnt/data1"},
+						},
+					},
+					{
+						Name: "test3",
+						Func: "PrepareData",
+						Args: map[string]interface{}{
+							PrepareDataNamespaceArg: fmt.Sprintf("{{ .%s.Namespace }}", kind),
+							PrepareDataImageArg:     "busybox",
+							PrepareDataCommandArg: []string{
+								"touch",
+								fmt.Sprintf("/mnt/prepare_data/%s/foo.txt", pvc),
+							},
 						},
 					},
 				},
@@ -88,18 +106,35 @@ func (s *PrepareDataSuite) TestPrepareData(c *C) {
 	c.Assert(err, IsNil)
 
 	ctx := context.Background()
-	tp := param.TemplateParams{
-		StatefulSet: &param.StatefulSetParams{
-			Namespace: s.namespace,
-		},
-	}
-
-	action := "test"
-	bp := newPrepareDataBlueprint(createdPVC.Name)
-	phases, err := kanister.GetPhases(*bp, action, tp)
-	c.Assert(err, IsNil)
-	for _, p := range phases {
-		err := p.Exec(ctx, tp)
+	for _, kind := range []string{deployment, statefulset} {
+		tp := param.TemplateParams{}
+		switch kind {
+		case deployment:
+			tp.Deployment = &param.DeploymentParams{
+				Namespace: s.namespace,
+				PersistentVolumeClaims: map[string]map[string]string{
+					"pod-0": {
+						createdPVC.Name: "/mnt/data",
+					},
+				},
+			}
+		case statefulset:
+			tp.StatefulSet = &param.StatefulSetParams{
+				Namespace: s.namespace,
+				PersistentVolumeClaims: map[string]map[string]string{
+					"pod-0": {
+						createdPVC.Name: "/mnt/data",
+					},
+				},
+			}
+		}
+		action := "test"
+		bp := newPrepareDataBlueprint(kind, createdPVC.Name)
+		phases, err := kanister.GetPhases(*bp, action, tp)
 		c.Assert(err, IsNil)
+		for _, p := range phases {
+			err := p.Exec(ctx, tp)
+			c.Assert(err, IsNil)
+		}
 	}
 }

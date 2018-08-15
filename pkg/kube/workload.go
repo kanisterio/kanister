@@ -3,6 +3,8 @@ package kube
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"k8s.io/api/apps/v1beta1"
@@ -206,11 +208,32 @@ func DeploymentVolumes(cli kubernetes.Interface, d *v1beta1.Deployment) (volName
 
 // From getPersistentVolumeClaimName() in stateful_set_utils.go in the K8s repository
 // Format is "<claim name>-<stateful set name>-<ordinal>"
-const ssetVolumeClaimFmt = "%s-%s-%d"
+const (
+	ssetVolumeClaimFmt = "%s-%s-%d"
+	ssetPodRegex       = ".*-([0-9]+)$"
+)
 
-// StatefulSetVolumes returns the PVCs referenced by this statefulset as a [pod spec volume name]->[PVC name] map
-func StatefulSetVolumes(cli kubernetes.Interface, sset *v1beta1.StatefulSet) (volNameToPvc map[string]string) {
-	replicas := int(*sset.Spec.Replicas)
+// From getParentNameAndOrdinal() in stateful_set_utils.go in the K8s repository
+func getOrdinal(pod string) int {
+	ordinal := -1
+	ssetPodRegex := regexp.MustCompile(ssetPodRegex)
+	matches := ssetPodRegex.FindStringSubmatch(pod)
+	if len(matches) != 2 {
+		return ordinal
+	}
+	if i, err := strconv.ParseInt(matches[1], 10, 32); err == nil {
+		ordinal = int(i)
+	}
+	return ordinal
+}
+
+// StatefulSetVolumes returns the PVCs referenced by a pod in this statefulset as a [pod spec volume name]->[PVC name] map
+func StatefulSetVolumes(cli kubernetes.Interface, sset *v1beta1.StatefulSet, pod *v1.Pod) (volNameToPvc map[string]string) {
+	ordinal := getOrdinal(pod.Name)
+	if ordinal == -1 {
+		// Pod not created through the statefulset?
+		return nil
+	}
 	claimTemplateNameToPodVolumeName := make(map[string]string)
 	for _, v := range sset.Spec.Template.Spec.Volumes {
 		if v.PersistentVolumeClaim == nil {
@@ -222,7 +245,7 @@ func StatefulSetVolumes(cli kubernetes.Interface, sset *v1beta1.StatefulSet) (vo
 	// the pod template
 	for _, vct := range sset.Spec.VolumeClaimTemplates {
 		if _, ok := claimTemplateNameToPodVolumeName[vct.Name]; !ok {
-			// The StatefulSet controller automagically generates references for claims not explicitly
+			// The StatefulSet controller automatically generates references for claims not explicitly
 			// referenced and uses the claim template name as the pod volume name
 			// to account for these.
 			claimTemplateNameToPodVolumeName[vct.Name] = vct.Name
@@ -230,10 +253,8 @@ func StatefulSetVolumes(cli kubernetes.Interface, sset *v1beta1.StatefulSet) (vo
 	}
 	volNameToPvc = make(map[string]string)
 	for claimTemplateName, podVolName := range claimTemplateNameToPodVolumeName {
-		for i := 0; i < replicas; i++ {
-			claimName := fmt.Sprintf(ssetVolumeClaimFmt, claimTemplateName, sset.Name, i)
-			volNameToPvc[podVolName] = claimName
-		}
+		claimName := fmt.Sprintf(ssetVolumeClaimFmt, claimTemplateName, sset.Name, ordinal)
+		volNameToPvc[podVolName] = claimName
 	}
 	return volNameToPvc
 }

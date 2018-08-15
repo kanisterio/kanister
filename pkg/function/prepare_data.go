@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +14,7 @@ import (
 )
 
 const (
+	defaultMountPoint         = "/mnt/prepare_data/%s"
 	prepareDataJobPrefix      = "prepare-data-job-"
 	PrepareDataNamespaceArg   = "namespace"
 	PrepareDataImageArg       = "image"
@@ -31,6 +33,28 @@ type prepareDataFunc struct{}
 
 func (*prepareDataFunc) Name() string {
 	return "PrepareData"
+}
+
+func getVolumes(tp param.TemplateParams) (map[string]string, error) {
+	vols := make(map[string]string)
+	var podsToPvcs map[string]map[string]string
+	switch {
+	case tp.Deployment != nil:
+		podsToPvcs = tp.Deployment.PersistentVolumeClaims
+	case tp.StatefulSet != nil:
+		podsToPvcs = tp.StatefulSet.PersistentVolumeClaims
+	default:
+		return nil, errors.New("Failed to get volumes")
+	}
+	for _, podToPvcs := range podsToPvcs {
+		for pvc := range podToPvcs {
+			vols[pvc] = fmt.Sprintf(defaultMountPoint, pvc)
+		}
+	}
+	if len(vols) == 0 {
+		return nil, errors.New("No volumes found")
+	}
+	return vols, nil
 }
 
 func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, serviceAccount, image string, vols map[string]string, command ...string) error {
@@ -69,7 +93,7 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = Arg(args, PrepareDataCommandArg, &command); err != nil {
 		return err
 	}
-	if err = Arg(args, PrepareDataVolumes, &vols); err != nil {
+	if err = OptArg(args, PrepareDataVolumes, &vols, nil); err != nil {
 		return err
 	}
 	if err = OptArg(args, PrepareDataServiceAccount, &serviceAccount, ""); err != nil {
@@ -79,9 +103,14 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
+	if len(vols) == 0 {
+		if vols, err = getVolumes(tp); err != nil {
+			return err
+		}
+	}
 	return prepareData(ctx, cli, namespace, serviceAccount, image, vols, command...)
 }
 
 func (*prepareDataFunc) RequiredArgs() []string {
-	return []string{PrepareDataNamespaceArg, PrepareDataImageArg, PrepareDataCommandArg, PrepareDataVolumes}
+	return []string{PrepareDataNamespaceArg, PrepareDataImageArg, PrepareDataCommandArg}
 }

@@ -54,13 +54,8 @@ func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, er
 		}
 		return nil, errors.New("Failed to find volumes for the Pod: " + pod)
 	case tp.StatefulSet != nil:
-		for i, p := range tp.StatefulSet.Pods {
-			if p != pod {
-				continue
-			}
-			if len(tp.StatefulSet.PersistentVolumeClaims) > i {
-				return tp.StatefulSet.PersistentVolumeClaims[i], nil
-			}
+		if pvcToMountPath, ok := tp.StatefulSet.PersistentVolumeClaims[pod]; ok {
+			return pvcToMountPath, nil
 		}
 		return nil, errors.New("Failed to find volumes for the Pod: " + pod)
 	default:
