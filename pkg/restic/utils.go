@@ -1,14 +1,16 @@
 package restic
 
 import (
-	"golang.org/x/crypto/bcrypt"
+	"crypto/sha256"
+	"fmt"
 )
 
 const (
 	password = "testpassword"
 )
 
-func generatePassword() (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(bytes), err
+func generatePassword() string {
+	h := sha256.New()
+	h.Write([]byte(password))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }

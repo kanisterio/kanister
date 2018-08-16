@@ -73,9 +73,10 @@ func newRestoreDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 						Func: "RestoreData",
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:      "{{ .StatefulSet.Namespace }}",
-							RestoreDataImageArg:          "kanisterio/kanister-tools:0.10.0",
-							RestoreDataBackupArtifactArg: "s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}/test-file.tgz",
-							RestoreDataRestorePathArg:    "/mnt/data",
+							RestoreDataImageArg:          "kanisterio/kanister-tools:0.11.0",
+							RestoreDataBackupArtifactArg: "{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}",
+							RestoreDataRestorePathArg:    "/",
+							RestoreDataBackupTagArg:      "{{ .Time }}",
 							RestoreDataVolsArg: map[string]string{
 								pvc: "/mnt/data",
 							},
@@ -101,7 +102,8 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 							BackupDataPodArg:            "{{ index .StatefulSet.Pods 0 }}",
 							BackupDataContainerArg:      "{{ index .StatefulSet.Containers 0 0 }}",
 							BackupDataIncludePathArg:    "/etc",
-							BackupDataBackupArtifactArg: "s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}/test-file.tgz",
+							BackupDataBackupArtifactArg: "{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}",
+							BackupDataBackupTagArg:      "{{ .Time }}",
 						},
 					},
 				},
