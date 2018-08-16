@@ -118,9 +118,9 @@ func (s *ParamsSuite) TestFetchStatefulSetParams(c *C) {
 		Name:       name,
 		Namespace:  s.namespace,
 		Pods:       []string{name + "-0"},
-		Containers: [][]string{[]string{"test-container"}},
-		PersistentVolumeClaims: []map[string]string{
-			map[string]string{
+		Containers: [][]string{{"test-container"}},
+		PersistentVolumeClaims: map[string]map[string]string{
+			name + "-0": map[string]string{
 				s.pvc + "-" + name + "-0": "/mnt/data/" + name,
 			},
 		},
@@ -196,7 +196,7 @@ const cmSpec = `
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  Name: %s-cm
+  name: %s-cm
 data:
   someKey: some-value
 `

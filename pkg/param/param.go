@@ -37,7 +37,7 @@ type StatefulSetParams struct {
 	Namespace              string
 	Pods                   []string
 	Containers             [][]string
-	PersistentVolumeClaims []map[string]string
+	PersistentVolumeClaims map[string]map[string]string
 }
 
 // DeploymentParams are params for deployments
@@ -216,23 +216,22 @@ func fetchStatefulSetParams(ctx context.Context, cli kubernetes.Interface, names
 		return nil, errors.WithStack(err)
 	}
 	ssp := &StatefulSetParams{
-		Name:       name,
-		Namespace:  namespace,
-		Pods:       []string{},
-		Containers: [][]string{},
+		Name:                   name,
+		Namespace:              namespace,
+		Pods:                   []string{},
+		Containers:             [][]string{},
+		PersistentVolumeClaims: make(map[string]map[string]string),
 	}
-	pods, err := kube.FetchRunningPods(cli, namespace, ss.UID)
+	pods, _, err := kube.FetchPods(cli, namespace, ss.UID)
 	if err != nil {
 		return nil, err
-	}
-	volToPvc := make(map[string]string)
-	if len(pods) > 0 {
-		volToPvc = kube.StatefulSetVolumes(cli, ss)
 	}
 	for _, p := range pods {
 		ssp.Pods = append(ssp.Pods, p.Name)
 		ssp.Containers = append(ssp.Containers, containerNames(p))
-		ssp.PersistentVolumeClaims = append(ssp.PersistentVolumeClaims, volumes(p, volToPvc))
+		if pvcToMountPath := volumes(p, kube.StatefulSetVolumes(cli, ss, &p)); len(pvcToMountPath) > 0 {
+			ssp.PersistentVolumeClaims[p.Name] = pvcToMountPath
+		}
 	}
 	return ssp, nil
 }
@@ -243,16 +242,17 @@ func fetchDeploymentParams(ctx context.Context, cli kubernetes.Interface, namesp
 		return nil, errors.WithStack(err)
 	}
 	dp := &DeploymentParams{
-		Name:       name,
-		Namespace:  namespace,
-		Pods:       []string{},
-		Containers: [][]string{},
+		Name:                   name,
+		Namespace:              namespace,
+		Pods:                   []string{},
+		Containers:             [][]string{},
+		PersistentVolumeClaims: make(map[string]map[string]string),
 	}
 	rs, err := kube.FetchReplicaSet(cli, namespace, d.UID)
 	if err != nil {
 		return nil, err
 	}
-	pods, err := kube.FetchRunningPods(cli, namespace, rs.UID)
+	pods, _, err := kube.FetchPods(cli, namespace, rs.UID)
 	if err != nil {
 		return nil, err
 	}
@@ -265,8 +265,6 @@ func fetchDeploymentParams(ctx context.Context, cli kubernetes.Interface, namesp
 		dp.Containers = append(dp.Containers, containerNames(p))
 		pvcToMountPath := volumes(p, volToPvc)
 		if len(pvcToMountPath) > 0 {
-			dp.PersistentVolumeClaims = make(map[string]map[string]string)
-			dp.PersistentVolumeClaims[p.Name] = make(map[string]string)
 			dp.PersistentVolumeClaims[p.Name] = pvcToMountPath
 		}
 	}

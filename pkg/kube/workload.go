@@ -3,6 +3,8 @@ package kube
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"k8s.io/api/apps/v1beta1"
@@ -58,11 +60,11 @@ func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespa
 	if ss.Status.ReadyReplicas != *ss.Spec.Replicas {
 		return false, nil
 	}
-	pods, err := FetchRunningPods(kubeCli, namespace, ss.GetUID())
+	runningPods, _, err := FetchPods(kubeCli, namespace, ss.GetUID())
 	if err != nil {
 		return false, err
 	}
-	return len(pods) == int(*ss.Spec.Replicas), nil
+	return len(runningPods) == int(*ss.Spec.Replicas), nil
 }
 
 // WaitOnStatefulSetReady waits for the stateful set to be ready
@@ -83,18 +85,30 @@ func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespac
 	if err != nil {
 		return false, errors.Wrapf(err, "could not get Deployment{Namespace: %s, Name: %s}", namespace, name)
 	}
-	if d.Status.AvailableReplicas != *d.Spec.Replicas {
+	// Wait for deployment to complete. The deployment controller will check the downstream
+	// RS and Running Pods to update the deployment status
+	if deploymentComplete := d.Status.UpdatedReplicas == *d.Spec.Replicas &&
+		d.Status.Replicas == *d.Spec.Replicas &&
+		d.Status.AvailableReplicas == *d.Spec.Replicas &&
+		d.Status.ObservedGeneration >= d.Generation; !deploymentComplete {
 		return false, nil
 	}
 	rs, err := FetchReplicaSet(kubeCli, namespace, d.GetUID())
 	if err != nil {
 		return false, err
 	}
-	pods, err := FetchRunningPods(kubeCli, namespace, rs.GetUID())
+	runningPods, notRunningPods, err := FetchPods(kubeCli, namespace, rs.GetUID())
 	if err != nil {
 		return false, err
 	}
-	return len(pods) == int(d.Status.AvailableReplicas), nil
+	// The deploymentComplete check above already validates this but we do it
+	// again anyway given we have this information available
+	if len(runningPods) != int(d.Status.AvailableReplicas) {
+		return false, nil
+	}
+	// Wait for things to settle. This check *is* required since the deployment controller
+	// excludes any pods not running from its replica count(s)
+	return len(notRunningPods) == 0, nil
 }
 
 // WaitOnDeploymentReady waits for the deployment to be ready
@@ -131,25 +145,26 @@ func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID) 
 	return nil, errors.Wrap(errNotFound, "Could not find a ReplicaSet for Deployment")
 }
 
-// FetchRunningPods fetches the running pods matching the specified owner UID
-func FetchRunningPods(cli kubernetes.Interface, namespace string, uid types.UID) ([]v1.Pod, error) {
+// FetchPods fetches the pods matching the specified owner UID and splits them
+// into 2 groups (running/not-running)
+func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID) (runningPods []v1.Pod, notRunningPods []v1.Pod, err error) {
 	opts := metav1.ListOptions{}
 	pods, err := cli.Core().Pods(namespace).List(opts)
 	if err != nil {
-		return nil, errors.Wrap(err, "Could not list Pods")
+		return nil, nil, errors.Wrap(err, "Could not list Pods")
 	}
-	ps := make([]v1.Pod, 0, len(pods.Items))
 	for _, pod := range pods.Items {
 		if len(pod.OwnerReferences) != 1 ||
 			pod.OwnerReferences[0].UID != uid {
 			continue
 		}
 		if pod.Status.Phase != v1.PodRunning {
+			notRunningPods = append(notRunningPods, pod)
 			continue
 		}
-		ps = append(ps, pod)
+		runningPods = append(runningPods, pod)
 	}
-	return ps, nil
+	return runningPods, notRunningPods, nil
 }
 
 func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
@@ -193,11 +208,32 @@ func DeploymentVolumes(cli kubernetes.Interface, d *v1beta1.Deployment) (volName
 
 // From getPersistentVolumeClaimName() in stateful_set_utils.go in the K8s repository
 // Format is "<claim name>-<stateful set name>-<ordinal>"
-const ssetVolumeClaimFmt = "%s-%s-%d"
+const (
+	ssetVolumeClaimFmt = "%s-%s-%d"
+	ssetPodRegex       = ".*-([0-9]+)$"
+)
 
-// StatefulSetVolumes returns the PVCs referenced by this statefulset as a [pod spec volume name]->[PVC name] map
-func StatefulSetVolumes(cli kubernetes.Interface, sset *v1beta1.StatefulSet) (volNameToPvc map[string]string) {
-	replicas := int(*sset.Spec.Replicas)
+// From getParentNameAndOrdinal() in stateful_set_utils.go in the K8s repository
+func getOrdinal(pod string) int {
+	ordinal := -1
+	ssetPodRegex := regexp.MustCompile(ssetPodRegex)
+	matches := ssetPodRegex.FindStringSubmatch(pod)
+	if len(matches) != 2 {
+		return ordinal
+	}
+	if i, err := strconv.ParseInt(matches[1], 10, 32); err == nil {
+		ordinal = int(i)
+	}
+	return ordinal
+}
+
+// StatefulSetVolumes returns the PVCs referenced by a pod in this statefulset as a [pod spec volume name]->[PVC name] map
+func StatefulSetVolumes(cli kubernetes.Interface, sset *v1beta1.StatefulSet, pod *v1.Pod) (volNameToPvc map[string]string) {
+	ordinal := getOrdinal(pod.Name)
+	if ordinal == -1 {
+		// Pod not created through the statefulset?
+		return nil
+	}
 	claimTemplateNameToPodVolumeName := make(map[string]string)
 	for _, v := range sset.Spec.Template.Spec.Volumes {
 		if v.PersistentVolumeClaim == nil {
@@ -209,7 +245,7 @@ func StatefulSetVolumes(cli kubernetes.Interface, sset *v1beta1.StatefulSet) (vo
 	// the pod template
 	for _, vct := range sset.Spec.VolumeClaimTemplates {
 		if _, ok := claimTemplateNameToPodVolumeName[vct.Name]; !ok {
-			// The StatefulSet controller automagically generates references for claims not explicitly
+			// The StatefulSet controller automatically generates references for claims not explicitly
 			// referenced and uses the claim template name as the pod volume name
 			// to account for these.
 			claimTemplateNameToPodVolumeName[vct.Name] = vct.Name
@@ -217,10 +253,8 @@ func StatefulSetVolumes(cli kubernetes.Interface, sset *v1beta1.StatefulSet) (vo
 	}
 	volNameToPvc = make(map[string]string)
 	for claimTemplateName, podVolName := range claimTemplateNameToPodVolumeName {
-		for i := 0; i < replicas; i++ {
-			claimName := fmt.Sprintf(ssetVolumeClaimFmt, claimTemplateName, sset.Name, i)
-			volNameToPvc[podVolName] = claimName
-		}
+		claimName := fmt.Sprintf(ssetVolumeClaimFmt, claimTemplateName, sset.Name, ordinal)
+		volNameToPvc[podVolName] = claimName
 	}
 	return volNameToPvc
 }

@@ -61,11 +61,11 @@ func newValidStatefulSetTP() param.TemplateParams {
 				"pod2",
 			},
 			Containers: [][]string{{"test-container"}},
-			PersistentVolumeClaims: []map[string]string{
-				map[string]string{
+			PersistentVolumeClaims: map[string]map[string]string{
+				"pod1": map[string]string{
 					"pvc1": "path1",
 				},
-				map[string]string{
+				"pod2": map[string]string{
 					"pvc2": "path2",
 					"pvc3": "path3",
 				},

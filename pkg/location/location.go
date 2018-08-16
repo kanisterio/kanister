@@ -1,6 +1,7 @@
 package location
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -36,6 +37,22 @@ func Read(ctx context.Context, out io.Writer, profile param.Profile, suffix stri
 		args := s3CompliantReadArgs(profile, suffix)
 		env := s3CompliantEnv(profile)
 		return readExec(ctx, out, bin, args, env)
+	}
+	return errors.Errorf("Unsupported Location type: %s", profile.Location.Type)
+}
+
+//Delete data from location specified by `profile` and `suffix`.
+func Delete(ctx context.Context, profile param.Profile, suffix string) error {
+	switch profile.Location.Type {
+	case crv1alpha1.LocationTypeS3Compliant:
+		recursiveCmd, err := checkIfS3Dir(ctx, profile, suffix)
+		if err != nil {
+			return err
+		}
+		bin := s3CompliantBin()
+		args := s3CompliantDeleteArgs(profile, suffix, recursiveCmd)
+		env := s3CompliantEnv(profile)
+		return deleteExec(ctx, bin, args, env)
 	}
 	return errors.Errorf("Unsupported Location type: %s", profile.Location.Type)
 }
@@ -90,6 +107,29 @@ func writeExec(ctx context.Context, input io.Reader, bin string, args []string, 
 	return errors.Wrap(cmd.Wait(), "Failed to write data to location in profile")
 }
 
+func deleteExec(ctx context.Context, bin string, args []string, env []string) error {
+	err := exec.CommandContext(ctx, bin, args...).Run()
+	if err != nil {
+		return errors.Wrap(err, "Failed to delete the artifact")
+	}
+	log.Info("Successfully deleted the artifact")
+	return nil
+}
+
+func checkIfS3DirExec(ctx context.Context, bin string, args []string, env []string) (string, error) {
+	out, err := exec.CommandContext(ctx, bin, args...).Output()
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to list the artifacts")
+	}
+
+	if bytes.Contains(out, []byte(" PRE ")) {
+		// The path is a location of a directory in the S3 bucket
+		// So append "--recursive" to the rm command
+		return "--recursive", nil
+	}
+	return "", nil
+}
+
 const awsBin = `aws`
 
 func s3CompliantBin() string {
@@ -104,6 +144,11 @@ func s3CompliantReadArgs(profile param.Profile, suffix string) []string {
 func s3CompliantWriteArgs(profile param.Profile, suffix string) []string {
 	dst := s3CompliantPath(profile, suffix)
 	return awsS3CpArgs(profile, "-", dst)
+}
+
+func s3CompliantDeleteArgs(profile param.Profile, suffix string, recursive string) []string {
+	target := s3CompliantPath(profile, suffix)
+	return awsS3RmArgs(profile, target, recursive)
 }
 
 const s3Prefix = "s3://"
@@ -125,13 +170,17 @@ func s3CompliantEnv(profile param.Profile) []string {
 }
 
 func awsS3CpArgs(profile param.Profile, src string, dst string) (cmd []string) {
-	if profile.Location.S3Compliant.Endpoint != "" {
-		cmd = append(cmd, "--endpoint", profile.Location.S3Compliant.Endpoint)
-	}
-	if profile.SkipSSLVerify {
-		cmd = append(cmd, "--no-verify-ssl")
-	}
+	cmd = s3CompliantFlags(profile)
 	cmd = append(cmd, "s3", "cp", src, dst)
+	return cmd
+}
+
+func awsS3RmArgs(profile param.Profile, target string, recursiveCmd string) (cmd []string) {
+	cmd = s3CompliantFlags(profile)
+	cmd = append(cmd, "s3", "rm", target)
+	if recursiveCmd != "" {
+		cmd = append(cmd, recursiveCmd)
+	}
 	return cmd
 }
 
@@ -148,4 +197,24 @@ func awsCredsEnv(cred param.Credential) []string {
 		fmt.Sprintf("%s=%s", AWSAccessKeyID, cred.KeyPair.ID),
 		fmt.Sprintf("%s=%s", AWSSecretAccessKey, cred.KeyPair.Secret),
 	}
+}
+
+func checkIfS3Dir(ctx context.Context, profile param.Profile, suffix string) (string, error) {
+	var cmd []string
+	target := s3CompliantPath(profile, suffix)
+	cmd = s3CompliantFlags(profile)
+	cmd = append(cmd, "s3", "ls", target)
+	bin := s3CompliantBin()
+	env := s3CompliantEnv(profile)
+	return checkIfS3DirExec(ctx, bin, cmd, env)
+}
+
+func s3CompliantFlags(profile param.Profile) (cmd []string) {
+	if profile.Location.S3Compliant.Endpoint != "" {
+		cmd = append(cmd, "--endpoint", profile.Location.S3Compliant.Endpoint)
+	}
+	if profile.SkipSSLVerify {
+		cmd = append(cmd, "--no-verify-ssl")
+	}
+	return cmd
 }
