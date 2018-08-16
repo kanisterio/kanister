@@ -83,12 +83,6 @@ spec:
         - mountPath: /usr/share/elasticsearch/data
           name: data
       containers:
-      - name: kanister-sidecar
-        image: kanisterio/es-sidecar:0.0.0
-        command: ["bash", "-c", "tail -f /dev/null"]
-        volumeMounts:
-        - mountPath: /usr/share/elasticsearch/esdump
-          name: esdump
       - name: elasticsearch
         env:
         - name: NODE_DATA
@@ -126,8 +120,6 @@ spec:
           name: http
 {{ end }}
         volumeMounts:
-        - mountPath: /usr/share/elasticsearch/esdump
-          name: esdump
         - mountPath: /usr/share/elasticsearch/data
           name: data
         - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
@@ -144,8 +136,6 @@ spec:
           subPath: log4j2.properties
 {{- end }}
       volumes:
-      - name: esdump
-        emptyDir: {}
       - name: config
         configMap:
           name: {{ template "elasticsearch.fullname" . }}
