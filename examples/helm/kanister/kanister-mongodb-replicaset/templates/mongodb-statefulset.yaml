@@ -139,7 +139,7 @@ spec:
               mountPath: /data/db
       containers:
         - name: kanister-sidecar
-          image: kanisterio/mongo-sidecar:v0.10.0
+          image: kanisterio/mongo-sidecar:v0.11.0
           env:
           {{- if .Values.auth.enabled }}
           - name: MONGO_ADMIN_USER
