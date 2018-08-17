@@ -2,14 +2,14 @@ package function
 
 import (
 	"context"
-	"encoding/json"
-	"strings"
+	"fmt"
 
 	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/restic"
 )
 
 const (
@@ -21,6 +21,8 @@ const (
 	RestoreDataBackupArtifactArg = "backupArtifact"
 	// RestoreDataRestorePathArg provides the path to restore backed up data
 	RestoreDataRestorePathArg = "restorePath"
+	// RestoreDataBackupTagArg provides artifact tag added during backup
+	RestoreDataBackupTagArg = "backupTag"
 	// RestoreDataPodArg provides the pod connected to the data volume
 	RestoreDataPodArg = "pod"
 	// RestoreDataVolsArg provides a map of PVC->mountPaths to be attached
@@ -63,20 +65,15 @@ func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, er
 	}
 }
 
-func generateRestoreCommand(backupArtifact, restorePath string, profile *param.Profile) ([]string, error) {
-	p, err := json.Marshal(profile)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to marshal profile")
-	}
-	cmd := []string{"kando", "location", "pull", "--profile", "'" + string(p) + "'", "--path", backupArtifact, "-", "|"}
-	// Command to extract
-	cmd = append(cmd, "gunzip", "-c", "-", "|", "tar", "-xf", "-", "-C", restorePath)
-	command := strings.Join(cmd, " ")
+func generateRestoreCommand(backupArtifact, restorePath, backupTag string, profile *param.Profile) ([]string, error) {
+	// Restic restore command
+	command := restic.RestoreCommand(profile, backupArtifact)
+	command = fmt.Sprintf("%s --tag %s latest --target %s", command, backupTag, restorePath)
 	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}, nil
 }
 
 func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
-	var namespace, pod, image, backupArtifact, restorePath string
+	var namespace, pod, image, backupArtifact, restorePath, backupTag string
 	var vols map[string]string
 	var err error
 	if err = Arg(args, RestoreDataNamespaceArg, &namespace); err != nil {
@@ -88,7 +85,11 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = Arg(args, RestoreDataBackupArtifactArg, &backupArtifact); err != nil {
 		return err
 	}
-	if err = Arg(args, RestoreDataRestorePathArg, &restorePath); err != nil {
+	// TODO: Change this to required arg once all the changes are done
+	if err = OptArg(args, RestoreDataBackupTagArg, &backupTag, ""); err != nil {
+		return err
+	}
+	if err = OptArg(args, RestoreDataRestorePathArg, &restorePath, "/"); err != nil {
 		return err
 	}
 	if err = OptArg(args, RestoreDataPodArg, &pod, ""); err != nil {
@@ -105,7 +106,7 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 		return err
 	}
 	// Generate restore command
-	cmd, err := generateRestoreCommand(backupArtifact, restorePath, tp.Profile)
+	cmd, err := generateRestoreCommand(backupArtifact, restorePath, backupTag, tp.Profile)
 	if err != nil {
 		return err
 	}
@@ -126,5 +127,5 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 
 func (*restoreDataFunc) RequiredArgs() []string {
 	return []string{RestoreDataNamespaceArg, RestoreDataImageArg,
-		RestoreDataBackupArtifactArg, RestoreDataRestorePathArg}
+		RestoreDataBackupArtifactArg}
 }

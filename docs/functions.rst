@@ -139,7 +139,7 @@ Example:
           echo "Example"
 
 ScaleWorkload
----------------
+-------------
 
 ScaleWorkload is used to scale up or scale down a Kubernetes workload.
 The function only returns after the desired replica state is achieved:
@@ -221,7 +221,7 @@ ScaleWorkload.
 
    `namespace`, Yes, `string`, namespace in which to execute
    `image`, Yes, `string`, image to be used the command
-   `volumes`, Yes, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
+   `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available.
    `command`, Yes, `[]string`,  command list to execute
 
 .. note::
@@ -229,6 +229,8 @@ ScaleWorkload.
    data manipulation logic needs to be aware of any `subPath` mounts
    that may have been used when mounting a PVC in the primary
    application container.
+   If `volumes` argument is not specified, all volumes belonging to the protected object
+   will be mounted at the predefined path `/mnt/prepare_data/<pvcName>`
 
 Example:
 
@@ -256,7 +258,7 @@ Example:
           cp /restore-data/file_to_replace.data /data/file.data
 
 BackupData
------------
+----------
 
 This function backs up data from a container into an S3 compatible object store.
 

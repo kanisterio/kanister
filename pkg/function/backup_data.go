@@ -2,8 +2,8 @@ package function
 
 import (
 	"context"
-	"encoding/json"
-	"strings"
+	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -11,6 +11,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/restic"
 )
 
 const (
@@ -24,6 +25,8 @@ const (
 	BackupDataIncludePathArg = "includePath"
 	// BackupDataBackupArtifactArg provides the path to store artifacts on the object store
 	BackupDataBackupArtifactArg = "backupArtifact"
+	// BackupDataBackupTagArg provides a tag to be added to the artifacts
+	BackupDataBackupTagArg = "backupTag"
 )
 
 func init() {
@@ -38,17 +41,23 @@ func (*backupDataFunc) Name() string {
 	return "BackupData"
 }
 
-func generateBackupCommand(includePath, destArtifact string, profile *param.Profile) ([]string, error) {
-	p, err := json.Marshal(profile)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to marshal profile")
-	}
-	// Command to tar and compress
-	cmd := []string{"tar", "-cf", "-", "-C", includePath, ".", "|", "gzip", "-", "|"}
-	// Command to dump on the object store
-	cmd = append(cmd, "kando", "location", "push", "--profile", "'"+string(p)+"'", "--path", destArtifact, "-")
-	command := strings.Join(cmd, " ")
-	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}, nil
+func generateSnapshotsCommand(destArtifact string, profile *param.Profile) []string {
+	// Restic Snapshots command
+	command := restic.SnapshotsCommand(profile, destArtifact)
+	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
+}
+
+func generateInitCommand(destArtifact string, profile *param.Profile) []string {
+	// Restic Repository Init command
+	command := restic.InitCommand(profile, destArtifact)
+	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
+}
+
+func generateBackupCommand(includePath, destArtifact, tag string, profile *param.Profile) []string {
+	// Restic Backup command
+	command := restic.BackupCommand(profile, destArtifact)
+	command = fmt.Sprintf("%s --tag %s %s", command, tag, includePath)
+	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
 }
 
 func validateProfile(profile *param.Profile) error {
@@ -62,7 +71,7 @@ func validateProfile(profile *param.Profile) error {
 }
 
 func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
-	var namespace, pod, container, includePath, backupArtifact string
+	var namespace, pod, container, includePath, backupArtifact, backupTag string
 	var err error
 	if err = Arg(args, BackupDataNamespaceArg, &namespace); err != nil {
 		return err
@@ -79,6 +88,10 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = Arg(args, BackupDataBackupArtifactArg, &backupArtifact); err != nil {
 		return err
 	}
+	// TODO: Change this to required arg once all the changes are done
+	if err = OptArg(args, BackupDataBackupTagArg, &backupTag, time.Now().UnixNano()); err != nil {
+		return err
+	}
 	// Validate the Profile
 	if err = validateProfile(tp.Profile); err != nil {
 		return errors.Wrapf(err, "Failed to validate Profile")
@@ -87,12 +100,24 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	// Create backup and dump it on the object store
-	cmd, err := generateBackupCommand(includePath, backupArtifact, tp.Profile)
-	if err != nil {
-		return err
-	}
+	// Use the snapshots command to check if the repository exists
+	cmd := generateSnapshotsCommand(backupArtifact, tp.Profile)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
+	formatAndLog(pod, container, stdout)
+	formatAndLog(pod, container, stderr)
+	if err != nil {
+		// Create a repository
+		cmd := generateInitCommand(backupArtifact, tp.Profile)
+		stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
+		formatAndLog(pod, container, stdout)
+		formatAndLog(pod, container, stderr)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to create object store backup location")
+		}
+	}
+	// Create backup and dump it on the object store
+	cmd = generateBackupCommand(includePath, backupArtifact, backupTag, tp.Profile)
+	stdout, stderr, err = kube.Exec(cli, namespace, pod, container, cmd)
 	formatAndLog(pod, container, stdout)
 	formatAndLog(pod, container, stderr)
 	if err != nil {
