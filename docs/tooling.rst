@@ -295,11 +295,13 @@ object store like AWS S3. We've found it can be cumbersome to pass Profile
 configuration to tools like the AWS command line from inside Blueprints.
 
 `kando` is a tool to simplify object store interactions from within blueprints.
-It has two commands:
+It has three commands:
 
 * `location push`
 
 * `location pull`
+
+* `location delete`
 
 The usage for these commands can be displayed using the `--help` flag:
 
@@ -333,11 +335,28 @@ The usage for these commands can be displayed using the `--help` flag:
     -s, --path string      Specify a path suffix (optional)
     -p, --profile string   Pass a Profile as a JSON string (required)
 
+.. code-block:: bash
+
+$ kando location delete --help
+Delete artifacts from s3-compliant object storage
+
+Usage:
+  kando location delete [flags]
+
+Flags:
+  -h, --help   help for delete
+
+Global Flags:
+  -s, --path string      Specify a path suffix (optional)
+  -p, --profile string   Pass a Profile as a JSON string (required)
+
 The following snippet is an example of using kando from inside a Blueprint.
 
 .. code-block:: console
 
   kando location push --profile '{{ .Profile }}' --path '{{ .ArtifactsOut }}' -
+
+  kando location delete --profile '{{ .Profile }}' --path '{{ .ArtifactsOut }}'
 
 
 Docker Image
