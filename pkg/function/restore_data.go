@@ -17,12 +17,12 @@ const (
 	RestoreDataNamespaceArg = "namespace"
 	// RestoreDataImageArg provides the image of the container with required tools
 	RestoreDataImageArg = "image"
-	// RestoreDataBackupArtifactArg provides the path of the backed up artifact
-	RestoreDataBackupArtifactArg = "backupArtifact"
+	// RestoreDataBackupArtifactPrefixArg provides the path of the backed up artifact
+	RestoreDataBackupArtifactPrefixArg = "backupArtifactPrefix"
 	// RestoreDataRestorePathArg provides the path to restore backed up data
 	RestoreDataRestorePathArg = "restorePath"
-	// RestoreDataBackupTagArg provides artifact tag added during backup
-	RestoreDataBackupTagArg = "backupTag"
+	// RestoreDataBackupIdentifierArg provides a unique ID added to the backed up artifacts
+	RestoreDataBackupIdentifierArg = "backupIdentifier"
 	// RestoreDataPodArg provides the pod connected to the data volume
 	RestoreDataPodArg = "pod"
 	// RestoreDataVolsArg provides a map of PVC->mountPaths to be attached
@@ -65,15 +65,15 @@ func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, er
 	}
 }
 
-func generateRestoreCommand(backupArtifact, restorePath, backupTag string, profile *param.Profile) ([]string, error) {
+func generateRestoreCommand(backupArtifactPrefix, restorePath, id string, profile *param.Profile) ([]string, error) {
 	// Restic restore command
-	command := restic.RestoreCommand(profile, backupArtifact)
-	command = fmt.Sprintf("%s --tag %s latest --target %s", command, backupTag, restorePath)
+	command := restic.RestoreCommand(profile, backupArtifactPrefix)
+	command = fmt.Sprintf("%s --tag %s latest --target %s", command, id, restorePath)
 	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}, nil
 }
 
 func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
-	var namespace, pod, image, backupArtifact, restorePath, backupTag string
+	var namespace, pod, image, backupArtifactPrefix, restorePath, backupIdentifier string
 	var vols map[string]string
 	var err error
 	if err = Arg(args, RestoreDataNamespaceArg, &namespace); err != nil {
@@ -82,11 +82,10 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = Arg(args, RestoreDataImageArg, &image); err != nil {
 		return err
 	}
-	if err = Arg(args, RestoreDataBackupArtifactArg, &backupArtifact); err != nil {
+	if err = Arg(args, RestoreDataBackupArtifactPrefixArg, &backupArtifactPrefix); err != nil {
 		return err
 	}
-	// TODO: Change this to required arg once all the changes are done
-	if err = OptArg(args, RestoreDataBackupTagArg, &backupTag, ""); err != nil {
+	if err = Arg(args, RestoreDataBackupIdentifierArg, &backupIdentifier); err != nil {
 		return err
 	}
 	if err = OptArg(args, RestoreDataRestorePathArg, &restorePath, "/"); err != nil {
@@ -106,7 +105,7 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 		return err
 	}
 	// Generate restore command
-	cmd, err := generateRestoreCommand(backupArtifact, restorePath, backupTag, tp.Profile)
+	cmd, err := generateRestoreCommand(backupArtifactPrefix, restorePath, backupIdentifier, tp.Profile)
 	if err != nil {
 		return err
 	}
@@ -127,5 +126,5 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 
 func (*restoreDataFunc) RequiredArgs() []string {
 	return []string{RestoreDataNamespaceArg, RestoreDataImageArg,
-		RestoreDataBackupArtifactArg}
+		RestoreDataBackupArtifactPrefixArg, RestoreDataBackupIdentifierArg}
 }

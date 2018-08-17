@@ -3,7 +3,6 @@ package function
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -23,10 +22,10 @@ const (
 	BackupDataContainerArg = "container"
 	// BackupDataIncludePathArg provides the path of the volume or sub-path for required backup
 	BackupDataIncludePathArg = "includePath"
-	// BackupDataBackupArtifactArg provides the path to store artifacts on the object store
-	BackupDataBackupArtifactArg = "backupArtifact"
-	// BackupDataBackupTagArg provides a tag to be added to the artifacts
-	BackupDataBackupTagArg = "backupTag"
+	// BackupDataBackupArtifactPrefixArg provides the path to store artifacts on the object store
+	BackupDataBackupArtifactPrefixArg = "backupArtifactPrefix"
+	// BackupDataBackupIdentifierArg provides a unique ID added to the artifacts
+	BackupDataBackupIdentifierArg = "backupIdentifier"
 )
 
 func init() {
@@ -53,10 +52,10 @@ func generateInitCommand(destArtifact string, profile *param.Profile) []string {
 	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
 }
 
-func generateBackupCommand(includePath, destArtifact, tag string, profile *param.Profile) []string {
+func generateBackupCommand(includePath, destArtifact, id string, profile *param.Profile) []string {
 	// Restic Backup command
 	command := restic.BackupCommand(profile, destArtifact)
-	command = fmt.Sprintf("%s --tag %s %s", command, tag, includePath)
+	command = fmt.Sprintf("%s --tag %s %s", command, id, includePath)
 	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
 }
 
@@ -71,7 +70,7 @@ func validateProfile(profile *param.Profile) error {
 }
 
 func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
-	var namespace, pod, container, includePath, backupArtifact, backupTag string
+	var namespace, pod, container, includePath, backupArtifactPrefix, backupIdentifier string
 	var err error
 	if err = Arg(args, BackupDataNamespaceArg, &namespace); err != nil {
 		return err
@@ -85,11 +84,10 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = Arg(args, BackupDataIncludePathArg, &includePath); err != nil {
 		return err
 	}
-	if err = Arg(args, BackupDataBackupArtifactArg, &backupArtifact); err != nil {
+	if err = Arg(args, BackupDataBackupArtifactPrefixArg, &backupArtifactPrefix); err != nil {
 		return err
 	}
-	// TODO: Change this to required arg once all the changes are done
-	if err = OptArg(args, BackupDataBackupTagArg, &backupTag, time.Now().UnixNano()); err != nil {
+	if err = Arg(args, BackupDataBackupIdentifierArg, &backupIdentifier); err != nil {
 		return err
 	}
 	// Validate the Profile
@@ -101,13 +99,13 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		return errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
 	// Use the snapshots command to check if the repository exists
-	cmd := generateSnapshotsCommand(backupArtifact, tp.Profile)
+	cmd := generateSnapshotsCommand(backupArtifactPrefix, tp.Profile)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
 	formatAndLog(pod, container, stdout)
 	formatAndLog(pod, container, stderr)
 	if err != nil {
 		// Create a repository
-		cmd := generateInitCommand(backupArtifact, tp.Profile)
+		cmd := generateInitCommand(backupArtifactPrefix, tp.Profile)
 		stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
 		formatAndLog(pod, container, stdout)
 		formatAndLog(pod, container, stderr)
@@ -116,7 +114,7 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		}
 	}
 	// Create backup and dump it on the object store
-	cmd = generateBackupCommand(includePath, backupArtifact, backupTag, tp.Profile)
+	cmd = generateBackupCommand(includePath, backupArtifactPrefix, backupIdentifier, tp.Profile)
 	stdout, stderr, err = kube.Exec(cli, namespace, pod, container, cmd)
 	formatAndLog(pod, container, stdout)
 	formatAndLog(pod, container, stderr)
@@ -128,5 +126,5 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 
 func (*backupDataFunc) RequiredArgs() []string {
 	return []string{BackupDataNamespaceArg, BackupDataPodArg, BackupDataContainerArg,
-		BackupDataIncludePathArg, BackupDataBackupArtifactArg}
+		BackupDataIncludePathArg, BackupDataBackupArtifactPrefixArg, BackupDataBackupIdentifierArg}
 }
