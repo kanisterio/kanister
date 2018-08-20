@@ -273,7 +273,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
-	crCli := crfake.NewSimpleClientset(prof)
+	crCli := crfake.NewSimpleClientset()
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
 	c.Assert(err, IsNil)
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("profName", metav1.GetOptions{})
@@ -432,7 +432,7 @@ func (s *ParamsSuite) TestProfile(c *C) {
 			},
 		},
 	}
-	crCli := crfake.NewSimpleClientset(as, prof)
+	crCli := crfake.NewSimpleClientset()
 	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).Create(as)
 	c.Assert(err, IsNil)
 	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).Get("", metav1.GetOptions{})

@@ -114,7 +114,7 @@ found [here](https://hub.kubeapps.com/charts/stable/kanister-operator) and can
 be installed by specifying the `stable` chart prefix.
 
 ```bash
-helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=0.10.0
+helm install --name myrelease --namespace kanister stable/kanister-operator --set image.tag=0.11.0
 ```
 
 > **Warning**: The Kanister chart found in `stable` may be behind the one in

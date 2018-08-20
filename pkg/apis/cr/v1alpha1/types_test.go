@@ -38,7 +38,7 @@ actions:
 
 func (s *TypesSuite) TestBlueprintDecode(c *C) {
 	expected := map[string]reflect.Kind{
-		"testint":         reflect.Uint64,
+		"testint":         reflect.Int64,
 		"teststring":      reflect.String,
 		"teststringslice": reflect.Slice,
 		"teststringmap":   reflect.Map,
