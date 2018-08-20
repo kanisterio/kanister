@@ -2,18 +2,17 @@ package: github.com/kanisterio/kanister
 import:
 - package: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
-  vcs: git
   repo: https://github.com/GoogleCloudPlatform/google-cloud-go.git
 - package: github.com/aws/aws-sdk-go
-  version: v1.13.39
+  version: v1.14.31
 - package: github.com/graymeta/stow
   vcs: git
   version: master
   repo: https://github.com/kastenhq/stow.git
 - package: github.com/jpillora/backoff
-  version: 06c7a16c845dc8e0bf575fafeeca0f5462f5eb4d
+  version: 1.0.0
 - package: github.com/Masterminds/sprig
-  version: v2.14.0
+  version: v2.15.0
 - package: github.com/mitchellh/mapstructure
   version: 00c29f56e2386353d58c599509e8dc3801b0d716
 - package: github.com/pkg/errors
@@ -23,28 +22,28 @@ import:
   version: rm-k8s-dep
   repo: https://github.com/kastenhq/operator-kit.git
 - package: github.com/sirupsen/logrus
-  version: v1.0.3
+  version: v1.0.6
 - package: github.com/spf13/cobra
-  version: v0.0.2
+  version: v0.0.3
 - package: github.com/spf13/pflag
-  version: v1.0.0
+  version: v1.0.1
 - package: github.com/stretchr/testify
-  version: v1.1.4
+  version: v1.2.2
 - package: golang.org/x/oauth2
-  version: d89af98d7c6bba047c5a2622f36bc14b8766df85
+  version: fdc9e635145ae97e6c2cb777c48305600cf515cb
 - package: google.golang.org/api
   version: f5fa6a3eed6362c07f4e2e4425faeab907a041bd
 - package: gopkg.in/check.v1
   version: 64131543e7896d5bcc6bd5a76287eb75ea96c673
 - package: k8s.io/api
-  version: 11147472b7c934c474a2c484af3c0c5210b7a3af
+  version: kubernetes-1.11.1
 - package: k8s.io/apiextensions-apiserver
-  version: 98ecf7bbd60f9f11a72000e4f05203f542136219
+  version: kubernetes-1.11.1
 - package: k8s.io/apimachinery
-  version: 180eddb345a5be3a157cea1c624700ad5bd27b8f
+  version: kubernetes-1.11.1
 - package: k8s.io/client-go
-  version: v6.0.0
+  version: v8.0.0
 - package: k8s.io/code-generator
-  version: kubernetes-1.9.0
+  version: kubernetes-1.11.1
 - package: k8s.io/gengo
-  version: 1ef560bbde5195c01629039ad3b337ce63e7b321
+  version: 906d99f89cd644eecf75ab547b29bf9f876f0b59
