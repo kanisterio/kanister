@@ -276,7 +276,8 @@ This function backs up data from a container into an S3 compatible object store.
    `pod`, Yes, `string`, pod in which to execute
    `container`, Yes, `string`, container in which to execute
    `includePath`, Yes, `string`, path of the data to be backed up
-   `backupArtifact`, Yes, `string`, path to store the backup on the object store
+   `backupArtifactPrefix`, Yes, `string`, path to store the backup on the object store
+   `backupIdentifier`, Yes, `string`, unique string to identify the backup
 
 Example:
 
@@ -290,7 +291,8 @@ Example:
       pod: "{{ index .Deployment.Pods 0 }}"
       container: kanister-tools
       includePath: /mnt/data
-      backupArtifact: s3://bucket/path/artifact
+      backupArtifactPrefix: s3-bucket/path/artifactPrefix
+      backupIdentifier: "{{ .Time }}"
 
 RestoreData
 -----------
@@ -315,8 +317,9 @@ by the specified Pod and restores data to the specified path.
 
    `namespace`, Yes, `string`, namespace in which to execute
    `image`, Yes, `string`, image to be used for running restore
-   `backupArtifact`, Yes, `string`, path to the backup on the object store
-   `restorePath`, Yes, `string`, path where data is restored
+   `backupArtifactPrefix`, Yes, `string`, path to the backup on the object store
+   `backupIdentifier`, Yes, `string`, unique string to identify the backup
+   `restorePath`, No, `string`, path where data is restored
    `pod`, No, `string`, pod to which the volumes are attached
    `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
 
@@ -345,8 +348,8 @@ Example:
       namespace: "{{ .Deployment.Namespace }}"
       pod: "{{ index .Deployment.Pods 0 }}"
       image: kanisterio/kanister-tools:0.11.0
-      backupArtifact: s3://bucket/path/artifact
-      restorePath: /mnt/data
+      backupArtifactPrefix: s3-bucket/path/artifactPrefix
+      backupIdentifier: "{{ .Time }}"
 
 DeleteData
 ----------
