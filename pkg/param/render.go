@@ -80,7 +80,7 @@ func RenderArtifacts(arts map[string]crv1alpha1.Artifact, tp TemplateParams) (ma
 }
 
 func renderStringArg(arg string, tp TemplateParams) (string, error) {
-	t, err := template.New("config").Funcs(sprig.TxtFuncMap()).Parse(arg)
+	t, err := template.New("config").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(arg)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}

@@ -118,6 +118,14 @@ func (s *RenderSuite) TestRender(c *C) {
 			out:     map[interface{}]interface{}{"HELLO": []interface{}{"HELLO"}},
 			checker: IsNil,
 		},
+		{
+			// Render should fail if referenced key doesn't exist
+			arg: "{{ .ArtifactsOut.hello.KeyValue.someKey }}",
+			tp: TemplateParams{
+				ArtifactsOut: map[string]crv1alpha1.Artifact{},
+			},
+			checker: NotNil,
+		},
 	} {
 		inArgs := map[string]interface{}{"arg": tc.arg}
 		out, err := RenderArgs(inArgs, tc.tp)
