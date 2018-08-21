@@ -43,8 +43,10 @@ main() {
 
     helm init --client-only
 
+    helm repo add kanister ${HELM_RELEASE_REPO_URL}
+    release_helm_charts helm/profile "${version}"
     # Release example application charts
-    local -a example_charts=( "kanister-mongodb-replicaset" "kanister-mysql" "kanister-postgresql")
+    local -a example_charts=( "kanister-mongodb-replicaset" "kanister-mysql" "kanister-postgresql" "kanister-elasticsearch")
     for chart_name in "${example_charts[@]}"
     do
         release_helm_charts "examples/helm/kanister/${chart_name}" "${version}"
@@ -52,7 +54,7 @@ main() {
 
     # Release kanister charts
     release_helm_charts helm/kanister-operator "${version}"
-    release_helm_charts helm/profile "${version}"
+
 }
 
 main $@
