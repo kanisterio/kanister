@@ -100,7 +100,7 @@ spec:
           mountPath: /etc/mysql/conf.d
         {{- end }}
       - name: kanister-sidecar
-        image: kastenio/kanister-mysql-sidecar:v0.1.0
+        image: kastenio/kanister-mysql-sidecar:0.11.0
         command: ["bash", "-c"]
         args:
         - "tail -f /dev/null"
