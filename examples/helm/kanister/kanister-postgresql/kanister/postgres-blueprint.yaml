@@ -3,7 +3,7 @@ actions:
     type: Deployment
     outputArtifacts:
       manifest:
-        KeyValue:
+        keyValue:
           prefix: 'postgres-backups/{{ .Deployment.Name }}'
           path: 'postgres-backups/{{ .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt'
     phases:
