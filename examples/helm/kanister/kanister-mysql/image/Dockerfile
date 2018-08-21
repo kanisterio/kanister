@@ -6,3 +6,7 @@ USER root
 ADD . /kanister
 
 RUN /kanister/install.sh && rm -rf /kanister && rm -rf /tmp && mkdir /tmp
+
+COPY --from=kanisterio/kanister-tools:0.11.0 /usr/local/bin/kando /usr/local/bin/kando
+
+CMD ["tail", "-f", "/dev/null"]
