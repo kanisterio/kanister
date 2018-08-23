@@ -108,7 +108,9 @@ func writeExec(ctx context.Context, input io.Reader, bin string, args []string, 
 }
 
 func deleteExec(ctx context.Context, bin string, args []string, env []string) error {
-	err := exec.CommandContext(ctx, bin, args...).Run()
+	cmd := exec.CommandContext(ctx, bin, args...)
+	cmd.Env = env
+	err := cmd.Run()
 	if err != nil {
 		return errors.Wrap(err, "Failed to delete the artifact")
 	}
@@ -117,7 +119,9 @@ func deleteExec(ctx context.Context, bin string, args []string, env []string) er
 }
 
 func checkIfS3DirExec(ctx context.Context, bin string, args []string, env []string) (string, error) {
-	out, err := exec.CommandContext(ctx, bin, args...).Output()
+	cmd := exec.CommandContext(ctx, bin, args...)
+	cmd.Env = env
+	out, err := cmd.Output()
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to list the artifacts")
 	}
