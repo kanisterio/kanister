@@ -76,16 +76,7 @@ actions:
           - pipefail
           - -c
           - |
-            s3_cmd=(aws)
-            {{- if .Profile.SkipSSLVerify }}
-            s3_cmd+=(" --no-verify-ssl")
-            {{- end }}
-            {{- if .Profile.Location.S3Compliant.Endpoint }}
-            s3_cmd+=(" --endpoint {{ .Profile.Location.S3Compliant.Endpoint }}")
-            {{- end }}
-            s3_path="s3://{{ .Profile.Location.S3Compliant.Bucket }}{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
-            s3_cmd+=(s3 rm "${s3_path}")
+            s3_path="{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
             export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
             export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
-            ${s3_cmd[@]}
-
+            kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}
