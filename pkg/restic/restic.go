@@ -60,14 +60,19 @@ const (
 	ResticPassword   = "RESTIC_PASSWORD"
 	ResticRepository = "RESTIC_REPOSITORY"
 	ResticCommand    = "restic"
+	awsS3Endpoint    = "s3.amazonaws.com"
 )
 
 func resticArgs(profile *param.Profile, repository string) []string {
+	s3Endpoint := awsS3Endpoint
+	if profile.Location.S3Compliant.Endpoint != "" {
+		s3Endpoint = profile.Location.S3Compliant.Endpoint
+	}
 	return []string{
 		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, profile.Credential.KeyPair.ID),
 		fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, profile.Credential.KeyPair.Secret),
 		fmt.Sprintf("export %s=%s\n", ResticPassword, generatePassword()),
-		fmt.Sprintf("export %s=s3:s3.amazonaws.com/%s\n", ResticRepository, repository),
+		fmt.Sprintf("export %s=s3:%s/%s\n", ResticRepository, s3Endpoint, repository),
 		ResticCommand,
 	}
 }
