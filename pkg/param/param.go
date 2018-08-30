@@ -22,6 +22,7 @@ type TemplateParams struct {
 	StatefulSet  *StatefulSetParams
 	Deployment   *DeploymentParams
 	PVC          *PVCParams
+	Namespace    *NamespaceParams
 	ArtifactsIn  map[string]crv1alpha1.Artifact
 	ArtifactsOut map[string]crv1alpha1.Artifact
 	ConfigMaps   map[string]v1.ConfigMap
@@ -55,6 +56,11 @@ type PVCParams struct {
 	Namespace string
 }
 
+// NamespaceParams are params for namespaces
+type NamespaceParams struct {
+	Name string
+}
+
 // Profile contains where to store artifacts and how to access them.
 type Profile struct {
 	Location      crv1alpha1.Location
@@ -85,6 +91,7 @@ const (
 	DeploymentKind  = "deployment"
 	StatefulSetKind = "statefulset"
 	PVCKind         = "pvc"
+	NamespaceKind   = "namespace"
 )
 
 // New function fetches and returns the desired params
@@ -129,6 +136,8 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 			return nil, err
 		}
 		tp.PVC = pp
+	case NamespaceKind:
+		tp.Namespace = &NamespaceParams{Name: as.Object.Namespace}
 	default:
 		return nil, errors.Errorf("Resource '%s' not supported", as.Object.Kind)
 	}
