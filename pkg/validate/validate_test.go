@@ -53,7 +53,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 					},
 				},
 			},
-			checker: NotNil,
+			checker: IsNil,
 		},
 		{
 			as: &crv1alpha1.ActionSet{
@@ -87,7 +87,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 					},
 				},
 			},
-			checker: NotNil,
+			checker: IsNil,
 		},
 		{
 			as: &crv1alpha1.ActionSet{

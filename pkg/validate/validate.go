@@ -15,20 +15,6 @@ func ActionSet(as *crv1alpha1.ActionSet) error {
 	if err := actionSetSpec(as.Spec); err != nil {
 		return err
 	}
-	if ns := as.GetNamespace(); ns != "" {
-		for _, a := range as.Spec.Actions {
-			for _, v := range a.ConfigMaps {
-				if v.Namespace != ns {
-					return errorf("Referenced ConfigMaps must be in the same namespace as the controller")
-				}
-			}
-			for _, v := range a.Secrets {
-				if v.Namespace != ns {
-					return errorf("Referenced Secrets must be in the same namespace as the controller")
-				}
-			}
-		}
-	}
 	if as.Status != nil {
 		if len(as.Spec.Actions) != len(as.Status.Actions) {
 			return errorf("Number of actions in status actions and spec must match")
