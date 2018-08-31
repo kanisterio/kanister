@@ -1,6 +1,8 @@
 package kanctl
 
 import (
+	"os"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -21,6 +23,7 @@ func Execute() {
 	root := newRootCommand()
 	if err := root.Execute(); err != nil {
 		log.Errorf("%+v", err)
+		os.Exit(1)
 	}
 }
 

@@ -232,6 +232,11 @@ func (s *ParamsSuite) TestNewTemplateParamsPVC(c *C) {
 	s.testNewTemplateParams(ctx, c, s.pvc, PVCKind)
 }
 
+func (s *ParamsSuite) TestNewTemplateParamsNamespace(c *C) {
+	ctx := context.Background()
+	s.testNewTemplateParams(ctx, c, s.namespace, NamespaceKind)
+}
+
 func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name string, kind string) {
 	spec := fmt.Sprintf(cmSpec, name)
 	cm, err := kube.CreateConfigMap(ctx, s.cli, s.namespace, spec)
@@ -299,6 +304,17 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 			"podName": "some-pod",
 		},
 	}
+	var template string
+	switch kind {
+	case DeploymentKind:
+		template = "{{ .Deployment.Name }}"
+	case StatefulSetKind:
+		template = "{{ .StatefulSet.Name }}"
+	case PVCKind:
+		template = "{{ .PVC.Name }}"
+	case NamespaceKind:
+		template = "{{ .Namespace.Name }}"
+	}
 
 	artsTpl := map[string]crv1alpha1.Artifact{
 		"my-art": crv1alpha1.Artifact{KeyValue: map[string]string{
@@ -307,7 +323,10 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 		"my-time": crv1alpha1.Artifact{KeyValue: map[string]string{
 			"my-time": "{{ .Time }}"},
 		},
+		"kindArtifact": crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": template}},
 	}
+	artsTpl["kindArtifact"] = crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": template}}
+
 	tp, err := New(ctx, s.cli, crCli, as)
 	c.Assert(err, IsNil)
 	c.Assert(tp.ConfigMaps["myCM"].Data, DeepEquals, map[string]string{"someKey": "some-value"})
@@ -318,6 +337,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 	c.Assert(arts["my-art"], DeepEquals, crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": "some-value"}})
 	_, err = time.Parse(timeFormat, arts["my-time"].KeyValue["my-time"])
 	c.Assert(err, IsNil)
+	c.Assert(arts["kindArtifact"], DeepEquals, crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": name}})
 }
 
 func (s *ParamsSuite) TestfetchKVSecretCredential(c *C) {

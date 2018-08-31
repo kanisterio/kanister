@@ -178,7 +178,7 @@ func (job *Job) Delete() error {
 	deletePropagation = metav1.DeletePropagationForeground
 	err := jobsClient.Delete(job.name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to delete job %s: %s", job.name)
+		return errors.Wrapf(err, "Failed to delete job %s", job.name)
 	}
 	log.Printf("Deleted job %s", job.name)
 
