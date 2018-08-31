@@ -1,5 +1,5 @@
-hash: 889c80a57787511591d5c9d4039b83f2a274d65882da9db028a504051562f30f
-updated: 2018-07-24T10:36:10.723709398-07:00
+hash: 0683291a7097fc386e9d79872e95ae819523b93b199f6a88d91d0c8175df5308
+updated: 2018-08-22T15:50:21.370824639-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -122,8 +122,6 @@ imports:
   version: 2bf18b218c51864a87384c06996e40ff9dcff8e1
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
-- name: github.com/inconshreveable/mousetrap
-  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/jmespath/go-jmespath
   version: 3433f3ea46d9f8019119e7dd41274e112a2359a9
 - name: github.com/jpillora/backoff
@@ -186,7 +184,6 @@ imports:
   version: 95c6576299259db960f6c5b9b69ea52422860fce
   subpackages:
   - unix
-  - windows
 - name: golang.org/x/text
   version: b19bf474d317b857955b12035d2c5acb57ce8b01
   subpackages:
@@ -206,18 +203,6 @@ imports:
   - googleapi
   - googleapi/internal/uritemplates
   - storage/v1
-- name: google.golang.org/appengine
-  version: b1f26356af11148e710935ed1ac8a7f5702c7612
-  subpackages:
-  - internal
-  - internal/app_identity
-  - internal/base
-  - internal/datastore
-  - internal/log
-  - internal/modules
-  - internal/remote_api
-  - internal/urlfetch
-  - urlfetch
 - name: gopkg.in/check.v1
   version: 64131543e7896d5bcc6bd5a76287eb75ea96c673
 - name: gopkg.in/inf.v0
@@ -257,7 +242,7 @@ imports:
   - storage/v1alpha1
   - storage/v1beta1
 - name: k8s.io/apiextensions-apiserver
-  version: 06dfdaae5c2bd89e1243151ff65b9bf8ee050f28
+  version: 408db4a50408e2149acbd657bceb2480c13cb0a4
   subpackages:
   - pkg/apis/apiextensions
   - pkg/apis/apiextensions/v1beta1
@@ -313,7 +298,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/client-go
-  version: 7d04d0e2a0a1a4d4a1cd6baa432a2301492e4e65
+  version: 1f13a808da65775f22cbf47862c4e5898d8f4ca1
   subpackages:
   - discovery
   - discovery/fake
