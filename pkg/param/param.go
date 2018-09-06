@@ -257,7 +257,7 @@ func fetchDeploymentParams(ctx context.Context, cli kubernetes.Interface, namesp
 		Containers:             [][]string{},
 		PersistentVolumeClaims: make(map[string]map[string]string),
 	}
-	rs, err := kube.FetchReplicaSet(cli, namespace, d.UID)
+	rs, err := kube.FetchReplicaSet(cli, namespace, d.UID, d.Annotations[kube.RevisionAnnotation])
 	if err != nil {
 		return nil, err
 	}

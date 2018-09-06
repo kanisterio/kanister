@@ -20,6 +20,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
+const (
+	// RevisionAnnotation is the revision annotation of a deployment's replica sets which records its rollout sequence
+	RevisionAnnotation = "deployment.kubernetes.io/revision"
+)
+
 // CreateConfigMap creates a configmap set from a yaml spec.
 func CreateConfigMap(ctx context.Context, cli kubernetes.Interface, namespace string, spec string) (*v1.ConfigMap, error) {
 	cm := &v1.ConfigMap{}
@@ -93,7 +98,7 @@ func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespac
 		d.Status.ObservedGeneration >= d.Generation; !deploymentComplete {
 		return false, nil
 	}
-	rs, err := FetchReplicaSet(kubeCli, namespace, d.GetUID())
+	rs, err := FetchReplicaSet(kubeCli, namespace, d.GetUID(), d.Annotations[RevisionAnnotation])
 	if err != nil {
 		return false, err
 	}
@@ -125,7 +130,7 @@ func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, na
 var errNotFound = fmt.Errorf("not found")
 
 // FetchReplicaSet fetches the replicaset matching the specified owner UID
-func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID) (*v1beta1ext.ReplicaSet, error) {
+func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*v1beta1ext.ReplicaSet, error) {
 	opts := metav1.ListOptions{}
 	rss, err := cli.Extensions().ReplicaSets(namespace).List(opts)
 	if err != nil {
@@ -138,6 +143,10 @@ func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID) 
 		}
 		// We ignore ReplicaSets owned by other deployments.
 		if rs.OwnerReferences[0].UID != uid {
+			continue
+		}
+		// We ignore older ReplicaSets
+		if rs.Annotations[RevisionAnnotation] != revision {
 			continue
 		}
 		return &rs, nil
