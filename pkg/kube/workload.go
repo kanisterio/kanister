@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/apps/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	v1beta1ext "k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -36,29 +36,29 @@ func CreateConfigMap(ctx context.Context, cli kubernetes.Interface, namespace st
 }
 
 // CreateDeployment creates a deployment set from a yaml spec.
-func CreateDeployment(ctx context.Context, cli kubernetes.Interface, namespace string, spec string) (*v1beta1.Deployment, error) {
-	dep := &v1beta1.Deployment{}
+func CreateDeployment(ctx context.Context, cli kubernetes.Interface, namespace string, spec string) (*appsv1.Deployment, error) {
+	dep := &appsv1.Deployment{}
 	d := serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 	if _, _, err := d.Decode([]byte(spec), nil, dep); err != nil {
 		return nil, err
 	}
-	return cli.AppsV1beta1().Deployments(namespace).Create(dep)
+	return cli.AppsV1().Deployments(namespace).Create(dep)
 }
 
 // CreateStatefulSet creates a stateful set from a yaml spec.
-func CreateStatefulSet(ctx context.Context, cli kubernetes.Interface, namespace string, spec string) (*v1beta1.StatefulSet, error) {
-	ss := &v1beta1.StatefulSet{}
+func CreateStatefulSet(ctx context.Context, cli kubernetes.Interface, namespace string, spec string) (*appsv1.StatefulSet, error) {
+	ss := &appsv1.StatefulSet{}
 	d := serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 	if _, _, err := d.Decode([]byte(spec), nil, ss); err != nil {
 		return nil, err
 	}
-	return cli.AppsV1beta1().StatefulSets(namespace).Create(ss)
+	return cli.AppsV1().StatefulSets(namespace).Create(ss)
 }
 
 // StatefulSetReady checks if a statefulset has the desired number of ready
 // replicas.
 func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, error) {
-	ss, err := kubeCli.AppsV1beta1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
+	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return false, errors.Wrapf(err, "could not get StatefulSet{Namespace: %s, Name: %s}", namespace, name)
 	}
@@ -86,7 +86,7 @@ func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, n
 // DeploymentReady checks to see if the deployment has the desired number of
 // available replicas.
 func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, error) {
-	d, err := kubeCli.AppsV1beta1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	d, err := kubeCli.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return false, errors.Wrapf(err, "could not get Deployment{Namespace: %s, Name: %s}", namespace, name)
 	}
@@ -177,12 +177,12 @@ func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID) (runni
 }
 
 func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
-	ss, err := kubeCli.AppsV1beta1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
+	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not get Statefulset{Namespace %s, Name: %s}", namespace, name)
 	}
 	ss.Spec.Replicas = &replicas
-	ss, err = kubeCli.AppsV1beta1().StatefulSets(namespace).Update(ss)
+	ss, err = kubeCli.AppsV1().StatefulSets(namespace).Update(ss)
 	if err != nil {
 		return errors.Wrapf(err, "Could not update Statefulset{Namespace %s, Name: %s}", namespace, name)
 	}
@@ -190,12 +190,12 @@ func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespa
 }
 
 func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
-	d, err := kubeCli.AppsV1beta1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	d, err := kubeCli.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not get Deployment{Namespace %s, Name: %s}", namespace, name)
 	}
 	d.Spec.Replicas = &replicas
-	d, err = kubeCli.AppsV1beta1().Deployments(namespace).Update(d)
+	d, err = kubeCli.AppsV1().Deployments(namespace).Update(d)
 	if err != nil {
 		return errors.Wrapf(err, "Could not update Deployment{Namespace %s, Name: %s}", namespace, name)
 	}
@@ -203,7 +203,7 @@ func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespac
 }
 
 // DeploymentVolumes returns the PVCs referenced by this deployment as a [pods spec volume name]->[PVC name] map
-func DeploymentVolumes(cli kubernetes.Interface, d *v1beta1.Deployment) (volNameToPvc map[string]string) {
+func DeploymentVolumes(cli kubernetes.Interface, d *appsv1.Deployment) (volNameToPvc map[string]string) {
 	volNameToPvc = make(map[string]string)
 	for _, v := range d.Spec.Template.Spec.Volumes {
 		// We only care about persistent volume claims for now.
@@ -237,7 +237,7 @@ func getOrdinal(pod string) int {
 }
 
 // StatefulSetVolumes returns the PVCs referenced by a pod in this statefulset as a [pod spec volume name]->[PVC name] map
-func StatefulSetVolumes(cli kubernetes.Interface, sset *v1beta1.StatefulSet, pod *v1.Pod) (volNameToPvc map[string]string) {
+func StatefulSetVolumes(cli kubernetes.Interface, sset *appsv1.StatefulSet, pod *v1.Pod) (volNameToPvc map[string]string) {
 	ordinal := getOrdinal(pod.Name)
 	if ordinal == -1 {
 		// Pod not created through the statefulset?

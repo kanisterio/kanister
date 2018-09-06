@@ -11,12 +11,15 @@ spec:
     requests:
       storage: 1Gi
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: time-logger
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: time-logger
   template:
     metadata:
       labels:

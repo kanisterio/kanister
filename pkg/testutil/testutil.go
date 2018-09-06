@@ -3,7 +3,7 @@ package testutil
 import (
 	"fmt"
 
-	"k8s.io/api/apps/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,29 +38,31 @@ func NewTestNamespace() *v1.Namespace {
 }
 
 // NewTestDeployment function returns a pointer to a new Deployment test object
-func NewTestDeployment() *v1beta1.Deployment {
+func NewTestDeployment() *appsv1.Deployment {
 	var replicas int32 = 1
-	return &v1beta1.Deployment{
+	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-deployment-",
 		},
-		Spec: v1beta1.DeploymentSpec{
+		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "fake-app"}},
 			Template: newTestPodTemplateSpec(),
 		},
 	}
 }
 
 // NewTestStatefulSet function returns a pointer to a new StatefulSet test object
-func NewTestStatefulSet() *v1beta1.StatefulSet {
+func NewTestStatefulSet() *appsv1.StatefulSet {
 	var replicas int32 = 1
-	return &v1beta1.StatefulSet{
+	return &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-statefulset-",
 		},
-		Spec: v1beta1.StatefulSetSpec{
+		Spec: appsv1.StatefulSetSpec{
 			Replicas:    &replicas,
 			ServiceName: "fake-svc",
+			Selector:    &metav1.LabelSelector{MatchLabels: map[string]string{"app": "fake-app"}},
 			Template:    newTestPodTemplateSpec(),
 		},
 	}
