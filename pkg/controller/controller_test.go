@@ -7,7 +7,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/apps/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -32,8 +32,8 @@ type ControllerSuite struct {
 	cli        kubernetes.Interface
 	namespace  string
 	cancel     func()
-	ss         *v1beta1.StatefulSet
-	deployment *v1beta1.Deployment
+	ss         *appsv1.StatefulSet
+	deployment *appsv1.Deployment
 	confimap   *v1.ConfigMap
 	recorder   record.EventRecorder
 }
@@ -74,12 +74,12 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	ss := testutil.NewTestStatefulSet()
-	ss, err = s.cli.AppsV1beta1().StatefulSets(s.namespace).Create(ss)
+	ss, err = s.cli.AppsV1().StatefulSets(s.namespace).Create(ss)
 	c.Assert(err, IsNil)
 	s.ss = ss
 
 	d := testutil.NewTestDeployment()
-	d, err = s.cli.AppsV1beta1().Deployments(s.namespace).Create(d)
+	d, err = s.cli.AppsV1().Deployments(s.namespace).Create(d)
 	c.Assert(err, IsNil)
 	s.deployment = d
 

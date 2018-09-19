@@ -74,13 +74,16 @@ subjects:
   name: kanister-operator
   namespace: kanister
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kanister-operator
   namespace: kanister
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: kanister-operator
   template:
     metadata:
       labels:

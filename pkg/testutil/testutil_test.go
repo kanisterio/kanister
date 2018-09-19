@@ -35,18 +35,18 @@ func (s *TestUtilSuite) TestDeployment(c *C) {
 	}()
 
 	d := NewTestDeployment()
-	d, err = cli.AppsV1beta1().Deployments(ns.GetName()).Create(d)
+	d, err = cli.AppsV1().Deployments(ns.GetName()).Create(d)
 	c.Assert(err, IsNil)
 	defer func() {
-		err = cli.AppsV1beta1().Deployments(ns.GetName()).Delete(d.GetName(), nil)
+		err = cli.AppsV1().Deployments(ns.GetName()).Delete(d.GetName(), nil)
 		c.Assert(err, IsNil)
 	}()
 
 	ss := NewTestStatefulSet()
-	ss, err = cli.AppsV1beta1().StatefulSets(ns.GetName()).Create(ss)
+	ss, err = cli.AppsV1().StatefulSets(ns.GetName()).Create(ss)
 	c.Assert(err, IsNil)
 	defer func() {
-		err := cli.AppsV1beta1().StatefulSets(ns.GetName()).Delete(ss.GetName(), nil)
+		err := cli.AppsV1().StatefulSets(ns.GetName()).Delete(ss.GetName(), nil)
 		c.Assert(err, IsNil)
 	}()
 

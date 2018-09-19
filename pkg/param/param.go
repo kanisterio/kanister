@@ -220,7 +220,7 @@ func fetchConfigMaps(ctx context.Context, cli kubernetes.Interface, refs map[str
 }
 
 func fetchStatefulSetParams(ctx context.Context, cli kubernetes.Interface, namespace, name string) (*StatefulSetParams, error) {
-	ss, err := cli.AppsV1beta1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
+	ss, err := cli.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -246,7 +246,7 @@ func fetchStatefulSetParams(ctx context.Context, cli kubernetes.Interface, names
 }
 
 func fetchDeploymentParams(ctx context.Context, cli kubernetes.Interface, namespace, name string) (*DeploymentParams, error) {
-	d, err := cli.AppsV1beta1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	d, err := cli.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -257,7 +257,7 @@ func fetchDeploymentParams(ctx context.Context, cli kubernetes.Interface, namesp
 		Containers:             [][]string{},
 		PersistentVolumeClaims: make(map[string]map[string]string),
 	}
-	rs, err := kube.FetchReplicaSet(cli, namespace, d.UID)
+	rs, err := kube.FetchReplicaSet(cli, namespace, d.UID, d.Annotations[kube.RevisionAnnotation])
 	if err != nil {
 		return nil, err
 	}

@@ -121,7 +121,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 		},
 	}
 
-	d, err := s.cli.AppsV1beta1().Deployments(s.namespace).Create(d)
+	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(d)
 	c.Assert(err, IsNil)
 
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
@@ -169,7 +169,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 			},
 		},
 	}
-	ss, err := s.cli.AppsV1beta1().StatefulSets(s.namespace).Create(ss)
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(ss)
 	c.Assert(err, IsNil)
 
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())

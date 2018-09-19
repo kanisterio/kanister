@@ -8,7 +8,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/apps/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,13 +76,16 @@ func (s *ParamsSuite) TearDownTest(c *C) {
 }
 
 const ssSpec = `
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: %s
 spec:
   replicas: 1
   serviceName: fake-svc
+  selector:
+    matchLabels:
+      app: fake-app
   template:
     metadata:
       labels:
@@ -129,12 +132,15 @@ func (s *ParamsSuite) TestFetchStatefulSetParams(c *C) {
 }
 
 const deploySpec = `
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: %s
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: fake-app
   template:
     metadata:
       labels:
@@ -384,7 +390,7 @@ func (s *ParamsSuite) TestfetchKVSecretCredential(c *C) {
 }
 
 func (s *ParamsSuite) TestProfile(c *C) {
-	ss := &v1beta1.StatefulSet{
+	ss := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ssName",
 			Namespace: s.namespace,
@@ -410,7 +416,7 @@ func (s *ParamsSuite) TestProfile(c *C) {
 		},
 	}
 	cli := fake.NewSimpleClientset(ss, pod, secret)
-	_, err := cli.AppsV1beta1().StatefulSets("").Get("", metav1.GetOptions{})
+	_, err := cli.AppsV1().StatefulSets("").Get("", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	_, err = cli.CoreV1().Pods("").Get("", metav1.GetOptions{})
 	c.Assert(err, IsNil)

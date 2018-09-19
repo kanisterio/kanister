@@ -90,7 +90,7 @@ func newExecAllBlueprint(kind string) *crv1alpha1.Blueprint {
 func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 	ctx := context.Background()
 	d := testutil.NewTestDeployment()
-	d, err := s.cli.AppsV1beta1().Deployments(s.namespace).Create(d)
+	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(d)
 	c.Assert(err, IsNil)
 
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.Namespace, d.Name)
@@ -123,7 +123,7 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 	ctx := context.Background()
 	ss := testutil.NewTestStatefulSet()
-	ss, err := s.cli.AppsV1beta1().StatefulSets(s.namespace).Create(ss)
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(ss)
 	c.Assert(err, IsNil)
 
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.Namespace, ss.Name)

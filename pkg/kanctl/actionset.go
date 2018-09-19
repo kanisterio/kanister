@@ -20,19 +20,20 @@ import (
 )
 
 const (
-	actionFlagName        = "action"
-	blueprintFlagName     = "blueprint"
-	configMapsFlagName    = "config-maps"
-	deploymentFlagName    = "deployment"
-	optionsFlagName       = "options"
-	profileFlagName       = "profile"
-	pvcFlagName           = "pvc"
-	secretsFlagName       = "secrets"
-	statefulSetFlagName   = "statefulset"
-	sourceFlagName        = "from"
-	selectorFlagName      = "selector"
-	selectorKindFlag      = "kind"
-	selectorNamespaceFlag = "selector-namespace"
+	actionFlagName           = "action"
+	blueprintFlagName        = "blueprint"
+	configMapsFlagName       = "config-maps"
+	deploymentFlagName       = "deployment"
+	optionsFlagName          = "options"
+	profileFlagName          = "profile"
+	pvcFlagName              = "pvc"
+	secretsFlagName          = "secrets"
+	statefulSetFlagName      = "statefulset"
+	sourceFlagName           = "from"
+	selectorFlagName         = "selector"
+	selectorKindFlag         = "kind"
+	selectorNamespaceFlag    = "selector-namespace"
+	namespaceTargetsFlagName = "namespacetargets"
 )
 
 type performParams struct {
@@ -71,6 +72,7 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().StringP(selectorFlagName, "l", "", "k8s selector for objects")
 	cmd.Flags().StringP(selectorKindFlag, "k", "all", "resource kind to apply selector on. Used along with the selector specified using --selector/-l")
 	cmd.Flags().String(selectorNamespaceFlag, "", "namespace to apply selector on. Used along with the selector specified using --selector/-l")
+	cmd.Flags().StringSliceP(namespaceTargetsFlagName, "T", []string{}, "namespaces for the action set, comma separated list of namespaces (eg: --namespacetargets namespace1,namespace2)")
 	return cmd
 }
 
@@ -309,9 +311,11 @@ func parseObjects(cmd *cobra.Command, cli kubernetes.Interface) ([]crv1alpha1.Ob
 	deployments, _ := cmd.Flags().GetStringSlice(deploymentFlagName)
 	statefulSets, _ := cmd.Flags().GetStringSlice(statefulSetFlagName)
 	pvcs, _ := cmd.Flags().GetStringSlice(pvcFlagName)
+	namespaces, _ := cmd.Flags().GetStringSlice(namespaceTargetsFlagName)
 	objs[param.DeploymentKind] = deployments
 	objs[param.StatefulSetKind] = statefulSets
 	objs[param.PVCKind] = pvcs
+	objs[param.NamespaceKind] = namespaces
 
 	parsed := make(map[string]bool)
 	fromCmd, err := parseObjectsFromCmd(objs, parsed)
@@ -342,7 +346,7 @@ func parseObjectsFromCmd(objs map[string][]string, parsed map[string]bool) ([]cr
 	var objects []crv1alpha1.ObjectReference
 	for kind, resources := range objs {
 		for _, resource := range resources {
-			namespace, name, err := parseName(resource)
+			namespace, name, err := parseName(kind, resource)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to parse %s", kind)
 			}
@@ -358,6 +362,8 @@ func parseObjectsFromCmd(objs map[string][]string, parsed map[string]bool) ([]cr
 				objects = append(objects, crv1alpha1.ObjectReference{Kind: param.StatefulSetKind, Namespace: namespace, Name: name})
 			case param.PVCKind:
 				objects = append(objects, crv1alpha1.ObjectReference{Kind: param.PVCKind, Namespace: namespace, Name: name})
+			case param.NamespaceKind:
+				objects = append(objects, crv1alpha1.ObjectReference{Kind: param.NamespaceKind, Namespace: namespace, Name: name})
 			default:
 				return nil, errors.Errorf("unsupported or unknown object kind '%s'. Supported %s, %s and %s", kind, param.DeploymentKind, param.StatefulSetKind, param.PVCKind)
 			}
@@ -409,6 +415,14 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 		}
 		for _, pvc := range pvcs.Items {
 			appendObj(param.PVCKind, pvc.Namespace, pvc.Name)
+		}
+	case param.NamespaceKind:
+		namespaces, err := cli.CoreV1().Namespaces().List(metav1.ListOptions{LabelSelector: selector})
+		if err != nil {
+			return nil, errors.Errorf("failed to get namespaces using selector '%s' '", selector)
+		}
+		for _, ns := range namespaces.Items {
+			appendObj(param.NamespaceKind, ns.Namespace, ns.Name)
 		}
 	default:
 		return nil, errors.Errorf("unsupported or unknown object kind '%s'. Supported %s, %s and %s", kind, param.DeploymentKind, param.StatefulSetKind, param.PVCKind)
@@ -476,7 +490,10 @@ func parseReference(r string) (ref, namespace, name string, err error) {
 	return matches[1], matches[2], matches[3], nil
 }
 
-func parseName(r string) (namespace, name string, err error) {
+func parseName(k string, r string) (namespace, name string, err error) {
+	if strings.ToLower(k) == param.NamespaceKind {
+		return r, r, nil
+	}
 	reg := regexp.MustCompile(`([\w-.]+)/([\w-.]+)`)
 	m := reg.FindStringSubmatch(r)
 	if len(m) != 3 {

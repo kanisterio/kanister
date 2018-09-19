@@ -92,13 +92,16 @@ func newKubeExecBlueprint() *crv1alpha1.Blueprint {
 }
 
 const ssSpec = `
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: %s
 spec:
   replicas: 1
   serviceName: fake-svc
+  selector:
+    matchLabels:
+      app: fake-app
   template:
     metadata:
       labels:
