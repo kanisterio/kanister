@@ -14,7 +14,7 @@ export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true
 export KUBECONFIG=$HOME/.kube/config
-export KUBE_VERSION=${KUBE_VERSION:-v1.8.0}
+export KUBE_VERSION=${KUBE_VERSION:-v1.9.0}
 export MINIKUBE_VERSION=${MINIKUBE_VERSION:-v0.25.1}
 declare -a REQUIRED_BINS=( iptables docker sudo jq )
 
