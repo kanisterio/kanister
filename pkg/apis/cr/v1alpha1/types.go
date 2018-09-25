@@ -59,6 +59,10 @@ type ActionSet struct {
 type ObjectReference struct {
 	// API version of the referent.
 	APIVersion string `json:"apiVersion"`
+	// API Group of the referent.
+	Group string `json:"group"`
+	// Resource name of the referent.
+	Resource string `json:"resource"`
 	// Kind of the referent.
 	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds
 	Kind string `json:"kind"`

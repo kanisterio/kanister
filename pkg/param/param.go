@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -30,6 +31,7 @@ type TemplateParams struct {
 	Time         string
 	Profile      *Profile
 	Options      map[string]string
+	Unstructured map[string]interface{}
 }
 
 // StatefulSetParams are params for stateful sets.
@@ -139,7 +141,16 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 	case NamespaceKind:
 		tp.Namespace = &NamespaceParams{Name: as.Object.Namespace}
 	default:
-		return nil, errors.Errorf("Resource '%s' not supported", as.Object.Kind)
+		gvr := schema.GroupVersionResource{
+			Group:    as.Object.Group,
+			Version:  as.Object.APIVersion,
+			Resource: as.Object.Resource,
+		}
+		u, err := kube.FetchUnstructuredObject(gvr, as.Object.Namespace, as.Object.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not fetch object name: %s, namespace: %s, group: %s, version: %s, resource: %s", as.Object.Name, as.Object.Namespace, gvr.Group, gvr.Version, gvr.Resource)
+		}
+		tp.Unstructured = u.UnstructuredContent()
 	}
 	return &tp, nil
 }
