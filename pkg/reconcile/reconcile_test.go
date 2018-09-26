@@ -13,6 +13,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -60,7 +61,12 @@ func (s *ReconcileSuite) SetUpSuite(c *C) {
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{},
+				crv1alpha1.ActionSpec{
+					Object: crv1alpha1.ObjectReference{
+						Name: "foo",
+						Kind: param.StatefulSetKind,
+					},
+				},
 			},
 		},
 		Status: &crv1alpha1.ActionSetStatus{

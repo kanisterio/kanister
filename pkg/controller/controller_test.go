@@ -18,6 +18,7 @@ import (
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
@@ -173,6 +174,10 @@ func (s *ControllerSuite) TestSynchronousFailure(c *C) {
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
 				crv1alpha1.ActionSpec{
+					Object: crv1alpha1.ObjectReference{
+						Name: "foo",
+						Kind: param.NamespaceKind,
+					},
 					Blueprint: "NONEXISTANT_BLUEPRINT",
 				},
 			},
