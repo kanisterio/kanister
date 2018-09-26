@@ -168,7 +168,7 @@ actions:
             # First need to setup wal-e conf as env vars
             {{- if .Profile.Location.S3Compliant.Endpoint }}
               wale_s3_endpoint="{{ .Profile.Location.S3Compliant.Endpoint | quote}}"
-              wale_s3_endpoint-${wale_s3_endpoint,,}
+              wale_s3_endpoint=${wale_s3_endpoint,,}
               {{- if .Profile.SkipSSLVerify }}
                 # Since wal-e does not support skip-ssl-verify switch to http://
                 wale_s3_endpoint="${wale_s3_endpoint/https/http}"
