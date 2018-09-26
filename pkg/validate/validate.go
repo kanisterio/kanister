@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -40,7 +41,7 @@ func actionSetSpec(as *crv1alpha1.ActionSetSpec) error {
 }
 
 func actionSpec(s crv1alpha1.ActionSpec) error {
-	switch s.Object.Kind {
+	switch strings.ToLower(s.Object.Kind) {
 	case param.StatefulSetKind:
 		fallthrough
 	case param.DeploymentKind:

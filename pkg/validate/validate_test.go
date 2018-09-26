@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"github.com/kanisterio/kanister/pkg/param"
 	"testing"
 
 	. "gopkg.in/check.v1"
@@ -44,6 +45,10 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
 						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "ns1",
+								Kind: param.NamespaceKind,
+							},
 							ConfigMaps: map[string]crv1alpha1.ObjectReference{
 								"testCM": crv1alpha1.ObjectReference{
 									Namespace: "ns2",
@@ -61,6 +66,10 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
 						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "ns1",
+								Kind: param.NamespaceKind,
+							},
 							ConfigMaps: map[string]crv1alpha1.ObjectReference{
 								"testCM": crv1alpha1.ObjectReference{
 									Namespace: "ns1",
@@ -78,6 +87,10 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
 						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "ns1",
+								Kind: param.NamespaceKind,
+							},
 							Secrets: map[string]crv1alpha1.ObjectReference{
 								"testSecrets": crv1alpha1.ObjectReference{
 									Namespace: "ns2",
@@ -95,6 +108,10 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
 						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "ns1",
+								Kind: param.NamespaceKind,
+							},
 							Secrets: map[string]crv1alpha1.ObjectReference{
 								"testSecrets": crv1alpha1.ObjectReference{
 									Namespace: "ns1",
@@ -126,7 +143,12 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 			as: &crv1alpha1.ActionSet{
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{},
+						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "ns1",
+								Kind: param.NamespaceKind,
+							},
+						},
 					},
 				},
 				Status: &crv1alpha1.ActionSetStatus{
@@ -139,7 +161,12 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 			as: &crv1alpha1.ActionSet{
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{},
+						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "ns1",
+								Kind: param.NamespaceKind,
+							},
+						},
 					},
 				},
 				Status: &crv1alpha1.ActionSetStatus{
@@ -155,7 +182,12 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 			as: &crv1alpha1.ActionSet{
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{},
+						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "ns1",
+								Kind: param.NamespaceKind,
+							},
+						},
 					},
 				},
 				Status: &crv1alpha1.ActionSetStatus{
@@ -166,6 +198,120 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				},
 			},
 			checker: IsNil,
+		},
+		// NamespaceKind
+		{
+			as: &crv1alpha1.ActionSet{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
+				Spec: &crv1alpha1.ActionSetSpec{
+					Actions: []crv1alpha1.ActionSpec{
+						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "foo",
+								Kind: param.NamespaceKind,
+							},
+						},
+					},
+				},
+			},
+			checker: IsNil,
+		},
+		// StatefulSetKind
+		{
+			as: &crv1alpha1.ActionSet{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
+				Spec: &crv1alpha1.ActionSetSpec{
+					Actions: []crv1alpha1.ActionSpec{
+						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "foo",
+								Kind: param.StatefulSetKind,
+							},
+						},
+					},
+				},
+			},
+			checker: IsNil,
+		},
+		// DeploymentKind
+		{
+			as: &crv1alpha1.ActionSet{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
+				Spec: &crv1alpha1.ActionSetSpec{
+					Actions: []crv1alpha1.ActionSpec{
+						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "foo",
+								Kind: param.DeploymentKind,
+							},
+						},
+					},
+				},
+			},
+			checker: IsNil,
+		},
+		// PVCKind
+		{
+			as: &crv1alpha1.ActionSet{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
+				Spec: &crv1alpha1.ActionSetSpec{
+					Actions: []crv1alpha1.ActionSpec{
+						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "foo",
+								Kind: param.PVCKind,
+							},
+						},
+					},
+				},
+			},
+			checker: IsNil,
+		},
+		// Generic K8s resource (apiversion, resource missing)
+		{
+			as: &crv1alpha1.ActionSet{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
+				Spec: &crv1alpha1.ActionSetSpec{
+					Actions: []crv1alpha1.ActionSpec{
+						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name: "foo",
+								Kind: "unknown",
+							},
+						},
+					},
+				},
+			},
+			checker: NotNil,
+		},
+		// Generic K8s resource
+		{
+			as: &crv1alpha1.ActionSet{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
+				Spec: &crv1alpha1.ActionSetSpec{
+					Actions: []crv1alpha1.ActionSpec{
+						crv1alpha1.ActionSpec{
+							Object: crv1alpha1.ObjectReference{
+								Name:       "foo",
+								APIVersion: "v1",
+								Resource:   "serviceaccount",
+							},
+						},
+					},
+				},
+			},
+			checker: IsNil,
+		}, // No object specified
+		{
+			as: &crv1alpha1.ActionSet{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
+				Spec: &crv1alpha1.ActionSetSpec{
+					Actions: []crv1alpha1.ActionSpec{
+						crv1alpha1.ActionSpec{},
+					},
+				},
+			},
+			checker: NotNil,
 		},
 	} {
 		err := ActionSet(tc.as)
