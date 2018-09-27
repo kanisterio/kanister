@@ -7,7 +7,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/apps/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -18,6 +18,7 @@ import (
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
@@ -32,8 +33,8 @@ type ControllerSuite struct {
 	cli        kubernetes.Interface
 	namespace  string
 	cancel     func()
-	ss         *v1beta1.StatefulSet
-	deployment *v1beta1.Deployment
+	ss         *appsv1.StatefulSet
+	deployment *appsv1.Deployment
 	confimap   *v1.ConfigMap
 	recorder   record.EventRecorder
 }
@@ -74,12 +75,12 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	ss := testutil.NewTestStatefulSet()
-	ss, err = s.cli.AppsV1beta1().StatefulSets(s.namespace).Create(ss)
+	ss, err = s.cli.AppsV1().StatefulSets(s.namespace).Create(ss)
 	c.Assert(err, IsNil)
 	s.ss = ss
 
 	d := testutil.NewTestDeployment()
-	d, err = s.cli.AppsV1beta1().Deployments(s.namespace).Create(d)
+	d, err = s.cli.AppsV1().Deployments(s.namespace).Create(d)
 	c.Assert(err, IsNil)
 	s.deployment = d
 
@@ -173,6 +174,10 @@ func (s *ControllerSuite) TestSynchronousFailure(c *C) {
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
 				crv1alpha1.ActionSpec{
+					Object: crv1alpha1.ObjectReference{
+						Name: "foo",
+						Kind: param.NamespaceKind,
+					},
 					Blueprint: "NONEXISTANT_BLUEPRINT",
 				},
 			},

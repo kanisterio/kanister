@@ -12,27 +12,31 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
 const (
-	actionFlagName        = "action"
-	blueprintFlagName     = "blueprint"
-	configMapsFlagName    = "config-maps"
-	deploymentFlagName    = "deployment"
-	optionsFlagName       = "options"
-	profileFlagName       = "profile"
-	pvcFlagName           = "pvc"
-	secretsFlagName       = "secrets"
-	statefulSetFlagName   = "statefulset"
-	sourceFlagName        = "from"
-	selectorFlagName      = "selector"
-	selectorKindFlag      = "kind"
-	selectorNamespaceFlag = "selector-namespace"
+	actionFlagName           = "action"
+	blueprintFlagName        = "blueprint"
+	configMapsFlagName       = "config-maps"
+	deploymentFlagName       = "deployment"
+	optionsFlagName          = "options"
+	profileFlagName          = "profile"
+	pvcFlagName              = "pvc"
+	secretsFlagName          = "secrets"
+	statefulSetFlagName      = "statefulset"
+	sourceFlagName           = "from"
+	selectorFlagName         = "selector"
+	selectorKindFlag         = "kind"
+	selectorNamespaceFlag    = "selector-namespace"
+	namespaceTargetsFlagName = "namespacetargets"
+	objectsFlagName          = "objects"
 )
 
 type performParams struct {
@@ -71,6 +75,8 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().StringP(selectorFlagName, "l", "", "k8s selector for objects")
 	cmd.Flags().StringP(selectorKindFlag, "k", "all", "resource kind to apply selector on. Used along with the selector specified using --selector/-l")
 	cmd.Flags().String(selectorNamespaceFlag, "", "namespace to apply selector on. Used along with the selector specified using --selector/-l")
+	cmd.Flags().StringSliceP(namespaceTargetsFlagName, "T", []string{}, "namespaces for the action set, comma separated list of namespaces (eg: --namespacetargets namespace1,namespace2)")
+	cmd.Flags().StringSliceP(objectsFlagName, "O", []string{}, "objects for the action set, comma separated list of object references (eg: --objects group/version/resource/namespace1/name1,group/version/resource/namespace2/name2)")
 	return cmd
 }
 
@@ -309,12 +315,22 @@ func parseObjects(cmd *cobra.Command, cli kubernetes.Interface) ([]crv1alpha1.Ob
 	deployments, _ := cmd.Flags().GetStringSlice(deploymentFlagName)
 	statefulSets, _ := cmd.Flags().GetStringSlice(statefulSetFlagName)
 	pvcs, _ := cmd.Flags().GetStringSlice(pvcFlagName)
+	namespaces, _ := cmd.Flags().GetStringSlice(namespaceTargetsFlagName)
+
 	objs[param.DeploymentKind] = deployments
 	objs[param.StatefulSetKind] = statefulSets
 	objs[param.PVCKind] = pvcs
+	objs[param.NamespaceKind] = namespaces
 
 	parsed := make(map[string]bool)
 	fromCmd, err := parseObjectsFromCmd(objs, parsed)
+	if err != nil {
+		return nil, err
+	}
+	objects = append(objects, fromCmd...)
+
+	genObjects, _ := cmd.Flags().GetStringSlice(objectsFlagName)
+	fromCmd, err = parseGenericObjects(genObjects)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +358,7 @@ func parseObjectsFromCmd(objs map[string][]string, parsed map[string]bool) ([]cr
 	var objects []crv1alpha1.ObjectReference
 	for kind, resources := range objs {
 		for _, resource := range resources {
-			namespace, name, err := parseName(resource)
+			namespace, name, err := parseName(kind, resource)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to parse %s", kind)
 			}
@@ -358,12 +374,42 @@ func parseObjectsFromCmd(objs map[string][]string, parsed map[string]bool) ([]cr
 				objects = append(objects, crv1alpha1.ObjectReference{Kind: param.StatefulSetKind, Namespace: namespace, Name: name})
 			case param.PVCKind:
 				objects = append(objects, crv1alpha1.ObjectReference{Kind: param.PVCKind, Namespace: namespace, Name: name})
+			case param.NamespaceKind:
+				objects = append(objects, crv1alpha1.ObjectReference{Kind: param.NamespaceKind, Namespace: namespace, Name: name})
 			default:
 				return nil, errors.Errorf("unsupported or unknown object kind '%s'. Supported %s, %s and %s", kind, param.DeploymentKind, param.StatefulSetKind, param.PVCKind)
 			}
 		}
 	}
 	return objects, nil
+}
+
+func parseGenericObjects(objs []string) ([]crv1alpha1.ObjectReference, error) {
+	var objects []crv1alpha1.ObjectReference
+	for _, ref := range objs {
+		o, err := parseGenericObjectReference(ref)
+		if err != nil {
+			return nil, err
+		}
+		objects = append(objects, o)
+	}
+	return objects, nil
+}
+
+func parseGenericObjectReference(s string) (crv1alpha1.ObjectReference, error) {
+	// Looking for group/version/resource/namespace/name
+	reg := regexp.MustCompile(`([\w-.]+)/([\w-.]+)/([\w-.]+)/([\w-.]+)/([\w-.]+)`)
+	m := reg.FindStringSubmatch(s)
+	if len(m) != 6 {
+		return crv1alpha1.ObjectReference{}, errors.Errorf("Expected group/version/resource/namespace/name. Got %s %d", s, len(m))
+	}
+	return crv1alpha1.ObjectReference{
+		Group:      m[1],
+		APIVersion: m[2],
+		Resource:   m[3],
+		Namespace:  m[4],
+		Name:       m[5],
+	}, nil
 }
 
 func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interface, parsed map[string]bool) ([]crv1alpha1.ObjectReference, error) {
@@ -409,6 +455,14 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 		}
 		for _, pvc := range pvcs.Items {
 			appendObj(param.PVCKind, pvc.Namespace, pvc.Name)
+		}
+	case param.NamespaceKind:
+		namespaces, err := cli.CoreV1().Namespaces().List(metav1.ListOptions{LabelSelector: selector})
+		if err != nil {
+			return nil, errors.Errorf("failed to get namespaces using selector '%s' '", selector)
+		}
+		for _, ns := range namespaces.Items {
+			appendObj(param.NamespaceKind, ns.Namespace, ns.Name)
 		}
 	default:
 		return nil, errors.Errorf("unsupported or unknown object kind '%s'. Supported %s, %s and %s", kind, param.DeploymentKind, param.StatefulSetKind, param.PVCKind)
@@ -476,7 +530,10 @@ func parseReference(r string) (ref, namespace, name string, err error) {
 	return matches[1], matches[2], matches[3], nil
 }
 
-func parseName(r string) (namespace, name string, err error) {
+func parseName(k string, r string) (namespace, name string, err error) {
+	if strings.ToLower(k) == param.NamespaceKind {
+		return r, r, nil
+	}
 	reg := regexp.MustCompile(`([\w-.]+)/([\w-.]+)`)
 	m := reg.FindStringSubmatch(r)
 	if len(m) != 3 {
@@ -525,6 +582,15 @@ func verifyParams(ctx context.Context, p *performParams, cli kubernetes.Interfac
 				_, err = cli.AppsV1().StatefulSets(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
 			case param.PVCKind:
 				_, err = cli.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+			case param.NamespaceKind:
+				_, err = cli.CoreV1().Namespaces().Get(obj.Name, metav1.GetOptions{})
+			default:
+				gvr := schema.GroupVersionResource{
+					Group:    obj.Group,
+					Version:  obj.APIVersion,
+					Resource: obj.Resource,
+				}
+				_, err = kube.FetchUnstructuredObject(gvr, obj.Namespace, obj.Name)
 			}
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, obj.Kind, obj.Name, obj.Namespace)

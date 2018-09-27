@@ -9,7 +9,10 @@ actions:
     outputArtifacts:
       timeLog:
         keyValue:
-          path: 's3://{{ .Profile.Location.S3Compliant.Bucket }}/time-log/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02" }}.tgz'
+          path: '{{ .Profile.Location.S3Compliant.Bucket }}/time-log'
+      backupIdentifier:
+        keyValue:
+          id: '{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02" }}'
     phases:
     - func: BackupData
       name: backupToS3
@@ -18,11 +21,13 @@ actions:
         pod: "{{ index .Deployment.Pods 0 }}"
         container: test-container
         includePath: /var/log
-        backupArtifact: "{{ .ArtifactsOut.timeLog.KeyValue.path }}"
+        backupArtifactPrefix: "{{ .ArtifactsOut.timeLog.KeyValue.path }}"
+        backupIdentifier: "{{ .ArtifactsOut.backupIdentifier.KeyValue.id }}"
   restore:
     type: Deployment
     inputArtifactNames:
     - timeLog
+    - backupIdentifier
     phases:
     - func: ScaleWorkload
       name: shutdownPod
@@ -37,8 +42,8 @@ actions:
         namespace: "{{ .Deployment.Namespace }}"
         pod: "{{ index .Deployment.Pods 0 }}"
         image: kanisterio/kanister-tools:0.11.0
-        backupArtifact: "{{ .ArtifactsIn.timeLog.KeyValue.path }}"
-        restorePath: /var/log
+        backupArtifactPrefix: "{{ .ArtifactsIn.timeLog.KeyValue.path }}"
+        backupIdentifier: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
     - func: ScaleWorkload
       name: bringupPod
       args:

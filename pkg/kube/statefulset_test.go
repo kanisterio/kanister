@@ -43,13 +43,16 @@ func (s *StatefulSetSuite) TearDownSuite(c *C) {
 }
 
 const ssSpec = `
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: %s
 spec:
   replicas: 1
   serviceName: fake-svc
+  selector:
+    matchLabels:
+      app: fake-app
   template:
     metadata:
       labels:
@@ -71,7 +74,7 @@ func (s *StatefulSetSuite) TestCreateStatefulSet(c *C) {
 	_, err := CreateStatefulSet(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
 	defer func() {
-		err = s.cli.AppsV1beta1().StatefulSets(s.namespace).Delete(name, nil)
+		err = s.cli.AppsV1().StatefulSets(s.namespace).Delete(name, nil)
 		c.Assert(err, IsNil)
 	}()
 	_, err = s.cli.Core().Pods(s.namespace).Get(name+"-0", metav1.GetOptions{})

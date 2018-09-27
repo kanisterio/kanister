@@ -8,7 +8,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/apps/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,13 +76,16 @@ func (s *ParamsSuite) TearDownTest(c *C) {
 }
 
 const ssSpec = `
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: %s
 spec:
   replicas: 1
   serviceName: fake-svc
+  selector:
+    matchLabels:
+      app: fake-app
   template:
     metadata:
       labels:
@@ -129,12 +132,15 @@ func (s *ParamsSuite) TestFetchStatefulSetParams(c *C) {
 }
 
 const deploySpec = `
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: %s
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: fake-app
   template:
     metadata:
       labels:
@@ -211,7 +217,7 @@ func (s *ParamsSuite) TestNewTemplateParamsDeployment(c *C) {
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.Namespace, d.Name)
 	c.Assert(err, IsNil)
 
-	s.testNewTemplateParams(ctx, c, name, DeploymentKind)
+	s.testNewTemplateParams(ctx, c, crv1alpha1.ObjectReference{Name: name, Namespace: s.namespace, Kind: DeploymentKind})
 }
 
 func (s *ParamsSuite) TestNewTemplateParamsStatefulSet(c *C) {
@@ -224,21 +230,27 @@ func (s *ParamsSuite) TestNewTemplateParamsStatefulSet(c *C) {
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.Namespace, ss.Name)
 	c.Assert(err, IsNil)
 
-	s.testNewTemplateParams(ctx, c, name, StatefulSetKind)
+	s.testNewTemplateParams(ctx, c, crv1alpha1.ObjectReference{Name: name, Namespace: s.namespace, Kind: StatefulSetKind})
 }
 
 func (s *ParamsSuite) TestNewTemplateParamsPVC(c *C) {
 	ctx := context.Background()
-	s.testNewTemplateParams(ctx, c, s.pvc, PVCKind)
+	s.testNewTemplateParams(ctx, c, crv1alpha1.ObjectReference{Name: s.pvc, Namespace: s.namespace, Kind: PVCKind})
 }
 
 func (s *ParamsSuite) TestNewTemplateParamsNamespace(c *C) {
 	ctx := context.Background()
-	s.testNewTemplateParams(ctx, c, s.namespace, NamespaceKind)
+	s.testNewTemplateParams(ctx, c, crv1alpha1.ObjectReference{Name: s.namespace, Namespace: s.namespace, Kind: NamespaceKind})
 }
 
-func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name string, kind string) {
-	spec := fmt.Sprintf(cmSpec, name)
+func (s *ParamsSuite) TestNewTemplateParamsUnstructured(c *C) {
+	ctx := context.Background()
+	// Lookup the "default" serviceaccount in the test namespace
+	s.testNewTemplateParams(ctx, c, crv1alpha1.ObjectReference{Name: "default", Namespace: s.namespace, Group: "", APIVersion: "v1", Resource: "serviceaccounts"})
+}
+
+func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, object crv1alpha1.ObjectReference) {
+	spec := fmt.Sprintf(cmSpec, object.Name)
 	cm, err := kube.CreateConfigMap(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
 	c.Assert(cm, NotNil)
@@ -285,14 +297,10 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 	c.Assert(err, IsNil)
 
 	as := crv1alpha1.ActionSpec{
-		Object: crv1alpha1.ObjectReference{
-			Kind:      kind,
-			Name:      name,
-			Namespace: s.namespace,
-		},
+		Object: object,
 		ConfigMaps: map[string]crv1alpha1.ObjectReference{
 			"myCM": crv1alpha1.ObjectReference{
-				Name:      name + "-cm",
+				Name:      object.Name + "-cm",
 				Namespace: s.namespace,
 			},
 		},
@@ -305,7 +313,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 		},
 	}
 	var template string
-	switch kind {
+	switch object.Kind {
 	case DeploymentKind:
 		template = "{{ .Deployment.Name }}"
 	case StatefulSetKind:
@@ -314,6 +322,8 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 		template = "{{ .PVC.Name }}"
 	case NamespaceKind:
 		template = "{{ .Namespace.Name }}"
+	default:
+		template = "{{ .Unstructured.metadata.name }}"
 	}
 
 	artsTpl := map[string]crv1alpha1.Artifact{
@@ -337,7 +347,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, name stri
 	c.Assert(arts["my-art"], DeepEquals, crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": "some-value"}})
 	_, err = time.Parse(timeFormat, arts["my-time"].KeyValue["my-time"])
 	c.Assert(err, IsNil)
-	c.Assert(arts["kindArtifact"], DeepEquals, crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": name}})
+	c.Assert(arts["kindArtifact"], DeepEquals, crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": object.Name}})
 }
 
 func (s *ParamsSuite) TestfetchKVSecretCredential(c *C) {
@@ -384,7 +394,7 @@ func (s *ParamsSuite) TestfetchKVSecretCredential(c *C) {
 }
 
 func (s *ParamsSuite) TestProfile(c *C) {
-	ss := &v1beta1.StatefulSet{
+	ss := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ssName",
 			Namespace: s.namespace,
@@ -410,7 +420,7 @@ func (s *ParamsSuite) TestProfile(c *C) {
 		},
 	}
 	cli := fake.NewSimpleClientset(ss, pod, secret)
-	_, err := cli.AppsV1beta1().StatefulSets("").Get("", metav1.GetOptions{})
+	_, err := cli.AppsV1().StatefulSets("").Get("", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	_, err = cli.CoreV1().Pods("").Get("", metav1.GetOptions{})
 	c.Assert(err, IsNil)

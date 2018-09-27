@@ -2,12 +2,14 @@ package validate
 
 import (
 	"context"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/objectstore"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 // ActionSet function validates the ActionSet and returns an error if it is invalid.
@@ -29,6 +31,31 @@ func ActionSet(as *crv1alpha1.ActionSet) error {
 func actionSetSpec(as *crv1alpha1.ActionSetSpec) error {
 	if as == nil {
 		return errorf("Spec must be non-nil")
+	}
+	for _, a := range as.Actions {
+		if err := actionSpec(a); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func actionSpec(s crv1alpha1.ActionSpec) error {
+	switch strings.ToLower(s.Object.Kind) {
+	case param.StatefulSetKind:
+		fallthrough
+	case param.DeploymentKind:
+		fallthrough
+	case param.PVCKind:
+		fallthrough
+	case param.NamespaceKind:
+		// Known types
+	default:
+		// Not a known type. ActionSet must specify API group and resource
+		// name in order to populate `Unstructured` TemplateParam
+		if s.Object.APIVersion == "" || s.Object.Resource == "" {
+			return errorf("Not a known object Kind %s. Action %s must specify Resource name and API version", s.Object.Kind, s.Name)
+		}
 	}
 	return nil
 }

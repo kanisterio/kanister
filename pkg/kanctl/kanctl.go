@@ -15,6 +15,12 @@ import (
 
 const (
 	namespaceFlagName = "namespace"
+	verboseFlagName   = "verbose"
+)
+
+var (
+	// Verbose indicates whether verbose output should be displayed
+	Verbose bool
 )
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -22,7 +28,11 @@ const (
 func Execute() {
 	root := newRootCommand()
 	if err := root.Execute(); err != nil {
-		log.Errorf("%+v", err)
+		fmt := "%s"
+		if Verbose {
+			fmt = "%+v"
+		}
+		log.Errorf(fmt, err)
 		os.Exit(1)
 	}
 }
@@ -35,6 +45,7 @@ func newRootCommand() *cobra.Command {
 		Version: version.VersionString(),
 	}
 	rootCmd.PersistentFlags().StringP(namespaceFlagName, "n", "", "Override namespace obtained from kubectl context")
+	rootCmd.PersistentFlags().BoolVar(&Verbose, verboseFlagName, false, "Display verbose output")
 	rootCmd.AddCommand(newValidateCommand())
 	rootCmd.AddCommand(newCreateCommand())
 	return rootCmd

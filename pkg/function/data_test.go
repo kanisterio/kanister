@@ -114,7 +114,7 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 
 func (s *DataSuite) TestBackupRestoreData(c *C) {
 	ctx := context.Background()
-	ss, err := s.cli.AppsV1beta1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet())
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet())
 	c.Assert(err, IsNil)
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 	c.Assert(err, IsNil)
