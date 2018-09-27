@@ -32,6 +32,7 @@ type TemplateParams struct {
 	Profile      *Profile
 	Options      map[string]string
 	Unstructured map[string]interface{}
+	Phases       map[string]*Phase
 }
 
 // StatefulSetParams are params for stateful sets.
@@ -87,6 +88,11 @@ type Credential struct {
 type KeyPair struct {
 	ID     string
 	Secret string
+}
+
+// Phase represents a Blueprint phase and contains the phase output
+type Phase struct {
+	Output map[string]interface{}
 }
 
 const (
@@ -320,4 +326,14 @@ func fetchPVCParams(ctx context.Context, cli kubernetes.Interface, namespace, na
 		Name:      name,
 		Namespace: namespace,
 	}, nil
+}
+
+// UpdatePhaseParams updates the TemplateParams with Phase information
+func UpdatePhaseParams(ctx context.Context, tp *TemplateParams, phaseName string, output map[string]interface{}) {
+	if tp.Phases == nil {
+		tp.Phases = make(map[string]*Phase)
+	}
+	tp.Phases[phaseName] = &Phase{
+		Output: output,
+	}
 }

@@ -387,6 +387,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				c.logAndErrorEvent(msg, reason, err, as, bp)
 				return
 			}
+			param.UpdatePhaseParams(ctx, tp, p.Name(), nil)
 			c.logAndSuccessEvent(fmt.Sprintf("Completed phase %s", p.Name()), "Ended Phase", as)
 		}
 	}()

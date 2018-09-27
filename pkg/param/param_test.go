@@ -1,12 +1,15 @@
 package param
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
@@ -486,4 +489,89 @@ func (s *ParamsSuite) TestProfile(c *C) {
 			},
 		},
 	})
+}
+
+func (s *ParamsSuite) TestPhaseParams(c *C) {
+	ctx := context.Background()
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secret-name",
+			Namespace: s.namespace,
+			Labels:    map[string]string{"app": "fake-app"},
+		},
+		Data: map[string][]byte{
+			"key":   []byte("myKey"),
+			"value": []byte("myValue"),
+		},
+	}
+	prof := &crv1alpha1.Profile{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "profName",
+			Namespace: s.namespace,
+		},
+		Credential: crv1alpha1.Credential{
+			Type: crv1alpha1.CredentialTypeKeyPair,
+			KeyPair: &crv1alpha1.KeyPair{
+				IDField:     "key",
+				SecretField: "value",
+				Secret: crv1alpha1.ObjectReference{
+					Name:      "secret-name",
+					Namespace: s.namespace,
+				},
+			},
+		},
+	}
+	_, err := s.cli.CoreV1().Secrets(s.namespace).Create(secret)
+	c.Assert(err, IsNil)
+	defer s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{})
+
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	crCli := crfake.NewSimpleClientset()
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
+	c.Assert(err, IsNil)
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("profName", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	as := crv1alpha1.ActionSpec{
+		Object: crv1alpha1.ObjectReference{
+			Name:      s.pvc,
+			Namespace: s.namespace,
+			Kind:      PVCKind,
+		},
+		Profile: &crv1alpha1.ObjectReference{
+			Name:      "profName",
+			Namespace: s.namespace,
+		},
+	}
+	tp, err := New(ctx, s.cli, crCli, as)
+	c.Assert(err, IsNil)
+	c.Assert(tp.Phases, IsNil)
+	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.11.0"})
+	c.Assert(tp.Phases, HasLen, 1)
+	c.Assert(tp.Phases["backup"], NotNil)
+}
+
+func (s *ParamsSuite) TestRenderingPhaseParams(c *C) {
+	tp := TemplateParams{
+		Phases: map[string]*Phase{
+			"backup": &Phase{
+				Output: map[string]interface{}{
+					"replicas": 2,
+				},
+			},
+		},
+	}
+	buf := bytes.NewBuffer(nil)
+	for _, tc := range []struct {
+		arg string
+	}{
+		{"{{ .Phases.backup.Output.replicas }}"},
+	} {
+		t, err := template.New("config").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(tc.arg)
+		c.Assert(err, IsNil)
+		err = t.Execute(buf, tp)
+		c.Assert(err, IsNil)
+		c.Logf("Template: %s, Value: %s", tc.arg, buf.String())
+	}
 }
