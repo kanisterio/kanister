@@ -135,3 +135,20 @@ func (s *RenderSuite) TestRender(c *C) {
 		}
 	}
 }
+
+func (s *RenderSuite) TestRenderObjects(c *C) {
+	tp := TemplateParams{
+		Unstructured: map[string]interface{}{
+			"spec": map[string]string{"authSecret": "secret-name"},
+		},
+	}
+	in := map[string]crv1alpha1.ObjectReference{
+		"authSecret": crv1alpha1.ObjectReference{
+			Kind: SecretKind,
+			Name: "{{ .Unstructured.spec.authSecret }}",
+		},
+	}
+	out, err := RenderObjectRefs(in, tp)
+	c.Assert(err, IsNil)
+	c.Assert(out["authSecret"].Name, Equals, "secret-name")
+}

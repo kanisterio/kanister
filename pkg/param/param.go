@@ -92,7 +92,8 @@ type KeyPair struct {
 
 // Phase represents a Blueprint phase and contains the phase output
 type Phase struct {
-	Output map[string]interface{}
+	Secrets map[string]v1.Secret
+	Output  map[string]interface{}
 }
 
 const (
@@ -100,6 +101,7 @@ const (
 	StatefulSetKind = "statefulset"
 	PVCKind         = "pvc"
 	NamespaceKind   = "namespace"
+	SecretKind      = "secret"
 )
 
 // New function fetches and returns the desired params
@@ -215,6 +217,9 @@ func fetchKeyPairCredential(ctx context.Context, cli kubernetes.Interface, c *cr
 func fetchSecrets(ctx context.Context, cli kubernetes.Interface, refs map[string]crv1alpha1.ObjectReference) (map[string]v1.Secret, error) {
 	secrets := make(map[string]v1.Secret, len(refs))
 	for name, ref := range refs {
+		if strings.ToLower(ref.Kind) != SecretKind {
+			continue
+		}
 		s, err := cli.CoreV1().Secrets(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, errors.WithStack(err)
@@ -330,10 +335,20 @@ func fetchPVCParams(ctx context.Context, cli kubernetes.Interface, namespace, na
 
 // UpdatePhaseParams updates the TemplateParams with Phase information
 func UpdatePhaseParams(ctx context.Context, tp *TemplateParams, phaseName string, output map[string]interface{}) {
+	tp.Phases[phaseName].Output = output
+}
+
+// InitPhaseParams initializes the TemplateParams with Phase information
+func InitPhaseParams(ctx context.Context, cli kubernetes.Interface, tp *TemplateParams, phaseName string, objects map[string]crv1alpha1.ObjectReference) error {
 	if tp.Phases == nil {
 		tp.Phases = make(map[string]*Phase)
 	}
-	tp.Phases[phaseName] = &Phase{
-		Output: output,
+	secrets, err := fetchSecrets(ctx, cli, objects)
+	if err != nil {
+		return err
 	}
+	tp.Phases[phaseName] = &Phase{
+		Secrets: secrets,
+	}
+	return nil
 }

@@ -553,25 +553,51 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 }
 
 func (s *ParamsSuite) TestRenderingPhaseParams(c *C) {
-	tp := TemplateParams{
-		Phases: map[string]*Phase{
-			"backup": &Phase{
-				Output: map[string]interface{}{
-					"replicas": 2,
-				},
-			},
+	ctx := context.Background()
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secret-dfss",
+			Namespace: "ns1",
+		},
+		StringData: map[string]string{
+			"myKey":   "foo",
+			"myValue": "bar",
 		},
 	}
-	buf := bytes.NewBuffer(nil)
+	cli := fake.NewSimpleClientset(secret)
+	secretRef := map[string]crv1alpha1.ObjectReference{
+		"authSecret": crv1alpha1.ObjectReference{
+			Kind:      SecretKind,
+			Name:      secret.Name,
+			Namespace: secret.Namespace,
+		},
+	}
+	tp := TemplateParams{}
+	err := InitPhaseParams(ctx, cli, &tp, "backup", secretRef)
+	c.Assert(err, IsNil)
+	UpdatePhaseParams(ctx, &tp, "backup", map[string]interface{}{"replicas": 2})
 	for _, tc := range []struct {
-		arg string
+		arg      string
+		expected string
 	}{
-		{"{{ .Phases.backup.Output.replicas }}"},
+		{
+			"{{ .Phases.backup.Output.replicas }}",
+			"2",
+		},
+		{
+			"{{ .Phases.backup.Secrets.authSecret.Namespace }}",
+			"ns1",
+		},
+		{
+			"{{ .Phases.backup.Secrets.authSecret.StringData.myValue }}",
+			"bar",
+		},
 	} {
 		t, err := template.New("config").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(tc.arg)
 		c.Assert(err, IsNil)
+		buf := bytes.NewBuffer(nil)
 		err = t.Execute(buf, tp)
 		c.Assert(err, IsNil)
-		c.Logf("Template: %s, Value: %s", tc.arg, buf.String())
+		c.Assert(buf.String(), Equals, tc.expected)
 	}
 }
