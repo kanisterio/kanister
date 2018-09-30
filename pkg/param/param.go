@@ -31,7 +31,7 @@ type TemplateParams struct {
 	Time         string
 	Profile      *Profile
 	Options      map[string]string
-	Unstructured map[string]interface{}
+	Object       map[string]interface{}
 	Phases       map[string]*Phase
 }
 
@@ -158,7 +158,8 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not fetch object name: %s, namespace: %s, group: %s, version: %s, resource: %s", as.Object.Name, as.Object.Namespace, gvr.Group, gvr.Version, gvr.Resource)
 		}
-		tp.Unstructured = u.UnstructuredContent()
+		// TODO: We should set `Object` for all other kinds as well.
+		tp.Object = u.UnstructuredContent()
 	}
 	return &tp, nil
 }

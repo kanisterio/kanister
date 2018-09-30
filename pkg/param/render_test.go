@@ -138,14 +138,14 @@ func (s *RenderSuite) TestRender(c *C) {
 
 func (s *RenderSuite) TestRenderObjects(c *C) {
 	tp := TemplateParams{
-		Unstructured: map[string]interface{}{
+		Object: map[string]interface{}{
 			"spec": map[string]string{"authSecret": "secret-name"},
 		},
 	}
 	in := map[string]crv1alpha1.ObjectReference{
 		"authSecret": crv1alpha1.ObjectReference{
 			Kind: SecretKind,
-			Name: "{{ .Unstructured.spec.authSecret }}",
+			Name: "{{ .Object.spec.authSecret }}",
 		},
 	}
 	out, err := RenderObjectRefs(in, tp)

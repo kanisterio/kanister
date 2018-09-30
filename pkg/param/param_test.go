@@ -326,7 +326,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, object cr
 	case NamespaceKind:
 		template = "{{ .Namespace.Name }}"
 	default:
-		template = "{{ .Unstructured.metadata.name }}"
+		template = "{{ .Object.metadata.name }}"
 	}
 
 	artsTpl := map[string]crv1alpha1.Artifact{
