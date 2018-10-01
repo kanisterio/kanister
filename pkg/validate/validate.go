@@ -52,7 +52,7 @@ func actionSpec(s crv1alpha1.ActionSpec) error {
 		// Known types
 	default:
 		// Not a known type. ActionSet must specify API group and resource
-		// name in order to populate `Unstructured` TemplateParam
+		// name in order to populate `Object` TemplateParam
 		if s.Object.APIVersion == "" || s.Object.Resource == "" {
 			return errorf("Not a known object Kind %s. Action %s must specify Resource name and API version", s.Object.Kind, s.Name)
 		}

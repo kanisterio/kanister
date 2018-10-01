@@ -31,7 +31,8 @@ type TemplateParams struct {
 	Time         string
 	Profile      *Profile
 	Options      map[string]string
-	Unstructured map[string]interface{}
+	Object       map[string]interface{}
+	Phases       map[string]*Phase
 }
 
 // StatefulSetParams are params for stateful sets.
@@ -89,11 +90,18 @@ type KeyPair struct {
 	Secret string
 }
 
+// Phase represents a Blueprint phase and contains the phase output
+type Phase struct {
+	Secrets map[string]v1.Secret
+	Output  map[string]interface{}
+}
+
 const (
 	DeploymentKind  = "deployment"
 	StatefulSetKind = "statefulset"
 	PVCKind         = "pvc"
 	NamespaceKind   = "namespace"
+	SecretKind      = "secret"
 )
 
 // New function fetches and returns the desired params
@@ -150,7 +158,8 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not fetch object name: %s, namespace: %s, group: %s, version: %s, resource: %s", as.Object.Name, as.Object.Namespace, gvr.Group, gvr.Version, gvr.Resource)
 		}
-		tp.Unstructured = u.UnstructuredContent()
+		// TODO: We should set `Object` for all other kinds as well.
+		tp.Object = u.UnstructuredContent()
 	}
 	return &tp, nil
 }
@@ -209,6 +218,9 @@ func fetchKeyPairCredential(ctx context.Context, cli kubernetes.Interface, c *cr
 func fetchSecrets(ctx context.Context, cli kubernetes.Interface, refs map[string]crv1alpha1.ObjectReference) (map[string]v1.Secret, error) {
 	secrets := make(map[string]v1.Secret, len(refs))
 	for name, ref := range refs {
+		if strings.ToLower(ref.Kind) != SecretKind {
+			continue
+		}
 		s, err := cli.CoreV1().Secrets(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, errors.WithStack(err)
@@ -320,4 +332,24 @@ func fetchPVCParams(ctx context.Context, cli kubernetes.Interface, namespace, na
 		Name:      name,
 		Namespace: namespace,
 	}, nil
+}
+
+// UpdatePhaseParams updates the TemplateParams with Phase information
+func UpdatePhaseParams(ctx context.Context, tp *TemplateParams, phaseName string, output map[string]interface{}) {
+	tp.Phases[phaseName].Output = output
+}
+
+// InitPhaseParams initializes the TemplateParams with Phase information
+func InitPhaseParams(ctx context.Context, cli kubernetes.Interface, tp *TemplateParams, phaseName string, objects map[string]crv1alpha1.ObjectReference) error {
+	if tp.Phases == nil {
+		tp.Phases = make(map[string]*Phase)
+	}
+	secrets, err := fetchSecrets(ctx, cli, objects)
+	if err != nil {
+		return err
+	}
+	tp.Phases[phaseName] = &Phase{
+		Secrets: secrets,
+	}
+	return nil
 }

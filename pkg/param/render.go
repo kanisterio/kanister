@@ -54,6 +54,18 @@ func render(arg interface{}, tp TemplateParams) (interface{}, error) {
 			ras[rk] = rv
 		}
 		return ras, nil
+	case reflect.Struct:
+		ras := reflect.New(val.Type())
+		for i := 0; i < val.NumField(); i++ {
+			r, err := render(val.Field(i).Interface(), tp)
+			if err != nil {
+				return nil, err
+			}
+			// set the field to the rendered value
+			rv := reflect.Indirect(reflect.ValueOf(r))
+			ras.Elem().Field(i).Set(rv)
+		}
+		return ras.Elem().Interface(), nil
 	default:
 		return arg, nil
 	}
@@ -89,4 +101,17 @@ func renderStringArg(arg string, tp TemplateParams) (string, error) {
 		return "", errors.WithStack(err)
 	}
 	return buf.String(), nil
+}
+
+// RenderObjectRefs function renders object refs from TemplateParams
+func RenderObjectRefs(in map[string]crv1alpha1.ObjectReference, tp TemplateParams) (map[string]crv1alpha1.ObjectReference, error) {
+	out := make(map[string]crv1alpha1.ObjectReference, len(in))
+	for k, v := range in {
+		rv, err := render(v, tp)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not render object reference {%s}", k)
+		}
+		out[k] = rv.(crv1alpha1.ObjectReference)
+	}
+	return out, nil
 }

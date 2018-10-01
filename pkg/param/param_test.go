@@ -1,12 +1,15 @@
 package param
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
@@ -323,7 +326,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, object cr
 	case NamespaceKind:
 		template = "{{ .Namespace.Name }}"
 	default:
-		template = "{{ .Unstructured.metadata.name }}"
+		template = "{{ .Object.metadata.name }}"
 	}
 
 	artsTpl := map[string]crv1alpha1.Artifact{
@@ -486,4 +489,117 @@ func (s *ParamsSuite) TestProfile(c *C) {
 			},
 		},
 	})
+}
+
+func (s *ParamsSuite) TestPhaseParams(c *C) {
+	ctx := context.Background()
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secret-name",
+			Namespace: s.namespace,
+			Labels:    map[string]string{"app": "fake-app"},
+		},
+		Data: map[string][]byte{
+			"key":   []byte("myKey"),
+			"value": []byte("myValue"),
+		},
+	}
+	prof := &crv1alpha1.Profile{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "profName",
+			Namespace: s.namespace,
+		},
+		Credential: crv1alpha1.Credential{
+			Type: crv1alpha1.CredentialTypeKeyPair,
+			KeyPair: &crv1alpha1.KeyPair{
+				IDField:     "key",
+				SecretField: "value",
+				Secret: crv1alpha1.ObjectReference{
+					Name:      "secret-name",
+					Namespace: s.namespace,
+				},
+			},
+		},
+	}
+	_, err := s.cli.CoreV1().Secrets(s.namespace).Create(secret)
+	c.Assert(err, IsNil)
+	defer s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{})
+
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	crCli := crfake.NewSimpleClientset()
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
+	c.Assert(err, IsNil)
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("profName", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	as := crv1alpha1.ActionSpec{
+		Object: crv1alpha1.ObjectReference{
+			Name:      s.pvc,
+			Namespace: s.namespace,
+			Kind:      PVCKind,
+		},
+		Profile: &crv1alpha1.ObjectReference{
+			Name:      "profName",
+			Namespace: s.namespace,
+		},
+	}
+	tp, err := New(ctx, s.cli, crCli, as)
+	c.Assert(err, IsNil)
+	c.Assert(tp.Phases, IsNil)
+	err = InitPhaseParams(ctx, s.cli, tp, "backup", nil)
+	c.Assert(err, IsNil)
+	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.11.0"})
+	c.Assert(tp.Phases, HasLen, 1)
+	c.Assert(tp.Phases["backup"], NotNil)
+}
+
+func (s *ParamsSuite) TestRenderingPhaseParams(c *C) {
+	ctx := context.Background()
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secret-dfss",
+			Namespace: "ns1",
+		},
+		StringData: map[string]string{
+			"myKey":   "foo",
+			"myValue": "bar",
+		},
+	}
+	cli := fake.NewSimpleClientset(secret)
+	secretRef := map[string]crv1alpha1.ObjectReference{
+		"authSecret": crv1alpha1.ObjectReference{
+			Kind:      SecretKind,
+			Name:      secret.Name,
+			Namespace: secret.Namespace,
+		},
+	}
+	tp := TemplateParams{}
+	err := InitPhaseParams(ctx, cli, &tp, "backup", secretRef)
+	c.Assert(err, IsNil)
+	UpdatePhaseParams(ctx, &tp, "backup", map[string]interface{}{"replicas": 2})
+	for _, tc := range []struct {
+		arg      string
+		expected string
+	}{
+		{
+			"{{ .Phases.backup.Output.replicas }}",
+			"2",
+		},
+		{
+			"{{ .Phases.backup.Secrets.authSecret.Namespace }}",
+			"ns1",
+		},
+		{
+			"{{ .Phases.backup.Secrets.authSecret.StringData.myValue }}",
+			"bar",
+		},
+	} {
+		t, err := template.New("config").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(tc.arg)
+		c.Assert(err, IsNil)
+		buf := bytes.NewBuffer(nil)
+		err = t.Execute(buf, tp)
+		c.Assert(err, IsNil)
+		c.Assert(buf.String(), Equals, tc.expected)
+	}
 }
