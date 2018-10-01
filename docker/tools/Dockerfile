@@ -14,7 +14,7 @@ RUN apk -v --update add --no-cache bash curl python py-pip groff less mailcap ca
     pip install --upgrade pip && \
     pip install --upgrade awscli && \
     apk -v --purge del py-pip && \
-    rm /var/cache/apk/*
+    rm -f /var/cache/apk/*
 
 RUN curl https://raw.githubusercontent.com/kanisterio/kanister/master/scripts/get.sh | bash
 
