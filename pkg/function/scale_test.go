@@ -142,11 +142,11 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
 		tp, err := param.New(ctx, s.cli, s.crCli, as)
 		c.Assert(err, IsNil)
-
-		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)
+		bp := newScaleBlueprint(kind)
+		phases, err := kanister.GetPhases(*bp, action, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			err := p.Exec(context.Background(), *tp)
+			_, err = p.Exec(context.Background(), *bp, action, *tp)
 			c.Assert(err, IsNil)
 		}
 		ok, err := kube.DeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
@@ -191,11 +191,11 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
 		tp, err := param.New(ctx, s.cli, s.crCli, as)
 		c.Assert(err, IsNil)
-
-		phases, err := kanister.GetPhases(*newScaleBlueprint(kind), action, *tp)
+		bp := newScaleBlueprint(kind)
+		phases, err := kanister.GetPhases(*bp, action, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			err := p.Exec(context.Background(), *tp)
+			_, err = p.Exec(context.Background(), *bp, action, *tp)
 			c.Assert(err, IsNil)
 
 		}

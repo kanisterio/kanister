@@ -33,24 +33,24 @@ func (*kubeExecFunc) Name() string {
 	return "KubeExec"
 }
 
-func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	cli, err := kube.NewClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var namespace, pod, container string
 	var cmd []string
 	if err = Arg(args, KubeExecNamespaceArg, &namespace); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, KubeExecPodNameArg, &pod); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, KubeExecContainerNameArg, &container); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, KubeExecCommandArg, &cmd); err != nil {
-		return err
+		return nil, err
 	}
 
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
@@ -70,7 +70,7 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 			}
 		}
 	}
-	return err
+	return nil, err
 }
 
 func (*kubeExecFunc) RequiredArgs() []string {

@@ -147,7 +147,7 @@ func (s *DataSuite) TestBackupRestoreData(c *C) {
 		phases, err := kanister.GetPhases(bp, actionName, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			err := p.Exec(context.Background(), *tp)
+			_, err = p.Exec(context.Background(), bp, actionName, *tp)
 			c.Assert(err, IsNil)
 		}
 	}

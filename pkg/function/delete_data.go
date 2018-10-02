@@ -47,23 +47,23 @@ func generateDeleteCommand(artifact string, profile *param.Profile) []string {
 	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}
 }
 
-func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var artifact, namespace string
 	var err error
 	if err = Arg(args, DeleteDataArtifactArg, &artifact); err != nil {
-		return err
+		return nil, err
 	}
 	if err = OptArg(args, DeleteDataNamespaceArg, &namespace, ""); err != nil {
-		return err
+		return nil, err
 	}
 	// Validate the Profile
 	if err = validateProfile(tp.Profile); err != nil {
-		return errors.Wrapf(err, "Failed to validate Profile")
+		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
 	// Generate delete command
 	cmd := generateDeleteCommand(artifact, tp.Profile)
 	// Use KubeTask to delete the artifact
-	return kubeTask(ctx, namespace, "kanisterio/kanister-tools:0.12.0", cmd)
+	return nil, kubeTask(ctx, namespace, "kanisterio/kanister-tools:0.12.0", cmd)
 }
 
 func (*deleteDataFunc) RequiredArgs() []string {

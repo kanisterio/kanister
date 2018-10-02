@@ -29,7 +29,29 @@ func (p *Phase) Objects() map[string]crv1alpha1.ObjectReference {
 
 // Exec renders the argument templates in this Phase's Func and executes with
 // those arguments.
-func (p *Phase) Exec(ctx context.Context, tp param.TemplateParams) error {
+func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) (map[string]interface{}, error) {
+	if p.args == nil {
+		// Get the action from Blueprint
+		a, ok := bp.Actions[action]
+		if !ok {
+			return nil, errors.Errorf("Action {%s} not found in action map", action)
+		}
+		// Render the argument templates for the Phase's function
+		for _, ap := range a.Phases {
+			if ap.Name != p.name {
+				continue
+			}
+			args, err := param.RenderArgs(ap.Args, tp)
+			if err != nil {
+				return nil, err
+			}
+			if err = checkRequiredArgs(funcs[ap.Func].RequiredArgs(), args); err != nil {
+				return nil, errors.Wrapf(err, "Reqired args missing for function %s", funcs[ap.Func].Name())
+			}
+			p.args = args
+		}
+	}
+	// Execute the function
 	return p.f.Exec(ctx, tp, p.args)
 }
 
@@ -53,16 +75,8 @@ func GetPhases(bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) 
 		if err != nil {
 			return nil, err
 		}
-		args, err := param.RenderArgs(p.Args, tp)
-		if err != nil {
-			return nil, err
-		}
-		if err = checkRequiredArgs(funcs[p.Func].RequiredArgs(), args); err != nil {
-			return nil, errors.Wrapf(err, "Reqired args missing for function %s", funcs[p.Func].Name())
-		}
 		phases = append(phases, &Phase{
 			name:    p.Name,
-			args:    args,
 			objects: objs,
 			f:       funcs[p.Func],
 		})

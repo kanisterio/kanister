@@ -18,7 +18,7 @@ var (
 type Func interface {
 	Name() string
 	RequiredArgs() []string
-	Exec(context.Context, param.TemplateParams, map[string]interface{}) error
+	Exec(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error)
 }
 
 // Register allows Funcs to be references by User Defined YAMLs

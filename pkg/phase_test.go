@@ -25,9 +25,9 @@ func (*testFunc) Name() string {
 	return "mock"
 }
 
-func (tf *testFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (tf *testFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	*tf.output = args["testKey"].(string)
-	return tf.err
+	return nil, tf.err
 }
 
 func (tf *testFunc) RequiredArgs() []string {
@@ -68,7 +68,7 @@ func (s *PhaseSuite) TestExec(c *C) {
 		args, err := param.RenderArgs(rawArgs, tp)
 		c.Assert(err, IsNil)
 		p := Phase{args: args, f: tf}
-		err = p.Exec(context.Background(), tp)
+		_, err = p.Exec(context.Background(), crv1alpha1.Blueprint{}, "", tp)
 		c.Assert(err, IsNil)
 		c.Assert(output, Equals, tc.expected)
 	}

@@ -69,34 +69,34 @@ func validateProfile(profile *param.Profile) error {
 	return nil
 }
 
-func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, pod, container, includePath, backupArtifactPrefix, backupIdentifier string
 	var err error
 	if err = Arg(args, BackupDataNamespaceArg, &namespace); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, BackupDataPodArg, &pod); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, BackupDataContainerArg, &container); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, BackupDataIncludePathArg, &includePath); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, BackupDataBackupArtifactPrefixArg, &backupArtifactPrefix); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, BackupDataBackupIdentifierArg, &backupIdentifier); err != nil {
-		return err
+		return nil, err
 	}
 	// Validate the Profile
 	if err = validateProfile(tp.Profile); err != nil {
-		return errors.Wrapf(err, "Failed to validate Profile")
+		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
 	cli, err := kube.NewClient()
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
 	// Use the snapshots command to check if the repository exists
 	cmd := generateSnapshotsCommand(backupArtifactPrefix, tp.Profile)
@@ -110,7 +110,7 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		formatAndLog(pod, container, stdout)
 		formatAndLog(pod, container, stderr)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create object store backup location")
+			return nil, errors.Wrapf(err, "Failed to create object store backup location")
 		}
 	}
 	// Create backup and dump it on the object store
@@ -119,9 +119,9 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	formatAndLog(pod, container, stdout)
 	formatAndLog(pod, container, stderr)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create and upload backup")
+		return nil, errors.Wrapf(err, "Failed to create and upload backup")
 	}
-	return nil
+	return nil, nil
 }
 
 func (*backupDataFunc) RequiredArgs() []string {

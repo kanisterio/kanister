@@ -72,56 +72,56 @@ func generateRestoreCommand(backupArtifactPrefix, restorePath, id string, profil
 	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}, nil
 }
 
-func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, pod, image, backupArtifactPrefix, restorePath, backupIdentifier string
 	var vols map[string]string
 	var err error
 	if err = Arg(args, RestoreDataNamespaceArg, &namespace); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, RestoreDataImageArg, &image); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, RestoreDataBackupArtifactPrefixArg, &backupArtifactPrefix); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, RestoreDataBackupIdentifierArg, &backupIdentifier); err != nil {
-		return err
+		return nil, err
 	}
 	if err = OptArg(args, RestoreDataRestorePathArg, &restorePath, "/"); err != nil {
-		return err
+		return nil, err
 	}
 	if err = OptArg(args, RestoreDataPodArg, &pod, ""); err != nil {
-		return err
+		return nil, err
 	}
 	if err = OptArg(args, RestoreDataVolsArg, &vols, nil); err != nil {
-		return err
+		return nil, err
 	}
 	if err = validateOptArgs(pod, vols); err != nil {
-		return err
+		return nil, err
 	}
 	// Validate profile
 	if err = validateProfile(tp.Profile); err != nil {
-		return err
+		return nil, err
 	}
 	// Generate restore command
 	cmd, err := generateRestoreCommand(backupArtifactPrefix, restorePath, backupIdentifier, tp.Profile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(vols) == 0 {
 		// Fetch Volumes
 		vols, err = fetchPodVolumes(pod, tp)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	// Call PrepareData with generated command
 	cli, err := kube.NewClient()
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return prepareData(ctx, cli, namespace, "", image, vols, cmd...)
+	return nil, prepareData(ctx, cli, namespace, "", image, vols, cmd...)
 }
 
 func (*restoreDataFunc) RequiredArgs() []string {

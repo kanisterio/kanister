@@ -35,28 +35,28 @@ func (*kubeExecAllFunc) Name() string {
 	return "KubeExecAll"
 }
 
-func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	cli, err := kube.NewClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var namespace, pods, containers string
 	var cmd []string
 	if err = Arg(args, KubeExecAllNamespaceArg, &namespace); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, KubeExecAllPodsNameArg, &pods); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, KubeExecAllContainersNameArg, &containers); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, KubeExecAllCommandArg, &cmd); err != nil {
-		return err
+		return nil, err
 	}
 	ps := strings.Fields(pods)
 	cs := strings.Fields(containers)
-	return execAll(cli, namespace, ps, cs, cmd)
+	return nil, execAll(cli, namespace, ps, cs, cmd)
 }
 
 func (*kubeExecAllFunc) RequiredArgs() []string {

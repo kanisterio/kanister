@@ -221,6 +221,9 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			{
 				funcNames: []string{testutil.ArgFuncName, testutil.FailFuncName},
 			},
+			{
+				funcNames: []string{testutil.OutputFuncName},
+			},
 		} {
 			var err error
 			// Add a blueprint with a mocked kanister function.
@@ -259,6 +262,8 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 					testutil.ReleaseWaitFunc()
 				case testutil.ArgFuncName:
 					c.Assert(testutil.ArgFuncArgs(), DeepEquals, map[string]interface{}{"key": "myValue"})
+				case testutil.OutputFuncName:
+					c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
 				}
 			}
 
