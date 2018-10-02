@@ -9,8 +9,8 @@ RUN apk -v --update add --no-cache python py-pip groff less && \
     pip install --upgrade pip && \
     pip install --upgrade awscli && \
     apk -v --purge del py-pip && \
-    rm /var/cache/apk/*
+    rm -f /var/cache/apk/*
 
-COPY --from=kanisterio/kanister-tools:0.11.0 /usr/local/bin/kando /usr/local/bin/kando
+COPY --from=kanisterio/kanister-tools:0.12.0 /usr/local/bin/kando /usr/local/bin/kando
 
 CMD ["tail", "-f", "/dev/null"]
