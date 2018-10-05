@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -69,7 +70,27 @@ func validateProfile(profile *param.Profile) error {
 	return nil
 }
 
+func getOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix string, profile *param.Profile) error {
+	// Use the snapshots command to check if the repository exists
+	cmd := generateSnapshotsCommand(artifactPrefix, profile)
+	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
+	formatAndLog(pod, container, stdout)
+	formatAndLog(pod, container, stderr)
+	if err != nil {
+		// Create a repository
+		cmd := generateInitCommand(artifactPrefix, profile)
+		stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
+		formatAndLog(pod, container, stdout)
+		formatAndLog(pod, container, stderr)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to create object store backup location")
+		}
+	}
+	return nil
+}
+
 func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+
 	var namespace, pod, container, includePath, backupArtifactPrefix, backupIdentifier string
 	var err error
 	if err = Arg(args, BackupDataNamespaceArg, &namespace); err != nil {
@@ -98,24 +119,14 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	// Use the snapshots command to check if the repository exists
-	cmd := generateSnapshotsCommand(backupArtifactPrefix, tp.Profile)
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
-	formatAndLog(pod, container, stdout)
-	formatAndLog(pod, container, stderr)
-	if err != nil {
-		// Create a repository
-		cmd := generateInitCommand(backupArtifactPrefix, tp.Profile)
-		stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
-		formatAndLog(pod, container, stdout)
-		formatAndLog(pod, container, stderr)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to create object store backup location")
-		}
+
+	if err = getOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, tp.Profile); err != nil {
+		return nil, err
 	}
+
 	// Create backup and dump it on the object store
-	cmd = generateBackupCommand(includePath, backupArtifactPrefix, backupIdentifier, tp.Profile)
-	stdout, stderr, err = kube.Exec(cli, namespace, pod, container, cmd)
+	cmd := generateBackupCommand(includePath, backupArtifactPrefix, backupIdentifier, tp.Profile)
+	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
 	formatAndLog(pod, container, stdout)
 	formatAndLog(pod, container, stderr)
 	if err != nil {
