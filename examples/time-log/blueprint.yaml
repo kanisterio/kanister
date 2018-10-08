@@ -21,8 +21,8 @@ actions:
         pod: "{{ index .Deployment.Pods 0 }}"
         container: test-container
         includePath: /var/log
-        backupArtifactPrefix: "{{ .ArtifactsOut.timeLog.KeyValue.path }}"
-        backupIdentifier: "{{ .ArtifactsOut.backupIdentifier.KeyValue.id }}"
+        backupArtifactPrefix: "{{ .Profile.Location.S3Compliant.Bucket }}/time-log"
+        backupIdentifier: "{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02" }}"
   restore:
     type: Deployment
     inputArtifactNames:

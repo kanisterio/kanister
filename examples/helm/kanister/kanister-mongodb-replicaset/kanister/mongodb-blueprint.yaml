@@ -28,7 +28,7 @@ actions:
             then
                 dump_cmd+=(-u "${MONGO_ADMIN_USER}" -p "${MONGO_ADMIN_PASSWORD}")
             fi
-            ${dump_cmd[@]} | kando location push --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsOut.cloudObject.KeyValue.path }}' -
+            ${dump_cmd[@]} | kando location push --profile '{{ toJson .Profile }}' --path '/mongodb-replicaset-backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs_backup.gz' -
   restore:
     type: StatefulSet
     inputArtifactNames:
