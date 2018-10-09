@@ -8,52 +8,58 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
+func shCommand(command string) []string {
+	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
+}
+
 // BackupCommand returns restic backup command
-func BackupCommand(profile *param.Profile, repository string) string {
+func BackupCommand(profile *param.Profile, repository, id, includePath string) []string {
 	cmd := resticArgs(profile, repository)
 	cmd = append(cmd, "backup")
 	command := strings.Join(cmd, " ")
-	return command
+	command = fmt.Sprintf("%s --tag %s %s", command, id, includePath)
+	return shCommand(command)
 }
 
 // RestoreCommand returns restic restore command
-func RestoreCommand(profile *param.Profile, repository string) string {
+func RestoreCommand(profile *param.Profile, repository, id, restorePath string) []string {
 	cmd := resticArgs(profile, repository)
 	cmd = append(cmd, "restore")
 	command := strings.Join(cmd, " ")
-	return command
+	command = fmt.Sprintf("%s --tag %s latest --target %s", command, id, restorePath)
+	return shCommand(command)
 }
 
 // SnapshotsCommand returns restic snapshots command
-func SnapshotsCommand(profile *param.Profile, repository string) string {
+func SnapshotsCommand(profile *param.Profile, repository string) []string {
 	cmd := resticArgs(profile, repository)
 	cmd = append(cmd, "snapshots")
 	command := strings.Join(cmd, " ")
-	return command
+	return shCommand(command)
 }
 
 // InitCommand returns restic init command
-func InitCommand(profile *param.Profile, repository string) string {
+func InitCommand(profile *param.Profile, repository string) []string {
 	cmd := resticArgs(profile, repository)
 	cmd = append(cmd, "init")
 	command := strings.Join(cmd, " ")
-	return command
+	return shCommand(command)
 }
 
 // ForgetCommand returns restic forget command
-func ForgetCommand(profile *param.Profile, repository string) string {
+func ForgetCommand(profile *param.Profile, repository string) []string {
 	cmd := resticArgs(profile, repository)
 	cmd = append(cmd, "forget")
 	command := strings.Join(cmd, " ")
-	return command
+	return shCommand(command)
 }
 
 // PruneCommand returns restic prune command
-func PruneCommand(profile *param.Profile, repository string) string {
+func PruneCommand(profile *param.Profile, repository string) []string {
 	cmd := resticArgs(profile, repository)
 	cmd = append(cmd, "prune")
 	command := strings.Join(cmd, " ")
-	return command
+	return shCommand(command)
 }
 
 const (

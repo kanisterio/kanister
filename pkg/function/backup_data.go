@@ -2,7 +2,6 @@ package function
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
@@ -41,25 +40,6 @@ func (*backupDataFunc) Name() string {
 	return "BackupData"
 }
 
-func generateSnapshotsCommand(destArtifact string, profile *param.Profile) []string {
-	// Restic Snapshots command
-	command := restic.SnapshotsCommand(profile, destArtifact)
-	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
-}
-
-func generateInitCommand(destArtifact string, profile *param.Profile) []string {
-	// Restic Repository Init command
-	command := restic.InitCommand(profile, destArtifact)
-	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
-}
-
-func generateBackupCommand(includePath, destArtifact, id string, profile *param.Profile) []string {
-	// Restic Backup command
-	command := restic.BackupCommand(profile, destArtifact)
-	command = fmt.Sprintf("%s --tag %s %s", command, id, includePath)
-	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
-}
-
 func validateProfile(profile *param.Profile) error {
 	if profile == nil {
 		return errors.New("Profile must be non-nil")
@@ -72,13 +52,13 @@ func validateProfile(profile *param.Profile) error {
 
 func getOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix string, profile *param.Profile) error {
 	// Use the snapshots command to check if the repository exists
-	cmd := generateSnapshotsCommand(artifactPrefix, profile)
+	cmd := restic.SnapshotsCommand(profile, artifactPrefix)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
 	formatAndLog(pod, container, stdout)
 	formatAndLog(pod, container, stderr)
 	if err != nil {
 		// Create a repository
-		cmd := generateInitCommand(artifactPrefix, profile)
+		cmd := restic.InitCommand(profile, artifactPrefix)
 		stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
 		formatAndLog(pod, container, stdout)
 		formatAndLog(pod, container, stderr)
@@ -125,7 +105,7 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	}
 
 	// Create backup and dump it on the object store
-	cmd := generateBackupCommand(includePath, backupArtifactPrefix, backupIdentifier, tp.Profile)
+	cmd := restic.BackupCommand(tp.Profile, backupArtifactPrefix, backupIdentifier, includePath)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
 	formatAndLog(pod, container, stdout)
 	formatAndLog(pod, container, stderr)

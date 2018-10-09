@@ -2,7 +2,6 @@ package function
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -65,13 +64,6 @@ func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, er
 	}
 }
 
-func generateRestoreCommand(backupArtifactPrefix, restorePath, id string, profile *param.Profile) ([]string, error) {
-	// Restic restore command
-	command := restic.RestoreCommand(profile, backupArtifactPrefix)
-	command = fmt.Sprintf("%s --tag %s latest --target %s", command, id, restorePath)
-	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}, nil
-}
-
 func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, pod, image, backupArtifactPrefix, restorePath, backupIdentifier string
 	var vols map[string]string
@@ -105,10 +97,7 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 		return nil, err
 	}
 	// Generate restore command
-	cmd, err := generateRestoreCommand(backupArtifactPrefix, restorePath, backupIdentifier, tp.Profile)
-	if err != nil {
-		return nil, err
-	}
+	cmd := restic.RestoreCommand(tp.Profile, backupArtifactPrefix, backupIdentifier, restorePath)
 	if len(vols) == 0 {
 		// Fetch Volumes
 		vols, err = fetchPodVolumes(pod, tp)
