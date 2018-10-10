@@ -23,8 +23,8 @@ func newOutputCommand() *cobra.Command {
 }
 
 func validateArguments(c *cobra.Command, args []string) error {
-	if err := cobra.ExactArgs(2); err != nil {
-		return errors.New("Command requires exactly two arguments")
+	if len(args) != 2 {
+		return errors.Errorf("Command accepts 2 arguments, received %d arguments", len(args))
 	}
 	return output.ValidateKey(args[0])
 }
