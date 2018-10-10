@@ -2,14 +2,13 @@ package function
 
 import (
 	"context"
-	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -71,8 +70,8 @@ func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []strin
 		for _, c := range cs {
 			go func(p string, c string) {
 				stdout, stderr, err := kube.Exec(cli, namespace, p, c, cmd)
-				formatAndLog(p, c, stdout)
-				formatAndLog(p, c, stderr)
+				format.Log(p, c, stdout)
+				format.Log(p, c, stderr)
 				errChan <- err
 			}(p, c)
 		}
@@ -88,15 +87,4 @@ func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []strin
 		return errors.New(strings.Join(errs, "\n"))
 	}
 	return nil
-}
-
-func formatAndLog(podName string, containerName string, output string) {
-	if output != "" {
-		logs := regexp.MustCompile("[\r\n]").Split(output, -1)
-		for _, l := range logs {
-			if strings.TrimSpace(l) != "" {
-				log.Info("Pod: ", podName, " Container: ", containerName, " Out: ", l)
-			}
-		}
-	}
 }

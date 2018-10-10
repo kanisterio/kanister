@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/format"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -81,4 +86,22 @@ func resticArgs(profile *param.Profile, repository string) []string {
 		fmt.Sprintf("export %s=s3:%s/%s\n", ResticRepository, s3Endpoint, repository),
 		ResticCommand,
 	}
+}
+
+// GetOrCreateRepository will check if the repository already exists and initialize one if not
+func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix string, profile *param.Profile) error {
+	// Use the snapshots command to check if the repository exists
+	cmd := SnapshotsCommand(profile, artifactPrefix)
+	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
+	format.Log(pod, container, stdout)
+	format.Log(pod, container, stderr)
+	if err == nil {
+		return nil
+	}
+	// Create a repository
+	cmd = InitCommand(profile, artifactPrefix)
+	stdout, stderr, err = kube.Exec(cli, namespace, pod, container, cmd)
+	format.Log(pod, container, stdout)
+	format.Log(pod, container, stderr)
+	return errors.Wrapf(err, "Failed to create object store backup location")
 }
