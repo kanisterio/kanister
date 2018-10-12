@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	phaseOpString = "###Phase-output###:"
+	PhaseOpString = "###Phase-output###:"
 )
 
 type Output struct {
@@ -24,9 +24,16 @@ func marshalOutput(key, value string) (string, error) {
 	}
 	outString, err := json.Marshal(out)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to marshall key-value pair")
+		return "", errors.Wrap(err, "Failed to marshal key-value pair")
 	}
 	return string(outString), nil
+}
+
+// UnmarshalOutput unmarshals output json into Output struct
+func UnmarshalOutput(opString string) (*Output, error) {
+	p := &Output{}
+	err := json.Unmarshal([]byte(opString), p)
+	return p, errors.Wrap(err, "Failed to unmarshal key-value pair")
 }
 
 // ValidateKey validates the key argument
@@ -49,6 +56,6 @@ func PrintOutput(key, value string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(phaseOpString, outString)
+	fmt.Println(PhaseOpString, outString)
 	return nil
 }

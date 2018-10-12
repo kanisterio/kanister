@@ -149,3 +149,27 @@ func (s *KubeExecTest) TestKubeExec(c *C) {
 		c.Assert(err, IsNil)
 	}
 }
+
+func (s *KubeExecTest) TestParseLogAndCreateOutput(c *C) {
+	for _, tc := range []struct {
+		log        string
+		expected   map[string]interface{}
+		errChecker Checker
+		outChecker Checker
+	}{
+		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.12.0\"}", map[string]interface{}{"version": "0.12.0"}, IsNil, NotNil},
+		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.12.0\"}\n###Phase-output###: {\"key\":\"path\",\"value\":\"/backup/path\"}",
+			map[string]interface{}{"version": "0.12.0", "path": "/backup/path"}, IsNil, NotNil},
+		{"Random message ###Phase-output###: {\"key\":\"version\",\"value\":\"0.12.0\"}", map[string]interface{}{"version": "0.12.0"}, IsNil, NotNil},
+		{"Random message with newline \n###Phase-output###: {\"key\":\"version\",\"value\":\"0.12.0\"}", map[string]interface{}{"version": "0.12.0"}, IsNil, NotNil},
+		{"###Phase-output###: Invalid message", nil, NotNil, IsNil},
+		{"Random message", nil, IsNil, IsNil},
+	} {
+		out, err := parseLogAndCreateOutput(tc.log)
+		c.Check(err, tc.errChecker)
+		c.Check(out, tc.outChecker)
+		if out != nil {
+			c.Check(out, DeepEquals, tc.expected)
+		}
+	}
+}
