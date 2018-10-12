@@ -36,20 +36,24 @@ func (s *RenderSuite) TestRender(c *C) {
 			checker: IsNil,
 		},
 		{
-			arg: "{{ .Options.hello }}",
+			arg: "{{ .ArtifactsOut.hello.KeyValue }}",
 			tp: TemplateParams{
-				Options: map[string]string{
-					"hello": "",
+				ArtifactsOut: map[string]crv1alpha1.Artifact{
+					"hello": crv1alpha1.Artifact{},
 				},
 			},
-			out:     "",
+			out:     "map[]",
 			checker: IsNil,
 		},
 		{
-			arg: "{{ .Options.hello }}",
+			arg: "{{ .ArtifactsOut.hello.KeyValue.someKey }}",
 			tp: TemplateParams{
-				Options: map[string]string{
-					"hello": "someValue",
+				ArtifactsOut: map[string]crv1alpha1.Artifact{
+					"hello": crv1alpha1.Artifact{
+						KeyValue: map[string]string{
+							"someKey": "someValue",
+						},
+					},
 				},
 			},
 			out:     "someValue",
@@ -57,10 +61,14 @@ func (s *RenderSuite) TestRender(c *C) {
 		},
 		{
 			// `-` cannot be used in a template path.
-			arg: "{{ .Options.hello-world }}",
+			arg: "{{ .ArtifactsOut.hello-world.KeyValue.someKey }}",
 			tp: TemplateParams{
-				Options: map[string]string{
-					"hello-world": "someValue",
+				ArtifactsOut: map[string]crv1alpha1.Artifact{
+					"hello-world": crv1alpha1.Artifact{
+						KeyValue: map[string]string{
+							"someKey": "someValue",
+						},
+					},
 				},
 			},
 			out:     "",
@@ -68,11 +76,19 @@ func (s *RenderSuite) TestRender(c *C) {
 		},
 		{
 			// `-` can exist in artifact keys, it just cannot be used in path.
-			arg: "{{ .Options.hello }}",
+			arg: "{{ .ArtifactsOut.hello.KeyValue.someKey }}",
 			tp: TemplateParams{
-				Options: map[string]string{
-					"hello":       "someValue",
-					"hello-world": "someValue",
+				ArtifactsOut: map[string]crv1alpha1.Artifact{
+					"hello": crv1alpha1.Artifact{
+						KeyValue: map[string]string{
+							"someKey": "someValue",
+						},
+					},
+					"hello-world": crv1alpha1.Artifact{
+						KeyValue: map[string]string{
+							"someKey": "someValue",
+						},
+					},
 				},
 			},
 			out:     "someValue",
@@ -104,9 +120,9 @@ func (s *RenderSuite) TestRender(c *C) {
 		},
 		{
 			// Render should fail if referenced key doesn't exist
-			arg: "{{ .Options.hello }}",
+			arg: "{{ .ArtifactsOut.hello.KeyValue.someKey }}",
 			tp: TemplateParams{
-				Options: map[string]string{},
+				ArtifactsOut: map[string]crv1alpha1.Artifact{},
 			},
 			checker: NotNil,
 		},

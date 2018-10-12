@@ -42,20 +42,24 @@ func (s *PhaseSuite) TestExec(c *C) {
 	}{
 		{
 			artifact: "hello",
-			argument: "{{ .Options.test }} world",
+			argument: "{{ .ArtifactsOut.test.KeyValue.in }} world",
 			expected: "hello world",
 		},
 		{
 			artifact: "HELLO",
-			argument: "{{ .Options.test | lower}} world",
+			argument: "{{ .ArtifactsOut.test.KeyValue.in | lower}} world",
 			expected: "hello world",
 		},
 	} {
 		var output string
 		tf := &testFunc{output: &output}
 		tp := param.TemplateParams{
-			Options: map[string]string{
-				"test": tc.artifact,
+			ArtifactsOut: map[string]crv1alpha1.Artifact{
+				"test": crv1alpha1.Artifact{
+					KeyValue: map[string]string{
+						"in": tc.artifact,
+					},
+				},
 			},
 		}
 		rawArgs := map[string]interface{}{
