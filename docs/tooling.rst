@@ -354,9 +354,9 @@ The following snippet is an example of using kando from inside a Blueprint.
 
 .. code-block:: console
 
-  kando location push --profile '{{ .Profile }}' --path '{{ .ArtifactsOut }}' -
+  kando location push --profile '{{ .Profile }}' --path '/backup/path' -
 
-  kando location delete --profile '{{ .Profile }}' --path '{{ .ArtifactsOut }}'
+  kando location delete --profile '{{ .Profile }}' --path '/backup/path'
 
 
 Docker Image
