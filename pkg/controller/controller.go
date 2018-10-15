@@ -220,8 +220,9 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 			}
 		}
 	}
-	newAS.Status.State = crv1alpha1.StateComplete
-	c.logAndSuccessEvent(fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State), "Update Complete", newAS)
+	if len(newAS.Status.Actions) != 0 {
+		return nil
+	}
 	return reconcile.ActionSet(context.TODO(), c.crClient.CrV1alpha1(), newAS.GetNamespace(), newAS.GetName(), func(ras *crv1alpha1.ActionSet) error {
 		ras.Status.State = crv1alpha1.StateComplete
 		return nil
@@ -409,31 +410,22 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		}
 		// Render the artifacts
 		arts, err := param.RenderArtifacts(artTpls, *tp)
-		var af func(*crv1alpha1.ActionSet) error
 		if err != nil {
-			af = func(ras *crv1alpha1.ActionSet) error {
-				ras.Status.State = crv1alpha1.StateFailed
-				return nil
-			}
-		} else {
-			af = func(ras *crv1alpha1.ActionSet) error {
-				ras.Status.Actions[aIDX].Artifacts = arts
-				ras.Status.State = crv1alpha1.StateComplete
-				return nil
-			}
+			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
+			msg := fmt.Sprintf("Failed to render Output Artifacts: %#v:", artTpls)
+			c.logAndErrorEvent(msg, reason, err, as, bp)
+			return
+		}
+		af := func(ras *crv1alpha1.ActionSet) error {
+			ras.Status.Actions[aIDX].Artifacts = arts
+			ras.Status.State = crv1alpha1.StateComplete
+			return nil
 		}
 		// Update ActionSet with artifacts
 		if aErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), ns, name, af); aErr != nil {
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
 			msg := fmt.Sprintf("Failed to update Output Artifacts: %#v:", artTpls)
 			c.logAndErrorEvent(msg, reason, aErr, as, bp)
-			return
-		}
-		// Failed to render artifacts
-		if err != nil {
-			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
-			msg := fmt.Sprintf("Failed to render Output Artifacts: %#v:", artTpls)
-			c.logAndErrorEvent(msg, reason, err, as, bp)
 			return
 		}
 	}()
