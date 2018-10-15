@@ -205,6 +205,8 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 	if newAS.Status == nil || newAS.Status.State != crv1alpha1.StateRunning {
 		if newAS.Status == nil {
 			log.Infof("Updated ActionSet '%s' Status->nil", newAS.Name)
+		} else if newAS.Status.State == crv1alpha1.StateComplete {
+			c.logAndSuccessEvent(fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State), "Update Complete", newAS)
 		} else {
 			log.Infof("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State)
 		}
@@ -346,12 +348,6 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	if err != nil {
 		return err
 	}
-	artTpls := as.Status.Actions[aIDX].Artifacts
-	arts, err := param.RenderArtifacts(artTpls, *tp)
-	if err != nil {
-		return err
-	}
-	tp.ArtifactsOut = arts
 	phases, err := kanister.GetPhases(*bp, action.Name, *tp)
 	if err != nil {
 		return err
@@ -363,7 +359,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			err = param.InitPhaseParams(ctx, c.clientset, tp, p.Name(), p.Objects())
 			if err != nil {
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
-				msg := fmt.Sprintf("Failed to execute phase: %#v:", as.Status.Actions[aIDX].Phases[i])
+				msg := fmt.Sprintf("Failed to init phase params: %#v:", as.Status.Actions[aIDX].Phases[i])
 				c.logAndErrorEvent(msg, reason, err, as, bp)
 				return
 			}
@@ -377,7 +373,6 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				}
 			} else {
 				rf = func(ras *crv1alpha1.ActionSet) error {
-					ras.Status.Actions[aIDX].Artifacts = arts
 					ras.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateComplete
 					ras.Status.Actions[aIDX].Phases[i].Output = output
 					return nil
@@ -397,6 +392,49 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			}
 			param.UpdatePhaseParams(ctx, tp, p.Name(), output)
 			c.logAndSuccessEvent(fmt.Sprintf("Completed phase %s", p.Name()), "Ended Phase", as)
+		}
+		// Check if output artifacts are present
+		artTpls := as.Status.Actions[aIDX].Artifacts
+		if len(artTpls) == 0 {
+			// No artifacts, set ActionSetStatus to complete
+			if rErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), ns, name, func(ras *crv1alpha1.ActionSet) error {
+				ras.Status.State = crv1alpha1.StateComplete
+				return nil
+			}); rErr != nil {
+				reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
+				msg := fmt.Sprintf("Failed to update ActionSet: %s", name)
+				c.logAndErrorEvent(msg, reason, err, as, bp)
+			}
+			return
+		}
+		// Render the artifacts
+		arts, err := param.RenderArtifacts(artTpls, *tp)
+		var af func(*crv1alpha1.ActionSet) error
+		if err != nil {
+			af = func(ras *crv1alpha1.ActionSet) error {
+				ras.Status.State = crv1alpha1.StateFailed
+				return nil
+			}
+		} else {
+			af = func(ras *crv1alpha1.ActionSet) error {
+				ras.Status.Actions[aIDX].Artifacts = arts
+				ras.Status.State = crv1alpha1.StateComplete
+				return nil
+			}
+		}
+		// Update ActionSet with artifacts
+		if aErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), ns, name, af); aErr != nil {
+			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
+			msg := fmt.Sprintf("Failed to update Output Artifacts: %#v:", artTpls)
+			c.logAndErrorEvent(msg, reason, aErr, as, bp)
+			return
+		}
+		// Failed to render artifacts
+		if err != nil {
+			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
+			msg := fmt.Sprintf("Failed to render Output Artifacts: %#v:", artTpls)
+			c.logAndErrorEvent(msg, reason, err, as, bp)
+			return
 		}
 	}()
 	return nil

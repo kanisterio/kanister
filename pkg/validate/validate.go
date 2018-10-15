@@ -91,9 +91,6 @@ func actionSetStatus(as *crv1alpha1.ActionSetStatus) error {
 			return errorf("ActionSet cannot be complete if any actions are not complete")
 		}
 	}
-	if saw[crv1alpha1.StateFailed] != (as.State == crv1alpha1.StateFailed) {
-		return errorf("Iff any action is failed, the whole ActionSet must be failed")
-	}
 	return nil
 }
 

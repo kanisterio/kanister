@@ -20,19 +20,18 @@ const timeFormat = time.RFC3339Nano
 
 // TemplateParams are the values that will change between separate runs of Phases.
 type TemplateParams struct {
-	StatefulSet  *StatefulSetParams
-	Deployment   *DeploymentParams
-	PVC          *PVCParams
-	Namespace    *NamespaceParams
-	ArtifactsIn  map[string]crv1alpha1.Artifact
-	ArtifactsOut map[string]crv1alpha1.Artifact
-	ConfigMaps   map[string]v1.ConfigMap
-	Secrets      map[string]v1.Secret
-	Time         string
-	Profile      *Profile
-	Options      map[string]string
-	Object       map[string]interface{}
-	Phases       map[string]*Phase
+	StatefulSet *StatefulSetParams
+	Deployment  *DeploymentParams
+	PVC         *PVCParams
+	Namespace   *NamespaceParams
+	ArtifactsIn map[string]crv1alpha1.Artifact
+	ConfigMaps  map[string]v1.ConfigMap
+	Secrets     map[string]v1.Secret
+	Time        string
+	Profile     *Profile
+	Options     map[string]string
+	Object      map[string]interface{}
+	Phases      map[string]*Phase
 }
 
 // StatefulSetParams are params for stateful sets.
