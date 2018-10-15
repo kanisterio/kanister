@@ -2,9 +2,11 @@ package function
 
 import (
 	"context"
+	"fmt"
 
 	. "gopkg.in/check.v1"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -154,9 +156,26 @@ func (s *DataSuite) TestBackupRestoreData(c *C) {
 	}
 }
 
-func newCopyDataBlueprint() crv1alpha1.Blueprint {
+func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 	return crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"addfile": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "test1",
+						Func: "PrepareData",
+						Args: map[string]interface{}{
+							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
+							PrepareDataImageArg:     "busybox",
+							PrepareDataCommandArg: []string{
+								"touch",
+								"/mnt/data1/foo.txt",
+							},
+							PrepareDataVolumes: map[string]string{"{{ .PVC.Name }}": "/mnt/data1"},
+						},
+					},
+				},
+			},
 			"copy": &crv1alpha1.BlueprintAction{
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
@@ -170,15 +189,90 @@ func newCopyDataBlueprint() crv1alpha1.Blueprint {
 					},
 				},
 			},
+			"restore": &crv1alpha1.BlueprintAction{
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testRestore",
+						Func: "RestoreData",
+						Args: map[string]interface{}{
+							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
+							RestoreDataImageArg:                "kanisterio/kanister-tools:0.12.0",
+							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
+							RestoreDataBackupIdentifierArg:     fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupID),
+							RestoreDataVolsArg: map[string]string{
+								"{{ .PVC.Name }}": fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupRoot),
+							},
+						},
+					},
+				},
+			},
+			"checkfile": {
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Func: "PrepareData",
+						Args: map[string]interface{}{
+							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
+							PrepareDataImageArg:     "busybox",
+							PrepareDataCommandArg: []string{
+								"ls",
+								"-l",
+								"/mnt/datadir/foo.txt",
+							},
+							PrepareDataVolumes: map[string]string{"{{ .PVC.Name }}": "/mnt/datadir"},
+						},
+					},
+				},
+			},
 		},
 	}
 }
 func (s *DataSuite) TestCopyData(c *C) {
-	ctx := context.Background()
-	pvc := testutil.NewTestPVC()
-	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+	pvcSpec := testutil.NewTestPVC()
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvcSpec)
 	c.Assert(err, IsNil)
+	tp := s.initPVCTemplateParams(c, pvc, nil)
+	bp := newCopyDataTestBlueprint()
 
+	// Add a file on the source PVC
+	_ = runAction(c, bp, "addfile", tp)
+	// Copy PVC data
+	out := runAction(c, bp, "copy", tp)
+
+	// Validate outputs and setup as inputs for restore
+	c.Assert(out[CopyVolumeDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[CopyVolumeDataOutputBackupRoot].(string), Not(Equals), "")
+	c.Assert(out[CopyVolumeDataOutputBackupArtifactLocation].(string), Not(Equals), "")
+	options := map[string]string{
+		CopyVolumeDataOutputBackupID:               out[CopyVolumeDataOutputBackupID].(string),
+		CopyVolumeDataOutputBackupRoot:             out[CopyVolumeDataOutputBackupRoot].(string),
+		CopyVolumeDataOutputBackupArtifactLocation: out[CopyVolumeDataOutputBackupArtifactLocation].(string),
+	}
+
+	// Create a new PVC
+	pvc2, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvcSpec)
+	c.Assert(err, IsNil)
+	tp = s.initPVCTemplateParams(c, pvc2, options)
+	// Restore data from copy
+	_ = runAction(c, bp, "restore", tp)
+	// Validate file exists on this new PVC
+	_ = runAction(c, bp, "checkfile", tp)
+}
+
+func runAction(c *C, bp crv1alpha1.Blueprint, action string, tp *param.TemplateParams) map[string]interface{} {
+	phases, err := kanister.GetPhases(bp, action, *tp)
+	c.Assert(err, IsNil)
+	out := make(map[string]interface{})
+	for _, p := range phases {
+		o, err := p.Exec(context.Background(), bp, action, *tp)
+		c.Assert(err, IsNil)
+		for k, v := range o {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+func (s *DataSuite) initPVCTemplateParams(c *C, pvc *v1.PersistentVolumeClaim, options map[string]string) *param.TemplateParams {
 	as := crv1alpha1.ActionSpec{
 		Object: crv1alpha1.ObjectReference{
 			Kind:      param.PVCKind,
@@ -189,18 +283,10 @@ func (s *DataSuite) TestCopyData(c *C) {
 			Name:      testutil.TestProfileName,
 			Namespace: s.namespace,
 		},
+		Options: options,
 	}
-
-	tp, err := param.New(ctx, s.cli, s.crCli, as)
+	tp, err := param.New(context.Background(), s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
-
 	tp.Profile = testutil.ObjectStoreProfileOrSkip(c)
-
-	bp := newCopyDataBlueprint()
-	phases, err := kanister.GetPhases(bp, "copy", *tp)
-	c.Assert(err, IsNil)
-	for _, p := range phases {
-		_, err = p.Exec(context.Background(), bp, "copy", *tp)
-		c.Assert(err, IsNil)
-	}
+	return tp
 }
