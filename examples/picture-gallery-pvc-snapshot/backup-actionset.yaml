@@ -1,0 +1,17 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  generateName: pic-gal-pvc-snapshot-
+  namespace: kanister
+spec:
+  actions:
+  - name: backup
+    blueprint: picture-gallery
+    object:
+      kind: Deployment
+      name: picture-gallery
+      namespace: default
+    profile:
+      kind: Profile
+      name: default-profile
+      namespace: kanister

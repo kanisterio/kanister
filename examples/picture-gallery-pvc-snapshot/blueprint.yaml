@@ -1,0 +1,51 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: picture-gallery
+  namespace: kanister
+actions:
+  backup:
+    type: Deployment
+    outputArtifacts:
+      backupLocation:
+        keyValue:
+          path: "{{ .Phases.backupVolume.Output.backupLocation }}"
+    phases:
+    - func: CreateVolumeSnapshot
+      name: backupVolume
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+  restore:
+    type: Deployment
+    inputArtifactNames:
+      - backupLocation
+    phases:
+    - func: ScaleWorkload
+      name: shutdownPod
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        name: "{{ .Deployment.Name }}"
+        kind: Deployment
+        replicas: 0
+    - func: CreateVolumeFromSnapshot
+      name: restoreVolume
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        snapshots: "{{ .ArtifactsIn.backupLocation.KeyValue.path }}"
+    - func: ScaleWorkload
+      name: bringupPod
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        name: "{{ .Deployment.Name }}"
+        kind: Deployment
+        replicas: 1
+  delete:
+    type: Deployment
+    inputArtifactNames:
+      - backupLocation
+    phases:
+    - func: DeleteVolumeSnapshot
+      name: deleteVolumeSnapshot
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        snapshots: "{{ .ArtifactsIn.backupLocation.KeyValue.path }}"
