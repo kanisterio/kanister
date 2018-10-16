@@ -12,7 +12,7 @@ implements the following go interface:
   // Func allows custom actions to be executed.
   type Func interface {
       Name() string
-      Exec(ctx context.Context, args ...string) error
+      Exec(ctx context.Context, args ...string) (map[string]interface{}, error)
       RequiredArgs() []string
   }
 
