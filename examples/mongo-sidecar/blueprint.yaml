@@ -39,7 +39,7 @@ actions:
             then
                 cmd=(aws --endpoint https://storage.googleapis.com s3 cp)
             fi
-            ${cmd[@]} ${file} "{{ .ArtifactsOut.cloudObject.KeyValue.path }}"
+            ${cmd[@]} ${file} "{{ .ConfigMaps.location.Data.bucket }}/backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs0.tar"
   restore:
     type: StatefulSet
     inputArtifactNames:

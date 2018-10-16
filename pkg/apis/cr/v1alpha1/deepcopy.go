@@ -7,3 +7,11 @@ func (in *BlueprintPhase) DeepCopyInto(out *BlueprintPhase) {
 	// TODO: Handle 'Args'
 	return
 }
+
+// DeepCopyInto handles the Phase deep copies, copying the receiver, writing into out. in must be non-nil.
+// This is a workaround to handle the map[string]interface{} output type
+func (in *Phase) DeepCopyInto(out *Phase) {
+	*out = *in
+	// TODO: Handle 'Output' map[string]interface{}
+	return
+}

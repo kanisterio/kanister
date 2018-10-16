@@ -34,7 +34,7 @@ actions:
             then
               # Setup wal-e s3 connection parameters.
               timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
-              wale_s3_prefix="s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .ArtifactsOut.manifest.KeyValue.prefix }}/${timeline}"
+              wale_s3_prefix="s3://{{ .Profile.Location.S3Compliant.Bucket }}/postgres-backups/{{ .Deployment.Name }}/${timeline}"
               echo "${wale_s3_prefix}" > "${env_wal_prefix}"
             fi
 
@@ -89,7 +89,7 @@ actions:
             {{- if .Profile.Location.S3Compliant.Region }}
               s3_cmd+=(--region "{{ .Profile.Location.S3Compliant.Region | quote}}")
             {{- end }}
-            s3_path="s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .ArtifactsOut.manifest.KeyValue.path }}"
+            s3_path="s3://{{ .Profile.Location.S3Compliant.Bucket }}/postgres-backups/{{ .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt"
             s3_cmd+=(s3 cp - "${s3_path}")
 
             set +o xtrace

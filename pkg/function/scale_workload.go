@@ -32,25 +32,25 @@ func (*scaleWorkloadFunc) Name() string {
 	return "ScaleWorkload"
 }
 
-func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, kind, name string
 	var replicas int32
 	namespace, kind, name, replicas, err := getArgs(tp, args)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cli, err := kube.NewClient()
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
 	switch strings.ToLower(kind) {
 	case param.StatefulSetKind:
-		return kube.ScaleStatefulSet(ctx, cli, namespace, name, replicas)
+		return nil, kube.ScaleStatefulSet(ctx, cli, namespace, name, replicas)
 	case param.DeploymentKind:
-		return kube.ScaleDeployment(ctx, cli, namespace, name, replicas)
+		return nil, kube.ScaleDeployment(ctx, cli, namespace, name, replicas)
 	default:
-		return errors.New("Workload type not supported " + kind)
+		return nil, errors.New("Workload type not supported " + kind)
 	}
 }
 

@@ -2,12 +2,12 @@ package function
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/restic"
@@ -40,25 +40,6 @@ func (*backupDataFunc) Name() string {
 	return "BackupData"
 }
 
-func generateSnapshotsCommand(destArtifact string, profile *param.Profile) []string {
-	// Restic Snapshots command
-	command := restic.SnapshotsCommand(profile, destArtifact)
-	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
-}
-
-func generateInitCommand(destArtifact string, profile *param.Profile) []string {
-	// Restic Repository Init command
-	command := restic.InitCommand(profile, destArtifact)
-	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
-}
-
-func generateBackupCommand(includePath, destArtifact, id string, profile *param.Profile) []string {
-	// Restic Backup command
-	command := restic.BackupCommand(profile, destArtifact)
-	command = fmt.Sprintf("%s --tag %s %s", command, id, includePath)
-	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
-}
-
 func validateProfile(profile *param.Profile) error {
 	if profile == nil {
 		return errors.New("Profile must be non-nil")
@@ -69,59 +50,49 @@ func validateProfile(profile *param.Profile) error {
 	return nil
 }
 
-func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, pod, container, includePath, backupArtifactPrefix, backupIdentifier string
 	var err error
 	if err = Arg(args, BackupDataNamespaceArg, &namespace); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, BackupDataPodArg, &pod); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, BackupDataContainerArg, &container); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, BackupDataIncludePathArg, &includePath); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, BackupDataBackupArtifactPrefixArg, &backupArtifactPrefix); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, BackupDataBackupIdentifierArg, &backupIdentifier); err != nil {
-		return err
+		return nil, err
 	}
 	// Validate the Profile
 	if err = validateProfile(tp.Profile); err != nil {
-		return errors.Wrapf(err, "Failed to validate Profile")
+		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
 	cli, err := kube.NewClient()
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	// Use the snapshots command to check if the repository exists
-	cmd := generateSnapshotsCommand(backupArtifactPrefix, tp.Profile)
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
-	formatAndLog(pod, container, stdout)
-	formatAndLog(pod, container, stderr)
-	if err != nil {
-		// Create a repository
-		cmd := generateInitCommand(backupArtifactPrefix, tp.Profile)
-		stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
-		formatAndLog(pod, container, stdout)
-		formatAndLog(pod, container, stderr)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to create object store backup location")
-		}
+
+	if err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, tp.Profile); err != nil {
+		return nil, err
 	}
+
 	// Create backup and dump it on the object store
-	cmd = generateBackupCommand(includePath, backupArtifactPrefix, backupIdentifier, tp.Profile)
-	stdout, stderr, err = kube.Exec(cli, namespace, pod, container, cmd)
-	formatAndLog(pod, container, stdout)
-	formatAndLog(pod, container, stderr)
+	cmd := restic.BackupCommand(tp.Profile, backupArtifactPrefix, backupIdentifier, includePath)
+	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
+	format.Log(pod, container, stdout)
+	format.Log(pod, container, stderr)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create and upload backup")
+		return nil, errors.Wrapf(err, "Failed to create and upload backup")
 	}
-	return nil
+	return nil, nil
 }
 
 func (*backupDataFunc) RequiredArgs() []string {

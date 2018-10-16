@@ -112,10 +112,11 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 	c.Assert(err, IsNil)
 
 	action := "echo"
-	phases, err := kanister.GetPhases(*newExecAllBlueprint(kind), action, *tp)
+	bp := newExecAllBlueprint(kind)
+	phases, err := kanister.GetPhases(*bp, action, *tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
-		err = p.Exec(ctx, *tp)
+		_, err = p.Exec(ctx, *bp, action, *tp)
 		c.Assert(err, IsNil)
 	}
 }
@@ -145,10 +146,11 @@ func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 	c.Assert(err, IsNil)
 
 	action := "echo"
-	phases, err := kanister.GetPhases(*newExecAllBlueprint(kind), action, *tp)
+	bp := newExecAllBlueprint(kind)
+	phases, err := kanister.GetPhases(*bp, action, *tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
-		err = p.Exec(ctx, *tp)
+		_, err = p.Exec(ctx, *bp, action, *tp)
 		c.Assert(err, IsNil)
 	}
 }

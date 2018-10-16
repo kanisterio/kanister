@@ -2,14 +2,13 @@ package function
 
 import (
 	"context"
-	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -35,28 +34,28 @@ func (*kubeExecAllFunc) Name() string {
 	return "KubeExecAll"
 }
 
-func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	cli, err := kube.NewClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var namespace, pods, containers string
 	var cmd []string
 	if err = Arg(args, KubeExecAllNamespaceArg, &namespace); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, KubeExecAllPodsNameArg, &pods); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, KubeExecAllContainersNameArg, &containers); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, KubeExecAllCommandArg, &cmd); err != nil {
-		return err
+		return nil, err
 	}
 	ps := strings.Fields(pods)
 	cs := strings.Fields(containers)
-	return execAll(cli, namespace, ps, cs, cmd)
+	return nil, execAll(cli, namespace, ps, cs, cmd)
 }
 
 func (*kubeExecAllFunc) RequiredArgs() []string {
@@ -71,8 +70,8 @@ func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []strin
 		for _, c := range cs {
 			go func(p string, c string) {
 				stdout, stderr, err := kube.Exec(cli, namespace, p, c, cmd)
-				formatAndLog(p, c, stdout)
-				formatAndLog(p, c, stderr)
+				format.Log(p, c, stdout)
+				format.Log(p, c, stderr)
 				errChan <- err
 			}(p, c)
 		}
@@ -88,15 +87,4 @@ func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []strin
 		return errors.New(strings.Join(errs, "\n"))
 	}
 	return nil
-}
-
-func formatAndLog(podName string, containerName string, output string) {
-	if output != "" {
-		logs := regexp.MustCompile("[\r\n]").Split(output, -1)
-		for _, l := range logs {
-			if strings.TrimSpace(l) != "" {
-				log.Info("Pod: ", podName, " Container: ", containerName, " Out: ", l)
-			}
-		}
-	}
 }

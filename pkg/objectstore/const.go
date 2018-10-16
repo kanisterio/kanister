@@ -22,10 +22,10 @@ const (
 type SecretType string
 
 const (
-	// SecretTypeAwsAccessKey captures enum value "awsAccessKey"
-	SecretTypeAwsAccessKey SecretType = "awsAccessKey"
-	// SecretTypeGcpServiceAccountKey captures enum value "gcpServiceAccountKey"
-	SecretTypeGcpServiceAccountKey SecretType = "gcpServiceAccountKey"
-	// SecretTypeAzStorageAccount captures enum value "azStorageAccount"
-	SecretTypeAzStorageAccount SecretType = "azStorageAccount"
+	// SecretTypeAwsAccessKey captures enum value "AwsAccessKey"
+	SecretTypeAwsAccessKey SecretType = "AwsAccessKey"
+	// SecretTypeGcpServiceAccountKey captures enum value "GcpServiceAccountKey"
+	SecretTypeGcpServiceAccountKey SecretType = "GcpServiceAccountKey"
+	// SecretTypeAzStorageAccount captures enum value "AzStorageAccount"
+	SecretTypeAzStorageAccount SecretType = "AzStorageAccount"
 )

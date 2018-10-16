@@ -16,7 +16,6 @@ The TemplateParam struct is defined as:
       Deployment   DeploymentParams
       PVC          PVCParams
       ArtifactsIn  map[string]crv1alpha1.Artifact // A Kanister Artifact
-      ArtifactsOut map[string]crv1alpha1.Artifact
       Profile      *Profile
       ConfigMaps   map[string]v1.ConfigMap
       Secrets      map[string]v1.Secret

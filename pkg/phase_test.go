@@ -25,9 +25,9 @@ func (*testFunc) Name() string {
 	return "mock"
 }
 
-func (tf *testFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (tf *testFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	*tf.output = args["testKey"].(string)
-	return tf.err
+	return nil, tf.err
 }
 
 func (tf *testFunc) RequiredArgs() []string {
@@ -42,24 +42,20 @@ func (s *PhaseSuite) TestExec(c *C) {
 	}{
 		{
 			artifact: "hello",
-			argument: "{{ .ArtifactsOut.test.KeyValue.in }} world",
+			argument: "{{ .Options.test }} world",
 			expected: "hello world",
 		},
 		{
 			artifact: "HELLO",
-			argument: "{{ .ArtifactsOut.test.KeyValue.in | lower}} world",
+			argument: "{{ .Options.test | lower}} world",
 			expected: "hello world",
 		},
 	} {
 		var output string
 		tf := &testFunc{output: &output}
 		tp := param.TemplateParams{
-			ArtifactsOut: map[string]crv1alpha1.Artifact{
-				"test": crv1alpha1.Artifact{
-					KeyValue: map[string]string{
-						"in": tc.artifact,
-					},
-				},
+			Options: map[string]string{
+				"test": tc.artifact,
 			},
 		}
 		rawArgs := map[string]interface{}{
@@ -68,7 +64,7 @@ func (s *PhaseSuite) TestExec(c *C) {
 		args, err := param.RenderArgs(rawArgs, tp)
 		c.Assert(err, IsNil)
 		p := Phase{args: args, f: tf}
-		err = p.Exec(context.Background(), tp)
+		_, err = p.Exec(context.Background(), crv1alpha1.Blueprint{}, "", tp)
 		c.Assert(err, IsNil)
 		c.Assert(output, Equals, tc.expected)
 	}

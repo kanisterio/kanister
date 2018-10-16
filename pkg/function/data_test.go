@@ -40,6 +40,7 @@ func (s *DataSuite) SetUpSuite(c *C) {
 	s.crCli = crCli
 
 	ns := testutil.NewTestNamespace()
+	ns.GenerateName = "kanister-datatest-"
 
 	cns, err := s.cli.Core().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
@@ -147,8 +148,59 @@ func (s *DataSuite) TestBackupRestoreData(c *C) {
 		phases, err := kanister.GetPhases(bp, actionName, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			err := p.Exec(context.Background(), *tp)
+			_, err = p.Exec(context.Background(), bp, actionName, *tp)
 			c.Assert(err, IsNil)
 		}
+	}
+}
+
+func newCopyDataBlueprint() crv1alpha1.Blueprint {
+	return crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"copy": &crv1alpha1.BlueprintAction{
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testCopy",
+						Func: "CopyVolumeData",
+						Args: map[string]interface{}{
+							CopyVolumeDataNamespaceArg:      "{{ .PVC.Namespace }}",
+							CopyVolumeDataVolumeArg:         "{{ .PVC.Name }}",
+							CopyVolumeDataArtifactPrefixArg: "{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}/{{ .PVC.Namespace }}/{{ .PVC.Name }}",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+func (s *DataSuite) TestCopyData(c *C) {
+	ctx := context.Background()
+	pvc := testutil.NewTestPVC()
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+	c.Assert(err, IsNil)
+
+	as := crv1alpha1.ActionSpec{
+		Object: crv1alpha1.ObjectReference{
+			Kind:      param.PVCKind,
+			Name:      pvc.Name,
+			Namespace: pvc.Namespace,
+		},
+		Profile: &crv1alpha1.ObjectReference{
+			Name:      testutil.TestProfileName,
+			Namespace: s.namespace,
+		},
+	}
+
+	tp, err := param.New(ctx, s.cli, s.crCli, as)
+	c.Assert(err, IsNil)
+
+	tp.Profile = testutil.ObjectStoreProfileOrSkip(c)
+
+	bp := newCopyDataBlueprint()
+	phases, err := kanister.GetPhases(bp, "copy", *tp)
+	c.Assert(err, IsNil)
+	for _, p := range phases {
+		_, err = p.Exec(context.Background(), bp, "copy", *tp)
+		c.Assert(err, IsNil)
 	}
 }

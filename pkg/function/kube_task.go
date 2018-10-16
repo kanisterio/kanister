@@ -67,20 +67,20 @@ func kubeTask(ctx context.Context, namespace, image string, command []string) er
 	return nil
 }
 
-func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, image string
 	var command []string
 	var err error
 	if err = Arg(args, KubeTaskImageArg, &image); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, KubeTaskCommandArg, &command); err != nil {
-		return err
+		return nil, err
 	}
 	if err = OptArg(args, KubeTaskNamespaceArg, &namespace, ""); err != nil {
-		return err
+		return nil, err
 	}
-	return kubeTask(ctx, namespace, image, command)
+	return nil, kubeTask(ctx, namespace, image, command)
 }
 
 func (*kubeTaskFunc) RequiredArgs() []string {

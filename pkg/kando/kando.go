@@ -27,5 +27,6 @@ func newRootCommand() *cobra.Command {
 		Version: version.VersionString(),
 	}
 	rootCmd.AddCommand(newLocationCommand())
+	rootCmd.AddCommand(newOutputCommand())
 	return rootCmd
 }

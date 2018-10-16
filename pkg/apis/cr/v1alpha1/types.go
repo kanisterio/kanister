@@ -137,8 +137,9 @@ const (
 
 // Phase is subcomponent of an action.
 type Phase struct {
-	Name  string `json:"name"`
-	State State  `json:"state"`
+	Name   string                 `json:"name"`
+	State  State                  `json:"state"`
+	Output map[string]interface{} `json:"output"`
 }
 
 // k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

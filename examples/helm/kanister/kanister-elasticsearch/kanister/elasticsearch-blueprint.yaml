@@ -21,7 +21,7 @@ actions:
           - |
             env_prefix="{{ snakecase .StatefulSet.Name | trimSuffix "_data"  | upper}}"
             cluster_ip=$(env | grep ${env_prefix}_CLIENT_PORT_9200_TCP_ADDR= | sed 's/.*=//')
-            snapshot_prefix="{{ .ArtifactsOut.esBackup.KeyValue.path }}"
+            snapshot_prefix="/elasticsearch-backups/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}"
             list="$(curl -GET ${cluster_ip}:9200/_cat/indices | awk '{ print $3 }')"
             for index in $list
             do

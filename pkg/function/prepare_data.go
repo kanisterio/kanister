@@ -79,36 +79,36 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 	return nil
 }
 
-func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) error {
+func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, image, serviceAccount string
 	var command []string
 	var vols map[string]string
 	var err error
 	if err = Arg(args, PrepareDataNamespaceArg, &namespace); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, PrepareDataImageArg, &image); err != nil {
-		return err
+		return nil, err
 	}
 	if err = Arg(args, PrepareDataCommandArg, &command); err != nil {
-		return err
+		return nil, err
 	}
 	if err = OptArg(args, PrepareDataVolumes, &vols, nil); err != nil {
-		return err
+		return nil, err
 	}
 	if err = OptArg(args, PrepareDataServiceAccount, &serviceAccount, ""); err != nil {
-		return err
+		return nil, err
 	}
 	cli, err := kube.NewClient()
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create Kubernetes client")
+		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
 	if len(vols) == 0 {
 		if vols, err = getVolumes(tp); err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return prepareData(ctx, cli, namespace, serviceAccount, image, vols, command...)
+	return nil, prepareData(ctx, cli, namespace, serviceAccount, image, vols, command...)
 }
 
 func (*prepareDataFunc) RequiredArgs() []string {

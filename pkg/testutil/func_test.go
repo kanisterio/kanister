@@ -21,7 +21,7 @@ func (s *FuncSuite) TearDownSuite(c *C) {
 
 func (s *FuncSuite) TestFailFunc(c *C) {
 	ctx := context.Background()
-	err := failFunc(ctx, param.TemplateParams{}, nil)
+	_, err := failFunc(ctx, param.TemplateParams{}, nil)
 	c.Assert(err, NotNil)
 }
 
@@ -29,7 +29,7 @@ func (s *FuncSuite) TestWaitFunc(c *C) {
 	ctx := context.Background()
 	done := make(chan bool)
 	go func() {
-		err := waitFunc(ctx, param.TemplateParams{}, nil)
+		_, err := waitFunc(ctx, param.TemplateParams{}, nil)
 		c.Assert(err, IsNil)
 		close(done)
 	}()
@@ -46,8 +46,19 @@ func (s *FuncSuite) TestArgsFunc(c *C) {
 	ctx := context.Background()
 	args := map[string]interface{}{"arg1": []string{"foo", "bar"}}
 	go func() {
-		err := argsFunc(ctx, param.TemplateParams{}, args)
+		_, err := argsFunc(ctx, param.TemplateParams{}, args)
 		c.Assert(err, IsNil)
 	}()
 	c.Assert(ArgFuncArgs(), DeepEquals, args)
+}
+
+func (s *FuncSuite) TestOutputFunc(c *C) {
+	ctx := context.Background()
+	args := map[string]interface{}{"arg1": []string{"foo", "bar"}}
+	go func() {
+		output, err := outputFunc(ctx, param.TemplateParams{}, args)
+		c.Assert(err, IsNil)
+		c.Assert(output, DeepEquals, args)
+	}()
+	c.Assert(OutputFuncOut(), DeepEquals, args)
 }
