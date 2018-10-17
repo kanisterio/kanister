@@ -71,6 +71,8 @@ As seen above, both ActionSets and profiles can be created using `kanctl create`
     -f, --from string                 specify name of the action set
     -h, --help                        help for actionset
     -k, --kind string                 resource kind to apply selector on. Used along with the selector specified using --selector/-l (default "all")
+    -T, --namespacetargets strings    namespaces for the action set, comma separated list of namespaces (eg: --namespacetargets namespace1,namespace2)
+    -O, --objects strings             objects for the action set, comma separated list of object references (eg: --objects group/version/resource/namespace1/name1,group/version/resource/namespace2/name2)
     -o, --options strings             specify options for the action set, comma separated key=value pairs (eg: --options key1=value1,key2=value2)
     -p, --profile string              profile for the action set
     -v, --pvc strings                 pvc for the action set, comma separated namespace/name pairs (eg: --pvc namespace1/name1,namespace2/name2)
