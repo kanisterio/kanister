@@ -69,9 +69,9 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 			"backup": {
 				Kind: param.StatefulSetKind,
 				OutputArtifacts: map[string]crv1alpha1.Artifact{
-					"backupLocation": {
+					"backupInfo": {
 						KeyValue: map[string]string{
-							"path": "{{ .Phases.testBackupVolume.Output.backupLocation }}",
+							"manifest": "{{ .Phases.testBackupVolume.Output.volumeSnapshotInfo }}",
 						},
 					},
 				},
@@ -88,7 +88,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 			"restore": {
 				Kind: param.StatefulSetKind,
 				InputArtifactNames: []string{
-					"backupLocation",
+					"backupInfo",
 				},
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
@@ -104,7 +104,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 						Func: "CreateVolumeFromSnapshot",
 						Args: map[string]interface{}{
 							CreateVolumeFromSnapshotNamespaceArg: "{{ .StatefulSet.Namespace }}",
-							CreateVolumeFromSnapshotPathArg:      "{{ .ArtifactsIn.backupLocation.KeyValue.path }}",
+							CreateVolumeFromSnapshotManifestArg:  "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}",
 						},
 					},
 					{
@@ -120,7 +120,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 			"delete": {
 				Kind: param.StatefulSetKind,
 				InputArtifactNames: []string{
-					"backupLocation",
+					"backupInfo",
 				},
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
@@ -128,7 +128,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 						Func: "DeleteVolumeSnapshot",
 						Args: map[string]interface{}{
 							DeleteVolumeSnapshotNamespaceArg: "{{ .StatefulSet.Namespace }}",
-							DeleteVolumeSnapshotPathArg:      "{{ .ArtifactsIn.backupLocation.KeyValue.path }}",
+							DeleteVolumeSnapshotManifestArg:  "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}",
 						},
 					},
 				},
@@ -213,7 +213,6 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 
 	tp, err := param.New(ctx, s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
-	tp.Profile = testutil.ObjectStoreProfileOrSkip(c)
 
 	actions := []string{"backup", "restore", "delete"}
 	bp := newVolumeSnapshotBlueprint()
@@ -224,12 +223,12 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 			output, err := p.Exec(ctx, *bp, action, *tp)
 			if action == "backup" {
 				keyval := make(map[string]string)
-				keyval["path"] = output["backupLocation"].(string)
+				keyval["manifest"] = output["volumeSnapshotInfo"].(string)
 				artifact := crv1alpha1.Artifact{
 					KeyValue: keyval,
 				}
 				tp.ArtifactsIn = make(map[string]crv1alpha1.Artifact)
-				tp.ArtifactsIn["backupLocation"] = artifact
+				tp.ArtifactsIn["backupInfo"] = artifact
 			}
 			c.Assert(err, IsNil)
 		}

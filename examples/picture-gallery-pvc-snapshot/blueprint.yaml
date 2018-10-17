@@ -7,9 +7,9 @@ actions:
   backup:
     type: Deployment
     outputArtifacts:
-      backupLocation:
+      backupInfo:
         keyValue:
-          path: "{{ .Phases.backupVolume.Output.backupLocation }}"
+          manifest: "{{ .Phases.backupVolume.Output.volumeSnapshotInfo }}"
     phases:
     - func: CreateVolumeSnapshot
       name: backupVolume
@@ -18,7 +18,7 @@ actions:
   restore:
     type: Deployment
     inputArtifactNames:
-      - backupLocation
+      - backupInfo
     phases:
     - func: ScaleWorkload
       name: shutdownPod
@@ -31,7 +31,7 @@ actions:
       name: restoreVolume
       args:
         namespace: "{{ .Deployment.Namespace }}"
-        snapshots: "{{ .ArtifactsIn.backupLocation.KeyValue.path }}"
+        snapshots: "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}"
     - func: ScaleWorkload
       name: bringupPod
       args:
@@ -42,10 +42,10 @@ actions:
   delete:
     type: Deployment
     inputArtifactNames:
-      - backupLocation
+      - backupInfo
     phases:
     - func: DeleteVolumeSnapshot
       name: deleteVolumeSnapshot
       args:
         namespace: "{{ .Deployment.Namespace }}"
-        snapshots: "{{ .ArtifactsIn.backupLocation.KeyValue.path }}"
+        snapshots: "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}"

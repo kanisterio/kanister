@@ -8,7 +8,6 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -22,7 +21,7 @@ var (
 
 const (
 	DeleteVolumeSnapshotNamespaceArg = "namespace"
-	DeleteVolumeSnapshotPathArg      = "snapshots"
+	DeleteVolumeSnapshotManifestArg  = "snapshots"
 )
 
 type deleteVolumeSnapshotFunc struct{}
@@ -31,8 +30,8 @@ func (*deleteVolumeSnapshotFunc) Name() string {
 	return "DeleteVolumeSnapshot"
 }
 
-func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotPath string, profile *param.Profile) error {
-	return objectstore.DeleteData(ctx, profile, objectstore.ProviderTypeS3, profile.Location.S3Compliant.Bucket, snapshotPath)
+func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotinfo string, profile *param.Profile) error {
+	return nil
 }
 
 func (kef *deleteVolumeSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -40,16 +39,16 @@ func (kef *deleteVolumeSnapshotFunc) Exec(ctx context.Context, tp param.Template
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	var namespace, snapshots string
+	var namespace, snapshotinfo string
 	if err = Arg(args, DeleteVolumeSnapshotNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, DeleteVolumeSnapshotPathArg, &snapshots); err != nil {
+	if err = Arg(args, DeleteVolumeSnapshotManifestArg, &snapshotinfo); err != nil {
 		return nil, err
 	}
-	return nil, deleteVolumeSnapshot(ctx, cli, namespace, snapshots, tp.Profile)
+	return nil, deleteVolumeSnapshot(ctx, cli, namespace, snapshotinfo, tp.Profile)
 }
 
 func (*deleteVolumeSnapshotFunc) RequiredArgs() []string {
-	return []string{DeleteVolumeSnapshotNamespaceArg, DeleteVolumeSnapshotPathArg}
+	return []string{DeleteVolumeSnapshotNamespaceArg, DeleteVolumeSnapshotManifestArg}
 }
