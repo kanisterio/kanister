@@ -17,12 +17,15 @@ import (
 )
 
 const (
-	kanisterToolsImage              = "kanisterio/kanister-tools:0.12.0"
-	copyVolumeDataMountPoint        = "/mnt/vol_data/%s"
-	copyVolumeDataJobPrefix         = "copy-vol-data-"
-	CopyVolumeDataNamespaceArg      = "namespace"
-	CopyVolumeDataVolumeArg         = "volume"
-	CopyVolumeDataArtifactPrefixArg = "dataArtifactPrefix"
+	kanisterToolsImage                         = "kanisterio/kanister-tools:0.12.0"
+	copyVolumeDataMountPoint                   = "/mnt/vol_data/%s"
+	copyVolumeDataJobPrefix                    = "copy-vol-data-"
+	CopyVolumeDataNamespaceArg                 = "namespace"
+	CopyVolumeDataVolumeArg                    = "volume"
+	CopyVolumeDataArtifactPrefixArg            = "dataArtifactPrefix"
+	CopyVolumeDataOutputBackupID               = "backupID"
+	CopyVolumeDataOutputBackupRoot             = "backupRoot"
+	CopyVolumeDataOutputBackupArtifactLocation = "backupArtifactLocation"
 )
 
 func init() {
@@ -70,7 +73,12 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create and upload backup")
 	}
-	return map[string]interface{}{"backupID": backupIdentifier}, nil
+	return map[string]interface{}{
+			CopyVolumeDataOutputBackupID:               backupIdentifier,
+			CopyVolumeDataOutputBackupRoot:             mountPoint,
+			CopyVolumeDataOutputBackupArtifactLocation: targetPath,
+		},
+		nil
 }
 
 func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

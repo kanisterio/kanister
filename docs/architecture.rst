@@ -197,19 +197,19 @@ state, and the overall execution progress.
   }
 
 Unlike in the ActionSpec, the Artifacts in the ActionStatus are the rendered
-output artifacts from the Blueprint. These are populated as soon as they are
-rendered, but should only be considered valid once the action is complete.
+output artifacts from the Blueprint. These are rendered and populated once the action is complete.
 
 
 Each phase in the ActionStatus phases list contains the phase name of the
-Blueprint phase and its state of execution.
+Blueprint phase along with its state of execution and output.
 
 .. code-block:: go
 
   // Phase is subcomponent of an action.
   type Phase struct {
-      Name  string `json:"name"`
-      State State  `json:"state"`
+      Name   string                 `json:"name"`
+      State  State                  `json:"state"`
+      Output map[string]interface{} `json:"output"`
   }
 
 .. _profiles:

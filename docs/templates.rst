@@ -21,6 +21,7 @@ The TemplateParam struct is defined as:
       Secrets      map[string]v1.Secret
       Time         string
       Options      map[string]string
+      Phases       map[string]*Phase
   }
 
 Rendering Templates
@@ -497,3 +498,34 @@ The Options can then be used in the Blueprint via templating:
 
   "{{ .Options.podName }}"
 
+Phases
+------
+
+Phases are used to capture information required or returned from Blueprint phases.
+Currently, each phase contains a map of Secrets required to execute a phase,
+or the Output map returned from the execution.
+
+The definition is as follows:
+
+.. code-block:: go
+  :linenos:
+
+  type Phase struct {
+    Secrets map[string]v1.Secret
+    Output  map[string]interface{}
+  }
+
+The phase parameters can be referenced by the phases following it,
+or as output artifacts using templating.
+
+For example, an output artifact can reference the output from a phase as follows:
+
+.. code-block:: yaml
+
+"{{ .Phases.phase-name.Output.key-name }}"
+
+Similarly, a phase can use Secrets as arguments:
+
+.. code-block:: yaml
+
+"{{ .Phases.phase-name.Secrets.secret-name.Namespace }}"
