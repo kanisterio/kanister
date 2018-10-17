@@ -11,7 +11,7 @@ create as part of the first instance.
 
    * Create a bucket for artifacts on your S3 store. This will be your
      ``s3.bucket`` parameter to the command.
-   * Obtain ``s3.apiKey`` and ``s3.secretKey`` credentials for an
+   * Obtain ``s3.accessKey`` and ``s3.secretKey`` credentials for an
      account with access to the bucket that you will use.
    * Configure the permissions on the bucket to allow the account to
      list, put, get, and delete.
