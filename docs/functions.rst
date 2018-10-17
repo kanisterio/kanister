@@ -257,6 +257,8 @@ Example:
         - |
           cp /restore-data/file_to_replace.data /data/file.data
 
+.. _backupdata:
+
 BackupData
 ----------
 
@@ -293,6 +295,8 @@ Example:
       includePath: /mnt/data
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupIdentifier: "{{ .Time }}"
+
+.. _restoredata:
 
 RestoreData
 -----------
@@ -350,6 +354,54 @@ Example:
       image: kanisterio/kanister-tools:0.12.0
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupIdentifier: "{{ .Time }}"
+
+CopyVolumeData
+--------------
+
+This function copies data from the specified volume (referenced by a
+Kubernetes PersistentVolumeClaim) into an object store.
+This data can be restored into a volume using the :ref:`restoredata`
+function
+
+.. note::
+   The PVC must not be in-use (attached to a running Pod)
+
+   If data needs to be copied from a running workload without stopping
+   it, use the :ref:`backupdata` function
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace the source PVC is in
+   `volume`, Yes, `string`, name of the source PVC
+   `dataArtifactPrefix`, Yes, `string`, path on the object store to store the data in
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `backupArtifactLocation`,`string`, location in objectstore where data was copied
+   `backupID`,`string`,  unique string to identify this data copy
+
+Example:
+
+If the ActionSet `Object` is a PersistentVolumeClaim:
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: CopyVolumeData
+    args:
+      namespace: "{{ .PVC.Namespace }}"
+      volume: "{{ .PVC.Name }}"
+      dataArtifactPrefix: s3-bucket-name/path
 
 DeleteData
 ----------
