@@ -26,6 +26,7 @@ const (
 	CopyVolumeDataOutputBackupID               = "backupID"
 	CopyVolumeDataOutputBackupRoot             = "backupRoot"
 	CopyVolumeDataOutputBackupArtifactLocation = "backupArtifactLocation"
+	CopyVolumeDataEncryptionKeyArg             = "encryptionKey"
 )
 
 func init() {
@@ -40,7 +41,7 @@ func (*copyVolumeDataFunc) Name() string {
 	return "CopyVolumeData"
 }
 
-func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc, targetPath string) (map[string]interface{}, error) {
+func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc, targetPath, encryptionKey string) (map[string]interface{}, error) {
 	// Validate PVC exists
 	if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvc, metav1.GetOptions{}); err != nil {
 		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
@@ -60,13 +61,13 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 	defer kube.DeletePod(context.Background(), cli, pod)
 
 	// Get restic repository
-	if err = restic.GetOrCreateRepository(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, tp.Profile); err != nil {
+	if err = restic.GetOrCreateRepository(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, encryptionKey, tp.Profile); err != nil {
 		return nil, err
 	}
 
 	// Copy data to object store
 	backupIdentifier := rand.String(10)
-	cmd := restic.BackupCommand(tp.Profile, targetPath, backupIdentifier, mountPoint)
+	cmd := restic.BackupCommand(tp.Profile, targetPath, backupIdentifier, mountPoint, encryptionKey)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd)
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
@@ -82,7 +83,7 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 }
 
 func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var namespace, vol, targetPath string
+	var namespace, vol, targetPath, encryptionKey string
 	var err error
 	if err = Arg(args, CopyVolumeDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -93,11 +94,14 @@ func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	if err = Arg(args, CopyVolumeDataArtifactPrefixArg, &targetPath); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, CopyVolumeDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
+		return nil, err
+	}
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return copyVolumeData(ctx, cli, tp, namespace, vol, targetPath)
+	return copyVolumeData(ctx, cli, tp, namespace, vol, targetPath, encryptionKey)
 }
 
 func (*copyVolumeDataFunc) RequiredArgs() []string {
