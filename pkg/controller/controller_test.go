@@ -172,6 +172,32 @@ func newBPWithOutputArtifact() *crv1alpha1.Blueprint {
 	}
 }
 
+func newBPWithFakeOutputArtifact() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-blueprint-",
+		},
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"myAction": &crv1alpha1.BlueprintAction{
+				OutputArtifacts: map[string]crv1alpha1.Artifact{
+					"myArt": crv1alpha1.Artifact{
+						KeyValue: map[string]string{
+							"key": "{{ .Phases.myPhase0.Output.myKey }}",
+						},
+					},
+				},
+				Kind: "Deployment",
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "myPhase0",
+						Func: testutil.OutputFuncName,
+					},
+				},
+			},
+		},
+	}
+}
+
 func (s *ControllerSuite) TestEmptyActionSetStatus(c *C) {
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -394,4 +420,25 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	c.Assert(arts, HasLen, 1)
 	keyVal := arts["myArt"].KeyValue
 	c.Assert(keyVal, DeepEquals, map[string]string{"key": "myValue"})
+}
+
+func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
+	bp := newBPWithFakeOutputArtifact()
+	bp = testutil.BlueprintWithConfigMap(bp)
+	bp, err := s.crCli.Blueprints(s.namespace).Create(bp)
+	c.Assert(err, IsNil)
+
+	// Add an actionset that references that blueprint.
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace)
+	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
+	as, err = s.crCli.ActionSets(s.namespace).Create(as)
+	c.Assert(err, IsNil)
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+
+	c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
+	c.Assert(err, IsNil)
 }

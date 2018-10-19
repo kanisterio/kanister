@@ -421,7 +421,7 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 					},
 				},
 			},
-			checker: NotNil,
+			checker: IsNil,
 		},
 		{
 			as: &crv1alpha1.ActionSetStatus{
