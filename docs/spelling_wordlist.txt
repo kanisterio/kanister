@@ -28,3 +28,4 @@ Dockerfile
 PersistentVolumeClaim
 actionset
 objectstore
+Elasticsearch
