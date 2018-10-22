@@ -19,6 +19,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
+const volSnapshotInfoKey = "volumeSnapshotInfo"
+
 type VolumeSnapshotTestSuite struct {
 	cli       kubernetes.Interface
 	crCli     versioned.Interface
@@ -214,23 +216,37 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	tp, err := param.New(ctx, s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
 
-	actions := []string{"backup", "restore", "delete"}
 	bp := newVolumeSnapshotBlueprint()
-	for _, action := range actions {
-		phases, err := kanister.GetPhases(*bp, action, *tp)
+	action := "backup"
+	phases, err := kanister.GetPhases(*bp, action, *tp)
+	c.Assert(err, IsNil)
+	for _, p := range phases {
+		output, err := p.Exec(ctx, *bp, action, *tp)
 		c.Assert(err, IsNil)
-		for _, p := range phases {
-			output, err := p.Exec(ctx, *bp, action, *tp)
-			if action == "backup" {
-				keyval := make(map[string]string)
-				keyval["manifest"] = output["volumeSnapshotInfo"].(string)
-				artifact := crv1alpha1.Artifact{
-					KeyValue: keyval,
-				}
-				tp.ArtifactsIn = make(map[string]crv1alpha1.Artifact)
-				tp.ArtifactsIn["backupInfo"] = artifact
-			}
-			c.Assert(err, IsNil)
+		c.Assert(output, NotNil)
+		c.Assert(output[volSnapshotInfoKey], NotNil)
+		keyval := make(map[string]string)
+		keyval["manifest"] = output[volSnapshotInfoKey].(string)
+		artifact := crv1alpha1.Artifact{
+			KeyValue: keyval,
 		}
+		tp.ArtifactsIn = make(map[string]crv1alpha1.Artifact)
+		tp.ArtifactsIn["backupInfo"] = artifact
+	}
+
+	action = "restore"
+	phases, err = kanister.GetPhases(*bp, action, *tp)
+	c.Assert(err, IsNil)
+	for _, p := range phases {
+		_, err = p.Exec(ctx, *bp, action, *tp)
+		c.Assert(err, IsNil)
+	}
+
+	action = "delete"
+	phases, err = kanister.GetPhases(*bp, action, *tp)
+	c.Assert(err, IsNil)
+	for _, p := range phases {
+		_, err = p.Exec(ctx, *bp, action, *tp)
+		c.Assert(err, IsNil)
 	}
 }
