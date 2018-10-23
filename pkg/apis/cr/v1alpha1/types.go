@@ -146,28 +146,7 @@ type Phase struct {
 
 // Artifact tracks objects produced by an action.
 type Artifact struct {
-	CloudObject ArtifactCloudObject `json:"cloudObject"`
-	KeyValue    map[string]string   `json:"keyValue"`
-}
-
-// CloudObjectProvider is the cloud storage provider.
-type CloudObjectProvider string
-
-const (
-	// CloudObjectProviderGCS means this provider is Google Cloud Storage.
-	CloudObjectProviderGCS CloudObjectProvider = "GCS"
-	// CloudObjectProviderS3 means this provider is AWS S3.
-	CloudObjectProviderS3 CloudObjectProvider = "S3"
-)
-
-// ArtifactCloudObject references an object in cloud storage.
-type ArtifactCloudObject struct {
-	Bucket   string              `json:"bucket"`
-	Provider CloudObjectProvider `json:"provider"`
-	Endpoint string              `json:"endpoint"`
-	Path     string              `json:"path"`
-	PathType string              `json:"pathType"`
-	Region   string              `json:"region"`
+	KeyValue map[string]string `json:"keyValue"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

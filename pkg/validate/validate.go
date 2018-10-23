@@ -117,14 +117,6 @@ func Blueprint(bp *crv1alpha1.Blueprint) error {
 	return nil
 }
 
-// CloudObjectProvider returns an error if op is not a known provider
-func CloudObjectProvider(op crv1alpha1.CloudObjectProvider) error {
-	if op != crv1alpha1.CloudObjectProviderGCS && op != crv1alpha1.CloudObjectProviderS3 {
-		return errorf("Invalid cloud object provider %s", op)
-	}
-	return nil
-}
-
 func ProfileSchema(p *crv1alpha1.Profile) error {
 	if p.Location.Type != crv1alpha1.LocationTypeS3Compliant {
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
