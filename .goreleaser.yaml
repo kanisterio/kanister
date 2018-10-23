@@ -9,7 +9,6 @@ builds:
       - CGO_ENABLED=0
       - GO_EXTLINK_ENABLED=0
     goos:
-      - windows
       - darwin
       - linux
     goarch:
@@ -22,7 +21,6 @@ builds:
       - CGO_ENABLED=0
       - GO_EXTLINK_ENABLED=0
     goos:
-      - windows
       - darwin
       - linux
     goarch:
@@ -31,6 +29,3 @@ builds:
 # Archive customization
 archive:
   format: tar.gz
-  format_overrides:
-    - goos: windows
-      format: zip
