@@ -26,6 +26,8 @@ const (
 	BackupDataBackupArtifactPrefixArg = "backupArtifactPrefix"
 	// BackupDataBackupIdentifierArg provides a unique ID added to the artifacts
 	BackupDataBackupIdentifierArg = "backupIdentifier"
+	// BackupDataEncryptionKeyArg provides the encryption key to be used for backups
+	BackupDataEncryptionKeyArg = "encryptionKey"
 )
 
 func init() {
@@ -51,7 +53,7 @@ func validateProfile(profile *param.Profile) error {
 }
 
 func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var namespace, pod, container, includePath, backupArtifactPrefix, backupIdentifier string
+	var namespace, pod, container, includePath, backupArtifactPrefix, backupIdentifier, encryptionKey string
 	var err error
 	if err = Arg(args, BackupDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -71,6 +73,9 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = Arg(args, BackupDataBackupIdentifierArg, &backupIdentifier); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, BackupDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
+		return nil, err
+	}
 	// Validate the Profile
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
@@ -80,12 +85,12 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
 
-	if err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, tp.Profile); err != nil {
+	if err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, encryptionKey, tp.Profile); err != nil {
 		return nil, err
 	}
 
 	// Create backup and dump it on the object store
-	cmd := restic.BackupCommand(tp.Profile, backupArtifactPrefix, backupIdentifier, includePath)
+	cmd := restic.BackupCommand(tp.Profile, backupArtifactPrefix, backupIdentifier, includePath, encryptionKey)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)

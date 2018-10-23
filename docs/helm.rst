@@ -39,3 +39,4 @@ The following application-specific instructions are available:
    helm_instructions/mysql_instructions.rst
    helm_instructions/pgsql_instructions.rst
    helm_instructions/mongodb_instructions.rst
+   helm_instructions/elasticsearch_instructions.rst

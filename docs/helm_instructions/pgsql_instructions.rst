@@ -28,7 +28,7 @@ Then install the sample PostgreSQL application in its own namespace.
           --set profile.profileName='postgres-test-profile' \
           --set profile.s3.bucket="kanister-bucket" \
           --set profile.s3.endpoint="https://my-custom-s3-provider:9000" \
-          --set profile.s3.apiKey="AKIAIOSFODNN7EXAMPLE" \
+          --set profile.s3.accessKey="AKIAIOSFODNN7EXAMPLE" \
           --set profile.s3.secretKey="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
           --set kanister.controller_namespace="kanister"
 

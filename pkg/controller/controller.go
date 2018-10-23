@@ -358,13 +358,13 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		for i, p := range phases {
 			c.logAndSuccessEvent(fmt.Sprintf("Executing phase %s", p.Name()), "Started Phase", as)
 			err = param.InitPhaseParams(ctx, c.clientset, tp, p.Name(), p.Objects())
-			if err != nil {
-				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
-				msg := fmt.Sprintf("Failed to init phase params: %#v:", as.Status.Actions[aIDX].Phases[i])
-				c.logAndErrorEvent(msg, reason, err, as, bp)
-				return
+			var output map[string]interface{}
+			var msg string
+			if err == nil {
+				output, err = p.Exec(ctx, *bp, action.Name, *tp)
+			} else {
+				msg = fmt.Sprintf("Failed to init phase params: %#v:", as.Status.Actions[aIDX].Phases[i])
 			}
-			output, err := p.Exec(ctx, *bp, action.Name, *tp)
 			var rf func(*crv1alpha1.ActionSet) error
 			if err != nil {
 				rf = func(ras *crv1alpha1.ActionSet) error {
@@ -387,7 +387,9 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			}
 			if err != nil {
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
-				msg := fmt.Sprintf("Failed to execute phase: %#v:", as.Status.Actions[aIDX].Phases[i])
+				if msg == "" {
+					msg = fmt.Sprintf("Failed to execute phase: %#v:", as.Status.Actions[aIDX].Phases[i])
+				}
 				c.logAndErrorEvent(msg, reason, err, as, bp)
 				return
 			}
@@ -410,22 +412,30 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		}
 		// Render the artifacts
 		arts, err := param.RenderArtifacts(artTpls, *tp)
+		var af func(*crv1alpha1.ActionSet) error
 		if err != nil {
-			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
-			msg := fmt.Sprintf("Failed to render Output Artifacts: %#v:", artTpls)
-			c.logAndErrorEvent(msg, reason, err, as, bp)
-			return
+			af = func(ras *crv1alpha1.ActionSet) error {
+				ras.Status.State = crv1alpha1.StateFailed
+				return nil
+			}
+		} else {
+			af = func(ras *crv1alpha1.ActionSet) error {
+				ras.Status.Actions[aIDX].Artifacts = arts
+				ras.Status.State = crv1alpha1.StateComplete
+				return nil
+			}
 		}
-		af := func(ras *crv1alpha1.ActionSet) error {
-			ras.Status.Actions[aIDX].Artifacts = arts
-			ras.Status.State = crv1alpha1.StateComplete
-			return nil
-		}
-		// Update ActionSet with artifacts
+		// Update ActionSet
 		if aErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), ns, name, af); aErr != nil {
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
 			msg := fmt.Sprintf("Failed to update Output Artifacts: %#v:", artTpls)
 			c.logAndErrorEvent(msg, reason, aErr, as, bp)
+			return
+		}
+		if err != nil {
+			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
+			msg := "Failed to render output artifacts"
+			c.logAndErrorEvent(msg, reason, err, as, bp)
 			return
 		}
 	}()

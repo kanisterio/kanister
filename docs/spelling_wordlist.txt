@@ -25,3 +25,7 @@ defaultProfile
 Kando
 kando
 Dockerfile
+PersistentVolumeClaim
+actionset
+objectstore
+Elasticsearch

@@ -7,6 +7,7 @@ import (
 	. "gopkg.in/check.v1"
 
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -70,6 +71,9 @@ func newRestoreDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			actionName: &crv1alpha1.BlueprintAction{
 				Kind: param.StatefulSetKind,
+				SecretNames: []string{
+					"backupKey",
+				},
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testRestore",
@@ -80,6 +84,7 @@ func newRestoreDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}",
 							RestoreDataRestorePathArg:          "/",
 							RestoreDataBackupIdentifierArg:     "{{ .Time }}",
+							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
 							RestoreDataVolsArg: map[string]string{
 								pvc: "/mnt/data",
 							},
@@ -107,6 +112,7 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 							BackupDataIncludePathArg:          "/etc",
 							BackupDataBackupArtifactPrefixArg: "{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}",
 							BackupDataBackupIdentifierArg:     "{{ .Time }}",
+							BackupDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
 						},
 					},
 				},
@@ -126,6 +132,19 @@ func (s *DataSuite) TestBackupRestoreData(c *C) {
 	pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
 	c.Assert(err, IsNil)
 
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secret-datatest",
+			Namespace: s.namespace,
+		},
+		Type: "Opaque",
+		StringData: map[string]string{
+			"password": "myPassword",
+		},
+	}
+	secret, err = s.cli.CoreV1().Secrets(s.namespace).Create(secret)
+	c.Assert(err, IsNil)
+
 	as := crv1alpha1.ActionSpec{
 		Object: crv1alpha1.ObjectReference{
 			Kind:      param.StatefulSetKind,
@@ -135,6 +154,13 @@ func (s *DataSuite) TestBackupRestoreData(c *C) {
 		Profile: &crv1alpha1.ObjectReference{
 			Name:      testutil.TestProfileName,
 			Namespace: s.namespace,
+		},
+		Secrets: map[string]crv1alpha1.ObjectReference{
+			"backupKey": crv1alpha1.ObjectReference{
+				Kind:      "Secret",
+				Name:      secret.GetName(),
+				Namespace: s.namespace,
+			},
 		},
 	}
 

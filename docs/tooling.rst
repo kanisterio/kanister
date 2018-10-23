@@ -71,6 +71,8 @@ As seen above, both ActionSets and profiles can be created using `kanctl create`
     -f, --from string                 specify name of the action set
     -h, --help                        help for actionset
     -k, --kind string                 resource kind to apply selector on. Used along with the selector specified using --selector/-l (default "all")
+    -T, --namespacetargets strings    namespaces for the action set, comma separated list of namespaces (eg: --namespacetargets namespace1,namespace2)
+    -O, --objects strings             objects for the action set, comma separated list of object references (eg: --objects group/version/resource/namespace1/name1,group/version/resource/namespace2/name2)
     -o, --options strings             specify options for the action set, comma separated key=value pairs (eg: --options key1=value1,key2=value2)
     -p, --profile string              profile for the action set
     -v, --pvc strings                 pvc for the action set, comma separated namespace/name pairs (eg: --pvc namespace1/name1,namespace2/name2)
@@ -295,13 +297,17 @@ object store like AWS S3. We've found it can be cumbersome to pass Profile
 configuration to tools like the AWS command line from inside Blueprints.
 
 `kando` is a tool to simplify object store interactions from within blueprints.
-It has three commands:
+It also provides a way to create desired output from a blueprint phase.
+
+It has the following commands:
 
 * `location push`
 
 * `location pull`
 
 * `location delete`
+
+* `output`
 
 The usage for these commands can be displayed using the `--help` flag:
 
@@ -337,18 +343,29 @@ The usage for these commands can be displayed using the `--help` flag:
 
 .. code-block:: bash
 
-$ kando location delete --help
-Delete artifacts from s3-compliant object storage
+  $ kando location delete --help
+  Delete artifacts from s3-compliant object storage
 
-Usage:
-  kando location delete [flags]
+  Usage:
+    kando location delete [flags]
 
-Flags:
-  -h, --help   help for delete
+  Flags:
+    -h, --help   help for delete
 
-Global Flags:
-  -s, --path string      Specify a path suffix (optional)
-  -p, --profile string   Pass a Profile as a JSON string (required)
+  Global Flags:
+    -s, --path string      Specify a path suffix (optional)
+    -p, --profile string   Pass a Profile as a JSON string (required)
+
+.. code-block:: bash
+
+  $ kando output --help
+  Create phase output with given key:value
+
+  Usage:
+    kando output <key> <value> [flags]
+
+  Flags:
+    -h, --help   help for output
 
 The following snippet is an example of using kando from inside a Blueprint.
 
@@ -358,6 +375,7 @@ The following snippet is an example of using kando from inside a Blueprint.
 
   kando location delete --profile '{{ .Profile }}' --path '/backup/path'
 
+  kando output version 0.13.0
 
 Docker Image
 ============

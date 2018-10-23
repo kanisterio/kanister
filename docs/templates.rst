@@ -15,12 +15,14 @@ The TemplateParam struct is defined as:
       StatefulSet  StatefulSetParams
       Deployment   DeploymentParams
       PVC          PVCParams
+      Namespace    NamespaceParams
       ArtifactsIn  map[string]crv1alpha1.Artifact // A Kanister Artifact
       Profile      *Profile
       ConfigMaps   map[string]v1.ConfigMap
       Secrets      map[string]v1.Secret
       Time         string
       Options      map[string]string
+      Object       map[string]interface{}
       Phases       map[string]*Phase
   }
 
@@ -51,16 +53,20 @@ standard go template functions, Kanister imports all the `sprig
     return ras, nil
 
 
-Protected Objects
-=================
+Objects
+=======
 
-Kanister operates on the granularity of a `ProtectedObject`. As of the current
-release, a Protected Object is a workload, specifically, a Deployment or
-StatefulSet. The TemplateParams struct has one field for each potential protected
-object, which is effectively a union in go.
+Kanister operates on the granularity of an `Object`. As of the current
+release, well known Object types are `Deployment`, `StatefulSet`, `PersistentVolumeClaim`,
+or `Namespace`. The TemplateParams struct has one field for each well known
+object type, which is effectively a union in go.
 
-Each ProtectedObject param struct is a set of useful fields related to the
-ProtectedObject.
+Other than the types mentioned above, Kanister can also act on any Kubernetes
+object such as a CRD and the :ref:`object` field in TemplateParams is populated with the
+unstructured content of those.
+
+Each param struct described below is a set of useful fields related to the
+Object.
 
 StatefulSet
 -----------
@@ -109,6 +115,27 @@ For example, to access the Name of a Deployment use:
 
   "{{ index .Deployment.Name }}"
 
+Namespace
+---
+
+NamespaceParams includes the name of the namespace
+that is being acted on when the ActionSet `Object` is
+specifies a Namespace
+
+.. code-block:: go
+  :linenos:
+
+  // NamespaceParams are params for a Namespace
+  type NamespaceParams struct {
+    Name              string
+  }
+
+For example, to access the Name of a Namespace, use:
+
+.. code-block:: go
+
+  "{{ .Namespace.Name }}"
+
 PVC
 ---
 
@@ -129,6 +156,32 @@ For example, to access the Name of a persistent volume claim, use:
 .. code-block:: go
 
   "{{ .PVC.Name }}"
+
+.. _object:
+
+Object
+------
+
+Object includes the unstructured representation of the underlying
+Kubernetes object. This allows the flexibility of writing blueprints
+that operate on objects that are not well known to Kanister such as
+CRD's
+
+.. code-block:: go
+  :linenos:
+
+  type TemplateParams struct {
+    ...
+    Object       map[string]interface{}
+    ...
+  }
+
+For example, to access the Name in the Kubernetes ObjectMeta of an
+arbitrary object, use:
+
+.. code-block:: go
+
+  "{{ .Object.metadata.name }}"
 
 Artifacts
 =========

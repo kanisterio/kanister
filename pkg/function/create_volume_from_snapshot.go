@@ -10,7 +10,6 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -24,7 +23,7 @@ var (
 
 const (
 	CreateVolumeFromSnapshotNamespaceArg = "namespace"
-	CreateVolumeFromSnapshotPathArg      = "snapshots"
+	CreateVolumeFromSnapshotManifestArg  = "snapshots"
 )
 
 type createVolumeFromSnapshotFunc struct{}
@@ -33,13 +32,9 @@ func (*createVolumeFromSnapshotFunc) Name() string {
 	return "CreateVolumeFromSnapshot"
 }
 
-func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotPath string, profile *param.Profile) error {
-	data, err := objectstore.GetData(ctx, profile, objectstore.ProviderTypeS3, profile.Location.S3Compliant.Bucket, snapshotPath, "manifest.txt")
-	if err != nil {
-		return err
-	}
+func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotinfo string, profile *param.Profile) error {
 	PVCData := []VolumeSnapshotInfo{}
-	err = json.Unmarshal(data, &PVCData)
+	err := json.Unmarshal([]byte(snapshotinfo), &PVCData)
 	if err != nil {
 		return errors.Wrapf(err, "Could not decode JSON data")
 	}
@@ -81,16 +76,16 @@ func (kef *createVolumeFromSnapshotFunc) Exec(ctx context.Context, tp param.Temp
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	var namespace, snapshots string
+	var namespace, snapshotinfo string
 	if err = Arg(args, CreateVolumeFromSnapshotNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, CreateVolumeFromSnapshotPathArg, &snapshots); err != nil {
+	if err = Arg(args, CreateVolumeFromSnapshotManifestArg, &snapshotinfo); err != nil {
 		return nil, err
 	}
-	return nil, createVolumeFromSnapshot(ctx, cli, namespace, snapshots, tp.Profile)
+	return nil, createVolumeFromSnapshot(ctx, cli, namespace, snapshotinfo, tp.Profile)
 }
 
 func (*createVolumeFromSnapshotFunc) RequiredArgs() []string {
-	return []string{CreateVolumeFromSnapshotNamespaceArg, CreateVolumeFromSnapshotPathArg}
+	return []string{CreateVolumeFromSnapshotNamespaceArg, CreateVolumeFromSnapshotManifestArg}
 }

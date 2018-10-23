@@ -26,6 +26,8 @@ const (
 	RestoreDataPodArg = "pod"
 	// RestoreDataVolsArg provides a map of PVC->mountPaths to be attached
 	RestoreDataVolsArg = "volumes"
+	// RestoreDataEncryptionKeyArg provides the encryption key used during backup
+	RestoreDataEncryptionKeyArg = "encryptionKey"
 )
 
 func init() {
@@ -65,7 +67,7 @@ func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, er
 }
 
 func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var namespace, pod, image, backupArtifactPrefix, restorePath, backupIdentifier string
+	var namespace, pod, image, backupArtifactPrefix, restorePath, backupIdentifier, encryptionKey string
 	var vols map[string]string
 	var err error
 	if err = Arg(args, RestoreDataNamespaceArg, &namespace); err != nil {
@@ -89,6 +91,9 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = OptArg(args, RestoreDataVolsArg, &vols, nil); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, RestoreDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
+		return nil, err
+	}
 	if err = validateOptArgs(pod, vols); err != nil {
 		return nil, err
 	}
@@ -97,7 +102,7 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 		return nil, err
 	}
 	// Generate restore command
-	cmd := restic.RestoreCommand(tp.Profile, backupArtifactPrefix, backupIdentifier, restorePath)
+	cmd := restic.RestoreCommand(tp.Profile, backupArtifactPrefix, backupIdentifier, restorePath, encryptionKey)
 	if len(vols) == 0 {
 		// Fetch Volumes
 		vols, err = fetchPodVolumes(pod, tp)

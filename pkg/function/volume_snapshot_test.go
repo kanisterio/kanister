@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"strings"
 
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -17,6 +18,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+)
+
+const (
+	volumeSnapshotInfoKey = "volumeSnapshotInfo"
+	manifestKey           = "manifest"
+	backupInfoKey         = "backupInfo"
+	skipTestErrorMsg      = "Storage type not supported"
 )
 
 type VolumeSnapshotTestSuite struct {
@@ -69,9 +77,9 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 			"backup": {
 				Kind: param.StatefulSetKind,
 				OutputArtifacts: map[string]crv1alpha1.Artifact{
-					"backupLocation": {
+					"backupInfo": {
 						KeyValue: map[string]string{
-							"path": "{{ .Phases.testBackupVolume.Output.backupLocation }}",
+							"manifest": "{{ .Phases.testBackupVolume.Output.volumeSnapshotInfo }}",
 						},
 					},
 				},
@@ -88,7 +96,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 			"restore": {
 				Kind: param.StatefulSetKind,
 				InputArtifactNames: []string{
-					"backupLocation",
+					"backupInfo",
 				},
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
@@ -104,7 +112,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 						Func: "CreateVolumeFromSnapshot",
 						Args: map[string]interface{}{
 							CreateVolumeFromSnapshotNamespaceArg: "{{ .StatefulSet.Namespace }}",
-							CreateVolumeFromSnapshotPathArg:      "{{ .ArtifactsIn.backupLocation.KeyValue.path }}",
+							CreateVolumeFromSnapshotManifestArg:  "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}",
 						},
 					},
 					{
@@ -120,7 +128,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 			"delete": {
 				Kind: param.StatefulSetKind,
 				InputArtifactNames: []string{
-					"backupLocation",
+					"backupInfo",
 				},
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
@@ -128,7 +136,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 						Func: "DeleteVolumeSnapshot",
 						Args: map[string]interface{}{
 							DeleteVolumeSnapshotNamespaceArg: "{{ .StatefulSet.Namespace }}",
-							DeleteVolumeSnapshotPathArg:      "{{ .ArtifactsIn.backupLocation.KeyValue.path }}",
+							DeleteVolumeSnapshotManifestArg:  "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}",
 						},
 					},
 				},
@@ -213,7 +221,6 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 
 	tp, err := param.New(ctx, s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
-	tp.Profile = testutil.ObjectStoreProfileOrSkip(c)
 
 	actions := []string{"backup", "restore", "delete"}
 	bp := newVolumeSnapshotBlueprint()
@@ -222,16 +229,21 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			output, err := p.Exec(ctx, *bp, action, *tp)
+			if err != nil && strings.Contains(err.Error(), skipTestErrorMsg) {
+				c.Skip("Skipping the test since storage type not supported")
+			}
+			c.Assert(err, IsNil)
 			if action == "backup" {
 				keyval := make(map[string]string)
-				keyval["path"] = output["backupLocation"].(string)
+				c.Assert(output, NotNil)
+				c.Assert(output[volumeSnapshotInfoKey], NotNil)
+				keyval[manifestKey] = output[volumeSnapshotInfoKey].(string)
 				artifact := crv1alpha1.Artifact{
 					KeyValue: keyval,
 				}
 				tp.ArtifactsIn = make(map[string]crv1alpha1.Artifact)
-				tp.ArtifactsIn["backupLocation"] = artifact
+				tp.ArtifactsIn[backupInfoKey] = artifact
 			}
-			c.Assert(err, IsNil)
 		}
 	}
 }

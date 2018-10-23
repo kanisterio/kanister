@@ -421,7 +421,7 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 					},
 				},
 			},
-			checker: NotNil,
+			checker: IsNil,
 		},
 		{
 			as: &crv1alpha1.ActionSetStatus{
@@ -465,20 +465,4 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 func (s *ValidateSuite) TestBlueprint(c *C) {
 	err := Blueprint(nil)
 	c.Assert(err, IsNil)
-}
-
-func (s *ValidateSuite) TestCloudObjectProvider(c *C) {
-	cases := []struct {
-		cop     crv1alpha1.CloudObjectProvider
-		checker Checker
-	}{
-		{crv1alpha1.CloudObjectProviderGCS, IsNil},
-		{crv1alpha1.CloudObjectProviderS3, IsNil},
-		{crv1alpha1.CloudObjectProvider(""), NotNil},
-		{crv1alpha1.CloudObjectProvider("unsupported provider"), NotNil},
-	}
-	for _, tc := range cases {
-		err := CloudObjectProvider(tc.cop)
-		c.Assert(err, tc.checker)
-	}
 }

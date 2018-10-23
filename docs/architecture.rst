@@ -73,8 +73,10 @@ The definition of a `BlueprintAction` is:
       Phases             []BlueprintPhase    `json:"phases"`
   }
 
-- `Kind` is required as and represents the type of object to act on.
-   Currently the supported values are `Deployment` or `Statefulset`.
+- `Kind` represents the type of Kubernetes object this BlueprintAction is written for.
+  Specifying this is optional and going forward, if this is specified, Kanister will
+  enforce that it matches the `Object` kind specified in an ActionSet referencing this
+  BlueprintAction
 - `ConfigMapNames`, `SecretNames`, `InputArtifactNames` are optional
   but, if specified, they list named parameters that must be included by
   the `ActionSet`.

@@ -3,7 +3,6 @@ package function
 import (
 	"context"
 	"encoding/json"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -12,7 +11,6 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -51,11 +49,7 @@ type volumeInfo struct {
 }
 
 func createVolumeSnapshot(ctx context.Context, tp param.TemplateParams, cli kubernetes.Interface, namespace string, pvcs []string) (map[string]interface{}, error) {
-	appName, err := getAppName(tp)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get App name")
-	}
-	backupLocation := filepath.Join(appName, tp.Time)
+
 	PVCData := make([]VolumeSnapshotInfo, 0, len(pvcs))
 	for _, pvc := range pvcs {
 		volInfo, err := getPVCInfo(cli, namespace, pvc)
@@ -72,14 +66,12 @@ func createVolumeSnapshot(ctx context.Context, tp param.TemplateParams, cli kube
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to encode JSON data")
 	}
-	if err = objectstore.PutData(ctx, tp.Profile, objectstore.ProviderTypeS3, tp.Profile.Location.S3Compliant.Bucket, backupLocation, "manifest.txt", manifestData); err != nil {
-		return nil, errors.Wrapf(err, "Failed to upload Snapshot manifest to S3")
-	}
-	return map[string]interface{}{"backupLocation": backupLocation}, nil
+
+	return map[string]interface{}{"volumeSnapshotInfo": string(manifestData)}, nil
 }
 
 func snapshotVolume(ctx context.Context, cli kubernetes.Interface, vol *volumeInfo, namespace string) (*VolumeSnapshotInfo, error) {
-	return &VolumeSnapshotInfo{SnapshotID: "123", StorageType: "EBS", Region: ""}, nil
+	return &VolumeSnapshotInfo{SnapshotID: vol.volumeID, StorageType: vol.storageType, Region: ""}, nil
 }
 
 func getPVCInfo(kubeCli kubernetes.Interface, namespace string, name string) (*volumeInfo, error) {
@@ -139,18 +131,6 @@ func getPVCList(tp param.TemplateParams) ([]string, error) {
 		return nil, errors.New("No pvcs found")
 	}
 	return pvcList, nil
-}
-
-func getAppName(tp param.TemplateParams) (string, error) {
-	var appName string
-	switch {
-	case tp.Deployment != nil:
-		return tp.Deployment.Name, nil
-	case tp.StatefulSet != nil:
-		return tp.StatefulSet.Name, nil
-	default:
-		return appName, errors.New("Failed to get app name")
-	}
 }
 
 func (kef *createVolumeSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
