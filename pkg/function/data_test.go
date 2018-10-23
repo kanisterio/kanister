@@ -80,7 +80,7 @@ func newRestoreDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 						Func: "RestoreData",
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataImageArg:                "kanisterio/kanister-tools:0.12.0",
+							RestoreDataImageArg:                "kanisterio/kanister-tools:0.13.0",
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}",
 							RestoreDataRestorePathArg:          "/",
 							RestoreDataBackupIdentifierArg:     "{{ .Time }}",
@@ -222,7 +222,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 						Func: "RestoreData",
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
-							RestoreDataImageArg:                "kanisterio/kanister-tools:0.12.0",
+							RestoreDataImageArg:                "kanisterio/kanister-tools:0.13.0",
 							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
 							RestoreDataBackupIdentifierArg:     fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupID),
 							RestoreDataVolsArg: map[string]string{
