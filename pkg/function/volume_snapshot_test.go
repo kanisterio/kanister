@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"strings"
 
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -17,6 +18,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+)
+
+const (
+	volumeSnapshotInfoKey = "volumeSnapshotInfo"
+	manifestKey           = "manifest"
+	backupInfoKey         = "backupInfo"
+	skipTestErrorMsg      = "Storage type not supported"
 )
 
 type VolumeSnapshotTestSuite struct {
@@ -221,16 +229,21 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			output, err := p.Exec(ctx, *bp, action, *tp)
+			if err != nil && strings.Contains(err.Error(), skipTestErrorMsg) {
+				c.Skip("Skipping the test since storage type not supported")
+			}
+			c.Assert(err, IsNil)
 			if action == "backup" {
 				keyval := make(map[string]string)
-				keyval["manifest"] = output["volumeSnapshotInfo"].(string)
+				c.Assert(output, NotNil)
+				c.Assert(output[volumeSnapshotInfoKey], NotNil)
+				keyval[manifestKey] = output[volumeSnapshotInfoKey].(string)
 				artifact := crv1alpha1.Artifact{
 					KeyValue: keyval,
 				}
 				tp.ArtifactsIn = make(map[string]crv1alpha1.Artifact)
-				tp.ArtifactsIn["backupInfo"] = artifact
+				tp.ArtifactsIn[backupInfoKey] = artifact
 			}
-			c.Assert(err, IsNil)
 		}
 	}
 }
