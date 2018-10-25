@@ -4,7 +4,7 @@ package objectstore
 
 import (
 	"context"
-	"path/filepath"
+	"path"
 
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
@@ -49,7 +49,7 @@ func (p *provider) CreateBucket(ctx context.Context, bucketName, region string) 
 		directory:    dir,
 		container:    c,
 		location:     location,
-		hostEndPoint: filepath.Join(p.hostEndPoint, c.ID()),
+		hostEndPoint: path.Join(p.hostEndPoint, c.ID()),
 	}
 	dir.bucket = bucket
 	return bucket, nil
@@ -73,7 +73,7 @@ func (p *provider) GetBucket(ctx context.Context, bucketName string) (Bucket, er
 		directory:    dir,
 		container:    c,
 		location:     location,
-		hostEndPoint: filepath.Join(p.hostEndPoint, c.ID()),
+		hostEndPoint: path.Join(p.hostEndPoint, c.ID()),
 	}
 	dir.bucket = bucket
 	return bucket, nil
@@ -101,7 +101,7 @@ func (p *provider) ListBuckets(ctx context.Context) (map[string]Bucket, error) {
 				directory:    dir,
 				container:    c,
 				location:     location,
-				hostEndPoint: filepath.Join(p.hostEndPoint, c.ID()),
+				hostEndPoint: path.Join(p.hostEndPoint, c.ID()),
 			}
 			dir.bucket = bucket
 			buckets[c.ID()] = bucket
@@ -158,7 +158,7 @@ func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, 
 		directory:    dir,
 		container:    c,
 		location:     location,
-		hostEndPoint: filepath.Join(hostEndPoint, c.ID()),
+		hostEndPoint: path.Join(hostEndPoint, c.ID()),
 	}
 	dir.bucket = bucket
 	return bucket, nil
