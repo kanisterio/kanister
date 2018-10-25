@@ -138,9 +138,14 @@ type s3Provider struct {
 }
 
 func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, error) {
-	region, _ := p.getRegionForBucket(ctx, bucketName)
 	hostEndPoint := p.hostEndPoint
-	if hostEndPoint != "" {
+	var region string
+	if hostEndPoint == "" {
+		var err error
+		region, err = p.getRegionForBucket(ctx, bucketName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not get region for bucket %s", bucketName)
+		}
 		hostEndPoint = awsS3Endpoint(region)
 	}
 	location, err := getStowLocation(ctx, p.config, p.secret, region)
