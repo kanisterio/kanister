@@ -205,21 +205,12 @@ func getStowLocation(ctx context.Context, config ProviderConfig, secret *Secret,
 func getHostURI(config ProviderConfig) string {
 	switch config.Type {
 	case ProviderTypeGCS:
-		return fmt.Sprintf(googleGCSHostFmt)
+		return googleGCSHost
 	default:
 		return config.Endpoint
 	}
 }
 
-func checkHostURI(config ProviderConfig, hostEndpoint, region string) string {
-	if config.Type == ProviderTypeS3 {
-		if expectedEndpoint := fmt.Sprintf(awsS3HostFmt, region); expectedEndpoint != hostEndpoint {
-			return expectedEndpoint
-		}
-	}
-	return hostEndpoint
-}
-
-func getHostEndPoint(host, path string) string {
-	return fmt.Sprintf("%s/%s", host, path)
+func awsS3Endpoint(region string) string {
+	return fmt.Sprintf(awsS3HostFmt, region)
 }
