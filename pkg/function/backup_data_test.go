@@ -7,10 +7,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
-type ValidateProfileSuite struct {
+type BackupDataSuite struct {
 }
 
-var _ = Suite(&ValidateProfileSuite{})
+var _ = Suite(&BackupDataSuite{})
 
 func newValidProfile() *param.Profile {
 	return &param.Profile{
@@ -56,7 +56,7 @@ func newInvalidProfile() *param.Profile {
 	}
 }
 
-func (s *ValidateProfileSuite) TestValidateProfile(c *C) {
+func (s *BackupDataSuite) TestValidateProfile(c *C) {
 	testCases := []struct {
 		name       string
 		profile    *param.Profile
@@ -69,5 +69,20 @@ func (s *ValidateProfileSuite) TestValidateProfile(c *C) {
 	for _, tc := range testCases {
 		err := validateProfile(tc.profile)
 		c.Check(err, tc.errChecker, Commentf("Test %s Failed", tc.name))
+	}
+}
+
+func (s *BackupDataSuite) TestGetSnapshotID(c *C) {
+	for _, tc := range []struct {
+		log      string
+		expected string
+	}{
+		{"snapshot 1a2b3c4d saved", "1a2b3c4d"},
+		{"snapshot 123abcd", ""},
+		{"Invalid message", ""},
+		{"snapshot abc123\n saved", ""},
+	} {
+		id := getSnapshotIDFromLog(tc.log)
+		c.Check(id, Equals, tc.expected, Commentf("Failed for log: %s", tc.log))
 	}
 }

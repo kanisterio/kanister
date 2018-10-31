@@ -12,9 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/graymeta/stow"
-	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 	. "gopkg.in/check.v1"
@@ -133,13 +131,7 @@ func (s *ObjectStoreProviderSuite) TestGetNonExistingBucket(c *C) {
 	bucketName := s.createBucketName(c)
 	bucket, err := s.provider.GetBucket(ctx, bucketName)
 	c.Check(err, NotNil)
-	switch errors.Cause(err).(type) {
-	case awserr.Error:
-		c.Logf("Got a aws err %s", errors.Cause(err).Error())
-	default:
-		c.Logf("Expecting an aws error. Got %s", err.Error())
-		c.Fail()
-	}
+	c.Assert(isBucketNotFoundError(err), Equals, true)
 	c.Check(bucket, IsNil)
 }
 

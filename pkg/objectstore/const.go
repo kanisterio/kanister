@@ -1,9 +1,8 @@
 package objectstore
 
 const (
-	awsS3HostFmt = "https://s3-%s.amazonaws.com"
-
-	googleGCSHostFmt = "https://storage.googleapis.com"
+	awsS3HostFmt  = "https://s3-%s.amazonaws.com"
+	googleGCSHost = "https://storage.googleapis.com"
 )
 
 // ProviderType enum for different providers

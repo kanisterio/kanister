@@ -2,6 +2,7 @@ package objectstore
 
 import (
 	"context"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -14,6 +15,7 @@ import (
 const (
 	bucketNotFound = "NotFound"
 	noSuchBucket   = s3.ErrCodeNoSuchBucket
+	gcsS3NotFound  = "not found"
 )
 
 func config(region string) *aws.Config {
@@ -25,11 +27,14 @@ func config(region string) *aws.Config {
 }
 
 func isBucketNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
 	if awsErr, ok := errors.Cause(err).(awserr.Error); ok {
 		code := awsErr.Code()
 		return code == bucketNotFound || code == noSuchBucket
 	}
-	return false
+	return strings.Contains(err.Error(), gcsS3NotFound)
 }
 
 func GetS3BucketRegion(ctx context.Context, bucketName, regionHint string) (string, error) {

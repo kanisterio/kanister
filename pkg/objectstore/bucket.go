@@ -4,6 +4,7 @@ package objectstore
 
 import (
 	"context"
+	"path"
 
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
@@ -34,7 +35,6 @@ type bucket struct {
 // CreateBucket creates the bucket. Bucket naming rules are provider dependent.
 func (p *provider) CreateBucket(ctx context.Context, bucketName, region string) (Bucket, error) {
 	location, err := getStowLocation(ctx, p.config, p.secret, region)
-	p.hostEndPoint = checkHostURI(p.config, p.hostEndPoint, region)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (p *provider) CreateBucket(ctx context.Context, bucketName, region string) 
 		directory:    dir,
 		container:    c,
 		location:     location,
-		hostEndPoint: getHostEndPoint(p.hostEndPoint, c.ID()),
+		hostEndPoint: path.Join(p.hostEndPoint, c.ID()),
 	}
 	dir.bucket = bucket
 	return bucket, nil
@@ -73,7 +73,7 @@ func (p *provider) GetBucket(ctx context.Context, bucketName string) (Bucket, er
 		directory:    dir,
 		container:    c,
 		location:     location,
-		hostEndPoint: getHostEndPoint(p.hostEndPoint, c.ID()),
+		hostEndPoint: path.Join(p.hostEndPoint, c.ID()),
 	}
 	dir.bucket = bucket
 	return bucket, nil
@@ -101,7 +101,7 @@ func (p *provider) ListBuckets(ctx context.Context) (map[string]Bucket, error) {
 				directory:    dir,
 				container:    c,
 				location:     location,
-				hostEndPoint: getHostEndPoint(p.hostEndPoint, c.ID()),
+				hostEndPoint: path.Join(p.hostEndPoint, c.ID()),
 			}
 			dir.bucket = bucket
 			buckets[c.ID()] = bucket
@@ -138,11 +138,16 @@ type s3Provider struct {
 }
 
 func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, error) {
-	region, err := p.getRegionForBucket(ctx, bucketName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not get region for bucket %s", bucketName)
+	hostEndPoint := p.hostEndPoint
+	var region string
+	if hostEndPoint == "" {
+		var err error
+		region, err = p.getRegionForBucket(ctx, bucketName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not get region for bucket %s", bucketName)
+		}
+		hostEndPoint = awsS3Endpoint(region)
 	}
-	p.hostEndPoint = checkHostURI(p.config, p.hostEndPoint, region)
 	location, err := getStowLocation(ctx, p.config, p.secret, region)
 	if err != nil {
 		return nil, err
@@ -158,28 +163,23 @@ func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, 
 		directory:    dir,
 		container:    c,
 		location:     location,
-		hostEndPoint: getHostEndPoint(p.hostEndPoint, c.ID()),
+		hostEndPoint: path.Join(hostEndPoint, c.ID()),
 	}
 	dir.bucket = bucket
 	return bucket, nil
 }
 
 func (p *s3Provider) DeleteBucket(ctx context.Context, bucketName string) error {
-	region, err := p.getRegionForBucket(ctx, bucketName)
-	if err != nil {
-		return errors.Wrapf(err, "could not get region for bucket %s", bucketName)
-	}
-	p.hostEndPoint = checkHostURI(p.config, p.hostEndPoint, region)
+	region, _ := p.getRegionForBucket(ctx, bucketName)
 	location, err := getStowLocation(ctx, p.config, p.secret, region)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get location for bucket deletion. bucket: %s", bucketName)
+	}
 	return location.RemoveContainer(bucketName)
 }
 
 // returns the region for a particular bucket
 func (p *s3Provider) getRegionForBucket(ctx context.Context, bucketName string) (string, error) {
-	// Only AWS S3 requires this check
-	if p.config.Type != ProviderTypeS3 {
-		return "", errors.New("getRegionForBucket can be used only for S3")
-	}
 	return GetS3BucketRegion(ctx, bucketName, "")
 }
 
