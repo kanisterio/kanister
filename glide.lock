@@ -1,5 +1,5 @@
-hash: 0683291a7097fc386e9d79872e95ae819523b93b199f6a88d91d0c8175df5308
-updated: 2018-08-22T15:50:21.370824639-07:00
+hash: 09eb11ac814f3773149d7aff5c898c2960f3c6936f3534791a23842988a8022c
+updated: 2018-10-31T16:24:08.342234-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -9,6 +9,8 @@ imports:
   - internal
 - name: github.com/aokoli/goutils
   version: 3391d3790d23d03408670993e957e8f408993c34
+- name: github.com/asaskevich/govalidator
+  version: 593d64559f7600f29581a3ee42177f5dbded27a9
 - name: github.com/aws/aws-sdk-go
   version: bc3f534c19ffdf835e524e11f0f825b3eaf541c3
   subpackages:
@@ -34,6 +36,7 @@ imports:
   - internal/sdkuri
   - internal/shareddefaults
   - private/protocol
+  - private/protocol/ec2query
   - private/protocol/eventstream
   - private/protocol/eventstream/eventstreamapi
   - private/protocol/query
@@ -41,12 +44,13 @@ imports:
   - private/protocol/rest
   - private/protocol/restxml
   - private/protocol/xml/xmlutil
+  - service/ec2
   - service/s3
   - service/s3/s3iface
   - service/s3/s3manager
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
-  version: 767429fcb996dad413936d682c28301e6739bade
+  version: 100a309838ef6b0878b014e5ae541c83a7cbdfaa
   subpackages:
   - storage
   - version
@@ -70,7 +74,11 @@ imports:
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
 - name: github.com/go-ini/ini
-  version: 32e4be5f41bb918afb6e37c07426e2ddbcb6647e
+  version: 9c8236e659b76e87bf02044d06fde8683008ff3e
+- name: github.com/go-openapi/errors
+  version: d24ebc2075bad502fac3a8ae27aa6dd58e1952dc
+- name: github.com/go-openapi/strfmt
+  version: 610b6cacdcde6852f4de68998bd20ce1dac85b22
 - name: github.com/gogo/protobuf
   version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
   subpackages:
@@ -119,19 +127,25 @@ imports:
   subpackages:
   - simplelru
 - name: github.com/huandu/xstrings
-  version: 2bf18b218c51864a87384c06996e40ff9dcff8e1
+  version: 8bbcf2f9ccb55755e748b7644164cd4bdce94c1d
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
 - name: github.com/jmespath/go-jmespath
-  version: 3433f3ea46d9f8019119e7dd41274e112a2359a9
+  version: c2b33e8439af944379acbdd9c3a5fe0bc44bd8a5
 - name: github.com/jpillora/backoff
   version: 8eab2debe79d12b7bd3d10653910df25fa9552ba
 - name: github.com/json-iterator/go
   version: f2b4162afba35581b6d4a50d3b8f34e33c144682
+- name: github.com/mailru/easyjson
+  version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
+  subpackages:
+  - buffer
+  - jlexer
+  - jwriter
 - name: github.com/marstr/guid
   version: 8bdf7d1a087ccc975cf37dd6507da50698fd19ca
 - name: github.com/Masterminds/semver
-  version: 59c29afe1a994eacb71c833025ca7acf874bb1da
+  version: c84ddcca87bf5a941b138dde832a7e20b0159ad8
 - name: github.com/Masterminds/sprig
   version: 6b2a58267f6a8b1dc8e2eb5519b984008fa85e8c
 - name: github.com/mitchellh/mapstructure
@@ -149,7 +163,7 @@ imports:
   repo: https://github.com/kastenhq/operator-kit.git
   vcs: git
 - name: github.com/satori/go.uuid
-  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
+  version: b2ce2384e17bbe0c6d34077efa39dbab3e09123b
 - name: github.com/sirupsen/logrus
   version: 3e01752db0189b9157070a0e1668a620f9a85da2
 - name: github.com/spf13/cobra
@@ -181,7 +195,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sys
-  version: 95c6576299259db960f6c5b9b69ea52422860fce
+  version: 9b800f95dbbc54abff0acf7ee32d88ba4e328c89
   subpackages:
   - unix
 - name: golang.org/x/text
@@ -207,6 +221,11 @@ imports:
   version: 64131543e7896d5bcc6bd5a76287eb75ea96c673
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
+- name: gopkg.in/mgo.v2
+  version: 9856a29383ce1c59f308dd1cf0363a79b5bef6b5
+  subpackages:
+  - bson
+  - internal/json
 - name: gopkg.in/yaml.v2
   version: 670d4cfef0544295bc27a114dbac37980d83185a
 - name: k8s.io/api
@@ -284,6 +303,7 @@ imports:
   - pkg/util/json
   - pkg/util/mergepatch
   - pkg/util/net
+  - pkg/util/rand
   - pkg/util/remotecommand
   - pkg/util/runtime
   - pkg/util/sets
@@ -302,6 +322,7 @@ imports:
   subpackages:
   - discovery
   - discovery/fake
+  - dynamic
   - kubernetes
   - kubernetes/fake
   - kubernetes/scheme
