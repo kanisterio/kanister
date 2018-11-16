@@ -110,7 +110,7 @@ Example:
 KubeTask
 --------
 
-KubeTask spins up a new container and executes a command via a Kubernetes job.
+KubeTask spins up a new container and executes a command via a Pod.
 This allows you to run a new Pod from a Blueprint.
 
 .. csv-table::

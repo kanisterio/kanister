@@ -3,6 +3,7 @@ package function
 import (
 	"context"
 	"os"
+	"time"
 
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
@@ -53,19 +54,20 @@ func newTaskBlueprint(namespace string) *crv1alpha1.Blueprint {
 				Kind: "StatefulSet",
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
-						Name: "test",
+						Name: "testOutput",
 						Func: "KubeTask",
 						Args: map[string]interface{}{
 							KubeTaskNamespaceArg: namespace,
-							KubeTaskImageArg:     "busybox",
+							KubeTaskImageArg:     "kanisterio/kanister-tools:0.13.0",
 							KubeTaskCommandArg: []string{
-								"sleep",
-								"2",
+								"sh",
+								"-c",
+								"kando output version 0.13.0",
 							},
 						},
 					},
 					{
-						Name: "test2",
+						Name: "testSleep",
 						Func: "KubeTask",
 						Args: map[string]interface{}{
 							KubeTaskNamespaceArg: namespace,
@@ -83,7 +85,8 @@ func newTaskBlueprint(namespace string) *crv1alpha1.Blueprint {
 }
 
 func (s *KubeTaskSuite) TestKubeTask(c *C) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 	tp := param.TemplateParams{
 		StatefulSet: &param.StatefulSetParams{
 			Namespace: s.namespace,
@@ -95,7 +98,10 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 	phases, err := kanister.GetPhases(*bp, action, tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
-		_, err = p.Exec(ctx, *bp, action, tp)
-		c.Assert(err, IsNil)
+		out, err := p.Exec(ctx, *bp, action, tp)
+		c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
+		if out != nil {
+			c.Assert(out["version"], NotNil)
+		}
 	}
 }
