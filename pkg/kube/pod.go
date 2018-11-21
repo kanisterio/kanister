@@ -37,7 +37,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 					Name:            "container",
 					Image:           opts.Image,
 					Command:         opts.Command,
-					ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+					ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
 					VolumeMounts:    volumeMounts,
 				},
 			},
