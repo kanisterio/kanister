@@ -3,6 +3,10 @@ package function
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"path/filepath"
+	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -10,6 +14,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/blockstorage"
+	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
+	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -34,34 +42,80 @@ func (*createVolumeSnapshotFunc) Name() string {
 }
 
 type VolumeSnapshotInfo struct {
-	SnapshotID  string
-	StorageType string
-	Region      string
+	SnapshotID string
+	Type       blockstorage.Type
+	Region     string
+	PVCName    string
+	Az         string
+	Tags       blockstorage.VolumeTags
+	VolumeType string
 }
 
 type volumeInfo struct {
-	provider    string
-	volumeID    string
-	storageType string
-	volZone     string
-	pvc         string
-	size        int64
+	provider blockstorage.Provider
+	volumeID string
+	sType    blockstorage.Type
+	volZone  string
+	pvc      string
+	size     int64
+	region   string
 }
 
-func createVolumeSnapshot(ctx context.Context, tp param.TemplateParams, cli kubernetes.Interface, namespace string, pvcs []string) (map[string]interface{}, error) {
+func ValidateProfile(profile *param.Profile) error {
+	if profile == nil {
+		return errors.New("Profile must be non-nil")
+	}
+	if profile.Location.Type != crv1alpha1.LocationTypeS3Compliant {
+		return errors.New("Location type not supported")
+	}
+	if len(profile.Location.S3Compliant.Region) == 0 {
+		return errors.New("Region is not set")
+	}
+	if profile.Credential.Type != param.CredentialTypeKeyPair {
+		return errors.New("Credential type not supported")
+	}
+	if len(profile.Credential.KeyPair.ID) == 0 {
+		return errors.New("Region is not set")
+	}
+	if len(profile.Credential.KeyPair.Secret) == 0 {
+		return errors.New("Secret access key is not set")
+	}
+	return nil
+}
 
-	PVCData := make([]VolumeSnapshotInfo, 0, len(pvcs))
+func createVolumeSnapshot(ctx context.Context, tp param.TemplateParams, cli kubernetes.Interface, namespace string, pvcs []string, getter getter.Getter) (map[string]interface{}, error) {
+	vols := make([]volumeInfo, 0, len(pvcs))
 	for _, pvc := range pvcs {
-		volInfo, err := getPVCInfo(cli, namespace, pvc)
+		volInfo, err := getPVCInfo(ctx, cli, namespace, pvc, tp, getter)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to get PVC info")
 		}
-		volSnapInfo, err := snapshotVolume(ctx, cli, volInfo, namespace)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to snapshot volume")
-		}
-		PVCData = append(PVCData, *volSnapInfo)
+		vols = append(vols, *volInfo)
 	}
+
+	var PVCData []VolumeSnapshotInfo
+	var wg sync.WaitGroup
+	var errstrings []string
+	for _, vol := range vols {
+		wg.Add(1)
+		go func(volInfo volumeInfo) {
+			defer wg.Done()
+			volSnapInfo, err := snapshotVolume(ctx, volInfo, namespace)
+			if err != nil {
+				errstrings = append(errstrings, err.Error())
+			} else {
+				PVCData = append(PVCData, *volSnapInfo)
+			}
+			return
+		}(vol)
+	}
+	wg.Wait()
+
+	err := fmt.Errorf(strings.Join(errstrings, "\n"))
+	if len(err.Error()) > 0 {
+		return nil, errors.Wrapf(err, "Failed to snapshot one of the volumes")
+	}
+
 	manifestData, err := json.Marshal(PVCData)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to encode JSON data")
@@ -70,11 +124,34 @@ func createVolumeSnapshot(ctx context.Context, tp param.TemplateParams, cli kube
 	return map[string]interface{}{"volumeSnapshotInfo": string(manifestData)}, nil
 }
 
-func snapshotVolume(ctx context.Context, cli kubernetes.Interface, vol *volumeInfo, namespace string) (*VolumeSnapshotInfo, error) {
-	return &VolumeSnapshotInfo{SnapshotID: vol.volumeID, StorageType: vol.storageType, Region: ""}, nil
+func snapshotVolume(ctx context.Context, volume volumeInfo, namespace string) (*VolumeSnapshotInfo, error) {
+	provider := volume.provider
+	vol, err := provider.VolumeGet(ctx, volume.volumeID, volume.volZone)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Volume unavailable, volumeID: %s", volume.volumeID)
+	}
+	if vol.Encrypted {
+		return nil, errors.New("Encrypted volumes are unsupported")
+	}
+
+	// Snapshot the volume.
+	tags := map[string]string{
+		"pvcname": volume.pvc,
+	}
+	if err = provider.SetTags(ctx, vol, tags); err != nil {
+		return nil, err
+	}
+	snap, err := provider.SnapshotCreate(ctx, *vol, tags)
+	if err != nil {
+		return nil, err
+	}
+	return &VolumeSnapshotInfo{SnapshotID: snap.ID, Type: volume.sType, Region: volume.region, PVCName: volume.pvc, Az: snap.Volume.Az, Tags: snap.Volume.Tags, VolumeType: snap.Volume.VolumeType}, nil
 }
 
-func getPVCInfo(kubeCli kubernetes.Interface, namespace string, name string) (*volumeInfo, error) {
+func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, tp param.TemplateParams, getter getter.Getter) (*volumeInfo, error) {
+	_ = ctx
+	var region string
+	var provider blockstorage.Provider
 	pvc, err := kubeCli.Core().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get PVC, PVC name: %s, namespace: %s", name, namespace)
@@ -87,26 +164,30 @@ func getPVCInfo(kubeCli kubernetes.Interface, namespace string, name string) (*v
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get PV %s, namespace: %s", pvName, namespace)
 	}
+	pvLabels := pv.GetObjectMeta().GetLabels()
 	var size int64
 	if cap, ok := pv.Spec.Capacity[v1.ResourceStorage]; ok {
 		size = cap.Value()
 	}
 	// Check to see which provider is the source. Spec mandates only one of the provider
 	// fields will be set
+	config := make(map[string]string)
 	if ebs := pv.Spec.AWSElasticBlockStore; ebs != nil {
-		return &volumeInfo{provider: "EBS", volumeID: pvName, storageType: "EBS", volZone: "", pvc: name, size: size}, nil
-	}
-	if gpd := pv.Spec.GCEPersistentDisk; gpd != nil {
-		return &volumeInfo{provider: "GPD", volumeID: pvName, storageType: "GPD", volZone: "", pvc: name, size: size}, nil
-	}
-	if ad := pv.Spec.AzureDisk; ad != nil {
-		return &volumeInfo{provider: "AD", volumeID: pvName, storageType: "AD", volZone: "", pvc: name, size: size}, nil
-	}
-	if cinder := pv.Spec.Cinder; cinder != nil {
-		return &volumeInfo{provider: "Cinder", volumeID: pvName, storageType: "Cinder", volZone: "", pvc: name, size: size}, nil
-	}
-	if ceph := pv.Spec.RBD; ceph != nil {
-		return &volumeInfo{provider: "Ceph", volumeID: pvName, storageType: "Ceph", volZone: "", pvc: name, size: size}, nil
+		if err = ValidateProfile(tp.Profile); err != nil {
+			return nil, errors.Wrap(err, "Profile validation failed")
+		}
+		region = tp.Profile.Location.S3Compliant.Region
+		if pvZone, ok := pvLabels[kube.PVZoneLabelName]; ok {
+			config[awsebs.ConfigRegion] = region
+			config[awsebs.AccessKeyID] = tp.Profile.Credential.KeyPair.ID
+			config[awsebs.SecretAccessKey] = tp.Profile.Credential.KeyPair.Secret
+			provider, err = getter.Get(blockstorage.TypeEBS, config)
+			if err != nil {
+				return nil, errors.Wrap(err, "Could not get storage provider")
+			}
+			return &volumeInfo{provider: provider, volumeID: filepath.Base(ebs.VolumeID), sType: blockstorage.TypeEBS, volZone: pvZone, pvc: name, size: size, region: region}, nil
+		}
+		return nil, errors.Errorf("PV zone label is empty, pvName: %s, namespace: %s", pvName, namespace)
 	}
 	return nil, errors.New("Storage type not supported!")
 }
@@ -143,7 +224,7 @@ func (kef *createVolumeSnapshotFunc) Exec(ctx context.Context, tp param.Template
 	if err = Arg(args, CreateVolumeSnapshotNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, RestoreDataVolsArg, &pvcs, nil); err != nil {
+	if err = OptArg(args, CreateVolumeSnapshotPVCsArg, &pvcs, nil); err != nil {
 		return nil, err
 	}
 	if len(pvcs) == 0 {
@@ -153,7 +234,7 @@ func (kef *createVolumeSnapshotFunc) Exec(ctx context.Context, tp param.Template
 			return nil, err
 		}
 	}
-	return createVolumeSnapshot(ctx, tp, cli, namespace, pvcs)
+	return createVolumeSnapshot(ctx, tp, cli, namespace, pvcs, getter.New())
 }
 
 func (*createVolumeSnapshotFunc) RequiredArgs() []string {

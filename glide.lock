@@ -1,5 +1,5 @@
-hash: 09eb11ac814f3773149d7aff5c898c2960f3c6936f3534791a23842988a8022c
-updated: 2018-10-31T16:24:08.342234-07:00
+hash: f1b78ff0d608fbb38269fc7b0ce7ace939b9afc2ed7c46e6d21786e6e42b3918
+updated: 2018-11-09T10:40:36.46445-08:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -50,7 +50,7 @@ imports:
   - service/s3/s3manager
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
-  version: 100a309838ef6b0878b014e5ae541c83a7cbdfaa
+  version: 9419692eb7ad7f923cca690cc5a6b2c6d22405e1
   subpackages:
   - storage
   - version
@@ -145,7 +145,7 @@ imports:
 - name: github.com/marstr/guid
   version: 8bdf7d1a087ccc975cf37dd6507da50698fd19ca
 - name: github.com/Masterminds/semver
-  version: c84ddcca87bf5a941b138dde832a7e20b0159ad8
+  version: 59c29afe1a994eacb71c833025ca7acf874bb1da
 - name: github.com/Masterminds/sprig
   version: 6b2a58267f6a8b1dc8e2eb5519b984008fa85e8c
 - name: github.com/mitchellh/mapstructure
@@ -163,7 +163,7 @@ imports:
   repo: https://github.com/kastenhq/operator-kit.git
   vcs: git
 - name: github.com/satori/go.uuid
-  version: b2ce2384e17bbe0c6d34077efa39dbab3e09123b
+  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/sirupsen/logrus
   version: 3e01752db0189b9157070a0e1668a620f9a85da2
 - name: github.com/spf13/cobra
@@ -195,7 +195,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sys
-  version: 9b800f95dbbc54abff0acf7ee32d88ba4e328c89
+  version: 95c6576299259db960f6c5b9b69ea52422860fce
   subpackages:
   - unix
 - name: golang.org/x/text
