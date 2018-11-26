@@ -100,10 +100,13 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		if err != nil {
 			return true, err
 		}
-		return (p.Status.Phase == v1.PodSucceeded) || (p.Status.Phase == v1.PodFailed), nil
+		if p.Status.Phase == v1.PodFailed {
+			return false, errors.Errorf("Pod %s failed", name)
+		}
+		return (p.Status.Phase == v1.PodSucceeded), nil
 	})
 	if err == nil {
 		return nil
 	}
-	return errors.Wrapf(err, "Pod did not transition into a terminal state. Namespace:%s, Name:%s", namespace, name)
+	return errors.Wrap(err, "Pod did not transition into complete state")
 }

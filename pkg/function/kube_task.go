@@ -10,6 +10,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -64,7 +65,11 @@ func kubeTask(ctx context.Context, namespace, image string, command []string) (m
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create pod for KubeTask")
 	}
-	defer kube.DeletePod(context.Background(), clientset, pod)
+	defer func() {
+		if err := kube.DeletePod(context.Background(), clientset, pod); err != nil {
+			log.Error("Failed to delete pod ", err.Error())
+		}
+	}()
 
 	// Wait for pod completion
 	if err := kube.WaitForPodCompletion(ctx, clientset, pod.Namespace, pod.Name); err != nil {
@@ -78,7 +83,7 @@ func kubeTask(ctx context.Context, namespace, image string, command []string) (m
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, logs)
 
 	out, err := parseLogAndCreateOutput(logs)
-	return out, errors.Wrap(err, "Failed to generate output")
+	return out, errors.Wrap(err, "Failed to parse phase output")
 }
 
 func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

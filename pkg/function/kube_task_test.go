@@ -30,7 +30,7 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "kanisterdeletetest-",
+			GenerateName: "kanisterkubetasktest-",
 		},
 	}
 	cns, err := s.cli.Core().Namespaces().Create(ns)
@@ -85,7 +85,7 @@ func newTaskBlueprint(namespace string) *crv1alpha1.Blueprint {
 }
 
 func (s *KubeTaskSuite) TestKubeTask(c *C) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{
 		StatefulSet: &param.StatefulSetParams{

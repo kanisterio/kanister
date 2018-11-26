@@ -82,7 +82,7 @@ func newRestoreDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 							RestoreDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							RestoreDataImageArg:                "kanisterio/kanister-tools:0.13.0",
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}",
-							RestoreDataRestorePathArg:          "/",
+							RestoreDataRestorePathArg:          "/mnt/data",
 							RestoreDataBackupIdentifierArg:     "{{ .Time }}",
 							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
 							RestoreDataVolsArg: map[string]string{
