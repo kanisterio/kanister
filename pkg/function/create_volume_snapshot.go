@@ -75,7 +75,7 @@ func ValidateProfile(profile *param.Profile) error {
 		return errors.New("Credential type not supported")
 	}
 	if len(profile.Credential.KeyPair.ID) == 0 {
-		return errors.New("Region is not set")
+		return errors.New("AWS access key id is not set")
 	}
 	if len(profile.Credential.KeyPair.Secret) == 0 {
 		return errors.New("Secret access key is not set")
