@@ -37,10 +37,14 @@ func (s *BlockStorageProviderSuite) SetUpSuite(c *C) {
 	var err error
 	if s.storageType == blockstorage.TypeEBS {
 		config[awsebs.ConfigRegion] = s.storageRegion
-		accessKey := os.Getenv(awsebs.AccessKeyID)
-		c.Assert(len(accessKey) > 0, Equals, true)
-		secretAccessKey := os.Getenv(awsebs.SecretAccessKey)
-		c.Assert(len(secretAccessKey) > 0, Equals, true)
+		accessKey, ok := os.LookupEnv(awsebs.AccessKeyID)
+		if !ok {
+			c.Skip("The necessary env variable AWS_ACCESS_KEY_ID is not set.")
+		}
+		secretAccessKey, ok := os.LookupEnv(awsebs.SecretAccessKey)
+		if !ok {
+			c.Skip("The necessary env variable AWS_SECRET_ACCESS_KEY is not set.")
+		}
 		config[awsebs.AccessKeyID] = accessKey
 		config[awsebs.SecretAccessKey] = secretAccessKey
 	}
