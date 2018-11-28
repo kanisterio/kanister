@@ -5,6 +5,8 @@ import:
   repo: https://github.com/GoogleCloudPlatform/google-cloud-go.git
 - package: github.com/aws/aws-sdk-go
   version: v1.14.31
+- package: github.com/go-openapi/strfmt
+  version: 610b6cacdcde6852f4de68998bd20ce1dac85b22
 - package: github.com/graymeta/stow
   vcs: git
   version: master
@@ -21,6 +23,8 @@ import:
   vcs: git
   version: rm-k8s-dep
   repo: https://github.com/kastenhq/operator-kit.git
+- package: github.com/satori/go.uuid
+  version: v1.2.0  
 - package: github.com/sirupsen/logrus
   version: v1.0.6
 - package: github.com/spf13/cobra

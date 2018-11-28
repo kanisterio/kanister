@@ -115,7 +115,7 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return nil, prepareData(ctx, cli, namespace, "", image, vols, cmd...)
+	return prepareData(ctx, cli, namespace, "", image, vols, cmd...)
 }
 
 func (*restoreDataFunc) RequiredArgs() []string {

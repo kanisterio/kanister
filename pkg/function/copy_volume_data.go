@@ -60,6 +60,11 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 	}
 	defer kube.DeletePod(context.Background(), cli, pod)
 
+	// Wait for pod to reach running state
+	if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
+		return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+	}
+
 	// Get restic repository
 	if err = restic.GetOrCreateRepository(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, encryptionKey, tp.Profile); err != nil {
 		return nil, err

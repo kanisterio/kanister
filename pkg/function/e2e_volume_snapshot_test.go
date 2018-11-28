@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"os"
 	"strings"
 
 	. "gopkg.in/check.v1"
@@ -13,11 +14,14 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
+	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	"github.com/kanisterio/kanister/pkg/testutil/mockblockstorage"
 )
 
 const (
@@ -25,12 +29,15 @@ const (
 	manifestKey           = "manifest"
 	backupInfoKey         = "backupInfo"
 	skipTestErrorMsg      = "Storage type not supported"
+	AWSRegion             = "AWS_REGION"
 )
 
 type VolumeSnapshotTestSuite struct {
-	cli       kubernetes.Interface
-	crCli     versioned.Interface
-	namespace string
+	cli        kubernetes.Interface
+	crCli      versioned.Interface
+	namespace  string
+	mockGetter getter.Getter
+	tp         *param.TemplateParams
 }
 
 var _ = Suite(&VolumeSnapshotTestSuite{})
@@ -56,13 +63,78 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	c.Assert(err, IsNil)
 	s.namespace = cns.GetName()
 
-	sec := testutil.NewTestProfileSecret()
+	sec := NewTestProfileSecret()
 	sec, err = s.cli.Core().Secrets(s.namespace).Create(sec)
 	c.Assert(err, IsNil)
 
-	p := testutil.NewTestProfile(s.namespace, sec.GetName())
+	p := NewTestProfile(s.namespace, sec.GetName())
 	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(p)
 	c.Assert(err, IsNil)
+
+	s.mockGetter = mockblockstorage.NewGetter()
+
+	ctx := context.Background()
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(newStatefulSet(s.namespace))
+	c.Assert(err, IsNil)
+	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
+	c.Assert(err, IsNil)
+
+	as := crv1alpha1.ActionSpec{
+		Object: crv1alpha1.ObjectReference{
+			Kind:      param.StatefulSetKind,
+			Name:      ss.GetName(),
+			Namespace: s.namespace,
+		},
+		Profile: &crv1alpha1.ObjectReference{
+			Name:      testutil.TestProfileName,
+			Namespace: s.namespace,
+		},
+	}
+
+	tp, err := param.New(ctx, s.cli, s.crCli, as)
+	c.Assert(err, IsNil)
+	s.tp = tp
+
+}
+
+// NewTestProfileSecret function returns a pointer to a new Secret test object.
+func NewTestProfileSecret() *v1.Secret {
+	return &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-secret-",
+		},
+		StringData: map[string]string{
+			"id":     os.Getenv(awsebs.AccessKeyID),
+			"secret": os.Getenv(awsebs.SecretAccessKey),
+		},
+	}
+}
+
+// NewTestProfile function returns a pointer to a new Profile test object that
+// passes validation.
+func NewTestProfile(namespace string, secretName string) *crv1alpha1.Profile {
+	return &crv1alpha1.Profile{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      testutil.TestProfileName,
+			Namespace: namespace,
+		},
+		Location: crv1alpha1.Location{
+			Type: crv1alpha1.LocationTypeS3Compliant,
+			S3Compliant: &crv1alpha1.S3CompliantLocation{
+				Region: os.Getenv(AWSRegion)},
+		},
+		Credential: crv1alpha1.Credential{
+			Type: crv1alpha1.CredentialTypeKeyPair,
+			KeyPair: &crv1alpha1.KeyPair{
+				Secret: crv1alpha1.ObjectReference{
+					Name:      secretName,
+					Namespace: namespace,
+				},
+				IDField:     "id",
+				SecretField: "secret",
+			},
+		},
+	}
 }
 
 func (s *VolumeSnapshotTestSuite) TearDownTest(c *C) {
@@ -200,35 +272,23 @@ func newStatefulSet(namespace string) *appsv1.StatefulSet {
 }
 
 func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
-	ctx := context.Background()
-
-	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(newStatefulSet(s.namespace))
-	c.Assert(err, IsNil)
-	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
-	c.Assert(err, IsNil)
-
-	as := crv1alpha1.ActionSpec{
-		Object: crv1alpha1.ObjectReference{
-			Kind:      param.StatefulSetKind,
-			Name:      ss.GetName(),
-			Namespace: s.namespace,
-		},
-		Profile: &crv1alpha1.ObjectReference{
-			Name:      testutil.TestProfileName,
-			Namespace: s.namespace,
-		},
+	if len(os.Getenv(AWSRegion)) == 0 {
+		c.Skip("Skipping the test since env variable AWS_REGION is not set")
 	}
-
-	tp, err := param.New(ctx, s.cli, s.crCli, as)
-	c.Assert(err, IsNil)
-
+	if len(os.Getenv(awsebs.AccessKeyID)) == 0 {
+		c.Skip("Skipping the test since env variable AWS_ACCESS_KEY_ID is not set")
+	}
+	if len(os.Getenv(awsebs.SecretAccessKey)) == 0 {
+		c.Skip("Skipping the test since env variable AWS_SECRET_ACCESS_KEY is not set")
+	}
+	ctx := context.Background()
 	actions := []string{"backup", "restore", "delete"}
 	bp := newVolumeSnapshotBlueprint()
 	for _, action := range actions {
-		phases, err := kanister.GetPhases(*bp, action, *tp)
+		phases, err := kanister.GetPhases(*bp, action, *s.tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			output, err := p.Exec(ctx, *bp, action, *tp)
+			output, err := p.Exec(ctx, *bp, action, *s.tp)
 			if err != nil && strings.Contains(err.Error(), skipTestErrorMsg) {
 				c.Skip("Skipping the test since storage type not supported")
 			}
@@ -241,8 +301,8 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 				artifact := crv1alpha1.Artifact{
 					KeyValue: keyval,
 				}
-				tp.ArtifactsIn = make(map[string]crv1alpha1.Artifact)
-				tp.ArtifactsIn[backupInfoKey] = artifact
+				s.tp.ArtifactsIn = make(map[string]crv1alpha1.Artifact)
+				s.tp.ArtifactsIn[backupInfoKey] = artifact
 			}
 		}
 	}

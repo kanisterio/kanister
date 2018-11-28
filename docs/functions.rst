@@ -110,7 +110,7 @@ Example:
 KubeTask
 --------
 
-KubeTask spins up a new container and executes a command via a Kubernetes job.
+KubeTask spins up a new container and executes a command via a Pod.
 This allows you to run a new Pod from a Blueprint.
 
 .. csv-table::
@@ -197,7 +197,7 @@ Example of scaling up:
 PrepareData
 -----------
 
-This function allows running a Kubernetes Job that will mount one or more PVCs
+This function allows running a new Pod that will mount one or more PVCs
 and execute a command or script that manipulates the data on the PVCs.
 
 The function can be useful when it is necessary to perform operations on the
@@ -302,13 +302,13 @@ RestoreData
 -----------
 
 This function restores data backed up by the BackupData function.
-It creates a Kubernetes Job that mounts the PVCs referenced
-by the specified Pod and restores data to the specified path.
+It creates a new Pod that mounts the PVCs referenced by the specified Pod
+and restores data to the specified path.
 
 .. note::
    It is extremely important that, the PVCs are not be currently
-   in use by an active application container, as the Kubernetes Job
-   requires to mount the PVCs to a new Pod (ensure by using
+   in use by an active application container, as they are required
+   to be mounted to the new Pod (ensure by using
    ScaleWorkload with replicas=0 first).
    For advanced use cases, it is possible to have concurrent access but
    the PV needs to have RWX mode enabled and the volume needs to use a
@@ -406,7 +406,7 @@ If the ActionSet `Object` is a PersistentVolumeClaim:
 DeleteData
 ----------
 
-This function uses a Kubernetes Job to delete the specified artifact
+This function uses a new Pod to delete the specified artifact
 from an S3 compatible object store.
 
 .. csv-table::

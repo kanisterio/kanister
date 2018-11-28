@@ -6,9 +6,13 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/blockstorage"
+	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
+	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -32,43 +36,63 @@ func (*createVolumeFromSnapshotFunc) Name() string {
 	return "CreateVolumeFromSnapshot"
 }
 
-func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotinfo string, profile *param.Profile) error {
+func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotinfo string, profile *param.Profile, getter getter.Getter) (map[string]blockstorage.Provider, error) {
 	PVCData := []VolumeSnapshotInfo{}
 	err := json.Unmarshal([]byte(snapshotinfo), &PVCData)
 	if err != nil {
-		return errors.Wrapf(err, "Could not decode JSON data")
+		return nil, errors.Wrapf(err, "Could not decode JSON data")
 	}
+	// providerList required for unit testing
+	providerList := make(map[string]blockstorage.Provider)
 	for _, pvcInfo := range PVCData {
-		var storageType string
-		switch pvcInfo.StorageType {
-		// TODO: use constants once blockstorage is moved to kanister repo
-		case "EBS":
-			storageType = "EBS"
-		case "GPD":
-			storageType = "GPD"
-		case "AD":
-			storageType = "AD"
-		case "Cinder":
-			storageType = "Cinder"
-		case "Ceph":
-			storageType = "Ceph"
-		default:
-			return errors.Errorf("Storage type %s not supported!", pvcInfo.StorageType)
+		config := make(map[string]string)
+		switch pvcInfo.Type {
+		case blockstorage.TypeEBS:
+			if err = ValidateProfile(profile); err != nil {
+				return nil, errors.Wrap(err, "Profile validation failed")
+			}
+			config[awsebs.ConfigRegion] = pvcInfo.Region
+			config[awsebs.AccessKeyID] = profile.Credential.KeyPair.ID
+			config[awsebs.SecretAccessKey] = profile.Credential.KeyPair.Secret
 		}
-		log.Infof("snapshotId: %s, StorageType: %s, region: %s", pvcInfo.SnapshotID, storageType, pvcInfo.Region)
-		if err := createPVCFromSnapshot(); err != nil {
-			return errors.Wrapf(err, "Could not create PVC")
+		provider, err := getter.Get(pvcInfo.Type, config)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not get storage provider %v", pvcInfo.Type)
 		}
+		_, err = cli.Core().PersistentVolumeClaims(namespace).Get(pvcInfo.PVCName, metav1.GetOptions{})
+		if err == nil {
+			if err = kube.DeletePVC(cli, namespace, pvcInfo.PVCName); err != nil {
+				return nil, err
+			}
+		}
+		snapshot, err := provider.SnapshotGet(ctx, pvcInfo.SnapshotID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to get Snapshot from Provider")
+		}
+		tags := map[string]string{
+			"pvcname": pvcInfo.PVCName,
+		}
+		snapshot.Volume.VolumeType = pvcInfo.VolumeType
+		snapshot.Volume.Az = pvcInfo.Az
+		snapshot.Volume.Tags = pvcInfo.Tags
+		vol, err := provider.VolumeCreateFromSnapshot(ctx, *snapshot, tags)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to create volume from snapshot, snapID: %s", snapshot.ID)
+		}
+
+		annotations := map[string]string{}
+		pvc, err := kube.CreatePVC(ctx, cli, namespace, pvcInfo.PVCName, vol.Size, vol.ID, annotations)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Unable to create PVC for volume %v", *vol)
+		}
+		pv, err := kube.CreatePV(ctx, cli, vol, vol.Type, annotations)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Unable to create PV for volume %v", *vol)
+		}
+		log.Infof("Restore/Create volume from snapshot completed for pvc: %s, volume: %s", pvc, pv)
+		providerList[pvcInfo.PVCName] = provider
 	}
-	return nil
-}
-
-func createPVCFromSnapshot() error {
-	return errors.Wrapf(createPV(), "Could not create PV")
-}
-
-func createPV() error {
-	return nil
+	return providerList, nil
 }
 
 func (kef *createVolumeFromSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -83,7 +107,8 @@ func (kef *createVolumeFromSnapshotFunc) Exec(ctx context.Context, tp param.Temp
 	if err = Arg(args, CreateVolumeFromSnapshotManifestArg, &snapshotinfo); err != nil {
 		return nil, err
 	}
-	return nil, createVolumeFromSnapshot(ctx, cli, namespace, snapshotinfo, tp.Profile)
+	_, err = createVolumeFromSnapshot(ctx, cli, namespace, snapshotinfo, tp.Profile, getter.New())
+	return nil, err
 }
 
 func (*createVolumeFromSnapshotFunc) RequiredArgs() []string {
