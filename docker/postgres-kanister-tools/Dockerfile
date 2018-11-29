@@ -11,6 +11,6 @@ RUN apk -v --update add --no-cache python py-pip groff less && \
     apk -v --purge del py-pip && \
     rm -f /var/cache/apk/*
 
-COPY --from=kanisterio/kanister-tools:0.13.0 /usr/local/bin/kando /usr/local/bin/kando
+COPY --from=kanisterio/kanister-tools:0.14.0 /usr/local/bin/kando /usr/local/bin/kando
 
 CMD ["tail", "-f", "/dev/null"]
