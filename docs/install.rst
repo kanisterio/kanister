@@ -17,6 +17,10 @@ Prerequisites
 
 * `helm <https://helm.sh>`_ installed and initialized using the command `helm init`
 
+* :ref:`kanctl <tooling>` installed
+
+* Access to an S3 compatible bucket and credentials.
+
 * Docker (for source-based installs only)
 
 
@@ -32,6 +36,12 @@ This will install the Kanister controller in the `kanister` namespace
 
    # Install the Kanister operator controller using helm
    $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.14.0
+
+   # Create an S3 Compliant Kanister profile using kanctl
+   $ kanctl create profile s3compliant --bucket <bucket> --access-key ${AWS_ACCESS_KEY_ID} \
+                                       --secret-key ${AWS_SECRET_ACCESS_KEY}               \
+                                       --region <region>                                   \
+                                       --namespace kanister
 
 
 Building and Deploying from Source
@@ -63,5 +73,5 @@ namespace.
 
 .. code-block:: bash
 
-   # Deploy controller version 0.10.0 to Kubernetes
-   $ make deploy VERSION="0.10.0"
+   # Deploy controller version 0.14.0 to Kubernetes
+   $ make deploy VERSION="0.14.0"
