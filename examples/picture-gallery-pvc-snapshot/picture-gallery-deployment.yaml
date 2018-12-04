@@ -72,7 +72,7 @@ spec:
         tier: frontend
     spec:
       containers:
-      - image: kastenio/picturegallery:70307e
+      - image: kastenio/picturegallery:3fbc5be
         livenessProbe:
           httpGet:
             path: /
