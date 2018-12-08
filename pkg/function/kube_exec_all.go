@@ -55,16 +55,17 @@ func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	}
 	ps := strings.Fields(pods)
 	cs := strings.Fields(containers)
-	return nil, execAll(cli, namespace, ps, cs, cmd)
+	return execAll(cli, namespace, ps, cs, cmd)
 }
 
 func (*kubeExecAllFunc) RequiredArgs() []string {
 	return []string{KubeExecAllNamespaceArg, KubeExecAllPodsNameArg, KubeExecAllContainersNameArg, KubeExecAllCommandArg}
 }
 
-func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []string, cmd []string) error {
+func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []string, cmd []string) (map[string]interface{}, error) {
 	numContainers := len(ps) * len(cs)
 	errChan := make(chan error, numContainers)
+	output := ""
 	// Run the command
 	for _, p := range ps {
 		for _, c := range cs {
@@ -73,6 +74,7 @@ func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []strin
 				format.Log(p, c, stdout)
 				format.Log(p, c, stderr)
 				errChan <- err
+				output = output + "\n" + stdout
 			}(p, c)
 		}
 	}
@@ -84,7 +86,11 @@ func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []strin
 		}
 	}
 	if len(errs) != 0 {
-		return errors.New(strings.Join(errs, "\n"))
+		return nil, errors.New(strings.Join(errs, "\n"))
 	}
-	return nil
+	out, err := parseLogAndCreateOutput(output)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
