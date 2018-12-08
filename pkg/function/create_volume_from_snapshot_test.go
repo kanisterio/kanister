@@ -75,13 +75,20 @@ func (s *CreateVolumeFromSnapshotTestSuite) TestCreateVolumeFromSnapshot(c *C) {
 	for _, tc := range []struct {
 		snapshotinfo string
 		check        Checker
+		newPVCs      []string
 	}{
 		{
 			snapshotinfo: snapinfo,
 			check:        IsNil,
+			newPVCs:      nil,
+		},
+		{
+			snapshotinfo: snapinfo,
+			check:        IsNil,
+			newPVCs:      []string{"newpvc-1", "newpvc-2"},
 		},
 	} {
-		providerList, err := createVolumeFromSnapshot(ctx, cli, ns, tc.snapshotinfo, profile, mockGetter)
+		providerList, err := createVolumeFromSnapshot(ctx, cli, ns, tc.snapshotinfo, tc.newPVCs, profile, mockGetter)
 		c.Assert(providerList, Not(Equals), tc.check)
 		c.Assert(err, tc.check)
 		if err != nil {
@@ -100,9 +107,16 @@ func (s *CreateVolumeFromSnapshotTestSuite) TestCreateVolumeFromSnapshot(c *C) {
 		c.Assert(mockblockstorage.CheckID("snap-2", provider.(*mockblockstorage.Provider).SnapIDList), Equals, true)
 		c.Assert(len(provider.(*mockblockstorage.Provider).VolIDList) == 1, Equals, true)
 
-		_, err = cli.Core().PersistentVolumeClaims(ns).Get("pvc-1", metav1.GetOptions{})
-		c.Assert(err, IsNil)
-		_, err = cli.Core().PersistentVolumeClaims(ns).Get("pvc-2", metav1.GetOptions{})
-		c.Assert(err, IsNil)
+		if tc.newPVCs != nil {
+			_, err = cli.Core().PersistentVolumeClaims(ns).Get("newpvc-1", metav1.GetOptions{})
+			c.Assert(err, IsNil)
+			_, err = cli.Core().PersistentVolumeClaims(ns).Get("newpvc-2", metav1.GetOptions{})
+			c.Assert(err, IsNil)
+		} else {
+			_, err = cli.Core().PersistentVolumeClaims(ns).Get("pvc-1", metav1.GetOptions{})
+			c.Assert(err, IsNil)
+			_, err = cli.Core().PersistentVolumeClaims(ns).Get("pvc-2", metav1.GetOptions{})
+			c.Assert(err, IsNil)
+		}
 	}
 }
