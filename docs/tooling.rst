@@ -223,9 +223,9 @@ A new S3Compliant profile can be created using the s3compliant subcommand
 
 .. code-block:: bash
 
-  $ kanctl create profile s3compliant --bucket <bucket> --access-key $AWS_ACCESS_KEY_ID \
-                                      --secret-key $AWS_SECRET_ACCESS_KEY               \
-                                      --region us-west-1                                \
+  $ kanctl create profile s3compliant --bucket <bucket> --access-key ${AWS_ACCESS_KEY_ID} \
+                                      --secret-key ${AWS_SECRET_ACCESS_KEY}               \
+                                      --region us-west-1                                  \
                                       --namespace kanister
   secret 's3-secret-chst2' created
   profile 's3-profile-5mmkj' created
@@ -376,6 +376,20 @@ The following snippet is an example of using kando from inside a Blueprint.
   kando location delete --profile '{{ .Profile }}' --path '/backup/path'
 
   kando output version 0.14.0
+
+Install the tools
+=================
+
+Installation of the tools requires `Go <https://golang.org/doc/install>`_ to be installed
+
+.. code-block:: bash
+
+  # Installing kanctl
+  $ go install -v github.com/kanisterio/kanister/cmd/kanctl
+
+  # Installing kando
+  $ go install -v github.com/kanisterio/kanister/cmd/kando
+
 
 Docker Image
 ============

@@ -28,6 +28,7 @@ var (
 const (
 	CreateVolumeFromSnapshotNamespaceArg = "namespace"
 	CreateVolumeFromSnapshotManifestArg  = "snapshots"
+	CreateVolumeFromSnapshotPVCNamesArg  = "pvcNames"
 )
 
 type createVolumeFromSnapshotFunc struct{}
@@ -36,15 +37,22 @@ func (*createVolumeFromSnapshotFunc) Name() string {
 	return "CreateVolumeFromSnapshot"
 }
 
-func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotinfo string, profile *param.Profile, getter getter.Getter) (map[string]blockstorage.Provider, error) {
+func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotinfo string, pvcNames []string, profile *param.Profile, getter getter.Getter) (map[string]blockstorage.Provider, error) {
 	PVCData := []VolumeSnapshotInfo{}
 	err := json.Unmarshal([]byte(snapshotinfo), &PVCData)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not decode JSON data")
 	}
+	if len(pvcNames) > 0 && len(pvcNames) != len(PVCData) {
+		return nil, errors.New("Invalid number of PVC names provided")
+	}
 	// providerList required for unit testing
 	providerList := make(map[string]blockstorage.Provider)
-	for _, pvcInfo := range PVCData {
+	for i, pvcInfo := range PVCData {
+		pvcName := pvcInfo.PVCName
+		if len(pvcNames) > 0 {
+			pvcName = pvcNames[i]
+		}
 		config := make(map[string]string)
 		switch pvcInfo.Type {
 		case blockstorage.TypeEBS:
@@ -59,9 +67,9 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not get storage provider %v", pvcInfo.Type)
 		}
-		_, err = cli.Core().PersistentVolumeClaims(namespace).Get(pvcInfo.PVCName, metav1.GetOptions{})
+		_, err = cli.Core().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
 		if err == nil {
-			if err = kube.DeletePVC(cli, namespace, pvcInfo.PVCName); err != nil {
+			if err = kube.DeletePVC(cli, namespace, pvcName); err != nil {
 				return nil, err
 			}
 		}
@@ -69,8 +77,9 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to get Snapshot from Provider")
 		}
+
 		tags := map[string]string{
-			"pvcname": pvcInfo.PVCName,
+			"pvcname": pvcName,
 		}
 		snapshot.Volume.VolumeType = pvcInfo.VolumeType
 		snapshot.Volume.Az = pvcInfo.Az
@@ -81,7 +90,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		}
 
 		annotations := map[string]string{}
-		pvc, err := kube.CreatePVC(ctx, cli, namespace, pvcInfo.PVCName, vol.Size, vol.ID, annotations)
+		pvc, err := kube.CreatePVC(ctx, cli, namespace, pvcName, vol.Size, vol.ID, annotations)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to create PVC for volume %v", *vol)
 		}
@@ -101,13 +110,17 @@ func (kef *createVolumeFromSnapshotFunc) Exec(ctx context.Context, tp param.Temp
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
 	var namespace, snapshotinfo string
+	var pvcNames []string
 	if err = Arg(args, CreateVolumeFromSnapshotNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
 	if err = Arg(args, CreateVolumeFromSnapshotManifestArg, &snapshotinfo); err != nil {
 		return nil, err
 	}
-	_, err = createVolumeFromSnapshot(ctx, cli, namespace, snapshotinfo, tp.Profile, getter.New())
+	if err = OptArg(args, CreateVolumeFromSnapshotPVCNamesArg, &pvcNames, nil); err != nil {
+		return nil, err
+	}
+	_, err = createVolumeFromSnapshot(ctx, cli, namespace, snapshotinfo, pvcNames, tp.Profile, getter.New())
 	return nil, err
 }
 

@@ -55,3 +55,18 @@ subjects:
   name: {{ template "kanister-operator.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  labels:
+{{ include "kanister-operator.helmLabels" . | indent 4 }}
+  name: {{ template "kanister-operator.fullname" . }}-pv-provisioner
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:persistent-volume-provisioner
+subjects:
+- kind: ServiceAccount
+  name: {{ template "kanister-operator.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
