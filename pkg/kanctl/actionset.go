@@ -248,7 +248,10 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	parentName, _ := cmd.Flags().GetString(sourceFlagName)
 	blueprint, _ := cmd.Flags().GetString(blueprintFlagName)
 	dryRun, _ := cmd.Flags().GetBool(dryRunFlag)
-	profile := parseProfile(cmd, ns)
+	profile, err := parseProfile(cmd, ns)
+	if err != nil {
+		return nil, err
+	}
 	cms, err := parseConfigMaps(cmd)
 	if err != nil {
 		return nil, err
@@ -288,15 +291,23 @@ func parseConfigMaps(cmd *cobra.Command) (map[string]crv1alpha1.ObjectReference,
 	return cms, nil
 }
 
-func parseProfile(cmd *cobra.Command, ns string) *crv1alpha1.ObjectReference {
+func parseProfile(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectReference, error) {
 	profileName, _ := cmd.Flags().GetString(profileFlagName)
 	if profileName == "" {
-		return nil
+		return nil, nil
+	}
+	if strings.Contains(profileName, "/") {
+		temp := strings.Split(profileName, "/")
+		if len(temp) != 2 {
+			return nil, errors.Errorf("Invalid profile name %s, should be of the form ( --profile namespace/name OR --profile name)", profileName)
+		}
+		ns = temp[0]
+		profileName = temp[1]
 	}
 	return &crv1alpha1.ObjectReference{
 		Name:      profileName,
 		Namespace: ns,
-	}
+	}, nil
 }
 
 func parseSecrets(cmd *cobra.Command) (map[string]crv1alpha1.ObjectReference, error) {

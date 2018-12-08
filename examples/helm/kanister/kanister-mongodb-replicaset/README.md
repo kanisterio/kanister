@@ -3,7 +3,7 @@
 ## Prerequisites Details
 * Kubernetes 1.8+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.7.0 with `profiles.cr.kanister.io` CRD installed
+* Kanister version 0.14.0 with `profiles.cr.kanister.io` CRD installed
 
 ## StatefulSet Details
 * https://kubernetes.io/docs/concepts/abstractions/controllers/statefulsets/
@@ -28,21 +28,23 @@ $ helm repo add kanister http://charts.kanister.io
 ```
 
 Then install the sample MongoDB application with the release name `my-release` in its own namespace
-`mongo-test` use the following:
+`mongo-test` using the command below. Make sure you have the kanister controller running in namespace `kasten-io` which is the default setting in MongoDB charts. Otherwise, you will also have to set the `kanister.controller_namespace` parameter value to the respective kanister controller namespace in the following command:
 
 ```bash
+# Replace the default s3 credentials (endpoint, bucket and region) with your credentials before you run this command
 $ helm install kanister/kanister-mongodb-replicaset -n my-release --namespace mongo-test \
      --set profile.create='true' \
      --set profile.profileName='mongo-test-profile' \
      --set profile.s3.endpoint='https://my-custom-s3-provider:9000' \
-     --set profile.s3.accessKey='AKIAIOSFODNN7EXAMPLE' \
-     --set profile.s3.secretKey='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
-     --set profile.s3.bucket='kanister-bucket'
+     --set profile.s3.accessKey="${AWS_ACCESS_KEY_ID}" \
+     --set profile.s3.secretKey="${AWS_SECRET_ACCESS_KEY}" \
+     --set profile.s3.bucket='kanister-bucket' \
+     --set profile.s3.region=us-west-2
 ```
 
 The command deploys MongoDB ReplicaSet on the Kubernetes cluster in the default
 configuration. The [configuration](#configuration) section lists the parameters that can be
-configured during installation.
+configured during installation. It also installs a `profiles.cr.kanister.io` CRD named `mongo-test-profile` in `mongo-test` namespace.
 
 The command will also configure a location where artifacts resulting from Kanister
 data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
@@ -56,6 +58,91 @@ If not creating a Profile CR, it is possible to use an even simpler command.
 
 ```bash
 $ helm install kanister/kanister-mongodb-replicaset -n my-release --namespace mongo-test
+```
+
+Once MongoDB is running, you can populate it with some data. Let's add a collection called "restaurants" to a test database:
+
+```bash
+# Connect to MongoDB by running a shell inside MongoDB's pod
+$ kubectl exec --namespace mongo-test -i -t my-release-kanister-mongodb-replicaset-0  -- bash -l
+
+# From inside the shell, use the mongo CLI to insert some data into the test database
+$ mongo test --quiet --eval "db.restaurants.insert({'name' : 'Roys', 'cuisine' : 'Hawaiian', 'id' : '8675309'})"
+WriteResult({ "nInserted" : 1 })
+
+# View the restaurants data in the test database
+$ mongo test --quiet --eval "db.restaurants.find()"
+{ "_id" : ObjectId("5a1dd0719dcbfd513fecf87c"), "name" : "Roys", "cuisine" : "Hawaiian", "id" : "8675309" }
+```
+
+## Protect the Application
+
+You can now take a backup of the MongoDB data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
+
+```bash
+$ kanctl create actionset --action backup --namespace kasten-io --blueprint my-release-kanister-mongodb-replicaset-blueprint --statefulset mongo-test/my-release-kanister-mongodb-replicaset --profile mongo-test/mongo-test-profile
+actionset backup-llfb8 created
+
+$ kubectl --namespace kasten-io get actionsets.cr.kanister.io
+NAME                 AGE
+backup-llfb8         2h
+
+# View the status of the actionset
+$ kubectl --namespace kasten-io describe actionset backup-llfb8
+```
+
+### Disaster strikes!
+
+Let's say someone with fat fingers accidentally deleted the restaurants collection using the following command:
+```bash
+# Drop the restaurants collection
+$ mongo test --quiet --eval "db.restaurants.drop()"
+true
+```
+
+If you try to access this data in the database, you should see that it is no longer there:
+```bash
+$ mongo test --quiet --eval "db.restaurants.find()"
+# No entries should be found in the restaurants collection
+```
+
+### Restore the Application
+
+To restore the missing data, you should use the backup that you created before. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
+
+```bash
+$ kanctl --namespace kasten-io create actionset --action restore --from "backup-llfb8"
+actionset restore-backup-llfb8-64gqm created
+
+# View the status of the ActionSet
+kubectl --namespace kasten-io describe actionset restore-backup-llfb8-64gqm
+```
+
+You should now see that the data has been successfully restored to MongoDB!
+
+```bash
+$ mongo test --quiet --eval "db.restaurants.find()"
+{ "_id" : ObjectId("5a1dd0719dcbfd513fecf87c"), "name" : "Roys", "cuisine" : "Hawaiian", "id" : "8675309" }
+```
+
+### Delete the Artifacts
+
+The artifacts created by the backup action can be cleaned up using the following command:
+
+```bash
+$ kanctl --namespace kasten-io create actionset --action delete --from "backup-llfb8"
+actionset "delete-backup-llfb8-k9ncm" created
+
+# View the status of the ActionSet
+$ kubectl --namespace kasten-io describe actionset delete-backup-llfb8-k9ncm
+```
+
+### Troubleshooting
+
+If you run into any issues with the above commands, you can check the logs of the controller using:
+
+```bash
+$ kubectl --namespace kasten-io logs -l app=kanister-operator
 ```
 
 ## Uninstalling the Chart
@@ -85,7 +172,7 @@ default values. The Profile CR parameters are passed to the profile sub-chart.
 | `profile.s3.region` | (Optional if creating profile) Region to be used for the bucket. | `nil` |
 | `profile.s3.endpoint` | (Optional if creating profile) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
 | `profile.verifySSL` | (Optional if creating profile) Set to ``false`` to disable SSL verification on the s3 endpoint. | `true` |
-| `kanister.controller_namespace` | (Optional) Specify the namespace where the Kanister controller is running. | kanister |
+| `kanister.controller_namespace` | (Optional) Specify the namespace where the Kanister controller is running. | `kasten-io` |
 
 The following tables lists the configurable parameters of the mongodb chart and their default values.
 
