@@ -3,7 +3,7 @@
 ## Prerequisites Details
 * Kubernetes 1.8+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.14.0 with `profiles.cr.kanister.io` CRD installed
+* Kanister version 0.15.0 with `profiles.cr.kanister.io` CRD installed
 
 ## StatefulSet Details
 * https://kubernetes.io/docs/concepts/abstractions/controllers/statefulsets/
@@ -228,8 +228,8 @@ The following tables lists the configurable parameters of the mongodb chart and 
 
 *MongoDB config file*
 
-All options that depended on the chart configuration are supplied as command-line arguments to `mongod`. By default, 
-the chart creates an empty config file. Entries may be added via  the `configmap` configuration value. 
+All options that depended on the chart configuration are supplied as command-line arguments to `mongod`. By default,
+the chart creates an empty config file. Entries may be added via  the `configmap` configuration value.
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
@@ -241,8 +241,8 @@ $ helm install --name my-release -f values.yaml kanister/kanister-mongodb-replic
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
 
-Once you have all 3 nodes in running, you can run the "test.sh" script in this directory, which will insert a key into 
-the primary and check the secondaries for output. This script requires that the `$RELEASE_NAME` environment variable 
+Once you have all 3 nodes in running, you can run the "test.sh" script in this directory, which will insert a key into
+the primary and check the secondaries for output. This script requires that the `$RELEASE_NAME` environment variable
 be set, in order to access the pods.
 
 ## Authentication
@@ -368,7 +368,7 @@ livenessProbe:
 ## Deep dive
 
 Because the pod names are dependent on the name chosen for it, the following examples use the
-environment variable `RELEASENAME`. For example, if the helm release name is `messy-hydra`, one would need to set the 
+environment variable `RELEASENAME`. For example, if the helm release name is `messy-hydra`, one would need to set the
 following before proceeding. The example scripts below assume 3 pods only.
 
 ```console
