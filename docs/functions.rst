@@ -351,7 +351,7 @@ Example:
     args:
       namespace: "{{ .Deployment.Namespace }}"
       pod: "{{ index .Deployment.Pods 0 }}"
-      image: kanisterio/kanister-tools:0.14.0
+      image: kanisterio/kanister-tools:0.15.0
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupIdentifier: "{{ .Time }}"
 
