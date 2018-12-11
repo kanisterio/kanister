@@ -54,7 +54,8 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "pv-test-1",
 				Labels: map[string]string{
-					kube.PVZoneLabelName: "us-west-2a",
+					kube.PVZoneLabelName:   "us-west-2a",
+					kube.PVRegionLabelName: "us-west-2",
 				},
 			},
 			Spec: v1.PersistentVolumeSpec{
