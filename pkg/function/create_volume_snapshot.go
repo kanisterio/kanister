@@ -176,7 +176,15 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 		if err = ValidateProfile(tp.Profile); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
-		region = tp.Profile.Location.S3Compliant.Region
+		// Get Region from PV label or EC2 metadata
+		if pvRegion, ok := pvLabels[kube.PVRegionLabelName]; ok {
+			region = pvRegion
+		} else {
+			region, err = awsebs.GetRegionFromEC2Metadata()
+			if err != nil {
+				return nil, err
+			}
+		}
 		if pvZone, ok := pvLabels[kube.PVZoneLabelName]; ok {
 			config[awsebs.ConfigRegion] = region
 			config[awsebs.AccessKeyID] = tp.Profile.Credential.KeyPair.ID
@@ -189,7 +197,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 		}
 		return nil, errors.Errorf("PV zone label is empty, pvName: %s, namespace: %s", pvName, namespace)
 	}
-	return nil, errors.New("Storage type not supported!")
+	return nil, errors.New("Storage type not supported")
 }
 
 func getPVCList(tp param.TemplateParams) ([]string, error) {

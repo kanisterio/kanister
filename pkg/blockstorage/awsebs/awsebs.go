@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jpillora/backoff"
@@ -542,4 +543,21 @@ func waitOnSnapshotID(ctx context.Context, ec2Cli *EC2, snapID string) error {
 		log.Debugf("Snapshot progress: snapshot_id: %s, progress: %s", snapID, fmt.Sprintf("%+v", *s.Progress))
 		return false, nil
 	})
+}
+
+// GetRegionFromEC2Metadata retrieves the region from the EC2 metadata service.
+// Only works when the call is performed from inside AWS
+func GetRegionFromEC2Metadata() (string, error) {
+	log.Debug("Retrieving region from metadata")
+	conf := aws.Config{
+		HTTPClient: &http.Client{
+			Transport: http.DefaultTransport,
+			Timeout:   2 * time.Second,
+		},
+		MaxRetries: aws.Int(1),
+	}
+	ec2MetaData := ec2metadata.New(session.Must(session.NewSession()), &conf)
+
+	awsRegion, err := ec2MetaData.Region()
+	return awsRegion, errors.Wrap(err, "Failed to get AWS Region")
 }
