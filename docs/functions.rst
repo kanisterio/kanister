@@ -456,6 +456,7 @@ Arguments:
 
    `namespace`, Yes, `string`, namespace in which to execute
    `pvcs`, No, `[]string`, list of names of PVCs to be backed up
+   `skipWait`, No, `bool`, initiate but do not wait for the snapshot operation to complete
 
 When no PVCs are specified in the `pvcs` argument above, all PVCs in use by a
 Deployment or StatefulSet will be backed up.
@@ -489,6 +490,21 @@ of this phase is saved to an Artifact named `backupInfo`, shown below:
         name: backupVolume
         args:
           namespace: "{{ .Deployment.Namespace }}"
+
+WaitForSnapshotCompletion
+-------------------------
+
+This function is used to wait for completion of snapshot operations
+initiated using the :ref:`createvolumesnapshot` function.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `snapshots`, Yes, `string`, snapshot info generated as output in CreateVolumeSnapshot function
 
 CreateVolumeFromSnapshot
 ------------------------

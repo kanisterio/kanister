@@ -139,6 +139,11 @@ func (p *Provider) SnapshotCreate(ctx context.Context, volume blockstorage.Volum
 	return p.MockSnapshot(), nil
 }
 
+// SnapshotCreateWaitForCompletion mock
+func (p *Provider) SnapshotCreateWaitForCompletion(context.Context, *blockstorage.Snapshot) error {
+	return nil
+}
+
 // SnapshotDelete mock
 func (p *Provider) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
 	p.AddDeletedSnapID(snapshot.ID)
