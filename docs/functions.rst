@@ -433,6 +433,154 @@ Example:
       namespace: "{{ .Deployment.Namespace }}"
       artifact: s3://bucket/path/artifact
 
+.. _createvolumesnapshot:
+
+CreateVolumeSnapshot
+--------------------
+
+This function is used to create snapshots of one or more PVCs
+associated with an application. It takes individual snapshot
+of each PVC which can be then restored later. It generates an
+output that contains the Snapshot info required for restoring PVCs.
+
+.. note::
+   Currently we only support PVC snapshots on AWS EBS. Support for more storage
+   providers is coming soon!
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `pvcs`, No, `[]string`, list of names of PVCs to be backed up
+   `skipWait`, No, `bool`, initiate but do not wait for the snapshot operation to complete
+
+When no PVCs are specified in the `pvcs` argument above, all PVCs in use by a
+Deployment or StatefulSet will be backed up.
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `volumeSnapshotInfo`,`string`, Snapshot info required while restoring the PVCs
+
+Example:
+
+Consider a scenario where you wish to backup all PVCs of a deployment. The output
+of this phase is saved to an Artifact named `backupInfo`, shown below:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backup:
+      type: Deployment
+      outputArtifacts:
+        backupInfo:
+          keyValue:
+            manifest: "{{ .Phases.backupVolume.Output.volumeSnapshotInfo }}"
+      phases:
+      - func: CreateVolumeSnapshot
+        name: backupVolume
+        args:
+          namespace: "{{ .Deployment.Namespace }}"
+
+WaitForSnapshotCompletion
+-------------------------
+
+This function is used to wait for completion of snapshot operations
+initiated using the :ref:`createvolumesnapshot` function.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `snapshots`, Yes, `string`, snapshot info generated as output in CreateVolumeSnapshot function
+
+CreateVolumeFromSnapshot
+------------------------
+
+This function is used to restore one or more PVCs of an application from the snapshots
+taken using the :ref:`createvolumesnapshot` function. It deletes old PVCs,
+if present and creates new PVCs from the snapshots taken earlier.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,20
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `snapshots`, Yes, `string`, snapshot info generated as output in CreateVolumeSnapshot function
+
+Example:
+
+Consider a scenario where you wish to restore all PVCs of a deployment.
+We will first scale down the application, restore PVCs and then scale up.
+For this phase, we will make use of the backupInfo Artifact provided by
+the :ref:`createvolumesnapshot` function.
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: ScaleWorkload
+    name: shutdownPod
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
+      kind: Deployment
+      replicas: 0
+  - func: CreateVolumeFromSnapshot
+    name: restoreVolume
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      snapshots: "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}"
+  - func: ScaleWorkload
+    name: bringupPod
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
+      kind: Deployment
+      replicas: 1
+
+DeleteVolumeSnapshot
+--------------------
+
+This function is used to delete snapshots of PVCs taken using the
+:ref:`createvolumesnapshot` function.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,20
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `snapshots`, Yes, `string`, snapshot info generated as output in CreateVolumeSnapshot function
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: DeleteVolumeSnapshot
+    name: deleteVolumeSnapshot
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      snapshots: "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}"
+
+
 Registering Functions
 ---------------------
 

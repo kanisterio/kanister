@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jpillora/backoff"
@@ -272,45 +273,41 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 func (s *ebsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	// Snapshot the EBS volume
 	csi := (&ec2.CreateSnapshotInput{}).SetVolumeId(volume.ID)
-	var snapID string
-	alltags := ktags.GetTags(tags)
+	csi.SetTagSpecifications([]*ec2.TagSpecification{
+		&ec2.TagSpecification{
+			ResourceType: aws.String(ec2.ResourceTypeSnapshot),
+			Tags:         mapToEC2Tags(ktags.GetTags(tags)),
+		},
+	})
 	log.Infof("Snapshotting EBS volume: %s", *csi.VolumeId)
 	csi.SetDryRun(s.ec2Cli.DryRun)
 	snap, err := s.ec2Cli.CreateSnapshotWithContext(ctx, csi)
-	if isDryRunErr(err) {
-		snapID = ""
-	} else {
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to create snapshot, volume_id: %s", *csi.VolumeId)
-		}
-		if err = setResourceTags(ctx, s.ec2Cli, aws.StringValue(snap.SnapshotId), alltags); err != nil {
-			return nil, err
-		}
-		err = waitOnSnapshot(ctx, s.ec2Cli, snap)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Waiting on snapshot %v", snap)
-		}
-		snapID = aws.StringValue(snap.SnapshotId)
+	if err != nil && !isDryRunErr(err) {
+		return nil, errors.Wrapf(err, "Failed to create snapshot, volume_id: %s", *csi.VolumeId)
 	}
 
-	snaps, err := getSnapshots(ctx, s.ec2Cli, []*string{&snapID})
-	if err != nil {
-		return nil, err
-	}
-
-	ebssnap := snaps[0]
 	region, err := availabilityZoneToRegion(ctx, s.ec2Cli, volume.Az)
 	if err != nil {
 		return nil, err
 	}
 
-	ms := s.snapshotParse(ctx, ebssnap)
+	ms := s.snapshotParse(ctx, snap)
 	ms.Region = region
-	for _, tag := range ebssnap.Tags {
+	for _, tag := range snap.Tags {
 		ms.Tags = append(ms.Tags, &blockstorage.KeyValue{Key: aws.StringValue(tag.Key), Value: aws.StringValue(tag.Value)})
 	}
 	ms.Volume = &volume
 	return ms, nil
+}
+
+func (s *ebsStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
+	if s.ec2Cli.DryRun {
+		return nil
+	}
+	if err := waitOnSnapshotID(ctx, s.ec2Cli, snap.ID); err != nil {
+		return errors.Wrapf(err, "Waiting on snapshot %v", snap)
+	}
+	return nil
 }
 
 func (s *ebsStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
@@ -542,4 +539,21 @@ func waitOnSnapshotID(ctx context.Context, ec2Cli *EC2, snapID string) error {
 		log.Debugf("Snapshot progress: snapshot_id: %s, progress: %s", snapID, fmt.Sprintf("%+v", *s.Progress))
 		return false, nil
 	})
+}
+
+// GetRegionFromEC2Metadata retrieves the region from the EC2 metadata service.
+// Only works when the call is performed from inside AWS
+func GetRegionFromEC2Metadata() (string, error) {
+	log.Debug("Retrieving region from metadata")
+	conf := aws.Config{
+		HTTPClient: &http.Client{
+			Transport: http.DefaultTransport,
+			Timeout:   2 * time.Second,
+		},
+		MaxRetries: aws.Int(1),
+	}
+	ec2MetaData := ec2metadata.New(session.Must(session.NewSession()), &conf)
+
+	awsRegion, err := ec2MetaData.Region()
+	return awsRegion, errors.Wrap(err, "Failed to get AWS Region")
 }

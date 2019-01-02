@@ -16,6 +16,7 @@ type Provider interface {
 	// Snapshot operations
 	SnapshotCopy(ctx context.Context, from Snapshot, to Snapshot) (*Snapshot, error)
 	SnapshotCreate(ctx context.Context, volume Volume, tags map[string]string) (*Snapshot, error)
+	SnapshotCreateWaitForCompletion(context.Context, *Snapshot) error
 	SnapshotDelete(context.Context, *Snapshot) error
 	SnapshotGet(ctx context.Context, id string) (*Snapshot, error)
 	// Others

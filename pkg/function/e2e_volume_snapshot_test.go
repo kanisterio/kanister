@@ -161,6 +161,14 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 						Func: "CreateVolumeSnapshot",
 						Args: map[string]interface{}{
 							CreateVolumeSnapshotNamespaceArg: "{{ .StatefulSet.Namespace }}",
+							CreateVolumeSnapshotSkipWaitArg:  true,
+						},
+					},
+					{
+						Name: "waitOnSnapshots",
+						Func: "WaitForSnapshotCompletion",
+						Args: map[string]interface{}{
+							WaitForSnapshotCompletionSnapshotsArg: "{{ .Phases.testBackupVolume.Output.volumeSnapshotInfo }}",
 						},
 					},
 				},
@@ -288,21 +296,17 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 		phases, err := kanister.GetPhases(*bp, action, *s.tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
+			c.Assert(param.InitPhaseParams(ctx, s.cli, s.tp, p.Name(), p.Objects()), IsNil)
 			output, err := p.Exec(ctx, *bp, action, *s.tp)
 			if err != nil && strings.Contains(err.Error(), skipTestErrorMsg) {
 				c.Skip("Skipping the test since storage type not supported")
 			}
 			c.Assert(err, IsNil)
+			param.UpdatePhaseParams(ctx, s.tp, p.Name(), output)
 			if action == "backup" {
-				keyval := make(map[string]string)
-				c.Assert(output, NotNil)
-				c.Assert(output[volumeSnapshotInfoKey], NotNil)
-				keyval[manifestKey] = output[volumeSnapshotInfoKey].(string)
-				artifact := crv1alpha1.Artifact{
-					KeyValue: keyval,
-				}
-				s.tp.ArtifactsIn = make(map[string]crv1alpha1.Artifact)
-				s.tp.ArtifactsIn[backupInfoKey] = artifact
+				arts, err := param.RenderArtifacts(bp.Actions[action].OutputArtifacts, *s.tp)
+				c.Assert(err, IsNil)
+				s.tp.ArtifactsIn = arts
 			}
 		}
 	}
