@@ -119,7 +119,7 @@ func NewTestProfile(namespace string, secretName string) *crv1alpha1.Profile {
 			Namespace: namespace,
 		},
 		Location: crv1alpha1.Location{
-			Type: crv1alpha1.LocationTypeS3Compliant,
+			Type:   crv1alpha1.LocationTypeS3Compliant,
 			Region: os.Getenv(AWSRegion),
 		},
 		Credential: crv1alpha1.Credential{
