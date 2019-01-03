@@ -69,7 +69,7 @@ func ValidateProfile(profile *param.Profile) error {
 	if profile.Location.Type != crv1alpha1.LocationTypeS3Compliant {
 		return errors.New("Location type not supported")
 	}
-	if len(profile.Location.S3Compliant.Region) == 0 {
+	if len(profile.Location.Region) == 0 {
 		return errors.New("Region is not set")
 	}
 	if profile.Credential.Type != param.CredentialTypeKeyPair {

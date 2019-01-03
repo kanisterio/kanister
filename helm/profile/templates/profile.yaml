@@ -19,11 +19,10 @@ metadata:
 {{ include "profile.helmLabels" . | indent 4 }}
 location:
   type: s3Compliant
-  s3Compliant:
-    bucket: {{ required "S3 compatible bucket is required when configuring a profile." .Values.s3.bucket | quote }}
-    endpoint: {{ .Values.s3.endpoint | quote }}
-    prefix: {{ .Values.s3.prefix | quote }}
-    region: {{ .Values.s3.region | quote }}
+  bucket: {{ required "S3 compatible bucket is required when configuring a profile." .Values.s3.bucket | quote }}
+  endpoint: {{ .Values.s3.endpoint | quote }}
+  prefix: {{ .Values.s3.prefix | quote }}
+  region: {{ .Values.s3.region | quote }}
 credential:
   type: keyPair
   keyPair:

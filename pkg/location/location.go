@@ -159,11 +159,11 @@ const s3Prefix = "s3://"
 
 func s3CompliantPath(profile param.Profile, suffix string) string {
 	path := filepath.Join(
-		profile.Location.S3Compliant.Bucket,
-		profile.Location.S3Compliant.Prefix,
+		profile.Location.Bucket,
+		profile.Location.Prefix,
 		suffix,
 	)
-	if strings.HasPrefix(profile.Location.S3Compliant.Bucket, s3Prefix) {
+	if strings.HasPrefix(profile.Location.Bucket, s3Prefix) {
 		return path
 	}
 	return s3Prefix + path
@@ -214,8 +214,8 @@ func checkIfS3Dir(ctx context.Context, profile param.Profile, suffix string) (st
 }
 
 func s3CompliantFlags(profile param.Profile) (cmd []string) {
-	if profile.Location.S3Compliant.Endpoint != "" {
-		cmd = append(cmd, "--endpoint", profile.Location.S3Compliant.Endpoint)
+	if profile.Location.Endpoint != "" {
+		cmd = append(cmd, "--endpoint", profile.Location.Endpoint)
 	}
 	if profile.SkipSSLVerify {
 		cmd = append(cmd, "--no-verify-ssl")

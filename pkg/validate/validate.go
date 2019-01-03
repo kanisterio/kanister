@@ -124,10 +124,10 @@ func ProfileSchema(p *crv1alpha1.Profile) error {
 	if p.Credential.Type != crv1alpha1.CredentialTypeKeyPair {
 		return errorf("unknown or unsupported credential type '%s'", p.Credential.Type)
 	}
-	if p.Location.S3Compliant.Bucket == "" {
+	if p.Location.Bucket == "" {
 		return errorf("S3 bucket not specified")
 	}
-	if p.Location.S3Compliant.Endpoint == "" && p.Location.S3Compliant.Region == "" {
+	if p.Location.Endpoint == "" && p.Location.Region == "" {
 		return errorf("S3 bucket region not specified")
 	}
 	if p.Credential.KeyPair.Secret.Name == "" {
@@ -140,8 +140,8 @@ func ProfileSchema(p *crv1alpha1.Profile) error {
 }
 
 func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile) error {
-	bucketName := p.Location.S3Compliant.Bucket
-	givenRegion := p.Location.S3Compliant.Region
+	bucketName := p.Location.Bucket
+	givenRegion := p.Location.Region
 	if givenRegion != "" {
 		actualRegion, err := objectstore.GetS3BucketRegion(ctx, bucketName, givenRegion)
 		if err != nil {
@@ -165,19 +165,19 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 	}
 	pc := objectstore.ProviderConfig{
 		Type:          objectstore.ProviderTypeS3,
-		Endpoint:      p.Location.S3Compliant.Endpoint,
+		Endpoint:      p.Location.Endpoint,
 		SkipSSLVerify: p.SkipSSLVerify,
 	}
 	provider, err := objectstore.NewProvider(ctx, pc, secret)
 	if err != nil {
 		return err
 	}
-	bucket, err := provider.GetBucket(ctx, p.Location.S3Compliant.Bucket)
+	bucket, err := provider.GetBucket(ctx, p.Location.Bucket)
 	if err != nil {
 		return err
 	}
 	if _, err := bucket.ListDirectories(ctx); err != nil {
-		return errorf("failed to list directories in bucket '%s'", p.Location.S3Compliant.Bucket)
+		return errorf("failed to list directories in bucket '%s'", p.Location.Bucket)
 	}
 	return nil
 }
@@ -195,23 +195,23 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	}
 	pc := objectstore.ProviderConfig{
 		Type:          objectstore.ProviderTypeS3,
-		Endpoint:      p.Location.S3Compliant.Endpoint,
+		Endpoint:      p.Location.Endpoint,
 		SkipSSLVerify: p.SkipSSLVerify,
 	}
 	provider, err := objectstore.NewProvider(ctx, pc, secret)
 	if err != nil {
 		return err
 	}
-	bucket, err := provider.GetBucket(ctx, p.Location.S3Compliant.Bucket)
+	bucket, err := provider.GetBucket(ctx, p.Location.Bucket)
 	if err != nil {
 		return err
 	}
 	data := []byte("sample content")
 	if err := bucket.PutBytes(ctx, objName, data, nil); err != nil {
-		return errorf("failed to write contents to bucket '%s'", p.Location.S3Compliant.Bucket)
+		return errorf("failed to write contents to bucket '%s'", p.Location.Bucket)
 	}
 	if err := bucket.Delete(ctx, objName); err != nil {
-		return errorf("failed to delete contents in bucket '%s'", p.Location.S3Compliant.Bucket)
+		return errorf("failed to delete contents in bucket '%s'", p.Location.Bucket)
 	}
 	return nil
 }

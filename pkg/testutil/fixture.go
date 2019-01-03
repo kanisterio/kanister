@@ -23,11 +23,9 @@ func ObjectStoreProfileOrSkip(c *check.C) *param.Profile {
 	skipIfEnvNotSet(c, objectStoreTestEnvVars)
 	return &param.Profile{
 		Location: crv1alpha1.Location{
-			Type: crv1alpha1.LocationTypeS3Compliant,
-			S3Compliant: &crv1alpha1.S3CompliantLocation{
-				Bucket: os.Getenv(testBucketName),
-				Prefix: c.TestName(),
-			},
+			Type:   crv1alpha1.LocationTypeS3Compliant,
+			Bucket: os.Getenv(testBucketName),
+			Prefix: c.TestName(),
 		},
 		Credential: param.Credential{
 			Type: param.CredentialTypeKeyPair,

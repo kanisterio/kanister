@@ -36,8 +36,8 @@ func generateDeleteCommand(artifact string, profile *param.Profile) []string {
 	cmd = append(cmd, "export", fmt.Sprintf("AWS_ACCESS_KEY_ID=%s\n", profile.Credential.KeyPair.ID))
 	// Command to delete from the object store
 	cmd = append(cmd, "aws")
-	if profile.Location.S3Compliant.Endpoint != "" {
-		cmd = append(cmd, "--endpoint", profile.Location.S3Compliant.Endpoint)
+	if profile.Location.Endpoint != "" {
+		cmd = append(cmd, "--endpoint", profile.Location.Endpoint)
 	}
 	if profile.SkipSSLVerify {
 		cmd = append(cmd, "--no-verify-ssl")

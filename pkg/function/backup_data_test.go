@@ -15,13 +15,11 @@ var _ = Suite(&BackupDataSuite{})
 func newValidProfile() *param.Profile {
 	return &param.Profile{
 		Location: crv1alpha1.Location{
-			Type: crv1alpha1.LocationTypeS3Compliant,
-			S3Compliant: &crv1alpha1.S3CompliantLocation{
-				Bucket:   "test-bucket",
-				Endpoint: "",
-				Prefix:   "",
-				Region:   "us-west-1",
-			},
+			Type:     crv1alpha1.LocationTypeS3Compliant,
+			Bucket:   "test-bucket",
+			Endpoint: "",
+			Prefix:   "",
+			Region:   "us-west-1",
 		},
 		Credential: param.Credential{
 			Type: param.CredentialTypeKeyPair,
@@ -37,13 +35,11 @@ func newValidProfile() *param.Profile {
 func newInvalidProfile() *param.Profile {
 	return &param.Profile{
 		Location: crv1alpha1.Location{
-			Type: "foo-type",
-			S3Compliant: &crv1alpha1.S3CompliantLocation{
-				Bucket:   "test-bucket",
-				Endpoint: "",
-				Prefix:   "",
-				Region:   "us-west-1",
-			},
+			Type:     "foo-type",
+			Bucket:   "test-bucket",
+			Endpoint: "",
+			Prefix:   "",
+			Region:   "us-west-1",
 		},
 		Credential: param.Credential{
 			Type: param.CredentialTypeKeyPair,
