@@ -7,6 +7,6 @@ ADD . /kanister
 
 RUN /kanister/install.sh && rm -rf /kanister && rm -rf /tmp && mkdir /tmp
 
-COPY --from=kanisterio/kanister-tools:0.15.0 /usr/local/bin/kando /usr/local/bin/kando
+RUN curl https://raw.githubusercontent.com/kanisterio/kanister/master/scripts/get.sh | bash
 
 CMD ["tail", "-f", "/dev/null"]
