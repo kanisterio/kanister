@@ -228,21 +228,17 @@ type Profile struct {
 type LocationType string
 
 const (
+	LocationTypeGCS         LocationType = "gcs"
 	LocationTypeS3Compliant LocationType = "s3Compliant"
 )
 
 // Location
 type Location struct {
-	Type        LocationType         `json:"type"`
-	S3Compliant *S3CompliantLocation `json:"s3Compliant"`
-}
-
-// S3Compliant
-type S3CompliantLocation struct {
-	Bucket   string `json:"bucket"`
-	Endpoint string `json:"endpoint"`
-	Prefix   string `json:"prefix"`
-	Region   string `json:"region"`
+	Type     LocationType `json:"type"`
+	Bucket   string       `json:"bucket"`
+	Endpoint string       `json:"endpoint"`
+	Prefix   string       `json:"prefix"`
+	Region   string       `json:"region"`
 }
 
 // CredentialType

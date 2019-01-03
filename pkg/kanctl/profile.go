@@ -164,13 +164,11 @@ func constructS3CompliantProfile(s3P *s3CompliantParams, secret *v1.Secret) *v1a
 			GenerateName: "s3-profile-",
 		},
 		Location: v1alpha1.Location{
-			Type: v1alpha1.LocationTypeS3Compliant,
-			S3Compliant: &v1alpha1.S3CompliantLocation{
-				Bucket:   s3P.bucket,
-				Endpoint: s3P.endpoint,
-				Prefix:   s3P.prefix,
-				Region:   s3P.region,
-			},
+			Type:     v1alpha1.LocationTypeS3Compliant,
+			Bucket:   s3P.bucket,
+			Endpoint: s3P.endpoint,
+			Prefix:   s3P.prefix,
+			Region:   s3P.region,
 		},
 		Credential: v1alpha1.Credential{
 			Type: v1alpha1.CredentialTypeKeyPair,

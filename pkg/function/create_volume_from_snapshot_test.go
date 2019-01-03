@@ -28,9 +28,8 @@ func (s *CreateVolumeFromSnapshotTestSuite) TestCreateVolumeFromSnapshot(c *C) {
 	mockGetter := mockblockstorage.NewGetter()
 	profile := &param.Profile{
 		Location: crv1alpha1.Location{
-			Type: crv1alpha1.LocationTypeS3Compliant,
-			S3Compliant: &crv1alpha1.S3CompliantLocation{
-				Region: "us-west-2"},
+			Type:   crv1alpha1.LocationTypeS3Compliant,
+			Region: "us-west-2",
 		},
 		Credential: param.Credential{
 			Type: param.CredentialTypeKeyPair,

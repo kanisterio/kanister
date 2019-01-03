@@ -34,7 +34,7 @@ actions:
             then
               # Setup wal-e s3 connection parameters.
               timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
-              wale_s3_prefix="s3://{{ .Profile.Location.S3Compliant.Bucket }}/postgres-backups/{{ .Deployment.Name }}/${timeline}"
+              wale_s3_prefix="s3://{{ .Profile.Location.Bucket }}/postgres-backups/{{ .Deployment.Name }}/${timeline}"
               echo "${wale_s3_prefix}" > "${env_wal_prefix}"
             fi
 
@@ -44,8 +44,8 @@ actions:
             env_wal_access_key_id="${env_dir}/AWS_ACCESS_KEY_ID"
             env_wal_secret_access_key="${env_dir}/AWS_SECRET_ACCESS_KEY"
 
-            {{- if .Profile.Location.S3Compliant.Endpoint }}
-              wale_s3_endpoint="{{ .Profile.Location.S3Compliant.Endpoint | quote }}"
+            {{- if .Profile.Location.Endpoint }}
+              wale_s3_endpoint="{{ .Profile.Location.Endpoint | quote }}"
               wale_s3_endpoint=${wale_s3_endpoint,,}
               {{- if .Profile.SkipSSLVerify }}
                 # Since wal-e does not support skip-ssl-verify switch to http://
@@ -63,8 +63,8 @@ actions:
             {{- else }}
               # Region is required when no endpoint is used (AWS S3).
               wale_s3_region="us-east-1"
-              {{- if .Profile.Location.S3Compliant.Region }}
-                wale_s3_region="{{ .Profile.Location.S3Compliant.Region | quote}}"
+              {{- if .Profile.Location.Region }}
+                wale_s3_region="{{ .Profile.Location.Region | quote}}"
               {{- end }}
               echo "${wale_s3_region}" > "${env_wal_region}"
             {{- end }}
@@ -83,13 +83,13 @@ actions:
             {{- if .Profile.SkipSSLVerify }}
               s3_cmd+=("--no-verify-ssl")
             {{- end }}
-            {{- if .Profile.Location.S3Compliant.Endpoint }}
-              s3_cmd+=(--endpoint "{{ .Profile.Location.S3Compliant.Endpoint }}")
+            {{- if .Profile.Location.Endpoint }}
+              s3_cmd+=(--endpoint "{{ .Profile.Location.Endpoint }}")
             {{- end }}
-            {{- if .Profile.Location.S3Compliant.Region }}
-              s3_cmd+=(--region "{{ .Profile.Location.S3Compliant.Region | quote}}")
+            {{- if .Profile.Location.Region }}
+              s3_cmd+=(--region "{{ .Profile.Location.Region | quote}}")
             {{- end }}
-            s3_path="s3://{{ .Profile.Location.S3Compliant.Bucket }}/postgres-backups/{{ .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt"
+            s3_path="s3://{{ .Profile.Location.Bucket }}/postgres-backups/{{ .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt"
             s3_cmd+=(s3 cp - "${s3_path}")
 
             set +o xtrace
@@ -147,13 +147,13 @@ actions:
             {{- if .Profile.SkipSSLVerify }}
               s3_cmd+=(" --no-verify-ssl")
             {{- end }}
-            {{- if .Profile.Location.S3Compliant.Endpoint }}
-              s3_cmd+=(--endpoint "{{ .Profile.Location.S3Compliant.Endpoint }}")
+            {{- if .Profile.Location.Endpoint }}
+              s3_cmd+=(--endpoint "{{ .Profile.Location.Endpoint }}")
             {{- end }}
-            {{- if .Profile.Location.S3Compliant.Region }}
-              s3_cmd+=(--region "{{ .Profile.Location.S3Compliant.Region | quote}}")
+            {{- if .Profile.Location.Region }}
+              s3_cmd+=(--region "{{ .Profile.Location.Region | quote}}")
             {{- end }}
-            s3_path="s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.path }}"
+            s3_path="s3://{{ .Profile.Location.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.path }}"
             s3_cmd+=(s3 cp "${s3_path}" -)
 
             set +o xtrace
@@ -166,8 +166,8 @@ actions:
 
             # Fetch base backup using the old WALE_S3_PREFIX.
             # First need to setup wal-e conf as env vars
-            {{- if .Profile.Location.S3Compliant.Endpoint }}
-              wale_s3_endpoint="{{ .Profile.Location.S3Compliant.Endpoint | quote}}"
+            {{- if .Profile.Location.Endpoint }}
+              wale_s3_endpoint="{{ .Profile.Location.Endpoint | quote}}"
               wale_s3_endpoint=${wale_s3_endpoint,,}
               {{- if .Profile.SkipSSLVerify }}
                 # Since wal-e does not support skip-ssl-verify switch to http://
@@ -183,8 +183,8 @@ actions:
               # Region will be ignored for S3 compatible object store so skipping.
             {{- else }}
               # Region is required when no endpoint is used (AWS S3).
-              {{- if .Profile.Location.S3Compliant.Region }}
-                wale_s3_region="{{ .Profile.Location.S3Compliant.Region | quote}}"
+              {{- if .Profile.Location.Region }}
+                wale_s3_region="{{ .Profile.Location.Region | quote}}"
               {{- else }}
                 wale_s3_region="us-east-1"
               {{- end }}
@@ -226,7 +226,7 @@ actions:
             # Recovery is now complete and can switch to new WAL timeline
             env_wal_prefix="${pgdata}/env/WALE_S3_PREFIX"
             timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
-            wale_s3_prefix="s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.prefix }}/${timeline}"
+            wale_s3_prefix="s3://{{ .Profile.Location.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.prefix }}/${timeline}"
             echo "${wale_s3_prefix}" > "${env_wal_prefix}"
     - func: ScaleWorkload
       name: restartPod
@@ -267,13 +267,13 @@ actions:
             {{- if .Profile.SkipSSLVerify }}
               aws_args+=(" --no-verify-ssl")
             {{- end }}
-            {{- if .Profile.Location.S3Compliant.Endpoint }}
-              aws_args+=(--endpoint "{{ .Profile.Location.S3Compliant.Endpoint }}")
+            {{- if .Profile.Location.Endpoint }}
+              aws_args+=(--endpoint "{{ .Profile.Location.Endpoint }}")
             {{- end }}
-            {{- if .Profile.Location.S3Compliant.Region }}
-              aws_args+=(--region "{{ .Profile.Location.S3Compliant.Region | quote}}")
+            {{- if .Profile.Location.Region }}
+              aws_args+=(--region "{{ .Profile.Location.Region | quote}}")
             {{- end }}
-            s3_path="s3://{{ .Profile.Location.S3Compliant.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.path }}"
+            s3_path="s3://{{ .Profile.Location.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.path }}"
 
 
             # Get and parse artifact manifest to discover the timeline and the base-backup name.
@@ -286,8 +286,8 @@ actions:
             aws "${aws_args[@]}" s3 rm --recursive "${base_backup_path}"
 
             # Setup configuration for wal-e.
-            {{- if .Profile.Location.S3Compliant.Endpoint }}
-              wale_s3_endpoint="{{ .Profile.Location.S3Compliant.Endpoint | quote}}"
+            {{- if .Profile.Location.Endpoint }}
+              wale_s3_endpoint="{{ .Profile.Location.Endpoint | quote}}"
               wale_s3_endpoint-${wale_s3_endpoint,,}
               {{- if .Profile.SkipSSLVerify }}
                 # Since wal-e does not support skip-ssl-verify switch to http://
@@ -303,8 +303,8 @@ actions:
               # Region will be ignored for S3 compatible object store so skipping.
             {{- else }}
               # Region is required when no endpoint is used (AWS S3).
-              {{- if .Profile.Location.S3Compliant.Region }}
-                wale_s3_region="{{ .Profile.Location.S3Compliant.Region | quote}}"
+              {{- if .Profile.Location.Region }}
+                wale_s3_region="{{ .Profile.Location.Region | quote}}"
               {{- else }}
                 wale_s3_region="us-east-1"
               {{- end }}

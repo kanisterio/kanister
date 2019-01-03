@@ -4,12 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	. "gopkg.in/check.v1"
-
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
@@ -17,6 +11,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	. "gopkg.in/check.v1"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 type DataSuite struct {
@@ -81,7 +79,7 @@ func newRestoreDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							RestoreDataImageArg:                "kanisterio/kanister-tools:0.15.0",
-							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}",
+							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataRestorePathArg:          "/mnt/data",
 							RestoreDataBackupIdentifierArg:     "{{ .Time }}",
 							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
@@ -110,7 +108,7 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 							BackupDataPodArg:                  "{{ index .StatefulSet.Pods 0 }}",
 							BackupDataContainerArg:            "{{ index .StatefulSet.Containers 0 0 }}",
 							BackupDataIncludePathArg:          "/etc",
-							BackupDataBackupArtifactPrefixArg: "{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}",
+							BackupDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							BackupDataBackupIdentifierArg:     "{{ .Time }}",
 							BackupDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
 						},
@@ -213,7 +211,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 						Args: map[string]interface{}{
 							CopyVolumeDataNamespaceArg:      "{{ .PVC.Namespace }}",
 							CopyVolumeDataVolumeArg:         "{{ .PVC.Name }}",
-							CopyVolumeDataArtifactPrefixArg: "{{ .Profile.Location.S3Compliant.Bucket }}/{{ .Profile.Location.S3Compliant.Prefix }}/{{ .PVC.Namespace }}/{{ .PVC.Name }}",
+							CopyVolumeDataArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}/{{ .PVC.Namespace }}/{{ .PVC.Name }}",
 						},
 					},
 				},

@@ -6,11 +6,10 @@ metadata:
 # Note: Add details of an existing S3 compliant bucket below
 location:
   type: s3Compliant
-  s3Compliant:
-    bucket: XXXX
-    endpoint: XXXX
-    prefix: XXXX
-    region: XXXX
+  bucket: XXXX
+  endpoint: XXXX
+  prefix: XXXX
+  region: XXXX
 credential:
   type: keyPair
   keyPair:

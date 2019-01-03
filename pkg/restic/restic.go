@@ -76,8 +76,8 @@ const (
 
 func resticArgs(profile *param.Profile, repository, encryptionKey string) []string {
 	s3Endpoint := awsS3Endpoint
-	if profile.Location.S3Compliant.Endpoint != "" {
-		s3Endpoint = profile.Location.S3Compliant.Endpoint
+	if profile.Location.Endpoint != "" {
+		s3Endpoint = profile.Location.Endpoint
 	}
 	return []string{
 		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, profile.Credential.KeyPair.ID),
