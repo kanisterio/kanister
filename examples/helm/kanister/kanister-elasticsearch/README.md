@@ -13,7 +13,7 @@ If you want to avoid doing that upgrade to Elasticsearch 5.6 first before moving
 
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.7.0 with `profiles.cr.kanister.io` CRD installed
+* Kanister version 0.16.0 with `profiles.cr.kanister.io` CRD installed
 
 ## StatefulSets Details
 * https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
@@ -39,21 +39,23 @@ $ helm repo add kanister http://charts.kanister.io
 ```
 
 Then install the sample Elasticsearch application with the release name `my-release` in its own namespace
-`es-test` using the following command:
+`es-test` using the command below. Make sure you have the kanister controller running in namespace `kasten-io` which is the default setting in Elasticsearch charts. Otherwise, you will also have to set the `kanister.controller_namespace` parameter value to the respective kanister controller namespace in the following command:
 
 ```bash
+# Replace the default s3 credentials (endpoint, bucket and region) with your credentials before you run this command
 $ helm install kanister/kanister-elasticsearch -n my-release --namespace es-test \
      --set profile.create='true' \
      --set profile.profileName='es-test-profile' \
      --set profile.s3.endpoint='https://my-custom-s3-provider:9000' \
-     --set profile.s3.accessKey='AKIAIOSFODNN7EXAMPLE' \
-     --set profile.s3.secretKey='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
-     --set profile.s3.bucket='kanister-bucket'
+     --set profile.s3.accessKey="${AWS_ACCESS_KEY_ID}" \
+     --set profile.s3.secretKey="${AWS_SECRET_ACCESS_KEY}" \
+     --set profile.s3.bucket='kanister-bucket' \
+     --set profile.s3.region=us-west-2
 ```
 
 The command deploys Elasticsearch on the Kubernetes cluster in the default
 configuration. The [configuration](#configuration) section lists the parameters that can be
-configured during installation.
+configured during installation. It also installs a `profiles.cr.kanister.io` CRD named `es-test-profile` in `es-test` namespace.
 
 The command will also configure a location where artifacts resulting from Kanister
 data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
@@ -62,8 +64,6 @@ requires a Profile reference whether one created as part of the application inst
 not. Support for creating an ActionSet as part of install is simply for convenience.
 This CR can be shared between Kanister-enabled application instances so one option is to
 only create as part of the first instance.
-
-Make sure you have the kanister controller running in namespace `kasten-io` which is the default setting in Elasticsearch otherwise, you will also have to set the `kanister.controller_namespace` parameter value to the respective kanister controller namespace in the above command.
 
 If not creating a Profile CR, it is possible to use an even simpler command.
 
@@ -92,33 +92,17 @@ green  open   customer xbwj34pTSZOdDI7xVR0qIA   5   1          1            0   
 
 ## Protect the Application
 
-You can now take a backup of the Elasticsearch data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
+You can now take a backup of the Elasticsearch data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller using `kanctl`, a command-line tool that helps create ActionSets as shown below:
 
 ```bash
-$ cat << EOF | kubectl create -f -
-apiVersion: cr.kanister.io/v1alpha1
-kind: ActionSet
-metadata:
-  name: es-backup-1
-  namespace: kasten-io
-spec:
-  actions:
-  - name: backup
-    blueprint: my-release-kanister-elasticsearch-blueprint
-    object:
-      kind: StatefulSet
-      name: my-release-kanister-elasticsearch-data
-      namespace: es-test
-    profile:
-      apiVersion: v1alpha1
-      kind: Profile
-      name: default-profile
-      namespace: kasten-io
-EOF
+$ kanctl create actionset --action backup --namespace kasten-io --blueprint my-release-kanister-elasticsearch-blueprint --statefulset es-test/my-release-kanister-elasticsearch-data --profile es-test/es-test-profile
 
-$ kubectl --namespace kanister get actionsets.cr.kanister.io
+$ kubectl --namespace kasten-io get actionsets.cr.kanister.io
 NAME                AGE
-es-backup-1         2h
+backup-lphk7        2h
+
+# View the status of the actionset
+$ kubectl --namespace kasten-io describe actionset backup-lphk7
 ```
 
 ## Disaster strikes!
@@ -144,11 +128,11 @@ health status index uuid pri rep docs.count docs.deleted store.size pri.store.si
 To restore the missing data, we want to use the backup created earlier in the steps above. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action restore --from "es-backup-1"
-actionset restore-es-backup-1-mqsm5 created
+$ kanctl --namespace kasten-io create actionset --action restore --from "backup-lphk7"
+actionset restore-backup-lphk7-hndm6 created
 
 # View the status of the ActionSet
-kubectl --namespace kasten-io get actionset restore-es-backup-1-mqsm5 -oyaml
+kubectl --namespace kasten-io describe actionset restore-backup-lphk7-hndm6
 ```
 
 You should now see that the data has been successfully restored to Elasticsearch!
@@ -164,11 +148,19 @@ green  open   customer xbwj34pTSZOdDI7xVR0qIA   5   1          1            0   
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action delete --from "es-backup-1"
-actionset "delete-es-backup-1-fnb9v" created
+$ kanctl --namespace kasten-io create actionset --action delete --from "backup-lphk7"
+actionset "delete-backup-lphk7-5n8nz" created
 
 # View the status of the ActionSet
-$ kubectl --namespace kasten-io get actionset delete-es-backup-1-fnb9v -oyaml
+$ kubectl --namespace kasten-io describe actionset delete-backup-lphk7-5n8nz
+```
+
+### Troubleshooting
+
+If you run into any issues with the above commands, you can check the logs of the controller using:
+
+```bash
+$ kubectl --namespace kasten-io logs -l app=kanister-operator
 ```
 
 ## Delete the Helm deployment as normal
