@@ -63,7 +63,7 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	// Generate delete command
 	cmd := generateDeleteCommand(artifact, tp.Profile)
 	// Use KubeTask to delete the artifact
-	return kubeTask(ctx, namespace, "kanisterio/kanister-tools:0.15.0", cmd)
+	return kubeTask(ctx, namespace, "kanisterio/kanister-tools:0.16.0", cmd)
 }
 
 func (*deleteDataFunc) RequiredArgs() []string {
