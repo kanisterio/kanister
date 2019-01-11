@@ -1,5 +1,5 @@
-hash: f1b78ff0d608fbb38269fc7b0ce7ace939b9afc2ed7c46e6d21786e6e42b3918
-updated: 2018-11-09T10:40:36.46445-08:00
+hash: 00fad859fcbd0aebb184c343badcc6d20a01074b96d9b89fcac886daa8bad0f4
+updated: 2019-01-10T22:34:21.581570958Z
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -50,7 +50,7 @@ imports:
   - service/s3/s3manager
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
-  version: 9419692eb7ad7f923cca690cc5a6b2c6d22405e1
+  version: 4e8cbbfb1aeab140cd0fa97fd16b64ee18c3ca6a
   subpackages:
   - storage
   - version
@@ -74,7 +74,7 @@ imports:
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
 - name: github.com/go-ini/ini
-  version: 9c8236e659b76e87bf02044d06fde8683008ff3e
+  version: 5cf292cae48347c2490ac1a58fe36735fb78df7e
 - name: github.com/go-openapi/errors
   version: d24ebc2075bad502fac3a8ae27aa6dd58e1952dc
 - name: github.com/go-openapi/strfmt
@@ -127,11 +127,11 @@ imports:
   subpackages:
   - simplelru
 - name: github.com/huandu/xstrings
-  version: 8bbcf2f9ccb55755e748b7644164cd4bdce94c1d
+  version: 2bf18b218c51864a87384c06996e40ff9dcff8e1
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
 - name: github.com/jmespath/go-jmespath
-  version: c2b33e8439af944379acbdd9c3a5fe0bc44bd8a5
+  version: 3433f3ea46d9f8019119e7dd41274e112a2359a9
 - name: github.com/jpillora/backoff
   version: 8eab2debe79d12b7bd3d10653910df25fa9552ba
 - name: github.com/json-iterator/go
@@ -188,7 +188,7 @@ imports:
   - idna
   - lex/httplex
 - name: golang.org/x/oauth2
-  version: fdc9e635145ae97e6c2cb777c48305600cf515cb
+  version: d668ce993890a79bda886613ee587a69dd5da7a6
   subpackages:
   - google
   - internal
@@ -222,7 +222,7 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/mgo.v2
-  version: 9856a29383ce1c59f308dd1cf0363a79b5bef6b5
+  version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
   subpackages:
   - bson
   - internal/json
