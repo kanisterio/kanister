@@ -31,10 +31,11 @@ helm repo add kanister http://charts.kanister.io
 helm install kanister/kanister-postgresql --name postgres-test --namespace postgres-test \
      --set profile.create='true' \
      --set profile.profileName='postgres-test-profile' \
-     --set profile.s3.accessKey=${AWS_ACCESS_KEY_ID} \
-     --set profile.s3.secretKey=${AWS_SECRET_ACCESS_KEY} \
-     --set profile.s3.bucket='<BUCKET_NAME e.g kanister_bucket>' \
-     --set profile.s3.region='<BUCKET_REGION e.g. us-west-2>' \
+     --set profile.location.type='s3Compliant' \
+     --set profile.location.bucket='kanister-bucket' \
+     --set profile.location.region=us-west-2 \
+     --set profile.aws.accessKey="${AWS_ACCESS_KEY_ID}" \
+     --set profile.aws.secretKey="${AWS_SECRET_ACCESS_KEY}" \
      --set kanister.controller_namespace=kanister
 ```
 
@@ -99,10 +100,11 @@ Then install the sample Postgres application in its own namespace.
 $ helm install kanister/kanister-postgresql --name postgres-test --namespace postgres-test \
      --set profile.create='true' \
      --set profile.profileName='postgres-test-profile' \
-     --set profile.s3.accessKey=${AWS_ACCESS_KEY_ID} \
-     --set profile.s3.secretKey=${AWS_SECRET_ACCESS_KEY} \
-     --set profile.s3.bucket='<BUCKET_NAME e.g kanister_bucket>' \
-     --set profile.s3.region='<BUCKET_REGION e.g. us-west-2>' \
+     --set profile.location.type='s3Compliant' \
+     --set profile.location.bucket='kanister-bucket' \
+     --set profile.location.region=us-west-2 \
+     --set profile.aws.accessKey="${AWS_ACCESS_KEY_ID}" \
+     --set profile.aws.secretKey="${AWS_SECRET_ACCESS_KEY}" \
      --set kanister.controller_namespace=kanister
 ```
 
@@ -148,11 +150,11 @@ default values. The Profile CR parameters are passed to the profile sub-chart.
 | `profile.create` | (Optional) Specify if a Profile CR should be created as part of install. | ``false`` |
 | `profile.defaultProfile` | (Optional) Set to ``true`` to create a profile with name `default-profile` | ``false`` |
 | `profile.profileName` | (Required if not creating a default Profile) Name for the profile that is created | `nil` |
-| `profile.s3.accessKey` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
-| `profile.s3.secretKey` | (Required if creating profile) Corresponding secret for `accessKey`. | `nil` |
-| `profile.s3.bucket` | (Required if creating profile) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `nil` |
-| `profile.s3.region` | (Optional if creating profile) Region to be used for the bucket. | `nil` |
-| `profile.s3.endpoint` | (Optional if creating profile) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
+| `profile.aws.accessKey` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
+| `profile.aws.secretKey` | (Required if creating profile) Corresponding secret for `accessKey`. | `nil` |
+| `profile.location.bucket` | (Required if creating profile) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `nil` |
+| `profile.location.region` | (Optional if creating profile) Region to be used for the bucket. | `nil` |
+| `profile.location.endpoint` | (Optional if creating profile) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
 | `profile.verifySSL` | (Optional if creating profile) Set to ``false`` to disable SSL verification on the s3 endpoint. | `true` |
 | `kanister.controller_namespace` | (Optional) Specify the namespace where the Kanister controller is running. | kanister |
 

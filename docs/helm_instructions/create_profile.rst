@@ -10,20 +10,20 @@ create as part of the first instance.
 .. note:: Prior to creating the Profile CR, you will need to do the following:
 
    * Create a bucket for artifacts on your S3 store. This will be your
-     ``s3.bucket`` parameter to the command.
-   * Obtain ``s3.accessKey`` and ``s3.secretKey`` credentials for an
+     ``location.bucket`` parameter to the command.
+   * Obtain ``aws.accessKey`` and ``aws.secretKey`` credentials for an
      account with access to the bucket that you will use.
    * Configure the permissions on the bucket to allow the account to
      list, put, get, and delete.
    * Make sure that your retention policy allows deletions so that artifacts
      can be reclaimed based on your intended data backup retention.
 
-.. note:: The ``s3.endpoint`` parameter is only required if you are using an
+.. note:: The ``location.endpoint`` parameter is only required if you are using an
    S3-compatible provider different from AWS.
 
    If you are using an on-premises s3 provider, the endpoint specified needs be
    accessible from within your Kubernetes cluster.
 
    If, in your environment, the endpoint has a self-signed SSL certificate,
-   include ``--set s3.verifySSL=false`` in the above command to disable SSL
+   include ``--set verifySSL=false`` in the above command to disable SSL
    verification for the S3 operations in the blueprint.

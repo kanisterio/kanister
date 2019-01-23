@@ -13,9 +13,10 @@ $ helm repo add kanister https://charts.kanister.io/
 # Create a Profile with the default name in the kanister namespace
 $ helm install kanister/profile --namespace kanister \
      --set defaultProfile=true \
-     --set s3.accessKey="${AWS_ACCESS_KEY}" \
-     --set s3.secretKey="${AWS_SECRET_KEY}" \
-     --set s3.bucket='my-kanister-bucket'
+     --set location.type='s3Compliant' \
+     --set aws.accessKey="${AWS_ACCESS_KEY}" \
+     --set aws.secretKey="${AWS_SECRET_KEY}" \
+     --set location.bucket='my-kanister-bucket'
 ```
 
 ## Overview
@@ -51,11 +52,11 @@ passed to the profile sub-chart.
 | ---              | ---                                                                                                                                | ---       |
 | `defaultProfile` | (Optional) Set to ``true`` to create a profile with name `default-profile`.                                                        | ``false`` |
 | `profileName`    | (Required if `! defaultProfile`) Name of the Profile CR.                                                                           | `nil`     |
-| `s3.accessKey`   | (Required) API Key for an s3 compatible object store.                                                                              | `nil`     |
-| `s3.secretKey`   | (Required) Corresponding secret for `accessKey`.                                                                                   | `nil`     |
-| `s3.bucket`      | (Required) Bucket used to store Kanister artifacts.<br><br>The bucket must already exist.                                          | `nil`     |
-| `s3.region`      | (Optional) Region to be used for the bucket.                                                                                       | `nil`     |
-| `s3.endpoint`    | (Optional) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil`     |
+| `aws.accessKey`   | (Required) API Key for an s3 compatible object store.                                                                              | `nil`     |
+| `aws.secretKey`   | (Required) Corresponding secret for `accessKey`.                                                                                   | `nil`     |
+| `location.bucket`      | (Required) Bucket used to store Kanister artifacts.<br><br>The bucket must already exist.                                          | `nil`     |
+| `location.region`      | (Optional) Region to be used for the bucket.                                                                                       | `nil`     |
+| `location.endpoint`    | (Optional) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil`     |
 | `verifySSL`      | (Optional) Set to ``false`` to disable SSL verification on the s3 endpoint.                                                        | `true`    |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm
@@ -64,9 +65,10 @@ install`. For example:
 ```bash
 $ helm install kanister/profile my-profile-release --namespace kanister \
      --set profileName='my-profile' \
-     --set s3.endpoint='https://my-custom-s3-provider:9000' \
-     --set s3.accessKey="${AWS_ACCESS_KEY}" \
-     --set s3.secretKey="${AWS_SECRET_KEY}" \
-     --set s3.bucket='my-kanister-bucket'
-     --set s3.verifySSL='true'
+     --set location.type='s3Compliant' \
+     --set location.endpoint='https://my-custom-s3-provider:9000' \
+     --set aws.accessKey="${AWS_ACCESS_KEY}" \
+     --set aws.secretKey="${AWS_SECRET_KEY}" \
+     --set location.bucket='my-kanister-bucket' \
+     --set verifySSL='true'
 ```

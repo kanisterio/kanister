@@ -23,10 +23,11 @@ Then install the sample MongoDB replica set application in its own namespace.
           --namespace mongodb-test \
           --set profile.create='true' \
           --set profile.profileName='mongo-test-profile' \
-          --set profile.s3.bucket="kanister-bucket" \
-          --set profile.s3.endpoint="https://my-custom-s3-provider:9000" \
-          --set profile.s3.accessKey="AKIAIOSFODNN7EXAMPLE" \
-          --set profile.s3.secretKey="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
+          --set profile.location.type='s3Compliant' \
+          --set profile.location.bucket='kanister-bucket' \
+          --set profile.location.endpoint='https://my-custom-s3-provider:9000' \
+          --set profile.aws.accessKey='AKIAIOSFODNN7EXAMPLE' \
+          --set profile.aws.secretKey='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
           --set kanister.controller_namespace="kanister" \
           --set replicas=1 \
           --set persistentVolume.size=2Gi
