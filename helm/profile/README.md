@@ -10,12 +10,20 @@ management on Kubernetes.
 # Add the Kanister helm repo
 $ helm repo add kanister https://charts.kanister.io/
 
-# Create a Profile with the default name in the kanister namespace
+# Create a Profile with the default name in the kanister namespace and AWS credentials set
 $ helm install kanister/profile --namespace kanister \
      --set defaultProfile=true \
      --set location.type='s3Compliant' \
      --set aws.accessKey="${AWS_ACCESS_KEY}" \
      --set aws.secretKey="${AWS_SECRET_KEY}" \
+     --set location.bucket='my-kanister-bucket'
+
+# Create a Profile with GCP credentials set
+$ helm install kanister/profile --namespace kanister \
+     --set defaultProfile=true \
+     --set location.type='gcs' \
+     --set gcp.projectID="my-project-ID" \
+     --set-file gcp.serviceKey='path-to-json-file-containing-google-app-credentials' \
      --set location.bucket='my-kanister-bucket'
 ```
 
@@ -52,9 +60,12 @@ passed to the profile sub-chart.
 | ---              | ---                                                                                                                                | ---       |
 | `defaultProfile` | (Optional) Set to ``true`` to create a profile with name `default-profile`.                                                        | ``false`` |
 | `profileName`    | (Required if `! defaultProfile`) Name of the Profile CR.                                                                           | `nil`     |
-| `aws.accessKey`   | (Required) API Key for an s3 compatible object store.                                                                              | `nil`     |
-| `aws.secretKey`   | (Required) Corresponding secret for `accessKey`.                                                                                   | `nil`     |
-| `location.bucket`      | (Required) Bucket used to store Kanister artifacts.<br><br>The bucket must already exist.                                          | `nil`     |
+| `aws.accessKey`   | (Required if gcp creds not set) API Key for an s3 compatible object store.                                                                              | `nil`     |
+| `aws.secretKey`   | (Required if gcp creds not set) Corresponding secret for `accessKey`.                                                                                   | `nil`     |
+| `gcp.projectID`      | (Required if aws creds not set) Project ID of the google application.                                          | `nil`     |
+| `gcp.serviceKey`     | (Required if aws creds not set) Path to json file containing google application credentials.                                          | `nil`     |
+| `location.type`      | (Optional) Location type: s3Compliant or gcs.                                          | `nil`     |
+| `location.bucket`      | (Required if location.type is set) Bucket used to store Kanister artifacts.<br><br>The bucket must already exist.                                          | `nil`     |
 | `location.region`      | (Optional) Region to be used for the bucket.                                                                                       | `nil`     |
 | `location.endpoint`    | (Optional) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil`     |
 | `verifySSL`      | (Optional) Set to ``false`` to disable SSL verification on the s3 endpoint.                                                        | `true`    |
