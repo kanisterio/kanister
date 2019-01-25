@@ -21,6 +21,6 @@ type Provider interface {
 	SnapshotGet(ctx context.Context, id string) (*Snapshot, error)
 	// Others
 	SetTags(ctx context.Context, resource interface{}, tags map[string]string) error
-	VolumesList(ctx context.Context, tags map[string]string) ([]*Volume, error)
+	VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*Volume, error)
 	SnapshotsList(ctx context.Context, tags map[string]string) ([]*Snapshot, error)
 }

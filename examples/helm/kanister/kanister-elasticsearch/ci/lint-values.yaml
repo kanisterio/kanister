@@ -1,0 +1,7 @@
+profile:
+  create: true
+  defaultProfile: true
+  s3:
+    accessKey: SomeBogusTestKey=
+    secretKey: SomeTestSecrest==
+    bucket: linttestname

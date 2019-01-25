@@ -29,10 +29,11 @@ Then install the sample MySQL application in its own namespace.
 $ helm install kanister/kanister-mysql -n my-release --namespace mysql-test \
     --set profile.create='true' \
     --set profile.profileName='mysql-test-profile' \
-    --set profile.s3.endpoint='https://my-custom-s3-provider:9000' \
-    --set profile.s3.accessKey='AKIAIOSFODNN7EXAMPLE' \
-    --set profile.s3.secretKey='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
-    --set profile.s3.bucket='kanister-bucket' \
+    --set profile.location.type='s3Compliant' \
+    --set profile.location.bucket='kanister-bucket' \
+    --set profile.location.endpoint='https://my-custom-s3-provider:9000' \
+    --set profile.aws.accessKey='AKIAIOSFODNN7EXAMPLE' \
+    --set profile.aws.secretKey='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
     --set mysqlRootPassword='asd#45@mysqlEXAMPLE' \
     --set persistence.size=10Gi
 ```
@@ -87,11 +88,11 @@ default values. The Profile CR parameters are passed to the profile sub-chart.
 | `profile.create` | (Optional) Specify if a Profile CR should be created as part of install. | ``false`` |
 | `profile.defaultProfile` | (Optional if not creating a default Profile) Set to ``true`` to create a profile with name `default-profile` | ``false`` | 
 | `profile.profileName` | (Required if not creating a default Profile) Name for the profile that is created | `nil` |
-| `profile.s3.accessKey` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
-| `profile.s3.secretKey` | (Required if creating profile) Corresponding secret for `accessKey`. | `nil` |
-| `profile.s3.bucket` | (Required if creating profile) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `nil` |
-| `profile.s3.region` | (Optional if creating profile) Region to be used for the bucket. | `nil` |
-| `profile.s3.endpoint` | (Optional if creating profile) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
+| `profile.aws.accessKey` | (Required if creating profile) API Key for an s3 compatible object store. | `nil`|
+| `profile.aws.secretKey` | (Required if creating profile) Corresponding secret for `accessKey`. | `nil` |
+| `profile.location.bucket` | (Required if creating profile) A bucket that will be used to store Kanister artifacts. <br><br>The bucket must already exist and the account with the above API key and secret needs to have sufficient permissions to list, get, put, delete. | `nil` |
+| `profile.location.region` | (Optional if creating profile) Region to be used for the bucket. | `nil` |
+| `profile.location.endpoint` | (Optional if creating profile) The URL for an s3 compatible object store provider. Can be omitted if provider is AWS. Required for any other provider. | `nil` |
 | `profile.verifySSL` | (Optional if creating profile) Set to ``false`` to disable SSL verification on the s3 endpoint. | `true` |
 | `kanister.controller_namespace` | (Optional) Specify the namespace where the Kanister controller is running. | kanister |
 

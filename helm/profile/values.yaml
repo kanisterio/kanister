@@ -4,12 +4,20 @@
 defaultProfile: true
 defaultProfileName: default-profile
 profileName:
-# s3 properties
-s3:
+
+location:
+  type:
   bucket:
   endpoint:
   prefix:
   region:
+
+aws:
   accessKey:
   secretKey:
+
+gcp:
+  projectID:
+  serviceKey:
+
 verifySSL: true

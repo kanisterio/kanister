@@ -34,7 +34,7 @@ import:
 - package: github.com/stretchr/testify
   version: v1.2.2
 - package: golang.org/x/oauth2
-  version: fdc9e635145ae97e6c2cb777c48305600cf515cb
+  version: d668ce993890a79bda886613ee587a69dd5da7a6
 - package: google.golang.org/api
   version: f5fa6a3eed6362c07f4e2e4425faeab907a041bd
 - package: gopkg.in/check.v1

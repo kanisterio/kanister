@@ -22,10 +22,11 @@ Then install the sample MySQL application in its own namespace.
      $ helm install kanister/kanister-mysql -n mysql --namespace mysql-test \
           --set profile.create='true' \
           --set profile.profileName='mysql-test-profile' \
-          --set profile.s3.bucket="kanister-bucket" \
-          --set profile.s3.endpoint="https://my-custom-s3-provider:9000" \
-          --set profile.s3.accessKey="AKIAIOSFODNN7EXAMPLE" \
-          --set profile.s3.secretKey="wJalrXUtnFEMI!K7MDENG!bPxRfiCYEXAMPLEKEY" \
+          --set profile.location.type='s3Compliant' \
+          --set profile.location.bucket='kanister-bucket' \
+          --set profile.location.endpoint='https://my-custom-s3-provider:9000' \
+          --set profile.aws.accessKey='AKIAIOSFODNN7EXAMPLE' \
+          --set profile.aws.secretKey='wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
           --set kanister.controller_namespace="kanister" \
           --set mysqlRootPassword="asd#45@mysqlEXAMPLE" \
           --set persistence.size=10Gi

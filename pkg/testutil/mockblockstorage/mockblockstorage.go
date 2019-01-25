@@ -183,7 +183,7 @@ func (p *Provider) MockSnapshot() *blockstorage.Snapshot {
 }
 
 // VolumesList mock
-func (p *Provider) VolumesList(ctx context.Context, tags map[string]string) ([]*blockstorage.Volume, error) {
+func (p *Provider) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	return []*blockstorage.Volume{p.MockVolume(), p.MockVolume()}, nil
 }
 

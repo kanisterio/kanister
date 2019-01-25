@@ -155,7 +155,7 @@ func (s *ebsStorage) volumeParse(ctx context.Context, volume interface{}) *block
 	}
 }
 
-func (s *ebsStorage) VolumesList(ctx context.Context, tags map[string]string) ([]*blockstorage.Volume, error) {
+func (s *ebsStorage) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	var vols []*blockstorage.Volume
 	var fltrs []*ec2.Filter
 	dvi := &ec2.DescribeVolumesInput{}

@@ -7,8 +7,14 @@ metadata:
 {{ include "profile.helmLabels" . | indent 4 }}
 type: Opaque
 data:
-  access_key_id: {{ required "Cloud provider API key is required when configuring a profile." .Values.s3.accessKey | b64enc | quote }}
-  secret_access_key: {{ required "Cloud provider API secret is required when configuring a profile." .Values.s3.secretKey | b64enc | quote }}
+  {{- if .Values.aws.accessKey }}
+  access_key_id: {{ .Values.aws.accessKey | b64enc | quote }}
+  secret_access_key: {{ .Values.aws.secretKey | b64enc | quote }}
+  {{- else if .Values.gcp.projectID }}
+  project_id: {{ .Values.gcp.projectID | b64enc | quote }}
+  service_key: {{ .Values.gcp.serviceKey | b64enc | quote }}
+  {{- end }}
+
 ---
 apiVersion: cr.kanister.io/v1alpha1
 kind: Profile
@@ -18,16 +24,21 @@ metadata:
   labels:
 {{ include "profile.helmLabels" . | indent 4 }}
 location:
-  type: s3Compliant
-  bucket: {{ required "S3 compatible bucket is required when configuring a profile." .Values.s3.bucket | quote }}
-  endpoint: {{ .Values.s3.endpoint | quote }}
-  prefix: {{ .Values.s3.prefix | quote }}
-  region: {{ .Values.s3.region | quote }}
+  type: {{ .Values.location.type | quote }}
+  bucket: {{ .Values.bucket | quote }}
+  endpoint: {{ .Values.endpoint | quote }}
+  prefix: {{ .Values.prefix | quote }}
+  region: {{ .Values.region | quote }}
 credential:
   type: keyPair
   keyPair:
+    {{- if .Values.aws.accessKey }}
     idField: access_key_id
     secretField: secret_access_key
+    {{- else if .Values.gcp.projectID }}
+    idField: project_id
+    secretField: service_key
+    {{- end }}
     secret:
       apiVersion: v1
       name: {{ template "profile.profileName" . }}-creds

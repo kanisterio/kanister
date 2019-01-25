@@ -1,5 +1,5 @@
 
-FROM kanisterio/kanister-tools:0.15.0
+FROM kanisterio/kanister-tools:0.16.0
 MAINTAINER Supriya Kharade <supriya@kasten.io>
 
 COPY esdump-setup.sh /esdump-setup.sh
