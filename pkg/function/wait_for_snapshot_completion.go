@@ -51,14 +51,17 @@ func waitForSnapshotsCompletion(ctx context.Context, snapshotinfo string, profil
 	}
 	for _, pvcInfo := range PVCData {
 		config := make(map[string]string)
+		if err = ValidateProfile(profile, pvcInfo.Type); err != nil {
+			return errors.Wrap(err, "Profile validation failed")
+		}
 		switch pvcInfo.Type {
 		case blockstorage.TypeEBS:
-			if err = ValidateProfile(profile); err != nil {
-				return errors.Wrap(err, "Profile validation failed")
-			}
 			config[awsebs.ConfigRegion] = pvcInfo.Region
 			config[awsebs.AccessKeyID] = profile.Credential.KeyPair.ID
 			config[awsebs.SecretAccessKey] = profile.Credential.KeyPair.Secret
+		case blockstorage.TypeGPD:
+			config[blockstorage.GoogleProjectID] = profile.Credential.KeyPair.ID
+			config[blockstorage.GoogleServiceKey] = profile.Credential.KeyPair.Secret
 		default:
 			return errors.New("Storage provider not supported " + string(pvcInfo.Type))
 		}
