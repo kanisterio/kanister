@@ -5,6 +5,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
+	"github.com/kanisterio/kanister/pkg/blockstorage/gcepd"
 )
 
 // Getter is a resolver for a storage provider.
@@ -26,6 +27,8 @@ func (*getter) Get(storageType blockstorage.Type, config map[string]string) (blo
 	switch storageType {
 	case blockstorage.TypeEBS:
 		return awsebs.NewProvider(config)
+	case blockstorage.TypeGPD:
+		return gcepd.NewProvider(config)
 	default:
 		return nil, errors.Errorf("Unsupported storage type %v", storageType)
 	}
@@ -35,6 +38,8 @@ func (*getter) Get(storageType blockstorage.Type, config map[string]string) (blo
 func Supported(st blockstorage.Type) bool {
 	switch st {
 	case blockstorage.TypeEBS:
+		return true
+	case blockstorage.TypeGPD:
 		return true
 	default:
 		return false

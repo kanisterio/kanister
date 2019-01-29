@@ -1,7 +1,17 @@
 package blockstorage
 
 import (
+	"bytes"
+
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+)
+
+// Google Cloud environment variable names
+const (
+	GoogleCloudZone  = "CLOUDSDK_COMPUTE_ZONE"
+	GoogleCloudCreds = "GOOGLE_APPLICATION_CREDENTIALS"
+	GoogleProjectID  = "projectID"
+	GoogleServiceKey = "serviceKey"
 )
 
 // SanitizeTags are used to sanitize the tags
@@ -27,4 +37,29 @@ func KeyValueToMap(kv []*KeyValue) map[string]string {
 		stringMap[t.Key] = t.Value
 	}
 	return stringMap
+}
+
+// MapToKeyValue converts a map to a KeyValue slice
+func MapToKeyValue(stringMap map[string]string) []*KeyValue {
+	kv := make([]*KeyValue, 0, len(stringMap))
+	for k, v := range stringMap {
+		kv = append(kv, &KeyValue{Key: k, Value: v})
+	}
+	return kv
+}
+
+// MapToString creates a string representation of a map with the entries
+// separated by entrySep, and the key separated from the value using kvSep
+func MapToString(m map[string]string, entrySep string, kvSep string) string {
+	var b bytes.Buffer
+
+	eSep := ""
+	for k, v := range m {
+		b.WriteString(eSep)
+		b.WriteString(k)
+		b.WriteString(kvSep)
+		b.WriteString(v)
+		eSep = entrySep
+	}
+	return b.String()
 }
