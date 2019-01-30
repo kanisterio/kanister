@@ -196,19 +196,18 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 			if err != nil {
 				return nil, err
 			}
-
-			if pvZone, ok := pvLabels[kube.PVZoneLabelName]; ok {
-				config[awsebs.ConfigRegion] = region
-				config[awsebs.AccessKeyID] = tp.Profile.Credential.KeyPair.ID
-				config[awsebs.SecretAccessKey] = tp.Profile.Credential.KeyPair.Secret
-				provider, err = getter.Get(blockstorage.TypeEBS, config)
-				if err != nil {
-					return nil, errors.Wrap(err, "Could not get storage provider")
-				}
-				return &volumeInfo{provider: provider, volumeID: filepath.Base(ebs.VolumeID), sType: blockstorage.TypeEBS, volZone: pvZone, pvc: name, size: size, region: region}, nil
-			}
-			return nil, errors.Errorf("PV zone label is empty, pvName: %s, namespace: %s", pvName, namespace)
 		}
+		if pvZone, ok := pvLabels[kube.PVZoneLabelName]; ok {
+			config[awsebs.ConfigRegion] = region
+			config[awsebs.AccessKeyID] = tp.Profile.Credential.KeyPair.ID
+			config[awsebs.SecretAccessKey] = tp.Profile.Credential.KeyPair.Secret
+			provider, err = getter.Get(blockstorage.TypeEBS, config)
+			if err != nil {
+				return nil, errors.Wrap(err, "Could not get storage provider")
+			}
+			return &volumeInfo{provider: provider, volumeID: filepath.Base(ebs.VolumeID), sType: blockstorage.TypeEBS, volZone: pvZone, pvc: name, size: size, region: region}, nil
+		}
+		return nil, errors.Errorf("PV zone label is empty, pvName: %s, namespace: %s", pvName, namespace)
 
 	case pv.Spec.GCEPersistentDisk != nil:
 		gpd := pv.Spec.GCEPersistentDisk
