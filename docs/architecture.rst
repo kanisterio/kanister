@@ -183,7 +183,7 @@ As a reference, below is an example of a ActionSpec.
         name: example-profile
         namespace: example-namespace
 
-In addition the Spec, an ActionSet also contains an ActionSetStatus
+In addition to the Spec, an ActionSet also contains an ActionSetStatus
 which mirrors the Spec, but contains the phases of execution, their
 state, and the overall execution progress.
 

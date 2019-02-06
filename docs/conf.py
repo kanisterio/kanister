@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Kanister'
-copyright = '2017-2018, Kanister'
+copyright = '2017-2019, Kanister'
 author = 'Kanister'
 
 # The version info for the project you're documenting, acts as replacement for
