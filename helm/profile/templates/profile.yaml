@@ -25,10 +25,10 @@ metadata:
 {{ include "profile.helmLabels" . | indent 4 }}
 location:
   type: {{ .Values.location.type | quote }}
-  bucket: {{ .Values.bucket | quote }}
-  endpoint: {{ .Values.endpoint | quote }}
-  prefix: {{ .Values.prefix | quote }}
-  region: {{ .Values.region | quote }}
+  bucket: {{ .Values.location.bucket | quote }}
+  endpoint: {{ .Values.location.endpoint | quote }}
+  prefix: {{ .Values.location.prefix | quote }}
+  region: {{ .Values.location.region | quote }}
 credential:
   type: keyPair
   keyPair:
