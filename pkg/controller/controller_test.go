@@ -133,11 +133,14 @@ func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, s
 		if as.Status.State == state {
 			return true, nil
 		}
+		if state == crv1alpha1.StateRunning && as.Status.State == crv1alpha1.StateComplete {
+			return true, nil
+		}
 		// These are non-terminal states.
 		if as.Status.State == crv1alpha1.StatePending || as.Status.State == crv1alpha1.StateRunning {
 			return false, nil
 		}
-		return false, errors.New(fmt.Sprintf("Unexpected state: %s", state))
+		return false, errors.New(fmt.Sprintf("Unexpected state: %s", as.Status.State))
 
 	})
 	if err == nil {
