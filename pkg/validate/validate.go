@@ -118,17 +118,16 @@ func Blueprint(bp *crv1alpha1.Blueprint) error {
 }
 
 func ProfileSchema(p *crv1alpha1.Profile) error {
-	if p.Location.Type != crv1alpha1.LocationTypeS3Compliant {
+	if !supported(p.Location.Type) {
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
 	if p.Credential.Type != crv1alpha1.CredentialTypeKeyPair {
 		return errorf("unknown or unsupported credential type '%s'", p.Credential.Type)
 	}
-	if p.Location.Bucket == "" {
-		return errorf("S3 bucket not specified")
-	}
-	if p.Location.Endpoint == "" && p.Location.Region == "" {
-		return errorf("S3 bucket region not specified")
+	if p.Location.Type == crv1alpha1.LocationTypeS3Compliant {
+		if p.Location.Bucket != "" && p.Location.Endpoint == "" && p.Location.Region == "" {
+			return errorf("Bucket region not specified")
+		}
 	}
 	if p.Credential.KeyPair.Secret.Name == "" {
 		return errorf("secret for bucket credentials not specified")
@@ -139,32 +138,69 @@ func ProfileSchema(p *crv1alpha1.Profile) error {
 	return nil
 }
 
-func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile) error {
+func supported(t crv1alpha1.LocationType) bool {
+	return t == crv1alpha1.LocationTypeS3Compliant || t == crv1alpha1.LocationTypeGCS
+}
+
+func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Interface) error {
 	bucketName := p.Location.Bucket
-	givenRegion := p.Location.Region
-	if givenRegion != "" {
-		actualRegion, err := objectstore.GetS3BucketRegion(ctx, bucketName, givenRegion)
+
+	switch p.Location.Type {
+	case crv1alpha1.LocationTypeS3Compliant:
+		givenRegion := p.Location.Region
+		if givenRegion != "" {
+			actualRegion, err := objectstore.GetS3BucketRegion(ctx, bucketName, givenRegion)
+			if err != nil {
+				return err
+			}
+			if actualRegion != givenRegion {
+				return errorf("Incorrect region for bucket. Expected '%s', Got '%s'", actualRegion, givenRegion)
+			}
+		}
+	case crv1alpha1.LocationTypeGCS:
+		pType := objectstore.ProviderTypeGCS
+		pc := objectstore.ProviderConfig{Type: pType}
+		secret, err := osSecretFromProfile(pType, p, cli)
 		if err != nil {
 			return err
 		}
-		if actualRegion != givenRegion {
-			return errorf("Incorrect region for bucket. Expected '%s', Got '%s'", actualRegion, givenRegion)
+		provider, err := objectstore.NewProvider(ctx, pc, secret)
+		if err != nil {
+			return err
 		}
+		_, err = provider.GetBucket(ctx, bucketName)
+		if err != nil {
+			return err
+		}
+	default:
+		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
+
 	return nil
 }
 
 func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Interface) error {
-	secret := &objectstore.Secret{
-		Type: objectstore.SecretTypeAwsAccessKey,
-		Aws:  &objectstore.SecretAws{},
-	}
-	err := fillKVAwsCredentials(ctx, secret, p, cli)
-	if err != nil {
-		return err
+	var pType objectstore.ProviderType
+	var secret *objectstore.Secret
+	var err error
+	switch p.Location.Type {
+	case crv1alpha1.LocationTypeS3Compliant:
+		pType = objectstore.ProviderTypeS3
+		secret, err = osSecretFromProfile(pType, p, cli)
+		if err != nil {
+			return err
+		}
+	case crv1alpha1.LocationTypeGCS:
+		pType = objectstore.ProviderTypeGCS
+		secret, err = osSecretFromProfile(pType, p, cli)
+		if err != nil {
+			return err
+		}
+	default:
+		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
 	pc := objectstore.ProviderConfig{
-		Type:          objectstore.ProviderTypeS3,
+		Type:          pType,
 		Endpoint:      p.Location.Endpoint,
 		SkipSSLVerify: p.SkipSSLVerify,
 	}
@@ -183,18 +219,30 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 }
 
 func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Interface) error {
+	var pType objectstore.ProviderType
+	var secret *objectstore.Secret
+	var err error
+	switch p.Location.Type {
+	case crv1alpha1.LocationTypeS3Compliant:
+		pType = objectstore.ProviderTypeS3
+		secret, err = osSecretFromProfile(pType, p, cli)
+		if err != nil {
+			return err
+		}
+	case crv1alpha1.LocationTypeGCS:
+		pType = objectstore.ProviderTypeGCS
+		secret, err = osSecretFromProfile(pType, p, cli)
+		if err != nil {
+			return err
+		}
+	default:
+		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
+	}
+
 	const objName = "sample"
 
-	secret := &objectstore.Secret{
-		Type: objectstore.SecretTypeAwsAccessKey,
-		Aws:  &objectstore.SecretAws{},
-	}
-	err := fillKVAwsCredentials(ctx, secret, p, cli)
-	if err != nil {
-		return err
-	}
 	pc := objectstore.ProviderConfig{
-		Type:          objectstore.ProviderTypeS3,
+		Type:          pType,
 		Endpoint:      p.Location.Endpoint,
 		SkipSSLVerify: p.SkipSSLVerify,
 	}
@@ -216,22 +264,39 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	return nil
 }
 
-func fillKVAwsCredentials(ctx context.Context, ss *objectstore.Secret, p *crv1alpha1.Profile, cli kubernetes.Interface) error {
+func osSecretFromProfile(pType objectstore.ProviderType, p *crv1alpha1.Profile, cli kubernetes.Interface) (*objectstore.Secret, error) {
+	var key, value []byte
+	var ok bool
+	secret := &objectstore.Secret{}
 	kp := p.Credential.KeyPair
 	if kp == nil {
-		return errorf("invalid credentials kv cannot be nil")
+		return nil, errorf("invalid credentials kv cannot be nil")
 	}
 	s, err := cli.CoreV1().Secrets(kp.Secret.Namespace).Get(kp.Secret.Name, metav1.GetOptions{})
 	if err != nil {
-		return errorf("could not fetch the secret specified in credential")
+		return nil, errorf("could not fetch the secret specified in credential")
 	}
-	if _, ok := s.Data[kp.IDField]; !ok {
-		return errorf("Key '%s' not found in secret '%s:%s'", kp.IDField, s.GetNamespace(), s.GetName())
+	if key, ok = s.Data[kp.IDField]; !ok {
+		return nil, errorf("Key '%s' not found in secret '%s:%s'", kp.IDField, s.GetNamespace(), s.GetName())
 	}
-	if _, ok := s.Data[kp.SecretField]; !ok {
-		return errorf("Value '%s' not found in secret '%s:%s'", kp.SecretField, s.GetNamespace(), s.GetName())
+	if value, ok = s.Data[kp.SecretField]; !ok {
+		return nil, errorf("Value '%s' not found in secret '%s:%s'", kp.SecretField, s.GetNamespace(), s.GetName())
 	}
-	ss.Aws.AccessKeyID = string(s.Data[kp.IDField])
-	ss.Aws.SecretAccessKey = string(s.Data[kp.SecretField])
-	return nil
+	switch pType {
+	case objectstore.ProviderTypeS3:
+		secret.Type = objectstore.SecretTypeAwsAccessKey
+		secret.Aws = &objectstore.SecretAws{
+			AccessKeyID:     string(key),
+			SecretAccessKey: string(value),
+		}
+	case objectstore.ProviderTypeGCS:
+		secret.Type = objectstore.SecretTypeGcpServiceAccountKey
+		secret.Gcp = &objectstore.SecretGcp{
+			ProjectID:  string(key),
+			ServiceKey: string(value),
+		}
+	default:
+		return nil, errorf("unknown or unsupported provider type '%s'", pType)
+	}
+	return secret, nil
 }
