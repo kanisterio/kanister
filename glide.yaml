@@ -11,6 +11,9 @@ import:
   vcs: git
   version: master
   repo: https://github.com/kastenhq/stow.git
+- package: github.com/IBM/ibmcloud-storage-volume-lib
+  version: f3805379b0af4dd418e2cdb9000f2738c15216ab
+  repo: https://github.com/kastenhq/ibmcloud-storage-volume-lib.git
 - package: github.com/jpillora/backoff
   version: 1.0.0
 - package: github.com/Masterminds/sprig

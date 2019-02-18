@@ -1,0 +1,25 @@
+[bluemix]
+iam_url = "https://iam.stage1.ng.bluemix.net"
+iam_client_id = "bx"
+iam_client_secret = "bx"
+iam_api_key = "free"
+refresh_token = ""
+
+
+[softlayer]
+softlayer_block_enabled = true
+softlayer_block_provider_name = "SOFTLAYER-BLOCK"
+softlayer_file_enabled = false
+softlayer_file_provider_name = "SOFTLAYER-FILE"
+softlayer_username = ""
+softlayer_api_key = ""
+softlayer_endpoint_url = "https://api.softlayer.com/rest/v3"
+softlayer_iam_endpoint_url = "https://api.softlayer.com/mobile/v3"
+softlayer_datacenter = "mex01"
+softlayer_api_timeout = "20s"
+
+[genesis]
+genesis_provider_enabled = false
+genesis_user_name = ""
+genesis_api_key = ""
+genesis_url = ""
