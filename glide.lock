@@ -1,5 +1,5 @@
-hash: d8332dc94a5a077949a4f7225c032d96d74251efbbce32300eae7b9191fe6170
-updated: 2019-02-19T23:17:24.753604275Z
+hash: fc4d75608112d2011ee561de18bba830c3344f9ab7bb19d275549947b0692a53
+updated: 2019-02-21T19:15:13.2151361Z
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -114,7 +114,7 @@ imports:
   - compiler
   - extensions
 - name: github.com/graymeta/stow
-  version: cdb6b5b32028c2a8cf25e213e1249e018c788967
+  version: 8fbce7785aa7c9a2a25dc95f308b22abab3584fa
   repo: https://github.com/kastenhq/stow.git
   vcs: git
   subpackages:

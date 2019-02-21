@@ -9,7 +9,7 @@ import:
   version: 610b6cacdcde6852f4de68998bd20ce1dac85b22
 - package: github.com/graymeta/stow
   vcs: git
-  version: master
+  version: v0.1.1-kasten
   repo: https://github.com/kastenhq/stow.git
 - package: github.com/IBM/ibmcloud-storage-volume-lib
   version: f3805379b0af4dd418e2cdb9000f2738c15216ab
