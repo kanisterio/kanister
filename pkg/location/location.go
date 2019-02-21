@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -25,6 +26,12 @@ func Write(ctx context.Context, in io.Reader, profile param.Profile, suffix stri
 		args := s3CompliantWriteArgs(profile, suffix)
 		env := s3CompliantEnv(profile)
 		return writeExec(ctx, in, bin, args, env)
+	case crv1alpha1.LocationTypeGCS:
+		path := filepath.Join(
+			profile.Location.Prefix,
+			suffix,
+		)
+		return writeData(ctx, objectstore.ProviderTypeGCS, profile, in, path)
 	}
 	return errors.Errorf("Unsupported Location type: %s", profile.Location.Type)
 }
@@ -37,6 +44,12 @@ func Read(ctx context.Context, out io.Writer, profile param.Profile, suffix stri
 		args := s3CompliantReadArgs(profile, suffix)
 		env := s3CompliantEnv(profile)
 		return readExec(ctx, out, bin, args, env)
+	case crv1alpha1.LocationTypeGCS:
+		path := filepath.Join(
+			profile.Location.Prefix,
+			suffix,
+		)
+		return readData(ctx, objectstore.ProviderTypeGCS, profile, out, path)
 	}
 	return errors.Errorf("Unsupported Location type: %s", profile.Location.Type)
 }
@@ -53,6 +66,12 @@ func Delete(ctx context.Context, profile param.Profile, suffix string) error {
 		args := s3CompliantDeleteArgs(profile, suffix, recursiveCmd)
 		env := s3CompliantEnv(profile)
 		return deleteExec(ctx, bin, args, env)
+	case crv1alpha1.LocationTypeGCS:
+		path := filepath.Join(
+			profile.Location.Prefix,
+			suffix,
+		)
+		return deleteData(ctx, objectstore.ProviderTypeGCS, profile, path)
 	}
 	return errors.Errorf("Unsupported Location type: %s", profile.Location.Type)
 }
@@ -221,4 +240,75 @@ func s3CompliantFlags(profile param.Profile) (cmd []string) {
 		cmd = append(cmd, "--no-verify-ssl")
 	}
 	return cmd
+}
+
+func readData(ctx context.Context, pType objectstore.ProviderType, profile param.Profile, out io.Writer, path string) error {
+	bucket, err := getBucket(ctx, pType, profile)
+	if err != nil {
+		return err
+	}
+
+	r, _, err := bucket.Get(ctx, path)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, r); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeData(ctx context.Context, pType objectstore.ProviderType, profile param.Profile, in io.Reader, path string) error {
+	bucket, err := getBucket(ctx, pType, profile)
+	if err != nil {
+		return err
+	}
+	if err := bucket.Put(ctx, path, in, 0, nil); err != nil {
+		return errors.Errorf("failed to write contents to bucket '%s'", profile.Location.Bucket)
+	}
+	return nil
+}
+
+func deleteData(ctx context.Context, pType objectstore.ProviderType, profile param.Profile, path string) error {
+	bucket, err := getBucket(ctx, pType, profile)
+	if err != nil {
+		return err
+	}
+	return bucket.Delete(ctx, path)
+}
+
+func getBucket(ctx context.Context, pType objectstore.ProviderType, profile param.Profile) (objectstore.Bucket, error) {
+	pc := objectstore.ProviderConfig{
+		Type: pType,
+	}
+	secret, err := getOSSecret(pType, profile.Credential)
+	if err != nil {
+		return nil, err
+	}
+	provider, err := objectstore.NewProvider(ctx, pc, secret)
+	if err != nil {
+		return nil, err
+	}
+	return provider.GetBucket(ctx, profile.Location.Bucket)
+}
+
+func getOSSecret(pType objectstore.ProviderType, cred param.Credential) (*objectstore.Secret, error) {
+	secret := &objectstore.Secret{}
+	switch pType {
+	case objectstore.ProviderTypeS3:
+		secret.Type = objectstore.SecretTypeAwsAccessKey
+		secret.Aws = &objectstore.SecretAws{
+			AccessKeyID:     cred.KeyPair.ID,
+			SecretAccessKey: cred.KeyPair.Secret,
+		}
+	case objectstore.ProviderTypeGCS:
+		secret.Type = objectstore.SecretTypeGcpServiceAccountKey
+		secret.Gcp = &objectstore.SecretGcp{
+			ProjectID:  cred.KeyPair.ID,
+			ServiceKey: cred.KeyPair.Secret,
+		}
+	default:
+		return nil, errors.Errorf("unknown or unsupported provider type '%s'", pType)
+	}
+	return secret, nil
 }
