@@ -3,7 +3,6 @@ package location
 import (
 	"bytes"
 	"context"
-	"io"
 	"math/rand"
 	"testing"
 	"time"
@@ -31,24 +30,35 @@ type LocationSuite struct {
 }
 
 const (
-	testBucketName = "kanister-gcp-tests"
+	testBucketName = "kio-store-tests"
 	testRegionS3   = "us-west-2"
 )
 
+var _ = Suite(&LocationSuite{osType: objectstore.ProviderTypeS3, region: testRegionS3})
 var _ = Suite(&LocationSuite{osType: objectstore.ProviderTypeGCS, region: ""})
 
 func (s *LocationSuite) SetUpSuite(c *C) {
+	var location crv1alpha1.Location
 	switch s.osType {
+	case objectstore.ProviderTypeS3:
+		testutil.GetEnvOrSkip(c, AWSAccessKeyID)
+		testutil.GetEnvOrSkip(c, AWSSecretAccessKey)
+		location = crv1alpha1.Location{
+			Type:   crv1alpha1.LocationTypeS3Compliant,
+			Bucket: testBucketName,
+			Region: s.region,
+		}
 	case objectstore.ProviderTypeGCS:
-		testutil.GetEnvOrSkip(c, "GOOGLE_APPLICATION_CREDENTIALS")
-		location := crv1alpha1.Location{
+		testutil.GetEnvOrSkip(c, GoogleCloudCreds)
+		location = crv1alpha1.Location{
 			Type:   crv1alpha1.LocationTypeGCS,
 			Bucket: testBucketName,
 		}
-		s.profile = *testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeGCS, location)
 	default:
 		c.Fatalf("Unrecognized objectstore '%s'", s.osType)
 	}
+
+	s.profile = *testutil.ObjectStoreProfileOrSkip(c, s.osType, location)
 	var err error
 	ctx := context.Background()
 
@@ -76,90 +86,6 @@ func (s *LocationSuite) TearDownTest(c *C) {
 			c.Log("Cannot cleanup test directory: ", s.testpath)
 			return
 		}
-		err = s.provider.DeleteBucket(ctx, testBucketName)
-		c.Check(err, IsNil)
-	}
-}
-
-func (s *LocationSuite) TestWrite(c *C) {
-	ctx := context.Background()
-	for _, tc := range []struct {
-		in      io.Reader
-		bin     string
-		args    []string
-		env     []string
-		checker Checker
-	}{
-		{
-			in:      bytes.NewBufferString("hello"),
-			bin:     "",
-			args:    nil,
-			env:     nil,
-			checker: NotNil,
-		},
-		{
-			in:      bytes.NewBufferString("hello"),
-			bin:     "cat",
-			args:    nil,
-			env:     nil,
-			checker: IsNil,
-		},
-		{
-			in:      bytes.NewBufferString("echo hello"),
-			bin:     "bash",
-			args:    nil,
-			env:     nil,
-			checker: IsNil,
-		},
-		{
-			in:      bytes.NewBufferString("INVALID"),
-			bin:     "bash",
-			args:    nil,
-			env:     nil,
-			checker: NotNil,
-		},
-	} {
-
-		err := writeExec(ctx, tc.in, tc.bin, tc.args, tc.env)
-		c.Check(err, tc.checker)
-	}
-}
-
-func (s *LocationSuite) TestRead(c *C) {
-	ctx := context.Background()
-	for _, tc := range []struct {
-		out     string
-		bin     string
-		args    []string
-		env     []string
-		checker Checker
-	}{
-		{
-			out:     "",
-			bin:     "",
-			args:    nil,
-			env:     nil,
-			checker: NotNil,
-		},
-		{
-			out:     "",
-			bin:     "echo",
-			args:    []string{"-n"},
-			env:     nil,
-			checker: IsNil,
-		},
-		{
-			out:     "hello",
-			bin:     "echo",
-			args:    []string{"-n", "hello"},
-			env:     nil,
-			checker: IsNil,
-		},
-	} {
-		buf := bytes.NewBuffer(nil)
-		err := readExec(ctx, buf, tc.bin, tc.args, tc.env)
-		c.Check(err, tc.checker)
-		c.Check(buf.String(), Equals, tc.out)
 	}
 }
 
