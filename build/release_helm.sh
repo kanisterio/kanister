@@ -20,7 +20,6 @@ release_helm_charts() {
     fi
 
     mkdir ${package_folder}
-    helm dep update ${chart_path}
     local out=$(helm package ${chart_path} --version ${version} -d ${package_folder})
     [[ ${out} =~ ^.*/(.*\.tgz)$ ]]
     local chart_tar=${BASH_REMATCH[1]}
@@ -36,6 +35,8 @@ release_helm_charts() {
     echo "Uploading chart and index file"
     aws s3 cp ${package_folder}/${chart_tar} ${HELM_RELEASE_BUCKET}
     aws s3 cp ${package_folder}/index.yaml ${HELM_RELEASE_BUCKET}
+    cp -f ${package_folder}/index.yaml ${HELM_HOME:-${HOME}/.helm}/repository/cache/kanister-index.yaml
+    cp -f ${package_folder}/${chart_tar} ${HELM_HOME:-${HOME}/.helm}/cache/archive/
 }
 
 main() {
@@ -49,6 +50,9 @@ main() {
     local -a example_charts=( "kanister-mongodb-replicaset" "kanister-mysql" "kanister-postgresql" "kanister-elasticsearch")
     for chart_name in "${example_charts[@]}"
     do
+        #profile chart is a dependency which will not be avalible due slow cloud caching
+        [ -d examples/helm/kanister/${chart_name}/charts/ ] || mkdir -p examples/helm/kanister/${chart_name}/charts/
+        cp ${HELM_HOME:-${HOME}/.helm}/cache/archive/profile-${version}.tgz examples/helm/kanister/${chart_name}/charts/
         release_helm_charts "examples/helm/kanister/${chart_name}" "${version}"
     done
 
