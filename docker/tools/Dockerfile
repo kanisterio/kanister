@@ -10,6 +10,12 @@ MAINTAINER Tom Manville <tom@kasten.io>
 
 COPY --from=restbox /bin/restic /bin/restic
 
+RUN apk -v --update add --no-cache bash curl python py-pip groff less mailcap ca-certificates && \
+    pip install --upgrade pip && \
+    pip install --upgrade awscli && \
+    apk -v --purge del py-pip && \
+    rm -f /var/cache/apk/*
+
 RUN curl https://raw.githubusercontent.com/kanisterio/kanister/master/scripts/get.sh | bash
 
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]
