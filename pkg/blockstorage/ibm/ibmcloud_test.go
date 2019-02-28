@@ -1,3 +1,5 @@
+// +build !unit
+
 package ibm
 
 import (
@@ -24,6 +26,7 @@ type TestIBMCloudBlock struct {
 	testVol  *blockstorage.Volume
 }
 
+//These are not executed as part of Pipeline, but usefull for development
 var _ = Suite(&TestIBMCloudBlock{})
 
 func (s *TestIBMCloudBlock) SetUpSuite(c *C) {

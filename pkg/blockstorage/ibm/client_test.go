@@ -1,3 +1,5 @@
+// +build !unit 
+
 package ibm
 
 import (
@@ -17,6 +19,7 @@ const (
 	IBMApiKeyEnv  = "IBM_API_KEY"
 )
 
+//These are not executed as part of Pipeline, but usefull for development
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
 
