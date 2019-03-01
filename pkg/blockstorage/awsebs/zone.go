@@ -2,6 +2,9 @@ package awsebs
 
 import (
 	"context"
+	"hash/fnv"
+	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -48,12 +51,26 @@ func zoneFromKnownNodeZones(ctx context.Context, region string, sourceZone strin
 		}
 	}
 	// If any nodes are available, return an arbitrary one.
-	// This is relatively random based on go's map iteration.
-	for nz := range nzs {
-		return nz, nil
+	return consistentZone(sourceZone, nzs)
+}
+
+func consistentZone(sourceZone string, nzs map[string]struct{}) (string, error) {
+	if len(nzs) == 0 {
+		return "", errors.New("could not restore volume: no zone found")
 	}
-	// Unreachable
-	return "", nil
+	s := make([]string, 0, len(nzs))
+	for nz := range nzs {
+		s = append(s, nz)
+	}
+	sort.Slice(s, func(i, j int) bool {
+		return strings.Compare(s[i], s[j]) < 0
+	})
+	h := fnv.New32()
+	if _, err := h.Write([]byte(sourceZone)); err != nil {
+		return "", errors.Errorf("failed to hash source zone %s: %s", sourceZone, err.Error())
+	}
+	i := int(h.Sum32()) % len(nzs)
+	return s[i], nil
 }
 
 func zoneWithUnknownNodeZones(ctx context.Context, region string, sourceZone string) (string, error) {
