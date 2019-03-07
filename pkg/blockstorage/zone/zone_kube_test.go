@@ -1,6 +1,6 @@
 // +build !unit
 
-package awsebs
+package zone
 
 import (
 	"context"
@@ -14,7 +14,7 @@ var _ = Suite(&KubeTestAWSEBSSuite{})
 
 func (s KubeTestAWSEBSSuite) TestNodeZones(c *C) {
 	ctx := context.Background()
-	zones, err := nodeZones(ctx)
+	zones, err := NodeZones(ctx)
 	c.Assert(err, IsNil)
 	c.Assert(zones, Not(HasLen), 0)
 }

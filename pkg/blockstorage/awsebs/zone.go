@@ -2,26 +2,19 @@ package awsebs
 
 import (
 	"context"
-	"hash/fnv"
-	"sort"
-	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-
-	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 func zoneForVolumeCreateFromSnapshot(ctx context.Context, region string, sourceZone string) (string, error) {
-	nzs, err := nodeZones(ctx)
+	nzs, err := zone.NodeZones(ctx)
 	if err != nil {
 		log.Errorf("Ignoring error getting Node availability zones. Error: %+v", err)
 	}
 	if len(nzs) != 0 {
 		var z string
-		if z, err = zoneFromKnownNodeZones(ctx, region, sourceZone, nzs); err == nil && isZoneValid(z, region) {
+		if z, err = zone.GetZoneFromKnownNodeZones(ctx, sourceZone, nzs); err == nil && isZoneValid(z, region) {
 			return z, nil
 		}
 	}
@@ -39,40 +32,6 @@ func isZoneValid(zone, region string) bool {
 	return false
 }
 
-func zoneFromKnownNodeZones(ctx context.Context, region string, sourceZone string, nzs map[string]struct{}) (string, error) {
-	// If the original zone is available, we return that one.
-	if _, ok := nzs[sourceZone]; ok {
-		return sourceZone, nil
-	}
-	// If there's an available zone with the zone suffix, we use that one.
-	for nz := range nzs {
-		if zoneSuffixesMatch(nz, sourceZone) {
-			return nz, nil
-		}
-	}
-	// If any nodes are available, return an arbitrary one.
-	return consistentZone(sourceZone, nzs)
-}
-
-func consistentZone(sourceZone string, nzs map[string]struct{}) (string, error) {
-	if len(nzs) == 0 {
-		return "", errors.New("could not restore volume: no zone found")
-	}
-	s := make([]string, 0, len(nzs))
-	for nz := range nzs {
-		s = append(s, nz)
-	}
-	sort.Slice(s, func(i, j int) bool {
-		return strings.Compare(s[i], s[j]) < 0
-	})
-	h := fnv.New32()
-	if _, err := h.Write([]byte(sourceZone)); err != nil {
-		return "", errors.Errorf("failed to hash source zone %s: %s", sourceZone, err.Error())
-	}
-	i := int(h.Sum32()) % len(nzs)
-	return s[i], nil
-}
-
 func zoneWithUnknownNodeZones(ctx context.Context, region string, sourceZone string) (string, error) {
 	// We could not the zones of the nodes, so we return an arbitrary one.
 	zs, err := regionToZones(ctx, region)
@@ -83,40 +42,10 @@ func zoneWithUnknownNodeZones(ctx context.Context, region string, sourceZone str
 	}
 	// We look for a zone with the same suffix.
 	for _, z := range zs {
-		if zoneSuffixesMatch(z, sourceZone) {
+		if zone.GetZoneSuffixesMatch(z, sourceZone) {
 			return z, nil
 		}
 	}
 	// We return an arbitrary zone in the region.
 	return zs[0], nil
-}
-
-func zoneSuffixesMatch(zone1, zone2 string) bool {
-	return zone1[len(zone1)-1] == zone2[len(zone2)-1]
-}
-
-const (
-	nodeZonesErr = `Failed to get Node availability zones.`
-)
-
-func nodeZones(ctx context.Context) (map[string]struct{}, error) {
-	cfg, err := kube.LoadConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, nodeZonesErr)
-	}
-	cli, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, nodeZonesErr)
-	}
-	ns, err := cli.CoreV1().Nodes().List(metav1.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, nodeZonesErr)
-	}
-	zoneSet := make(map[string]struct{}, len(ns.Items))
-	for _, n := range ns.Items {
-		if v, ok := n.Labels[kube.PVZoneLabelName]; ok {
-			zoneSet[v] = struct{}{}
-		}
-	}
-	return zoneSet, nil
 }
