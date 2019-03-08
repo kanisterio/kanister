@@ -21,8 +21,11 @@ func (s *FuncSuite) TearDownSuite(c *C) {
 
 func (s *FuncSuite) TestFailFunc(c *C) {
 	ctx := context.Background()
-	_, err := failFunc(ctx, param.TemplateParams{}, nil)
-	c.Assert(err, NotNil)
+	go func() {
+		_, err := failFunc(ctx, param.TemplateParams{}, nil)
+		c.Assert(err, NotNil)
+	}()
+	c.Assert(FailFuncError().Error(), Equals, "Kanister function failed")
 }
 
 func (s *FuncSuite) TestWaitFunc(c *C) {
