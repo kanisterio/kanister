@@ -2,12 +2,11 @@ package function
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -30,23 +29,6 @@ func (*deleteDataFunc) Name() string {
 	return "DeleteData"
 }
 
-func generateDeleteCommand(artifact string, profile *param.Profile) []string {
-	// Command to export credentials
-	cmd := []string{"export", fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s\n", profile.Credential.KeyPair.Secret)}
-	cmd = append(cmd, "export", fmt.Sprintf("AWS_ACCESS_KEY_ID=%s\n", profile.Credential.KeyPair.ID))
-	// Command to delete from the object store
-	cmd = append(cmd, "aws")
-	if profile.Location.Endpoint != "" {
-		cmd = append(cmd, "--endpoint", profile.Location.Endpoint)
-	}
-	if profile.SkipSSLVerify {
-		cmd = append(cmd, "--no-verify-ssl")
-	}
-	cmd = append(cmd, "s3", "rm", artifact)
-	command := strings.Join(cmd, " ")
-	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}
-}
-
 func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var artifact, namespace string
 	var err error
@@ -60,10 +42,8 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
-	// Generate delete command
-	cmd := generateDeleteCommand(artifact, tp.Profile)
-	// Use KubeTask to delete the artifact
-	return kubeTask(ctx, namespace, "kanisterio/kanister-tools:0.16.0", cmd)
+
+	return nil, location.Delete(ctx, *tp.Profile, artifact)
 }
 
 func (*deleteDataFunc) RequiredArgs() []string {

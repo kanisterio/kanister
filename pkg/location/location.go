@@ -89,7 +89,7 @@ func deleteData(ctx context.Context, pType objectstore.ProviderType, profile par
 	if err != nil {
 		return err
 	}
-	return bucket.Delete(ctx, path)
+	return bucket.DeleteAllWithPrefix(ctx, path)
 }
 
 func getProviderType(lType crv1alpha1.LocationType) (objectstore.ProviderType, error) {

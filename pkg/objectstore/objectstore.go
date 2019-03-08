@@ -50,6 +50,9 @@ type Directory interface {
 	// DeleteDirectory deletes the current directory
 	DeleteDirectory(context.Context) error
 
+	// DeleteAllWithPrefix deletes all directorys and objects with a provided prefix
+	DeleteAllWithPrefix(context.Context, string) error
+
 	// ListDirectories lists all the directories rooted in
 	// the current directory and their handle
 	ListDirectories(context.Context) (map[string]Directory, error)

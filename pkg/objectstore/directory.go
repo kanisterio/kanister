@@ -120,26 +120,32 @@ func (d *directory) ListObjects(ctx context.Context) ([]string, error) {
 }
 
 // DeleteDirectory deletes all objects that have d.path as the prefix
-// <bucket>/<d.path/<everything> including <bucket>/<d.path>/<some dir>/<objects>
+// <bucket>/<d.path>/<everything> including <bucket>/<d.path>/<some dir>/<objects>
 func (d *directory) DeleteDirectory(ctx context.Context) error {
 	if d.path == "" {
 		return errors.New("invalid entry")
 	}
+	return deleteWithPrefix(ctx, d.bucket.container, cloudName(d.path))
+}
 
-	// Walk to find all entries that match the d.path prefix.
-	err := stow.Walk(d.bucket.container, cloudName(d.path), 10000,
+// DeleteDirectory deletes all objects that have d.path/dir as the prefix
+// <bucket>/<d.path>/dir/<everything> including <bucket>/<d.path>/dir/<some dir>/<objects>
+func (d *directory) DeleteAllWithPrefix(ctx context.Context, prefix string) error {
+	p := cloudName(filepath.Join(d.path, prefix))
+	return deleteWithPrefix(ctx, d.bucket.container, p)
+}
+
+func deleteWithPrefix(ctx context.Context, c stow.Container, prefix string) error {
+	err := stow.Walk(c, prefix, 10000,
 		func(item stow.Item, err error) error {
 			if err != nil {
 				return err
 			}
-
-			return d.bucket.container.RemoveItem(item.Name())
+			return c.RemoveItem(item.Name())
 		})
-
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to delete item %s", prefix)
 	}
-
 	return nil
 }
 
