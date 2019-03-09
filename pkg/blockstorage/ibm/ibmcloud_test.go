@@ -66,6 +66,9 @@ func (s *TestIBMCloudBlock) SetUpSuite(c *C) {
 
 func (s TestIBMCloudBlock) TearDownSuite(c *C) {
 	// Check whether or not the test volume was initialized
+	if _, ok := os.LookupEnv(IBMApiKeyEnv); !ok {
+		c.Skip(fmt.Sprintf("Skipping TearDown"))
+	}
 	c.Assert(s.testVol, NotNil)
 	bsVol, err := s.provider.VolumeGet(context.Background(), s.testVol.ID, "")
 	c.Assert(err, IsNil)
