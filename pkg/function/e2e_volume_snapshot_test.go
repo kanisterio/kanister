@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -14,14 +15,13 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
-	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
-	"github.com/kanisterio/kanister/pkg/testutil/mockblockstorage"
 )
 
 const (
@@ -33,11 +33,10 @@ const (
 )
 
 type VolumeSnapshotTestSuite struct {
-	cli        kubernetes.Interface
-	crCli      versioned.Interface
-	namespace  string
-	mockGetter getter.Getter
-	tp         *param.TemplateParams
+	cli       kubernetes.Interface
+	crCli     versioned.Interface
+	namespace string
+	tp        *param.TemplateParams
 }
 
 var _ = Suite(&VolumeSnapshotTestSuite{})
@@ -63,20 +62,31 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	c.Assert(err, IsNil)
 	s.namespace = cns.GetName()
 
-	sec := NewTestProfileSecret()
+	ctx := context.Background()
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(newStatefulSet(s.namespace))
+	c.Assert(err, IsNil)
+	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
+	c.Assert(err, IsNil)
+
+	pods, _, err := kube.FetchPods(s.cli, s.namespace, ss.UID)
+	c.Assert(err, IsNil)
+	volToPvc := kube.StatefulSetVolumes(s.cli, ss, &pods[0])
+	pvc, _ := volToPvc[pods[0].Spec.Containers[0].VolumeMounts[0].Name]
+	c.Assert(len(pvc) > 0, Equals, true)
+	id, secret, err := s.getCreds(c, s.cli, s.namespace, pvc)
+	c.Assert(err, IsNil)
+	if id == "" || secret == "" {
+		c.Skip("Skipping the test since storage type not supported")
+	}
+
+	serviceKey, err := getServiceKey(c)
+	c.Assert(err, IsNil)
+	sec := NewTestProfileSecret(serviceKey, id, secret)
 	sec, err = s.cli.Core().Secrets(s.namespace).Create(sec)
 	c.Assert(err, IsNil)
 
 	p := NewTestProfile(s.namespace, sec.GetName())
 	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(p)
-	c.Assert(err, IsNil)
-
-	s.mockGetter = mockblockstorage.NewGetter()
-
-	ctx := context.Background()
-	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(newStatefulSet(s.namespace))
-	c.Assert(err, IsNil)
-	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 	c.Assert(err, IsNil)
 
 	as := crv1alpha1.ActionSpec{
@@ -86,7 +96,7 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 			Namespace: s.namespace,
 		},
 		Profile: &crv1alpha1.ObjectReference{
-			Name:      testutil.TestProfileName,
+			Name:      p.GetName(),
 			Namespace: s.namespace,
 		},
 	}
@@ -98,14 +108,14 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 }
 
 // NewTestProfileSecret function returns a pointer to a new Secret test object.
-func NewTestProfileSecret() *v1.Secret {
+func NewTestProfileSecret(serviceKey string, id string, secret string) *v1.Secret {
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-secret-",
 		},
 		StringData: map[string]string{
-			"id":     os.Getenv(awsebs.AccessKeyID),
-			"secret": os.Getenv(awsebs.SecretAccessKey),
+			"id":     id,
+			"secret": secret,
 		},
 	}
 }
@@ -279,15 +289,6 @@ func newStatefulSet(namespace string) *appsv1.StatefulSet {
 }
 
 func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
-	if len(os.Getenv(AWSRegion)) == 0 {
-		c.Skip("Skipping the test since env variable AWS_REGION is not set")
-	}
-	if len(os.Getenv(awsebs.AccessKeyID)) == 0 {
-		c.Skip("Skipping the test since env variable AWS_ACCESS_KEY_ID is not set")
-	}
-	if len(os.Getenv(awsebs.SecretAccessKey)) == 0 {
-		c.Skip("Skipping the test since env variable AWS_SECRET_ACCESS_KEY is not set")
-	}
 	ctx := context.Background()
 	actions := []string{"backup", "restore", "delete"}
 	bp := newVolumeSnapshotBlueprint()
@@ -309,4 +310,47 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 			}
 		}
 	}
+}
+
+func (s *VolumeSnapshotTestSuite) getCreds(c *C, cli kubernetes.Interface, namespace string, pvcname string) (string, string, error) {
+	pvc, err := cli.Core().PersistentVolumeClaims(namespace).Get(pvcname, metav1.GetOptions{})
+	if err != nil {
+		return "", "", err
+	}
+	pvName := pvc.Spec.VolumeName
+	pv, err := cli.Core().PersistentVolumes().Get(pvName, metav1.GetOptions{})
+	if err != nil {
+		return "", "", err
+	}
+	switch {
+	case pv.Spec.AWSElasticBlockStore != nil:
+		_ = GetEnvOrSkip(c, AWSRegion)
+		return GetEnvOrSkip(c, awsebs.AccessKeyID), GetEnvOrSkip(c, awsebs.SecretAccessKey), nil
+
+	case pv.Spec.GCEPersistentDisk != nil:
+		serviceKey, err := getServiceKey(c)
+		if err != nil {
+			return "", "", err
+		}
+		return "test_project_id", serviceKey, nil
+	}
+	return "", "", nil
+}
+
+func getServiceKey(c *C) (string, error) {
+	filename := GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func GetEnvOrSkip(c *C, varName string) string {
+	v := os.Getenv(varName)
+	// Ensure the variable is set
+	if v == "" {
+		c.Skip("Required environment variable " + varName + " is not set")
+	}
+	return v
 }

@@ -118,6 +118,12 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 		}
 		pv.ObjectMeta.Labels[PVZoneLabelName] = vol.Az
 		pv.ObjectMeta.Labels[PVRegionLabelName] = zoneToRegion(vol.Az)
+	case blockstorage.TypeGPD:
+		pv.Spec.PersistentVolumeSource.GCEPersistentDisk = &v1.GCEPersistentDiskVolumeSource{
+			PDName: vol.ID,
+		}
+		pv.ObjectMeta.Labels[PVZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[PVRegionLabelName] = zoneToRegion(vol.Az)
 	default:
 		return "", errors.Errorf("Volume type %v(%T) not supported ", volType, volType)
 	}

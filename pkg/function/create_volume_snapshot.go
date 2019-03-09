@@ -62,24 +62,28 @@ type volumeInfo struct {
 	region   string
 }
 
-func ValidateProfile(profile *param.Profile) error {
+func ValidateProfile(profile *param.Profile, sType blockstorage.Type) error {
 	if profile == nil {
 		return errors.New("Profile must be non-nil")
 	}
-	if profile.Location.Type != crv1alpha1.LocationTypeS3Compliant {
-		return errors.New("Location type not supported")
-	}
-	if len(profile.Location.Region) == 0 {
-		return errors.New("Region is not set")
-	}
+
 	if profile.Credential.Type != param.CredentialTypeKeyPair {
 		return errors.New("Credential type not supported")
 	}
 	if len(profile.Credential.KeyPair.ID) == 0 {
-		return errors.New("AWS access key id is not set")
+		return errors.New("Access key ID is not set")
 	}
 	if len(profile.Credential.KeyPair.Secret) == 0 {
 		return errors.New("Secret access key is not set")
+	}
+	switch sType {
+	case blockstorage.TypeEBS:
+		if profile.Location.Type != crv1alpha1.LocationTypeS3Compliant {
+			return errors.New("Location type not supported")
+		}
+		if len(profile.Location.Region) == 0 {
+			return errors.New("Region is not set")
+		}
 	}
 	return nil
 }
@@ -178,8 +182,10 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 	// Check to see which provider is the source. Spec mandates only one of the provider
 	// fields will be set
 	config := make(map[string]string)
-	if ebs := pv.Spec.AWSElasticBlockStore; ebs != nil {
-		if err = ValidateProfile(tp.Profile); err != nil {
+	switch {
+	case pv.Spec.AWSElasticBlockStore != nil:
+		ebs := pv.Spec.AWSElasticBlockStore
+		if err = ValidateProfile(tp.Profile, blockstorage.TypeEBS); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
 		// Get Region from PV label or EC2 metadata
@@ -202,8 +208,25 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 			return &volumeInfo{provider: provider, volumeID: filepath.Base(ebs.VolumeID), sType: blockstorage.TypeEBS, volZone: pvZone, pvc: name, size: size, region: region}, nil
 		}
 		return nil, errors.Errorf("PV zone label is empty, pvName: %s, namespace: %s", pvName, namespace)
+
+	case pv.Spec.GCEPersistentDisk != nil:
+		gpd := pv.Spec.GCEPersistentDisk
+		region = ""
+		if err = ValidateProfile(tp.Profile, blockstorage.TypeGPD); err != nil {
+			return nil, errors.Wrap(err, "Profile validation failed")
+		}
+		if pvZone, ok := pvLabels[kube.PVZoneLabelName]; ok {
+			config[blockstorage.GoogleProjectID] = tp.Profile.Credential.KeyPair.ID
+			config[blockstorage.GoogleServiceKey] = tp.Profile.Credential.KeyPair.Secret
+			provider, err = getter.Get(blockstorage.TypeGPD, config)
+			if err != nil {
+				return nil, errors.Wrap(err, "Could not get storage provider")
+			}
+			return &volumeInfo{provider: provider, volumeID: filepath.Base(gpd.PDName), sType: blockstorage.TypeGPD, volZone: pvZone, pvc: name, size: size, region: region}, nil
+		}
+		return nil, errors.Errorf("PV zone label is empty, pvName: %s, namespace: %s", pvName, namespace)
 	}
-	return nil, errors.New("Storage type not supported")
+	return nil, errors.New("Storage type not supported!")
 }
 
 func getPVCList(tp param.TemplateParams) ([]string, error) {

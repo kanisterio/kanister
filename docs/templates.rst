@@ -116,7 +116,7 @@ For example, to access the Name of a Deployment use:
   "{{ index .Deployment.Name }}"
 
 Namespace
----
+---------
 
 NamespaceParams includes the name of the namespace
 that is being acted on when the ActionSet `Object` is
@@ -573,12 +573,12 @@ or as output artifacts using templating.
 
 For example, an output artifact can reference the output from a phase as follows:
 
-.. code-block:: yaml
+.. code-block:: go
 
-"{{ .Phases.phase-name.Output.key-name }}"
+  "{{ .Phases.phase-name.Output.key-name }}"
 
 Similarly, a phase can use Secrets as arguments:
 
-.. code-block:: yaml
+.. code-block:: go
 
-"{{ .Phases.phase-name.Secrets.secret-name.Namespace }}"
+  "{{ .Phases.phase-name.Secrets.secret-name.Namespace }}"

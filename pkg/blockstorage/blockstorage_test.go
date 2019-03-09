@@ -31,23 +31,11 @@ type BlockStorageProviderSuite struct {
 }
 
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeEBS, storageRegion: clusterRegionAWS})
+var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: ""})
 
 func (s *BlockStorageProviderSuite) SetUpSuite(c *C) {
-	config := make(map[string]string)
 	var err error
-	if s.storageType == blockstorage.TypeEBS {
-		config[awsebs.ConfigRegion] = s.storageRegion
-		accessKey, ok := os.LookupEnv(awsebs.AccessKeyID)
-		if !ok {
-			c.Skip("The necessary env variable AWS_ACCESS_KEY_ID is not set.")
-		}
-		secretAccessKey, ok := os.LookupEnv(awsebs.SecretAccessKey)
-		if !ok {
-			c.Skip("The necessary env variable AWS_SECRET_ACCESS_KEY is not set.")
-		}
-		config[awsebs.AccessKeyID] = accessKey
-		config[awsebs.SecretAccessKey] = secretAccessKey
-	}
+	config := s.getConfig(c, s.storageRegion)
 	s.provider, err = getter.New().Get(s.storageType, config)
 	c.Assert(err, IsNil)
 }
@@ -147,16 +135,7 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 
 	log.Infof("Copied snapshot %v to %v", srcSnapshot.ID, snap.ID)
 
-	config := make(map[string]string)
-	if s.storageType == blockstorage.TypeEBS {
-		config[awsebs.ConfigRegion] = dstSnapshot.Region
-		accessKey := os.Getenv(awsebs.AccessKeyID)
-		c.Assert(len(accessKey) > 0, Equals, true)
-		secretAccessKey := os.Getenv(awsebs.SecretAccessKey)
-		c.Assert(len(secretAccessKey) > 0, Equals, true)
-		config[awsebs.AccessKeyID] = accessKey
-		config[awsebs.SecretAccessKey] = secretAccessKey
-	}
+	config := s.getConfig(c, dstSnapshot.Region)
 	provider, err := getter.New().Get(s.storageType, config)
 	c.Assert(err, IsNil)
 
@@ -266,4 +245,29 @@ func (s *BlockStorageProviderSuite) checkStdTagsExist(c *C, actual map[string]st
 	for k := range stdTags {
 		c.Check(actual[k], NotNil)
 	}
+}
+
+func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]string {
+	config := make(map[string]string)
+	switch s.storageType {
+	case blockstorage.TypeEBS:
+		config[awsebs.ConfigRegion] = region
+		accessKey, ok := os.LookupEnv(awsebs.AccessKeyID)
+		if !ok {
+			c.Skip("The necessary env variable AWS_ACCESS_KEY_ID is not set.")
+		}
+		secretAccessKey, ok := os.LookupEnv(awsebs.SecretAccessKey)
+		if !ok {
+			c.Skip("The necessary env variable AWS_SECRET_ACCESS_KEY is not set.")
+		}
+		config[awsebs.AccessKeyID] = accessKey
+		config[awsebs.SecretAccessKey] = secretAccessKey
+	case blockstorage.TypeGPD:
+		creds, ok := os.LookupEnv(blockstorage.GoogleCloudCreds)
+		if !ok {
+			c.Skip("The necessary env variable GOOGLE_APPLICATION_CREDENTIALS is not set.")
+		}
+		config[blockstorage.GoogleCloudCreds] = creds
+	}
+	return config
 }

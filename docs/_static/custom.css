@@ -7,7 +7,11 @@ h1, h2, h3, h4, h5, h6 {
 
 body, p {
     font-family: 'Open Sans', sans-serif !important;
-    font-weight: 400 !important;
+    font-weight: 400;
+}
+
+div.body p {
+    line-height: 1.6em;
 }
 
 li {
@@ -20,4 +24,34 @@ li {
 
 div.admonition {
     padding: 1rem 2rem;
+    border-width: 0 0 0 3px;
+}
+
+div.admonition.warning {
+    background-color: #fff3f3;
+    border-color: #FAA;
+}
+
+div.sphinxsidebarwrapper p.logo {
+    margin: -10px 0 3rem -20px;
+}
+
+img.logo {
+    max-width: 80%;
+}
+
+div.topic {
+    padding: 20px 30px;
+    margin: 20px 0 10px 0;
+    border: none;
+    background-color: #edf6fb;
+}
+
+div.sphinxsidebarwrapper #searchbox {
+    margin-top: 2rem;
+}
+
+div.sphinxsidebar #searchbox input {
+    padding: 0.6rem !important;
+    font-family: 'Open Sans', sans-serif;
 }
