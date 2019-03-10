@@ -9,10 +9,11 @@ keywords:
 - kanister
 maintainers:
 - email: tom@kasten.io
-  name: Tom Manville
+  name: tdmanv
 name: kanister-mysql
 sources:
 - https://github.com/kubernetes/charts
 - https://github.com/docker-library/mysql
 - https://kanister.io/
-version: 1.1.2
+version: 0.16.0
+appVersion: 5.7.14

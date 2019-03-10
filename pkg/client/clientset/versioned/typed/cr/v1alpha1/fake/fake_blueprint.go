@@ -119,7 +119,7 @@ func (c *FakeBlueprints) DeleteCollection(options *v1.DeleteOptions, listOptions
 // Patch applies the patch and returns the patched blueprint.
 func (c *FakeBlueprints) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Blueprint, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(blueprintsResource, c.ns, name, data, subresources...), &v1alpha1.Blueprint{})
+		Invokes(testing.NewPatchSubresourceAction(blueprintsResource, c.ns, name, pt, data, subresources...), &v1alpha1.Blueprint{})
 
 	if obj == nil {
 		return nil, err

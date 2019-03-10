@@ -1,11 +1,13 @@
 package getter
 
 import (
+	"context"
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
 	"github.com/kanisterio/kanister/pkg/blockstorage/gcepd"
+	"github.com/kanisterio/kanister/pkg/blockstorage/ibm"
 )
 
 // Getter is a resolver for a storage provider.
@@ -27,6 +29,8 @@ func (*getter) Get(storageType blockstorage.Type, config map[string]string) (blo
 	switch storageType {
 	case blockstorage.TypeEBS:
 		return awsebs.NewProvider(config)
+	case blockstorage.TypeSoftlayerBlock:
+		return ibm.NewProvider(context.TODO(), config)
 	case blockstorage.TypeGPD:
 		return gcepd.NewProvider(config)
 	default:
@@ -38,6 +42,8 @@ func (*getter) Get(storageType blockstorage.Type, config map[string]string) (blo
 func Supported(st blockstorage.Type) bool {
 	switch st {
 	case blockstorage.TypeEBS:
+		return true
+	case blockstorage.TypeSoftlayerBlock:
 		return true
 	case blockstorage.TypeGPD:
 		return true

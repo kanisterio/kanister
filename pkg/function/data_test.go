@@ -4,17 +4,19 @@ import (
 	"context"
 	"fmt"
 
-	kanister "github.com/kanisterio/kanister/pkg"
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
-	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/kanisterio/kanister/pkg/resource"
-	"github.com/kanisterio/kanister/pkg/testutil"
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/objectstore"
+	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/resource"
+	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 type DataSuite struct {
@@ -165,7 +167,11 @@ func (s *DataSuite) TestBackupRestoreData(c *C) {
 	tp, err := param.New(ctx, s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
 
-	tp.Profile = testutil.ObjectStoreProfileOrSkip(c)
+	location := crv1alpha1.Location{
+		Type:   crv1alpha1.LocationTypeS3Compliant,
+		Bucket: testutil.GetEnvOrSkip(c, testutil.TestS3BucketName),
+	}
+	tp.Profile = testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeS3, location)
 
 	for _, bp := range []crv1alpha1.Blueprint{
 		*newBackupDataBlueprint(),
@@ -314,6 +320,11 @@ func (s *DataSuite) initPVCTemplateParams(c *C, pvc *v1.PersistentVolumeClaim, o
 	}
 	tp, err := param.New(context.Background(), s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
-	tp.Profile = testutil.ObjectStoreProfileOrSkip(c)
+
+	location := crv1alpha1.Location{
+		Type:   crv1alpha1.LocationTypeS3Compliant,
+		Bucket: testutil.GetEnvOrSkip(c, testutil.TestS3BucketName),
+	}
+	tp.Profile = testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeS3, location)
 	return tp
 }

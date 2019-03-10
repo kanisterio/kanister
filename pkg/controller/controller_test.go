@@ -137,7 +137,7 @@ func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, s
 		if as.Status.State == crv1alpha1.StatePending || as.Status.State == crv1alpha1.StateRunning {
 			return false, nil
 		}
-		return false, errors.New(fmt.Sprintf("Unexpected state: %s", state))
+		return false, errors.New(fmt.Sprintf("Unexpected state: %s", as.Status.State))
 
 	})
 	if err == nil {
@@ -251,30 +251,39 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 		for _, tc := range []struct {
 			funcNames []string
 			args      [][]string
+			name      string
 		}{
 			{
 				funcNames: []string{testutil.WaitFuncName},
+				name:      "WaitFunc",
 			},
 			{
 				funcNames: []string{testutil.WaitFuncName, testutil.WaitFuncName},
+				name:      "WaitWait",
 			},
 			{
 				funcNames: []string{testutil.FailFuncName},
+				name:      "FailFunc",
 			},
 			{
 				funcNames: []string{testutil.WaitFuncName, testutil.FailFuncName},
+				name:      "WaitFail",
 			},
 			{
 				funcNames: []string{testutil.FailFuncName, testutil.WaitFuncName},
+				name:      "FailWait",
 			},
 			{
 				funcNames: []string{testutil.ArgFuncName},
+				name:      "ArgFunc",
 			},
 			{
 				funcNames: []string{testutil.ArgFuncName, testutil.FailFuncName},
+				name:      "ArgFail",
 			},
 			{
 				funcNames: []string{testutil.OutputFuncName},
+				name:      "OutputFunc",
 			},
 		} {
 			var err error
@@ -298,10 +307,10 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace)
 			as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 			as, err = s.crCli.ActionSets(s.namespace).Create(as)
-			c.Assert(err, IsNil)
+			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
 
 			err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-			c.Assert(err, IsNil)
+			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
 
 			final := crv1alpha1.StateComplete
 		Loop:
@@ -309,18 +318,19 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				switch fn {
 				case testutil.FailFuncName:
 					final = crv1alpha1.StateFailed
+					c.Assert(testutil.FailFuncError().Error(), DeepEquals, "Kanister function failed", Commentf("Failed case: %s", tc.name))
 					break Loop
 				case testutil.WaitFuncName:
 					testutil.ReleaseWaitFunc()
 				case testutil.ArgFuncName:
-					c.Assert(testutil.ArgFuncArgs(), DeepEquals, map[string]interface{}{"key": "myValue"})
+					c.Assert(testutil.ArgFuncArgs(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
 				case testutil.OutputFuncName:
-					c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
+					c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
 				}
 			}
 
 			err = s.waitOnActionSetState(c, as, final)
-			c.Assert(err, IsNil)
+			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
 
 			err = s.crCli.Blueprints(s.namespace).Delete(bp.GetName(), nil)
 			c.Assert(err, IsNil)

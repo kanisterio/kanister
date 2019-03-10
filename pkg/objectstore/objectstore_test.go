@@ -246,11 +246,44 @@ func (s *ObjectStoreProviderSuite) TestDirectories(c *C) {
 
 	directory, err = rootDirectory.GetDirectory(ctx, dir1)
 	c.Check(err, IsNil)
-
 	// Delete everything by deleting the parent directory
 	err = directory.DeleteDirectory(ctx)
 	c.Check(err, IsNil)
 	checkNoItemsWithPrefix(c, cont, dir1)
+}
+
+func (s *ObjectStoreProviderSuite) TestDeleteAllWithPrefix(c *C) {
+	ctx := context.Background()
+	rootDirectory, err := s.root.CreateDirectory(ctx, s.testDir)
+	c.Assert(err, IsNil)
+	c.Assert(rootDirectory, NotNil)
+	const (
+		dir1 = "directory1"
+		dir2 = "directory2"
+		dir3 = "directory3"
+	)
+
+	directory, err := rootDirectory.CreateDirectory(ctx, dir1)
+	c.Assert(err, IsNil)
+
+	// Expecting /dir1/dir2
+	_, err = directory.CreateDirectory(ctx, dir2)
+	c.Assert(err, IsNil)
+
+	// Expecting root dir to have /dir1/dir2 and /dir3
+	_, err = rootDirectory.CreateDirectory(ctx, dir3)
+	c.Assert(err, IsNil)
+
+	// Delete everything with prefix "dir1"
+	err = rootDirectory.DeleteAllWithPrefix(ctx, dir1)
+	c.Assert(err, IsNil)
+
+	// Expecting root dir to have /dir3
+	directories, err := rootDirectory.ListDirectories(ctx)
+	c.Check(err, IsNil)
+	c.Check(directories, HasLen, 1)
+	_, ok := directories[dir3]
+	c.Check(ok, Equals, true)
 }
 
 // TestObjects verifies object operations: GetBytes and PutBytes

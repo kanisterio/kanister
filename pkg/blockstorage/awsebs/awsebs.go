@@ -218,7 +218,6 @@ func (s *ebsStorage) SnapshotsList(ctx context.Context, tags map[string]string) 
 }
 
 // SnapshotCopy copies snapshot 'from' to 'to'. Follows aws restrictions regarding encryption;
-
 // i.e., copying unencrypted to encrypted snapshot is allowed but not vice versa.
 func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
 	if to.Region == "" {
@@ -227,11 +226,30 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	if to.ID != "" {
 		return nil, errors.Errorf("Snapshot %v destination ID must be empty", to)
 	}
-
 	// Copy operation must be initiated from the destination region.
 	ec2Cli, err := newEC2Client(to.Region, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
+	}
+	// Include a presigned URL when the regions are different. Include it
+	// independent of whether or not the snapshot is encrypted.
+	var presignedURL *string
+	if to.Region != from.Region {
+		fromCli, err2 := newEC2Client(from.Region, nil)
+		if err2 != nil {
+			return nil, errors.Wrap(err2, "Could not create client to presign URL for snapshot copy request")
+		}
+		si := ec2.CopySnapshotInput{
+			SourceSnapshotId:  aws.String(from.ID),
+			SourceRegion:      aws.String(from.Region),
+			DestinationRegion: ec2Cli.Config.Region,
+		}
+		rq, _ := fromCli.CopySnapshotRequest(&si)
+		su, err2 := rq.Presign(120 * time.Minute)
+		if err2 != nil {
+			return nil, errors.Wrap(err2, "Could not presign URL for snapshot copy request")
+		}
+		presignedURL = &su
 	}
 	// Copy tags from source snap to dest.
 	tags := make(map[string]string, len(from.Tags))
@@ -239,11 +257,19 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		tags[tag.Key] = tag.Value
 	}
 
+	var encrypted *bool
+	// encrypted can not be set to false.
+	// Only unspecified or `true` are supported in `CopySnapshotInput`
+	if from.Encrypted {
+		encrypted = &from.Encrypted
+	}
 	csi := ec2.CopySnapshotInput{
 		Description:       aws.String("Copy of " + from.ID),
 		SourceSnapshotId:  aws.String(from.ID),
 		SourceRegion:      aws.String(from.Region),
 		DestinationRegion: ec2Cli.Config.Region,
+		Encrypted:         encrypted,
+		PresignedUrl:      presignedURL,
 	}
 	cso, err := ec2Cli.CopySnapshotWithContext(ctx, &csi)
 	if err != nil {
@@ -385,8 +411,13 @@ func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s, VolumeTags: %v", snapshot.Volume.VolumeType, snapshot.Volume.Az, snapshot.Volume.Tags)
 	}
 
+	z, err := zoneForVolumeCreateFromSnapshot(ctx, snapshot.Region, snapshot.Volume.Az)
+	if err != nil {
+		return nil, err
+	}
+
 	cvi := &ec2.CreateVolumeInput{
-		AvailabilityZone: aws.String(snapshot.Volume.Az),
+		AvailabilityZone: aws.String(z),
 		SnapshotId:       aws.String(snapshot.ID),
 		VolumeType:       aws.String(string(snapshot.Volume.VolumeType)),
 	}
@@ -556,4 +587,128 @@ func GetRegionFromEC2Metadata() (string, error) {
 
 	awsRegion, err := ec2MetaData.Region()
 	return awsRegion, errors.Wrap(err, "Failed to get AWS Region")
+}
+
+func regionToZones(ctx context.Context, region string) ([]string, error) {
+	// Fall back to using a static map.
+	return staticRegionToZones(region)
+}
+
+func queryRegionToZones(ctx context.Context, region string) ([]string, error) {
+	ec2Cli, err := newEC2Client(region, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not get EC2 client")
+	}
+	dazi := &ec2.DescribeAvailabilityZonesInput{}
+	dazo, err := ec2Cli.DescribeAvailabilityZonesWithContext(ctx, dazi)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get AZs for region %s", region)
+	}
+	azs := make([]string, 0, len(dazo.AvailabilityZones))
+	for _, az := range dazo.AvailabilityZones {
+		if az.ZoneName != nil {
+			azs = append(azs, *az.ZoneName)
+		}
+	}
+	return azs, nil
+}
+
+func staticRegionToZones(region string) ([]string, error) {
+	switch region {
+	case "ap-south-1":
+		return []string{
+			"ap-south-1a",
+			"ap-south-1b",
+		}, nil
+	case "eu-west-3":
+		return []string{
+			"eu-west-3a",
+			"eu-west-3b",
+			"eu-west-3c",
+		}, nil
+	case "eu-north-1":
+		return []string{
+			"eu-north-1a",
+			"eu-north-1b",
+			"eu-north-1c",
+		}, nil
+	case "eu-west-2":
+		return []string{
+			"eu-west-2a",
+			"eu-west-2b",
+			"eu-west-2c",
+		}, nil
+	case "eu-west-1":
+		return []string{
+			"eu-west-1a",
+			"eu-west-1b",
+			"eu-west-1c",
+		}, nil
+	case "ap-northeast-2":
+		return []string{
+			"ap-northeast-2a",
+			"ap-northeast-2c",
+		}, nil
+	case "ap-northeast-1":
+		return []string{
+			"ap-northeast-1a",
+			"ap-northeast-1c",
+			"ap-northeast-1d",
+		}, nil
+	case "sa-east-1":
+		return []string{
+			"sa-east-1a",
+			"sa-east-1c",
+		}, nil
+	case "ca-central-1":
+		return []string{
+			"ca-central-1a",
+			"ca-central-1b",
+		}, nil
+	case "ap-southeast-1":
+		return []string{
+			"ap-southeast-1a",
+			"ap-southeast-1b",
+			"ap-southeast-1c",
+		}, nil
+	case "ap-southeast-2":
+		return []string{
+			"ap-southeast-2a",
+			"ap-southeast-2b",
+			"ap-southeast-2c",
+		}, nil
+	case "eu-central-1":
+		return []string{
+			"eu-central-1a",
+			"eu-central-1b",
+			"eu-central-1c",
+		}, nil
+	case "us-east-1":
+		return []string{
+			"us-east-1a",
+			"us-east-1b",
+			"us-east-1c",
+			"us-east-1d",
+			"us-east-1e",
+			"us-east-1f",
+		}, nil
+	case "us-east-2":
+		return []string{
+			"us-east-2a",
+			"us-east-2b",
+			"us-east-2c",
+		}, nil
+	case "us-west-1":
+		return []string{
+			"us-west-1a",
+			"us-west-1b",
+		}, nil
+	case "us-west-2":
+		return []string{
+			"us-west-2a",
+			"us-west-2b",
+			"us-west-2c",
+		}, nil
+	}
+	return nil, errors.New("cannot get availability zones for region")
 }

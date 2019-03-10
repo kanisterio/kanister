@@ -7,6 +7,8 @@ import (
 
 	. "gopkg.in/check.v1"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
@@ -17,7 +19,11 @@ var _ = Suite(&LocationSuite{})
 const testContent = "test-content"
 
 func (s *LocationSuite) TestLocationObjectStore(c *C) {
-	p := testutil.ObjectStoreProfileOrSkip(c)
+	location := crv1alpha1.Location{
+		Type:   crv1alpha1.LocationTypeS3Compliant,
+		Bucket: testutil.GetEnvOrSkip(c, testutil.TestS3BucketName),
+	}
+	p := testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeS3, location)
 	ctx := context.Background()
 	dir := c.MkDir()
 	path := filepath.Join(dir, "test-object1.txt")

@@ -17,13 +17,16 @@ const (
 )
 
 var (
+	failFuncCh   chan error
 	waitFuncCh   chan struct{}
 	argFuncCh    chan map[string]interface{}
 	outputFuncCh chan map[string]interface{}
 )
 
 func failFunc(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error) {
-	return nil, errors.New("Kanister Function Failed")
+	err := errors.New("Kanister function failed")
+	failFuncCh <- err
+	return nil, err
 }
 
 func waitFunc(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error) {
@@ -41,6 +44,7 @@ func outputFunc(ctx context.Context, tp param.TemplateParams, args map[string]in
 }
 
 func init() {
+	failFuncCh = make(chan error)
 	waitFuncCh = make(chan struct{})
 	argFuncCh = make(chan map[string]interface{})
 	outputFuncCh = make(chan map[string]interface{})
@@ -67,6 +71,10 @@ func (mf *mockKanisterFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 
 func (mf *mockKanisterFunc) Name() string {
 	return mf.name
+}
+
+func FailFuncError() error {
+	return <-failFuncCh
 }
 
 func ReleaseWaitFunc() {

@@ -3,12 +3,15 @@ package kanctl
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"reflect"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2/google"
+	compute "google.golang.org/api/compute/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sYAML "k8s.io/apimachinery/pkg/util/yaml"
@@ -20,12 +23,14 @@ import (
 )
 
 const (
-	bucketFlag    = "bucket"
-	endpointFlag  = "endpoint"
-	prefixFlag    = "prefix"
-	regionFlag    = "region"
-	accessKeyFlag = "access-key"
-	secretKeyFlag = "secret-key"
+	bucketFlag        = "bucket"
+	endpointFlag      = "endpoint"
+	prefixFlag        = "prefix"
+	regionFlag        = "region"
+	awsAccessKeyFlag  = "access-key"
+	awsSecretKeyFlag  = "secret-key"
+	gcpProjectIDFlag  = "project-id"
+	gcpServiceKeyFlag = "service-key"
 
 	idField           = "access_key_id"
 	secretField       = "secret_access_key"
@@ -35,18 +40,18 @@ const (
 	regionValidation      = "Validate bucket region specified in profile"
 	readAccessValidation  = "Validate read access to bucket specified in profile"
 	writeAccessValidation = "Validate write access to bucket specified in profile"
+
+	secretFormat = "%s-secret-%s"
 )
 
-type s3CompliantParams struct {
-	namespace string
-	bucket    string
-	endpoint  string
-	prefix    string
-	region    string
-
-	accessKey string
-	secretKey string
-
+type locationParams struct {
+	locationType  v1alpha1.LocationType
+	profileName   string
+	namespace     string
+	bucket        string
+	endpoint      string
+	prefix        string
+	region        string
 	skipSSLVerify bool
 }
 
@@ -58,6 +63,11 @@ func newProfileCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(newS3CompliantProfileCmd())
+	cmd.AddCommand(newGCPProfileCmd())
+	cmd.PersistentFlags().StringP(bucketFlag, "b", "", "object store bucket name")
+	cmd.PersistentFlags().StringP(endpointFlag, "e", "", "endpoint URL of the object store bucket")
+	cmd.PersistentFlags().StringP(prefixFlag, "p", "", "prefix URL of the object store bucket")
+	cmd.PersistentFlags().StringP(regionFlag, "r", "", "region of the object store bucket")
 	cmd.PersistentFlags().Bool(skipSSLVerifyFlag, false, "if set, SSL verification is disabled for the profile")
 	return cmd
 }
@@ -68,24 +78,37 @@ func newS3CompliantProfileCmd() *cobra.Command {
 		Short: "Create new S3 compliant profile",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return createS3CompliantProfile(cmd, args)
+			return createNewProfile(cmd, args)
 		},
 	}
-	cmd.Flags().StringP(bucketFlag, "b", "", "s3 bucket name")
-	cmd.Flags().StringP(endpointFlag, "e", "", "endpoint URL of the s3 bucket")
-	cmd.Flags().StringP(prefixFlag, "p", "", "prefix URL of the s3 bucket")
-	cmd.Flags().StringP(regionFlag, "r", "", "region of the s3 bucket")
 
-	cmd.Flags().StringP(accessKeyFlag, "a", "", "access key of the s3 compliant bucket")
-	cmd.Flags().StringP(secretKeyFlag, "s", "", "secret key of the s3 compliant bucket")
+	cmd.Flags().StringP(awsAccessKeyFlag, "a", "", "access key of the s3 compliant bucket")
+	cmd.Flags().StringP(awsSecretKeyFlag, "s", "", "secret key of the s3 compliant bucket")
 
-	cmd.MarkFlagRequired(bucketFlag)
-	cmd.MarkFlagRequired(accessKeyFlag)
-	cmd.MarkFlagRequired(secretKeyFlag)
+	cmd.MarkFlagRequired(awsAccessKeyFlag)
+	cmd.MarkFlagRequired(awsSecretKeyFlag)
 	return cmd
 }
 
-func createS3CompliantProfile(cmd *cobra.Command, args []string) error {
+func newGCPProfileCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "gcp",
+		Short: "Create new gcp profile",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return createNewProfile(cmd, args)
+		},
+	}
+
+	cmd.Flags().StringP(gcpProjectIDFlag, "a", "", "Project ID of the google application")
+	cmd.Flags().StringP(gcpServiceKeyFlag, "s", "", "Path to json file containing google application credentials")
+
+	cmd.MarkFlagRequired(gcpProjectIDFlag)
+	cmd.MarkFlagRequired(gcpServiceKeyFlag)
+	return cmd
+}
+
+func createNewProfile(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		return newArgsLengthError("expected 0 args. Got %#v", args)
 	}
@@ -96,13 +119,16 @@ func createS3CompliantProfile(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	s3P, err := getS3CompliantParams(cmd)
+	lP, err := getLocationParams(cmd)
 	if err != nil {
 		return err
 	}
 	cmd.SilenceUsage = true
-	secret := constructSecret(s3P)
-	profile := constructS3CompliantProfile(s3P, secret)
+	secret, err := constructSecret(ctx, lP, cmd)
+	if err != nil {
+		return err
+	}
+	profile := constructProfile(lP, secret)
 	if dryRun {
 		// Just perform schema validation and print YAML
 		if err := validate.ProfileSchema(profile); err != nil {
@@ -129,7 +155,9 @@ func createS3CompliantProfile(cmd *cobra.Command, args []string) error {
 	return createProfile(ctx, profile, crCli)
 }
 
-func getS3CompliantParams(cmd *cobra.Command) (*s3CompliantParams, error) {
+func getLocationParams(cmd *cobra.Command) (*locationParams, error) {
+	var lType v1alpha1.LocationType
+	var profileName string
 	ns, err := resolveNamespace(cmd)
 	if err != nil {
 		return nil, err
@@ -140,35 +168,41 @@ func getS3CompliantParams(cmd *cobra.Command) (*s3CompliantParams, error) {
 	prefix, _ := cmd.Flags().GetString(prefixFlag)
 	region, _ := cmd.Flags().GetString(regionFlag)
 
-	// Secret
-	accessKey, _ := cmd.Flags().GetString(accessKeyFlag)
-	secretKey, _ := cmd.Flags().GetString(secretKeyFlag)
-
+	switch cmd.Name() {
+	case "s3compliant":
+		lType = v1alpha1.LocationTypeS3Compliant
+		profileName = "s3-profile-"
+	case "gcp":
+		lType = v1alpha1.LocationTypeGCS
+		profileName = "gcp-profile-"
+	default:
+		return nil, errors.New("Profile type not supported: " + cmd.Name())
+	}
 	skipSSLVerify, _ := cmd.Flags().GetBool(skipSSLVerifyFlag)
-	return &s3CompliantParams{
+	return &locationParams{
+		locationType:  lType,
+		profileName:   profileName,
 		namespace:     ns,
 		bucket:        bucket,
 		endpoint:      endpoint,
 		prefix:        prefix,
 		region:        region,
-		accessKey:     accessKey,
-		secretKey:     secretKey,
 		skipSSLVerify: skipSSLVerify,
 	}, nil
 }
 
-func constructS3CompliantProfile(s3P *s3CompliantParams, secret *v1.Secret) *v1alpha1.Profile {
+func constructProfile(lP *locationParams, secret *v1.Secret) *v1alpha1.Profile {
 	return &v1alpha1.Profile{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    s3P.namespace,
-			GenerateName: "s3-profile-",
+			Namespace:    lP.namespace,
+			GenerateName: lP.profileName,
 		},
 		Location: v1alpha1.Location{
-			Type:     v1alpha1.LocationTypeS3Compliant,
-			Bucket:   s3P.bucket,
-			Endpoint: s3P.endpoint,
-			Prefix:   s3P.prefix,
-			Region:   s3P.region,
+			Type:     lP.locationType,
+			Bucket:   lP.bucket,
+			Endpoint: lP.endpoint,
+			Prefix:   lP.prefix,
+			Region:   lP.region,
 		},
 		Credential: v1alpha1.Credential{
 			Type: v1alpha1.CredentialTypeKeyPair,
@@ -181,22 +215,39 @@ func constructS3CompliantProfile(s3P *s3CompliantParams, secret *v1.Secret) *v1a
 				},
 			},
 		},
-		SkipSSLVerify: s3P.skipSSLVerify,
+		SkipSSLVerify: lP.skipSSLVerify,
 	}
 }
 
-func constructSecret(s3P *s3CompliantParams) *v1.Secret {
+func constructSecret(ctx context.Context, lP *locationParams, cmd *cobra.Command) (*v1.Secret, error) {
 	data := make(map[string]string, 2)
-	data[idField] = s3P.accessKey
-	data[secretField] = s3P.secretKey
+	secretname := ""
+	switch lP.locationType {
+	case v1alpha1.LocationTypeS3Compliant:
+		accessKey, _ := cmd.Flags().GetString(awsAccessKeyFlag)
+		secretKey, _ := cmd.Flags().GetString(awsSecretKeyFlag)
+		data[idField] = accessKey
+		data[secretField] = secretKey
+		secretname = "s3"
+	case v1alpha1.LocationTypeGCS:
+		projectID, _ := cmd.Flags().GetString(gcpProjectIDFlag)
+		filePath, _ := cmd.Flags().GetString(gcpServiceKeyFlag)
+		serviceKey, err := getServiceKey(ctx, filePath)
+		if err != nil {
+			return nil, err
+		}
+		data[idField] = projectID
+		data[secretField] = serviceKey
+		secretname = "gcp"
+	}
 
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("s3-secret-%s", randString(6)),
-			Namespace: s3P.namespace,
+			Name:      fmt.Sprintf(secretFormat, secretname, randString(6)),
+			Namespace: lP.namespace,
 		},
 		StringData: data,
-	}
+	}, nil
 }
 
 func createSecret(ctx context.Context, s *v1.Secret, cli kubernetes.Interface) (*v1.Secret, error) {
@@ -274,27 +325,29 @@ func validateProfile(ctx context.Context, profile *v1alpha1.Profile, cli kuberne
 		printStage(schemaValidation, pass)
 	}
 
-	for _, d := range []string{regionValidation, readAccessValidation, writeAccessValidation} {
-		if schemaValidationOnly {
-			if !printFailStageOnly {
-				printStage(d, skip)
+	if profile.Location.Bucket != "" {
+		for _, d := range []string{regionValidation, readAccessValidation, writeAccessValidation} {
+			if schemaValidationOnly {
+				if !printFailStageOnly {
+					printStage(d, skip)
+				}
+				continue
 			}
-			continue
-		}
-		switch d {
-		case regionValidation:
-			err = validate.ProfileBucket(ctx, profile)
-		case readAccessValidation:
-			err = validate.ReadAccess(ctx, profile, cli)
-		case writeAccessValidation:
-			err = validate.WriteAccess(ctx, profile, cli)
-		}
-		if err != nil {
-			printStage(d, fail)
-			return err
-		}
-		if !printFailStageOnly {
-			printStage(d, pass)
+			switch d {
+			case regionValidation:
+				err = validate.ProfileBucket(ctx, profile, cli)
+			case readAccessValidation:
+				err = validate.ReadAccess(ctx, profile, cli)
+			case writeAccessValidation:
+				err = validate.WriteAccess(ctx, profile, cli)
+			}
+			if err != nil {
+				printStage(d, fail)
+				return err
+			}
+			if !printFailStageOnly {
+				printStage(d, pass)
+			}
 		}
 	}
 	if !printFailStageOnly {
@@ -330,4 +383,17 @@ func getProfileFromFile(ctx context.Context, filename string) (*v1alpha1.Profile
 		return nil, err
 	}
 	return prof, nil
+}
+
+func getServiceKey(ctx context.Context, filename string) (string, error) {
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	//Parse the service key
+	_, err = google.CredentialsFromJSON(ctx, b, compute.ComputeScope)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }

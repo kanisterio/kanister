@@ -9,8 +9,11 @@ import:
   version: 610b6cacdcde6852f4de68998bd20ce1dac85b22
 - package: github.com/graymeta/stow
   vcs: git
-  version: master
+  version: v0.1.1-kasten
   repo: https://github.com/kastenhq/stow.git
+- package: github.com/IBM/ibmcloud-storage-volume-lib
+  version: f3805379b0af4dd418e2cdb9000f2738c15216ab
+  repo: https://github.com/kastenhq/ibmcloud-storage-volume-lib.git
 - package: github.com/jpillora/backoff
   version: 1.0.0
 - package: github.com/Masterminds/sprig
@@ -24,7 +27,7 @@ import:
   version: rm-k8s-dep
   repo: https://github.com/kastenhq/operator-kit.git
 - package: github.com/satori/go.uuid
-  version: v1.2.0  
+  version: v1.2.0
 - package: github.com/sirupsen/logrus
   version: v1.0.6
 - package: github.com/spf13/cobra
@@ -40,14 +43,14 @@ import:
 - package: gopkg.in/check.v1
   version: 64131543e7896d5bcc6bd5a76287eb75ea96c673
 - package: k8s.io/api
-  version: kubernetes-1.11.2
+  version: kubernetes-1.13.3
 - package: k8s.io/apiextensions-apiserver
-  version: kubernetes-1.11.2
+  version: kubernetes-1.13.3
 - package: k8s.io/apimachinery
-  version: kubernetes-1.11.2
+  version: kubernetes-1.13.3
 - package: k8s.io/client-go
-  version: kubernetes-1.11.2
+  version: kubernetes-1.13.3
 - package: k8s.io/code-generator
-  version: kubernetes-1.11.2
+  version: kubernetes-1.13.3
 - package: k8s.io/gengo
-  version: 906d99f89cd644eecf75ab547b29bf9f876f0b59
+  version: 0689ccc1d7d65d9dd1bedcc3b0b1ed7df91ba266

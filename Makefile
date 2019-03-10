@@ -61,7 +61,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= kanisterio/build:0.13.1-go1.9
+BUILD_IMAGE ?= kanisterio/build:0.13.2-go1.11
 DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
 
 DEFAULT_PATH := /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

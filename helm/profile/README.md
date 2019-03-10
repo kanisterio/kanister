@@ -1,7 +1,7 @@
 # Profile CustomResource
 
 Profile CustomResources (CRs) are used to provide configuration information to
-[Kanister](https://kansiter.io), a framework that enables application-level data
+[Kanister](https://kanister.io), a framework that enables application-level data
 management on Kubernetes.
 
 ## TL;DR;
