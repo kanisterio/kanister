@@ -41,7 +41,7 @@ actions:
       args:
         namespace: "{{ .Deployment.Namespace }}"
         pod: "{{ index .Deployment.Pods 0 }}"
-        image: kanisterio/kanister-tools:0.16.0
+        image: kanisterio/kanister-tools:0.17.0
         backupArtifactPrefix: "{{ .ArtifactsIn.timeLog.KeyValue.path }}"
         backupIdentifier: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
     - func: ScaleWorkload
