@@ -85,7 +85,7 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 html_sidebars = {
     '**': [
@@ -100,11 +100,10 @@ html_sidebars = {
 # documentation.
 #
 html_theme_options = {
-    'show_powered_by': 'false',
-    'description': '',
-    'logo': 'kanister.svg',
-    'logo_name': 'Kanister Logo'
+    'canonical_url': 'https://docs.kanister.io',
 }
+
+html_logo = '_static/kanister-logo.png'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -118,7 +117,7 @@ html_show_sourcelink = False
 html_favicon = "_static/favicon.ico"
 
 html_context = {
-    'css_files': ['_static/custom.css'],
+    'css_files': ['_static/custom_new.css'],
 }
 
 # -- Options for HTMLHelp output ------------------------------------------
