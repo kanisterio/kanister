@@ -105,7 +105,9 @@ func getProviderType(lType crv1alpha1.LocationType) (objectstore.ProviderType, e
 
 func getBucket(ctx context.Context, pType objectstore.ProviderType, profile param.Profile) (objectstore.Bucket, error) {
 	pc := objectstore.ProviderConfig{
-		Type: pType,
+		Type:          pType,
+		Endpoint:      profile.Location.Endpoint,
+		SkipSSLVerify: profile.SkipSSLVerify,
 	}
 	secret, err := getOSSecret(pType, profile.Credential)
 	if err != nil {
