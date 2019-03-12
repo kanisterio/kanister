@@ -1,0 +1,33 @@
+.wy-nav-content {
+    max-width: 1200px !important;
+}
+
+.wy-side-nav-search {
+    background-color: #daebf1;
+}
+
+.wy-side-nav-search>div.version,
+.wy-side-nav-search>a,
+.wy-side-nav-search .wy-dropdown>a {
+    color: #555;
+}
+
+.wy-table-responsive table {
+    width: 100%;
+}
+
+.wy-table-responsive table td,.wy-table-responsive table th {
+    white-space: normal;
+}
+
+.wy-table-responsive table colgroup col {
+    width: auto;
+}
+
+.highlight-yaml span.l.l-Scalar.l-Scalar-Plain {
+    color: #E74C3C;
+}
+
+.highlight-yaml span.p.p-Indicator + span.l.l-Scalar.l-Scalar-Plain {
+    color: inherit;
+}
