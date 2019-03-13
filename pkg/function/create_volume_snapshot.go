@@ -19,6 +19,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	"github.com/kanisterio/kanister/pkg/kube"
+	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -189,7 +190,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
 		// Get Region from PV label or EC2 metadata
-		if pvRegion, ok := pvLabels[kube.PVRegionLabelName]; ok {
+		if pvRegion, ok := pvLabels[kubevolume.PVRegionLabelName]; ok {
 			region = pvRegion
 		} else {
 			region, err = awsebs.GetRegionFromEC2Metadata()
@@ -197,7 +198,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 				return nil, err
 			}
 		}
-		if pvZone, ok := pvLabels[kube.PVZoneLabelName]; ok {
+		if pvZone, ok := pvLabels[kubevolume.PVZoneLabelName]; ok {
 			config[awsebs.ConfigRegion] = region
 			config[awsebs.AccessKeyID] = tp.Profile.Credential.KeyPair.ID
 			config[awsebs.SecretAccessKey] = tp.Profile.Credential.KeyPair.Secret
@@ -215,7 +216,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 		if err = ValidateProfile(tp.Profile, blockstorage.TypeGPD); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
-		if pvZone, ok := pvLabels[kube.PVZoneLabelName]; ok {
+		if pvZone, ok := pvLabels[kubevolume.PVZoneLabelName]; ok {
 			config[blockstorage.GoogleProjectID] = tp.Profile.Credential.KeyPair.ID
 			config[blockstorage.GoogleServiceKey] = tp.Profile.Credential.KeyPair.Secret
 			provider, err = getter.Get(blockstorage.TypeGPD, config)

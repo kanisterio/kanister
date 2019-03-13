@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/kube"
+	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 )
 
 type (
@@ -124,7 +125,7 @@ func nodeZones(ctx context.Context) (map[string]struct{}, error) {
 	}
 	zoneSet := make(map[string]struct{}, len(ns.Items))
 	for _, n := range ns.Items {
-		if v, ok := n.Labels[kube.PVZoneLabelName]; ok {
+		if v, ok := n.Labels[kubevolume.PVZoneLabelName]; ok {
 			zoneSet[v] = struct{}{}
 		}
 	}

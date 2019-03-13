@@ -1,5 +1,5 @@
-hash: 7bde4a309512fa8bc317673f9fb93bdfa24b62df67755afe7d34f96e6ad261f0
-updated: 2019-02-21T23:12:00.943302286Z
+hash: d0cf74cfb00fb63c14f0864b1812e0e4ba0e215fbb9834387152b75e91f04855
+updated: 2019-03-07T21:00:01.993836682Z
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -163,6 +163,15 @@ imports:
   version: 8eab2debe79d12b7bd3d10653910df25fa9552ba
 - name: github.com/json-iterator/go
   version: ab8a2e0c74be9d3be70b3184d9acc634935ded82
+- name: github.com/kubernetes-csi/external-snapshotter
+  version: 0d2cdd7bde5ea9d41ae47ef4184ca20ebe0435e1
+  subpackages:
+  - pkg/apis/volumesnapshot/v1alpha1
+  - pkg/client/clientset/versioned
+  - pkg/client/clientset/versioned/fake
+  - pkg/client/clientset/versioned/scheme
+  - pkg/client/clientset/versioned/typed/volumesnapshot/v1alpha1
+  - pkg/client/clientset/versioned/typed/volumesnapshot/v1alpha1/fake
 - name: github.com/mailru/easyjson
   version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
   subpackages:
@@ -181,6 +190,8 @@ imports:
   version: bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94
 - name: github.com/modern-go/reflect2
   version: 94122c33edd36123c84d5368cfb2b69df93a0ec8
+- name: github.com/pborman/uuid
+  version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
 - name: github.com/peterbourgon/diskv
   version: 5f041e8faa004a95c88a202771f4cc3e991971e6
 - name: github.com/pkg/errors
@@ -366,6 +377,7 @@ imports:
   - pkg/util/runtime
   - pkg/util/sets
   - pkg/util/strategicpatch
+  - pkg/util/uuid
   - pkg/util/validation
   - pkg/util/validation/field
   - pkg/util/wait

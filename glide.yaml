@@ -16,6 +16,8 @@ import:
   repo: https://github.com/kastenhq/ibmcloud-storage-volume-lib.git
 - package: github.com/jpillora/backoff
   version: 1.0.0
+- package: github.com/kubernetes-csi/external-snapshotter
+  version: v1.0.1
 - package: github.com/Masterminds/sprig
   version: v2.15.0
 - package: github.com/mitchellh/mapstructure
