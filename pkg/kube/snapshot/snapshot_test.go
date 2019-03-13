@@ -12,6 +12,7 @@ import (
 	snapshotfake "github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned/fake"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -61,7 +62,10 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 	s.snapCli = sc
 
 	vscs, err := sc.VolumesnapshotV1alpha1().VolumeSnapshotClasses().List(metav1.ListOptions{})
-	c.Assert(err, IsNil)
+	if !k8errors.IsNotFound(err) {
+		c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
+		c.Fail()
+	}
 	if len(vscs.Items) != 0 {
 		s.snapshotClass = &vscs.Items[0].Name
 	}
