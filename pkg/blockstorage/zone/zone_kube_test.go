@@ -4,20 +4,17 @@ package zone
 
 import (
 	"context"
-	"fmt"
 
 	. "gopkg.in/check.v1"
 )
 
-type KubeTestAWSEBSSuite struct{}
+type KubeTestZoneSuite struct{}
 
-var _ = Suite(&KubeTestAWSEBSSuite{})
+var _ = Suite(&KubeTestZoneSuite{})
 
-func (s KubeTestAWSEBSSuite) TestNodeZones(c *C) {
-	// skipping this test since it fails on travis(minikube)
-	c.Skip(fmt.Sprintf("Skipping TestNodeZones"))
+func (s KubeTestZoneSuite) TestNodeZones(c *C) {
 	ctx := context.Background()
-	zones, err := NodeZones(ctx)
+	zones, err := nodeZones(ctx)
 	c.Assert(err, IsNil)
 	c.Assert(zones, Not(HasLen), 0)
 }

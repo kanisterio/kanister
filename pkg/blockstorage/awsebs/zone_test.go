@@ -2,8 +2,11 @@ package awsebs
 
 import (
 	"context"
+	"os"
 
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 )
 
 type ZoneSuite struct{}
@@ -38,12 +41,30 @@ func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
 			out:    "us-west-2a",
 		},
 	} {
-
-		z, err := zoneWithUnknownNodeZones(ctx, tc.region, tc.in)
+		config := getConfigForTest(c, tc.region)
+		provider, err := NewProvider(config)
+		z, err := zone.WithUnknownNodeZones(ctx, provider.(zone.Mapper), tc.region, tc.in)
 		c.Assert(err, IsNil)
 		c.Assert(z, Not(Equals), "")
 		if tc.out != "" {
 			c.Assert(z, Equals, tc.out)
 		}
 	}
+}
+
+func getConfigForTest(c *C, region string) map[string]string {
+	config := make(map[string]string)
+	config[ConfigRegion] = region
+	accessKey, ok := os.LookupEnv(AccessKeyID)
+	if !ok {
+		c.Skip("The necessary env variable AWS_ACCESS_KEY_ID is not set.")
+	}
+	secretAccessKey, ok := os.LookupEnv(SecretAccessKey)
+	if !ok {
+		c.Skip("The necessary env variable AWS_SECRET_ACCESS_KEY is not set.")
+	}
+	config[AccessKeyID] = accessKey
+	config[SecretAccessKey] = secretAccessKey
+
+	return config
 }
