@@ -17,10 +17,12 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 var _ blockstorage.Provider = (*gpdStorage)(nil)
+var _ zone.Mapper = (*gpdStorage)(nil)
 
 type gpdStorage struct {
 	service *compute.Service
@@ -255,7 +257,10 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 			tags[tag.Key] = tag.Value
 		}
 	}
-
+	zone, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
+	if err != nil {
+		return nil, err
+	}
 	createDisk := &compute.Disk{
 		Name:           fmt.Sprintf(volumeNameFmt, uuid.NewV1().String()),
 		SizeGb:         snapshot.Volume.Size,
@@ -264,15 +269,15 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		SourceSnapshot: snap.SelfLink,
 	}
 
-	resp, err := s.service.Disks.Insert(s.project, snapshot.Volume.Az, createDisk).Context(ctx).Do()
+	resp, err := s.service.Disks.Insert(s.project, zone, createDisk).Context(ctx).Do()
 	if err != nil {
 		return nil, err
 	}
-	if err := s.waitOnOperation(ctx, resp, snapshot.Volume.Az); err != nil {
+	if err := s.waitOnOperation(ctx, resp, zone); err != nil {
 		return nil, err
 	}
 
-	return s.VolumeGet(ctx, createDisk.Name, snapshot.Volume.Az)
+	return s.VolumeGet(ctx, createDisk.Name, zone)
 }
 
 func (s *gpdStorage) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
@@ -385,4 +390,123 @@ func isNotFoundError(err error) bool {
 	}
 	ae, ok := err.(*googleapi.Error)
 	return ok && ae.Code == http.StatusNotFound
+}
+
+func (s *gpdStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
+	return staticRegionToZones(region)
+}
+
+func staticRegionToZones(region string) ([]string, error) {
+	switch region {
+	case "asia-east1":
+		return []string{
+			"asia-east1a",
+			"asia-east1b",
+			"asia-east1c",
+		}, nil
+	case "asia-east2":
+		return []string{
+			"asia-east2a",
+			"asia-east2b",
+			"asia-east2c",
+		}, nil
+	case "asia-northeast1":
+		return []string{
+			"asia-northeast1a",
+			"asia-northeast1b",
+			"asia-northeast1c",
+		}, nil
+	case "asia-south1":
+		return []string{
+			"asia-south1a",
+			"asia-south1b",
+			"asia-south1c",
+		}, nil
+	case "asia-southeast1":
+		return []string{
+			"asia-southeast1a",
+			"asia-southeast1b",
+			"asia-southeast1c",
+		}, nil
+	case "australia-southeast1":
+		return []string{
+			"australia-southeast1a",
+			"australia-southeast1b",
+			"australia-southeast1c",
+		}, nil
+	case "europe-north1":
+		return []string{
+			"europe-north1a",
+			"europe-north1b",
+			"europe-north1c",
+		}, nil
+	case "europe-west1":
+		return []string{
+			"europe-west1b",
+			"europe-west1c",
+			"europe-west1d",
+		}, nil
+	case "europe-west2":
+		return []string{
+			"europe-west2a",
+			"europe-west2b",
+			"europe-west2c",
+		}, nil
+	case "europe-west3":
+		return []string{
+			"europe-west3a",
+			"europe-west3b",
+			"europe-west3c",
+		}, nil
+	case "europe-west4":
+		return []string{
+			"europe-west4a",
+			"europe-west4b",
+			"europe-west4c",
+		}, nil
+	case "northamerica-northeast1":
+		return []string{
+			"northamerica-northeast1a",
+			"northamerica-northeast1b",
+			"northamerica-northeast1c",
+		}, nil
+	case "southamerica-east1":
+		return []string{
+			"southamerica-east1",
+			"southamerica-east1b",
+			"southamerica-east1c",
+		}, nil
+	case "us-central1":
+		return []string{
+			"us-central1a",
+			"us-central1b",
+			"us-central1c",
+			"us-central1f",
+		}, nil
+	case "us-east1":
+		return []string{
+			"us-east1b",
+			"us-east1c",
+			"us-east1d",
+		}, nil
+	case "us-east4":
+		return []string{
+			"us-east4a",
+			"us-east4b",
+			"us-east4c",
+		}, nil
+	case "us-west1":
+		return []string{
+			"us-west1a",
+			"us-west1b",
+			"us-west1c",
+		}, nil
+	case "us-west2":
+		return []string{
+			"us-west2a",
+			"us-west2b",
+			"us-west2c",
+		}, nil
+	}
+	return nil, errors.New("cannot get availability zones for region")
 }
