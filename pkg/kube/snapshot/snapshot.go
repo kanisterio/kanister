@@ -65,7 +65,7 @@ func Create(ctx context.Context, kubeCli kubernetes.Interface, snapCli snapshotc
 		return err
 	}
 
-	_, err = snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Get(name, metav1.GetOptions{})
+	_, err = Get(ctx, snapCli, name, namespace)
 	return err
 }
 
@@ -94,7 +94,7 @@ func Delete(ctx context.Context, snapCli snapshotclient.Interface, name, namespa
 // 'cloneNamespace' is the namespace where the clone will be created.
 // 'waitForReady' will make the function blocks until the clone's status is ready to use.
 func Clone(ctx context.Context, snapCli snapshotclient.Interface, name, namespace, cloneName, cloneNamespace string, waitForReady bool) error {
-	snap, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Get(name, metav1.GetOptions{})
+	snap, err := Get(ctx, snapCli, name, namespace)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func Clone(ctx context.Context, snapCli snapshotclient.Interface, name, namespac
 		return errors.Errorf("Original snapshot does not have content, VolumeSnapshot: %s, Namespace: %s", cloneName, cloneNamespace)
 	}
 
-	_, err = snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(cloneNamespace).Get(cloneName, metav1.GetOptions{})
+	_, err = Get(ctx, snapCli, cloneName, cloneNamespace)
 	if err == nil {
 		return errors.Errorf("Target snapshot already exists in target namespace, Volumesnapshot: %s, Namespace: %s", cloneName, cloneNamespace)
 	}
@@ -113,36 +113,93 @@ func Clone(ctx context.Context, snapCli snapshotclient.Interface, name, namespac
 		return errors.Errorf("Failed to query target Volumesnapshot: %s, Namespace: %s: %v", cloneName, cloneNamespace, err)
 	}
 
-	content, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Get(snap.Spec.SnapshotContentName, metav1.GetOptions{})
+	src, err := GetSource(ctx, snapCli, name, namespace)
 	if err != nil {
-		return errors.Errorf("Failed to get original snapshot content, VolumesnapshotContent: %s: %v", snap.Spec.SnapshotContentName, err)
+		return errors.Errorf("Failed to get source")
+	}
+	return CreateFromSource(ctx, snapCli, src, cloneName, cloneNamespace, waitForReady)
+}
+
+// Source represents the CSI source of the Volumesnapshot.
+type Source struct {
+	Handle                  string
+	Driver                  string
+	RestoreSize             *int64
+	VolumeSnapshotClassName *string
+}
+
+// GetSource will return the CSI source that backs the volume snapshot.
+//
+// 'snapshotName' is the name of the Volumesnapshot.
+// 'namespace' is the namespace of the Volumesnapshot.
+func GetSource(ctx context.Context, snapCli snapshotclient.Interface, snapshotName, namespace string) (*Source, error) {
+	snap, err := Get(ctx, snapCli, snapshotName, namespace)
+	if err != nil {
+		return nil, errors.Errorf("Failed to get snapshot, VolumeSnapshot: %s, Error: %v", snapshotName, err)
+	}
+	cont, err := getContent(ctx, snapCli, snap.Spec.SnapshotContentName)
+	if err != nil {
+		return nil, errors.Errorf("Failed to get snapshot content, VolumeSnapshot: %s, VolumeSnapshotContent: %s, Error: %v", snapshotName, snap.Spec.SnapshotContentName, err)
+	}
+	src := &Source{
+		Handle:                  cont.Spec.CSI.SnapshotHandle,
+		Driver:                  cont.Spec.CSI.Driver,
+		RestoreSize:             cont.Spec.CSI.RestoreSize,
+		VolumeSnapshotClassName: cont.Spec.VolumeSnapshotClassName,
+	}
+	return src, nil
+}
+
+// CreateFromSource will create a 'Volumesnapshot' and 'VolumesnaphotContent' pair for the underlying snapshot source.
+//
+// 'source' contains information about CSI snapshot.
+// 'snapshotName' is the name of the snapshot that will be created.
+// 'namespace' is the namespace of the snapshot.
+// 'waitForReady' blocks the caller until snapshot is ready to use or context is cancelled.
+func CreateFromSource(ctx context.Context, snapCli snapshotclient.Interface, source *Source, snapshotName, namespace string, waitForReady bool) error {
+	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
+	content := &snapshot.VolumeSnapshotContent{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: contentName,
+		},
+		Spec: snapshot.VolumeSnapshotContentSpec{
+			VolumeSnapshotSource: snapshot.VolumeSnapshotSource{
+				CSI: &snapshot.CSIVolumeSnapshotSource{
+					Driver:         source.Driver,
+					SnapshotHandle: source.Handle,
+				},
+			},
+			VolumeSnapshotRef: &corev1.ObjectReference{
+				Kind:      snapshotKind,
+				Namespace: namespace,
+				Name:      snapshotName,
+			},
+			VolumeSnapshotClassName: source.VolumeSnapshotClassName,
+		},
+	}
+	snap := &snapshot.VolumeSnapshot{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: snapshotName,
+		},
+		Spec: snapshot.VolumeSnapshotSpec{
+			SnapshotContentName:     content.Name,
+			VolumeSnapshotClassName: content.Spec.VolumeSnapshotClassName,
+		},
 	}
 
-	// Create a 'VolumeSnapshotContent' referenced by a 'VolumeSnapshot' 'cloneName' in namespace 'cloneNamespace'.
-	clonedSnap, clonedContent := cloneSnapshotAndContent(content, cloneName, cloneNamespace)
-
-	// Create cloned VolumeSnapshotContent first, then cloned VolumeSnapshot.
-	// Snapshotter will check the binding and set the status of VolumeSnapshot.
-	_, err = snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Create(clonedContent)
+	content, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Create(content)
 	if err != nil {
-		return errors.Errorf("Failed to create target snapshot content, VolumeSnapshotContent: %s: %v", clonedContent.Name, err)
+		return errors.Errorf("Failed to create content, VolumesnapshotContent: %s, Error: %v", content.Name, err)
 	}
-
-	clonedSnap, err = snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(cloneNamespace).Create(clonedSnap)
+	snap, err = snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Create(snap)
 	if err != nil {
-		return errors.Errorf("Failed to create target snapshot, VolumeSnapshot: %s: %v", clonedSnap.Name, err)
+		return errors.Errorf("Failed to create content, Volumesnapshot: %s, Error: %v", snap.Name, err)
 	}
-
 	if !waitForReady {
 		return nil
 	}
 
-	err = WaitOnReadyToUse(ctx, snapCli, clonedSnap.Name, clonedSnap.Namespace)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return WaitOnReadyToUse(ctx, snapCli, snap.Name, snap.Namespace)
 }
 
 // WaitOnReadyToUse will block until the Volumesnapshot in namespace 'namespace' with name 'snapshotName'
@@ -157,43 +214,6 @@ func WaitOnReadyToUse(ctx context.Context, snapCli snapshotclient.Interface, sna
 	})
 }
 
-// clonedSnapshotAndContent will return a 'VolumeSnapshot' and 'VolumeSnapshotContent' for a snapshot clone.
-// Cloned 'VolumeSnapshotContent' will copy the value for 'Source.CSI.{Driver,SnapshotHandle}'
-// since these are the minimum info for snapshotter to get information from the source.
-// It needs to prepopulate 'VolumeSnapshotRef' field with the values from the 'VolumeSnapshot'
-// that will also be returned.
-func cloneSnapshotAndContent(content *snapshot.VolumeSnapshotContent, clonedName, clonedNamespace string) (*snapshot.VolumeSnapshot, *snapshot.VolumeSnapshotContent) {
-	clonedContent := &snapshot.VolumeSnapshotContent{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: clonedContentName(content.Name),
-		},
-		Spec: snapshot.VolumeSnapshotContentSpec{
-			VolumeSnapshotSource: snapshot.VolumeSnapshotSource{
-				CSI: &snapshot.CSIVolumeSnapshotSource{
-					Driver:         content.Spec.VolumeSnapshotSource.CSI.Driver,
-					SnapshotHandle: content.Spec.VolumeSnapshotSource.CSI.SnapshotHandle,
-				},
-			},
-			VolumeSnapshotRef: &corev1.ObjectReference{
-				Kind:      snapshotKind,
-				Namespace: clonedNamespace,
-				Name:      clonedName,
-			},
-			VolumeSnapshotClassName: content.Spec.VolumeSnapshotClassName,
-		},
-	}
-	clonedSnap := &snapshot.VolumeSnapshot{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: clonedName,
-		},
-		Spec: snapshot.VolumeSnapshotSpec{
-			SnapshotContentName:     clonedContent.Name,
-			VolumeSnapshotClassName: content.Spec.VolumeSnapshotClassName,
-		},
-	}
-	return clonedSnap, clonedContent
-}
-
-func clonedContentName(contentName string) string {
-	return contentName + "-k10clone-" + string(uuid.NewUUID())
+func getContent(ctx context.Context, snapCli snapshotclient.Interface, contentName string) (*snapshot.VolumeSnapshotContent, error) {
+	return snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Get(contentName, metav1.GetOptions{})
 }
