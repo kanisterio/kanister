@@ -2,11 +2,9 @@ package gcepd
 
 import (
 	"context"
-	"os"
 
 	. "gopkg.in/check.v1"
 
-	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 )
 
@@ -42,9 +40,8 @@ func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
 			out:    "us-west2a",
 		},
 	} {
-		config := getConfigForTest(c)
-		provider, err := NewProvider(config)
-		z, err := zone.WithUnknownNodeZones(ctx, provider.(zone.Mapper), tc.region, tc.in)
+		var t = &gcpTest{}
+		z, err := zone.WithUnknownNodeZones(ctx, t, tc.region, tc.in)
 		c.Assert(err, IsNil)
 		c.Assert(z, Not(Equals), "")
 		if tc.out != "" {
@@ -53,12 +50,11 @@ func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
 	}
 }
 
-func getConfigForTest(c *C) map[string]string {
-	config := make(map[string]string)
-	creds, ok := os.LookupEnv(blockstorage.GoogleCloudCreds)
-	if !ok {
-		c.Skip("The necessary env variable GOOGLE_APPLICATION_CREDENTIALS is not set.")
-	}
-	config[blockstorage.GoogleCloudCreds] = creds
-	return config
+var _ zone.Mapper = (*gcpTest)(nil)
+
+type gcpTest struct{}
+
+func (gt *gcpTest) FromRegion(ctx context.Context, region string) ([]string, error) {
+	// Fall back to using a static map.
+	return staticRegionToZones(region)
 }
