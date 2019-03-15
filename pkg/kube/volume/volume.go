@@ -94,7 +94,7 @@ func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, sn
 	}
 	size := snap.Status.RestoreSize
 	if restoreSize != nil {
-		s := resource.MustParse(fmt.Sprintf("%dGi", restoreSize))
+		s := resource.MustParse(fmt.Sprintf("%dGi", *restoreSize))
 		size = &s
 	}
 	if size == nil {

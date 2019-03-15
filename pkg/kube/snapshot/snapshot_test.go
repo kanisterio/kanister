@@ -62,7 +62,7 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 	s.snapCli = sc
 
 	vscs, err := sc.VolumesnapshotV1alpha1().VolumeSnapshotClasses().List(metav1.ListOptions{})
-	if !k8errors.IsNotFound(err) {
+	if err != nil && !k8errors.IsNotFound(err) {
 		c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
 		c.Fail()
 	}
@@ -197,7 +197,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	size, err := resource.ParseQuantity("200Gi")
+	size, err := resource.ParseQuantity("1Gi")
 	c.Assert(err, IsNil)
 
 	pvc := &corev1.PersistentVolumeClaim{
@@ -244,6 +244,19 @@ func (s *SnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	c.Assert(err, IsNil)
 
 	_, err = volume.CreatePVCFromSnapshot(ctx, s.cli, s.snapCli, s.targetNamespace, volumeCloneName, snapshotCloneName, nil)
+	c.Assert(err, IsNil)
+	poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.targetNamespace).Get(volumeCloneName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		return pvc.Status.Phase == corev1.ClaimBound, nil
+	})
+
+	// Try with a greater restore size.
+	sizeNew := 2
+	volumeCloneName += "-2"
+	_, err = volume.CreatePVCFromSnapshot(ctx, s.cli, s.snapCli, s.targetNamespace, volumeCloneName, snapshotCloneName, &sizeNew)
 	c.Assert(err, IsNil)
 	poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.targetNamespace).Get(volumeCloneName, metav1.GetOptions{})
