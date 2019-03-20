@@ -101,6 +101,9 @@ func consistentZone(sourceZone string, nzs map[string]struct{}) (string, error) 
 }
 
 func getZoneSuffixesMatch(zone1, zone2 string) bool {
+	if zone1 == "" || zone2 == "" {
+		return zone1 == zone2
+	}
 	a1 := zone1[len(zone1)-1]
 	a2 := zone2[len(zone2)-1]
 	return a1 == a2
