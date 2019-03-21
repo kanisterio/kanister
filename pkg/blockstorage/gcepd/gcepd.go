@@ -257,7 +257,7 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 			tags[tag.Key] = tag.Value
 		}
 	}
-	zone, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
+	z, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
@@ -269,15 +269,15 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		SourceSnapshot: snap.SelfLink,
 	}
 
-	resp, err := s.service.Disks.Insert(s.project, zone, createDisk).Context(ctx).Do()
+	resp, err := s.service.Disks.Insert(s.project, z, createDisk).Context(ctx).Do()
 	if err != nil {
 		return nil, err
 	}
-	if err := s.waitOnOperation(ctx, resp, zone); err != nil {
+	if err := s.waitOnOperation(ctx, resp, z); err != nil {
 		return nil, err
 	}
 
-	return s.VolumeGet(ctx, createDisk.Name, zone)
+	return s.VolumeGet(ctx, createDisk.Name, z)
 }
 
 func (s *gpdStorage) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {

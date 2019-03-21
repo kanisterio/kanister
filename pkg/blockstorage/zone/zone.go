@@ -23,14 +23,21 @@ type (
 
 // FromSourceRegionZone gets the zones from the given region and sourceZome
 func FromSourceRegionZone(ctx context.Context, m Mapper, region string, sourceZone string) (string, error) {
-	nzs, err := nodeZones(ctx)
-	if err != nil {
-		log.Errorf("Ignoring error getting Node availability zones. Error: %+v", err)
-	}
-	if len(nzs) != 0 {
-		var z string
-		if z, err = getZoneFromKnownNodeZones(ctx, sourceZone, nzs); err == nil && isZoneValid(ctx, m, z, region) {
-			return z, nil
+	cli, err := kube.NewClient()
+	if err == nil {
+		nzs, rs, errzr := nodeZonesAndRegion(ctx, cli)
+		if err != nil {
+			log.Errorf("Ignoring error getting Node availability zones. Error: %+v", errzr)
+		}
+		if len(nzs) != 0 {
+			var z string
+			z, err = getZoneFromKnownNodeZones(ctx, sourceZone, nzs)
+			if err == nil && isZoneValid(ctx, m, z, rs) {
+				return z, nil
+			}
+			if err != nil {
+				log.Errorf("Ignoring error getting Zone from KnownNodeZones. Error: %+v", err)
+			}
 		}
 	}
 	return WithUnknownNodeZones(ctx, m, region, sourceZone)
@@ -113,24 +120,33 @@ const (
 	nodeZonesErr = `Failed to get Node availability zones.`
 )
 
-func nodeZones(ctx context.Context) (map[string]struct{}, error) {
-	cfg, err := kube.LoadConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, nodeZonesErr)
-	}
-	cli, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, nodeZonesErr)
+func nodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[string]struct{}, string, error) {
+	if cli == nil {
+		return nil, "", errors.New(nodeZonesErr)
 	}
 	ns, err := cli.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
-		return nil, errors.Wrap(err, nodeZonesErr)
+		return nil, "", errors.Wrap(err, nodeZonesErr)
 	}
 	zoneSet := make(map[string]struct{}, len(ns.Items))
+	regionSet := make(map[string]struct{})
 	for _, n := range ns.Items {
 		if v, ok := n.Labels[kubevolume.PVZoneLabelName]; ok {
 			zoneSet[v] = struct{}{}
 		}
+		if v, ok := n.Labels[kubevolume.PVRegionLabelName]; ok {
+			regionSet[v] = struct{}{}
+		}
 	}
-	return zoneSet, nil
+	if len(regionSet) > 1 {
+		return nil, "", errors.New("Multiple failure domain regions found")
+	}
+	if len(regionSet) == 0 {
+		return nil, "", errors.New("No failure domain regions found")
+	}
+	var region []string
+	for r := range regionSet {
+		region = append(region, r)
+	}
+	return zoneSet, region[0], nil
 }
