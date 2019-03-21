@@ -21,23 +21,23 @@ func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
 	}{
 		{
 			region: "us-west2",
-			in:     "us-west2a",
-			out:    "us-west2a",
+			in:     "us-west2-a",
+			out:    "us-west2-a",
 		},
 		{
 			region: "us-west2",
-			in:     "us-east1f",
-			out:    "us-west2a",
+			in:     "us-east1-f",
+			out:    "us-west2-a",
 		},
 		{
 			region: "us-west2",
-			in:     "us-east2b",
-			out:    "us-west2b",
+			in:     "us-east2-b",
+			out:    "us-west2-b",
 		},
 		{
 			region: "us-west2",
-			in:     "us-east1f",
-			out:    "us-west2a",
+			in:     "us-east1-f",
+			out:    "us-west2-a",
 		},
 	} {
 		var t = &gcpTest{}
