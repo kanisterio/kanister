@@ -51,10 +51,18 @@ func InitCommand(profile *param.Profile, repository, encryptionKey string) []str
 	return shCommand(command)
 }
 
-// ForgetCommand returns restic forget command
-func ForgetCommand(profile *param.Profile, repository, encryptionKey string) []string {
+// ForgetCommandByTag returns restic forget command
+func ForgetCommandByTag(profile *param.Profile, repository, tag, encryptionKey string) []string {
 	cmd := resticArgs(profile, repository, encryptionKey)
-	cmd = append(cmd, "forget")
+	cmd = append(cmd, "forget", "--tag", tag, "--prune")
+	command := strings.Join(cmd, " ")
+	return shCommand(command)
+}
+
+// ForgetCommandByID returns restic forget command
+func ForgetCommandByID(profile *param.Profile, repository, id, encryptionKey string) []string {
+	cmd := resticArgs(profile, repository, encryptionKey)
+	cmd = append(cmd, "forget", id, "--prune")
 	command := strings.Join(cmd, " ")
 	return shCommand(command)
 }
