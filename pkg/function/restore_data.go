@@ -102,7 +102,7 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 		return nil, err
 	}
 	// Generate restore command
-	cmd := restic.RestoreCommand(tp.Profile, backupArtifactPrefix, backupIdentifier, restorePath, encryptionKey)
+	cmd := restic.RestoreCommandByTag(tp.Profile, backupArtifactPrefix, backupIdentifier, restorePath, encryptionKey)
 	if len(vols) == 0 {
 		// Fetch Volumes
 		vols, err = fetchPodVolumes(pod, tp)

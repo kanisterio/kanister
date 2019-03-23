@@ -26,12 +26,19 @@ func BackupCommand(profile *param.Profile, repository, id, includePath, encrypti
 	return shCommand(command)
 }
 
-// RestoreCommand returns restic restore command
-func RestoreCommand(profile *param.Profile, repository, id, restorePath, encryptionKey string) []string {
+// RestoreCommandByID returns restic restore command with snapshotID as the identifier
+func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, encryptionKey string) []string {
 	cmd := resticArgs(profile, repository, encryptionKey)
-	cmd = append(cmd, "restore")
+	cmd = append(cmd, "restore", id, "--target", restorePath)
 	command := strings.Join(cmd, " ")
-	command = fmt.Sprintf("%s --tag %s latest --target %s", command, id, restorePath)
+	return shCommand(command)
+}
+
+// RestoreCommandByTag returns restic restore command with tag as the identifier
+func RestoreCommandByTag(profile *param.Profile, repository, tag, restorePath, encryptionKey string) []string {
+	cmd := resticArgs(profile, repository, encryptionKey)
+	cmd = append(cmd, "restore", "--tag", tag, "latest", "--target", restorePath)
+	command := strings.Join(cmd, " ")
 	return shCommand(command)
 }
 
