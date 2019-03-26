@@ -1,5 +1,5 @@
-hash: d0cf74cfb00fb63c14f0864b1812e0e4ba0e215fbb9834387152b75e91f04855
-updated: 2019-03-07T21:00:01.993836682Z
+hash: 9033384f4649a0a5a01a355335d190965d457530bfce30100a60f283b9f4f38a
+updated: 2019-03-26T18:56:29.5746592Z
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -64,7 +64,7 @@ imports:
   - logger
   - version
 - name: github.com/BurntSushi/toml
-  version: bbd5bb678321a0d6e58f1099321dfa73391c1b6f
+  version: 3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
@@ -221,6 +221,23 @@ imports:
   version: 583c0c0531f06d5278b7d917446061adc344b5cd
 - name: github.com/stretchr/testify
   version: f35b8ab0b5a2cef36673838d662e249dd9c94686
+- name: go.opencensus.io
+  version: 5ae9166f90ff989c557e45fcb9592ac59afa0fa0
+  subpackages:
+  - internal
+  - internal/tagencoding
+  - metric/metricdata
+  - plugin/ochttp
+  - plugin/ochttp/propagation/b3
+  - resource
+  - stats
+  - stats/internal
+  - stats/view
+  - tag
+  - trace
+  - trace/internal
+  - trace/propagation
+  - trace/tracestate
 - name: go.uber.org/atomic
   version: 8dc6146f7569370a472715e178d8ae31172ee6da
 - name: go.uber.org/multierr
@@ -247,7 +264,9 @@ imports:
   - http2
   - http2/hpack
   - idna
+  - internal/timeseries
   - lex/httplex
+  - trace
 - name: golang.org/x/oauth2
   version: d668ce993890a79bda886613ee587a69dd5da7a6
   subpackages:
@@ -256,7 +275,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sys
-  version: 95c6576299259db960f6c5b9b69ea52422860fce
+  version: 98c5dad5d1a0e8a73845ecc8897d0bd56586511d
   subpackages:
   - unix
 - name: golang.org/x/text
@@ -275,13 +294,51 @@ imports:
   subpackages:
   - rate
 - name: google.golang.org/api
-  version: f5fa6a3eed6362c07f4e2e4425faeab907a041bd
+  version: bce707a4d0ea3488942724b3bcc1c8338f38f991
   subpackages:
   - compute/v1
   - gensupport
   - googleapi
   - googleapi/internal/uritemplates
+  - googleapi/transport
+  - internal
+  - option
   - storage/v1
+  - transport/http
+  - transport/http/internal/propagation
+- name: google.golang.org/genproto
+  version: 09f6ed296fc66555a25fe4ce95173148778dfa85
+  subpackages:
+  - googleapis/rpc/status
+- name: google.golang.org/grpc
+  version: 168a6198bcb0ef175f7dacec0b8691fc141dc9b8
+  subpackages:
+  - balancer
+  - balancer/base
+  - balancer/roundrobin
+  - codes
+  - connectivity
+  - credentials
+  - encoding
+  - encoding/proto
+  - grpclog
+  - health
+  - health/grpc_health_v1
+  - internal
+  - internal/backoff
+  - internal/channelz
+  - internal/grpcrand
+  - keepalive
+  - metadata
+  - naming
+  - peer
+  - resolver
+  - resolver/dns
+  - resolver/passthrough
+  - stats
+  - status
+  - tap
+  - transport
 - name: gopkg.in/check.v1
   version: 64131543e7896d5bcc6bd5a76287eb75ea96c673
 - name: gopkg.in/inf.v0
