@@ -11,10 +11,8 @@ import (
 )
 
 const (
-	// DeleteDataNamespaceArg provides the namespace
-	DeleteDataNamespaceArg = "namespace"
-	// DeleteDataArtifactArg provides the path to the artifacts on the object store
-	DeleteDataArtifactArg = "artifact"
+	// LocationDeleteArtifactArg provides the path to the artifacts on the object store
+	LocationDeleteArtifactArg = "artifact"
 )
 
 func init() {
@@ -26,16 +24,13 @@ var _ kanister.Func = (*deleteDataFunc)(nil)
 type deleteDataFunc struct{}
 
 func (*deleteDataFunc) Name() string {
-	return "DeleteData"
+	return "LocationDelete"
 }
 
 func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var artifact, namespace string
+	var artifact string
 	var err error
-	if err = Arg(args, DeleteDataArtifactArg, &artifact); err != nil {
-		return nil, err
-	}
-	if err = OptArg(args, DeleteDataNamespaceArg, &namespace, ""); err != nil {
+	if err = Arg(args, LocationDeleteArtifactArg, &artifact); err != nil {
 		return nil, err
 	}
 	// Validate the Profile
@@ -47,5 +42,5 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 }
 
 func (*deleteDataFunc) RequiredArgs() []string {
-	return []string{DeleteDataArtifactArg}
+	return []string{LocationDeleteArtifactArg}
 }

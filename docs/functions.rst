@@ -403,8 +403,8 @@ If the ActionSet `Object` is a PersistentVolumeClaim:
       volume: "{{ .PVC.Name }}"
       dataArtifactPrefix: s3-bucket-name/path
 
-DeleteData
-----------
+LocationDelete
+--------------
 
 This function uses a new Pod to delete the specified artifact
 from an S3 compatible object store.
@@ -414,7 +414,6 @@ from an S3 compatible object store.
    :align: left
    :widths: 5,5,5,15
 
-   `namespace`, No, `string`, namespace in which to execute
    `artifact`, Yes, `string`, artifact to be deleted from the object store
 
 .. note::
@@ -427,10 +426,9 @@ Example:
 .. code-block:: yaml
   :linenos:
 
-  - func: DeleteData
-    name: DeleteFromObjectStore
+  - func: LocationDelete
+    name: LocationDeleteFromObjectStore
     args:
-      namespace: "{{ .Deployment.Namespace }}"
       artifact: s3://bucket/path/artifact
 
 .. _createvolumesnapshot:
