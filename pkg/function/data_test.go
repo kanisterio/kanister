@@ -254,6 +254,19 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 					},
 				},
 			},
+			"delete": &crv1alpha1.BlueprintAction{
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testDelete",
+						Func: "DeleteData",
+						Args: map[string]interface{}{
+							DeleteDataNamespaceArg:            "{{ .PVC.Namespace }}",
+							DeleteDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
+							DeleteDataBackupIdentifierArg:     fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupID),
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -289,6 +302,8 @@ func (s *DataSuite) TestCopyData(c *C) {
 	_ = runAction(c, bp, "restore", tp)
 	// Validate file exists on this new PVC
 	_ = runAction(c, bp, "checkfile", tp)
+	// Delete data from copy
+	_ = runAction(c, bp, "delete", tp)
 }
 
 func runAction(c *C, bp crv1alpha1.Blueprint, action string, tp *param.TemplateParams) map[string]interface{} {

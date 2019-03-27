@@ -16,18 +16,18 @@ const (
 )
 
 func init() {
-	kanister.Register(&deleteDataFunc{})
+	kanister.Register(&locationDeleteFunc{})
 }
 
-var _ kanister.Func = (*deleteDataFunc)(nil)
+var _ kanister.Func = (*locationDeleteFunc)(nil)
 
-type deleteDataFunc struct{}
+type locationDeleteFunc struct{}
 
-func (*deleteDataFunc) Name() string {
+func (*locationDeleteFunc) Name() string {
 	return "LocationDelete"
 }
 
-func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (*locationDeleteFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var artifact string
 	var err error
 	if err = Arg(args, LocationDeleteArtifactArg, &artifact); err != nil {
@@ -41,6 +41,6 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	return nil, location.Delete(ctx, *tp.Profile, artifact)
 }
 
-func (*deleteDataFunc) RequiredArgs() []string {
+func (*locationDeleteFunc) RequiredArgs() []string {
 	return []string{LocationDeleteArtifactArg}
 }
