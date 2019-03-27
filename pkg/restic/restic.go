@@ -14,15 +14,22 @@ import (
 )
 
 func shCommand(command string) []string {
-	return []string{"sh", "-o", "errexit", "-o", "pipefail", "-c", command}
+	return []string{"bash", "-o", "errexit", "-o", "pipefail", "-c", command}
 }
 
-// BackupCommand returns restic backup command
-func BackupCommand(profile *param.Profile, repository, id, includePath, encryptionKey string) []string {
+// BackupCommandByID returns restic backup command
+func BackupCommandByID(profile *param.Profile, repository, pathToBackup, encryptionKey string) []string {
 	cmd := resticArgs(profile, repository, encryptionKey)
-	cmd = append(cmd, "backup")
+	cmd = append(cmd, "backup", pathToBackup)
 	command := strings.Join(cmd, " ")
-	command = fmt.Sprintf("%s --tag %s %s", command, id, includePath)
+	return shCommand(command)
+}
+
+// BackupCommandByTag returns restic backup command with tag
+func BackupCommandByTag(profile *param.Profile, repository, backupTag, includePath, encryptionKey string) []string {
+	cmd := resticArgs(profile, repository, encryptionKey)
+	cmd = append(cmd, "backup", "--tag", backupTag, includePath)
+	command := strings.Join(cmd, " ")
 	return shCommand(command)
 }
 
@@ -61,7 +68,7 @@ func InitCommand(profile *param.Profile, repository, encryptionKey string) []str
 // ForgetCommandByTag returns restic forget command
 func ForgetCommandByTag(profile *param.Profile, repository, tag, encryptionKey string) []string {
 	cmd := resticArgs(profile, repository, encryptionKey)
-	cmd = append(cmd, "forget", "--tag", tag, "--prune")
+	cmd = append(cmd, "forget", "--tag", tag)
 	command := strings.Join(cmd, " ")
 	return shCommand(command)
 }
@@ -69,7 +76,7 @@ func ForgetCommandByTag(profile *param.Profile, repository, tag, encryptionKey s
 // ForgetCommandByID returns restic forget command
 func ForgetCommandByID(profile *param.Profile, repository, id, encryptionKey string) []string {
 	cmd := resticArgs(profile, repository, encryptionKey)
-	cmd = append(cmd, "forget", id, "--prune")
+	cmd = append(cmd, "forget", id)
 	command := strings.Join(cmd, " ")
 	return shCommand(command)
 }

@@ -64,12 +64,10 @@ func (s *DataSuite) TearDownSuite(c *C) {
 	}
 }
 
-const actionName = "backupAndRestore"
-
 func newRestoreDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			actionName: &crv1alpha1.BlueprintAction{
+			"restore": &crv1alpha1.BlueprintAction{
 				Kind: param.StatefulSetKind,
 				SecretNames: []string{
 					"backupKey",
@@ -83,7 +81,7 @@ func newRestoreDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 							RestoreDataImageArg:                "kanisterio/kanister-tools:0.18.0",
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataRestorePathArg:          "/mnt/data",
-							RestoreDataBackupIdentifierArg:     "{{ .Time }}",
+							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", BackupDataOutputBackupTag),
 							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
 							RestoreDataVolsArg: map[string]string{
 								pvc: "/mnt/data",
@@ -99,7 +97,7 @@ func newRestoreDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			actionName: &crv1alpha1.BlueprintAction{
+			"backup": &crv1alpha1.BlueprintAction{
 				Kind: param.StatefulSetKind,
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
@@ -111,7 +109,6 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 							BackupDataContainerArg:            "{{ index .StatefulSet.Containers 0 0 }}",
 							BackupDataIncludePathArg:          "/etc",
 							BackupDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
-							BackupDataBackupIdentifierArg:     "{{ .Time }}",
 							BackupDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
 						},
 					},
@@ -173,20 +170,21 @@ func (s *DataSuite) TestBackupRestoreData(c *C) {
 	}
 	tp.Profile = testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeS3, location)
 
-	for _, bp := range []crv1alpha1.Blueprint{
-		*newBackupDataBlueprint(),
-		*newRestoreDataBlueprint(pvc.GetName()),
-	} {
-		phases, err := kanister.GetPhases(bp, actionName, *tp)
-		c.Assert(err, IsNil)
-		for _, p := range phases {
-			out, err := p.Exec(context.Background(), bp, actionName, *tp)
-			if out != nil {
-				c.Assert(out["snapshotID"], NotNil)
-			}
-			c.Assert(err, IsNil)
-		}
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	options := map[string]string{
+		BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
+		BackupDataOutputBackupTag: out[BackupDataOutputBackupTag].(string),
 	}
+	tp.Options = options
+
+	// Test restore
+	bp = *newRestoreDataBlueprint(pvc.GetName())
+	_ = runAction(c, bp, "restore", tp)
 }
 
 func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
@@ -231,7 +229,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
 							RestoreDataImageArg:                "kanisterio/kanister-tools:0.18.0",
 							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
-							RestoreDataBackupIdentifierArg:     fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupID),
+							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupTag),
 							RestoreDataVolsArg: map[string]string{
 								"{{ .PVC.Name }}": fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupRoot),
 							},
@@ -275,10 +273,12 @@ func (s *DataSuite) TestCopyData(c *C) {
 	c.Assert(out[CopyVolumeDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out[CopyVolumeDataOutputBackupRoot].(string), Not(Equals), "")
 	c.Assert(out[CopyVolumeDataOutputBackupArtifactLocation].(string), Not(Equals), "")
+	c.Assert(out[CopyVolumeDataOutputBackupTag].(string), Not(Equals), "")
 	options := map[string]string{
 		CopyVolumeDataOutputBackupID:               out[CopyVolumeDataOutputBackupID].(string),
 		CopyVolumeDataOutputBackupRoot:             out[CopyVolumeDataOutputBackupRoot].(string),
 		CopyVolumeDataOutputBackupArtifactLocation: out[CopyVolumeDataOutputBackupArtifactLocation].(string),
+		CopyVolumeDataOutputBackupTag:              out[CopyVolumeDataOutputBackupTag].(string),
 	}
 
 	// Create a new PVC

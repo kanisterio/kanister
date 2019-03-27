@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -25,10 +26,12 @@ const (
 	BackupDataIncludePathArg = "includePath"
 	// BackupDataBackupArtifactPrefixArg provides the path to store artifacts on the object store
 	BackupDataBackupArtifactPrefixArg = "backupArtifactPrefix"
-	// BackupDataBackupIdentifierArg provides a unique ID added to the artifacts
-	BackupDataBackupIdentifierArg = "backupIdentifier"
 	// BackupDataEncryptionKeyArg provides the encryption key to be used for backups
 	BackupDataEncryptionKeyArg = "encryptionKey"
+	// BackupDataOutputBackupID is the key used for returning backup ID output
+	BackupDataOutputBackupID = "backupID"
+	// BackupDataOutputBackupTag is the key used for returning backupTag output
+	BackupDataOutputBackupTag = "backupTag"
 )
 
 func init() {
@@ -70,7 +73,7 @@ func getSnapshotIDFromLog(output string) string {
 }
 
 func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var namespace, pod, container, includePath, backupArtifactPrefix, backupIdentifier, encryptionKey string
+	var namespace, pod, container, includePath, backupArtifactPrefix, encryptionKey string
 	var err error
 	if err = Arg(args, BackupDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -85,9 +88,6 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		return nil, err
 	}
 	if err = Arg(args, BackupDataBackupArtifactPrefixArg, &backupArtifactPrefix); err != nil {
-		return nil, err
-	}
-	if err = Arg(args, BackupDataBackupIdentifierArg, &backupIdentifier); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, BackupDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
@@ -107,7 +107,8 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	}
 
 	// Create backup and dump it on the object store
-	cmd := restic.BackupCommand(tp.Profile, backupArtifactPrefix, backupIdentifier, includePath, encryptionKey)
+	backupTag := rand.String(10)
+	cmd := restic.BackupCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, includePath, encryptionKey)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
@@ -115,13 +116,18 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		return nil, errors.Wrapf(err, "Failed to create and upload backup")
 	}
 	// Get the snapshot ID from log
-	if snapID := getSnapshotIDFromLog(stdout); snapID != "" {
-		return map[string]interface{}{"snapshotID": snapID}, nil
+	backupID := getSnapshotIDFromLog(stdout)
+	if backupID == "" {
+		return nil, errors.New("Failed to parse the backup ID from logs")
 	}
-	return nil, nil
+	output := map[string]interface{}{
+		BackupDataOutputBackupID:  backupID,
+		BackupDataOutputBackupTag: backupTag,
+	}
+	return output, nil
 }
 
 func (*backupDataFunc) RequiredArgs() []string {
 	return []string{BackupDataNamespaceArg, BackupDataPodArg, BackupDataContainerArg,
-		BackupDataIncludePathArg, BackupDataBackupArtifactPrefixArg, BackupDataBackupIdentifierArg}
+		BackupDataIncludePathArg, BackupDataBackupArtifactPrefixArg}
 }

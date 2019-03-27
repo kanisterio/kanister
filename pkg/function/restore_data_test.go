@@ -96,22 +96,42 @@ func (s *RestoreDataTestSuite) TestFetchPodVolumesTest(c *C) {
 	}
 }
 
-func (s *RestoreDataTestSuite) TestValidateOptArgs(c *C) {
+func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 	testCases := []struct {
 		name       string
-		pod        string
-		vols       map[string]string
+		args       map[string]interface{}
 		errChecker Checker
 	}{
-		{"Pod with nil Vols", "some-pod", nil, IsNil},
-		{"Pod with empty Vols", "some-pod", map[string]string{}, IsNil},
-		{"Vols with empty Pod", "", map[string]string{"pvc": "mount"}, IsNil},
-		{"Empty Pod and Vols", "", map[string]string{}, NotNil},
-		{"Empty Pod and nil Vols", "", nil, NotNil},
-		{"Pod with Vols", "some-pod", map[string]string{"pvc": "mount"}, NotNil},
+		{
+			name: "Args with Pod",
+			args: map[string]interface{}{
+				RestoreDataPodArg: "some-pod",
+			},
+			errChecker: IsNil,
+		},
+		{
+			name: "Args with Vols",
+			args: map[string]interface{}{
+				RestoreDataVolsArg: map[string]string{"pvc": "mount"},
+			},
+			errChecker: IsNil,
+		},
+		{
+			name: "Args with Pod and Vols",
+			args: map[string]interface{}{
+				RestoreDataPodArg:  "some-pod",
+				RestoreDataVolsArg: map[string]string{"pvc": "mount"},
+			},
+			errChecker: NotNil,
+		},
+		{
+			name:       "Empty Args",
+			args:       map[string]interface{}{},
+			errChecker: NotNil,
+		},
 	}
 	for _, tc := range testCases {
-		err := validateOptArgs(tc.pod, tc.vols)
-		c.Check(err, tc.errChecker, Commentf("Test: %s Failed!", tc.name))
+		_, _, _, _, err := validateAndGetOptArgs(tc.args)
+		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
 	}
 }

@@ -27,6 +27,7 @@ const (
 	CopyVolumeDataOutputBackupRoot             = "backupRoot"
 	CopyVolumeDataOutputBackupArtifactLocation = "backupArtifactLocation"
 	CopyVolumeDataEncryptionKeyArg             = "encryptionKey"
+	CopyVolumeDataOutputBackupTag              = "backupTag"
 )
 
 func init() {
@@ -71,18 +72,24 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 	}
 
 	// Copy data to object store
-	backupIdentifier := rand.String(10)
-	cmd := restic.BackupCommand(tp.Profile, targetPath, backupIdentifier, mountPoint, encryptionKey)
+	backupTag := rand.String(10)
+	cmd := restic.BackupCommandByTag(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd)
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create and upload backup")
 	}
+	// Get the snapshot ID from log
+	backupID := getSnapshotIDFromLog(stdout)
+	if backupID == "" {
+		return nil, errors.New("Failed to parse the backup ID from logs")
+	}
 	return map[string]interface{}{
-			CopyVolumeDataOutputBackupID:               backupIdentifier,
+			CopyVolumeDataOutputBackupID:               backupID,
 			CopyVolumeDataOutputBackupRoot:             mountPoint,
 			CopyVolumeDataOutputBackupArtifactLocation: targetPath,
+			CopyVolumeDataOutputBackupTag:              backupTag,
 		},
 		nil
 }
