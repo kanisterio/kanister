@@ -432,6 +432,37 @@ If the ActionSet `Object` is a PersistentVolumeClaim:
       volume: "{{ .PVC.Name }}"
       dataArtifactPrefix: s3-bucket-name/path
 
+DeleteData
+----------
+
+This function deletes the snapshot data backed up by the BackupData function.
+
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `backupArtifactPrefix`, Yes, `string`, path to the backup on the object store
+   `backupTag`, Yes, `string`, unique tag added during the backup
+
+Example:
+
+Consider a scenario where you wish to delete the data backed up by the
+:ref:`backupdata` function.
+For this phase, we will use the `backupInfo` Artifact provided by backup function.
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: DeleteData
+    name: DeleteFromObjectStore
+    args:
+      namespace: "{{ .Namespace.Name }}"
+      backupArtifactPrefix: s3-bucket/path/artifactPrefix
+      backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
+
 LocationDelete
 --------------
 
