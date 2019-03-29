@@ -57,6 +57,14 @@ func SnapshotsCommand(profile *param.Profile, repository, encryptionKey string) 
 	return shCommand(command)
 }
 
+// SnapshotsCommandByTag returns restic snapshots command
+func SnapshotsCommandByTag(profile *param.Profile, repository, tag, encryptionKey string) []string {
+	cmd := resticArgs(profile, repository, encryptionKey)
+	cmd = append(cmd, "snapshots", "--tag", tag, "--json")
+	command := strings.Join(cmd, " ")
+	return shCommand(command)
+}
+
 // InitCommand returns restic init command
 func InitCommand(profile *param.Profile, repository, encryptionKey string) []string {
 	cmd := resticArgs(profile, repository, encryptionKey)

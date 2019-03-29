@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/pkg/errors"
 
@@ -84,27 +85,36 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if (deleteIdentifier != "") == (deleteTag != "") {
 		return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
 	}
-	var cmd []string
-	if deleteIdentifier != "" {
-		cmd = restic.ForgetCommandByID(tp.Profile, deleteArtifactPrefix, deleteIdentifier, encryptionKey)
-	}
 	if deleteTag != "" {
-		cmd = restic.ForgetCommandByTag(tp.Profile, deleteArtifactPrefix, deleteTag, encryptionKey)
+		cmd := restic.SnapshotsCommandByTag(tp.Profile, deleteArtifactPrefix, deleteTag, encryptionKey)
+		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd)
+		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
+		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
+		}
+		deleteIdentifier, err = GetSnapshotIDFromLog(stdout)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
+		}
 	}
-	stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd)
-	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to forget data")
+	if deleteIdentifier != "" {
+		cmd := restic.ForgetCommandByID(tp.Profile, deleteArtifactPrefix, deleteIdentifier, encryptionKey)
+		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd)
+		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
+		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to forget data")
+		}
 	}
 
 	if reclaimSpace {
-		cmdP := restic.PruneCommand(tp.Profile, deleteArtifactPrefix, encryptionKey)
-		stdoutP, stderrP, errP := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmdP)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdoutP)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderrP)
+		cmd := restic.PruneCommand(tp.Profile, deleteArtifactPrefix, encryptionKey)
+		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd)
+		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
+		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 		if err != nil {
-			return nil, errors.Wrapf(errP, "Failed to prune data after forget")
+			return nil, errors.Wrapf(err, "Failed to prune data after forget")
 		}
 	}
 	return nil, nil
@@ -112,4 +122,18 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 
 func (*deleteDataFunc) RequiredArgs() []string {
 	return []string{DeleteDataNamespaceArg, DeleteDataBackupArtifactPrefixArg}
+}
+
+// GetSnapshotIDFromLog gets the SnapshotID from log
+func GetSnapshotIDFromLog(output string) (string, error) {
+	var result []map[string]interface{}
+	err := json.Unmarshal([]byte(output), &result)
+	if err != nil {
+		return "", errors.WithMessage(err, "Failed to unmarshall output from snapshotCommand")
+	}
+	if len(result) != 1 {
+		return "", errors.New("Snapshot not found")
+	}
+	snapId := result[0]["short_id"]
+	return snapId.(string), nil
 }
