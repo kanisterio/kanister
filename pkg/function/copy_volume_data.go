@@ -81,7 +81,7 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 		return nil, errors.Wrapf(err, "Failed to create and upload backup")
 	}
 	// Get the snapshot ID from log
-	backupID := getSnapshotIDFromLog(stdout)
+	backupID := restic.SnapshotIDFromBackupLog(stdout)
 	if backupID == "" {
 		return nil, errors.New("Failed to parse the backup ID from logs")
 	}

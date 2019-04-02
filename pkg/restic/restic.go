@@ -1,7 +1,9 @@
 package restic
 
 import (
+	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -134,4 +136,35 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	return errors.Wrapf(err, "Failed to create object store backup location")
+}
+
+// SnapshotIDFromSnapshotLog gets the SnapshotID from Snapshot Command log
+func SnapshotIDFromSnapshotLog(output string) (string, error) {
+	var result []map[string]interface{}
+	err := json.Unmarshal([]byte(output), &result)
+	if err != nil {
+		return "", errors.WithMessage(err, "Failed to unmarshall output from snapshotCommand")
+	}
+	if len(result) != 1 {
+		return "", errors.New("Snapshot not found")
+	}
+	snapId := result[0]["short_id"]
+	return snapId.(string), nil
+}
+
+// SnapshotIDFromBackupLog gets the SnapshotID from Backup Command log
+func SnapshotIDFromBackupLog(output string) string {
+	if output == "" {
+		return ""
+	}
+	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	for _, l := range logs {
+		// Log should contain "snapshot ABC123 saved"
+		pattern := regexp.MustCompile(`snapshot\s(.*?)\ssaved$`)
+		match := pattern.FindAllStringSubmatch(l, 1)
+		if match != nil {
+			return match[0][1]
+		}
+	}
+	return ""
 }

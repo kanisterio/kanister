@@ -2,7 +2,6 @@ package function
 
 import (
 	"context"
-	"regexp"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -56,22 +55,6 @@ func validateProfile(profile *param.Profile) error {
 	return nil
 }
 
-func getSnapshotIDFromLog(output string) string {
-	if output == "" {
-		return ""
-	}
-	logs := regexp.MustCompile("[\n]").Split(output, -1)
-	for _, l := range logs {
-		// Log should contain "snapshot ABC123 saved"
-		pattern := regexp.MustCompile(`snapshot\s(.*?)\ssaved$`)
-		match := pattern.FindAllStringSubmatch(l, 1)
-		if match != nil {
-			return match[0][1]
-		}
-	}
-	return ""
-}
-
 func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, pod, container, includePath, backupArtifactPrefix, encryptionKey string
 	var err error
@@ -116,7 +99,7 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		return nil, errors.Wrapf(err, "Failed to create and upload backup")
 	}
 	// Get the snapshot ID from log
-	backupID := getSnapshotIDFromLog(stdout)
+	backupID := restic.SnapshotIDFromBackupLog(stdout)
 	if backupID == "" {
 		return nil, errors.New("Failed to parse the backup ID from logs")
 	}

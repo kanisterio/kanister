@@ -2,7 +2,6 @@ package function
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/pkg/errors"
 
@@ -93,7 +92,7 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
 		}
-		deleteIdentifier, err = GetSnapshotIDFromLog(stdout)
+		deleteIdentifier, err = restic.SnapshotIDFromSnapshotLog(stdout)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
 		}
@@ -122,18 +121,4 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 
 func (*deleteDataFunc) RequiredArgs() []string {
 	return []string{DeleteDataNamespaceArg, DeleteDataBackupArtifactPrefixArg}
-}
-
-// GetSnapshotIDFromLog gets the SnapshotID from log
-func GetSnapshotIDFromLog(output string) (string, error) {
-	var result []map[string]interface{}
-	err := json.Unmarshal([]byte(output), &result)
-	if err != nil {
-		return "", errors.WithMessage(err, "Failed to unmarshall output from snapshotCommand")
-	}
-	if len(result) != 1 {
-		return "", errors.New("Snapshot not found")
-	}
-	snapId := result[0]["short_id"]
-	return snapId.(string), nil
 }

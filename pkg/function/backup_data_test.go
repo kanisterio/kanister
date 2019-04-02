@@ -67,18 +67,3 @@ func (s *BackupDataSuite) TestValidateProfile(c *C) {
 		c.Check(err, tc.errChecker, Commentf("Test %s Failed", tc.name))
 	}
 }
-
-func (s *BackupDataSuite) TestGetSnapshotID(c *C) {
-	for _, tc := range []struct {
-		log      string
-		expected string
-	}{
-		{"snapshot 1a2b3c4d saved", "1a2b3c4d"},
-		{"snapshot 123abcd", ""},
-		{"Invalid message", ""},
-		{"snapshot abc123\n saved", ""},
-	} {
-		id := getSnapshotIDFromLog(tc.log)
-		c.Check(id, Equals, tc.expected, Commentf("Failed for log: %s", tc.log))
-	}
-}
