@@ -24,6 +24,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/pkg/errors"
 	opkit "github.com/rook/operator-kit"
@@ -50,10 +51,11 @@ import (
 
 // Controller represents a controller object for kanister custom resources
 type Controller struct {
-	config    *rest.Config
-	crClient  versioned.Interface
-	clientset kubernetes.Interface
-	recorder  record.EventRecorder
+	config           *rest.Config
+	crClient         versioned.Interface
+	clientset        kubernetes.Interface
+	recorder         record.EventRecorder
+	actionSetTombMap sync.Map
 }
 
 // New create controller for watching kanister custom resources created
@@ -320,8 +322,9 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(as); err != nil {
 		return errors.WithStack(err)
 	}
+	ctx := context.Background()
 	for i := range as.Status.Actions {
-		if err = c.runAction(context.TODO(), as, i); err != nil {
+		if err = c.runAction(ctx, as, i); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
 			bpName := as.Spec.Actions[i].Blueprint
@@ -356,6 +359,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	}
 	ns, name := as.GetNamespace(), as.GetName()
 	t, _ := tomb.WithContext(ctx) // TODO: @Deepika Ignoring child context currently
+	c.actionSetTombMap.Store(as.Name, t)
 	t.Go(func() error {
 		for i, p := range phases {
 			c.logAndSuccessEvent(fmt.Sprintf("Executing phase %s", p.Name()), "Started Phase", as)
