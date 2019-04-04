@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 	opkit "github.com/rook/operator-kit"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -354,7 +355,8 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		return err
 	}
 	ns, name := as.GetNamespace(), as.GetName()
-	go func() {
+	t, _ := tomb.WithContext(ctx) // TODO: @Deepika Ignoring child context currently
+	t.Go(func() error {
 		for i, p := range phases {
 			c.logAndSuccessEvent(fmt.Sprintf("Executing phase %s", p.Name()), "Started Phase", as)
 			err = param.InitPhaseParams(ctx, c.clientset, tp, p.Name(), p.Objects())
@@ -383,7 +385,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
 				msg := fmt.Sprintf("Failed to update phase: %#v:", as.Status.Actions[aIDX].Phases[i])
 				c.logAndErrorEvent(msg, reason, rErr, as, bp)
-				return
+				return nil
 			}
 			if err != nil {
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
@@ -391,7 +393,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 					msg = fmt.Sprintf("Failed to execute phase: %#v:", as.Status.Actions[aIDX].Phases[i])
 				}
 				c.logAndErrorEvent(msg, reason, err, as, bp)
-				return
+				return nil
 			}
 			param.UpdatePhaseParams(ctx, tp, p.Name(), output)
 			c.logAndSuccessEvent(fmt.Sprintf("Completed phase %s", p.Name()), "Ended Phase", as)
@@ -408,7 +410,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				msg := fmt.Sprintf("Failed to update ActionSet: %s", name)
 				c.logAndErrorEvent(msg, reason, err, as, bp)
 			}
-			return
+			return nil
 		}
 		// Render the artifacts
 		arts, err := param.RenderArtifacts(artTpls, *tp)
@@ -430,15 +432,16 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
 			msg := fmt.Sprintf("Failed to update Output Artifacts: %#v:", artTpls)
 			c.logAndErrorEvent(msg, reason, aErr, as, bp)
-			return
+			return nil
 		}
 		if err != nil {
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
 			msg := "Failed to render output artifacts"
 			c.logAndErrorEvent(msg, reason, err, as, bp)
-			return
+			return nil
 		}
-	}()
+		return nil
+	})
 	return nil
 }
 
