@@ -30,6 +30,7 @@ type TestIBMCloudBlock struct {
 var _ = Suite(&TestIBMCloudBlock{})
 
 func (s *TestIBMCloudBlock) SetUpSuite(c *C) {
+	c.Skip("IBM tests are too flaky to run in CI")
 	var apiKey string
 	if apiK, ok := os.LookupEnv(IBMApiKeyEnv); ok {
 		apiKey = apiK
