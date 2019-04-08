@@ -238,7 +238,18 @@ func (c *Controller) onUpdateBlueprint(oldBP, newBP *crv1alpha1.Blueprint) error
 }
 
 func (c *Controller) onDeleteActionSet(as *crv1alpha1.ActionSet) error {
-	log.Infof("Deleted ActionSet %s", as.GetName())
+	asName := as.GetName()
+	log.Infof("Deleted ActionSet %s", asName)
+	v, ok := c.actionSetTombMap.Load(asName)
+	if !ok {
+		return nil
+	}
+	t, castOk := v.(*tomb.Tomb)
+	if !castOk {
+		return nil
+	}
+	t.Kill(nil) // TODO: @Deepika Give reason for ActionSet kill
+	c.actionSetTombMap.Delete(asName)
 	return nil
 }
 
