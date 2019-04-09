@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
@@ -55,15 +56,31 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 }
 
 func (s *gpdStorage) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
-	disk, err := s.service.Disks.Get(s.project, zone, id).Context(ctx).Do()
-	if err != nil {
-		return nil, err
+	var err error
+	var disk *compute.Disk
+
+	if isMultiZone(zone) {
+		region, err := getRegionFromZones(zone)
+		if err != nil {
+			return nil, err
+		}
+		disk, err = s.service.RegionDisks.Get(s.project, region, id).Context(ctx).Do()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		disk, err = s.service.Disks.Get(s.project, zone, id).Context(ctx).Do()
+		if err != nil {
+			return nil, err
+		}
 	}
-	mv := s.volumeParse(ctx, disk)
+	mv := s.volumeParse(ctx, disk, zone)
 	return mv, nil
 }
 
 func (s *gpdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
+	var resp *compute.Operation
+	var err error
 	tags := make(map[string]string, len(volume.Tags))
 	for _, tag := range volume.Tags {
 		tags[tag.Key] = tag.Value
@@ -76,20 +93,43 @@ func (s *gpdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 		Type:   volume.VolumeType,
 		Labels: tags,
 	}
-
-	resp, err := s.service.Disks.Insert(s.project, volume.Az, createDisk).Context(ctx).Do()
-	if err != nil {
-		return nil, err
+	if isMultiZone(volume.Az) {
+		region, err := getRegionFromZones(volume.Az)
+		if err != nil {
+			return nil, err
+		}
+		replicaZones, err := s.getSelfLinks(ctx, strings.Split(volume.Az, "__"))
+		if err != nil {
+			return nil, err
+		}
+		createDisk.ReplicaZones = replicaZones
+		if resp, err = s.service.RegionDisks.Insert(s.project, region, createDisk).Context(ctx).Do(); err != nil {
+			return nil, err
+		}
+	} else {
+		if resp, err = s.service.Disks.Insert(s.project, volume.Az, createDisk).Context(ctx).Do(); err != nil {
+			return nil, err
+		}
 	}
 	if err := s.waitOnOperation(ctx, resp, volume.Az); err != nil {
 		return nil, err
 	}
-
 	return s.VolumeGet(ctx, createDisk.Name, volume.Az)
 }
 
 func (s *gpdStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
-	op, err := s.service.Disks.Delete(s.project, volume.Az, volume.ID).Context(ctx).Do()
+	var op *compute.Operation
+	var err error
+
+	if isMultiZone(volume.Az) {
+		region, err := getRegionFromZones(volume.Az)
+		if err != nil {
+			return err
+		}
+		op, err = s.service.RegionDisks.Delete(s.project, region, volume.ID).Context(ctx).Do()
+	} else {
+		op, err = s.service.Disks.Delete(s.project, volume.Az, volume.ID).Context(ctx).Do()
+	}
 	if isNotFoundError(err) {
 		log.Debugf("Cannot delete volume with id:%s Volume not found. ", volume.ID)
 		return nil
@@ -97,11 +137,15 @@ func (s *gpdStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volu
 	if err != nil {
 		return err
 	}
+	// For Regional Disks, op = nil if we try to delete an already deleted volume. Hence, the following check!
+	if op == nil {
+		return nil
+	}
 	return s.waitOnOperation(ctx, op, volume.Az)
 }
 
 func (s *gpdStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
-	return nil, fmt.Errorf("Not implemented")
+	return nil, errors.Errorf("Not implemented")
 }
 
 func (s *gpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
@@ -162,7 +206,7 @@ func (s *gpdStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.
 	return s.snapshotParse(ctx, snap), nil
 }
 
-func (s *gpdStorage) volumeParse(ctx context.Context, volume interface{}) *blockstorage.Volume {
+func (s *gpdStorage) volumeParse(ctx context.Context, volume interface{}, zone string) *blockstorage.Volume {
 
 	vol := volume.(*compute.Disk)
 	volCreationTime, err := time.Parse(time.RFC3339, vol.CreationTimestamp)
@@ -176,7 +220,7 @@ func (s *gpdStorage) volumeParse(ctx context.Context, volume interface{}) *block
 		ID:           vol.Name,
 		Encrypted:    false,
 		Size:         vol.SizeGb,
-		Az:           filepath.Base(vol.Zone),
+		Az:           filepath.Base(zone),
 		Tags:         blockstorage.MapToKeyValue(vol.Labels),
 		VolumeType:   vol.Type,
 		CreationTime: blockstorage.TimeStamp(volCreationTime),
@@ -215,15 +259,32 @@ func (s *gpdStorage) snapshotParse(ctx context.Context, snap *compute.Snapshot) 
 func (s *gpdStorage) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	var vols []*blockstorage.Volume
 	fltrs := blockstorage.MapToString(tags, " AND ", ":")
-	req := s.service.Disks.List(s.project, zone).Filter(fltrs)
-	if err := req.Pages(ctx, func(page *compute.DiskList) error {
-		for _, disk := range page.Items {
-			vol := s.volumeParse(ctx, disk)
-			vols = append(vols, vol)
+	if isMultiZone(zone) {
+		region, err := getRegionFromZones(zone)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not get region from zones %s", zone)
 		}
-		return nil
-	}); err != nil {
-		return nil, err
+		req := s.service.RegionDisks.List(s.project, region).Filter(fltrs)
+		if err := req.Pages(ctx, func(page *compute.DiskList) error {
+			for _, disk := range page.Items {
+				vol := s.volumeParse(ctx, disk, zone)
+				vols = append(vols, vol)
+			}
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+	} else {
+		req := s.service.Disks.List(s.project, zone).Filter(fltrs)
+		if err := req.Pages(ctx, func(page *compute.DiskList) error {
+			for _, disk := range page.Items {
+				vol := s.volumeParse(ctx, disk, zone)
+				vols = append(vols, vol)
+			}
+			return nil
+		}); err != nil {
+			return nil, err
+		}
 	}
 	return vols, nil
 }
@@ -301,18 +362,39 @@ func (s *gpdStorage) SetTags(ctx context.Context, resource interface{}, tags map
 		}
 	case *blockstorage.Volume:
 		{
-			vol, err := s.service.Disks.Get(s.project, res.Az, res.ID).Context(ctx).Do()
-			if err != nil {
-				return err
-			}
-			tags = ktags.AddMissingTags(vol.Labels, ktags.GetTags(tags))
-			slr := &compute.ZoneSetLabelsRequest{
-				LabelFingerprint: vol.LabelFingerprint,
-				Labels:           blockstorage.SanitizeTags(tags),
-			}
-			op, err := s.service.Disks.SetLabels(s.project, res.Az, vol.Name, slr).Do()
-			if err != nil {
-				return err
+			var op *compute.Operation
+			if isMultiZone(res.Az) {
+				region, err := getRegionFromZones(res.Az)
+				if err != nil {
+					return err
+				}
+				vol, err := s.service.RegionDisks.Get(s.project, region, res.ID).Context(ctx).Do()
+				if err != nil {
+					return err
+				}
+				tags = ktags.AddMissingTags(vol.Labels, ktags.GetTags(tags))
+				slr := &compute.RegionSetLabelsRequest{
+					LabelFingerprint: vol.LabelFingerprint,
+					Labels:           blockstorage.SanitizeTags(tags),
+				}
+				op, err = s.service.RegionDisks.SetLabels(s.project, region, vol.Name, slr).Do()
+				if err != nil {
+					return err
+				}
+			} else {
+				vol, err := s.service.Disks.Get(s.project, res.Az, res.ID).Context(ctx).Do()
+				if err != nil {
+					return err
+				}
+				tags = ktags.AddMissingTags(vol.Labels, ktags.GetTags(tags))
+				slr := &compute.ZoneSetLabelsRequest{
+					LabelFingerprint: vol.LabelFingerprint,
+					Labels:           blockstorage.SanitizeTags(tags),
+				}
+				op, err = s.service.Disks.SetLabels(s.project, res.Az, vol.Name, slr).Do()
+				if err != nil {
+					return err
+				}
 			}
 			return s.waitOnOperation(ctx, op, res.Az)
 		}
@@ -329,34 +411,42 @@ func (s *gpdStorage) waitOnOperation(ctx context.Context, op *compute.Operation,
 		Min:    1 * time.Second,
 		Max:    10 * time.Second,
 	}
-	for {
+
+	return poll.WaitWithBackoff(ctx, waitBackoff, func(ctx context.Context) (bool, error) {
+		var err error
+		switch {
+		case zone == "":
+			op, err = s.service.GlobalOperations.Get(s.project, op.Name).Context(ctx).Do()
+		case isMultiZone(zone):
+			region, err := getRegionFromZones(zone)
+			if err != nil {
+				return false, err
+			}
+			op, err = s.service.RegionOperations.Get(s.project, region, op.Name).Context(ctx).Do()
+		default:
+			op, err = s.service.ZoneOperations.Get(s.project, zone, op.Name).Context(ctx).Do()
+		}
+		if err != nil {
+			return false, err
+		}
 		switch op.Status {
 		case operationDone:
 			if op.Error != nil {
 				errJSON, merr := op.Error.MarshalJSON()
 				if merr != nil {
-					return fmt.Errorf("Operation %s failed. Failed to marshal error string with error %s", op.OperationType, merr)
+					return false, errors.Errorf("Operation %s failed. Failed to marshal error string with error %s", op.OperationType, merr)
 				}
-				return fmt.Errorf("%s", errJSON)
+				return false, errors.Errorf("%s", errJSON)
 			}
 			log.Infof("Operation %s done", op.OperationType)
-			return nil
+			return true, nil
 		case operationPending, operationRunning:
 			log.Debugf("Operation %s status: %s %s progress %d", op.OperationType, op.Status, op.StatusMessage, op.Progress)
-			time.Sleep(waitBackoff.Duration())
-			var err error
-			if zone != "" {
-				op, err = s.service.ZoneOperations.Get(s.project, zone, op.Name).Do()
-			} else {
-				op, err = s.service.GlobalOperations.Get(s.project, op.Name).Do()
-			}
-			if err != nil {
-				return err
-			}
+			return false, nil
 		default:
-			return fmt.Errorf("Unknown operation status")
+			return false, errors.Errorf("Unknown operation status")
 		}
-	}
+	})
 }
 
 // waitOnSnapshotID waits for the snapshot to be created
@@ -515,4 +605,43 @@ func staticRegionToZones(region string) ([]string, error) {
 		}, nil
 	}
 	return nil, errors.New("cannot get availability zones for region")
+}
+
+func isMultiZone(az string) bool {
+	return strings.Contains(az, "__")
+}
+
+// getRegionFromZones function is used from the link below
+// https://github.com/kubernetes-sigs/gcp-compute-persistent-disk-csi-driver/blob/master/pkg/common/utils.go#L103
+
+func getRegionFromZones(az string) (string, error) {
+	zones := strings.Split(az, "__")
+	regions := sets.String{}
+	if len(zones) < 1 {
+		return "", errors.Errorf("no zones specified, zone: %s", az)
+	}
+	for _, zone := range zones {
+		// Expected format of zone: {locale}-{region}-{zone}
+		splitZone := strings.Split(zone, "-")
+		if len(splitZone) != 3 {
+			return "", errors.Errorf("zone in unexpected format, expected: {locale}-{region}-{zone}, got: %v", zone)
+		}
+		regions.Insert(strings.Join(splitZone[0:2], "-"))
+	}
+	if regions.Len() != 1 {
+		return "", errors.Errorf("multiple or no regions gotten from zones, got: %v", regions)
+	}
+	return regions.UnsortedList()[0], nil
+}
+
+func (s *gpdStorage) getSelfLinks(ctx context.Context, zones []string) ([]string, error) {
+	selfLinks := make([]string, len(zones))
+	for i, zone := range zones {
+		replicaZone, err := s.service.Zones.Get(s.project, zone).Context(ctx).Do()
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not get Zone %s", zone)
+		}
+		selfLinks[i] = replicaZone.SelfLink
+	}
+	return selfLinks, nil
 }

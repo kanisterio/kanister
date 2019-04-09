@@ -3,6 +3,7 @@ package blockstorage_test
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -25,13 +26,15 @@ func Test(t *testing.T) { TestingT(t) }
 type BlockStorageProviderSuite struct {
 	storageType   blockstorage.Type
 	storageRegion string
+	storageAZ     string
 	provider      blockstorage.Provider
 	volumes       []*blockstorage.Volume
 	snapshots     []*blockstorage.Snapshot
 }
 
-var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeEBS, storageRegion: clusterRegionAWS})
-var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: ""})
+var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeEBS, storageRegion: clusterRegionAWS, storageAZ: "us-west-2b"})
+var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-b"})
+var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-c__us-west1-a"})
 
 func (s *BlockStorageProviderSuite) SetUpSuite(c *C) {
 	var err error
@@ -157,14 +160,7 @@ func (s *BlockStorageProviderSuite) testVolumesList(c *C) {
 	} else {
 		tags = map[string]string{"status": "available"}
 	}
-	switch s.storageType {
-	case blockstorage.TypeGPD:
-		zone = "us-west1-b"
-	case blockstorage.TypeEBS:
-		zone = "us-west-2b"
-	case blockstorage.TypeAD:
-		zone = "centralus"
-	}
+	zone = s.storageAZ
 	vols, err := s.provider.VolumesList(context.Background(), tags, zone)
 	c.Assert(err, IsNil)
 	c.Assert(vols, NotNil)
@@ -200,25 +196,27 @@ func (s *BlockStorageProviderSuite) createVolume(c *C) *blockstorage.Volume {
 		Size: 1,
 		Tags: tags,
 	}
-	switch s.storageType {
-	case blockstorage.TypeGPD:
-		vol.Az = "us-west1-b"
-	case blockstorage.TypeEBS:
-		vol.Az = "us-west-2b"
-	case blockstorage.TypeAD:
-		vol.Az = "centralus"
+	size := vol.Size
+
+	vol.Az = s.storageAZ
+	if s.isRegional(vol.Az) {
+		vol.Size = 200
+		size = vol.Size
 	}
 
 	ret, err := s.provider.VolumeCreate(context.Background(), vol)
 	c.Assert(err, IsNil)
 	s.volumes = append(s.volumes, ret)
-	c.Assert(ret.Size, Equals, int64(1))
+	c.Assert(ret.Size, Equals, int64(size))
 	s.checkTagsExist(c, blockstorage.KeyValueToMap(ret.Tags), blockstorage.KeyValueToMap(tags))
 	s.checkStdTagsExist(c, blockstorage.KeyValueToMap(ret.Tags))
 	return ret
 }
 
 func (s *BlockStorageProviderSuite) createSnapshot(c *C) *blockstorage.Snapshot {
+	if s.isRegional(s.storageAZ) {
+		c.Skip("WIP for Support for google regional disk in snapshot functions!")
+	}
 	vol := s.createVolume(c)
 	tags := map[string]string{testTagKey: testTagValue, "kanister.io/testname": c.TestName()}
 	ret, err := s.provider.SnapshotCreate(context.Background(), *vol, tags)
@@ -270,4 +268,8 @@ func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]st
 		config[blockstorage.GoogleCloudCreds] = creds
 	}
 	return config
+}
+
+func (b *BlockStorageProviderSuite) isRegional(az string) bool {
+	return strings.Contains(az, "__")
 }
