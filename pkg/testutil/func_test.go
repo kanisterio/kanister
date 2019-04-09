@@ -82,5 +82,6 @@ func (s *FuncSuite) TestCancelFunc(c *C) {
 	default:
 	}
 	cancel()
+	c.Assert(CancelFuncOut().Error(), DeepEquals, "context canceled")
 	<-done
 }
