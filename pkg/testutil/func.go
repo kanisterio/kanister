@@ -14,6 +14,7 @@ const (
 	WaitFuncName   = "WaitFunc"
 	ArgFuncName    = "ArgFunc"
 	OutputFuncName = "OutputFunc"
+	CancelFuncName = "CancelFunc"
 )
 
 var (
@@ -33,6 +34,7 @@ func waitFunc(context.Context, param.TemplateParams, map[string]interface{}) (ma
 	<-waitFuncCh
 	return nil, nil
 }
+
 func argsFunc(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	argFuncCh <- args
 	return nil, nil
@@ -41,6 +43,11 @@ func argsFunc(ctx context.Context, tp param.TemplateParams, args map[string]inte
 func outputFunc(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	outputFuncCh <- args
 	return args, nil
+}
+
+func cancelFunc(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
 }
 
 func init() {
@@ -52,6 +59,7 @@ func init() {
 	registerMockKanisterFunc(WaitFuncName, waitFunc)
 	registerMockKanisterFunc(ArgFuncName, argsFunc)
 	registerMockKanisterFunc(OutputFuncName, outputFunc)
+	registerMockKanisterFunc(CancelFuncName, cancelFunc)
 }
 
 func registerMockKanisterFunc(name string, f func(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error)) {
