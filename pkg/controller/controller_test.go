@@ -285,6 +285,10 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				funcNames: []string{testutil.OutputFuncName},
 				name:      "OutputFunc",
 			},
+			{
+				funcNames: []string{testutil.CancelFuncName},
+				name:      "CancelFunc",
+			},
 		} {
 			var err error
 			// Add a blueprint with a mocked kanister function.
@@ -313,6 +317,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
 
 			final := crv1alpha1.StateComplete
+			cancel := false
 		Loop:
 			for _, fn := range tc.funcNames {
 				switch fn {
@@ -326,16 +331,26 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 					c.Assert(testutil.ArgFuncArgs(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
 				case testutil.OutputFuncName:
 					c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
+				case testutil.CancelFuncName:
+					err = s.crCli.ActionSets(s.namespace).Delete(as.GetName(), nil)
+					c.Assert(err, IsNil)
+					c.Assert(testutil.CancelFuncOut().Error(), DeepEquals, "context canceled")
+					cancel = true
 				}
 			}
 
-			err = s.waitOnActionSetState(c, as, final)
-			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
-
+			if !cancel {
+				err = s.waitOnActionSetState(c, as, final)
+				c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
+			}
 			err = s.crCli.Blueprints(s.namespace).Delete(bp.GetName(), nil)
 			c.Assert(err, IsNil)
 			err = s.crCli.ActionSets(s.namespace).Delete(as.GetName(), nil)
-			c.Assert(err, IsNil)
+			if !cancel {
+				c.Assert(err, IsNil)
+			} else {
+				c.Assert(err, NotNil)
+			}
 		}
 	}
 }

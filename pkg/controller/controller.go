@@ -369,7 +369,8 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		return err
 	}
 	ns, name := as.GetNamespace(), as.GetName()
-	t, _ := tomb.WithContext(ctx) // TODO: @Deepika Ignoring child context currently
+	var t *tomb.Tomb
+	t, ctx = tomb.WithContext(ctx)
 	c.actionSetTombMap.Store(as.Name, t)
 	t.Go(func() error {
 		for i, p := range phases {
