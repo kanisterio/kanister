@@ -20,8 +20,6 @@ const (
 	pvcKind      = "PersistentVolumeClaim"
 )
 
-var snapshotAPIGroup = "snapshot.storage.k8s.io"
-
 // Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
 //
 // 'name' is the name of the VolumeSnapshot.
@@ -210,7 +208,11 @@ func WaitOnReadyToUse(ctx context.Context, snapCli snapshotclient.Interface, sna
 		if err != nil {
 			return false, err
 		}
-		return snap.Status.ReadyToUse, nil
+		// Error can be set while waiting for creation
+		if snap.Status.Error != nil {
+			return false, errors.New(snap.Status.Error.Message)
+		}
+		return (snap.Status.ReadyToUse && snap.Status.CreationTime != nil), nil
 	})
 }
 

@@ -66,15 +66,23 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 		c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
 		c.Fail()
 	}
+	var snapshotterName string
 	if len(vscs.Items) != 0 {
-		s.snapshotClass = &vscs.Items[0].Name
+		vsClass, err := sc.VolumesnapshotV1alpha1().VolumeSnapshotClasses().Get(vscs.Items[0].Name, metav1.GetOptions{})
+		if err != nil {
+			c.Logf("Failed to get VolumeSnapshotClass, skipping test. Error: %v", err)
+			c.Fail()
+		}
+		snapshotterName = vsClass.Snapshotter
+		s.snapshotClass = &vsClass.Name
 	}
 
 	storageClasses, err := cli.StorageV1().StorageClasses().List(metav1.ListOptions{})
 	c.Assert(err, IsNil)
 	for _, class := range storageClasses.Items {
-		if isCSIProvisioner(class.Provisioner) {
+		if class.Provisioner == snapshotterName {
 			s.storageClassCSI = &class.Name
+			break
 		}
 	}
 
@@ -149,6 +157,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 			},
 		},
 	}
+	ctime := metav1.Now()
 	snapshot := &snapshot.VolumeSnapshot{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fakeSnapshotName,
@@ -159,7 +168,8 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 			VolumeSnapshotClassName: &fakeClass,
 		},
 		Status: snapshot.VolumeSnapshotStatus{
-			ReadyToUse: true,
+			ReadyToUse:   true,
+			CreationTime: &ctime,
 		},
 	}
 
@@ -272,15 +282,6 @@ func (s *SnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	err = Delete(ctx, s.snapCli, snap.Name, snap.Namespace)
 	c.Assert(err, NotNil)
 
-}
-
-func isCSIProvisioner(provisioner string) bool {
-	for _, part := range strings.Split(provisioner, ".") {
-		if part == "csi" {
-			return true
-		}
-	}
-	return false
 }
 
 func (s *SnapshotTestSuite) cleanupNamespace(c *C, ns string) {
