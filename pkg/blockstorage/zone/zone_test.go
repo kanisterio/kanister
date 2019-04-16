@@ -51,7 +51,7 @@ func (s ZoneSuite) TestConsistentZone(c *C) {
 			out: "zone1",
 		},
 	} {
-		out, err := consistentZone(tc.sourceZone, tc.nzs)
+		out, err := consistentZone(tc.sourceZone, tc.nzs, make(map[string]struct{}))
 		c.Assert(err, IsNil)
 		c.Assert(out, Equals, tc.out)
 	}

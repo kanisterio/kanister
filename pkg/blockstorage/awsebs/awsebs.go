@@ -413,13 +413,15 @@ func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s, VolumeTags: %v", snapshot.Volume.VolumeType, snapshot.Volume.Az, snapshot.Volume.Tags)
 	}
 
-	z, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
+	zones, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
-
+	if len(zones) != 1 {
+		return nil, errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
+	}
 	cvi := &ec2.CreateVolumeInput{
-		AvailabilityZone: aws.String(z),
+		AvailabilityZone: aws.String(zones[0]),
 		SnapshotId:       aws.String(snapshot.ID),
 		VolumeType:       aws.String(string(snapshot.Volume.VolumeType)),
 	}

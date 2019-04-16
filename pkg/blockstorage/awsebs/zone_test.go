@@ -41,8 +41,7 @@ func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
 		},
 	} {
 		var t = &ebsTest{}
-		z, err := zone.WithUnknownNodeZones(ctx, t, tc.region, tc.in)
-		c.Assert(err, IsNil)
+		z := zone.WithUnknownNodeZones(ctx, t, tc.region, tc.in, make(map[string]struct{}))
 		c.Assert(z, Not(Equals), "")
 		if tc.out != "" {
 			c.Assert(z, Equals, tc.out)

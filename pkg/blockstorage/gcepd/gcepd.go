@@ -318,10 +318,14 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 			tags[tag.Key] = tag.Value
 		}
 	}
-	z, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
+	zones, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
+	if len(zones) != 1 {
+		return nil, errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
+	}
+
 	createDisk := &compute.Disk{
 		Name:           fmt.Sprintf(volumeNameFmt, uuid.NewV1().String()),
 		SizeGb:         snapshot.Volume.Size,
@@ -330,15 +334,15 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		SourceSnapshot: snap.SelfLink,
 	}
 
-	resp, err := s.service.Disks.Insert(s.project, z, createDisk).Context(ctx).Do()
+	resp, err := s.service.Disks.Insert(s.project, zones[0], createDisk).Context(ctx).Do()
 	if err != nil {
 		return nil, err
 	}
-	if err := s.waitOnOperation(ctx, resp, z); err != nil {
+	if err := s.waitOnOperation(ctx, resp, zones[0]); err != nil {
 		return nil, err
 	}
 
-	return s.VolumeGet(ctx, createDisk.Name, z)
+	return s.VolumeGet(ctx, createDisk.Name, zones[0])
 }
 
 func (s *gpdStorage) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {

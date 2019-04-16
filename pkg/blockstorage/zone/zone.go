@@ -21,8 +21,12 @@ type (
 	}
 )
 
-// FromSourceRegionZone gets the zones from the given region and sourceZome
-func FromSourceRegionZone(ctx context.Context, m Mapper, region string, sourceZone string) (string, error) {
+// FromSourceRegionZone gets the zones from the given region and sourceZones
+// It will return a minimum of 0 and a maximum of zones equal to the length of sourceZones.
+// Depending on the length of the slice returned, the blockstorage providers will decide if
+// a regional volume or a zonal volume should be created.
+func FromSourceRegionZone(ctx context.Context, m Mapper, region string, sourceZones ...string) ([]string, error) {
+	newZones := make(map[string]struct{})
 	cli, err := kube.NewClient()
 	if err == nil {
 		nzs, rs, errzr := nodeZonesAndRegion(ctx, cli)
@@ -30,17 +34,40 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, region string, sourceZo
 			log.Errorf("Ignoring error getting Node availability zones. Error: %+v", errzr)
 		}
 		if len(nzs) != 0 {
-			var z string
-			z, err = getZoneFromKnownNodeZones(ctx, sourceZone, nzs)
-			if err == nil && isZoneValid(ctx, m, z, rs) {
-				return z, nil
-			}
-			if err != nil {
-				log.Errorf("Ignoring error getting Zone from KnownNodeZones. Error: %+v", err)
+			for _, zone := range sourceZones {
+				var z string
+				// getZoneFromKnownNodeZones() func makes sure that all zones
+				// added to newZones[] are unique and not repeated.
+				z, err = getZoneFromKnownNodeZones(ctx, zone, nzs, newZones)
+				if err == nil && isZoneValid(ctx, m, z, rs) {
+					newZones[z] = struct{}{}
+				}
+				if err != nil {
+					log.Errorf("Ignoring error getting Zone from KnownNodeZones. Error: %+v", err)
+				}
 			}
 		}
 	}
-	return WithUnknownNodeZones(ctx, m, region, sourceZone)
+	if len(newZones) == 0 {
+		for _, zone := range sourceZones {
+			// WithUnknownNodeZones() func makes sure that all zones
+			// added to newZones[] are unique and not repeated.
+			newZone := WithUnknownNodeZones(ctx, m, region, zone, newZones)
+			if newZone != "" {
+				newZones[newZone] = struct{}{}
+			}
+		}
+	}
+
+	if len(newZones) == 0 {
+		return nil, errors.Errorf("Could not get zone for region %s and sourceZones %s", region, sourceZones)
+	}
+
+	var zones []string
+	for z := range newZones {
+		zones = append(zones, z)
+	}
+	return zones, nil
 }
 
 func isZoneValid(ctx context.Context, m Mapper, zone, region string) bool {
@@ -55,40 +82,59 @@ func isZoneValid(ctx context.Context, m Mapper, zone, region string) bool {
 }
 
 // WithUnknownNodeZones get the zone list  for the region
-func WithUnknownNodeZones(ctx context.Context, m Mapper, region string, sourceZone string) (string, error) {
+func WithUnknownNodeZones(ctx context.Context, m Mapper, region string, sourceZone string, newZones map[string]struct{}) string {
 	// We could not the zones of the nodes, so we return an arbitrary one.
 	zs, err := m.FromRegion(ctx, region)
 	if err != nil || len(zs) == 0 {
 		// If all else fails, we return the original AZ.
 		log.Errorf("Using original AZ. region: %s, Error: %+v", region, err)
-		return sourceZone, nil
+		return sourceZone
 	}
+
 	// We look for a zone with the same suffix.
 	for _, z := range zs {
 		if getZoneSuffixesMatch(z, sourceZone) {
-			return z, nil
+			// check if zone z is already added to newZones
+			if _, ok := newZones[z]; ok {
+				continue
+			}
+			return z
 		}
 	}
+
 	// We return an arbitrary zone in the region.
-	return zs[0], nil
+	for i := range zs {
+		// check if zone zs[i] is already added to newZones
+		if _, ok := newZones[zs[i]]; ok {
+			continue
+		}
+		return zs[i]
+	}
+
+	return ""
 }
 
-func getZoneFromKnownNodeZones(ctx context.Context, sourceZone string, nzs map[string]struct{}) (string, error) {
+func getZoneFromKnownNodeZones(ctx context.Context, sourceZone string, nzs map[string]struct{}, newZones map[string]struct{}) (string, error) {
 	// If the original zone is available, we return that one.
 	if _, ok := nzs[sourceZone]; ok {
 		return sourceZone, nil
 	}
+
 	// If there's an available zone with the zone suffix, we use that one.
 	for nz := range nzs {
 		if getZoneSuffixesMatch(nz, sourceZone) {
+			// check if zone nz is already added to newZones
+			if _, ok := newZones[nz]; ok {
+				continue
+			}
 			return nz, nil
 		}
 	}
 	// If any nodes are available, return an arbitrary one.
-	return consistentZone(sourceZone, nzs)
+	return consistentZone(sourceZone, nzs, newZones)
 }
 
-func consistentZone(sourceZone string, nzs map[string]struct{}) (string, error) {
+func consistentZone(sourceZone string, nzs map[string]struct{}, newZones map[string]struct{}) (string, error) {
 	if len(nzs) == 0 {
 		return "", errors.New("could not restore volume: no zone found")
 	}
@@ -104,6 +150,11 @@ func consistentZone(sourceZone string, nzs map[string]struct{}) (string, error) 
 		return "", errors.Errorf("failed to hash source zone %s: %s", sourceZone, err.Error())
 	}
 	i := int(h.Sum32()) % len(nzs)
+
+	// check if zone s[i] is already added to newZones
+	if _, ok := newZones[s[i]]; ok {
+		return "", nil
+	}
 	return s[i], nil
 }
 
