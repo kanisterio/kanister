@@ -8,11 +8,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// PodRunner specifies Kubernetes Client and PodOptions needed for creating Pod
 type PodRunner struct {
 	cli        kubernetes.Interface
 	podOptions *PodOptions
 }
 
+// NewPodRunner returns a new PodRunner given Kubernetes Client and PodOptions
 func NewPodRunner(cli kubernetes.Interface, options *PodOptions) *PodRunner {
 	return &PodRunner{
 		cli:        cli,
@@ -20,6 +22,7 @@ func NewPodRunner(cli kubernetes.Interface, options *PodOptions) *PodRunner {
 	}
 }
 
+// Run will create a new Pod based on PodRunner contents and execute the given function
 func (p *PodRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
