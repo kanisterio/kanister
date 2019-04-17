@@ -13,9 +13,19 @@ type PodRunner struct {
 	podOptions *PodOptions
 }
 
+func NewPodRunner(cli kubernetes.Interface, options *PodOptions) *PodRunner {
+	return &PodRunner{
+		cli:        cli,
+		podOptions: options,
+	}
+}
+
 func (p *PodRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	if p.cli == nil || p.podOptions == nil {
+		return nil, errors.New("Pod Runner not initialized")
+	}
 	pod, err := CreatePod(ctx, p.cli, p.podOptions)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create pod")

@@ -30,14 +30,11 @@ func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {
 	})
 	deleted := make(chan struct{})
 	cli.PrependReactor("delete", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
-		c.Log("Pod Deleted due to Context Cancelled")
+		c.Log("Pod deleted due to Context Cancelled")
 		close(deleted)
 		return true, nil, nil
 	})
-	pr := PodRunner{
-		cli:        cli,
-		podOptions: &PodOptions{},
-	}
+	pr := NewPodRunner(cli, &PodOptions{})
 	returned := make(chan struct{})
 	go func() {
 		_, err := pr.Run(ctx, makePodRunnerTestFunc(deleted))
