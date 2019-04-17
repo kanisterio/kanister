@@ -39,9 +39,5 @@ func (p *PodRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (
 			defer DeletePod(context.Background(), p.cli, pod)
 		}
 	}()
-	// Wait for pod to reach running state
-	if err := WaitForPodReady(ctx, p.cli, pod.Namespace, pod.Name); err != nil {
-		return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
-	}
 	return fn(ctx, pod)
 }
