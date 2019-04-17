@@ -214,9 +214,6 @@ func (s *BlockStorageProviderSuite) createVolume(c *C) *blockstorage.Volume {
 }
 
 func (s *BlockStorageProviderSuite) createSnapshot(c *C) *blockstorage.Snapshot {
-	if s.isRegional(s.storageAZ) {
-		c.Skip("WIP for Support for google regional disk in snapshot functions!")
-	}
 	vol := s.createVolume(c)
 	tags := map[string]string{testTagKey: testTagValue, "kanister.io/testname": c.TestName()}
 	ret, err := s.provider.SnapshotCreate(context.Background(), *vol, tags)

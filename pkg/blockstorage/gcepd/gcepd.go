@@ -98,7 +98,7 @@ func (s *gpdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 		if err != nil {
 			return nil, err
 		}
-		replicaZones, err := s.getSelfLinks(ctx, strings.Split(volume.Az, "__"))
+		replicaZones, err := s.getSelfLinks(ctx, splitZones(volume.Az))
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +153,18 @@ func (s *gpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 		Name:   fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String()),
 		Labels: blockstorage.SanitizeTags(ktags.GetTags(tags)),
 	}
-	_, err := s.service.Disks.CreateSnapshot(s.project, volume.Az, volume.ID, rb).Context(ctx).Do()
+	var err error
+	if isMultiZone(volume.Az) {
+		var region string
+		region, err = getRegionFromZones(volume.Az)
+		if err != nil {
+			return nil, err
+		}
+		_, err = s.service.RegionDisks.CreateSnapshot(s.project, region, volume.ID, rb).Context(ctx).Do()
+
+	} else {
+		_, err = s.service.Disks.CreateSnapshot(s.project, volume.Az, volume.ID, rb).Context(ctx).Do()
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -311,6 +322,10 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		return nil, err
 	}
 
+	if snapshot.Volume.VolumeType == "" || snapshot.Volume.Az == "" {
+		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s", snapshot.Volume.VolumeType, snapshot.Volume.Az)
+	}
+
 	// Incorporate pre-existing tags if overrides don't already exist
 	// in provided tags
 	for _, tag := range snapshot.Volume.Tags {
@@ -318,14 +333,6 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 			tags[tag.Key] = tag.Value
 		}
 	}
-	zones, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
-	if err != nil {
-		return nil, err
-	}
-	if len(zones) != 1 {
-		return nil, errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
-	}
-
 	createDisk := &compute.Disk{
 		Name:           fmt.Sprintf(volumeNameFmt, uuid.NewV1().String()),
 		SizeGb:         snapshot.Volume.Size,
@@ -334,15 +341,45 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		SourceSnapshot: snap.SelfLink,
 	}
 
-	resp, err := s.service.Disks.Insert(s.project, zones[0], createDisk).Context(ctx).Do()
+	var resp *compute.Operation
+	var zones []string
+	var region string
+	// Validate Zones
+	if _, err = getRegionFromZones(snapshot.Volume.Az); err != nil {
+		return nil, errors.Wrapf(err, "Could not validate zones: %s", snapshot.Volume.Az)
+	}
+	zones = splitZones(snapshot.Volume.Az)
+	zones, err = zone.FromSourceRegionZone(ctx, s, snapshot.Region, zones...)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.waitOnOperation(ctx, resp, zones[0]); err != nil {
+	volZone := strings.Join(zones, "__")
+	// Validates new Zones
+	region, err = getRegionFromZones(volZone)
+	if err != nil {
+		return nil, err
+	}
+	newZones := splitZones(volZone)
+
+	if len(newZones) == 1 {
+		resp, err = s.service.Disks.Insert(s.project, volZone, createDisk).Context(ctx).Do()
+	} else {
+		zones, err = s.getSelfLinks(ctx, newZones)
+		if err != nil {
+			return nil, err
+		}
+		createDisk.ReplicaZones = zones
+		resp, err = s.service.RegionDisks.Insert(s.project, region, createDisk).Context(ctx).Do()
+	}
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create volume from snapshot")
+	}
+
+	if err = s.waitOnOperation(ctx, resp, volZone); err != nil {
 		return nil, err
 	}
 
-	return s.VolumeGet(ctx, createDisk.Name, zones[0])
+	return s.VolumeGet(ctx, createDisk.Name, volZone)
 }
 
 func (s *gpdStorage) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
@@ -619,7 +656,7 @@ func isMultiZone(az string) bool {
 // https://github.com/kubernetes-sigs/gcp-compute-persistent-disk-csi-driver/blob/master/pkg/common/utils.go#L103
 
 func getRegionFromZones(az string) (string, error) {
-	zones := strings.Split(az, "__")
+	zones := splitZones(az)
 	regions := sets.String{}
 	if len(zones) < 1 {
 		return "", errors.Errorf("no zones specified, zone: %s", az)
@@ -648,4 +685,8 @@ func (s *gpdStorage) getSelfLinks(ctx context.Context, zones []string) ([]string
 		selfLinks[i] = replicaZone.SelfLink
 	}
 	return selfLinks, nil
+}
+
+func splitZones(az string) []string {
+	return strings.Split(az, "__")
 }
