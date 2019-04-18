@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -66,36 +66,34 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
 		}
 	}
-	pod, err := kube.CreatePod(ctx, cli, &kube.PodOptions{
+	options := &kube.PodOptions{
 		Namespace:          namespace,
 		GenerateName:       prepareDataJobPrefix,
 		Image:              image,
 		Command:            command,
 		Volumes:            vols,
 		ServiceAccountName: serviceAccount,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod to run prepare data job")
 	}
-	defer func() {
-		if err := kube.DeletePod(context.Background(), cli, pod); err != nil {
-			log.Error("Failed to delete pod ", err.Error())
+	pr := kube.NewPodRunner(cli, options)
+	podFunc := prepareDataPodFunc(cli)
+	return pr.Run(ctx, podFunc)
+}
+
+func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+		// Wait for pod completion
+		if err := kube.WaitForPodCompletion(ctx, cli, pod.Namespace, pod.Name); err != nil {
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
 		}
-	}()
-
-	// Wait for pod completion
-	if err := kube.WaitForPodCompletion(ctx, cli, pod.Namespace, pod.Name); err != nil {
-		return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
+		// Fetch logs from the pod
+		logs, err := kube.GetPodLogs(ctx, cli, pod.Namespace, pod.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
+		}
+		format.Log(pod.Name, pod.Spec.Containers[0].Name, logs)
+		out, err := parseLogAndCreateOutput(logs)
+		return out, errors.Wrap(err, "Failed to parse phase output")
 	}
-	// Fetch logs from the pod
-	logs, err := kube.GetPodLogs(ctx, cli, pod.Namespace, pod.Name)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
-	}
-	format.Log(pod.Name, pod.Spec.Containers[0].Name, logs)
-
-	out, err := parseLogAndCreateOutput(logs)
-	return out, errors.Wrap(err, "Failed to parse phase output")
 }
 
 func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
