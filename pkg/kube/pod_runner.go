@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -36,7 +37,10 @@ func (p *PodRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (
 	go func() {
 		select {
 		case <-ctx.Done():
-			defer DeletePod(context.Background(), p.cli, pod)
+			err := DeletePod(context.Background(), p.cli, pod)
+			if err != nil {
+				log.Error("Failed to delete pod ", err.Error())
+			}
 		}
 	}()
 	return fn(ctx, pod)
