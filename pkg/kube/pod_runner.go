@@ -35,12 +35,10 @@ func (p *PodRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (
 		return nil, errors.Wrapf(err, "Failed to create pod")
 	}
 	go func() {
-		select {
-		case <-ctx.Done():
-			err := DeletePod(context.Background(), p.cli, pod)
-			if err != nil {
-				log.Error("Failed to delete pod ", err.Error())
-			}
+		<-ctx.Done()
+		err := DeletePod(context.Background(), p.cli, pod)
+		if err != nil {
+			log.Error("Failed to delete pod ", err.Error())
 		}
 	}()
 	return fn(ctx, pod)
