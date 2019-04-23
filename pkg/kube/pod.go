@@ -83,7 +83,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		p, err := cli.Core().Pods(namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
-			return true, err
+			return false, err
 		}
 		return (p.Status.Phase == v1.PodRunning), nil
 	})

@@ -124,7 +124,7 @@ func resticArgs(profile *param.Profile, repository, encryptionKey string) []stri
 func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, profile *param.Profile) error {
 	// Use the snapshots command to check if the repository exists
 	cmd := SnapshotsCommand(profile, artifactPrefix, encryptionKey)
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
+	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	if err == nil {
@@ -132,7 +132,7 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 	}
 	// Create a repository
 	cmd = InitCommand(profile, artifactPrefix, encryptionKey)
-	stdout, stderr, err = kube.Exec(cli, namespace, pod, container, cmd)
+	stdout, stderr, err = kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	return errors.Wrapf(err, "Failed to create object store backup location")

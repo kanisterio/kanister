@@ -65,7 +65,7 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 		}
 		if deleteTag != "" {
 			cmd := restic.SnapshotsCommandByTag(tp.Profile, targetPath, deleteTag, encryptionKey)
-			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd)
+			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 			if err != nil {
@@ -78,7 +78,7 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 		}
 		if deleteIdentifier != "" {
 			cmd := restic.ForgetCommandByID(tp.Profile, targetPath, deleteIdentifier, encryptionKey)
-			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd)
+			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 			if err != nil {
@@ -87,7 +87,7 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 		}
 		if reclaimSpace {
 			cmd := restic.PruneCommand(tp.Profile, targetPath, encryptionKey)
-			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd)
+			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 			if err != nil {

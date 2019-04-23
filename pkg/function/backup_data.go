@@ -92,7 +92,7 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	// Create backup and dump it on the object store
 	backupTag := rand.String(10)
 	cmd := restic.BackupCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, includePath, encryptionKey)
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd)
+	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	if err != nil {

@@ -75,7 +75,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 		// Copy data to object store
 		backupTag := rand.String(10)
 		cmd := restic.BackupCommandByTag(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey)
-		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd)
+		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 		if err != nil {
