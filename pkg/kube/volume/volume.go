@@ -131,7 +131,7 @@ func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, sn
 		}
 		return "", errors.Wrapf(err, "Unable to create PVC, PVC: %v", pvc)
 	}
-	return "", err
+	return pvc.Name, err
 }
 
 // CreatePV creates a PersistentVolume and returns its name
