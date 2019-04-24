@@ -7,16 +7,16 @@ import (
 
 type Specs map[schema.GroupVersionResource][]unstructured.Unstructured
 
-func (s Specs) keys() []schema.GroupVersionResource {
-	gvrs := make([]schema.GroupVersionResource, 0, len(s))
+func (s Specs) keys() GroupVersionResourceList {
+	gvrs := make(GroupVersionResourceList, 0, len(s))
 	for gvr := range s {
 		gvrs = append(gvrs, gvr)
 	}
 	return gvrs
 }
 
-func (s Specs) Include(g ResourceMatcher) Specs {
-	gvrs := g.Include(s.keys())
+func (s Specs) Include(ms ...ResourceMatcher) Specs {
+	gvrs := s.keys().Include(ms...)
 	ret := make(Specs, len(gvrs))
 	for _, gvr := range gvrs {
 		ret[gvr] = s[gvr]
@@ -24,8 +24,8 @@ func (s Specs) Include(g ResourceMatcher) Specs {
 	return ret
 }
 
-func (s Specs) Exclude(g ResourceMatcher) Specs {
-	gvrs := g.Exclude(s.keys())
+func (s Specs) Exclude(ms ...ResourceMatcher) Specs {
+	gvrs := s.keys().Exclude(ms...)
 	ret := make(Specs, len(gvrs))
 	for _, gvr := range gvrs {
 		ret[gvr] = s[gvr]

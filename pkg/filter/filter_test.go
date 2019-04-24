@@ -202,13 +202,13 @@ func (s *FilterSuite) TestGroupVersionResourceAnyAll(c *C) {
 
 func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 	for _, tc := range []struct {
-		g       ResourceMatcher
-		gvrs    []schema.GroupVersionResource
-		include []schema.GroupVersionResource
-		exclude []schema.GroupVersionResource
+		m       ResourceMatcher
+		gvrs    GroupVersionResourceList
+		include GroupVersionResourceList
+		exclude GroupVersionResourceList
 	}{
 		{
-			g: nil,
+			m: nil,
 			gvrs: []schema.GroupVersionResource{
 				schema.GroupVersionResource{},
 			},
@@ -220,7 +220,7 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			},
 		},
 		{
-			g: ResourceMatcher{},
+			m: ResourceMatcher{},
 			gvrs: []schema.GroupVersionResource{
 				schema.GroupVersionResource{},
 			},
@@ -232,7 +232,7 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			},
 		},
 		{
-			g: ResourceMatcher{ResourceRequirement{}},
+			m: ResourceMatcher{ResourceRequirement{}},
 			gvrs: []schema.GroupVersionResource{
 				schema.GroupVersionResource{},
 			},
@@ -242,7 +242,7 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			exclude: []schema.GroupVersionResource{},
 		},
 		{
-			g: ResourceMatcher{ResourceRequirement{}},
+			m: ResourceMatcher{ResourceRequirement{}},
 			gvrs: []schema.GroupVersionResource{
 				schema.GroupVersionResource{
 					Group: "mygroup",
@@ -256,7 +256,7 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			exclude: []schema.GroupVersionResource{},
 		},
 		{
-			g: ResourceMatcher{
+			m: ResourceMatcher{
 				ResourceRequirement{
 					Group: "mygroup",
 				},
@@ -274,7 +274,7 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			exclude: []schema.GroupVersionResource{},
 		},
 		{
-			g: ResourceMatcher{
+			m: ResourceMatcher{
 				ResourceRequirement{
 					Group: "mygroup",
 				},
@@ -334,7 +334,25 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			},
 		},
 	} {
-		c.Check(tc.g.Include(tc.gvrs), DeepEquals, tc.include)
-		c.Check(tc.g.Exclude(tc.gvrs), DeepEquals, tc.exclude)
+		c.Check(tc.gvrs.Include(tc.m), DeepEquals, tc.include)
+		c.Check(tc.gvrs.Exclude(tc.m), DeepEquals, tc.exclude)
+	}
+}
+
+func (s *FilterSuite) TestJoin(c *C) {
+	for _, tc := range []struct {
+		m   []ResourceMatcher
+		out ResourceMatcher
+	}{
+		{
+			m:   []ResourceMatcher{ResourceMatcher{}, ResourceMatcher{}},
+			out: ResourceMatcher{},
+		},
+		{
+			m:   []ResourceMatcher{ResourceMatcher{}, ResourceMatcher{}},
+			out: ResourceMatcher{},
+		},
+	} {
+		c.Check(joinResourceMatchers(tc.m...), DeepEquals, tc.out)
 	}
 }

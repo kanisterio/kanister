@@ -29,7 +29,9 @@ func (s *CRDSuite) TestCRDMatcher(c *C) {
 	c.Assert(gvrs, Not(HasLen), 0)
 
 	// We assume there's at least one CRD in the cluster.
-	c.Assert(g.Include(gvrs), Not(HasLen), 0)
-	c.Assert(g.Exclude(gvrs), Not(HasLen), 0)
-	c.Assert(len(g.Exclude(gvrs))+len(g.Include(gvrs)), Equals, len(gvrs))
+	igvrs := GroupVersionResourceList(gvrs).Include(g)
+	egvrs := GroupVersionResourceList(gvrs).Exclude(g)
+	c.Assert(igvrs, Not(HasLen), 0)
+	c.Assert(egvrs, Not(HasLen), 0)
+	c.Assert(len(igvrs)+len(egvrs), Equals, len(gvrs))
 }

@@ -5,9 +5,9 @@ import (
 )
 
 type ResourceRequirement struct {
-	Group    string
-	Version  string
-	Resource string
+	Group    string `json:"group,omitempty"`
+	Version  string `json:"version,omitempty"`
+	Resource string `json:"resource,omitempty"`
 }
 
 func (r ResourceRequirement) Matches(gvr schema.GroupVersionResource) bool {
@@ -42,23 +42,40 @@ func (g ResourceMatcher) All(gvr schema.GroupVersionResource) bool {
 	return true
 }
 
-func (g ResourceMatcher) Include(gvrs []schema.GroupVersionResource) []schema.GroupVersionResource {
-	return g.apply(gvrs, false)
+type GroupVersionResourceList []schema.GroupVersionResource
+
+func (g GroupVersionResourceList) Include(ms ...ResourceMatcher) GroupVersionResourceList {
+	return g.apply(ms, false)
 }
 
-func (g ResourceMatcher) Exclude(gvrs []schema.GroupVersionResource) []schema.GroupVersionResource {
-	return g.apply(gvrs, true)
+func (g GroupVersionResourceList) Exclude(ms ...ResourceMatcher) GroupVersionResourceList {
+	return g.apply(ms, true)
 }
 
-func (g ResourceMatcher) apply(gvrs []schema.GroupVersionResource, exclude bool) []schema.GroupVersionResource {
-	if g.Empty() {
-		return gvrs
+func (g GroupVersionResourceList) apply(ms []ResourceMatcher, exclude bool) GroupVersionResourceList {
+	m := joinResourceMatchers(ms...)
+	if m.Empty() {
+		return g
 	}
-	filtered := make([]schema.GroupVersionResource, 0, len(gvrs))
-	for _, gvr := range gvrs {
-		if exclude != g.Any(gvr) {
+	filtered := make([]schema.GroupVersionResource, 0, len(g))
+	for _, gvr := range g {
+		if exclude != m.Any(gvr) {
 			filtered = append(filtered, gvr)
 		}
 	}
 	return filtered
+}
+
+func joinResourceMatchers(ms ...ResourceMatcher) ResourceMatcher {
+	n := 0
+	for _, m := range ms {
+		n += len(m)
+	}
+	gvr := make(ResourceMatcher, n)
+	i := 0
+	for _, m := range ms {
+		copy(gvr[i:], []ResourceRequirement(m))
+		i += len(m)
+	}
+	return gvr
 }
