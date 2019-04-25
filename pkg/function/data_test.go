@@ -64,7 +64,7 @@ func (s *DataSuite) TearDownSuite(c *C) {
 	}
 }
 
-func newRestoreDataBlueprint(pvc string) *crv1alpha1.Blueprint {
+func newRestoreDataBlueprint(pvc, identifierArg, identifierVal string) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"restore": &crv1alpha1.BlueprintAction{
@@ -81,11 +81,11 @@ func newRestoreDataBlueprint(pvc string) *crv1alpha1.Blueprint {
 							RestoreDataImageArg:                "kanisterio/kanister-tools:0.18.0",
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataRestorePathArg:          "/mnt/data",
-							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", BackupDataOutputBackupTag),
 							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
 							RestoreDataVolsArg: map[string]string{
 								pvc: "/mnt/data",
 							},
+							identifierArg: fmt.Sprintf("{{ .Options.%s }}", identifierVal),
 						},
 					},
 				},
@@ -183,7 +183,75 @@ func (s *DataSuite) TestBackupRestoreData(c *C) {
 	tp.Options = options
 
 	// Test restore
-	bp = *newRestoreDataBlueprint(pvc.GetName())
+	bp = *newRestoreDataBlueprint(pvc.GetName(), RestoreDataBackupTagArg, BackupDataOutputBackupTag)
+	_ = runAction(c, bp, "restore", tp)
+}
+
+func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
+	ctx := context.Background()
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet())
+	c.Assert(err, IsNil)
+	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
+	c.Assert(err, IsNil)
+
+	pvc := testutil.NewTestPVC()
+	pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+	c.Assert(err, IsNil)
+
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secret-datatest-id",
+			Namespace: s.namespace,
+		},
+		Type: "Opaque",
+		StringData: map[string]string{
+			"password": "myPassword",
+		},
+	}
+	secret, err = s.cli.CoreV1().Secrets(s.namespace).Create(secret)
+
+	as := crv1alpha1.ActionSpec{
+		Object: crv1alpha1.ObjectReference{
+			Kind:      param.StatefulSetKind,
+			Name:      ss.GetName(),
+			Namespace: s.namespace,
+		},
+		Profile: &crv1alpha1.ObjectReference{
+			Name:      testutil.TestProfileName,
+			Namespace: s.namespace,
+		},
+		Secrets: map[string]crv1alpha1.ObjectReference{
+			"backupKey": crv1alpha1.ObjectReference{
+				Kind:      "Secret",
+				Name:      secret.GetName(),
+				Namespace: s.namespace,
+			},
+		},
+	}
+
+	tp, err := param.New(ctx, s.cli, s.crCli, as)
+	c.Assert(err, IsNil)
+
+	location := crv1alpha1.Location{
+		Type:   crv1alpha1.LocationTypeS3Compliant,
+		Bucket: testutil.GetEnvOrSkip(c, testutil.TestS3BucketName),
+	}
+	tp.Profile = testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeS3, location)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	options := map[string]string{
+		BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
+		BackupDataOutputBackupTag: out[BackupDataOutputBackupTag].(string),
+	}
+	tp.Options = options
+
+	// Test restore with ID
+	bp = *newRestoreDataBlueprint(pvc.GetName(), RestoreDataBackupIdentifierArg, BackupDataOutputBackupID)
 	_ = runAction(c, bp, "restore", tp)
 }
 

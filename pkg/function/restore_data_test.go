@@ -105,22 +105,25 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 		{
 			name: "Args with Pod",
 			args: map[string]interface{}{
-				RestoreDataPodArg: "some-pod",
+				RestoreDataPodArg:       "some-pod",
+				RestoreDataBackupTagArg: "backup123",
 			},
 			errChecker: IsNil,
 		},
 		{
 			name: "Args with Vols",
 			args: map[string]interface{}{
-				RestoreDataVolsArg: map[string]string{"pvc": "mount"},
+				RestoreDataVolsArg:      map[string]string{"pvc": "mount"},
+				RestoreDataBackupTagArg: "backup123",
 			},
 			errChecker: IsNil,
 		},
 		{
 			name: "Args with Pod and Vols",
 			args: map[string]interface{}{
-				RestoreDataPodArg:  "some-pod",
-				RestoreDataVolsArg: map[string]string{"pvc": "mount"},
+				RestoreDataPodArg:       "some-pod",
+				RestoreDataVolsArg:      map[string]string{"pvc": "mount"},
+				RestoreDataBackupTagArg: "backup123",
 			},
 			errChecker: NotNil,
 		},
@@ -129,9 +132,34 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 			args:       map[string]interface{}{},
 			errChecker: NotNil,
 		},
+		{
+			name: "Args with backupTag",
+			args: map[string]interface{}{
+				RestoreDataPodArg:       "some-pod",
+				RestoreDataBackupTagArg: "backup123",
+			},
+			errChecker: IsNil,
+		},
+		{
+			name: "Args with ID",
+			args: map[string]interface{}{
+				RestoreDataPodArg:              "some-pod",
+				RestoreDataBackupIdentifierArg: "backup123",
+			},
+			errChecker: IsNil,
+		},
+		{
+			name: "Args with backupTag and ID",
+			args: map[string]interface{}{
+				RestoreDataPodArg:              "some-pod",
+				RestoreDataBackupTagArg:        "backup123",
+				RestoreDataBackupIdentifierArg: "backup123",
+			},
+			errChecker: NotNil,
+		},
 	}
 	for _, tc := range testCases {
-		_, _, _, _, err := validateAndGetOptArgs(tc.args)
+		_, _, _, _, _, _, err := validateAndGetOptArgs(tc.args)
 		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
 	}
 }
