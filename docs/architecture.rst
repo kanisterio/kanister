@@ -214,6 +214,19 @@ Blueprint phase along with its state of execution and output.
       Output map[string]interface{} `json:"output"`
   }
 
+
+Deleting an ActionSet will cause the controller to delete the ActionSet,
+which will stop the execution of the actions.
+
+.. code-block:: bash
+
+  $ kubectl --namespace kanister delete actionset s3backup-j4z6f
+    actionset.cr.kanister.io "s3backup-j4z6f" deleted
+
+.. note::
+    Since ActionSets are `Custom Resources`, Kubernetes allows users to delete them like any other API objects.
+    Currently, `deleting` an ActionSet to stop execution is an **alpha** feature.
+
 .. _profiles:
 
 Profiles
