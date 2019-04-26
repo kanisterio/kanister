@@ -14,6 +14,7 @@ const (
 	WaitFuncName   = "WaitFunc"
 	ArgFuncName    = "ArgFunc"
 	OutputFuncName = "OutputFunc"
+	CancelFuncName = "CancelFunc"
 )
 
 var (
@@ -21,6 +22,7 @@ var (
 	waitFuncCh   chan struct{}
 	argFuncCh    chan map[string]interface{}
 	outputFuncCh chan map[string]interface{}
+	cancelFuncCh chan error
 )
 
 func failFunc(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error) {
@@ -33,6 +35,7 @@ func waitFunc(context.Context, param.TemplateParams, map[string]interface{}) (ma
 	<-waitFuncCh
 	return nil, nil
 }
+
 func argsFunc(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	argFuncCh <- args
 	return nil, nil
@@ -43,15 +46,23 @@ func outputFunc(ctx context.Context, tp param.TemplateParams, args map[string]in
 	return args, nil
 }
 
+func cancelFunc(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	<-ctx.Done()
+	cancelFuncCh <- ctx.Err()
+	return nil, ctx.Err()
+}
+
 func init() {
 	failFuncCh = make(chan error)
 	waitFuncCh = make(chan struct{})
 	argFuncCh = make(chan map[string]interface{})
 	outputFuncCh = make(chan map[string]interface{})
+	cancelFuncCh = make(chan error)
 	registerMockKanisterFunc(FailFuncName, failFunc)
 	registerMockKanisterFunc(WaitFuncName, waitFunc)
 	registerMockKanisterFunc(ArgFuncName, argsFunc)
 	registerMockKanisterFunc(OutputFuncName, outputFunc)
+	registerMockKanisterFunc(CancelFuncName, cancelFunc)
 }
 
 func registerMockKanisterFunc(name string, f func(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error)) {
@@ -91,4 +102,8 @@ func OutputFuncOut() map[string]interface{} {
 
 func (mf *mockKanisterFunc) RequiredArgs() []string {
 	return nil
+}
+
+func CancelFuncOut() error {
+	return <-cancelFuncCh
 }

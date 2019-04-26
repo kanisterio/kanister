@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
@@ -27,6 +28,7 @@ const (
 	CopyVolumeDataOutputBackupRoot             = "backupRoot"
 	CopyVolumeDataOutputBackupArtifactLocation = "backupArtifactLocation"
 	CopyVolumeDataEncryptionKeyArg             = "encryptionKey"
+	CopyVolumeDataOutputBackupTag              = "backupTag"
 )
 
 func init() {
@@ -48,43 +50,50 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 	}
 	// Create a pod with PVCs attached
 	mountPoint := fmt.Sprintf(copyVolumeDataMountPoint, pvc)
-	pod, err := kube.CreatePod(ctx, cli, &kube.PodOptions{
+	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: copyVolumeDataJobPrefix,
 		Image:        kanisterToolsImage,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      map[string]string{pvc: mountPoint},
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod to copy volume data")
 	}
-	defer kube.DeletePod(context.Background(), cli, pod)
+	pr := kube.NewPodRunner(cli, options)
+	podFunc := copyVolumeDataPodFunc(cli, tp, namespace, mountPoint, targetPath, encryptionKey)
+	return pr.Run(ctx, podFunc)
+}
 
-	// Wait for pod to reach running state
-	if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
-		return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, mountPoint, targetPath, encryptionKey string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+		// Wait for pod to reach running state
+		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+		}
+		// Get restic repository
+		if err := restic.GetOrCreateRepository(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, encryptionKey, tp.Profile); err != nil {
+			return nil, err
+		}
+		// Copy data to object store
+		backupTag := rand.String(10)
+		cmd := restic.BackupCommandByTag(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey)
+		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
+		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
+		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to create and upload backup")
+		}
+		// Get the snapshot ID from log
+		backupID := restic.SnapshotIDFromBackupLog(stdout)
+		if backupID == "" {
+			return nil, errors.New("Failed to parse the backup ID from logs")
+		}
+		return map[string]interface{}{
+				CopyVolumeDataOutputBackupID:               backupID,
+				CopyVolumeDataOutputBackupRoot:             mountPoint,
+				CopyVolumeDataOutputBackupArtifactLocation: targetPath,
+				CopyVolumeDataOutputBackupTag:              backupTag,
+			},
+			nil
 	}
-
-	// Get restic repository
-	if err = restic.GetOrCreateRepository(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, encryptionKey, tp.Profile); err != nil {
-		return nil, err
-	}
-
-	// Copy data to object store
-	backupIdentifier := rand.String(10)
-	cmd := restic.BackupCommand(tp.Profile, targetPath, backupIdentifier, mountPoint, encryptionKey)
-	stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd)
-	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create and upload backup")
-	}
-	return map[string]interface{}{
-			CopyVolumeDataOutputBackupID:               backupIdentifier,
-			CopyVolumeDataOutputBackupRoot:             mountPoint,
-			CopyVolumeDataOutputBackupArtifactLocation: targetPath,
-		},
-		nil
 }
 
 func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

@@ -24,10 +24,12 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/pkg/errors"
 	opkit "github.com/rook/operator-kit"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -49,10 +51,11 @@ import (
 
 // Controller represents a controller object for kanister custom resources
 type Controller struct {
-	config    *rest.Config
-	crClient  versioned.Interface
-	clientset kubernetes.Interface
-	recorder  record.EventRecorder
+	config           *rest.Config
+	crClient         versioned.Interface
+	clientset        kubernetes.Interface
+	recorder         record.EventRecorder
+	actionSetTombMap sync.Map
 }
 
 // New create controller for watching kanister custom resources created
@@ -235,7 +238,18 @@ func (c *Controller) onUpdateBlueprint(oldBP, newBP *crv1alpha1.Blueprint) error
 }
 
 func (c *Controller) onDeleteActionSet(as *crv1alpha1.ActionSet) error {
-	log.Infof("Deleted ActionSet %s", as.GetName())
+	asName := as.GetName()
+	log.Infof("Deleted ActionSet %s", asName)
+	v, ok := c.actionSetTombMap.Load(asName)
+	if !ok {
+		return nil
+	}
+	t, castOk := v.(*tomb.Tomb)
+	if !castOk {
+		return nil
+	}
+	t.Kill(nil) // TODO: @Deepika Give reason for ActionSet kill
+	c.actionSetTombMap.Delete(asName)
 	return nil
 }
 
@@ -319,8 +333,9 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(as); err != nil {
 		return errors.WithStack(err)
 	}
+	ctx := context.Background()
 	for i := range as.Status.Actions {
-		if err = c.runAction(context.TODO(), as, i); err != nil {
+		if err = c.runAction(ctx, as, i); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
 			bpName := as.Spec.Actions[i].Blueprint
@@ -354,7 +369,10 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		return err
 	}
 	ns, name := as.GetNamespace(), as.GetName()
-	go func() {
+	var t *tomb.Tomb
+	t, ctx = tomb.WithContext(ctx)
+	c.actionSetTombMap.Store(as.Name, t)
+	t.Go(func() error {
 		for i, p := range phases {
 			c.logAndSuccessEvent(fmt.Sprintf("Executing phase %s", p.Name()), "Started Phase", as)
 			err = param.InitPhaseParams(ctx, c.clientset, tp, p.Name(), p.Objects())
@@ -383,7 +401,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
 				msg := fmt.Sprintf("Failed to update phase: %#v:", as.Status.Actions[aIDX].Phases[i])
 				c.logAndErrorEvent(msg, reason, rErr, as, bp)
-				return
+				return nil
 			}
 			if err != nil {
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
@@ -391,7 +409,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 					msg = fmt.Sprintf("Failed to execute phase: %#v:", as.Status.Actions[aIDX].Phases[i])
 				}
 				c.logAndErrorEvent(msg, reason, err, as, bp)
-				return
+				return nil
 			}
 			param.UpdatePhaseParams(ctx, tp, p.Name(), output)
 			c.logAndSuccessEvent(fmt.Sprintf("Completed phase %s", p.Name()), "Ended Phase", as)
@@ -408,7 +426,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				msg := fmt.Sprintf("Failed to update ActionSet: %s", name)
 				c.logAndErrorEvent(msg, reason, err, as, bp)
 			}
-			return
+			return nil
 		}
 		// Render the artifacts
 		arts, err := param.RenderArtifacts(artTpls, *tp)
@@ -430,15 +448,16 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
 			msg := fmt.Sprintf("Failed to update Output Artifacts: %#v:", artTpls)
 			c.logAndErrorEvent(msg, reason, aErr, as, bp)
-			return
+			return nil
 		}
 		if err != nil {
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
 			msg := "Failed to render output artifacts"
 			c.logAndErrorEvent(msg, reason, err, as, bp)
-			return
+			return nil
 		}
-	}()
+		return nil
+	})
 	return nil
 }
 

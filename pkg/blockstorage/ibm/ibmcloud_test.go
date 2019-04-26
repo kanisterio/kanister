@@ -30,6 +30,7 @@ type TestIBMCloudBlock struct {
 var _ = Suite(&TestIBMCloudBlock{})
 
 func (s *TestIBMCloudBlock) SetUpSuite(c *C) {
+	c.Skip("IBM tests are too flaky to run in CI")
 	var apiKey string
 	if apiK, ok := os.LookupEnv(IBMApiKeyEnv); ok {
 		apiKey = apiK
@@ -65,9 +66,10 @@ func (s *TestIBMCloudBlock) SetUpSuite(c *C) {
 }
 
 func (s TestIBMCloudBlock) TearDownSuite(c *C) {
+	c.Skip("IBM tests are too flaky to run in CI")
 	// Check whether or not the test volume was initialized
 	if _, ok := os.LookupEnv(IBMApiKeyEnv); !ok {
-		c.Skip(fmt.Sprintf("Skipping TearDown"))
+		c.Skip("Skipping TearDown")
 	}
 	c.Assert(s.testVol, NotNil)
 	bsVol, err := s.provider.VolumeGet(context.Background(), s.testVol.ID, "")

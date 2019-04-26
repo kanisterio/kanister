@@ -14,6 +14,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	"github.com/kanisterio/kanister/pkg/kube"
+	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -72,7 +73,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		}
 		_, err = cli.Core().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
 		if err == nil {
-			if err = kube.DeletePVC(cli, namespace, pvcName); err != nil {
+			if err = kubevolume.DeletePVC(cli, namespace, pvcName); err != nil {
 				return nil, err
 			}
 		}
@@ -93,11 +94,11 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		}
 
 		annotations := map[string]string{}
-		pvc, err := kube.CreatePVC(ctx, cli, namespace, pvcName, vol.Size, vol.ID, annotations)
+		pvc, err := kubevolume.CreatePVC(ctx, cli, namespace, pvcName, vol.Size, vol.ID, annotations)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to create PVC for volume %v", *vol)
 		}
-		pv, err := kube.CreatePV(ctx, cli, vol, vol.Type, annotations)
+		pv, err := kubevolume.CreatePV(ctx, cli, vol, vol.Type, annotations)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to create PV for volume %v", *vol)
 		}

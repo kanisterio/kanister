@@ -20,9 +20,11 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 )
 
 var _ blockstorage.Provider = (*ebsStorage)(nil)
+var _ zone.Mapper = (*ebsStorage)(nil)
 
 type ebsStorage struct {
 	ec2Cli *EC2
@@ -411,13 +413,15 @@ func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s, VolumeTags: %v", snapshot.Volume.VolumeType, snapshot.Volume.Az, snapshot.Volume.Tags)
 	}
 
-	z, err := zoneForVolumeCreateFromSnapshot(ctx, snapshot.Region, snapshot.Volume.Az)
+	zones, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
-
+	if len(zones) != 1 {
+		return nil, errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
+	}
 	cvi := &ec2.CreateVolumeInput{
-		AvailabilityZone: aws.String(z),
+		AvailabilityZone: aws.String(zones[0]),
 		SnapshotId:       aws.String(snapshot.ID),
 		VolumeType:       aws.String(string(snapshot.Volume.VolumeType)),
 	}
@@ -589,7 +593,7 @@ func GetRegionFromEC2Metadata() (string, error) {
 	return awsRegion, errors.Wrap(err, "Failed to get AWS Region")
 }
 
-func regionToZones(ctx context.Context, region string) ([]string, error) {
+func (s *ebsStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
 	// Fall back to using a static map.
 	return staticRegionToZones(region)
 }

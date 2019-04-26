@@ -70,7 +70,7 @@ func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []strin
 	for _, p := range ps {
 		for _, c := range cs {
 			go func(p string, c string) {
-				stdout, stderr, err := kube.Exec(cli, namespace, p, c, cmd)
+				stdout, stderr, err := kube.Exec(cli, namespace, p, c, cmd, nil)
 				format.Log(p, c, stdout)
 				format.Log(p, c, stderr)
 				errChan <- err

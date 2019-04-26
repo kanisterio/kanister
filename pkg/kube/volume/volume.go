@@ -1,4 +1,4 @@
-package kube
+package volume
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	snapshotclient "github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -61,8 +62,8 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 		pvc.ObjectMeta.GenerateName = pvcGenerateName
 	}
 
-	// If targetVolID is set, static provisioning is desired
 	if targetVolID != "" {
+		// If targetVolID is set, static provisioning is desired
 		pvc.Spec.Selector = &metav1.LabelSelector{
 			MatchLabels: map[string]string{pvMatchLabelName: filepath.Base(targetVolID)},
 		}
@@ -77,6 +78,60 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 		return "", errors.Wrapf(err, "Unable to create PVC %v", pvc)
 	}
 	return createdPVC.Name, nil
+}
+
+// CreatePVCFromSnapshot will restore a volume and returns the resulting
+// PersistentVolumeClaim and any error that happened in the process.
+//
+// 'volumeName' is the name of the PVC that will be restored from the snapshot.
+// 'snapshotName' is the name of the VolumeSnapshot that will be used for restoring.
+// 'namespace' is the namespace of the VolumeSnapshot. The PVC will be restored to the same namepsace.
+// 'restoreSize' will override existing restore size from snapshot content if provided.
+func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, snapCli snapshotclient.Interface, namespace, volumeName, snapshotName string, restoreSize *int) (string, error) {
+	snap, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Get(snapshotName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	size := snap.Status.RestoreSize
+	if restoreSize != nil {
+		s := resource.MustParse(fmt.Sprintf("%dGi", *restoreSize))
+		size = &s
+	}
+	if size == nil {
+		return "", fmt.Errorf("Restore size is empty and no restore size argument given, Volumesnapshot: %s", snap.Name)
+	}
+
+	snapshotKind := "VolumeSnapshot"
+	snapshotAPIGroup := "snapshot.storage.k8s.io"
+	pvc := &v1.PersistentVolumeClaim{
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			DataSource: &v1.TypedLocalObjectReference{
+				APIGroup: &snapshotAPIGroup,
+				Kind:     snapshotKind,
+				Name:     snapshotName,
+			},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: *size,
+				},
+			},
+		},
+	}
+	if volumeName != "" {
+		pvc.ObjectMeta.Name = volumeName
+	} else {
+		pvc.ObjectMeta.GenerateName = pvcGenerateName
+	}
+
+	pvc, err = kubeCli.CoreV1().PersistentVolumeClaims(namespace).Create(pvc)
+	if err != nil {
+		if volumeName != "" && apierrors.IsAlreadyExists(err) {
+			return volumeName, nil
+		}
+		return "", errors.Wrapf(err, "Unable to create PVC, PVC: %v", pvc)
+	}
+	return pvc.Name, err
 }
 
 // CreatePV creates a PersistentVolume and returns its name

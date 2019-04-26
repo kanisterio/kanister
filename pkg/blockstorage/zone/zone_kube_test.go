@@ -1,23 +1,23 @@
-// +build !unit
-
 package zone
 
 import (
 	"context"
-	"fmt"
 
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/kube"
 )
 
-type KubeTestAWSEBSSuite struct{}
+type KubeTestZoneSuite struct{}
 
-var _ = Suite(&KubeTestAWSEBSSuite{})
+var _ = Suite(&KubeTestZoneSuite{})
 
-func (s KubeTestAWSEBSSuite) TestNodeZones(c *C) {
-	// skipping this test since it fails on travis(minikube)
-	c.Skip(fmt.Sprintf("Skipping TestNodeZones"))
+func (s KubeTestZoneSuite) TestNodeZones(c *C) {
+	c.Skip("Fails in Minikube")
 	ctx := context.Background()
-	zones, err := NodeZones(ctx)
+	cli, err := kube.NewClient()
+	c.Assert(err, IsNil)
+	zones, _, err := nodeZonesAndRegion(ctx, cli)
 	c.Assert(err, IsNil)
 	c.Assert(zones, Not(HasLen), 0)
 }

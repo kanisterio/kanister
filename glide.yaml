@@ -16,6 +16,8 @@ import:
   repo: https://github.com/kastenhq/ibmcloud-storage-volume-lib.git
 - package: github.com/jpillora/backoff
   version: 1.0.0
+- package: github.com/kubernetes-csi/external-snapshotter
+  version: v1.0.1
 - package: github.com/Masterminds/sprig
   version: v2.15.0
 - package: github.com/mitchellh/mapstructure
@@ -39,9 +41,12 @@ import:
 - package: golang.org/x/oauth2
   version: d668ce993890a79bda886613ee587a69dd5da7a6
 - package: google.golang.org/api
-  version: f5fa6a3eed6362c07f4e2e4425faeab907a041bd
+  version: v0.3.0
 - package: gopkg.in/check.v1
   version: 64131543e7896d5bcc6bd5a76287eb75ea96c673
+- package: gopkg.in/tomb.v2
+  version: v2
+  repo: https://github.com/go-tomb/tomb.git
 - package: k8s.io/api
   version: kubernetes-1.13.3
 - package: k8s.io/apiextensions-apiserver

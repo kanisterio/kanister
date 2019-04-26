@@ -269,6 +269,8 @@ This function backs up data from a container into an S3 compatible object store.
    sidecar container. This sidecar is necessary to run the
    tools that capture path on a volume and store it on the object store.
 
+Arguments:
+
 .. csv-table::
    :header: "Argument", "Required", "Type", "Description"
    :align: left
@@ -279,22 +281,37 @@ This function backs up data from a container into an S3 compatible object store.
    `container`, Yes, `string`, container in which to execute
    `includePath`, Yes, `string`, path of the data to be backed up
    `backupArtifactPrefix`, Yes, `string`, path to store the backup on the object store
-   `backupIdentifier`, Yes, `string`, unique string to identify the backup
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `backupTag`,`string`, unique tag added to the backup
 
 Example:
 
 .. code-block:: yaml
   :linenos:
 
-  - func: BackupData
-    name: BackupToObjectStore
-    args:
-      namespace: "{{ .Deployment.Namespace }}"
-      pod: "{{ index .Deployment.Pods 0 }}"
-      container: kanister-tools
-      includePath: /mnt/data
-      backupArtifactPrefix: s3-bucket/path/artifactPrefix
-      backupIdentifier: "{{ .Time }}"
+  actions:
+    backup:
+      type: Deployment
+      outputArtifacts:
+        backupInfo:
+          keyValue:
+            backupIdentifier: "{{ .Phases.BackupToObjectStore.Output.backupTag }}"
+      phases:
+        - func: BackupData
+          name: BackupToObjectStore
+          args:
+            namespace: "{{ .Deployment.Namespace }}"
+            pod: "{{ index .Deployment.Pods 0 }}"
+            container: kanister-tools
+            includePath: /mnt/data
+            backupArtifactPrefix: s3-bucket/path/artifactPrefix
 
 .. _restoredata:
 
@@ -322,7 +339,7 @@ and restores data to the specified path.
    `namespace`, Yes, `string`, namespace in which to execute
    `image`, Yes, `string`, image to be used for running restore
    `backupArtifactPrefix`, Yes, `string`, path to the backup on the object store
-   `backupIdentifier`, Yes, `string`, unique string to identify the backup
+   `backupTag`, Yes, `string`, unique tag added during the backup
    `restorePath`, No, `string`, path where data is restored
    `pod`, No, `string`, pod to which the volumes are attached
    `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
@@ -336,6 +353,11 @@ and restores data to the specified path.
 
 Example:
 
+Consider a scenario where you wish to restore the data backed up by the
+:ref:`backupdata` function. We will first scale down the application,
+restore the data and then scale it back up.
+For this phase, we will use the `backupInfo` Artifact provided by backup function.
+
 .. code-block:: yaml
   :linenos:
 
@@ -344,7 +366,7 @@ Example:
     args:
       namespace: "{{ .Deployment.Namespace }}"
       name: "{{ .Deployment.Name }}"
-      kind: deployment
+      kind: Deployment
       replicas: 0
   - func: RestoreData
     name: RestoreFromObjectStore
@@ -353,7 +375,14 @@ Example:
       pod: "{{ index .Deployment.Pods 0 }}"
       image: kanisterio/kanister-tools:0.18.0
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
-      backupIdentifier: "{{ .Time }}"
+      backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
+  - func: ScaleWorkload
+    name: StartupApplication
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
+      kind: Deployment
+      replicas: 1
 
 CopyVolumeData
 --------------
@@ -388,7 +417,7 @@ Outputs:
    :widths: 5,5,15
 
    `backupArtifactLocation`,`string`, location in objectstore where data was copied
-   `backupID`,`string`,  unique string to identify this data copy
+   `backupTag`,`string`,  unique string to identify this data copy
 
 Example:
 
@@ -406,6 +435,37 @@ If the ActionSet `Object` is a PersistentVolumeClaim:
 DeleteData
 ----------
 
+This function deletes the snapshot data backed up by the BackupData function.
+
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `backupArtifactPrefix`, Yes, `string`, path to the backup on the object store
+   `backupTag`, Yes, `string`, unique tag added during the backup
+
+Example:
+
+Consider a scenario where you wish to delete the data backed up by the
+:ref:`backupdata` function.
+For this phase, we will use the `backupInfo` Artifact provided by backup function.
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: DeleteData
+    name: DeleteFromObjectStore
+    args:
+      namespace: "{{ .Namespace.Name }}"
+      backupArtifactPrefix: s3-bucket/path/artifactPrefix
+      backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
+
+LocationDelete
+--------------
+
 This function uses a new Pod to delete the specified artifact
 from an S3 compatible object store.
 
@@ -414,7 +474,6 @@ from an S3 compatible object store.
    :align: left
    :widths: 5,5,5,15
 
-   `namespace`, No, `string`, namespace in which to execute
    `artifact`, Yes, `string`, artifact to be deleted from the object store
 
 .. note::
@@ -427,10 +486,9 @@ Example:
 .. code-block:: yaml
   :linenos:
 
-  - func: DeleteData
-    name: DeleteFromObjectStore
+  - func: LocationDelete
+    name: LocationDeleteFromObjectStore
     args:
-      namespace: "{{ .Deployment.Namespace }}"
       artifact: s3://bucket/path/artifact
 
 .. _createvolumesnapshot:

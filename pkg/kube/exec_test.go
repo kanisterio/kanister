@@ -3,6 +3,10 @@
 package kube
 
 import (
+	"bytes"
+	"context"
+	"time"
+
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,6 +47,11 @@ func (s *ExecSuite) SetUpSuite(c *C) {
 	}
 	s.pod, err = s.cli.Core().Pods(s.namespace).Create(pod)
 	c.Assert(err, IsNil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	c.Assert(WaitForPodReady(ctx, s.cli, s.namespace, s.pod.Name), IsNil)
+	s.pod, err = s.cli.Core().Pods(s.namespace).Get(s.pod.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
 }
 
 func (s *ExecSuite) TearDownSuite(c *C) {
@@ -52,9 +61,11 @@ func (s *ExecSuite) TearDownSuite(c *C) {
 	}
 }
 func (s *ExecSuite) TestExecEcho(c *C) {
-	cmd := []string{"sh", "-c", "echo badabing"}
+	cmd := []string{"sh", "-c", "cat -"}
+	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
 	for _, cs := range s.pod.Status.ContainerStatuses {
-		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd)
+		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, bytes.NewBufferString("badabing"))
 		c.Assert(err, IsNil)
 		c.Assert(stdout, Equals, "badabing")
 		c.Assert(stderr, Equals, "")

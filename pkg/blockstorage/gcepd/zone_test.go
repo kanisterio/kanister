@@ -1,4 +1,4 @@
-package awsebs
+package gcepd
 
 import (
 	"context"
@@ -20,27 +20,27 @@ func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
 		out    string
 	}{
 		{
-			region: "us-west-2",
-			in:     "us-west-2a",
-			out:    "us-west-2a",
+			region: "us-west2",
+			in:     "us-west2-a",
+			out:    "us-west2-a",
 		},
 		{
-			region: "us-west-2",
-			in:     "us-east-1f",
-			out:    "us-west-2a",
+			region: "us-west2",
+			in:     "us-east1-f",
+			out:    "us-west2-a",
 		},
 		{
-			region: "us-west-2",
-			in:     "us-east-2b",
-			out:    "us-west-2b",
+			region: "us-west2",
+			in:     "us-east2-b",
+			out:    "us-west2-b",
 		},
 		{
-			region: "us-west-2",
-			in:     "us-east-1f",
-			out:    "us-west-2a",
+			region: "us-west2",
+			in:     "us-east1-f",
+			out:    "us-west2-a",
 		},
 	} {
-		var t = &ebsTest{}
+		var t = &gcpTest{}
 		z := zone.WithUnknownNodeZones(ctx, t, tc.region, tc.in, make(map[string]struct{}))
 		c.Assert(z, Not(Equals), "")
 		if tc.out != "" {
@@ -49,11 +49,11 @@ func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
 	}
 }
 
-var _ zone.Mapper = (*ebsTest)(nil)
+var _ zone.Mapper = (*gcpTest)(nil)
 
-type ebsTest struct{}
+type gcpTest struct{}
 
-func (et *ebsTest) FromRegion(ctx context.Context, region string) ([]string, error) {
+func (gt *gcpTest) FromRegion(ctx context.Context, region string) ([]string, error) {
 	// Fall back to using a static map.
 	return staticRegionToZones(region)
 }

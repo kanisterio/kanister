@@ -33,7 +33,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name:            "container",
 					Image:           opts.Image,
 					Command:         opts.Command,
@@ -83,7 +83,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		p, err := cli.Core().Pods(namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
-			return true, err
+			return false, err
 		}
 		return (p.Status.Phase == v1.PodRunning), nil
 	})
@@ -102,6 +102,13 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		}
 		if p.Status.Phase == v1.PodFailed {
 			return false, errors.Errorf("Pod %s failed", name)
+		}
+		if p.Status.Phase == v1.PodRunning {
+			for _, con := range p.Status.ContainerStatuses {
+				if con.State.Terminated != nil {
+					return false, errors.Errorf("Container %v is terminated, while Pod %v is Running", con.Name, name)
+				}
+			}
 		}
 		return (p.Status.Phase == v1.PodSucceeded), nil
 	})

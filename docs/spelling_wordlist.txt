@@ -5,6 +5,7 @@ Walkthrough
 Workflow
 args
 aws
+boolean
 helm
 kanctl
 kanister
@@ -15,11 +16,14 @@ namespace
 outputArtifact
 param
 params
+pluggable
 prepopulated
 repo
+runtime
 schemas
 stateful
 stdout
+subcommand
 templating
 defaultProfile
 Kando

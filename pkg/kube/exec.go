@@ -28,12 +28,13 @@ type ExecOptions struct {
 
 // Exec is our version of the call to `kubectl exec` that does not depend on
 // k8s.io/kubernetes.
-func Exec(cli kubernetes.Interface, namespace, pod, container string, command []string) (string, string, error) {
+func Exec(cli kubernetes.Interface, namespace, pod, container string, command []string, stdin io.Reader) (string, string, error) {
 	opts := ExecOptions{
 		Command:       command,
 		Namespace:     namespace,
 		PodName:       pod,
 		ContainerName: container,
+		Stdin:         stdin,
 		CaptureStdout: true,
 		CaptureStderr: true,
 	}

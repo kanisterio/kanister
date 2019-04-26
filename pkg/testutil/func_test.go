@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"strings"
 
 	. "gopkg.in/check.v1"
 
@@ -64,4 +65,23 @@ func (s *FuncSuite) TestOutputFunc(c *C) {
 		c.Assert(output, DeepEquals, args)
 	}()
 	c.Assert(OutputFuncOut(), DeepEquals, args)
+}
+
+func (s *FuncSuite) TestCancelFunc(c *C) {
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan bool)
+	go func() {
+		_, err := cancelFunc(ctx, param.TemplateParams{}, nil)
+		c.Assert(err, NotNil)
+		c.Assert(strings.Contains(err.Error(), "context canceled"), Equals, true)
+		close(done)
+	}()
+	select {
+	case <-done:
+		c.FailNow()
+	default:
+	}
+	cancel()
+	c.Assert(CancelFuncOut().Error(), DeepEquals, "context canceled")
+	<-done
 }

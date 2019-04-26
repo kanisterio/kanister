@@ -56,8 +56,7 @@ actions:
     inputArtifactNames:
     - timeLog
     phases:
-    - func: DeleteData
-      name: deleteFromS3
+    - func: LocationDelete
+      name: LocationDeleteFromS3
       args:
-        namespace: "{{ .Deployment.Namespace }}"
         artifact: "{{ .ArtifactsIn.timeLog.KeyValue.path }}"

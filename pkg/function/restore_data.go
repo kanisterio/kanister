@@ -28,6 +28,8 @@ const (
 	RestoreDataVolsArg = "volumes"
 	// RestoreDataEncryptionKeyArg provides the encryption key used during backup
 	RestoreDataEncryptionKeyArg = "encryptionKey"
+	// RestoreDataBackupTagArg provides a unique tag added to the backup artifacts
+	RestoreDataBackupTagArg = "backupTag"
 )
 
 func init() {
@@ -42,11 +44,38 @@ func (*restoreDataFunc) Name() string {
 	return "RestoreData"
 }
 
-func validateOptArgs(pod string, vols map[string]string) error {
-	if (pod != "") != (len(vols) > 0) {
-		return nil
+func validateAndGetOptArgs(args map[string]interface{}) (string, string, string, map[string]string, string, string, error) {
+	var restorePath, encryptionKey, pod, tag, id string
+	var vols map[string]string
+	var err error
+
+	if err = OptArg(args, RestoreDataRestorePathArg, &restorePath, "/"); err != nil {
+		return restorePath, encryptionKey, pod, vols, tag, id, err
 	}
-	return errors.Errorf("Require one argument: %s or %s", RestoreDataPodArg, RestoreDataVolsArg)
+	if err = OptArg(args, RestoreDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
+		return restorePath, encryptionKey, pod, vols, tag, id, err
+	}
+	if err = OptArg(args, RestoreDataPodArg, &pod, ""); err != nil {
+		return restorePath, encryptionKey, pod, vols, tag, id, err
+	}
+	if err = OptArg(args, RestoreDataVolsArg, &vols, nil); err != nil {
+		return restorePath, encryptionKey, pod, vols, tag, id, err
+	}
+	if (pod != "") == (len(vols) > 0) {
+		return restorePath, encryptionKey, pod, vols, tag, id,
+			errors.Errorf("Require one argument: %s or %s", RestoreDataPodArg, RestoreDataVolsArg)
+	}
+	if err = OptArg(args, RestoreDataBackupTagArg, &tag, nil); err != nil {
+		return restorePath, encryptionKey, pod, vols, tag, id, err
+	}
+	if err = OptArg(args, RestoreDataBackupIdentifierArg, &id, nil); err != nil {
+		return restorePath, encryptionKey, pod, vols, tag, id, err
+	}
+	if (tag != "") == (id != "") {
+		return restorePath, encryptionKey, pod, vols, tag, id,
+			errors.Errorf("Require one argument: %s or %s", RestoreDataBackupTagArg, RestoreDataBackupIdentifierArg)
+	}
+	return restorePath, encryptionKey, pod, vols, tag, id, nil
 }
 
 func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, error) {
@@ -67,8 +96,8 @@ func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, er
 }
 
 func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var namespace, pod, image, backupArtifactPrefix, restorePath, backupIdentifier, encryptionKey string
-	var vols map[string]string
+	var namespace, image, backupArtifactPrefix, backupTag, backupID string
+	var cmd []string
 	var err error
 	if err = Arg(args, RestoreDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -79,30 +108,21 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = Arg(args, RestoreDataBackupArtifactPrefixArg, &backupArtifactPrefix); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, RestoreDataBackupIdentifierArg, &backupIdentifier); err != nil {
-		return nil, err
-	}
-	if err = OptArg(args, RestoreDataRestorePathArg, &restorePath, "/"); err != nil {
-		return nil, err
-	}
-	if err = OptArg(args, RestoreDataPodArg, &pod, ""); err != nil {
-		return nil, err
-	}
-	if err = OptArg(args, RestoreDataVolsArg, &vols, nil); err != nil {
-		return nil, err
-	}
-	if err = OptArg(args, RestoreDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
-		return nil, err
-	}
-	if err = validateOptArgs(pod, vols); err != nil {
+	// Validate and get optional arguments
+	restorePath, encryptionKey, pod, vols, backupTag, backupID, err := validateAndGetOptArgs(args)
+	if err != nil {
 		return nil, err
 	}
 	// Validate profile
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
-	// Generate restore command
-	cmd := restic.RestoreCommand(tp.Profile, backupArtifactPrefix, backupIdentifier, restorePath, encryptionKey)
+	// Generate restore command based on the identifier passed
+	if backupTag != "" {
+		cmd = restic.RestoreCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, restorePath, encryptionKey)
+	} else if backupID != "" {
+		cmd = restic.RestoreCommandByID(tp.Profile, backupArtifactPrefix, backupID, restorePath, encryptionKey)
+	}
 	if len(vols) == 0 {
 		// Fetch Volumes
 		vols, err = fetchPodVolumes(pod, tp)
@@ -120,5 +140,5 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 
 func (*restoreDataFunc) RequiredArgs() []string {
 	return []string{RestoreDataNamespaceArg, RestoreDataImageArg,
-		RestoreDataBackupArtifactPrefixArg, RestoreDataBackupIdentifierArg}
+		RestoreDataBackupArtifactPrefixArg}
 }
