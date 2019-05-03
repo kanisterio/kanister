@@ -65,15 +65,15 @@ func (p *PodWriteSuite) TestPodWriter(c *C) {
 	c.Assert(p.pod.Status.Phase, Equals, v1.PodRunning)
 	c.Assert(len(p.pod.Status.ContainerStatuses) > 0, Equals, true)
 	for _, cs := range p.pod.Status.ContainerStatuses {
-		pw := NewPodWriter(p.cli, p.pod.Namespace, path, p.pod.Name, cs.Name)
-		err := pw.Write(context.Background(), bytes.NewBufferString("badabing"))
+		pw := NewPodWriter(p.cli, path, bytes.NewBufferString("badabing"))
+		err := pw.Write(context.Background(), p.pod.Namespace, p.pod.Name, cs.Name)
 		c.Assert(err, IsNil)
 		cmd := []string{"sh", "-c", "cat " + pw.path}
 		stdout, stderr, err := Exec(p.cli, p.pod.Namespace, p.pod.Name, cs.Name, cmd, nil)
 		c.Assert(err, IsNil)
 		c.Assert(stdout, Equals, "badabing")
 		c.Assert(stderr, Equals, "")
-		err = pw.Remove(context.Background())
+		err = pw.Remove(context.Background(), p.pod.Namespace, p.pod.Name, cs.Name)
 		c.Assert(err, IsNil)
 	}
 }
