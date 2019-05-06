@@ -208,7 +208,7 @@ func (s *JobSuite) TestJobsWaitOnNonExistentJob(c *C) {
 
 	// Call WaitForCompletion on non-existent kubernetes job.
 	err = job.WaitForCompletion(context.Background())
-	c.Assert(c, NotNil)
+	c.Assert(err, NotNil)
 }
 
 func (s *JobSuite) TestJobsVolumes(c *C) {

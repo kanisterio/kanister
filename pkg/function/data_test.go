@@ -118,7 +118,26 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 	}
 }
 
-func (s *DataSuite) TestBackupRestoreData(c *C) {
+func newLocationDeleteBlueprint() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"delete": &crv1alpha1.BlueprintAction{
+				Kind: param.StatefulSetKind,
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testLocationDelete",
+						Func: "LocationDelete",
+						Args: map[string]interface{}{
+							LocationDeleteArtifactArg: "{{ .Profile.Location.Bucket }}",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 	ctx := context.Background()
 	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet())
 	c.Assert(err, IsNil)
@@ -166,6 +185,7 @@ func (s *DataSuite) TestBackupRestoreData(c *C) {
 
 	location := crv1alpha1.Location{
 		Type:   crv1alpha1.LocationTypeS3Compliant,
+		Prefix: "testBackupRestoreLocDelete",
 		Bucket: testutil.GetEnvOrSkip(c, testutil.TestS3BucketName),
 	}
 	tp.Profile = testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeS3, location)
@@ -185,6 +205,9 @@ func (s *DataSuite) TestBackupRestoreData(c *C) {
 	// Test restore
 	bp = *newRestoreDataBlueprint(pvc.GetName(), RestoreDataBackupTagArg, BackupDataOutputBackupTag)
 	_ = runAction(c, bp, "restore", tp)
+
+	bp = *newLocationDeleteBlueprint()
+	_ = runAction(c, bp, "delete", tp)
 }
 
 func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {

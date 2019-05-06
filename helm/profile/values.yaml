@@ -8,9 +8,9 @@ profileName:
 location:
   type:
   bucket:
-  endpoint:
-  prefix:
-  region:
+  endpoint: ""
+  prefix: ""
+  region: ""
 
 aws:
   accessKey:

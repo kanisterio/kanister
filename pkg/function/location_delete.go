@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -37,8 +38,7 @@ func (*locationDeleteFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
-
-	return nil, location.Delete(ctx, *tp.Profile, artifact)
+	return nil, location.Delete(ctx, *tp.Profile, strings.TrimPrefix(artifact, tp.Profile.Location.Bucket))
 }
 
 func (*locationDeleteFunc) RequiredArgs() []string {

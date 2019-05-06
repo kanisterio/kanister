@@ -26,9 +26,9 @@ metadata:
 location:
   type: {{ .Values.location.type | quote }}
   bucket: {{ .Values.location.bucket | quote }}
-  endpoint: {{ .Values.location.endpoint | quote }}
-  prefix: {{ .Values.location.prefix | quote }}
-  region: {{ .Values.location.region | quote }}
+  endpoint: {{ .Values.location.endpoint }}
+  prefix: {{ .Values.location.prefix }}
+  region: {{ .Values.location.region }}
 credential:
   type: keyPair
   keyPair:
