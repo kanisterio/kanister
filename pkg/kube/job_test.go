@@ -11,6 +11,7 @@ import (
 	. "gopkg.in/check.v1"
 	batch "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -20,13 +21,18 @@ type JobSuite struct{}
 
 var _ = Suite(&JobSuite{})
 
-const testJobName = "kanister-test-job"
+var testJobName = "kanister-test-job"
+
 const testJobNamespace = "default"
 const testJobImage = "busybox"
 const testJobServiceAccount = "default"
 
 func (s *JobSuite) SetUpSuite(c *C) {
 	// c.Skip("Too slow")
+}
+
+func (s *JobSuite) SetUpTest(c *C) {
+	testJobName = testJobName + rand.String(5)
 }
 
 // Verifies that the Job object is not created if the job name is not specified.

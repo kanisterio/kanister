@@ -73,19 +73,17 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	volToPvc := kube.StatefulSetVolumes(s.cli, ss, &pods[0])
 	pvc, _ := volToPvc[pods[0].Spec.Containers[0].VolumeMounts[0].Name]
 	c.Assert(len(pvc) > 0, Equals, true)
-	id, secret, err := s.getCreds(c, s.cli, s.namespace, pvc)
+	id, secret, locationType, err := s.getCreds(c, s.cli, s.namespace, pvc)
 	c.Assert(err, IsNil)
 	if id == "" || secret == "" {
 		c.Skip("Skipping the test since storage type not supported")
 	}
 
-	serviceKey, err := getServiceKey(c)
-	c.Assert(err, IsNil)
-	sec := NewTestProfileSecret(serviceKey, id, secret)
+	sec := NewTestProfileSecret(id, secret)
 	sec, err = s.cli.Core().Secrets(s.namespace).Create(sec)
 	c.Assert(err, IsNil)
 
-	p := NewTestProfile(s.namespace, sec.GetName())
+	p := NewTestProfile(s.namespace, sec.GetName(), locationType)
 	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(p)
 	c.Assert(err, IsNil)
 
@@ -108,7 +106,7 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 }
 
 // NewTestProfileSecret function returns a pointer to a new Secret test object.
-func NewTestProfileSecret(serviceKey string, id string, secret string) *v1.Secret {
+func NewTestProfileSecret(id string, secret string) *v1.Secret {
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-secret-",
@@ -122,15 +120,19 @@ func NewTestProfileSecret(serviceKey string, id string, secret string) *v1.Secre
 
 // NewTestProfile function returns a pointer to a new Profile test object that
 // passes validation.
-func NewTestProfile(namespace string, secretName string) *crv1alpha1.Profile {
+func NewTestProfile(namespace string, secretName string, locationType crv1alpha1.LocationType) *crv1alpha1.Profile {
+	region := ""
+	if locationType == crv1alpha1.LocationTypeS3Compliant {
+		region = os.Getenv(AWSRegion)
+	}
 	return &crv1alpha1.Profile{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testutil.TestProfileName,
 			Namespace: namespace,
 		},
 		Location: crv1alpha1.Location{
-			Type:   crv1alpha1.LocationTypeS3Compliant,
-			Region: os.Getenv(AWSRegion),
+			Type:   locationType,
+			Region: region,
 		},
 		Credential: crv1alpha1.Credential{
 			Type: crv1alpha1.CredentialTypeKeyPair,
@@ -312,29 +314,29 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	}
 }
 
-func (s *VolumeSnapshotTestSuite) getCreds(c *C, cli kubernetes.Interface, namespace string, pvcname string) (string, string, error) {
+func (s *VolumeSnapshotTestSuite) getCreds(c *C, cli kubernetes.Interface, namespace string, pvcname string) (string, string, crv1alpha1.LocationType, error) {
 	pvc, err := cli.Core().PersistentVolumeClaims(namespace).Get(pvcname, metav1.GetOptions{})
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	pvName := pvc.Spec.VolumeName
 	pv, err := cli.Core().PersistentVolumes().Get(pvName, metav1.GetOptions{})
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	switch {
 	case pv.Spec.AWSElasticBlockStore != nil:
 		_ = GetEnvOrSkip(c, AWSRegion)
-		return GetEnvOrSkip(c, awsebs.AccessKeyID), GetEnvOrSkip(c, awsebs.SecretAccessKey), nil
+		return GetEnvOrSkip(c, awsebs.AccessKeyID), GetEnvOrSkip(c, awsebs.SecretAccessKey), crv1alpha1.LocationTypeS3Compliant, nil
 
 	case pv.Spec.GCEPersistentDisk != nil:
 		serviceKey, err := getServiceKey(c)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
-		return "test_project_id", serviceKey, nil
+		return "test_project_id", serviceKey, crv1alpha1.LocationTypeGCS, nil
 	}
-	return "", "", nil
+	return "", "", "", nil
 }
 
 func getServiceKey(c *C) (string, error) {

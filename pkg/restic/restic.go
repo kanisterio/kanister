@@ -9,10 +9,15 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
+)
+
+const (
+	GoogleCloudCredsFilePath = "/tmp/creds.txt"
 )
 
 func shCommand(command string) []string {
@@ -107,17 +112,29 @@ const (
 )
 
 func resticArgs(profile *param.Profile, repository, encryptionKey string) []string {
-	s3Endpoint := awsS3Endpoint
-	if profile.Location.Endpoint != "" {
-		s3Endpoint = profile.Location.Endpoint
+	switch profile.Location.Type {
+	case crv1alpha1.LocationTypeS3Compliant:
+		s3Endpoint := awsS3Endpoint
+		if profile.Location.Endpoint != "" {
+			s3Endpoint = profile.Location.Endpoint
+		}
+		return []string{
+			fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, profile.Credential.KeyPair.ID),
+			fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, profile.Credential.KeyPair.Secret),
+			fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey),
+			fmt.Sprintf("export %s=s3:%s/%s\n", ResticRepository, s3Endpoint, repository),
+			ResticCommand,
+		}
+	case crv1alpha1.LocationTypeGCS:
+		return []string{
+			fmt.Sprintf("export %s=%s\n", location.GoogleProjectId, profile.Credential.KeyPair.ID),
+			fmt.Sprintf("export %s=%s\n", location.GoogleCloudCreds, GoogleCloudCredsFilePath),
+			fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey),
+			fmt.Sprintf("export %s=gs:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
+			ResticCommand,
+		}
 	}
-	return []string{
-		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, profile.Credential.KeyPair.ID),
-		fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, profile.Credential.KeyPair.Secret),
-		fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey),
-		fmt.Sprintf("export %s=s3:%s/%s\n", ResticRepository, s3Endpoint, repository),
-		ResticCommand,
-	}
+	return nil
 }
 
 // GetOrCreateRepository will check if the repository already exists and initialize one if not
