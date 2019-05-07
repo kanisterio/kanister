@@ -80,10 +80,14 @@ func ValidateProfile(profile *param.Profile, sType blockstorage.Type) error {
 	switch sType {
 	case blockstorage.TypeEBS:
 		if profile.Location.Type != crv1alpha1.LocationTypeS3Compliant {
-			return errors.New("Location type not supported")
+			return errors.Errorf("Location type %s not supported", profile.Location.Type)
 		}
 		if len(profile.Location.Region) == 0 {
 			return errors.New("Region is not set")
+		}
+	case blockstorage.TypeGPD:
+		if profile.Location.Type != crv1alpha1.LocationTypeGCS {
+			return errors.Errorf("Location type %s not supported ", profile.Location.Type)
 		}
 	}
 	return nil
