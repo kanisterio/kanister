@@ -373,7 +373,7 @@ For this phase, we will use the `backupInfo` Artifact provided by backup functio
     args:
       namespace: "{{ .Deployment.Namespace }}"
       pod: "{{ index .Deployment.Pods 0 }}"
-      image: kanisterio/kanister-tools:0.18.0
+      image: kanisterio/kanister-tools:0.19.0
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
   - func: ScaleWorkload

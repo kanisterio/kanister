@@ -10,7 +10,7 @@ actions:
       name: takeDataSnapshot
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/es-sidecar:0.18.0"
+        image: "kanisterio/es-sidecar:0.19.0"
         command:
           - bash
           - -o
@@ -37,7 +37,7 @@ actions:
       name: restoreSnapshots
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/es-sidecar:0.18.0"
+        image: "kanisterio/es-sidecar:0.19.0"
         command:
           - bash
           - -o
@@ -63,7 +63,7 @@ actions:
       name: deleteSnapshots
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/es-sidecar:0.18.0"
+        image: "kanisterio/es-sidecar:0.19.0"
         command:
           - bash
           - -o
