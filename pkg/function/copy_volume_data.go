@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	kanisterToolsImage                         = "kanisterio/kanister-tools:0.18.0"
+	kanisterToolsImage                         = "kanisterio/kanister-tools:0.19.0"
 	copyVolumeDataMountPoint                   = "/mnt/vol_data/%s"
 	copyVolumeDataJobPrefix                    = "copy-vol-data-"
 	CopyVolumeDataNamespaceArg                 = "namespace"
