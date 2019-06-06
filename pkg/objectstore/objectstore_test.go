@@ -131,7 +131,7 @@ func (s *ObjectStoreProviderSuite) TestGetNonExistingBucket(c *C) {
 	bucketName := s.createBucketName(c)
 	bucket, err := s.provider.GetBucket(ctx, bucketName)
 	c.Check(err, NotNil)
-	c.Assert(isBucketNotFoundError(err), Equals, true)
+	c.Assert(IsBucketNotFoundError(err), Equals, true)
 	c.Check(bucket, IsNil)
 }
 

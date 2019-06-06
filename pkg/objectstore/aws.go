@@ -26,7 +26,7 @@ func config(region string) *aws.Config {
 	return c
 }
 
-func isBucketNotFoundError(err error) bool {
+func IsBucketNotFoundError(err error) bool {
 	if err == nil {
 		return false
 	}

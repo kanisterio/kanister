@@ -185,7 +185,7 @@ func (p *s3Provider) getRegionForBucket(ctx context.Context, bucketName string) 
 
 func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName, region string) (Bucket, error) {
 	d, err := p.GetBucket(ctx, bucketName)
-	if isBucketNotFoundError(err) {
+	if IsBucketNotFoundError(err) {
 		// Create bucket when it does not exist
 		return p.CreateBucket(ctx, bucketName, region)
 	}
