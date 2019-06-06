@@ -59,7 +59,7 @@ func RestoreCommandByTag(profile *param.Profile, repository, tag, restorePath, e
 // SnapshotsCommand returns restic snapshots command
 func SnapshotsCommand(profile *param.Profile, repository, encryptionKey string) []string {
 	cmd := resticArgs(profile, repository, encryptionKey)
-	cmd = append(cmd, "snapshots")
+	cmd = append(cmd, "snapshots", "--json")
 	command := strings.Join(cmd, " ")
 	return shCommand(command)
 }
