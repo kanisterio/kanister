@@ -31,6 +31,9 @@ func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, locat
 		c.Check(err, check.IsNil)
 		key = creds.ProjectID
 		val = string(creds.JSON)
+	case objectstore.ProviderTypeAzure:
+		key = GetEnvOrSkip(c, blockstorage.AzureStorageAccount)
+		val = GetEnvOrSkip(c, blockstorage.AzureStorageKey)
 	}
 	return &param.Profile{
 		Location: location,

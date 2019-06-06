@@ -8,10 +8,12 @@ import (
 
 // Google Cloud environment variable names
 const (
-	GoogleCloudZone  = "CLOUDSDK_COMPUTE_ZONE"
-	GoogleCloudCreds = "GOOGLE_APPLICATION_CREDENTIALS"
-	GoogleProjectID  = "projectID"
-	GoogleServiceKey = "serviceKey"
+	GoogleCloudZone     = "CLOUDSDK_COMPUTE_ZONE"
+	GoogleCloudCreds    = "GOOGLE_APPLICATION_CREDENTIALS"
+	GoogleProjectID     = "projectID"
+	GoogleServiceKey    = "serviceKey"
+	AzureStorageAccount = "AZURE_STORAGE_ACCOUNT_NAME"
+	AzureStorageKey     = "AZURE_STORAGE_ACCOUNT_KEY"
 )
 
 // SanitizeTags are used to sanitize the tags
