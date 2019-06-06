@@ -230,6 +230,7 @@ type LocationType string
 const (
 	LocationTypeGCS         LocationType = "gcs"
 	LocationTypeS3Compliant LocationType = "s3Compliant"
+	LocationTypeAzure       LocationType = "azure"
 )
 
 // Location
