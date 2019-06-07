@@ -24,3 +24,10 @@ type Provider interface {
 	VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*Volume, error)
 	SnapshotsList(ctx context.Context, tags map[string]string) ([]*Snapshot, error)
 }
+
+// RestoreTargeter implements the SnapshotRestoreTargets method
+type RestoreTargeter interface {
+	// SnapshotRestoreTargets returns whether a snapshot can be restored globally.
+	// If not globally restorable, returns a map of the regions and zones to which snapshot can be restored.
+	SnapshotRestoreTargets(context.Context, *Snapshot) (global bool, regionsAndZones map[string][]string, err error)
+}

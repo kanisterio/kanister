@@ -16,6 +16,7 @@ import (
 )
 
 type (
+	// Mapper interface indicates provider that supports FromRegion mapping to list of zones
 	Mapper interface {
 		FromRegion(ctx context.Context, region string) ([]string, error)
 	}
@@ -29,7 +30,7 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, region string, sourceZo
 	newZones := make(map[string]struct{})
 	cli, err := kube.NewClient()
 	if err == nil {
-		nzs, rs, errzr := nodeZonesAndRegion(ctx, cli)
+		nzs, rs, errzr := NodeZonesAndRegion(ctx, cli)
 		if err != nil {
 			log.Errorf("Ignoring error getting Node availability zones. Error: %+v", errzr)
 		}
@@ -171,7 +172,8 @@ const (
 	nodeZonesErr = `Failed to get Node availability zones.`
 )
 
-func nodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[string]struct{}, string, error) {
+// NodeZonesAndRegion returns cloud provider failure-domain region and zones as reported by K8s
+func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[string]struct{}, string, error) {
 	if cli == nil {
 		return nil, "", errors.New(nodeZonesErr)
 	}
