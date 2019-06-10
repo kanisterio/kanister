@@ -35,7 +35,7 @@ This will install the Kanister controller in the `kanister` namespace
    $ helm repo add kanister https://charts.kanister.io/
 
    # Install the Kanister operator controller using helm
-   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.19.0
+   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.20.0
 
    # Create an S3 Compliant Kanister profile using kanctl
    $ kanctl create profile s3compliant --bucket <bucket> --access-key ${AWS_ACCESS_KEY_ID} \
@@ -73,5 +73,5 @@ namespace.
 
 .. code-block:: bash
 
-   # Deploy controller version 0.19.0 to Kubernetes
-   $ make deploy VERSION="0.19.0"
+   # Deploy controller version 0.20.0 to Kubernetes
+   $ make deploy VERSION="0.20.0"
