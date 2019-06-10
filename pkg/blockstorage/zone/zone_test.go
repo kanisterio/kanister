@@ -82,7 +82,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	expectedZone["us-west2-b"] = struct{}{}
 	expectedZone["us-west2-c"] = struct{}{}
 	cli := fake.NewSimpleClientset(node1, node2, node3)
-	z, r, err := nodeZonesAndRegion(ctx, cli)
+	z, r, err := NodeZonesAndRegion(ctx, cli)
 	c.Assert(err, IsNil)
 	c.Assert(reflect.DeepEqual(z, expectedZone), Equals, true)
 	c.Assert(r, Equals, "us-west2")
@@ -113,7 +113,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	expectedZone["us-west-2b"] = struct{}{}
 	expectedZone["us-west-2c"] = struct{}{}
 	cli := fake.NewSimpleClientset(node1, node2, node3)
-	z, r, err := nodeZonesAndRegion(ctx, cli)
+	z, r, err := NodeZonesAndRegion(ctx, cli)
 	c.Assert(err, IsNil)
 	c.Assert(reflect.DeepEqual(z, expectedZone), Equals, true)
 	c.Assert(r, Equals, "us-west-2")

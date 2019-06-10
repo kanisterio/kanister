@@ -13,6 +13,9 @@ data:
   {{- else if .Values.gcp.projectID }}
   project_id: {{ .Values.gcp.projectID | b64enc | quote }}
   service_key: {{ .Values.gcp.serviceKey | b64enc | quote }}
+  {{- else if .Values.azure.storageAccount }}
+  storage_account: {{ .Values.azure.storageAccount | b64enc | quote }}
+  storage_key: {{ .Values.azure.storageKey | b64enc | quote }}
   {{- end }}
 
 ---
@@ -38,6 +41,9 @@ credential:
     {{- else if .Values.gcp.projectID }}
     idField: project_id
     secretField: service_key
+    {{- else if .Values.azure.storageAccount }}
+    idField: storage_account
+    secretField: storage_key
     {{- end }}
     secret:
       apiVersion: v1

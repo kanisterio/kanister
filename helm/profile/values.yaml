@@ -20,4 +20,8 @@ gcp:
   projectID:
   serviceKey:
 
+azure:
+  storageAccount:
+  storageKey:
+
 verifySSL: true

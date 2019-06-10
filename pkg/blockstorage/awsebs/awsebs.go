@@ -617,6 +617,22 @@ func queryRegionToZones(ctx context.Context, region string) ([]string, error) {
 	return azs, nil
 }
 
+func (s *ebsStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blockstorage.Snapshot) (global bool, regionsAndZones map[string][]string, err error) {
+	// A few checks from VolumeCreateFromSnapshot
+	if snapshot.Volume == nil {
+		return false, nil, errors.New("Snapshot volume information not available")
+	}
+	if snapshot.Volume.VolumeType == "" || snapshot.Volume.Az == "" || snapshot.Volume.Tags == nil {
+		return false, nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s, VolumeTags: %v", snapshot.Volume.VolumeType, snapshot.Volume.Az, snapshot.Volume.Tags)
+	}
+	// EBS snapshots can only be restored in their region
+	zl, err := staticRegionToZones(snapshot.Region)
+	if err != nil {
+		return false, nil, err
+	}
+	return false, map[string][]string{snapshot.Region: zl}, nil
+}
+
 func staticRegionToZones(region string) ([]string, error) {
 	switch region {
 	case "ap-south-1":

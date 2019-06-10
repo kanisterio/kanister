@@ -17,7 +17,7 @@ func (s KubeTestZoneSuite) TestNodeZones(c *C) {
 	ctx := context.Background()
 	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
-	zones, _, err := nodeZonesAndRegion(ctx, cli)
+	zones, _, err := NodeZonesAndRegion(ctx, cli)
 	c.Assert(err, IsNil)
 	c.Assert(zones, Not(HasLen), 0)
 }

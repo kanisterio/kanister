@@ -99,6 +99,8 @@ func getProviderType(lType crv1alpha1.LocationType) (objectstore.ProviderType, e
 		return objectstore.ProviderTypeS3, nil
 	case crv1alpha1.LocationTypeGCS:
 		return objectstore.ProviderTypeGCS, nil
+	case crv1alpha1.LocationTypeAzure:
+		return objectstore.ProviderTypeAzure, nil
 	default:
 		return "", errors.Errorf("Unsupported Location type: %s", lType)
 	}
@@ -135,6 +137,12 @@ func getOSSecret(pType objectstore.ProviderType, cred param.Credential) (*object
 		secret.Gcp = &objectstore.SecretGcp{
 			ProjectID:  cred.KeyPair.ID,
 			ServiceKey: cred.KeyPair.Secret,
+		}
+	case objectstore.ProviderTypeAzure:
+		secret.Type = objectstore.SecretTypeAzStorageAccount
+		secret.Azure = &objectstore.SecretAzure{
+			StorageAccount: cred.KeyPair.ID,
+			StorageKey:     cred.KeyPair.Secret,
 		}
 	default:
 		return nil, errors.Errorf("unknown or unsupported provider type '%s'", pType)

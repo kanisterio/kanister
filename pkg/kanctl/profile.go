@@ -23,14 +23,16 @@ import (
 )
 
 const (
-	bucketFlag        = "bucket"
-	endpointFlag      = "endpoint"
-	prefixFlag        = "prefix"
-	regionFlag        = "region"
-	awsAccessKeyFlag  = "access-key"
-	awsSecretKeyFlag  = "secret-key"
-	gcpProjectIDFlag  = "project-id"
-	gcpServiceKeyFlag = "service-key"
+	bucketFlag              = "bucket"
+	endpointFlag            = "endpoint"
+	prefixFlag              = "prefix"
+	regionFlag              = "region"
+	awsAccessKeyFlag        = "access-key"
+	awsSecretKeyFlag        = "secret-key"
+	gcpProjectIDFlag        = "project-id"
+	gcpServiceKeyFlag       = "service-key"
+	AzureStorageAccountFlag = "storage-account"
+	AzureStorageKeyFlag     = "storage-key"
 
 	idField           = "access_key_id"
 	secretField       = "secret_access_key"
@@ -64,6 +66,7 @@ func newProfileCommand() *cobra.Command {
 
 	cmd.AddCommand(newS3CompliantProfileCmd())
 	cmd.AddCommand(newGCPProfileCmd())
+	cmd.AddCommand(newAzureProfileCmd())
 	cmd.PersistentFlags().StringP(bucketFlag, "b", "", "object store bucket name")
 	cmd.PersistentFlags().StringP(endpointFlag, "e", "", "endpoint URL of the object store bucket")
 	cmd.PersistentFlags().StringP(prefixFlag, "p", "", "prefix URL of the object store bucket")
@@ -105,6 +108,24 @@ func newGCPProfileCmd() *cobra.Command {
 
 	cmd.MarkFlagRequired(gcpProjectIDFlag)
 	cmd.MarkFlagRequired(gcpServiceKeyFlag)
+	return cmd
+}
+
+func newAzureProfileCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "azure",
+		Short: "Create new azure profile",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return createNewProfile(cmd, args)
+		},
+	}
+
+	cmd.Flags().StringP(AzureStorageAccountFlag, "a", "", "Storage account name of the azure storage")
+	cmd.Flags().StringP(AzureStorageKeyFlag, "s", "", "Storage account key of the azure storage")
+
+	cmd.MarkFlagRequired(AzureStorageAccountFlag)
+	cmd.MarkFlagRequired(AzureStorageKeyFlag)
 	return cmd
 }
 
@@ -175,6 +196,9 @@ func getLocationParams(cmd *cobra.Command) (*locationParams, error) {
 	case "gcp":
 		lType = v1alpha1.LocationTypeGCS
 		profileName = "gcp-profile-"
+	case "azure":
+		lType = v1alpha1.LocationTypeAzure
+		profileName = "azure-profile-"
 	default:
 		return nil, errors.New("Profile type not supported: " + cmd.Name())
 	}
@@ -239,8 +263,13 @@ func constructSecret(ctx context.Context, lP *locationParams, cmd *cobra.Command
 		data[idField] = projectID
 		data[secretField] = serviceKey
 		secretname = "gcp"
+	case v1alpha1.LocationTypeAzure:
+		storageAccount, _ := cmd.Flags().GetString(AzureStorageAccountFlag)
+		storageKey, _ := cmd.Flags().GetString(AzureStorageKeyFlag)
+		data[idField] = storageAccount
+		data[secretField] = storageKey
+		secretname = "azure"
 	}
-
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf(secretFormat, secretname, randString(6)),

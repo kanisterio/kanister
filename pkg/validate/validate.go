@@ -139,10 +139,11 @@ func ProfileSchema(p *crv1alpha1.Profile) error {
 }
 
 func supported(t crv1alpha1.LocationType) bool {
-	return t == crv1alpha1.LocationTypeS3Compliant || t == crv1alpha1.LocationTypeGCS
+	return t == crv1alpha1.LocationTypeS3Compliant || t == crv1alpha1.LocationTypeGCS || t == crv1alpha1.LocationTypeAzure
 }
 
 func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Interface) error {
+	var pType objectstore.ProviderType
 	bucketName := p.Location.Bucket
 
 	switch p.Location.Type {
@@ -157,25 +158,27 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 				return errorf("Incorrect region for bucket. Expected '%s', Got '%s'", actualRegion, givenRegion)
 			}
 		}
+		return nil
 	case crv1alpha1.LocationTypeGCS:
-		pType := objectstore.ProviderTypeGCS
-		pc := objectstore.ProviderConfig{Type: pType}
-		secret, err := osSecretFromProfile(pType, p, cli)
-		if err != nil {
-			return err
-		}
-		provider, err := objectstore.NewProvider(ctx, pc, secret)
-		if err != nil {
-			return err
-		}
-		_, err = provider.GetBucket(ctx, bucketName)
-		if err != nil {
-			return err
-		}
+		pType = objectstore.ProviderTypeGCS
+	case crv1alpha1.LocationTypeAzure:
+		pType = objectstore.ProviderTypeAzure
 	default:
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-
+	pc := objectstore.ProviderConfig{Type: pType}
+	secret, err := osSecretFromProfile(pType, p, cli)
+	if err != nil {
+		return err
+	}
+	provider, err := objectstore.NewProvider(ctx, pc, secret)
+	if err != nil {
+		return err
+	}
+	_, err = provider.GetBucket(ctx, bucketName)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -186,18 +189,16 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 	switch p.Location.Type {
 	case crv1alpha1.LocationTypeS3Compliant:
 		pType = objectstore.ProviderTypeS3
-		secret, err = osSecretFromProfile(pType, p, cli)
-		if err != nil {
-			return err
-		}
 	case crv1alpha1.LocationTypeGCS:
 		pType = objectstore.ProviderTypeGCS
-		secret, err = osSecretFromProfile(pType, p, cli)
-		if err != nil {
-			return err
-		}
+	case crv1alpha1.LocationTypeAzure:
+		pType = objectstore.ProviderTypeAzure
 	default:
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
+	}
+	secret, err = osSecretFromProfile(pType, p, cli)
+	if err != nil {
+		return err
 	}
 	pc := objectstore.ProviderConfig{
 		Type:          pType,
@@ -225,20 +226,17 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	switch p.Location.Type {
 	case crv1alpha1.LocationTypeS3Compliant:
 		pType = objectstore.ProviderTypeS3
-		secret, err = osSecretFromProfile(pType, p, cli)
-		if err != nil {
-			return err
-		}
 	case crv1alpha1.LocationTypeGCS:
 		pType = objectstore.ProviderTypeGCS
-		secret, err = osSecretFromProfile(pType, p, cli)
-		if err != nil {
-			return err
-		}
+	case crv1alpha1.LocationTypeAzure:
+		pType = objectstore.ProviderTypeAzure
 	default:
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-
+	secret, err = osSecretFromProfile(pType, p, cli)
+	if err != nil {
+		return err
+	}
 	const objName = "sample"
 
 	pc := objectstore.ProviderConfig{
@@ -294,6 +292,12 @@ func osSecretFromProfile(pType objectstore.ProviderType, p *crv1alpha1.Profile, 
 		secret.Gcp = &objectstore.SecretGcp{
 			ProjectID:  string(key),
 			ServiceKey: string(value),
+		}
+	case objectstore.ProviderTypeAzure:
+		secret.Type = objectstore.SecretTypeAzStorageAccount
+		secret.Azure = &objectstore.SecretAzure{
+			StorageAccount: string(key),
+			StorageKey:     string(value),
 		}
 	default:
 		return nil, errorf("unknown or unsupported provider type '%s'", pType)

@@ -141,7 +141,7 @@ func restoreDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, names
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to create and upload backup")
+			return nil, errors.Wrapf(err, "Failed to restore backup")
 		}
 		out, err := parseLogAndCreateOutput(stdout)
 		return out, errors.Wrap(err, "Failed to parse phase output")
