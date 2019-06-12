@@ -1,5 +1,5 @@
-hash: be3f91e422dda369b7624466382e18ca0baceb6b3262fb6ee602ec9c92d65601
-updated: 2019-04-12T23:07:10.658947538Z
+hash: e24bb9a36d565b7148223182fb659bbb53027e5af28c34d7caafb00c05e90178
+updated: 2019-06-11T22:20:35.748864-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -64,7 +64,7 @@ imports:
   - logger
   - version
 - name: github.com/BurntSushi/toml
-  version: bbd5bb678321a0d6e58f1099321dfa73391c1b6f
+  version: 3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
@@ -78,7 +78,7 @@ imports:
 - name: github.com/evanphx/json-patch
   version: 36442dbdb585210f8d5a1b45e67aa323c197d5c4
 - name: github.com/ghodss/yaml
-  version: c7ce16629ff4cd059ed96ed06419dd3856fd3577
+  version: 25d852aebe32c875e9c044af3eef9c7dc6bc777f
 - name: github.com/go-ini/ini
   version: 3be5ad479f69d4e08d7fe25edf79bf3346bd658e
 - name: github.com/go-openapi/errors
@@ -133,7 +133,7 @@ imports:
 - name: github.com/huandu/xstrings
   version: 8bbcf2f9ccb55755e748b7644164cd4bdce94c1d
 - name: github.com/IBM-Bluemix/bluemix-cli-sdk
-  version: 67e7aca80eb41888a684388658ffa0a7f3764682
+  version: 8983a1c31eed993b51c9b6e404d105637dd4d134
   subpackages:
   - common/rest
 - name: github.com/IBM/ibmcloud-storage-volume-lib
@@ -222,7 +222,7 @@ imports:
 - name: github.com/stretchr/testify
   version: f35b8ab0b5a2cef36673838d662e249dd9c94686
 - name: go.opencensus.io
-  version: 75c0cca22312e51bfd4fafdbe9197ae399e18b38
+  version: f6172e422374225c6748bd2a9c872e88c2eb43d4
   subpackages:
   - internal
   - internal/tagencoding
