@@ -133,6 +133,14 @@ func resticArgs(profile *param.Profile, repository, encryptionKey string) []stri
 			fmt.Sprintf("export %s=gs:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
 			ResticCommand,
 		}
+	case crv1alpha1.LocationTypeAzure:
+		return []string{
+			fmt.Sprintf("export %s=%s\n", location.AzureStorageAccount, profile.Credential.KeyPair.ID),
+			fmt.Sprintf("export %s=%s\n", location.AzureStorageKey, profile.Credential.KeyPair.Secret),
+			fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey),
+			fmt.Sprintf("export %s=azure:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
+			ResticCommand,
+		}
 	}
 	return nil
 }

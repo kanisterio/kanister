@@ -61,7 +61,11 @@ func validateProfile(profile *param.Profile) error {
 	if len(profile.Credential.KeyPair.Secret) == 0 {
 		return errors.New("Secret access key is not set")
 	}
-	if profile.Location.Type != crv1alpha1.LocationTypeS3Compliant && profile.Location.Type != crv1alpha1.LocationTypeGCS {
+	switch profile.Location.Type {
+	case crv1alpha1.LocationTypeS3Compliant:
+	case crv1alpha1.LocationTypeGCS:
+	case crv1alpha1.LocationTypeAzure:
+	default:
 		return errors.New("Location type not supported")
 	}
 	return nil

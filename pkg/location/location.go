@@ -13,10 +13,12 @@ import (
 )
 
 const (
-	AWSAccessKeyID     = "AWS_ACCESS_KEY_ID"
-	AWSSecretAccessKey = "AWS_SECRET_ACCESS_KEY"
-	GoogleCloudCreds   = "GOOGLE_APPLICATION_CREDENTIALS"
-	GoogleProjectId    = "GOOGLE_PROJECT_ID"
+	AWSAccessKeyID      = "AWS_ACCESS_KEY_ID"
+	AWSSecretAccessKey  = "AWS_SECRET_ACCESS_KEY"
+	GoogleCloudCreds    = "GOOGLE_APPLICATION_CREDENTIALS"
+	GoogleProjectId     = "GOOGLE_PROJECT_ID"
+	AzureStorageAccount = "AZURE_ACCOUNT_NAME"
+	AzureStorageKey     = "AZURE_ACCOUNT_KEY"
 )
 
 // Write pipes data from `in` into the location specified by `profile` and `suffix`.
