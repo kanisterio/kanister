@@ -112,37 +112,46 @@ const (
 )
 
 func resticArgs(profile *param.Profile, repository, encryptionKey string) []string {
+	var cmd []string
 	switch profile.Location.Type {
 	case crv1alpha1.LocationTypeS3Compliant:
-		s3Endpoint := awsS3Endpoint
-		if profile.Location.Endpoint != "" {
-			s3Endpoint = profile.Location.Endpoint
-		}
-		return []string{
-			fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, profile.Credential.KeyPair.ID),
-			fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, profile.Credential.KeyPair.Secret),
-			fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey),
-			fmt.Sprintf("export %s=s3:%s/%s\n", ResticRepository, s3Endpoint, repository),
-			ResticCommand,
-		}
+		cmd = resticS3Args(profile, repository)
 	case crv1alpha1.LocationTypeGCS:
-		return []string{
-			fmt.Sprintf("export %s=%s\n", location.GoogleProjectId, profile.Credential.KeyPair.ID),
-			fmt.Sprintf("export %s=%s\n", location.GoogleCloudCreds, GoogleCloudCredsFilePath),
-			fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey),
-			fmt.Sprintf("export %s=gs:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
-			ResticCommand,
-		}
+		cmd = resticGCSArgs(profile, repository)
 	case crv1alpha1.LocationTypeAzure:
-		return []string{
-			fmt.Sprintf("export %s=%s\n", location.AzureStorageAccount, profile.Credential.KeyPair.ID),
-			fmt.Sprintf("export %s=%s\n", location.AzureStorageKey, profile.Credential.KeyPair.Secret),
-			fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey),
-			fmt.Sprintf("export %s=azure:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
-			ResticCommand,
-		}
+		cmd = resticAzureArgs(profile, repository)
+	default:
+		return nil
 	}
-	return nil
+	return append(cmd, fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey), ResticCommand)
+}
+
+func resticS3Args(profile *param.Profile, repository string) []string {
+	s3Endpoint := awsS3Endpoint
+	if profile.Location.Endpoint != "" {
+		s3Endpoint = profile.Location.Endpoint
+	}
+	return []string{
+		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, profile.Credential.KeyPair.ID),
+		fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, profile.Credential.KeyPair.Secret),
+		fmt.Sprintf("export %s=s3:%s/%s\n", ResticRepository, s3Endpoint, repository),
+	}
+}
+
+func resticGCSArgs(profile *param.Profile, repository string) []string {
+	return []string{
+		fmt.Sprintf("export %s=%s\n", location.GoogleProjectId, profile.Credential.KeyPair.ID),
+		fmt.Sprintf("export %s=%s\n", location.GoogleCloudCreds, GoogleCloudCredsFilePath),
+		fmt.Sprintf("export %s=gs:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
+	}
+}
+
+func resticAzureArgs(profile *param.Profile, repository string) []string {
+	return []string{
+		fmt.Sprintf("export %s=%s\n", location.AzureStorageAccount, profile.Credential.KeyPair.ID),
+		fmt.Sprintf("export %s=%s\n", location.AzureStorageKey, profile.Credential.KeyPair.Secret),
+		fmt.Sprintf("export %s=azure:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
+	}
 }
 
 // GetOrCreateRepository will check if the repository already exists and initialize one if not
