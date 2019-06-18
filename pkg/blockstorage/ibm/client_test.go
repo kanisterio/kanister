@@ -41,9 +41,10 @@ func (s *ClientSuite) TestClient(c *C) {
 		c.Skip(fmt.Sprintf("Could not find env var %s with API key", IBMApiKeyEnv))
 	}
 	ibmCli, err := newClient(context.Background(), map[string]string{APIKeyArgName: apiKey})
-	defer ibmCli.Service.Close()
 	c.Assert(err, IsNil)
+	c.Assert(ibmCli, NotNil)
 	c.Assert(ibmCli.Service, NotNil)
+	defer ibmCli.Service.Close()
 	c.Assert(*ibmCli, FitsTypeOf, client{})
 	_, err = ibmCli.Service.SnapshotsList()
 	c.Assert(err, IsNil)
@@ -51,18 +52,21 @@ func (s *ClientSuite) TestClient(c *C) {
 
 func (s *ClientSuite) TestDefaultLibConfig(c *C) {
 	if tomlPath, ok := os.LookupEnv(workAroundEnv); ok {
-		os.Setenv(LibDefCfgEnv, filepath.Dir(tomlPath))
+		err := os.Setenv(LibDefCfgEnv, filepath.Dir(tomlPath))
+		c.Assert(err, IsNil)
 		defer os.Unsetenv(LibDefCfgEnv)
 	} else {
 		c.Skip(workAroundEnv + " TOML path is not present")
 	}
 	apiKey := os.Getenv(IBMApiKeyEnv)
-	os.Unsetenv(IBMApiKeyEnv)
+	err := os.Unsetenv(IBMApiKeyEnv)
+	c.Assert(err, IsNil)
 	defer os.Setenv(IBMApiKeyEnv, apiKey)
 	ibmCli, err := newClient(context.Background(), make(map[string]string))
-	defer ibmCli.Service.Close()
 	c.Assert(err, IsNil)
+	c.Assert(ibmCli, NotNil)
 	c.Assert(ibmCli.Service, NotNil)
+	defer ibmCli.Service.Close()
 	c.Assert(*ibmCli, FitsTypeOf, client{})
 }
 
@@ -71,11 +75,13 @@ func (s *ClientSuite) TestErrorsCases(c *C) {
 	ibmCli, err := newClient(context.Background(), map[string]string{CfgSecretNameArgName: "somename"})
 	c.Assert(err, NotNil)
 	c.Assert(ibmCli, IsNil)
-	os.Setenv(LibDefCfgEnv, "someboguspath")
+	err = os.Setenv(LibDefCfgEnv, "someboguspath")
+	c.Assert(err, IsNil)
 	ibmCli, err = newClient(context.Background(), make(map[string]string))
 	c.Assert(err, NotNil)
 	c.Assert(ibmCli, IsNil)
-	os.Setenv(LibDefCfgEnv, testBogusPath)
+	err = os.Setenv(LibDefCfgEnv, testBogusPath)
+	c.Assert(err, IsNil)
 	ibmCli, err = newClient(context.Background(), make(map[string]string))
 	c.Assert(err, NotNil)
 	c.Assert(ibmCli, IsNil)

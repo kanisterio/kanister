@@ -62,12 +62,14 @@ func (s KubeTestIBMClient) TearDownSuite(c *C) {
 
 func (s KubeTestIBMClient) TestIBMSecret(c *C) {
 	apiKey := os.Getenv(IBMApiKeyEnv)
-	os.Unsetenv(IBMApiKeyEnv)
+	err := os.Unsetenv(IBMApiKeyEnv)
+	c.Assert(err, IsNil)
 	defer os.Setenv(IBMApiKeyEnv, apiKey)
 	ibmCli, err := newClient(context.Background(), map[string]string{CfgSecretNameArgName: testSecretName})
-	defer ibmCli.Service.Close()
 	c.Assert(err, IsNil)
+	c.Assert(ibmCli, NotNil)
 	c.Assert(ibmCli.Service, NotNil)
+	defer ibmCli.Service.Close()
 	c.Assert(*ibmCli, FitsTypeOf, client{})
 	_, err = ibmCli.Service.SnapshotsList()
 	c.Assert(err, IsNil)
