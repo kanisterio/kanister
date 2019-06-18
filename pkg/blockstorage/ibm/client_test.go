@@ -28,6 +28,8 @@ type ClientSuite struct{}
 var _ = Suite(&ClientSuite{})
 
 func (s *ClientSuite) SetUpSuite(c *C) {
+	// TODO: IBM client changed internally, unskip after K10-2454
+	c.Skip("Skipped until we fix K10-2454")
 	if os.Getenv(IBMApiKeyEnv) == "" {
 		c.Skip(IBMApiKeyEnv + " envionment variable not set")
 	}

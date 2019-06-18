@@ -27,6 +27,8 @@ type KubeTestIBMClient struct {
 var _ = Suite(&KubeTestIBMClient{})
 
 func (s *KubeTestIBMClient) SetUpSuite(c *C) {
+	// TODO: IBM client changed internally, unskip after K10-2454
+	c.Skip("Skipped until we fix K10-2454")
 	var secData []byte
 	var err error
 	if tomlPath, ok := os.LookupEnv(workAroundEnv); ok {
@@ -53,6 +55,8 @@ func (s *KubeTestIBMClient) SetUpSuite(c *C) {
 }
 
 func (s KubeTestIBMClient) TearDownSuite(c *C) {
+	// TODO: IBM client changed internally, unskip after K10-2454
+	c.Skip("Skipped until we fix K10-2454")
 	if _, ok := os.LookupEnv(workAroundEnv); !ok {
 		c.Skip(workAroundEnv + "TOML path is not present")
 	}
