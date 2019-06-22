@@ -4,13 +4,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type ResourceRequirement struct {
+type ResourceTypeRequirement struct {
 	Group    string `json:"group,omitempty"`
 	Version  string `json:"version,omitempty"`
 	Resource string `json:"resource,omitempty"`
 }
 
-func (r ResourceRequirement) Matches(gvr schema.GroupVersionResource) bool {
+func (r ResourceTypeRequirement) Matches(gvr schema.GroupVersionResource) bool {
 	return matches(r.Group, gvr.Group) && matches(r.Version, gvr.Version) && matches(r.Resource, gvr.Resource)
 }
 
@@ -18,13 +18,13 @@ func matches(sel, val string) bool {
 	return sel == "" || sel == val
 }
 
-type ResourceMatcher []ResourceRequirement
+type ResourceTypeMatcher []ResourceTypeRequirement
 
-func (g ResourceMatcher) Empty() bool {
+func (g ResourceTypeMatcher) Empty() bool {
 	return len(g) == 0
 }
 
-func (g ResourceMatcher) Any(gvr schema.GroupVersionResource) bool {
+func (g ResourceTypeMatcher) Any(gvr schema.GroupVersionResource) bool {
 	for _, req := range g {
 		if req.Matches(gvr) {
 			return true
@@ -33,7 +33,7 @@ func (g ResourceMatcher) Any(gvr schema.GroupVersionResource) bool {
 	return false
 }
 
-func (g ResourceMatcher) All(gvr schema.GroupVersionResource) bool {
+func (g ResourceTypeMatcher) All(gvr schema.GroupVersionResource) bool {
 	for _, req := range g {
 		if !req.Matches(gvr) {
 			return false
@@ -44,16 +44,16 @@ func (g ResourceMatcher) All(gvr schema.GroupVersionResource) bool {
 
 type GroupVersionResourceList []schema.GroupVersionResource
 
-func (g GroupVersionResourceList) Include(ms ...ResourceMatcher) GroupVersionResourceList {
+func (g GroupVersionResourceList) Include(ms ...ResourceTypeMatcher) GroupVersionResourceList {
 	return g.apply(ms, false)
 }
 
-func (g GroupVersionResourceList) Exclude(ms ...ResourceMatcher) GroupVersionResourceList {
+func (g GroupVersionResourceList) Exclude(ms ...ResourceTypeMatcher) GroupVersionResourceList {
 	return g.apply(ms, true)
 }
 
-func (g GroupVersionResourceList) apply(ms []ResourceMatcher, exclude bool) GroupVersionResourceList {
-	m := joinResourceMatchers(ms...)
+func (g GroupVersionResourceList) apply(ms []ResourceTypeMatcher, exclude bool) GroupVersionResourceList {
+	m := joinResourceTypeMatchers(ms...)
 	if m.Empty() {
 		return g
 	}
@@ -66,15 +66,15 @@ func (g GroupVersionResourceList) apply(ms []ResourceMatcher, exclude bool) Grou
 	return filtered
 }
 
-func joinResourceMatchers(ms ...ResourceMatcher) ResourceMatcher {
+func joinResourceTypeMatchers(ms ...ResourceTypeMatcher) ResourceTypeMatcher {
 	n := 0
 	for _, m := range ms {
 		n += len(m)
 	}
-	gvr := make(ResourceMatcher, n)
+	gvr := make(ResourceTypeMatcher, n)
 	i := 0
 	for _, m := range ms {
-		copy(gvr[i:], []ResourceRequirement(m))
+		copy(gvr[i:], []ResourceTypeRequirement(m))
 		i += len(m)
 	}
 	return gvr

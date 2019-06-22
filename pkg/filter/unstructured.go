@@ -15,7 +15,7 @@ func (s Specs) keys() GroupVersionResourceList {
 	return gvrs
 }
 
-func (s Specs) Include(ms ...ResourceMatcher) Specs {
+func (s Specs) Include(ms ...ResourceTypeMatcher) Specs {
 	gvrs := s.keys().Include(ms...)
 	ret := make(Specs, len(gvrs))
 	for _, gvr := range gvrs {
@@ -24,7 +24,7 @@ func (s Specs) Include(ms ...ResourceMatcher) Specs {
 	return ret
 }
 
-func (s Specs) Exclude(ms ...ResourceMatcher) Specs {
+func (s Specs) Exclude(ms ...ResourceTypeMatcher) Specs {
 	gvrs := s.keys().Exclude(ms...)
 	ret := make(Specs, len(gvrs))
 	for _, gvr := range gvrs {

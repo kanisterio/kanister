@@ -13,7 +13,7 @@ var _ = Suite(&UnstructuredSuite{})
 func (s *UnstructuredSuite) TestIncludeExclude(c *C) {
 	for _, tc := range []struct {
 		s       Specs
-		gvr     ResourceMatcher
+		gvr     ResourceTypeMatcher
 		include Specs
 		exclude Specs
 	}{
@@ -25,7 +25,7 @@ func (s *UnstructuredSuite) TestIncludeExclude(c *C) {
 		},
 		{
 			s:       Specs{},
-			gvr:     ResourceMatcher{},
+			gvr:     ResourceTypeMatcher{},
 			include: Specs{},
 			exclude: Specs{},
 		},
@@ -33,7 +33,7 @@ func (s *UnstructuredSuite) TestIncludeExclude(c *C) {
 			s: Specs{
 				schema.GroupVersionResource{Group: "mygroup"}: nil,
 			},
-			gvr: ResourceMatcher{},
+			gvr: ResourceTypeMatcher{},
 			include: Specs{
 				schema.GroupVersionResource{Group: "mygroup"}: nil,
 			},
@@ -45,7 +45,7 @@ func (s *UnstructuredSuite) TestIncludeExclude(c *C) {
 			s: Specs{
 				schema.GroupVersionResource{Group: "mygroup"}: nil,
 			},
-			gvr: ResourceMatcher{ResourceRequirement{Group: "mygroup"}},
+			gvr: ResourceTypeMatcher{ResourceTypeRequirement{Group: "mygroup"}},
 			include: Specs{
 				schema.GroupVersionResource{Group: "mygroup"}: nil,
 			},
@@ -55,7 +55,7 @@ func (s *UnstructuredSuite) TestIncludeExclude(c *C) {
 			s: Specs{
 				schema.GroupVersionResource{Group: "mygroup"}: nil,
 			},
-			gvr:     ResourceMatcher{ResourceRequirement{Group: "yourgroup"}},
+			gvr:     ResourceTypeMatcher{ResourceTypeRequirement{Group: "yourgroup"}},
 			include: Specs{},
 			exclude: Specs{
 				schema.GroupVersionResource{Group: "mygroup"}: nil,

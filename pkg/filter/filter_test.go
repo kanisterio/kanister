@@ -16,13 +16,13 @@ var _ = Suite(&FilterSuite{})
 
 func (s *FilterSuite) TestGVRRequirement(c *C) {
 	for _, tc := range []struct {
-		gvrr     ResourceRequirement
+		gvrr     ResourceTypeRequirement
 		gvr      schema.GroupVersionResource
 		expected bool
 	}{
 		// Basic case
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "",
 				Resource: "",
@@ -37,7 +37,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 
 		// Case w/ Version Requirements
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "v1",
 				Resource: "",
@@ -50,7 +50,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 			expected: false,
 		},
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "v1",
 				Resource: "",
@@ -63,7 +63,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 			expected: false,
 		},
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "v1",
 				Resource: "",
@@ -76,7 +76,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 			expected: true,
 		},
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "v1",
 				Resource: "",
@@ -91,7 +91,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 
 		// Wrong group
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "apps",
 				Version:  "v1",
 				Resource: "services",
@@ -106,7 +106,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 
 		// Wrong object
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "v1",
 				Resource: "services",
@@ -124,17 +124,17 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 }
 
 func (s *FilterSuite) TestGroupVersionResourceEmpty(c *C) {
-	var g ResourceMatcher
+	var g ResourceTypeMatcher
 	c.Assert(g.Empty(), Equals, true)
-	g = ResourceMatcher{}
+	g = ResourceTypeMatcher{}
 	c.Assert(g.Empty(), Equals, true)
-	g = ResourceMatcher{ResourceRequirement{}}
+	g = ResourceTypeMatcher{ResourceTypeRequirement{}}
 	c.Assert(g.Empty(), Equals, false)
 }
 
 func (s *FilterSuite) TestGroupVersionResourceAnyAll(c *C) {
 	for _, tc := range []struct {
-		g   ResourceMatcher
+		g   ResourceTypeMatcher
 		gvr schema.GroupVersionResource
 		any bool
 		all bool
@@ -147,48 +147,48 @@ func (s *FilterSuite) TestGroupVersionResourceAnyAll(c *C) {
 			all: true,
 		},
 		{
-			g:   ResourceMatcher{},
+			g:   ResourceTypeMatcher{},
 			gvr: schema.GroupVersionResource{},
 			any: false,
 			all: true,
 		},
 		{
-			g: ResourceMatcher{
-				ResourceRequirement{},
+			g: ResourceTypeMatcher{
+				ResourceTypeRequirement{},
 			},
 			gvr: schema.GroupVersionResource{},
 			any: true,
 			all: true,
 		},
 		{
-			g: ResourceMatcher{
-				ResourceRequirement{Group: "mygroup"},
+			g: ResourceTypeMatcher{
+				ResourceTypeRequirement{Group: "mygroup"},
 			},
 			gvr: schema.GroupVersionResource{Group: "mygroup"},
 			any: true,
 			all: true,
 		},
 		{
-			g: ResourceMatcher{
-				ResourceRequirement{Group: "mygroup"},
+			g: ResourceTypeMatcher{
+				ResourceTypeRequirement{Group: "mygroup"},
 			},
 			gvr: schema.GroupVersionResource{Group: "yourgroup"},
 			any: false,
 			all: false,
 		},
 		{
-			g: ResourceMatcher{
-				ResourceRequirement{Group: "mygroup"},
-				ResourceRequirement{Group: "yourgroup"},
+			g: ResourceTypeMatcher{
+				ResourceTypeRequirement{Group: "mygroup"},
+				ResourceTypeRequirement{Group: "yourgroup"},
 			},
 			gvr: schema.GroupVersionResource{Group: "yourgroup"},
 			any: true,
 			all: false,
 		},
 		{
-			g: ResourceMatcher{
-				ResourceRequirement{Group: "mygroup"},
-				ResourceRequirement{Group: "yourgroup"},
+			g: ResourceTypeMatcher{
+				ResourceTypeRequirement{Group: "mygroup"},
+				ResourceTypeRequirement{Group: "yourgroup"},
 			},
 			gvr: schema.GroupVersionResource{Group: "ourgroup"},
 			any: false,
@@ -202,7 +202,7 @@ func (s *FilterSuite) TestGroupVersionResourceAnyAll(c *C) {
 
 func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 	for _, tc := range []struct {
-		m       ResourceMatcher
+		m       ResourceTypeMatcher
 		gvrs    GroupVersionResourceList
 		include GroupVersionResourceList
 		exclude GroupVersionResourceList
@@ -220,7 +220,7 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			},
 		},
 		{
-			m: ResourceMatcher{},
+			m: ResourceTypeMatcher{},
 			gvrs: []schema.GroupVersionResource{
 				schema.GroupVersionResource{},
 			},
@@ -232,7 +232,7 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			},
 		},
 		{
-			m: ResourceMatcher{ResourceRequirement{}},
+			m: ResourceTypeMatcher{ResourceTypeRequirement{}},
 			gvrs: []schema.GroupVersionResource{
 				schema.GroupVersionResource{},
 			},
@@ -242,7 +242,7 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			exclude: []schema.GroupVersionResource{},
 		},
 		{
-			m: ResourceMatcher{ResourceRequirement{}},
+			m: ResourceTypeMatcher{ResourceTypeRequirement{}},
 			gvrs: []schema.GroupVersionResource{
 				schema.GroupVersionResource{
 					Group: "mygroup",
@@ -256,8 +256,8 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			exclude: []schema.GroupVersionResource{},
 		},
 		{
-			m: ResourceMatcher{
-				ResourceRequirement{
+			m: ResourceTypeMatcher{
+				ResourceTypeRequirement{
 					Group: "mygroup",
 				},
 			},
@@ -274,11 +274,11 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			exclude: []schema.GroupVersionResource{},
 		},
 		{
-			m: ResourceMatcher{
-				ResourceRequirement{
+			m: ResourceTypeMatcher{
+				ResourceTypeRequirement{
 					Group: "mygroup",
 				},
-				ResourceRequirement{
+				ResourceTypeRequirement{
 					Version: "myversion",
 				},
 			},
@@ -341,18 +341,18 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 
 func (s *FilterSuite) TestJoin(c *C) {
 	for _, tc := range []struct {
-		m   []ResourceMatcher
-		out ResourceMatcher
+		m   []ResourceTypeMatcher
+		out ResourceTypeMatcher
 	}{
 		{
-			m:   []ResourceMatcher{ResourceMatcher{}, ResourceMatcher{}},
-			out: ResourceMatcher{},
+			m:   []ResourceTypeMatcher{ResourceTypeMatcher{}, ResourceTypeMatcher{}},
+			out: ResourceTypeMatcher{},
 		},
 		{
-			m:   []ResourceMatcher{ResourceMatcher{}, ResourceMatcher{}},
-			out: ResourceMatcher{},
+			m:   []ResourceTypeMatcher{ResourceTypeMatcher{}, ResourceTypeMatcher{}},
+			out: ResourceTypeMatcher{},
 		},
 	} {
-		c.Check(joinResourceMatchers(tc.m...), DeepEquals, tc.out)
+		c.Check(joinResourceTypeMatchers(tc.m...), DeepEquals, tc.out)
 	}
 }
