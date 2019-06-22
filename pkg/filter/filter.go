@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -42,6 +43,16 @@ func (g ResourceTypeMatcher) All(gvr schema.GroupVersionResource) bool {
 	return true
 }
 
+// ResourceMatcher constructs a resource matcher
+// based on a `ResourceTypeMatcher`
+func (g ResourceTypeMatcher) ResourceMatcher() ResourceMatcher {
+	rm := make(ResourceMatcher, 0, len(g))
+	for _, rtr := range g {
+		rm = append(rm, ResourceRequirement{ResourceTypeRequirement: rtr})
+	}
+	return rm
+}
+
 type GroupVersionResourceList []schema.GroupVersionResource
 
 func (g GroupVersionResourceList) Include(ms ...ResourceTypeMatcher) GroupVersionResourceList {
@@ -78,4 +89,37 @@ func joinResourceTypeMatchers(ms ...ResourceTypeMatcher) ResourceTypeMatcher {
 		i += len(m)
 	}
 	return gvr
+}
+
+// ResourceRequirement allows specifying a resource requirement by type and/or name
+type ResourceRequirement struct {
+	v1.LocalObjectReference `json:",inline,omitempty"`
+	ResourceTypeRequirement `json:",inline,omitempty"`
+}
+
+type ResourceMatcher []ResourceRequirement
+
+func (g ResourceMatcher) Empty() bool {
+	return len(g) == 0
+}
+
+// TypeMatcher constructs a resource type matcher
+// based on a `ResourceMatcher`
+//
+// The `usageExclusion` flag should be set to true
+// if the type matcher will be used as an exclude filter
+func (rm ResourceMatcher) TypeMatcher(usageInclusion bool) ResourceTypeMatcher {
+	rtm := make(ResourceTypeMatcher, 0, len(rm))
+	for _, rr := range rm {
+		// Include the type requirement from the ResourceRequirement, if
+		//  - There is no "Name" filter or
+		//  - The intended usage of the returned type matcher is "inclusion"
+		//		i.e. it is OK to include *all* resources that have this type
+		//			 but is not OK to exclude *all* resources that have this
+		//			 type
+		if rr.Name == "" || usageInclusion {
+			rtm = append(rtm, rr.ResourceTypeRequirement)
+		}
+	}
+	return rtm
 }
