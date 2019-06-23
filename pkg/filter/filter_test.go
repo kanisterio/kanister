@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -354,5 +355,85 @@ func (s *FilterSuite) TestJoin(c *C) {
 		},
 	} {
 		c.Check(joinResourceTypeMatchers(tc.m...), DeepEquals, tc.out)
+	}
+}
+
+func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
+	ssTypeRequirement := ResourceTypeRequirement{Group: "apps", Resource: "statefulsets"}
+	pvcTypeRequirement := ResourceTypeRequirement{Version: "v1", Resource: "persistentvolumeclaims"}
+	ss1 := Resource{Name: "ss1", GVR: schema.GroupVersionResource{Group: "apps", Resource: "statefulsets"}}
+	ss2 := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Group: "apps", Resource: "statefulsets"}}
+	pvc1 := Resource{Name: "pvc1", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"}}
+	pvc2 := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"}}
+
+	for _, tc := range []struct {
+		m         ResourceMatcher
+		resources ResourceList
+		include   ResourceList
+		exclude   ResourceList
+	}{
+		{
+			// No matcher, empty resource list
+			m:         nil,
+			resources: []Resource{Resource{}},
+			include:   []Resource{Resource{}},
+			exclude:   []Resource{Resource{}},
+		},
+		{
+			// No matcher, include/exclude is a no-op
+			m:         nil,
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{ss1, ss2, pvc1, pvc2},
+			exclude:   []Resource{ss1, ss2, pvc1, pvc2},
+		},
+		{
+			// Match all types
+			m: ResourceMatcher{
+				ResourceRequirement{ResourceTypeRequirement: ssTypeRequirement},
+				ResourceRequirement{ResourceTypeRequirement: pvcTypeRequirement},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{ss1, ss2, pvc1, pvc2},
+			exclude:   []Resource{},
+		},
+		{
+			// Match one type
+			m: ResourceMatcher{
+				ResourceRequirement{ResourceTypeRequirement: pvcTypeRequirement},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{pvc1, pvc2},
+			exclude:   []Resource{ss1, ss2},
+		},
+		{
+			// Match a specific resource
+			m: ResourceMatcher{
+				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "pvc1"}, ResourceTypeRequirement: pvcTypeRequirement},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{pvc1},
+			exclude:   []Resource{ss1, ss2, pvc2},
+		},
+		{
+			// Match a specific resource name only (no GVR), matches only one object
+			m: ResourceMatcher{
+				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "pvc1"}},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{pvc1},
+			exclude:   []Resource{ss1, ss2, pvc2},
+		},
+		{
+			// Match a specific resource name only (no GVR), matches mulitple resources
+			m: ResourceMatcher{
+				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "specificname"}},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{ss2, pvc2},
+			exclude:   []Resource{ss1, pvc1},
+		},
+	} {
+		c.Check(tc.resources.Include(tc.m), DeepEquals, tc.include)
+		c.Check(tc.resources.Exclude(tc.m), DeepEquals, tc.exclude)
 	}
 }

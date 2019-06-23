@@ -97,6 +97,16 @@ type ResourceRequirement struct {
 	ResourceTypeRequirement `json:",inline,omitempty"`
 }
 
+// Matches returns true if the specified resource name/GVR matches the requirement
+func (r ResourceRequirement) Matches(name string, gvr schema.GroupVersionResource) bool {
+	// If the requirement does not specify a resource name - only check the
+	// ResourceTypeRequirement i.e. GVR match
+	if r.LocalObjectReference.Name == "" {
+		return r.ResourceTypeRequirement.Matches(gvr)
+	}
+	return matches(r.Name, name) && r.ResourceTypeRequirement.Matches(gvr)
+}
+
 type ResourceMatcher []ResourceRequirement
 
 func (g ResourceMatcher) Empty() bool {
@@ -122,4 +132,64 @@ func (rm ResourceMatcher) TypeMatcher(usageInclusion bool) ResourceTypeMatcher {
 		}
 	}
 	return rtm
+}
+
+// Any returns true if the specified resource matches any of the requirements
+// in `ResourceMatcher`
+func (g ResourceMatcher) Any(name string, gvr schema.GroupVersionResource) bool {
+	for _, req := range g {
+		if req.Matches(name, gvr) {
+			return true
+		}
+	}
+	return false
+}
+
+// All returns true if the specified resource matches all of the requirements
+// in `ResourceMatcher`
+func (g ResourceMatcher) All(name string, gvr schema.GroupVersionResource) bool {
+	for _, req := range g {
+		if !req.Matches(name, gvr) {
+			return false
+		}
+	}
+	return true
+}
+
+// Resource represents a named Kubernetes object (name + GVR). This provides
+// methods to use for filtering/selection.
+//
+// Note: This does not include 'Namespace'. The assumption is that the caller
+// is responsible for determining what namespace scope to use for filtering
+type Resource struct {
+	Name string
+	GVR  schema.GroupVersionResource
+}
+
+// ResourceList is a collection of Resource objects
+type ResourceList []Resource
+
+// Include returns any resources from the ResourceList that
+// match the criteria in the specified ResourceMatcher
+func (rl ResourceList) Include(m ResourceMatcher) ResourceList {
+	return rl.apply(m, false)
+}
+
+// Exclude returns any resources from the ResourceList that
+// do not match the criteria in the specified ResourceMatcher
+func (rl ResourceList) Exclude(m ResourceMatcher) ResourceList {
+	return rl.apply(m, true)
+}
+
+func (rl ResourceList) apply(m ResourceMatcher, exclude bool) ResourceList {
+	if m.Empty() {
+		return rl
+	}
+	filtered := make([]Resource, 0, len(rl))
+	for _, r := range rl {
+		if exclude != m.Any(r.Name, r.GVR) {
+			filtered = append(filtered, r)
+		}
+	}
+	return filtered
 }
