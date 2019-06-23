@@ -387,6 +387,13 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 			exclude:   []Resource{ss1, ss2, pvc1, pvc2},
 		},
 		{
+			// Empty matcher, include/exclude is a no-op
+			m:         ResourceMatcher{},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{ss1, ss2, pvc1, pvc2},
+			exclude:   []Resource{ss1, ss2, pvc1, pvc2},
+		},
+		{
 			// Match all types
 			m: ResourceMatcher{
 				ResourceRequirement{ResourceTypeRequirement: ssTypeRequirement},
