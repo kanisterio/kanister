@@ -13,6 +13,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
@@ -20,12 +21,19 @@ import (
 )
 
 type DataSuite struct {
-	cli       kubernetes.Interface
-	crCli     versioned.Interface
-	namespace string
+	cli          kubernetes.Interface
+	crCli        versioned.Interface
+	namespace    string
+	profile      *param.Profile
+	providerType objectstore.ProviderType
 }
 
-var _ = Suite(&DataSuite{})
+const (
+	testBucketName = "kio-store-tests"
+)
+
+var _ = Suite(&DataSuite{providerType: objectstore.ProviderTypeS3})
+var _ = Suite(&DataSuite{providerType: objectstore.ProviderTypeGCS})
 
 func (s *DataSuite) SetUpSuite(c *C) {
 	config, err := kube.LoadConfig()
@@ -56,9 +64,29 @@ func (s *DataSuite) SetUpSuite(c *C) {
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
 	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(p)
 	c.Assert(err, IsNil)
+
+	var location crv1alpha1.Location
+	switch s.providerType {
+	case objectstore.ProviderTypeS3:
+		location = crv1alpha1.Location{
+			Type: crv1alpha1.LocationTypeS3Compliant,
+		}
+	case objectstore.ProviderTypeGCS:
+		location = crv1alpha1.Location{
+			Type: crv1alpha1.LocationTypeGCS,
+		}
+	default:
+		c.Fatalf("Unrecognized objectstore '%s'", s.providerType)
+	}
+	location.Prefix = "testBackupRestoreLocDelete"
+	location.Bucket = testBucketName
+	s.profile = testutil.ObjectStoreProfileOrSkip(c, s.providerType, location)
 }
 
 func (s *DataSuite) TearDownSuite(c *C) {
+	ctx := context.Background()
+	err := location.Delete(ctx, *s.profile, "")
+	c.Assert(err, IsNil)
 	if s.namespace != "" {
 		s.cli.Core().Namespaces().Delete(s.namespace, nil)
 	}
@@ -182,13 +210,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 
 	tp, err := param.New(ctx, s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
-
-	location := crv1alpha1.Location{
-		Type:   crv1alpha1.LocationTypeS3Compliant,
-		Prefix: "testBackupRestoreLocDelete",
-		Bucket: testutil.GetEnvOrSkip(c, testutil.TestS3BucketName),
-	}
-	tp.Profile = testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeS3, location)
+	tp.Profile = s.profile
 
 	// Test backup
 	bp := *newBackupDataBlueprint()
@@ -254,12 +276,7 @@ func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
 
 	tp, err := param.New(ctx, s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
-
-	location := crv1alpha1.Location{
-		Type:   crv1alpha1.LocationTypeS3Compliant,
-		Bucket: testutil.GetEnvOrSkip(c, testutil.TestS3BucketName),
-	}
-	tp.Profile = testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeS3, location)
+	tp.Profile = s.profile
 
 	// Test backup
 	bp := *newBackupDataBlueprint()
@@ -426,11 +443,6 @@ func (s *DataSuite) initPVCTemplateParams(c *C, pvc *v1.PersistentVolumeClaim, o
 	}
 	tp, err := param.New(context.Background(), s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
-
-	location := crv1alpha1.Location{
-		Type:   crv1alpha1.LocationTypeS3Compliant,
-		Bucket: testutil.GetEnvOrSkip(c, testutil.TestS3BucketName),
-	}
-	tp.Profile = testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeS3, location)
+	tp.Profile = s.profile
 	return tp
 }
