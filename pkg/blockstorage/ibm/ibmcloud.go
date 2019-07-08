@@ -31,6 +31,9 @@ const (
 )
 
 func (s *ibmCloud) Type() blockstorage.Type {
+	if s.cli.SLCfg.SoftlayerFileEnabled {
+		return blockstorage.TypeSoftlayerFile
+	}
 	return blockstorage.TypeSoftlayerBlock
 }
 
@@ -100,7 +103,7 @@ func (s *ibmCloud) volumeParse(ctx context.Context, vol *ibmprov.Volume) (*block
 		attribs[SnapshotSpaceAttName] = strconv.Itoa(*vol.SnapshotSpace)
 	}
 
-	if vol.LunID == "" {
+	if vol.LunID == "" && string(vol.Provider) == s.cli.SLCfg.SoftlayerBlockProviderName {
 		return nil, errors.New("LunID is missing from Volume info")
 	}
 	attribs[LunIDAttName] = vol.LunID

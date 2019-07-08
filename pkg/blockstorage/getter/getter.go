@@ -33,6 +33,9 @@ func (*getter) Get(storageType blockstorage.Type, config map[string]string) (blo
 		return ibm.NewProvider(context.TODO(), config)
 	case blockstorage.TypeGPD:
 		return gcepd.NewProvider(config)
+	case blockstorage.TypeSoftlayerFile:
+		config[ibm.SoftlayerFileAttName] = "true"
+		return ibm.NewProvider(context.TODO(), config)
 	default:
 		return nil, errors.Errorf("Unsupported storage type %v", storageType)
 	}
@@ -46,6 +49,8 @@ func Supported(st blockstorage.Type) bool {
 	case blockstorage.TypeSoftlayerBlock:
 		return true
 	case blockstorage.TypeGPD:
+		return true
+	case blockstorage.TypeSoftlayerFile:
 		return true
 	default:
 		return false

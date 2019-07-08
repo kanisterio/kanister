@@ -62,8 +62,18 @@ func newClient(ctx context.Context, args map[string]string) (*client, error) {
 	defer zaplog.Sync() // nolint: errcheck
 
 	cfg, err := findDefaultConfig(ctx, args, zaplog)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get IBM client config")
+	if err != nil || cfg.Softlayer == nil {
+		return nil, errors.New("Failed to get IBM client config")
+	}
+
+	provName := softLayerCfg.SoftlayerBlockProviderName
+	if enableFile, ok := args[SoftlayerFileAttName]; ok && enableFile == "true" {
+		cfg.Softlayer.SoftlayerFileEnabled = true
+		cfg.Softlayer.SoftlayerBlockEnabled = false
+		provName = softLayerCfg.SoftlayerFileProviderName
+	} else {
+		cfg.Softlayer.SoftlayerFileEnabled = false
+		cfg.Softlayer.SoftlayerBlockEnabled = true
 	}
 
 	provReg, err := ibmprovutils.InitProviders(cfg, zaplog)
@@ -71,9 +81,9 @@ func newClient(ctx context.Context, args map[string]string) (*client, error) {
 		return nil, errors.Wrap(err, "Failed to Init IBM providers")
 	}
 
-	session, _, err := ibmprovutils.OpenProviderSession(cfg, provReg, cfg.Softlayer.SoftlayerBlockProviderName, zaplog)
+	session, _, err := ibmprovutils.OpenProviderSession(cfg, provReg, provName, zaplog)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Open session for IBM provider. %s", cfg.Softlayer.SoftlayerBlockProviderName)
+		return nil, errors.Wrapf(err, "Failed to create Open session for IBM provider. %s", provName)
 	}
 
 	return &client{

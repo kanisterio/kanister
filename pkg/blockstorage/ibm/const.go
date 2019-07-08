@@ -23,4 +23,6 @@ const (
 	LunIDAttName = "LunID"
 	// TargetIPsAttName attribute name for Volume.TargetIPAddresses
 	TargetIPsAttName = "TargetIPAddresses"
+	// SoftlayerFileAttName attribute name to enable softlayer file support
+	SoftlayerFileAttName = "SoftlayerFileEnabled"
 )

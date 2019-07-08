@@ -23,7 +23,9 @@ const (
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
 
-type ClientSuite struct{}
+type ClientSuite struct {
+	apiKey string
+}
 
 var _ = Suite(&ClientSuite{})
 
@@ -33,9 +35,15 @@ func (s *ClientSuite) SetUpSuite(c *C) {
 	if os.Getenv(IBMApiKeyEnv) == "" {
 		c.Skip(IBMApiKeyEnv + " envionment variable not set")
 	}
+	s.apiKey = os.Getenv(IBMApiKeyEnv)
 }
 
-func (s *ClientSuite) TestClient(c *C) {
+func (s *ClientSuite) TearDownSuite(c *C) {
+	os.Setenv(IBMApiKeyEnv, s.apiKey)
+	os.Unsetenv(LibDefCfgEnv)
+}
+
+func (s *ClientSuite) TestAPIClient(c *C) {
 	var apiKey string
 	if apiK, ok := os.LookupEnv(IBMApiKeyEnv); ok {
 		apiKey = apiK
@@ -48,6 +56,24 @@ func (s *ClientSuite) TestClient(c *C) {
 	c.Assert(ibmCli.Service, NotNil)
 	defer ibmCli.Service.Close()
 	c.Assert(*ibmCli, FitsTypeOf, client{})
+	_, err = ibmCli.Service.SnapshotsList()
+	c.Assert(err, IsNil)
+}
+
+func (s *ClientSuite) TestIBMClientSoftlayerFile(c *C) {
+	var apiKey string
+	if apiK, ok := os.LookupEnv(IBMApiKeyEnv); ok {
+		apiKey = apiK
+	} else {
+		c.Skip(fmt.Sprintf("Could not find env var %s with API key", IBMApiKeyEnv))
+	}
+	ibmCli, err := newClient(context.Background(), map[string]string{APIKeyArgName: apiKey, SoftlayerFileAttName: "true"})
+	defer ibmCli.Service.Close()
+	c.Assert(err, IsNil)
+	c.Assert(ibmCli.Service, NotNil)
+	c.Assert(*ibmCli, FitsTypeOf, client{})
+	c.Assert(ibmCli.SLCfg.SoftlayerBlockEnabled, Equals, false)
+	c.Assert(ibmCli.SLCfg.SoftlayerFileEnabled, Equals, true)
 	_, err = ibmCli.Service.SnapshotsList()
 	c.Assert(err, IsNil)
 }
