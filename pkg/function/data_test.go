@@ -85,8 +85,10 @@ func (s *DataSuite) SetUpSuite(c *C) {
 
 func (s *DataSuite) TearDownSuite(c *C) {
 	ctx := context.Background()
-	err := location.Delete(ctx, *s.profile, "")
-	c.Assert(err, IsNil)
+	if s.profile != nil {
+		err := location.Delete(ctx, *s.profile, "")
+		c.Assert(err, IsNil)
+	}
 	if s.namespace != "" {
 		s.cli.Core().Namespaces().Delete(s.namespace, nil)
 	}
