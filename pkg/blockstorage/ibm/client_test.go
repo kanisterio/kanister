@@ -30,8 +30,6 @@ type ClientSuite struct {
 var _ = Suite(&ClientSuite{})
 
 func (s *ClientSuite) SetUpSuite(c *C) {
-	// TODO: IBM client changed internally, unskip after K10-2454
-	c.Skip("Skipped until we fix K10-2454")
 	if os.Getenv(IBMApiKeyEnv) == "" {
 		c.Skip(IBMApiKeyEnv + " envionment variable not set")
 	}
@@ -56,7 +54,7 @@ func (s *ClientSuite) TestAPIClient(c *C) {
 	c.Assert(ibmCli.Service, NotNil)
 	defer ibmCli.Service.Close()
 	c.Assert(*ibmCli, FitsTypeOf, client{})
-	_, err = ibmCli.Service.SnapshotsList()
+	_, err = ibmCli.Service.ListSnapshots()
 	c.Assert(err, IsNil)
 }
 
@@ -74,7 +72,7 @@ func (s *ClientSuite) TestIBMClientSoftlayerFile(c *C) {
 	c.Assert(*ibmCli, FitsTypeOf, client{})
 	c.Assert(ibmCli.SLCfg.SoftlayerBlockEnabled, Equals, false)
 	c.Assert(ibmCli.SLCfg.SoftlayerFileEnabled, Equals, true)
-	_, err = ibmCli.Service.SnapshotsList()
+	_, err = ibmCli.Service.ListSnapshots()
 	c.Assert(err, IsNil)
 }
 

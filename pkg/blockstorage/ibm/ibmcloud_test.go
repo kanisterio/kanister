@@ -10,6 +10,7 @@ import (
 	"time"
 
 	ibmprov "github.com/IBM/ibmcloud-storage-volume-lib/lib/provider"
+	"github.com/luci/go-render/render"
 	. "gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
@@ -28,15 +29,14 @@ type TestIBMCloud struct {
 	volAtts       map[string]string
 }
 
+//These are not executed as part of Pipeline, but usefull for development
 var softlayerVolAtts = map[string]string{
 	ProviderTypeAttName: string(ibmprov.VolumeProviderType("endurance")),
 	TierAttName:         "2",
 }
 
 var _ = Suite(&TestIBMCloud{softlayerFile: false, volAtts: softlayerVolAtts})
-
-// Commented out untill IBM fixes SL on their side.
-// var _ = Suite(&TestIBMCloud{softlayerFile: true, volAtts: softlayerVolAtts})
+var _ = Suite(&TestIBMCloud{softlayerFile: true, volAtts: softlayerVolAtts})
 
 func (s *TestIBMCloud) SetUpSuite(c *C) {
 	c.Skip("IBM tests are too flaky to run in CI")
@@ -50,6 +50,7 @@ func (s *TestIBMCloud) SetUpSuite(c *C) {
 	if s.softlayerFile {
 		args[SoftlayerFileAttName] = "true"
 	}
+
 	var err error
 	ctx := context.Background()
 	s.provider, err = NewProvider(ctx, args)
@@ -69,6 +70,7 @@ func (s *TestIBMCloud) SetUpSuite(c *C) {
 	}
 	tmpVol.Az = s.cli.SLCfg.SoftlayerDataCenter
 	s.testVol, err = s.provider.VolumeCreate(ctx, *tmpVol)
+	c.Log(fmt.Sprintf("sl cfg %s", render.Render(softLayerCfg)))
 	c.Assert(err, IsNil)
 	c.Assert(s.testVol.ID, NotNil)
 }
@@ -120,7 +122,7 @@ func (s TestIBMCloud) TestVolRestore(c *C) {
 	tTags := map[string]string{"ibmblock_unit_test_restore_vol": fmt.Sprintf("test-vol-%d", time.Now().Unix())}
 	resVol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), *bsSnap, tTags)
 	c.Assert(err, IsNil)
-	cVol, err := s.cli.Service.VolumeGet(resVol.ID)
+	cVol, err := s.cli.Service.GetVolume(resVol.ID)
 	c.Assert(err, IsNil)
 	c.Assert(cVol, NotNil)
 	err = s.provider.VolumeDelete(context.Background(), resVol)

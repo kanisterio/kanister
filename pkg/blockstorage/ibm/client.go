@@ -47,6 +47,11 @@ var (
 		SoftlayerVolProvisionTimeout: "10m",
 		SoftlayerRetryInterval:       "5s",
 	}
+
+	vpcCfg = ibmcfg.VPCProviderConfig{
+		Enabled:              false,
+		VPCBlockProviderName: "vpc-classic",
+	}
 )
 
 //client is a wrapper for Library client
@@ -66,14 +71,11 @@ func newClient(ctx context.Context, args map[string]string) (*client, error) {
 		return nil, errors.New("Failed to get IBM client config")
 	}
 
-	provName := softLayerCfg.SoftlayerBlockProviderName
+	provName := cfg.Softlayer.SoftlayerBlockProviderName
 	if enableFile, ok := args[SoftlayerFileAttName]; ok && enableFile == "true" {
 		cfg.Softlayer.SoftlayerFileEnabled = true
 		cfg.Softlayer.SoftlayerBlockEnabled = false
-		provName = softLayerCfg.SoftlayerFileProviderName
-	} else {
-		cfg.Softlayer.SoftlayerFileEnabled = false
-		cfg.Softlayer.SoftlayerBlockEnabled = true
+		provName = cfg.Softlayer.SoftlayerFileProviderName
 	}
 
 	provReg, err := ibmprovutils.InitProviders(cfg, zaplog)
@@ -101,6 +103,7 @@ func findDefaultConfig(ctx context.Context, args map[string]string, zaplog *zap.
 			Softlayer: &softLayerCfg,
 			Gen2:      &ibmcfg.Gen2Config{},
 			Bluemix:   &blueMixCfg,
+			VPC:       &vpcCfg,
 		}, nil
 	}
 	// Cheking if IBM store secret is present
