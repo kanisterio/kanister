@@ -21,7 +21,7 @@ import:
 - package: github.com/jpillora/backoff
   version: 1.0.0
 - package: github.com/kubernetes-csi/external-snapshotter
-  version: v1.0.1
+  version: v1.1.0
 - package: github.com/Masterminds/sprig
   version: v2.15.0
 - package: github.com/mitchellh/mapstructure
@@ -52,14 +52,14 @@ import:
   version: v2
   repo: https://github.com/go-tomb/tomb.git
 - package: k8s.io/api
-  version: kubernetes-1.13.3
+  version: kubernetes-1.14.4
 - package: k8s.io/apiextensions-apiserver
-  version: kubernetes-1.13.3
+  version: kubernetes-1.14.4
 - package: k8s.io/apimachinery
-  version: kubernetes-1.13.3
+  version: kubernetes-1.14.4
 - package: k8s.io/client-go
-  version: kubernetes-1.13.3
+  version: kubernetes-1.14.4
 - package: k8s.io/code-generator
-  version: kubernetes-1.13.3
+  version: kubernetes-1.14.4
 - package: k8s.io/gengo
   version: 0689ccc1d7d65d9dd1bedcc3b0b1ed7df91ba266

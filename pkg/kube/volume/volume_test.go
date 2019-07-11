@@ -28,7 +28,7 @@ func (s *TestVolSuite) TestCreatePVC(c *C) {
 	cli := fake.NewSimpleClientset()
 	pvcName, err := CreatePVC(ctx, cli, ns, NoPVCNameSpecified, pvcSize, targetVolID, annotations)
 	c.Assert(err, IsNil)
-	pvc, err := cli.Core().PersistentVolumeClaims(ns).Get(pvcName, metav1.GetOptions{})
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(ns).Get(pvcName, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	c.Assert(len(pvc.Spec.AccessModes) >= 1, Equals, true)

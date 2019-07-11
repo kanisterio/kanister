@@ -14,7 +14,7 @@ func NewEventRecorder(client kubernetes.Interface, component string) record.Even
 	broadcaster := record.NewBroadcaster()
 	broadcaster.StartEventWatcher(
 		func(event *core.Event) {
-			if _, err := client.Core().Events(event.Namespace).Create(event); err != nil {
+			if _, err := client.CoreV1().Events(event.Namespace).Create(event); err != nil {
 				log.Errorf("Error while creating the event: %#v", err)
 			}
 		},

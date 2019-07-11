@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
@@ -22,7 +23,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
-	"github.com/pkg/errors"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -62,12 +62,12 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 			GenerateName: "kanistercontrollertest-",
 		},
 	}
-	cns, err := s.cli.Core().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.Core().Secrets(s.namespace).Create(sec)
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(sec)
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
@@ -93,7 +93,7 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 
 func (s *ControllerSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.Core().Namespaces().Delete(s.namespace, nil)
+		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 

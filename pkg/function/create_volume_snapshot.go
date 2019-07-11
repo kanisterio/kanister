@@ -167,7 +167,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 	_ = ctx
 	var region string
 	var provider blockstorage.Provider
-	pvc, err := kubeCli.Core().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
+	pvc, err := kubeCli.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get PVC, PVC name: %s, namespace: %s", name, namespace)
 	}
@@ -175,7 +175,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 	if pvName == "" {
 		return nil, errors.Errorf("PVC %s in namespace %s not bound", name, namespace)
 	}
-	pv, err := kubeCli.Core().PersistentVolumes().Get(pvName, metav1.GetOptions{})
+	pv, err := kubeCli.CoreV1().PersistentVolumes().Get(pvName, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get PV %s, namespace: %s", pvName, namespace)
 	}

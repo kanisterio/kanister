@@ -49,7 +49,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 			ServiceAccountName: opts.ServiceAccountName,
 		},
 	}
-	pod, err := cli.Core().Pods(opts.Namespace).Create(pod)
+	pod, err := cli.CoreV1().Pods(opts.Namespace).Create(pod)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
@@ -58,7 +58,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 
 // DeletePod deletes the specified pod
 func DeletePod(ctx context.Context, cli kubernetes.Interface, pod *v1.Pod) error {
-	if err := cli.Core().Pods(pod.Namespace).Delete(pod.Name, nil); err != nil {
+	if err := cli.CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil); err != nil {
 		log.Errorf("DeletePod failed: %v", err)
 	}
 	return nil
@@ -66,7 +66,7 @@ func DeletePod(ctx context.Context, cli kubernetes.Interface, pod *v1.Pod) error
 
 // GetPodLogs fetches the logs from the given pod
 func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name string) (string, error) {
-	reader, err := cli.Core().Pods(namespace).GetLogs(name, &v1.PodLogOptions{}).Stream()
+	reader, err := cli.CoreV1().Pods(namespace).GetLogs(name, &v1.PodLogOptions{}).Stream()
 	if err != nil {
 		return "", err
 	}
@@ -81,7 +81,7 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 // WaitForPodReady waits for a pod to reach Running state
 func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		p, err := cli.Core().Pods(namespace).Get(name, metav1.GetOptions{})
+		p, err := cli.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -96,7 +96,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 // WaitForPodCompletion waits for a pod to reach a terminal state
 func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		p, err := cli.Core().Pods(namespace).Get(name, metav1.GetOptions{})
+		p, err := cli.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return true, err
 		}

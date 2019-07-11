@@ -115,9 +115,9 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			},
 		},
 	)
-	_, err := cli.Core().PersistentVolumeClaims(ns).Get("pvc-test-1", metav1.GetOptions{})
+	_, err := cli.CoreV1().PersistentVolumeClaims(ns).Get("pvc-test-1", metav1.GetOptions{})
 	c.Assert(err, IsNil)
-	_, err = cli.Core().PersistentVolumes().Get("pv-test-1", metav1.GetOptions{})
+	_, err = cli.CoreV1().PersistentVolumes().Get("pv-test-1", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	for _, tc := range []struct {

@@ -30,7 +30,7 @@ func (p *PodWriteSuite) SetUpSuite(c *C) {
 			GenerateName: "podwritertest-",
 		},
 	}
-	ns, err = p.cli.Core().Namespaces().Create(ns)
+	ns, err = p.cli.CoreV1().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	p.namespace = ns.Name
 	pod := &v1.Pod{
@@ -45,18 +45,18 @@ func (p *PodWriteSuite) SetUpSuite(c *C) {
 			},
 		},
 	}
-	p.pod, err = p.cli.Core().Pods(p.namespace).Create(pod)
+	p.pod, err = p.cli.CoreV1().Pods(p.namespace).Create(pod)
 	c.Assert(err, IsNil)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	c.Assert(WaitForPodReady(ctx, p.cli, p.namespace, p.pod.Name), IsNil)
-	p.pod, err = p.cli.Core().Pods(p.namespace).Get(p.pod.Name, metav1.GetOptions{})
+	p.pod, err = p.cli.CoreV1().Pods(p.namespace).Get(p.pod.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 }
 
 func (p *PodWriteSuite) TearDownSuite(c *C) {
 	if p.namespace != "" {
-		err := p.cli.Core().Namespaces().Delete(p.namespace, nil)
+		err := p.cli.CoreV1().Namespaces().Delete(p.namespace, nil)
 		c.Assert(err, IsNil)
 	}
 }

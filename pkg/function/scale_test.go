@@ -45,12 +45,12 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 			GenerateName: "kanister-scale-test-",
 		},
 	}
-	cns, err := s.cli.Core().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.Core().Secrets(s.namespace).Create(sec)
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(sec)
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
@@ -60,7 +60,7 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 
 func (s *ScaleSuite) TearDownTest(c *C) {
 	if s.namespace != "" {
-		s.cli.Core().Namespaces().Delete(s.namespace, nil)
+		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 

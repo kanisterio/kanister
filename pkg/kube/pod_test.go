@@ -33,14 +33,14 @@ func (s *PodSuite) SetUpSuite(c *C) {
 			GenerateName: "podtest-",
 		},
 	}
-	ns, err = s.cli.Core().Namespaces().Create(ns)
+	ns, err = s.cli.CoreV1().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
 }
 
 func (s *PodSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		err := s.cli.Core().Namespaces().Delete(s.namespace, nil)
+		err := s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 		c.Assert(err, IsNil)
 	}
 }

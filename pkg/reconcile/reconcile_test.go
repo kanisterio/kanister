@@ -50,7 +50,7 @@ func (s *ReconcileSuite) SetUpSuite(c *C) {
 			GenerateName: "reconciletest-",
 		},
 	}
-	cns, err := cli.Core().Namespaces().Create(ns)
+	cns, err := cli.CoreV1().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 
@@ -92,7 +92,7 @@ func (s *ReconcileSuite) SetUpSuite(c *C) {
 
 func (s *ReconcileSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.Core().Namespaces().Delete(s.namespace, nil)
+		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
