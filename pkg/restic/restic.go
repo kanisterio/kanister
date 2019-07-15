@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -130,6 +131,10 @@ func resticS3Args(profile *param.Profile, repository string) []string {
 	s3Endpoint := awsS3Endpoint
 	if profile.Location.Endpoint != "" {
 		s3Endpoint = profile.Location.Endpoint
+	}
+	if strings.HasSuffix(s3Endpoint, "/") {
+		log.Debugln("Removing trailing slashes from the endpoint")
+		s3Endpoint = strings.TrimRight(s3Endpoint, "/")
 	}
 	return []string{
 		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, profile.Credential.KeyPair.ID),
