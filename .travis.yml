@@ -14,6 +14,7 @@ branches:
 # This moves Kubernetes specific config files.
 env:
 - CHANGE_MINIKUBE_NONE_USER=true
+- GO111MODULE=on
 
 before_install:
 - sudo bash build/local_kubernetes.sh get_minikube
@@ -22,6 +23,7 @@ before_install:
 - sudo mv kubectl /usr/local/bin/kubectl
 
 script:
+- go mod download
 - make build DOCKER_BUILD=false
 - make docs
 - sudo bash build/local_kubernetes.sh start_minikube
