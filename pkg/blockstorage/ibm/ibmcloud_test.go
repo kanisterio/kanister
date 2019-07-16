@@ -10,6 +10,7 @@ import (
 	"time"
 
 	ibmprov "github.com/IBM/ibmcloud-storage-volume-lib/lib/provider"
+	"github.com/luci/go-render/render"
 	. "gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
@@ -20,16 +21,24 @@ const (
 	testTagValue = "unittest"
 )
 
-type TestIBMCloudBlock struct {
-	provider blockstorage.Provider
-	cli      *client
-	testVol  *blockstorage.Volume
+type TestIBMCloud struct {
+	provider      blockstorage.Provider
+	cli           *client
+	testVol       *blockstorage.Volume
+	softlayerFile bool
+	volAtts       map[string]string
 }
 
 //These are not executed as part of Pipeline, but usefull for development
-var _ = Suite(&TestIBMCloudBlock{})
+var softlayerVolAtts = map[string]string{
+	ProviderTypeAttName: string(ibmprov.VolumeProviderType("endurance")),
+	TierAttName:         "2",
+}
 
-func (s *TestIBMCloudBlock) SetUpSuite(c *C) {
+var _ = Suite(&TestIBMCloud{softlayerFile: false, volAtts: softlayerVolAtts})
+var _ = Suite(&TestIBMCloud{softlayerFile: true, volAtts: softlayerVolAtts})
+
+func (s *TestIBMCloud) SetUpSuite(c *C) {
 	c.Skip("IBM tests are too flaky to run in CI")
 	var apiKey string
 	if apiK, ok := os.LookupEnv(IBMApiKeyEnv); ok {
@@ -38,6 +47,10 @@ func (s *TestIBMCloudBlock) SetUpSuite(c *C) {
 		c.Skip(fmt.Sprintf("Could not find env var %s with API key", IBMApiKeyEnv))
 	}
 	args := map[string]string{APIKeyArgName: apiKey}
+	if s.softlayerFile {
+		args[SoftlayerFileAttName] = "true"
+	}
+
 	var err error
 	ctx := context.Background()
 	s.provider, err = NewProvider(ctx, args)
@@ -47,13 +60,9 @@ func (s *TestIBMCloudBlock) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(s.cli, NotNil)
 	tmpVol := &blockstorage.Volume{
-		Attributes: make(map[string]string),
+		Attributes: s.volAtts,
 	}
-
 	tmpVol.VolumeType = string(s.cli.Service.Type())
-	provT := "endurance"
-	tmpVol.Attributes[ProviderTypeAttName] = string(ibmprov.VolumeProviderType(provT))
-	tmpVol.Attributes[TierAttName] = "2"
 	tmpVol.Size = 20
 	tmpVol.Tags = []*blockstorage.KeyValue{
 		{Key: testTagKey, Value: testTagValue},
@@ -61,11 +70,12 @@ func (s *TestIBMCloudBlock) SetUpSuite(c *C) {
 	}
 	tmpVol.Az = s.cli.SLCfg.SoftlayerDataCenter
 	s.testVol, err = s.provider.VolumeCreate(ctx, *tmpVol)
+	c.Log(fmt.Sprintf("sl cfg %s", render.Render(softLayerCfg)))
 	c.Assert(err, IsNil)
 	c.Assert(s.testVol.ID, NotNil)
 }
 
-func (s TestIBMCloudBlock) TearDownSuite(c *C) {
+func (s TestIBMCloud) TearDownSuite(c *C) {
 	c.Skip("IBM tests are too flaky to run in CI")
 	// Check whether or not the test volume was initialized
 	if _, ok := os.LookupEnv(IBMApiKeyEnv); !ok {
@@ -78,7 +88,7 @@ func (s TestIBMCloudBlock) TearDownSuite(c *C) {
 	c.Assert(err, IsNil)
 }
 
-func (s TestIBMCloudBlock) TestSnapshotCreate(c *C) {
+func (s TestIBMCloud) TestSnapshotCreate(c *C) {
 	bsVol, err := s.provider.VolumeGet(context.Background(), s.testVol.ID, "")
 	c.Assert(err, IsNil)
 	c.Assert(bsVol.ID, Equals, s.testVol.ID)
@@ -102,7 +112,7 @@ func (s TestIBMCloudBlock) TestSnapshotCreate(c *C) {
 
 }
 
-func (s TestIBMCloudBlock) TestVolRestore(c *C) {
+func (s TestIBMCloud) TestVolRestore(c *C) {
 	bsVol, err := s.provider.VolumeGet(context.Background(), s.testVol.ID, "")
 	c.Assert(err, IsNil)
 	snapTTags := map[string]string{"ibmblock_unit_test_snap": fmt.Sprintf("test-snap-%d", time.Now().Unix())}
@@ -112,7 +122,7 @@ func (s TestIBMCloudBlock) TestVolRestore(c *C) {
 	tTags := map[string]string{"ibmblock_unit_test_restore_vol": fmt.Sprintf("test-vol-%d", time.Now().Unix())}
 	resVol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), *bsSnap, tTags)
 	c.Assert(err, IsNil)
-	cVol, err := s.cli.Service.VolumeGet(resVol.ID)
+	cVol, err := s.cli.Service.GetVolume(resVol.ID)
 	c.Assert(err, IsNil)
 	c.Assert(cVol, NotNil)
 	err = s.provider.VolumeDelete(context.Background(), resVol)

@@ -46,7 +46,7 @@ func Exec(cli kubernetes.Interface, namespace, pod, container string, command []
 // additional parameters to be passed.
 func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string, string, error) {
 	const tty = false
-	req := kubeCli.Core().RESTClient().Post().
+	req := kubeCli.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(options.PodName).
 		Namespace(options.Namespace).

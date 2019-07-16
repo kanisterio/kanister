@@ -107,14 +107,14 @@ func (s *CreateVolumeFromSnapshotTestSuite) TestCreateVolumeFromSnapshot(c *C) {
 		c.Assert(len(provider.(*mockblockstorage.Provider).VolIDList) == 1, Equals, true)
 
 		if tc.newPVCs != nil {
-			_, err = cli.Core().PersistentVolumeClaims(ns).Get("newpvc-1", metav1.GetOptions{})
+			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get("newpvc-1", metav1.GetOptions{})
 			c.Assert(err, IsNil)
-			_, err = cli.Core().PersistentVolumeClaims(ns).Get("newpvc-2", metav1.GetOptions{})
+			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get("newpvc-2", metav1.GetOptions{})
 			c.Assert(err, IsNil)
 		} else {
-			_, err = cli.Core().PersistentVolumeClaims(ns).Get("pvc-1", metav1.GetOptions{})
+			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get("pvc-1", metav1.GetOptions{})
 			c.Assert(err, IsNil)
-			_, err = cli.Core().PersistentVolumeClaims(ns).Get("pvc-2", metav1.GetOptions{})
+			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get("pvc-2", metav1.GetOptions{})
 			c.Assert(err, IsNil)
 		}
 	}

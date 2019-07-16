@@ -33,7 +33,7 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 			GenerateName: "kanisterkubetasktest-",
 		},
 	}
-	cns, err := s.cli.Core().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 	os.Setenv("POD_NAMESPACE", cns.Name)
@@ -43,7 +43,7 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 
 func (s *KubeTaskSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.Core().Namespaces().Delete(s.namespace, nil)
+		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 

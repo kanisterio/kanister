@@ -16,6 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
+	bsibmutils "github.com/kanisterio/kanister/pkg/blockstorage/ibm/utils"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 )
 
@@ -31,6 +32,9 @@ const (
 )
 
 func (s *ibmCloud) Type() blockstorage.Type {
+	if s.cli.SLCfg.SoftlayerFileEnabled {
+		return blockstorage.TypeSoftlayerFile
+	}
 	return blockstorage.TypeSoftlayerBlock
 }
 
@@ -56,7 +60,7 @@ func (s *ibmCloud) VolumeCreate(ctx context.Context, volume blockstorage.Volume)
 	newVol.VolumeNotes = blockstorage.KeyValueToMap(volume.Tags)
 	newVol.Az = s.cli.SLCfg.SoftlayerDataCenter
 	log.Debugf("Creating new volume %+v", newVol)
-	volR, err := s.cli.Service.VolumeCreate(newVol)
+	volR, err := s.cli.Service.CreateVolume(newVol)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Failed to create volume. %s", err.Error()))
 	}
@@ -65,7 +69,7 @@ func (s *ibmCloud) VolumeCreate(ctx context.Context, volume blockstorage.Volume)
 }
 
 func (s *ibmCloud) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
-	vol, err := s.cli.Service.VolumeGet(id)
+	vol, err := s.cli.Service.GetVolume(id)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get volume with id %s", id)
 	}
@@ -100,15 +104,21 @@ func (s *ibmCloud) volumeParse(ctx context.Context, vol *ibmprov.Volume) (*block
 		attribs[SnapshotSpaceAttName] = strconv.Itoa(*vol.SnapshotSpace)
 	}
 
-	if vol.LunID == "" {
+	if vol.LunID == "" && string(vol.Provider) == s.cli.SLCfg.SoftlayerBlockProviderName {
 		return nil, errors.New("LunID is missing from Volume info")
 	}
 	attribs[LunIDAttName] = vol.LunID
 
-	if len(vol.TargetIPAddresses) < 0 {
-		return nil, errors.New("TargetIPAddresses are missing from Volume info")
+	if len(vol.IscsiTargetIPAddresses) < 0 {
+		return nil, errors.New("IscsiTargetIPAddresses are missing from Volume info")
 	}
-	attribs[TargetIPsAttName] = strings.Join(vol.TargetIPAddresses, ",")
+	if len(vol.Attributes) > 0 {
+		for k, v := range vol.Attributes {
+			attribs[k] = v
+		}
+	}
+
+	attribs[TargetIPsAttName] = strings.Join(vol.IscsiTargetIPAddresses, ",")
 
 	return &blockstorage.Volume{
 		Type:         s.Type(),
@@ -126,7 +136,7 @@ func (s *ibmCloud) volumeParse(ctx context.Context, vol *ibmprov.Volume) (*block
 
 func (s *ibmCloud) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	var vols []*blockstorage.Volume
-	ibmVols, err := s.cli.Service.VolumesList(tags)
+	ibmVols, err := s.cli.Service.ListVolumes(tags)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to list volumes with tags %v", tags)
 	}
@@ -173,7 +183,7 @@ func (s *ibmCloud) SnapshotsList(ctx context.Context, tags map[string]string) ([
 	var snaps []*blockstorage.Snapshot
 	// IBM doens't support tag for snapshot list.
 	// Getting all of them
-	ibmsnaps, err := s.cli.Service.SnapshotsList()
+	ibmsnaps, err := s.cli.Service.ListSnapshots()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to list Snapshots")
 	}
@@ -192,7 +202,7 @@ func (s *ibmCloud) SnapshotCopy(ctx context.Context, from, to blockstorage.Snaps
 
 func (s *ibmCloud) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	alltags := ktags.GetTags(tags)
-	ibmvol, err := s.cli.Service.VolumeGet(volume.ID)
+	ibmvol, err := s.cli.Service.GetVolume(volume.ID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get Volume for Snapshot creation, volume_id :%s", volume.ID)
 	}
@@ -200,7 +210,7 @@ func (s *ibmCloud) SnapshotCreate(ctx context.Context, volume blockstorage.Volum
 	if ibmvol.SnapshotSpace == nil {
 		log.Debugf("Ordering snapshot space for volume %+v", ibmvol)
 		ibmvol.SnapshotSpace = ibmvol.Capacity
-		err = s.cli.Service.SnapshotOrder(*ibmvol)
+		err = s.cli.Service.OrderSnapshot(*ibmvol)
 		if err != nil {
 			if strings.Contains(err.Error(), "already has snapshot space") != true {
 				return nil, errors.Wrapf(err, "Failed to order Snapshot space, volume_id :%s", volume.ID)
@@ -214,7 +224,7 @@ func (s *ibmCloud) SnapshotCreate(ctx context.Context, volume blockstorage.Volum
 		}
 	}
 	log.Debugf("Creating snapshot for vol %+v", ibmvol)
-	snap, err := s.cli.Service.SnapshotCreate(ibmvol, alltags)
+	snap, err := s.cli.Service.CreateSnapshot(ibmvol, alltags)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create snapshot, volume_id: %s", volume.ID)
 	}
@@ -228,15 +238,15 @@ func (s *ibmCloud) SnapshotCreateWaitForCompletion(ctx context.Context, snap *bl
 }
 
 func (s *ibmCloud) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
-	snap, err := s.cli.Service.SnapshotGet(snapshot.ID)
+	snap, err := s.cli.Service.GetSnapshot(snapshot.ID)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get Snapshot for deletion, snapshot_id %s", snapshot.ID)
 	}
-	return s.cli.Service.SnapshotDelete(snap)
+	return s.cli.Service.DeleteSnapshot(snap)
 }
 
 func (s *ibmCloud) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
-	snap, err := s.cli.Service.SnapshotGet(id)
+	snap, err := s.cli.Service.GetSnapshot(id)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get Snapshot, snapshot_id %s", id)
 	}
@@ -244,11 +254,11 @@ func (s *ibmCloud) SnapshotGet(ctx context.Context, id string) (*blockstorage.Sn
 }
 
 func (s *ibmCloud) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
-	ibmvol, err := s.cli.Service.VolumeGet(volume.ID)
+	ibmvol, err := s.cli.Service.GetVolume(volume.ID)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get Volume for deletion, volume_id :%s", volume.ID)
 	}
-	return s.cli.Service.VolumeDelete(ibmvol)
+	return s.cli.Service.DeleteVolume(ibmvol)
 }
 
 func (s *ibmCloud) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
@@ -267,7 +277,7 @@ func (s *ibmCloud) VolumeCreateFromSnapshot(ctx context.Context, snapshot blocks
 			tags[tag.Key] = tag.Value
 		}
 	}
-	snap, err := s.cli.Service.SnapshotGet(snapshot.ID)
+	snap, err := s.cli.Service.GetSnapshot(snapshot.ID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get Snapshot for Volume Restore, snapshot_id %s", snapshot.ID)
 	}
@@ -277,10 +287,15 @@ func (s *ibmCloud) VolumeCreateFromSnapshot(ctx context.Context, snapshot blocks
 	snap.Volume.VolumeID = snapshot.Volume.ID
 	log.Debugf("Snapshot with new volume ID %+v", snap)
 
-	vol, err := s.cli.Service.VolumeCreateFromSnapshot(*snap, tags)
+	vol, err := s.cli.Service.CreateVolumeFromSnapshot(*snap, tags)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Volume from Snapshot, snapshot_id %s", snapshot.ID)
 	}
+
+	if err = bsibmutils.AuthorizeSoftLayerFileHosts(ctx, vol, s.cli.Service); err != nil {
+		return nil, errors.Wrap(err, "Failed to add Authorized Hosts to new volume, without Authorized Hosts ibm storage will not be able to mount volume to kubernetes node")
+	}
+
 	return s.VolumeGet(ctx, vol.VolumeID, snapshot.Volume.Az)
 }
 
@@ -292,7 +307,7 @@ func waitforSnapSpaceOrder(ctx context.Context, cli *client, id string) error {
 		Max:    10 * time.Second,
 	}
 	return poll.WaitWithBackoff(ctx, snapWaitBackoff, func(ctx context.Context) (bool, error) {
-		vol, err := cli.Service.VolumeGet(id)
+		vol, err := cli.Service.GetVolume(id)
 		if err != nil {
 			return false, errors.Wrapf(err, "Failed to get volume, volume_id: %s", id)
 		}

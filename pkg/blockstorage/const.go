@@ -18,4 +18,8 @@ const (
 	TypeCeph Type = "Ceph"
 	// TypeSoftlayerBlock captures enum value "SoftlayerBlock"
 	TypeSoftlayerBlock Type = "SoftlayerBlock"
+	// TypeSoftlayerFile captures enum value "SoftlayerFile"
+	TypeSoftlayerFile Type = "SoftlayerFile"
+	// TypeEFS captures enum value "EFS"
+	TypeEFS Type = "EFS"
 )

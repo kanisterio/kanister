@@ -61,10 +61,8 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= kanisterio/build:0.13.2-go1.11
+BUILD_IMAGE ?= kanisterio/build:v0.0.1
 DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
-
-DEFAULT_PATH := /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
 
@@ -92,10 +90,10 @@ all-push: $(addprefix push-, $(ALL_ARCH))
 
 build: bin/$(ARCH)/$(BIN)
 
-bin/$(ARCH)/$(BIN): .vendor
+bin/$(ARCH)/$(BIN): 
 	@echo "building: $@"
 	@$(MAKE) run CMD='-c " \
-		ARCH=$(ARCH)       \
+		GOARCH=$(ARCH)       \
 		VERSION=$(VERSION) \
 		PKG=$(PKG)         \
 		./build/build.sh   \
@@ -107,24 +105,14 @@ shell: build-dirs
 	    -ti                                                                \
 	    --rm                                                               \
 	    --privileged                                                       \
-	    -e GOPATH=/go                                                      \
-	    -e GOROOT=/usr/local/go                                            \
-	    -v "$(PWD)/.go:/go"                                                \
+	    -v "$(PWD)/.go/pkg:/go/pkg"                                                \
 	    -v "$(PWD):/go/src/$(PKG)"                                         \
 	    -v "$(PWD)/bin/$(ARCH):/go/bin"                                    \
 	    -v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)"            \
-	    -v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
 	    -v /var/run/docker.sock:/var/run/docker.sock                       \
 	    -w /go/src/$(PKG)                                                  \
 	    $(BUILD_IMAGE)                                                     \
-		/bin/bash -l
-
-.vendor:
-	@$(MAKE) run CMD='-c "                       \
-		PATH=$$GOPATH/bin:$$GOROOT/bin::$${PATH} \
-		glide install --strip-vendor             \
-	"'
-	@touch $@
+		/bin/sh 
 
 DOTFILE_IMAGE = $(subst :,_,$(subst /,_,$(IMAGE))-$(VERSION))
 
@@ -168,7 +156,7 @@ deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 	    bundle.yaml.in > .deploy-$(DOTFILE_IMAGE)
 	@kubectl apply -f .deploy-$(DOTFILE_IMAGE)
 
-test: .vendor build-dirs
+test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
 
 codegen:
@@ -205,32 +193,26 @@ ifeq ($(DOCKER_BUILD),"true")
 	@echo "running CMD in the containerized build environment"
 	@docker run                                                            \
 		--rm                                                               \
-		-e GOPATH=/go                                                      \
-		-e GOROOT=/usr/local/go                                            \
 		-e GITHUB_TOKEN=$(GITHUB_TOKEN)                                    \
 		-v "${HOME}/.kube:/root/.kube"                                     \
-		-v "$(PWD)/.go:/go"                                                \
+		-v "$(PWD)/.go/pkg:/go/pkg"                                        \
 		-v "$(PWD):/go/src/$(PKG)"                                         \
-		-v "$(PWD)/bin/$(ARCH):/go/bin"                                    \
-		-v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)"            \
+		-v "$(PWD)/bin/$(ARCH)/$$(go env GOOS)_$(ARCH):/go/bin"            \
 		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
 		-w /go/src/$(PKG)                                                  \
 		$(BUILD_IMAGE)                                                     \
-		/bin/bash $(CMD)
+		/bin/sh $(CMD)
 else
 	@/bin/bash $(CMD)
 endif
 
-clean: dotfile-clean bin-clean vendor-clean
+clean: dotfile-clean bin-clean 
 
 dotfile-clean:
 	rm -rf .container-* .dockerfile-* .push-* .vendor .deploy-*
 
 bin-clean:
 	rm -rf .go bin
-
-vendor-clean:
-	rm -rf vendor
 
 release-docs: docs
 	@if [ -z ${AWS_ACCESS_KEY_ID} ] || [ -z ${AWS_SECRET_ACCESS_KEY} ]; then\

@@ -30,14 +30,14 @@ func (s *StatefulSetSuite) SetUpSuite(c *C) {
 			GenerateName: "statefulsettest-",
 		},
 	}
-	cns, err := s.cli.Core().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 }
 
 func (s *StatefulSetSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		err := s.cli.Core().Namespaces().Delete(s.namespace, nil)
+		err := s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 		c.Assert(err, IsNil)
 	}
 }
@@ -77,6 +77,6 @@ func (s *StatefulSetSuite) TestCreateStatefulSet(c *C) {
 		err = s.cli.AppsV1().StatefulSets(s.namespace).Delete(name, nil)
 		c.Assert(err, IsNil)
 	}()
-	_, err = s.cli.Core().Pods(s.namespace).Get(name+"-0", metav1.GetOptions{})
+	_, err = s.cli.CoreV1().Pods(s.namespace).Get(name+"-0", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 }

@@ -4,6 +4,9 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 type ResticDataSuite struct{}
@@ -41,5 +44,89 @@ func (s *ResticDataSuite) TestGetSnapshotID(c *C) {
 	} {
 		id := SnapshotIDFromBackupLog(tc.log)
 		c.Check(id, Equals, tc.expected, Commentf("Failed for log: %s", tc.log))
+	}
+}
+
+func (s *ResticDataSuite) TestResticArgs(c *C) {
+	for _, tc := range []struct {
+		profile  *param.Profile
+		repo     string
+		password string
+		expected []string
+	}{
+		{
+			profile: &param.Profile{
+				Location: v1alpha1.Location{
+					Type:     v1alpha1.LocationTypeS3Compliant,
+					Endpoint: "endpoint",
+				},
+				Credential: param.Credential{
+					Type: param.CredentialTypeKeyPair,
+					KeyPair: &param.KeyPair{
+						ID:     "id",
+						Secret: "secret",
+					},
+				},
+			},
+			repo:     "repo",
+			password: "my-secret",
+			expected: []string{
+				"export AWS_ACCESS_KEY_ID=id\n",
+				"export AWS_SECRET_ACCESS_KEY=secret\n",
+				"export RESTIC_REPOSITORY=s3:endpoint/repo\n",
+				"export RESTIC_PASSWORD=my-secret\n",
+				"restic",
+			},
+		},
+		{
+			profile: &param.Profile{
+				Location: v1alpha1.Location{
+					Type:     v1alpha1.LocationTypeS3Compliant,
+					Endpoint: "endpoint/", // Remove trailing slash
+				},
+				Credential: param.Credential{
+					Type: param.CredentialTypeKeyPair,
+					KeyPair: &param.KeyPair{
+						ID:     "id",
+						Secret: "secret",
+					},
+				},
+			},
+			repo:     "repo",
+			password: "my-secret",
+			expected: []string{
+				"export AWS_ACCESS_KEY_ID=id\n",
+				"export AWS_SECRET_ACCESS_KEY=secret\n",
+				"export RESTIC_REPOSITORY=s3:endpoint/repo\n",
+				"export RESTIC_PASSWORD=my-secret\n",
+				"restic",
+			},
+		},
+		{
+			profile: &param.Profile{
+				Location: v1alpha1.Location{
+					Type:     v1alpha1.LocationTypeS3Compliant,
+					Endpoint: "endpoint/////////", // Also remove all of the trailing slashes
+				},
+				Credential: param.Credential{
+					Type: param.CredentialTypeKeyPair,
+					KeyPair: &param.KeyPair{
+						ID:     "id",
+						Secret: "secret",
+					},
+				},
+			},
+			repo:     "repo",
+			password: "my-secret",
+			expected: []string{
+				"export AWS_ACCESS_KEY_ID=id\n",
+				"export AWS_SECRET_ACCESS_KEY=secret\n",
+				"export RESTIC_REPOSITORY=s3:endpoint/repo\n",
+				"export RESTIC_PASSWORD=my-secret\n",
+				"restic",
+			},
+		},
+	} {
+		c.Assert(resticArgs(tc.profile, tc.repo, tc.password), DeepEquals, tc.expected)
 	}
 }

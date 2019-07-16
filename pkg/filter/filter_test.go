@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -16,13 +17,13 @@ var _ = Suite(&FilterSuite{})
 
 func (s *FilterSuite) TestGVRRequirement(c *C) {
 	for _, tc := range []struct {
-		gvrr     ResourceRequirement
+		gvrr     ResourceTypeRequirement
 		gvr      schema.GroupVersionResource
 		expected bool
 	}{
 		// Basic case
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "",
 				Resource: "",
@@ -37,7 +38,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 
 		// Case w/ Version Requirements
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "v1",
 				Resource: "",
@@ -50,7 +51,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 			expected: false,
 		},
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "v1",
 				Resource: "",
@@ -63,7 +64,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 			expected: false,
 		},
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "v1",
 				Resource: "",
@@ -76,7 +77,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 			expected: true,
 		},
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "v1",
 				Resource: "",
@@ -91,7 +92,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 
 		// Wrong group
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "apps",
 				Version:  "v1",
 				Resource: "services",
@@ -106,7 +107,7 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 
 		// Wrong object
 		{
-			gvrr: ResourceRequirement{
+			gvrr: ResourceTypeRequirement{
 				Group:    "",
 				Version:  "v1",
 				Resource: "services",
@@ -124,17 +125,17 @@ func (s *FilterSuite) TestGVRRequirement(c *C) {
 }
 
 func (s *FilterSuite) TestGroupVersionResourceEmpty(c *C) {
-	var g ResourceMatcher
+	var g ResourceTypeMatcher
 	c.Assert(g.Empty(), Equals, true)
-	g = ResourceMatcher{}
+	g = ResourceTypeMatcher{}
 	c.Assert(g.Empty(), Equals, true)
-	g = ResourceMatcher{ResourceRequirement{}}
+	g = ResourceTypeMatcher{ResourceTypeRequirement{}}
 	c.Assert(g.Empty(), Equals, false)
 }
 
 func (s *FilterSuite) TestGroupVersionResourceAnyAll(c *C) {
 	for _, tc := range []struct {
-		g   ResourceMatcher
+		g   ResourceTypeMatcher
 		gvr schema.GroupVersionResource
 		any bool
 		all bool
@@ -147,48 +148,48 @@ func (s *FilterSuite) TestGroupVersionResourceAnyAll(c *C) {
 			all: true,
 		},
 		{
-			g:   ResourceMatcher{},
+			g:   ResourceTypeMatcher{},
 			gvr: schema.GroupVersionResource{},
 			any: false,
 			all: true,
 		},
 		{
-			g: ResourceMatcher{
-				ResourceRequirement{},
+			g: ResourceTypeMatcher{
+				ResourceTypeRequirement{},
 			},
 			gvr: schema.GroupVersionResource{},
 			any: true,
 			all: true,
 		},
 		{
-			g: ResourceMatcher{
-				ResourceRequirement{Group: "mygroup"},
+			g: ResourceTypeMatcher{
+				ResourceTypeRequirement{Group: "mygroup"},
 			},
 			gvr: schema.GroupVersionResource{Group: "mygroup"},
 			any: true,
 			all: true,
 		},
 		{
-			g: ResourceMatcher{
-				ResourceRequirement{Group: "mygroup"},
+			g: ResourceTypeMatcher{
+				ResourceTypeRequirement{Group: "mygroup"},
 			},
 			gvr: schema.GroupVersionResource{Group: "yourgroup"},
 			any: false,
 			all: false,
 		},
 		{
-			g: ResourceMatcher{
-				ResourceRequirement{Group: "mygroup"},
-				ResourceRequirement{Group: "yourgroup"},
+			g: ResourceTypeMatcher{
+				ResourceTypeRequirement{Group: "mygroup"},
+				ResourceTypeRequirement{Group: "yourgroup"},
 			},
 			gvr: schema.GroupVersionResource{Group: "yourgroup"},
 			any: true,
 			all: false,
 		},
 		{
-			g: ResourceMatcher{
-				ResourceRequirement{Group: "mygroup"},
-				ResourceRequirement{Group: "yourgroup"},
+			g: ResourceTypeMatcher{
+				ResourceTypeRequirement{Group: "mygroup"},
+				ResourceTypeRequirement{Group: "yourgroup"},
 			},
 			gvr: schema.GroupVersionResource{Group: "ourgroup"},
 			any: false,
@@ -202,7 +203,7 @@ func (s *FilterSuite) TestGroupVersionResourceAnyAll(c *C) {
 
 func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 	for _, tc := range []struct {
-		m       ResourceMatcher
+		m       ResourceTypeMatcher
 		gvrs    GroupVersionResourceList
 		include GroupVersionResourceList
 		exclude GroupVersionResourceList
@@ -220,7 +221,7 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			},
 		},
 		{
-			m: ResourceMatcher{},
+			m: ResourceTypeMatcher{},
 			gvrs: []schema.GroupVersionResource{
 				schema.GroupVersionResource{},
 			},
@@ -232,7 +233,7 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			},
 		},
 		{
-			m: ResourceMatcher{ResourceRequirement{}},
+			m: ResourceTypeMatcher{ResourceTypeRequirement{}},
 			gvrs: []schema.GroupVersionResource{
 				schema.GroupVersionResource{},
 			},
@@ -242,7 +243,7 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			exclude: []schema.GroupVersionResource{},
 		},
 		{
-			m: ResourceMatcher{ResourceRequirement{}},
+			m: ResourceTypeMatcher{ResourceTypeRequirement{}},
 			gvrs: []schema.GroupVersionResource{
 				schema.GroupVersionResource{
 					Group: "mygroup",
@@ -256,8 +257,8 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			exclude: []schema.GroupVersionResource{},
 		},
 		{
-			m: ResourceMatcher{
-				ResourceRequirement{
+			m: ResourceTypeMatcher{
+				ResourceTypeRequirement{
 					Group: "mygroup",
 				},
 			},
@@ -274,11 +275,11 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 			exclude: []schema.GroupVersionResource{},
 		},
 		{
-			m: ResourceMatcher{
-				ResourceRequirement{
+			m: ResourceTypeMatcher{
+				ResourceTypeRequirement{
 					Group: "mygroup",
 				},
-				ResourceRequirement{
+				ResourceTypeRequirement{
 					Version: "myversion",
 				},
 			},
@@ -341,18 +342,105 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 
 func (s *FilterSuite) TestJoin(c *C) {
 	for _, tc := range []struct {
-		m   []ResourceMatcher
-		out ResourceMatcher
+		m   []ResourceTypeMatcher
+		out ResourceTypeMatcher
 	}{
 		{
-			m:   []ResourceMatcher{ResourceMatcher{}, ResourceMatcher{}},
-			out: ResourceMatcher{},
+			m:   []ResourceTypeMatcher{ResourceTypeMatcher{}, ResourceTypeMatcher{}},
+			out: ResourceTypeMatcher{},
 		},
 		{
-			m:   []ResourceMatcher{ResourceMatcher{}, ResourceMatcher{}},
-			out: ResourceMatcher{},
+			m:   []ResourceTypeMatcher{ResourceTypeMatcher{}, ResourceTypeMatcher{}},
+			out: ResourceTypeMatcher{},
 		},
 	} {
-		c.Check(joinResourceMatchers(tc.m...), DeepEquals, tc.out)
+		c.Check(joinResourceTypeMatchers(tc.m...), DeepEquals, tc.out)
+	}
+}
+
+func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
+	ssTypeRequirement := ResourceTypeRequirement{Group: "apps", Resource: "statefulsets"}
+	pvcTypeRequirement := ResourceTypeRequirement{Version: "v1", Resource: "persistentvolumeclaims"}
+	ss1 := Resource{Name: "ss1", GVR: schema.GroupVersionResource{Group: "apps", Resource: "statefulsets"}}
+	ss2 := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Group: "apps", Resource: "statefulsets"}}
+	pvc1 := Resource{Name: "pvc1", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"}}
+	pvc2 := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"}}
+
+	for _, tc := range []struct {
+		m         ResourceMatcher
+		resources ResourceList
+		include   ResourceList
+		exclude   ResourceList
+	}{
+		{
+			// No matcher, empty resource list
+			m:         nil,
+			resources: []Resource{Resource{}},
+			include:   []Resource{Resource{}},
+			exclude:   []Resource{Resource{}},
+		},
+		{
+			// No matcher, include/exclude is a no-op
+			m:         nil,
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{ss1, ss2, pvc1, pvc2},
+			exclude:   []Resource{ss1, ss2, pvc1, pvc2},
+		},
+		{
+			// Empty matcher, include/exclude is a no-op
+			m:         ResourceMatcher{},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{ss1, ss2, pvc1, pvc2},
+			exclude:   []Resource{ss1, ss2, pvc1, pvc2},
+		},
+		{
+			// Match all types
+			m: ResourceMatcher{
+				ResourceRequirement{ResourceTypeRequirement: ssTypeRequirement},
+				ResourceRequirement{ResourceTypeRequirement: pvcTypeRequirement},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{ss1, ss2, pvc1, pvc2},
+			exclude:   []Resource{},
+		},
+		{
+			// Match one type
+			m: ResourceMatcher{
+				ResourceRequirement{ResourceTypeRequirement: pvcTypeRequirement},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{pvc1, pvc2},
+			exclude:   []Resource{ss1, ss2},
+		},
+		{
+			// Match a specific resource
+			m: ResourceMatcher{
+				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "pvc1"}, ResourceTypeRequirement: pvcTypeRequirement},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{pvc1},
+			exclude:   []Resource{ss1, ss2, pvc2},
+		},
+		{
+			// Match a specific resource name only (no GVR), matches only one object
+			m: ResourceMatcher{
+				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "pvc1"}},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{pvc1},
+			exclude:   []Resource{ss1, ss2, pvc2},
+		},
+		{
+			// Match a specific resource name only (no GVR), matches mulitple resources
+			m: ResourceMatcher{
+				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "specificname"}},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{ss2, pvc2},
+			exclude:   []Resource{ss1, pvc1},
+		},
+	} {
+		c.Check(tc.resources.Include(tc.m), DeepEquals, tc.include)
+		c.Check(tc.resources.Exclude(tc.m), DeepEquals, tc.exclude)
 	}
 }

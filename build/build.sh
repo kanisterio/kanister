@@ -21,21 +21,13 @@ if [ -z "${PKG}" ]; then
     echo "PKG must be set"
     exit 1
 fi
-if [ -z "${ARCH}" ]; then
-    echo "ARCH must be set"
-    exit 1
-fi
 if [ -z "${VERSION}" ]; then
     echo "VERSION must be set"
     exit 1
 fi
 
-export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
-
 export CGO_ENABLED=0
-export GOARCH="${ARCH}"
-
 go install -v                                                      \
     -installsuffix "static"                                        \
     -ldflags "-X ${PKG}/pkg/version.VERSION=${VERSION}"            \
-    ./...
+    ./cmd/...

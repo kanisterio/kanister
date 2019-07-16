@@ -1,10 +1,13 @@
+[server]
+debug_trace = false
+
 [bluemix]
-iam_url = "https://iam.stage1.ng.bluemix.net"
+iam_url = "https://iam.bluemix.net"
 iam_client_id = "bx"
 iam_client_secret = "bx"
 iam_api_key = "free"
 refresh_token = ""
-
+containers_api_route = "https://origin.containers.test.cloud.ibm.com"
 
 [softlayer]
 softlayer_block_enabled = true
@@ -15,11 +18,21 @@ softlayer_username = ""
 softlayer_api_key = ""
 softlayer_endpoint_url = "https://api.softlayer.com/rest/v3"
 softlayer_iam_endpoint_url = "https://api.softlayer.com/mobile/v3"
-softlayer_datacenter = "mex01"
-softlayer_api_timeout = "20s"
+softlayer_datacenter = "sjc03"
+softlayer_api_timeout = "30s"
+softlayer_vol_provision_timeout = "30m"
+softlayer_api_retry_interval = "5s"
 
 [genesis]
 genesis_provider_enabled = false
 genesis_user_name = ""
 genesis_api_key = ""
 genesis_url = ""
+
+[vpc]
+vpc_enabled = false
+vpc_block_provider_name = "vpc-classic"
+
+[iks]
+iks_enabled = false
+iks_block_provider_name = "iks-vpc-classic"

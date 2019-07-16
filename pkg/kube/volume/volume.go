@@ -193,7 +193,7 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 // DeletePVC deletes the given PVC immediately and waits with timeout until it is returned as deleted
 func DeletePVC(cli kubernetes.Interface, namespace, pvcName string) error {
 	var now int64
-	if err := cli.Core().PersistentVolumeClaims(namespace).Delete(pvcName, &metav1.DeleteOptions{GracePeriodSeconds: &now}); err != nil {
+	if err := cli.CoreV1().PersistentVolumeClaims(namespace).Delete(pvcName, &metav1.DeleteOptions{GracePeriodSeconds: &now}); err != nil {
 		// If the PVC does not exist, that's an acceptable error
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -205,7 +205,7 @@ func DeletePVC(cli kubernetes.Interface, namespace, pvcName string) error {
 	ctx, c := context.WithTimeout(context.TODO(), time.Minute)
 	defer c()
 	return poll.Wait(ctx, func(context.Context) (bool, error) {
-		_, err := cli.Core().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
+		_, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
 			return true, nil
 		}

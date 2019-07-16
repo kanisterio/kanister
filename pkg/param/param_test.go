@@ -43,7 +43,7 @@ func (s *ParamsSuite) SetUpSuite(c *C) {
 			GenerateName: "kanisterparamstest-",
 		},
 	}
-	cns, err := s.cli.Core().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 }
@@ -69,7 +69,7 @@ func (s *ParamsSuite) SetUpTest(c *C) {
 
 func (s *ParamsSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.Core().Namespaces().Delete(s.namespace, nil)
+		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 

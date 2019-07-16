@@ -132,7 +132,7 @@ var errNotFound = fmt.Errorf("not found")
 // FetchReplicaSet fetches the replicaset matching the specified owner UID
 func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*v1beta1ext.ReplicaSet, error) {
 	opts := metav1.ListOptions{}
-	rss, err := cli.Extensions().ReplicaSets(namespace).List(opts)
+	rss, err := cli.ExtensionsV1beta1().ReplicaSets(namespace).List(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not list ReplicaSets")
 	}
@@ -158,7 +158,7 @@ func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, 
 // into 2 groups (running/not-running)
 func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID) (runningPods []v1.Pod, notRunningPods []v1.Pod, err error) {
 	opts := metav1.ListOptions{}
-	pods, err := cli.Core().Pods(namespace).List(opts)
+	pods, err := cli.CoreV1().Pods(namespace).List(opts)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Could not list Pods")
 	}
