@@ -20,6 +20,7 @@ set -o nounset
 export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 
 export CGO_ENABLED=0
+export GO111MODULE=on
 
 TARGETS=$(for d in "$@"; do echo ./$d/...; done)
 
