@@ -5,7 +5,7 @@ services:
 language: go
 
 go:
-  - "1.10.x"
+  - "1.12.x"
 
 branches:
   only:
@@ -20,9 +20,6 @@ before_install:
 - wget --progress=dot:mega https://storage.googleapis.com/kubernetes-release/release/v1.8.4/bin/linux/amd64/kubectl
 - sudo chmod +x kubectl
 - sudo mv kubectl /usr/local/bin/kubectl
-- wget --progress=dot:mega https://github.com/Masterminds/glide/releases/download/v0.13.1/glide-v0.13.1-linux-amd64.tar.gz -O glide.tar.gz
-- tar zxfp glide.tar.gz linux-amd64/glide --strip=1
-- sudo mv glide /usr/local/bin/glide
 
 script:
 - make build DOCKER_BUILD=false
