@@ -52,7 +52,7 @@ func (s *ebsStorage) Type() blockstorage.Type {
 
 // NewProvider returns a provider for the EBS storage type in the specified region
 func NewProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, err := getConfig(config)
+	awsConfig, region, err := GetConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,8 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	return &ebsStorage{ec2Cli: ec2Cli}, nil
 }
 
-func getConfig(config map[string]string) (*aws.Config, string, error) {
+// GetConfig returns a configuration to establish AWS connection and the connected region name.
+func GetConfig(config map[string]string) (*aws.Config, string, error) {
 	region, ok := config[ConfigRegion]
 	if !ok {
 		return nil, "", errors.New("region required for storage type EBS")
