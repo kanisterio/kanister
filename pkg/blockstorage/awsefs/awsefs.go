@@ -73,7 +73,11 @@ func (e *efs) VolumeDelete(context.Context, *blockstorage.Volume) error {
 }
 
 func (e *efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
-	return nil, errors.New("Not implemented")
+	desc, err := e.getFileSystemDescriptionWithID(ctx, id)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get EFS volume")
+	}
+	return volumeFromEFSDescription(desc, zone), nil
 }
 
 func (e *efs) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
@@ -106,4 +110,25 @@ func (e *efs) VolumesList(ctx context.Context, tags map[string]string, zone stri
 
 func (e *efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	return nil, errors.New("Not implemented")
+}
+
+func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*awsefs.FileSystemDescription, error) {
+	req := &awsefs.DescribeFileSystemsInput{}
+	req.SetFileSystemId(id)
+
+	descs, err := e.DescribeFileSystemsWithContext(ctx, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get filesystem description")
+	}
+	availables := filterAvailable(descs.FileSystems)
+	var desc *awsefs.FileSystemDescription
+	switch len(availables) {
+	case 0:
+		return nil, errors.New("Failed to find volume")
+	case 1:
+		desc = descs.FileSystems[0]
+	default:
+		return nil, errors.New("Unexpected condition, multiple filesystems with same ID")
+	}
+	return desc, nil
 }
