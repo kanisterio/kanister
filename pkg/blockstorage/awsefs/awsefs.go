@@ -68,8 +68,15 @@ func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorag
 	return nil, errors.New("Not implemented")
 }
 
-func (e *efs) VolumeDelete(context.Context, *blockstorage.Volume) error {
-	return errors.New("Not implemented")
+func (e *efs) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
+	req := &awsefs.DeleteFileSystemInput{}
+	req.SetFileSystemId(volume.ID)
+
+	_, err := e.DeleteFileSystemWithContext(ctx, req)
+	if isVolumeNotFound(err) {
+		return nil
+	}
+	return err
 }
 
 func (e *efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
