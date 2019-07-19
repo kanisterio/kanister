@@ -25,6 +25,8 @@ type efs struct {
 var _ blockstorage.Provider = (*efs)(nil)
 
 const (
+	k10BackupVaultName = "k10vault"
+  
 	dummyMarker = ""
 )
 
@@ -103,8 +105,13 @@ func (e *efs) SnapshotCreateWaitForCompletion(context.Context, *blockstorage.Sna
 	return errors.New("Not implemented")
 }
 
-func (e *efs) SnapshotDelete(context.Context, *blockstorage.Snapshot) error {
-	return errors.New("Not implemented")
+func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
+	req := &backup.DeleteRecoveryPointInput{}
+	req.SetBackupVaultName(k10BackupVaultName)
+	req.SetRecoveryPointArn(snapshot.ID)
+
+	_, err := e.DeleteRecoveryPointWithContext(ctx, req)
+	return err
 }
 
 func (e *efs) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
