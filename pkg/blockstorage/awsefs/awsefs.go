@@ -24,6 +24,10 @@ type efs struct {
 
 var _ blockstorage.Provider = (*efs)(nil)
 
+const (
+	dummyMarker = ""
+)
+
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
 func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 	awsConfig, region, err := awsebs.GetConfig(config)
@@ -112,11 +116,27 @@ func (e *efs) SetTags(ctx context.Context, resource interface{}, tags map[string
 }
 
 func (e *efs) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
-	return nil, errors.New("Not implemented")
+	result := make([]*blockstorage.Volume, 0)
+	for resp, req := emptyResponseRequestForFilesystems(); resp.NextMarker != nil; req.Marker = resp.NextMarker {
+		var err error
+		resp, err = e.DescribeFileSystemsWithContext(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		availables := filterAvailable(filterWithTags(resp.FileSystems, tags))
+		result = append(result, volumesFromEFSDescriptions(availables, zone)...)
+	}
+	return result, nil
 }
 
 func (e *efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	return nil, errors.New("Not implemented")
+}
+
+func emptyResponseRequestForFilesystems() (*awsefs.DescribeFileSystemsOutput, *awsefs.DescribeFileSystemsInput) {
+	resp := (&awsefs.DescribeFileSystemsOutput{}).SetNextMarker(dummyMarker)
+	req := &awsefs.DescribeFileSystemsInput{}
+	return resp, req
 }
 
 func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*awsefs.FileSystemDescription, error) {
