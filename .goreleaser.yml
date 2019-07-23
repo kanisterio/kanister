@@ -1,0 +1,86 @@
+project_name: kanister
+before:
+  hooks:
+  - go mod download
+builds:
+- id: kanctl
+  binary: kanctl
+  main: cmd/kanctl/main.go
+  ldflags: &ldflags
+  - -s -w
+    -X github.com/kanisterio/kanister/pkg/version.VERSION={{.Version}}
+    -X github.com/kanisterio/kanister/pkg/version.GIT_COMMIT={{.Commit}}
+    -X github.com/kanisterio/kanister/pkg/version.BUILD_DATE={{.Date}}
+  env: &env
+  - GO111MODULE=on
+  - CGO_ENABLED=0
+  - GO_EXTLINK_ENABLED=0
+  goos:
+  - darwin
+  - linux
+  goarch: &goarch
+  - amd64
+- id: kando
+  binary: kando
+  main: cmd/kando/main.go
+  ldflags: *ldflags
+  env: *env
+  goos: &goos
+  - linux
+  goarch: *goarch
+- id: controller
+  binary: controller
+  main: cmd/controller/main.go
+  ldflags: *ldflags
+  env: *env
+  goos: *goos
+  goarch: *goarch
+dockers:
+- binaries:
+  - kando
+  image_templates:
+  - 'kanisterio/kanister-tools:{{ .Tag }}'
+  dockerfile: 'docker/tools/Dockerfile'
+- binaries:
+  - controller
+  image_templates:
+  - 'kanisterio/kanister-controller:{{ .Tag }}'
+  dockerfile: 'docker/controller/Dockerfile'
+- binaries:
+  - kando
+  image_templates:
+  - 'kanisterio/postgres-kanister-tools:{{ .Tag }}'
+  dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
+- binaries:
+  - kando
+  image_templates:
+  - 'kanisterio/es-sidecar:{{ .Tag }}'
+  dockerfile: 'examples/helm/kanister/kanister-elasticsearch/image/Dockerfile'
+  extra_files:
+  - 'examples/helm/kanister/kanister-elasticsearch/image/esdump-setup.sh'
+- binaries:
+  - kando
+  image_templates:
+  - 'kanisterio/mysql-sidecar:{{ .Tag }}'
+  dockerfile: 'examples/helm/kanister/kanister-mysql/image/Dockerfile'
+- binaries:
+  - kando
+  image_templates:
+  - 'kanisterio/mongo-sidecar:{{ .Tag }}'
+  dockerfile: 'examples/helm/kanister/kanister-mongodb-replicaset/image/Dockerfile'
+  extra_files:
+  - 'examples/helm/kanister/kanister-mongodb-replicaset/image/install.sh'
+  - 'examples/helm/kanister/kanister-mongodb-replicaset/image/90forceyes'
+  - 'examples/helm/kanister/kanister-mongodb-replicaset/image/config'
+  - 'examples/helm/kanister/kanister-mongodb-replicaset/image/gbl_env.sh'
+
+snapshot:
+  name_template: '{{ .Tag }}'
+checksum:
+  name_template: 'checksums.txt'
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'

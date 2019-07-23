@@ -1,4 +1,0 @@
-APT::Get::Assume-Yes "true";
-APT::Get::allow-downgrades "true"; 
-APT::Get::allow-remove-essential "true";
-APT::Get::allow-change-held-package "true";
