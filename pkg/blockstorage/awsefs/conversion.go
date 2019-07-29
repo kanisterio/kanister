@@ -1,8 +1,13 @@
 package awsefs
 
 import (
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
+	awsarn "github.com/aws/aws-sdk-go/aws/arn"
+	"github.com/aws/aws-sdk-go/service/backup"
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
+	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
@@ -22,6 +27,46 @@ func convertFromEFSTags(efsTags []*awsefs.Tag) map[string]string {
 		tags[*t.Key] = *t.Value
 	}
 	return tags
+}
+
+// efsIDFromResourceARN gets EFS filesystem ID from an EFS resource ARN.
+func efsIDFromResourceARN(arn string) (string, error) {
+	resourceARN, err := awsarn.Parse(arn)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to parse ARN")
+	}
+	// An example of resourceArn.Resource:
+	// "file-system/fs-87b1302c"
+	tokens := strings.Split(resourceARN.Resource, "/")
+	if len(tokens) != 2 {
+		return "", errors.New("Bad resource in ARN")
+	}
+	if tokens[0] != "file-system" {
+		return "", errors.New("Bad resource type in ARN")
+	}
+	return tokens[1], nil
+}
+
+func snapshotFromRecoveryPoint(rp *backup.DescribeRecoveryPointOutput, volume *blockstorage.Volume, region string) (*blockstorage.Snapshot, error) {
+	if rp.CreationDate == nil {
+		return nil, errors.New("Recovery point has no CreationDate")
+	}
+	if rp.BackupSizeInBytes == nil {
+		return nil, errors.New("Recovery point has no BackupSizeInBytes")
+	}
+	if rp.RecoveryPointArn == nil {
+		return nil, errors.New("Recovery point has no RecoveryPointArn")
+	}
+	return &blockstorage.Snapshot{
+		ID:           *rp.RecoveryPointArn,
+		CreationTime: blockstorage.TimeStamp(*rp.CreationDate),
+		Size:         bytesInGiB(*rp.BackupSizeInBytes),
+		Region:       region,
+		Type:         blockstorage.TypeEFS,
+		Volume:       volume,
+		Encrypted:    volume.Encrypted,
+		Tags:         nil,
+	}, nil
 }
 
 // convertToBackupTags converts a flattened map to AWS Backup compliant tag structure.

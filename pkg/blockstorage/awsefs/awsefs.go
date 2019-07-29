@@ -143,7 +143,26 @@ func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapsho
 }
 
 func (e *efs) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
-	return nil, errors.New("Not implemented")
+	req := &backup.DescribeRecoveryPointInput{}
+	req.SetBackupVaultName(k10BackupVaultName)
+	req.SetRecoveryPointArn(id)
+
+	resp, err := e.DescribeRecoveryPointWithContext(ctx, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get recovery point information")
+	}
+	if resp.ResourceArn == nil {
+		return nil, errors.Wrap(err, "Resource ARN in recovery point is empty")
+	}
+	volID, err := efsIDFromResourceARN(*resp.ResourceArn)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get volume ID from recovery point ARN")
+	}
+	vol, err := e.VolumeGet(ctx, volID, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get originating volume")
+	}
+	return snapshotFromRecoveryPoint(resp, vol, e.region)
 }
 
 func (e *efs) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
