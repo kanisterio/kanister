@@ -1,7 +1,9 @@
 package awsefs
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
+
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
@@ -20,6 +22,15 @@ func convertFromEFSTags(efsTags []*awsefs.Tag) map[string]string {
 		tags[*t.Key] = *t.Value
 	}
 	return tags
+}
+
+// convertToEFSTags converts a map to AWS EFS tags.
+func convertToEFSTags(tags map[string]string) []*awsefs.Tag {
+	efsTags := make([]*awsefs.Tag, 0, len(tags))
+	for k, v := range tags {
+		efsTags = append(efsTags, &awsefs.Tag{Key: aws.String(k), Value: aws.String(v)})
+	}
+	return efsTags
 }
 
 // volumeFromEFSDescription converts an AWS EFS filesystem description to Kanister blockstorage Volume type

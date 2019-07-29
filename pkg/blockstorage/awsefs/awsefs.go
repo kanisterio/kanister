@@ -10,6 +10,7 @@ import (
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
@@ -25,8 +26,16 @@ type efs struct {
 var _ blockstorage.Provider = (*efs)(nil)
 
 const (
+	generalPurposePerformanceMode = awsefs.PerformanceModeGeneralPurpose
+	maximumIOPerformanceMode      = awsefs.PerformanceModeMaxIo
+	defaultPerformanceMode        = generalPurposePerformanceMode
+
+	burstingThroughputMode    = awsefs.ThroughputModeBursting
+	provisionedThroughputMode = awsefs.ThroughputModeProvisioned
+	defaultThroughputMode     = burstingThroughputMode
+
 	k10BackupVaultName = "k10vault"
-  
+
 	dummyMarker = ""
 )
 
@@ -66,8 +75,28 @@ func (e *efs) Type() blockstorage.Type {
 	return blockstorage.TypeEFS
 }
 
-func (e *efs) VolumeCreate(context.Context, blockstorage.Volume) (*blockstorage.Volume, error) {
-	return nil, errors.New("Not implemented")
+// VolumeCreate implements interface method for EFS. It sends EFS volume create request
+// to AWS EFS and waits until the file system is available. Eventually, it returns the
+// volume info that is sent back from the AWS EFS.
+func (e *efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
+	req := &awsefs.CreateFileSystemInput{}
+	req.SetCreationToken(uuid.NewV4().String())
+	req.SetPerformanceMode(defaultPerformanceMode)
+	req.SetThroughputMode(defaultThroughputMode)
+	req.SetTags(convertToEFSTags(blockstorage.KeyValueToMap(volume.Tags)))
+
+	fd, err := e.CreateFileSystemWithContext(ctx, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create EFS instance")
+	}
+	if err = e.waitUntilFileSystemAvailable(ctx, *fd.FileSystemId); err != nil {
+		return nil, errors.Wrap(err, "EFS instance is not available")
+	}
+	vol, err := e.VolumeGet(ctx, volume.ID, volume.Az)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get recently create EFS instance")
+	}
+	return vol, nil
 }
 
 func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
