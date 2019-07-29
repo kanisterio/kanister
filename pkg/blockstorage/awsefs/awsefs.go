@@ -35,8 +35,7 @@ const (
 	defaultThroughputMode     = burstingThroughputMode
 
 	k10BackupVaultName = "k10vault"
-
-	dummyMarker = ""
+	dummyMarker        = ""
 )
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
@@ -148,7 +147,32 @@ func (e *efs) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapsho
 }
 
 func (e *efs) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
-	return errors.New("Not implemented")
+	switch r := resource.(type) {
+	case *blockstorage.Volume:
+		return e.setEFSTags(ctx, r.ID, tags)
+	case *blockstorage.Snapshot:
+		return e.setBackupTags(ctx, r.ID, tags)
+	default:
+		return errors.New("Unsupported type for setting tags")
+	}
+}
+
+func (e *efs) setBackupTags(ctx context.Context, arn string, tags map[string]string) error {
+	req := &backup.TagResourceInput{
+		ResourceArn: &arn,
+		Tags:        convertToBackupTags(tags),
+	}
+	_, err := e.TagResourceWithContext(ctx, req)
+	return err
+}
+
+func (e *efs) setEFSTags(ctx context.Context, id string, tags map[string]string) error {
+	req := &awsefs.CreateTagsInput{
+		FileSystemId: &id,
+		Tags:         convertToEFSTags(tags),
+	}
+	_, err := e.CreateTagsWithContext(ctx, req)
+	return err
 }
 
 func (e *efs) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {

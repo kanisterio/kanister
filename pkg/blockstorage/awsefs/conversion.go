@@ -24,7 +24,18 @@ func convertFromEFSTags(efsTags []*awsefs.Tag) map[string]string {
 	return tags
 }
 
-// convertToEFSTags converts a map to AWS EFS tags.
+// convertToBackupTags converts a flattened map to AWS Backup compliant tag structure.
+func convertToBackupTags(tags map[string]string) map[string]*string {
+	backupTags := make(map[string]*string)
+	for k, v := range tags {
+		vPtr := new(string)
+		*vPtr = v
+		backupTags[k] = vPtr
+	}
+	return backupTags
+}
+
+// convertToEFSTags converts a flattened map to AWS EFS tag structure.
 func convertToEFSTags(tags map[string]string) []*awsefs.Tag {
 	efsTags := make([]*awsefs.Tag, 0, len(tags))
 	for k, v := range tags {
