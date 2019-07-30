@@ -55,3 +55,22 @@ func (e *efs) waitUntilRecoveryPointCompleted(ctx context.Context, id string) er
 		return *status == backup.RecoveryPointStatusCompleted, nil
 	})
 }
+
+func (e *efs) waitUntilRecoveryPointVisible(ctx context.Context, id string) error {
+	return poll.WaitWithRetries(ctx, maxNumErrorRetries, poll.IsAlwaysRetryable, func(ctx context.Context) (bool, error) {
+		req := &backup.DescribeRecoveryPointInput{}
+		req.SetBackupVaultName(k10BackupVaultName)
+		req.SetRecoveryPointArn(id)
+
+		_, err := e.DescribeRecoveryPointWithContext(ctx, req)
+		if isRecoveryPointNotFound(err) {
+			// Recovery point doesn't appear when the backup jobs finishes.
+			// Since this case is special, it will be counted as non-error.
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	})
+}

@@ -12,6 +12,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
+const (
+	securityGroupSeperator = "+"
+	mountTargetKeyPrefix   = "kasten.io/aws-mount-target/"
+)
+
 // bytesInGiB calculates how many GiB is equal to the given bytes by rounding up
 // the intermediate result.
 func bytesInGiB(bytes int64) int64 {
@@ -117,4 +122,20 @@ func volumesFromEFSDescriptions(descriptions []*awsefs.FileSystemDescription, zo
 		volumes = append(volumes, volumeFromEFSDescription(desc, zone))
 	}
 	return volumes
+}
+
+func mergeSecurityGroups(securityGroups []*string) string {
+	dereferenced := make([]string, 0, len(securityGroups))
+	for _, d := range securityGroups {
+		dereferenced = append(dereferenced, *d)
+	}
+	return strings.Join(dereferenced, securityGroupSeperator)
+}
+
+func mountTargetKey(mountTargetID string) string {
+	return mountTargetKeyPrefix + mountTargetID
+}
+
+func mountTargetValue(subnetID string, securityGroups []*string) string {
+	return subnetID + securityGroupSeperator + mergeSecurityGroups(securityGroups)
 }
