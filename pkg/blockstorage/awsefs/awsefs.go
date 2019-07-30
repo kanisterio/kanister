@@ -129,8 +129,8 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 	return nil, errors.New("Not implemented")
 }
 
-func (e *efs) SnapshotCreateWaitForCompletion(context.Context, *blockstorage.Snapshot) error {
-	return errors.New("Not implemented")
+func (e *efs) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blockstorage.Snapshot) error {
+	return e.waitUntilRecoveryPointCompleted(ctx, snapshot.ID)
 }
 
 func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
