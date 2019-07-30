@@ -14,20 +14,10 @@ export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true
 export KUBECONFIG=$HOME/.kube/config
-export KUBE_VERSION=${KUBE_VERSION:-v1.9.0}
-export MINIKUBE_VERSION=${MINIKUBE_VERSION:-v0.25.1}
-declare -a REQUIRED_BINS=( iptables docker sudo jq )
-
-if command -v apt-get
-then
-    lin_repo_pre_cmd="apt-get install -y "
-elif command -v apk
-then
-    lin_repo_pre_cmd="apk add --update "
-else
-    echo "apk or apt-get is supported at this moment"
-    exit 1
-fi
+export KUBE_VERSION=${KUBE_VERSION:-"v1.13.7"}
+export KIND_VERSION=${KIND_VERSION:-"v0.4.0"}
+export LOCAL_CLUSTER_NAME=${LOCAL_CLUSTER_NAME:-"kanister"}
+declare -a REQUIRED_BINS=( docker sudo jq go )
 
 check_or_get_dependencies() {
     for dep in ${REQUIRED_BINS[@]}
@@ -44,33 +34,29 @@ check_or_get_dependencies() {
     done
 }
 
-start_minikube() {
-    if ! command -v minikube
+start_localkube() {
+    if ! command -v kind
     then
-        get_minikube
+        get_localkube
     fi
-    minikube start --vm-driver=none --mount --kubernetes-version=${KUBE_VERSION} --extra-config=apiserver.GenericServerRunOptions.AuthorizationMode=RBAC
-    wait_for_minikube_nodes
+    kind create cluster --name ${LOCAL_CLUSTER_NAME} --image=kindest/node:${KUBE_VERSION}
+    cp $(kind get kubeconfig-path --name="kanister") ${KUBECONFIG}
+    wait_for_nodes
     wait_for_pods
 }
 
-stop_minikube() {
-    if !  minikube stop
-    then
-        systemctl stop localkube
-        docker rm -f $(docker ps -aq --filter name=k8s)
-    fi
+stop_localkube() {
+    kind delete cluster --name ${LOCAL_CLUSTER_NAME}
 }
 
-get_minikube() {
+get_localkube() {
     check_or_get_dependencies
     mkdir $HOME/.kube || true
     touch $HOME/.kube/config
-    curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube
-    ln -sf $(pwd)/minikube /usr/bin/minikube
+    GO111MODULE="on" go get sigs.k8s.io/kind@${KIND_VERSION}
 }
 
-wait_for_minikube_nodes() {
+wait_for_nodes() {
     local nodes_ready=$(kubectl get nodes 2>/dev/null | grep -c Ready)
     local retries=20
     while [[  ${nodes_ready} -eq 0 ]]
@@ -94,7 +80,7 @@ wait_for_minikube_nodes() {
 
 wait_for_pods() {
     local namespace=${1:-"kube-system"}
-    local pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
+    local pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j '.items | .[] | .status | .containerStatuses | .[]? | .state.running != null or .state.terminated.reason == "Completed"')
     local retries=20
 
     while [[  ${pod_status} == *false* ]] || [[ ${pod_status} == '' ]]
@@ -106,7 +92,7 @@ wait_for_pods() {
             return 1
         fi
         sleep 5
-        if ! pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j ".items | .[] | .status | .containerStatuses | .[] | .ready")
+        if ! pod_status=$(kubectl get pod --namespace=${namespace} -o json | jq -j '.items | .[] | .status | .containerStatuses | .[]? | .state.running != null or .state.terminated.reason == "Completed"')
         then
              pod_status=''
         fi
@@ -119,9 +105,9 @@ usage() {
     cat <<EOM
 Usage: ${0} <operation>
 Where operation is one of the following:
-  get_minikube: installs minikube
-  start_minikube : minikube start
-  stop_minikube : minikube stop
+  get_localkube: installs kind
+  start_localkube : localkube start
+  stop_localkube : localkube stop
 EOM
     exit 1
 }
@@ -129,14 +115,14 @@ EOM
 [ ${#@} -gt 0 ] || usage
 case "${1}" in
         # Alphabetically sorted
-        get_minikube)
-            time -p get_minikube
+        get_localkube)
+            time -p get_localkube
             ;;
-        start_minikube)
-            time -p start_minikube
+        start_localkube)
+            time -p start_localkube
             ;;
-        stop_minikube)
-            time -p stop_minikube
+        stop_localkube)
+            time -p stop_localkube
             ;;
         *)
             usage

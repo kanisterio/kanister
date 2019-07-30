@@ -16,8 +16,8 @@ env:
 - CHANGE_MINIKUBE_NONE_USER=true GO111MODULE=on
 
 before_install:
-- sudo bash build/local_kubernetes.sh get_minikube
-- wget --progress=dot:mega https://storage.googleapis.com/kubernetes-release/release/v1.8.4/bin/linux/amd64/kubectl
+- sudo bash build/local_kubernetes.sh get_localkube
+- wget --progress=dot:mega https://storage.googleapis.com/kubernetes-release/release/v1.15.0/bin/linux/amd64/kubectl
 - sudo chmod +x kubectl
 - sudo mv kubectl /usr/local/bin/kubectl
 
@@ -25,6 +25,8 @@ script:
 - go mod download
 - make build DOCKER_BUILD=false
 - make docs
-- sudo bash build/local_kubernetes.sh start_minikube
+- sudo bash build/local_kubernetes.sh start_localkube
 - make test DOCKER_BUILD=false
 
+after_script:
+- sudo bash build/local_kubernetes.sh stop_localkube
