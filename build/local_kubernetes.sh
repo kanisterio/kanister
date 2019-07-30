@@ -57,6 +57,10 @@ start_localkube() {
 }
 
 stop_localkube() {
+    if ! command -v kind
+    then
+        get_localkube
+    fi
     kind delete cluster --name ${LOCAL_CLUSTER_NAME}
 }
 
