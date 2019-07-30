@@ -26,3 +26,10 @@ func isRecoveryPointNotFound(err error) bool {
 	}
 	return false
 }
+
+func isMountTargetNotFound(err error) bool {
+	if awsErr, ok := err.(awserr.Error); ok {
+		return awsErr.Code() == awsefs.ErrCodeMountTargetNotFound
+	}
+	return false
+}

@@ -74,6 +74,15 @@ func snapshotFromRecoveryPoint(rp *backup.DescribeRecoveryPointOutput, volume *b
 	}, nil
 }
 
+// convertFromBackupTags converts an AWS Backup compliant tag structure to a flattenned map.
+func convertFromBackupTags(tags map[string]*string) map[string]string {
+	result := make(map[string]string)
+	for k, v := range tags {
+		result[k] = *v
+	}
+	return result
+}
+
 // convertToBackupTags converts a flattened map to AWS Backup compliant tag structure.
 func convertToBackupTags(tags map[string]string) map[string]*string {
 	backupTags := make(map[string]*string)
@@ -92,6 +101,16 @@ func convertToEFSTags(tags map[string]string) []*awsefs.Tag {
 		efsTags = append(efsTags, &awsefs.Tag{Key: aws.String(k), Value: aws.String(v)})
 	}
 	return efsTags
+}
+
+// convertListOfStrings converts a flattend list to a list where each
+// element is a pointer to original elements.
+func convertListOfStrings(strs []string) []*string {
+	result := make([]*string, 0)
+	for i := range strs {
+		result = append(result, &strs[i])
+	}
+	return result
 }
 
 // volumeFromEFSDescription converts an AWS EFS filesystem description to Kanister blockstorage Volume type

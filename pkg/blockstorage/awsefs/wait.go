@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/backup"
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
+	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -72,5 +73,52 @@ func (e *efs) waitUntilRecoveryPointVisible(ctx context.Context, id string) erro
 			return false, err
 		}
 		return true, nil
+	})
+}
+
+func (e *efs) waitUntilMountTargetReady(ctx context.Context, mountTargetID string) error {
+	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		req := &awsefs.DescribeMountTargetsInput{}
+		req.SetMountTargetId(mountTargetID)
+
+		desc, err := e.DescribeMountTargetsWithContext(ctx, req)
+		if isMountTargetNotFound(err) {
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		if len(desc.MountTargets) != 1 {
+			return false, errors.New("Returned list must have 1 entry")
+		}
+		mt := desc.MountTargets[0]
+		state := mt.LifeCycleState
+		if state == nil {
+			return false, nil
+		}
+		return *state == awsefs.LifeCycleStateAvailable, nil
+	})
+}
+
+func (e *efs) waitUntilRestoreComplete(ctx context.Context, restoreJobID string) error {
+	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		req := &backup.DescribeRestoreJobInput{}
+		req.SetRestoreJobId(restoreJobID)
+
+		resp, err := e.DescribeRestoreJobWithContext(ctx, req)
+		if err != nil {
+			return false, err
+		}
+		if resp.Status == nil {
+			return false, errors.New("Failed to get restore job status")
+		}
+		switch *resp.Status {
+		case backup.RestoreJobStatusCompleted:
+			return true, nil
+		case backup.RestoreJobStatusAborted, backup.RestoreJobStatusFailed:
+			return false, errors.New("Restore job is not completed successfully")
+		default:
+			return false, nil
+		}
 	})
 }
