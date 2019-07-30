@@ -19,6 +19,17 @@ export KIND_VERSION=${KIND_VERSION:-"v0.4.0"}
 export LOCAL_CLUSTER_NAME=${LOCAL_CLUSTER_NAME:-"kanister"}
 declare -a REQUIRED_BINS=( docker sudo jq go )
 
+if command -v apt-get
+then
+    lin_repo_pre_cmd="apt-get install -y "
+elif command -v apk
+then
+    lin_repo_pre_cmd="apk add --update "
+else
+    echo "apk or apt-get is supported at this moment"
+    exit 1
+fi
+
 check_or_get_dependencies() {
     for dep in ${REQUIRED_BINS[@]}
     do
