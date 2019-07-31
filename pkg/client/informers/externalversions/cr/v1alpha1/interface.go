@@ -28,8 +28,6 @@ type Interface interface {
 	ActionSets() ActionSetInformer
 	// Blueprints returns a BlueprintInformer.
 	Blueprints() BlueprintInformer
-	// Profiles returns a ProfileInformer.
-	Profiles() ProfileInformer
 }
 
 type version struct {
@@ -51,9 +49,4 @@ func (v *version) ActionSets() ActionSetInformer {
 // Blueprints returns a BlueprintInformer.
 func (v *version) Blueprints() BlueprintInformer {
 	return &blueprintInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Profiles returns a ProfileInformer.
-func (v *version) Profiles() ProfileInformer {
-	return &profileInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

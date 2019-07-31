@@ -162,7 +162,6 @@ test: build-dirs
 
 codegen:
 	@$(MAKE) run CMD='-c "                       \
-		PATH=$$GOPATH/bin:$$GOROOT/bin::$${PATH} \
 		./build/codegen.sh                       \
 	"'
 
