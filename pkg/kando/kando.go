@@ -28,5 +28,6 @@ func newRootCommand() *cobra.Command {
 	}
 	rootCmd.AddCommand(newLocationCommand())
 	rootCmd.AddCommand(newOutputCommand())
+	rootCmd.AddCommand(newChronicleCommand())
 	return rootCmd
 }

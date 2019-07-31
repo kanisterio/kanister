@@ -90,7 +90,7 @@ all-push: $(addprefix push-, $(ALL_ARCH))
 
 build: bin/$(ARCH)/$(BIN)
 
-bin/$(ARCH)/$(BIN): 
+bin/$(ARCH)/$(BIN):
 	@echo "building: $@"
 	@$(MAKE) run CMD='-c " \
 		GOARCH=$(ARCH)       \
@@ -105,14 +105,15 @@ shell: build-dirs
 	    -ti                                                                \
 	    --rm                                                               \
 	    --privileged                                                       \
-	    -v "$(PWD)/.go/pkg:/go/pkg"                                                \
+		--net host                                                         \
+	    -v "$(PWD)/.go/pkg:/go/pkg"                                        \
 	    -v "$(PWD):/go/src/$(PKG)"                                         \
 	    -v "$(PWD)/bin/$(ARCH):/go/bin"                                    \
 	    -v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)"            \
 	    -v /var/run/docker.sock:/var/run/docker.sock                       \
 	    -w /go/src/$(PKG)                                                  \
 	    $(BUILD_IMAGE)                                                     \
-		/bin/sh 
+		/bin/sh
 
 DOTFILE_IMAGE = $(subst :,_,$(subst /,_,$(IMAGE))-$(VERSION))
 
@@ -193,6 +194,7 @@ ifeq ($(DOCKER_BUILD),"true")
 	@echo "running CMD in the containerized build environment"
 	@docker run                                                            \
 		--rm                                                               \
+		--net host                                                         \
 		-e GITHUB_TOKEN=$(GITHUB_TOKEN)                                    \
 		-v "${HOME}/.kube:/root/.kube"                                     \
 		-v "$(PWD)/.go/pkg:/go/pkg"                                        \
@@ -206,7 +208,7 @@ else
 	@/bin/bash $(CMD)
 endif
 
-clean: dotfile-clean bin-clean 
+clean: dotfile-clean bin-clean
 
 dotfile-clean:
 	rm -rf .container-* .dockerfile-* .push-* .vendor .deploy-*

@@ -3,7 +3,7 @@ MAINTAINER "Tom Manville <tom@kasten.io>"
 
 USER root
 
-ADD . /kanister
+ADD ./examples/helm/kanister/kanister-mongodb-replicaset/image /kanister
 
 RUN /kanister/install.sh && rm -rf /kanister && rm -rf /tmp && mkdir /tmp
 

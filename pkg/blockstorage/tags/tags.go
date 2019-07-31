@@ -74,3 +74,27 @@ func SanitizeValueForGCP(value string) string {
 	sanitizedVal = re.ReplaceAllString(sanitizedVal, "_")
 	return sanitizedVal
 }
+
+// IsSubset returns true if key-value pairs of 'subset' is the subset of
+// key-value pairs of 'set'.
+func IsSubset(set map[string]string, subset map[string]string) bool {
+	for k, v := range subset {
+		if v2, ok := set[k]; !ok || v != v2 {
+			return false
+		}
+	}
+	return true
+}
+
+// Union returns union of A and B as a new map.
+// B's values have priority if a key from A and B collides.
+func Union(A map[string]string, B map[string]string) map[string]string {
+	result := make(map[string]string)
+	for k, v := range A {
+		result[k] = v
+	}
+	for k, v := range B {
+		result[k] = v
+	}
+	return result
+}

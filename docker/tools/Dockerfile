@@ -15,6 +15,6 @@ COPY --from=restbox /bin/restic /bin/restic
 RUN apk -v --update add --no-cache bash curl groff less mailcap ca-certificates && \
     rm -f /var/cache/apk/*
 
-RUN curl https://raw.githubusercontent.com/kanisterio/kanister/master/scripts/get.sh | bash
+ADD kando /usr/local/bin/
 
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]
