@@ -38,8 +38,7 @@ func NewTestNamespace() *v1.Namespace {
 }
 
 // NewTestDeployment function returns a pointer to a new Deployment test object
-func NewTestDeployment() *appsv1.Deployment {
-	var replicas int32 = 1
+func NewTestDeployment(replicas int32) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-deployment-",
@@ -53,8 +52,7 @@ func NewTestDeployment() *appsv1.Deployment {
 }
 
 // NewTestStatefulSet function returns a pointer to a new StatefulSet test object
-func NewTestStatefulSet() *appsv1.StatefulSet {
-	var replicas int32 = 1
+func NewTestStatefulSet(replicas int32) *appsv1.StatefulSet {
 	return &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-statefulset-",

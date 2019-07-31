@@ -74,12 +74,12 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	_, err = s.crCli.Profiles(s.namespace).Create(p)
 	c.Assert(err, IsNil)
 
-	ss := testutil.NewTestStatefulSet()
+	ss := testutil.NewTestStatefulSet(1)
 	ss, err = s.cli.AppsV1().StatefulSets(s.namespace).Create(ss)
 	c.Assert(err, IsNil)
 	s.ss = ss
 
-	d := testutil.NewTestDeployment()
+	d := testutil.NewTestDeployment(1)
 	d, err = s.cli.AppsV1().Deployments(s.namespace).Create(d)
 	c.Assert(err, IsNil)
 	s.deployment = d

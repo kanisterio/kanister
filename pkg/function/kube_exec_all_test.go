@@ -89,7 +89,7 @@ func newExecAllBlueprint(kind string) *crv1alpha1.Blueprint {
 
 func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 	ctx := context.Background()
-	d := testutil.NewTestDeployment()
+	d := testutil.NewTestDeployment(1)
 	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(d)
 	c.Assert(err, IsNil)
 
@@ -123,7 +123,7 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 
 func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 	ctx := context.Background()
-	ss := testutil.NewTestStatefulSet()
+	ss := testutil.NewTestStatefulSet(1)
 	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(ss)
 	c.Assert(err, IsNil)
 

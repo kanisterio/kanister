@@ -34,7 +34,7 @@ func (s *TestUtilSuite) TestDeployment(c *C) {
 		c.Assert(err, IsNil)
 	}()
 
-	d := NewTestDeployment()
+	d := NewTestDeployment(1)
 	d, err = cli.AppsV1().Deployments(ns.GetName()).Create(d)
 	c.Assert(err, IsNil)
 	defer func() {
@@ -42,7 +42,7 @@ func (s *TestUtilSuite) TestDeployment(c *C) {
 		c.Assert(err, IsNil)
 	}()
 
-	ss := NewTestStatefulSet()
+	ss := NewTestStatefulSet(1)
 	ss, err = cli.AppsV1().StatefulSets(ns.GetName()).Create(ss)
 	c.Assert(err, IsNil)
 	defer func() {

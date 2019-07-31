@@ -169,7 +169,7 @@ func newLocationDeleteBlueprint() *crv1alpha1.Blueprint {
 
 func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 	ctx := context.Background()
-	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet())
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet(1))
 	c.Assert(err, IsNil)
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 	c.Assert(err, IsNil)
@@ -236,7 +236,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 
 func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
 	ctx := context.Background()
-	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet())
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet(1))
 	c.Assert(err, IsNil)
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 	c.Assert(err, IsNil)
