@@ -16,7 +16,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
-const TestS3BucketName = "S3_TEST_BUCKET"
+const (
+	TestS3BucketName = "tests.kanister.io"
+	TestS3Region     = "us-west-2"
+)
 
 func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, location crv1alpha1.Location) *param.Profile {
 	var key, val string

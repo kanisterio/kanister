@@ -21,7 +21,7 @@ func (s *EnvDirSuite) TestEnvDir(c *C) {
 	p := filepath.Join(d, "FOO")
 	err := ioutil.WriteFile(p, []byte("BAR"), os.ModePerm)
 	c.Assert(err, IsNil)
-	e, err := envDir(d)
+	e, err := EnvDir(d)
 	c.Assert(err, IsNil)
 	c.Assert(e, DeepEquals, []string{"FOO=BAR"})
 }
