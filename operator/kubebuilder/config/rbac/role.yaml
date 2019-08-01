@@ -1,0 +1,28 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - kanister.cr.kanister.io
+  resources:
+  - actionsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kanister.cr.kanister.io
+  resources:
+  - actionsets/status
+  verbs:
+  - get
+  - patch
+  - update

@@ -1,0 +1,7 @@
+version: "2"
+domain: cr.kanister.io
+repo: github.com/joshiomkarj/kanister-kubebuilder
+resources:
+- group: kanister
+  version: v1beta1
+  kind: ActionSet
