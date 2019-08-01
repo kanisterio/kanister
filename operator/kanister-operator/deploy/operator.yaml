@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kanister-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: kanister-operator
+  template:
+    metadata:
+      labels:
+        name: kanister-operator
+    spec:
+      serviceAccountName: kanister-operator
+      containers:
+        - name: kanister-operator
+          # Replace this with the built image name
+          image: REPLACE_IMAGE
+          command:
+          - kanister-operator
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "kanister-operator"
