@@ -190,7 +190,7 @@ func newBackupDataAllBlueprint() *crv1alpha1.Blueprint {
 	}
 }
 
-func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32, secretName string) (*param.TemplateParams, string) {
+func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.TemplateParams, string) {
 	ctx := context.Background()
 	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet(replicas))
 	c.Assert(err, IsNil)
@@ -203,8 +203,8 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32, secretName
 
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: s.namespace,
+			GenerateName: "secret-datatest-",
+			Namespace:    s.namespace,
 		},
 		Type: "Opaque",
 		StringData: map[string]string{
@@ -241,7 +241,7 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32, secretName
 }
 
 func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
-	tp, pvc := s.getTemplateParamsAndPVCName(c, 1, "secret-datatest")
+	tp, pvc := s.getTemplateParamsAndPVCName(c, 1)
 
 	// Test backup
 	bp := *newBackupDataBlueprint()
@@ -264,7 +264,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 }
 
 func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
-	tp, pvc := s.getTemplateParamsAndPVCName(c, 1, "secret-datatest-id")
+	tp, pvc := s.getTemplateParamsAndPVCName(c, 1)
 
 	// Test backup
 	bp := *newBackupDataBlueprint()
@@ -286,7 +286,7 @@ func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
 func (s *DataSuite) TestBackupDataAll(c *C) {
 	var replicas int32
 	replicas = 2
-	tp, _ := s.getTemplateParamsAndPVCName(c, replicas, "secret-datatest")
+	tp, _ := s.getTemplateParamsAndPVCName(c, replicas)
 
 	// Test backup
 	bp := *newBackupDataAllBlueprint()
