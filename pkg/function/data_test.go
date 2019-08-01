@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	. "gopkg.in/check.v1"
@@ -167,9 +168,31 @@ func newLocationDeleteBlueprint() *crv1alpha1.Blueprint {
 	}
 }
 
-func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
+func newBackupDataAllBlueprint() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"backup": &crv1alpha1.BlueprintAction{
+				Kind: param.StatefulSetKind,
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testBackupDataAll",
+						Func: "BackupDataAll",
+						Args: map[string]interface{}{
+							BackupDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
+							BackupDataAllContainerArg:            "{{ index .StatefulSet.Containers 0 0 }}",
+							BackupDataAllIncludePathArg:          "/etc",
+							BackupDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32, secretName string) (*param.TemplateParams, string) {
 	ctx := context.Background()
-	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet(1))
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet(replicas))
 	c.Assert(err, IsNil)
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 	c.Assert(err, IsNil)
@@ -180,7 +203,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "secret-datatest",
+			Name:      secretName,
 			Namespace: s.namespace,
 		},
 		Type: "Opaque",
@@ -213,6 +236,12 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 	tp, err := param.New(ctx, s.cli, s.crCli, as)
 	c.Assert(err, IsNil)
 	tp.Profile = s.profile
+
+	return tp, pvc.GetName()
+}
+
+func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
+	tp, pvc := s.getTemplateParamsAndPVCName(c, 1, "secret-datatest")
 
 	// Test backup
 	bp := *newBackupDataBlueprint()
@@ -227,7 +256,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 	tp.Options = options
 
 	// Test restore
-	bp = *newRestoreDataBlueprint(pvc.GetName(), RestoreDataBackupTagArg, BackupDataOutputBackupTag)
+	bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupTagArg, BackupDataOutputBackupTag)
 	_ = runAction(c, bp, "restore", tp)
 
 	bp = *newLocationDeleteBlueprint()
@@ -235,50 +264,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 }
 
 func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
-	ctx := context.Background()
-	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet(1))
-	c.Assert(err, IsNil)
-	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
-	c.Assert(err, IsNil)
-
-	pvc := testutil.NewTestPVC()
-	pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
-	c.Assert(err, IsNil)
-
-	secret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "secret-datatest-id",
-			Namespace: s.namespace,
-		},
-		Type: "Opaque",
-		StringData: map[string]string{
-			"password": "myPassword",
-		},
-	}
-	secret, err = s.cli.CoreV1().Secrets(s.namespace).Create(secret)
-
-	as := crv1alpha1.ActionSpec{
-		Object: crv1alpha1.ObjectReference{
-			Kind:      param.StatefulSetKind,
-			Name:      ss.GetName(),
-			Namespace: s.namespace,
-		},
-		Profile: &crv1alpha1.ObjectReference{
-			Name:      testutil.TestProfileName,
-			Namespace: s.namespace,
-		},
-		Secrets: map[string]crv1alpha1.ObjectReference{
-			"backupKey": crv1alpha1.ObjectReference{
-				Kind:      "Secret",
-				Name:      secret.GetName(),
-				Namespace: s.namespace,
-			},
-		},
-	}
-
-	tp, err := param.New(ctx, s.cli, s.crCli, as)
-	c.Assert(err, IsNil)
-	tp.Profile = s.profile
+	tp, pvc := s.getTemplateParamsAndPVCName(c, 1, "secret-datatest-id")
 
 	// Test backup
 	bp := *newBackupDataBlueprint()
@@ -293,8 +279,26 @@ func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
 	tp.Options = options
 
 	// Test restore with ID
-	bp = *newRestoreDataBlueprint(pvc.GetName(), RestoreDataBackupIdentifierArg, BackupDataOutputBackupID)
+	bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupIdentifierArg, BackupDataOutputBackupID)
 	_ = runAction(c, bp, "restore", tp)
+}
+
+func (s *DataSuite) TestBackupDataAll(c *C) {
+	var replicas int32
+	replicas = 2
+	tp, _ := s.getTemplateParamsAndPVCName(c, replicas, "secret-datatest")
+
+	// Test backup
+	bp := *newBackupDataAllBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataAllOutput].(string), Not(Equals), "")
+
+	output := make(map[string]BackupInfo)
+	c.Assert(json.Unmarshal([]byte(out[BackupDataAllOutput].(string)), &output), IsNil)
+	c.Assert(int32(len(output)), Equals, replicas)
+	for k := range output {
+		c.Assert(k, Equals, output[k].PodName)
+	}
 }
 
 func newCopyDataTestBlueprint() crv1alpha1.Blueprint {

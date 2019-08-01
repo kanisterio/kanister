@@ -100,28 +100,9 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	pw, err := getPodWriter(cli, ctx, namespace, pod, container, tp.Profile)
+	backupID, backupTag, err := backupData(ctx, cli, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey, tp)
 	if err != nil {
-		return nil, err
-	}
-	defer cleanUpCredsFile(ctx, pw, namespace, pod, container)
-	if err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, encryptionKey, tp.Profile); err != nil {
-		return nil, err
-	}
-
-	// Create backup and dump it on the object store
-	backupTag := rand.String(10)
-	cmd := restic.BackupCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, includePath, encryptionKey)
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create and upload backup")
-	}
-	// Get the snapshot ID from log
-	backupID := restic.SnapshotIDFromBackupLog(stdout)
-	if backupID == "" {
-		return nil, errors.New("Failed to parse the backup ID from logs")
+		return nil, errors.Wrapf(err, "Failed to backup data")
 	}
 	output := map[string]interface{}{
 		BackupDataOutputBackupID:  backupID,
@@ -133,6 +114,33 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 func (*backupDataFunc) RequiredArgs() []string {
 	return []string{BackupDataNamespaceArg, BackupDataPodArg, BackupDataContainerArg,
 		BackupDataIncludePathArg, BackupDataBackupArtifactPrefixArg}
+}
+
+func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey string, tp param.TemplateParams) (string, string, error) {
+	pw, err := getPodWriter(cli, ctx, namespace, pod, container, tp.Profile)
+	if err != nil {
+		return "", "", err
+	}
+	defer cleanUpCredsFile(ctx, pw, namespace, pod, container)
+	if err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, encryptionKey, tp.Profile); err != nil {
+		return "", "", err
+	}
+
+	// Create backup and dump it on the object store
+	backupTag := rand.String(10)
+	cmd := restic.BackupCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, includePath, encryptionKey)
+	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	format.Log(pod, container, stdout)
+	format.Log(pod, container, stderr)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "Failed to create and upload backup")
+	}
+	// Get the snapshot ID from log
+	backupID := restic.SnapshotIDFromBackupLog(stdout)
+	if backupID == "" {
+		return "", "", errors.New("Failed to parse the backup ID from logs")
+	}
+	return backupID, backupTag, nil
 }
 
 func getPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podName, containerName string, profile *param.Profile) (*kube.PodWriter, error) {
