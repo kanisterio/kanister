@@ -123,13 +123,10 @@ const (
 
 // Phase is subcomponent of an action.
 type Phase struct {
-	Name   string         `json:"name"`
-	State  State          `json:"state"`
-	Output PhaseInterface `json:"output"`
+	Name   string            `json:"name"`
+	State  State             `json:"state"`
+	Output map[string]string `json:"output"`
 }
-
-// PhaseInterface is a named empty interface for phase
-type PhaseInterface interface{}
 
 // Artifact tracks objects produced by an action.
 type Artifact struct {
