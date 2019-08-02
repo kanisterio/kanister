@@ -252,12 +252,12 @@ func (in *Phase) DeepCopyInto(out *Phase) {
 	*out = *in
 	if in.Output != nil {
 		in, out := &in.Output, &out.Output
-		*out = make(map[string]phaseInterface, len(*in))
+		*out = make(map[string]PhaseInterface, len(*in))
 		for key, val := range *in {
 			if val == nil {
 				(*out)[key] = nil
 			} else {
-				(*out)[key] = val.DeepCopyphaseInterface()
+				(*out)[key] = val.DeepCopyPhaseInterface()
 			}
 		}
 	}

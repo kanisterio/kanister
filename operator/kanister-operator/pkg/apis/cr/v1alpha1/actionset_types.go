@@ -112,10 +112,11 @@ const (
 type Phase struct {
 	Name   string                    `json:"name"`
 	State  State                     `json:"state"`
-	Output map[string]phaseInterface `json:"output"`
+	Output map[string]PhaseInterface `json:"output"`
 }
 
-type phaseInterface interface{}
+// PhaseInterface is an empty interface for phase
+type PhaseInterface interface{}
 
 // Artifact tracks objects produced by an action.
 type Artifact struct {
