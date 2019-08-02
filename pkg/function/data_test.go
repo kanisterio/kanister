@@ -190,16 +190,46 @@ func newBackupDataAllBlueprint() *crv1alpha1.Blueprint {
 	}
 }
 
-func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.TemplateParams, string) {
+func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"restore": &crv1alpha1.BlueprintAction{
+				Kind: param.StatefulSetKind,
+				SecretNames: []string{
+					"backupKey",
+				},
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testRestoreDataAll",
+						Func: "RestoreDataAll",
+						Args: map[string]interface{}{
+							RestoreDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
+							RestoreDataAllImageArg:                "kanisterio/kanister-tools:0.20.0",
+							RestoreDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
+							RestoreDataAllBackupInfo:              fmt.Sprintf("{{ .Options.%s }}", BackupDataAllOutput),
+							RestoreDataAllRestorePathArg:          "/mnt/data",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.TemplateParams, []string) {
 	ctx := context.Background()
 	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet(replicas))
 	c.Assert(err, IsNil)
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 	c.Assert(err, IsNil)
-
-	pvc := testutil.NewTestPVC()
-	pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
-	c.Assert(err, IsNil)
+	pvcs := []string{}
+	var i int32
+	for i = 0; i < replicas; i++ {
+		pvc := testutil.NewTestPVC()
+		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+		c.Assert(err, IsNil)
+		pvcs = append(pvcs, pvc.GetName())
+	}
 
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -237,56 +267,60 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.Te
 	c.Assert(err, IsNil)
 	tp.Profile = s.profile
 
-	return tp, pvc.GetName()
+	return tp, pvcs
 }
 
 func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
-	tp, pvc := s.getTemplateParamsAndPVCName(c, 1)
+	tp, pvcs := s.getTemplateParamsAndPVCName(c, 1)
 
-	// Test backup
-	bp := *newBackupDataBlueprint()
-	out := runAction(c, bp, "backup", tp)
-	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
-	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	for _, pvc := range pvcs {
+		// Test backup
+		bp := *newBackupDataBlueprint()
+		out := runAction(c, bp, "backup", tp)
+		c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+		c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
 
-	options := map[string]string{
-		BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
-		BackupDataOutputBackupTag: out[BackupDataOutputBackupTag].(string),
+		options := map[string]string{
+			BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
+			BackupDataOutputBackupTag: out[BackupDataOutputBackupTag].(string),
+		}
+		tp.Options = options
+
+		// Test restore
+		bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupTagArg, BackupDataOutputBackupTag)
+		_ = runAction(c, bp, "restore", tp)
+
+		bp = *newLocationDeleteBlueprint()
+		_ = runAction(c, bp, "delete", tp)
 	}
-	tp.Options = options
 
-	// Test restore
-	bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupTagArg, BackupDataOutputBackupTag)
-	_ = runAction(c, bp, "restore", tp)
-
-	bp = *newLocationDeleteBlueprint()
-	_ = runAction(c, bp, "delete", tp)
 }
 
 func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
-	tp, pvc := s.getTemplateParamsAndPVCName(c, 1)
+	tp, pvcs := s.getTemplateParamsAndPVCName(c, 1)
+	for _, pvc := range pvcs {
+		// Test backup
+		bp := *newBackupDataBlueprint()
+		out := runAction(c, bp, "backup", tp)
+		c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+		c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
 
-	// Test backup
-	bp := *newBackupDataBlueprint()
-	out := runAction(c, bp, "backup", tp)
-	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
-	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+		options := map[string]string{
+			BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
+			BackupDataOutputBackupTag: out[BackupDataOutputBackupTag].(string),
+		}
+		tp.Options = options
 
-	options := map[string]string{
-		BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
-		BackupDataOutputBackupTag: out[BackupDataOutputBackupTag].(string),
+		// Test restore with ID
+		bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupIdentifierArg, BackupDataOutputBackupID)
+		_ = runAction(c, bp, "restore", tp)
 	}
-	tp.Options = options
-
-	// Test restore with ID
-	bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupIdentifierArg, BackupDataOutputBackupID)
-	_ = runAction(c, bp, "restore", tp)
 }
 
 func (s *DataSuite) TestBackupDataAll(c *C) {
 	var replicas int32
 	replicas = 2
-	tp, _ := s.getTemplateParamsAndPVCName(c, replicas)
+	tp, pvcs := s.getTemplateParamsAndPVCName(c, replicas)
 
 	// Test backup
 	bp := *newBackupDataAllBlueprint()
@@ -299,6 +333,16 @@ func (s *DataSuite) TestBackupDataAll(c *C) {
 	for k := range output {
 		c.Assert(k, Equals, output[k].PodName)
 	}
+	options := map[string]string{BackupDataAllOutput: out[BackupDataAllOutput].(string)}
+	tp.Options = options
+
+	for i, pod := range tp.StatefulSet.Pods {
+		tp.StatefulSet.PersistentVolumeClaims[pod] = map[string]string{pvcs[i]: "/mnt/data"}
+	}
+	// Test restore
+	bp = *newRestoreDataAllBlueprint()
+	_ = runAction(c, bp, "restore", tp)
+
 }
 
 func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
