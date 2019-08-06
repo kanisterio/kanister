@@ -17,7 +17,7 @@ export KUBECONFIG=$HOME/.kube/config
 export KUBE_VERSION=${KUBE_VERSION:-"v1.13.7"}
 export KIND_VERSION=${KIND_VERSION:-"v0.4.0"}
 export LOCAL_CLUSTER_NAME=${LOCAL_CLUSTER_NAME:-"kanister"}
-declare -a REQUIRED_BINS=( docker sudo jq go )
+declare -a REQUIRED_BINS=( docker jq go )
 
 if command -v apt-get
 then
@@ -65,7 +65,6 @@ stop_localkube() {
 }
 
 get_localkube() {
-    check_or_get_dependencies
     mkdir $HOME/.kube || true
     touch $HOME/.kube/config
     GO111MODULE="on" go get sigs.k8s.io/kind@${KIND_VERSION}
@@ -128,6 +127,7 @@ EOM
 }
 
 [ ${#@} -gt 0 ] || usage
+check_or_get_dependencies
 case "${1}" in
         # Alphabetically sorted
         get_localkube)
