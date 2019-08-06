@@ -100,7 +100,7 @@ func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, er
 	}
 }
 
-func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID string, vols map[string]string) (map[string]interface{}, error) {
+func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, jobPrefix string, vols map[string]string) (map[string]interface{}, error) {
 	// Validate volumes
 	for pvc := range vols {
 		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvc, metav1.GetOptions{}); err != nil {
@@ -109,7 +109,7 @@ func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.Templat
 	}
 	options := &kube.PodOptions{
 		Namespace:    namespace,
-		GenerateName: restoreDataJobPrefix,
+		GenerateName: jobPrefix,
 		Image:        kanisterToolsImage,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      vols,
@@ -180,7 +180,7 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return restoreData(ctx, cli, tp, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, vols)
+	return restoreData(ctx, cli, tp, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, restoreDataJobPrefix, vols)
 }
 
 func (*restoreDataFunc) RequiredArgs() []string {

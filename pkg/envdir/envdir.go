@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func envDir(dir string) ([]string, error) {
+func EnvDir(dir string) ([]string, error) {
 	fis, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read env from dir:"+dir)

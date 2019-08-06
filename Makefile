@@ -147,7 +147,7 @@ push-name:
 version:
 	@echo $(VERSION)
 
-.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean vendor-clean docs
+.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean vendor-clean docs start-kind stop-kind
 
 deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 .deploy-$(DOTFILE_IMAGE):
@@ -201,6 +201,7 @@ ifeq ($(DOCKER_BUILD),"true")
 		-v "$(PWD):/go/src/$(PKG)"                                         \
 		-v "$(PWD)/bin/$(ARCH)/$$(go env GOOS)_$(ARCH):/go/bin"            \
 		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
+		-v /var/run/docker.sock:/var/run/docker.sock                       \
 		-w /go/src/$(PKG)                                                  \
 		$(BUILD_IMAGE)                                                     \
 		/bin/sh $(CMD)
@@ -235,3 +236,9 @@ release-helm:
 
 release-kanctl:
 	@$(MAKE) run CMD='-c "./build/release_kanctl.sh"'
+
+start-kind:
+	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh start_localkube"'
+
+stop-kind:
+	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
