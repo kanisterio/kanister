@@ -1,0 +1,7 @@
+apiVersion: cr.kanister.io/v1beta1
+kind: ActionSet
+metadata:
+  name: actionset-sample
+spec:
+  # Add fields here
+  foo: bar
