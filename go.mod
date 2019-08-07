@@ -28,6 +28,8 @@ require (
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
+	github.com/go-logr/logr v0.1.0 // indirect
+	github.com/go-logr/zapr v0.1.1 // indirect
 	github.com/go-openapi/errors v0.19.2 // indirect
 	github.com/go-openapi/strfmt v0.0.0-20170822153411-610b6cacdcde
 	github.com/gogo/protobuf v1.2.1 // indirect
@@ -75,5 +77,7 @@ require (
 	k8s.io/klog v0.3.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20190709113604-33be087ad058 // indirect
 	k8s.io/utils v0.0.0-20190712204705-3dccf664f023 // indirect
+	sigs.k8s.io/controller-runtime v0.1.12 // indirect
+	sigs.k8s.io/testing_frameworks v0.1.1 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
