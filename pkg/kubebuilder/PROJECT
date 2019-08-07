@@ -11,3 +11,6 @@ resources:
 - group: cr
   version: v1beta1
   kind: Profile
+- group: cr
+  version: v1beta1
+  kind: Controller
