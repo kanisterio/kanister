@@ -28,9 +28,9 @@ func newChroniclePushCommand() *cobra.Command {
 			return chronicle.Push(params)
 		},
 	}
-	cmd.PersistentFlags().StringVarP(&params.ProfilePath, profilePathFlagName, "s", "", "Specify a path suffix (optional)")
+	cmd.PersistentFlags().StringVarP(&params.ProfilePath, profilePathFlagName, "p", "", "Path to a Profile as a JSON string (required)")
 	cmd.MarkPersistentFlagRequired(profilePathFlagName)
-	cmd.PersistentFlags().StringVarP(&params.ArtifactPath, artifactPathFlagName, "p", "", "Path to a Profile as a JSON string (required)")
+	cmd.PersistentFlags().StringVarP(&params.ArtifactPath, artifactPathFlagName, "s", "", "Specify a path suffix (optional)")
 	cmd.PersistentFlags().StringVarP(&params.EnvDir, envDirFlagName, "e", "", "Get environment variables from a (optional)")
 	cmd.PersistentFlags().DurationVarP(&params.Frequency, frequencyFlagName, "f", time.Minute, "The Frequency to push to object storage ")
 	return cmd

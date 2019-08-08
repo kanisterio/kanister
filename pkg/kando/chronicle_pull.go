@@ -13,15 +13,15 @@ import (
 func newChroniclePullCommand() *cobra.Command {
 	params := locationParams{}
 	cmd := &cobra.Command{
-		Use:   "push <command>",
-		Short: "Periodically push the output of a command to object storage",
+		Use:   "pull <command>",
+		Short: "Pull the data referenced by a chronicle manifest",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			return runChroniclePull(c, params, args[0])
 		},
 	}
 	cmd.PersistentFlags().StringVarP(&params.suffix, pathFlagName, "s", "", "Specify a path suffix (optional)")
-	cmd.PersistentFlags().StringVarP(&params.profile, pathFlagName, "p", "", "Pass a Profile as a JSON string (required)")
+	cmd.PersistentFlags().StringVarP(&params.profile, profileFlagName, "p", "", "Pass a Profile as a JSON string (required)")
 	cmd.MarkPersistentFlagRequired(profileFlagName)
 	return cmd
 }

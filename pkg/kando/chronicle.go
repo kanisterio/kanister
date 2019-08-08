@@ -10,5 +10,6 @@ func newChronicleCommand() *cobra.Command {
 		Short: "Manage periodic output streams in object storage",
 	}
 	cmd.AddCommand(newChroniclePushCommand())
+	cmd.AddCommand(newChroniclePullCommand())
 	return cmd
 }

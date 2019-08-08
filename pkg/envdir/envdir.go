@@ -16,7 +16,7 @@ func EnvDir(dir string) ([]string, error) {
 	}
 	e := make([]string, 0, len(fis))
 	for _, fi := range fis {
-		if fi.IsDir() {
+		if fi.IsDir() || fi.Mode()&os.ModeSymlink == os.ModeSymlink {
 			continue
 		}
 		p := filepath.Join(dir, fi.Name())
