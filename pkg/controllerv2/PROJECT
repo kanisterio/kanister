@@ -1,0 +1,7 @@
+version: "2"
+domain: kanister.io
+repo: github.com/kanisterio/kanister/pkg/controllerv2
+resources:
+- group: cr
+  version: v1beta1
+  kind: ActionSet
