@@ -16,16 +16,15 @@
 
 set -o errexit
 set -o nounset
+set -o xtrace
 
-# This is a workaround for the fact that codegen requires this boilerplate file
-# to exist in GOPATH. If this file isn't present, we'll use an empty one.
-boilerplate="${GOPATH}/src/k8s.io/kubernetes/hack/boilerplate/boilerplate.go.txt"
-mkdir -p $(dirname "${boilerplate}")
-touch "${boilerplate}"
-
-pushd vendor/k8s.io/code-generator
-./generate-groups.sh                        \
-  all                                       \
-  github.com/kanisterio/kanister/pkg/client \
-  github.com/kanisterio/kanister/pkg/apis   \
-  "cr:v1alpha1"                             \
+export GO111MODULE=on
+go mod download
+execDir="/go/pkg/mod/k8s.io/code-generator@$(go list -f '{{.Version}}' -m k8s.io/code-generator)"
+chmod +x "${execDir}"/generate-groups.sh
+"${execDir}"/generate-groups.sh                         \
+  all                                        \
+  github.com/kanisterio/kanister/pkg/client  \
+  github.com/kanisterio/kanister/pkg/apis    \
+  "cr:v1alpha1"                              \
+  --go-header-file "${execDir}"/hack/boilerplate.go.txt
