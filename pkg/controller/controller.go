@@ -31,7 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -51,11 +51,11 @@ import (
 
 // Controller represents a controller object for kanister custom resources
 type Controller struct {
-	config           *rest.Config
-	crClient         versioned.Interface
-	clientset        kubernetes.Interface
-	recorder         record.EventRecorder
-	actionSetTombMap sync.Map
+	config           *rest.Config         //`json:"config,omitempty"`
+	crClient         versioned.Interface  //`json:"crclient,omitempty"`
+	clientset        kubernetes.Interface //`json:"clientset,omitempty"`
+	recorder         record.EventRecorder //`json:"recorder,omitempty"`
+	actionSetTombMap sync.Map             //`json:"actionSetTombMap,omitempty"`
 }
 
 // New create controller for watching kanister custom resources created
