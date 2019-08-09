@@ -22,6 +22,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	ktrl "github.com/kanisterio/kanister/pkg/controller"
 	crv1beta1 "github.com/kanisterio/kanister/pkg/controllerv2/api/v1beta1"
 )
 
@@ -39,6 +40,8 @@ func (r *ActionSetReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = r.Log.WithValues("actionset", req.NamespacedName)
 
 	// your logic here
+
+	_ = ktrl.Controller{}
 
 	return ctrl.Result{}, nil
 }

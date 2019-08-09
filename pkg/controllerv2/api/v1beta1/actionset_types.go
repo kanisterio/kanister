@@ -16,7 +16,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	ktrl "github.com/kanisterio/kanister/pkg/controller"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -42,9 +41,8 @@ type ActionSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec     ActionSetSpec   `json:"spec,omitempty"`
-	Status   ActionSetStatus `json:"status,omitempty"`
-	Kanister ktrl.Controller `json:"kanister"`
+	Spec   ActionSetSpec   `json:"spec,omitempty"`
+	Status ActionSetStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
