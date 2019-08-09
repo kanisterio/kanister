@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -42,25 +43,25 @@ func (*deleteDataFunc) Name() string {
 	return "DeleteData"
 }
 
-func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, targetPath, deleteTag, deleteIdentifier, encryptionKey string) (map[string]interface{}, error) {
+func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string, jobPrefix string) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
-		GenerateName: deleteDataJobPrefix,
+		GenerateName: jobPrefix,
 		Image:        kanisterToolsImage,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := deleteDataPodFunc(cli, tp, reclaimSpace, namespace, targetPath, deleteTag, deleteIdentifier, encryptionKey)
+	podFunc := deleteDataPodFunc(cli, tp, reclaimSpace, namespace, encryptionKey, targetPaths, deleteTags, deleteIdentifiers)
 	return pr.Run(ctx, podFunc)
 }
 
-func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, targetPath, deleteTag, deleteIdentifier, encryptionKey string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
-		if (deleteIdentifier != "") == (deleteTag != "") {
+		if (len(deleteIdentifiers) == 0) == (len(deleteTags) == 0) {
 			return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
 		}
 		pw, err := getPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
@@ -68,39 +69,46 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 			return nil, err
 		}
 		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
-		if deleteTag != "" {
-			cmd := restic.SnapshotsCommandByTag(tp.Profile, targetPath, deleteTag, encryptionKey)
+		for i, deleteTag := range deleteTags {
+			cmd := restic.SnapshotsCommandByTag(tp.Profile, targetPaths[i], deleteTag, encryptionKey)
 			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
 			}
-			deleteIdentifier, err = restic.SnapshotIDFromSnapshotLog(stdout)
+			deleteIdentifier, err := restic.SnapshotIDFromSnapshotLog(stdout)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
 			}
+			deleteIdentifiers = append(deleteIdentifiers, deleteIdentifier)
 		}
-		if deleteIdentifier != "" {
-			cmd := restic.ForgetCommandByID(tp.Profile, targetPath, deleteIdentifier, encryptionKey)
+		for i, deleteIdentifier := range deleteIdentifiers {
+			cmd := restic.ForgetCommandByID(tp.Profile, targetPaths[i], deleteIdentifier, encryptionKey)
 			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to forget data")
 			}
-		}
-		if reclaimSpace {
-			cmd := restic.PruneCommand(tp.Profile, targetPath, encryptionKey)
-			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
-			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to prune data after forget")
+			if reclaimSpace {
+				err := pruneData(cli, tp, pod, namespace, encryptionKey, targetPaths[i])
+				if err != nil {
+					return nil, errors.Wrapf(err, "Error executing prune command")
+				}
 			}
 		}
+
 		return nil, nil
 	}
+}
+
+func pruneData(cli kubernetes.Interface, tp param.TemplateParams, pod *v1.Pod, namespace, encryptionKey, targetPath string) error {
+	cmd := restic.PruneCommand(tp.Profile, targetPath, encryptionKey)
+	stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
+	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
+	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+	return errors.Wrapf(err, "Failed to prune data after forget")
 }
 
 func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -125,11 +133,15 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = OptArg(args, DeleteDataReclaimSpace, &reclaimSpace, false); err != nil {
 		return nil, err
 	}
+	// Validate profile
+	if err = validateProfile(tp.Profile); err != nil {
+		return nil, err
+	}
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return deleteData(ctx, cli, tp, reclaimSpace, namespace, deleteArtifactPrefix, deleteTag, deleteIdentifier, encryptionKey)
+	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, strings.Fields(deleteArtifactPrefix), strings.Fields(deleteTag), strings.Fields(deleteIdentifier), deleteDataJobPrefix)
 }
 
 func (*deleteDataFunc) RequiredArgs() []string {

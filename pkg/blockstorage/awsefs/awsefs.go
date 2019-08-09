@@ -422,7 +422,54 @@ func (e *efs) VolumesList(ctx context.Context, tags map[string]string, zone stri
 }
 
 func (e *efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
-	return nil, errors.New("Not implemented")
+	result := make([]*blockstorage.Snapshot, 0)
+	for resp, req := emptyResponseRequestForBackups(); resp.NextToken != nil; req.NextToken = resp.NextToken {
+		var err error
+		req.SetBackupVaultName(k10BackupVaultName)
+		resp, err = e.ListRecoveryPointsByBackupVaultWithContext(ctx, req)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to list recovery points by vault")
+		}
+		snaps, err := e.snapshotsFromRecoveryPoints(ctx, resp.RecoveryPoints)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get snapshots from recovery points")
+		}
+		result = append(result, filterSnapshotsWithTags(snaps, tags)...)
+	}
+	return result, nil
+}
+
+func (e *efs) snapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.RecoveryPointByBackupVault) ([]*blockstorage.Snapshot, error) {
+	result := make([]*blockstorage.Snapshot, 0)
+	for _, rp := range rps {
+		if rp.RecoveryPointArn == nil {
+			return nil, errors.New("Empty ARN in recovery point")
+		}
+		tags, err := e.getBackupTags(ctx, *rp.RecoveryPointArn)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get backup tags")
+		}
+		volID, err := efsIDFromResourceARN(*rp.ResourceArn)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get volume ID from recovery point ARN")
+		}
+		vol, err := e.VolumeGet(ctx, volID, "")
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get EFS volume")
+		}
+		snap, err := snapshotFromRecoveryPointByVault(rp, vol, tags, e.region)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get snapshot from the vault")
+		}
+		result = append(result, snap)
+	}
+	return result, nil
+}
+
+func emptyResponseRequestForBackups() (*backup.ListRecoveryPointsByBackupVaultOutput, *backup.ListRecoveryPointsByBackupVaultInput) {
+	resp := (&backup.ListRecoveryPointsByBackupVaultOutput{}).SetNextToken(dummyMarker)
+	req := &backup.ListRecoveryPointsByBackupVaultInput{}
+	return resp, req
 }
 
 func emptyResponseRequestForFilesystems() (*awsefs.DescribeFileSystemsOutput, *awsefs.DescribeFileSystemsInput) {

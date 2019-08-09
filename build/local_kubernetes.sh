@@ -51,7 +51,11 @@ start_localkube() {
         get_localkube
     fi
     kind create cluster --name ${LOCAL_CLUSTER_NAME} --image=kindest/node:${KUBE_VERSION}
-    cp $(kind get kubeconfig-path --name="kanister") ${KUBECONFIG}
+    if [ -e ${KUBECONFIG} ]; then
+        cp -fr ${KUBECONFIG} ${HOME}/.kube/config_bk
+    fi
+    KUBECONFIG=$(kind get kubeconfig-path --name="kanister")
+    export KUBECONFIG=${KUBECONFIG}:${HOME}/.kube/config_bk; kubectl config view --flatten > "${HOME}/.kube/config"
     wait_for_nodes
     wait_for_pods
 }

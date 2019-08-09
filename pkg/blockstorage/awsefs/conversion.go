@@ -53,6 +53,9 @@ func efsIDFromResourceARN(arn string) (string, error) {
 }
 
 func snapshotFromRecoveryPoint(rp *backup.DescribeRecoveryPointOutput, volume *blockstorage.Volume, region string) (*blockstorage.Snapshot, error) {
+	if rp == nil {
+		return nil, errors.New("Empty recovery point")
+	}
 	if rp.CreationDate == nil {
 		return nil, errors.New("Recovery point has no CreationDate")
 	}
@@ -71,6 +74,34 @@ func snapshotFromRecoveryPoint(rp *backup.DescribeRecoveryPointOutput, volume *b
 		Volume:       volume,
 		Encrypted:    volume.Encrypted,
 		Tags:         nil,
+	}, nil
+}
+
+func snapshotFromRecoveryPointByVault(rp *backup.RecoveryPointByBackupVault, volume *blockstorage.Volume, tags map[string]string, region string) (*blockstorage.Snapshot, error) {
+	if rp == nil {
+		return nil, errors.New("Empty recovery point")
+	}
+	if rp.CreationDate == nil {
+		return nil, errors.New("Recovery point has not CreationDate")
+	}
+	if rp.BackupSizeInBytes == nil {
+		return nil, errors.New("Recovery point has no BackupSizeInBytes")
+	}
+	if rp.RecoveryPointArn == nil {
+		return nil, errors.New("Recovery point has no RecoveryPointArn")
+	}
+	if volume == nil {
+		return nil, errors.New("Nil volume as argument")
+	}
+	return &blockstorage.Snapshot{
+		ID:           *rp.RecoveryPointArn,
+		CreationTime: blockstorage.TimeStamp(*rp.CreationDate),
+		Size:         bytesInGiB(*rp.BackupSizeInBytes),
+		Region:       region,
+		Type:         blockstorage.TypeEFS,
+		Volume:       volume,
+		Encrypted:    volume.Encrypted,
+		Tags:         blockstorage.MapToKeyValue(tags),
 	}, nil
 }
 

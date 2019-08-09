@@ -195,9 +195,6 @@ func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"restore": &crv1alpha1.BlueprintAction{
 				Kind: param.StatefulSetKind,
-				SecretNames: []string{
-					"backupKey",
-				},
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testRestoreDataAll",
@@ -208,6 +205,28 @@ func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
 							RestoreDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataAllBackupInfo:              fmt.Sprintf("{{ .Options.%s }}", BackupDataAllOutput),
 							RestoreDataAllRestorePathArg:          "/mnt/data",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func newDeleteDataAllBlueprint() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"delete": &crv1alpha1.BlueprintAction{
+				Kind: param.StatefulSetKind,
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testDelete",
+						Func: "DeleteDataAll",
+						Args: map[string]interface{}{
+							DeleteDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
+							DeleteDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
+							DeleteDataAllBackupInfo:              fmt.Sprintf("{{ .Options.%s }}", BackupDataAllOutput),
+							DeleteDataAllReclaimSpace:            true,
 						},
 					},
 				},
@@ -317,7 +336,7 @@ func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
 	}
 }
 
-func (s *DataSuite) TestBackupDataAll(c *C) {
+func (s *DataSuite) TestBackupRestoreDeleteDataAll(c *C) {
 	var replicas int32
 	replicas = 2
 	tp, pvcs := s.getTemplateParamsAndPVCName(c, replicas)
@@ -342,6 +361,10 @@ func (s *DataSuite) TestBackupDataAll(c *C) {
 	// Test restore
 	bp = *newRestoreDataAllBlueprint()
 	_ = runAction(c, bp, "restore", tp)
+
+	// Test delete
+	bp = *newDeleteDataAllBlueprint()
+	_ = runAction(c, bp, "delete", tp)
 
 }
 

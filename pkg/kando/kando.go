@@ -3,6 +3,7 @@ package kando
 import (
 	"os"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -26,8 +27,24 @@ func newRootCommand() *cobra.Command {
 		Short:   "A set of tools used from Kanister Blueprints",
 		Version: version.VersionString(),
 	}
+
+	var v string
+	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", log.WarnLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
+	rootCmd.PersistentPreRunE = func(*cobra.Command, []string) error {
+		return setLogLevel(v)
+	}
+
 	rootCmd.AddCommand(newLocationCommand())
 	rootCmd.AddCommand(newOutputCommand())
 	rootCmd.AddCommand(newChronicleCommand())
 	return rootCmd
+}
+
+func setLogLevel(v string) error {
+	l, err := log.ParseLevel(v)
+	if err != nil {
+		return errors.Wrap(err, "Invalid log level: "+v)
+	}
+	log.SetLevel(l)
+	return nil
 }
