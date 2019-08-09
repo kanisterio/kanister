@@ -242,3 +242,75 @@ start-kind:
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
+
+
+
+# Image URL to use all building/pushing image targets
+IMG ?= controller:latest
+# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
+CRD_OPTIONS ?= "crd:trivialVersions=true"
+
+# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
+ifeq (,$(shell go env GOBIN))
+GOBIN=$(shell go env GOPATH)/bin
+else
+GOBIN=$(shell go env GOBIN)
+endif
+
+kubegen: kubegen-manager
+
+# Run tests
+kubegen-test: kubegen-generate kubegen-fmt kubegen-vet kubegen-manifests
+	go test ./pkg/controllerv2/api/... ./pkg/controllerv2/controllers/... -coverprofile cover.out
+
+# Build manager binary
+kubegen-manager: kubegen-generate kubegen-fmt kubegen-vet
+	go build -o ./pkg/controllerv2/bin/manager ./pkg/controllerv2/main.go
+
+# Run against the configured Kubernetes cluster in ~/.kube/config
+kubegen-run: kubegen-generate kubegen-fmt kubegen-vet kubegen-manifests
+	go run ./pkg/controllerv2/main.go
+
+# Install CRDs into a cluster
+kubegen-install: kubegen-manifests
+	kubectl apply -f ./pkg/controllerv2/config/crd/bases
+
+# Deploy controller in the configured Kubernetes cluster in ~/.kube/config
+kubegen-deploy: kubegen-manifests
+	kubectl apply -f ./pkg/controllerv2/config/crd/bases
+	cd ./pkg/controllerv2/config/manager && kustomize edit set image controller=${IMG}
+	kustomize build ./pkg/controllerv2/config/default | kubectl apply -f -
+
+# Generate manifests e.g. CRD, RBAC etc.
+kubegen-manifests: kubegen-controller-gen
+	cd ./pkg/controllerv2 && $(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+
+# Run go fmt against code
+kubegen-fmt:
+	go fmt ./pkg/controllerv2/...
+
+# Run go vet against code
+kubegen-vet:
+	go vet ./pkg/controllerv2/...
+
+# Generate code
+kubegen-generate: kubegen-controller-gen
+	cd ./pkg/controllerv2 && $(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths=./api/...
+
+# Build the docker image
+kubegen-docker-build: kubegen-test
+	docker build ./pkg/controllerv2/ -t ${IMG}
+
+# Push the docker image
+kubegen-docker-push:
+	docker push ${IMG}
+
+# find or download controller-gen
+# download controller-gen if necessary
+kubegen-controller-gen:
+ifeq (, $(shell which controller-gen))
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0-beta.4
+CONTROLLER_GEN=$(GOBIN)/controller-gen
+else
+CONTROLLER_GEN=$(shell which controller-gen)
+endif
