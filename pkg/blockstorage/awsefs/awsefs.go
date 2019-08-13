@@ -453,10 +453,9 @@ func (e *efs) snapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.Rec
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get volume ID from recovery point ARN")
 		}
-		vol, err := e.VolumeGet(ctx, volID, "")
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get EFS volume")
-		}
+		// VolumeGet might return error since originating filesystem might have
+		// been deleted.
+		vol, _ := e.VolumeGet(ctx, volID, "")
 		snap, err := snapshotFromRecoveryPointByVault(rp, vol, tags, e.region)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get snapshot from the vault")
