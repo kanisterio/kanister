@@ -84,10 +84,11 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 // PersistentVolumeClaim and any error that happened in the process.
 //
 // 'volumeName' is the name of the PVC that will be restored from the snapshot.
+// 'storageClassName' is the name of the storage class used to create the PVC.
 // 'snapshotName' is the name of the VolumeSnapshot that will be used for restoring.
 // 'namespace' is the namespace of the VolumeSnapshot. The PVC will be restored to the same namepsace.
 // 'restoreSize' will override existing restore size from snapshot content if provided.
-func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, snapCli snapshotclient.Interface, namespace, volumeName, snapshotName string, restoreSize *int) (string, error) {
+func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, snapCli snapshotclient.Interface, namespace, volumeName, storageClassName, snapshotName string, restoreSize *int) (string, error) {
 	snap, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Get(snapshotName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
@@ -122,6 +123,9 @@ func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, sn
 		pvc.ObjectMeta.Name = volumeName
 	} else {
 		pvc.ObjectMeta.GenerateName = pvcGenerateName
+	}
+	if storageClassName != "" {
+		pvc.Spec.StorageClassName = &storageClassName
 	}
 
 	pvc, err = kubeCli.CoreV1().PersistentVolumeClaims(namespace).Create(pvc)
