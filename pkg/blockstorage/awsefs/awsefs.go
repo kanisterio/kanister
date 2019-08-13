@@ -372,8 +372,8 @@ func (e *efs) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapsho
 		return nil, errors.Wrap(err, "Failed to get volume ID from recovery point ARN")
 	}
 	vol, err := e.VolumeGet(ctx, volID, "")
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get originating volume")
+	if err != nil && !isVolumeNotFound(err) {
+		return nil, errors.Wrap(err, "Failed to get filesystem")
 	}
 	return snapshotFromRecoveryPoint(resp, vol, e.region)
 }
@@ -455,7 +455,10 @@ func (e *efs) snapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.Rec
 		}
 		// VolumeGet might return error since originating filesystem might have
 		// been deleted.
-		vol, _ := e.VolumeGet(ctx, volID, "")
+		vol, err := e.VolumeGet(ctx, volID, "")
+		if err != nil && !isVolumeNotFound(err) {
+			return nil, errors.Wrap(err, "Failed to get filesystem")
+		}
 		snap, err := snapshotFromRecoveryPointByVault(rp, vol, tags, e.region)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get snapshot from the vault")

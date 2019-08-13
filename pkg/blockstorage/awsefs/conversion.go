@@ -65,6 +65,10 @@ func snapshotFromRecoveryPoint(rp *backup.DescribeRecoveryPointOutput, volume *b
 	if rp.RecoveryPointArn == nil {
 		return nil, errors.New("Recovery point has no RecoveryPointArn")
 	}
+	encrypted := false
+	if volume != nil {
+		encrypted = volume.Encrypted
+	}
 	return &blockstorage.Snapshot{
 		ID:           *rp.RecoveryPointArn,
 		CreationTime: blockstorage.TimeStamp(*rp.CreationDate),
@@ -72,7 +76,7 @@ func snapshotFromRecoveryPoint(rp *backup.DescribeRecoveryPointOutput, volume *b
 		Region:       region,
 		Type:         blockstorage.TypeEFS,
 		Volume:       volume,
-		Encrypted:    volume.Encrypted,
+		Encrypted:    encrypted,
 		Tags:         nil,
 	}, nil
 }
