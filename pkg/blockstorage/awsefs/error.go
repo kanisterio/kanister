@@ -8,11 +8,9 @@ import (
 )
 
 func isVolumeNotFound(err error) bool {
-	switch errV := err.(type) {
+	switch errV := errors.Cause(err).(type) {
 	case awserr.Error:
 		return errV.Code() == awsefs.ErrCodeFileSystemNotFound
-	case errors.Causer:
-		return isVolumeNotFound(errV.Cause())
 	default:
 		return false
 	}
