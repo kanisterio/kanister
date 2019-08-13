@@ -44,6 +44,8 @@ const (
 	AccessKeyID = "AWS_ACCESS_KEY_ID"
 	// SecretAccessKey represents AWS Secret Access Key
 	SecretAccessKey = "AWS_SECRET_ACCESS_KEY"
+	// SessionToken represents AWS Session Key
+	SessionToken = "AWS_SESSION_TOKEN"
 )
 
 func (s *ebsStorage) Type() blockstorage.Type {
@@ -77,7 +79,8 @@ func GetConfig(config map[string]string) (*aws.Config, string, error) {
 	if !ok {
 		return nil, "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS")
 	}
-	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, "")}, region, nil
+	sessionToken := config[SessionToken]
+	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, sessionToken)}, region, nil
 }
 
 // newEC2Client returns ec2 client struct.
