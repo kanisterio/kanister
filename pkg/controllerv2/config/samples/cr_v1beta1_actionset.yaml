@@ -4,4 +4,40 @@ metadata:
   name: actionset-sample
 spec:
   # Add fields here
-  foo: bar
+  actions: 
+    - name: action1
+      object:
+        apiVersion: v1beta1
+        group: cr.kanister.io
+        resource: resource
+        kind: profile
+        name: profile-sample
+        namespace: test
+      blueprint: blueprint1
+      configMaps:
+        cm1:
+          apiVersion: v1beta1
+          group: cr.kanister.io
+          resource: resource
+          kind: configMap
+          name: configmap-sample
+          namespace: test
+      secrets:
+        secret1:
+          apiVersion: v1beta1
+          group: cr.kanister.io
+          resource: resource
+          kind: secret
+          name: secret-sample
+          namespace: test
+      profile:
+        apiVersion: v1beta1
+        group: cr.kanister.io
+        resource: resource
+        kind: profile
+        name: profile-sample
+        namespace: test
+      options:
+        string:
+          string
+

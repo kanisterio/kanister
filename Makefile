@@ -246,7 +246,7 @@ stop-kind:
 
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= controllerv2:0.0.2
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -297,9 +297,21 @@ kubegen-vet:
 kubegen-generate: kubegen-controller-gen
 	cd ./pkg/controllerv2 && $(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt paths=./api/...
 
+kubegen-build: kubegen-bin
+
+kubegen-bin:
+	@echo "building: $@"
+	@/bin/bash -c " \
+		GOARCH=$(ARCH)       \
+		VERSION=$(VERSION) \
+		PKG=$(PKG)         \
+		./pkg/controllerv2/build/build.sh   \
+	"
+	
+
 # Build the docker image
-kubegen-docker-build: kubegen-test
-	docker build ./pkg/controllerv2/ -t ${IMG}
+kubegen-docker-build: kubegen-test kubegen-build
+	cd pkg/controllerv2 && docker build -t ${IMG} .
 
 # Push the docker image
 kubegen-docker-push:

@@ -27,11 +27,8 @@ require (
 	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-<<<<<<< HEAD
-=======
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.1 // indirect
->>>>>>> added require & replace to go modules
 	github.com/go-openapi/errors v0.19.2 // indirect
 	github.com/go-openapi/strfmt v0.0.0-20170822153411-610b6cacdcde
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
@@ -75,10 +72,6 @@ require (
 	k8s.io/klog v0.3.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20190709113604-33be087ad058 // indirect
 	k8s.io/utils v0.0.0-20190712204705-3dccf664f023 // indirect
-<<<<<<< HEAD
-	sigs.k8s.io/yaml v1.1.0 // indirect
-=======
 	sigs.k8s.io/controller-runtime v0.2.0-beta.4
 	sigs.k8s.io/controller-tools v0.2.0-beta.4 // indirect
->>>>>>> added require & replace to go modules
 )

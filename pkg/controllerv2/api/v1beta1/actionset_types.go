@@ -23,7 +23,7 @@ import (
 
 const (
 	// SchemeVersion is the API version of objects in this package.
-	SchemeVersion = "v1alpha1"
+	SchemeVersion = "v1beta1"
 	// ResourceGroup is the API group of resources in this package.
 	ResourceGroup = "cr.kanister.io"
 )

@@ -1,0 +1,7 @@
+apiVersion: cr.kanister.io/v1beta1
+kind: Profile
+metadata:
+  name: profile-sample
+  #spec:
+  # Add fields here
+

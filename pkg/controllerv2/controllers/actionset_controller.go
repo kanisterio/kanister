@@ -17,19 +17,25 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	ktrl "github.com/kanisterio/kanister/pkg/controller"
 	crv1beta1 "github.com/kanisterio/kanister/pkg/controllerv2/api/v1beta1"
+
+	//importing gocheck to allow ci tests to pass.
+	_ "gopkg.in/check.v1"
 )
 
 // ActionSetReconciler reconciles a ActionSet object
 type ActionSetReconciler struct {
 	client.Client
 	Log logr.Logger
+	//Kanister ktrl.Controller
 }
 
 // +kubebuilder:rbac:groups=cr.kanister.io,resources=actionsets,verbs=get;list;watch;create;update;patch;delete
@@ -42,6 +48,20 @@ func (r *ActionSetReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// your logic here
 
 	_ = ktrl.Controller{}
+
+	instance := &crv1beta1.ActionSet{}
+	err := r.Get(context.TODO(), req.NamespacedName, instance)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Object not found, return.  Created objects are automatically garbage collected.
+			// For additional cleanup logic use finalizers.
+			return ctrl.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		return ctrl.Result{}, err
+	}
+
+	fmt.Printf("object found is: %#v", instance)
 
 	return ctrl.Result{}, nil
 }

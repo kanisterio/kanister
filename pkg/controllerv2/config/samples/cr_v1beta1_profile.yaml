@@ -1,0 +1,26 @@
+apiVersion: cr.kanister.io/v1beta1
+kind: Profile
+metadata:
+  name: profile-sample
+  #spec:
+  # Add fields here
+location: 
+  type: type
+  bucket: bucket
+  endpoint: endpoint
+  prefix: prefix
+  region: region
+credential:
+  type: local
+  keyPair:
+    idField: idField
+    secretField: secretField
+    secret:
+      apiVersion: v1beta1
+      group: cr.kanister.io
+      resource: resource
+      kind: profile
+      name: profile-sample
+      namespace: test
+skipSSLVerify: true
+

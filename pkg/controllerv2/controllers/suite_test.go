@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	_ "gopkg.in/check.v1"
 
 	crv1beta1 "github.com/kanisterio/kanister/pkg/controllerv2/api/v1beta1"
 	"k8s.io/client-go/kubernetes/scheme"
