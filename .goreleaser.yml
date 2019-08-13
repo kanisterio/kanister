@@ -37,15 +37,15 @@ builds:
   goarch: *goarch
 dockers:
 - binaries:
-  - kando
-  image_templates:
-  - 'kanisterio/kanister-tools:{{ .Tag }}'
-  dockerfile: 'docker/tools/Dockerfile'
-- binaries:
   - controller
   image_templates:
   - 'kanisterio/kanister-controller:{{ .Tag }}'
   dockerfile: 'docker/controller/Dockerfile'
+- binaries:
+  - kando
+  image_templates:
+  - 'kanisterio/kanister-tools:{{ .Tag }}'
+  dockerfile: 'docker/tools/Dockerfile'
 - binaries:
   - kando
   image_templates:
