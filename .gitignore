@@ -4,5 +4,4 @@
 /.go
 /.push-*
 /.vendor
-/bin
-/vendor
+/dist
