@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/backup"
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
-	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -53,19 +53,15 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session for EFS")
 	}
-	iamCli := iam.New(s, aws.NewConfig().WithRegion(region))
-	user, err := iamCli.GetUser(&iam.GetUserInput{})
+	stsCli := sts.New(s, aws.NewConfig().WithRegion(region))
+	user, err := stsCli.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get user")
 	}
-	if user.User == nil {
-		return nil, errors.New("Failed to infer user from credentials")
+	if user.Account == nil {
+		return nil, errors.New("Account ID is empty")
 	}
-	userARN, err := awsarn.Parse(*user.User.Arn)
-	if err != nil {
-		return nil, err
-	}
-	accountID := userARN.AccountID
+	accountID := *user.Account
 	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region))
 	backupCli := backup.New(s, aws.NewConfig().WithRegion(region))
 	return &efs{
