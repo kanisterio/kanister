@@ -41,8 +41,11 @@ type Profile struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ProfileSpec   `json:"spec,omitempty"`
-	Status ProfileStatus `json:"status,omitempty"`
+	Spec          ProfileSpec   `json:"spec,omitempty"`
+	Status        ProfileStatus `json:"status,omitempty"`
+	Location      Location      `json:"location"`
+	Credential    Credential    `json:"credential"`
+	SkipSSLVerify bool          `json:"skipSSLVerify"`
 }
 
 // +kubebuilder:object:root=true

@@ -1,0 +1,123 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: profiles.cr.kanister.io
+spec:
+  group: cr.kanister.io
+  names:
+    kind: Profile
+    plural: profiles
+  scope: ""
+  validation:
+    openAPIV3Schema:
+      description: Profile is the Schema for the profiles API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        credential:
+          description: Credential
+          properties:
+            keyPair:
+              description: KeyPair
+              properties:
+                idField:
+                  type: string
+                secret:
+                  description: ObjectReference refers to a kubernetes object.
+                  properties:
+                    apiVersion:
+                      description: API version of the referent.
+                      type: string
+                    group:
+                      description: API Group of the referent.
+                      type: string
+                    kind:
+                      description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                      type: string
+                    name:
+                      description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
+                      type: string
+                    namespace:
+                      description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
+                      type: string
+                    resource:
+                      description: Resource name of the referent.
+                      type: string
+                  required:
+                  - apiVersion
+                  - group
+                  - kind
+                  - name
+                  - resource
+                  type: object
+                secretField:
+                  type: string
+              required:
+              - idField
+              - secret
+              - secretField
+              type: object
+            type:
+              description: CredentialType
+              type: string
+          required:
+          - keyPair
+          - type
+          type: object
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        location:
+          description: Location
+          properties:
+            bucket:
+              type: string
+            endpoint:
+              type: string
+            prefix:
+              type: string
+            region:
+              type: string
+            type:
+              description: LocationType
+              type: string
+          required:
+          - bucket
+          - endpoint
+          - prefix
+          - region
+          - type
+          type: object
+        metadata:
+          type: object
+        skipSSLVerify:
+          type: boolean
+        spec:
+          description: ProfileSpec defines the desired state of Profile
+          type: object
+        status:
+          description: ProfileStatus defines the observed state of Profile
+          type: object
+      required:
+      - credential
+      - location
+      - skipSSLVerify
+      type: object
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
