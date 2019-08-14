@@ -253,7 +253,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	err = Clone(ctx, s.snapCli, snapshotName, s.sourceNamespace, snapshotCloneName, s.targetNamespace, wait)
 	c.Assert(err, IsNil)
 
-	_, err = volume.CreatePVCFromSnapshot(ctx, s.cli, s.snapCli, s.targetNamespace, volumeCloneName, snapshotCloneName, nil)
+	_, err = volume.CreatePVCFromSnapshot(ctx, s.cli, s.snapCli, s.targetNamespace, volumeCloneName, "", snapshotCloneName, nil)
 	c.Assert(err, IsNil)
 	poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.targetNamespace).Get(volumeCloneName, metav1.GetOptions{})
@@ -266,7 +266,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	// Try with a greater restore size.
 	sizeNew := 2
 	volumeCloneName += "-2"
-	_, err = volume.CreatePVCFromSnapshot(ctx, s.cli, s.snapCli, s.targetNamespace, volumeCloneName, snapshotCloneName, &sizeNew)
+	_, err = volume.CreatePVCFromSnapshot(ctx, s.cli, s.snapCli, s.targetNamespace, volumeCloneName, "", snapshotCloneName, &sizeNew)
 	c.Assert(err, IsNil)
 	poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.targetNamespace).Get(volumeCloneName, metav1.GetOptions{})
