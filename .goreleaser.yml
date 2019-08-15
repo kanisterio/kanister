@@ -39,7 +39,7 @@ dockers:
 - binaries:
   - controller
   image_templates:
-  - 'kanisterio/kanister-controller:{{ .Tag }}'
+  - 'kanisterio/controller:{{ .Tag }}'
   dockerfile: 'docker/controller/Dockerfile'
 - binaries:
   - kando

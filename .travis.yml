@@ -1,32 +1,36 @@
 sudo: required
+
 services:
-  - docker
+- docker
 
-language: go
-
-go:
-  - "1.12.x"
+# Selecting C as the language keeps the container to a minimum footprint. All
+# go-specifc code is run in build container.
+language: c
 
 branches:
   only:
   - master
 
-# This moves Kubernetes specific config files.
-env:
-- CHANGE_MINIKUBE_NONE_USER=true GO111MODULE=on
+cache:
+  directories:
+  - .go/pkg/mod/cache
+  - .go/cache
 
-before_install:
-- wget --progress=dot:mega https://storage.googleapis.com/kubernetes-release/release/v1.15.0/bin/linux/amd64/kubectl
-- sudo chmod +x kubectl
-- sudo mv kubectl /usr/local/bin/kubectl
-
-script:
-- go mod download
-- sudo make build
-- make docs
-- docker run -ti --rm --net host -e GOPATH=/go -v ${GOPATH}:/go -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.kube:/root/.kube -v $(pwd):/data -w /data --entrypoint="bash" kanisterio/build:v0.0.1 -c "bash build/local_kubernetes.sh start_localkube"
-- sudo make test
-
-after_script:
-- docker run -ti --rm --net host -e GOPATH=/go -v ${GOPATH}:/go -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.kube:/root/.kube -v $(pwd):/data -w /data --entrypoint="bash" kanisterio/build:v0.0.1 -c "bash build/local_kubernetes.sh stop_localkube"
+jobs:
+  include:
+    - stage: test
+      script:
+      - make docs
+    - stage: test
+      install:
+      - make go-mod-download
+      before_script:
+      - make start-kind
+      script:
+      - make build
+      - make test
+      before_cache:
+      - sudo chown -R travis:travis ./.go
+      after_script:
+      - make stop-kind
 

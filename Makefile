@@ -61,7 +61,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= kanisterio/build:v0.0.1
+BUILD_IMAGE ?= kanisterio/build:v0.0.4
 DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
 
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
@@ -101,18 +101,19 @@ bin/$(ARCH)/$(BIN):
 # Example: make shell CMD="-c 'date > datefile'"
 shell: build-dirs
 	@echo "launching a shell in the containerized build environment"
-	@docker run                                                            \
-	    -ti                                                                \
-	    --rm                                                               \
-	    --privileged                                                       \
-		--net host                                                         \
-	    -v "$(PWD)/.go/pkg:/go/pkg"                                        \
-	    -v "$(PWD):/go/src/$(PKG)"                                         \
-	    -v "$(PWD)/bin/$(ARCH):/go/bin"                                    \
-	    -v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)"            \
-	    -v /var/run/docker.sock:/var/run/docker.sock                       \
-	    -w /go/src/$(PKG)                                                  \
-	    $(BUILD_IMAGE)                                                     \
+	@docker run                                                 \
+		-ti                                                     \
+		--rm                                                    \
+		--privileged                                            \
+		--net host                                              \
+		-v "$(PWD)/.go/pkg:/go/pkg"                             \
+		-v "$(PWD)/.go/cache:/go/.cache"                        \
+		-v "$(PWD):/go/src/$(PKG)"                              \
+		-v "$(PWD)/bin/$(ARCH):/go/bin"                         \
+		-v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)" \
+		-v /var/run/docker.sock:/var/run/docker.sock            \
+		-w /go/src/$(PKG)                                       \
+		$(BUILD_IMAGE)                                          \
 		/bin/sh
 
 DOTFILE_IMAGE = $(subst :,_,$(subst /,_,$(IMAGE))-$(VERSION))
@@ -147,23 +148,21 @@ push-name:
 version:
 	@echo $(VERSION)
 
-.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean vendor-clean docs start-kind stop-kind
+.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean docs start-kind stop-kind release-snapshot go-mod-download
 
 deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 .deploy-$(DOTFILE_IMAGE):
 	@sed                        \
-	    -e 's|IMAGE|$(IMAGE)|g' \
-	    -e 's|TAG|$(VERSION)|g' \
-	    bundle.yaml.in > .deploy-$(DOTFILE_IMAGE)
+		-e 's|IMAGE|$(IMAGE)|g' \
+		-e 's|TAG|$(VERSION)|g' \
+		bundle.yaml.in > .deploy-$(DOTFILE_IMAGE)
 	@kubectl apply -f .deploy-$(DOTFILE_IMAGE)
 
 test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
 
 codegen:
-	@$(MAKE) run CMD='-c "                       \
-		./build/codegen.sh                       \
-	"'
+	@$(MAKE) run CMD='-c "./build/codegen.sh"'
 
 DOCS_CMD = "cd docs && make clean &&          \
                 doc8 --max-line-length 90 --ignore D000 . && \
@@ -173,12 +172,12 @@ DOCS_CMD = "cd docs && make clean &&          \
 docs:
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running DOCS_CMD in the containerized build environment"
-	@docker run                               \
-		--entrypoint ''                   \
-		--rm                              \
-		-v "$(PWD):/repo"                 \
-		-w /repo                          \
-		$(DOCS_BUILD_IMAGE)               \
+	@docker run             \
+		--entrypoint ''     \
+		--rm                \
+		-v "$(PWD):/repo"   \
+		-w /repo            \
+		$(DOCS_BUILD_IMAGE) \
 		/bin/bash -c $(DOCS_CMD)
 else
 	@/bin/bash -c $(DOCS_CMD)
@@ -191,18 +190,19 @@ build-dirs:
 run: build-dirs
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running CMD in the containerized build environment"
-	@docker run                                                            \
-		--rm                                                               \
-		--net host                                                         \
-		-e GITHUB_TOKEN=$(GITHUB_TOKEN)                                    \
-		-v "${HOME}/.kube:/root/.kube"                                     \
-		-v "$(PWD)/.go/pkg:/go/pkg"                                        \
-		-v "$(PWD):/go/src/$(PKG)"                                         \
-		-v "$(PWD)/bin/$(ARCH)/$$(go env GOOS)_$(ARCH):/go/bin"            \
-		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
-		-v /var/run/docker.sock:/var/run/docker.sock                       \
-		-w /go/src/$(PKG)                                                  \
-		$(BUILD_IMAGE)                                                     \
+	@docker run                                                     \
+		--rm                                                        \
+		--net host                                                  \
+		-e GITHUB_TOKEN=$(GITHUB_TOKEN)                             \
+		-v "${HOME}/.kube:/root/.kube"                              \
+		-v "$(PWD)/.go/pkg:/go/pkg"                                 \
+		-v "$(PWD)/.go/cache:/go/.cache"                            \
+		-v "$(PWD):/go/src/$(PKG)"                                  \
+		-v "$(PWD)/bin/$(ARCH)/$$(go env GOOS)_$(ARCH):/go/bin"     \
+		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)" \
+		-v /var/run/docker.sock:/var/run/docker.sock                \
+		-w /go/src/$(PKG)                                           \
+		$(BUILD_IMAGE)                                              \
 		/bin/sh $(CMD)
 else
 	@/bin/bash $(CMD)
@@ -211,23 +211,23 @@ endif
 clean: dotfile-clean bin-clean
 
 dotfile-clean:
-	rm -rf .container-* .dockerfile-* .push-* .vendor .deploy-*
+	rm -rf .container-* .dockerfile-* .push-* .deploy-*
 
 bin-clean:
 	rm -rf .go bin
 
 release-docs: docs
 	@if [ -z ${AWS_ACCESS_KEY_ID} ] || [ -z ${AWS_SECRET_ACCESS_KEY} ]; then\
-	    echo "Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. Exiting.";\
-	    exit 1;\
+		echo "Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. Exiting.";\
+		exit 1;\
 	fi;\
 
 	@if [ -f "docs/_build/html/index.html" ]; then\
-	    aws s3 sync docs/_build/html $(DOCS_RELEASE_BUCKET) --delete;\
-	    echo "Success";\
+		aws s3 sync docs/_build/html $(DOCS_RELEASE_BUCKET) --delete;\
+		echo "Success";\
 	else\
-	    echo "No built docs found";\
-	    exit 1;\
+		echo "No built docs found";\
+		exit 1;\
 	fi;\
 
 release-helm:
@@ -236,8 +236,15 @@ release-helm:
 release-kanctl:
 	@$(MAKE) run CMD='-c "./build/release_kanctl.sh"'
 
+release-snapshot:
+	@$(MAKE) run CMD='-c "goreleaser --debug release --rm-dist --snapshot"'
+
+go-mod-download:
+	@$(MAKE) run CMD='-c "go mod download"'
+
 start-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh start_localkube"'
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
+
