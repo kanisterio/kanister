@@ -88,10 +88,13 @@ func (e *efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*bl
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create EFS instance")
 	}
+	if fd.FileSystemId == nil {
+		return nil, errors.New("Empty filesystem ID")
+	}
 	if err = e.waitUntilFileSystemAvailable(ctx, *fd.FileSystemId); err != nil {
 		return nil, errors.Wrap(err, "EFS instance is not available")
 	}
-	vol, err := e.VolumeGet(ctx, volume.ID, volume.Az)
+	vol, err := e.VolumeGet(ctx, *fd.FileSystemId, volume.Az)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get recently create EFS instance")
 	}
