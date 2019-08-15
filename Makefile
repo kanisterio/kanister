@@ -101,18 +101,19 @@ bin/$(ARCH)/$(BIN):
 # Example: make shell CMD="-c 'date > datefile'"
 shell: build-dirs
 	@echo "launching a shell in the containerized build environment"
-	@docker run                                                            \
-	    -ti                                                                \
-	    --rm                                                               \
-	    --privileged                                                       \
-		--net host                                                         \
-	    -v "$(PWD)/.go/pkg:/go/pkg"                                        \
-	    -v "$(PWD):/go/src/$(PKG)"                                         \
-	    -v "$(PWD)/bin/$(ARCH):/go/bin"                                    \
-	    -v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)"            \
-	    -v /var/run/docker.sock:/var/run/docker.sock                       \
-	    -w /go/src/$(PKG)                                                  \
-	    $(BUILD_IMAGE)                                                     \
+	@docker run                                                 \
+	    -ti                                                     \
+	    --rm                                                    \
+	    --privileged                                            \
+		--net host                                              \
+	    -v "$(PWD)/.go/pkg:/go/pkg"                             \
+		-v "$(PWD)/.go/cache:/go/.cache"                        \
+	    -v "$(PWD):/go/src/$(PKG)"                              \
+	    -v "$(PWD)/bin/$(ARCH):/go/bin"                         \
+	    -v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)" \
+	    -v /var/run/docker.sock:/var/run/docker.sock            \
+	    -w /go/src/$(PKG)                                       \
+	    $(BUILD_IMAGE)                                          \
 		/bin/sh
 
 DOTFILE_IMAGE = $(subst :,_,$(subst /,_,$(IMAGE))-$(VERSION))
