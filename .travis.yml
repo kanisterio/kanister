@@ -18,6 +18,7 @@ env:
 cache:
   directories:
   - .go/pkg/mod/cache
+  - .go/cache
 
 script:
 - make docs

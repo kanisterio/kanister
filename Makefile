@@ -61,7 +61,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= kanisterio/build:v0.0.2
+BUILD_IMAGE ?= kanisterio/build:v0.0.3
 DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
 
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
@@ -161,9 +161,7 @@ test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
 
 codegen:
-	@$(MAKE) run CMD='-c "                       \
-		./build/codegen.sh                       \
-	"'
+	@$(MAKE) run CMD='-c "./build/codegen.sh"'
 
 DOCS_CMD = "cd docs && make clean &&          \
                 doc8 --max-line-length 90 --ignore D000 . && \
@@ -173,12 +171,12 @@ DOCS_CMD = "cd docs && make clean &&          \
 docs:
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running DOCS_CMD in the containerized build environment"
-	@docker run                               \
-		--entrypoint ''                   \
-		--rm                              \
-		-v "$(PWD):/repo"                 \
-		-w /repo                          \
-		$(DOCS_BUILD_IMAGE)               \
+	@docker run             \
+		--entrypoint ''     \
+		--rm                \
+		-v "$(PWD):/repo"   \
+		-w /repo            \
+		$(DOCS_BUILD_IMAGE) \
 		/bin/bash -c $(DOCS_CMD)
 else
 	@/bin/bash -c $(DOCS_CMD)
@@ -191,18 +189,19 @@ build-dirs:
 run: build-dirs
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running CMD in the containerized build environment"
-	@docker run                                                            \
-		--rm                                                               \
-		--net host                                                         \
-		-e GITHUB_TOKEN=$(GITHUB_TOKEN)                                    \
-		-v "${HOME}/.kube:/root/.kube"                                     \
-		-v "$(PWD)/.go/pkg:/go/pkg"                                        \
-		-v "$(PWD):/go/src/$(PKG)"                                         \
-		-v "$(PWD)/bin/$(ARCH)/$$(go env GOOS)_$(ARCH):/go/bin"            \
-		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)_static" \
-		-v /var/run/docker.sock:/var/run/docker.sock                       \
-		-w /go/src/$(PKG)                                                  \
-		$(BUILD_IMAGE)                                                     \
+	@docker run                                                     \
+		--rm                                                        \
+		--net host                                                  \
+		-e GITHUB_TOKEN=$(GITHUB_TOKEN)                             \
+		-v "${HOME}/.kube:/root/.kube"                              \
+		-v "$(PWD)/.go/pkg:/go/pkg"                                 \
+		-v "$(PWD)/.go/cache:/go/.cache"                            \
+		-v "$(PWD):/go/src/$(PKG)"                                  \
+		-v "$(PWD)/bin/$(ARCH)/$$(go env GOOS)_$(ARCH):/go/bin"     \
+		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)" \
+		-v /var/run/docker.sock:/var/run/docker.sock                \
+		-w /go/src/$(PKG)                                           \
+		$(BUILD_IMAGE)                                              \
 		/bin/sh $(CMD)
 else
 	@/bin/bash $(CMD)
