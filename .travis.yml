@@ -22,12 +22,15 @@ jobs:
       script:
       - make docs
     - stage: test
+      install:
+      - make go-mod-download
       before_script:
       - make start-kind
       script:
-      - make go-mod-download
       - make build
       - make test
+      before_cache:
+      - sudo chown -R travis:travis ./.go
       after_script:
       - make stop-kind
 
