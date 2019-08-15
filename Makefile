@@ -61,7 +61,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= kanisterio/build:v0.0.1
+BUILD_IMAGE ?= kanisterio/build:v0.0.2
 DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
 
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
@@ -147,7 +147,7 @@ push-name:
 version:
 	@echo $(VERSION)
 
-.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean vendor-clean docs start-kind stop-kind
+.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean docs start-kind stop-kind release-snapshot go-mod-download
 
 deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 .deploy-$(DOTFILE_IMAGE):
@@ -211,7 +211,7 @@ endif
 clean: dotfile-clean bin-clean
 
 dotfile-clean:
-	rm -rf .container-* .dockerfile-* .push-* .vendor .deploy-*
+	rm -rf .container-* .dockerfile-* .push-* .deploy-*
 
 bin-clean:
 	rm -rf .go bin
@@ -236,8 +236,15 @@ release-helm:
 release-kanctl:
 	@$(MAKE) run CMD='-c "./build/release_kanctl.sh"'
 
+release-snapshot:
+	@$(MAKE) run CMD='-c "goreleaser --debug release --rm-dist --snapshot"'
+
+go-mod-download:
+	@$(MAKE) run CMD='-c "go mod download"'
+
 start-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh start_localkube"'
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
+

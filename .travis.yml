@@ -15,18 +15,17 @@ branches:
 env:
 - CHANGE_MINIKUBE_NONE_USER=true GO111MODULE=on
 
-before_install:
-- wget --progress=dot:mega https://storage.googleapis.com/kubernetes-release/release/v1.15.0/bin/linux/amd64/kubectl
-- sudo chmod +x kubectl
-- sudo mv kubectl /usr/local/bin/kubectl
+cache:
+  directories:
+  - .go/pkg/mod/
 
 script:
-- go mod download
-- sudo make build
 - make docs
-- docker run -ti --rm --net host -e GOPATH=/go -v ${GOPATH}:/go -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.kube:/root/.kube -v $(pwd):/data -w /data --entrypoint="bash" kanisterio/build:v0.0.1 -c "bash build/local_kubernetes.sh start_localkube"
-- sudo make test
+- make go-mod-download
+- make build
+- make start-kind
+- make test
 
 after_script:
-- docker run -ti --rm --net host -e GOPATH=/go -v ${GOPATH}:/go -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.kube:/root/.kube -v $(pwd):/data -w /data --entrypoint="bash" kanisterio/build:v0.0.1 -c "bash build/local_kubernetes.sh stop_localkube"
+- make stop-kind
 
