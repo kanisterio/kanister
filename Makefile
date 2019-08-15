@@ -102,18 +102,18 @@ bin/$(ARCH)/$(BIN):
 shell: build-dirs
 	@echo "launching a shell in the containerized build environment"
 	@docker run                                                 \
-	    -ti                                                     \
-	    --rm                                                    \
-	    --privileged                                            \
+		-ti                                                     \
+		--rm                                                    \
+		--privileged                                            \
 		--net host                                              \
-	    -v "$(PWD)/.go/pkg:/go/pkg"                             \
+		-v "$(PWD)/.go/pkg:/go/pkg"                             \
 		-v "$(PWD)/.go/cache:/go/.cache"                        \
-	    -v "$(PWD):/go/src/$(PKG)"                              \
-	    -v "$(PWD)/bin/$(ARCH):/go/bin"                         \
-	    -v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)" \
-	    -v /var/run/docker.sock:/var/run/docker.sock            \
-	    -w /go/src/$(PKG)                                       \
-	    $(BUILD_IMAGE)                                          \
+		-v "$(PWD):/go/src/$(PKG)"                              \
+		-v "$(PWD)/bin/$(ARCH):/go/bin"                         \
+		-v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)" \
+		-v /var/run/docker.sock:/var/run/docker.sock            \
+		-w /go/src/$(PKG)                                       \
+		$(BUILD_IMAGE)                                          \
 		/bin/sh
 
 DOTFILE_IMAGE = $(subst :,_,$(subst /,_,$(IMAGE))-$(VERSION))
@@ -153,9 +153,9 @@ version:
 deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 .deploy-$(DOTFILE_IMAGE):
 	@sed                        \
-	    -e 's|IMAGE|$(IMAGE)|g' \
-	    -e 's|TAG|$(VERSION)|g' \
-	    bundle.yaml.in > .deploy-$(DOTFILE_IMAGE)
+		-e 's|IMAGE|$(IMAGE)|g' \
+		-e 's|TAG|$(VERSION)|g' \
+		bundle.yaml.in > .deploy-$(DOTFILE_IMAGE)
 	@kubectl apply -f .deploy-$(DOTFILE_IMAGE)
 
 test: build-dirs
@@ -218,16 +218,16 @@ bin-clean:
 
 release-docs: docs
 	@if [ -z ${AWS_ACCESS_KEY_ID} ] || [ -z ${AWS_SECRET_ACCESS_KEY} ]; then\
-	    echo "Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. Exiting.";\
-	    exit 1;\
+		echo "Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. Exiting.";\
+		exit 1;\
 	fi;\
 
 	@if [ -f "docs/_build/html/index.html" ]; then\
-	    aws s3 sync docs/_build/html $(DOCS_RELEASE_BUCKET) --delete;\
-	    echo "Success";\
+		aws s3 sync docs/_build/html $(DOCS_RELEASE_BUCKET) --delete;\
+		echo "Success";\
 	else\
-	    echo "No built docs found";\
-	    exit 1;\
+		echo "No built docs found";\
+		exit 1;\
 	fi;\
 
 release-helm:
