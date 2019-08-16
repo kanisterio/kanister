@@ -68,12 +68,14 @@ and backup to an AWS S3 bucket.
 
   # Install MySQL and configure its Kanister Blueprint.
   # Also create a Profile CR that can be used in ActionSets
-  helm install kanister/kanister-mysql                        \
-      --name mysql-release --namespace mysql-ns               \
-      --set kanister.create_profile="true"                    \
-      --set kanister.s3_bucket="mysql-backup-bucket"          \
-      --set kanister.s3_api_key="${AWS_ACCESS_KEY_ID}"        \
-      --set kanister.s3_api_secret="${AWS_SECRET_ACCESS_KEY}" \
+  helm install kanister/kanister-mysql                                      \
+      --name mysql-release --namespace mysql-ns                             \
+      --set profile.create='true'                                           \
+      --set profile.location.type='s3Compliant'                             \
+      --set profile.location.bucket='mysql-backup-bucket'                   \
+      --set profile.location.endpoint='https://my-custom-s3-provider:9000'  \
+      --set profile.aws.accessKey="${AWS_ACCESS_KEY_ID}"                    \
+      --set profile.aws.secretKey="${AWS_SECRET_ACCESS_KEY}"                \
       --set kanister.controller_namespace=kanister
 
   # Perform a backup by creating an ActionSet
