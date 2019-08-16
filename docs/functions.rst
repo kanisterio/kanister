@@ -323,8 +323,8 @@ Example:
 BackupDataAll
 -------------
 
-This function concurrently backs up data from more than one pods into an any object store
-supported by Kanister.
+This function concurrently backs up data from more than one pods into an any
+object store supported by Kanister.
 
 .. note::
    It is important that the application includes a `kanister-tools`
@@ -420,7 +420,8 @@ Example:
 Consider a scenario where you wish to restore the data backed up by the
 :ref:`backupdata` function. We will first scale down the application,
 restore the data and then scale it back up.
-For this phase, we will use the `backupInfo` Artifact provided by backup function.
+For this phase, we will use the `backupInfo` Artifact provided by
+backup function.
 
 .. code-block:: yaml
   :linenos:
@@ -494,7 +495,8 @@ Consider a scenario where you wish to restore the data backed up by the
 :ref:`backupdataall` function. We will first scale down the application,
 restore the data and then scale it back up. We will not specify `pods`
 arg, so this function will restore data on all pods concurrently.
-For this phase, we will use the `params` Artifact provided by BackupDataAll function.
+For this phase, we will use the `params` Artifact provided by
+BackupDataAll function.
 
 .. code-block:: yaml
   :linenos:
@@ -609,7 +611,8 @@ For this phase, we will use the `backupInfo` Artifact provided by backup functio
 DeleteDataAll
 -------------
 
-This function concurrently deletes the snapshot data backed up by the BackupDataAll function.
+This function concurrently deletes the snapshot data backed up by the
+BackupDataAll function.
 
 
 .. csv-table::
@@ -744,9 +747,9 @@ Arguments:
 CreateVolumeFromSnapshot
 ------------------------
 
-This function is used to restore one or more PVCs of an application from the snapshots
-taken using the :ref:`createvolumesnapshot` function. It deletes old PVCs,
-if present and creates new PVCs from the snapshots taken earlier.
+This function is used to restore one or more PVCs of an application from the
+snapshots taken using the :ref:`createvolumesnapshot` function. It deletes old
+PVCs, if present and creates new PVCs from the snapshots taken earlier.
 
 Arguments:
 
