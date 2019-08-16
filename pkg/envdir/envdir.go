@@ -10,6 +10,10 @@ import (
 )
 
 func EnvDir(dir string) ([]string, error) {
+	// Check if dir doesn't exist or it isn't a directory.
+	if fi, err := os.Stat(dir); os.IsNotExist(err) || !fi.IsDir() {
+		return nil, nil
+	}
 	fis, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read env from dir:"+dir)
