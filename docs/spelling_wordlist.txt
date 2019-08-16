@@ -34,3 +34,7 @@ actionset
 objectstore
 Elasticsearch
 backupInfo
+restic
+backupTag
+backupIdentifier
+gcs
