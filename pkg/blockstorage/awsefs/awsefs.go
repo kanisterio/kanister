@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/backup"
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
@@ -44,7 +45,7 @@ const (
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
 func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, err := awsebs.GetConfig(config)
+	awsConfig, region, roleName, err := awsebs.GetConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get configuration for EFS")
 	}
@@ -61,13 +62,23 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 		return nil, errors.New("Account ID is empty")
 	}
 	accountID := *user.Account
-	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region))
-	backupCli := backup.New(s, aws.NewConfig().WithRegion(region))
+	creds := awsConfig.Credentials
+	if roleName != "" {
+		role := roleARN(*user.Account, roleName)
+		creds = stscreds.NewCredentials(s, role)
+	}
+	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds))
+	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds))
 	return &efs{
 		EFS:       efsCli,
 		Backup:    backupCli,
 		region:    region,
-		accountID: accountID}, nil
+		accountID: accountID,
+	}, nil
+}
+
+func roleARN(accountID, roleName string) string {
+	return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
 }
 
 func (e *efs) Type() blockstorage.Type {

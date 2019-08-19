@@ -40,6 +40,9 @@ const (
 	maxRetries = 10
 	// ConfigRegion represents region key required in the map "config"
 	ConfigRegion = "region"
+	// ConfigRole represents the key for the role which can be assumed.
+	// It is optional.
+	ConfigRole = "role"
 	// AccessKeyID represents AWS Access key ID
 	AccessKeyID = "AWS_ACCESS_KEY_ID"
 	// SecretAccessKey represents AWS Secret Access Key
@@ -54,7 +57,7 @@ func (s *ebsStorage) Type() blockstorage.Type {
 
 // NewProvider returns a provider for the EBS storage type in the specified region
 func NewProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, err := GetConfig(config)
+	awsConfig, region, _, err := GetConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -66,21 +69,22 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 }
 
 // GetConfig returns a configuration to establish AWS connection and the connected region name.
-func GetConfig(config map[string]string) (*aws.Config, string, error) {
+func GetConfig(config map[string]string) (*aws.Config, string, string, error) {
 	region, ok := config[ConfigRegion]
 	if !ok {
-		return nil, "", errors.New("region required for storage type EBS")
+		return nil, "", "", errors.New("region required for storage type EBS")
 	}
 	accessKey, ok := config[AccessKeyID]
 	if !ok {
-		return nil, "", errors.New("AWS_ACCESS_KEY_ID required for storage type EBS")
+		return nil, "", "", errors.New("AWS_ACCESS_KEY_ID required for storage type EBS")
 	}
 	secretAccessKey, ok := config[SecretAccessKey]
 	if !ok {
-		return nil, "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS")
+		return nil, "", "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS")
 	}
 	sessionToken := config[SessionToken]
-	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, sessionToken)}, region, nil
+	role := config[ConfigRole]
+	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, sessionToken)}, region, role, nil
 }
 
 // newEC2Client returns ec2 client struct.
