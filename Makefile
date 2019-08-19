@@ -108,6 +108,7 @@ shell: build-dirs
 		--net host                                              \
 		-v "$(PWD)/.go/pkg:/go/pkg"                             \
 		-v "$(PWD)/.go/cache:/go/.cache"                        \
+		-v "${HOME}/.kube:/root/.kube"                          \
 		-v "$(PWD):/go/src/$(PKG)"                              \
 		-v "$(PWD)/bin/$(ARCH):/go/bin"                         \
 		-v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)" \
