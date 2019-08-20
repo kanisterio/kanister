@@ -2,6 +2,8 @@ package chronicle
 
 import (
 	"context"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	. "gopkg.in/check.v1"
@@ -28,9 +30,12 @@ func (s *ChroniclePushSuite) TestPush(c *C) {
 	err := writeProfile(pp, prof)
 	c.Assert(err, IsNil)
 
+	a := filepath.Join(c.MkDir(), "artifact")
+	err = ioutil.WriteFile(a, []byte(rand.String(10)), os.ModePerm)
+	c.Assert(err, IsNil)
 	p := PushParams{
 		ProfilePath:  pp,
-		ArtifactPath: rand.String(10),
+		ArtifactFile: a,
 		Command:      []string{"echo hello"},
 	}
 	ctx := context.Background()
