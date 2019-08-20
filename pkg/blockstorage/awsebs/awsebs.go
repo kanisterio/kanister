@@ -40,7 +40,7 @@ const (
 	maxRetries = 10
 	// ConfigRegion represents region key required in the map "config"
 	ConfigRegion = "region"
-	// ConfigRole represents the key for the role which can be assumed.
+	// ConfigRole represents the key for the ARN of the role which can be assumed.
 	// It is optional.
 	ConfigRole = "role"
 	// AccessKeyID represents AWS Access key ID
