@@ -76,10 +76,6 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 	}, nil
 }
 
-func roleARN(accountID, roleName string) string {
-	return fmt.Sprintf("arn:aws:iam::%s:role/%s", accountID, roleName)
-}
-
 func (e *efs) Type() blockstorage.Type {
 	return blockstorage.TypeEFS
 }
