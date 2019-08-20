@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -21,6 +20,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
+	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 )
 
 var _ blockstorage.Provider = (*ebsStorage)(nil)
@@ -38,17 +38,6 @@ type EC2 struct {
 
 const (
 	maxRetries = 10
-	// ConfigRegion represents region key required in the map "config"
-	ConfigRegion = "region"
-	// ConfigRole represents the key for the ARN of the role which can be assumed.
-	// It is optional.
-	ConfigRole = "role"
-	// AccessKeyID represents AWS Access key ID
-	AccessKeyID = "AWS_ACCESS_KEY_ID"
-	// SecretAccessKey represents AWS Secret Access Key
-	SecretAccessKey = "AWS_SECRET_ACCESS_KEY"
-	// SessionToken represents AWS Session Key
-	SessionToken = "AWS_SESSION_TOKEN"
 )
 
 func (s *ebsStorage) Type() blockstorage.Type {
@@ -57,7 +46,7 @@ func (s *ebsStorage) Type() blockstorage.Type {
 
 // NewProvider returns a provider for the EBS storage type in the specified region
 func NewProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, _, err := GetConfig(config)
+	awsConfig, region, _, err := awsconfig.GetConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -66,25 +55,6 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
 	return &ebsStorage{ec2Cli: ec2Cli}, nil
-}
-
-// GetConfig returns a configuration to establish AWS connection, connected region name and the role to assume if it exists.
-func GetConfig(config map[string]string) (awsConfig *aws.Config, region string, role string, err error) {
-	region, ok := config[ConfigRegion]
-	if !ok {
-		return nil, "", "", errors.New("region required for storage type EBS")
-	}
-	accessKey, ok := config[AccessKeyID]
-	if !ok {
-		return nil, "", "", errors.New("AWS_ACCESS_KEY_ID required for storage type EBS")
-	}
-	secretAccessKey, ok := config[SecretAccessKey]
-	if !ok {
-		return nil, "", "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS")
-	}
-	sessionToken := config[SessionToken]
-	role = config[ConfigRole]
-	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, sessionToken)}, region, role, nil
 }
 
 // newEC2Client returns ec2 client struct.

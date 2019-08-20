@@ -16,8 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
 	kantags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 )
 
 type efs struct {
@@ -45,7 +45,7 @@ const (
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
 func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, role, err := awsebs.GetConfig(config)
+	awsConfig, region, role, err := awsconfig.GetConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get configuration for EFS")
 	}
