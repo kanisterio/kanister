@@ -11,7 +11,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
+	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -26,8 +26,8 @@ func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, locat
 
 	switch osType {
 	case objectstore.ProviderTypeS3:
-		key = GetEnvOrSkip(c, awsebs.AccessKeyID)
-		val = GetEnvOrSkip(c, awsebs.SecretAccessKey)
+		key = GetEnvOrSkip(c, awsconfig.AccessKeyID)
+		val = GetEnvOrSkip(c, awsconfig.SecretAccessKey)
 	case objectstore.ProviderTypeGCS:
 		GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
 		creds, err := google.FindDefaultCredentials(context.Background(), compute.ComputeScope)
