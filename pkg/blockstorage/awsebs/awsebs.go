@@ -68,8 +68,8 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	return &ebsStorage{ec2Cli: ec2Cli}, nil
 }
 
-// GetConfig returns a configuration to establish AWS connection and the connected region name.
-func GetConfig(config map[string]string) (*aws.Config, string, string, error) {
+// GetConfig returns a configuration to establish AWS connection, connected region name and the role to assume if it exists.
+func GetConfig(config map[string]string) (awsConfig *aws.Config, region string, role string, err error) {
 	region, ok := config[ConfigRegion]
 	if !ok {
 		return nil, "", "", errors.New("region required for storage type EBS")
@@ -83,7 +83,7 @@ func GetConfig(config map[string]string) (*aws.Config, string, string, error) {
 		return nil, "", "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS")
 	}
 	sessionToken := config[SessionToken]
-	role := config[ConfigRole]
+	role = config[ConfigRole]
 	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, sessionToken)}, region, role, nil
 }
 
