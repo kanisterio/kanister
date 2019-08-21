@@ -214,12 +214,20 @@ func fetchKeyPairCredential(ctx context.Context, cli kubernetes.Interface, c *cr
 	}, nil
 }
 
+func filterByKind(refs map[string]crv1alpha1.ObjectReference, kind string) map[string]crv1alpha1.ObjectReference {
+	filtered := make(map[string]crv1alpha1.ObjectReference, len(refs))
+	for name, ref := range refs {
+		if strings.ToLower(ref.Kind) != strings.ToLower(kind) {
+			continue
+		}
+		filtered[name] = ref
+	}
+	return filtered
+}
+
 func fetchSecrets(ctx context.Context, cli kubernetes.Interface, refs map[string]crv1alpha1.ObjectReference) (map[string]v1.Secret, error) {
 	secrets := make(map[string]v1.Secret, len(refs))
 	for name, ref := range refs {
-		if strings.ToLower(ref.Kind) != SecretKind {
-			continue
-		}
 		s, err := cli.CoreV1().Secrets(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, errors.WithStack(err)
@@ -343,7 +351,7 @@ func InitPhaseParams(ctx context.Context, cli kubernetes.Interface, tp *Template
 	if tp.Phases == nil {
 		tp.Phases = make(map[string]*Phase)
 	}
-	secrets, err := fetchSecrets(ctx, cli, objects)
+	secrets, err := fetchSecrets(ctx, cli, filterByKind(objects, SecretKind))
 	if err != nil {
 		return err
 	}
