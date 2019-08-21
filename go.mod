@@ -16,7 +16,7 @@ require (
 	github.com/IBM-Bluemix/bluemix-cli-sdk v0.3.0 // indirect
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.3.0 // indirect
 	github.com/IBM/ibmcloud-storage-volume-lib v0.0.0-20190705114640-e7a4b11c618c
-	github.com/Masterminds/semver v1.4.2 // indirect
+	github.com/Masterminds/semver v1.4.2
 	github.com/Masterminds/sprig v2.15.0+incompatible
 	github.com/aokoli/goutils v1.1.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a // indirect
