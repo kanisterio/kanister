@@ -151,8 +151,8 @@ as follows:
       Artifacts map[string]Artifact         `json:"artifacts,omitempty"`
       ConfigMaps map[string]ObjectReference `json:"configMaps"`
       Secrets map[string]ObjectReference    `json:"secrets"`
-      Profile *ObjectReference              `json:"profile"`
       Options map[string]string             `json:"options"`
+      Profile *ObjectReference              `json:"profile"`
   }
 
 - `Name` is required and specifies the action in the Blueprint.
