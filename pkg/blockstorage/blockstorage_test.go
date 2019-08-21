@@ -10,9 +10,9 @@ import (
 	. "gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 )
 
 const (
@@ -246,17 +246,17 @@ func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]st
 	config := make(map[string]string)
 	switch s.storageType {
 	case blockstorage.TypeEBS:
-		config[awsebs.ConfigRegion] = region
-		accessKey, ok := os.LookupEnv(awsebs.AccessKeyID)
+		config[awsconfig.ConfigRegion] = region
+		accessKey, ok := os.LookupEnv(awsconfig.AccessKeyID)
 		if !ok {
 			c.Skip("The necessary env variable AWS_ACCESS_KEY_ID is not set.")
 		}
-		secretAccessKey, ok := os.LookupEnv(awsebs.SecretAccessKey)
+		secretAccessKey, ok := os.LookupEnv(awsconfig.SecretAccessKey)
 		if !ok {
 			c.Skip("The necessary env variable AWS_SECRET_ACCESS_KEY is not set.")
 		}
-		config[awsebs.AccessKeyID] = accessKey
-		config[awsebs.SecretAccessKey] = secretAccessKey
+		config[awsconfig.AccessKeyID] = accessKey
+		config[awsconfig.SecretAccessKey] = secretAccessKey
 	case blockstorage.TypeGPD:
 		creds, ok := os.LookupEnv(blockstorage.GoogleCloudCreds)
 		if !ok {

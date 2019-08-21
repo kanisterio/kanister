@@ -8,8 +8,8 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
+	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -56,9 +56,9 @@ func waitForSnapshotsCompletion(ctx context.Context, snapshotinfo string, profil
 		}
 		switch pvcInfo.Type {
 		case blockstorage.TypeEBS:
-			config[awsebs.ConfigRegion] = pvcInfo.Region
-			config[awsebs.AccessKeyID] = profile.Credential.KeyPair.ID
-			config[awsebs.SecretAccessKey] = profile.Credential.KeyPair.Secret
+			config[awsconfig.ConfigRegion] = pvcInfo.Region
+			config[awsconfig.AccessKeyID] = profile.Credential.KeyPair.ID
+			config[awsconfig.SecretAccessKey] = profile.Credential.KeyPair.Secret
 		case blockstorage.TypeGPD:
 			config[blockstorage.GoogleProjectID] = profile.Credential.KeyPair.ID
 			config[blockstorage.GoogleServiceKey] = profile.Credential.KeyPair.Secret
