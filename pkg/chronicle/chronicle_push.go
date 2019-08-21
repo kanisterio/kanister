@@ -22,7 +22,7 @@ import (
 
 type PushParams struct {
 	ProfilePath  string
-	ArtifactPath string
+	ArtifactFile string
 	Frequency    time.Duration
 	EnvDir       string
 	Command      []string
@@ -85,8 +85,9 @@ func push(ctx context.Context, p PushParams, ord int) error {
 			return err
 		}
 	}
+	ap, err := readArtifactPathFile(p.ArtifactFile)
 	log.Debugf("Pushing output from Command %d: %v. Environment: %v", ord, p.Command, env)
-	return pushWithEnv(ctx, p.Command, p.ArtifactPath, ord, prof, env)
+	return pushWithEnv(ctx, p.Command, ap, ord, prof, env)
 }
 
 func pushWithEnv(ctx context.Context, c []string, suffix string, ord int, prof param.Profile, env []string) error {
@@ -121,12 +122,17 @@ func pushWithEnv(ctx context.Context, c []string, suffix string, ord int, prof p
 	return nil
 }
 
+func readArtifactPathFile(path string) (string, error) {
+	buf, err := ioutil.ReadFile(path)
+	t := strings.TrimSuffix(string(buf), "\n")
+	return t, errors.Wrap(err, "Could not read artifact path file")
+}
+
 func readProfile(path string) (p param.Profile, ok bool, err error) {
 	var buf []byte
 	buf, err = ioutil.ReadFile(path)
 	switch {
 	case os.IsNotExist(err):
-		ok = true
 		err = nil
 		return
 	case err != nil:

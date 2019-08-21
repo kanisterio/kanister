@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -42,9 +43,12 @@ func (s *ChronicleSuite) TestPushPull(c *C) {
 	err := writeProfile(pp, s.profile)
 	c.Assert(err, IsNil)
 
+	a := filepath.Join(c.MkDir(), "artifact")
+	err = ioutil.WriteFile(a, []byte(rand.String(10)), os.ModePerm)
+	c.Assert(err, IsNil)
 	p := PushParams{
 		ProfilePath:  pp,
-		ArtifactPath: rand.String(10),
+		ArtifactFile: a,
 	}
 	ctx := context.Background()
 
@@ -56,7 +60,7 @@ func (s *ChronicleSuite) TestPushPull(c *C) {
 
 		// Pull and check that we still get i
 		buf := bytes.NewBuffer(nil)
-		err = Pull(ctx, buf, s.profile, p.ArtifactPath)
+		err = Pull(ctx, buf, s.profile, p.ArtifactFile)
 		c.Assert(err, IsNil)
 		str, err := ioutil.ReadAll(buf)
 		c.Assert(err, IsNil)
