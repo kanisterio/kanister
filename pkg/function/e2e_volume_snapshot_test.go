@@ -16,8 +16,8 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
@@ -327,7 +327,7 @@ func (s *VolumeSnapshotTestSuite) getCreds(c *C, cli kubernetes.Interface, names
 	switch {
 	case pv.Spec.AWSElasticBlockStore != nil:
 		_ = GetEnvOrSkip(c, AWSRegion)
-		return GetEnvOrSkip(c, awsebs.AccessKeyID), GetEnvOrSkip(c, awsebs.SecretAccessKey), crv1alpha1.LocationTypeS3Compliant, nil
+		return GetEnvOrSkip(c, awsconfig.AccessKeyID), GetEnvOrSkip(c, awsconfig.SecretAccessKey), crv1alpha1.LocationTypeS3Compliant, nil
 
 	case pv.Spec.GCEPersistentDisk != nil:
 		serviceKey, err := getServiceKey(c)

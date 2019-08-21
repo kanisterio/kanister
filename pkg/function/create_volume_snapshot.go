@@ -18,6 +18,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
+	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -203,9 +204,9 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 			}
 		}
 		if pvZone, ok := pvLabels[kubevolume.PVZoneLabelName]; ok {
-			config[awsebs.ConfigRegion] = region
-			config[awsebs.AccessKeyID] = tp.Profile.Credential.KeyPair.ID
-			config[awsebs.SecretAccessKey] = tp.Profile.Credential.KeyPair.Secret
+			config[awsconfig.ConfigRegion] = region
+			config[awsconfig.AccessKeyID] = tp.Profile.Credential.KeyPair.ID
+			config[awsconfig.SecretAccessKey] = tp.Profile.Credential.KeyPair.Secret
 			provider, err = getter.Get(blockstorage.TypeEBS, config)
 			if err != nil {
 				return nil, errors.Wrap(err, "Could not get storage provider")
