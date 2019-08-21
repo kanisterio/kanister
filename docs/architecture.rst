@@ -90,15 +90,18 @@ The definition of a `BlueprintAction` is:
 
   // BlueprintPhase is a an individual unit of execution.
   type BlueprintPhase struct {
-      Func string   `json:"func"`
-      Name string   `json:"name"`
-      Args map[string]interface{} `json:"args"`
+      Func       string                     `json:"func"`
+      Name       string                     `json:"name"`
+      ObjectRefs map[string]ObjectReference `json:"objects"`
+      Args       map[string]interface{}     `json:"args"`
   }
 
 - `Func` is required as the name of a registered Kanister function.
   See :ref:`functions` for the list of  functions supported by the controller.
 - `Name` is mostly cosmetic. It is useful in quickly identifying which
   phases the controller has finished executing.
+- `Object` is a map of references to the Kubernetes objects on which
+  the action will be performed.
 - `Args` is a map of named arguments that the controller will pass to
   the Kanister function.
   String argument values can be templates that the controller will
@@ -148,6 +151,7 @@ as follows:
       Artifacts map[string]Artifact         `json:"artifacts,omitempty"`
       ConfigMaps map[string]ObjectReference `json:"configMaps"`
       Secrets map[string]ObjectReference    `json:"secrets"`
+      Options map[string]string             `json:"options"`
       Profile *ObjectReference              `json:"profile"`
   }
 
@@ -163,6 +167,7 @@ as follows:
   specified in the Blueprint referencing the Kubernetes object to be used.
 - `Profile` is a reference to a :ref:`Profile<profiles>` Kubernetes
   CustomResource that will be made available to the Blueprint.
+- `Options` is used to specify additional values to be used in the Blueprint
 
 As a reference, below is an example of a ActionSpec.
 
@@ -263,25 +268,22 @@ The definition of a `Profile` is:
   type LocationType string
 
   const (
+    LocationTypeGCS         LocationType = "gcs"
     LocationTypeS3Compliant LocationType = "s3Compliant"
+    LocationTypeAzure       LocationType = "azure"
   )
 
   // Location
   type Location struct {
-    Type        LocationType         `json:"type"`
-    S3Compliant *S3CompliantLocation `json:"s3Compliant"`
-  }
-
-  // S3Compliant
-  type S3CompliantLocation struct {
-    Bucket   string `json:"bucket"`
-    Endpoint string `json:"endpoint"`
-    Prefix   string `json:"prefix"`
-    Region   string `json:"region"`
+    Type     LocationType `json:"type"`
+    Bucket   string       `json:"bucket"`
+    Endpoint string       `json:"endpoint"`
+    Prefix   string       `json:"prefix"`
+    Region   string       `json:"region"`
   }
 
 - `Credential` is required and used to specify the credentials associated with
-  the `Location`. Currently, only key pair s3 location credentials are
+  the `Location`. Currently, only key pair s3, gcs and azure location credentials are
   supported.
 
   The definition of `Credential` is as follows:
@@ -326,11 +328,10 @@ As a reference, below is an example of a Profile and the corresponding secret.
     namespace: example-namespace
   location:
     type: s3Compliant
-    s3Compliant:
-      bucket: example-bucket
-      endpoint: <endpoint URL>:<port>
-      prefix: ""
-      region: ""
+    bucket: example-bucket
+    endpoint: <endpoint URL>:<port>
+    prefix: ""
+    region: ""
   credential:
     type: keyPair
     keyPair:

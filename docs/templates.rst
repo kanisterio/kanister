@@ -464,7 +464,7 @@ The following examples should be helpful.
 .. code-block:: yaml
 
   # Access the Profile s3 location bucket
-  "{{ .Profile.Location.S3Compliant.Bucket }}"
+  "{{ .Profile.Location.Bucket }}"
 
   # Access the associated secret credential
   # Assuming "{{ .Profile.Credential.KeyPair.SecretField }}" is 'Secret'
@@ -484,20 +484,18 @@ The currently supported Profile template is based on the following definitions
   type LocationType string
 
   const (
+    LocationTypeGCS         LocationType = "gcs"
     LocationTypeS3Compliant LocationType = "s3Compliant"
+    LocationTypeAzure       LocationType = "azure"
   )
 
-  // Only supporting S3 compatible locations currently
-  type Location struct {
-    Type        LocationType
-    S3Compliant *S3CompliantLocation
-  }
 
-  type S3CompliantLocation struct {
-    Bucket   string
-    Endpoint string
-    Prefix   string
-    Region   string
+  type Location struct {
+    Type      LocationType
+    Bucket    string
+    Endpoint  string
+    Prefix    string
+    Region    string
   }
 
   type CredentialType string
