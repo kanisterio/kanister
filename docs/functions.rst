@@ -624,7 +624,7 @@ BackupDataAll function.
    `backupArtifactPrefix`, Yes, `string`, path to the backup on the object store
    `backupInfo`, Yes, `string`, snapshot info generated as output in BackupDataAll function
    `encryptionKey`, No, `string`, encryption key to be used during backups
-   `reclaimSpace`, NO, `bool`, provides a way to specify if space should be reclaimed
+   `reclaimSpace`, No, `bool`, provides a way to specify if space should be reclaimed
 
 Example:
 
