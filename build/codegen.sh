@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2019 Kasten Inc.
+# Copyright 2019 The Kanister Authors.
 # 
 # Copyright 2016 The Rook Authors. All rights reserved.
 #

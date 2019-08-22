@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Kasten Inc.
+Copyright 2019 The Kanister Authors.
 
 Copyright 2017 The Rook Authors. All rights reserved.
 
