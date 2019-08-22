@@ -296,7 +296,7 @@ Base64 credentials and put them below.
 
 .. code-block:: bash
 
-  echo "YOUR_KEY" | base64
+  echo -n "YOUR_KEY" | base64
 
 
 .. code-block:: yaml

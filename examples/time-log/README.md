@@ -19,7 +19,7 @@ Next create a Blueprint which describes how backup and restore actions can be ex
 
 ```bash
 # Get base64 encoded aws keys
-$ echo "YOUR_KEY" | base64
+$ echo -n "YOUR_KEY" | base64
 
 # Create secrets containing the necessary AWS credentials
 $ kubectl apply -f examples/time-log/secrets.yaml
