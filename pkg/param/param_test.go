@@ -12,7 +12,7 @@ import (
 	"github.com/Masterminds/sprig"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -521,7 +521,7 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 			},
 		},
 	}
-	_, err := s.cli.CoreV1().Secrets(s.namespace).Create(secret)
+	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(secret)
 	c.Assert(err, IsNil)
 	defer s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{})
 
@@ -543,6 +543,12 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 			Name:      "profName",
 			Namespace: s.namespace,
 		},
+		Secrets: map[string]crv1alpha1.ObjectReference{
+			"actionSetSecret": crv1alpha1.ObjectReference{
+				Name:      secret.Name,
+				Namespace: secret.Namespace,
+			},
+		},
 	}
 	tp, err := New(ctx, s.cli, crCli, as)
 	c.Assert(err, IsNil)
@@ -552,6 +558,8 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.20.0"})
 	c.Assert(tp.Phases, HasLen, 1)
 	c.Assert(tp.Phases["backup"], NotNil)
+	c.Assert(tp.Secrets, HasLen, 1)
+	c.Assert(tp.Secrets["actionSetSecret"], DeepEquals, *secret)
 }
 
 func (s *ParamsSuite) TestRenderingPhaseParams(c *C) {
