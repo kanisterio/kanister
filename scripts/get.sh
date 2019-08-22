@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# Copyright 2019 Kasten Inc.
 # This script is based off of the install script from helm, licensed under the
 # Apache License, Version 2.0. The script was found here
 # https://github.com/kubernetes/helm/blob/master/scripts/get
