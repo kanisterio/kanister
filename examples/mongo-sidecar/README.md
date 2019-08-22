@@ -32,7 +32,7 @@ Next create a Blueprint which describes how backup and restore actions can be ex
 
 ```bash
 # Get base64 encoded aws keys
-$ echo "YOUR_KEY" | base64
+$ echo -n "YOUR_KEY" | base64
 
 # Create the ConfigMap with an S3 path
 $ kubectl apply -f ./examples/mongo-sidecar/s3-location-configmap.yaml

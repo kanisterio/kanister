@@ -30,8 +30,8 @@ You should also update secrets.yaml to contain the necessary AWS credentials to 
 
 ```bash
 # Get base64 encoded aws keys
-$ echo ${AWS_ACCESS_KEY_ID} | base64
-$ echo ${AWS_SECRET_ACCESS_KEY} | base64
+$ echo -n ${AWS_ACCESS_KEY_ID} | base64
+$ echo -n ${AWS_SECRET_ACCESS_KEY} | base64
 
 # Edit the secret spec and add the base64 encoded AWS keys
 $ vim secrets.yaml
