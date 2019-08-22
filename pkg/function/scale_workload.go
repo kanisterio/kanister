@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -59,11 +60,19 @@ func (*scaleWorkloadFunc) RequiredArgs() []string {
 }
 
 func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, kind, name string, replicas int32, err error) {
-	err = Arg(args, ScaleWorkloadReplicas, &replicas)
+	var rep interface{}
+	err = Arg(args, ScaleWorkloadReplicas, &rep)
 	if err != nil {
 		return namespace, kind, name, replicas, err
 	}
-
+	if val, ok := rep.(int); ok {
+		replicas = int32(val)
+	} else if val, ok := rep.(string); ok {
+		strToInt := intstr.Parse(val)
+		replicas = strToInt.IntVal
+	} else {
+		return namespace, kind, name, replicas, errors.Wrapf(err, "Failed to decode arg `%s`", ScaleWorkloadReplicas)
+	}
 	// Populate default values for optional arguments from template parameters
 	switch {
 	case tp.StatefulSet != nil:
