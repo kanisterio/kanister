@@ -111,7 +111,6 @@ shell: build-dirs
 		-v "${HOME}/.kube:/root/.kube"                          \
 		-v "$(PWD):/go/src/$(PKG)"                              \
 		-v "$(PWD)/bin/$(ARCH):/go/bin"                         \
-		-v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)" \
 		-v /var/run/docker.sock:/var/run/docker.sock            \
 		-w /go/src/$(PKG)                                       \
 		$(BUILD_IMAGE)                                          \
@@ -199,7 +198,7 @@ ifeq ($(DOCKER_BUILD),"true")
 		-v "$(PWD)/.go/pkg:/go/pkg"                                 \
 		-v "$(PWD)/.go/cache:/go/.cache"                            \
 		-v "$(PWD):/go/src/$(PKG)"                                  \
-		-v "$(PWD)/bin/$(ARCH)/$$(go env GOOS)_$(ARCH):/go/bin"     \
+		-v "$(PWD)/bin/$(ARCH):/go/bin"                             \
 		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)" \
 		-v /var/run/docker.sock:/var/run/docker.sock                \
 		-w /go/src/$(PKG)                                           \
