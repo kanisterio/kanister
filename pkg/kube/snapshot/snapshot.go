@@ -6,6 +6,7 @@ import (
 	snapshot "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	snapshotclient "github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -160,6 +161,7 @@ func CreateFromSource(ctx context.Context, snapCli snapshotclient.Interface, sou
 		return errors.Wrapf(err, "Failed to find VolumeSnapshotClass: %s", *source.VolumeSnapshotClassName)
 	}
 	deletionPolicy := *vsc.DeletionPolicy
+	log.Info("VolumeSnapshotClass DeletionPolicy: ", deletionPolicy)
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
 	content := &snapshot.VolumeSnapshotContent{
 		ObjectMeta: metav1.ObjectMeta{
