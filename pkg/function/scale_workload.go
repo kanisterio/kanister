@@ -2,10 +2,10 @@ package function
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -65,14 +65,22 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, k
 	if err != nil {
 		return namespace, kind, name, replicas, err
 	}
-	if val, ok := rep.(int); ok {
-		replicas = int32(val)
-	} else if val, ok := rep.(string); ok {
-		strToInt := intstr.Parse(val)
-		replicas = strToInt.IntVal
-	} else {
-		return namespace, kind, name, replicas, errors.Wrapf(err, "Failed to decode arg `%s`", ScaleWorkloadReplicas)
+
+	var val int
+	switch rep.(type) {
+	case int:
+		val = rep.(int)
+	case string:
+		if val, err = strconv.Atoi(rep.(string)); err != nil {
+			err = errors.Wrapf(err, "Cannot convert %s to int ", rep.(string))
+			return
+		}
+	default:
+		err = errors.Errorf("Invalid arg type %T for Arg %s ", rep, ScaleWorkloadReplicas)
+		return
 	}
+
+	replicas = int32(val)
 	// Populate default values for optional arguments from template parameters
 	switch {
 	case tp.StatefulSet != nil:
