@@ -155,6 +155,11 @@ func GetSource(ctx context.Context, snapCli snapshotclient.Interface, snapshotNa
 // 'namespace' is the namespace of the snapshot.
 // 'waitForReady' blocks the caller until snapshot is ready to use or context is cancelled.
 func CreateFromSource(ctx context.Context, snapCli snapshotclient.Interface, source *Source, snapshotName, namespace string, waitForReady bool) error {
+	vsc, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotClasses().Get(*source.VolumeSnapshotClassName, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to find VolumeSnapshotClass: %s", *source.VolumeSnapshotClassName)
+	}
+	deletionPolicy := *vsc.DeletionPolicy
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
 	content := &snapshot.VolumeSnapshotContent{
 		ObjectMeta: metav1.ObjectMeta{
@@ -173,6 +178,7 @@ func CreateFromSource(ctx context.Context, snapCli snapshotclient.Interface, sou
 				Name:      snapshotName,
 			},
 			VolumeSnapshotClassName: source.VolumeSnapshotClassName,
+			DeletionPolicy:          &deletionPolicy,
 		},
 	}
 	snap := &snapshot.VolumeSnapshot{
@@ -185,7 +191,7 @@ func CreateFromSource(ctx context.Context, snapCli snapshotclient.Interface, sou
 		},
 	}
 
-	content, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Create(content)
+	content, err = snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Create(content)
 	if err != nil {
 		return errors.Errorf("Failed to create content, VolumesnapshotContent: %s, Error: %v", content.Name, err)
 	}
