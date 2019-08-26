@@ -269,7 +269,7 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 				},
 			},
 			args: map[string]interface{}{
-				ScaleWorkloadReplicas: "2",
+				ScaleWorkloadReplicas: int64(2),
 			},
 			wantKind:      param.DeploymentKind,
 			wantName:      "app",
@@ -285,7 +285,7 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 				},
 			},
 			args: map[string]interface{}{
-				ScaleWorkloadReplicas:     2,
+				ScaleWorkloadReplicas:     int32(2),
 				ScaleWorkloadNamespaceArg: "notfoo",
 				ScaleWorkloadNameArg:      "notapp",
 				ScaleWorkloadKindArg:      param.DeploymentKind,
