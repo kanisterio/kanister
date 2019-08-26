@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -60,11 +62,19 @@ func (s *ebsStorage) Type() blockstorage.Type {
 
 // NewProvider returns a provider for the EBS storage type in the specified region
 func NewProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, _, err := awsconfig.GetConfig(config)
+	awsConfig, region, role, err := awsconfig.GetConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	ec2Cli, err := newEC2Client(region, awsConfig)
+	s, err := session.NewSession(awsConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create session for EFS")
+	}
+	creds := awsConfig.Credentials
+	if role != "" {
+		creds = stscreds.NewCredentials(s, role)
+	}
+	ec2Cli, err := newEC2Client(region, awsConfig, creds)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
@@ -72,14 +82,17 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 }
 
 // newEC2Client returns ec2 client struct.
-func newEC2Client(awsRegion string, config *aws.Config) (*EC2, error) {
+func newEC2Client(awsRegion string, config *aws.Config, creds *credentials.Credentials) (*EC2, error) {
 	httpClient := &http.Client{Transport: http.DefaultTransport}
 	s, err := session.NewSession(config)
 	if err != nil {
 		return nil, err
 	}
-	return &EC2{EC2: ec2.New(s, &aws.Config{MaxRetries: aws.Int(maxRetries),
-		Region: aws.String(awsRegion), HTTPClient: httpClient})}, nil
+	conf := config.WithHTTPClient(httpClient).
+		WithMaxRetries(maxRetries).
+		WithRegion(awsRegion).
+		WithCredentials(creds)
+	return &EC2{EC2: ec2.New(s, conf)}, nil
 }
 
 func (s *ebsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
