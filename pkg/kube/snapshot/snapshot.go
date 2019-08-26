@@ -6,7 +6,6 @@ import (
 	snapshot "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	snapshotclient "github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -156,12 +155,10 @@ func GetSource(ctx context.Context, snapCli snapshotclient.Interface, snapshotNa
 // 'namespace' is the namespace of the snapshot.
 // 'waitForReady' blocks the caller until snapshot is ready to use or context is cancelled.
 func CreateFromSource(ctx context.Context, snapCli snapshotclient.Interface, source *Source, snapshotName, namespace string, waitForReady bool) error {
-	vsc, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotClasses().Get(*source.VolumeSnapshotClassName, metav1.GetOptions{})
+	deletionPolicy, err := getDeletionPolicyFromClass(snapCli, *source.VolumeSnapshotClassName)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to find VolumeSnapshotClass: %s", *source.VolumeSnapshotClassName)
+		errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
-	deletionPolicy := *vsc.DeletionPolicy
-	log.Info("VolumeSnapshotClass DeletionPolicy: ", deletionPolicy)
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
 	content := &snapshot.VolumeSnapshotContent{
 		ObjectMeta: metav1.ObjectMeta{
@@ -226,4 +223,12 @@ func WaitOnReadyToUse(ctx context.Context, snapCli snapshotclient.Interface, sna
 
 func getContent(ctx context.Context, snapCli snapshotclient.Interface, contentName string) (*snapshot.VolumeSnapshotContent, error) {
 	return snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Get(contentName, metav1.GetOptions{})
+}
+
+func getDeletionPolicyFromClass(snapCli snapshotclient.Interface, snapClassName string) (snapshot.DeletionPolicy, error) {
+	vsc, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotClasses().Get(snapClassName, metav1.GetOptions{})
+	if err != nil {
+		return "", errors.Wrapf(err, "Failed to find VolumeSnapshotClass: %s", snapClassName)
+	}
+	return *vsc.DeletionPolicy, nil
 }
