@@ -157,7 +157,7 @@ func GetSource(ctx context.Context, snapCli snapshotclient.Interface, snapshotNa
 func CreateFromSource(ctx context.Context, snapCli snapshotclient.Interface, source *Source, snapshotName, namespace string, waitForReady bool) error {
 	deletionPolicy, err := getDeletionPolicyFromClass(snapCli, *source.VolumeSnapshotClassName)
 	if err != nil {
-		errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
+		return errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
 	content := &snapshot.VolumeSnapshotContent{
