@@ -76,7 +76,7 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, k
 	case string:
 		var v int
 		if v, err = strconv.Atoi(val); err != nil {
-			err = errors.Wrapf(err, "Cannot convert %s to int ", rep.(string))
+			err = errors.Wrapf(err, "Cannot convert %s to int ", val)
 			return
 		}
 		replicas = int32(v)
