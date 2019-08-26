@@ -70,6 +70,10 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, k
 	switch rep.(type) {
 	case int:
 		val = rep.(int)
+	case int32:
+		val = int(rep.(int32))
+	case int64:
+		val = int(rep.(int64))
 	case string:
 		if val, err = strconv.Atoi(rep.(string)); err != nil {
 			err = errors.Wrapf(err, "Cannot convert %s to int ", rep.(string))
