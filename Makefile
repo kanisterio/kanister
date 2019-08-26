@@ -233,8 +233,8 @@ release-docs: docs
 release-helm:
 	@/bin/bash ./build/release_helm.sh $(VERSION)
 
-release-kanctl:
-	@$(MAKE) run CMD='-c "./build/release_kanctl.sh"'
+gorelease:
+	@$(MAKE) run CMD='-c "./build/gorelease.sh"'
 
 release-snapshot:
 	@$(MAKE) run CMD='-c "goreleaser --debug release --rm-dist --snapshot"'
