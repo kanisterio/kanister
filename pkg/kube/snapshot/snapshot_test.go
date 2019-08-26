@@ -205,6 +205,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 	cloneContent, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Get(clone.Spec.SnapshotContentName, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(strings.HasPrefix(cloneContent.Name, fakeClone), Equals, true)
+	c.Assert(*cloneContent.Spec.DeletionPolicy, Equals, *vsc.DeletionPolicy)
 }
 
 func (s *SnapshotTestSuite) TestVolumeSnapshot(c *C) {
