@@ -74,7 +74,7 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	if role != "" {
 		creds = stscreds.NewCredentials(s, role)
 	}
-	ec2Cli, err := newEC2Client(region, awsConfig, creds)
+	ec2Cli, err := newEC2Client(s, region, awsConfig, creds)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
@@ -82,17 +82,13 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 }
 
 // newEC2Client returns ec2 client struct.
-func newEC2Client(awsRegion string, config *aws.Config, creds *credentials.Credentials) (*EC2, error) {
+func newEC2Client(session *session.Session, awsRegion string, config *aws.Config, creds *credentials.Credentials) (*EC2, error) {
 	httpClient := &http.Client{Transport: http.DefaultTransport}
-	s, err := session.NewSession(config)
-	if err != nil {
-		return nil, err
-	}
 	conf := config.WithHTTPClient(httpClient).
 		WithMaxRetries(maxRetries).
 		WithRegion(awsRegion).
 		WithCredentials(creds)
-	return &EC2{EC2: ec2.New(s, conf)}, nil
+	return &EC2{EC2: ec2.New(session, conf)}, nil
 }
 
 func (s *ebsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
