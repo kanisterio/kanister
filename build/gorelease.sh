@@ -1,14 +1,11 @@
-#!/bin/sh
-
+#!/usr/bin/env bash
 # Copyright 2019 The Kanister Authors.
-# 
-# Copyright 2016 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,20 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 set -o errexit
 set -o nounset
+set -o xtrace
+set -o pipefail
 
-if [ -z "${PKG}" ]; then
-    echo "PKG must be set"
-    exit 1
+if [ -z ${GITHUB_TOKEN} ]
+then
+	echo "Please set your GITHUB_TOKEN."
+	echo "You can generate a token here: https://github.com/settings/tokens/new"
+	exit 1
 fi
-if [ -z "${VERSION}" ]; then
-    echo "VERSION must be set"
-    exit 1
-fi
-
-export CGO_ENABLED=0
-go install -v                                                      \
-    -installsuffix "static"                                        \
-    -ldflags "-X ${PKG}/pkg/version.VERSION=${VERSION}"            \
-    ./cmd/...
+goreleaser release --parallelism=1 --rm-dist --debug

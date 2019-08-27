@@ -1,3 +1,5 @@
+# Copyright 2019 The Kanister Authors.
+#
 # Copyright 2016 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +36,8 @@ PWD := $$(pwd)
 
 # Whether to build inside a containerized build environment
 DOCKER_BUILD ?= "true"
+
+DOCKER_CONFIG ?= "$(HOME)/.docker"
 
 ###
 ### These variables should not need tweaking.
@@ -101,19 +105,20 @@ bin/$(ARCH)/$(BIN):
 # Example: make shell CMD="-c 'date > datefile'"
 shell: build-dirs
 	@echo "launching a shell in the containerized build environment"
-	@docker run                                                 \
-		-ti                                                     \
-		--rm                                                    \
-		--privileged                                            \
-		--net host                                              \
-		-v "$(PWD)/.go/pkg:/go/pkg"                             \
-		-v "$(PWD)/.go/cache:/go/.cache"                        \
-		-v "${HOME}/.kube:/root/.kube"                          \
-		-v "$(PWD):/go/src/$(PKG)"                              \
-		-v "$(PWD)/bin/$(ARCH):/go/bin"                         \
-		-v /var/run/docker.sock:/var/run/docker.sock            \
-		-w /go/src/$(PKG)                                       \
-		$(BUILD_IMAGE)                                          \
+	@docker run                                      \
+		-ti                                          \
+		--rm                                         \
+		--privileged                                 \
+		--net host                                   \
+		-v "$(PWD)/.go/pkg:/go/pkg"                  \
+		-v "$(PWD)/.go/cache:/go/.cache"             \
+		-v "${HOME}/.kube:/root/.kube"               \
+		-v "$(PWD):/go/src/$(PKG)"                   \
+		-v "$(PWD)/bin/$(ARCH):/go/bin"              \
+		-v "$(DOCKER_CONFIG):/root/.docker"          \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-w /go/src/$(PKG)                            \
+		$(BUILD_IMAGE)                               \
 		/bin/sh
 
 DOTFILE_IMAGE = $(subst :,_,$(subst /,_,$(IMAGE))-$(VERSION))
@@ -200,6 +205,7 @@ ifeq ($(DOCKER_BUILD),"true")
 		-v "$(PWD):/go/src/$(PKG)"                                  \
 		-v "$(PWD)/bin/$(ARCH):/go/bin"                             \
 		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)" \
+		-v "$(DOCKER_CONFIG):/root/.docker"                         \
 		-v /var/run/docker.sock:/var/run/docker.sock                \
 		-w /go/src/$(PKG)                                           \
 		$(BUILD_IMAGE)                                              \
@@ -233,8 +239,8 @@ release-docs: docs
 release-helm:
 	@/bin/bash ./build/release_helm.sh $(VERSION)
 
-release-kanctl:
-	@$(MAKE) run CMD='-c "./build/release_kanctl.sh"'
+gorelease:
+	@$(MAKE) run CMD='-c "./build/gorelease.sh"'
 
 release-snapshot:
 	@$(MAKE) run CMD='-c "goreleaser --debug release --rm-dist --snapshot"'
