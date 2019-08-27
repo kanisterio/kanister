@@ -55,6 +55,8 @@ const (
 	efsType            = "EFS"
 	k10BackupVaultName = "k10vault"
 	dummyMarker        = ""
+
+	maxRetries = 10
 )
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
@@ -67,7 +69,7 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session for EFS")
 	}
-	stsCli := sts.New(s, aws.NewConfig().WithRegion(region).WithMaxRetries(aws.UseServiceDefaultRetries))
+	stsCli := sts.New(s, aws.NewConfig().WithRegion(region).WithMaxRetries(maxRetries))
 	user, err := stsCli.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get user")
@@ -80,8 +82,8 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 	if role != "" {
 		creds = stscreds.NewCredentials(s, role)
 	}
-	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(aws.UseServiceDefaultRetries))
-	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(aws.UseServiceDefaultRetries))
+	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
+	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
 	return &efs{
 		EFS:       efsCli,
 		Backup:    backupCli,
