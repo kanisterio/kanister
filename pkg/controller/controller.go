@@ -33,6 +33,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -54,6 +55,7 @@ type Controller struct {
 	config           *rest.Config
 	crClient         versioned.Interface
 	clientset        kubernetes.Interface
+	dynClient        dynamic.Interface
 	recorder         record.EventRecorder
 	actionSetTombMap sync.Map
 }
@@ -78,8 +80,14 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get a k8s client")
 	}
+	dynClient, err := dynamic.NewForConfig(c.config)
+	if err != nil {
+		return errors.Wrap(err, "failed to get a k8s dynamic client")
+	}
+
 	c.crClient = crClient
 	c.clientset = clientset
+	c.dynClient = dynClient
 	c.recorder = eventer.NewEventRecorder(c.clientset, "Kanister Controller")
 
 	for cr, o := range map[customresource.CustomResource]runtime.Object{
@@ -360,7 +368,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	tp, err := param.New(ctx, c.clientset, c.crClient, action)
+	tp, err := param.New(ctx, c.clientset, c.dynClient, c.crClient, action)
 	if err != nil {
 		return err
 	}
