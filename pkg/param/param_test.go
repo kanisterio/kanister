@@ -329,6 +329,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, object cr
 			"podName": "some-pod",
 		},
 	}
+	unstructuredTemplate := "{{ .Object.metadata.namespace }}"
 	var template string
 	switch object.Kind {
 	case DeploymentKind:
@@ -353,6 +354,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, object cr
 		"kindArtifact": crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": template}},
 	}
 	artsTpl["kindArtifact"] = crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": template}}
+	artsTpl["objectNSArtifact"] = crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": unstructuredTemplate}}
 
 	tp, err := New(ctx, s.cli, crCli, as)
 	c.Assert(err, IsNil)
@@ -365,6 +367,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, object cr
 	_, err = time.Parse(timeFormat, arts["my-time"].KeyValue["my-time"])
 	c.Assert(err, IsNil)
 	c.Assert(arts["kindArtifact"], DeepEquals, crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": object.Name}})
+	c.Assert(arts["objectNSArtifact"], DeepEquals, crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": object.Namespace}})
 }
 
 func (s *ParamsSuite) TestfetchKVSecretCredential(c *C) {
