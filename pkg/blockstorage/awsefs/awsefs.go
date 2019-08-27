@@ -67,7 +67,7 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session for EFS")
 	}
-	stsCli := sts.New(s, aws.NewConfig().WithRegion(region))
+	stsCli := sts.New(s, aws.NewConfig().WithRegion(region).WithMaxRetries(aws.UseServiceDefaultRetries))
 	user, err := stsCli.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get user")
@@ -80,8 +80,8 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 	if role != "" {
 		creds = stscreds.NewCredentials(s, role)
 	}
-	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds))
-	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds))
+	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(aws.UseServiceDefaultRetries))
+	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(aws.UseServiceDefaultRetries))
 	return &efs{
 		EFS:       efsCli,
 		Backup:    backupCli,
