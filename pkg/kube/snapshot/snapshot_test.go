@@ -153,6 +153,15 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 	fakeSnapshotName := "snap-1-fake"
 	fakeContentName := "snapcontent-1-fake"
 
+	dp := snapshot.VolumeSnapshotContentDelete
+	vsc := &snapshot.VolumeSnapshotClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fakeClass,
+		},
+		Snapshotter:    fakeDriver,
+		DeletionPolicy: &dp,
+	}
+
 	content := &snapshot.VolumeSnapshotContent{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fakeContentName,
@@ -172,7 +181,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		},
 	}
 	ctime := metav1.Now()
-	snapshot := &snapshot.VolumeSnapshot{
+	snap := &snapshot.VolumeSnapshot{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fakeSnapshotName,
 			Namespace: defaultNamespace,
@@ -191,7 +200,9 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 	fakeTargetNamespace := "new-ns"
 	fakeClone := "clone-1"
 
-	_, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(defaultNamespace).Create(snapshot)
+	_, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotClasses().Create(vsc)
+	c.Assert(err, IsNil)
+	_, err = snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(defaultNamespace).Create(snap)
 	c.Assert(err, IsNil)
 	_, err = snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Create(content)
 	c.Assert(err, IsNil)
@@ -208,6 +219,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 	cloneContent, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Get(clone.Spec.SnapshotContentName, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(strings.HasPrefix(cloneContent.Name, fakeClone), Equals, true)
+	c.Assert(*cloneContent.Spec.DeletionPolicy, Equals, *vsc.DeletionPolicy)
 }
 
 func (s *SnapshotTestSuite) TestVolumeSnapshot(c *C) {
