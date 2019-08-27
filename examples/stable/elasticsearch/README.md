@@ -43,20 +43,16 @@ Then install the sample Elasticsearch application with the release name `my-rele
 
 ```bash
 # Replace the default s3 credentials (endpoint, bucket and region) with your credentials before you run this command
-$ helm install kanister/kanister-elasticsearch -n my-release --namespace es-test \
-     --set profile.create='true' \
-     --set profile.profileName='es-test-profile' \
-     --set profile.location.type='s3Compliant' \
-     --set profile.location.bucket='kanister-bucket' \
-     --set profile.location.endpoint='https://my-custom-s3-provider:9000' \
-     --set profile.location.region=us-west-2 \
-     --set profile.aws.accessKey="${AWS_ACCESS_KEY_ID}" \
-     --set profile.aws.secretKey="${AWS_SECRET_ACCESS_KEY}"
+$ helm install stable/elasticsearch -n my-release --namespace es-test 
 ```
 
 The command deploys Elasticsearch on the Kubernetes cluster in the default
-configuration. The [configuration](#configuration) section lists the parameters that can be
-configured during installation. It also installs a `profiles.cr.kanister.io` CRD named `es-test-profile` in `es-test` namespace.
+configuration. 
+
+```bash
+kanctl --namespace kasten-io create profile --bucket infracloud.kanister.io --region ap-south-1 s3compliant --access-key "AKIAIOSFODNN7EXAMPLE" --secret-key "wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY"
+```
+This command creates a profile which we'll later use.
 
 The command will also configure a location where artifacts resulting from Kanister
 data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
@@ -66,11 +62,7 @@ not. Support for creating an ActionSet as part of install is simply for convenie
 This CR can be shared between Kanister-enabled application instances so one option is to
 only create as part of the first instance.
 
-If not creating a Profile CR, it is possible to use an even simpler command.
-
-```bash
-$ helm install kanister/kanister-elasticsearch -n my-release --namespace es-test
-```
+If not creating a Profile CR, the the above kanctl command can be skipped and only helm install is sufficient.
 
 Once Elasticsearch is running, you can populate it with some data. Follow the instructions that get displayed by running command `helm status my-release` to connect to the application.
 
@@ -91,12 +83,20 @@ health status index    uuid                   pri rep docs.count docs.deleted st
 green  open   customer xbwj34pTSZOdDI7xVR0qIA   5   1          1            0      8.9kb          4.4kb
 ```
 
+## Create the Blueprint 
+
+In order to perform backup, restore, and delete operations on the running elasticsearch, we need to create a blueprint. You can create that using the command below from the root of kanister repo.
+
+```bash
+kubectl create -f ./examples/helm/kanister/kanister-elasticsearch/kanister/elasticsearch-blueprint.yaml -n kasten-io
+```
+
 ## Protect the Application
 
 You can now take a backup of the Elasticsearch data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller using `kanctl`, a command-line tool that helps create ActionSets as shown below:
 
 ```bash
-$ kanctl create actionset --action backup --namespace kasten-io --blueprint my-release-kanister-elasticsearch-blueprint --statefulset es-test/my-release-kanister-elasticsearch-data --profile es-test/es-test-profile
+$ kanctl create actionset --action backup --namespace kasten-io --blueprint elasticsearch-blueprint --statefulset es-test/my-release-elasticsearch-data --options releaseName=my-release --profile es-test/<PROFILE_NAME>
 
 $ kubectl --namespace kasten-io get actionsets.cr.kanister.io
 NAME                AGE
@@ -104,6 +104,12 @@ backup-lphk7        2h
 
 # View the status of the actionset
 $ kubectl --namespace kasten-io describe actionset backup-lphk7
+```
+
+The PROFILE_NAME is the name of the profile generated from earlier kanctl create profile command. It can be retrieved using,
+
+```bash
+kubectl get profiles.cr.kanister.io -n es-test
 ```
 
 ## Disaster strikes!

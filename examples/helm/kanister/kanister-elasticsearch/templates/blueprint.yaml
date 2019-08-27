@@ -1,6 +1,0 @@
-apiVersion: cr.kanister.io/v1alpha1
-kind: Blueprint
-metadata:
-  name: {{ template "elasticsearch.fullname" . }}-blueprint
-  namespace: {{ .Values.kanister.controller_namespace }}
-{{ .Files.Get "kanister/elasticsearch-blueprint.yaml" }}
