@@ -44,7 +44,8 @@ func (s *ChronicleSuite) TestPushPull(c *C) {
 	c.Assert(err, IsNil)
 
 	a := filepath.Join(c.MkDir(), "artifact")
-	err = ioutil.WriteFile(a, []byte(rand.String(10)), os.ModePerm)
+	ap := rand.String(10)
+	err = ioutil.WriteFile(a, []byte(ap), os.ModePerm)
 	c.Assert(err, IsNil)
 	p := PushParams{
 		ProfilePath:  pp,
@@ -60,7 +61,8 @@ func (s *ChronicleSuite) TestPushPull(c *C) {
 
 		// Pull and check that we still get i
 		buf := bytes.NewBuffer(nil)
-		err = Pull(ctx, buf, s.profile, p.ArtifactFile)
+		c.Log("File: ", p.ArtifactFile)
+		err = Pull(ctx, buf, s.profile, ap)
 		c.Assert(err, IsNil)
 		str, err := ioutil.ReadAll(buf)
 		c.Assert(err, IsNil)

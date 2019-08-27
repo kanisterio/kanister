@@ -2,6 +2,7 @@ package function
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -59,11 +60,30 @@ func (*scaleWorkloadFunc) RequiredArgs() []string {
 }
 
 func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, kind, name string, replicas int32, err error) {
-	err = Arg(args, ScaleWorkloadReplicas, &replicas)
+	var rep interface{}
+	err = Arg(args, ScaleWorkloadReplicas, &rep)
 	if err != nil {
 		return namespace, kind, name, replicas, err
 	}
 
+	switch val := rep.(type) {
+	case int:
+		replicas = int32(val)
+	case int32:
+		replicas = val
+	case int64:
+		replicas = int32(val)
+	case string:
+		var v int
+		if v, err = strconv.Atoi(val); err != nil {
+			err = errors.Wrapf(err, "Cannot convert %s to int ", val)
+			return
+		}
+		replicas = int32(v)
+	default:
+		err = errors.Errorf("Invalid arg type %T for Arg %s ", rep, ScaleWorkloadReplicas)
+		return
+	}
 	// Populate default values for optional arguments from template parameters
 	switch {
 	case tp.StatefulSet != nil:

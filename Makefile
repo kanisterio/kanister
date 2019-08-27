@@ -111,7 +111,6 @@ shell: build-dirs
 		-v "${HOME}/.kube:/root/.kube"                          \
 		-v "$(PWD):/go/src/$(PKG)"                              \
 		-v "$(PWD)/bin/$(ARCH):/go/bin"                         \
-		-v "$(PWD)/bin/$(ARCH):/go/bin/$$(go env GOOS)_$(ARCH)" \
 		-v /var/run/docker.sock:/var/run/docker.sock            \
 		-w /go/src/$(PKG)                                       \
 		$(BUILD_IMAGE)                                          \
@@ -199,7 +198,7 @@ ifeq ($(DOCKER_BUILD),"true")
 		-v "$(PWD)/.go/pkg:/go/pkg"                                 \
 		-v "$(PWD)/.go/cache:/go/.cache"                            \
 		-v "$(PWD):/go/src/$(PKG)"                                  \
-		-v "$(PWD)/bin/$(ARCH)/$$(go env GOOS)_$(ARCH):/go/bin"     \
+		-v "$(PWD)/bin/$(ARCH):/go/bin"                             \
 		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)" \
 		-v /var/run/docker.sock:/var/run/docker.sock                \
 		-w /go/src/$(PKG)                                           \
@@ -234,8 +233,8 @@ release-docs: docs
 release-helm:
 	@/bin/bash ./build/release_helm.sh $(VERSION)
 
-release-kanctl:
-	@$(MAKE) run CMD='-c "./build/release_kanctl.sh"'
+gorelease:
+	@$(MAKE) run CMD='-c "./build/gorelease.sh"'
 
 release-snapshot:
 	@$(MAKE) run CMD='-c "goreleaser --debug release --rm-dist --snapshot"'

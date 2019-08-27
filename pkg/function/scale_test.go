@@ -101,7 +101,7 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 						Name: "testScale",
 						Func: "ScaleWorkload",
 						Args: map[string]interface{}{
-							ScaleWorkloadReplicas: 2,
+							ScaleWorkloadReplicas: "2",
 						},
 					},
 				},
@@ -234,7 +234,7 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 		{
 			tp: param.TemplateParams{},
 			args: map[string]interface{}{
-				ScaleWorkloadReplicas:     2,
+				ScaleWorkloadReplicas:     "2",
 				ScaleWorkloadNamespaceArg: "foo",
 				ScaleWorkloadNameArg:      "app",
 				ScaleWorkloadKindArg:      param.StatefulSetKind,
@@ -269,7 +269,7 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 				},
 			},
 			args: map[string]interface{}{
-				ScaleWorkloadReplicas: 2,
+				ScaleWorkloadReplicas: int64(2),
 			},
 			wantKind:      param.DeploymentKind,
 			wantName:      "app",
@@ -285,7 +285,7 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 				},
 			},
 			args: map[string]interface{}{
-				ScaleWorkloadReplicas:     2,
+				ScaleWorkloadReplicas:     int32(2),
 				ScaleWorkloadNamespaceArg: "notfoo",
 				ScaleWorkloadNameArg:      "notapp",
 				ScaleWorkloadKindArg:      param.DeploymentKind,
