@@ -26,12 +26,12 @@ import (
 	"reflect"
 	"sync"
 
+	customresource "github.com/kanisterio/kanister/pkg/customresource"
 	"github.com/pkg/errors"
-	opkit "github.com/rook/operator-kit"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -82,7 +82,7 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 	c.clientset = clientset
 	c.recorder = eventer.NewEventRecorder(c.clientset, "Kanister Controller")
 
-	for cr, o := range map[opkit.CustomResource]runtime.Object{
+	for cr, o := range map[customresource.CustomResource]runtime.Object{
 		crv1alpha1.ActionSetResource: &crv1alpha1.ActionSet{},
 		crv1alpha1.BlueprintResource: &crv1alpha1.Blueprint{},
 	} {
@@ -91,7 +91,7 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 			UpdateFunc: c.onUpdate,
 			DeleteFunc: c.onDelete,
 		}
-		watcher := opkit.NewWatcher(cr, namespace, resourceHandlers, crClient.CrV1alpha1().RESTClient())
+		watcher := customresource.NewWatcher(cr, namespace, resourceHandlers, crClient.CrV1alpha1().RESTClient())
 		// TODO: remove this tmp channel once https://github.com/rook/operator-kit/pull/11 is merged.
 		chTmp := make(chan struct{})
 		go func() {

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 #
+# Copyright 2019 The Kanister Authors.
 # The wrapper for https://kubernetes-v1-4.github.io/docs/getting-started-guides/locally/#requirements
 # also script checks if shippable cache is used for any thing
 
