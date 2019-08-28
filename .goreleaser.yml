@@ -51,6 +51,11 @@ dockers:
   image_templates:
   - 'kanisterio/postgres-kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
+- image_templates:
+  - 'kanisterio/postgresql:{{ .Tag }}'
+  dockerfile: 'docker/postgresql/Dockerfile'
+  extra_files:
+  - 'docker/postgresql/run.sh'
 - binaries:
   - kando
   image_templates:
