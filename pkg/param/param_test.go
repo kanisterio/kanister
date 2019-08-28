@@ -563,10 +563,10 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
-	crCli := crfake.NewSimpleClientset()
 	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(s.pvc, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	dynCli := s.getDynamicClient(c, pvc)
+	crCli := crfake.NewSimpleClientset()
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
 	c.Assert(err, IsNil)
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("profName", metav1.GetOptions{})
