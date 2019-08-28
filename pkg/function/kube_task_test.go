@@ -72,11 +72,11 @@ func newTaskBlueprint(namespace string) *crv1alpha1.Blueprint {
 						Func: "KubeTask",
 						Args: map[string]interface{}{
 							KubeTaskNamespaceArg: namespace,
-							KubeTaskImageArg:     "kanisterio/kanister-tools:0.20.0",
+							KubeTaskImageArg:     "kanisterio/kanister-tools:0.21.0",
 							KubeTaskCommandArg: []string{
 								"sh",
 								"-c",
-								"kando output version 0.20.0",
+								"kando output version 0.21.0",
 							},
 						},
 					},

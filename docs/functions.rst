@@ -438,7 +438,7 @@ backup function.
     args:
       namespace: "{{ .Deployment.Namespace }}"
       pod: "{{ index .Deployment.Pods 0 }}"
-      image: kanisterio/kanister-tools:0.20.0
+      image: kanisterio/kanister-tools:0.21.0
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
   - func: ScaleWorkload
@@ -512,7 +512,7 @@ BackupDataAll function.
     name: RestoreFromObjectStore
     args:
       namespace: "{{ .Deployment.Namespace }}"
-      image: kanisterio/kanister-tools:0.20.0
+      image: kanisterio/kanister-tools:0.21.0
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupInfo: "{{ .ArtifactsIn.params.KeyValue.backupInfo }}"
   - func: ScaleWorkload

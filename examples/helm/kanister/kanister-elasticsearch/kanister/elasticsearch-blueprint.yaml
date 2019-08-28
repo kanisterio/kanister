@@ -10,7 +10,7 @@ actions:
       name: backupToObjectStore
       args:
         namespace: "{{ .Deployment.Namespace }}"
-        image: "kanisterio/es-sidecar:0.20.0"
+        image: "kanisterio/es-sidecar:0.21.0"
         command:
           - bash
           - -o
@@ -32,7 +32,7 @@ actions:
       name: restoreFromObjectStore
       args:
         namespace: "{{ .Deployment.Namespace }}"
-        image: "kanisterio/es-sidecar:0.20.0"
+        image: "kanisterio/es-sidecar:0.21.0"
         command:
           - bash
           - -o
@@ -52,7 +52,7 @@ actions:
       name: deleteFromObjectStore
       args:
         namespace: "{{ .Deployment.Namespace }}"
-        image: "kanisterio/es-sidecar:0.20.0"
+        image: "kanisterio/es-sidecar:0.21.0"
         command:
           - bash
           - -o
