@@ -158,7 +158,7 @@ func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 			Namespace: s.namespace,
 		},
 	}
-	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss),s.crCli, as)
+	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
 	c.Assert(err, IsNil)
 
 	action := "echo"

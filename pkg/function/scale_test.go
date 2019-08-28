@@ -156,7 +156,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 		},
 	}
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
-		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, d),s.crCli, as)
+		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, d), s.crCli, as)
 		c.Assert(err, IsNil)
 		bp := newScaleBlueprint(kind)
 		phases, err := kanister.GetPhases(*bp, action, *tp)
@@ -205,7 +205,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 	}
 
 	for _, action := range []string{"scaleUp", "echoHello", "scaleDown"} {
-		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss),s.crCli, as)
+		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
 		c.Assert(err, IsNil)
 		bp := newScaleBlueprint(kind)
 		phases, err := kanister.GetPhases(*bp, action, *tp)
