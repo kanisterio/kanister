@@ -21,7 +21,9 @@ import (
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
+	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -122,7 +124,7 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 			Namespace: s.namespace,
 		},
 	}
-	tp, err := param.New(ctx, s.cli, s.crCli, as)
+	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, d), s.crCli, as)
 	c.Assert(err, IsNil)
 
 	action := "echo"
@@ -156,7 +158,7 @@ func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 			Namespace: s.namespace,
 		},
 	}
-	tp, err := param.New(ctx, s.cli, s.crCli, as)
+	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
 	c.Assert(err, IsNil)
 
 	action := "echo"

@@ -20,9 +20,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -118,7 +119,7 @@ const (
 )
 
 // New function fetches and returns the desired params
-func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
+func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface, crCli versioned.Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
 	secrets, err := fetchSecrets(ctx, cli, as.Secrets)
 	if err != nil {
 		return nil, err
@@ -140,6 +141,8 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 		Time:        now.Format(timeFormat),
 		Options:     as.Options,
 	}
+	var gvr schema.GroupVersionResource
+	namespace := as.Object.Namespace
 	switch strings.ToLower(as.Object.Kind) {
 	case StatefulSetKind:
 		ssp, err := fetchStatefulSetParams(ctx, cli, as.Object.Namespace, as.Object.Name)
@@ -147,33 +150,39 @@ func New(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interfac
 			return nil, err
 		}
 		tp.StatefulSet = ssp
+		gvr = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}
 	case DeploymentKind:
 		dp, err := fetchDeploymentParams(ctx, cli, as.Object.Namespace, as.Object.Name)
 		if err != nil {
 			return nil, err
 		}
 		tp.Deployment = dp
+		gvr = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
 	case PVCKind:
 		pp, err := fetchPVCParams(ctx, cli, as.Object.Namespace, as.Object.Name)
 		if err != nil {
 			return nil, err
 		}
 		tp.PVC = pp
+		gvr = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "persistentvolumeclaims"}
 	case NamespaceKind:
 		tp.Namespace = &NamespaceParams{Name: as.Object.Namespace}
+		gvr = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
+		// `Namespace` is a global resource
+		namespace = ""
 	default:
-		gvr := schema.GroupVersionResource{
+		gvr = schema.GroupVersionResource{
 			Group:    as.Object.Group,
 			Version:  as.Object.APIVersion,
 			Resource: as.Object.Resource,
 		}
-		u, err := kube.FetchUnstructuredObject(gvr, as.Object.Namespace, as.Object.Name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not fetch object name: %s, namespace: %s, group: %s, version: %s, resource: %s", as.Object.Name, as.Object.Namespace, gvr.Group, gvr.Version, gvr.Resource)
-		}
-		// TODO: We should set `Object` for all other kinds as well.
-		tp.Object = u.UnstructuredContent()
 	}
+	u, err := kube.FetchUnstructuredObjectWithCli(dynCli, gvr, namespace, as.Object.Name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not fetch object name: %s, namespace: %s, group: %s, version: %s, resource: %s", as.Object.Name, namespace, gvr.Group, gvr.Version, gvr.Resource)
+	}
+	tp.Object = u.UnstructuredContent()
+
 	return &tp, nil
 }
 

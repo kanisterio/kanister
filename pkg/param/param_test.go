@@ -29,8 +29,12 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
+	fakedyncli "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/kubernetes/scheme"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crfake "github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"
@@ -42,6 +46,7 @@ func Test(t *testing.T) { TestingT(t) }
 
 type ParamsSuite struct {
 	cli       kubernetes.Interface
+	dynCli    dynamic.Interface
 	namespace string
 	pvc       string
 }
@@ -60,6 +65,7 @@ func (s *ParamsSuite) SetUpSuite(c *C) {
 	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
+	s.dynCli = fakedyncli.NewSimpleDynamicClient(scheme.Scheme, cns)
 }
 
 func (s *ParamsSuite) SetUpTest(c *C) {
@@ -234,7 +240,7 @@ func (s *ParamsSuite) TestNewTemplateParamsDeployment(c *C) {
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.Namespace, d.Name)
 	c.Assert(err, IsNil)
 
-	s.testNewTemplateParams(ctx, c, crv1alpha1.ObjectReference{Name: name, Namespace: s.namespace, Kind: DeploymentKind})
+	s.testNewTemplateParams(ctx, c, s.getDynamicClient(c, d), crv1alpha1.ObjectReference{Name: name, Namespace: s.namespace, Kind: DeploymentKind})
 }
 
 func (s *ParamsSuite) TestNewTemplateParamsStatefulSet(c *C) {
@@ -247,26 +253,37 @@ func (s *ParamsSuite) TestNewTemplateParamsStatefulSet(c *C) {
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.Namespace, ss.Name)
 	c.Assert(err, IsNil)
 
-	s.testNewTemplateParams(ctx, c, crv1alpha1.ObjectReference{Name: name, Namespace: s.namespace, Kind: StatefulSetKind})
+	s.testNewTemplateParams(ctx, c, s.getDynamicClient(c, ss), crv1alpha1.ObjectReference{Name: name, Namespace: s.namespace, Kind: StatefulSetKind})
 }
 
 func (s *ParamsSuite) TestNewTemplateParamsPVC(c *C) {
 	ctx := context.Background()
-	s.testNewTemplateParams(ctx, c, crv1alpha1.ObjectReference{Name: s.pvc, Namespace: s.namespace, Kind: PVCKind})
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(s.pvc, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	s.testNewTemplateParams(ctx, c, s.getDynamicClient(c, pvc), crv1alpha1.ObjectReference{Name: s.pvc, Namespace: s.namespace, Kind: PVCKind})
 }
 
 func (s *ParamsSuite) TestNewTemplateParamsNamespace(c *C) {
 	ctx := context.Background()
-	s.testNewTemplateParams(ctx, c, crv1alpha1.ObjectReference{Name: s.namespace, Namespace: s.namespace, Kind: NamespaceKind})
+	s.testNewTemplateParams(ctx, c, s.getDynamicClient(c), crv1alpha1.ObjectReference{Name: s.namespace, Namespace: s.namespace, Kind: NamespaceKind})
 }
 
 func (s *ParamsSuite) TestNewTemplateParamsUnstructured(c *C) {
 	ctx := context.Background()
 	// Lookup the "default" serviceaccount in the test namespace
-	s.testNewTemplateParams(ctx, c, crv1alpha1.ObjectReference{Name: "default", Namespace: s.namespace, Group: "", APIVersion: "v1", Resource: "serviceaccounts"})
+	sa, err := s.cli.CoreV1().ServiceAccounts(s.namespace).Get("default", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	s.testNewTemplateParams(ctx, c, s.getDynamicClient(c, sa), crv1alpha1.ObjectReference{Name: "default", Namespace: s.namespace, Group: "", APIVersion: "v1", Resource: "serviceaccounts"})
 }
 
-func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, object crv1alpha1.ObjectReference) {
+func (s *ParamsSuite) getDynamicClient(c *C, objects ...runtime.Object) dynamic.Interface {
+	ns, err := s.cli.CoreV1().Namespaces().Get(s.namespace, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	objects = append(objects, ns)
+	return fakedyncli.NewSimpleDynamicClient(scheme.Scheme, objects...)
+}
+
+func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dynamic.Interface, object crv1alpha1.ObjectReference) {
 	spec := fmt.Sprintf(cmSpec, object.Name)
 	cm, err := kube.CreateConfigMap(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
@@ -329,6 +346,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, object cr
 			"podName": "some-pod",
 		},
 	}
+	unstructuredTemplate := "{{ .Object.metadata.name }}"
 	var template string
 	switch object.Kind {
 	case DeploymentKind:
@@ -353,8 +371,9 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, object cr
 		"kindArtifact": crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": template}},
 	}
 	artsTpl["kindArtifact"] = crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": template}}
+	artsTpl["objectNameArtifact"] = crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": unstructuredTemplate}}
 
-	tp, err := New(ctx, s.cli, crCli, as)
+	tp, err := New(ctx, s.cli, dynCli, crCli, as)
 	c.Assert(err, IsNil)
 	c.Assert(tp.ConfigMaps["myCM"].Data, DeepEquals, map[string]string{"someKey": "some-value"})
 	c.Assert(tp.Options, DeepEquals, map[string]string{"podName": "some-pod"})
@@ -365,6 +384,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, object cr
 	_, err = time.Parse(timeFormat, arts["my-time"].KeyValue["my-time"])
 	c.Assert(err, IsNil)
 	c.Assert(arts["kindArtifact"], DeepEquals, crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": object.Name}})
+	c.Assert(arts["objectNameArtifact"], DeepEquals, crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": object.Name}})
 }
 
 func (s *ParamsSuite) TestfetchKVSecretCredential(c *C) {
@@ -437,6 +457,7 @@ func (s *ParamsSuite) TestProfile(c *C) {
 		},
 	}
 	cli := fake.NewSimpleClientset(ss, pod, secret)
+	dynCli := fakedyncli.NewSimpleDynamicClient(scheme.Scheme, ss)
 	_, err := cli.AppsV1().StatefulSets("").Get("", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	_, err = cli.CoreV1().Pods("").Get("", metav1.GetOptions{})
@@ -490,7 +511,7 @@ func (s *ParamsSuite) TestProfile(c *C) {
 	c.Assert(err, IsNil)
 
 	ctx := context.Background()
-	tp, err := New(ctx, cli, crCli, as.Spec.Actions[0])
+	tp, err := New(ctx, cli, dynCli, crCli, as.Spec.Actions[0])
 	c.Assert(err, IsNil)
 	c.Assert(tp.Profile, NotNil)
 	c.Assert(tp.Profile, DeepEquals, &Profile{
@@ -542,6 +563,9 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(s.pvc, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	dynCli := s.getDynamicClient(c, pvc)
 	crCli := crfake.NewSimpleClientset()
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
 	c.Assert(err, IsNil)
@@ -564,7 +588,7 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 			},
 		},
 	}
-	tp, err := New(ctx, s.cli, crCli, as)
+	tp, err := New(ctx, s.cli, dynCli, crCli, as)
 	c.Assert(err, IsNil)
 	c.Assert(tp.Phases, IsNil)
 	err = InitPhaseParams(ctx, s.cli, tp, "backup", nil)
