@@ -15,9 +15,4 @@ RUN set -x \
 	&& pip3 install awscli \
 	&& (cd /usr/local/bin; curl -L https://github.com/wal-g/wal-g/releases/download/v0.1.7/wal-g.linux-amd64.tar.gz | tar -zxv)
 
-# Override base image's CMD script
-COPY docker/postgresql/run.sh /
-
-RUN chown postgres:root /run.sh
-
 USER postgres

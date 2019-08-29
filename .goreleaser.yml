@@ -54,8 +54,6 @@ dockers:
 - image_templates:
   - 'kanisterio/postgresql:{{ .Tag }}'
   dockerfile: 'docker/postgresql/Dockerfile'
-  extra_files:
-  - 'docker/postgresql/run.sh'
 - binaries:
   - kando
   image_templates:

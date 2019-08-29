@@ -80,10 +80,6 @@ actions:
             echo "{{ .Profile.Credential.KeyPair.ID }}" > "${env_wal_access_key_id}"
             set -o xtrace
 
-            # Copy postgresql.conf to PGDATA
-            cp /opt/bitnami/postgresql/conf/postgresql.conf ${PGDATA}
-            cp /opt/bitnami/postgresql/conf/pg_hba.conf ${PGDATA}
-            cp -r /opt/bitnami/postgresql/conf/conf.d ${PGDATA}
             # Create and push a base-backup to the object store.
             PGPASSWORD="{{ index .Secrets.postgresql.Data "postgresql-password" | toString }}" envdir "${env_dir}" wal-e backup-push "${PGDATA}"
             backup_name=$(envdir "${env_dir}" wal-e backup-list | tail -n +2 | sort -k2 | tail -n 1 | awk '{print $1}')
@@ -126,7 +122,7 @@ actions:
     - func: PrepareData
       name: performRestore
       args:
-        image: "kanisterio/postgresql:0.20.0"
+        image: "kanisterio/postgresql:0.21.0"
         namespace: "{{ .StatefulSet.Namespace }}"
         volumes:
           "data-{{ .StatefulSet.Name }}-0": "/pg"
@@ -209,7 +205,6 @@ actions:
             ls -d ${pgdata}/kanister-restore/* | sed 's/kanister-restore\///' | xargs -t rm -fr
             mv ${pgdata}/kanister-restore/* ${pgdata}/
             rm -fr ${pgdata}/kanister-restore
-            chown postgres:root -R ${pgdata}/*
 
             # Create the recovery file that will apply the WAL files.
             cat << EOF > "${pgdata}"/recovery.conf
@@ -222,12 +217,26 @@ actions:
             EOF
             sync
 
+            # Create required configuration dir/config files
+            # Create empty conf.d directory
+            if [ ! -d /pg/data/conf.d ]; then
+                mkdir /pg/data/conf.d
+            fi
+
+            # Create default postgresql.conf
+            cp /opt/bitnami/postgresql/share/postgresql.conf.sample /pg/data/postgresql.conf
+
+            # Create default pg_hba.conf
+            cat << EOF > /pg/data/pg_hba.conf
+            host     all             all             0.0.0.0/0               trust
+            host     all             all             ::1/128                 trust
+            EOF
+
             # Complete the recovery based on recovery.conf.
             # The timeout for applying the WALs is currently 10 hours.
             # Starting this instance with WAL archival off so that we don't pollute the current timeline
             # Once the WALs have been applied, we shutdown the database.
-            chown postgres:root ${pgdata}/recovery.conf
-            cat ${pgdata}/recovery.conf
+
             PG_CTL="$(which pg_ctl)"
             ${PG_CTL} -D ${pgdata} -w start -t 36000 -o '-c archive_mode=off --config-file=/pg/data/postgresql.conf --hba_file=/pg/data/pg_hba.conf'
 
@@ -256,7 +265,7 @@ actions:
       name: deleteArtifact
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/postgresql:0.20.0"
+        image: "kanisterio/postgresql:0.21.0"
         command:
           - bash
           - -o
