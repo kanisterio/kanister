@@ -56,19 +56,31 @@ func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
 	var op map[string]interface{}
 	logs := regexp.MustCompile("[\n]").Split(out, -1)
 	for _, l := range logs {
-		// Log should contain "###Phase-output###:" string
-		if strings.Contains(l, output.PhaseOpString) {
-			if op == nil {
-				op = make(map[string]interface{})
-			}
-			pattern := regexp.MustCompile(`###Phase-output###:(.*?)*$`)
-			match := pattern.FindAllStringSubmatch(l, 1)
-			opObj, err := output.UnmarshalOutput(match[0][1])
-			if err != nil {
-				return nil, err
-			}
-			op[opObj.Key] = opObj.Value
+		opObj, err := parseLogLineForOutput(l)
+		if err != nil {
+			return nil, err
 		}
+		if opObj == nil {
+			continue
+		}
+		if op == nil {
+			op = make(map[string]interface{})
+		}
+		op[opObj.Key] = opObj.Value
+	}
+	return op, nil
+}
+
+var outputRE = regexp.MustCompile(`###Phase-output###:(.*?)*$`)
+
+func parseLogLineForOutput(l string) (*output.Output, error) {
+	if !strings.Contains(l, output.PhaseOpString) {
+		return nil, nil
+	}
+	match := outputRE.FindAllStringSubmatch(l, 1)
+	op, err := output.UnmarshalOutput(match[0][1])
+	if err != nil {
+		return nil, err
 	}
 	return op, nil
 }
