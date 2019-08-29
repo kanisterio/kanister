@@ -17,7 +17,6 @@ package function
 import (
 	"context"
 	"regexp"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -56,7 +55,7 @@ func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
 	var op map[string]interface{}
 	logs := regexp.MustCompile("[\n]").Split(out, -1)
 	for _, l := range logs {
-		opObj, err := parseLogLineForOutput(l)
+		opObj, err := output.Parse(l)
 		if err != nil {
 			return nil, err
 		}
@@ -67,20 +66,6 @@ func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
 			op = make(map[string]interface{})
 		}
 		op[opObj.Key] = opObj.Value
-	}
-	return op, nil
-}
-
-var outputRE = regexp.MustCompile(`###Phase-output###:(.*?)*$`)
-
-func parseLogLineForOutput(l string) (*output.Output, error) {
-	if !strings.Contains(l, output.PhaseOpString) {
-		return nil, nil
-	}
-	match := outputRE.FindAllStringSubmatch(l, 1)
-	op, err := output.UnmarshalOutput(match[0][1])
-	if err != nil {
-		return nil, err
 	}
 	return op, nil
 }
