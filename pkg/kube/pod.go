@@ -16,6 +16,7 @@ package kube
 
 import (
 	"context"
+	"io"
 	"io/ioutil"
 
 	"github.com/pkg/errors"
@@ -78,6 +79,13 @@ func DeletePod(ctx context.Context, cli kubernetes.Interface, pod *v1.Pod) error
 	return nil
 }
 
+func StreamPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name string) (io.ReadCloser, error) {
+	plo := &v1.PodLogOptions{
+		Follow: true,
+	}
+	return cli.CoreV1().Pods(namespace).GetLogs(name, plo).Stream()
+}
+
 // GetPodLogs fetches the logs from the given pod
 func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name string) (string, error) {
 	reader, err := cli.CoreV1().Pods(namespace).GetLogs(name, &v1.PodLogOptions{}).Stream()
@@ -92,18 +100,15 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 	return string(bytes), nil
 }
 
-// WaitForPodReady waits for a pod to reach Running state
+// WaitForPodReady waits for a pod to exit the pending state
 func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		p, err := cli.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
-		return (p.Status.Phase == v1.PodRunning), nil
+		return p.Status.Phase != v1.PodPending && p.Status.Phase != "", nil
 	})
-	if err == nil {
-		return nil
-	}
 	return errors.Wrapf(err, "Pod did not transition into running state. Namespace:%s, Name:%s", namespace, name)
 }
 
@@ -114,20 +119,17 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		if err != nil {
 			return true, err
 		}
-		if p.Status.Phase == v1.PodFailed {
-			return false, errors.Errorf("Pod %s failed", name)
-		}
-		if p.Status.Phase == v1.PodRunning {
+		switch p.Status.Phase {
+		case v1.PodRunning:
 			for _, con := range p.Status.ContainerStatuses {
 				if con.State.Terminated != nil {
 					return false, errors.Errorf("Container %v is terminated, while Pod %v is Running", con.Name, name)
 				}
 			}
+		case v1.PodFailed:
+			return false, errors.Errorf("Pod %s failed", name)
 		}
-		return (p.Status.Phase == v1.PodSucceeded), nil
+		return p.Status.Phase == v1.PodSucceeded, nil
 	})
-	if err == nil {
-		return nil
-	}
 	return errors.Wrap(err, "Pod did not transition into complete state")
 }
