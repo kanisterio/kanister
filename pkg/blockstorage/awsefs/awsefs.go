@@ -1,3 +1,17 @@
+// Copyright 2019 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package awsefs
 
 import (
@@ -41,6 +55,8 @@ const (
 	efsType            = "EFS"
 	k10BackupVaultName = "k10vault"
 	dummyMarker        = ""
+
+	maxRetries = 10
 )
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
@@ -53,7 +69,7 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session for EFS")
 	}
-	stsCli := sts.New(s, aws.NewConfig().WithRegion(region))
+	stsCli := sts.New(s, aws.NewConfig().WithRegion(region).WithMaxRetries(maxRetries))
 	user, err := stsCli.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get user")
@@ -66,8 +82,8 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 	if role != "" {
 		creds = stscreds.NewCredentials(s, role)
 	}
-	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds))
-	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds))
+	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
+	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
 	return &efs{
 		EFS:       efsCli,
 		Backup:    backupCli,

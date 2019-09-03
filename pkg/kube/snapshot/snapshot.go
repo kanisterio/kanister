@@ -1,3 +1,17 @@
+// Copyright 2019 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package snapshot
 
 import (
@@ -155,6 +169,10 @@ func GetSource(ctx context.Context, snapCli snapshotclient.Interface, snapshotNa
 // 'namespace' is the namespace of the snapshot.
 // 'waitForReady' blocks the caller until snapshot is ready to use or context is cancelled.
 func CreateFromSource(ctx context.Context, snapCli snapshotclient.Interface, source *Source, snapshotName, namespace string, waitForReady bool) error {
+	deletionPolicy, err := getDeletionPolicyFromClass(snapCli, *source.VolumeSnapshotClassName)
+	if err != nil {
+		return errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
+	}
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
 	content := &snapshot.VolumeSnapshotContent{
 		ObjectMeta: metav1.ObjectMeta{
@@ -173,6 +191,7 @@ func CreateFromSource(ctx context.Context, snapCli snapshotclient.Interface, sou
 				Name:      snapshotName,
 			},
 			VolumeSnapshotClassName: source.VolumeSnapshotClassName,
+			DeletionPolicy:          &deletionPolicy,
 		},
 	}
 	snap := &snapshot.VolumeSnapshot{
@@ -185,7 +204,7 @@ func CreateFromSource(ctx context.Context, snapCli snapshotclient.Interface, sou
 		},
 	}
 
-	content, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Create(content)
+	content, err = snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Create(content)
 	if err != nil {
 		return errors.Errorf("Failed to create content, VolumesnapshotContent: %s, Error: %v", content.Name, err)
 	}
@@ -218,4 +237,12 @@ func WaitOnReadyToUse(ctx context.Context, snapCli snapshotclient.Interface, sna
 
 func getContent(ctx context.Context, snapCli snapshotclient.Interface, contentName string) (*snapshot.VolumeSnapshotContent, error) {
 	return snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Get(contentName, metav1.GetOptions{})
+}
+
+func getDeletionPolicyFromClass(snapCli snapshotclient.Interface, snapClassName string) (snapshot.DeletionPolicy, error) {
+	vsc, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotClasses().Get(snapClassName, metav1.GetOptions{})
+	if err != nil {
+		return "", errors.Wrapf(err, "Failed to find VolumeSnapshotClass: %s", snapClassName)
+	}
+	return *vsc.DeletionPolicy, nil
 }

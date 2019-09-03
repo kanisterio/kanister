@@ -1,3 +1,17 @@
+// Copyright 2019 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package function
 
 import (
@@ -42,19 +56,31 @@ func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
 	var op map[string]interface{}
 	logs := regexp.MustCompile("[\n]").Split(out, -1)
 	for _, l := range logs {
-		// Log should contain "###Phase-output###:" string
-		if strings.Contains(l, output.PhaseOpString) {
-			if op == nil {
-				op = make(map[string]interface{})
-			}
-			pattern := regexp.MustCompile(`###Phase-output###:(.*?)*$`)
-			match := pattern.FindAllStringSubmatch(l, 1)
-			opObj, err := output.UnmarshalOutput(match[0][1])
-			if err != nil {
-				return nil, err
-			}
-			op[opObj.Key] = opObj.Value
+		opObj, err := parseLogLineForOutput(l)
+		if err != nil {
+			return nil, err
 		}
+		if opObj == nil {
+			continue
+		}
+		if op == nil {
+			op = make(map[string]interface{})
+		}
+		op[opObj.Key] = opObj.Value
+	}
+	return op, nil
+}
+
+var outputRE = regexp.MustCompile(`###Phase-output###:(.*?)*$`)
+
+func parseLogLineForOutput(l string) (*output.Output, error) {
+	if !strings.Contains(l, output.PhaseOpString) {
+		return nil, nil
+	}
+	match := outputRE.FindAllStringSubmatch(l, 1)
+	op, err := output.UnmarshalOutput(match[0][1])
+	if err != nil {
+		return nil, err
 	}
 	return op, nil
 }

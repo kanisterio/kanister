@@ -1,3 +1,17 @@
+// Copyright 2019 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package function
 
 import (
@@ -59,18 +73,32 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 
 func kubeTaskPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-		// Wait for pod completion
-		if err := kube.WaitForPodCompletion(ctx, cli, pod.Namespace, pod.Name); err != nil {
+		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
 		}
 		// Fetch logs from the pod
-		logs, err := kube.GetPodLogs(ctx, cli, pod.Namespace, pod.Name)
+		r, err := kube.StreamPodLogs(ctx, cli, pod.Namespace, pod.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
 		}
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, logs)
-		out, err := parseLogAndCreateOutput(logs)
-		return out, errors.Wrap(err, "Failed to parse phase output")
+		defer r.Close()
+		logCh := format.LogStream(pod.Name, pod.Spec.Containers[0].Name, r)
+		// Wait for pod completion
+		err = kube.WaitForPodCompletion(ctx, cli, pod.Namespace, pod.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
+		}
+		out := make(map[string]interface{})
+		for l := range logCh {
+			op, err := parseLogLineForOutput(l)
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to parse phase output")
+			}
+			if op != nil {
+				out[op.Key] = op.Value
+			}
+		}
+		return out, nil
 	}
 }
 

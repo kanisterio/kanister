@@ -1,4 +1,4 @@
-FROM kanisterio/kanister-tools:0.20.0
+FROM kanisterio/kanister-tools:0.21.0
 MAINTAINER Supriya Kharade <supriya@kasten.io>
 
 ADD examples/helm/kanister/kanister-elasticsearch/image/esdump-setup.sh /esdump-setup.sh

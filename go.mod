@@ -13,10 +13,9 @@ require (
 	github.com/Azure/go-autorest/autorest v0.5.0 // indirect
 	github.com/Azure/go-autorest/autorest/to v0.2.0 // indirect
 	github.com/BurntSushi/toml v0.3.1
-	github.com/IBM-Bluemix/bluemix-cli-sdk v0.3.0 // indirect
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.3.0 // indirect
 	github.com/IBM/ibmcloud-storage-volume-lib v0.0.0-20190705114640-e7a4b11c618c
-	github.com/Masterminds/semver v1.4.2 // indirect
+	github.com/Masterminds/semver v1.4.2
 	github.com/Masterminds/sprig v2.15.0+incompatible
 	github.com/aokoli/goutils v1.1.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a // indirect
@@ -32,7 +31,6 @@ require (
 	github.com/go-openapi/errors v0.19.2 // indirect
 	github.com/go-openapi/strfmt v0.0.0-20170822153411-610b6cacdcde
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
-	github.com/golang/mock v1.2.0 // indirect
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/googleapis/gnostic v0.3.0 // indirect
@@ -52,10 +50,8 @@ require (
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pkg/errors v0.8.0
 	github.com/renier/xmlrpc v0.0.0-20170708154548-ce4a1a486c03 // indirect
-	github.com/rook/operator-kit v0.0.0-00010101000000-000000000000
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.2.0
-	github.com/smartystreets/goconvey v0.0.0-20190710185942-9d28bd7c0945 // indirect
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.1 // indirect

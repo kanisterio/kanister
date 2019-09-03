@@ -1,3 +1,17 @@
+// Copyright 2019 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package function
 
 import (
@@ -6,9 +20,11 @@ import (
 	"fmt"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
+	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -109,7 +125,7 @@ func newRestoreDataBlueprint(pvc, identifierArg, identifierVal string) *crv1alph
 						Func: "RestoreData",
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataImageArg:                "kanisterio/kanister-tools:0.20.0",
+							RestoreDataImageArg:                "kanisterio/kanister-tools:0.21.0",
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataRestorePathArg:          "/mnt/data",
 							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
@@ -201,7 +217,7 @@ func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
 						Func: "RestoreDataAll",
 						Args: map[string]interface{}{
 							RestoreDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataAllImageArg:                "kanisterio/kanister-tools:0.20.0",
+							RestoreDataAllImageArg:                "kanisterio/kanister-tools:0.21.0",
 							RestoreDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataAllBackupInfo:              fmt.Sprintf("{{ .Options.%s }}", BackupDataAllOutput),
 							RestoreDataAllRestorePathArg:          "/mnt/data",
@@ -282,7 +298,7 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.Te
 		},
 	}
 
-	tp, err := param.New(ctx, s.cli, s.crCli, as)
+	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
 	c.Assert(err, IsNil)
 	tp.Profile = s.profile
 
@@ -408,7 +424,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 						Func: "RestoreData",
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
-							RestoreDataImageArg:                "kanisterio/kanister-tools:0.20.0",
+							RestoreDataImageArg:                "kanisterio/kanister-tools:0.21.0",
 							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
 							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupTag),
 							RestoreDataVolsArg: map[string]string{
@@ -514,7 +530,7 @@ func (s *DataSuite) initPVCTemplateParams(c *C, pvc *v1.PersistentVolumeClaim, o
 		},
 		Options: options,
 	}
-	tp, err := param.New(context.Background(), s.cli, s.crCli, as)
+	tp, err := param.New(context.Background(), s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, pvc), s.crCli, as)
 	c.Assert(err, IsNil)
 	tp.Profile = s.profile
 	return tp
