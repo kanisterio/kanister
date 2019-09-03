@@ -153,7 +153,7 @@ push-name:
 version:
 	@echo $(VERSION)
 
-.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean docs start-kind stop-kind release-snapshot go-mod-download
+.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean docs start-kind tiller stop-kind release-snapshot go-mod-download
 
 deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 .deploy-$(DOTFILE_IMAGE):
@@ -250,6 +250,9 @@ go-mod-download:
 
 start-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh start_localkube"'
+
+tiller:
+	@/bin/bash ./build/init_tiller.sh
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
