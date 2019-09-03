@@ -12,7 +12,7 @@ Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment
 
 - Kubernetes 1.10+
 - PV provisioner support in the underlying infrastructure
-- Kanister version 0.21.0 installed
+- Kanister controller version 0.21.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Installing the Chart
@@ -26,14 +26,14 @@ $ helm install stable/postgresql --name my-release \
 	--namespace postgres-test \
 	--set image.repository=kanisterio/postgresql \
 	--set image.tag=0.21.0 \
-	--set postgresqlPassword=postgres-12345
+	--set postgresqlPassword=postgres-12345 \
 	--set postgresqlExtendedConf.archiveCommand="'envdir /bitnami/postgresql/data/env wal-e wal-push %p'" \
 	--set postgresqlExtendedConf.archiveMode=true \
 	--set postgresqlExtendedConf.archiveTimeout=60 \
 	--set postgresqlExtendedConf.walLevel=archive
 ```
 
-The command deploys PostgreSQL on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
+The command deploys PostgreSQL on the Kubernetes cluster in the default configuration.
 
 > **Tip**: List all releases using `helm list`
 
@@ -46,17 +46,17 @@ $ helm install --name kanister --namespace kasten-io kanister/kanister-operator 
 
 ## Integrating with Kanister
 
-If you have deployed postgresql application with other name than `my-release` and namespace other than `postgres-test`, you need to modify the commands used below to use the correct name and namespace
+If you have deployed postgresql application with name other than `my-release` and namespace other than `postgres-test`, you need to modify the commands used below to use the correct name and namespace
 
 ### Create Profile
 
 Create Profile CR if not created already
 
 ```bash
-$ kanctl create profile s3compliant --access-key 'AKIAIOSFODNN7EXAMPLE' \
-	--secret-key 'wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY' \
-	--bucket <s3-bucket-name> --region ap-south-1 \
-	--namespace postgres-test
+$ kanctl create profile s3compliant --access-key <aws-access-key-id> \
+	--secret-key <aws-secret-key> \
+	--bucket <s3-bucket-name> --region <region-name> \
+	--namespace mysql-test
 ```
 
 **NOTE:**
@@ -64,16 +64,14 @@ $ kanctl create profile s3compliant --access-key 'AKIAIOSFODNN7EXAMPLE' \
 The command will configure a location where artifacts resulting from Kanister
 data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
 *CustomResource (CR)* which is then referenced in Kanister ActionSets. Every ActionSet
-requires a Profile reference whether one created as part of the application install or
-not. Support for creating an ActionSet as part of install is simply for convenience.
-This CR can be shared between Kanister-enabled application instances so one option is to
-only create as part of the first instance.
+requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
+can be shared between Kanister-enabled application instances.
 
 ### Create Blueprint
 Create Blueprint in the same namespace as the controller
 
 ```bash
-$ kubectl create -f kanister/postgresql-blueprint.yaml -n kasten-io
+$ kubectl create -f ./postgresql-blueprint.yaml -n kasten-io
 ```
 
 Once Postgres is running, you can populate it with some data. Let's add a table called "company" to a "test" database:
@@ -189,7 +187,7 @@ To restore the missing data, you should use the backup that you created before. 
 $ kanctl --namespace kasten-io create actionset --action restore --from backup-md6gb
 actionset restore-backup-md6gb-d7g7w created
 
-## If you want to pass pitr, you can use --options for that
+## If you want to pass pitr, you can use the --options flag for that
 # e.g $ kanctl --namespace kasten-io create actionset --action restore --from backup-md6gb --options pitr=2019-08-23T14:30:29Z
 
 ## Check status
@@ -220,6 +218,20 @@ test=# select * from company;
 (1 row)
 
 
+```
+
+## Troubleshooting
+
+If you run into any issues with the above commands, you can check the logs of the controller using:
+
+```bash
+$ kubectl --namespace kasten-io logs -l app=kanister-operator
+```
+
+you can also check events of the actionset
+
+```bash
+$ kubectl describe actionset restore-backup-md6gb-d7g7w -n kasten-io
 ```
 
 ## Cleanup
