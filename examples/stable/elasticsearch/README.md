@@ -52,17 +52,13 @@ configuration.
 ```bash
 kanctl --namespace kasten-io create profile --bucket infracloud.kanister.io --region ap-south-1 s3compliant --access-key "AKIAIOSFODNN7EXAMPLE" --secret-key "wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY"
 ```
-This command creates a profile which we'll later use.
+This command creates a profile which we will use later.
 
-The command will also configure a location where artifacts resulting from Kanister
+The command will configure a location where artifacts resulting from Kanister
 data operations such as backup should go. This is stored as a `profiles.cr.kanister.io`
 *CustomResource (CR)* which is then referenced in Kanister ActionSets. Every ActionSet
-requires a Profile reference whether one created as part of the application install or
-not. Support for creating an ActionSet as part of install is simply for convenience.
-This CR can be shared between Kanister-enabled application instances so one option is to
-only create as part of the first instance.
-
-If not creating a Profile CR, the the above kanctl command can be skipped and only helm install is sufficient.
+requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
+can be shared between Kanister-enabled application instances.
 
 Once Elasticsearch is running, you can populate it with some data. Follow the instructions that get displayed by running command `helm status my-release` to connect to the application.
 
@@ -88,7 +84,7 @@ green  open   customer xbwj34pTSZOdDI7xVR0qIA   5   1          1            0   
 In order to perform backup, restore, and delete operations on the running elasticsearch, we need to create a blueprint. You can create that using the command below from the root of kanister repo.
 
 ```bash
-kubectl create -f ./examples/helm/kanister/kanister-elasticsearch/kanister/elasticsearch-blueprint.yaml -n kasten-io
+kubectl create -f ./examples/stable/elasticsearch/elasticsearch-blueprint.yaml -n kasten-io
 ```
 
 ## Protect the Application
