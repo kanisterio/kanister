@@ -229,3 +229,28 @@ func SnapshotIDFromBackupLog(output string) string {
 	}
 	return ""
 }
+
+// SnapshotStatsFromStatsLog gets the Snapshot Stats from Stats Command log
+func SnapshotStatsFromStatsLog(output string) (string, string) {
+	if output == "" {
+		return "", ""
+	}
+	var fileCount string
+	var size string
+	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	for _, l := range logs {
+		// Log should contain "Total File Count:   xx"
+		pattern1 := regexp.MustCompile(`Total File Count:\s+(.*?)$`)
+		match1 := pattern1.FindAllStringSubmatch(l, 1)
+		if match1 != nil {
+			fileCount = match1[0][1]
+		}
+		// Log should contain "Total Size:   xx"
+		pattern2 := regexp.MustCompile(`Total Size: \s+(.*?)$`)
+		match2 := pattern2.FindAllStringSubmatch(l, 1)
+		if match2 != nil {
+			size = match2[0][1]
+		}
+	}
+	return fileCount, size
+}
