@@ -144,3 +144,21 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 		c.Assert(resticArgs(tc.profile, tc.repo, tc.password), DeepEquals, tc.expected)
 	}
 }
+
+func (s *ResticDataSuite) TestGetSnapshotStatsFromStatsLog(c *C) {
+	for _, tc := range []struct {
+		log          string
+		expectedfc   string
+		expectedsize string
+	}{
+		{log: "Total File Count:   9", expectedfc: "9", expectedsize: ""},
+		{log: "Total Size:   10.322 KiB", expectedfc: "", expectedsize: "10.322 KiB"},
+		{log: "sudhufehfuijbfjbruifhoiwhf", expectedfc: "", expectedsize: ""},
+		{log: "      Total File Count:   9", expectedfc: "9", expectedsize: ""},
+		{log: "    Total Size:   10.322 KiB", expectedfc: "", expectedsize: "10.322 KiB"},
+	} {
+		fc, s := SnapshotStatsFromStatsLog(tc.log)
+		c.Assert(fc, Equals, tc.expectedfc)
+		c.Assert(s, Equals, tc.expectedsize)
+	}
+}
