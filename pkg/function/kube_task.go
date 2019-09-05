@@ -22,8 +22,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
-	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -81,24 +81,15 @@ func kubeTaskPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
 		}
-		defer r.Close()
-		logCh := format.LogStream(pod.Name, pod.Spec.Containers[0].Name, r)
-		// Wait for pod completion
-		err = kube.WaitForPodCompletion(ctx, cli, pod.Namespace, pod.Name)
+		out, err := output.LogAndParse(ctx, r)
 		if err != nil {
+			return nil, err
+		}
+		// Wait for pod completion
+		if err := kube.WaitForPodCompletion(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
 		}
-		out := make(map[string]interface{})
-		for l := range logCh {
-			op, err := parseLogLineForOutput(l)
-			if err != nil {
-				return nil, errors.Wrap(err, "Failed to parse phase output")
-			}
-			if op != nil {
-				out[op.Key] = op.Value
-			}
-		}
-		return out, nil
+		return out, err
 	}
 }
 

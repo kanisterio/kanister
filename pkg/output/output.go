@@ -17,7 +17,10 @@ package output
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -66,10 +69,31 @@ func ValidateKey(key string) error {
 
 // PrintOutput runs the `kando output` command
 func PrintOutput(key, value string) error {
+	return fPrintOutput(os.Stdout, key, value)
+}
+
+func fPrintOutput(w io.Writer, key, value string) error {
 	outString, err := marshalOutput(key, value)
 	if err != nil {
 		return err
 	}
-	fmt.Println(PhaseOpString, outString)
+	fmt.Fprintln(w, PhaseOpString, outString)
 	return nil
+}
+
+const reStr = PhaseOpString + `(.*)$`
+
+var logRE = regexp.MustCompile(reStr)
+
+func Parse(l string) (*Output, error) {
+	l = strings.TrimSpace(l)
+	match := logRE.FindAllStringSubmatch(l, 1)
+	if len(match) == 0 {
+		return nil, nil
+	}
+	op, err := UnmarshalOutput(match[0][1])
+	if err != nil {
+		return nil, err
+	}
+	return op, nil
 }
