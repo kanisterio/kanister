@@ -36,8 +36,8 @@ const (
 	BackupDataStatsBackupArtifactPrefixArg = "backupArtifactPrefix"
 	// BackupDataStatsEncryptionKeyArg provides the encryption key to be used for backups
 	BackupDataStatsEncryptionKeyArg = "encryptionKey"
-	// BackupDataStatsOutputBackupID is the key used for returning backup ID output
-	BackupDataBackupID = "backupID"
+	// BackupDataStatsBackupIdentifierArg provides a unique ID added to the backed up artifacts
+	BackupDataStatsBackupIdentifierArg = "backupID"
 )
 
 func init() {
@@ -95,7 +95,7 @@ func (*BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err = Arg(args, BackupDataStatsBackupArtifactPrefixArg, &backupArtifactPrefix); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, BackupDataBackupID, &backupID); err != nil {
+	if err = Arg(args, BackupDataStatsBackupIdentifierArg, &backupID); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, BackupDataStatsEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
