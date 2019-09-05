@@ -29,6 +29,7 @@ import (
 )
 
 const (
+	backupDataStatsJobPrefix = "backup-data-stats-"
 	// BackupDataStatsNamespaceArg provides the namespace
 	BackupDataStatsNamespaceArg = "namespace"
 	// BackupDataStatsBackupArtifactPrefixArg provides the path to store artifacts on the object store
@@ -63,7 +64,7 @@ func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 	return pr.Run(ctx, podFunc)
 }
 
-func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey string, backupArtifactPrefix, backupID string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, backupID string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
@@ -86,7 +87,7 @@ func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 }
 
 func (*BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var namespace, pod, backupArtifactPrefix, backupID, encryptionKey string
+	var namespace, backupArtifactPrefix, backupID, encryptionKey string
 	var err error
 	if err = Arg(args, BackupDataStatsNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -108,7 +109,7 @@ func (*BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return backupDataStats(ctx, cli, tp, namespace, pod, backupArtifactPrefix, backupID, encryptionKey)
+	return backupDataStats(ctx, cli, tp, namespace, encryptionKey, backupArtifactPrefix, backupID, backupDataStatsJobPrefix)
 }
 
 func (*BackupDataStatsFunc) RequiredArgs() []string {
