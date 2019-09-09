@@ -5,7 +5,7 @@
 * Kubernetes 1.9+
 * Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
 * PV support on the underlying infrastructure
-* Kanister version 0.20.0 with `profiles.cr.kanister.io` CRD installed
+* Kanister version 0.21.0 with `profiles.cr.kanister.io` CRD installed
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## StatefulSet Details
@@ -29,7 +29,9 @@ To install the chart with the release name `my-release`:
 $ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 $ helm repo update
 
-$ helm install --name my-release stable/mongodb-replicaset --namespace mongo-test
+$ helm install --name my-release stable/mongodb-replicaset --namespace mongo-test \
+	--set image.repository=kanisterio/mongodb \
+	--set image.tag=0.21.0
 ```
 
 The command deploys MongoDB ReplicaSet on the Kubernetes cluster in the default

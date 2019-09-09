@@ -6,78 +6,48 @@ actions:
   backup:
     type: StatefulSet
     outputArtifacts:
-      cloudObject:
+      backupInfo:
         keyValue:
-          path: '/mongodb-replicaset-backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs_backup.gz'
+          backupIdentifier: "{{ .Phases.backupSnapshots.Output.BackupAllInfo }}"
     phases:
-    - func: KubeTask
-      name: takeConsistentBackup
+    - func: BackupDataAll
+      name: backupSnapshots
       args:
-        image: kanisterio/mongo-sidecar:0.20.0     
         namespace: "{{ .StatefulSet.Namespace }}"
-        command:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -c
-          - |
-            host_sfx=".{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
-            host="${REPLICA_SET}/{{ range $i,$p :=.StatefulSet.Pods }}{{- if $i }},{{- end }}{{- $p -}}${host_sfx}{{ end }}"
-            dump_cmd=(mongodump --oplog --gzip --archive --readPreference=secondaryPreferred --host=my-release-kanister-mongodb-replicaset --port=27017)
-            dump_cmd+=(--host "${host}")
-            if [[ -n "${MONGO_ADMIN_USER+set}" ]]
-            then
-                dump_cmd+=(-u "${MONGO_ADMIN_USER}" -p "${MONGO_ADMIN_PASSWORD}")
-            fi
-            ${dump_cmd[@]} | kando location push --profile '{{ toJson .Profile }}' --path '/mongodb-replicaset-backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs_backup.gz' -
+        container: "mongodb-replicaset"
+        includePath: /data
+        backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-replicaset-backups/{{ .StatefulSet.Name }}/rs_backup"
   restore:
     type: StatefulSet
-    inputArtifactNames:
-      - cloudObject
     phases:
-    - func: KubeTask
-      name: pullFromBlobStore
+    - func: ScaleWorkload
+      name: ShutdownApplication
       args:
-        image: kanisterio/mongo-sidecar:0.20.0     
         namespace: "{{ .StatefulSet.Namespace }}"
-        command:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -c
-          - |
-            host_sfx=".{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
-            host="${REPLICA_SET}/{{ range $i,$p :=.StatefulSet.Pods }}{{- if $i }},{{- end }}{{- $p -}}${host_sfx}{{ end }}"
-            restore_cmd=(mongorestore --gzip --archive --oplogReplay --drop --host=my-release-kanister-mongodb-replicaset --port=27017)
-            restore_cmd+=(--host "${host}")
-            if [[ -n "${MONGO_ADMIN_USER+set}" ]]
-            then
-                restore_cmd+=(-u "${MONGO_ADMIN_USER}" -p "${MONGO_ADMIN_PASSWORD}")
-            fi
-            kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.path }}' - | ${restore_cmd[@]}
+        name: "{{ .StatefulSet.Name }}"
+        kind: StatefulSet
+        replicas: 0
+    - func: RestoreDataAll
+      name: restoreFromSnapshots
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: kanisterio/kanister-tools:0.21.0
+        backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-replicaset-backups/{{ .StatefulSet.Name }}/rs_backup"
+        backupInfo: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
+    - func: ScaleWorkload
+      name: StartupApplication
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        name: "{{ .StatefulSet.Name }}"
+        kind: StatefulSet
+        replicas: 3
   delete:
     type: StatefulSet
-    inputArtifactNames:
-      - cloudObject
     phases:
-    - func: KubeTask
-      name: deleteFromBlobStore
+    - func: DeleteDataAll
+      name: deleteSnapshots
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: kanisterio/mongo-sidecar:0.20.0     
-        command:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -c
-          - |
-            s3_path="{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
-            export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
-            export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
-            kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}
+        backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-replicaset-backups/{{ .StatefulSet.Name }}/rs_backup"
+        backupInfo: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
+        reclaimSpace: true

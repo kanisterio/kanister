@@ -73,6 +73,11 @@ dockers:
   - 'examples/helm/kanister/kanister-mongodb-replicaset/image/90forceyes'
   - 'examples/helm/kanister/kanister-mongodb-replicaset/image/config'
   - 'examples/helm/kanister/kanister-mongodb-replicaset/image/gbl_env.sh'
+- binaries:
+  - kando
+  image_templates:
+  - 'kanisterio/mongodb:{{ .Tag }}'
+  dockerfile: 'docker/mongodb/Dockerfile'
 
 snapshot:
   name_template: '{{ .Tag }}'
