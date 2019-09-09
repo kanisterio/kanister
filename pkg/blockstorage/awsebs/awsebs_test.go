@@ -32,7 +32,10 @@ func (s AWSEBSSuite) TestQueryRegionToZones(c *C) {
 	c.Skip("Only works on AWS")
 	ctx := context.Background()
 	region := "us-east-1"
-	zs, err := queryRegionToZones(ctx, region)
+	ec2Cli, err := newEC2Client(region, nil, "")
+	c.Assert(err, IsNil)
+	provider := &ebsStorage{ec2Cli: ec2Cli}
+	zs, err := provider.queryRegionToZones(ctx, region)
 	c.Assert(err, IsNil)
 	c.Assert(zs, DeepEquals, []string{"us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1e", "us-east-1f"})
 }

@@ -599,8 +599,8 @@ func (s *ebsStorage) FromRegion(ctx context.Context, region string) ([]string, e
 	return staticRegionToZones(region)
 }
 
-func queryRegionToZones(ctx context.Context, region string) ([]string, error) {
-	ec2Cli, err := newEC2Client(region, nil, "")
+func (s *ebsStorage) queryRegionToZones(ctx context.Context, region string) ([]string, error) {
+	ec2Cli, err := newEC2Client(region, nil, s.role)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
