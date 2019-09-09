@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -79,7 +80,10 @@ func newEC2Client(awsRegion string, config *aws.Config, role string) (*EC2, erro
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session for EFS")
 	}
-	creds := config.Credentials
+	var creds *credentials.Credentials
+	if config != nil {
+		creds = config.Credentials
+	}
 	if role != "" {
 		creds = stscreds.NewCredentials(s, role)
 	}
