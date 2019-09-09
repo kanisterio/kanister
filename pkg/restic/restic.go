@@ -120,9 +120,9 @@ func PruneCommand(profile *param.Profile, repository, encryptionKey string) []st
 }
 
 // StatsCommandByID returns restic stats command
-func StatsCommandByID(profile *param.Profile, repository, id, encryptionKey string) []string {
+func StatsCommandByID(profile *param.Profile, repository, id, mode, encryptionKey string) []string {
 	cmd := resticArgs(profile, repository, encryptionKey)
-	cmd = append(cmd, "stats", id)
+	cmd = append(cmd, "stats", id, "--mode", mode)
 	command := strings.Join(cmd, " ")
 	return shCommand(command)
 }
