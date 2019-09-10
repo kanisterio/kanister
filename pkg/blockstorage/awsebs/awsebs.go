@@ -76,6 +76,9 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 
 // newEC2Client returns ec2 client struct.
 func newEC2Client(awsRegion string, config *aws.Config, role string) (*EC2, error) {
+	if config == nil {
+		config = aws.NewConfig()
+	}
 	s, err := session.NewSession(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session for EFS")
