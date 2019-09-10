@@ -23,8 +23,7 @@ func New(key string, value interface{}) Fields {
 // Add returns a collection with all the fields in s plus a new field with the
 // given key and value. Duplicates are not eliminated.
 func Add(s Fields, key string, value interface{}) Fields {
-	// TODO: implement
-	return nil
+	return newField(s, key, value)
 }
 
 // M contains fields with unique keys. Used to facilitate adding multiple
