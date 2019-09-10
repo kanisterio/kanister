@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -42,6 +44,7 @@ var _ zone.Mapper = (*ebsStorage)(nil)
 
 type ebsStorage struct {
 	ec2Cli *EC2
+	role   string
 }
 
 // EC2 is kasten's wrapper around ec2.EC2 structs
@@ -60,26 +63,32 @@ func (s *ebsStorage) Type() blockstorage.Type {
 
 // NewProvider returns a provider for the EBS storage type in the specified region
 func NewProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, _, err := awsconfig.GetConfig(config)
+	awsConfig, region, role, err := awsconfig.GetConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	ec2Cli, err := newEC2Client(region, awsConfig)
+	ec2Cli, err := newEC2Client(region, awsConfig, role)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
-	return &ebsStorage{ec2Cli: ec2Cli}, nil
+	return &ebsStorage{ec2Cli: ec2Cli, role: role}, nil
 }
 
 // newEC2Client returns ec2 client struct.
-func newEC2Client(awsRegion string, config *aws.Config) (*EC2, error) {
-	httpClient := &http.Client{Transport: http.DefaultTransport}
+func newEC2Client(awsRegion string, config *aws.Config, role string) (*EC2, error) {
 	s, err := session.NewSession(config)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to create session for EFS")
 	}
-	return &EC2{EC2: ec2.New(s, &aws.Config{MaxRetries: aws.Int(maxRetries),
-		Region: aws.String(awsRegion), HTTPClient: httpClient})}, nil
+	var creds *credentials.Credentials
+	if config != nil {
+		creds = config.Credentials
+	}
+	if role != "" {
+		creds = stscreds.NewCredentials(s, role)
+	}
+	conf := config.WithMaxRetries(maxRetries).WithRegion(awsRegion).WithCredentials(creds)
+	return &EC2{EC2: ec2.New(s, conf)}, nil
 }
 
 func (s *ebsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
@@ -221,7 +230,7 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		return nil, errors.Errorf("Snapshot %v destination ID must be empty", to)
 	}
 	// Copy operation must be initiated from the destination region.
-	ec2Cli, err := newEC2Client(to.Region, nil)
+	ec2Cli, err := newEC2Client(to.Region, nil, s.role)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
@@ -229,7 +238,7 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	// independent of whether or not the snapshot is encrypted.
 	var presignedURL *string
 	if to.Region != from.Region {
-		fromCli, err2 := newEC2Client(from.Region, nil)
+		fromCli, err2 := newEC2Client(from.Region, nil, s.role)
 		if err2 != nil {
 			return nil, errors.Wrap(err2, "Could not create client to presign URL for snapshot copy request")
 		}
@@ -590,8 +599,8 @@ func (s *ebsStorage) FromRegion(ctx context.Context, region string) ([]string, e
 	return staticRegionToZones(region)
 }
 
-func queryRegionToZones(ctx context.Context, region string) ([]string, error) {
-	ec2Cli, err := newEC2Client(region, nil)
+func (s *ebsStorage) queryRegionToZones(ctx context.Context, region string) ([]string, error) {
+	ec2Cli, err := newEC2Client(region, nil, s.role)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
