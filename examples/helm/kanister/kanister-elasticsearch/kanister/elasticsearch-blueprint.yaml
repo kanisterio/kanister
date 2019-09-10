@@ -1,6 +1,10 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: elasticsearch-blueprint
 actions:
   backup:
-    type: Deployment
+    type: StatefulSet
     outputArtifacts:
       cloudObject:
         keyValue:
@@ -9,56 +13,59 @@ actions:
     - func: KubeTask
       name: backupToObjectStore
       args:
-        namespace: "{{ .Deployment.Namespace }}"
+        namespace: "{{ .StatefulSet.Namespace }}"
         image: "kanisterio/es-sidecar:0.21.0"
         command:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -c
-          - |
-            host_name="{{ .Deployment.Name }}.{{ .Deployment.Namespace }}.svc.cluster.local"
-            BACKUP_LOCATION=es_backups/{{ .Deployment.Namespace }}/{{ .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/backup.gz
-            elasticdump --bulk=true --input=http://${host_name}:9200 --output=$ | gzip | kando location push --profile '{{ toJson .Profile }}' --path $BACKUP_LOCATION -
-            kando output backupLocation $BACKUP_LOCATION
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          host_name="{{ .Object.metadata.labels.release }}-kanister-elasticsearch-client.{{ .StatefulSet.Namespace }}.svc.cluster.local"
+          echo $host_name
+          BACKUP_LOCATION=es_backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/backup.gz
+          echo $BACKUP_LOCATION
+          elasticdump --bulk=true --input=http://${host_name}:9200 --output=$ | gzip | kando location push --profile '{{ toJson .Profile }}' --path $BACKUP_LOCATION -
+          kando output backupLocation $BACKUP_LOCATION
+          echo "exiting from backup"
   restore:
-    type: Deployment
+    type: StatefulSet
     inputArtifactNames:
-      - cloudObject
+    - cloudObject
     phases:
     - func: KubeTask
       name: restoreFromObjectStore
       args:
-        namespace: "{{ .Deployment.Namespace }}"
+        namespace: "{{ .StatefulSet.Namespace }}"
         image: "kanisterio/es-sidecar:0.21.0"
         command:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -c
-          - |
-            host_name="{{ .Deployment.Name }}.{{ .Deployment.Namespace }}.svc.cluster.local"
-            kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}' - | gunzip | elasticdump --bulk=true --input=$ --output=http://${host_name}:9200
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          host_name="{{ .Object.metadata.labels.release }}-kanister-elasticsearch-client.{{ .StatefulSet.Namespace }}.svc.cluster.local"
+          kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}' - | gunzip | elasticdump --bulk=true --input=$ --output=http://${host_name}:9200
   delete:
-    type: Deployment
+    type: StatefulSet
     inputArtifactNames:
-      - cloudObject
+    - cloudObject
     phases:
     - func: KubeTask
       name: deleteFromObjectStore
       args:
-        namespace: "{{ .Deployment.Namespace }}"
+        namespace: "{{ .StatefulSet.Namespace }}"
         image: "kanisterio/es-sidecar:0.21.0"
         command:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
-          - -c
-          - |
-            kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}'
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}'
