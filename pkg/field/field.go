@@ -26,3 +26,16 @@ func Add(s Fields, key string, value interface{}) Fields {
 	// TODO: implement
 	return nil
 }
+
+// M contains fields with unique keys. Used to facilitate adding multiple
+// "fields" to a Fields collection
+type M = map[string]interface{}
+
+// addMap adds the entries in m to s as Field(s). The map key is used as the
+// Field.Key() and the corresponding value as Field.Value()
+func addMap(s Fields, m M) Fields {
+	for k, v := range m {
+		s = Add(s, k, v)
+	}
+	return s
+}
