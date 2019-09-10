@@ -87,11 +87,7 @@ func newEC2Client(awsRegion string, config *aws.Config, role string) (*EC2, erro
 	if role != "" {
 		creds = stscreds.NewCredentials(s, role)
 	}
-	httpClient := &http.Client{Transport: http.DefaultTransport}
-	conf := config.WithHTTPClient(httpClient).
-		WithMaxRetries(maxRetries).
-		WithRegion(awsRegion).
-		WithCredentials(creds)
+	conf := config.WithMaxRetries(maxRetries).WithRegion(awsRegion).WithCredentials(creds)
 	return &EC2{EC2: ec2.New(s, conf)}, nil
 }
 
