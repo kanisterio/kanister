@@ -7,7 +7,7 @@
 Please check the type of change your PR introduces:
 - [ ] Work in Progress
 - [ ] Refactoring (no functional changes, no api changes)
-- [ ] Trival/Minor
+- [ ] Trivial/Minor
 - [ ] Bugfix
 - [ ] Feature
 - [ ] Documentation
