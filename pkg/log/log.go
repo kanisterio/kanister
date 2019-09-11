@@ -2,7 +2,6 @@ package log
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/sirupsen/logrus"
 )
@@ -22,7 +21,7 @@ const (
 type logger struct {
 	level Level
 	entry *logrus.Entry
-	ctx   context
+	ctx   context.Context
 	err   error
 }
 
@@ -51,14 +50,14 @@ func (l *logger) Print(msg string) {
 	switch l.level {
 	case InfoLevel:
 		logrus.Info(msg...)
-	case logTypeError:
-		ErrorLevel.Error(msg...)
+	case ErrorLevel:
+		logrus.Error(msg...)
 	case DebugLevel:
 		logrus.Debug(msg...)
 	}
 }
 
-func (l *logger) WithContext(ctx context) Printer {
+func (l *logger) WithContext(ctx context.Context) Printer {
 	l.ctx = ctx
 	return l
 }

@@ -6,6 +6,6 @@ import (
 
 type Printer interface {
 	Print(msg string)
-	WithContext(ctx context) Printer
+	WithContext(ctx context.Context) Printer
 	WithError(err error) Printer
 }
