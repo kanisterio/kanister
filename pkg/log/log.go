@@ -47,15 +47,13 @@ func WithContext(ctx context.Context) {
 }
 
 func (l *logger) Print(msg string) {
-	var message interface{}
-	message = msg
 	switch l.level {
 	case InfoLevel:
-		logrus.Info(message)
+		logrus.Info(msg)
 	case ErrorLevel:
-		logrus.Error(message)
+		logrus.Error(msg)
 	case DebugLevel:
-		logrus.Debug(message)
+		logrus.Debug(msg)
 	}
 }
 
