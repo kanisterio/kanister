@@ -25,19 +25,19 @@ type logger struct {
 	err   error
 }
 
-func Info() Printer {
+func Info() Logger {
 	return &logger{level: InfoLevel}
 }
 
-func Error() Printer {
+func Error() Logger {
 	return &logger{level: ErrorLevel}
 }
 
-func Debug() Printer {
+func Debug() Logger {
 	return &logger{level: DebugLevel}
 }
 
-// Most commonly used logging function
+// Print adds `msg` to the log at `InfoLevel`. It is a wrapper for `Info().Print(msg)`, since this is the most common use case.
 func Print(msg string) {
 	Info().Print(msg)
 }
@@ -47,22 +47,24 @@ func WithContext(ctx context.Context) {
 }
 
 func (l *logger) Print(msg string) {
+	var message interface{}
+	message = msg
 	switch l.level {
 	case InfoLevel:
-		logrus.Infof(msg)
+		logrus.Info(message)
 	case ErrorLevel:
-		logrus.Errorf(msg)
+		logrus.Error(message)
 	case DebugLevel:
-		logrus.Debugf(msg)
+		logrus.Debug(message)
 	}
 }
 
-func (l *logger) WithContext(ctx context.Context) Printer {
+func (l *logger) WithContext(ctx context.Context) Logger {
 	l.ctx = ctx
 	return l
 }
 
-func (l *logger) WithError(err error) Printer {
+func (l *logger) WithError(err error) Logger {
 	l.err = err
 	return l
 }

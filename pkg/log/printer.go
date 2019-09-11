@@ -4,8 +4,8 @@ import (
 	"context"
 )
 
-type Printer interface {
+type Logger interface {
 	Print(msg string)
-	WithContext(ctx context.Context) Printer
-	WithError(err error) Printer
+	WithContext(ctx context.Context) Logger
+	WithError(err error) Logger
 }
