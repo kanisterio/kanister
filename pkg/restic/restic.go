@@ -206,7 +206,7 @@ func SnapshotIDFromSnapshotLog(output string) (string, error) {
 	if err != nil {
 		return "", errors.WithMessage(err, "Failed to unmarshall output from snapshotCommand")
 	}
-	if len(result) != 1 {
+	if len(result) == 0 {
 		return "", errors.New("Snapshot not found")
 	}
 	snapId := result[0]["short_id"]
