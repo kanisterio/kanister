@@ -5,35 +5,37 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-
-	"github.com/pkg/field"
 )
 
-type logLevel string
+// Level describes the current log level.
+type Level uint32
 
 const (
-	logTypeInfo  logLevel = "Info"
-	logTypeError logLevel = "Error"
-	logTypeDebug logLevel = "Debug"
+	// DebugLevel log level.
+	DebugLevel Level = Level(logrus.DebugLevel)
+	// InfoLevel log level.
+	InfoLevel Level = Level(logrus.InfoLevel)
+	// ErrorLevel log level.
+	ErrorLevel Level = Level(logrus.ErrorLevel)
 )
 
 type logger struct {
-	level logLevel
+	level Level
 	entry *logrus.Entry
 	ctx   context
 	err   error
 }
 
 func Info() Printer {
-	return &logger{level: logTypeInfo}
+	return &logger{level: InfoLevel}
 }
 
 func Error() Printer {
-	return &logger{level: logTypeError}
+	return &logger{level: ErrorLevel}
 }
 
 func Debug() Printer {
-	return &logger{level: logTypeDebug}
+	return &logger{level: DebugLevel}
 }
 
 // Most commonly used logging function
@@ -47,11 +49,11 @@ func WithContext(ctx) {
 
 func (l *logger) Print(msg string) {
 	switch l.level {
-	case logTypeInfo:
+	case InfoLevel:
 		logrus.Info(msg...)
 	case logTypeError:
-		logrus.Error(msg...)
-	case logTypeDebug:
+		ErrorLevel.Error(msg...)
+	case DebugLevel:
 		logrus.Debug(msg...)
 	}
 }
