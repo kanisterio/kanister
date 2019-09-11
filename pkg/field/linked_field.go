@@ -15,6 +15,8 @@ type field struct {
 	value interface{}
 }
 
+var _ fmt.Stringer = field{}
+
 func (f field) Key() string {
 	return f.key
 }
@@ -31,6 +33,8 @@ type linkedField struct {
 	field
 	prev *linkedField
 }
+
+var _ fmt.Stringer = (*linkedField)(nil)
 
 func newField(prev Fields, key string, value interface{}) *linkedField {
 	return &linkedField{prev: asLinkedFields(prev), field: field{key: key, value: value}}
