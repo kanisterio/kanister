@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -76,14 +75,14 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 
 // newEC2Client returns ec2 client struct.
 func newEC2Client(awsRegion string, config *aws.Config, role string) (*EC2, error) {
+	if config == nil {
+		return nil, errors.New("Invalid empty AWS config")
+	}
 	s, err := session.NewSession(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session for EFS")
 	}
-	var creds *credentials.Credentials
-	if config != nil {
-		creds = config.Credentials
-	}
+	creds := config.Credentials
 	if role != "" {
 		creds = stscreds.NewCredentials(s, role)
 	}
@@ -230,7 +229,7 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		return nil, errors.Errorf("Snapshot %v destination ID must be empty", to)
 	}
 	// Copy operation must be initiated from the destination region.
-	ec2Cli, err := newEC2Client(to.Region, nil, s.role)
+	ec2Cli, err := newEC2Client(to.Region, s.ec2Cli.Config.Copy(), s.role)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
@@ -238,7 +237,7 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	// independent of whether or not the snapshot is encrypted.
 	var presignedURL *string
 	if to.Region != from.Region {
-		fromCli, err2 := newEC2Client(from.Region, nil, s.role)
+		fromCli, err2 := newEC2Client(from.Region, s.ec2Cli.Config.Copy(), s.role)
 		if err2 != nil {
 			return nil, errors.Wrap(err2, "Could not create client to presign URL for snapshot copy request")
 		}
@@ -600,7 +599,7 @@ func (s *ebsStorage) FromRegion(ctx context.Context, region string) ([]string, e
 }
 
 func (s *ebsStorage) queryRegionToZones(ctx context.Context, region string) ([]string, error) {
-	ec2Cli, err := newEC2Client(region, nil, s.role)
+	ec2Cli, err := newEC2Client(region, s.ec2Cli.Config.Copy(), s.role)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
