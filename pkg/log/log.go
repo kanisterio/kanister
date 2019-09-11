@@ -42,18 +42,18 @@ func Print(msg string) {
 	Info().Print(msg)
 }
 
-func WithContext(ctx) {
+func WithContext(ctx context.Context) {
 	Info().WithContext(ctx)
 }
 
 func (l *logger) Print(msg string) {
 	switch l.level {
 	case InfoLevel:
-		logrus.Info(msg...)
+		logrus.Infof(msg)
 	case ErrorLevel:
-		logrus.Error(msg...)
+		logrus.Errorf(msg)
 	case DebugLevel:
-		logrus.Debug(msg...)
+		logrus.Debugf(msg)
 	}
 }
 
@@ -62,7 +62,7 @@ func (l *logger) WithContext(ctx context.Context) Printer {
 	return l
 }
 
-func (l *logger) WithError(err Error) Printer {
+func (l *logger) WithError(err error) Printer {
 	l.err = err
 	return l
 }
