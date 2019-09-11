@@ -28,8 +28,8 @@ func ExampleAdd() {
 
 type M = field.M
 
-func ExampleAddToContext() {
-	ctx := field.AddToContext(context.Background(), "foo", "bar")
+func ExampleContext() {
+	ctx := field.Context(context.Background(), "foo", "bar")
 	fmt.Print(field.FromContext(ctx))
 	// Output: ["foo":"bar"]
 }
