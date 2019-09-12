@@ -45,7 +45,7 @@ var _ = Suite(&ClientSuite{})
 
 func (s *ClientSuite) SetUpSuite(c *C) {
 	if os.Getenv(IBMApiKeyEnv) == "" {
-		c.Skip(IBMApiKeyEnv + " envionment variable not set")
+		//	c.Skip(IBMApiKeyEnv + " envionment variable not set")
 	}
 	s.apiKey = os.Getenv(IBMApiKeyEnv)
 }

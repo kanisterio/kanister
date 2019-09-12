@@ -88,3 +88,11 @@ func (s KubeTestIBMClient) TestIBMSecret(c *C) {
 	_, err = ibmCli.Service.ListSnapshots()
 	c.Assert(err, IsNil)
 }
+
+func (s *KubeTestIBMClient) TestSecretWSLApiKey(c *C) {
+	testSlKey := "TestSlKey"
+	ibmCfg, err := getDefIBMStoreSecret(context.Background(), map[string]string{CfgSecretNameArgName: testSecretName, SLAPIKeyArgName: testSlKey})
+	c.Assert(err, IsNil)
+	c.Assert(ibmCfg, NotNil)
+	c.Assert(ibmCfg.Softlayer.SoftlayerAPIKey, Equals, testSlKey)
+}
