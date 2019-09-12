@@ -25,6 +25,8 @@ type ProviderConfig struct {
 	// If true, disable SSL verification. If false (the default), SSL
 	// verification is enabled.
 	SkipSSLVerify bool
+	// If given, the object store access will be established after switching to the role.
+	Role string
 }
 
 // SecretAws AWS keys

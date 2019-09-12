@@ -83,6 +83,7 @@ type Profile struct {
 	Location      crv1alpha1.Location
 	Credential    Credential
 	SkipSSLVerify bool
+	Role          string
 }
 
 // CredentialType

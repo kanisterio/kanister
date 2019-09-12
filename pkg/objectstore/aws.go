@@ -20,6 +20,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -38,6 +40,29 @@ func config(region string) *aws.Config {
 		return c.WithRegion(region)
 	}
 	return c
+}
+
+type awsCreds struct {
+	accessKeyID     string
+	secretAccessKey string
+	token           string
+}
+
+// switchRole changes the role using the credentials provider.
+// It returns the new set of credentials.
+func switchRole(awsAccessKeyID, awsSecretAccessKey, role string) (*awsCreds, error) {
+	creds := credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, role)
+	sess := session.New(aws.NewConfig().WithCredentials(creds))
+	creds = stscreds.NewCredentials(sess, role)
+	val, err := creds.Get()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get role credentials")
+	}
+	return &awsCreds{
+		accessKeyID:     val.AccessKeyID,
+		secretAccessKey: val.SecretAccessKey,
+		token:           val.SessionToken,
+	}, nil
 }
 
 func IsBucketNotFoundError(err error) bool {

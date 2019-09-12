@@ -224,6 +224,7 @@ type Profile struct {
 	Location          Location   `json:"location"`
 	Credential        Credential `json:"credential"`
 	SkipSSLVerify     bool       `json:"skipSSLVerify"`
+	Role              string     `json:"role"`
 }
 
 // LocationType

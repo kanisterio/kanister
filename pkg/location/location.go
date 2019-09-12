@@ -127,6 +127,7 @@ func getBucket(ctx context.Context, pType objectstore.ProviderType, profile para
 		Type:          pType,
 		Endpoint:      profile.Location.Endpoint,
 		SkipSSLVerify: profile.SkipSSLVerify,
+		Role:          profile.Role,
 	}
 	secret, err := getOSSecret(pType, profile.Credential)
 	if err != nil {

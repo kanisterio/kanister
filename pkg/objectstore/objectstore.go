@@ -132,6 +132,18 @@ func s3Config(config ProviderConfig, secret *Secret, region string) (stowKind st
 		stows3.ConfigAccessKeyID: awsAccessKeyID,
 		stows3.ConfigSecretKey:   awsSecretAccessKey,
 	}
+	if config.Role != "" {
+		// Switch role and replace credentials.
+		creds, err := switchRole(awsAccessKeyID, awsSecretAccessKey, config.Role)
+		if err != nil {
+			return "", cm, errors.New("Failed to switch role")
+		}
+		cm = stow.ConfigMap{
+			stows3.ConfigAccessKeyID: creds.accessKeyID,
+			stows3.ConfigSecretKey:   creds.secretAccessKey,
+			stows3.ConfigToken:       creds.token,
+		}
+	}
 	if region != "" {
 		cm[stows3.ConfigRegion] = region
 	}

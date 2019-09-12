@@ -218,6 +218,7 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 		Type:          pType,
 		Endpoint:      p.Location.Endpoint,
 		SkipSSLVerify: p.SkipSSLVerify,
+		Role:          p.Role,
 	}
 	provider, err := objectstore.NewProvider(ctx, pc, secret)
 	if err != nil {
@@ -257,6 +258,7 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 		Type:          pType,
 		Endpoint:      p.Location.Endpoint,
 		SkipSSLVerify: p.SkipSSLVerify,
+		Role:          p.Role,
 	}
 	provider, err := objectstore.NewProvider(ctx, pc, secret)
 	if err != nil {
