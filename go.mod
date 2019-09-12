@@ -4,7 +4,7 @@ go 1.12
 
 replace (
 	cloud.google.com/go => github.com/GoogleCloudPlatform/google-cloud-go v0.1.1-0.20160913182117-3b1ae45394a2
-	github.com/graymeta/stow => github.com/kastenhq/stow v0.1.1-kasten
+	github.com/graymeta/stow => github.com/kastenhq/stow v0.1.2-kasten
 	github.com/rook/operator-kit => github.com/kastenhq/operator-kit v0.0.0-20180316185208-859e831cc18d
 )
 
