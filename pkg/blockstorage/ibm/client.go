@@ -16,10 +16,7 @@ package ibm
 
 import (
 	"context"
-	"fmt"
 	"strings"
-
-	"github.com/luci/go-render/render"
 
 	"github.com/BurntSushi/toml"
 	ibmcfg "github.com/IBM/ibmcloud-storage-volume-lib/config"
@@ -87,8 +84,6 @@ func newClient(ctx context.Context, args map[string]string) (*client, error) {
 	if err != nil || cfg.Softlayer == nil {
 		return nil, errors.New("Failed to get IBM client config")
 	}
-
-	fmt.Println(render.Render(cfg))
 
 	provName := cfg.Softlayer.SoftlayerBlockProviderName
 	if enableFile, ok := args[SoftlayerFileAttName]; ok && enableFile == "true" {
