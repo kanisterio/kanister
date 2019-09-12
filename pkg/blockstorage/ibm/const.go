@@ -15,7 +15,6 @@
 package ibm
 
 const (
-
 	// APIKeyArgName is used to pass ibmbluemix api key into client.
 	APIKeyArgName = "api-key"
 	// SLAPIKeyArgName is used to pass SoftLayer api key into client.
