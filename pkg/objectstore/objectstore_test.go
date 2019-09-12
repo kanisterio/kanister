@@ -38,6 +38,7 @@ type ObjectStoreProviderSuite struct {
 	osType         ProviderType
 	provider       Provider
 	rand           *rand.Rand
+	role           string
 	root           Bucket // root of the default test bucket
 	suiteDirPrefix string // directory name prefix for all tests in this suite
 	testDir        string // directory name for a given test
@@ -48,9 +49,11 @@ type ObjectStoreProviderSuite struct {
 const (
 	testBucketName = "kio-store-tests"
 	testRegionS3   = "us-west-2"
+	testRole       = ""
 )
 
 var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeS3, region: testRegionS3})
+var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeS3, region: testRegionS3, role: testRole})
 var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeGCS, region: ""})
 var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeAzure, region: ""})
 
@@ -72,7 +75,7 @@ func (s *ObjectStoreProviderSuite) SetUpSuite(c *C) {
 	ctx := context.Background()
 
 	s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	pc := ProviderConfig{Type: s.osType}
+	pc := ProviderConfig{Type: s.osType, Role: s.role}
 	secret := getSecret(c, s.osType)
 	s.provider, err = NewProvider(ctx, pc, secret)
 	c.Check(err, IsNil)
