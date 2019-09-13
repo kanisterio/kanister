@@ -158,5 +158,8 @@ func getDefIBMStoreSecret(ctx context.Context, args map[string]string) (*ibmcfg.
 	if slapi, ok := args[SLAPIKeyArgName]; ok {
 		retConfig.Softlayer.SoftlayerAPIKey = slapi
 	}
+	if slusername, ok := args[SLAPIUsernameArgName]; ok {
+		retConfig.Softlayer.SoftlayerUsername = slusername
+	}
 	return &retConfig, err
 }

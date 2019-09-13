@@ -20,6 +20,8 @@ const (
 	APIKeyArgName = "api-key"
 	// SLAPIKeyArgName is used to pass SoftLayer api key into client.
 	SLAPIKeyArgName = "sl-api-key"
+	// SLAPIUsernameArgName is used to pass SoftLayer api username into client.
+	SLAPIUsernameArgName = "sl-api-username"
 	// CfgSecretNameArgName is used to pass in cluster secret name.
 	CfgSecretNameArgName = "secret-name"
 	// CfgSecretNameSpaceArgName is used to pass in cluster secret name.
