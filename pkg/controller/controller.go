@@ -268,19 +268,19 @@ func (c *Controller) onDeleteBlueprint(bp *crv1alpha1.Blueprint) error {
 }
 
 func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
+	ctx := context.Background()
+	ctx = field.Context(ctx, field.ActionsetNameKey, as.GetName())
 	if as.Spec == nil {
-		log.Error("Cannot initialize an ActionSet %s without a spec.", as.GetName())
+		log.WithContext(ctx).Error("Cannot initialize an ActionSet without a spec.")
 		return
 	}
 	if as.Status != nil {
-		log.Error("Cannot initialize non-nil ActionSet %s Status", as.GetName())
+		log.WithContext(ctx).Error("Cannot initialize non-nil ActionSet Status")
 		return
 	}
 	as.Status = &crv1alpha1.ActionSetStatus{State: crv1alpha1.StatePending}
 	actions := make([]crv1alpha1.ActionStatus, 0, len(as.Spec.Actions))
 	var err error
-	ctx := context.Background()
-	ctx = field.Context(ctx, field.ActionsetNameKey, as.GetName())
 	for _, a := range as.Spec.Actions {
 		var actionStatus *crv1alpha1.ActionStatus
 		actionStatus, err = c.initialActionStatus(as.GetNamespace(), a)
