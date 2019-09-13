@@ -16,9 +16,9 @@ func FromContext(ctx context.Context) Fields {
 	return nil
 }
 
-// AddToContext returns a new context that has ctx as its parent context and
+// Context returns a new context that has ctx as its parent context and
 // has a Field with the given key and value.
-func AddToContext(ctx context.Context, key string, v interface{}) context.Context {
+func Context(ctx context.Context, key string, v interface{}) context.Context {
 	return context.WithValue(ctx, ctxKey, Add(FromContext(ctx), key, v))
 }
 
