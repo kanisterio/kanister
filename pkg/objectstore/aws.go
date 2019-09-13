@@ -17,6 +17,7 @@ package objectstore
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -29,9 +30,10 @@ import (
 )
 
 const (
-	bucketNotFound = "NotFound"
-	noSuchBucket   = s3.ErrCodeNoSuchBucket
-	gcsS3NotFound  = "not found"
+	bucketNotFound   = "NotFound"
+	noSuchBucket     = s3.ErrCodeNoSuchBucket
+	gcsS3NotFound    = "not found"
+	awsTokenDuration = 90 * time.Minute
 )
 
 func config(region string) *aws.Config {
@@ -53,7 +55,9 @@ type awsCreds struct {
 func switchRole(awsAccessKeyID, awsSecretAccessKey, role string) (*awsCreds, error) {
 	creds := credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, role)
 	sess := session.New(aws.NewConfig().WithCredentials(creds))
-	creds = stscreds.NewCredentials(sess, role)
+	creds = stscreds.NewCredentials(sess, role, func(p *stscreds.AssumeRoleProvider) {
+		p.Duration = awsTokenDuration
+	})
 	val, err := creds.Get()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get role credentials")
