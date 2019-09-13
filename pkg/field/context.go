@@ -4,6 +4,13 @@ import "context"
 
 // context.Context support for fields
 
+const (
+	ActionsetNameKey = "ActionSet"
+	PodNameKey       = "Pod"
+	ContainerNameKey = "Container"
+	PhaseNameKey     = "Phase"
+)
+
 type contextKey uint8
 
 const ctxKey = contextKey(43)
