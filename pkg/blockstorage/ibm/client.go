@@ -114,10 +114,7 @@ func findDefaultConfig(ctx context.Context, args map[string]string, zaplog *zap.
 	if err == nil {
 		return ibmCfg, nil
 	}
-		log.WithError(err).Info("Could not get IBM default store secret")
-	} else {
-		return ibmCfg, nil
-	}
+	log.WithError(err).Info("Could not get IBM default store secret")
 	// Checking if an api key is provided via args
 	// If it present will use api value and default Softlayer config
 	if apik, ok := args[APIKeyArgName]; ok {
