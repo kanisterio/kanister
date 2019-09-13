@@ -38,6 +38,8 @@ const (
 	BackupDataStatsEncryptionKeyArg = "encryptionKey"
 	// BackupDataStatsBackupIdentifierArg provides a unique ID added to the backed up artifacts
 	BackupDataStatsBackupIdentifierArg = "backupID"
+	BackupDataStatsOutputFileCount     = "fileCount"
+	BackupDataStatsOutputSize          = "size"
 )
 
 func init() {
@@ -82,7 +84,16 @@ func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to get backup stats")
 		}
-		return nil, nil
+		// Get File Count and Size from Stats
+		fc, size := restic.SnapshotStatsFromStatsLog(stdout)
+		if fc == "" || size == "" {
+			return nil, errors.New("Failed to parse snapshot stats from logs")
+		}
+		return map[string]interface{}{
+				BackupDataStatsOutputFileCount: fc,
+				BackupDataStatsOutputSize:      size,
+			},
+			nil
 	}
 }
 
