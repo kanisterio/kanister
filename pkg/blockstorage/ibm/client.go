@@ -111,7 +111,9 @@ func newClient(ctx context.Context, args map[string]string) (*client, error) {
 func findDefaultConfig(ctx context.Context, args map[string]string, zaplog *zap.Logger) (*ibmcfg.Config, error) {
 	// Cheking if IBM store secret is present
 	ibmCfg, err := getDefIBMStoreSecret(ctx, args)
-	if err != nil {
+	if err == nil {
+		return ibmCfg, nil
+	}
 		log.WithError(err).Info("Could not get IBM default store secret")
 	} else {
 		return ibmCfg, nil
