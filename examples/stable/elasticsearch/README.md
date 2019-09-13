@@ -35,15 +35,14 @@ For basic installation, you can install using the provided Helm chart that will 
 Prior to install you will need to have the Kanister Helm repository added to your local setup.
 
 ```bash
-$ helm repo add kanister http://charts.kanister.io
+$ helm repo add elastic https://helm.elastic.co
 ```
 
 Then install the sample Elasticsearch application with the release name `my-release` in its own namespace
 `es-test` using the command below. Make sure you have the kanister controller running in namespace `kasten-io` which is the default setting in Elasticsearch charts. Otherwise, you will also have to set the `kanister.controller_namespace` parameter value to the respective kanister controller namespace in the following command:
 
 ```bash
-# Replace the default s3 credentials (endpoint, bucket and region) with your credentials before you run this command
-$ helm install stable/elasticsearch -n my-release --namespace es-test
+$ helm install --namespace es-test --name elasticsearch elastic/elasticsearch --set antiAffinity=soft -f extraInitContainers.yaml
 ```
 
 The command deploys Elasticsearch on the Kubernetes cluster in the default
@@ -77,6 +76,40 @@ $ curl -X PUT "localhost:9200/customer/_doc/1?pretty" -H 'Content-Type: applicat
 $ curl -X GET "localhost:9200/_cat/indices?v"
 health status index    uuid                   pri rep docs.count docs.deleted store.size pri.store.size
 green  open   customer xbwj34pTSZOdDI7xVR0qIA   5   1          1            0      8.9kb          4.4kb
+
+
+
+$ curl 'localhost:9200/customer/_search?q=*&pretty'
+
+{
+  "took" : 9,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 1,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "customer",
+        "_type" : "_doc",
+        "_id" : "1",
+        "_score" : 1.0,
+        "_source" : {
+          "name" : "John Smith"
+        }
+      }
+    ]
+  }
+}
+
 ```
 
 ## Create the Blueprint
