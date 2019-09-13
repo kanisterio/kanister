@@ -74,6 +74,48 @@ Create Blueprint in the same namespace as the controller
 $ kubectl create -f ./postgresql-blueprint.yaml -n kasten-io
 ```
 
+### Create a Base Backup
+Create an ActionSet in the same namespace as the controller to trigger a backup. This will also setup log shipping that enables restoring to point-in-time restore
+
+```bash
+# Find profile name
+$ kubectl get profile -n postgres-test
+NAME               AGE
+s3-profile-zvrg9   109m
+
+# Create Actionset
+# Create a base backup by creating an ActionSet
+cat << EOF | kubectl create -f -
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+    name: pg-base-backup
+    namespace: kasten-io
+spec:
+    actions:
+    - name: backup
+      blueprint: postgresql-blueprint
+      object:
+        kind: StatefulSet
+        name: my-release-postgresql
+        namespace: postgres-test
+      profile:
+        apiVersion: v1alpha1
+        kind: Profile
+        name: s3-profile-k8s9l
+        namespace: postgres-test
+      secrets:
+        postgresql:
+          name: my-release-postgresql
+          namespace: postgres-test
+EOF
+
+# View the status of the actionset
+$ kubectl --namespace kasten-io describe actionset pg-base-backup
+```
+
+
+
 Once Postgres is running, you can populate it with some data. Let's add a table called "company" to a "test" database:
 ```
 ## Log in into postgresql container and get shell access
@@ -103,40 +145,36 @@ postgres=# \l
 postgres=# \c test
 You are now connected to database "test" as user "postgres".
 test=# CREATE TABLE COMPANY(
-test(#    ID INT PRIMARY KEY     NOT NULL,
-test(#    NAME           TEXT    NOT NULL,
-test(#    AGE            INT     NOT NULL,
-test(#    ADDRESS        CHAR(50),
-test(#    SALARY         REAL
+test(#     ID INT PRIMARY KEY     NOT NULL,
+test(#     NAME           TEXT    NOT NULL,
+test(#     AGE            INT     NOT NULL,
+test(#     ADDRESS        CHAR(50),
+test(#     SALARY         REAL,
+test(#     CREATED_AT    TIMESTAMP
 test(# );
 CREATE TABLE
 
 ## Insert data into the table
-test=# INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) VALUES (1, 'Paul', 32, 'California', 20000.00);
+test=# INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY,CREATED_AT) VALUES (10, 'Paul', 32, 'California', 20000.00, now());
 INSERT 0 1
 test=# select * from company;
- id | name | age |                      address                       | salary
-----+------+-----+----------------------------------------------------+--------
-  1 | Paul |  32 | California                                         |  20000
+ id | name | age |                      address                       | salary |         created_at
+----+------+-----+----------------------------------------------------+--------+----------------------------
+ 10 | Paul |  32 | California                                         |  20000 | 2019-09-16 14:39:36.316065
 (1 row)
-```
 
-### Protect the Application
+## Add few more entries
+test=# INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY,CREATED_AT) VALUES (20, 'Omkar', 32, 'California', 20000.00, now());
+INSERT 0 1
+test=# INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY,CREATED_AT) VALUES (30, 'Prasad', 32, 'California', 20000.00, now());
+INSERT 0 1
 
-You can now take a backup of the PostgreSQL data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
-
-```bash
-# Find profile name
-$ kubectl get profile -n postgres-test
-NAME               AGE
-s3-profile-zvrg9   109m
-
-# Create Actionset
-$ kanctl create actionset --action backup --namespace kasten-io --blueprint postgresql-blueprint --statefulset postgres-test/my-release-postgresql --profile postgres-test/s3-profile-zvrg9 --secrets postgresql=postgres-test/my-release-postgresql
-actionset backup-md6gb created
-
-# View the status of the actionset
-$ kubectl --namespace kasten-io describe actionset backup-md6gb
+test=# select * from company;
+ id | name  | age |                      address                       | salary |         created_at
+----+-------+-----+----------------------------------------------------+--------+----------------------------
+ 10 | Paul  |  32 | California                                         |  20000 | 2019-09-16 14:39:36.316065
+ 20 | Omkar |  32 | California                                         |  20000 | 2019-09-16 14:40:52.952459
+ 30 | Omkar |  32 | California                                         |  20000 | 2019-09-16 14:41:06.433487
 ```
 
 ### Disaster strikes!
@@ -183,15 +221,17 @@ postgres=# \l
 
 To restore the missing data, you should use the backup that you created before. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
 
-```bash
-$ kanctl --namespace kasten-io create actionset --action restore --from backup-md6gb
-actionset restore-backup-md6gb-d7g7w created
+Let's use PostgreSQL Point-In-Time Recovery to recover data till perticular time
 
-## If you want to pass pitr, you can use the --options flag for that
-# e.g $ kanctl --namespace kasten-io create actionset --action restore --from backup-md6gb --options pitr=2019-08-23T14:30:29Z
+```bash
+$ kanctl --namespace kasten-io create actionset --action restore --from pg-base-backup --options pitr=2019-09-16T14:41:00Z 
+actionset restore-pg-base-backup-d7g7w created
+
+## NOTE: pitr argument to the command is optional. If you want to restore data till the latest consistent state, you can skip '--options pitr' option
+# e.g $ kanctl --namespace kasten-io create actionset --action restore --from pg-base-backup
 
 ## Check status
-$ kubectl --namespace kasten-io describe actionset restore-backup-md6gb-d7g7w
+$ kubectl --namespace kasten-io describe actionset restore-pg-base-backup-d7g7w
 ```
 
 Once the ActionSet status is set to "complete", you can see that the data has been successfully restored to PostgreSQL
@@ -212,10 +252,12 @@ postgres=# \l
 postgres=# \c test;
 You are now connected to database "test" as user "postgres".
 test=# select * from company;
- id | name | age |                      address                       | salary
-----+------+-----+----------------------------------------------------+--------
-  1 | Paul |  32 | California                                         |  20000
-(1 row)
+ id | name  | age |                      address                       | salary |         created_at
+----+-------+-----+----------------------------------------------------+--------+----------------------------
+ 10 | Paul  |  32 | California                                         |  20000 | 2019-09-16 14:39:36.316065
+ 20 | Omkar |  32 | California                                         |  20000 | 2019-09-16 14:40:52.952459
+ 
+(2 rows)
 
 
 ```

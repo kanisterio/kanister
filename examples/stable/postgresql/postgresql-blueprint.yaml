@@ -125,7 +125,7 @@ actions:
         image: "kanisterio/postgresql:0.21.0"
         namespace: "{{ .StatefulSet.Namespace }}"
         volumes:
-          "data-{{ .StatefulSet.Name }}-0": "/pg"
+          "data-{{ .StatefulSet.Name }}-0": "/bitnami/postgresql"
         command:
           - bash
           - -o
@@ -139,11 +139,11 @@ actions:
           - -c
           - |
             # The PG PVC maybe mounted under a subpath
-            pgdata="/pg/data"
+            PGDATA="/bitnami/postgresql/data"
 
             # Prepare the environment variable directory.
             # Bring the backup to a separate folder first
-            recover_dir="${pgdata}/kanister-restore"
+            recover_dir="${PGDATA}/kanister-restore"
             env_dir="${recover_dir}/env"
             mkdir -p  "${env_dir}"
 
@@ -202,16 +202,16 @@ actions:
             # Move the files to the data directory
 
             # TODO: Currently .conf files unchanged. Include in backup in future
-            ls -d ${pgdata}/kanister-restore/* | sed 's/kanister-restore\///' | xargs -t rm -fr
-            mv ${pgdata}/kanister-restore/* ${pgdata}/
-            rm -fr ${pgdata}/kanister-restore
+            ls -d ${PGDATA}/kanister-restore/* | sed 's/kanister-restore\///' | xargs -t rm -fr
+            mv ${PGDATA}/kanister-restore/* ${PGDATA}/
+            rm -fr ${PGDATA}/kanister-restore
 
             # Create the recovery file that will apply the WAL files.
-            cat << EOF > "${pgdata}"/recovery.conf
-            restore_command = 'wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
+            cat << EOF > "${PGDATA}"/recovery.conf
+            restore_command = 'envdir "${PGDATA}/env" wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
             {{- if .Options }}
             {{- if .Options.pitr }}
-            recovery_target_time = '{{ toDate "2006-01-02T15:04:05.000Z07:00" .Options.pitr | date "2006-01-02 15:04:05 MST" }}'
+            recovery_target_time = '{{ toDate "2006-01-02T15:04:05Z" .Options.pitr | date "2006-01-02 15:04:05 GMT" }}'
             {{- end }}
             {{- end }}
             EOF
@@ -219,15 +219,15 @@ actions:
 
             # Create required configuration dir/config files
             # Create empty conf.d directory
-            if [ ! -d /pg/data/conf.d ]; then
-                mkdir /pg/data/conf.d
+            if [ ! -d $PGDATA/conf.d ]; then
+                mkdir $PGDATA/conf.d
             fi
 
             # Create default postgresql.conf
-            cp /opt/bitnami/postgresql/share/postgresql.conf.sample /pg/data/postgresql.conf
+            cp /opt/bitnami/postgresql/share/postgresql.conf.sample $PGDATA/postgresql.conf
 
             # Create default pg_hba.conf
-            cat << EOF > /pg/data/pg_hba.conf
+            cat << EOF > $PGDATA/pg_hba.conf
             host     all             all             0.0.0.0/0               trust
             host     all             all             ::1/128                 trust
             EOF
@@ -238,14 +238,14 @@ actions:
             # Once the WALs have been applied, we shutdown the database.
 
             PG_CTL="$(which pg_ctl)"
-            ${PG_CTL} -D ${pgdata} -w start -t 36000 -o '-c archive_mode=off --config-file=/pg/data/postgresql.conf --hba_file=/pg/data/pg_hba.conf'
+            ${PG_CTL} -D ${PGDATA} -w start -t 36000 -o '-c archive_mode=off --config-file=$PGDATA/postgresql.conf --hba_file=$PGDATA/pg_hba.conf'
 
             echo "Recovery succeeded!"
             # Gracefully shutdown to complete
-            ${PG_CTL} -D ${pgdata} -w stop -t 300 --mode fast
+            ${PG_CTL} -D ${PGDATA} -w stop -t 300 --mode fast
 
             # Recovery is now complete and can switch to new WAL timeline
-            env_wal_prefix="${pgdata}/env/WALE_S3_PREFIX"
+            env_wal_prefix="${PGDATA}/env/WALE_S3_PREFIX"
             timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
             wale_s3_prefix="s3://{{ .Profile.Location.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.prefix }}/${timeline}"
             echo "${wale_s3_prefix}" > "${env_wal_prefix}"

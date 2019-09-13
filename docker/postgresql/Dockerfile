@@ -1,4 +1,4 @@
-FROM bitnami/postgresql:11.5.0-debian-9-r1
+FROM bitnami/postgresql:9.6-debian-9
 
 USER root
 
@@ -12,7 +12,6 @@ RUN set -x \
 	&& pip3 install --upgrade pip \
 	&& hash -r pip3 \
 	&& pip3 install wal-e[aws] \
-	&& pip3 install awscli \
-	&& (cd /usr/local/bin; curl -L https://github.com/wal-g/wal-g/releases/download/v0.1.7/wal-g.linux-amd64.tar.gz | tar -zxv)
+	&& pip3 install awscli
 
 USER postgres
