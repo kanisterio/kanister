@@ -238,17 +238,17 @@ func SnapshotStatsFromStatsLog(output string) (string, string, string) {
 	var fileCount string
 	var size string
 	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	// Log should contain "Total File Count:   xx"
+	pattern1 := regexp.MustCompile(`Total File Count:\s+(.*?)$`)
+	// Log should contain "Total Size:   xx"
+	pattern2 := regexp.MustCompile(`Total Size: \s+(.*?)$`)
 	for _, l := range logs {
-		// Log should contain "Total File Count:   xx"
-		pattern1 := regexp.MustCompile(`Total File Count:\s+(.*?)$`)
 		match1 := pattern1.FindAllStringSubmatch(l, 1)
-		if match1 != nil {
+		if match1 != nil && match1[0] != nil {
 			fileCount = match1[0][1]
 		}
-		// Log should contain "Total Size:   xx"
-		pattern2 := regexp.MustCompile(`Total Size: \s+(.*?)$`)
 		match2 := pattern2.FindAllStringSubmatch(l, 1)
-		if match2 != nil {
+		if match2 != nil && match2[0] != nil {
 			size = match2[0][1]
 		}
 	}
@@ -258,11 +258,11 @@ func SnapshotStatsFromStatsLog(output string) (string, string, string) {
 // SnapshotStatsModeFromStatsLog gets the Stats mode from Stats Command log
 func SnapshotStatsModeFromStatsLog(output string) string {
 	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	// Log should contain "Stats for .... in  xx mode"
+	pattern := regexp.MustCompile(`Stats for.*in\s+(.*?)\s+mode:`)
 	for _, l := range logs {
-		// Log should contain "Total File Count:   xx"
-		pattern := regexp.MustCompile(`Stats for.*in\s+(.*?)\s+mode:`)
 		match := pattern.FindAllStringSubmatch(l, 1)
-		if match != nil {
+		if match != nil && match[0] != nil {
 			return match[0][1]
 		}
 	}
