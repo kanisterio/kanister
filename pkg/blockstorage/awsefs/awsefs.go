@@ -285,14 +285,48 @@ func (e *efs) getBackupTags(ctx context.Context, arn string) (map[string]string,
 }
 
 func (e *efs) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
+	mts, err := e.getMountTargets(ctx, volume.ID)
+	if isVolumeNotFound(err) {
+		return nil
+	}
+	err = e.deleteMountTargets(ctx, mts)
+	if err != nil {
+		return errors.Wrap(err, "Failed to delete mount targets")
+	}
+
 	req := &awsefs.DeleteFileSystemInput{}
 	req.SetFileSystemId(volume.ID)
-
-	_, err := e.DeleteFileSystemWithContext(ctx, req)
+	_, err = e.DeleteFileSystemWithContext(ctx, req)
 	if isVolumeNotFound(err) {
 		return nil
 	}
 	return err
+}
+
+func (e *efs) getMountTargets(ctx context.Context, fsID string) ([]*awsefs.MountTargetDescription, error) {
+	mts := make([]*awsefs.MountTargetDescription, 0)
+	for resp, req := emptyResponseRequestForMountTargets(); resp.NextMarker != nil; req.Marker = resp.NextMarker {
+		var err error
+		req.SetFileSystemId(fsID)
+		resp, err = e.DescribeMountTargetsWithContext(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		mts = append(mts, resp.MountTargets...)
+	}
+	return mts, nil
+}
+
+func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetDescription) error {
+	for _, mt := range mts {
+		req := &awsefs.DeleteMountTargetInput{}
+		req.SetMountTargetId(*mt.MountTargetId)
+		_, err := e.DeleteMountTargetWithContext(ctx, req)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (e *efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
@@ -546,15 +580,9 @@ func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*a
 }
 
 func (e *efs) getMountPointAndSecurityGroupTags(ctx context.Context, id string) (map[string]string, error) {
-	mts := make([]*awsefs.MountTargetDescription, 0)
-	for resp, req := emptyResponseRequestForMountTargets(); resp.NextMarker != nil; req.Marker = resp.NextMarker {
-		var err error
-		req.SetFileSystemId(id)
-		resp, err = e.DescribeMountTargetsWithContext(ctx, req)
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get mount targets")
-		}
-		mts = append(mts, resp.MountTargets...)
+	mts, err := e.getMountTargets(ctx, id)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get mount target for the volume")
 	}
 	resultTags := make(map[string]string)
 	for _, mt := range mts {
