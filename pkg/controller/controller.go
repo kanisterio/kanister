@@ -242,7 +242,7 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 }
 
 func (c *Controller) onUpdateBlueprint(oldBP, newBP *crv1alpha1.Blueprint) error {
-	log.Infof("Updated Blueprint '%s' from %#v to %#v", newBP.Name, oldBP, newBP)
+	log.Infof("Updated Blueprint '%s'", newBP.Name)
 	return nil
 }
 
