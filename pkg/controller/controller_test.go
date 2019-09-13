@@ -32,6 +32,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/scheme"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/eventer"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -398,10 +399,12 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	c.Assert(err, IsNil)
 
 	//Test the logAndErrorEvent function
+	ctx := context.Background()
+	ctx = field.Context(ctx, field.ActionsetNameKey, as.GetName())
 	config, err := kube.LoadConfig()
 	c.Assert(err, IsNil)
 	ctlr := New(config)
-	ctlr.logAndErrorEvent(msg, reason, errors.New("Testing Event Logs"), as, nilAs, bp)
+	ctlr.logAndErrorEvent(ctx, msg, reason, errors.New("Testing Event Logs"), as, nilAs, bp)
 
 	// Test ActionSet error event logging
 	events, err := s.cli.CoreV1().Events(as.Namespace).Search(scheme.Scheme, as)
@@ -424,7 +427,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 
 	//Testing empty Blueprint
 	testbp := &crv1alpha1.Blueprint{}
-	ctlr.logAndErrorEvent(msg, reason, errors.New("Testing Event Logs"), testbp)
+	ctlr.logAndErrorEvent(ctx, msg, reason, errors.New("Testing Event Logs"), testbp)
 	events, err = s.cli.CoreV1().Events(bp.Namespace).Search(scheme.Scheme, testbp)
 	c.Assert(err, NotNil)
 	c.Assert(len(events.Items), Equals, 0)
