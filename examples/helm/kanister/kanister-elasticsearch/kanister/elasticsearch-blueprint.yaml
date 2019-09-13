@@ -1,7 +1,3 @@
-apiVersion: cr.kanister.io/v1alpha1
-kind: Blueprint
-metadata:
-  name: elasticsearch-blueprint
 actions:
   backup:
     type: StatefulSet
