@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -71,10 +72,12 @@ func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.Template
 
 func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+		ctx = field.Context(ctx, field.PodNameKey, pod.Name)
 		// Wait for pod to reach running state
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
+		ctx = field.Context(ctx, field.ContainerNameKey, pod.Spec.Containers[0].Name)
 		if (len(deleteIdentifiers) == 0) == (len(deleteTags) == 0) {
 			return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
 		}
