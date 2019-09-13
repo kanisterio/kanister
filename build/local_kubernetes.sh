@@ -16,7 +16,7 @@ export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true
 export KUBECONFIG=$HOME/.kube/config
 export KUBE_VERSION=${KUBE_VERSION:-"v1.13.7"}
-export KIND_VERSION=${KIND_VERSION:-"v0.4.0"}
+export KIND_VERSION=${KIND_VERSION:-"v0.5.1"}
 export LOCAL_CLUSTER_NAME=${LOCAL_CLUSTER_NAME:-"kanister"}
 declare -a REQUIRED_BINS=( docker jq go )
 
