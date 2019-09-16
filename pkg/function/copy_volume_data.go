@@ -25,7 +25,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
-
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
