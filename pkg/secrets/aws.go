@@ -18,6 +18,36 @@ const (
 	AWSSessionToken string = "AWS_SESSION_TOKEN"
 )
 
+// ValidateAWSCredentials validates secret has all necessary information
+// for AWS credentials. It also checks the secret doesn't have unnnecessary
+//  information.
+//
+// Required fields:
+// - AWS_ACCESS_KEY_ID
+// - AWS_SECRET_ACCESS_KEY
+//
+// Optional field:
+// - AWS_SESSION_TOKEN
+func ValidateAWSCredentials(secret *v1.Secret) error {
+	if string(secret.Type) != AWSSecretType {
+		return errors.New("Secret is not AWS secret")
+	}
+	if _, ok := secret.Data[AWSAccessKeyID]; !ok {
+		return errors.New("AWS_ACCESS_KEY_ID is a required field")
+	}
+	if _, ok := secret.Data[AWSSecretAccessKey]; !ok {
+		return errors.New("AWS_SECRET_ACCESS_KEY is a required field")
+	}
+	count := 2
+	if _, ok := secret.Data[AWSSessionToken]; ok {
+		count++
+	}
+	if len(secret.Data) > count {
+		return errors.New("Secret has an unknown field")
+	}
+	return nil
+}
+
 // ExtractAWSCredentials extracts AWS credential values from the given secret.
 //
 // Extracted values from the secrets are:
@@ -28,17 +58,11 @@ const (
 // If the type of the secret is not "secret.kanister.io/aws", it returns an error.
 // If the required types are not avaialable in the secrets, it returns an errror.
 func ExtractAWSCredentials(secret *v1.Secret) (*credentials.Value, error) {
-	if string(secret.Type) != AWSSecretType {
-		return nil, errors.New("Secret is not AWS secret")
+	if err := ValidateAWSCredentials(secret); err != nil {
+		return nil, err
 	}
-	accessKeyID, ok := secret.Data[AWSAccessKeyID]
-	if !ok {
-		return nil, errors.New("AWS_ACCESS_KEY_ID is a required field")
-	}
-	secretAccessKey, ok := secret.Data[AWSSecretAccessKey]
-	if !ok {
-		return nil, errors.New("AWS_SECRET_ACCESS_KEY is a required field")
-	}
+	accessKeyID := secret.Data[AWSAccessKeyID]
+	secretAccessKey := secret.Data[AWSSecretAccessKey]
 	sessionToken := secret.Data[AWSSessionToken]
 	return &credentials.Value{
 		AccessKeyID:     string(accessKeyID),
