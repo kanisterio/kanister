@@ -78,6 +78,18 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 			expected:   nil,
 			errChecker: NotNil,
 		},
+		{
+			secret: &v1.Secret{
+				Type: v1.SecretType(AWSSecretType),
+				Data: map[string][]byte{
+					AWSAccessKeyID:     []byte("key_id"),
+					AWSSecretAccessKey: []byte("secret_key"),
+					"ExtraField":       []byte("extra_value"),
+				},
+			},
+			expected:   nil,
+			errChecker: NotNil,
+		},
 	}
 	for _, tc := range tcs {
 		creds, err := ExtractAWSCredentials(tc.secret)
