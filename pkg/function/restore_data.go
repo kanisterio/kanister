@@ -177,7 +177,10 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	}
 	// Validate and get optional arguments
 	restorePath, encryptionKey, pod, vols, backupTag, backupID, err := validateAndGetOptArgs(args)
-	ctx = field.Context(ctx, field.PodNameKey, pod)
+
+	if pod != "" {
+		ctx = field.Context(ctx, field.PodNameKey, pod)
+	}
 	if err != nil {
 		return nil, err
 	}
