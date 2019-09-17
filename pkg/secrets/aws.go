@@ -11,16 +11,16 @@ const (
 	AWSSecretType string = "secrets.kanister.io/aws"
 
 	// AWSAccessKeyID is the key for AWS access key ID.
-	AWSAccessKeyID string = "AWS_ACCESS_KEY_ID"
+	AWSAccessKeyID string = "awsAccessKeyID"
 	// AWSSecretAccessKey is the key for AWS secret access key.
-	AWSSecretAccessKey string = "AWS_SECRET_ACCESS_KEY"
+	AWSSecretAccessKey string = "awsSecretAccessKey"
 	// AWSSessionToken is the key for optional AWS session token.
-	AWSSessionToken string = "AWS_SESSION_TOKEN"
+	AWSSessionToken string = "awsSessionToken"
 )
 
 // ValidateAWSCredentials validates secret has all necessary information
 // for AWS credentials. It also checks the secret doesn't have unnnecessary
-//  information.
+// information.
 //
 // Required fields:
 // - AWS_ACCESS_KEY_ID

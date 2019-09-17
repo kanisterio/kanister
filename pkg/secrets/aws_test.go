@@ -1,15 +1,10 @@
 package secrets
 
 import (
-	"testing"
-
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 )
-
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
 
 type AWSSecretSuite struct{}
 
