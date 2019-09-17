@@ -48,40 +48,32 @@ func WithContext(ctx context.Context) {
 	Info().WithContext(ctx)
 }
 
+func WithError(err error) {
+	Error().WithError(err)
+}
+
 func (l *logger) Print(msg string) {
 	logFields := make(logrus.Fields)
 	if l.ctx != nil {
-		ctxFields := field.FromContext(l.ctx)
-		for _, f := range ctxFields {
+		ctxFields := field.FromContext(l.ctx).Fields()
+		for _, cf := range ctxFields {
 			logFields[cf.Key()] = cf.Value()
 		}
 	}
-	if len(logFields) > 0 {
-		if l.entry != nil {
-			l.entry = l.entry.WithFields(logFields)
-		} else {
-			l.entry = logrus.WithFields(logFields)
-		}
+
+	if l.entry != nil {
+		l.entry = l.entry.WithFields(logFields)
+	} else {
+		l.entry = logrus.WithFields(logFields)
 	}
+
 	switch l.level {
 	case InfoLevel:
-		if l.entry != nil {
-			l.entry.Info(msg)
-		} else {
-			logrus.Info(msg)
-		}
+		l.entry.Info(msg)
 	case ErrorLevel:
-		if l.entry != nil {
-			l.entry.Error(msg)
-		} else {
-			logrus.Error(msg)
-		}
+		l.entry.Error(msg)
 	case DebugLevel:
-		if l.entry != nil {
-			l.entry.Debug(msg)
-		} else {
-			logrus.Debug(msg)
-		}
+		l.entry.Debug(msg)
 	}
 }
 
