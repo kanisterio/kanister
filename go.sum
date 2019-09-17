@@ -143,6 +143,8 @@ github.com/json-iterator/go v1.1.6/go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCV
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/kastenhq/stow v0.1.1-kasten h1:0IuykRy/KfqUttO2n6w3XTJzyFhSThXeE5UtKvstmYs=
 github.com/kastenhq/stow v0.1.1-kasten/go.mod h1:ABI2whmZOX25JbmbVuHRLFuPiGnv5lxXhduCtof7UHk=
+github.com/kastenhq/stow v0.1.2-kasten h1:3msAbg6woEPWzYaBPmsOY4a0V55QosWD86XMOE+gDbM=
+github.com/kastenhq/stow v0.1.2-kasten/go.mod h1:ABI2whmZOX25JbmbVuHRLFuPiGnv5lxXhduCtof7UHk=
 github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
 github.com/kelseyhightower/envconfig v1.4.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
