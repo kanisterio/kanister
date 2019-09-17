@@ -54,9 +54,8 @@ func WithError(err error) {
 
 func (l *logger) Print(msg string) {
 	logFields := make(logrus.Fields)
-	if l.ctx != nil {
-		ctxFields := field.FromContext(l.ctx).Fields()
-		for _, cf := range ctxFields {
+	if ctxFields := field.FromContext(l.ctx); ctxFields != nil {
+		for _, cf := range ctxFields.Fields() {
 			logFields[cf.Key()] = cf.Value()
 		}
 	}
