@@ -248,15 +248,15 @@ type Location struct {
 type CredentialType string
 
 const (
-	CredentialTypeKeyPair CredentialType = "keyPair"
-	CredentialTypeAws     CredentialType = "aws"
+	CredentialTypeKeyPair     CredentialType = "keyPair"
+	CredentialTypeTypedSecret CredentialType = "typedSecret"
 )
 
 // Credential
 type Credential struct {
-	Type    CredentialType  `json:"type"`
-	KeyPair *KeyPair        `json:"keyPair"`
-	Aws     *AwsCredentials `json:"aws"`
+	Type        CredentialType `json:"type"`
+	KeyPair     *KeyPair       `json:"keyPair"`
+	TypedSecret *TypedSecret   `json:"aws"`
 }
 
 // KeyPair
@@ -266,8 +266,8 @@ type KeyPair struct {
 	Secret      ObjectReference `json:"secret"`
 }
 
-// AwsCredentials
-type AwsCredentials struct {
+// TypedSecret
+type TypedSecret struct {
 	Secret ObjectReference `json:"secret"`
 }
 
