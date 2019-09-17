@@ -25,6 +25,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -107,8 +108,8 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = OptArg(args, BackupDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
-	ctx = field.Context(ctx, field.PodNameKey, pod)
-	ctx = field.Context(ctx, field.ContainerNameKey, container)
+	ctx = field.Context(ctx, consts.PodNameKey, pod)
+	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	// Validate the Profile
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")

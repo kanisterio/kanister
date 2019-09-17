@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -85,8 +86,8 @@ func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps
 	for _, p := range ps {
 		for _, c := range cs {
 			go func(p string, c string) {
-				ctx = field.Context(ctx, field.PodNameKey, p)
-				ctx = field.Context(ctx, field.ContainerNameKey, c)
+				ctx = field.Context(ctx, consts.PodNameKey, p)
+				ctx = field.Context(ctx, consts.ContainerNameKey, c)
 				stdout, stderr, err := kube.Exec(cli, namespace, p, c, cmd, nil)
 				format.Log(p, c, stdout)
 				format.Log(p, c, stderr)

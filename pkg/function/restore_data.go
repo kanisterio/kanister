@@ -23,7 +23,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -177,10 +176,6 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	}
 	// Validate and get optional arguments
 	restorePath, encryptionKey, pod, vols, backupTag, backupID, err := validateAndGetOptArgs(args)
-
-	if pod != "" {
-		ctx = field.Context(ctx, field.PodNameKey, pod)
-	}
 	if err != nil {
 		return nil, err
 	}

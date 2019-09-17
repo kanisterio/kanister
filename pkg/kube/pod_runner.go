@@ -22,6 +22,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 )
 
@@ -50,8 +51,8 @@ func (p *PodRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create pod")
 	}
-	ctx = field.Context(ctx, field.PodNameKey, pod.Name)
-	ctx = field.Context(ctx, field.ContainerNameKey, pod.Spec.Containers[0].Name)
+	ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
+	ctx = field.Context(ctx, consts.ContainerNameKey, pod.Spec.Containers[0].Name)
 	go func() {
 		<-ctx.Done()
 		err := DeletePod(context.Background(), p.cli, pod)
