@@ -65,7 +65,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= kanisterio/build:v0.0.4
+BUILD_IMAGE ?= kanisterio/build:v0.0.5
 DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
 
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
@@ -153,7 +153,7 @@ push-name:
 version:
 	@echo $(VERSION)
 
-.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean docs start-kind stop-kind release-snapshot go-mod-download
+.PHONY: deploy test codegen build-dirs run clean container-clean bin-clean docs start-kind tiller stop-kind release-snapshot go-mod-download
 
 deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 .deploy-$(DOTFILE_IMAGE):
@@ -250,6 +250,9 @@ go-mod-download:
 
 start-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh start_localkube"'
+
+tiller:
+	@/bin/bash ./build/init_tiller.sh
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'

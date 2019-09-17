@@ -119,6 +119,14 @@ func PruneCommand(profile *param.Profile, repository, encryptionKey string) []st
 	return shCommand(command)
 }
 
+// StatsCommandByID returns restic stats command
+func StatsCommandByID(profile *param.Profile, repository, id, encryptionKey string) []string {
+	cmd := resticArgs(profile, repository, encryptionKey)
+	cmd = append(cmd, "stats", id)
+	command := strings.Join(cmd, " ")
+	return shCommand(command)
+}
+
 const (
 	ResticPassword   = "RESTIC_PASSWORD"
 	ResticRepository = "RESTIC_REPOSITORY"
@@ -198,7 +206,7 @@ func SnapshotIDFromSnapshotLog(output string) (string, error) {
 	if err != nil {
 		return "", errors.WithMessage(err, "Failed to unmarshall output from snapshotCommand")
 	}
-	if len(result) != 1 {
+	if len(result) == 0 {
 		return "", errors.New("Snapshot not found")
 	}
 	snapId := result[0]["short_id"]
