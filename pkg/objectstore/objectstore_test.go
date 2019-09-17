@@ -455,6 +455,7 @@ func getSecret(c *C, osType ProviderType) *Secret {
 		secret.Aws = &SecretAws{
 			AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
 			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			SessionToken:    os.Getenv("AWS_SESSION_TOKEN"),
 		}
 		c.Check(secret.Aws.AccessKeyID, Not(Equals), "")
 		c.Check(secret.Aws.SecretAccessKey, Not(Equals), "")

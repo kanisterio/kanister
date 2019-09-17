@@ -25,6 +25,8 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -106,6 +108,8 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = OptArg(args, BackupDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
+	ctx = field.Context(ctx, consts.PodNameKey, pod)
+	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	// Validate the Profile
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
@@ -170,7 +174,7 @@ func getPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podN
 func cleanUpCredsFile(ctx context.Context, pw *kube.PodWriter, namespace, podName, containerName string) {
 	if pw != nil {
 		if err := pw.Remove(ctx, namespace, podName, containerName); err != nil {
-			log.Errorf("Could not delete the temp file")
+			log.WithContext(ctx).Error("Could not delete the temp file")
 		}
 	}
 }
