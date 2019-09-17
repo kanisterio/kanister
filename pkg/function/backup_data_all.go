@@ -24,6 +24,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/restic"
@@ -85,6 +87,7 @@ func (*backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = OptArg(args, BackupDataAllEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
+	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	// Validate the Profile
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
@@ -121,6 +124,7 @@ func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace stri
 	// Run the command
 	for _, pod := range ps {
 		go func(pod string, container string) {
+			ctx = field.Context(ctx, consts.PodNameKey, pod)
 			backupID, backupTag, err := backupData(ctx, cli, namespace, pod, container, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), includePath, encryptionKey, tp)
 			errChan <- errors.Wrapf(err, "Failed to backup data for pod %s", pod)
 			outChan <- BackupInfo{PodName: pod, BackupID: backupID, BackupTag: backupTag}
