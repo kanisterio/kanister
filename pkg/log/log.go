@@ -48,16 +48,13 @@ func WithContext(ctx context.Context) {
 	Info().WithContext(ctx)
 }
 
-func (l *logger) Print(msg string, fields field.Fields) {
+func (l *logger) Print(msg string) {
 	logFields := make(logrus.Fields)
 	if l.ctx != nil {
 		ctxFields := field.FromContext(l.ctx)
 		for _, f := range ctxFields {
 			logFields[cf.Key()] = cf.Value()
 		}
-	}
-	for _, f := range fields {
-		logFields[f.Key()] = f.Value()
 	}
 	if len(logFields) > 0 {
 		if l.entry != nil {
