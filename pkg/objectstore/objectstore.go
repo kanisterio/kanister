@@ -112,13 +112,14 @@ func Supported(t ProviderType) bool {
 }
 
 func s3Config(config ProviderConfig, secret *Secret, region string) (stowKind string, stowConfig stow.Config, err error) {
-	var awsAccessKeyID, awsSecretAccessKey string
+	var awsAccessKeyID, awsSecretAccessKey, awsSessionToken string
 	if secret != nil {
 		if secret.Type != SecretTypeAwsAccessKey {
 			return "", nil, errors.Errorf("invalid secret type %s", secret.Type)
 		}
 		awsAccessKeyID = secret.Aws.AccessKeyID
 		awsSecretAccessKey = secret.Aws.SecretAccessKey
+		awsSessionToken = secret.Aws.SessionToken
 	} else {
 		var ok bool
 		if awsAccessKeyID, ok = os.LookupEnv("AWS_ACCESS_KEY_ID"); !ok {
@@ -127,10 +128,12 @@ func s3Config(config ProviderConfig, secret *Secret, region string) (stowKind st
 		if awsSecretAccessKey, ok = os.LookupEnv("AWS_SECRET_ACCESS_KEY"); !ok {
 			return "", nil, errors.New("AWS_SECRET_ACCESS_KEY environment not set")
 		}
+		awsSessionToken = os.Getenv("AWS_SESSION_TOKEN")
 	}
 	cm := stow.ConfigMap{
 		stows3.ConfigAccessKeyID: awsAccessKeyID,
 		stows3.ConfigSecretKey:   awsSecretAccessKey,
+		stows3.ConfigToken:       awsSessionToken,
 	}
 	if region != "" {
 		cm[stows3.ConfigRegion] = region
