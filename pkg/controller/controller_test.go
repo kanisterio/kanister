@@ -31,6 +31,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/scheme"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -400,7 +401,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 
 	//Test the logAndErrorEvent function
 	ctx := context.Background()
-	ctx = field.Context(ctx, field.ActionsetNameKey, as.GetName())
+	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	config, err := kube.LoadConfig()
 	c.Assert(err, IsNil)
 	ctlr := New(config)
