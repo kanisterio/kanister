@@ -44,6 +44,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/scheme"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -269,7 +270,7 @@ func (c *Controller) onDeleteBlueprint(bp *crv1alpha1.Blueprint) error {
 
 func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 	ctx := context.Background()
-	ctx = field.Context(ctx, field.ActionsetNameKey, as.GetName())
+	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	if as.Spec == nil {
 		log.WithContext(ctx).Error("Cannot initialize an ActionSet without a spec.")
 		return
@@ -345,7 +346,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 		return errors.WithStack(err)
 	}
 	ctx := context.Background()
-	ctx = field.Context(ctx, field.ActionsetNameKey, as.GetName())
+	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	for i := range as.Status.Actions {
 		if err = c.runAction(ctx, as, i); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
@@ -384,10 +385,10 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	var t *tomb.Tomb
 	t, ctx = tomb.WithContext(ctx)
 	c.actionSetTombMap.Store(as.Name, t)
-	ctx = field.Context(ctx, field.ActionsetNameKey, as.GetName())
+	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	t.Go(func() error {
 		for i, p := range phases {
-			ctx = field.Context(ctx, field.PhaseNameKey, p.Name())
+			ctx = field.Context(ctx, consts.PhaseNameKey, p.Name())
 			c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing phase %s", p.Name()), "Started Phase", as)
 			err = param.InitPhaseParams(ctx, c.clientset, tp, p.Name(), p.Objects())
 			var output map[string]interface{}
