@@ -249,12 +249,14 @@ type CredentialType string
 
 const (
 	CredentialTypeKeyPair CredentialType = "keyPair"
+	CredentialTypeAws     CredentialType = "aws"
 )
 
 // Credential
 type Credential struct {
-	Type    CredentialType `json:"type"`
-	KeyPair *KeyPair       `json:"keyPair"`
+	Type    CredentialType  `json:"type"`
+	KeyPair *KeyPair        `json:"keyPair"`
+	Aws     *AwsCredentials `json:"aws"`
 }
 
 // KeyPair
@@ -262,6 +264,11 @@ type KeyPair struct {
 	IDField     string          `json:"idField"`
 	SecretField string          `json:"secretField"`
 	Secret      ObjectReference `json:"secret"`
+}
+
+// AwsCredentials
+type AwsCredentials struct {
+	Secret ObjectReference `json:"secret"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
