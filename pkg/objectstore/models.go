@@ -33,6 +33,8 @@ type SecretAws struct {
 	AccessKeyID string
 	// secret access key
 	SecretAccessKey string
+	// session token
+	SessionToken string
 }
 
 // SecretAzure Azure credentials
