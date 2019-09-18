@@ -248,15 +248,15 @@ type Location struct {
 type CredentialType string
 
 const (
-	CredentialTypeKeyPair     CredentialType = "keyPair"
-	CredentialTypeTypedSecret CredentialType = "typedSecret"
+	CredentialTypeKeyPair CredentialType = "keyPair"
+	CredentialTypeSecret  CredentialType = "secret"
 )
 
 // Credential
 type Credential struct {
-	Type        CredentialType `json:"type"`
-	KeyPair     *KeyPair       `json:"keyPair"`
-	TypedSecret *TypedSecret   `json:"aws"`
+	Type    CredentialType  `json:"type"`
+	KeyPair *KeyPair        `json:"keyPair"`
+	Secret  ObjectReference `json:"aws"`
 }
 
 // KeyPair
@@ -264,11 +264,6 @@ type KeyPair struct {
 	IDField     string          `json:"idField"`
 	SecretField string          `json:"secretField"`
 	Secret      ObjectReference `json:"secret"`
-}
-
-// TypedSecret
-type TypedSecret struct {
-	Secret ObjectReference `json:"secret"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
