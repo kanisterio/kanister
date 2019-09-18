@@ -29,6 +29,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 const timeFormat = time.RFC3339Nano
@@ -90,18 +91,26 @@ type CredentialType string
 
 const (
 	CredentialTypeKeyPair CredentialType = "keyPair"
+	CredentialTypeAWS     CredentialType = "aws"
 )
 
 // Credential resolves the storage
 type Credential struct {
 	Type    CredentialType
 	KeyPair *KeyPair
+	Aws     *AWSSecret
 }
 
 // KeyPair is a credential that contains two strings: an ID and a secret.
 type KeyPair struct {
 	ID     string
 	Secret string
+}
+
+type AWSSecret struct {
+	AccessKeyID  string
+	SecretKey    string
+	SessionToken string
 }
 
 // Phase represents a Blueprint phase and contains the phase output
@@ -209,6 +218,8 @@ func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1
 	switch c.Type {
 	case crv1alpha1.CredentialTypeKeyPair:
 		return fetchKeyPairCredential(ctx, cli, c.KeyPair)
+	case crv1alpha1.CredentialTypeSecret:
+		return fetchSecretCredential(ctx, cli, c.Secret)
 	default:
 		return nil, errors.Errorf("CredentialType '%s' not supported", c.Type)
 	}
@@ -233,6 +244,37 @@ func fetchKeyPairCredential(ctx context.Context, cli kubernetes.Interface, c *cr
 		KeyPair: &KeyPair{
 			ID:     string(s.Data[c.IDField]),
 			Secret: string(s.Data[c.SecretField]),
+		},
+	}, nil
+}
+
+func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *crv1alpha1.ObjectReference) (*Credential, error) {
+	if sr == nil {
+		return nil, errors.New("Secret reference cannot be nil")
+	}
+	s, err := cli.CoreV1().Secrets(sr.Namespace).Get(sr.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch the secret")
+	}
+	switch string(s.Type) {
+	case secrets.AWSSecretType:
+		return fetchAWSSecretCredential(ctx, s)
+	default:
+		return nil, errors.Errorf("Unsupported type '%s' for secret", string(s.Type))
+	}
+}
+
+func fetchAWSSecretCredential(ctx context.Context, s *v1.Secret) (*Credential, error) {
+	creds, err := secrets.ExtractAWSCredentials(s)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to validate AWS typed secret")
+	}
+	return &Credential{
+		Type: CredentialTypeAWS,
+		Aws: &AWSSecret{
+			AccessKeyID:  creds.AccessKeyID,
+			SecretKey:    creds.SecretAccessKey,
+			SessionToken: creds.SessionToken,
 		},
 	}, nil
 }
