@@ -22,6 +22,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -76,6 +78,7 @@ func kubeTaskPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
 		}
+		ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
 		// Fetch logs from the pod
 		r, err := kube.StreamPodLogs(ctx, cli, pod.Namespace, pod.Name)
 		if err != nil {
