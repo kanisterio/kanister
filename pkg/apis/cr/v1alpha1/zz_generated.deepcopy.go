@@ -388,7 +388,11 @@ func (in *Credential) DeepCopyInto(out *Credential) {
 		*out = new(KeyPair)
 		**out = **in
 	}
-	out.Secret = in.Secret
+	if in.Secret != nil {
+		in, out := &in.Secret, &out.Secret
+		*out = new(ObjectReference)
+		**out = **in
+	}
 	return
 }
 
