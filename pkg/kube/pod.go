@@ -16,6 +16,7 @@ package kube
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 
@@ -36,35 +37,55 @@ type PodOptions struct {
 	Command            []string
 	Volumes            map[string]string
 	ServiceAccountName string
+	PodOverride        v1.PodSpec
 }
 
 // CreatePod creates a pod with a single container based on the specified image
 func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
 	volumeMounts, podVolumes := createVolumeSpecs(opts.Volumes)
+	defaultSpecs := v1.PodSpec{
+		Containers: []v1.Container{
+			{
+				Name:            "container",
+				Image:           opts.Image,
+				Command:         opts.Command,
+				ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
+				VolumeMounts:    volumeMounts,
+			},
+		},
+		// RestartPolicy dictates when the containers of the pod should be restarted.
+		// The possible values include Always, OnFailure and Never with Always being the default.
+		// OnFailure policy will result in failed containers being restarted with an exponential back-off delay.
+		RestartPolicy:      v1.RestartPolicyOnFailure,
+		Volumes:            podVolumes,
+		ServiceAccountName: opts.ServiceAccountName,
+	}
+	log.Infof("Default pod specs::\n %+v", defaultSpecs)
+	// Override default specs if podspecs are passed
+	log.Infof("PodOverride specs to override::\n %+v", opts.PodOverride)
+
+	// Override default pod Spec with the ones provided via specs
+	// - Marshal override specs
+	// - Unmarshal override specs on default object so that it overrides only the fields that are present in override specs
+	override, err := json.Marshal(opts.PodOverride)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create pod. Cannot parse podoverride args. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+	}
+	err = json.Unmarshal(override, &defaultSpecs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+	}
+
+	log.Infof("Final Specs::\n %+v", defaultSpecs)
+
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
 			Namespace:    opts.Namespace,
 		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Name:            "container",
-					Image:           opts.Image,
-					Command:         opts.Command,
-					ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
-					VolumeMounts:    volumeMounts,
-				},
-			},
-			// RestartPolicy dictates when the containers of the pod should be restarted.
-			// The possible values include Always, OnFailure and Never with Always being the default.
-			// OnFailure policy will result in failed containers being restarted with an exponential back-off delay.
-			RestartPolicy:      v1.RestartPolicyOnFailure,
-			Volumes:            podVolumes,
-			ServiceAccountName: opts.ServiceAccountName,
-		},
+		Spec: defaultSpecs,
 	}
-	pod, err := cli.CoreV1().Pods(opts.Namespace).Create(pod)
+	pod, err = cli.CoreV1().Pods(opts.Namespace).Create(pod)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
