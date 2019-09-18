@@ -76,6 +76,28 @@ type client struct {
 
 //newClient returns a Client struct
 func newClient(ctx context.Context, args map[string]string) (*client, error) {
+	return handleClientPanic(func() (*client, error) {
+		return newClientUnsafe(ctx, args)
+	})
+}
+
+func handleClientPanic(f func() (*client, error)) (c *client, err error) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			return
+		}
+		if e, ok := r.(error); ok {
+			err = errors.Wrap(e, "IBM client panicked during initialization")
+		} else {
+			err = errors.Errorf("IBM client panicked during initialization: %s", r)
+		}
+	}()
+	return f()
+}
+
+// newClientUnsafe may panic. See https://github.com/IBM/ibmcloud-storage-volume-lib/issues/79
+func newClientUnsafe(ctx context.Context, args map[string]string) (*client, error) {
 
 	zaplog, _ := zap.NewProduction()
 	defer zaplog.Sync() // nolint: errcheck

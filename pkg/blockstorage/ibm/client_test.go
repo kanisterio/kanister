@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	ibmcfg "github.com/IBM/ibmcloud-storage-volume-lib/config"
+
 	. "gopkg.in/check.v1"
 )
 
@@ -125,4 +127,26 @@ func (s *ClientSuite) TestErrorsCases(c *C) {
 	ibmCli, err = newClient(context.Background(), make(map[string]string))
 	c.Assert(err, NotNil)
 	c.Assert(ibmCli, IsNil)
+}
+
+func (s *ClientSuite) TestPanic(c *C) {
+	for _, f := range []func() (*client, error){
+		func() (*client, error) {
+			panic("TEST")
+		},
+		func() (*client, error) {
+			var cfg *client
+			cfg.SLCfg = ibmcfg.SoftlayerConfig{}
+			return nil, nil
+		},
+		func() (*client, error) {
+			var x []int
+			x[0]++
+			return nil, nil
+		},
+	} {
+		cfg, err := handleClientPanic(f)
+		c.Assert(err, NotNil)
+		c.Assert(cfg, IsNil)
+	}
 }
