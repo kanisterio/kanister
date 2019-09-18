@@ -65,6 +65,7 @@ var (
 	vpcCfg = ibmcfg.VPCProviderConfig{
 		Enabled:              false,
 		VPCBlockProviderName: "vpc-classic",
+		APIKey:               "",
 	}
 )
 
