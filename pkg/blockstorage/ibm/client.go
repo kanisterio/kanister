@@ -109,6 +109,12 @@ func newClient(ctx context.Context, args map[string]string) (*client, error) {
 }
 
 func findDefaultConfig(ctx context.Context, args map[string]string, zaplog *zap.Logger) (*ibmcfg.Config, error) {
+	// Cheking if IBM store secret is present
+	ibmCfg, err := getDefIBMStoreSecret(ctx, args)
+	if err == nil {
+		return ibmCfg, nil
+	}
+	log.WithError(err).Info("Could not get IBM default store secret")
 	// Checking if an api key is provided via args
 	// If it present will use api value and default Softlayer config
 	if apik, ok := args[APIKeyArgName]; ok {
@@ -119,13 +125,6 @@ func findDefaultConfig(ctx context.Context, args map[string]string, zaplog *zap.
 			Bluemix:   &blueMixCfg,
 			VPC:       &vpcCfg,
 		}, nil
-	}
-	// Cheking if IBM store secret is present
-	ibmCfg, err := getDefIBMStoreSecret(ctx, args)
-	if err != nil {
-		log.WithError(err).Info("Could not get IBM default store secret")
-	} else {
-		return ibmCfg, nil
 	}
 	// Final attemp to get Config, by using default lib code path
 	defPath := ibmcfg.GetConfPath()
@@ -155,5 +154,11 @@ func getDefIBMStoreSecret(ctx context.Context, args map[string]string) (*ibmcfg.
 	}
 	retConfig := ibmcfg.Config{Softlayer: &softLayerCfg}
 	_, err = toml.Decode(string(storeSecret.Data[IBMK8sSecretData]), &retConfig)
+	if slapi, ok := args[SLAPIKeyArgName]; ok {
+		retConfig.Softlayer.SoftlayerAPIKey = slapi
+	}
+	if slusername, ok := args[SLAPIUsernameArgName]; ok {
+		retConfig.Softlayer.SoftlayerUsername = slusername
+	}
 	return &retConfig, err
 }
