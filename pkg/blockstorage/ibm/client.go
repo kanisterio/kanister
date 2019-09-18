@@ -152,7 +152,11 @@ func getDefIBMStoreSecret(ctx context.Context, args map[string]string) (*ibmcfg.
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to read Default IBM storage secret.")
 	}
-	retConfig := ibmcfg.Config{Softlayer: &softLayerCfg}
+	retConfig := ibmcfg.Config{
+		Softlayer: &softLayerCfg,
+		Bluemix:   &ibmcfg.BluemixConfig{},
+		VPC:       &ibmcfg.VPCProviderConfig{},
+	}
 	_, err = toml.Decode(string(storeSecret.Data[IBMK8sSecretData]), &retConfig)
 	if slapi, ok := args[SLAPIKeyArgName]; ok {
 		retConfig.Softlayer.SoftlayerAPIKey = slapi
@@ -160,5 +164,6 @@ func getDefIBMStoreSecret(ctx context.Context, args map[string]string) (*ibmcfg.
 	if slusername, ok := args[SLAPIUsernameArgName]; ok {
 		retConfig.Softlayer.SoftlayerUsername = slusername
 	}
+
 	return &retConfig, err
 }
