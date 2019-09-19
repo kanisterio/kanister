@@ -1,0 +1,21 @@
+[bluemix]
+iam_url = "https://iam.bluemix.net"
+iam_client_id = "bx"
+iam_client_secret = "bx"
+iam_api_key = "free"
+refresh_token = ""
+containers_api_route = "https://origin.containers.test.cloud.ibm.com"
+
+[softlayer]
+softlayer_block_enabled = true
+softlayer_block_provider_name = "SOFTLAYER-BLOCK"
+softlayer_file_enabled = false
+softlayer_file_provider_name = "SOFTLAYER-FILE"
+softlayer_username = ""
+softlayer_api_key = ""
+softlayer_endpoint_url = "https://api.softlayer.com/rest/v3"
+softlayer_iam_endpoint_url = "https://api.softlayer.com/mobile/v3"
+softlayer_datacenter = "sjc03"
+softlayer_api_timeout = "30s"
+softlayer_vol_provision_timeout = "30m"
+softlayer_api_retry_interval = "5s"
