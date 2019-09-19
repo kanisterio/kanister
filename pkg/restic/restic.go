@@ -244,11 +244,11 @@ func SnapshotStatsFromStatsLog(output string) (string, string, string) {
 	pattern2 := regexp.MustCompile(`Total Size: \s+(.*?)$`)
 	for _, l := range logs {
 		match1 := pattern1.FindAllStringSubmatch(l, 1)
-		if match1 != nil && match1[0] != nil {
+		if len(match1) > 0 && len(match1[0]) > 1 {
 			fileCount = match1[0][1]
 		}
 		match2 := pattern2.FindAllStringSubmatch(l, 1)
-		if match2 != nil && match2[0] != nil {
+		if len(match2) > 0 && len(match2[0]) > 1 {
 			size = match2[0][1]
 		}
 	}
@@ -262,7 +262,7 @@ func SnapshotStatsModeFromStatsLog(output string) string {
 	pattern := regexp.MustCompile(`Stats for.*in\s+(.*?)\s+mode:`)
 	for _, l := range logs {
 		match := pattern.FindAllStringSubmatch(l, 1)
-		if match != nil && match[0] != nil {
+		if len(match) > 0 && len(match[0]) > 1 {
 			return match[0][1]
 		}
 	}
