@@ -91,26 +91,20 @@ type CredentialType string
 
 const (
 	CredentialTypeKeyPair CredentialType = "keyPair"
-	CredentialTypeAWS     CredentialType = "aws"
+	CredentialTypeSecret  CredentialType = "secret"
 )
 
 // Credential resolves the storage
 type Credential struct {
 	Type    CredentialType
 	KeyPair *KeyPair
-	Aws     *AWSSecret
+	Secret  *v1.Secret
 }
 
 // KeyPair is a credential that contains two strings: an ID and a secret.
 type KeyPair struct {
 	ID     string
 	Secret string
-}
-
-type AWSSecret struct {
-	AccessKeyID  string
-	SecretKey    string
-	SessionToken string
 }
 
 // Phase represents a Blueprint phase and contains the phase output
@@ -265,17 +259,12 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 }
 
 func fetchAWSSecretCredential(ctx context.Context, s *v1.Secret) (*Credential, error) {
-	creds, err := secrets.ExtractAWSCredentials(s)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to validate AWS typed secret")
+	if err := secrets.ValidateAWSCredentials(s); err != nil {
+		return nil, err
 	}
 	return &Credential{
-		Type: CredentialTypeAWS,
-		Aws: &AWSSecret{
-			AccessKeyID:  creds.AccessKeyID,
-			SecretKey:    creds.SecretAccessKey,
-			SessionToken: creds.SessionToken,
-		},
+		Type:   CredentialTypeSecret,
+		Secret: s,
 	}, nil
 }
 
