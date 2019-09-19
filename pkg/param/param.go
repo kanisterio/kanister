@@ -259,16 +259,6 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 	}, nil
 }
 
-func fetchAWSSecretCredential(ctx context.Context, s *v1.Secret) (*Credential, error) {
-	if err := secrets.ValidateAWSCredentials(s); err != nil {
-		return nil, err
-	}
-	return &Credential{
-		Type:   CredentialTypeSecret,
-		Secret: s,
-	}, nil
-}
-
 func filterByKind(refs map[string]crv1alpha1.ObjectReference, kind string) map[string]crv1alpha1.ObjectReference {
 	filtered := make(map[string]crv1alpha1.ObjectReference, len(refs))
 	for name, ref := range refs {
