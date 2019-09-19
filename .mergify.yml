@@ -7,3 +7,4 @@ pull_request_rules:
     actions:
       merge:
         strict: smart
+        method: squash
