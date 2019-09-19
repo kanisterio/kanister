@@ -249,12 +249,14 @@ type CredentialType string
 
 const (
 	CredentialTypeKeyPair CredentialType = "keyPair"
+	CredentialTypeSecret  CredentialType = "secret"
 )
 
 // Credential
 type Credential struct {
-	Type    CredentialType `json:"type"`
-	KeyPair *KeyPair       `json:"keyPair"`
+	Type    CredentialType   `json:"type"`
+	KeyPair *KeyPair         `json:"keyPair"`
+	Secret  *ObjectReference `json:"secret"`
 }
 
 // KeyPair
