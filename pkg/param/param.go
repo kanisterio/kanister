@@ -250,12 +250,13 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch the secret")
 	}
-	switch string(s.Type) {
-	case secrets.AWSSecretType:
-		return fetchAWSSecretCredential(ctx, s)
-	default:
-		return nil, errors.Errorf("Unsupported type '%s' for secret", string(s.Type))
+	if err = secrets.ValidateCredentials(s); err != nil {
+		return nil, err
 	}
+	return &Credential{
+		Type:   CredentialTypeSecret,
+		Secret: s,
+	}, nil
 }
 
 func fetchAWSSecretCredential(ctx context.Context, s *v1.Secret) (*Credential, error) {
