@@ -4,7 +4,7 @@ go 1.12
 
 replace (
 	cloud.google.com/go => github.com/GoogleCloudPlatform/google-cloud-go v0.1.1-0.20160913182117-3b1ae45394a2
-	github.com/graymeta/stow => github.com/kastenhq/stow v0.1.1-kasten
+	github.com/graymeta/stow => github.com/kastenhq/stow v0.1.2-kasten
 	github.com/rook/operator-kit => github.com/kastenhq/operator-kit v0.0.0-20180316185208-859e831cc18d
 )
 
@@ -14,7 +14,7 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.2.0 // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.3.0 // indirect
-	github.com/IBM/ibmcloud-storage-volume-lib v0.0.0-20190705114640-e7a4b11c618c
+	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
 	github.com/Masterminds/semver v1.4.2
 	github.com/Masterminds/sprig v2.15.0+incompatible
 	github.com/aokoli/goutils v1.1.0 // indirect

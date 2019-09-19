@@ -120,9 +120,9 @@ func PruneCommand(profile *param.Profile, repository, encryptionKey string) []st
 }
 
 // StatsCommandByID returns restic stats command
-func StatsCommandByID(profile *param.Profile, repository, id, encryptionKey string) []string {
+func StatsCommandByID(profile *param.Profile, repository, id, mode, encryptionKey string) []string {
 	cmd := resticArgs(profile, repository, encryptionKey)
-	cmd = append(cmd, "stats", id)
+	cmd = append(cmd, "stats", id, "--mode", mode)
 	command := strings.Join(cmd, " ")
 	return shCommand(command)
 }
@@ -224,6 +224,45 @@ func SnapshotIDFromBackupLog(output string) string {
 		pattern := regexp.MustCompile(`snapshot\s(.*?)\ssaved$`)
 		match := pattern.FindAllStringSubmatch(l, 1)
 		if match != nil {
+			return match[0][1]
+		}
+	}
+	return ""
+}
+
+// SnapshotStatsFromStatsLog gets the Snapshot Stats from Stats Command log
+func SnapshotStatsFromStatsLog(output string) (string, string, string) {
+	if output == "" {
+		return "", "", ""
+	}
+	var fileCount string
+	var size string
+	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	// Log should contain "Total File Count:   xx"
+	pattern1 := regexp.MustCompile(`Total File Count:\s+(.*?)$`)
+	// Log should contain "Total Size:   xx"
+	pattern2 := regexp.MustCompile(`Total Size: \s+(.*?)$`)
+	for _, l := range logs {
+		match1 := pattern1.FindAllStringSubmatch(l, 1)
+		if len(match1) > 0 && len(match1[0]) > 1 {
+			fileCount = match1[0][1]
+		}
+		match2 := pattern2.FindAllStringSubmatch(l, 1)
+		if len(match2) > 0 && len(match2[0]) > 1 {
+			size = match2[0][1]
+		}
+	}
+	return SnapshotStatsModeFromStatsLog(output), fileCount, size
+}
+
+// SnapshotStatsModeFromStatsLog gets the Stats mode from Stats Command log
+func SnapshotStatsModeFromStatsLog(output string) string {
+	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	// Log should contain "Stats for .... in  xx mode"
+	pattern := regexp.MustCompile(`Stats for.*in\s+(.*?)\s+mode:`)
+	for _, l := range logs {
+		match := pattern.FindAllStringSubmatch(l, 1)
+		if len(match) > 0 && len(match[0]) > 1 {
 			return match[0][1]
 		}
 	}
