@@ -29,6 +29,7 @@ import (
 const (
 	AWSAccessKeyID      = "AWS_ACCESS_KEY_ID"
 	AWSSecretAccessKey  = "AWS_SECRET_ACCESS_KEY"
+	AWSSessionToken     = "AWS_SESSION_TOKEN"
 	GoogleCloudCreds    = "GOOGLE_APPLICATION_CREDENTIALS"
 	GoogleProjectId     = "GOOGLE_PROJECT_ID"
 	AzureStorageAccount = "AZURE_ACCOUNT_NAME"

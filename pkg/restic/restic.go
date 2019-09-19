@@ -22,6 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -29,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 const (
@@ -138,7 +140,7 @@ func resticArgs(profile *param.Profile, repository, encryptionKey string) []stri
 	var cmd []string
 	switch profile.Location.Type {
 	case crv1alpha1.LocationTypeS3Compliant:
-		cmd = resticS3Args(profile, repository)
+		cmd, _ = resticS3Args(profile, repository)
 	case crv1alpha1.LocationTypeGCS:
 		cmd = resticGCSArgs(profile, repository)
 	case crv1alpha1.LocationTypeAzure:
@@ -149,7 +151,7 @@ func resticArgs(profile *param.Profile, repository, encryptionKey string) []stri
 	return append(cmd, fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey), ResticCommand)
 }
 
-func resticS3Args(profile *param.Profile, repository string) []string {
+func resticS3Args(profile *param.Profile, repository string) ([]string, error) {
 	s3Endpoint := awsS3Endpoint
 	if profile.Location.Endpoint != "" {
 		s3Endpoint = profile.Location.Endpoint
@@ -158,11 +160,40 @@ func resticS3Args(profile *param.Profile, repository string) []string {
 		log.Debugln("Removing trailing slashes from the endpoint")
 		s3Endpoint = strings.TrimRight(s3Endpoint, "/")
 	}
-	return []string{
-		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, profile.Credential.KeyPair.ID),
-		fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, profile.Credential.KeyPair.Secret),
-		fmt.Sprintf("export %s=s3:%s/%s\n", ResticRepository, s3Endpoint, repository),
+	args, err := resticS3CredentialArgs(profile.Credential)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create args from credential")
 	}
+	args = append(args, fmt.Sprintf("export %s=s3:%s/%s\n", ResticRepository, s3Endpoint, repository))
+	return args, nil
+}
+
+func resticS3CredentialArgs(creds param.Credential) ([]string, error) {
+	switch creds.Type {
+	case param.CredentialTypeKeyPair:
+		return []string{
+			fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, creds.KeyPair.ID),
+			fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, creds.KeyPair.Secret),
+		}, nil
+	case param.CredentialTypeSecret:
+		return resticS3CredentialSecretArgs(creds.Secret)
+	default:
+		return nil, errors.Errorf("Unsupported type '%s' for credentials", creds.Type)
+	}
+}
+
+func resticS3CredentialSecretArgs(secret *v1.Secret) ([]string, error) {
+	if err := secrets.ValidateAWSCredentials(secret); err != nil {
+		return nil, err
+	}
+	args := []string{
+		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, secret.Data[secrets.AWSAccessKeyID]),
+		fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, secret.Data[secrets.AWSSecretAccessKey]),
+	}
+	if _, ok := secret.Data[secrets.AWSSessionToken]; ok {
+		args = append(args, fmt.Sprintf("export %s=%s\n", location.AWSSessionToken, secret.Data[secrets.AWSSessionToken]))
+	}
+	return args, nil
 }
 
 func resticGCSArgs(profile *param.Profile, repository string) []string {
