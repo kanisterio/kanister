@@ -23,14 +23,18 @@ import (
 	"path/filepath"
 	"testing"
 
+	ibmcfg "github.com/IBM/ibmcloud-storage-volume-lib/config"
+
 	. "gopkg.in/check.v1"
 )
 
 const (
-	testTomlPath  = "testdata/correct"
-	testBogusPath = "testdata/incorrect"
-	workAroundEnv = "IBM_STORE_TOML"
-	IBMApiKeyEnv  = "IBM_API_KEY"
+	testTomlPath        = "testdata/correct"
+	testBogusPath       = "testdata/incorrect"
+	workAroundEnv       = "IBM_STORE_TOML"
+	IBMApiKeyEnv        = "IBM_API_KEY"
+	IBMSLApiKeyEnv      = "IBM_SL_API_KEY"
+	IBMSLApiUsernameEnv = "IBM_SL_API_USERNAME"
 )
 
 //These are not executed as part of Pipeline, but usefull for development
@@ -38,16 +42,24 @@ const (
 func Test(t *testing.T) { TestingT(t) }
 
 type ClientSuite struct {
-	apiKey string
+	apiKey        string
+	slAPIKey      string
+	slAPIUsername string
 }
 
 var _ = Suite(&ClientSuite{})
 
 func (s *ClientSuite) SetUpSuite(c *C) {
-	if os.Getenv(IBMApiKeyEnv) == "" {
-		c.Skip(IBMApiKeyEnv + " envionment variable not set")
+	var ok bool
+	if s.slAPIKey, ok = os.LookupEnv(IBMSLApiKeyEnv); ok {
+		if s.slAPIUsername, ok = os.LookupEnv(IBMSLApiUsernameEnv); ok {
+			return
+		}
 	}
-	s.apiKey = os.Getenv(IBMApiKeyEnv)
+	if s.apiKey, ok = os.LookupEnv(IBMApiKeyEnv); ok {
+		return
+	}
+	c.Skip(fmt.Sprintf("One of  %s, %s and %s environment variable is not set", IBMApiKeyEnv, IBMSLApiKeyEnv, IBMSLApiUsernameEnv))
 }
 
 func (s *ClientSuite) TearDownSuite(c *C) {
@@ -56,13 +68,15 @@ func (s *ClientSuite) TearDownSuite(c *C) {
 }
 
 func (s *ClientSuite) TestAPIClient(c *C) {
-	var apiKey string
-	if apiK, ok := os.LookupEnv(IBMApiKeyEnv); ok {
-		apiKey = apiK
+	if tomlPath, ok := os.LookupEnv(workAroundEnv); ok {
+		err := os.Setenv(LibDefCfgEnv, filepath.Dir(tomlPath))
+		c.Assert(err, IsNil)
+		defer os.Unsetenv(LibDefCfgEnv)
 	} else {
-		c.Skip(fmt.Sprintf("Could not find env var %s with API key", IBMApiKeyEnv))
+		c.Skip(workAroundEnv + " TOML path is not present")
 	}
-	ibmCli, err := newClient(context.Background(), map[string]string{APIKeyArgName: apiKey})
+	args := s.getCredsMap(c)
+	ibmCli, err := newClient(context.Background(), args)
 	c.Assert(err, IsNil)
 	c.Assert(ibmCli, NotNil)
 	c.Assert(ibmCli.Service, NotNil)
@@ -73,13 +87,16 @@ func (s *ClientSuite) TestAPIClient(c *C) {
 }
 
 func (s *ClientSuite) TestIBMClientSoftlayerFile(c *C) {
-	var apiKey string
-	if apiK, ok := os.LookupEnv(IBMApiKeyEnv); ok {
-		apiKey = apiK
+	if tomlPath, ok := os.LookupEnv(workAroundEnv); ok {
+		err := os.Setenv(LibDefCfgEnv, filepath.Dir(tomlPath))
+		c.Assert(err, IsNil)
+		defer os.Unsetenv(LibDefCfgEnv)
 	} else {
-		c.Skip(fmt.Sprintf("Could not find env var %s with API key", IBMApiKeyEnv))
+		c.Skip(workAroundEnv + " TOML path is not present")
 	}
-	ibmCli, err := newClient(context.Background(), map[string]string{APIKeyArgName: apiKey, SoftlayerFileAttName: "true"})
+	args := s.getCredsMap(c)
+	args[SoftlayerFileAttName] = "true"
+	ibmCli, err := newClient(context.Background(), args)
 	defer ibmCli.Service.Close()
 	c.Assert(err, IsNil)
 	c.Assert(ibmCli.Service, NotNil)
@@ -121,8 +138,43 @@ func (s *ClientSuite) TestErrorsCases(c *C) {
 	c.Assert(err, NotNil)
 	c.Assert(ibmCli, IsNil)
 	err = os.Setenv(LibDefCfgEnv, testBogusPath)
+	defer os.Unsetenv(LibDefCfgEnv)
 	c.Assert(err, IsNil)
 	ibmCli, err = newClient(context.Background(), make(map[string]string))
 	c.Assert(err, NotNil)
 	c.Assert(ibmCli, IsNil)
+
+}
+
+func (s *ClientSuite) getCredsMap(c *C) map[string]string {
+	if s.slAPIKey != "" {
+		return map[string]string{SLAPIKeyArgName: s.slAPIKey, SLAPIUsernameArgName: s.slAPIUsername}
+	}
+	if s.apiKey != "" {
+		return map[string]string{APIKeyArgName: s.apiKey}
+	}
+	c.Skip(fmt.Sprintf("Neither of  %s, %s  environment variables set", IBMApiKeyEnv, IBMSLApiKeyEnv))
+	return map[string]string{}
+}
+
+func (s *ClientSuite) TestPanic(c *C) {
+	for _, f := range []func() (*client, error){
+		func() (*client, error) {
+			panic("TEST")
+		},
+		func() (*client, error) {
+			var cfg *client
+			cfg.SLCfg = ibmcfg.SoftlayerConfig{}
+			return nil, nil
+		},
+		func() (*client, error) {
+			var x []int
+			x[0]++
+			return nil, nil
+		},
+	} {
+		cfg, err := handleClientPanic(f)
+		c.Assert(err, NotNil)
+		c.Assert(cfg, IsNil)
+	}
 }
