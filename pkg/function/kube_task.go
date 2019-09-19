@@ -16,8 +16,10 @@ package function
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -115,6 +117,16 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	}
 	if err = OptArg(args, KubeTaskPodOverrideArg, &podOverride, v1.PodSpec{}); err != nil {
 		return nil, err
+	}
+
+	log.Infof("Template params %+v", tp.PodOverride)
+	// Check if PodOverride specs are passed to actionset
+	// If yes, override podOverride specs
+	if !reflect.DeepEqual(tp.PodOverride, v1.PodSpec{}) {
+		podOverride, err = kube.PodSpecOverride(ctx, podOverride, tp.PodOverride)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	cli, err := kube.NewClient()

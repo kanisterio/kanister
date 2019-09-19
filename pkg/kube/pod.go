@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"reflect"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -41,7 +42,7 @@ type PodOptions struct {
 }
 
 // CreatePod creates a pod with a single container based on the specified image
-func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (pod *v1.Pod, err error) {
 	volumeMounts, podVolumes := createVolumeSpecs(opts.Volumes)
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
@@ -64,21 +65,21 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	// Override default specs if podspecs are passed
 	log.Infof("PodOverride specs to override::\n %+v", opts.PodOverride)
 
-	// Override default pod Spec with the ones provided via specs
-	// - Marshal override specs
-	// - Unmarshal override specs on default object so that it overrides only the fields that are present in override specs
-	override, err := json.Marshal(opts.PodOverride)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Cannot parse podoverride args. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+	if !reflect.DeepEqual(opts.PodOverride, v1.PodSpec{}) {
+		defaultSpecs, err = PodSpecOverride(ctx, defaultSpecs, opts.PodOverride)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+		}
 	}
-	err = json.Unmarshal(override, &defaultSpecs)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+	// Make sure that container name exists after overriding
+	for i, _ := range defaultSpecs.Containers {
+		if len(defaultSpecs.Containers[i].Name) == 0 {
+			defaultSpecs.Containers[i].Name = "container"
+		}
 	}
-
 	log.Infof("Final Specs::\n %+v", defaultSpecs)
 
-	pod := &v1.Pod{
+	pod = &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
 			Namespace:    opts.Namespace,
@@ -153,4 +154,20 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		return p.Status.Phase == v1.PodSucceeded, nil
 	})
 	return errors.Wrap(err, "Pod did not transition into complete state")
+}
+
+// PodSpecOverride override default pod Spec with the ones provided via specs
+func PodSpecOverride(ctx context.Context, defaultSpecs, overrideSpecs v1.PodSpec) (v1.PodSpec, error) {
+	// - Marshal override specs
+	// - Unmarshal override specs on default object so that it overrides only the fields that are present in override specs
+	override, err := json.Marshal(overrideSpecs)
+	if err != nil {
+		return v1.PodSpec{}, err
+	}
+	err = json.Unmarshal(override, &defaultSpecs)
+	if err != nil {
+		return v1.PodSpec{}, err
+	}
+	log.Infof("Final Specs in fun::\n %+v", defaultSpecs)
+	return defaultSpecs, nil
 }
