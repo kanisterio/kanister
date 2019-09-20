@@ -135,21 +135,38 @@ func ProfileSchema(p *crv1alpha1.Profile) error {
 	if !supported(p.Location.Type) {
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-	if p.Credential.Type != crv1alpha1.CredentialTypeKeyPair {
-		return errorf("unknown or unsupported credential type '%s'", p.Credential.Type)
+	if err := validateCredentialType(&p.Credential); err != nil {
+		return err
 	}
 	if p.Location.Type == crv1alpha1.LocationTypeS3Compliant {
 		if p.Location.Bucket != "" && p.Location.Endpoint == "" && p.Location.Region == "" {
 			return errorf("Bucket region not specified")
 		}
 	}
-	if p.Credential.KeyPair.Secret.Name == "" {
-		return errorf("secret for bucket credentials not specified")
-	}
-	if p.Credential.KeyPair.SecretField == "" || p.Credential.KeyPair.IDField == "" {
-		return errorf("secret field or id field empty")
-	}
 	return nil
+}
+
+func validateCredentialType(creds *crv1alpha1.Credential) error {
+	switch creds.Type {
+	case crv1alpha1.CredentialTypeKeyPair:
+		if creds.KeyPair.Secret.Name == "" {
+			return errorf("Secret for bucket credentials not specified")
+		}
+		if creds.KeyPair.SecretField == "" || creds.KeyPair.IDField == "" {
+			return errorf("Secret field or id field empty")
+		}
+		return nil
+	case crv1alpha1.CredentialTypeSecret:
+		if creds.Secret.Name == "" {
+			return errorf("Secret name is empty")
+		}
+		if creds.Secret.Namespace == "" {
+			return errorf("Secret namespace is empty")
+		}
+		return nil
+	default:
+		return errorf("Unsupported credential type '%s'", creds.Type)
+	}
 }
 
 func supported(t crv1alpha1.LocationType) bool {
