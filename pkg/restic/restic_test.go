@@ -144,3 +144,37 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 		c.Assert(resticArgs(tc.profile, tc.repo, tc.password), DeepEquals, tc.expected)
 	}
 }
+
+func (s *ResticDataSuite) TestGetSnapshotStatsFromStatsLog(c *C) {
+	for _, tc := range []struct {
+		log          string
+		expectedfc   string
+		expectedsize string
+	}{
+		{log: "Total File Count:   9", expectedfc: "9", expectedsize: ""},
+		{log: "Total Size:   10.322 KiB", expectedfc: "", expectedsize: "10.322 KiB"},
+		{log: "sudhufehfuijbfjbruifhoiwhf", expectedfc: "", expectedsize: ""},
+		{log: "      Total File Count:   9", expectedfc: "9", expectedsize: ""},
+		{log: "    Total Size:   10.322 KiB", expectedfc: "", expectedsize: "10.322 KiB"},
+	} {
+		_, fc, s := SnapshotStatsFromStatsLog(tc.log)
+		c.Assert(fc, Equals, tc.expectedfc)
+		c.Assert(s, Equals, tc.expectedsize)
+	}
+}
+
+func (s *ResticDataSuite) TestGetSnapshotStatsModeFromStatsLog(c *C) {
+	for _, tc := range []struct {
+		log      string
+		expected string
+	}{
+		{log: "Stats for all snapshots in restore-size mode:", expected: "restore-size"},
+		{log: "Stats for 7e17e764 in restore-size mode:", expected: "restore-size"},
+		{log: "Stats for all snapshots in raw-data mode:", expected: "raw-data"},
+		{log: "Stats for all snapshots in blobs-per-file mode:", expected: "blobs-per-file"},
+		{log: "sudhufehfuijbfjbruifhoiwhf", expected: ""},
+	} {
+		mode := SnapshotStatsModeFromStatsLog(tc.log)
+		c.Assert(mode, Equals, tc.expected)
+	}
+}
