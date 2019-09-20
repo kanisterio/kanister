@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -147,9 +147,12 @@ func restoreDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, names
 		var cmd []string
 		// Generate restore command based on the identifier passed
 		if backupTag != "" {
-			cmd = restic.RestoreCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, restorePath, encryptionKey)
+			cmd, err = restic.RestoreCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, restorePath, encryptionKey)
 		} else if backupID != "" {
-			cmd = restic.RestoreCommandByID(tp.Profile, backupArtifactPrefix, backupID, restorePath, encryptionKey)
+			cmd, err = restic.RestoreCommandByID(tp.Profile, backupArtifactPrefix, backupID, restorePath, encryptionKey)
+		}
+		if err != nil {
+			return nil, err
 		}
 		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
