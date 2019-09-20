@@ -24,13 +24,11 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 const (
 	AWSAccessKeyID      = "AWS_ACCESS_KEY_ID"
 	AWSSecretAccessKey  = "AWS_SECRET_ACCESS_KEY"
-	AWSSessionToken     = "AWS_SESSION_TOKEN"
 	GoogleCloudCreds    = "GOOGLE_APPLICATION_CREDENTIALS"
 	GoogleProjectId     = "GOOGLE_PROJECT_ID"
 	AzureStorageAccount = "AZURE_ACCOUNT_NAME"
@@ -145,7 +143,11 @@ func getOSSecret(pType objectstore.ProviderType, cred param.Credential) (*object
 	secret := &objectstore.Secret{}
 	switch pType {
 	case objectstore.ProviderTypeS3:
-		return getAWSSecret(cred)
+		secret.Type = objectstore.SecretTypeAwsAccessKey
+		secret.Aws = &objectstore.SecretAws{
+			AccessKeyID:     cred.KeyPair.ID,
+			SecretAccessKey: cred.KeyPair.Secret,
+		}
 	case objectstore.ProviderTypeGCS:
 		secret.Type = objectstore.SecretTypeGcpServiceAccountKey
 		secret.Gcp = &objectstore.SecretGcp{
@@ -162,31 +164,4 @@ func getOSSecret(pType objectstore.ProviderType, cred param.Credential) (*object
 		return nil, errors.Errorf("unknown or unsupported provider type '%s'", pType)
 	}
 	return secret, nil
-}
-
-func getAWSSecret(cred param.Credential) (*objectstore.Secret, error) {
-	os := &objectstore.Secret{
-		Type: objectstore.SecretTypeAwsAccessKey,
-	}
-	switch cred.Type {
-	case param.CredentialTypeKeyPair:
-		os.Aws = &objectstore.SecretAws{
-			AccessKeyID:     cred.KeyPair.ID,
-			SecretAccessKey: cred.KeyPair.Secret,
-		}
-		return os, nil
-	case param.CredentialTypeSecret:
-		creds, err := secrets.ExtractAWSCredentials(cred.Secret)
-		if err != nil {
-			return nil, err
-		}
-		os.Aws = &objectstore.SecretAws{
-			AccessKeyID:     creds.AccessKeyID,
-			SecretAccessKey: creds.SecretAccessKey,
-			SessionToken:    creds.SessionToken,
-		}
-		return os, nil
-	default:
-		return nil, errors.Errorf("Unsupported type '%s' for credential", cred.Type)
-	}
 }
