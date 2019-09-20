@@ -17,12 +17,11 @@ package validate
 import (
 	"testing"
 
-	"github.com/kanisterio/kanister/pkg/param"
-
 	. "gopkg.in/check.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 // Hook up gocheck into the "go test" runner.
