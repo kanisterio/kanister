@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/kanisterio/kanister/pkg/field"
 )
 
 // Level describes the current log level.
@@ -46,23 +48,50 @@ func WithContext(ctx context.Context) {
 	Info().WithContext(ctx)
 }
 
+func WithError(err error) {
+	Error().WithError(err)
+}
+
 func (l *logger) Print(msg string) {
+	logFields := make(logrus.Fields)
+	if ctxFields := field.FromContext(l.ctx); ctxFields != nil {
+		for _, cf := range ctxFields.Fields() {
+			logFields[cf.Key()] = cf.Value()
+		}
+	}
+
+	if l.entry != nil {
+		l.entry = l.entry.WithFields(logFields)
+	} else {
+		l.entry = logrus.WithFields(logFields)
+	}
+
 	switch l.level {
 	case InfoLevel:
-		logrus.Info(msg)
+		l.entry.Info(msg)
 	case ErrorLevel:
-		logrus.Error(msg)
+		l.entry.Error(msg)
 	case DebugLevel:
-		logrus.Debug(msg)
+		l.entry.Debug(msg)
 	}
 }
 
 func (l *logger) WithContext(ctx context.Context) Logger {
 	l.ctx = ctx
+	if l.entry != nil {
+		l.entry = l.entry.WithContext(ctx)
+	} else {
+		l.entry = logrus.WithContext(ctx)
+	}
 	return l
 }
 
 func (l *logger) WithError(err error) Logger {
 	l.err = err
+	if l.entry != nil {
+		l.entry = l.entry.WithError(err)
+	} else {
+		l.entry = logrus.WithError(err)
+	}
 	return l
 }
