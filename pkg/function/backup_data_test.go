@@ -51,7 +51,7 @@ func newValidProfile() *param.Profile {
 func newValidProfileWithSecretCredentials() *param.Profile {
 	return &param.Profile{
 		Location: crv1alpha1.Location{
-			Type: crv1alpha1.LocationTypeS3Compliant,
+			Type:     crv1alpha1.LocationTypeS3Compliant,
 			Bucket:   "test-bucket",
 			Endpoint: "",
 			Prefix:   "",
@@ -62,9 +62,9 @@ func newValidProfileWithSecretCredentials() *param.Profile {
 			Secret: &v1.Secret{
 				Type: v1.SecretType(secrets.AWSSecretType),
 				Data: map[string][]byte{
-					secrets.AWSAccessKeyID: []byte("key-id"),
+					secrets.AWSAccessKeyID:     []byte("key-id"),
 					secrets.AWSSecretAccessKey: []byte("access-key"),
-					secrets.AWSSessionToken: []byte("session-token"),
+					secrets.AWSSessionToken:    []byte("session-token"),
 				},
 			},
 		},
