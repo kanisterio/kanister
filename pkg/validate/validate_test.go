@@ -550,6 +550,44 @@ func (s *ValidateSuite) TestProfileSchema(c *C) {
 			},
 			checker: NotNil,
 		},
+		// Missing secret field
+		{
+			profile: &crv1alpha1.Profile{
+				Location: crv1alpha1.Location{
+					Type: crv1alpha1.LocationTypeS3Compliant,
+				},
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeKeyPair,
+					KeyPair: &crv1alpha1.KeyPair{
+						IDField: "id",
+						Secret: crv1alpha1.ObjectReference{
+							Name:      "secret-name",
+							Namespace: "secret-namespace",
+						},
+					},
+				},
+			},
+			checker: NotNil,
+		},
+		// Missing id field
+		{
+			profile: &crv1alpha1.Profile{
+				Location: crv1alpha1.Location{
+					Type: crv1alpha1.LocationTypeS3Compliant,
+				},
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeKeyPair,
+					KeyPair: &crv1alpha1.KeyPair{
+						SecretField: "secret",
+						Secret: crv1alpha1.ObjectReference{
+							Name:      "secret-name",
+							Namespace: "secret-namespace",
+						},
+					},
+				},
+			},
+			checker: NotNil,
+		},
 	}
 
 	for _, tc := range tcs {
