@@ -15,8 +15,9 @@
 package validate
 
 import (
-	"github.com/kanisterio/kanister/pkg/param"
 	"testing"
+
+	"github.com/kanisterio/kanister/pkg/param"
 
 	. "gopkg.in/check.v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -479,4 +480,81 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 func (s *ValidateSuite) TestBlueprint(c *C) {
 	err := Blueprint(nil)
 	c.Assert(err, IsNil)
+}
+
+func (s *ValidateSuite) TestProfileSchema(c *C) {
+	tcs := []struct {
+		profile *crv1alpha1.Profile
+		checker Checker
+	}{
+		{
+			profile: &crv1alpha1.Profile{
+				Location: crv1alpha1.Location{
+					Type: crv1alpha1.LocationTypeS3Compliant,
+				},
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeSecret,
+					Secret: &crv1alpha1.ObjectReference{
+						Name:      "secret-name",
+						Namespace: "secret-namespace",
+					},
+				},
+			},
+			checker: IsNil,
+		},
+		{
+			profile: &crv1alpha1.Profile{
+				Location: crv1alpha1.Location{
+					Type: crv1alpha1.LocationTypeS3Compliant,
+				},
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeKeyPair,
+					KeyPair: &crv1alpha1.KeyPair{
+						IDField:     "id",
+						SecretField: "secret",
+						Secret: crv1alpha1.ObjectReference{
+							Name:      "secret-name",
+							Namespace: "secret-namespace",
+						},
+					},
+				},
+			},
+			checker: IsNil,
+		},
+		// Missing secret namespace
+		{
+			profile: &crv1alpha1.Profile{
+				Location: crv1alpha1.Location{
+					Type: crv1alpha1.LocationTypeS3Compliant,
+				},
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeSecret,
+					Secret: &crv1alpha1.ObjectReference{
+						Name: "secret-name",
+					},
+				},
+			},
+			checker: NotNil,
+		},
+		// Missing secret name
+		{
+			profile: &crv1alpha1.Profile{
+				Location: crv1alpha1.Location{
+					Type: crv1alpha1.LocationTypeS3Compliant,
+				},
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeSecret,
+					Secret: &crv1alpha1.ObjectReference{
+						Namespace: "secret-namespace",
+					},
+				},
+			},
+			checker: NotNil,
+		},
+	}
+
+	for _, tc := range tcs {
+		err := ProfileSchema(tc.profile)
+		c.Check(err, tc.checker)
+	}
 }

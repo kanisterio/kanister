@@ -163,6 +163,7 @@ func validateCredentialType(creds *crv1alpha1.Credential) error {
 		if creds.Secret.Namespace == "" {
 			return errorf("Secret namespace is empty")
 		}
+		return nil
 	default:
 		return errorf("Unsupported credential type '%s'", creds.Type)
 	}
