@@ -41,10 +41,10 @@ func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, locat
 
 	switch osType {
 	case objectstore.ProviderTypeS3:
-		session, ok := os.LookupEnv(awsconfig.SessionToken)
+
 		key = GetEnvOrSkip(c, awsconfig.AccessKeyID)
 		val = GetEnvOrSkip(c, awsconfig.SecretAccessKey)
-		if ok {
+		if session, ok := os.LookupEnv(awsconfig.SessionToken); ok {
 			return s3ProfileWithSecretCredential(location, key, val, session)
 		}
 	case objectstore.ProviderTypeGCS:
