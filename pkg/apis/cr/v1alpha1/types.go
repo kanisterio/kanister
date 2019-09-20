@@ -22,6 +22,7 @@ which also has the apache 2.0 license.
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -98,6 +99,9 @@ type ActionSpec struct {
 	// Profile is use to specify the location where store artifacts and the
 	// credentials authorized to access them.
 	Profile *ObjectReference `json:"profile"`
+	// PodOverride is use to specify pod specs that will override the
+	// default pod specs
+	PodOverride v1.PodSpec `json:"podOverride"`
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
 	Options map[string]string `json:"options"`
