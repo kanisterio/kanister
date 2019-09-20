@@ -61,10 +61,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		Volumes:            podVolumes,
 		ServiceAccountName: opts.ServiceAccountName,
 	}
-	log.Infof("Default pod specs::\n %+v", defaultSpecs)
 	// Override default specs if podspecs are passed
-	log.Infof("PodOverride specs to override::\n %+v", opts.PodOverride)
-
 	if !reflect.DeepEqual(opts.PodOverride, v1.PodSpec{}) {
 		defaultSpecs, err = PodSpecOverride(ctx, defaultSpecs, opts.PodOverride)
 		if err != nil {
@@ -77,7 +74,6 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 			defaultSpecs.Containers[i].Name = "container"
 		}
 	}
-	log.Infof("Final Specs::\n %+v", defaultSpecs)
 
 	pod = &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -168,6 +164,5 @@ func PodSpecOverride(ctx context.Context, defaultSpecs, overrideSpecs v1.PodSpec
 	if err != nil {
 		return v1.PodSpec{}, err
 	}
-	log.Infof("Final Specs in fun::\n %+v", defaultSpecs)
 	return defaultSpecs, nil
 }

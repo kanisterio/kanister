@@ -19,7 +19,6 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -36,7 +35,7 @@ const (
 	KubeTaskNamespaceArg   = "namespace"
 	KubeTaskImageArg       = "image"
 	KubeTaskCommandArg     = "command"
-	KubeTaskPodOverrideArg = "podoverride"
+	KubeTaskPodOverrideArg = "podOverride"
 )
 
 func init() {
@@ -119,8 +118,7 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		return nil, err
 	}
 
-	log.Infof("Template params %+v", tp.PodOverride)
-	// Check if PodOverride specs are passed to actionset
+	// Check if PodOverride specs are passed through actionset
 	// If yes, override podOverride specs
 	if !reflect.DeepEqual(tp.PodOverride, v1.PodSpec{}) {
 		podOverride, err = kube.PodSpecOverride(ctx, podOverride, tp.PodOverride)
