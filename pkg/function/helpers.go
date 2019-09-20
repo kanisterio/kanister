@@ -7,7 +7,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
-func ValidateCredentials(creds *param.Credentials) error {
+func ValidateCredentials(creds *param.Credential) error {
 	if creds == nil {
 		return errors.New("Empty credentials")
 	}
@@ -22,13 +22,10 @@ func ValidateCredentials(creds *param.Credentials) error {
 		if len(creds.KeyPair.Secret) == 0 {
 			return errors.New("Secret access key is not set")
 		}
+		return nil
 	case param.CredentialTypeSecret:
 		return secrets.ValidateCredentials(creds.Secret)
 	default:
 		return errors.Errorf("Unsupported type '%s' for credentials", creds.Type)
 	}
-	if creds.Type != param.CredentialTypeKeyPair {
-		return errors.New("Credential type not supported")
-	}
-
 }

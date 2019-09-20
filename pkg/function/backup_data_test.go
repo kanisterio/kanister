@@ -16,9 +16,11 @@ package function
 
 import (
 	. "gopkg.in/check.v1"
+	v1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 type BackupDataSuite struct {
@@ -43,6 +45,29 @@ func newValidProfile() *param.Profile {
 			},
 		},
 		SkipSSLVerify: false,
+	}
+}
+
+func newValidProfileWithSecretCredentials() *param.Profile {
+	return &param.Profile{
+		Location: crv1alpha1.Location{
+			Type: crv1alpha1.LocationTypeS3Compliant,
+			Bucket:   "test-bucket",
+			Endpoint: "",
+			Prefix:   "",
+			Region:   "us-west-1",
+		},
+		Credential: param.Credential{
+			Type: param.CredentialTypeSecret,
+			Secret: &v1.Secret{
+				Type: v1.SecretType(secrets.AWSSecretType),
+				Data: map[string][]byte{
+					secrets.AWSAccessKeyID: []byte("key-id"),
+					secrets.AWSSecretAccessKey: []byte("access-key"),
+					secrets.AWSSessionToken: []byte("session-token"),
+				},
+			},
+		},
 	}
 }
 
@@ -73,6 +98,7 @@ func (s *BackupDataSuite) TestValidateProfile(c *C) {
 		errChecker Checker
 	}{
 		{"Valid Profile", newValidProfile(), IsNil},
+		{"Valid Profile with Secret Credentials", newValidProfileWithSecretCredentials(), IsNil},
 		{"Invalid Profile", newInvalidProfile(), NotNil},
 		{"Nil Profile", nil, NotNil},
 	}
