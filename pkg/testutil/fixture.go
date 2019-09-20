@@ -38,10 +38,8 @@ const (
 
 func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, location crv1alpha1.Location) *param.Profile {
 	var key, val string
-
 	switch osType {
 	case objectstore.ProviderTypeS3:
-
 		key = GetEnvOrSkip(c, awsconfig.AccessKeyID)
 		val = GetEnvOrSkip(c, awsconfig.SecretAccessKey)
 		if session, ok := os.LookupEnv(awsconfig.SessionToken); ok {

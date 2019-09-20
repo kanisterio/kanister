@@ -187,6 +187,6 @@ func getAWSSecret(cred param.Credential) (*objectstore.Secret, error) {
 		}
 		return os, nil
 	default:
-		return nil, errors.Errorf("Unsupport type '%s' for credential", cred.Type)
+		return nil, errors.Errorf("Unsupported type '%s' for credential", cred.Type)
 	}
 }
