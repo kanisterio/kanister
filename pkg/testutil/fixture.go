@@ -22,6 +22,7 @@ import (
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 	"gopkg.in/check.v1"
+	v1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
@@ -40,8 +41,12 @@ func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, locat
 
 	switch osType {
 	case objectstore.ProviderTypeS3:
+		session, ok := os.LookupEnv(awsconfig.SessionToken)
 		key = GetEnvOrSkip(c, awsconfig.AccessKeyID)
 		val = GetEnvOrSkip(c, awsconfig.SecretAccessKey)
+		if ok {
+			return s3ProfileWithSecretCredential(location, key, val, session)
+		}
 	case objectstore.ProviderTypeGCS:
 		GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
 		creds, err := google.FindDefaultCredentials(context.Background(), compute.ComputeScope)
@@ -71,4 +76,21 @@ func GetEnvOrSkip(c *check.C, varName string) string {
 		c.Skip(reason)
 	}
 	return v
+}
+
+func s3ProfileWithSecretCredential(location crv1alpha1.Location, accessKeyID, secretAccessKey, sessionToken string) *param.Profile {
+	return &param.Profile{
+		Location: location,
+		Credential: param.Credential{
+			Type: param.CredentialTypeSecret,
+			Secret: &v1.Secret{
+				Type: "secrets.kanister.io/aws",
+				Data: map[string][]byte{
+					"access_key_id":     []byte(accessKeyID),
+					"secret_access_key": []byte(secretAccessKey),
+					"session_token":     []byte(sessionToken),
+				},
+			},
+		},
+	}
 }
