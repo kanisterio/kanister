@@ -68,14 +68,8 @@ func validateProfile(profile *param.Profile) error {
 	if profile == nil {
 		return errors.New("Profile must be non-nil")
 	}
-	if profile.Credential.Type != param.CredentialTypeKeyPair {
-		return errors.New("Credential type not supported")
-	}
-	if len(profile.Credential.KeyPair.ID) == 0 {
-		return errors.New("Access key ID is not set")
-	}
-	if len(profile.Credential.KeyPair.Secret) == 0 {
-		return errors.New("Secret access key is not set")
+	if err := ValidateCredentials(profile.Credential); err != nil {
+		return err
 	}
 	switch profile.Location.Type {
 	case crv1alpha1.LocationTypeS3Compliant:
