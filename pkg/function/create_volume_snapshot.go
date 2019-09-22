@@ -23,7 +23,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -36,6 +36,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 func init() {
@@ -82,15 +83,8 @@ func ValidateProfile(profile *param.Profile, sType blockstorage.Type) error {
 	if profile == nil {
 		return errors.New("Profile must be non-nil")
 	}
-
-	if profile.Credential.Type != param.CredentialTypeKeyPair {
-		return errors.New("Credential type not supported")
-	}
-	if len(profile.Credential.KeyPair.ID) == 0 {
-		return errors.New("Access key ID is not set")
-	}
-	if len(profile.Credential.KeyPair.Secret) == 0 {
-		return errors.New("Secret access key is not set")
+	if err := ValidateCredentials(profile.Credential); err != nil {
+		return err
 	}
 	switch sType {
 	case blockstorage.TypeEBS:
@@ -219,8 +213,19 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 		}
 		if pvZone, ok := pvLabels[kubevolume.PVZoneLabelName]; ok {
 			config[awsconfig.ConfigRegion] = region
-			config[awsconfig.AccessKeyID] = tp.Profile.Credential.KeyPair.ID
-			config[awsconfig.SecretAccessKey] = tp.Profile.Credential.KeyPair.Secret
+			switch tp.Profile.Credential.Type {
+			case param.CredentialTypeKeyPair:
+				config[awsconfig.AccessKeyID] = tp.Profile.Credential.KeyPair.ID
+				config[awsconfig.SecretAccessKey] = tp.Profile.Credential.KeyPair.Secret
+			case param.CredentialTypeSecret:
+				creds, err := secrets.ExtractAWSCredentials(tp.Profile.Credential.Secret)
+				if err != nil {
+					return nil, errors.Wrap(err, "Failed to get AWS credentials from profile")
+				}
+				config[awsconfig.AccessKeyID] = creds.AccessKeyID
+				config[awsconfig.SecretAccessKey] = creds.SecretAccessKey
+				config[awsconfig.SessionToken] = creds.SessionToken
+			}
 			provider, err = getter.Get(blockstorage.TypeEBS, config)
 			if err != nil {
 				return nil, errors.Wrap(err, "Could not get storage provider")

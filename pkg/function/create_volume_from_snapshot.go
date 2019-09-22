@@ -30,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 func init() {
@@ -68,18 +69,12 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		if len(pvcNames) > 0 {
 			pvcName = pvcNames[i]
 		}
-		config := make(map[string]string)
 		if err = ValidateProfile(profile, pvcInfo.Type); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
-		switch pvcInfo.Type {
-		case blockstorage.TypeEBS:
-			config[awsconfig.ConfigRegion] = pvcInfo.Region
-			config[awsconfig.AccessKeyID] = profile.Credential.KeyPair.ID
-			config[awsconfig.SecretAccessKey] = profile.Credential.KeyPair.Secret
-		case blockstorage.TypeGPD:
-			config[blockstorage.GoogleProjectID] = profile.Credential.KeyPair.ID
-			config[blockstorage.GoogleServiceKey] = profile.Credential.KeyPair.Secret
+		config, err := configFromProfile(profile, &pvcInfo)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to construct config from profile and PVC info")
 		}
 		provider, err := getter.Get(pvcInfo.Type, config)
 		if err != nil {
@@ -120,6 +115,37 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		providerList[pvcInfo.PVCName] = provider
 	}
 	return providerList, nil
+}
+
+func configFromProfile(profile *param.Profile, pvcInfo *VolumeSnapshotInfo) (map[string]string, error) {
+	config := make(map[string]string)
+	switch pvcInfo.Type {
+	case blockstorage.TypeGPD:
+		switch profile.Credential.Type {
+		case param.CredentialTypeKeyPair:
+			config[blockstorage.GoogleProjectID] = profile.Credential.KeyPair.ID
+			config[blockstorage.GoogleServiceKey] = profile.Credential.KeyPair.Secret
+		case param.CredentialTypeSecret:
+			return nil, errors.New("GPD with secret credentials is unsupported")
+		}
+	case blockstorage.TypeEBS:
+		switch profile.Credential.Type {
+		case param.CredentialTypeKeyPair:
+			config[awsconfig.ConfigRegion] = pvcInfo.Region
+			config[awsconfig.AccessKeyID] = profile.Credential.KeyPair.ID
+			config[awsconfig.SecretAccessKey] = profile.Credential.KeyPair.Secret
+		case param.CredentialTypeSecret:
+			creds, err := secrets.ExtractAWSCredentials(profile.Credential.Secret)
+			if err != nil {
+				return nil, err
+			}
+			config[awsconfig.ConfigRegion] = pvcInfo.Region
+			config[awsconfig.AccessKeyID] = creds.AccessKeyID
+			config[awsconfig.SecretAccessKey] = creds.SecretAccessKey
+			config[awsconfig.SessionToken] = creds.SessionToken
+		}
+	}
+	return config, nil
 }
 
 func (kef *createVolumeFromSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
