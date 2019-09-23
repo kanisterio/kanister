@@ -68,15 +68,7 @@ func (l *logger) Print(msg string) {
 		}
 	}
 	entry := log.WithFields(logFields)
-
-	switch l.level {
-	case InfoLevel:
-		entry.Info(msg)
-	case ErrorLevel:
-		entry.Error(msg)
-	case DebugLevel:
-		entry.Debug(msg)
-	}
+	entry.Log(logrus.Level(l.level), msg)
 }
 
 func (l *logger) WithContext(ctx context.Context) Logger {
