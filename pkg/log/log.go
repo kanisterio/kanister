@@ -22,7 +22,6 @@ const (
 
 type logger struct {
 	level Level
-	entry *logrus.Entry
 	ctx   context.Context
 	err   error
 }
@@ -33,21 +32,18 @@ var log = logrus.New()
 func Info() Logger {
 	return &logger{
 		level: InfoLevel,
-		entry: logrus.NewEntry(logrus.New()),
 	}
 }
 
 func Error() Logger {
 	return &logger{
 		level: ErrorLevel,
-		entry: logrus.NewEntry(logrus.New()),
 	}
 }
 
 func Debug() Logger {
 	return &logger{
 		level: DebugLevel,
-		entry: logrus.NewEntry(logrus.New()),
 	}
 }
 
@@ -85,12 +81,10 @@ func (l *logger) Print(msg string) {
 
 func (l *logger) WithContext(ctx context.Context) Logger {
 	l.ctx = ctx
-	l.entry = l.entry.WithContext(ctx)
 	return l
 }
 
 func (l *logger) WithError(err error) Logger {
 	l.err = err
-	l.entry = l.entry.WithError(err)
 	return l
 }
