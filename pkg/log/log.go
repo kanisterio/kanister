@@ -28,15 +28,25 @@ type logger struct {
 }
 
 func Info() Logger {
-	return &logger{level: InfoLevel}
+
+	return &logger{
+		level: InfoLevel,
+		entry: logrus.NewEntry(logrus.New()),
+	}
 }
 
 func Error() Logger {
-	return &logger{level: ErrorLevel}
+	return &logger{
+		level: ErrorLevel,
+		entry: logrus.NewEntry(logrus.New()),
+	}
 }
 
 func Debug() Logger {
-	return &logger{level: DebugLevel}
+	return &logger{
+		level: DebugLevel,
+		entry: logrus.NewEntry(logrus.New()),
+	}
 }
 
 // Print adds `msg` to the log at `InfoLevel`. It is a wrapper for `Info().Print(msg)`, since this is the most common use case.
@@ -49,7 +59,7 @@ func WithContext(ctx context.Context) {
 }
 
 func WithError(err error) {
-	Error().WithError(err)
+	Info().WithError(err)
 }
 
 func (l *logger) Print(msg string) {
@@ -60,11 +70,7 @@ func (l *logger) Print(msg string) {
 		}
 	}
 
-	if l.entry != nil {
-		l.entry = l.entry.WithFields(logFields)
-	} else {
-		l.entry = logrus.WithFields(logFields)
-	}
+	l.entry = l.entry.WithFields(logFields)
 
 	switch l.level {
 	case InfoLevel:
@@ -78,20 +84,12 @@ func (l *logger) Print(msg string) {
 
 func (l *logger) WithContext(ctx context.Context) Logger {
 	l.ctx = ctx
-	if l.entry != nil {
-		l.entry = l.entry.WithContext(ctx)
-	} else {
-		l.entry = logrus.WithContext(ctx)
-	}
+	l.entry = l.entry.WithContext(ctx)
 	return l
 }
 
 func (l *logger) WithError(err error) Logger {
 	l.err = err
-	if l.entry != nil {
-		l.entry = l.entry.WithError(err)
-	} else {
-		l.entry = logrus.WithError(err)
-	}
+	l.entry = l.entry.WithError(err)
 	return l
 }
