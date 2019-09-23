@@ -22,6 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -29,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 const (
@@ -40,91 +42,124 @@ func shCommand(command string) []string {
 }
 
 // BackupCommandByID returns restic backup command
-func BackupCommandByID(profile *param.Profile, repository, pathToBackup, encryptionKey string) []string {
-	cmd := resticArgs(profile, repository, encryptionKey)
+func BackupCommandByID(profile *param.Profile, repository, pathToBackup, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
 	cmd = append(cmd, "backup", pathToBackup)
 	command := strings.Join(cmd, " ")
-	return shCommand(command)
+	return shCommand(command), nil
 }
 
 // BackupCommandByTag returns restic backup command with tag
-func BackupCommandByTag(profile *param.Profile, repository, backupTag, includePath, encryptionKey string) []string {
-	cmd := resticArgs(profile, repository, encryptionKey)
+func BackupCommandByTag(profile *param.Profile, repository, backupTag, includePath, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
 	cmd = append(cmd, "backup", "--tag", backupTag, includePath)
 	command := strings.Join(cmd, " ")
-	return shCommand(command)
+	return shCommand(command), nil
 }
 
 // RestoreCommandByID returns restic restore command with snapshotID as the identifier
-func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, encryptionKey string) []string {
-	cmd := resticArgs(profile, repository, encryptionKey)
+func RestoreCommandByID(profile *param.Profile, repository, id, restorePath, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
 	cmd = append(cmd, "restore", id, "--target", restorePath)
 	command := strings.Join(cmd, " ")
-	return shCommand(command)
+	return shCommand(command), nil
 }
 
 // RestoreCommandByTag returns restic restore command with tag as the identifier
-func RestoreCommandByTag(profile *param.Profile, repository, tag, restorePath, encryptionKey string) []string {
-	cmd := resticArgs(profile, repository, encryptionKey)
+func RestoreCommandByTag(profile *param.Profile, repository, tag, restorePath, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
 	cmd = append(cmd, "restore", "--tag", tag, "latest", "--target", restorePath)
 	command := strings.Join(cmd, " ")
-	return shCommand(command)
+	return shCommand(command), nil
 }
 
 // SnapshotsCommand returns restic snapshots command
-func SnapshotsCommand(profile *param.Profile, repository, encryptionKey string) []string {
-	cmd := resticArgs(profile, repository, encryptionKey)
+func SnapshotsCommand(profile *param.Profile, repository, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
 	cmd = append(cmd, "snapshots", "--json")
 	command := strings.Join(cmd, " ")
-	return shCommand(command)
+	return shCommand(command), nil
 }
 
 // SnapshotsCommandByTag returns restic snapshots command
-func SnapshotsCommandByTag(profile *param.Profile, repository, tag, encryptionKey string) []string {
-	cmd := resticArgs(profile, repository, encryptionKey)
+func SnapshotsCommandByTag(profile *param.Profile, repository, tag, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
 	cmd = append(cmd, "snapshots", "--tag", tag, "--json")
 	command := strings.Join(cmd, " ")
-	return shCommand(command)
+	return shCommand(command), nil
 }
 
 // InitCommand returns restic init command
-func InitCommand(profile *param.Profile, repository, encryptionKey string) []string {
-	cmd := resticArgs(profile, repository, encryptionKey)
+func InitCommand(profile *param.Profile, repository, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
 	cmd = append(cmd, "init")
 	command := strings.Join(cmd, " ")
-	return shCommand(command)
+	return shCommand(command), nil
 }
 
 // ForgetCommandByTag returns restic forget command
-func ForgetCommandByTag(profile *param.Profile, repository, tag, encryptionKey string) []string {
-	cmd := resticArgs(profile, repository, encryptionKey)
+func ForgetCommandByTag(profile *param.Profile, repository, tag, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
 	cmd = append(cmd, "forget", "--tag", tag)
 	command := strings.Join(cmd, " ")
-	return shCommand(command)
+	return shCommand(command), nil
 }
 
 // ForgetCommandByID returns restic forget command
-func ForgetCommandByID(profile *param.Profile, repository, id, encryptionKey string) []string {
-	cmd := resticArgs(profile, repository, encryptionKey)
+func ForgetCommandByID(profile *param.Profile, repository, id, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
 	cmd = append(cmd, "forget", id)
 	command := strings.Join(cmd, " ")
-	return shCommand(command)
+	return shCommand(command), nil
 }
 
 // PruneCommand returns restic prune command
-func PruneCommand(profile *param.Profile, repository, encryptionKey string) []string {
-	cmd := resticArgs(profile, repository, encryptionKey)
+func PruneCommand(profile *param.Profile, repository, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
 	cmd = append(cmd, "prune")
 	command := strings.Join(cmd, " ")
-	return shCommand(command)
+	return shCommand(command), nil
 }
 
 // StatsCommandByID returns restic stats command
-func StatsCommandByID(profile *param.Profile, repository, id, mode, encryptionKey string) []string {
-	cmd := resticArgs(profile, repository, encryptionKey)
+func StatsCommandByID(profile *param.Profile, repository, id, mode, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
 	cmd = append(cmd, "stats", id, "--mode", mode)
 	command := strings.Join(cmd, " ")
-	return shCommand(command)
+	return shCommand(command), nil
 }
 
 const (
@@ -134,22 +169,26 @@ const (
 	awsS3Endpoint    = "s3.amazonaws.com"
 )
 
-func resticArgs(profile *param.Profile, repository, encryptionKey string) []string {
+func resticArgs(profile *param.Profile, repository, encryptionKey string) ([]string, error) {
 	var cmd []string
+	var err error
 	switch profile.Location.Type {
 	case crv1alpha1.LocationTypeS3Compliant:
-		cmd = resticS3Args(profile, repository)
+		cmd, err = resticS3Args(profile, repository)
 	case crv1alpha1.LocationTypeGCS:
 		cmd = resticGCSArgs(profile, repository)
 	case crv1alpha1.LocationTypeAzure:
 		cmd = resticAzureArgs(profile, repository)
 	default:
-		return nil
+		return nil, errors.New("Unsupported type '%s' for the location")
 	}
-	return append(cmd, fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey), ResticCommand)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get arguments")
+	}
+	return append(cmd, fmt.Sprintf("export %s=%s\n", ResticPassword, encryptionKey), ResticCommand), nil
 }
 
-func resticS3Args(profile *param.Profile, repository string) []string {
+func resticS3Args(profile *param.Profile, repository string) ([]string, error) {
 	s3Endpoint := awsS3Endpoint
 	if profile.Location.Endpoint != "" {
 		s3Endpoint = profile.Location.Endpoint
@@ -158,11 +197,40 @@ func resticS3Args(profile *param.Profile, repository string) []string {
 		log.Debugln("Removing trailing slashes from the endpoint")
 		s3Endpoint = strings.TrimRight(s3Endpoint, "/")
 	}
-	return []string{
-		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, profile.Credential.KeyPair.ID),
-		fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, profile.Credential.KeyPair.Secret),
-		fmt.Sprintf("export %s=s3:%s/%s\n", ResticRepository, s3Endpoint, repository),
+	args, err := resticS3CredentialArgs(profile.Credential)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create args from credential")
 	}
+	args = append(args, fmt.Sprintf("export %s=s3:%s/%s\n", ResticRepository, s3Endpoint, repository))
+	return args, nil
+}
+
+func resticS3CredentialArgs(creds param.Credential) ([]string, error) {
+	switch creds.Type {
+	case param.CredentialTypeKeyPair:
+		return []string{
+			fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, creds.KeyPair.ID),
+			fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, creds.KeyPair.Secret),
+		}, nil
+	case param.CredentialTypeSecret:
+		return resticS3CredentialSecretArgs(creds.Secret)
+	default:
+		return nil, errors.Errorf("Unsupported type '%s' for credentials", creds.Type)
+	}
+}
+
+func resticS3CredentialSecretArgs(secret *v1.Secret) ([]string, error) {
+	if err := secrets.ValidateAWSCredentials(secret); err != nil {
+		return nil, err
+	}
+	args := []string{
+		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, secret.Data[secrets.AWSAccessKeyID]),
+		fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, secret.Data[secrets.AWSSecretAccessKey]),
+	}
+	if _, ok := secret.Data[secrets.AWSSessionToken]; ok {
+		args = append(args, fmt.Sprintf("export %s=%s\n", location.AWSSessionToken, secret.Data[secrets.AWSSessionToken]))
+	}
+	return args, nil
 }
 
 func resticGCSArgs(profile *param.Profile, repository string) []string {
@@ -184,7 +252,10 @@ func resticAzureArgs(profile *param.Profile, repository string) []string {
 // GetOrCreateRepository will check if the repository already exists and initialize one if not
 func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, profile *param.Profile) error {
 	// Use the snapshots command to check if the repository exists
-	cmd := SnapshotsCommand(profile, artifactPrefix, encryptionKey)
+	cmd, err := SnapshotsCommand(profile, artifactPrefix, encryptionKey)
+	if err != nil {
+		return errors.Wrap(err, "Failed to create snapshot command")
+	}
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
@@ -192,7 +263,10 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 		return nil
 	}
 	// Create a repository
-	cmd = InitCommand(profile, artifactPrefix, encryptionKey)
+	cmd, err = InitCommand(profile, artifactPrefix, encryptionKey)
+	if err != nil {
+		return errors.Wrap(err, "Failed to create init command")
+	}
 	stdout, stderr, err = kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
@@ -224,6 +298,45 @@ func SnapshotIDFromBackupLog(output string) string {
 		pattern := regexp.MustCompile(`snapshot\s(.*?)\ssaved$`)
 		match := pattern.FindAllStringSubmatch(l, 1)
 		if match != nil {
+			return match[0][1]
+		}
+	}
+	return ""
+}
+
+// SnapshotStatsFromStatsLog gets the Snapshot Stats from Stats Command log
+func SnapshotStatsFromStatsLog(output string) (string, string, string) {
+	if output == "" {
+		return "", "", ""
+	}
+	var fileCount string
+	var size string
+	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	// Log should contain "Total File Count:   xx"
+	pattern1 := regexp.MustCompile(`Total File Count:\s+(.*?)$`)
+	// Log should contain "Total Size:   xx"
+	pattern2 := regexp.MustCompile(`Total Size: \s+(.*?)$`)
+	for _, l := range logs {
+		match1 := pattern1.FindAllStringSubmatch(l, 1)
+		if len(match1) > 0 && len(match1[0]) > 1 {
+			fileCount = match1[0][1]
+		}
+		match2 := pattern2.FindAllStringSubmatch(l, 1)
+		if len(match2) > 0 && len(match2[0]) > 1 {
+			size = match2[0][1]
+		}
+	}
+	return SnapshotStatsModeFromStatsLog(output), fileCount, size
+}
+
+// SnapshotStatsModeFromStatsLog gets the Stats mode from Stats Command log
+func SnapshotStatsModeFromStatsLog(output string) string {
+	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	// Log should contain "Stats for .... in  xx mode"
+	pattern := regexp.MustCompile(`Stats for.*in\s+(.*?)\s+mode:`)
+	for _, l := range logs {
+		match := pattern.FindAllStringSubmatch(l, 1)
+		if len(match) > 0 && len(match[0]) > 1 {
 			return match[0][1]
 		}
 	}
