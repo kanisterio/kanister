@@ -48,6 +48,7 @@ type TemplateParams struct {
 	Options     map[string]string
 	Object      map[string]interface{}
 	Phases      map[string]*Phase
+	PodOverride v1.PodSpec
 }
 
 // StatefulSetParams are params for stateful sets.
@@ -143,6 +144,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 		Profile:     prof,
 		Time:        now.Format(timeFormat),
 		Options:     as.Options,
+		PodOverride: as.PodOverride,
 	}
 	var gvr schema.GroupVersionResource
 	namespace := as.Object.Namespace
