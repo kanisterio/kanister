@@ -27,8 +27,10 @@ type logger struct {
 	err   error
 }
 
-func Info() Logger {
+// common logger implementation used in the library
+var log = logrus.New()
 
+func Info() Logger {
 	return &logger{
 		level: InfoLevel,
 		entry: logrus.NewEntry(logrus.New()),
@@ -69,16 +71,15 @@ func (l *logger) Print(msg string) {
 			logFields[cf.Key()] = cf.Value()
 		}
 	}
-
-	l.entry = l.entry.WithFields(logFields)
+	entry := log.WithFields(logFields)
 
 	switch l.level {
 	case InfoLevel:
-		l.entry.Info(msg)
+		entry.Info(msg)
 	case ErrorLevel:
-		l.entry.Error(msg)
+		entry.Error(msg)
 	case DebugLevel:
-		l.entry.Debug(msg)
+		entry.Debug(msg)
 	}
 }
 
