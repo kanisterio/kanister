@@ -68,6 +68,9 @@ func (l *logger) Print(msg string) {
 		}
 	}
 	entry := log.WithFields(logFields)
+	if l.err != nil {
+		entry = entry.WithError(l.err)
+	}
 	entry.Log(logrus.Level(l.level), msg)
 }
 
