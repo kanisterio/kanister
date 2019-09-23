@@ -83,7 +83,7 @@ func ValidateProfile(profile *param.Profile, sType blockstorage.Type) error {
 	if profile == nil {
 		return errors.New("Profile must be non-nil")
 	}
-	if err := ValidateCredentials(profile.Credential); err != nil {
+	if err := ValidateCredentials(&profile.Credential); err != nil {
 		return err
 	}
 	switch sType {
