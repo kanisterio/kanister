@@ -101,7 +101,7 @@ type ActionSpec struct {
 	Profile *ObjectReference `json:"profile"`
 	// PodOverride is use to specify pod specs that will override the
 	// default pod specs
-	PodOverride v1.PodSpec `json:"podOverride"`
+	PodOverride v1.PodSpec `json:"podOverride,omitempty"`
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
 	Options map[string]string `json:"options"`
