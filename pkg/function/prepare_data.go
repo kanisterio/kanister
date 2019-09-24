@@ -17,6 +17,7 @@ package function
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -37,6 +38,7 @@ const (
 	PrepareDataCommandArg     = "command"
 	PrepareDataVolumes        = "volumes"
 	PrepareDataServiceAccount = "serviceaccount"
+	PrepareDataPodOverrideArg = "podOverride"
 )
 
 func init() {
@@ -73,7 +75,7 @@ func getVolumes(tp param.TemplateParams) (map[string]string, error) {
 	return vols, nil
 }
 
-func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, serviceAccount, image string, vols map[string]string, command ...string) (map[string]interface{}, error) {
+func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, serviceAccount, image string, vols map[string]string, podOverride v1.PodSpec, command ...string) (map[string]interface{}, error) {
 	// Validate volumes
 	for pvc := range vols {
 		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvc, metav1.GetOptions{}); err != nil {
@@ -87,6 +89,7 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 		Command:            command,
 		Volumes:            vols,
 		ServiceAccountName: serviceAccount,
+		PodOverride:        podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := prepareDataPodFunc(cli)
@@ -114,6 +117,7 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	var namespace, image, serviceAccount string
 	var command []string
 	var vols map[string]string
+	var podOverride v1.PodSpec
 	var err error
 	if err = Arg(args, PrepareDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -130,6 +134,19 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = OptArg(args, PrepareDataServiceAccount, &serviceAccount, ""); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, PrepareDataPodOverrideArg, &podOverride, v1.PodSpec{}); err != nil {
+		return nil, err
+	}
+
+	// Check if PodOverride specs are passed through actionset
+	// If yes, override podOverride specs
+	if !reflect.DeepEqual(tp.PodOverride, v1.PodSpec{}) {
+		podOverride, err = kube.PodSpecOverride(ctx, podOverride, tp.PodOverride)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
@@ -139,7 +156,7 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 			return nil, err
 		}
 	}
-	return prepareData(ctx, cli, namespace, serviceAccount, image, vols, command...)
+	return prepareData(ctx, cli, namespace, serviceAccount, image, vols, podOverride, command...)
 }
 
 func (*prepareDataFunc) RequiredArgs() []string {
