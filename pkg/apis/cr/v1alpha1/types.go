@@ -105,9 +105,6 @@ type ActionSpec struct {
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
 	Options map[string]string `json:"options"`
-	// PodOverride contains pod specs which overrides
-	// default specs used by pod runner while executing functions like KubeTask
-	PodOverride v1.PodSpec `json:"podOverride"`
 }
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
