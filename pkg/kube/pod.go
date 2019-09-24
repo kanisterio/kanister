@@ -156,11 +156,11 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 func PodSpecOverride(ctx context.Context, defaultSpecs, overrideSpecs v1.PodSpec) (v1.PodSpec, error) {
 	containers := defaultSpecs.Containers
 	// - Marshal override specs
-	// - Unmarshal override specs on default object so that it overrides only the fields that are present in override specs
 	override, err := json.Marshal(overrideSpecs)
 	if err != nil {
 		return v1.PodSpec{}, err
 	}
+	// - Unmarshal override specs on default object so that it overrides only the fields that are present in override specs
 	err = json.Unmarshal(override, &defaultSpecs)
 	if err != nil {
 		return v1.PodSpec{}, err
