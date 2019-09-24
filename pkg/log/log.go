@@ -52,12 +52,12 @@ func Print(msg string) {
 	Info().Print(msg)
 }
 
-func WithContext(ctx context.Context) {
-	Info().WithContext(ctx)
+func WithContext(ctx context.Context) Logger {
+	return Info().WithContext(ctx)
 }
 
-func WithError(err error) {
-	Info().WithError(err)
+func WithError(err error) Logger {
+	return Info().WithError(err)
 }
 
 func (l *logger) Print(msg string) {
