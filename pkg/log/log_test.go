@@ -78,7 +78,7 @@ func (s *LogSuite) TestLogWithContextFieldsAndError(c *C) {
 	err := errors.New("test error")
 	entry := testLogMessage(c, text, WithError(err).WithContext(ctx).Print)
 	c.Assert(entry["level"], Equals, infoLevelStr)
-	// Error should not be set in the log entry
+	// Error should be included in the log entry
 	c.Assert(entry["error"], Equals, err.Error())
 	// A field with "key" should be set in the log entry
 	c.Assert(entry["key"], Equals, "value")
@@ -89,7 +89,6 @@ func testLogMessage(c *C, msg string, print func(string)) map[string]interface{}
 	var memLog bytes.Buffer
 	log.SetOutput(&memLog)
 	print(msg)
-	c.Log("memLog: ", memLog.String())
 	var entry map[string]interface{}
 	err := json.Unmarshal(memLog.Bytes(), &entry)
 	c.Assert(err, IsNil)
