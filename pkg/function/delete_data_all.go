@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -39,9 +38,7 @@ const (
 	DeleteDataAllReclaimSpace = "reclaimSpace"
 	// DeleteDataAllBackupInfo provides backup info required for delete
 	DeleteDataAllBackupInfo = "backupInfo"
-	// DeleteDataAllPodOverrideArg contains pod specs to override default pod specs
-	DeleteDataAllPodOverrideArg = "podOverride"
-	deleteDataAllJobPrefix      = "delete-data-all-"
+	deleteDataAllJobPrefix  = "delete-data-all-"
 )
 
 func init() {
@@ -58,7 +55,6 @@ func (*deleteDataAllFunc) Name() string {
 
 func (*deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, deleteArtifactPrefix, backupInfo, encryptionKey string
-	var podOverride v1.PodSpec
 	var reclaimSpace bool
 	var err error
 	if err = Arg(args, DeleteDataAllNamespaceArg, &namespace); err != nil {
@@ -96,7 +92,7 @@ func (*deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		deleteIdentifiers = append(deleteIdentifiers, info.BackupID)
 	}
 
-	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, targetPaths, nil, deleteIdentifiers, deleteDataAllJobPrefix, podOverride)
+	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, targetPaths, nil, deleteIdentifiers, deleteDataAllJobPrefix)
 }
 
 func (*deleteDataAllFunc) RequiredArgs() []string {

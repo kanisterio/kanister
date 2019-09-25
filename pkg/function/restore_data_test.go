@@ -18,7 +18,6 @@ import (
 	. "gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/param"
-	v1 "k8s.io/api/core/v1"
 )
 
 type RestoreDataTestSuite struct{}
@@ -172,24 +171,9 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 			},
 			errChecker: NotNil,
 		},
-		{
-			name: "Args with podOverride",
-			args: map[string]interface{}{
-				RestoreDataPodArg:              "some-pod",
-				RestoreDataBackupIdentifierArg: "backup123",
-				RestoreDataPodOverrideArg: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							Command: []string{"echo", "in unit tests"},
-						},
-					},
-				},
-			},
-			errChecker: IsNil,
-		},
 	}
 	for _, tc := range testCases {
-		_, _, _, _, _, _, _, err := validateAndGetOptArgs(tc.args)
+		_, _, _, _, _, _, err := validateAndGetOptArgs(tc.args)
 		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
 	}
 }

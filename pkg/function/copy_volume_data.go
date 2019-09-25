@@ -17,7 +17,6 @@ package function
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -44,7 +43,6 @@ const (
 	CopyVolumeDataOutputBackupArtifactLocation = "backupArtifactLocation"
 	CopyVolumeDataEncryptionKeyArg             = "encryptionKey"
 	CopyVolumeDataOutputBackupTag              = "backupTag"
-	CopyVolumeDataPodOverrideArg               = "podOverride"
 )
 
 func init() {
@@ -59,7 +57,7 @@ func (*copyVolumeDataFunc) Name() string {
 	return "CopyVolumeData"
 }
 
-func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc, targetPath, encryptionKey string, podOverride v1.PodSpec) (map[string]interface{}, error) {
+func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc, targetPath, encryptionKey string) (map[string]interface{}, error) {
 	// Validate PVC exists
 	if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvc, metav1.GetOptions{}); err != nil {
 		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
@@ -72,7 +70,6 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 		Image:        kanisterToolsImage,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      map[string]string{pvc: mountPoint},
-		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := copyVolumeDataPodFunc(cli, tp, namespace, mountPoint, targetPath, encryptionKey)
@@ -123,7 +120,6 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 
 func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, vol, targetPath, encryptionKey string
-	var podOverride v1.PodSpec
 	var err error
 	if err = Arg(args, CopyVolumeDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -137,24 +133,11 @@ func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	if err = OptArg(args, CopyVolumeDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, CopyVolumeDataPodOverrideArg, &podOverride, v1.PodSpec{}); err != nil {
-		return nil, err
-	}
-
-	// Check if PodOverride specs are passed through actionset
-	// If yes, override podOverride specs
-	if !reflect.DeepEqual(tp.PodOverride, v1.PodSpec{}) {
-		podOverride, err = kube.PodSpecOverride(ctx, podOverride, tp.PodOverride)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return copyVolumeData(ctx, cli, tp, namespace, vol, targetPath, encryptionKey, podOverride)
+	return copyVolumeData(ctx, cli, tp, namespace, vol, targetPath, encryptionKey)
 }
 
 func (*copyVolumeDataFunc) RequiredArgs() []string {
