@@ -22,30 +22,28 @@ const (
 
 type logger struct {
 	level Level
-	entry *logrus.Entry
 	ctx   context.Context
 	err   error
 }
 
-func Info() Logger {
+// common logger implementation used in the library
+var log = logrus.New()
 
+func Info() Logger {
 	return &logger{
 		level: InfoLevel,
-		entry: logrus.NewEntry(logrus.New()),
 	}
 }
 
 func Error() Logger {
 	return &logger{
 		level: ErrorLevel,
-		entry: logrus.NewEntry(logrus.New()),
 	}
 }
 
 func Debug() Logger {
 	return &logger{
 		level: DebugLevel,
-		entry: logrus.NewEntry(logrus.New()),
 	}
 }
 
@@ -54,12 +52,12 @@ func Print(msg string) {
 	Info().Print(msg)
 }
 
-func WithContext(ctx context.Context) {
-	Info().WithContext(ctx)
+func WithContext(ctx context.Context) Logger {
+	return Info().WithContext(ctx)
 }
 
-func WithError(err error) {
-	Info().WithError(err)
+func WithError(err error) Logger {
+	return Info().WithError(err)
 }
 
 func (l *logger) Print(msg string) {
@@ -69,27 +67,19 @@ func (l *logger) Print(msg string) {
 			logFields[cf.Key()] = cf.Value()
 		}
 	}
-
-	l.entry = l.entry.WithFields(logFields)
-
-	switch l.level {
-	case InfoLevel:
-		l.entry.Info(msg)
-	case ErrorLevel:
-		l.entry.Error(msg)
-	case DebugLevel:
-		l.entry.Debug(msg)
+	entry := log.WithFields(logFields)
+	if l.err != nil {
+		entry = entry.WithError(l.err)
 	}
+	entry.Log(logrus.Level(l.level), msg)
 }
 
 func (l *logger) WithContext(ctx context.Context) Logger {
 	l.ctx = ctx
-	l.entry = l.entry.WithContext(ctx)
 	return l
 }
 
 func (l *logger) WithError(err error) Logger {
 	l.err = err
-	l.entry = l.entry.WithError(err)
 	return l
 }
