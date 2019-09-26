@@ -134,10 +134,10 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 		return "", "", err
 	}
 	defer cleanUpCredsFile(ctx, pw, namespace, pod, container)
-	if err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, encryptionKey, tp.Profile); err != nil {
+	encryptionKey, err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, encryptionKey, tp.Profile)
+	if err != nil {
 		return "", "", err
 	}
-
 	// Create backup and dump it on the object store
 	backupTag := rand.String(10)
 	cmd, err := restic.BackupCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, includePath, encryptionKey)
