@@ -15,11 +15,12 @@
 package tags
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
@@ -62,7 +63,7 @@ func AddMissingTags(existingTags map[string]string, tagsToAdd map[string]string)
 	// Add missing tags
 	for k, v := range tagsToAdd {
 		if val, ok := ret[k]; ok {
-			log.Infof("Ignoring duplicate tag: %s:%s. Retained value: %s", k, v, val)
+			log.Print(fmt.Sprintf("Ignoring duplicate tag: %s:%s. Retained value: %s", k, v, val))
 		} else {
 			ret[k] = v
 		}

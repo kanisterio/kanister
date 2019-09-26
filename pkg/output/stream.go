@@ -17,11 +17,13 @@ package output
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, string) error) error {
@@ -51,7 +53,7 @@ func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, st
 func LogAndParse(ctx context.Context, r io.ReadCloser) (map[string]interface{}, error) {
 	out := make(map[string]interface{})
 	err := splitLines(ctx, r, func(ctx context.Context, l string) error {
-		log.Info("Pod Out:", l)
+		log.Info().Print(fmt.Sprintf("Pod Out: %s", l))
 		o, err := Parse(l)
 		if err != nil {
 			return err
@@ -66,7 +68,7 @@ func LogAndParse(ctx context.Context, r io.ReadCloser) (map[string]interface{}, 
 
 func Log(ctx context.Context, r io.ReadCloser) error {
 	err := splitLines(ctx, r, func(ctx context.Context, l string) error {
-		log.Info("Pod Out:", l)
+		log.Info().Print(fmt.Sprintf("Pod Out: %s", l))
 		return nil
 	})
 	return err

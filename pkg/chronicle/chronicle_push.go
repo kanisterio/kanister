@@ -27,10 +27,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/kanisterio/kanister/pkg/envdir"
 	"github.com/kanisterio/kanister/pkg/location"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -47,7 +47,7 @@ func (p PushParams) Validate() error {
 }
 
 func Push(p PushParams) error {
-	log.Debugf("%#v", p)
+	log.Debug().Print(fmt.Sprintf("%#v", p))
 	ctx := setupSignalHandler(context.Background())
 	var i int
 	for {
@@ -75,10 +75,10 @@ func setupSignalHandler(ctx context.Context) context.Context {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		log.Infof("Shutting down process")
+		log.Print("Shutting down process")
 		can()
 		<-c
-		log.Infof("Killing process")
+		log.Print("Killing process")
 		os.Exit(1)
 	}()
 	return ctx
@@ -100,7 +100,7 @@ func push(ctx context.Context, p PushParams, ord int) error {
 		}
 	}
 	ap, err := readArtifactPathFile(p.ArtifactFile)
-	log.Debugf("Pushing output from Command %d: %v. Environment: %v", ord, p.Command, env)
+	log.Debug().Print(fmt.Sprintf("Pushing output from Command %d: %v. Environment: %v", ord, p.Command, env))
 	return pushWithEnv(ctx, p.Command, ap, ord, prof, env)
 }
 

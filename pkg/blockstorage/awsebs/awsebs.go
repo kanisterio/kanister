@@ -30,12 +30,12 @@ import (
 	"github.com/jpillora/backoff"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 var _ blockstorage.Provider = (*ebsStorage)(nil)
@@ -120,7 +120,7 @@ func (s *ebsStorage) VolumeGet(ctx context.Context, id string, zone string) (*bl
 	dvi := &ec2.DescribeVolumesInput{VolumeIds: volIDs}
 	dvo, err := s.ec2Cli.DescribeVolumesWithContext(ctx, dvi)
 	if err != nil {
-		log.Errorf("Failed to get volumes %v Error: %+v", aws.StringValueSlice(volIDs), err)
+		log.WithError(err).Print(fmt.Sprintf("Failed to get volumes %v", aws.StringValueSlice(volIDs)))
 		return nil, err
 	}
 	if len(dvo.Volumes) != len(volIDs) {
@@ -307,7 +307,7 @@ func (s *ebsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 			Tags:         mapToEC2Tags(ktags.GetTags(tags)),
 		},
 	})
-	log.Infof("Snapshotting EBS volume: %s", *csi.VolumeId)
+	log.Print(fmt.Sprintf("Snapshotting EBS volume: %s", *csi.VolumeId))
 	csi.SetDryRun(s.ec2Cli.DryRun)
 	snap, err := s.ec2Cli.CreateSnapshotWithContext(ctx, csi)
 	if err != nil && !isDryRunErr(err) {
@@ -339,14 +339,14 @@ func (s *ebsStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *
 }
 
 func (s *ebsStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
-	log.Infof("EBS Snapshot ID %s", snapshot.ID)
+	log.Print(fmt.Sprintf("EBS Snapshot ID %s", snapshot.ID))
 	rmsi := &ec2.DeleteSnapshotInput{}
 	rmsi.SetSnapshotId(snapshot.ID)
 	rmsi.SetDryRun(s.ec2Cli.DryRun)
 	_, err := s.ec2Cli.DeleteSnapshotWithContext(ctx, rmsi)
 	if isSnapNotFoundErr(err) {
 		// If the snapshot is already deleted, we log, but don't return an error.
-		log.Debugf("Snapshot already deleted")
+		log.Debug().Print("Snapshot already deleted")
 		return nil
 	}
 	if err != nil && !isDryRunErr(err) {
@@ -376,7 +376,7 @@ func (s *ebsStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volu
 	_, err := s.ec2Cli.DeleteVolumeWithContext(ctx, rmvi)
 	if isVolNotFoundErr(err) {
 		// If the volume is already deleted, we log, but don't return an error.
-		log.Debugf("Volume already deleted")
+		log.Debug().Print("Volume already deleted")
 		return nil
 	}
 	if err != nil && !isDryRunErr(err) {
@@ -455,7 +455,7 @@ func createVolume(ctx context.Context, ec2Cli *EC2, cvi *ec2.CreateVolumeInput, 
 		return "", nil
 	}
 	if err != nil {
-		log.Errorf("Failed to create volume for %v Error: %+v", *cvi, err)
+		log.WithError(err).Print(fmt.Sprintf("Failed to create volume for %v", *cvi))
 		return "", err
 	}
 
@@ -475,7 +475,7 @@ func getSnapshots(ctx context.Context, ec2Cli *EC2, snapIDs []*string) ([]*ec2.S
 	}
 	// TODO: handle paging and continuation
 	if len(dso.Snapshots) != len(snapIDs) {
-		log.Errorf("Did not find all requested snapshots, snapshots_requested: %p, snapshots_found: %p", snapIDs, dso.Snapshots)
+		log.Error().Print(fmt.Sprintf("Did not find all requested snapshots, snapshots_requested: %p, snapshots_found: %p", snapIDs, dso.Snapshots))
 		// TODO: Move mapping to HTTP error to the caller
 		return nil, errors.New("Object not found")
 	}
@@ -522,7 +522,7 @@ func waitOnVolume(ctx context.Context, ec2Cli *EC2, vol *ec2.Volume) error {
 	for {
 		dvo, err := ec2Cli.DescribeVolumesWithContext(ctx, dvi)
 		if err != nil {
-			log.Errorf("Failed to describe volume %s Error: %+v", aws.StringValue(vol.VolumeId), err)
+			log.WithError(err).Print(fmt.Sprintf("Failed to describe volume %s", aws.StringValue(vol.VolumeId)))
 			return err
 		}
 		if len(dvo.Volumes) != 1 {
@@ -533,10 +533,10 @@ func waitOnVolume(ctx context.Context, ec2Cli *EC2, vol *ec2.Volume) error {
 			return errors.New("Creating EBS volume failed")
 		}
 		if *s.State == ec2.VolumeStateAvailable {
-			log.Infof("Volume %s complete", *vol.VolumeId)
+			log.Print(fmt.Sprintf("Volume %s complete", *vol.VolumeId))
 			return nil
 		}
-		log.Infof("Volume %s state: %s", *vol.VolumeId, *s.State)
+		log.Print(fmt.Sprintf("Volume %s state: %s", *vol.VolumeId, *s.State))
 		time.Sleep(volWaitBackoff.Duration())
 	}
 }
@@ -568,10 +568,10 @@ func waitOnSnapshotID(ctx context.Context, ec2Cli *EC2, snapID string) error {
 			return false, errors.New("Snapshot EBS volume failed")
 		}
 		if *s.State == ec2.SnapshotStateCompleted {
-			log.Infof("Snapshot with snapshot_id: %s completed", snapID)
+			log.Print(fmt.Sprintf("Snapshot with snapshot_id: %s completed", snapID))
 			return true, nil
 		}
-		log.Debugf("Snapshot progress: snapshot_id: %s, progress: %s", snapID, fmt.Sprintf("%+v", *s.Progress))
+		log.Debug().Print(fmt.Sprintf("Snapshot progress: snapshot_id: %s, progress: %s", snapID, fmt.Sprintf("%+v", *s.Progress)))
 		return false, nil
 	})
 }
@@ -579,7 +579,7 @@ func waitOnSnapshotID(ctx context.Context, ec2Cli *EC2, snapID string) error {
 // GetRegionFromEC2Metadata retrieves the region from the EC2 metadata service.
 // Only works when the call is performed from inside AWS
 func GetRegionFromEC2Metadata() (string, error) {
-	log.Debug("Retrieving region from metadata")
+	log.Debug().Print("Retrieving region from metadata")
 	conf := aws.Config{
 		HTTPClient: &http.Client{
 			Transport: http.DefaultTransport,

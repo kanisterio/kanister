@@ -17,9 +17,9 @@ package function
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -29,6 +29,7 @@ import (
 	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -116,7 +117,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to create PV for volume %v", *vol)
 		}
-		log.Infof("Restore/Create volume from snapshot completed for pvc: %s, volume: %s", pvc, pv)
+		log.Print(fmt.Sprintf("Restore/Create volume from snapshot completed for pvc: %s, volume: %s", pvc, pv))
 		providerList[pvcInfo.PVCName] = provider
 	}
 	return providerList, nil

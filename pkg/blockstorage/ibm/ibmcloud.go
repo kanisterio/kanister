@@ -27,11 +27,11 @@ import (
 	"github.com/jpillora/backoff"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	bsibmutils "github.com/kanisterio/kanister/pkg/blockstorage/ibm/utils"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 var _ blockstorage.Provider = (*ibmCloud)(nil)
@@ -73,12 +73,12 @@ func (s *ibmCloud) VolumeCreate(ctx context.Context, volume blockstorage.Volume)
 	newVol.Capacity = &size
 	newVol.VolumeNotes = blockstorage.KeyValueToMap(volume.Tags)
 	newVol.Az = s.cli.SLCfg.SoftlayerDataCenter
-	log.Debugf("Creating new volume %+v", newVol)
+	log.Debug().Print(fmt.Sprintf("Creating new volume %+v", newVol))
 	volR, err := s.cli.Service.CreateVolume(newVol)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Failed to create volume. %s", err.Error()))
 	}
-	log.Debugf("New volume created %+v", volR)
+	log.Debug().Print(fmt.Sprintf("New volume created %+v", volR))
 	return s.volumeParse(ctx, volR)
 }
 
@@ -87,7 +87,7 @@ func (s *ibmCloud) VolumeGet(ctx context.Context, id string, zone string) (*bloc
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get volume with id %s", id)
 	}
-	log.Debugf("Got volume from cloud provider %+v", vol)
+	log.Debug().Print(fmt.Sprintf("Got volume from cloud provider %+v", vol))
 	return s.volumeParse(ctx, vol)
 }
 
@@ -222,7 +222,7 @@ func (s *ibmCloud) SnapshotCreate(ctx context.Context, volume blockstorage.Volum
 	}
 
 	if ibmvol.SnapshotSpace == nil {
-		log.Debugf("Ordering snapshot space for volume %+v", ibmvol)
+		log.Debug().Print(fmt.Sprintf("Ordering snapshot space for volume %+v", ibmvol))
 		ibmvol.SnapshotSpace = ibmvol.Capacity
 		err = s.cli.Service.OrderSnapshot(*ibmvol)
 		if err != nil {
@@ -237,12 +237,12 @@ func (s *ibmCloud) SnapshotCreate(ctx context.Context, volume blockstorage.Volum
 			return nil, errors.Wrapf(err, "Wait is expired for order Snapshot space, volume_id :%s", volume.ID)
 		}
 	}
-	log.Debugf("Creating snapshot for vol %+v", ibmvol)
+	log.Debug().Print(fmt.Sprintf("Creating snapshot for vol %+v", ibmvol))
 	snap, err := s.cli.Service.CreateSnapshot(ibmvol, alltags)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create snapshot, volume_id: %s", volume.ID)
 	}
-	log.Debugf("New snapshot was created %+v", snap)
+	log.Debug().Print(fmt.Sprintf("New snapshot was created %+v", snap))
 
 	return s.snapshotParse(ctx, snap), nil
 }
@@ -276,7 +276,7 @@ func (s *ibmCloud) VolumeDelete(ctx context.Context, volume *blockstorage.Volume
 }
 
 func (s *ibmCloud) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
-	log.Info("IBM storage lib does not support SetTags")
+	log.Print("IBM storage lib does not support SetTags")
 	return nil
 }
 
@@ -299,7 +299,7 @@ func (s *ibmCloud) VolumeCreateFromSnapshot(ctx context.Context, snapshot blocks
 	// GetSnapshot doens't return correct Volume info
 	snap.VolumeID = snapshot.Volume.ID
 	snap.Volume.VolumeID = snapshot.Volume.ID
-	log.Debugf("Snapshot with new volume ID %+v", snap)
+	log.Debug().Print(fmt.Sprintf("Snapshot with new volume ID %+v", snap))
 
 	vol, err := s.cli.Service.CreateVolumeFromSnapshot(*snap, tags)
 	if err != nil {
@@ -327,10 +327,10 @@ func waitforSnapSpaceOrder(ctx context.Context, cli *client, id string) error {
 		}
 
 		if vol.SnapshotSpace != nil {
-			log.Debugf("Volume has snapshot space now, volume_id %s", id)
+			log.Debug().Print(fmt.Sprintf("Volume has snapshot space now, volume_id %s", id))
 			return true, nil
 		}
-		log.Debugf("Still waiting for Snapshor Space order volume_id: %s", id)
+		log.Debug().Print(fmt.Sprintf("Still waiting for Snapshor Space order volume_id: %s", id))
 		return false, nil
 	})
 

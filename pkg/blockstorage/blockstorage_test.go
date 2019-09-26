@@ -16,17 +16,18 @@ package blockstorage_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	. "gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
@@ -150,7 +151,7 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 	snap, err := s.provider.SnapshotCopy(context.TODO(), *srcSnapshot, *dstSnapshot)
 	c.Assert(err, IsNil)
 
-	log.Infof("Copied snapshot %v to %v", srcSnapshot.ID, snap.ID)
+	log.Print(fmt.Sprintf("Copied snapshot %v to %v", srcSnapshot.ID, snap.ID))
 
 	config := s.getConfig(c, dstSnapshot.Region)
 	provider, err := getter.New().Get(s.storageType, config)

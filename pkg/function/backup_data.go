@@ -19,7 +19,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 
@@ -29,6 +28,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
@@ -171,7 +171,7 @@ func getPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podN
 func cleanUpCredsFile(ctx context.Context, pw *kube.PodWriter, namespace, podName, containerName string) {
 	if pw != nil {
 		if err := pw.Remove(ctx, namespace, podName, containerName); err != nil {
-			log.WithContext(ctx).Error("Could not delete the temp file")
+			log.Error().WithContext(ctx).Print("Could not delete the temp file")
 		}
 	}
 }

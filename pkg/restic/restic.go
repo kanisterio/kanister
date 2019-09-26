@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -29,6 +28,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/location"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
@@ -194,7 +194,7 @@ func resticS3Args(profile *param.Profile, repository string) ([]string, error) {
 		s3Endpoint = profile.Location.Endpoint
 	}
 	if strings.HasSuffix(s3Endpoint, "/") {
-		log.Debugln("Removing trailing slashes from the endpoint")
+		log.Debug().Print("Removing trailing slashes from the endpoint")
 		s3Endpoint = strings.TrimRight(s3Endpoint, "/")
 	}
 	args, err := resticS3CredentialArgs(profile.Credential)

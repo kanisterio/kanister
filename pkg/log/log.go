@@ -71,7 +71,7 @@ func (l *logger) Print(msg string) {
 	if l.err != nil {
 		entry = entry.WithError(l.err)
 	}
-	entry.Log(logrus.Level(l.level), msg)
+	entry.Logln(logrus.Level(l.level), msg)
 }
 
 func (l *logger) WithContext(ctx context.Context) Logger {

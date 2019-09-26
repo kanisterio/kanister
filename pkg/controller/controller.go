@@ -28,7 +28,6 @@ import (
 
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,6 +46,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/reconcile"
 	"github.com/kanisterio/kanister/pkg/validate"
@@ -131,21 +131,21 @@ func checkCRAccess(cli versioned.Interface, ns string) error {
 func (c *Controller) onAdd(obj interface{}) {
 	o, ok := obj.(runtime.Object)
 	if !ok {
-		log.Errorf("Added object type <%T> does not implement runtime.Object", obj)
+		log.Error().Print(fmt.Sprintf("Added object type <%T> does not implement runtime.Object", obj))
 		return
 	}
 	o = o.DeepCopyObject()
 	switch v := o.(type) {
 	case *crv1alpha1.ActionSet:
 		if err := c.onAddActionSet(v); err != nil {
-			log.Errorf("Callback onAddActionSet() failed: %+v", err)
+			log.Error().WithError(err).Print("Callback onAddActionSet() failed")
 		}
 	case *crv1alpha1.Blueprint:
 		if err := c.onAddBlueprint(v); err != nil {
-			log.Errorf("Callback onAddBlueprint() failed: %+v", err)
+			log.Error().WithError(err).Print("Callback onAddBlueprint() failed")
 		}
 	default:
-		log.Errorf("Unknown object type <%T>", o)
+		log.Error().Print(fmt.Sprintf("Unknown object type <%T>", o))
 	}
 }
 
@@ -165,7 +165,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			c.logAndErrorEvent(nil, "Callback onUpdateBlueprint() failed:", "Error", err, new)
 		}
 	default:
-		log.Errorf("Unknown object type <%T>", oldObj)
+		log.Error().Print(fmt.Sprintf("Unknown object type <%T>", oldObj))
 	}
 }
 
@@ -182,7 +182,7 @@ func (c *Controller) onDelete(obj interface{}) {
 			c.logAndErrorEvent(nil, "Callback onDeleteBlueprint() failed:", "Error", err, v)
 		}
 	default:
-		log.Errorf("Unknown object type <%T>", obj)
+		log.Error().Print(fmt.Sprintf("Unknown object type <%T>", obj))
 	}
 }
 
@@ -212,23 +212,23 @@ func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) error {
 
 func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error {
 	if err := validate.ActionSet(newAS); err != nil {
-		log.Infof("Updated ActionSet '%s'", newAS.Name)
+		log.Print(fmt.Sprintf("Updated ActionSet '%s'", newAS.Name))
 		return err
 	}
 	if newAS.Status == nil || newAS.Status.State != crv1alpha1.StateRunning {
 		if newAS.Status == nil {
-			log.Infof("Updated ActionSet '%s' Status->nil", newAS.Name)
+			log.Print(fmt.Sprintf("Updated ActionSet '%s' Status->nil", newAS.Name))
 		} else if newAS.Status.State == crv1alpha1.StateComplete {
 			c.logAndSuccessEvent(nil, fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State), "Update Complete", newAS)
 		} else {
-			log.Infof("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State)
+			log.Print(fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State))
 		}
 		return nil
 	}
 	for _, as := range newAS.Status.Actions {
 		for _, p := range as.Phases {
 			if p.State != crv1alpha1.StateComplete {
-				log.Infof("Updated ActionSet '%s' Status->%s, Phase: %s->%s", newAS.Name, newAS.Status.State, p.Name, p.State)
+				log.Print(fmt.Sprintf("Updated ActionSet '%s' Status->%s, Phase: %s->%s", newAS.Name, newAS.Status.State, p.Name, p.State))
 				return nil
 			}
 		}
@@ -243,13 +243,13 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 }
 
 func (c *Controller) onUpdateBlueprint(oldBP, newBP *crv1alpha1.Blueprint) error {
-	log.Infof("Updated Blueprint '%s'", newBP.Name)
+	log.Print(fmt.Sprintf("Updated Blueprint '%s'", newBP.Name))
 	return nil
 }
 
 func (c *Controller) onDeleteActionSet(as *crv1alpha1.ActionSet) error {
 	asName := as.GetName()
-	log.Infof("Deleted ActionSet %s", asName)
+	log.Print(fmt.Sprintf("Deleted ActionSet %s", asName))
 	v, ok := c.actionSetTombMap.Load(asName)
 	if !ok {
 		return nil
@@ -264,7 +264,7 @@ func (c *Controller) onDeleteActionSet(as *crv1alpha1.ActionSet) error {
 }
 
 func (c *Controller) onDeleteBlueprint(bp *crv1alpha1.Blueprint) error {
-	log.Infof("Deleted Blueprint %s", bp.GetName())
+	log.Print(fmt.Sprintf("Deleted Blueprint %s", bp.GetName()))
 	return nil
 }
 
@@ -272,11 +272,11 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 	ctx := context.Background()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	if as.Spec == nil {
-		log.WithContext(ctx).Error("Cannot initialize an ActionSet without a spec.")
+		log.Error().WithContext(ctx).Print("Cannot initialize an ActionSet without a spec.")
 		return
 	}
 	if as.Status != nil {
-		log.WithContext(ctx).Error("Cannot initialize non-nil ActionSet Status")
+		log.Error().WithContext(ctx).Print("Cannot initialize non-nil ActionSet Status")
 		return
 	}
 	as.Status = &crv1alpha1.ActionSetStatus{State: crv1alpha1.StatePending}
@@ -361,7 +361,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 			return errors.WithStack(err)
 		}
 	}
-	log.WithContext(ctx).Infof("Created actionset %s and started executing actions", as.GetName())
+	log.WithContext(ctx).Print(fmt.Sprintf("Created actionset %s and started executing actions", as.GetName()))
 	return nil
 }
 
@@ -477,7 +477,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 }
 
 func (c *Controller) logAndErrorEvent(ctx context.Context, msg, reason string, err error, objects ...runtime.Object) {
-	log.WithContext(ctx).Errorf("%s %+v", msg, err)
+	log.WithContext(ctx).WithError(err).Print(msg)
 	if len(objects) == 0 {
 		return
 	}
@@ -495,7 +495,7 @@ func (c *Controller) logAndErrorEvent(ctx context.Context, msg, reason string, e
 }
 
 func (c *Controller) logAndSuccessEvent(ctx context.Context, msg, reason string, objects ...runtime.Object) {
-	log.WithContext(ctx).Info(msg)
+	log.WithContext(ctx).Print(msg)
 	if len(objects) == 0 {
 		return
 	}

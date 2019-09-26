@@ -16,17 +16,18 @@ package zone
 
 import (
 	"context"
+	"fmt"
 	"hash/fnv"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 type (
@@ -46,7 +47,7 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, region string, sourceZo
 	if err == nil {
 		nzs, rs, errzr := NodeZonesAndRegion(ctx, cli)
 		if err != nil {
-			log.Errorf("Ignoring error getting Node availability zones. Error: %+v", errzr)
+			log.WithError(errzr).Print("Ignoring error getting Node availability zones.")
 		}
 		if len(nzs) != 0 {
 			for _, zone := range sourceZones {
@@ -58,7 +59,7 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, region string, sourceZo
 					newZones[z] = struct{}{}
 				}
 				if err != nil {
-					log.Errorf("Ignoring error getting Zone from KnownNodeZones. Error: %+v", err)
+					log.WithError(err).Print("Ignoring error getting Zone from KnownNodeZones.")
 				}
 			}
 		}
@@ -102,7 +103,7 @@ func WithUnknownNodeZones(ctx context.Context, m Mapper, region string, sourceZo
 	zs, err := m.FromRegion(ctx, region)
 	if err != nil || len(zs) == 0 {
 		// If all else fails, we return the original AZ.
-		log.Errorf("Using original AZ. region: %s, Error: %+v", region, err)
+		log.WithError(err).Print(fmt.Sprintf("Using original AZ. region: %s", region))
 		return sourceZone
 	}
 
