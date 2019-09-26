@@ -34,6 +34,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
+	"github.com/kanisterio/kanister/pkg/restic"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
@@ -534,4 +535,20 @@ func (s *DataSuite) initPVCTemplateParams(c *C, pvc *v1.PersistentVolumeClaim, o
 	c.Assert(err, IsNil)
 	tp.Profile = s.profile
 	return tp
+}
+
+func (s *DataSuite) TestBackupWrongPassword(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = restic.GeneratePassword()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = "test123"
+	out2 := runAction(c, bp, "backup", tp)
+	c.Assert(out2[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out2[BackupDataOutputBackupTag].(string), Not(Equals), "")
 }
