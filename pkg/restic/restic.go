@@ -280,9 +280,6 @@ func checkIfRepoIsReachable(profile *param.Profile, cli kubernetes.Interface, ar
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
-	if err != nil {
-		return "", "", errors.Wrap(err, "Failed to create snapshot command")
-	}
 	return stdout, stderr, err
 }
 
@@ -363,7 +360,7 @@ func IsPasswordIncorrectError(output string) bool {
 	pattern := regexp.MustCompile(`Fatal: wrong password or no key found`)
 	for _, l := range logs {
 		match := pattern.FindAllStringSubmatch(l, 1)
-		if len(match) > 0 && len(match[0]) > 1 {
+		if len(match) > 0 {
 			return true
 		}
 	}
