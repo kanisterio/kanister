@@ -251,19 +251,17 @@ func resticAzureArgs(profile *param.Profile, repository string) []string {
 
 // GetOrCreateRepository will check if the repository already exists and initialize one if not
 func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, profile *param.Profile) error {
-	// Use the snapshots command to check if the repository exists
-	cmd, err := SnapshotsCommand(profile, artifactPrefix, encryptionKey)
+	stdout, stderr, err := checkIfRepoIsReachable(profile, cli, artifactPrefix, encryptionKey, namespace, pod, container)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create snapshot command")
+		return err
 	}
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
-	if err == nil {
-		return nil
+	passerr := IsPasswordIncorrectError(stdout)
+	if passerr { // If password didn't work, continue with default password
+		log.Info("Falling back to default password")
+		encryptionKey = GeneratePassword()
 	}
 	// Create a repository
-	cmd, err = InitCommand(profile, artifactPrefix, encryptionKey)
+	cmd, err := InitCommand(profile, artifactPrefix, encryptionKey)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create init command")
 	}
@@ -271,6 +269,21 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	return errors.Wrapf(err, "Failed to create object store backup location")
+}
+
+func checkIfRepoIsReachable(profile *param.Profile, cli kubernetes.Interface, artifactPrefix, encryptionKey, namespace, pod, container string) (string, string, error) {
+	// Use the snapshots command to check if the repository exists
+	cmd, err := SnapshotsCommand(profile, artifactPrefix, encryptionKey)
+	if err != nil {
+		return "", "", errors.Wrap(err, "Failed to create snapshot command")
+	}
+	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	format.Log(pod, container, stdout)
+	format.Log(pod, container, stderr)
+	if err != nil {
+		return "", "", errors.Wrap(err, "Failed to create snapshot command")
+	}
+	return stdout, stderr, err
 }
 
 // SnapshotIDFromSnapshotLog gets the SnapshotID from Snapshot Command log
@@ -341,4 +354,18 @@ func SnapshotStatsModeFromStatsLog(output string) string {
 		}
 	}
 	return ""
+}
+
+// IsPasswordIncorrectError check is password was wrong
+func IsPasswordIncorrectError(output string) bool {
+	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	// Log should contain "Stats for .... in  xx mode"
+	pattern := regexp.MustCompile(`Fatal: wrong password or no key found`)
+	for _, l := range logs {
+		match := pattern.FindAllStringSubmatch(l, 1)
+		if len(match) > 0 && len(match[0]) > 1 {
+			return true
+		}
+	}
+	return false
 }
