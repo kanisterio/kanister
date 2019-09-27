@@ -273,7 +273,7 @@ func CheckIfRepoIsReachable(profile *param.Profile, cli kubernetes.Interface, ar
 	if err == nil {
 		return encryptionKey, err
 	}
-	if passerr := IsPasswordIncorrect(stderr); passerr { // If password didn't work, continue with default password
+	if IsPasswordIncorrect(stderr) { // If password didn't work, continue with default password
 		log.Info("Falling back to default password")
 		encryptionKey = GeneratePassword()
 	}
