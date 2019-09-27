@@ -126,6 +126,14 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 		StatefulSet: &param.StatefulSetParams{
 			Namespace: s.namespace,
 		},
+		PodOverride: map[string]interface{}{
+			"containers": []map[string]interface{}{
+				{
+					"name":            "container",
+					"imagePullPolicy": "Always",
+				},
+			},
+		},
 	}
 	action := "test"
 	for _, tc := range []struct {

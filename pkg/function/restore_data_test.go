@@ -171,9 +171,24 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 			},
 			errChecker: NotNil,
 		},
+		{
+			name: "Args with podOverride",
+			args: map[string]interface{}{
+				RestoreDataPodArg:              "some-pod",
+				RestoreDataBackupIdentifierArg: "backup123",
+				RestoreDataPodOverrideArg: map[string]interface{}{
+					"containers": []map[string]interface{}{
+						{
+							"command": []string{"echo", "in unit tests"},
+						},
+					},
+				},
+			},
+			errChecker: IsNil,
+		},
 	}
 	for _, tc := range testCases {
-		_, _, _, _, _, _, err := validateAndGetOptArgs(tc.args)
+		_, _, _, _, _, _, _, err := validateAndGetOptArgs(tc.args)
 		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
 	}
 }
