@@ -166,6 +166,26 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 	}
 }
 
+func newDeleteDataBlueprint() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"delete": &crv1alpha1.BlueprintAction{
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testDelete",
+						Func: "DeleteData",
+						Args: map[string]interface{}{
+							DeleteDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
+							DeleteDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
+							DeleteDataBackupIdentifierArg:     fmt.Sprintf("{{ .Options.%s }}", BackupDataOutputBackupID),
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func newLocationDeleteBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
@@ -551,4 +571,48 @@ func (s *DataSuite) TestBackupWrongPassword(c *C) {
 	out2 := runAction(c, bp, "backup", tp)
 	c.Assert(out2[BackupDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out2[BackupDataOutputBackupTag].(string), Not(Equals), "")
+}
+
+func (s *DataSuite) TestBackupDeleteWrongPassword(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = restic.GeneratePassword()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	options := map[string]string{
+		BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
+		BackupDataOutputBackupTag: out[BackupDataOutputBackupTag].(string),
+	}
+	tp.Options = options
+
+	bp = *newDeleteDataBlueprint()
+	bp.Actions["delete"].Phases[0].Args[DeleteDataEncryptionKeyArg] = "test123"
+	_ = runAction(c, bp, "delete", tp)
+}
+
+func (s *DataSuite) TestBackupRestoreWrongPassword(c *C) {
+	tp, pvcs := s.getTemplateParamsAndPVCName(c, 1)
+	for _, pvc := range pvcs {
+		// Test backup
+		bp := *newBackupDataBlueprint()
+		bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = restic.GeneratePassword()
+		out := runAction(c, bp, "backup", tp)
+		c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+		c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+		options := map[string]string{
+			BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
+			BackupDataOutputBackupTag: out[BackupDataOutputBackupTag].(string),
+		}
+		tp.Options = options
+
+		// Test restore with ID
+		bp = *newRestoreDataBlueprint(pvc, RestoreDataBackupIdentifierArg, BackupDataOutputBackupID)
+		bp.Actions["restore"].Phases[0].Args[RestoreDataEncryptionKeyArg] = "test123"
+		_ = runAction(c, bp, "restore", tp)
+	}
 }
