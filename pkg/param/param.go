@@ -48,7 +48,7 @@ type TemplateParams struct {
 	Options     map[string]string
 	Object      map[string]interface{}
 	Phases      map[string]*Phase
-	PodOverride v1.PodSpec
+	PodOverride map[string]interface{}
 }
 
 // StatefulSetParams are params for stateful sets.
