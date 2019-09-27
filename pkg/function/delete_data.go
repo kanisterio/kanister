@@ -42,7 +42,9 @@ const (
 	DeleteDataEncryptionKeyArg = "encryptionKey"
 	// DeleteDataReclaimSpace provides a way to specify if space should be reclaimed
 	DeleteDataReclaimSpace = "reclaimSpace"
-	deleteDataJobPrefix    = "delete-data-"
+	// DeleteDataPodOverrideArg contains pod specs to override default pod specs
+	DeleteDataPodOverrideArg = "podOverride"
+	deleteDataJobPrefix      = "delete-data-"
 )
 
 func init() {
@@ -57,12 +59,13 @@ func (*deleteDataFunc) Name() string {
 	return "DeleteData"
 }
 
-func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string, jobPrefix string) (map[string]interface{}, error) {
+func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string, jobPrefix string, podOverride map[string]interface{}) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
 		Image:        kanisterToolsImage,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataPodFunc(cli, tp, reclaimSpace, namespace, encryptionKey, targetPaths, deleteTags, deleteIdentifiers)
@@ -137,6 +140,7 @@ func pruneData(cli kubernetes.Interface, tp param.TemplateParams, pod *v1.Pod, n
 func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, deleteArtifactPrefix, deleteIdentifier, deleteTag, encryptionKey string
 	var reclaimSpace bool
+	var podOverride map[string]interface{}
 	var err error
 	if err = Arg(args, DeleteDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -156,6 +160,19 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = OptArg(args, DeleteDataReclaimSpace, &reclaimSpace, false); err != nil {
 		return nil, err
 	}
+	if err = OptArg(args, DeleteDataPodOverrideArg, &podOverride, podOverride); err != nil {
+		return nil, err
+	}
+
+	// Check if PodOverride specs are passed through actionset
+	// If yes, override podOverride specs
+	if tp.PodOverride != nil {
+		podOverride, err = kube.CreateAndMergeJsonPatch(podOverride, tp.PodOverride)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Validate profile
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, err
@@ -164,7 +181,7 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, strings.Fields(deleteArtifactPrefix), strings.Fields(deleteTag), strings.Fields(deleteIdentifier), deleteDataJobPrefix)
+	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, strings.Fields(deleteArtifactPrefix), strings.Fields(deleteTag), strings.Fields(deleteIdentifier), deleteDataJobPrefix, podOverride)
 }
 
 func (*deleteDataFunc) RequiredArgs() []string {
