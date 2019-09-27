@@ -84,6 +84,10 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 		}
 		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		for i, deleteTag := range deleteTags {
+			encryptionKey, err = restic.CheckIfRepoIsReachable(tp.Profile, cli, targetPaths[i], encryptionKey, namespace, pod.Name, pod.Spec.Containers[0].Name)
+			if err != nil {
+				return nil, err
+			}
 			cmd, err := restic.SnapshotsCommandByTag(tp.Profile, targetPaths[i], deleteTag, encryptionKey)
 			if err != nil {
 				return nil, err
@@ -101,6 +105,10 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 			deleteIdentifiers = append(deleteIdentifiers, deleteIdentifier)
 		}
 		for i, deleteIdentifier := range deleteIdentifiers {
+			encryptionKey, err = restic.CheckIfRepoIsReachable(tp.Profile, cli, targetPaths[i], encryptionKey, namespace, pod.Name, pod.Spec.Containers[0].Name)
+			if err != nil {
+				return nil, err
+			}
 			cmd, err := restic.ForgetCommandByID(tp.Profile, targetPaths[i], deleteIdentifier, encryptionKey)
 			if err != nil {
 				return nil, err

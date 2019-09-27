@@ -145,6 +145,10 @@ func restoreDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, names
 		}
 		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		var cmd []string
+		encryptionKey, err := restic.CheckIfRepoIsReachable(tp.Profile, cli, backupArtifactPrefix, encryptionKey, namespace, pod.Name, pod.Spec.Containers[0].Name)
+		if err != nil {
+			return nil, err
+		}
 		// Generate restore command based on the identifier passed
 		if backupTag != "" {
 			cmd, err = restic.RestoreCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, restorePath, encryptionKey)
