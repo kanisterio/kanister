@@ -16,15 +16,15 @@ implements the following go interface:
       RequiredArgs() []string
   }
 
-Kanister Functions are registered by the return value of `Name()`, which must be
+Kanister Functions are registered by the return value of ``Name()``, which must be
 static.
 
-Each phase in a Blueprint executes a Kanister Function.  The `Func` field in
-a `BlueprintPhase` is used to lookup a Kanister Function.  After
-`BlueprintPhase.Args` are rendered, they are passed into the Kanister Function's
-`Exec()` method.
+Each phase in a Blueprint executes a Kanister Function.  The ``Func`` field in
+a ``BlueprintPhase`` is used to lookup a Kanister Function.  After
+``BlueprintPhase.Args`` are rendered, they are passed into the Kanister Function's
+``Exec()`` method.
 
-The `RequiredArgs` method returns the list of argument names that are required.
+The ``RequiredArgs`` method returns the list of argument names that are required.
 
 Existing Functions
 ==================
@@ -155,10 +155,10 @@ It is similar to running
 
 .. code-block:: bash
 
-  `kubectl scale deployment <DEPLOYMENT-NAME> --replicas=<NUMBER OF REPLICAS> --namespace <NAMESPACE>`
+  kubectl scale deployment <DEPLOYMENT-NAME> --replicas=<NUMBER OF REPLICAS> --namespace <NAMESPACE>
 
 This can be useful if the workload needs to be shutdown before processing
-certain data operations. For example, it may be useful to use `ScaleWorkload`
+certain data operations. For example, it may be useful to use ``ScaleWorkload``
 to stop a database process before restoring files.
 
 .. csv-table::
@@ -222,17 +222,17 @@ ScaleWorkload.
 
    `namespace`, Yes, `string`, namespace in which to execute
    `image`, Yes, `string`, image to be used the command
-   `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available.
+   `volumes`, No, `map[string]string`, Mapping of ``pvcName`` to ``mountPath`` under which the volume will be available.
    `command`, Yes, `[]string`,  command list to execute
    `serviceaccount`, No, `string`,  service account info
 
 .. note::
-   The `volumes` argument does not support `subPath` mounts so the
-   data manipulation logic needs to be aware of any `subPath` mounts
+   The ``volumes`` argument does not support ``subPath`` mounts so the
+   data manipulation logic needs to be aware of any ``subPath`` mounts
    that may have been used when mounting a PVC in the primary
    application container.
-   If `volumes` argument is not specified, all volumes belonging to the protected object
-   will be mounted at the predefined path `/mnt/prepare_data/<pvcName>`
+   If ``volumes`` argument is not specified, all volumes belonging to the protected object
+   will be mounted at the predefined path ``/mnt/prepare_data/<pvcName>``
 
 Example:
 
@@ -268,7 +268,7 @@ This function backs up data from a container into any object store
 supported by Kanister.
 
 .. note::
-   It is important that the application includes a `kanister-tools`
+   It is important that the application includes a ``kanister-tools``
    sidecar container. This sidecar is necessary to run the
    tools that capture path on a volume and store it on the object store.
 
@@ -327,7 +327,7 @@ This function concurrently backs up data from one or more pods into an any
 object store supported by Kanister.
 
 .. note::
-   It is important that the application includes a `kanister-tools`
+   It is important that the application includes a ``kanister-tools``
    sidecar container. This sidecar is necessary to run the
    tools that capture path on a volume and store it on the object store.
 
@@ -409,10 +409,10 @@ and restores data to the specified path.
    `encryptionKey`, No, `string`, encryption key to be used during backups
 
 .. note::
-   The `image` argument requires the use of `kanisterio/kanister-tools`
+   The ``image`` argument requires the use of ``kanisterio/kanister-tools``
    image since it includes the required tools to restore data from
    the object store.
-   Between the `pod` and `volumes` arguments, exactly one argument
+   Between the ``pod`` and ``volumes`` arguments, exactly one argument
    must be specified.
 
 Example:
@@ -420,7 +420,7 @@ Example:
 Consider a scenario where you wish to restore the data backed up by the
 :ref:`backupdata` function. We will first scale down the application,
 restore the data and then scale it back up.
-For this phase, we will use the `backupInfo` Artifact provided by
+For this phase, we will use the ``backupInfo`` Artifact provided by
 backup function.
 
 .. substitution-code-block:: yaml
@@ -493,9 +493,9 @@ Example:
 
 Consider a scenario where you wish to restore the data backed up by the
 :ref:`backupdataall` function. We will first scale down the application,
-restore the data and then scale it back up. We will not specify `pods` in
+restore the data and then scale it back up. We will not specify ``pods`` in
 args, so this function will restore data on all pods concurrently.
-For this phase, we will use the `params` Artifact provided by
+For this phase, we will use the ``params`` Artifact provided by
 BackupDataAll function.
 
 .. substitution-code-block:: yaml
@@ -564,7 +564,7 @@ Outputs:
 
 Example:
 
-If the ActionSet `Object` is a PersistentVolumeClaim:
+If the ActionSet ``Object`` is a PersistentVolumeClaim:
 
 .. code-block:: yaml
   :linenos:
@@ -596,7 +596,7 @@ Example:
 
 Consider a scenario where you wish to delete the data backed up by the
 :ref:`backupdata` function.
-For this phase, we will use the `backupInfo` Artifact provided by backup function.
+For this phase, we will use the ``backupInfo`` Artifact provided by backup function.
 
 .. code-block:: yaml
   :linenos:
@@ -630,7 +630,7 @@ Example:
 
 Consider a scenario where you wish to delete all the data backed up by the
 :ref:`backupdataall` function.
-For this phase, we will use the `params` Artifact provided by backup function.
+For this phase, we will use the ``params`` Artifact provided by backup function.
 
 .. code-block:: yaml
   :linenos:
@@ -657,7 +657,7 @@ from an object store.
    `artifact`, Yes, `string`, artifact to be deleted from the object store
 
 .. note::
-   The Kubernetes job uses the `kanisterio/kanister-tools` image,
+   The Kubernetes job uses the ``kanisterio/kanister-tools` image,
    since it includes all the tools required to delete the artifact
    from an object store.
 
@@ -696,7 +696,7 @@ Arguments:
    `pvcs`, No, `[]string`, list of names of PVCs to be backed up
    `skipWait`, No, `bool`, initiate but do not wait for the snapshot operation to complete
 
-When no PVCs are specified in the `pvcs` argument above, all PVCs in use by a
+When no PVCs are specified in the ``pvcs`` argument above, all PVCs in use by a
 Deployment or StatefulSet will be backed up.
 
 Outputs:
@@ -711,7 +711,7 @@ Outputs:
 Example:
 
 Consider a scenario where you wish to backup all PVCs of a deployment. The output
-of this phase is saved to an Artifact named `backupInfo`, shown below:
+of this phase is saved to an Artifact named ``backupInfo``, shown below:
 
 .. code-block:: yaml
   :linenos:
