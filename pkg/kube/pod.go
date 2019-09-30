@@ -147,24 +147,8 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 
 // PatchDefaultPodSpecs use Strategic Merge to patch default pod specs with the passed specs
 func PatchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override sp.JSONMap) (v1.PodSpec, error) {
-	if override == nil {
-		return defaultPodSpecs, nil
-	}
-
-	// Convert override specs to json
-	overrideJson, err := json.Marshal(override)
-	if err != nil {
-		return v1.PodSpec{}, err
-	}
-
-	// Convert default PodSpecs to json
-	originalJson, err := json.Marshal(defaultPodSpecs)
-	if err != nil {
-		return v1.PodSpec{}, err
-	}
-
 	// Merge default specs and override specs with StrategicMergePatch
-	mergedPatch, err := sp.StrategicMergePatch(originalJson, overrideJson, v1.PodSpec{})
+	mergedPatch, err := strategicMergeJsonPatch(defaultPodSpecs, override)
 	if err != nil {
 		return v1.PodSpec{}, err
 	}
@@ -180,10 +164,22 @@ func PatchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override sp.JSONMap) (v1.P
 
 // CreateAndMergeJsonPatch uses Strategic Merge to merge two Pod spec configuration
 func CreateAndMergeJsonPatch(original, override sp.JSONMap) (sp.JSONMap, error) {
-	if override == nil {
-		return original, nil
+	// Merge json specs with StrategicMerge
+	mergedPatch, err := strategicMergeJsonPatch(original, override)
+	if err != nil {
+		return nil, err
 	}
 
+	// Convert merged json to map[string]interface{}
+	var merged map[string]interface{}
+	json.Unmarshal(mergedPatch, &merged)
+	if err != nil {
+		return nil, err
+	}
+	return merged, err
+}
+
+func strategicMergeJsonPatch(original, override interface{}) ([]byte, error) {
 	// Convert override specs to json
 	overrideJson, err := json.Marshal(override)
 	if err != nil {
@@ -201,12 +197,5 @@ func CreateAndMergeJsonPatch(original, override sp.JSONMap) (sp.JSONMap, error) 
 	if err != nil {
 		return nil, err
 	}
-
-	// Convert merged json to map[string]interface{}
-	var merged map[string]interface{}
-	json.Unmarshal(mergedPatch, &merged)
-	if err != nil {
-		return nil, err
-	}
-	return merged, err
+	return mergedPatch, nil
 }
