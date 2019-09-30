@@ -27,7 +27,7 @@ usage() {
 main() {
     local prev=${1:?"$(usage)"}
     local next=${2:?"$(usage)"}
-    local -a pkgs=(docker/ scripts/ examples/ pkg/ helm/ docs/)
+    local -a pkgs=(docker/ scripts/ examples/ pkg/ helm/)
     grep -E "${prev}" -r  "${pkgs[@]}" | cut -d ':' -f 1 | uniq | xargs sed -ri "s/${prev}/${next//./\\.}/g"
 }
 

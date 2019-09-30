@@ -29,13 +29,13 @@ Deploying via Helm
 
 This will install the Kanister controller in the `kanister` namespace
 
-.. code-block:: bash
+.. substitution-code-block:: bash
 
    # Add Kanister charts
    $ helm repo add kanister https://charts.kanister.io/
 
    # Install the Kanister operator controller using helm
-   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.21.0
+   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=|version|
 
    # Create an S3 Compliant Kanister profile using kanctl
    $ kanctl create profile s3compliant --bucket <bucket> --access-key ${AWS_ACCESS_KEY_ID} \
@@ -71,7 +71,7 @@ the namespace fields in `bundle.yaml.in` to deploy in a namespace of your
 choice. By default, the controller will be deployed into the `default`
 namespace.
 
-.. code-block:: bash
+.. substitution-code-block:: bash
 
-   # Deploy controller version 0.21.0 to Kubernetes
-   $ make deploy VERSION="0.21.0"
+   # Deploy controller version |version| to Kubernetes
+   $ make deploy VERSION="|version|"
