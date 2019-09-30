@@ -563,7 +563,7 @@ Using kanctl to Chain ActionSets
 ================================
 
 So far in this tutorial, we have shown you how to manually create action
-sets via yaml files. In some cases, an action depends on a previous action,
+sets via YAML files. In some cases, an action depends on a previous action,
 and manually updating the action set to use artifacts created by the
 previous action set can be cumbersome. In situations like this, it is
 useful to instead use `kanctl`. To learn how to leverage `kanctl` to
