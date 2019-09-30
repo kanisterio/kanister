@@ -24,7 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -38,11 +38,11 @@ type PodOptions struct {
 	Command            []string
 	Volumes            map[string]string
 	ServiceAccountName string
-	PodOverride        map[string]interface{}
+	PodOverride        sp.JSONMap
 }
 
 // CreatePod creates a pod with a single container based on the specified image
-func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (pod *v1.Pod, err error) {
+func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
 	volumeMounts, podVolumes := createVolumeSpecs(opts.Volumes)
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
@@ -63,12 +63,12 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	}
 
 	// Patch default Pod Specs if needed
-	defaultSpecs, err = PatchDefaultPodSpecs(defaultSpecs, opts.PodOverride)
+	defaultSpecs, err := PatchDefaultPodSpecs(defaultSpecs, opts.PodOverride)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 
-	pod = &v1.Pod{
+	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
 			Namespace:    opts.Namespace,
@@ -146,7 +146,7 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 }
 
 // PatchDefaultPodSpecs use Strategic Merge to patch default pod specs with the passed specs
-func PatchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override map[string]interface{}) (v1.PodSpec, error) {
+func PatchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override sp.JSONMap) (v1.PodSpec, error) {
 	if override == nil {
 		return defaultPodSpecs, nil
 	}
@@ -164,7 +164,7 @@ func PatchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override map[string]interf
 	}
 
 	// Merge default specs and override specs with StrategicMergePatch
-	mergedPatch, err := strategicpatch.StrategicMergePatch(originalJson, overrideJson, v1.PodSpec{})
+	mergedPatch, err := sp.StrategicMergePatch(originalJson, overrideJson, v1.PodSpec{})
 	if err != nil {
 		return v1.PodSpec{}, err
 	}
@@ -179,7 +179,7 @@ func PatchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override map[string]interf
 }
 
 // CreateAndMergeJsonPatch uses Strategic Merge to merge two Pod spec configuration
-func CreateAndMergeJsonPatch(original, override map[string]interface{}) (map[string]interface{}, error) {
+func CreateAndMergeJsonPatch(original, override sp.JSONMap) (sp.JSONMap, error) {
 	if override == nil {
 		return original, nil
 	}
@@ -197,7 +197,7 @@ func CreateAndMergeJsonPatch(original, override map[string]interface{}) (map[str
 	}
 
 	// Merge json specs with StrategicMerge
-	mergedPatch, err := strategicpatch.StrategicMergePatch(originalJson, overrideJson, v1.PodSpec{})
+	mergedPatch, err := sp.StrategicMergePatch(originalJson, overrideJson, v1.PodSpec{})
 	if err != nil {
 		return nil, err
 	}

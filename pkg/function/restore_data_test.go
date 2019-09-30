@@ -17,6 +17,8 @@ package function
 import (
 	. "gopkg.in/check.v1"
 
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
+
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -176,7 +178,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 			args: map[string]interface{}{
 				RestoreDataPodArg:              "some-pod",
 				RestoreDataBackupIdentifierArg: "backup123",
-				RestoreDataPodOverrideArg: map[string]interface{}{
+				RestoreDataPodOverrideArg: sp.JSONMap{
 					"containers": []map[string]interface{}{
 						{
 							"command": []string{"echo", "in unit tests"},

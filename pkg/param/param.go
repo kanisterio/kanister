@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
@@ -48,7 +49,7 @@ type TemplateParams struct {
 	Options     map[string]string
 	Object      map[string]interface{}
 	Phases      map[string]*Phase
-	PodOverride map[string]interface{}
+	PodOverride sp.JSONMap
 }
 
 // StatefulSetParams are params for stateful sets.

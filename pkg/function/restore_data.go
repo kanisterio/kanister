@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -65,10 +66,10 @@ func (*restoreDataFunc) Name() string {
 	return "RestoreData"
 }
 
-func validateAndGetOptArgs(args map[string]interface{}) (string, string, string, map[string]string, string, string, map[string]interface{}, error) {
+func validateAndGetOptArgs(args map[string]interface{}) (string, string, string, map[string]string, string, string, sp.JSONMap, error) {
 	var restorePath, encryptionKey, pod, tag, id string
 	var vols map[string]string
-	var podOverride map[string]interface{}
+	var podOverride sp.JSONMap
 	var err error
 
 	if err = OptArg(args, RestoreDataRestorePathArg, &restorePath, "/"); err != nil {
@@ -121,7 +122,7 @@ func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, er
 	}
 }
 
-func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, jobPrefix string, vols map[string]string, podOverride map[string]interface{}) (map[string]interface{}, error) {
+func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, jobPrefix string, vols map[string]string, podOverride sp.JSONMap) (map[string]interface{}, error) {
 	// Validate volumes
 	for pvc := range vols {
 		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvc, metav1.GetOptions{}); err != nil {
@@ -175,7 +176,7 @@ func restoreDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, names
 
 func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, image, backupArtifactPrefix, backupTag, backupID string
-	var podOverride map[string]interface{}
+	var podOverride sp.JSONMap
 	var err error
 	if err = Arg(args, RestoreDataNamespaceArg, &namespace); err != nil {
 		return nil, err

@@ -22,6 +22,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
+
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -60,10 +62,10 @@ func (*restoreDataAllFunc) Name() string {
 	return "RestoreDataAll"
 }
 
-func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, []string, map[string]interface{}, error) {
+func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, []string, sp.JSONMap, error) {
 	var restorePath, encryptionKey, pods string
 	var ps []string
-	var podOverride map[string]interface{}
+	var podOverride sp.JSONMap
 	var err error
 
 	if err = OptArg(args, RestoreDataAllRestorePathArg, &restorePath, "/"); err != nil {

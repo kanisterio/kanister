@@ -26,6 +26,7 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/testing"
@@ -149,8 +150,8 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 	}
 
 	tests := []struct {
-		BlueprintPodSpecs map[string]interface{}
-		ActionsetPodSpecs map[string]interface{}
+		BlueprintPodSpecs sp.JSONMap
+		ActionsetPodSpecs sp.JSONMap
 		Expected          v1.PodSpec
 	}{
 		// Blueprint and Actionset PodOverride specs are nil
@@ -163,7 +164,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 		// Blueprint PodOverride specs are nil
 		{
 			BlueprintPodSpecs: nil,
-			ActionsetPodSpecs: map[string]interface{}{
+			ActionsetPodSpecs: sp.JSONMap{
 				"restartPolicy": "Always",
 			},
 			Expected: v1.PodSpec{
@@ -197,7 +198,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 
 		// Actionset PodOverride specs are nil
 		{
-			BlueprintPodSpecs: map[string]interface{}{
+			BlueprintPodSpecs: sp.JSONMap{
 				"containers": []map[string]interface{}{
 					{
 						"name":            "container",
@@ -237,7 +238,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 
 		// Actionset PodOverride specs are nil
 		{
-			BlueprintPodSpecs: map[string]interface{}{
+			BlueprintPodSpecs: sp.JSONMap{
 				"containers": []map[string]interface{}{
 					{
 						"name": "container",
@@ -250,7 +251,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 					},
 				},
 			},
-			ActionsetPodSpecs: map[string]interface{}{
+			ActionsetPodSpecs: sp.JSONMap{
 				"volumes": []map[string]interface{}{
 					{
 						"name": "data",
@@ -295,12 +296,12 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 
 		// Add NodeSelector and Tolerations
 		{
-			BlueprintPodSpecs: map[string]interface{}{
+			BlueprintPodSpecs: sp.JSONMap{
 				"nodeSelector": map[string]interface{}{
 					"selector-key": "selector-value",
 				},
 			},
-			ActionsetPodSpecs: map[string]interface{}{
+			ActionsetPodSpecs: sp.JSONMap{
 				"tolerations": []map[string]interface{}{
 					{
 						"key":      "taint-key",
@@ -352,7 +353,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 
 		// Add NodeSelector and Tolerations. Override container command
 		{
-			BlueprintPodSpecs: map[string]interface{}{
+			BlueprintPodSpecs: sp.JSONMap{
 				"nodeSelector": map[string]interface{}{
 					"selector-key": "selector-value",
 				},
@@ -365,7 +366,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 					},
 				},
 			},
-			ActionsetPodSpecs: map[string]interface{}{
+			ActionsetPodSpecs: sp.JSONMap{
 				"containers": []map[string]interface{}{
 					{
 						"name":    "container",
@@ -415,7 +416,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 
 		// Override container command
 		{
-			BlueprintPodSpecs: map[string]interface{}{
+			BlueprintPodSpecs: sp.JSONMap{
 				"containers": []map[string]interface{}{
 					{
 						"name":    "container",

@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 )
 
 const (
@@ -100,7 +101,7 @@ type ActionSpec struct {
 	Profile *ObjectReference `json:"profile"`
 	// PodOverride is use to specify pod specs that will override the
 	// default pod specs
-	PodOverride map[string]interface{} `json:"podOverride,omitempty"`
+	PodOverride sp.JSONMap `json:"podOverride,omitempty"`
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
 	Options map[string]string `json:"options"`

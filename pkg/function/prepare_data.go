@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -74,7 +75,7 @@ func getVolumes(tp param.TemplateParams) (map[string]string, error) {
 	return vols, nil
 }
 
-func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, serviceAccount, image string, vols map[string]string, podOverride map[string]interface{}, command ...string) (map[string]interface{}, error) {
+func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, serviceAccount, image string, vols map[string]string, podOverride sp.JSONMap, command ...string) (map[string]interface{}, error) {
 	// Validate volumes
 	for pvc := range vols {
 		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvc, metav1.GetOptions{}); err != nil {
@@ -116,7 +117,7 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	var namespace, image, serviceAccount string
 	var command []string
 	var vols map[string]string
-	var podOverride map[string]interface{}
+	var podOverride sp.JSONMap
 	var err error
 	if err = Arg(args, PrepareDataNamespaceArg, &namespace); err != nil {
 		return nil, err
