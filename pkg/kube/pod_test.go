@@ -236,7 +236,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 			},
 		},
 
-		// Actionset PodOverride specs are nil
+		// Modify volume mounts
 		{
 			BlueprintPodSpecs: sp.JSONMap{
 				"containers": []map[string]interface{}{
@@ -451,6 +451,50 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 						},
 					},
 				},
+			},
+		},
+
+		// Override blueprint specs with actionset
+		{
+			BlueprintPodSpecs: sp.JSONMap{
+				"containers": []map[string]interface{}{
+					{
+						"name":            "container",
+						"imagePullPolicy": "IfNotPresent",
+					},
+				},
+				"dnsPolicy": "Default",
+			},
+			ActionsetPodSpecs: sp.JSONMap{
+				"dnsPolicy": "ClusterFirst",
+			},
+			Expected: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:            "container",
+						Image:           "kanisterio/kanister-tools:0.21.0",
+						Command:         []string{"sh", "-c", "echo in default specs"},
+						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+						VolumeMounts: []v1.VolumeMount{
+							{
+								Name:      "data",
+								MountPath: "/var/lib/data",
+							},
+						},
+					},
+				},
+				RestartPolicy: v1.RestartPolicyOnFailure,
+				Volumes: []v1.Volume{
+					{
+						Name: "data",
+						VolumeSource: v1.VolumeSource{
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "default-pvc",
+							},
+						},
+					},
+				},
+				DNSPolicy: v1.DNSClusterFirst,
 			},
 		},
 	}
