@@ -369,13 +369,13 @@ The usage for these commands can be displayed using the `--help` flag:
 
 The following snippet is an example of using kando from inside a Blueprint.
 
-.. code-block:: console
+.. substitution-code-block:: console
 
   kando location push --profile '{{ .Profile }}' --path '/backup/path' -
 
   kando location delete --profile '{{ .Profile }}' --path '/backup/path'
 
-  kando output version 0.21.0
+  kando output version |version|
 
 Install the tools
 =================
@@ -395,10 +395,10 @@ Docker Image
 ============
 
 These tools, especially `kando` are meant to be invoked inside containers via
-Blueprints. Although suggest using the released image when possible, we've also
+Blueprints. Although we suggest using the released image when possible, we've also
 made it simple to add these tools to your container.
 
-The released image, `kanisterio/kanister-tools:0.21.0`, is hosted by
+The released image, `kanisterio/kanister-tools`, is hosted by
 `dockerhub <https://cloud.docker.com/swarm/kanisterio/repository/docker/kanisterio/kanister-tools/general>`_.
 
 The Dockerfile for this image is in the

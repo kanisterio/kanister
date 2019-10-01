@@ -423,7 +423,7 @@ restore the data and then scale it back up.
 For this phase, we will use the `backupInfo` Artifact provided by
 backup function.
 
-.. code-block:: yaml
+.. substitution-code-block:: yaml
   :linenos:
 
   - func: ScaleWorkload
@@ -438,7 +438,7 @@ backup function.
     args:
       namespace: "{{ .Deployment.Namespace }}"
       pod: "{{ index .Deployment.Pods 0 }}"
-      image: kanisterio/kanister-tools:0.21.0
+      image: kanisterio/kanister-tools:|version|
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
   - func: ScaleWorkload
@@ -498,7 +498,7 @@ args, so this function will restore data on all pods concurrently.
 For this phase, we will use the `params` Artifact provided by
 BackupDataAll function.
 
-.. code-block:: yaml
+.. substitution-code-block:: yaml
   :linenos:
 
   - func: ScaleWorkload
@@ -512,7 +512,7 @@ BackupDataAll function.
     name: RestoreFromObjectStore
     args:
       namespace: "{{ .Deployment.Namespace }}"
-      image: kanisterio/kanister-tools:0.21.0
+      image: kanisterio/kanister-tools:|version|
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupInfo: "{{ .ArtifactsIn.params.KeyValue.backupInfo }}"
   - func: ScaleWorkload
