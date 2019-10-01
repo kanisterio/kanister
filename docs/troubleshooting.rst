@@ -29,7 +29,7 @@ following commands:
 If you ever need to debug a live Kanister system and the information
 available in ActionSets you might have created is not enough, looking
 at the Kanister controller logs might help. Assuming you have deployed
-the controller in the `Kanister` namespace, you can use the following
+the controller in the ``kanister`` namespace, you can use the following
 commands to get controller logs.
 
 .. code-block:: bash
