@@ -371,9 +371,9 @@ The following snippet is an example of using kando from inside a Blueprint.
 
 .. substitution-code-block:: console
 
-  kando location push --profile '{{ .Profile }}' --path '/backup/path' -
+  kando location push --profile '{{ toJson .Profile }}' --path '/backup/path' -
 
-  kando location delete --profile '{{ .Profile }}' --path '/backup/path'
+  kando location delete --profile '{{ toJson .Profile }}' --path '/backup/path'
 
   kando output version |version|
 
