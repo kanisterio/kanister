@@ -57,9 +57,9 @@ Objects
 =======
 
 Kanister operates on the granularity of an ``Object``. As of the current
-release, well known Object types are ``Deployment``, ``StatefulSet``, ``PersistentVolumeClaim``,
-or ``Namespace``. The TemplateParams struct has one field for each well known
-object type, which is effectively a union in go.
+release, well known Object types are ``Deployment``, ``StatefulSet``,
+``PersistentVolumeClaim``, or ``Namespace``. The TemplateParams struct
+has one field for each well known object type, which is effectively a union in go.
 
 Other than the types mentioned above, Kanister can also act on any Kubernetes
 object such as a CRD and the :ref:`object` field in TemplateParams is populated with the

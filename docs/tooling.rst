@@ -85,8 +85,8 @@ As seen above, both ActionSets and profiles can be created using ``kanctl create
     -n, --namespace string   Override namespace obtained from kubectl context
         --skip-validation    if set, resource is not validated before creation
 
-``kanctl create actionset`` helps create ActionSets in a couple of different ways. A common
-backup/restore scenario is demonstrated below.
+``kanctl create actionset`` helps create ActionSets in a couple of different ways.
+A common backup/restore scenario is demonstrated below.
 
 Create a new Backup ActionSet
 

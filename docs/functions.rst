@@ -657,7 +657,7 @@ from an object store.
    `artifact`, Yes, `string`, artifact to be deleted from the object store
 
 .. note::
-   The Kubernetes job uses the ``kanisterio/kanister-tools` image,
+   The Kubernetes job uses the ``kanisterio/kanister-tools`` image,
    since it includes all the tools required to delete the artifact
    from an object store.
 
