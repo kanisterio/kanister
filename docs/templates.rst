@@ -3,7 +3,7 @@
 Template Parameters
 *******************
 
-Template Parameters are use to render templates in Blueprints. A `TemplateParam`
+Template Parameters are use to render templates in Blueprints. A ``TemplateParam``
 struct is constructed based on fields in an ActionSet.
 
 The TemplateParam struct is defined as:
@@ -56,10 +56,10 @@ standard go template functions, Kanister imports all the `sprig
 Objects
 =======
 
-Kanister operates on the granularity of an `Object`. As of the current
-release, well known Object types are `Deployment`, `StatefulSet`, `PersistentVolumeClaim`,
-or `Namespace`. The TemplateParams struct has one field for each well known
-object type, which is effectively a union in go.
+Kanister operates on the granularity of an ``Object``. As of the current
+release, well known Object types are ``Deployment``, ``StatefulSet``,
+``PersistentVolumeClaim``, or ``Namespace``. The TemplateParams struct
+has one field for each well known object type, which is effectively a union in go.
 
 Other than the types mentioned above, Kanister can also act on any Kubernetes
 object such as a CRD and the :ref:`object` field in TemplateParams is populated with the
@@ -119,7 +119,7 @@ Namespace
 ---------
 
 NamespaceParams includes the name of the namespace
-that is being acted on when the ActionSet `Object` is
+that is being acted on when the ActionSet ``Object`` is
 specifies a Namespace
 
 .. code-block:: go
@@ -208,7 +208,7 @@ artifact. This functionality is documented `here
 .. note::
 
   When using this feature, we recommend using alphanumeric Artifact keys since
-  the templating engine may not be able to use the `.` notation for non-standard
+  the templating engine may not be able to use the ``.`` notation for non-standard
   characters.
 
 
@@ -224,7 +224,7 @@ artifact  matching that name is present in the ActionSet. Input Artifacts are
 one such type of dependency.
 
 Any Input Artifacts required by a Blueprint are added to the
-`inputArtifactNames` field in Blueprint actions. These named Artifacts
+``inputArtifactNames`` field in Blueprint actions. These named Artifacts
 must be present in any ActionSetAction that uses that Blueprint. Always
 create ActionSet in the same namespace as the controller.
 
@@ -431,7 +431,7 @@ When creating an ActionSet include a reference to the Secret:
           namespace: kanister
 
 The data of the Secret is then available inside the Blueprint using
-templating. Since secrets `Data` field has the type `[]byte`, use
+templating. Since secrets ``Data`` field has the type ``[]byte``, use
 sprig's
 `toString function <http://masterminds.github.io/sprig/conversion.html>`_
 to cast the values to usable strings.

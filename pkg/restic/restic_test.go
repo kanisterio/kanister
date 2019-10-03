@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -140,7 +141,99 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 				"restic",
 			},
 		},
+		{
+			profile: &param.Profile{
+				Location: v1alpha1.Location{
+					Type:     v1alpha1.LocationTypeS3Compliant,
+					Endpoint: "endpoint", // Also remove all of the trailing slashes
+				},
+				Credential: param.Credential{
+					Type: param.CredentialTypeSecret,
+					Secret: &v1.Secret{
+						Type: "secrets.kanister.io/aws",
+						Data: map[string][]byte{
+							"access_key_id":     []byte("id"),
+							"secret_access_key": []byte("secret"),
+						},
+					},
+				},
+			},
+			repo:     "repo",
+			password: "my-secret",
+			expected: []string{
+				"export AWS_ACCESS_KEY_ID=id\n",
+				"export AWS_SECRET_ACCESS_KEY=secret\n",
+				"export RESTIC_REPOSITORY=s3:endpoint/repo\n",
+				"export RESTIC_PASSWORD=my-secret\n",
+				"restic",
+			},
+		},
+		{
+			profile: &param.Profile{
+				Location: v1alpha1.Location{
+					Type:     v1alpha1.LocationTypeS3Compliant,
+					Endpoint: "endpoint", // Also remove all of the trailing slashes
+				},
+				Credential: param.Credential{
+					Type: param.CredentialTypeSecret,
+					Secret: &v1.Secret{
+						Type: "secrets.kanister.io/aws",
+						Data: map[string][]byte{
+							"access_key_id":     []byte("id"),
+							"secret_access_key": []byte("secret"),
+							"session_token":     []byte("token"),
+						},
+					},
+				},
+			},
+			repo:     "repo",
+			password: "my-secret",
+			expected: []string{
+				"export AWS_ACCESS_KEY_ID=id\n",
+				"export AWS_SECRET_ACCESS_KEY=secret\n",
+				"export AWS_SESSION_TOKEN=token\n",
+				"export RESTIC_REPOSITORY=s3:endpoint/repo\n",
+				"export RESTIC_PASSWORD=my-secret\n",
+				"restic",
+			},
+		},
 	} {
-		c.Assert(resticArgs(tc.profile, tc.repo, tc.password), DeepEquals, tc.expected)
+		args, err := resticArgs(tc.profile, tc.repo, tc.password)
+		c.Assert(err, IsNil)
+		c.Assert(args, DeepEquals, tc.expected)
+	}
+}
+
+func (s *ResticDataSuite) TestGetSnapshotStatsFromStatsLog(c *C) {
+	for _, tc := range []struct {
+		log          string
+		expectedfc   string
+		expectedsize string
+	}{
+		{log: "Total File Count:   9", expectedfc: "9", expectedsize: ""},
+		{log: "Total Size:   10.322 KiB", expectedfc: "", expectedsize: "10.322 KiB"},
+		{log: "sudhufehfuijbfjbruifhoiwhf", expectedfc: "", expectedsize: ""},
+		{log: "      Total File Count:   9", expectedfc: "9", expectedsize: ""},
+		{log: "    Total Size:   10.322 KiB", expectedfc: "", expectedsize: "10.322 KiB"},
+	} {
+		_, fc, s := SnapshotStatsFromStatsLog(tc.log)
+		c.Assert(fc, Equals, tc.expectedfc)
+		c.Assert(s, Equals, tc.expectedsize)
+	}
+}
+
+func (s *ResticDataSuite) TestGetSnapshotStatsModeFromStatsLog(c *C) {
+	for _, tc := range []struct {
+		log      string
+		expected string
+	}{
+		{log: "Stats for all snapshots in restore-size mode:", expected: "restore-size"},
+		{log: "Stats for 7e17e764 in restore-size mode:", expected: "restore-size"},
+		{log: "Stats for all snapshots in raw-data mode:", expected: "raw-data"},
+		{log: "Stats for all snapshots in blobs-per-file mode:", expected: "blobs-per-file"},
+		{log: "sudhufehfuijbfjbruifhoiwhf", expected: ""},
+	} {
+		mode := SnapshotStatsModeFromStatsLog(tc.log)
+		c.Assert(mode, Equals, tc.expected)
 	}
 }

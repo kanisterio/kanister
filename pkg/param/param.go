@@ -29,6 +29,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 const timeFormat = time.RFC3339Nano
@@ -47,6 +48,7 @@ type TemplateParams struct {
 	Options     map[string]string
 	Object      map[string]interface{}
 	Phases      map[string]*Phase
+	PodOverride v1.PodSpec
 }
 
 // StatefulSetParams are params for stateful sets.
@@ -90,12 +92,14 @@ type CredentialType string
 
 const (
 	CredentialTypeKeyPair CredentialType = "keyPair"
+	CredentialTypeSecret  CredentialType = "secret"
 )
 
 // Credential resolves the storage
 type Credential struct {
 	Type    CredentialType
 	KeyPair *KeyPair
+	Secret  *v1.Secret
 }
 
 // KeyPair is a credential that contains two strings: an ID and a secret.
@@ -140,6 +144,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 		Profile:     prof,
 		Time:        now.Format(timeFormat),
 		Options:     as.Options,
+		PodOverride: as.PodOverride,
 	}
 	var gvr schema.GroupVersionResource
 	namespace := as.Object.Namespace
@@ -209,6 +214,8 @@ func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1
 	switch c.Type {
 	case crv1alpha1.CredentialTypeKeyPair:
 		return fetchKeyPairCredential(ctx, cli, c.KeyPair)
+	case crv1alpha1.CredentialTypeSecret:
+		return fetchSecretCredential(ctx, cli, c.Secret)
 	default:
 		return nil, errors.Errorf("CredentialType '%s' not supported", c.Type)
 	}
@@ -234,6 +241,23 @@ func fetchKeyPairCredential(ctx context.Context, cli kubernetes.Interface, c *cr
 			ID:     string(s.Data[c.IDField]),
 			Secret: string(s.Data[c.SecretField]),
 		},
+	}, nil
+}
+
+func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *crv1alpha1.ObjectReference) (*Credential, error) {
+	if sr == nil {
+		return nil, errors.New("Secret reference cannot be nil")
+	}
+	s, err := cli.CoreV1().Secrets(sr.Namespace).Get(sr.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch the secret")
+	}
+	if err = secrets.ValidateCredentials(s); err != nil {
+		return nil, err
+	}
+	return &Credential{
+		Type:   CredentialTypeSecret,
+		Secret: s,
 	}, nil
 }
 
