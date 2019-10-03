@@ -40,6 +40,7 @@ const (
 	BackupDataStatsBackupIdentifierArg = "backupID"
 	BackupDataStatsOutputFileCount     = "fileCount"
 	BackupDataStatsOutputSize          = "size"
+	BackupDataStatsOutputMode          = "mode"
 )
 
 func init() {
@@ -77,7 +78,10 @@ func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			return nil, err
 		}
 		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
-		cmd := restic.StatsCommandByID(tp.Profile, backupArtifactPrefix, backupID, encryptionKey)
+		cmd, err := restic.StatsCommandByID(tp.Profile, backupArtifactPrefix, backupID, encryptionKey)
+		if err != nil {
+			return nil, err
+		}
 		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
@@ -85,11 +89,12 @@ func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			return nil, errors.Wrapf(err, "Failed to get backup stats")
 		}
 		// Get File Count and Size from Stats
-		fc, size := restic.SnapshotStatsFromStatsLog(stdout)
+		mode, fc, size := restic.SnapshotStatsFromStatsLog(stdout)
 		if fc == "" || size == "" {
 			return nil, errors.New("Failed to parse snapshot stats from logs")
 		}
 		return map[string]interface{}{
+				BackupDataStatsOutputMode:      mode,
 				BackupDataStatsOutputFileCount: fc,
 				BackupDataStatsOutputSize:      size,
 			},
