@@ -99,7 +99,7 @@ type ActionSpec struct {
 	// Profile is use to specify the location where store artifacts and the
 	// credentials authorized to access them.
 	Profile *ObjectReference `json:"profile"`
-	// PodOverride is use to specify pod specs that will override the
+	// PodOverride is used to specify pod specs that will override the
 	// default pod specs
 	PodOverride sp.JSONMap `json:"podOverride,omitempty"`
 	// Options will be used to specify additional values

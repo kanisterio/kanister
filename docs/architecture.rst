@@ -153,6 +153,7 @@ as follows:
       Secrets map[string]ObjectReference    `json:"secrets"`
       Options map[string]string             `json:"options"`
       Profile *ObjectReference              `json:"profile"`
+      PodOverride map[string]interface{}    `json:"podOverride,omitempty"`
   }
 
 - ``Name`` is required and specifies the action in the Blueprint.
@@ -168,6 +169,8 @@ as follows:
 - ``Profile`` is a reference to a :ref:`Profile<profiles>` Kubernetes
   CustomResource that will be made available to the Blueprint.
 - ``Options`` is used to specify additional values to be used in the Blueprint
+- ``PodOverride`` is used to specify pod specs that will override default specs
+  of the Pod created while executing functions like KubeTask, PrepareData, etc.
 
 As a reference, below is an example of a ActionSpec.
 
