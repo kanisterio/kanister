@@ -38,9 +38,11 @@ const (
 	BackupDataStatsEncryptionKeyArg = "encryptionKey"
 	// BackupDataStatsBackupIdentifierArg provides a unique ID added to the backed up artifacts
 	BackupDataStatsBackupIdentifierArg = "backupID"
-	BackupDataStatsOutputFileCount     = "fileCount"
-	BackupDataStatsOutputSize          = "size"
-	BackupDataStatsOutputMode          = "mode"
+	// BackupDataStatsMode provides a mode for stats
+	BackupDataStatsMode            = "statsMode"
+	BackupDataStatsOutputFileCount = "fileCount"
+	BackupDataStatsOutputSize      = "size"
+	BackupDataStatsOutputMode      = "mode"
 )
 
 func init() {
@@ -55,7 +57,7 @@ func (*BackupDataStatsFunc) Name() string {
 	return "BackupDataStats"
 }
 
-func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, backupID, jobPrefix string) (map[string]interface{}, error) {
+func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, backupID, mode, jobPrefix string) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
@@ -63,11 +65,11 @@ func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := backupDataStatsPodFunc(cli, tp, namespace, encryptionKey, backupArtifactPrefix, backupID)
+	podFunc := backupDataStatsPodFunc(cli, tp, namespace, encryptionKey, backupArtifactPrefix, backupID, mode)
 	return pr.Run(ctx, podFunc)
 }
 
-func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, backupID string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, backupID, mode string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
@@ -78,7 +80,7 @@ func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			return nil, err
 		}
 		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
-		cmd, err := restic.StatsCommandByID(tp.Profile, backupArtifactPrefix, backupID, encryptionKey)
+		cmd, err := restic.StatsCommandByID(tp.Profile, backupArtifactPrefix, backupID, mode, encryptionKey)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +105,7 @@ func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 }
 
 func (*BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var namespace, backupArtifactPrefix, backupID, encryptionKey string
+	var namespace, backupArtifactPrefix, backupID, mode, encryptionKey string
 	var err error
 	if err = Arg(args, BackupDataStatsNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -112,6 +114,9 @@ func (*BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 		return nil, err
 	}
 	if err = Arg(args, BackupDataStatsBackupIdentifierArg, &backupID); err != nil {
+		return nil, err
+	}
+	if err = OptArg(args, BackupDataStatsMode, &mode, "restore-size"); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, BackupDataStatsEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
@@ -125,7 +130,7 @@ func (*BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return backupDataStats(ctx, cli, tp, namespace, encryptionKey, backupArtifactPrefix, backupID, backupDataStatsJobPrefix)
+	return backupDataStats(ctx, cli, tp, namespace, encryptionKey, backupArtifactPrefix, backupID, mode, backupDataStatsJobPrefix)
 }
 
 func (*BackupDataStatsFunc) RequiredArgs() []string {
