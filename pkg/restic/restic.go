@@ -251,19 +251,14 @@ func resticAzureArgs(profile *param.Profile, repository string) []string {
 
 // GetOrCreateRepository will check if the repository already exists and initialize one if not
 func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, profile *param.Profile) error {
-	// Use the snapshots command to check if the repository exists
-	cmd, err := SnapshotsCommand(profile, artifactPrefix, encryptionKey)
-	if err != nil {
-		return errors.Wrap(err, "Failed to create snapshot command")
-	}
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err := executeSnapshotCommand(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	if err == nil {
 		return nil
 	}
 	// Create a repository
-	cmd, err = InitCommand(profile, artifactPrefix, encryptionKey)
+	cmd, err := InitCommand(profile, artifactPrefix, encryptionKey)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create init command")
 	}
@@ -271,6 +266,44 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	return errors.Wrapf(err, "Failed to create object store backup location")
+}
+
+// GetSnapshotIDs checks if repo is reachable with current encryptionKey, and get a list of snapshot IDs
+func GetSnapshotIDs(profile *param.Profile, cli kubernetes.Interface, artifactPrefix, encryptionKey, namespace, pod, container string) (bool, []string, error) {
+	stdout, err := CheckIfRepoIsReachable(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+	if err != nil {
+		return false, nil, errors.Wrap(err, "Failed to connect to object store location")
+	}
+	// parse snapshots for list of IDs
+	snapshots, err := SnapshotIDsFromSnapshotCommand(stdout)
+	if err != nil {
+		return true, nil, errors.Wrap(err, "Failed to list snapshots")
+	}
+	return true, snapshots, nil
+}
+
+// CheckIfRepoIsReachable checks if repo can be reached by trying to list snapshots
+func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, error) {
+	stdout, stderr, err := executeSnapshotCommand(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+	if IsPasswordIncorrect(stderr) { // If password didn't work
+		return "", errors.Wrap(err, "Password is incorrect")
+	}
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to list snapshots")
+	}
+	return stdout, nil
+}
+
+func executeSnapshotCommand(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
+	// Use the snapshots command to check if the repository exists
+	cmd, err := SnapshotsCommand(profile, artifactPrefix, encryptionKey)
+	if err != nil {
+		return "", "", errors.Wrap(err, "Failed to create snapshot command")
+	}
+	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	format.Log(pod, container, stdout)
+	format.Log(pod, container, stderr)
+	return stdout, stderr, err
 }
 
 // SnapshotIDFromSnapshotLog gets the SnapshotID from Snapshot Command log
@@ -341,4 +374,28 @@ func SnapshotStatsModeFromStatsLog(output string) string {
 		}
 	}
 	return ""
+}
+
+// IsPasswordIncorrect checks if password was wrong from Snapshot Command log
+func IsPasswordIncorrect(output string) bool {
+	return strings.Contains(output, "wrong password")
+}
+
+// SnapshotIDFromSnapshotLog gets the SnapshotID from Snapshot Command log
+func SnapshotIDsFromSnapshotCommand(output string) ([]string, error) {
+	var snapIds []string
+	var result []map[string]interface{}
+	err := json.Unmarshal([]byte(output), &result)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to unmarshall output from snapshotCommand")
+	}
+	if len(result) == 0 {
+		return nil, errors.New("Snapshots not found")
+	}
+	for _, r := range result {
+		if r["short_id"] != nil {
+			snapIds = append(snapIds, r["short_id"].(string))
+		}
+	}
+	return snapIds, nil
 }
