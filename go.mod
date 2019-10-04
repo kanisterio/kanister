@@ -40,7 +40,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jarcoal/httpmock v1.0.4 // indirect
 	github.com/jpillora/backoff v0.0.0-20170918002102-8eab2debe79d
-	github.com/json-iterator/go v1.1.6 // indirect
+	github.com/json-iterator/go v1.1.6
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/kubernetes-csi/external-snapshotter v1.1.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f

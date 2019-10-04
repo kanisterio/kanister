@@ -17,6 +17,8 @@ package function
 import (
 	. "gopkg.in/check.v1"
 
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
+
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -115,6 +117,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 		name       string
 		args       map[string]interface{}
 		errChecker Checker
+		tp         param.TemplateParams
 	}{
 		{
 			name: "Args with Pod",
@@ -171,9 +174,30 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 			},
 			errChecker: NotNil,
 		},
+		{
+			name: "Args with podOverride",
+			args: map[string]interface{}{
+				RestoreDataPodArg:              "some-pod",
+				RestoreDataBackupIdentifierArg: "backup123",
+				RestoreDataPodOverrideArg: sp.JSONMap{
+					"containers": []map[string]interface{}{
+						{
+							"name":    "container",
+							"command": []string{"echo", "in unit tests"},
+						},
+					},
+				},
+			},
+			errChecker: IsNil,
+			tp: param.TemplateParams{
+				PodOverride: sp.JSONMap{
+					"dnsPolicy": "ClusterFirst",
+				},
+			},
+		},
 	}
 	for _, tc := range testCases {
-		_, _, _, _, _, _, err := validateAndGetOptArgs(tc.args)
+		_, _, _, _, _, _, _, err := validateAndGetOptArgs(tc.args, tc.tp)
 		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
 	}
 }
