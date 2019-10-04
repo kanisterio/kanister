@@ -237,3 +237,20 @@ func (s *ResticDataSuite) TestGetSnapshotStatsModeFromStatsLog(c *C) {
 		c.Assert(mode, Equals, tc.expected)
 	}
 }
+
+func (s *ResticDataSuite) TestGetSnapshotIDsFromSnapshotCommand(c *C) {
+	for _, tc := range []struct {
+		log      string
+		expected []string
+		checker  Checker
+	}{
+		{log: `[{"time":"2019-03-28T17:35:15.146526-07:00","hostname":"MacBook-Pro.local","username":"abc","uid":501,"gid":20,"tags":["backup123"],"id":"7c0bfeb93dd5b390a6eaf8a386ec8cb86e4631f2d96400407b529b53d979536a","short_id":"7c0bfeb9"}]`, expected: []string{"7c0bfeb9"}, checker: IsNil},
+		{log: `[{"time":"2019-03-28T17:35:15.146526-07:00","hostname":"MacBook-Pro.local","username":"abc","uid":501,"gid":20,"tags":["backup123"],"id":"7c0bfeb93dd5b390a6eaf8a386ec8cb86e4631f2d96400407b529b53d979536a","short_id":"7c0bfeb67"},{"time":"2019-03-28T17:35:15.146526-07:00","hostname":"MacBook-Pro.local","username":"abc","uid":501,"gid":20,"tags":["backup123"],"id":"7c0bfeb93dd5b390a6eaf8a386ec8cb86e4631f2d96400407b529b53d979536a","short_id":"7c0bfeb9"}]`, expected: []string{"7c0bfeb67", "7c0bfeb9"}, checker: IsNil},
+		{log: `null`, expected: []string(nil), checker: NotNil},
+	} {
+		ids, err := SnapshotIDsFromSnapshotCommand(tc.log)
+		c.Assert(err, tc.checker)
+		c.Assert(ids, DeepEquals, tc.expected)
+
+	}
+}
