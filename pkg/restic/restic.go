@@ -269,17 +269,17 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 }
 
 // GetSnapshotIDs checks if repo is reachable with current encryptionKey, and get a list of snapshot IDs
-func GetSnapshotIDs(profile *param.Profile, cli kubernetes.Interface, artifactPrefix, encryptionKey, namespace, pod, container string) (bool, []string, error) {
+func GetSnapshotIDs(profile *param.Profile, cli kubernetes.Interface, artifactPrefix, encryptionKey, namespace, pod, container string) ([]string, error) {
 	stdout, err := CheckIfRepoIsReachable(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
 	if err != nil {
-		return false, nil, errors.Wrap(err, "Failed to connect to object store location")
+		return nil, errors.Wrap(err, "Failed to connect to object store location")
 	}
 	// parse snapshots for list of IDs
 	snapshots, err := SnapshotIDsFromSnapshotCommand(stdout)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "Failed to list snapshots")
+		return nil, errors.Wrap(err, "Failed to list snapshots")
 	}
-	return true, snapshots, nil
+	return snapshots, nil
 }
 
 // CheckIfRepoIsReachable checks if repo can be reached by trying to list snapshots

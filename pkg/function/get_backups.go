@@ -39,6 +39,9 @@ const (
 	// getBackupsPodOverrideArg contains pod specs to override default pod specs
 	getBackupsPodOverrideArg = "podOverride"
 	getBackupsJobPrefix      = "get-backups-data-"
+	GetBackupsFileCount      = "filecount"
+	GetBackupsSize           = "size"
+	GetBackupsSnapshotIDs    = "snapshotIDs"
 )
 
 func init() {
@@ -77,11 +80,10 @@ func getBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namesp
 			return nil, err
 		}
 		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
-		_, _, err = restic.GetSnapshotIDs(tp.Profile, cli, targetPath, encryptionKey, namespace, pod.Name, pod.Spec.Containers[0].Name)
+		snapshotIDs, err := restic.GetSnapshotIDs(tp.Profile, cli, targetPath, encryptionKey, namespace, pod.Name, pod.Spec.Containers[0].Name)
 		if err != nil {
 			return nil, err
 		}
-
 		cmd, err := restic.StatsCommandByID(tp.Profile, targetPath, "" /* get all snapshot stats */, DefaultStatsMode, encryptionKey)
 		if err != nil {
 			return nil, err
@@ -97,7 +99,12 @@ func getBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namesp
 		if fc == "" || size == "" {
 			return nil, errors.New("Failed to parse snapshot stats from logs")
 		}
-		return nil, nil
+		return map[string]interface{}{
+				GetBackupsSnapshotIDs: snapshotIDs,
+				GetBackupsFileCount:   fc,
+				GetBackupsSize:        size,
+			},
+			nil
 	}
 }
 
