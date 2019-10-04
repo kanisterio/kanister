@@ -122,7 +122,6 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 
 func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, vol, targetPath, encryptionKey string
-	var podOverride map[string]interface{}
 	var err error
 	if err = Arg(args, CopyVolumeDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -136,17 +135,9 @@ func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	if err = OptArg(args, CopyVolumeDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, CopyVolumeDataPodOverrideArg, &podOverride, tp.PodOverride); err != nil {
+	podOverride, err := GetPodSpecOverride(tp, args, CopyVolumeDataPodOverrideArg)
+	if err != nil {
 		return nil, err
-	}
-
-	// Check if PodOverride specs are passed through actionset
-	// If yes, override podOverride specs
-	if tp.PodOverride != nil {
-		podOverride, err = kube.CreateAndMergeJsonPatch(podOverride, tp.PodOverride)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	cli, err := kube.NewClient()

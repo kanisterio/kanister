@@ -77,7 +77,8 @@ func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.Templ
 	if err = OptArg(args, RestoreDataAllPodsArg, &pods, ""); err != nil {
 		return restorePath, encryptionKey, ps, podOverride, err
 	}
-	if err = OptArg(args, RestoreDataAllPodOverrideArg, &podOverride, tp.PodOverride); err != nil {
+	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataAllPodOverrideArg)
+	if err != nil {
 		return restorePath, encryptionKey, ps, podOverride, err
 	}
 
@@ -117,15 +118,6 @@ func (*restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	restorePath, encryptionKey, pods, podOverride, err := validateAndGetRestoreAllOptArgs(args, tp)
 	if err != nil {
 		return nil, err
-	}
-
-	// Check if PodOverride specs are passed through actionset
-	// If yes, override podOverride specs
-	if tp.PodOverride != nil {
-		podOverride, err = kube.CreateAndMergeJsonPatch(podOverride, tp.PodOverride)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Validate profile

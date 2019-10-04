@@ -91,36 +91,11 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 	c.Assert(err, IsNil)
 
 	// Create a dummy Profile and secret
-	sec := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-secret-",
-		},
-		StringData: map[string]string{
-			"id":  "foo",
-			"key": "bar",
-		},
-	}
+	sec := testutil.NewTestProfileSecret()
 	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(sec)
 	c.Assert(err, IsNil)
-	p := &crv1alpha1.Profile{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-profile-",
-		},
-		Location: crv1alpha1.Location{
-			Type: crv1alpha1.LocationTypeS3Compliant,
-		},
-		Credential: crv1alpha1.Credential{
-			Type: crv1alpha1.CredentialTypeKeyPair,
-			KeyPair: &crv1alpha1.KeyPair{
-				IDField:     "id",
-				SecretField: "key",
-				Secret: crv1alpha1.ObjectReference{
-					Name:      sec.GetName(),
-					Namespace: s.namespace,
-				},
-			},
-		},
-	}
+
+	p := testutil.NewTestProfile(s.namespace, sec.GetName())
 	p, err = s.crCli.Profiles(s.namespace).Create(p)
 	c.Assert(err, IsNil)
 

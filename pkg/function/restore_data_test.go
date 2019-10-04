@@ -117,6 +117,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 		name       string
 		args       map[string]interface{}
 		errChecker Checker
+		tp         param.TemplateParams
 	}{
 		{
 			name: "Args with Pod",
@@ -181,16 +182,22 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 				RestoreDataPodOverrideArg: sp.JSONMap{
 					"containers": []map[string]interface{}{
 						{
+							"name":    "container",
 							"command": []string{"echo", "in unit tests"},
 						},
 					},
 				},
 			},
 			errChecker: IsNil,
+			tp: param.TemplateParams{
+				PodOverride: sp.JSONMap{
+					"dnsPolicy": "ClusterFirst",
+				},
+			},
 		},
 	}
 	for _, tc := range testCases {
-		_, _, _, _, _, _, _, err := validateAndGetOptArgs(tc.args)
+		_, _, _, _, _, _, _, err := validateAndGetOptArgs(tc.args, tc.tp)
 		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
 	}
 }

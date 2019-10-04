@@ -103,7 +103,6 @@ func kubeTaskPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1
 func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, image string
 	var command []string
-	var podOverride sp.JSONMap
 	var err error
 	if err = Arg(args, KubeTaskImageArg, &image); err != nil {
 		return nil, err
@@ -114,17 +113,9 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, KubeTaskNamespaceArg, &namespace, ""); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, KubeTaskPodOverrideArg, &podOverride, tp.PodOverride); err != nil {
+	podOverride, err := GetPodSpecOverride(tp, args, KubeTaskPodOverrideArg)
+	if err != nil {
 		return nil, err
-	}
-
-	// Check if PodOverride specs are passed through actionset
-	// If yes, override podOverride specs
-	if tp.PodOverride != nil {
-		podOverride, err = kube.CreateAndMergeJsonPatch(podOverride, tp.PodOverride)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	cli, err := kube.NewClient()

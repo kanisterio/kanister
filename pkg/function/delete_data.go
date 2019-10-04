@@ -141,7 +141,6 @@ func pruneData(cli kubernetes.Interface, tp param.TemplateParams, pod *v1.Pod, n
 func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, deleteArtifactPrefix, deleteIdentifier, deleteTag, encryptionKey string
 	var reclaimSpace bool
-	var podOverride sp.JSONMap
 	var err error
 	if err = Arg(args, DeleteDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -161,17 +160,9 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = OptArg(args, DeleteDataReclaimSpace, &reclaimSpace, false); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, DeleteDataPodOverrideArg, &podOverride, podOverride); err != nil {
+	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataPodOverrideArg)
+	if err != nil {
 		return nil, err
-	}
-
-	// Check if PodOverride specs are passed through actionset
-	// If yes, override podOverride specs
-	if tp.PodOverride != nil {
-		podOverride, err = kube.CreateAndMergeJsonPatch(podOverride, tp.PodOverride)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Validate profile

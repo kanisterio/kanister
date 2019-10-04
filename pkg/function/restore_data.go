@@ -66,7 +66,7 @@ func (*restoreDataFunc) Name() string {
 	return "RestoreData"
 }
 
-func validateAndGetOptArgs(args map[string]interface{}) (string, string, string, map[string]string, string, string, sp.JSONMap, error) {
+func validateAndGetOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, string, map[string]string, string, string, sp.JSONMap, error) {
 	var restorePath, encryptionKey, pod, tag, id string
 	var vols map[string]string
 	var podOverride sp.JSONMap
@@ -98,7 +98,8 @@ func validateAndGetOptArgs(args map[string]interface{}) (string, string, string,
 		return restorePath, encryptionKey, pod, vols, tag, id, podOverride,
 			errors.Errorf("Require one argument: %s or %s", RestoreDataBackupTagArg, RestoreDataBackupIdentifierArg)
 	}
-	if err = OptArg(args, RestoreDataPodOverrideArg, &podOverride, nil); err != nil {
+	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataPodOverrideArg)
+	if err != nil {
 		return restorePath, encryptionKey, pod, vols, tag, id, podOverride, err
 	}
 
@@ -189,7 +190,7 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	}
 
 	// Validate and get optional arguments
-	restorePath, encryptionKey, pod, vols, backupTag, backupID, podOverride, err := validateAndGetOptArgs(args)
+	restorePath, encryptionKey, pod, vols, backupTag, backupID, podOverride, err := validateAndGetOptArgs(args, tp)
 	if err != nil {
 		return nil, err
 	}

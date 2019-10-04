@@ -19,8 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
-
 	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -59,7 +57,6 @@ func (*deleteDataAllFunc) Name() string {
 
 func (*deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, deleteArtifactPrefix, backupInfo, encryptionKey string
-	var podOverride sp.JSONMap
 	var reclaimSpace bool
 	var err error
 	if err = Arg(args, DeleteDataAllNamespaceArg, &namespace); err != nil {
@@ -77,6 +74,11 @@ func (*deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = OptArg(args, DeleteDataAllReclaimSpace, &reclaimSpace, false); err != nil {
 		return nil, err
 	}
+	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataAllPodOverrideArg)
+	if err != nil {
+		return nil, err
+	}
+
 	// Validate profile
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, err

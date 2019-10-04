@@ -117,7 +117,6 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	var namespace, image, serviceAccount string
 	var command []string
 	var vols map[string]string
-	var podOverride sp.JSONMap
 	var err error
 	if err = Arg(args, PrepareDataNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -134,17 +133,9 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = OptArg(args, PrepareDataServiceAccount, &serviceAccount, ""); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, PrepareDataPodOverrideArg, &podOverride, tp.PodOverride); err != nil {
+	podOverride, err := GetPodSpecOverride(tp, args, PrepareDataPodOverrideArg)
+	if err != nil {
 		return nil, err
-	}
-
-	// Check if PodOverride specs are passed through actionset
-	// If yes, override podOverride specs
-	if tp.PodOverride != nil {
-		podOverride, err = kube.CreateAndMergeJsonPatch(podOverride, tp.PodOverride)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	cli, err := kube.NewClient()
