@@ -277,6 +277,8 @@ func (s *ResticDataSuite) TestGetSnapshotStatsFromBackupLog(c *C) {
 		{log: "processed 9 files, 11.235 TB in 0:00", expectedfc: "", expectedsize: ""},
 		{log: "processed 9 files, 11.235 PB in 0:00", expectedfc: "", expectedsize: ""},
 		{log: "processed 9 files, 11.235 asdfB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed  files, 11.235 asdfB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed files, 11.235 asdfB in 0:00", expectedfc: "", expectedsize: ""},
 	} {
 		fc, s := SnapshotStatsFromBackupLog(tc.log)
 		c.Check(fc, Equals, tc.expectedfc)
