@@ -237,3 +237,49 @@ func (s *ResticDataSuite) TestGetSnapshotStatsModeFromStatsLog(c *C) {
 		c.Assert(mode, Equals, tc.expected)
 	}
 }
+
+func (s *ResticDataSuite) TestGetSnapshotStatsFromBackupLog(c *C) {
+	for _, tc := range []struct {
+		log          string
+		expectedfc   string
+		expectedsize string
+	}{
+		{log: "processed 9 files, 11.235 KiB in 0:00", expectedfc: "9", expectedsize: "11.235 KiB"},
+		{log: "processed 9 files, 11 KiB in 0:00", expectedfc: "9", expectedsize: "11 KiB"},
+		{log: "processed 9 files, 11. KiB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, . KiB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, .111 KiB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 0.111 KiB in 0:00", expectedfc: "9", expectedsize: "0.111 KiB"},
+		{log: "processed   9 files, 11.235 KiB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed asdf files, 11.235 KiB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files,  11.235 KiB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "asdf 9 files, 11.235 KiB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9,999,999 files, 11.235 KiB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9.999 files, 11.235 KiB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed  9  files,  11.235 KiB  in  0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed  9  files,  11.235 KiB", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 KiB in", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 KiB in ", expectedfc: "9", expectedsize: "11.235 KiB"},
+		{log: "processed 9 files, 11.235  KiB in ", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 in ", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 , 11.235 KiB in ", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files 11.235 KiB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 B in 0:00", expectedfc: "9", expectedsize: "11.235 B"},
+		{log: "processed 9 files, 11.235 MiB in 0:00", expectedfc: "9", expectedsize: "11.235 MiB"},
+		{log: "processed 9 files, 11.235 GiB in 0:00", expectedfc: "9", expectedsize: "11.235 GiB"},
+		{log: "processed 9 files, 11.235 TiB in 0:00", expectedfc: "9", expectedsize: "11.235 TiB"},
+		{log: "processed 9 files, 11.235 PiB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 asdf in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 iB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 KB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 MB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 GB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 TB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 PB in 0:00", expectedfc: "", expectedsize: ""},
+		{log: "processed 9 files, 11.235 asdfB in 0:00", expectedfc: "", expectedsize: ""},
+	} {
+		fc, s := SnapshotStatsFromBackupLog(tc.log)
+		c.Check(fc, Equals, tc.expectedfc)
+		c.Check(s, Equals, tc.expectedsize)
+	}
+}
