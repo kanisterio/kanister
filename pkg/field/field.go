@@ -6,14 +6,11 @@ type Field interface {
 	Value() interface{}
 }
 
-// Fieldser is a collection of fields
-type Fieldser interface {
+// Fields is a collection of fields
+type Fields interface {
 	Fields() []Field
+	Add(key string, value interface{}) Fields
 }
-
-// Fields is an alias for Fieldser to make the interface friendlier. It seems
-// easier to talk about fields than fieldser(s)
-type Fields = Fieldser
 
 // New creates a new field collection with given key and value
 func New(key string, value interface{}) Fields {
