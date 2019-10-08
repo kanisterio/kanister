@@ -15,6 +15,7 @@
 package awsefs
 
 import (
+	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -22,6 +23,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	. "gopkg.in/check.v1"
 )
+
+func Test(t *testing.T) { TestingT(t) }
 
 type AWSEFSConversionTestSuite struct{}
 
