@@ -14,6 +14,9 @@ func convertFromObjectToVolume(vso *types.VStorageObject) *blockstorage.Volume {
 		Az:           "",
 		Iops:         0,
 		Encrypted:    false,
+		VolumeType:   "",
+		Tags:         blockstorage.VolumeTags{},
+		Attributes:   map[string]string{},
 	}
 }
 
