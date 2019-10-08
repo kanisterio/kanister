@@ -331,15 +331,40 @@ func SnapshotIDFromBackupLog(output string) string {
 		return ""
 	}
 	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	// Log should contain "snapshot ABC123 saved"
+	pattern := regexp.MustCompile(`snapshot\s(.*?)\ssaved$`)
 	for _, l := range logs {
-		// Log should contain "snapshot ABC123 saved"
-		pattern := regexp.MustCompile(`snapshot\s(.*?)\ssaved$`)
 		match := pattern.FindAllStringSubmatch(l, 1)
 		if match != nil {
-			return match[0][1]
+			if len(match) >= 1 && len(match[0]) >= 2 {
+				return match[0][1]
+			}
 		}
 	}
 	return ""
+}
+
+// SnapshotStatsFromBackupLog gets the Snapshot file count and size from Backup Command log
+func SnapshotStatsFromBackupLog(output string) (fileCount string, backupSize string) {
+	if output == "" {
+		return "", ""
+	}
+	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	// Log should contain "processed %d files, %.3f [Xi]B in mm:ss"
+	pattern := regexp.MustCompile(`processed\s([\d]+)\sfiles,\s([\d]+(\.[\d]+)?\s([TGMK]i)?B)\sin\s`)
+	for _, l := range logs {
+		match := pattern.FindAllStringSubmatch(l, 1)
+		if match != nil {
+			if len(match) >= 1 && len(match[0]) >= 3 {
+				// Expect in order:
+				// 0: entire match,
+				// 1: first submatch == file count,
+				// 2: second submatch == size string
+				return match[0][1], match[0][2]
+			}
+		}
+	}
+	return "", ""
 }
 
 // SnapshotStatsFromStatsLog gets the Snapshot Stats from Stats Command log
