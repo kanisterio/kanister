@@ -38,7 +38,7 @@ const (
 	BackupsInfoEncryptionKeyArg = "encryptionKey"
 	// BackupsInfoPodOverrideArg contains pod specs to override default pod specs
 	BackupsInfoPodOverrideArg    = "podOverride"
-	BackupsInfoJobPrefix         = "get-backups-data-"
+	BackupsInfoJobPrefix         = "get-backups-info-"
 	BackupsInfoFileCount         = "fileCount"
 	BackupsInfoSize              = "size"
 	BackupsInfoSnapshotIDs       = "snapshotIDs"
