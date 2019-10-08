@@ -29,22 +29,22 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 		return nil, errors.Wrap(err, "Failed to get config")
 	}
 	soapCli := soap.NewClient(u, true)
-	cli, err := vim25.NewClient(context.TODO(), soapCli)
+	ctx := context.Background()
+	cli, err := vim25.NewClient(ctx, soapCli)
 	req := types.Login{
 		This: *cli.ServiceContent.SessionManager,
 	}
 	req.UserName = u.User.Username()
 	req.Password, _ = u.User.Password()
-
-	_, err = methods.Login(context.Background(), cli, &req)
+	_, err = methods.Login(ctx, cli, &req)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to login")
 	}
-	cnsCli, err := cns.NewClient(context.Background(), cli)
+	cnsCli, err := cns.NewClient(ctx, cli)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to create CNS client")
 	}
-	vslmCli, err := vslm.NewClient(context.TODO(), cli)
+	vslmCli, err := vslm.NewClient(ctx, cli)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create VSLM client")
 	}
