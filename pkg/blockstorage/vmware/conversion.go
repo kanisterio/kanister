@@ -20,7 +20,7 @@ func convertFromObjectToVolume(vso *types.VStorageObject) *blockstorage.Volume {
 	}
 }
 
-// ID wraps ID string with vim25.ID struct.
+// vimID wraps ID string with vim25.ID struct.
 func vimID(id string) types.ID {
 	return types.ID{
 		Id: id,
