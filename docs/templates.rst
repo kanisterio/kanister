@@ -24,6 +24,7 @@ The TemplateParam struct is defined as:
       Options      map[string]string
       Object       map[string]interface{}
       Phases       map[string]*Phase
+      PodOverride  map[string]interface{}
   }
 
 Rendering Templates

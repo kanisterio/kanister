@@ -121,6 +121,7 @@ This allows you to run a new Pod from a Blueprint.
    `namespace`, Yes, `string`, namespace in which to execute
    `image`, Yes, `string`, image to be used for executing the task
    `command`, Yes, `[]string`,  command list to execute
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Example:
 
@@ -132,6 +133,10 @@ Example:
     args:
       namespace: "{{ .Deployment.Namespace }}"
       image: busybox
+      podOverride:
+        containers:
+        - name: container
+          imagePullPolicy: IfNotPresent
       command:
         - sh
         - -c
@@ -225,6 +230,7 @@ ScaleWorkload.
    `volumes`, No, `map[string]string`, Mapping of ``pvcName`` to ``mountPath`` under which the volume will be available.
    `command`, Yes, `[]string`,  command list to execute
    `serviceaccount`, No, `string`,  service account info
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
    The ``volumes`` argument does not support ``subPath`` mounts so the
@@ -407,6 +413,7 @@ and restores data to the specified path.
    `pod`, No, `string`, pod to which the volumes are attached
    `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
    The ``image`` argument requires the use of ``kanisterio/kanister-tools``
@@ -481,6 +488,7 @@ respective PVCs and restores data to the specified path.
    `pods`, No, `string`, pods to which the volumes are attached
    `encryptionKey`, No, `string`, encryption key to be used during backups
    `backupInfo`, Yes, `string`, snapshot info generated as output in BackupDataAll function
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
    The `image` argument requires the use of `kanisterio/kanister-tools`
@@ -549,6 +557,7 @@ Arguments:
    `volume`, Yes, `string`, name of the source PVC
    `dataArtifactPrefix`, Yes, `string`, path on the object store to store the data in
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Outputs:
 
@@ -591,6 +600,7 @@ This function deletes the snapshot data backed up by the BackupData function.
    `backupIdentifier`, No, `string`, (required if backupTag not provided) unique snapshot id generated during backup
    `backupTag`, No, `string`, (required if backupIdentifier not provided) unique tag added during the backup
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Example:
 
@@ -625,6 +635,7 @@ BackupDataAll function.
    `backupInfo`, Yes, `string`, snapshot info generated as output in BackupDataAll function
    `encryptionKey`, No, `string`, encryption key to be used during backups
    `reclaimSpace`, No, `bool`, provides a way to specify if space should be reclaimed
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Example:
 
