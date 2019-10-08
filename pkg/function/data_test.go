@@ -34,6 +34,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
+	"github.com/kanisterio/kanister/pkg/restic"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
@@ -155,6 +156,27 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 							BackupDataPodArg:                  "{{ index .StatefulSet.Pods 0 }}",
 							BackupDataContainerArg:            "{{ index .StatefulSet.Containers 0 0 }}",
 							BackupDataIncludePathArg:          "/etc",
+							BackupDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
+							BackupDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func newBackupsInfoBlueprint() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"backupsInfo": &crv1alpha1.BlueprintAction{
+				Kind: param.StatefulSetKind,
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testBackupsInfo",
+						Func: "BackupsInfo",
+						Args: map[string]interface{}{
+							BackupDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							BackupDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							BackupDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
 						},
@@ -538,4 +560,54 @@ func (s *DataSuite) initPVCTemplateParams(c *C, pvc *v1.PersistentVolumeClaim, o
 	c.Assert(err, IsNil)
 	tp.Profile = s.profile
 	return tp
+}
+func (s *DataSuite) TestBackupInfo(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	// Test backupsInfo
+	bp2 := *newBackupsInfoBlueprint()
+	out2 := runAction(c, bp2, "backupsInfo", tp)
+	c.Assert(out2[BackupsInfoSnapshotIDs].(string), Not(Equals), "")
+	c.Assert(out2[BackupsInfoFileCount].(string), Not(Equals), "")
+	c.Assert(out2[BackupsInfoSize].(string), Not(Equals), "")
+	c.Assert(out2[BackupsInfoPasswordIncorrect].(string), Not(Equals), "")
+	c.Assert(out2[BackupsInfoRepoUnavailable].(string), Not(Equals), "")
+}
+
+func (s *DataSuite) TestBackupInfoWrongPassword(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = restic.GeneratePassword()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	// Test backupsInfo
+	bp2 := *newBackupsInfoBlueprint()
+	out2 := runAction(c, bp2, "backupsInfo", tp)
+	c.Assert(out2[BackupsInfoPasswordIncorrect].(string), Equals, "true")
+}
+
+func (s *DataSuite) TestBackupInfoRepoNotAvailable(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	// Test backupsInfo
+	bp2 := *newBackupsInfoBlueprint()
+	bp2.Actions["backupsInfo"].Phases[0].Args[BackupsInfoArtifactPrefixArg] = "foobar"
+	out2 := runAction(c, bp2, "backupsInfo", tp)
+	c.Assert(out2[BackupsInfoRepoUnavailable].(string), Equals, "true")
 }
