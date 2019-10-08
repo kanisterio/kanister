@@ -314,6 +314,8 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 		out := runAction(c, bp, "backup", tp)
 		c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 		c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+		c.Check(out[BackupDataStatsOutputFileCount].(string), Not(Equals), "")
+		c.Check(out[BackupDataStatsOutputSize].(string), Not(Equals), "")
 
 		options := map[string]string{
 			BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
@@ -339,6 +341,8 @@ func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
 		out := runAction(c, bp, "backup", tp)
 		c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 		c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+		c.Check(out[BackupDataStatsOutputFileCount].(string), Not(Equals), "")
+		c.Check(out[BackupDataStatsOutputSize].(string), Not(Equals), "")
 
 		options := map[string]string{
 			BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
