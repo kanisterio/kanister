@@ -284,6 +284,8 @@ s3:s3.amazonaws.com/ddixit-test/testDir-dz`, expected: true},
 	} {
 		output := DoesRepoExist(tc.log)
 		c.Assert(output, Equals, tc.expected)
+	}
+}
 
 func (s *ResticDataSuite) TestGetSnapshotStatsFromBackupLog(c *C) {
 	for _, tc := range []struct {
