@@ -30,33 +30,35 @@ import (
 )
 
 const (
-	// getBackupsNamespaceArg provides the namespace
-	getBackupsNamespaceArg = "namespace"
-	// getBackupsArtifactPrefixArg provides the path to restore backed up data
-	getBackupsArtifactPrefixArg = "backupArtifactPrefix"
-	// getBackupsEncryptionKeyArg provides the encryption key to be used for deletes
-	getBackupsEncryptionKeyArg = "encryptionKey"
-	// getBackupsPodOverrideArg contains pod specs to override default pod specs
-	getBackupsPodOverrideArg = "podOverride"
-	getBackupsJobPrefix      = "get-backups-data-"
-	GetBackupsFileCount      = "filecount"
-	GetBackupsSize           = "size"
-	GetBackupsSnapshotIDs    = "snapshotIDs"
+	// getBackupsInfoNamespaceArg provides the namespace
+	getBackupsInfoNamespaceArg = "namespace"
+	// getBackupsInfoArtifactPrefixArg provides the path to restore backed up data
+	getBackupsInfoArtifactPrefixArg = "backupArtifactPrefix"
+	// getBackupsInfoEncryptionKeyArg provides the encryption key to be used for deletes
+	getBackupsInfoEncryptionKeyArg = "encryptionKey"
+	// getBackupsInfoPodOverrideArg contains pod specs to override default pod specs
+	getBackupsInfoPodOverrideArg    = "podOverride"
+	getBackupsInfoJobPrefix         = "get-backups-data-"
+	getBackupsInfoFileCount         = "filecount"
+	getBackupsInfoSize              = "size"
+	getBackupsInfoSnapshotIDs       = "snapshotIDs"
+	getBackupsInfoPasswordIncorrect = "passwordIncorrect"
+	getBackupsInfoRepoUnavailable   = "repoUnavailable"
 )
 
 func init() {
-	kanister.Register(&getBackupsFunc{})
+	kanister.Register(&getBackupsInfoFunc{})
 }
 
-var _ kanister.Func = (*getBackupsFunc)(nil)
+var _ kanister.Func = (*getBackupsInfoFunc)(nil)
 
-type getBackupsFunc struct{}
+type getBackupsInfoFunc struct{}
 
-func (*getBackupsFunc) Name() string {
-	return "getBackups"
+func (*getBackupsInfoFunc) Name() string {
+	return "getBackupsInfo"
 }
 
-func getBackups(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, targetPaths, jobPrefix string, podOverride sp.JSONMap) (map[string]interface{}, error) {
+func getBackupsInfo(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, targetPaths, jobPrefix string, podOverride sp.JSONMap) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
@@ -65,11 +67,11 @@ func getBackups(ctx context.Context, cli kubernetes.Interface, tp param.Template
 		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := getBackupsPodFunc(cli, tp, namespace, encryptionKey, targetPaths)
+	podFunc := getBackupsInfoPodFunc(cli, tp, namespace, encryptionKey, targetPaths)
 	return pr.Run(ctx, podFunc)
 }
 
-func getBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, targetPath string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func getBackupsInfoPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, targetPath string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
@@ -82,6 +84,26 @@ func getBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namesp
 		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		snapshotIDs, err := restic.GetSnapshotIDs(tp.Profile, cli, targetPath, encryptionKey, namespace, pod.Name, pod.Spec.Containers[0].Name)
 		if err != nil {
+			if err.Error() == restic.PasswordIncorrect {
+				return map[string]interface{}{
+						getBackupsInfoSnapshotIDs:       nil,
+						getBackupsInfoFileCount:         nil,
+						getBackupsInfoSize:              nil,
+						getBackupsInfoPasswordIncorrect: "true",
+						getBackupsInfoRepoUnavailable:   nil,
+					},
+					nil
+			}
+			if err.Error() == restic.RepoDoesNotExist {
+				return map[string]interface{}{
+						getBackupsInfoSnapshotIDs:       nil,
+						getBackupsInfoFileCount:         nil,
+						getBackupsInfoSize:              nil,
+						getBackupsInfoPasswordIncorrect: nil,
+						getBackupsInfoRepoUnavailable:   "true",
+					},
+					nil
+			}
 			return nil, err
 		}
 		cmd, err := restic.StatsCommandByID(tp.Profile, targetPath, "" /* get all snapshot stats */, DefaultStatsMode, encryptionKey)
@@ -100,27 +122,29 @@ func getBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, namesp
 			return nil, errors.New("Failed to parse snapshot stats from logs")
 		}
 		return map[string]interface{}{
-				GetBackupsSnapshotIDs: snapshotIDs,
-				GetBackupsFileCount:   fc,
-				GetBackupsSize:        size,
+				getBackupsInfoSnapshotIDs:       snapshotIDs,
+				getBackupsInfoFileCount:         fc,
+				getBackupsInfoSize:              size,
+				getBackupsInfoPasswordIncorrect: "false",
+				getBackupsInfoRepoUnavailable:   "false",
 			},
 			nil
 	}
 }
 
-func (*getBackupsFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var namespace, getBackupsArtifactPrefix, encryptionKey string
+func (*getBackupsInfoFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	var namespace, getBackupsInfoArtifactPrefix, encryptionKey string
 	var err error
-	if err = Arg(args, getBackupsNamespaceArg, &namespace); err != nil {
+	if err = Arg(args, getBackupsInfoNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, getBackupsArtifactPrefixArg, &getBackupsArtifactPrefix); err != nil {
+	if err = Arg(args, getBackupsInfoArtifactPrefixArg, &getBackupsInfoArtifactPrefix); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, getBackupsEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
+	if err = OptArg(args, getBackupsInfoEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
-	podOverride, err := GetPodSpecOverride(tp, args, getBackupsPodOverrideArg)
+	podOverride, err := GetPodSpecOverride(tp, args, getBackupsInfoPodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
@@ -133,9 +157,9 @@ func (*getBackupsFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return getBackups(ctx, cli, tp, namespace, encryptionKey, getBackupsArtifactPrefix, getBackupsJobPrefix, podOverride)
+	return getBackupsInfo(ctx, cli, tp, namespace, encryptionKey, getBackupsInfoArtifactPrefix, getBackupsInfoJobPrefix, podOverride)
 }
 
-func (*getBackupsFunc) RequiredArgs() []string {
-	return []string{getBackupsNamespaceArg, getBackupsArtifactPrefixArg}
+func (*getBackupsInfoFunc) RequiredArgs() []string {
+	return []string{getBackupsInfoNamespaceArg, getBackupsInfoArtifactPrefixArg}
 }

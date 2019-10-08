@@ -35,6 +35,8 @@ import (
 
 const (
 	GoogleCloudCredsFilePath = "/tmp/creds.txt"
+	PasswordIncorrect        = "Password is incorrect"
+	RepoDoesNotExist         = "Repo does not exist"
 )
 
 func shCommand(command string) []string {
@@ -251,7 +253,7 @@ func resticAzureArgs(profile *param.Profile, repository string) []string {
 
 // GetOrCreateRepository will check if the repository already exists and initialize one if not
 func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, profile *param.Profile) error {
-	stdout, stderr, err := executeSnapshotCommand(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+	stdout, stderr, err := listSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	if err == nil {
@@ -284,9 +286,12 @@ func GetSnapshotIDs(profile *param.Profile, cli kubernetes.Interface, artifactPr
 
 // CheckIfRepoIsReachable checks if repo can be reached by trying to list snapshots
 func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, error) {
-	stdout, stderr, err := executeSnapshotCommand(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+	stdout, stderr, err := listSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
 	if IsPasswordIncorrect(stderr) { // If password didn't work
-		return "", errors.Wrap(err, "Password is incorrect")
+		return "", errors.New(PasswordIncorrect)
+	}
+	if DoesRepoExist(stderr) {
+		return "", errors.New(RepoDoesNotExist)
 	}
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to list snapshots")
@@ -294,7 +299,7 @@ func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encry
 	return stdout, nil
 }
 
-func executeSnapshotCommand(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
+func listSnapshots(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
 	// Use the snapshots command to check if the repository exists
 	cmd, err := SnapshotsCommand(profile, artifactPrefix, encryptionKey)
 	if err != nil {
@@ -379,6 +384,11 @@ func SnapshotStatsModeFromStatsLog(output string) string {
 // IsPasswordIncorrect checks if password was wrong from Snapshot Command log
 func IsPasswordIncorrect(output string) bool {
 	return strings.Contains(output, "wrong password")
+}
+
+// DoesRepoExists checks if repo exists from Snapshot Command log
+func DoesRepoExist(output string) bool {
+	return strings.Contains(output, "Is there a repository at the following location?")
 }
 
 // SnapshotIDFromSnapshotLog gets the SnapshotID from Snapshot Command log
