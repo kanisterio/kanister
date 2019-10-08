@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -84,7 +85,7 @@ func BackupsInfoPodFunc(cli kubernetes.Interface, tp param.TemplateParams, names
 		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		snapshotIDs, err := restic.GetSnapshotIDs(tp.Profile, cli, targetPath, encryptionKey, namespace, pod.Name, pod.Spec.Containers[0].Name)
 		if err != nil {
-			if err.Error() == restic.PasswordIncorrect {
+			if strings.Contains(err.Error(), restic.PasswordIncorrect) {
 				return map[string]interface{}{
 						BackupsInfoSnapshotIDs:       nil,
 						BackupsInfoFileCount:         nil,
@@ -94,7 +95,7 @@ func BackupsInfoPodFunc(cli kubernetes.Interface, tp param.TemplateParams, names
 					},
 					nil
 			}
-			if err.Error() == restic.RepoDoesNotExist {
+			if strings.Contains(err.Error(), restic.RepoDoesNotExist) {
 				return map[string]interface{}{
 						BackupsInfoSnapshotIDs:       nil,
 						BackupsInfoFileCount:         nil,
