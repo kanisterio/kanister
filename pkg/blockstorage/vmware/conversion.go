@@ -1,8 +1,9 @@
 package vmware
 
 import (
-	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/vmware/govmomi/vim25/types"
+
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
 func convertFromObjectToVolume(vso *types.VStorageObject) *blockstorage.Volume {
