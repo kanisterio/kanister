@@ -125,7 +125,7 @@ func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace stri
 	for _, pod := range ps {
 		go func(pod string, container string) {
 			ctx = field.Context(ctx, consts.PodNameKey, pod)
-			backupID, backupTag, err := backupData(ctx, cli, namespace, pod, container, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), includePath, encryptionKey, tp)
+			backupID, backupTag, _, _, err := backupData(ctx, cli, namespace, pod, container, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), includePath, encryptionKey, tp)
 			errChan <- errors.Wrapf(err, "Failed to backup data for pod %s", pod)
 			outChan <- BackupInfo{PodName: pod, BackupID: backupID, BackupTag: backupTag}
 		}(pod, container)
