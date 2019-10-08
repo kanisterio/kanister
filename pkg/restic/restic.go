@@ -298,7 +298,9 @@ func SnapshotIDFromBackupLog(output string) string {
 	for _, l := range logs {
 		match := pattern.FindAllStringSubmatch(l, 1)
 		if match != nil {
-			return match[0][1]
+			if len(match) >= 1 && len(match[0]) >= 2 {
+				return match[0][1]
+			}
 		}
 	}
 	return ""
@@ -315,7 +317,13 @@ func SnapshotStatsFromBackupLog(output string) (fileCount string, backupSize str
 	for _, l := range logs {
 		match := pattern.FindAllStringSubmatch(l, 1)
 		if match != nil {
-			return match[0][1], match[0][2]
+			if len(match) >= 1 && len(match[0]) >= 3 {
+				// Expect in order:
+				// 0: entire match,
+				// 1: first submatch == file count,
+				// 2: second submatch == size string
+				return match[0][1], match[0][2]
+			}
 		}
 	}
 	return "", ""
