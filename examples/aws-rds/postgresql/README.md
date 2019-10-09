@@ -9,7 +9,6 @@ This example is to demonstrate how Kanister can be integrated with AWS RDS insta
 ## Prerequisites
 
 - Kubernetes 1.10+
-- PV provisioner support in the underlying infrastructure
 - Kanister controller version 0.21.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
@@ -35,6 +34,8 @@ aws rds create-db-instance \
     --master-username master \
     --vpc-security-group-id sg-xxxxyyyyzzz \ # Sec group with TCP 5432 inbound rule
     --master-user-password secret99
+
+aws rds wait db-instance-available --db-instance-identifier=test-postgresql-instance
 ```
 
 ## Deploy pgtest app
@@ -119,7 +120,7 @@ $ kubectl get profile -n pgtest
 NAME               AGE
 s3-profile-sph7s   2h
 
-$ kanctl create actionset --action backup --deployment pgtest/pgtestapp --configmap dbconfig=pgtest/dbconfig --profile pgtest/s3-profile-6hmhn -b rds-blueprint -n kasten-io
+$ kanctl create actionset --action backup --deployment pgtest/pgtestapp --config-maps dbconfig=pgtest/dbconfig --profile pgtest/s3-profile-6hmhn -b rds-blueprint -n kasten-io
 actionset backup-llfb8 created
 
 $ kubectl --namespace kasten-io get actionsets.cr.kanister.io
@@ -148,7 +149,7 @@ To restore the missing data from RDS snapshot, you should use the backup that yo
 
 
 ```bash
-$ kanctl create actionset --namespace kasten-io --action restore -c dbconfig=pgtest/dbconfig --from backup-llfb8
+$ kanctl create actionset --namespace kasten-io --action restore --config-maps dbconfig=pgtest/dbconfig --from backup-llfb8
 actionset restore-backup-llfb8-64gqm created
 
 ## Check status
