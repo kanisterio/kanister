@@ -72,7 +72,17 @@ func (p *fcdProvider) VolumeDelete(ctx context.Context, volume *blockstorage.Vol
 }
 
 func (p *fcdProvider) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
-	return nil, errors.New("Not implemented")
+	obj, err := p.gom.Retrieve(ctx, vimID(id))
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to query the disk")
+	}
+	kvs, err := p.gom.RetrieveMetadata(ctx, vimID(id), nil, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get volume metadata")
+	}
+	vol := convertFromObjectToVolume(obj)
+	vol.Tags = convertKeyValueToTags(kvs)
+	return vol, nil
 }
 
 func (p *fcdProvider) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
