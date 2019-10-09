@@ -80,9 +80,8 @@ func (p *fcdProvider) VolumeGet(ctx context.Context, id string, zone string) (*b
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get volume metadata")
 	}
-	tags := convertKeyValueToTags(kvs)
 	vol := convertFromObjectToVolume(obj)
-	vol.Tags = blockstorage.MapToKeyValue(tags)
+	vol.Tags = convertKeyValueToTags(kvs)
 	return vol, nil
 }
 

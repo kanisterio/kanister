@@ -28,10 +28,10 @@ func vimID(id string) types.ID {
 	}
 }
 
-func convertKeyValueToTags(kvs []types.KeyValue) map[string]string {
+func convertKeyValueToTags(kvs []types.KeyValue) []*blockstorage.KeyValue {
 	tags := make(map[string]string)
 	for _, kv := range kvs {
 		tags[kv.Key] = kv.Value
 	}
-	return tags
+	return blockstorage.MapToKeyValue(tags)
 }
