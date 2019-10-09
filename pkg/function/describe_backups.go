@@ -39,7 +39,7 @@ const (
 	DescribeBackupsEncryptionKeyArg = "encryptionKey"
 	// DescribeBackupsPodOverrideArg contains pod specs to override default pod specs
 	DescribeBackupsPodOverrideArg    = "podOverride"
-	DescribeBackupsJobPrefix         = "get-backups-info-"
+	DescribeBackupsJobPrefix         = "describe-backups-"
 	DescribeBackupsFileCount         = "fileCount"
 	DescribeBackupsSize              = "size"
 	DescribeBackupsSnapshotIDs       = "snapshotIDs"
@@ -61,6 +61,13 @@ func (*DescribeBackupsFunc) Name() string {
 }
 
 func describeBackups(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, targetPaths, jobPrefix string, podOverride sp.JSONMap) (map[string]interface{}, error) {
+	var err error
+	if namespace == "" {
+		namespace, err = kube.GetControllerNamespace()
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to get controller namespace")
+		}
+	}
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
@@ -140,10 +147,10 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 func (*DescribeBackupsFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, getDescribeBackupsArtifactPrefix, encryptionKey string
 	var err error
-	if err = Arg(args, DescribeBackupsNamespaceArg, &namespace); err != nil {
+	if err = Arg(args, DescribeBackupsArtifactPrefixArg, &getDescribeBackupsArtifactPrefix); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, DescribeBackupsArtifactPrefixArg, &getDescribeBackupsArtifactPrefix); err != nil {
+	if err = OptArg(args, DescribeBackupsNamespaceArg, &namespace, ""); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, DescribeBackupsEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
@@ -166,5 +173,5 @@ func (*DescribeBackupsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 }
 
 func (*DescribeBackupsFunc) RequiredArgs() []string {
-	return []string{DescribeBackupsNamespaceArg, DescribeBackupsArtifactPrefixArg}
+	return []string{DescribeBackupsArtifactPrefixArg}
 }
