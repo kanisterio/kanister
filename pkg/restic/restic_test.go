@@ -335,6 +335,5 @@ func (s *ResticDataSuite) TestGetSnapshotStatsFromBackupLog(c *C) {
 		fc, s := SnapshotStatsFromBackupLog(tc.log)
 		c.Check(fc, Equals, tc.expectedfc)
 		c.Check(s, Equals, tc.expectedsize)
-
 	}
 }

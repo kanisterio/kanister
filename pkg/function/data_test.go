@@ -166,15 +166,15 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 	}
 }
 
-func newBackupsInfoBlueprint() *crv1alpha1.Blueprint {
+func newDescribeBackupsBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"backupsInfo": &crv1alpha1.BlueprintAction{
+			"describeBackups": &crv1alpha1.BlueprintAction{
 				Kind: param.StatefulSetKind,
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
-						Name: "testBackupsInfo",
-						Func: "BackupsInfo",
+						Name: "testDescribeBackups",
+						Func: "DescribeBackups",
 						Args: map[string]interface{}{
 							BackupDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							BackupDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
@@ -570,14 +570,14 @@ func (s *DataSuite) TestBackupInfo(c *C) {
 	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
 
-	// Test backupsInfo
-	bp2 := *newBackupsInfoBlueprint()
-	out2 := runAction(c, bp2, "backupsInfo", tp)
-	c.Assert(out2[BackupsInfoSnapshotIDs].(string), Not(Equals), "")
-	c.Assert(out2[BackupsInfoFileCount].(string), Not(Equals), "")
-	c.Assert(out2[BackupsInfoSize].(string), Not(Equals), "")
-	c.Assert(out2[BackupsInfoPasswordIncorrect].(string), Not(Equals), "")
-	c.Assert(out2[BackupsInfoRepoUnavailable].(string), Not(Equals), "")
+	// Test DescribeBackups
+	bp2 := *newDescribeBackupsBlueprint()
+	out2 := runAction(c, bp2, "describeBackups", tp)
+	c.Assert(out2[DescribeBackupsSnapshotIDs], NotNil)
+	c.Assert(out2[DescribeBackupsFileCount].(string), Not(Equals), "")
+	c.Assert(out2[DescribeBackupsSize].(string), Not(Equals), "")
+	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Not(Equals), "")
+	c.Assert(out2[DescribeBackupsRepoUnavailable].(string), Not(Equals), "")
 }
 
 func (s *DataSuite) TestBackupInfoWrongPassword(c *C) {
@@ -590,10 +590,10 @@ func (s *DataSuite) TestBackupInfoWrongPassword(c *C) {
 	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
 
-	// Test backupsInfo
-	bp2 := *newBackupsInfoBlueprint()
-	out2 := runAction(c, bp2, "backupsInfo", tp)
-	c.Assert(out2[BackupsInfoPasswordIncorrect].(string), Equals, "true")
+	// Test DescribeBackups
+	bp2 := *newDescribeBackupsBlueprint()
+	out2 := runAction(c, bp2, "describeBackups", tp)
+	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Equals, "true")
 }
 
 func (s *DataSuite) TestBackupInfoRepoNotAvailable(c *C) {
@@ -605,9 +605,9 @@ func (s *DataSuite) TestBackupInfoRepoNotAvailable(c *C) {
 	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
 
-	// Test backupsInfo
-	bp2 := *newBackupsInfoBlueprint()
-	bp2.Actions["backupsInfo"].Phases[0].Args[BackupsInfoArtifactPrefixArg] = "foobar"
-	out2 := runAction(c, bp2, "backupsInfo", tp)
-	c.Assert(out2[BackupsInfoRepoUnavailable].(string), Equals, "true")
+	// Test DescribeBackups
+	bp2 := *newDescribeBackupsBlueprint()
+	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = "foobar"
+	out2 := runAction(c, bp2, "describeBackups", tp)
+	c.Assert(out2[DescribeBackupsRepoUnavailable].(string), Equals, "true")
 }
