@@ -577,7 +577,7 @@ func (s *DataSuite) TestBackupInfo(c *C) {
 	c.Assert(out2[DescribeBackupsFileCount].(string), Not(Equals), "")
 	c.Assert(out2[DescribeBackupsSize].(string), Not(Equals), "")
 	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Not(Equals), "")
-	c.Assert(out2[DescribeBackupsRepoUnavailable].(string), Not(Equals), "")
+	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Not(Equals), "")
 }
 
 func (s *DataSuite) TestBackupInfoWrongPassword(c *C) {
@@ -609,5 +609,5 @@ func (s *DataSuite) TestBackupInfoRepoNotAvailable(c *C) {
 	bp2 := *newDescribeBackupsBlueprint()
 	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = "foobar"
 	out2 := runAction(c, bp2, "describeBackups", tp)
-	c.Assert(out2[DescribeBackupsRepoUnavailable].(string), Equals, "true")
+	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Equals, "true")
 }
