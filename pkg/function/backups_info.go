@@ -86,7 +86,8 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		snapshotIDs, err := restic.GetSnapshotIDs(tp.Profile, cli, targetPath, encryptionKey, namespace, pod.Name, pod.Spec.Containers[0].Name)
 		if err != nil {
-			if strings.Contains(err.Error(), restic.PasswordIncorrect) {
+			switch msg := err.Error(); {
+			case strings.Contains(msg, restic.PasswordIncorrect):
 				return map[string]interface{}{
 						DescribeBackupsSnapshotIDs:       nil,
 						DescribeBackupsFileCount:         nil,
@@ -95,8 +96,8 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 						DescribeBackupsRepoUnavailable:   nil,
 					},
 					nil
-			}
-			if strings.Contains(err.Error(), restic.RepoDoesNotExist) {
+
+			case strings.Contains(msg, restic.RepoDoesNotExist):
 				return map[string]interface{}{
 						DescribeBackupsSnapshotIDs:       nil,
 						DescribeBackupsFileCount:         nil,
@@ -105,8 +106,9 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 						DescribeBackupsRepoUnavailable:   "true",
 					},
 					nil
+			default:
+				return nil, err
 			}
-			return nil, err
 		}
 		cmd, err := restic.StatsCommandByID(tp.Profile, targetPath, "" /* get all snapshot stats */, RawDataStatsMode, encryptionKey)
 		if err != nil {
