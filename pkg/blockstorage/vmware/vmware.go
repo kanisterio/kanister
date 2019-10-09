@@ -120,7 +120,24 @@ func (p *fcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 }
 
 func (p *fcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
-	return nil, errors.New("Not implemented")
+	volID, snapshotID := splitSnapshotFullID(id)
+	results, err := p.gom.RetrieveSnapshotInfo(ctx, vimID(volID))
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get snapshot info")
+	}
+	for _, result := range results {
+		if result.Id.Id == snapshotID {
+			snapshot := convertFromObjectToSnapshot(&result, volID)
+			snapID := vimID(snapshotID)
+			kvs, err := p.gom.RetrieveMetadata(ctx, vimID(volID), &snapID, "")
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to get snapshot metadata")
+			}
+			snapshot.Tags = convertKeyValueToTags(kvs)
+			return snapshot, nil
+		}
+	}
+	return nil, errors.New("Failed to find snapshot")
 }
 
 func (p *fcdProvider) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
