@@ -77,6 +77,9 @@ func (p *fcdProvider) VolumeGet(ctx context.Context, id string, zone string) (*b
 		return nil, errors.Wrap(err, "Failed to query the disk")
 	}
 	kvs, err := p.gom.RetrieveMetadata(ctx, vimID(id), nil, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get volume metadata")
+	}
 	tags := convertKeyValueToTags(kvs)
 	vol := convertFromObjectToVolume(obj)
 	vol.Tags = blockstorage.MapToKeyValue(tags)
