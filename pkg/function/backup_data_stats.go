@@ -43,7 +43,7 @@ const (
 	BackupDataStatsOutputFileCount = "fileCount"
 	BackupDataStatsOutputSize      = "size"
 	BackupDataStatsOutputMode      = "mode"
-	DefaultStatsMode               = "restore-size"
+	defaultStatsMode               = "restore-size"
 )
 
 func init() {
@@ -117,7 +117,7 @@ func (*BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err = Arg(args, BackupDataStatsBackupIdentifierArg, &backupID); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, BackupDataStatsMode, &mode, DefaultStatsMode); err != nil {
+	if err = OptArg(args, BackupDataStatsMode, &mode, defaultStatsMode); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, BackupDataStatsEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {

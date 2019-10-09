@@ -44,8 +44,8 @@ const (
 	DescribeBackupsSize              = "size"
 	DescribeBackupsSnapshotIDs       = "snapshotIDs"
 	DescribeBackupsPasswordIncorrect = "passwordIncorrect"
-	DescribeBackupsRepoUnavailable   = "repoUnavailable"
-	RawDataStatsMode                 = "raw-data"
+	DescribeBackupsRepoDoesNotExist  = "repoUnavailable"
+	rawDataStatsMode                 = "raw-data"
 )
 
 func init() {
@@ -97,28 +97,20 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			break
 		case strings.Contains(err.Error(), restic.PasswordIncorrect):
 			return map[string]interface{}{
-					DescribeBackupsSnapshotIDs:       nil,
-					DescribeBackupsFileCount:         nil,
-					DescribeBackupsSize:              nil,
 					DescribeBackupsPasswordIncorrect: "true",
-					DescribeBackupsRepoUnavailable:   nil,
 				},
 				nil
 
 		case strings.Contains(err.Error(), restic.RepoDoesNotExist):
 			return map[string]interface{}{
-					DescribeBackupsSnapshotIDs:       nil,
-					DescribeBackupsFileCount:         nil,
-					DescribeBackupsSize:              nil,
-					DescribeBackupsPasswordIncorrect: nil,
-					DescribeBackupsRepoUnavailable:   "true",
+					DescribeBackupsRepoDoesNotExist: "true",
 				},
 				nil
 		default:
 			return nil, err
 
 		}
-		cmd, err := restic.StatsCommandByID(tp.Profile, targetPath, "" /* get all snapshot stats */, RawDataStatsMode, encryptionKey)
+		cmd, err := restic.StatsCommandByID(tp.Profile, targetPath, "" /* get all snapshot stats */, rawDataStatsMode, encryptionKey)
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +130,7 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 				DescribeBackupsFileCount:         fc,
 				DescribeBackupsSize:              size,
 				DescribeBackupsPasswordIncorrect: "false",
-				DescribeBackupsRepoUnavailable:   "false",
+				DescribeBackupsRepoDoesNotExist:  "false",
 			},
 			nil
 	}

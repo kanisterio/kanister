@@ -280,7 +280,7 @@ func (s *ResticDataSuite) TestDoesRepoExist(c *C) {
 		{log: `Fatal: wrong password or no key found`, expected: false},
 		{log: `Fatal: unable to open config file: Stat: The specified key does not exist.
 Is there a repository at the following location?
-s3:s3.amazonaws.com/ddixit-test/testDir-dz`, expected: true},
+s3:s3.amazonaws.com/abhdbhf/foodbar`, expected: true},
 	} {
 		output := DoesRepoExist(tc.log)
 		c.Assert(output, Equals, tc.expected)
