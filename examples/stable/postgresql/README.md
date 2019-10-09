@@ -56,7 +56,7 @@ Create Profile CR if not created already
 $ kanctl create profile s3compliant --access-key <aws-access-key-id> \
 	--secret-key <aws-secret-key> \
 	--bucket <s3-bucket-name> --region <region-name> \
-	--namespace mysql-test
+	--namespace postgres-test
 ```
 
 **NOTE:**
