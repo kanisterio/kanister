@@ -2,6 +2,7 @@ package vmware
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/vmware/govmomi/cns"
@@ -15,6 +16,11 @@ import (
 )
 
 var _ blockstorage.Provider = (*fcdProvider)(nil)
+
+const (
+	noDescription   = ""
+	defaultWaitTime = 10 * time.Minute
+)
 
 type fcdProvider struct {
 	gom *vslm.GlobalObjectManager
@@ -90,7 +96,19 @@ func (p *fcdProvider) SnapshotCopy(ctx context.Context, from blockstorage.Snapsh
 }
 
 func (p *fcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	return nil, errors.New("Not implemented")
+	task, err := p.gom.CreateSnapshot(ctx, vimID(volume.ID), noDescription)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create snapshot")
+	}
+	res, err := task.Wait(ctx, defaultWaitTime)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to wait on task")
+	}
+	id, ok := res.(types.ID)
+	if !ok {
+		return nil, errors.New("Unexpected type")
+	}
+	return p.SnapshotGet(ctx, snapshotFullID(volume.ID, id.Id))
 }
 
 func (p *fcdProvider) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blockstorage.Snapshot) error {

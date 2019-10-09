@@ -28,6 +28,10 @@ func vimID(id string) types.ID {
 	}
 }
 
+func snapshotFullID(volID, snapshotID string) string {
+	return volID + ":" + snapshotID
+}
+
 func convertKeyValueToTags(kvs []types.KeyValue) []*blockstorage.KeyValue {
 	tags := make(map[string]string)
 	for _, kv := range kvs {
