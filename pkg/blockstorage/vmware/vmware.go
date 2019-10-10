@@ -190,6 +190,9 @@ func (p *fcdProvider) SetTags(ctx context.Context, resource interface{}, tags ma
 }
 
 func (p *fcdProvider) setTagsVolume(ctx context.Context, volume *blockstorage.Volume, tags map[string]string) error {
+	if volume == nil {
+		return errors.New("Empty volume")
+	}
 	task, err := p.gom.UpdateMetadata(ctx, vimID(volume.ID), convertTagsToKeyValue(tags), nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to update metadata")
