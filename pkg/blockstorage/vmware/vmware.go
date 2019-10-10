@@ -86,7 +86,10 @@ func (p *fcdProvider) VolumeGet(ctx context.Context, id string, zone string) (*b
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get volume metadata")
 	}
-	vol := convertFromObjectToVolume(obj)
+	vol, err := convertFromObjectToVolume(obj)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to convert object to volume")
+	}
 	vol.Tags = convertKeyValueToTags(kvs)
 	return vol, nil
 }
@@ -130,7 +133,10 @@ func (p *fcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage
 	}
 	for _, result := range results {
 		if result.Id.Id == snapshotID {
-			snapshot := convertFromObjectToSnapshot(&result, volID)
+			snapshot, err := convertFromObjectToSnapshot(&result, volID)
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to convert object to snapshot")
+			}
 			snapID := vimID(snapshotID)
 			kvs, err := p.gom.RetrieveMetadata(ctx, vimID(volID), &snapID, "")
 			if err != nil {

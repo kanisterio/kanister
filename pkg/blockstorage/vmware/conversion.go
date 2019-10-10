@@ -9,7 +9,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
-func convertFromObjectToVolume(vso *types.VStorageObject) *blockstorage.Volume {
+func convertFromObjectToVolume(vso *types.VStorageObject) (*blockstorage.Volume, error) {
+	if vso == nil {
+		return nil, errors.New("Nil object")
+	}
 	return &blockstorage.Volume{
 		Type:         blockstorage.TypeFCD,
 		ID:           vso.Config.Id.Id,
@@ -21,10 +24,13 @@ func convertFromObjectToVolume(vso *types.VStorageObject) *blockstorage.Volume {
 		VolumeType:   "",
 		Tags:         blockstorage.VolumeTags{},
 		Attributes:   map[string]string{},
-	}
+	}, nil
 }
 
-func convertFromObjectToSnapshot(vso *types.VStorageObjectSnapshotInfoVStorageObjectSnapshot, volID string) *blockstorage.Snapshot {
+func convertFromObjectToSnapshot(vso *types.VStorageObjectSnapshotInfoVStorageObjectSnapshot, volID string) (*blockstorage.Snapshot, error) {
+	if vso == nil {
+		return nil, errors.New("Empty opbject")
+	}
 	return &blockstorage.Snapshot{
 		Type:         blockstorage.TypeFCD,
 		CreationTime: blockstorage.TimeStamp(vso.CreateTime),
@@ -32,7 +38,7 @@ func convertFromObjectToSnapshot(vso *types.VStorageObjectSnapshotInfoVStorageOb
 		Size:         0,
 		Region:       "",
 		Encrypted:    false,
-	}
+	}, nil
 }
 
 // vimID wraps ID string with vim25.ID struct.
