@@ -152,7 +152,16 @@ func (p *fcdProvider) SnapshotCreateWaitForCompletion(ctx context.Context, snaps
 }
 
 func (p *fcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
-	return errors.New("Not implemented")
+	volID, snapshotID, err := splitSnapshotFullID(snapshot.ID)
+	if err != nil {
+		return errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
+	}
+	task, err := p.gom.DeleteSnapshot(ctx, vimID(volID), vimID(snapshotID))
+	if err != nil {
+		return errors.Wrap(err, "Failed to delete snapshot")
+	}
+	_, err = task.Wait(ctx, defaultWaitTime)
+	return err
 }
 
 func (p *fcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
