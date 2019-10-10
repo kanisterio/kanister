@@ -20,6 +20,10 @@ import (
 var _ blockstorage.Provider = (*fcdProvider)(nil)
 
 const (
+	// VSphereLoginURLKey represents key in config to establish connection.
+	// It should contain the username and the password
+	VSphereLoginURLKey = "VSphereLoginURL"
+
 	noDescription   = ""
 	defaultWaitTime = 10 * time.Minute
 )
@@ -32,7 +36,7 @@ type fcdProvider struct {
 // NewProvider creates new VMWare FCD provider with the config.
 // URL taken from config helps to establish connection.
 func NewProvider(config map[string]string) (blockstorage.Provider, error) {
-	u, err := soap.ParseURL(config["url"])
+	u, err := soap.ParseURL(config[VSphereLoginURLKey])
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get config")
 	}
