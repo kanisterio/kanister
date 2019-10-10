@@ -70,3 +70,14 @@ func convertKeyValueToTags(kvs []types.KeyValue) []*blockstorage.KeyValue {
 	}
 	return blockstorage.MapToKeyValue(tags)
 }
+
+func convertTagsToKeyValue(tags map[string]string) []types.KeyValue {
+	result := make([]types.KeyValue, 0)
+	for k, v := range tags {
+		var kv types.KeyValue
+		kv.Key = k
+		kv.Value = v
+		result = append(result, kv)
+	}
+	return result
+}
