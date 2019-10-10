@@ -369,14 +369,20 @@ func SnapshotStatsFromBackupLog(output string) (fileCount string, backupSize str
 
 // SnapshotStatsFromStatsLog gets the Snapshot Stats from Stats Command log
 func SnapshotStatsFromStatsLog(output string) (string, string, string) {
+	mode := SnapshotStatsModeFromStatsLog(output)
 	if output == "" {
 		return "", "", ""
 	}
 	var fileCount string
 	var size string
 	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	var pattern1 *regexp.Regexp
 	// Log should contain "Total File Count:   xx"
-	pattern1 := regexp.MustCompile(`Total File Count:\s+(.*?)$`)
+	pattern1 = regexp.MustCompile(`Total File Count:\s+(.*?)$`)
+	if mode == "raw-data" {
+		// Log should contain "Total Blob Count:   xx"
+		pattern1 = regexp.MustCompile(`Total Blob Count:\s+(.*?)$`)
+	}
 	// Log should contain "Total Size:   xx"
 	pattern2 := regexp.MustCompile(`Total Size: \s+(.*?)$`)
 	for _, l := range logs {
@@ -389,7 +395,7 @@ func SnapshotStatsFromStatsLog(output string) (string, string, string) {
 			size = match2[0][1]
 		}
 	}
-	return SnapshotStatsModeFromStatsLog(output), fileCount, size
+	return mode, fileCount, size
 }
 
 // SnapshotStatsModeFromStatsLog gets the Stats mode from Stats Command log
