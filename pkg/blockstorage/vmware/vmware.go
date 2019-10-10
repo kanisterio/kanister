@@ -2,6 +2,7 @@ package vmware
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/vmware/govmomi/cns"
@@ -15,6 +16,11 @@ import (
 )
 
 var _ blockstorage.Provider = (*fcdProvider)(nil)
+
+const (
+	noDescription   = ""
+	defaultWaitTime = 10 * time.Minute
+)
 
 type fcdProvider struct {
 	gom *vslm.GlobalObjectManager
@@ -80,7 +86,10 @@ func (p *fcdProvider) VolumeGet(ctx context.Context, id string, zone string) (*b
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get volume metadata")
 	}
-	vol := convertFromObjectToVolume(obj)
+	vol, err := convertFromObjectToVolume(obj)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to convert object to volume")
+	}
 	vol.Tags = convertKeyValueToTags(kvs)
 	return vol, nil
 }
@@ -90,7 +99,19 @@ func (p *fcdProvider) SnapshotCopy(ctx context.Context, from blockstorage.Snapsh
 }
 
 func (p *fcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	return nil, errors.New("Not implemented")
+	task, err := p.gom.CreateSnapshot(ctx, vimID(volume.ID), noDescription)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create snapshot")
+	}
+	res, err := task.Wait(ctx, defaultWaitTime)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to wait on task")
+	}
+	id, ok := res.(types.ID)
+	if !ok {
+		return nil, errors.New("Unexpected type")
+	}
+	return p.SnapshotGet(ctx, snapshotFullID(volume.ID, id.Id))
 }
 
 func (p *fcdProvider) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blockstorage.Snapshot) error {
@@ -102,7 +123,30 @@ func (p *fcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 }
 
 func (p *fcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
-	return nil, errors.New("Not implemented")
+	volID, snapshotID, err := splitSnapshotFullID(id)
+	if err != nil {
+		return nil, errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
+	}
+	results, err := p.gom.RetrieveSnapshotInfo(ctx, vimID(volID))
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get snapshot info")
+	}
+	for _, result := range results {
+		if result.Id.Id == snapshotID {
+			snapshot, err := convertFromObjectToSnapshot(&result, volID)
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to convert object to snapshot")
+			}
+			snapID := vimID(snapshotID)
+			kvs, err := p.gom.RetrieveMetadata(ctx, vimID(volID), &snapID, "")
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to get snapshot metadata")
+			}
+			snapshot.Tags = convertKeyValueToTags(kvs)
+			return snapshot, nil
+		}
+	}
+	return nil, errors.New("Failed to find snapshot")
 }
 
 func (p *fcdProvider) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
