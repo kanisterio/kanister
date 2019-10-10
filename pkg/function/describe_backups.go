@@ -31,8 +31,6 @@ import (
 )
 
 const (
-	// DescribeBackupsNamespaceArg provides the namespace
-	DescribeBackupsNamespaceArg = "namespace"
 	// DescribeBackupsArtifactPrefixArg provides the path to restore backed up data
 	DescribeBackupsArtifactPrefixArg = "backupArtifactPrefix"
 	// DescribeBackupsEncryptionKeyArg provides the encryption key to be used for deletes
@@ -60,13 +58,10 @@ func (*DescribeBackupsFunc) Name() string {
 	return "DescribeBackups"
 }
 
-func describeBackups(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, targetPaths, jobPrefix string, podOverride sp.JSONMap) (map[string]interface{}, error) {
-	var err error
-	if namespace == "" {
-		namespace, err = kube.GetControllerNamespace()
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to get controller namespace")
-		}
+func describeBackups(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, encryptionKey, targetPaths, jobPrefix string, podOverride sp.JSONMap) (map[string]interface{}, error) {
+	namespace, err := kube.GetControllerNamespace()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get controller namespace")
 	}
 	options := &kube.PodOptions{
 		Namespace:    namespace,
@@ -137,12 +132,9 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 }
 
 func (*DescribeBackupsFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var namespace, getDescribeBackupsArtifactPrefix, encryptionKey string
+	var getDescribeBackupsArtifactPrefix, encryptionKey string
 	var err error
 	if err = Arg(args, DescribeBackupsArtifactPrefixArg, &getDescribeBackupsArtifactPrefix); err != nil {
-		return nil, err
-	}
-	if err = OptArg(args, DescribeBackupsNamespaceArg, &namespace, ""); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, DescribeBackupsEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
@@ -161,7 +153,7 @@ func (*DescribeBackupsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return describeBackups(ctx, cli, tp, namespace, encryptionKey, getDescribeBackupsArtifactPrefix, DescribeBackupsJobPrefix, podOverride)
+	return describeBackups(ctx, cli, tp, encryptionKey, getDescribeBackupsArtifactPrefix, DescribeBackupsJobPrefix, podOverride)
 }
 
 func (*DescribeBackupsFunc) RequiredArgs() []string {
