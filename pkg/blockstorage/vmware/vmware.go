@@ -21,7 +21,7 @@ var _ blockstorage.Provider = (*fcdProvider)(nil)
 
 const (
 	// VSphereLoginURLKey represents key in config to establish connection.
-	// It should contain the username and the password
+	// It should contain the username and the password.
 	VSphereLoginURLKey = "VSphereLoginURL"
 
 	noDescription   = ""
