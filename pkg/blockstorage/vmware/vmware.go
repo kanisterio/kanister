@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 	"github.com/vmware/govmomi/cns"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/methods"
@@ -13,6 +14,7 @@ import (
 	"github.com/vmware/govmomi/vslm"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
+	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 )
 
 var _ blockstorage.Provider = (*fcdProvider)(nil)
@@ -70,7 +72,34 @@ func (p *fcdProvider) VolumeCreate(ctx context.Context, volume blockstorage.Volu
 }
 
 func (p *fcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
-	return nil, errors.New("Not implemented")
+	volID, snapshotID, err := splitSnapshotFullID(snapshot.ID)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to split snapshot full ID")
+	}
+	task, err := p.gom.CreateDiskFromSnapshot(ctx, vimID(volID), vimID(snapshotID), uuid.NewV1().String(), nil, nil, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create disk from snapshot")
+	}
+	res, err := task.Wait(ctx, defaultWaitTime)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to wait on task")
+	}
+	obj, ok := res.(types.VStorageObject)
+	if !ok {
+		return nil, errors.New("Wrong type returned")
+	}
+	vol, err := p.VolumeGet(ctx, obj.Config.Id.Id, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get volume")
+	}
+	tagsCNS := make(map[string]string)
+	tagsCNS["cns.tag"] = "1"
+	tags = ktags.Union(tags, tagsCNS)
+	err = p.SetTags(ctx, vol, tags)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to set tags")
+	}
+	return p.VolumeGet(ctx, vol.ID, "")
 }
 
 func (p *fcdProvider) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
@@ -115,7 +144,7 @@ func (p *fcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 }
 
 func (p *fcdProvider) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blockstorage.Snapshot) error {
-	return errors.New("Not implemented")
+	return nil
 }
 
 func (p *fcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
@@ -150,7 +179,26 @@ func (p *fcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage
 }
 
 func (p *fcdProvider) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
-	return errors.New("Not implemented")
+	switch r := resource.(type) {
+	case *blockstorage.Volume:
+		return p.setTagsVolume(ctx, r, tags)
+	case *blockstorage.Snapshot:
+		return nil
+	default:
+		return errors.New("Unsupported type for resource")
+	}
+}
+
+func (p *fcdProvider) setTagsVolume(ctx context.Context, volume *blockstorage.Volume, tags map[string]string) error {
+	task, err := p.gom.UpdateMetadata(ctx, vimID(volume.ID), convertTagsToKeyValue(tags), nil)
+	if err != nil {
+		return errors.Wrap(err, "Failed to update metadata")
+	}
+	_, err = task.Wait(ctx, defaultWaitTime)
+	if err != nil {
+		return errors.Wrap(err, "Failed to wait on task")
+	}
+	return nil
 }
 
 func (p *fcdProvider) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
