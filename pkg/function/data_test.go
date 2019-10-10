@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
@@ -99,6 +100,9 @@ func (s *DataSuite) SetUpSuite(c *C) {
 	location.Prefix = "testBackupRestoreLocDelete"
 	location.Bucket = testBucketName
 	s.profile = testutil.ObjectStoreProfileOrSkip(c, s.providerType, location)
+
+	os.Setenv("POD_NAMESPACE", s.namespace)
+	os.Setenv("POD_SERVICE_ACCOUNT", "default")
 }
 
 func (s *DataSuite) TearDownSuite(c *C) {
@@ -560,7 +564,7 @@ func (s *DataSuite) initPVCTemplateParams(c *C, pvc *v1.PersistentVolumeClaim, o
 	tp.Profile = s.profile
 	return tp
 }
-func (s *DataSuite) TestBackupInfo(c *C) {
+func (s *DataSuite) TestDescribeBackups(c *C) {
 	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
 
 	// Test backup
@@ -579,7 +583,7 @@ func (s *DataSuite) TestBackupInfo(c *C) {
 	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Not(Equals), "")
 }
 
-func (s *DataSuite) TestBackupInfoWrongPassword(c *C) {
+func (s *DataSuite) TestDescribeBackupsWrongPassword(c *C) {
 	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
 
 	// Test backup
@@ -595,7 +599,7 @@ func (s *DataSuite) TestBackupInfoWrongPassword(c *C) {
 	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Equals, "true")
 }
 
-func (s *DataSuite) TestBackupInfoRepoNotAvailable(c *C) {
+func (s *DataSuite) TestDescribeBackupsRepoNotAvailable(c *C) {
 	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
 
 	// Test backup
