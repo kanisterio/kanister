@@ -3,6 +3,7 @@ package vmware
 import (
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/vmware/govmomi/vim25/types"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
@@ -45,9 +46,15 @@ func snapshotFullID(volID, snapshotID string) string {
 	return volID + ":" + snapshotID
 }
 
-func splitSnapshotFullID(fullID string) (volID string, snapshotID string) {
+func splitSnapshotFullID(fullID string) (volID string, snapshotID string, err error) {
 	split := strings.Split(fullID, ":")
-	return split[0], split[1]
+	if len(split) != 2 {
+		return "", "", errors.New("Malformed full ID for snapshot")
+	}
+	if len(split[0]) == 0 || len(split[1]) == 0 {
+		return "", "", errors.New("Malformed volume ID or snapshot ID")
+	}
+	return split[0], split[1], nil
 }
 
 func convertKeyValueToTags(kvs []types.KeyValue) []*blockstorage.KeyValue {

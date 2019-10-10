@@ -120,7 +120,10 @@ func (p *fcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 }
 
 func (p *fcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
-	volID, snapshotID := splitSnapshotFullID(id)
+	volID, snapshotID, err := splitSnapshotFullID(id)
+	if err != nil {
+		return nil, errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
+	}
 	results, err := p.gom.RetrieveSnapshotInfo(ctx, vimID(volID))
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get snapshot info")
