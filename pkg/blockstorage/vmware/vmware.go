@@ -95,8 +95,7 @@ func (p *fcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blo
 	tagsCNS := make(map[string]string)
 	tagsCNS["cns.tag"] = "1"
 	tags = ktags.Union(tags, tagsCNS)
-	err = p.SetTags(ctx, vol, tags)
-	if err != nil {
+	if err = p.SetTags(ctx, vol, tags); err != nil {
 		return nil, errors.Wrap(err, "Failed to set tags")
 	}
 	return p.VolumeGet(ctx, vol.ID, "")
