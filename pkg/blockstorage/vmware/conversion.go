@@ -11,7 +11,7 @@ import (
 
 func convertFromObjectToVolume(vso *types.VStorageObject) (*blockstorage.Volume, error) {
 	if vso == nil {
-		return nil, errors.New("Nil object")
+		return nil, errors.New("Empty object")
 	}
 	return &blockstorage.Volume{
 		Type:         blockstorage.TypeFCD,
