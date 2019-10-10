@@ -102,7 +102,12 @@ func (p *fcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blo
 }
 
 func (p *fcdProvider) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
-	return errors.New("Not implemented")
+	task, err := p.gom.Delete(ctx, vimID(volume.ID))
+	if err != nil {
+		return errors.Wrap(err, "Failed to delete the disk")
+	}
+	_, err = task.Wait(ctx, defaultWaitTime)
+	return err
 }
 
 func (p *fcdProvider) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
