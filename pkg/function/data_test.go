@@ -588,6 +588,7 @@ func (s *DataSuite) TestDescribeBackupsWrongPassword(c *C) {
 
 	// Test backup
 	bp := *newBackupDataBlueprint()
+	bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg] = "abc-foo-bar"
 	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = restic.GeneratePassword()
 	out := runAction(c, bp, "backup", tp)
 	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
@@ -595,6 +596,7 @@ func (s *DataSuite) TestDescribeBackupsWrongPassword(c *C) {
 
 	// Test DescribeBackups
 	bp2 := *newDescribeBackupsBlueprint()
+	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = "abc-foo-bar"
 	out2 := runAction(c, bp2, "describeBackups", tp)
 	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Equals, "true")
 }
