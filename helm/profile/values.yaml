@@ -12,9 +12,13 @@ location:
   prefix: ""
   region: ""
 
+credential:
+  type:
+
 aws:
   accessKey:
   secretKey:
+  role: ""
 
 gcp:
   projectID:
