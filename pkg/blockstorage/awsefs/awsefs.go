@@ -60,8 +60,8 @@ const (
 )
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
-func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, role, err := awsconfig.GetConfig(config)
+func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
+	awsConfig, region, role, err := awsconfig.GetConfig(ctx, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get configuration for EFS")
 	}

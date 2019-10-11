@@ -64,7 +64,7 @@ func newValidProfileWithSecretCredentials() *param.Profile {
 				Data: map[string][]byte{
 					secrets.AWSAccessKeyID:     []byte("key-id"),
 					secrets.AWSSecretAccessKey: []byte("access-key"),
-					secrets.AWSSessionToken:    []byte("session-token"),
+					secrets.ConfigRole:         []byte("role"),
 				},
 			},
 		},
@@ -91,6 +91,30 @@ func newInvalidProfile() *param.Profile {
 	}
 }
 
+func newInvalidProfileWithSecretCredentials() *param.Profile {
+	return &param.Profile{
+		Location: crv1alpha1.Location{
+			Type:     crv1alpha1.LocationTypeS3Compliant,
+			Bucket:   "test-bucket",
+			Endpoint: "",
+			Prefix:   "",
+			Region:   "us-west-1",
+		},
+		Credential: param.Credential{
+			Type: param.CredentialTypeSecret,
+			Secret: &v1.Secret{
+				Type: v1.SecretType(secrets.AWSSecretType),
+				Data: map[string][]byte{
+					secrets.AWSAccessKeyID:     []byte("key-id"),
+					secrets.AWSSecretAccessKey: []byte("access-key"),
+					secrets.ConfigRole:         []byte("role"),
+					"InvalidSecretKey":         []byte("InvalidValue"),
+				},
+			},
+		},
+	}
+}
+
 func (s *BackupDataSuite) TestValidateProfile(c *C) {
 	testCases := []struct {
 		name       string
@@ -100,6 +124,7 @@ func (s *BackupDataSuite) TestValidateProfile(c *C) {
 		{"Valid Profile", newValidProfile(), IsNil},
 		{"Valid Profile with Secret Credentials", newValidProfileWithSecretCredentials(), IsNil},
 		{"Invalid Profile", newInvalidProfile(), NotNil},
+		{"Invalid Profile with Secret Credentials", newInvalidProfileWithSecretCredentials(), NotNil},
 		{"Nil Profile", nil, NotNil},
 	}
 	for _, tc := range testCases {

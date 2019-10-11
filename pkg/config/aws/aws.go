@@ -15,10 +15,13 @@
 package aws
 
 import (
-	"errors"
+	"context"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -33,10 +36,12 @@ const (
 	SecretAccessKey = "AWS_SECRET_ACCESS_KEY"
 	// SessionToken represents AWS Session Key
 	SessionToken = "AWS_SESSION_TOKEN"
+
+	assumeRoleDuration = 90 * time.Minute
 )
 
 // GetConfig returns a configuration to establish AWS connection, connected region name and the role to assume if it exists.
-func GetConfig(config map[string]string) (awsConfig *aws.Config, region string, role string, err error) {
+func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Config, region string, role string, err error) {
 	region, ok := config[ConfigRegion]
 	if !ok {
 		return nil, "", "", errors.New("region required for storage type EBS")
@@ -49,7 +54,25 @@ func GetConfig(config map[string]string) (awsConfig *aws.Config, region string, 
 	if !ok {
 		return nil, "", "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS")
 	}
-	sessionToken := config[SessionToken]
 	role = config[ConfigRole]
-	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, sessionToken)}, region, role, nil
+	if role != "" {
+		config, err := assumeRole(ctx, accessKey, secretAccessKey, role)
+		if err != nil {
+			return nil, "", "", errors.Wrap(err, "Failed to get temporary security credentials")
+		}
+		return config, region, role, nil
+	}
+	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, "")}, region, role, nil
+}
+
+func assumeRole(ctx context.Context, accessKey, secretAccessKey, role string) (*aws.Config, error) {
+	creds, err := SwitchRole(ctx, accessKey, secretAccessKey, role, assumeRoleDuration)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to switch roles")
+	}
+	val, err := creds.Get()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get AWS credentials")
+	}
+	return &aws.Config{Credentials: credentials.NewStaticCredentials(val.AccessKeyID, val.SecretAccessKey, val.SessionToken)}, nil
 }

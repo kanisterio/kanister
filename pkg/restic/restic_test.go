@@ -168,35 +168,6 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 				"restic",
 			},
 		},
-		{
-			profile: &param.Profile{
-				Location: v1alpha1.Location{
-					Type:     v1alpha1.LocationTypeS3Compliant,
-					Endpoint: "endpoint", // Also remove all of the trailing slashes
-				},
-				Credential: param.Credential{
-					Type: param.CredentialTypeSecret,
-					Secret: &v1.Secret{
-						Type: "secrets.kanister.io/aws",
-						Data: map[string][]byte{
-							"access_key_id":     []byte("id"),
-							"secret_access_key": []byte("secret"),
-							"session_token":     []byte("token"),
-						},
-					},
-				},
-			},
-			repo:     "repo",
-			password: "my-secret",
-			expected: []string{
-				"export AWS_ACCESS_KEY_ID=id\n",
-				"export AWS_SECRET_ACCESS_KEY=secret\n",
-				"export AWS_SESSION_TOKEN=token\n",
-				"export RESTIC_REPOSITORY=s3:endpoint/repo\n",
-				"export RESTIC_PASSWORD=my-secret\n",
-				"restic",
-			},
-		},
 	} {
 		args, err := resticArgs(tc.profile, tc.repo, tc.password)
 		c.Assert(err, IsNil)

@@ -1,6 +1,8 @@
 package secrets
 
 import (
+	"context"
+
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
@@ -36,7 +38,7 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 				Data: map[string][]byte{
 					AWSAccessKeyID:     []byte("key_id"),
 					AWSSecretAccessKey: []byte("secret_key"),
-					AWSSessionToken:    []byte("session_token"),
+					ConfigRole:         []byte("role"),
 				},
 			},
 			expected: &credentials.Value{
@@ -87,7 +89,7 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 		},
 	}
 	for _, tc := range tcs {
-		creds, err := ExtractAWSCredentials(tc.secret)
+		creds, err := ExtractAWSCredentials(context.Background(), tc.secret)
 		c.Check(creds, DeepEquals, tc.expected)
 		c.Check(err, tc.errChecker)
 	}

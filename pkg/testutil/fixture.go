@@ -76,7 +76,7 @@ func GetEnvOrSkip(c *check.C, varName string) string {
 	return v
 }
 
-func s3ProfileWithSecretCredential(location crv1alpha1.Location, accessKeyID, secretAccessKey, sessionToken string) *param.Profile {
+func s3ProfileWithSecretCredential(location crv1alpha1.Location, accessKeyID, secretAccessKey, role string) *param.Profile {
 	return &param.Profile{
 		Location: location,
 		Credential: param.Credential{
@@ -86,7 +86,7 @@ func s3ProfileWithSecretCredential(location crv1alpha1.Location, accessKeyID, se
 				Data: map[string][]byte{
 					"access_key_id":     []byte(accessKeyID),
 					"secret_access_key": []byte(secretAccessKey),
-					"session_token":     []byte(sessionToken),
+					"role":              []byte(role),
 				},
 			},
 		},

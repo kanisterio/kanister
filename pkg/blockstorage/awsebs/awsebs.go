@@ -61,8 +61,8 @@ func (s *ebsStorage) Type() blockstorage.Type {
 }
 
 // NewProvider returns a provider for the EBS storage type in the specified region
-func NewProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, role, err := awsconfig.GetConfig(config)
+func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
+	awsConfig, region, role, err := awsconfig.GetConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
