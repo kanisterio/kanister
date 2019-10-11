@@ -34,22 +34,6 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 		},
 		{
 			secret: &v1.Secret{
-				Type: v1.SecretType(AWSSecretType),
-				Data: map[string][]byte{
-					AWSAccessKeyID:     []byte("key_id"),
-					AWSSecretAccessKey: []byte("secret_key"),
-					ConfigRole:         []byte("role"),
-				},
-			},
-			expected: &credentials.Value{
-				AccessKeyID:     "key_id",
-				SecretAccessKey: "secret_key",
-				SessionToken:    "session_token",
-			},
-			errChecker: IsNil,
-		},
-		{
-			secret: &v1.Secret{
 				Type: "Opaque",
 			},
 			expected:   nil,
