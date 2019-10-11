@@ -14,7 +14,10 @@ This example is to demonstrate how Kanister can be integrated with AWS RDS insta
 
 ## Create RDS instance on AWS
 
+> You can skip this step if you already have an RDS instance created
+
 RDS instance needs to be reachable from outside world. So make sure that you have VPC with security group having rule to allow ingress traffic on 5432 TCP port.
+
 
 You can create security group and add rules to defaul VPC using following commands
 
@@ -38,48 +41,23 @@ aws rds create-db-instance \
 aws rds wait db-instance-available --db-instance-identifier=test-postgresql-instance
 ```
 
-## Deploy pgtest app
+## Create configmap
 
-Once the db instance is available, you can deploy pgtest application.
+Create a configmap which contains information to connect to the RDS DB instance
 
-- Modify pgtest/deploy/config.yaml and set values of **postgres.instanceid** and **postgres.host**
-- Update password in pgtest/deploy/secret.yaml if required. (Default is secret99)
-- Deploy pgtestapp using the following command
-  ```bash
-  kubectl create ns pgtest
-  kubectl create -f pgtest/deploy/ -n pgtest
-  ```
-
-  This command will create,
-  - configmap : "dbconfig"
-  - deployment: "pgtestapp"
-  - secret    : "dbcreds"
-  - service   : "pgtestapp"
-
-Once pgtestapp is running, let's add some data in the db.
-
-Use `kubectl proxy` to connect to the service in the cluster
 ```
-kubectl proxy&
-```
-
-> If you have deployed pgtestapp application in namespace other than `pgtest`, you need to modify the commands used below to use the correct namespace
-
-
-### Reset DB
-```bash
-$ curl -XPOST http://127.0.0.1:8001/api/v1/namespaces/pgtest/services/pgtestapp:8080/proxy/reset
-```
-
-### Add rows
-```bash
-$ curl -XPOST http://127.0.0.1:8001/api/v1/namespaces/pgtest/services/pgtestapp:8080/proxy/insert
-```
-_(Let's add 2-3 rows using POST /insert endpoints)_
-
-### Count rows
-```bash
-$ curl -XGET http://127.0.0.1:8001/api/v1/namespaces/pgtest/services/pgtestapp:8080/proxy/count
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    kasten.io/config: dataservice
+  name: dbconfig
+data:
+  postgres.instanceid: testinstance
+  postgres.host: testinstance.example.us-west-2.rds.amazonaws.com
+  postgres.databases: mypgsqldb
+  postgres.user: postgres
+  postgres.secret: dbcreds # name of K8s secret in the same namespace
 ```
 
 ## Integrating with Kanister
@@ -115,12 +93,14 @@ $ kubectl create -f ./rds-blueprint.yaml -n kasten-io
 
 You can now take a snapshot of the PostgreSQL RDS instance data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
 
+> If you have deployed your application which uses RDS instance in namespace other than `pgtest`, you need to modify the commands used below to use the correct namespace
+
 ```bash
 $ kubectl get profile -n pgtest
 NAME               AGE
 s3-profile-sph7s   2h
 
-$ kanctl create actionset --action backup --deployment pgtest/pgtestapp --config-maps dbconfig=pgtest/dbconfig --profile pgtest/s3-profile-6hmhn -b rds-blueprint -n kasten-io
+$ kanctl create actionset --action backup --deployment pgtest/<name of your app deployment> --config-maps dbconfig=pgtest/dbconfig --profile pgtest/s3-profile-6hmhn -b rds-blueprint -n kasten-io
 actionset backup-llfb8 created
 
 $ kubectl --namespace kasten-io get actionsets.cr.kanister.io
@@ -129,18 +109,6 @@ backup-llfb8         2h
 
 # View the status of the actionset
 $ kubectl --namespace kasten-io describe actionset backup-llfb8
-```
-
-### Disaster strikes!
-
-Let's say someone accidentally deleted the database using the following command:
-
-```bash
-$ curl -XPOST http://127.0.0.1:8001/api/v1/namespaces/pgtest/services/pgtestapp:8080/proxy/reset
-Reset database
-
-$ curl -XGET http://127.0.0.1:8001/api/v1/namespaces/pgtest/services/pgtestapp:8080/proxy/count
-Table has 0 rows
 ```
 
 ### Restore the Application
@@ -156,12 +124,6 @@ actionset restore-backup-llfb8-64gqm created
 $ kubectl --namespace kasten-io describe actionset restore-backup-llfb8-64gqm
 ```
 
-Once the ActionSet status is set to "complete", you can see that the data has been successfully restored to PostgreSQL
-
-```bash
-$ curl -XGET http://127.0.0.1:8001/api/v1/namespaces/pgtest/services/pgtestapp:8080/proxy/count
-Table has 3 rows
-```
 
 ### Delete snapshot
 
@@ -191,8 +153,6 @@ $ kubectl describe actionset restore-backup-md6gb-d7g7w -n kasten-io
 ```
 
 ## Cleanup
-
-### Removing pgtestapp deployment
 
 ```console
 $ kubectl delete -f ./rds-blueprint.yaml -n kasten-io
