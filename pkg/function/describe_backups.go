@@ -96,7 +96,7 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 					DescribeBackupsFileCount:         nil,
 					DescribeBackupsSize:              nil,
 					DescribeBackupsPasswordIncorrect: "true",
-					DescribeBackupsRepoDoesNotExist:  nil,
+					DescribeBackupsRepoDoesNotExist:  "false",
 				},
 				nil
 
@@ -105,8 +105,8 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 					DescribeBackupsSnapshotIDs:       nil,
 					DescribeBackupsFileCount:         nil,
 					DescribeBackupsSize:              nil,
-					DescribeBackupsPasswordIncorrect: nil,
-					DescribeBackupsRepoDoesNotExist:  "false",
+					DescribeBackupsPasswordIncorrect: "false",
+					DescribeBackupsRepoDoesNotExist:  "true",
 				},
 				nil
 		default:
