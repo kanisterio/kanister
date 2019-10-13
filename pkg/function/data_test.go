@@ -611,7 +611,7 @@ func (s *DataSuite) TestDescribeBackupsRepoNotAvailable(c *C) {
 
 	// Test DescribeBackups
 	bp2 := *newDescribeBackupsBlueprint()
-	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], "foobar")
+	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], c.TestName())
 	out2 := runAction(c, bp2, "describeBackups", tp)
 	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Equals, "true")
 }
