@@ -49,7 +49,7 @@ KubeExec is similar to running
 
    `namespace`, Yes, `string`, namespace in which to execute
    `pod`, Yes, `string`, name of the pod in which to execute
-   `container`, Yes, `string`, name of the container in which to execute
+   `container`, No , `string`, (required if pod contains more than 1 container) name of the container in which to execute
    `command`, Yes, `[]string`,  command list to execute
 
 Example:
