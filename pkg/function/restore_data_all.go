@@ -146,7 +146,7 @@ func (*restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 				outputChan <- out
 				return
 			}
-			out, err = restoreData(ctx, cli, tp, namespace, encryptionKey, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), restorePath, "", input[pod].BackupID, restoreDataAllJobPrefix, vols, podOverride)
+			out, err = restoreData(ctx, cli, tp, namespace, encryptionKey, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), restorePath, "", input[pod].BackupID, restoreDataAllJobPrefix, image, vols, podOverride)
 			errChan <- errors.Wrapf(err, "Failed to restore data for pod %s", pod)
 			outputChan <- out
 		}(pod)
