@@ -1,3 +1,0 @@
-package: github.com/kastenhq/pgtest
-import:
-- package: github.com/lib/pq

@@ -16,7 +16,7 @@
 BIN := pgtest
 
 # This repo's root import path (under GOPATH).
-PKG := github.com/kastenhq/pgtest
+PKG := github.com/kanisterio/kanister/examples/aws-rds/postgresql/pgtest
 
 # Where to push the docker image.
 REGISTRY ?= kastenio
@@ -54,7 +54,7 @@ endif
 
 IMAGE := $(REGISTRY)/$(BIN)-$(ARCH)
 
-BUILD_IMAGE ?= kanisterio/build:0.13.1-go1.9
+BUILD_IMAGE ?= kanisterio/build:0.13.2-go1.11
 
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
@@ -78,7 +78,7 @@ all-push: $(addprefix push-, $(ALL_ARCH))
 
 build: bin/$(ARCH)/$(BIN)
 
-bin/$(ARCH)/$(BIN): .vendor
+bin/$(ARCH)/$(BIN): build-dirs
 	@echo "building: $@"
 	@docker run                                                             \
 	    -ti                                                                 \
@@ -114,15 +114,6 @@ shell: build-dirs
 	    -w /go/src/$(PKG)                                                   \
 	    $(BUILD_IMAGE)                                                      \
 	    /bin/bash $(CMD)
-
-.vendor:
-	@$(MAKE) shell CMD='-c "                       \
-		PATH=$$GOPATH/bin:$$GOROOT/bin::$${PATH} HOME=/root \
-		glide install --strip-vendor             \
-	"'
-	@touch $@
-
-DOTFILE_IMAGE = $(subst :,_,$(subst /,_,$(IMAGE))-$(VERSION))
 
 container: .container-$(DOTFILE_IMAGE) container-name
 .container-$(DOTFILE_IMAGE): bin/$(ARCH)/$(BIN) Dockerfile.in
@@ -171,11 +162,7 @@ build-dirs:
 	@mkdir -p bin/$(ARCH)
 	@mkdir -p .go .go/cache .go/src/$(PKG) .go/pkg .go/bin .go/std/$(ARCH)
 
-clean: container-clean bin-clean vendor-clean
-
-vendor-clean:
-	rm -rf vendor
-	rm -f .vendor
+clean: container-clean bin-clean 
 
 container-clean:
 	rm -rf .container-* .dockerfile-* .push-*
