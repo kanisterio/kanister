@@ -19,9 +19,11 @@ import (
 	"io"
 	"io/ioutil"
 
+	json "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/log"
@@ -36,35 +38,44 @@ type PodOptions struct {
 	Command            []string
 	Volumes            map[string]string
 	ServiceAccountName string
+	PodOverride        sp.JSONMap
 }
 
 // CreatePod creates a pod with a single container based on the specified image
 func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
 	volumeMounts, podVolumes := createVolumeSpecs(opts.Volumes)
+	defaultSpecs := v1.PodSpec{
+		Containers: []v1.Container{
+			{
+				Name:            "container",
+				Image:           opts.Image,
+				Command:         opts.Command,
+				ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
+				VolumeMounts:    volumeMounts,
+			},
+		},
+		// RestartPolicy dictates when the containers of the pod should be restarted.
+		// The possible values include Always, OnFailure and Never with Always being the default.
+		// OnFailure policy will result in failed containers being restarted with an exponential back-off delay.
+		RestartPolicy:      v1.RestartPolicyOnFailure,
+		Volumes:            podVolumes,
+		ServiceAccountName: opts.ServiceAccountName,
+	}
+
+	// Patch default Pod Specs if needed
+	patchedSpecs, err := patchDefaultPodSpecs(defaultSpecs, opts.PodOverride)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+	}
+
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
 			Namespace:    opts.Namespace,
 		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Name:            "container",
-					Image:           opts.Image,
-					Command:         opts.Command,
-					ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
-					VolumeMounts:    volumeMounts,
-				},
-			},
-			// RestartPolicy dictates when the containers of the pod should be restarted.
-			// The possible values include Always, OnFailure and Never with Always being the default.
-			// OnFailure policy will result in failed containers being restarted with an exponential back-off delay.
-			RestartPolicy:      v1.RestartPolicyOnFailure,
-			Volumes:            podVolumes,
-			ServiceAccountName: opts.ServiceAccountName,
-		},
+		Spec: patchedSpecs,
 	}
-	pod, err := cli.CoreV1().Pods(opts.Namespace).Create(pod)
+	pod, err = cli.CoreV1().Pods(opts.Namespace).Create(pod)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
@@ -132,4 +143,59 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		return p.Status.Phase == v1.PodSucceeded, nil
 	})
 	return errors.Wrap(err, "Pod did not transition into complete state")
+}
+
+// use Strategic Merge to patch default pod specs with the passed specs
+func patchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override sp.JSONMap) (v1.PodSpec, error) {
+	// Merge default specs and override specs with StrategicMergePatch
+	mergedPatch, err := strategicMergeJsonPatch(defaultPodSpecs, override)
+	if err != nil {
+		return v1.PodSpec{}, err
+	}
+
+	// Convert merged json to v1.PodSPec object
+	podSpec := v1.PodSpec{}
+	json.Unmarshal(mergedPatch, &podSpec)
+	if err != nil {
+		return podSpec, err
+	}
+	return podSpec, err
+}
+
+// CreateAndMergeJsonPatch uses Strategic Merge to merge two Pod spec configuration
+func CreateAndMergeJsonPatch(original, override sp.JSONMap) (sp.JSONMap, error) {
+	// Merge json specs with StrategicMerge
+	mergedPatch, err := strategicMergeJsonPatch(original, override)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert merged json to map[string]interface{}
+	var merged map[string]interface{}
+	json.Unmarshal(mergedPatch, &merged)
+	if err != nil {
+		return nil, err
+	}
+	return merged, err
+}
+
+func strategicMergeJsonPatch(original, override interface{}) ([]byte, error) {
+	// Convert override specs to json
+	overrideJson, err := json.Marshal(override)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert original specs to json
+	originalJson, err := json.Marshal(original)
+	if err != nil {
+		return nil, err
+	}
+
+	// Merge json specs with StrategicMerge
+	mergedPatch, err := sp.StrategicMergePatch(originalJson, overrideJson, v1.PodSpec{})
+	if err != nil {
+		return nil, err
+	}
+	return mergedPatch, nil
 }

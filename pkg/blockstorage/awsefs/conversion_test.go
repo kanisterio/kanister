@@ -15,6 +15,7 @@
 package awsefs
 
 import (
+	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -22,6 +23,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	. "gopkg.in/check.v1"
 )
+
+func Test(t *testing.T) { TestingT(t) }
 
 type AWSEFSConversionTestSuite struct{}
 
@@ -84,6 +87,12 @@ func (s *AWSEFSConversionTestSuite) TestVolumeConversion(c *C) {
 
 	for _, tc := range tcs {
 		vol := volumeFromEFSDescription(tc.input, az)
-		c.Check(vol, DeepEquals, tc.expected)
+		c.Check(vol.Az, Equals, tc.expected.Az)
+		c.Check(vol.ID, Equals, tc.expected.ID)
+		c.Check(vol.CreationTime, Equals, tc.expected.CreationTime)
+		c.Check(vol.Size, Equals, tc.expected.Size)
+		c.Check(vol.Type, Equals, tc.expected.Type)
+		c.Check(vol.Encrypted, Equals, tc.expected.Encrypted)
+		c.Check(vol.Tags, HasLen, len(tc.expected.Tags))
 	}
 }

@@ -40,7 +40,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jarcoal/httpmock v1.0.4 // indirect
 	github.com/jpillora/backoff v0.0.0-20170918002102-8eab2debe79d
-	github.com/json-iterator/go v1.1.6 // indirect
+	github.com/json-iterator/go v1.1.6
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/kubernetes-csi/external-snapshotter v1.1.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
@@ -55,6 +55,7 @@ require (
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.1 // indirect
+	github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.10.0
