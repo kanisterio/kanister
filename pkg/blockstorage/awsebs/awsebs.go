@@ -62,19 +62,19 @@ func (s *ebsStorage) Type() blockstorage.Type {
 
 // NewProvider returns a provider for the EBS storage type in the specified region
 func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, role, err := awsconfig.GetConfig(ctx, config)
+	awsConfig, region, err := awsconfig.GetConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
-	ec2Cli, err := newEC2Client(region, awsConfig, role)
+	ec2Cli, err := newEC2Client(region, awsConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
-	return &ebsStorage{ec2Cli: ec2Cli, role: role}, nil
+	return &ebsStorage{ec2Cli: ec2Cli, role: config[awsConfig.ConfigRole]}, nil
 }
 
 // newEC2Client returns ec2 client struct.
-func newEC2Client(awsRegion string, config *aws.Config, role string) (*EC2, error) {
+func newEC2Client(awsRegion string, config *aws.Config) (*EC2, error) {
 	if config == nil {
 		return nil, errors.New("Invalid empty AWS config")
 	}
@@ -82,11 +82,7 @@ func newEC2Client(awsRegion string, config *aws.Config, role string) (*EC2, erro
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session for EFS")
 	}
-	creds := config.Credentials
-	if role != "" {
-		creds = stscreds.NewCredentials(s, role)
-	}
-	conf := config.WithMaxRetries(maxRetries).WithRegion(awsRegion).WithCredentials(creds)
+	conf := config.WithMaxRetries(maxRetries).WithRegion(awsRegion).WithCredentials(config.Credentials)
 	return &EC2{EC2: ec2.New(s, conf)}, nil
 }
 

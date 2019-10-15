@@ -61,7 +61,7 @@ const (
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
 func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, role, err := awsconfig.GetConfig(ctx, config)
+	awsConfig, region, err := awsconfig.GetConfig(ctx, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get configuration for EFS")
 	}
@@ -78,12 +78,8 @@ func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage
 		return nil, errors.New("Account ID is empty")
 	}
 	accountID := *user.Account
-	creds := awsConfig.Credentials
-	if role != "" {
-		creds = stscreds.NewCredentials(s, role)
-	}
-	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
-	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
+	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
+	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
 	return &efs{
 		EFS:       efsCli,
 		Backup:    backupCli,

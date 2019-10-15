@@ -37,32 +37,32 @@ const (
 	// SessionToken represents AWS Session Key
 	SessionToken = "AWS_SESSION_TOKEN"
 
-	assumeRoleDuration = 90 * time.Minute
+	assumeRoleDuration = 25 * time.Minute
 )
 
 // GetConfig returns a configuration to establish AWS connection, connected region name and the role to assume if it exists.
-func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Config, region string, role string, err error) {
+func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Config, region string, err error) {
 	region, ok := config[ConfigRegion]
 	if !ok {
-		return nil, "", "", errors.New("region required for storage type EBS")
+		return nil, "", errors.New("region required for storage type EBS")
 	}
 	accessKey, ok := config[AccessKeyID]
 	if !ok {
-		return nil, "", "", errors.New("AWS_ACCESS_KEY_ID required for storage type EBS")
+		return nil, "", errors.New("AWS_ACCESS_KEY_ID required for storage type EBS")
 	}
 	secretAccessKey, ok := config[SecretAccessKey]
 	if !ok {
-		return nil, "", "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS")
+		return nil, "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS")
 	}
-	role = config[ConfigRole]
+	role := config[ConfigRole]
 	if role != "" {
 		config, err := assumeRole(ctx, accessKey, secretAccessKey, role)
 		if err != nil {
-			return nil, "", "", errors.Wrap(err, "Failed to get temporary security credentials")
+			return nil, "", errors.Wrap(err, "Failed to get temporary security credentials")
 		}
-		return config, region, role, nil
+		return config, region, nil
 	}
-	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, "")}, region, role, nil
+	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, "")}, region, nil
 }
 
 func assumeRole(ctx context.Context, accessKey, secretAccessKey, role string) (*aws.Config, error) {

@@ -21,8 +21,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 type ResticDataSuite struct{}
@@ -192,9 +192,9 @@ func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *C) {
 					Secret: &v1.Secret{
 						Type: "secrets.kanister.io/aws",
 						Data: map[string][]byte{
-							"access_key_id":     []byte(testutil.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
-							"secret_access_key": []byte(testutil.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
-							"role":              []byte(testutil.GetEnvOrSkip(c, "role")),
+							"access_key_id":     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
+							"secret_access_key": []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
+							"role":              []byte(config.GetEnvOrSkip(c, "role")),
 						},
 					},
 				},
@@ -212,8 +212,8 @@ func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *C) {
 					Secret: &v1.Secret{
 						Type: "secrets.kanister.io/aws",
 						Data: map[string][]byte{
-							"access_key_id":     []byte(testutil.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
-							"secret_access_key": []byte(testutil.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
+							"access_key_id":     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
+							"secret_access_key": []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
 							"role":              []byte("arn:aws:iam::000000000000:role/test-fake-role"),
 						},
 					},
