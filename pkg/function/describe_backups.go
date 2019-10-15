@@ -92,13 +92,21 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			break
 		case strings.Contains(err.Error(), restic.PasswordIncorrect):
 			return map[string]interface{}{
+					DescribeBackupsSnapshotIDs:       nil,
+					DescribeBackupsFileCount:         nil,
+					DescribeBackupsSize:              nil,
 					DescribeBackupsPasswordIncorrect: "true",
+					DescribeBackupsRepoDoesNotExist:  "false",
 				},
 				nil
 
 		case strings.Contains(err.Error(), restic.RepoDoesNotExist):
 			return map[string]interface{}{
-					DescribeBackupsRepoDoesNotExist: "true",
+					DescribeBackupsSnapshotIDs:       nil,
+					DescribeBackupsFileCount:         nil,
+					DescribeBackupsSize:              nil,
+					DescribeBackupsPasswordIncorrect: "false",
+					DescribeBackupsRepoDoesNotExist:  "true",
 				},
 				nil
 		default:

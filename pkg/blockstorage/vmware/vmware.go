@@ -2,6 +2,7 @@ package vmware
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -20,6 +21,17 @@ import (
 var _ blockstorage.Provider = (*fcdProvider)(nil)
 
 const (
+	// VSphereLoginURLKey represents key in config to establish connection.
+	// It should contain the username and the password.
+	VSphereLoginURLKey = "VSphereLoginURL"
+
+	// VSphereEndpointKey represents key for the login endpoint.
+	VSphereEndpointKey = "VSphereEndpoint"
+	// VSphereUsernameKey represents key for the username.
+	VSphereUsernameKey = "VSphereUsername"
+	// VSpherePasswordKey represents key for the password.
+	VSpherePasswordKey = "VSpherePasswordKey"
+
 	noDescription   = ""
 	defaultWaitTime = 10 * time.Minute
 )
@@ -32,7 +44,19 @@ type fcdProvider struct {
 // NewProvider creates new VMWare FCD provider with the config.
 // URL taken from config helps to establish connection.
 func NewProvider(config map[string]string) (blockstorage.Provider, error) {
-	u, err := soap.ParseURL(config["url"])
+	ep, ok := config[VSphereEndpointKey]
+	if !ok {
+		return nil, errors.New("Failed to find VSphere endpoint value")
+	}
+	username, ok := config[VSphereUsernameKey]
+	if !ok {
+		return nil, errors.New("Failed to find VSphere username value")
+	}
+	password, ok := config[VSpherePasswordKey]
+	if !ok {
+		return nil, errors.New("Failed to find VSphere password value")
+	}
+	u, err := soap.ParseURL(constructLoginURL(ep, username, password))
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get config")
 	}
@@ -61,6 +85,10 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 		cns: cnsCli,
 		gom: gom,
 	}, nil
+}
+
+func constructLoginURL(endpoint, username, password string) string {
+	return fmt.Sprintf("https://%s:%s@%s/sdk", username, password, endpoint)
 }
 
 func (p *fcdProvider) Type() blockstorage.Type {
