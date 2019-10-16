@@ -874,18 +874,17 @@ Example:
       outputArtifacts:
         backupStats:
           keyValue:
-            mode: "{{ .Phases.backupDataStatsFromObjectStore.Output.BackupDataStatsOutputMode }}"
-            fileCount "{{ .Phases.backupDataStatsFromObjectStore.Output.BackupDataStatsOutputFileCount }}"
-            size: "{{ .Phases.backupDataStatsFromObjectStore.Output.BackupDataStatsOutputSize }}"
+            mode: "{{ .Phases.BackupDataStatsFromObjectStore.Output.Mode }}"
+            fileCount: "{{ .Phases.BackupDataStatsFromObjectStore.Output.FileCount }}"
+            size: "{{ .Phases.BackupDataStatsFromObjectStore.Output.Size }}"
       phases:
         - func: BackupData
-          name: BackupToObjectStore
+          name: BackupDataStatsFromObjectStore
           args:
             namespace: "{{ .Deployment.Namespace }}"
             backupArtifactPrefix: s3-bucket/path/artifactPrefix
             mode: restore-size
             backupID: "{{ .ArtifactsIn.snapshot.KeyValue.backupIdentifier }}"
-
 
 Registering Functions
 ---------------------
