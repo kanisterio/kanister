@@ -16,7 +16,6 @@ package zone
 
 import (
 	"context"
-	"fmt"
 	"hash/fnv"
 	"sort"
 	"strings"
