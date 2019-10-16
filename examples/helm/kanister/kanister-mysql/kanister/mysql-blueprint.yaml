@@ -63,6 +63,4 @@ actions:
           - -c
           - |
             s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.path }}"
-            export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
-            export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
             kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}

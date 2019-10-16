@@ -25,6 +25,8 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -66,14 +68,8 @@ func validateProfile(profile *param.Profile) error {
 	if profile == nil {
 		return errors.New("Profile must be non-nil")
 	}
-	if profile.Credential.Type != param.CredentialTypeKeyPair {
-		return errors.New("Credential type not supported")
-	}
-	if len(profile.Credential.KeyPair.ID) == 0 {
-		return errors.New("Access key ID is not set")
-	}
-	if len(profile.Credential.KeyPair.Secret) == 0 {
-		return errors.New("Secret access key is not set")
+	if err := ValidateCredentials(&profile.Credential); err != nil {
+		return err
 	}
 	switch profile.Location.Type {
 	case crv1alpha1.LocationTypeS3Compliant:
@@ -106,6 +102,8 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = OptArg(args, BackupDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
+	ctx = field.Context(ctx, consts.PodNameKey, pod)
+	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	// Validate the Profile
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
@@ -114,13 +112,15 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	backupID, backupTag, err := backupData(ctx, cli, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey, tp)
+	backupOutputs, err := backupData(ctx, cli, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey, tp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to backup data")
 	}
 	output := map[string]interface{}{
-		BackupDataOutputBackupID:  backupID,
-		BackupDataOutputBackupTag: backupTag,
+		BackupDataOutputBackupID:       backupOutputs.backupID,
+		BackupDataOutputBackupTag:      backupOutputs.backupTag,
+		BackupDataStatsOutputFileCount: backupOutputs.fileCount,
+		BackupDataStatsOutputSize:      backupOutputs.backupSize,
 	}
 	return output, nil
 }
@@ -130,31 +130,50 @@ func (*backupDataFunc) RequiredArgs() []string {
 		BackupDataIncludePathArg, BackupDataBackupArtifactPrefixArg}
 }
 
-func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey string, tp param.TemplateParams) (string, string, error) {
+type backupDataParsedOutput struct {
+	backupID   string
+	backupTag  string
+	fileCount  string
+	backupSize string
+}
+
+func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey string, tp param.TemplateParams) (backupDataParsedOutput, error) {
 	pw, err := getPodWriter(cli, ctx, namespace, pod, container, tp.Profile)
 	if err != nil {
-		return "", "", err
+		return backupDataParsedOutput{}, err
 	}
 	defer cleanUpCredsFile(ctx, pw, namespace, pod, container)
 	if err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, encryptionKey, tp.Profile); err != nil {
-		return "", "", err
+		return backupDataParsedOutput{}, err
 	}
 
 	// Create backup and dump it on the object store
 	backupTag := rand.String(10)
-	cmd := restic.BackupCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, includePath, encryptionKey)
+	cmd, err := restic.BackupCommandByTag(tp.Profile, backupArtifactPrefix, backupTag, includePath, encryptionKey)
+	if err != nil {
+		return backupDataParsedOutput{}, err
+	}
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "Failed to create and upload backup")
+		return backupDataParsedOutput{}, errors.Wrapf(err, "Failed to create and upload backup")
 	}
 	// Get the snapshot ID from log
 	backupID := restic.SnapshotIDFromBackupLog(stdout)
 	if backupID == "" {
-		return "", "", errors.New("Failed to parse the backup ID from logs")
+		return backupDataParsedOutput{}, errors.New("Failed to parse the backup ID from logs")
 	}
-	return backupID, backupTag, nil
+	// Get the file count and size of the backup from log
+	fileCount, backupSize := restic.SnapshotStatsFromBackupLog(stdout)
+	if fileCount == "" || backupSize == "" {
+		log.Debug("Could not parse backup stats from backup log")
+	}
+	return backupDataParsedOutput{
+		backupID:   backupID,
+		backupTag:  backupTag,
+		fileCount:  fileCount,
+		backupSize: backupSize}, nil
 }
 
 func getPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podName, containerName string, profile *param.Profile) (*kube.PodWriter, error) {
@@ -170,7 +189,7 @@ func getPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podN
 func cleanUpCredsFile(ctx context.Context, pw *kube.PodWriter, namespace, podName, containerName string) {
 	if pw != nil {
 		if err := pw.Remove(ctx, namespace, podName, containerName); err != nil {
-			log.Errorf("Could not delete the temp file")
+			log.WithContext(ctx).Error("Could not delete the temp file")
 		}
 	}
 }

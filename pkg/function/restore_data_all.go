@@ -22,6 +22,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
+
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -44,6 +46,8 @@ const (
 	RestoreDataAllEncryptionKeyArg = "encryptionKey"
 	// RestoreDataAllBackupInfo provides backup info required for restore
 	RestoreDataAllBackupInfo = "backupInfo"
+	// RestoreDataPodOverrideArg contains pod specs which overrides default pod specs
+	RestoreDataAllPodOverrideArg = "podOverride"
 )
 
 func init() {
@@ -58,19 +62,24 @@ func (*restoreDataAllFunc) Name() string {
 	return "RestoreDataAll"
 }
 
-func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, []string, error) {
+func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, []string, sp.JSONMap, error) {
 	var restorePath, encryptionKey, pods string
 	var ps []string
+	var podOverride sp.JSONMap
 	var err error
 
 	if err = OptArg(args, RestoreDataAllRestorePathArg, &restorePath, "/"); err != nil {
-		return restorePath, encryptionKey, ps, err
+		return restorePath, encryptionKey, ps, podOverride, err
 	}
 	if err = OptArg(args, RestoreDataAllEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
-		return restorePath, encryptionKey, ps, err
+		return restorePath, encryptionKey, ps, podOverride, err
 	}
 	if err = OptArg(args, RestoreDataAllPodsArg, &pods, ""); err != nil {
-		return restorePath, encryptionKey, ps, err
+		return restorePath, encryptionKey, ps, podOverride, err
+	}
+	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataAllPodOverrideArg)
+	if err != nil {
+		return restorePath, encryptionKey, ps, podOverride, err
 	}
 
 	if pods != "" {
@@ -82,11 +91,11 @@ func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.Templ
 		case tp.StatefulSet != nil:
 			ps = tp.StatefulSet.Pods
 		default:
-			return restorePath, encryptionKey, ps, errors.New("Unsupported workload type")
+			return restorePath, encryptionKey, ps, podOverride, errors.New("Unsupported workload type")
 		}
 	}
 
-	return restorePath, encryptionKey, ps, nil
+	return restorePath, encryptionKey, ps, podOverride, nil
 }
 
 func (*restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -104,11 +113,13 @@ func (*restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	if err = Arg(args, RestoreDataAllBackupInfo, &backupInfo); err != nil {
 		return nil, err
 	}
+
 	// Validate and get optional arguments
-	restorePath, encryptionKey, pods, err := validateAndGetRestoreAllOptArgs(args, tp)
+	restorePath, encryptionKey, pods, podOverride, err := validateAndGetRestoreAllOptArgs(args, tp)
 	if err != nil {
 		return nil, err
 	}
+
 	// Validate profile
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, err
@@ -135,7 +146,7 @@ func (*restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 				outputChan <- out
 				return
 			}
-			out, err = restoreData(ctx, cli, tp, namespace, encryptionKey, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), restorePath, "", input[pod].BackupID, restoreDataAllJobPrefix, vols)
+			out, err = restoreData(ctx, cli, tp, namespace, encryptionKey, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), restorePath, "", input[pod].BackupID, restoreDataAllJobPrefix, image, vols, podOverride)
 			errChan <- errors.Wrapf(err, "Failed to restore data for pod %s", pod)
 			outputChan <- out
 		}(pod)

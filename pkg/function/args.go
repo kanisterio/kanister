@@ -17,13 +17,17 @@ package function
 import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
+
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 // Arg returns the value of the specified argument
 // It will return an error if the argument type does not match the result type
 func Arg(args map[string]interface{}, argName string, result interface{}) error {
 	if val, ok := args[argName]; ok {
-		if err := mapstructure.Decode(val, result); err != nil {
+		if err := mapstructure.WeakDecode(val, result); err != nil {
 			return errors.Wrapf(err, "Failed to decode arg `%s`", argName)
 		}
 		return nil
@@ -44,4 +48,23 @@ func OptArg(args map[string]interface{}, argName string, result interface{}, def
 func ArgExists(args map[string]interface{}, argName string) bool {
 	_, ok := args[argName]
 	return ok
+}
+
+// GetPodSpecOverride merges PodOverride specs passed in args and TemplateParams and returns combined Override specs
+func GetPodSpecOverride(tp param.TemplateParams, args map[string]interface{}, argName string) (sp.JSONMap, error) {
+	var podOverride sp.JSONMap
+	var err error
+	if err = OptArg(args, KubeTaskPodOverrideArg, &podOverride, tp.PodOverride); err != nil {
+		return nil, err
+	}
+
+	// Check if PodOverride specs are passed through actionset
+	// If yes, override podOverride specs
+	if tp.PodOverride != nil {
+		podOverride, err = kube.CreateAndMergeJsonPatch(podOverride, tp.PodOverride)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return podOverride, nil
 }

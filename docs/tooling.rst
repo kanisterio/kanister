@@ -15,15 +15,14 @@ Although all Kanister custom resources can be managed using kubectl, there are
 situations where this may be cumbersome. A canonical example of this is
 backup/restore - Manually creating a restore ActionSet requires copying
 Artifacts from the status of the complete backup ActionSet, which is an error
-prone process. `kanctl` simplifies this process by allowing the user to
+prone process. ``kanctl`` simplifies this process by allowing the user to
 create custom Kanister resources - ActionSets and Profiles, override existing
 ActionSets and validate profiles.
 
-`kanctl` has two top level commands:
+``kanctl`` has two top level commands:
 
-* `create`
-
-* `validate`
+* ``create``
+* ``validate``
 
 The usage of these commands, with some examples, has been show below:
 
@@ -53,7 +52,7 @@ kanctl create
   Use "kanctl create [command] --help" for more information about a command.
 
 
-As seen above, both ActionSets and profiles can be created using `kanctl create`
+As seen above, both ActionSets and profiles can be created using ``kanctl create``
 
 .. code-block:: bash
 
@@ -86,8 +85,8 @@ As seen above, both ActionSets and profiles can be created using `kanctl create`
     -n, --namespace string   Override namespace obtained from kubectl context
         --skip-validation    if set, resource is not validated before creation
 
-`kanctl create actionset` helps create ActionSets in a couple of different ways. A common
-backup/restore scenario is demonstrated below.
+``kanctl create actionset`` helps create ActionSets in a couple of different ways.
+A common backup/restore scenario is demonstrated below.
 
 Create a new Backup ActionSet
 
@@ -124,7 +123,7 @@ Delete the Backup we created
   $ kubectl --namespace kanister describe actionset delete-backup-9gtmp-fc857
 
 To make the selection of objects (resources on which actions are performed) easier,
-you can filter on K8s labels using `--selector`.
+you can filter on K8s labels using ``--selector``.
 
 .. code-block:: bash
 
@@ -138,7 +137,7 @@ you can filter on K8s labels using `--selector`.
                             --selector-namespace kanister --profile s3-profile
   actionset backup-8f827 created
 
-The `--dry-run` flag will print the YAML of the ActionSet without actually creating it.
+The ``--dry-run`` flag will print the YAML of the ActionSet without actually creating it.
 
 .. code-block:: bash
 
@@ -172,7 +171,7 @@ The `--dry-run` flag will print the YAML of the ActionSet without actually creat
         namespace: kanister
       secrets: {}
 
-Profile creation using `kanctl create`
+Profile creation using ``kanctl create``
 
 .. code-block:: bash
 
@@ -296,20 +295,20 @@ A common use case for Kanister is to transfer data between Kubernetes and an
 object store like AWS S3. We've found it can be cumbersome to pass Profile
 configuration to tools like the AWS command line from inside Blueprints.
 
-`kando` is a tool to simplify object store interactions from within blueprints.
+``kando`` is a tool to simplify object store interactions from within blueprints.
 It also provides a way to create desired output from a blueprint phase.
 
 It has the following commands:
 
-* `location push`
+* ``location push``
 
-* `location pull`
+* ``location pull``
 
-* `location delete`
+* ``location delete``
 
-* `output`
+* ``output``
 
-The usage for these commands can be displayed using the `--help` flag:
+The usage for these commands can be displayed using the ``--help`` flag:
 
 .. code-block:: bash
 
@@ -369,13 +368,13 @@ The usage for these commands can be displayed using the `--help` flag:
 
 The following snippet is an example of using kando from inside a Blueprint.
 
-.. code-block:: console
+.. substitution-code-block:: console
 
-  kando location push --profile '{{ .Profile }}' --path '/backup/path' -
+  kando location push --profile '{{ toJson .Profile }}' --path '/backup/path' -
 
-  kando location delete --profile '{{ .Profile }}' --path '/backup/path'
+  kando location delete --profile '{{ toJson .Profile }}' --path '/backup/path'
 
-  kando output version 0.21.0
+  kando output version |version|
 
 Install the tools
 =================
@@ -394,11 +393,11 @@ Installation of the tools requires `Go <https://golang.org/doc/install>`_ to be 
 Docker Image
 ============
 
-These tools, especially `kando` are meant to be invoked inside containers via
+These tools, especially ``kando`` are meant to be invoked inside containers via
 Blueprints. Although suggest using the released image when possible, we've also
 made it simple to add these tools to your container.
 
-The released image, `kanisterio/kanister-tools:0.21.0`, is hosted by
+The released image, ``kanisterio/kanister-tools``, is hosted by
 `dockerhub <https://cloud.docker.com/swarm/kanisterio/repository/docker/kanisterio/kanister-tools/general>`_.
 
 The Dockerfile for this image is in the

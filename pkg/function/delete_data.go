@@ -19,10 +19,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/kanister/pkg"
+	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -42,7 +43,9 @@ const (
 	DeleteDataEncryptionKeyArg = "encryptionKey"
 	// DeleteDataReclaimSpace provides a way to specify if space should be reclaimed
 	DeleteDataReclaimSpace = "reclaimSpace"
-	deleteDataJobPrefix    = "delete-data-"
+	// DeleteDataPodOverrideArg contains pod specs to override default pod specs
+	DeleteDataPodOverrideArg = "podOverride"
+	deleteDataJobPrefix      = "delete-data-"
 )
 
 func init() {
@@ -57,12 +60,13 @@ func (*deleteDataFunc) Name() string {
 	return "DeleteData"
 }
 
-func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string, jobPrefix string) (map[string]interface{}, error) {
+func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string, jobPrefix string, podOverride sp.JSONMap) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
 		Image:        kanisterToolsImage,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataPodFunc(cli, tp, reclaimSpace, namespace, encryptionKey, targetPaths, deleteTags, deleteIdentifiers)
@@ -84,7 +88,10 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 		}
 		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		for i, deleteTag := range deleteTags {
-			cmd := restic.SnapshotsCommandByTag(tp.Profile, targetPaths[i], deleteTag, encryptionKey)
+			cmd, err := restic.SnapshotsCommandByTag(tp.Profile, targetPaths[i], deleteTag, encryptionKey)
+			if err != nil {
+				return nil, err
+			}
 			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
@@ -98,7 +105,10 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 			deleteIdentifiers = append(deleteIdentifiers, deleteIdentifier)
 		}
 		for i, deleteIdentifier := range deleteIdentifiers {
-			cmd := restic.ForgetCommandByID(tp.Profile, targetPaths[i], deleteIdentifier, encryptionKey)
+			cmd, err := restic.ForgetCommandByID(tp.Profile, targetPaths[i], deleteIdentifier, encryptionKey)
+			if err != nil {
+				return nil, err
+			}
 			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
@@ -118,7 +128,10 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 }
 
 func pruneData(cli kubernetes.Interface, tp param.TemplateParams, pod *v1.Pod, namespace, encryptionKey, targetPath string) error {
-	cmd := restic.PruneCommand(tp.Profile, targetPath, encryptionKey)
+	cmd, err := restic.PruneCommand(tp.Profile, targetPath, encryptionKey)
+	if err != nil {
+		return err
+	}
 	stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
@@ -147,6 +160,11 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = OptArg(args, DeleteDataReclaimSpace, &reclaimSpace, false); err != nil {
 		return nil, err
 	}
+	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataPodOverrideArg)
+	if err != nil {
+		return nil, err
+	}
+
 	// Validate profile
 	if err = validateProfile(tp.Profile); err != nil {
 		return nil, err
@@ -155,7 +173,7 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, strings.Fields(deleteArtifactPrefix), strings.Fields(deleteTag), strings.Fields(deleteIdentifier), deleteDataJobPrefix)
+	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, strings.Fields(deleteArtifactPrefix), strings.Fields(deleteTag), strings.Fields(deleteIdentifier), deleteDataJobPrefix, podOverride)
 }
 
 func (*deleteDataFunc) RequiredArgs() []string {
