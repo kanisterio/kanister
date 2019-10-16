@@ -35,7 +35,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
-	"github.com/kanisterio/kanister/pkg/restic"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
@@ -588,15 +587,15 @@ func (s *DataSuite) TestDescribeBackupsWrongPassword(c *C) {
 
 	// Test backup
 	bp := *newBackupDataBlueprint()
-	bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg], "abd")
-	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = restic.GeneratePassword()
+	bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg], "abcde")
+	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = "foobar"
 	out := runAction(c, bp, "backup", tp)
 	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
 
 	// Test DescribeBackups
 	bp2 := *newDescribeBackupsBlueprint()
-	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], "abd")
+	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], "abcde")
 	out2 := runAction(c, bp2, "describeBackups", tp)
 	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Equals, "true")
 }
@@ -612,7 +611,7 @@ func (s *DataSuite) TestDescribeBackupsRepoNotAvailable(c *C) {
 
 	// Test DescribeBackups
 	bp2 := *newDescribeBackupsBlueprint()
-	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], "foobar")
+	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], c.TestName())
 	out2 := runAction(c, bp2, "describeBackups", tp)
 	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Equals, "true")
 }
