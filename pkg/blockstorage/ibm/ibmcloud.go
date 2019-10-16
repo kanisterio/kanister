@@ -31,6 +31,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	bsibmutils "github.com/kanisterio/kanister/pkg/blockstorage/ibm/utils"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -73,12 +74,12 @@ func (s *ibmCloud) VolumeCreate(ctx context.Context, volume blockstorage.Volume)
 	newVol.Capacity = &size
 	newVol.VolumeNotes = blockstorage.KeyValueToMap(volume.Tags)
 	newVol.Az = s.cli.SLCfg.SoftlayerDataCenter
-	log.Debug().Print(fmt.Sprintf("Creating new volume %+v", newVol))
+	log.Debug().Print("Creating new volume", field.M{"volume": newVol})
 	volR, err := s.cli.Service.CreateVolume(newVol)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Failed to create volume. %s", err.Error()))
 	}
-	log.Debug().Print(fmt.Sprintf("New volume created %+v", volR))
+	log.Debug().Print("New volume created", field.M{"volume": volR})
 	return s.volumeParse(ctx, volR)
 }
 
@@ -87,7 +88,7 @@ func (s *ibmCloud) VolumeGet(ctx context.Context, id string, zone string) (*bloc
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get volume with id %s", id)
 	}
-	log.Debug().Print(fmt.Sprintf("Got volume from cloud provider %+v", vol))
+	log.Debug().Print("Got volume from cloud provider", field.M{"Volume": vol})
 	return s.volumeParse(ctx, vol)
 }
 
@@ -242,7 +243,7 @@ func (s *ibmCloud) SnapshotCreate(ctx context.Context, volume blockstorage.Volum
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create snapshot, volume_id: %s", volume.ID)
 	}
-	log.Debug().Print(fmt.Sprintf("New snapshot was created %+v", snap))
+	log.Debug().Print("New snapshot was created ", field.M{"Snapshot": snap})
 
 	return s.snapshotParse(ctx, snap), nil
 }
@@ -327,10 +328,10 @@ func waitforSnapSpaceOrder(ctx context.Context, cli *client, id string) error {
 		}
 
 		if vol.SnapshotSpace != nil {
-			log.Debug().Print(fmt.Sprintf("Volume has snapshot space now, volume_id %s", id))
+			log.Debug().Print("Volume has snapshot space now", field.M{"volume_id": id})
 			return true, nil
 		}
-		log.Debug().Print(fmt.Sprintf("Still waiting for Snapshor Space order volume_id: %s", id))
+		log.Debug().Print("Still waiting for Snapshor Space order", field.M{"volume_id": id})
 		return false, nil
 	})
 

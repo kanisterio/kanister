@@ -35,6 +35,7 @@ import (
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -120,7 +121,7 @@ func (s *ebsStorage) VolumeGet(ctx context.Context, id string, zone string) (*bl
 	dvi := &ec2.DescribeVolumesInput{VolumeIds: volIDs}
 	dvo, err := s.ec2Cli.DescribeVolumesWithContext(ctx, dvi)
 	if err != nil {
-		log.WithError(err).Print(fmt.Sprintf("Failed to get volumes %v", aws.StringValueSlice(volIDs)))
+		log.WithError(err).Print("Failed to get volumes", field.M{"VolumeIds": volIDs})
 		return nil, err
 	}
 	if len(dvo.Volumes) != len(volIDs) {
@@ -307,7 +308,7 @@ func (s *ebsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 			Tags:         mapToEC2Tags(ktags.GetTags(tags)),
 		},
 	})
-	log.Print(fmt.Sprintf("Snapshotting EBS volume: %s", *csi.VolumeId))
+	log.Print("Snapshotting EBS volume", field.M{"volume_id": *csi.VolumeId})
 	csi.SetDryRun(s.ec2Cli.DryRun)
 	snap, err := s.ec2Cli.CreateSnapshotWithContext(ctx, csi)
 	if err != nil && !isDryRunErr(err) {
@@ -475,7 +476,7 @@ func getSnapshots(ctx context.Context, ec2Cli *EC2, snapIDs []*string) ([]*ec2.S
 	}
 	// TODO: handle paging and continuation
 	if len(dso.Snapshots) != len(snapIDs) {
-		log.Error().Print(fmt.Sprintf("Did not find all requested snapshots, snapshots_requested: %p, snapshots_found: %p", snapIDs, dso.Snapshots))
+		log.Error().Print("Did not find all requested snapshots", field.M{"snapshots_requested": snapIDs, "snapshots_found": dso.Snapshots})
 		// TODO: Move mapping to HTTP error to the caller
 		return nil, errors.New("Object not found")
 	}
@@ -536,7 +537,7 @@ func waitOnVolume(ctx context.Context, ec2Cli *EC2, vol *ec2.Volume) error {
 			log.Print(fmt.Sprintf("Volume %s complete", *vol.VolumeId))
 			return nil
 		}
-		log.Print(fmt.Sprintf("Volume %s state: %s", *vol.VolumeId, *s.State))
+		log.Print("Update", field.M{"Volume": *vol.VolumeId, "State": *s.State})
 		time.Sleep(volWaitBackoff.Duration())
 	}
 }
@@ -571,7 +572,7 @@ func waitOnSnapshotID(ctx context.Context, ec2Cli *EC2, snapID string) error {
 			log.Print(fmt.Sprintf("Snapshot with snapshot_id: %s completed", snapID))
 			return true, nil
 		}
-		log.Debug().Print(fmt.Sprintf("Snapshot progress: snapshot_id: %s, progress: %s", snapID, fmt.Sprintf("%+v", *s.Progress)))
+		log.Debug().Print("Snapshot progress", field.M{"snapshot_id": snapID, "progress": *s.Progress})
 		return false, nil
 	})
 }

@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -103,7 +104,7 @@ func WithUnknownNodeZones(ctx context.Context, m Mapper, region string, sourceZo
 	zs, err := m.FromRegion(ctx, region)
 	if err != nil || len(zs) == 0 {
 		// If all else fails, we return the original AZ.
-		log.WithError(err).Print(fmt.Sprintf("Using original AZ. region: %s", region))
+		log.WithError(err).Print("Using original AZ.", field.M{"region": region})
 		return sourceZone
 	}
 

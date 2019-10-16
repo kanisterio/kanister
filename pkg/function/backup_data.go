@@ -167,7 +167,7 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 	// Get the file count and size of the backup from log
 	fileCount, backupSize := restic.SnapshotStatsFromBackupLog(stdout)
 	if fileCount == "" || backupSize == "" {
-		log.Debug("Could not parse backup stats from backup log")
+		log.Debug().Print("Could not parse backup stats from backup log")
 	}
 	return backupDataParsedOutput{
 		backupID:   backupID,
