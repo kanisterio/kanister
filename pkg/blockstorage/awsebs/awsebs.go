@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -70,7 +69,7 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
-	return &ebsStorage{ec2Cli: ec2Cli, role: config[awsConfig.ConfigRole]}, nil
+	return &ebsStorage{ec2Cli: ec2Cli, role: config[awsconfig.ConfigRole]}, nil
 }
 
 // newEC2Client returns ec2 client struct.
@@ -225,7 +224,7 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		return nil, errors.Errorf("Snapshot %v destination ID must be empty", to)
 	}
 	// Copy operation must be initiated from the destination region.
-	ec2Cli, err := newEC2Client(to.Region, s.ec2Cli.Config.Copy(), "")
+	ec2Cli, err := newEC2Client(to.Region, s.ec2Cli.Config.Copy())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
@@ -233,7 +232,7 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	// independent of whether or not the snapshot is encrypted.
 	var presignedURL *string
 	if to.Region != from.Region {
-		fromCli, err2 := newEC2Client(from.Region, s.ec2Cli.Config.Copy(), "")
+		fromCli, err2 := newEC2Client(from.Region, s.ec2Cli.Config.Copy())
 		if err2 != nil {
 			return nil, errors.Wrap(err2, "Could not create client to presign URL for snapshot copy request")
 		}
@@ -595,7 +594,7 @@ func (s *ebsStorage) FromRegion(ctx context.Context, region string) ([]string, e
 }
 
 func (s *ebsStorage) queryRegionToZones(ctx context.Context, region string) ([]string, error) {
-	ec2Cli, err := newEC2Client(region, s.ec2Cli.Config.Copy(), "")
+	ec2Cli, err := newEC2Client(region, s.ec2Cli.Config.Copy())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
