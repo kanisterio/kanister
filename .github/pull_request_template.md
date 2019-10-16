@@ -5,12 +5,13 @@
 ## Pull request type
 
 Please check the type of change your PR introduces:
-- [ ] Work in Progress
-- [ ] Refactoring (no functional changes, no api changes)
-- [ ] Trivial/Minor
-- [ ] Bugfix
-- [ ] Feature
-- [ ] Documentation
+- [ ] :construction: Work in Progress
+- [ ] :rainbow: Refactoring (no functional changes, no api changes)
+- [ ] :hamster: Trivial/Minor
+- [ ] :bug: Bugfix
+- [ ] :sunflower: Feature
+- [ ] :world_map: Documentation
+- [ ] :robot: Test
 
 ## Issues
 
@@ -21,6 +22,6 @@ Please check the type of change your PR introduces:
 <!-- Will run prior to merging.-->
 <!-- Include example how to run.-->
 
-- [ ] Manual
-- [ ] Unit test
-- [ ] E2E
+- [ ] :muscle: Manual
+- [ ] :zap: Unit test
+- [ ] :green_heart: E2E
