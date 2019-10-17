@@ -456,7 +456,7 @@ func createVolume(ctx context.Context, ec2Cli *EC2, cvi *ec2.CreateVolumeInput, 
 		return "", nil
 	}
 	if err != nil {
-		log.WithError(err).Print(fmt.Sprintf("Failed to create volume for %v", *cvi))
+		log.WithError(err).Print("Failed to create volume", field.M{"input": cvi})
 		return "", err
 	}
 
