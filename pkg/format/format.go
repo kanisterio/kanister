@@ -16,11 +16,11 @@ package format
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"regexp"
 	"strings"
 
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -44,7 +44,7 @@ func LogStream(podName string, containerName string, output io.ReadCloser) chan 
 			logCh <- l
 		}
 		if err := s.Err(); err != nil {
-			log.Error().Print(fmt.Sprintf("Pod: %s, Container: %s, Failed to stream log from pod: %s", podName, containerName, err.Error()))
+			log.Error().WithError(err).Print("Failed to stream log from pod", field.M{"Pod": podName, "Container": containerName})
 		}
 	}()
 	return logCh
@@ -52,6 +52,6 @@ func LogStream(podName string, containerName string, output io.ReadCloser) chan 
 
 func info(podName string, containerName string, l string) {
 	if strings.TrimSpace(l) != "" {
-		log.Print(fmt.Sprintf("Pod: %s, Container: %s, Out: %s", podName, containerName, l))
+		log.Print("Pod Update", field.M{"Pod": podName, "Container": containerName, "Out": l})
 	}
 }

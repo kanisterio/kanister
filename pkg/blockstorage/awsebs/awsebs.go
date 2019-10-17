@@ -18,7 +18,6 @@ package awsebs
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -340,7 +339,7 @@ func (s *ebsStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *
 }
 
 func (s *ebsStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
-	log.Print(fmt.Sprintf("EBS Snapshot ID %s", snapshot.ID))
+	log.Print("Deleting EBS Snapshot", field.M{"SnapshotID": snapshot.ID})
 	rmsi := &ec2.DeleteSnapshotInput{}
 	rmsi.SetSnapshotId(snapshot.ID)
 	rmsi.SetDryRun(s.ec2Cli.DryRun)
@@ -523,7 +522,7 @@ func waitOnVolume(ctx context.Context, ec2Cli *EC2, vol *ec2.Volume) error {
 	for {
 		dvo, err := ec2Cli.DescribeVolumesWithContext(ctx, dvi)
 		if err != nil {
-			log.WithError(err).Print(fmt.Sprintf("Failed to describe volume %s", aws.StringValue(vol.VolumeId)))
+			log.WithError(err).Print("Failed to describe volume", field.M{"VolumeID": aws.StringValue(vol.VolumeId)})
 			return err
 		}
 		if len(dvo.Volumes) != 1 {
@@ -534,7 +533,7 @@ func waitOnVolume(ctx context.Context, ec2Cli *EC2, vol *ec2.Volume) error {
 			return errors.New("Creating EBS volume failed")
 		}
 		if *s.State == ec2.VolumeStateAvailable {
-			log.Print(fmt.Sprintf("Volume %s complete", *vol.VolumeId))
+			log.Print("Volume creation complete", field.M{"VolumeID": *vol.VolumeId})
 			return nil
 		}
 		log.Print("Update", field.M{"Volume": *vol.VolumeId, "State": *s.State})
@@ -569,7 +568,7 @@ func waitOnSnapshotID(ctx context.Context, ec2Cli *EC2, snapID string) error {
 			return false, errors.New("Snapshot EBS volume failed")
 		}
 		if *s.State == ec2.SnapshotStateCompleted {
-			log.Print(fmt.Sprintf("Snapshot with snapshot_id: %s completed", snapID))
+			log.Print("Snapshot completed", field.M{"SnapshotID": snapID})
 			return true, nil
 		}
 		log.Debug().Print("Snapshot progress", field.M{"snapshot_id": snapID, "progress": *s.Progress})

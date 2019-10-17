@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/envdir"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -47,7 +48,7 @@ func (p PushParams) Validate() error {
 }
 
 func Push(p PushParams) error {
-	log.Debug().Print(fmt.Sprintf("%#v", p))
+	log.Debug().Print("", field.M{"PushParams": p})
 	ctx := setupSignalHandler(context.Background())
 	var i int
 	for {
@@ -100,7 +101,7 @@ func push(ctx context.Context, p PushParams, ord int) error {
 		}
 	}
 	ap, err := readArtifactPathFile(p.ArtifactFile)
-	log.Debug().Print(fmt.Sprintf("Pushing output from Command %d: %v. Environment: %v", ord, p.Command, env))
+	log.Debug().Print("Pushing output from Command ", field.M{"order": ord, "command": p.Command, "Environment": env})
 	return pushWithEnv(ctx, p.Command, ap, ord, prof, env)
 }
 

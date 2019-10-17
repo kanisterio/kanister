@@ -215,7 +215,7 @@ func (s *gpdStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *
 func (s *gpdStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
 	op, err := s.service.Snapshots.Delete(s.project, snapshot.ID).Context(ctx).Do()
 	if isNotFoundError(err) {
-		log.Debug().Print("Cannot delete snapshot.", field.M{"SnapshotID": snapshot.ID, "reason": "Snapshot not found"})
+		log.Debug().Print("Cannot delete snapshot", field.M{"SnapshotID": snapshot.ID, "reason": "Snapshot not found"})
 		return nil
 	}
 	if err != nil {
@@ -494,7 +494,7 @@ func (s *gpdStorage) waitOnOperation(ctx context.Context, op *compute.Operation,
 				}
 				return false, errors.Errorf("%s", errJSON)
 			}
-			log.Print(fmt.Sprintf("Operation %s done", op.OperationType))
+			log.Print("Operation done", field.M{"OperationType": op.OperationType})
 			return true, nil
 		case operationPending, operationRunning:
 			log.Debug().Print("Operation status update", field.M{"Operation": op.OperationType, "Status": op.Status, "Status message": op.StatusMessage, "Progress": op.Progress})
@@ -522,7 +522,7 @@ func (s *gpdStorage) waitOnSnapshotID(ctx context.Context, id string) error {
 			return false, errors.New("Snapshot GCP volume failed")
 		}
 		if snap.Status == "READY" {
-			log.Print(fmt.Sprintf("Snapshot with snapshot_id: %s completed", id))
+			log.Print("Snapshot completed", field.M{"SnapshotID": id})
 			return true, nil
 		}
 		log.Debug().Print("Snapshot status", field.M{"snapshot_id": id, "status": snap.Status})

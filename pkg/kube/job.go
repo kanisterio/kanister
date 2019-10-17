@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -115,7 +116,7 @@ func (job *Job) Create() error {
 		return errors.Wrapf(err, "Failed to create job %s", job.name)
 	}
 	job.name = newJob.Name
-	log.Print(fmt.Sprintf("New job %s created", job.name))
+	log.Print("New job created", field.M{"JobName": job.name})
 
 	return nil
 }
@@ -173,7 +174,7 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 			conditions := k8sJob.Status.Conditions
 			for _, condition := range conditions {
 				if condition.Type == batch.JobComplete {
-					log.Print(fmt.Sprintf("Job %s reported complete\n", job.name))
+					log.Print("Job reported complete\n", field.M{"JobName": job.name})
 					return nil
 				} else if condition.Type == batch.JobFailed {
 					return errors.Errorf("Job %s failed", job.name)
@@ -195,7 +196,7 @@ func (job *Job) Delete() error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete job %s", job.name)
 	}
-	log.Print(fmt.Sprintf("Deleted job %s", job.name))
+	log.Print("Deleted job", field.M{"JobName": job.name})
 
 	return nil
 }

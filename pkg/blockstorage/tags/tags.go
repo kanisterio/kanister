@@ -15,11 +15,11 @@
 package tags
 
 import (
-	"fmt"
 	"os"
 	"regexp"
 	"strings"
 
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -63,7 +63,7 @@ func AddMissingTags(existingTags map[string]string, tagsToAdd map[string]string)
 	// Add missing tags
 	for k, v := range tagsToAdd {
 		if val, ok := ret[k]; ok {
-			log.Print(fmt.Sprintf("Ignoring duplicate tag: %s:%s. Retained value: %s", k, v, val))
+			log.Print("Ignoring duplicate tag", field.M{k: v, "RetainedValue": val})
 		} else {
 			ret[k] = v
 		}

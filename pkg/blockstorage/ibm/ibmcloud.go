@@ -223,7 +223,7 @@ func (s *ibmCloud) SnapshotCreate(ctx context.Context, volume blockstorage.Volum
 	}
 
 	if ibmvol.SnapshotSpace == nil {
-		log.Debug().Print(fmt.Sprintf("Ordering snapshot space for volume %+v", ibmvol))
+		log.Debug().Print("Ordering snapshot space for volume", field.M{"Volume": ibmvol})
 		ibmvol.SnapshotSpace = ibmvol.Capacity
 		err = s.cli.Service.OrderSnapshot(*ibmvol)
 		if err != nil {
@@ -238,7 +238,7 @@ func (s *ibmCloud) SnapshotCreate(ctx context.Context, volume blockstorage.Volum
 			return nil, errors.Wrapf(err, "Wait is expired for order Snapshot space, volume_id :%s", volume.ID)
 		}
 	}
-	log.Debug().Print(fmt.Sprintf("Creating snapshot for vol %+v", ibmvol))
+	log.Debug().Print("Creating snapshot", field.M{"Volume": ibmvol})
 	snap, err := s.cli.Service.CreateSnapshot(ibmvol, alltags)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create snapshot, volume_id: %s", volume.ID)
@@ -300,7 +300,7 @@ func (s *ibmCloud) VolumeCreateFromSnapshot(ctx context.Context, snapshot blocks
 	// GetSnapshot doens't return correct Volume info
 	snap.VolumeID = snapshot.Volume.ID
 	snap.Volume.VolumeID = snapshot.Volume.ID
-	log.Debug().Print(fmt.Sprintf("Snapshot with new volume ID %+v", snap))
+	log.Debug().Print("Creating Volume from Snapshot with new volume ID", field.M{"inputSnapshot": snap})
 
 	vol, err := s.cli.Service.CreateVolumeFromSnapshot(*snap, tags)
 	if err != nil {

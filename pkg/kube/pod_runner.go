@@ -16,7 +16,6 @@ package kube
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -58,7 +57,7 @@ func (p *PodRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (
 		<-ctx.Done()
 		err := DeletePod(context.Background(), p.cli, pod)
 		if err != nil {
-			log.WithError(err).Print(fmt.Sprintf("Failed to delete pod %s", pod.Name))
+			log.WithError(err).Print("Failed to delete pod", field.M{"PodName": pod.Name})
 		}
 	}()
 	return fn(ctx, pod)

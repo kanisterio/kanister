@@ -16,7 +16,6 @@ package blockstorage_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -151,7 +150,7 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 	snap, err := s.provider.SnapshotCopy(context.TODO(), *srcSnapshot, *dstSnapshot)
 	c.Assert(err, IsNil)
 
-	log.Print(fmt.Sprintf("Copied snapshot %v to %v", srcSnapshot.ID, snap.ID))
+	log.Print("Snapshot copied", field.M{"FromSnapshotID": srcSnapshot.ID, "ToSnapshotID": snap.ID})
 
 	config := s.getConfig(c, dstSnapshot.Region)
 	provider, err := getter.New().Get(s.storageType, config)

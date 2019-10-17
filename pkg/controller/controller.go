@@ -131,7 +131,8 @@ func checkCRAccess(cli versioned.Interface, ns string) error {
 func (c *Controller) onAdd(obj interface{}) {
 	o, ok := obj.(runtime.Object)
 	if !ok {
-		log.Error().Print(fmt.Sprintf("Added object type <%T> does not implement runtime.Object", obj))
+		objType := fmt.Sprintf("%T", obj)
+		log.Error().Print("Added object type does not implement runtime.Object", field.M{"ObjectType": objType})
 		return
 	}
 	o = o.DeepCopyObject()
@@ -145,7 +146,8 @@ func (c *Controller) onAdd(obj interface{}) {
 			log.Error().WithError(err).Print("Callback onAddBlueprint() failed")
 		}
 	default:
-		log.Error().Print(fmt.Sprintf("Unknown object type <%T>", o))
+		objType := fmt.Sprintf("%T", o)
+		log.Error().Print("Unknown object type", field.M{"ObjectType": objType})
 	}
 }
 
@@ -165,7 +167,8 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			c.logAndErrorEvent(nil, "Callback onUpdateBlueprint() failed:", "Error", err, new)
 		}
 	default:
-		log.Error().Print(fmt.Sprintf("Unknown object type <%T>", oldObj))
+		objType := fmt.Sprintf("%T", oldObj)
+		log.Error().Print("Unknown object type", field.M{"ObjectType": objType})
 	}
 }
 
@@ -182,7 +185,8 @@ func (c *Controller) onDelete(obj interface{}) {
 			c.logAndErrorEvent(nil, "Callback onDeleteBlueprint() failed:", "Error", err, v)
 		}
 	default:
-		log.Error().Print(fmt.Sprintf("Unknown object type <%T>", obj))
+		objType := fmt.Sprintf("%T", obj)
+		log.Error().Print("Unknown object type", field.M{"ObjectType": objType})
 	}
 }
 
@@ -212,23 +216,23 @@ func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) error {
 
 func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error {
 	if err := validate.ActionSet(newAS); err != nil {
-		log.Print(fmt.Sprintf("Updated ActionSet '%s'", newAS.Name))
+		log.Print("Updated ActionSet", field.M{"ActionSetName": newAS.Name})
 		return err
 	}
 	if newAS.Status == nil || newAS.Status.State != crv1alpha1.StateRunning {
 		if newAS.Status == nil {
-			log.Print(fmt.Sprintf("Updated ActionSet '%s' Status->nil", newAS.Name))
+			log.Print("Updated ActionSet", field.M{"Actionset": newAS.Name, "Status": "nil"})
 		} else if newAS.Status.State == crv1alpha1.StateComplete {
 			c.logAndSuccessEvent(nil, fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State), "Update Complete", newAS)
 		} else {
-			log.Print(fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State))
+			log.Print("Updated ActionSet", field.M{"Actionset": newAS.Name, "Status": newAS.Status.State})
 		}
 		return nil
 	}
 	for _, as := range newAS.Status.Actions {
 		for _, p := range as.Phases {
 			if p.State != crv1alpha1.StateComplete {
-				log.Print(fmt.Sprintf("Updated ActionSet '%s' Status->%s, Phase: %s->%s", newAS.Name, newAS.Status.State, p.Name, p.State))
+				log.Print("Updated ActionSet", field.M{"Actionset": newAS.Name, "Status": newAS.Status.State, "Phase": fmt.Sprintf("%s->%s", p.Name, p.State)})
 				return nil
 			}
 		}
@@ -243,13 +247,13 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 }
 
 func (c *Controller) onUpdateBlueprint(oldBP, newBP *crv1alpha1.Blueprint) error {
-	log.Print(fmt.Sprintf("Updated Blueprint '%s'", newBP.Name))
+	log.Print("Updated Blueprint", field.M{"BlueprintName": newBP.Name})
 	return nil
 }
 
 func (c *Controller) onDeleteActionSet(as *crv1alpha1.ActionSet) error {
 	asName := as.GetName()
-	log.Print(fmt.Sprintf("Deleted ActionSet %s", asName))
+	log.Print("Deleted ActionSet", field.M{"ActionSetName": asName})
 	v, ok := c.actionSetTombMap.Load(asName)
 	if !ok {
 		return nil
@@ -264,7 +268,7 @@ func (c *Controller) onDeleteActionSet(as *crv1alpha1.ActionSet) error {
 }
 
 func (c *Controller) onDeleteBlueprint(bp *crv1alpha1.Blueprint) error {
-	log.Print(fmt.Sprintf("Deleted Blueprint %s", bp.GetName()))
+	log.Print("Deleted Blueprint ", field.M{"BlueprintName": bp.GetName()})
 	return nil
 }
 
@@ -361,7 +365,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 			return errors.WithStack(err)
 		}
 	}
-	log.WithContext(ctx).Print(fmt.Sprintf("Created actionset %s and started executing actions", as.GetName()))
+	log.WithContext(ctx).Print("Created actionset and started executing actions", field.M{"NewActionSetName": as.GetName()})
 	return nil
 }
 
