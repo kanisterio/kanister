@@ -888,49 +888,59 @@ Example:
 
 DescribeBackups
 ---------------
+
 This function describes the backups for an object store location
+
 .. note::
-  It is important that the application includes a ``kanister-tools``
-  sidecar container. This sidecar is necessary to run the
-  tools that get the information from the object store.
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that get the information from the object store.
+
 Arguments:
+
 .. csv-table::
-  :header: "Argument", "Required", "Type", "Description"
-  :align: left
-  :widths: 5,5,5,15
-  backupArtifactPrefix, Yes, string, path to the object store location
-  encryptionKey, No, string, encryption key to be used for backups
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `backupArtifactPrefix`, Yes, `string`, path to the object store location
+   `encryptionKey`, No, `string`, encryption key to be used for backups
+
 Outputs:
+
 .. csv-table::
-  :header: "Output", "Type", "Description"
-  :align: left
-  :widths: 5,5,15
-  mode,string, mode of the output stats
-  fileCount,string, number of files in backup object store location
-  size, string, size of the number of files in in backup object store location
-  snapshotIDs, string, list of snapshot ID in backup object store location
-  passwordIncorrect, string, true if encryption key is incorrect
-  repoUnavailable, string, true if object store location is unavailable
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `mode`,`string`, mode of the output stats
+   `fileCount`,`string`, number of files in backup object store location
+   `size`, `string`, size of the number of files in in backup object store location
+   `snapshotIDs`, `string`, list of snapshot ID in backup object store location
+   `passwordIncorrect`, `string`, true if encryption key is incorrect
+   `repoDoesNotExist`, `string`, true if object store location does not exist
+
 Example:
+
 .. code-block:: yaml
- :linenos:
- actions:
-   backupStats:
-     type: Deployment
-     outputArtifacts:
-       backupStats:
-         keyValue:
-           mode: "{{ .Phases.DescribeBackupsFromObjectStore.Output.Mode }}"
-           fileCount: "{{ .Phases.DescribeBackupsFromObjectStore.Output.FileCount }}"
-           size: "{{ .Phases.DescribeBackupsFromObjectStore.Output.Size }}"
-           snapshotIDs: "{{ .Phases.DescribeBackupsFromObjectStore.Output.SnapshotIDs }}"
-           passwordIncorrect: "{{ .Phases.DescribeBackupsFromObjectStore.Output.PasswordIncorrect }}"
-           repoUnavailable: "{{ .Phases.DescribeBackupsFromObjectStore.Output.RepoUnavailable }}"
-     phases:
-       - func: DescribeBackups
-         name: DescribeBackupsFromObjectStore
-         args:
-           backupArtifactPrefix: s3-bucket/path/artifactPrefix
+  :linenos:
+
+  actions:
+    backupStats:
+      type: Deployment
+      outputArtifacts:
+        backupStats:
+          keyValue:
+            fileCount: "{{ .Phases.DescribeBackupsFromObjectStore.Output.DescribeBackupsFileCount }}"
+            size: "{{ .Phases.DescribeBackupsFromObjectStore.Output.DescribeBackupsSize }}"
+            snapshotIDs: "{{ .Phases.DescribeBackupsFromObjectStore.Output.DescribeBackupsSnapshotIDs }}"
+            passwordIncorrect: "{{ .Phases.DescribeBackupsFromObjectStore.Output.DescribeBackupsPasswordIncorrect }}"
+            repoDoesNotExist: "{{ .Phases.DescribeBackupsFromObjectStore.Output.DescribeBackupsRepoDoesNotExist }}"
+      phases:
+        - func: DescribeBackups
+          name: DescribeBackupsFromObjectStore
+          args:
+            backupArtifactPrefix: s3-bucket/path/artifactPrefix
 
 Registering Functions
 ---------------------
