@@ -874,9 +874,9 @@ Example:
       outputArtifacts:
         backupStats:
           keyValue:
-            mode: "{{ .Phases.BackupDataStatsFromObjectStore.Output.BackupDataStatsOutputMode }}"
-            fileCount: "{{ .Phases.BackupDataStatsFromObjectStore.Output.BackupDataStatsOutputFileCount }}"
-            size: "{{ .Phases.BackupDataStatsFromObjectStore.Output.BackupDataStatsOutputSize }}"
+            mode: "{{ .Phases.BackupDataStatsFromObjectStore.Output.mode }}"
+            fileCount: "{{ .Phases.BackupDataStatsFromObjectStore.Output.fileCount }}"
+            size: "{{ .Phases.BackupDataStatsFromObjectStore.Output.size }}"
       phases:
         - func: BackupDataStats
           name: BackupDataStatsFromObjectStore
