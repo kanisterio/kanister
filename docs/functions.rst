@@ -874,11 +874,11 @@ Example:
       outputArtifacts:
         backupStats:
           keyValue:
-            mode: "{{ .Phases.BackupDataStatsFromObjectStore.Output.Mode }}"
-            fileCount: "{{ .Phases.BackupDataStatsFromObjectStore.Output.FileCount }}"
-            size: "{{ .Phases.BackupDataStatsFromObjectStore.Output.Size }}"
+            mode: "{{ .Phases.BackupDataStatsFromObjectStore.Output.BackupDataStatsOutputMode }}"
+            fileCount: "{{ .Phases.BackupDataStatsFromObjectStore.Output.BackupDataStatsOutputFileCount }}"
+            size: "{{ .Phases.BackupDataStatsFromObjectStore.Output.BackupDataStatsOutputSize }}"
       phases:
-        - func: BackupData
+        - func: BackupDataStats
           name: BackupDataStatsFromObjectStore
           args:
             namespace: "{{ .Deployment.Namespace }}"
