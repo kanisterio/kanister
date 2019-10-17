@@ -931,11 +931,11 @@ Example:
       outputArtifacts:
         backupStats:
           keyValue:
-            fileCount: "{{ .Phases.DescribeBackupsFromObjectStore.Output.DescribeBackupsFileCount }}"
-            size: "{{ .Phases.DescribeBackupsFromObjectStore.Output.DescribeBackupsSize }}"
-            snapshotIDs: "{{ .Phases.DescribeBackupsFromObjectStore.Output.DescribeBackupsSnapshotIDs }}"
-            passwordIncorrect: "{{ .Phases.DescribeBackupsFromObjectStore.Output.DescribeBackupsPasswordIncorrect }}"
-            repoDoesNotExist: "{{ .Phases.DescribeBackupsFromObjectStore.Output.DescribeBackupsRepoDoesNotExist }}"
+            fileCount: "{{ .Phases.DescribeBackupsFromObjectStore.Output.fileCount }}"
+            size: "{{ .Phases.DescribeBackupsFromObjectStore.Output.size }}"
+            snapshotIDs: "{{ .Phases.DescribeBackupsFromObjectStore.snapshotIDs }}"
+            passwordIncorrect: "{{ .Phases.DescribeBackupsFromObjectStore.Output.passwordIncorrect }}"
+            repoDoesNotExist: "{{ .Phases.DescribeBackupsFromObjectStore.Output.repoDoesNotExist }}"
       phases:
         - func: DescribeBackups
           name: DescribeBackupsFromObjectStore
