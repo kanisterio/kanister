@@ -57,7 +57,7 @@ func main() {
 	log.Print("Getting kubernetes context")
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.WithError(err).Print("Failed to get k8s config. ")
+		log.WithError(err).Print("Failed to get k8s config")
 		return
 	}
 
