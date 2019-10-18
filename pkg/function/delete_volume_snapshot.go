@@ -60,19 +60,14 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 	// providerList required for unit testing
 	providerList := make(map[string]blockstorage.Provider)
 	for _, pvcInfo := range PVCData {
-		config := make(map[string]string)
 		if err = ValidateProfile(profile, pvcInfo.Type); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
-		switch pvcInfo.Type {
-		case blockstorage.TypeEBS:
+		config := getConfig(profile, pvcInfo.Type)
+		if pvcInfo.Type == blockstorage.TypeEBS {
 			config[awsconfig.ConfigRegion] = pvcInfo.Region
-			config[awsconfig.AccessKeyID] = profile.Credential.KeyPair.ID
-			config[awsconfig.SecretAccessKey] = profile.Credential.KeyPair.Secret
-		case blockstorage.TypeGPD:
-			config[blockstorage.GoogleProjectID] = profile.Credential.KeyPair.ID
-			config[blockstorage.GoogleServiceKey] = profile.Credential.KeyPair.Secret
 		}
+
 		provider, err := getter.Get(pvcInfo.Type, config)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not get storage provider")
