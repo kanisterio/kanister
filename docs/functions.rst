@@ -829,6 +829,118 @@ Example:
       namespace: "{{ .Deployment.Namespace }}"
       snapshots: "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}"
 
+BackupDataStats
+---------------
+
+This function get stats for the backed up data from the object store location
+
+.. note::
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that get the information from the object store.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `backupArtifactPrefix`, Yes, `string`, path to the object store location
+   `backupID`, Yes, `string`, unique snapshot id generated during backup
+   `mode`, No, `string`, mode in which stats are expected
+   `encryptionKey`, No, `string`, encryption key to be used for backups
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `mode`,`string`, mode of the output stats
+   `fileCount`,`string`, number of files in backup
+   `size`, `string`, size of the number of files in backup
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backupStats:
+      type: Deployment
+      outputArtifacts:
+        backupStats:
+          keyValue:
+            mode: "{{ .Phases.BackupDataStatsFromObjectStore.Output.mode }}"
+            fileCount: "{{ .Phases.BackupDataStatsFromObjectStore.Output.fileCount }}"
+            size: "{{ .Phases.BackupDataStatsFromObjectStore.Output.size }}"
+      phases:
+        - func: BackupDataStats
+          name: BackupDataStatsFromObjectStore
+          args:
+            namespace: "{{ .Deployment.Namespace }}"
+            backupArtifactPrefix: s3-bucket/path/artifactPrefix
+            mode: restore-size
+            backupID: "{{ .ArtifactsIn.snapshot.KeyValue.backupIdentifier }}"
+
+DescribeBackups
+---------------
+
+This function describes the backups for an object store location
+
+.. note::
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that get the information from the object store.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `backupArtifactPrefix`, Yes, `string`, path to the object store location
+   `encryptionKey`, No, `string`, encryption key to be used for backups
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `mode`,`string`, mode of the output stats
+   `fileCount`,`string`, number of files in backup object store location
+   `size`, `string`, size of the number of files in in backup object store location
+   `snapshotIDs`, `string`, list of snapshot ID in backup object store location
+   `passwordIncorrect`, `string`, true if encryption key is incorrect
+   `repoDoesNotExist`, `string`, true if object store location does not exist
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backupStats:
+      type: Deployment
+      outputArtifacts:
+        backupStats:
+          keyValue:
+            fileCount: "{{ .Phases.DescribeBackupsFromObjectStore.Output.fileCount }}"
+            size: "{{ .Phases.DescribeBackupsFromObjectStore.Output.size }}"
+            snapshotIDs: "{{ .Phases.DescribeBackupsFromObjectStore.snapshotIDs }}"
+            passwordIncorrect: "{{ .Phases.DescribeBackupsFromObjectStore.Output.passwordIncorrect }}"
+            repoDoesNotExist: "{{ .Phases.DescribeBackupsFromObjectStore.Output.repoDoesNotExist }}"
+      phases:
+        - func: DescribeBackups
+          name: DescribeBackupsFromObjectStore
+          args:
+            backupArtifactPrefix: s3-bucket/path/artifactPrefix
 
 Registering Functions
 ---------------------

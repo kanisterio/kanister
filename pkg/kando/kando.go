@@ -18,9 +18,10 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/version"
 )
 
@@ -29,7 +30,7 @@ import (
 func Execute() {
 	root := newRootCommand()
 	if err := root.Execute(); err != nil {
-		log.Errorf("%+v", err)
+		log.WithError(err).Print("Kando failed to execute")
 		os.Exit(1)
 	}
 }
@@ -43,7 +44,7 @@ func newRootCommand() *cobra.Command {
 	}
 
 	var v string
-	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", log.WarnLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
+	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", logrus.WarnLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 	rootCmd.PersistentPreRunE = func(*cobra.Command, []string) error {
 		return setLogLevel(v)
 	}
@@ -55,10 +56,10 @@ func newRootCommand() *cobra.Command {
 }
 
 func setLogLevel(v string) error {
-	l, err := log.ParseLevel(v)
+	l, err := logrus.ParseLevel(v)
 	if err != nil {
 		return errors.Wrap(err, "Invalid log level: "+v)
 	}
-	log.SetLevel(l)
+	logrus.SetLevel(l)
 	return nil
 }

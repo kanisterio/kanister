@@ -18,12 +18,12 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/version"
 )
 
@@ -42,11 +42,11 @@ var (
 func Execute() {
 	root := newRootCommand()
 	if err := root.Execute(); err != nil {
-		fmt := "%s"
 		if Verbose {
-			fmt = "%+v"
+			log.WithError(err).Print("Kanctl failed to execute")
+		} else {
+			log.Error().Print(err.Error())
 		}
-		log.Errorf(fmt, err)
 		os.Exit(1)
 	}
 }

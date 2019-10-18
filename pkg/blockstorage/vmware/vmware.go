@@ -63,6 +63,9 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	soapCli := soap.NewClient(u, true)
 	ctx := context.Background()
 	cli, err := vim25.NewClient(ctx, soapCli)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create VIM client")
+	}
 	req := types.Login{
 		This: *cli.ServiceContent.SessionManager,
 	}

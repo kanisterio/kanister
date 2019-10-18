@@ -48,8 +48,8 @@ func Debug() Logger {
 }
 
 // Print adds `msg` to the log at `InfoLevel`. It is a wrapper for `Info().Print(msg)`, since this is the most common use case.
-func Print(msg string) {
-	Info().Print(msg)
+func Print(msg string, fields ...field.M) {
+	Info().Print(msg, fields...)
 }
 
 func WithContext(ctx context.Context) Logger {
@@ -60,18 +60,25 @@ func WithError(err error) Logger {
 	return Info().WithError(err)
 }
 
-func (l *logger) Print(msg string) {
+func (l *logger) Print(msg string, fields ...field.M) {
 	logFields := make(logrus.Fields)
 	if ctxFields := field.FromContext(l.ctx); ctxFields != nil {
 		for _, cf := range ctxFields.Fields() {
 			logFields[cf.Key()] = cf.Value()
 		}
 	}
+
+	for _, f := range fields {
+		for k, v := range f {
+			logFields[k] = v
+		}
+	}
+
 	entry := log.WithFields(logFields)
 	if l.err != nil {
 		entry = entry.WithError(l.err)
 	}
-	entry.Log(logrus.Level(l.level), msg)
+	entry.Logln(logrus.Level(l.level), msg)
 }
 
 func (l *logger) WithContext(ctx context.Context) Logger {
