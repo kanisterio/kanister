@@ -64,8 +64,12 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 		Resource("pods").
 		Name(options.PodName).
 		Namespace(options.Namespace).
-		SubResource("exec").
-		Param("container", options.ContainerName)
+		SubResource("exec")
+
+	// Add container name if passed
+	if len(options.ContainerName) != 0 {
+		req.Param("container", options.ContainerName)
+	}
 	for _, c := range options.Command {
 		req.Param("command", c)
 	}
