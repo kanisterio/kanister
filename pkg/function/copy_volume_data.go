@@ -115,7 +115,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 		}
 		fileCount, backupSize := restic.SnapshotStatsFromBackupLog(stdout)
 		if backupSize == "" {
-			log.Error("Could not parse backup size from backup output")
+			log.Debug().Print("Could not parse backup stats from backup log")
 		}
 		return map[string]interface{}{
 				CopyVolumeDataOutputBackupID:               backupID,
