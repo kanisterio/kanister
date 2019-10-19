@@ -50,7 +50,7 @@ const (
 	BackupDataOutputBackupID = "backupID"
 	// BackupDataOutputBackupTag is the key used for returning backupTag output
 	BackupDataOutputBackupTag = "backupTag"
-	// BackupDataOutputBackupFileCount is the key used for returning backup size
+	// BackupDataOutputBackupFileCount is the key used for returning backup file count
 	BackupDataOutputBackupFileCount = "fileCount"
 	// BackupDataOutputBackupSize is the key used for returning backup size
 	BackupDataOutputBackupSize = "size"
