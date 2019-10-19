@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -44,6 +45,8 @@ const (
 	CopyVolumeDataEncryptionKeyArg             = "encryptionKey"
 	CopyVolumeDataOutputBackupTag              = "backupTag"
 	CopyVolumeDataPodOverrideArg               = "podOverride"
+	CopyVolumeDataOutputBackupFileCount        = "fileCount"
+	CopyVolumeDataOutputBackupSize             = "size"
 )
 
 func init() {
@@ -110,11 +113,17 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 		if backupID == "" {
 			return nil, errors.New("Failed to parse the backup ID from logs")
 		}
+		fileCount, backupSize := restic.SnapshotStatsFromBackupLog(stdout)
+		if backupSize == "" {
+			log.Error("Could not parse backup size from backup output")
+		}
 		return map[string]interface{}{
 				CopyVolumeDataOutputBackupID:               backupID,
 				CopyVolumeDataOutputBackupRoot:             mountPoint,
 				CopyVolumeDataOutputBackupArtifactLocation: targetPath,
 				CopyVolumeDataOutputBackupTag:              backupTag,
+				CopyVolumeDataOutputBackupFileCount:        fileCount,
+				CopyVolumeDataOutputBackupSize:             backupSize,
 			},
 			nil
 	}

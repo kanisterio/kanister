@@ -50,6 +50,10 @@ const (
 	BackupDataOutputBackupID = "backupID"
 	// BackupDataOutputBackupTag is the key used for returning backupTag output
 	BackupDataOutputBackupTag = "backupTag"
+	// BackupDataOutputBackupFileCount is the key used for returning backup size
+	BackupDataOutputBackupFileCount = "fileCount"
+	// BackupDataOutputBackupSize is the key used for returning backup size
+	BackupDataOutputBackupSize = "size"
 )
 
 func init() {
@@ -117,10 +121,10 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		return nil, errors.Wrapf(err, "Failed to backup data")
 	}
 	output := map[string]interface{}{
-		BackupDataOutputBackupID:       backupOutputs.backupID,
-		BackupDataOutputBackupTag:      backupOutputs.backupTag,
-		BackupDataStatsOutputFileCount: backupOutputs.fileCount,
-		BackupDataStatsOutputSize:      backupOutputs.backupSize,
+		BackupDataOutputBackupID:        backupOutputs.backupID,
+		BackupDataOutputBackupTag:       backupOutputs.backupTag,
+		BackupDataOutputBackupFileCount: backupOutputs.fileCount,
+		BackupDataOutputBackupSize:      backupOutputs.backupSize,
 	}
 	return output, nil
 }
