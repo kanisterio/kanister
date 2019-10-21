@@ -70,9 +70,5 @@ func assumeRole(ctx context.Context, accessKey, secretAccessKey, role string) (*
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to switch roles")
 	}
-	val, err := creds.Get()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get AWS credentials")
-	}
-	return &aws.Config{Credentials: credentials.NewStaticCredentials(val.AccessKeyID, val.SecretAccessKey, val.SessionToken)}, nil
+	return &aws.Config{Credentials: creds}, nil
 }

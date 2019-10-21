@@ -24,7 +24,7 @@ const (
 	// ConfigRole represents the key for the ARN of the role which can be assumed.
 	// It is optional.
 	ConfigRole         = "role"
-	assumeRoleDuration = 25 * time.Minute
+	assumeRoleDuration = 90 * time.Minute
 )
 
 // ValidateAWSCredentials validates secret has all necessary information
