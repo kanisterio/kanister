@@ -17,9 +17,12 @@ package kanister
 import (
 	"context"
 
+	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -59,8 +62,8 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 			if err != nil {
 				return nil, err
 			}
-			if err = checkRequiredArgs(funcs[ap.Func].RequiredArgs(), args); err != nil {
-				return nil, errors.Wrapf(err, "Reqired args missing for function %s", funcs[ap.Func].Name())
+			if err = checkRequiredArgs(p.f.RequiredArgs(), args); err != nil {
+				return nil, errors.Wrapf(err, "Reqired args missing for function %s", p.f.Name())
 			}
 			p.args = args
 		}
@@ -70,17 +73,26 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 }
 
 // GetPhases renders the returns a list of Phases with pre-rendered arguments.
-func GetPhases(bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) ([]*Phase, error) {
+func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.TemplateParams) ([]*Phase, error) {
 	a, ok := bp.Actions[action]
 	if !ok {
 		return nil, errors.Errorf("Action {%s} not found in action map", action)
 	}
+	defaultVersion := *semver.MustParse(DefaultVersion)
+	funcVersion := *semver.MustParse(version)
 	funcMu.RLock()
 	defer funcMu.RUnlock()
 	// We first check that all requested phases are registered.
 	for _, p := range a.Phases {
 		if _, ok := funcs[p.Func]; !ok {
 			return nil, errors.Errorf("Requested function {%s} has not been registered", p.Func)
+		}
+		if _, ok := funcs[p.Func][funcVersion]; !ok {
+			if _, ok := funcs[p.Func][defaultVersion]; !ok {
+				return nil, errors.Errorf("Requested function {%s} has not been registered with version {%s} or the default version {%s}", p.Func, version, DefaultVersion)
+			}
+			log.Info().Print("Falling back to default version of the function", field.M{"Function": p.Func, "CurrentVersion": version, "DefaultVersion": DefaultVersion})
+			funcVersion = defaultVersion
 		}
 	}
 	phases := make([]*Phase, 0, len(a.Phases))
@@ -92,7 +104,7 @@ func GetPhases(bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) 
 		phases = append(phases, &Phase{
 			name:    p.Name,
 			objects: objs,
-			f:       funcs[p.Func],
+			f:       funcs[p.Func][funcVersion],
 		})
 	}
 	return phases, nil

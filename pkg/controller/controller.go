@@ -381,7 +381,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	if err != nil {
 		return err
 	}
-	phases, err := kanister.GetPhases(*bp, action.Name, *tp)
+	phases, err := kanister.GetPhases(*bp, action.Name, action.Version, *tp)
 	if err != nil {
 		return err
 	}
