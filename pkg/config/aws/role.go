@@ -25,8 +25,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// SwitchRole assumes role with given credentials.
-// Temporary credentials will be valid for 'duration'.
+// SwitchRole func uses credentials API to automatically generates New Credentials for a given role.
 func SwitchRole(ctx context.Context, accessKeyID string, secretAccessKey string, role string, duration time.Duration) (*credentials.Credentials, error) {
 	creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")
 	sess, err := session.NewSession(aws.NewConfig().WithCredentials(creds))

@@ -43,15 +43,15 @@ const (
 func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Config, region string, err error) {
 	region, ok := config[ConfigRegion]
 	if !ok {
-		return nil, "", errors.New("region required for storage type EBS")
+		return nil, "", errors.New("region required for storage type EBS/EFS")
 	}
 	accessKey, ok := config[AccessKeyID]
 	if !ok {
-		return nil, "", errors.New("AWS_ACCESS_KEY_ID required for storage type EBS")
+		return nil, "", errors.New("AWS_ACCESS_KEY_ID required for storage type EBS/EFS")
 	}
 	secretAccessKey, ok := config[SecretAccessKey]
 	if !ok {
-		return nil, "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS")
+		return nil, "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS/EFS")
 	}
 	role := config[ConfigRole]
 	if role != "" {
