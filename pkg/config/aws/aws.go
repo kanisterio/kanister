@@ -39,7 +39,7 @@ const (
 	assumeRoleDuration = 25 * time.Minute
 )
 
-// GetConfig returns a configuration to establish AWS connection, connected region name and the role to assume if it exists.
+// GetConfig returns a configuration to establish AWS connection and connected region name.
 func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Config, region string, err error) {
 	region, ok := config[ConfigRegion]
 	if !ok {
