@@ -21,12 +21,12 @@ import (
 
 	json "github.com/json-iterator/go"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
@@ -85,7 +85,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 // DeletePod deletes the specified pod
 func DeletePod(ctx context.Context, cli kubernetes.Interface, pod *v1.Pod) error {
 	if err := cli.CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil); err != nil {
-		log.Errorf("DeletePod failed: %v", err)
+		log.WithError(err).Print("DeletePod failed")
 	}
 	return nil
 }

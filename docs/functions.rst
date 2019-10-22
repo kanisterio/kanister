@@ -49,7 +49,7 @@ KubeExec is similar to running
 
    `namespace`, Yes, `string`, namespace in which to execute
    `pod`, Yes, `string`, name of the pod in which to execute
-   `container`, Yes, `string`, name of the container in which to execute
+   `container`, No , `string`, (required if pod contains more than 1 container) name of the container in which to execute
    `command`, Yes, `[]string`,  command list to execute
 
 Example:
@@ -885,6 +885,62 @@ Example:
             backupArtifactPrefix: s3-bucket/path/artifactPrefix
             mode: restore-size
             backupID: "{{ .ArtifactsIn.snapshot.KeyValue.backupIdentifier }}"
+
+DescribeBackups
+---------------
+
+This function describes the backups for an object store location
+
+.. note::
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that get the information from the object store.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `backupArtifactPrefix`, Yes, `string`, path to the object store location
+   `encryptionKey`, No, `string`, encryption key to be used for backups
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `mode`,`string`, mode of the output stats
+   `fileCount`,`string`, number of files in backup object store location
+   `size`, `string`, size of the number of files in in backup object store location
+   `snapshotIDs`, `string`, list of snapshot ID in backup object store location
+   `passwordIncorrect`, `string`, true if encryption key is incorrect
+   `repoDoesNotExist`, `string`, true if object store location does not exist
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backupStats:
+      type: Deployment
+      outputArtifacts:
+        backupStats:
+          keyValue:
+            fileCount: "{{ .Phases.DescribeBackupsFromObjectStore.Output.fileCount }}"
+            size: "{{ .Phases.DescribeBackupsFromObjectStore.Output.size }}"
+            snapshotIDs: "{{ .Phases.DescribeBackupsFromObjectStore.snapshotIDs }}"
+            passwordIncorrect: "{{ .Phases.DescribeBackupsFromObjectStore.Output.passwordIncorrect }}"
+            repoDoesNotExist: "{{ .Phases.DescribeBackupsFromObjectStore.Output.repoDoesNotExist }}"
+      phases:
+        - func: DescribeBackups
+          name: DescribeBackupsFromObjectStore
+          args:
+            backupArtifactPrefix: s3-bucket/path/artifactPrefix
 
 Registering Functions
 ---------------------

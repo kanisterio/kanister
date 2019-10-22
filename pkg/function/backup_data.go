@@ -19,7 +19,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 
@@ -29,6 +28,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
@@ -50,6 +50,10 @@ const (
 	BackupDataOutputBackupID = "backupID"
 	// BackupDataOutputBackupTag is the key used for returning backupTag output
 	BackupDataOutputBackupTag = "backupTag"
+	// BackupDataOutputBackupFileCount is the key used for returning backup file count
+	BackupDataOutputBackupFileCount = "fileCount"
+	// BackupDataOutputBackupSize is the key used for returning backup size
+	BackupDataOutputBackupSize = "size"
 )
 
 func init() {
@@ -117,10 +121,10 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		return nil, errors.Wrapf(err, "Failed to backup data")
 	}
 	output := map[string]interface{}{
-		BackupDataOutputBackupID:       backupOutputs.backupID,
-		BackupDataOutputBackupTag:      backupOutputs.backupTag,
-		BackupDataStatsOutputFileCount: backupOutputs.fileCount,
-		BackupDataStatsOutputSize:      backupOutputs.backupSize,
+		BackupDataOutputBackupID:        backupOutputs.backupID,
+		BackupDataOutputBackupTag:       backupOutputs.backupTag,
+		BackupDataOutputBackupFileCount: backupOutputs.fileCount,
+		BackupDataOutputBackupSize:      backupOutputs.backupSize,
 	}
 	return output, nil
 }
@@ -167,7 +171,7 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 	// Get the file count and size of the backup from log
 	fileCount, backupSize := restic.SnapshotStatsFromBackupLog(stdout)
 	if fileCount == "" || backupSize == "" {
-		log.Debug("Could not parse backup stats from backup log")
+		log.Debug().Print("Could not parse backup stats from backup log")
 	}
 	return backupDataParsedOutput{
 		backupID:   backupID,
@@ -189,7 +193,7 @@ func getPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podN
 func cleanUpCredsFile(ctx context.Context, pw *kube.PodWriter, namespace, podName, containerName string) {
 	if pw != nil {
 		if err := pw.Remove(ctx, namespace, podName, containerName); err != nil {
-			log.WithContext(ctx).Error("Could not delete the temp file")
+			log.Error().WithContext(ctx).Print("Could not delete the temp file")
 		}
 	}
 }
