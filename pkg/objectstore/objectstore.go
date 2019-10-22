@@ -31,6 +31,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/config/aws"
 )
 
+const assumeRoleDuration = 90 * time.Minute
+
 // Provider abstracts actions on cloud provider bucket
 type Provider interface {
 	// CreateBucket creates a new bucket. Bucket name must
@@ -131,13 +133,13 @@ func s3Config(ctx context.Context, config ProviderConfig, secret *Secret, region
 			return "", nil, errors.Errorf("%s environment not set", aws.SecretAccessKey)
 		}
 		if role, ok := os.LookupEnv(aws.ConfigRole); ok {
-			creds, err := aws.SwitchRole(ctx, awsAccessKeyID, awsSecretAccessKey, role)
+			creds, err := aws.SwitchRole(ctx, awsAccessKeyID, awsSecretAccessKey, role, assumeRoleDuration)
 			if err != nil {
-				return nil, err
+				return "", nil, err
 			}
 			val, err := creds.Get()
 			if err != nil {
-				return nil, errors.Wrap(err, "Failed to get AWS credentials")
+				return "", nil, errors.Wrap(err, "Failed to get AWS credentials")
 			}
 			awsAccessKeyID = val.AccessKeyID
 			awsSecretAccessKey = val.SecretAccessKey

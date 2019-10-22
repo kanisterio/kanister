@@ -86,6 +86,10 @@ func newEC2Client(awsRegion string, config *aws.Config) (*EC2, error) {
 }
 
 func (s *ebsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
+	err := s.refreshCreds()
+	if err != nil {
+		return nil, err
+	}
 	cvi := &ec2.CreateVolumeInput{
 		AvailabilityZone: aws.String(volume.Az),
 		VolumeType:       aws.String(string(volume.VolumeType)),
@@ -111,6 +115,10 @@ func (s *ebsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 }
 
 func (s *ebsStorage) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
+	err := s.refreshCreds()
+	if err != nil {
+		return nil, err
+	}
 	volIDs := []*string{aws.String(id)}
 	dvi := &ec2.DescribeVolumesInput{VolumeIds: volIDs}
 	dvo, err := s.ec2Cli.DescribeVolumesWithContext(ctx, dvi)
@@ -153,6 +161,10 @@ func (s *ebsStorage) volumeParse(ctx context.Context, volume interface{}) *block
 }
 
 func (s *ebsStorage) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
+	err := s.refreshCreds()
+	if err != nil {
+		return nil, err
+	}
 	var vols []*blockstorage.Volume
 	var fltrs []*ec2.Filter
 	dvi := &ec2.DescribeVolumesInput{}
@@ -195,6 +207,10 @@ func (s *ebsStorage) snapshotParse(ctx context.Context, snap *ec2.Snapshot) *blo
 }
 
 func (s *ebsStorage) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
+	err := s.refreshCreds()
+	if err != nil {
+		return nil, err
+	}
 	var snaps []*blockstorage.Snapshot
 	var fltrs []*ec2.Filter
 	dsi := &ec2.DescribeSnapshotsInput{}
@@ -217,6 +233,10 @@ func (s *ebsStorage) SnapshotsList(ctx context.Context, tags map[string]string) 
 // SnapshotCopy copies snapshot 'from' to 'to'. Follows aws restrictions regarding encryption;
 // i.e., copying unencrypted to encrypted snapshot is allowed but not vice versa.
 func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
+	err := s.refreshCreds()
+	if err != nil {
+		return nil, err
+	}
 	if to.Region == "" {
 		return nil, errors.New("Destination snapshot AvailabilityZone must be specified")
 	}
@@ -294,6 +314,10 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 }
 
 func (s *ebsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
+	err := s.refreshCreds()
+	if err != nil {
+		return nil, err
+	}
 	// Snapshot the EBS volume
 	csi := (&ec2.CreateSnapshotInput{}).SetVolumeId(volume.ID)
 	csi.SetTagSpecifications([]*ec2.TagSpecification{
@@ -324,6 +348,10 @@ func (s *ebsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 }
 
 func (s *ebsStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
+	err := s.refreshCreds()
+	if err != nil {
+		return err
+	}
 	if s.ec2Cli.DryRun {
 		return nil
 	}
@@ -334,11 +362,15 @@ func (s *ebsStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *
 }
 
 func (s *ebsStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
+	err := s.refreshCreds()
+	if err != nil {
+		return err
+	}
 	log.Infof("EBS Snapshot ID %s", snapshot.ID)
 	rmsi := &ec2.DeleteSnapshotInput{}
 	rmsi.SetSnapshotId(snapshot.ID)
 	rmsi.SetDryRun(s.ec2Cli.DryRun)
-	_, err := s.ec2Cli.DeleteSnapshotWithContext(ctx, rmsi)
+	_, err = s.ec2Cli.DeleteSnapshotWithContext(ctx, rmsi)
 	if isSnapNotFoundErr(err) {
 		// If the snapshot is already deleted, we log, but don't return an error.
 		log.Debugf("Snapshot already deleted")
@@ -351,6 +383,10 @@ func (s *ebsStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.
 }
 
 func (s *ebsStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
+	err := s.refreshCreds()
+	if err != nil {
+		return nil, err
+	}
 	snaps, err := getSnapshots(ctx, s.ec2Cli, []*string{&id})
 	if err != nil {
 		return nil, err
@@ -365,10 +401,14 @@ func (s *ebsStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.
 }
 
 func (s *ebsStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
+	err := s.refreshCreds()
+	if err != nil {
+		return err
+	}
 	rmvi := &ec2.DeleteVolumeInput{}
 	rmvi.SetVolumeId(volume.ID)
 	rmvi.SetDryRun(s.ec2Cli.DryRun)
-	_, err := s.ec2Cli.DeleteVolumeWithContext(ctx, rmvi)
+	_, err = s.ec2Cli.DeleteVolumeWithContext(ctx, rmvi)
 	if isVolNotFoundErr(err) {
 		// If the volume is already deleted, we log, but don't return an error.
 		log.Debugf("Volume already deleted")
@@ -401,6 +441,10 @@ func setResourceTags(ctx context.Context, ec2Cli *EC2, resourceID string, tags m
 }
 
 func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
+	err := s.refreshCreds()
+	if err != nil {
+		return nil, err
+	}
 	if snapshot.Volume == nil {
 		return nil, errors.New("Snapshot volume information not available")
 	}
@@ -626,6 +670,14 @@ func (s *ebsStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *block
 		return false, nil, err
 	}
 	return false, map[string][]string{snapshot.Region: zl}, nil
+}
+
+func (s *ebsStorage) refreshCreds() error {
+	if s.role != "" {
+		_, err := s.ec2Cli.Config.Credentials.Get()
+		return errors.Wrap(err, "Failed to retrieve/refresh creds")
+	}
+	return nil
 }
 
 func staticRegionToZones(region string) ([]string, error) {
