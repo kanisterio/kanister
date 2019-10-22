@@ -532,7 +532,7 @@ func (s *DataSuite) TestCopyData(c *C) {
 }
 
 func runAction(c *C, bp crv1alpha1.Blueprint, action string, tp *param.TemplateParams) map[string]interface{} {
-	phases, err := kanister.GetPhases(bp, action, *tp)
+	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, *tp)
 	c.Assert(err, IsNil)
 	out := make(map[string]interface{})
 	for _, p := range phases {
