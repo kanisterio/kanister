@@ -20,10 +20,11 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crclient "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controller"
@@ -145,6 +146,7 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 						Name:      p.GetName(),
 						Namespace: s.namespace,
 					},
+					Version: kanister.DefaultVersion,
 				},
 			},
 		},
@@ -268,6 +270,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 					PodOverride: map[string]interface{}{
 						"dnsPolicy": "ClusterFirst",
 					},
+					Version: kanister.DefaultVersion,
 				},
 			},
 		},
