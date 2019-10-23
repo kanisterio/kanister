@@ -44,6 +44,9 @@ const (
 	ActionSetResourceNamePlural = "actionsets"
 )
 
+// JSONMap contains PodOverride specs.
+type JSONMap sp.JSONMap
+
 var _ runtime.Object = (*ActionSet)(nil)
 
 // +genclient
@@ -101,7 +104,7 @@ type ActionSpec struct {
 	Profile *ObjectReference `json:"profile"`
 	// PodOverride is used to specify pod specs that will override the
 	// default pod specs
-	PodOverride sp.JSONMap `json:"podOverride,omitempty"`
+	PodOverride JSONMap `json:"podOverride,omitempty"`
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
 	Options map[string]string `json:"options"`

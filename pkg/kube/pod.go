@@ -26,6 +26,7 @@ import (
 	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -38,7 +39,7 @@ type PodOptions struct {
 	Command            []string
 	Volumes            map[string]string
 	ServiceAccountName string
-	PodOverride        sp.JSONMap
+	PodOverride        crv1alpha1.JSONMap
 }
 
 // CreatePod creates a pod with a single container based on the specified image
@@ -146,7 +147,7 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 }
 
 // use Strategic Merge to patch default pod specs with the passed specs
-func patchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override sp.JSONMap) (v1.PodSpec, error) {
+func patchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override crv1alpha1.JSONMap) (v1.PodSpec, error) {
 	// Merge default specs and override specs with StrategicMergePatch
 	mergedPatch, err := strategicMergeJsonPatch(defaultPodSpecs, override)
 	if err != nil {
@@ -163,7 +164,7 @@ func patchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override sp.JSONMap) (v1.P
 }
 
 // CreateAndMergeJsonPatch uses Strategic Merge to merge two Pod spec configuration
-func CreateAndMergeJsonPatch(original, override sp.JSONMap) (sp.JSONMap, error) {
+func CreateAndMergeJsonPatch(original, override crv1alpha1.JSONMap) (crv1alpha1.JSONMap, error) {
 	// Merge json specs with StrategicMerge
 	mergedPatch, err := strategicMergeJsonPatch(original, override)
 	if err != nil {

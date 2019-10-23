@@ -17,8 +17,7 @@ package function
 import (
 	. "gopkg.in/check.v1"
 
-	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
-
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -179,7 +178,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 			args: map[string]interface{}{
 				RestoreDataPodArg:              "some-pod",
 				RestoreDataBackupIdentifierArg: "backup123",
-				RestoreDataPodOverrideArg: sp.JSONMap{
+				RestoreDataPodOverrideArg: crv1alpha1.JSONMap{
 					"containers": []map[string]interface{}{
 						{
 							"name":    "container",
@@ -190,7 +189,7 @@ func (s *RestoreDataTestSuite) TestValidateAndGetOptArgs(c *C) {
 			},
 			errChecker: IsNil,
 			tp: param.TemplateParams{
-				PodOverride: sp.JSONMap{
+				PodOverride: crv1alpha1.JSONMap{
 					"dnsPolicy": "ClusterFirst",
 				},
 			},
