@@ -115,8 +115,9 @@ type ActionSpec struct {
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
 type ActionSetStatus struct {
-	State   State          `json:"state"`
-	Actions []ActionStatus `json:"actions"`
+	State     State          `json:"state"`
+	Actions   []ActionStatus `json:"actions"`
+	ErrorLogs []string       `json:"errorLogs"`
 }
 
 // ActionStatus is updated as we execute phases.
