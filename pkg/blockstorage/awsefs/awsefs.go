@@ -97,7 +97,7 @@ func (e *efs) Type() blockstorage.Type {
 // to AWS EFS and waits until the file system is available. Eventually, it returns the
 // volume info that is sent back from the AWS EFS.
 func (e *efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
-	err := s.refreshCreds()
+	err := e.refreshCreds()
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (e *efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*bl
 }
 
 func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
-	err := s.refreshCreds()
+	err := e.refreshCreds()
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func (e *efs) getBackupTags(ctx context.Context, arn string) (map[string]string,
 }
 
 func (e *efs) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
-	err := s.refreshCreds()
+	err := e.refreshCreds()
 	if err != nil {
 		return err
 	}
@@ -339,7 +339,7 @@ func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetD
 }
 
 func (e *efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
-	err := s.refreshCreds()
+	err := e.refreshCreds()
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +355,7 @@ func (e *efs) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to b
 }
 
 func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	err := s.refreshCreds()
+	err := e.refreshCreds()
 	if err != nil {
 		return nil, err
 	}
@@ -414,15 +414,15 @@ func (e *efs) createK10DefaultBackupVault() error {
 }
 
 func (e *efs) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blockstorage.Snapshot) error {
-	err := s.refreshCreds()
+	err := e.refreshCreds()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	return e.waitUntilRecoveryPointCompleted(ctx, snapshot.ID)
 }
 
 func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
-	err := s.refreshCreds()
+	err := e.refreshCreds()
 	if err != nil {
 		return err
 	}
@@ -435,7 +435,7 @@ func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapsho
 }
 
 func (e *efs) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
-	err := s.refreshCreds()
+	err := e.refreshCreds()
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +497,7 @@ func (e *efs) setEFSTags(ctx context.Context, id string, tags map[string]string)
 }
 
 func (e *efs) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
-	err := s.refreshCreds()
+	err := e.refreshCreds()
 	if err != nil {
 		return nil, err
 	}
@@ -515,7 +515,7 @@ func (e *efs) VolumesList(ctx context.Context, tags map[string]string, zone stri
 }
 
 func (e *efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
-	err := s.refreshCreds()
+	err := e.refreshCreds()
 	if err != nil {
 		return nil, err
 	}
@@ -565,12 +565,12 @@ func (e *efs) snapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.Rec
 	return result, nil
 }
 
-func (s *efs) refreshCreds() error {
-	if s.role != "" {
-		if _, err := s.EFS.Config.Credentials.Get(); err != nil {
+func (e *efs) refreshCreds() error {
+	if e.role != "" {
+		if _, err := e.EFS.Config.Credentials.Get(); err != nil {
 			return errors.Wrap(err, "Failed to retrieve/refresh creds")
 		}
-		s.Backup.Config.Credentials = s.EFS.Config.Credentials
+		e.Backup.Config.Credentials = e.EFS.Config.Credentials
 	}
 	return nil
 }
