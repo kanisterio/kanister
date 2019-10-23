@@ -27,6 +27,7 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
@@ -44,6 +45,8 @@ const (
 	CopyVolumeDataEncryptionKeyArg             = "encryptionKey"
 	CopyVolumeDataOutputBackupTag              = "backupTag"
 	CopyVolumeDataPodOverrideArg               = "podOverride"
+	CopyVolumeDataOutputBackupFileCount        = "fileCount"
+	CopyVolumeDataOutputBackupSize             = "size"
 )
 
 func init() {
@@ -110,11 +113,17 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 		if backupID == "" {
 			return nil, errors.New("Failed to parse the backup ID from logs")
 		}
+		fileCount, backupSize := restic.SnapshotStatsFromBackupLog(stdout)
+		if backupSize == "" {
+			log.Debug().Print("Could not parse backup stats from backup log")
+		}
 		return map[string]interface{}{
 				CopyVolumeDataOutputBackupID:               backupID,
 				CopyVolumeDataOutputBackupRoot:             mountPoint,
 				CopyVolumeDataOutputBackupArtifactLocation: targetPath,
 				CopyVolumeDataOutputBackupTag:              backupTag,
+				CopyVolumeDataOutputBackupFileCount:        fileCount,
+				CopyVolumeDataOutputBackupSize:             backupSize,
 			},
 			nil
 	}

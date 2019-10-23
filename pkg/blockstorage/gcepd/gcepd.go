@@ -25,7 +25,6 @@ import (
 	"github.com/jpillora/backoff"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -33,6 +32,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
@@ -145,7 +146,7 @@ func (s *gpdStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volu
 		op, err = s.service.Disks.Delete(s.project, volume.Az, volume.ID).Context(ctx).Do()
 	}
 	if isNotFoundError(err) {
-		log.Debugf("Cannot delete volume with id:%s Volume not found. ", volume.ID)
+		log.Debug().Print("Cannot delete volume.", field.M{"VolumeID": volume.ID, "reason": "Volume not found"})
 		return nil
 	}
 	if err != nil {
@@ -214,7 +215,7 @@ func (s *gpdStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *
 func (s *gpdStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
 	op, err := s.service.Snapshots.Delete(s.project, snapshot.ID).Context(ctx).Do()
 	if isNotFoundError(err) {
-		log.Debugf("Cannot delete snapshot with id:%s Snapshot not found. ", snapshot.ID)
+		log.Debug().Print("Cannot delete snapshot", field.M{"SnapshotID": snapshot.ID, "reason": "Snapshot not found"})
 		return nil
 	}
 	if err != nil {
@@ -236,7 +237,7 @@ func (s *gpdStorage) volumeParse(ctx context.Context, volume interface{}, zone s
 	vol := volume.(*compute.Disk)
 	volCreationTime, err := time.Parse(time.RFC3339, vol.CreationTimestamp)
 	if err != nil {
-		log.Errorf("Cannot parse GCP Disk timestamp")
+		log.Error().Print("Cannot parse GCP Disk timestamp")
 
 	}
 
@@ -266,7 +267,7 @@ func (s *gpdStorage) snapshotParse(ctx context.Context, snap *compute.Snapshot) 
 	}
 	snapCreationTIme, err := time.Parse(time.RFC3339, snap.CreationTimestamp)
 	if err != nil {
-		log.Errorf("Cannot parse GCP Snapshot timestamp")
+		log.Error().Print("Cannot parse GCP Snapshot timestamp")
 	}
 	// TODO: fix getting region from zone
 	return &blockstorage.Snapshot{
@@ -493,10 +494,10 @@ func (s *gpdStorage) waitOnOperation(ctx context.Context, op *compute.Operation,
 				}
 				return false, errors.Errorf("%s", errJSON)
 			}
-			log.Infof("Operation %s done", op.OperationType)
+			log.Print("Operation done", field.M{"OperationType": op.OperationType})
 			return true, nil
 		case operationPending, operationRunning:
-			log.Debugf("Operation %s status: %s %s progress %d", op.OperationType, op.Status, op.StatusMessage, op.Progress)
+			log.Debug().Print("Operation status update", field.M{"Operation": op.OperationType, "Status": op.Status, "Status message": op.StatusMessage, "Progress": op.Progress})
 			return false, nil
 		default:
 			return false, errors.Errorf("Unknown operation status")
@@ -521,10 +522,10 @@ func (s *gpdStorage) waitOnSnapshotID(ctx context.Context, id string) error {
 			return false, errors.New("Snapshot GCP volume failed")
 		}
 		if snap.Status == "READY" {
-			log.Infof("Snapshot with snapshot_id: %s completed", id)
+			log.Print("Snapshot completed", field.M{"SnapshotID": id})
 			return true, nil
 		}
-		log.Debugf("Snapshot status: snapshot_id: %s, status: %s", id, snap.Status)
+		log.Debug().Print("Snapshot status", field.M{"snapshot_id": id, "status": snap.Status})
 		return false, nil
 	})
 }

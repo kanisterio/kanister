@@ -85,7 +85,7 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = Arg(args, KubeExecPodNameArg, &pod); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, KubeExecContainerNameArg, &container); err != nil {
+	if err = OptArg(args, KubeExecContainerNameArg, &container, ""); err != nil {
 		return nil, err
 	}
 	if err = Arg(args, KubeExecCommandArg, &cmd); err != nil {
@@ -105,5 +105,5 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 }
 
 func (*kubeExecFunc) RequiredArgs() []string {
-	return []string{KubeExecNamespaceArg, KubeExecPodNameArg, KubeExecContainerNameArg, KubeExecCommandArg}
+	return []string{KubeExecNamespaceArg, KubeExecPodNameArg, KubeExecCommandArg}
 }
