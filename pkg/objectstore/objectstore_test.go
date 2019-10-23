@@ -30,6 +30,8 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/config/aws"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -51,8 +53,9 @@ const (
 )
 
 var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeS3, region: testRegionS3})
-var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeGCS, region: ""})
-var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeAzure, region: ""})
+
+// var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeGCS, region: ""})
+// var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeAzure, region: ""})
 
 func (s *ObjectStoreProviderSuite) SetUpSuite(c *C) {
 	switch s.osType {
@@ -73,7 +76,7 @@ func (s *ObjectStoreProviderSuite) SetUpSuite(c *C) {
 
 	s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	pc := ProviderConfig{Type: s.osType}
-	secret := getSecret(c, s.osType)
+	secret := getSecret(c, ctx, s.osType)
 	s.provider, err = NewProvider(ctx, pc, secret)
 	c.Check(err, IsNil)
 	c.Assert(s.provider, NotNil)
@@ -447,15 +450,27 @@ func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
 	}
 }
 
-func getSecret(c *C, osType ProviderType) *Secret {
+func getSecret(c *C, ctx context.Context, osType ProviderType) *Secret {
 	secret := &Secret{}
 	switch osType {
 	case ProviderTypeS3:
 		secret.Type = SecretTypeAwsAccessKey
+		awsAccessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
+		awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+		var awsSessionToken string
+		if role, ok := os.LookupEnv(aws.ConfigRole); ok {
+			creds, err := aws.SwitchRole(ctx, awsAccessKeyID, awsSecretAccessKey, role, assumeRoleDuration)
+			c.Check(err, IsNil)
+			val, err := creds.Get()
+			c.Check(err, IsNil)
+			awsAccessKeyID = val.AccessKeyID
+			awsSecretAccessKey = val.SecretAccessKey
+			awsSessionToken = val.SessionToken
+		}
 		secret.Aws = &SecretAws{
-			AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
-			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
-			SessionToken:    os.Getenv("AWS_SESSION_TOKEN"),
+			AccessKeyID:     awsAccessKeyID,
+			SecretAccessKey: awsSecretAccessKey,
+			SessionToken:    awsSessionToken,
 		}
 		c.Check(secret.Aws.AccessKeyID, Not(Equals), "")
 		c.Check(secret.Aws.SecretAccessKey, Not(Equals), "")
