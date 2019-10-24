@@ -421,7 +421,8 @@ func checkNoItemsWithPrefix(c *C, cont stow.Container, prefix string) {
 }
 
 func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
-	if s.osType != ProviderTypeS3 {
+	role := os.Getenv(aws.ConfigRole)
+	if s.osType != ProviderTypeS3 || role != "" {
 		c.Skip("Test only applicable to S3")
 	}
 	ctx := context.Background()
