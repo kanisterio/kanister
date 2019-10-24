@@ -1,9 +1,13 @@
 package secrets
 
 import (
+	"context"
+
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/kanisterio/kanister/pkg/config"
 )
 
 type AWSSecretSuite struct{}
@@ -27,22 +31,6 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 			expected: &credentials.Value{
 				AccessKeyID:     "key_id",
 				SecretAccessKey: "secret_key",
-			},
-			errChecker: IsNil,
-		},
-		{
-			secret: &v1.Secret{
-				Type: v1.SecretType(AWSSecretType),
-				Data: map[string][]byte{
-					AWSAccessKeyID:     []byte("key_id"),
-					AWSSecretAccessKey: []byte("secret_key"),
-					AWSSessionToken:    []byte("session_token"),
-				},
-			},
-			expected: &credentials.Value{
-				AccessKeyID:     "key_id",
-				SecretAccessKey: "secret_key",
-				SessionToken:    "session_token",
 			},
 			errChecker: IsNil,
 		},
@@ -87,8 +75,41 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 		},
 	}
 	for _, tc := range tcs {
-		creds, err := ExtractAWSCredentials(tc.secret)
+		creds, err := ExtractAWSCredentials(context.Background(), tc.secret)
 		c.Check(creds, DeepEquals, tc.expected)
 		c.Check(err, tc.errChecker)
+	}
+}
+
+func (s *AWSSecretSuite) TestExtractAWSCredentialsWithSessionToken(c *C) {
+	for _, tc := range []struct {
+		secret *v1.Secret
+		output Checker
+	}{
+		{
+			secret: &v1.Secret{
+				Type: v1.SecretType(AWSSecretType),
+				Data: map[string][]byte{
+					AWSAccessKeyID:     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
+					AWSSecretAccessKey: []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
+					ConfigRole:         []byte(config.GetEnvOrSkip(c, "role")),
+				},
+			},
+			output: IsNil,
+		},
+		{
+			secret: &v1.Secret{
+				Type: v1.SecretType(AWSSecretType),
+				Data: map[string][]byte{
+					AWSAccessKeyID:     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
+					AWSSecretAccessKey: []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
+					ConfigRole:         []byte("arn:aws:iam::000000000000:role/test-fake-role"),
+				},
+			},
+			output: NotNil,
+		},
+	} {
+		_, err := ExtractAWSCredentials(context.Background(), tc.secret)
+		c.Check(err, tc.output)
 	}
 }

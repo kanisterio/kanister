@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/backup"
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
@@ -39,6 +38,7 @@ type efs struct {
 	*backup.Backup
 	accountID string
 	region    string
+	role      string
 }
 
 var _ blockstorage.Provider = (*efs)(nil)
@@ -60,8 +60,8 @@ const (
 )
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
-func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, role, err := awsconfig.GetConfig(config)
+func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
+	awsConfig, region, err := awsconfig.GetConfig(ctx, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get configuration for EFS")
 	}
@@ -78,17 +78,14 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 		return nil, errors.New("Account ID is empty")
 	}
 	accountID := *user.Account
-	creds := awsConfig.Credentials
-	if role != "" {
-		creds = stscreds.NewCredentials(s, role)
-	}
-	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
-	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
+	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
+	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
 	return &efs{
 		EFS:       efsCli,
 		Backup:    backupCli,
 		region:    region,
 		accountID: accountID,
+		role:      config[awsconfig.ConfigRole],
 	}, nil
 }
 

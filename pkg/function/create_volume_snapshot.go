@@ -36,6 +36,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 func init() {
@@ -79,30 +80,20 @@ type volumeInfo struct {
 }
 
 func ValidateProfile(profile *param.Profile, sType blockstorage.Type) error {
-	if profile == nil {
-		return errors.New("Profile must be non-nil")
-	}
-
-	if profile.Credential.Type != param.CredentialTypeKeyPair {
-		return errors.New("Credential type not supported")
-	}
-	if len(profile.Credential.KeyPair.ID) == 0 {
-		return errors.New("Access key ID is not set")
-	}
-	if len(profile.Credential.KeyPair.Secret) == 0 {
-		return errors.New("Secret access key is not set")
+	if err := validateProfile(profile); err != nil {
+		return errors.Wrapf(err, "Profile Validation failed")
 	}
 	switch sType {
 	case blockstorage.TypeEBS:
 		if profile.Location.Type != crv1alpha1.LocationTypeS3Compliant {
-			return errors.Errorf("Location type %s not supported", profile.Location.Type)
+			return errors.Errorf("Location type %s not supported for blockstorage type %s", profile.Location.Type, sType)
 		}
 		if len(profile.Location.Region) == 0 {
-			return errors.New("Region is not set")
+			return errors.Errorf("Region is not set. Required for blockstorage type %s", sType)
 		}
 	case blockstorage.TypeGPD:
 		if profile.Location.Type != crv1alpha1.LocationTypeGCS {
-			return errors.Errorf("Location type %s not supported ", profile.Location.Type)
+			return errors.Errorf("Location type %s not supported for blockstorage type %s", profile.Location.Type, sType)
 		}
 	}
 	return nil
@@ -201,7 +192,6 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 	}
 	// Check to see which provider is the source. Spec mandates only one of the provider
 	// fields will be set
-	config := make(map[string]string)
 	switch {
 	case pv.Spec.AWSElasticBlockStore != nil:
 		ebs := pv.Spec.AWSElasticBlockStore
@@ -218,9 +208,8 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 			}
 		}
 		if pvZone, ok := pvLabels[kubevolume.PVZoneLabelName]; ok {
+			config := getConfig(tp.Profile, blockstorage.TypeEBS)
 			config[awsconfig.ConfigRegion] = region
-			config[awsconfig.AccessKeyID] = tp.Profile.Credential.KeyPair.ID
-			config[awsconfig.SecretAccessKey] = tp.Profile.Credential.KeyPair.Secret
 			provider, err = getter.Get(blockstorage.TypeEBS, config)
 			if err != nil {
 				return nil, errors.Wrap(err, "Could not get storage provider")
@@ -236,8 +225,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
 		if pvZone, ok := pvLabels[kubevolume.PVZoneLabelName]; ok {
-			config[blockstorage.GoogleProjectID] = tp.Profile.Credential.KeyPair.ID
-			config[blockstorage.GoogleServiceKey] = tp.Profile.Credential.KeyPair.Secret
+			config := getConfig(tp.Profile, blockstorage.TypeGPD)
 			provider, err = getter.Get(blockstorage.TypeGPD, config)
 			if err != nil {
 				return nil, errors.Wrap(err, "Could not get storage provider")
@@ -296,6 +284,24 @@ func (kef *createVolumeSnapshotFunc) Exec(ctx context.Context, tp param.Template
 		}
 	}
 	return createVolumeSnapshot(ctx, tp, cli, namespace, pvcs, getter.New(), skipWait)
+}
+func getConfig(profile *param.Profile, sType blockstorage.Type) map[string]string {
+	config := make(map[string]string)
+	switch sType {
+	case blockstorage.TypeEBS:
+		if profile.Credential.Type == param.CredentialTypeKeyPair {
+			config[awsconfig.AccessKeyID] = profile.Credential.KeyPair.ID
+			config[awsconfig.SecretAccessKey] = profile.Credential.KeyPair.Secret
+		} else if profile.Credential.Type == param.CredentialTypeSecret {
+			config[awsconfig.AccessKeyID] = string(profile.Credential.Secret.Data[secrets.AWSAccessKeyID])
+			config[awsconfig.SecretAccessKey] = string(profile.Credential.Secret.Data[secrets.AWSSecretAccessKey])
+			config[awsconfig.ConfigRole] = string(profile.Credential.Secret.Data[secrets.ConfigRole])
+		}
+	case blockstorage.TypeGPD:
+		config[blockstorage.GoogleProjectID] = profile.Credential.KeyPair.ID
+		config[blockstorage.GoogleServiceKey] = profile.Credential.KeyPair.Secret
+	}
+	return config
 }
 
 func (*createVolumeSnapshotFunc) RequiredArgs() []string {
