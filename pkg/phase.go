@@ -78,8 +78,10 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 	if !ok {
 		return nil, errors.Errorf("Action {%s} not found in action map", action)
 	}
-	defaultVersion := *semver.MustParse(DefaultVersion)
-	funcVersion := *semver.MustParse(version)
+	defaultVersion, funcVersion, err := getFunctionVersion(version)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get function version")
+	}
 	funcMu.RLock()
 	defer funcMu.RUnlock()
 	// We first check that all requested phases are registered.
@@ -87,12 +89,15 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 		if _, ok := funcs[p.Func]; !ok {
 			return nil, errors.Errorf("Requested function {%s} has not been registered", p.Func)
 		}
-		if _, ok := funcs[p.Func][funcVersion]; !ok {
-			if _, ok := funcs[p.Func][defaultVersion]; !ok {
-				return nil, errors.Errorf("Requested function {%s} has not been registered with version {%s} or the default version {%s}", p.Func, version, DefaultVersion)
+		if _, ok := funcs[p.Func][*funcVersion]; !ok {
+			if funcVersion.Equal(defaultVersion) {
+				return nil, errors.Errorf("Requested function {%s} has not been registered with version {%s}", p.Func, version)
+			}
+			if _, ok := funcs[p.Func][*defaultVersion]; !ok {
+				return nil, errors.Errorf("Requested function {%s} has not been registered with versions {%s} or {%s}", p.Func, version, DefaultVersion)
 			}
 			log.Info().Print("Falling back to default version of the function", field.M{"Function": p.Func, "CurrentVersion": version, "DefaultVersion": DefaultVersion})
-			funcVersion = defaultVersion
+			*funcVersion = *defaultVersion
 		}
 	}
 	phases := make([]*Phase, 0, len(a.Phases))
@@ -104,7 +109,7 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 		phases = append(phases, &Phase{
 			name:    p.Name,
 			objects: objs,
-			f:       funcs[p.Func][funcVersion],
+			f:       funcs[p.Func][*funcVersion],
 		})
 	}
 	return phases, nil
@@ -117,4 +122,21 @@ func checkRequiredArgs(reqArgs []string, args map[string]interface{}) error {
 		}
 	}
 	return nil
+}
+
+func getFunctionVersion(version string) (*semver.Version, *semver.Version, error) {
+	dv, err := semver.NewVersion(DefaultVersion)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "Failed to parse default function version")
+	}
+	switch version {
+	case DefaultVersion, "":
+		return dv, dv, nil
+	default:
+		fv, err := semver.NewVersion(version)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "Failed to parse function version {%s}", version)
+		}
+		return dv, fv, nil
+	}
 }

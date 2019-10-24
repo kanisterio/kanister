@@ -317,9 +317,24 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				version:   kanister.DefaultVersion,
 			},
 			{
-				funcNames: []string{testutil.ArgFuncName, testutil.FailFuncName},
-				name:      "ArgFailVersion",
+				funcNames: []string{testutil.ArgFuncName},
+				name:      "ArgFuncVersion",
 				version:   testutil.TestVersion,
+			},
+			{
+				funcNames: []string{testutil.ArgFuncName},
+				name:      "ArgFuncVersionFallback",
+				version:   "v1.2.3",
+			},
+			{
+				funcNames: []string{testutil.ArgFuncName},
+				name:      "ArgFuncNoActionSetVersion",
+				version:   "",
+			},
+			{
+				funcNames: []string{testutil.VersionMismatchFuncName},
+				name:      "VersionMismatchFunc",
+				version:   "v1.2.3",
 			},
 		} {
 			var err error
@@ -368,6 +383,9 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 					c.Assert(err, IsNil)
 					c.Assert(testutil.CancelFuncOut().Error(), DeepEquals, "context canceled")
 					cancel = true
+				case testutil.VersionMismatchFuncName:
+					final = crv1alpha1.StateFailed
+					c.Assert(err, IsNil)
 				}
 			}
 
