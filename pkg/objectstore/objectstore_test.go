@@ -53,9 +53,8 @@ const (
 )
 
 var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeS3, region: testRegionS3})
-
-// var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeGCS, region: ""})
-// var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeAzure, region: ""})
+var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeGCS, region: ""})
+var _ = Suite(&ObjectStoreProviderSuite{osType: ProviderTypeAzure, region: ""})
 
 func (s *ObjectStoreProviderSuite) SetUpSuite(c *C) {
 	switch s.osType {
