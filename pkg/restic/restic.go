@@ -15,6 +15,7 @@
 package restic
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -222,15 +223,16 @@ func resticS3CredentialArgs(creds param.Credential) ([]string, error) {
 }
 
 func resticS3CredentialSecretArgs(secret *v1.Secret) ([]string, error) {
-	if err := secrets.ValidateAWSCredentials(secret); err != nil {
+	creds, err := secrets.ExtractAWSCredentials(context.Background(), secret)
+	if err != nil {
 		return nil, err
 	}
 	args := []string{
-		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, secret.Data[secrets.AWSAccessKeyID]),
-		fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, secret.Data[secrets.AWSSecretAccessKey]),
+		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, creds.AccessKeyID),
+		fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, creds.SecretAccessKey),
 	}
-	if _, ok := secret.Data[secrets.AWSSessionToken]; ok {
-		args = append(args, fmt.Sprintf("export %s=%s\n", location.AWSSessionToken, secret.Data[secrets.AWSSessionToken]))
+	if creds.SessionToken != "" {
+		args = append(args, fmt.Sprintf("export %s=%s\n", location.AWSSessionToken, creds.SessionToken))
 	}
 	return args, nil
 }
