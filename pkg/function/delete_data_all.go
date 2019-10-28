@@ -79,8 +79,7 @@ func (*deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		return nil, err
 	}
 
-	// Validate profile
-	if err = validateProfile(tp.Profile); err != nil {
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
 	cli, err := kube.NewClient()

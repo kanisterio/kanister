@@ -61,7 +61,7 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 	// providerList required for unit testing
 	providerList := make(map[string]blockstorage.Provider)
 	for _, pvcInfo := range PVCData {
-		if err = ValidateProfile(profile, pvcInfo.Type); err != nil {
+		if err = ValidateLocationForBlockstorage(profile, pvcInfo.Type); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
 		config := getConfig(profile, pvcInfo.Type)

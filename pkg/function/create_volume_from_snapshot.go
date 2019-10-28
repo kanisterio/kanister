@@ -69,7 +69,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		if len(pvcNames) > 0 {
 			pvcName = pvcNames[i]
 		}
-		if err = ValidateProfile(profile, pvcInfo.Type); err != nil {
+		if err = ValidateLocationForBlockstorage(profile, pvcInfo.Type); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
 		config := getConfig(profile, pvcInfo.Type)

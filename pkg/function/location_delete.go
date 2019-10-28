@@ -48,8 +48,7 @@ func (*locationDeleteFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	if err = Arg(args, LocationDeleteArtifactArg, &artifact); err != nil {
 		return nil, err
 	}
-	// Validate the Profile
-	if err = validateProfile(tp.Profile); err != nil {
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
 	return nil, location.Delete(ctx, *tp.Profile, strings.TrimPrefix(artifact, tp.Profile.Location.Bucket))
