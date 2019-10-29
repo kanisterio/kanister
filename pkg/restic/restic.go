@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/location"
@@ -35,9 +36,8 @@ import (
 )
 
 const (
-	GoogleCloudCredsFilePath = "/tmp/creds.txt"
-	PasswordIncorrect        = "Password is incorrect"
-	RepoDoesNotExist         = "Repo does not exist"
+	PasswordIncorrect = "Password is incorrect"
+	RepoDoesNotExist  = "Repo does not exist"
 )
 
 func shCommand(command string) []string {
@@ -240,7 +240,7 @@ func resticS3CredentialSecretArgs(secret *v1.Secret) ([]string, error) {
 func resticGCSArgs(profile *param.Profile, repository string) []string {
 	return []string{
 		fmt.Sprintf("export %s=%s\n", location.GoogleProjectId, profile.Credential.KeyPair.ID),
-		fmt.Sprintf("export %s=%s\n", location.GoogleCloudCreds, GoogleCloudCredsFilePath),
+		fmt.Sprintf("export %s=%s\n", location.GoogleCloudCreds, consts.GoogleCloudCredsFilePath),
 		fmt.Sprintf("export %s=gs:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
 	}
 }

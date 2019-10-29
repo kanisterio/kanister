@@ -8,10 +8,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/kanisterio/kanister/pkg/restic"
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
@@ -60,7 +60,7 @@ func ValidateProfile(profile *param.Profile) error {
 // GetPodWriter creates a file with Google credentials if the given profile points to a GCS location
 func GetPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podName, containerName string, profile *param.Profile) (*kube.PodWriter, error) {
 	if profile.Location.Type == crv1alpha1.LocationTypeGCS {
-		pw := kube.NewPodWriter(cli, restic.GoogleCloudCredsFilePath, bytes.NewBufferString(profile.Credential.KeyPair.Secret))
+		pw := kube.NewPodWriter(cli, consts.GoogleCloudCredsFilePath, bytes.NewBufferString(profile.Credential.KeyPair.Secret))
 		if err := pw.Write(ctx, namespace, podName, containerName); err != nil {
 			return nil, err
 		}
