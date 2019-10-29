@@ -106,23 +106,6 @@ func validateAndGetOptArgs(args map[string]interface{}, tp param.TemplateParams)
 	return restorePath, encryptionKey, pod, vols, tag, id, podOverride, nil
 }
 
-func fetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, error) {
-	switch {
-	case tp.Deployment != nil:
-		if pvcToMountPath, ok := tp.Deployment.PersistentVolumeClaims[pod]; ok {
-			return pvcToMountPath, nil
-		}
-		return nil, errors.New("Failed to find volumes for the Pod: " + pod)
-	case tp.StatefulSet != nil:
-		if pvcToMountPath, ok := tp.StatefulSet.PersistentVolumeClaims[pod]; ok {
-			return pvcToMountPath, nil
-		}
-		return nil, errors.New("Failed to find volumes for the Pod: " + pod)
-	default:
-		return nil, errors.New("Invalid Template Params")
-	}
-}
-
 func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, restorePath, backupTag, backupID, jobPrefix, image string,
 	vols map[string]string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
 	// Validate volumes
@@ -150,11 +133,11 @@ func restoreDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, names
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
-		pw, err := getPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
+		pw, err := GetPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
 		if err != nil {
 			return nil, err
 		}
-		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+		defer CleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		var cmd []string
 		// Generate restore command based on the identifier passed
 		if backupTag != "" {
@@ -208,13 +191,12 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 		}
 	}
 
-	// Validate profile
-	if err = validateProfile(tp.Profile); err != nil {
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
 	if len(vols) == 0 {
 		// Fetch Volumes
-		vols, err = fetchPodVolumes(pod, tp)
+		vols, err = FetchPodVolumes(pod, tp)
 		if err != nil {
 			return nil, err
 		}

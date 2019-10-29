@@ -15,6 +15,7 @@
 package restic
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -25,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/location"
@@ -34,9 +36,8 @@ import (
 )
 
 const (
-	GoogleCloudCredsFilePath = "/tmp/creds.txt"
-	PasswordIncorrect        = "Password is incorrect"
-	RepoDoesNotExist         = "Repo does not exist"
+	PasswordIncorrect = "Password is incorrect"
+	RepoDoesNotExist  = "Repo does not exist"
 )
 
 func shCommand(command string) []string {
@@ -222,15 +223,16 @@ func resticS3CredentialArgs(creds param.Credential) ([]string, error) {
 }
 
 func resticS3CredentialSecretArgs(secret *v1.Secret) ([]string, error) {
-	if err := secrets.ValidateAWSCredentials(secret); err != nil {
+	creds, err := secrets.ExtractAWSCredentials(context.Background(), secret)
+	if err != nil {
 		return nil, err
 	}
 	args := []string{
-		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, secret.Data[secrets.AWSAccessKeyID]),
-		fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, secret.Data[secrets.AWSSecretAccessKey]),
+		fmt.Sprintf("export %s=%s\n", location.AWSAccessKeyID, creds.AccessKeyID),
+		fmt.Sprintf("export %s=%s\n", location.AWSSecretAccessKey, creds.SecretAccessKey),
 	}
-	if _, ok := secret.Data[secrets.AWSSessionToken]; ok {
-		args = append(args, fmt.Sprintf("export %s=%s\n", location.AWSSessionToken, secret.Data[secrets.AWSSessionToken]))
+	if creds.SessionToken != "" {
+		args = append(args, fmt.Sprintf("export %s=%s\n", location.AWSSessionToken, creds.SessionToken))
 	}
 	return args, nil
 }
@@ -238,7 +240,7 @@ func resticS3CredentialSecretArgs(secret *v1.Secret) ([]string, error) {
 func resticGCSArgs(profile *param.Profile, repository string) []string {
 	return []string{
 		fmt.Sprintf("export %s=%s\n", location.GoogleProjectId, profile.Credential.KeyPair.ID),
-		fmt.Sprintf("export %s=%s\n", location.GoogleCloudCreds, GoogleCloudCredsFilePath),
+		fmt.Sprintf("export %s=%s\n", location.GoogleCloudCreds, consts.GoogleCloudCredsFilePath),
 		fmt.Sprintf("export %s=gs:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
 	}
 }

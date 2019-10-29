@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -144,7 +144,7 @@ func (s *PrepareDataSuite) TestPrepareData(c *C) {
 		}
 		action := "test"
 		bp := newPrepareDataBlueprint(kind, createdPVC.Name)
-		phases, err := kanister.GetPhases(*bp, action, tp)
+		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			_, err = p.Exec(ctx, *bp, action, tp)

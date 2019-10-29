@@ -119,8 +119,7 @@ func (*restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 		return nil, err
 	}
 
-	// Validate profile
-	if err = validateProfile(tp.Profile); err != nil {
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
 	cli, err := kube.NewClient()
@@ -138,7 +137,7 @@ func (*restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	output := make(map[string]interface{})
 	for _, pod := range pods {
 		go func(pod string) {
-			vols, err := fetchPodVolumes(pod, tp)
+			vols, err := FetchPodVolumes(pod, tp)
 			var out map[string]interface{}
 			if err != nil {
 				errChan <- errors.Wrapf(err, "Failed to get volumes of pod %s", pod)

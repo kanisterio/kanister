@@ -1,9 +1,14 @@
 package secrets
 
 import (
+	"context"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -16,6 +21,10 @@ const (
 	AWSSecretAccessKey string = "secret_access_key"
 	// AWSSessionToken is the key for optional AWS session token.
 	AWSSessionToken string = "session_token"
+	// ConfigRole represents the key for the ARN of the role which can be assumed.
+	// It is optional.
+	ConfigRole         = "role"
+	assumeRoleDuration = 90 * time.Minute
 )
 
 // ValidateAWSCredentials validates secret has all necessary information
@@ -39,7 +48,7 @@ func ValidateAWSCredentials(secret *v1.Secret) error {
 		return errors.New("awsSecretAccessKey is a required field")
 	}
 	count := 2
-	if _, ok := secret.Data[AWSSessionToken]; ok {
+	if _, ok := secret.Data[ConfigRole]; ok {
 		count++
 	}
 	if len(secret.Data) > count {
@@ -53,20 +62,31 @@ func ValidateAWSCredentials(secret *v1.Secret) error {
 // Extracted values from the secrets are:
 // - access_key_id (required)
 // - secret_access_key (required)
-// - session_token (optional)
+// - role (optional)
 //
 // If the type of the secret is not "secret.kanister.io/aws", it returns an error.
 // If the required types are not avaialable in the secrets, it returns an errror.
-func ExtractAWSCredentials(secret *v1.Secret) (*credentials.Value, error) {
+func ExtractAWSCredentials(ctx context.Context, secret *v1.Secret) (*credentials.Value, error) {
 	if err := ValidateAWSCredentials(secret); err != nil {
 		return nil, err
 	}
-	accessKeyID := secret.Data[AWSAccessKeyID]
-	secretAccessKey := secret.Data[AWSSecretAccessKey]
-	sessionToken := secret.Data[AWSSessionToken]
+	accessKeyID := string(secret.Data[AWSAccessKeyID])
+	secretAccessKey := string(secret.Data[AWSSecretAccessKey])
+	role := string(secret.Data[ConfigRole])
+	if role != "" {
+		creds, err := aws.SwitchRole(ctx, accessKeyID, secretAccessKey, role, assumeRoleDuration)
+		if err != nil {
+			return nil, err
+		}
+		val, err := creds.Get()
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get AWS credentials")
+		}
+		return &val, nil
+	}
 	return &credentials.Value{
-		AccessKeyID:     string(accessKeyID),
-		SecretAccessKey: string(secretAccessKey),
-		SessionToken:    string(sessionToken),
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+		SessionToken:    "",
 	}, nil
 }

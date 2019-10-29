@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
@@ -159,7 +159,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, d), s.crCli, as)
 		c.Assert(err, IsNil)
 		bp := newScaleBlueprint(kind)
-		phases, err := kanister.GetPhases(*bp, action, *tp)
+		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			_, err = p.Exec(context.Background(), *bp, action, *tp)
@@ -208,7 +208,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
 		c.Assert(err, IsNil)
 		bp := newScaleBlueprint(kind)
-		phases, err := kanister.GetPhases(*bp, action, *tp)
+		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			_, err = p.Exec(context.Background(), *bp, action, *tp)

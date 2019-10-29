@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/graymeta/stow"
 	stowaz "github.com/graymeta/stow/azure"
@@ -27,7 +28,11 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
+
+	"github.com/kanisterio/kanister/pkg/config/aws"
 )
+
+const assumeRoleDuration = 90 * time.Minute
 
 // Provider abstracts actions on cloud provider bucket
 type Provider interface {
@@ -111,7 +116,7 @@ func Supported(t ProviderType) bool {
 	return t == ProviderTypeS3 || t == ProviderTypeGCS || t == ProviderTypeAzure
 }
 
-func s3Config(config ProviderConfig, secret *Secret, region string) (stowKind string, stowConfig stow.Config, err error) {
+func s3Config(ctx context.Context, config ProviderConfig, secret *Secret, region string) (stowKind string, stowConfig stow.Config, err error) {
 	var awsAccessKeyID, awsSecretAccessKey, awsSessionToken string
 	if secret != nil {
 		if secret.Type != SecretTypeAwsAccessKey {
@@ -122,13 +127,25 @@ func s3Config(config ProviderConfig, secret *Secret, region string) (stowKind st
 		awsSessionToken = secret.Aws.SessionToken
 	} else {
 		var ok bool
-		if awsAccessKeyID, ok = os.LookupEnv("AWS_ACCESS_KEY_ID"); !ok {
-			return "", nil, errors.New("AWS_ACCESS_KEY environment not set")
+		if awsAccessKeyID, ok = os.LookupEnv(aws.AccessKeyID); !ok {
+			return "", nil, errors.Errorf("%s environment not set", aws.AccessKeyID)
 		}
-		if awsSecretAccessKey, ok = os.LookupEnv("AWS_SECRET_ACCESS_KEY"); !ok {
-			return "", nil, errors.New("AWS_SECRET_ACCESS_KEY environment not set")
+		if awsSecretAccessKey, ok = os.LookupEnv(aws.SecretAccessKey); !ok {
+			return "", nil, errors.Errorf("%s environment not set", aws.SecretAccessKey)
 		}
-		awsSessionToken = os.Getenv("AWS_SESSION_TOKEN")
+		if role, ok := os.LookupEnv(aws.ConfigRole); ok {
+			creds, err := aws.SwitchRole(ctx, awsAccessKeyID, awsSecretAccessKey, role, assumeRoleDuration)
+			if err != nil {
+				return "", nil, err
+			}
+			val, err := creds.Get()
+			if err != nil {
+				return "", nil, errors.Wrap(err, "Failed to get AWS credentials")
+			}
+			awsAccessKeyID = val.AccessKeyID
+			awsSecretAccessKey = val.SecretAccessKey
+			awsSessionToken = val.SessionToken
+		}
 	}
 	cm := stow.ConfigMap{
 		stows3.ConfigAccessKeyID: awsAccessKeyID,
@@ -200,7 +217,7 @@ func azureConfig(ctx context.Context, secret *Secret) (stowKind string, stowConf
 func getConfig(ctx context.Context, config ProviderConfig, secret *Secret, region string) (stowKind string, stowConfig stow.Config, err error) {
 	switch config.Type {
 	case ProviderTypeS3:
-		return s3Config(config, secret, region)
+		return s3Config(ctx, config, secret, region)
 	case ProviderTypeGCS:
 		return gcsConfig(ctx, secret)
 	case ProviderTypeAzure:
