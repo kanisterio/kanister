@@ -23,7 +23,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -79,8 +79,8 @@ type volumeInfo struct {
 	region   string
 }
 
-func ValidateProfile(profile *param.Profile, sType blockstorage.Type) error {
-	if err := validateProfile(profile); err != nil {
+func ValidateLocationForBlockstorage(profile *param.Profile, sType blockstorage.Type) error {
+	if err := ValidateProfile(profile); err != nil {
 		return errors.Wrapf(err, "Profile Validation failed")
 	}
 	switch sType {
@@ -195,7 +195,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 	switch {
 	case pv.Spec.AWSElasticBlockStore != nil:
 		ebs := pv.Spec.AWSElasticBlockStore
-		if err = ValidateProfile(tp.Profile, blockstorage.TypeEBS); err != nil {
+		if err = ValidateLocationForBlockstorage(tp.Profile, blockstorage.TypeEBS); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
 		// Get Region from PV label or EC2 metadata
@@ -221,7 +221,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 	case pv.Spec.GCEPersistentDisk != nil:
 		gpd := pv.Spec.GCEPersistentDisk
 		region = ""
-		if err = ValidateProfile(tp.Profile, blockstorage.TypeGPD); err != nil {
+		if err = ValidateLocationForBlockstorage(tp.Profile, blockstorage.TypeGPD); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
 		if pvZone, ok := pvLabels[kubevolume.PVZoneLabelName]; ok {

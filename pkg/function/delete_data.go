@@ -82,11 +82,11 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 		if (len(deleteIdentifiers) == 0) == (len(deleteTags) == 0) {
 			return nil, errors.Errorf("Require one argument: %s or %s", DeleteDataBackupIdentifierArg, DeleteDataBackupTagArg)
 		}
-		pw, err := getPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
+		pw, err := GetPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
 		if err != nil {
 			return nil, err
 		}
-		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+		defer CleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		for i, deleteTag := range deleteTags {
 			cmd, err := restic.SnapshotsCommandByTag(tp.Profile, targetPaths[i], deleteTag, encryptionKey)
 			if err != nil {
@@ -165,8 +165,7 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		return nil, err
 	}
 
-	// Validate profile
-	if err = validateProfile(tp.Profile); err != nil {
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
 	cli, err := kube.NewClient()
