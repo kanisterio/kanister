@@ -281,15 +281,6 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 	return errors.Wrapf(err, "Failed to create object store backup location")
 }
 
-// CheckRepo checks if repo is reachable with current encryptionKey
-func CheckRepo(profile *param.Profile, cli kubernetes.Interface, artifactPrefix, encryptionKey, namespace, pod, container string) error {
-	err := CheckIfRepoIsReachable(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
-	if err != nil {
-		return errors.Wrap(err, "Failed to connect to object store location")
-	}
-	return nil
-}
-
 // CheckIfRepoIsReachable checks if repo can be reached by trying to list snapshots
 func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) error {
 	_, stderr, err := getLatestSnapshot(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)

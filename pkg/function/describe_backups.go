@@ -85,7 +85,7 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			return nil, err
 		}
 		defer CleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
-		err = restic.CheckRepo(tp.Profile, cli, targetPath, encryptionKey, namespace, pod.Name, pod.Spec.Containers[0].Name)
+		err = restic.CheckIfRepoIsReachable(tp.Profile, cli, targetPath, encryptionKey, namespace, pod.Name, pod.Spec.Containers[0].Name)
 		switch {
 		case err == nil:
 			break
