@@ -99,6 +99,17 @@ func SnapshotsCommand(profile *param.Profile, repository, encryptionKey string) 
 	return shCommand(command), nil
 }
 
+// LatestSnapshotCommand returns restic snapshots command for last snapshot
+func LatestSnapshotCommand(profile *param.Profile, repository, encryptionKey string) ([]string, error) {
+	cmd, err := resticArgs(profile, repository, encryptionKey)
+	if err != nil {
+		return nil, err
+	}
+	cmd = append(cmd, "snapshots", "--last", "--json")
+	command := strings.Join(cmd, " ")
+	return shCommand(command), nil
+}
+
 // SnapshotsCommandByTag returns restic snapshots command
 func SnapshotsCommandByTag(profile *param.Profile, repository, tag, encryptionKey string) ([]string, error) {
 	cmd, err := resticArgs(profile, repository, encryptionKey)
@@ -255,9 +266,7 @@ func resticAzureArgs(profile *param.Profile, repository string) []string {
 
 // GetOrCreateRepository will check if the repository already exists and initialize one if not
 func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, profile *param.Profile) error {
-	stdout, stderr, err := listSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
+	stdout, stderr, err := getLatestSnapshot(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
 	if err == nil {
 		return nil
 	}
@@ -272,38 +281,33 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 	return errors.Wrapf(err, "Failed to create object store backup location")
 }
 
-// GetSnapshotIDs checks if repo is reachable with current encryptionKey, and get a list of snapshot IDs
-func GetSnapshotIDs(profile *param.Profile, cli kubernetes.Interface, artifactPrefix, encryptionKey, namespace, pod, container string) ([]string, error) {
-	stdout, err := CheckIfRepoIsReachable(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+// CheckRepo checks if repo is reachable with current encryptionKey
+func CheckRepo(profile *param.Profile, cli kubernetes.Interface, artifactPrefix, encryptionKey, namespace, pod, container string) error {
+	err := CheckIfRepoIsReachable(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to connect to object store location")
+		return errors.Wrap(err, "Failed to connect to object store location")
 	}
-	// parse snapshots for list of IDs
-	snapshots, err := SnapshotIDsFromSnapshotCommand(stdout)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to list snapshots")
-	}
-	return snapshots, nil
+	return nil
 }
 
 // CheckIfRepoIsReachable checks if repo can be reached by trying to list snapshots
-func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, error) {
-	stdout, stderr, err := listSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) error {
+	_, stderr, err := getLatestSnapshot(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
 	if IsPasswordIncorrect(stderr) { // If password didn't work
-		return "", errors.New(PasswordIncorrect)
+		return errors.New(PasswordIncorrect)
 	}
 	if DoesRepoExist(stderr) {
-		return "", errors.New(RepoDoesNotExist)
+		return errors.New(RepoDoesNotExist)
 	}
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to list snapshots")
+		return errors.Wrap(err, "Failed to list snapshots")
 	}
-	return stdout, nil
+	return nil
 }
 
-func listSnapshots(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
-	// Use the snapshots command to check if the repository exists
-	cmd, err := SnapshotsCommand(profile, artifactPrefix, encryptionKey)
+func getLatestSnapshot(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
+	// Use the latest snapshots command to check if the repository exists
+	cmd, err := LatestSnapshotCommand(profile, artifactPrefix, encryptionKey)
 	if err != nil {
 		return "", "", errors.Wrap(err, "Failed to create snapshot command")
 	}
