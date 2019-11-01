@@ -913,10 +913,8 @@ Outputs:
    :align: left
    :widths: 5,5,15
 
-   `mode`,`string`, mode of the output stats
    `fileCount`,`string`, number of files in backup object store location
    `size`, `string`, size of the number of files in in backup object store location
-   `snapshotIDs`, `string`, list of snapshot ID in backup object store location
    `passwordIncorrect`, `string`, true if encryption key is incorrect
    `repoDoesNotExist`, `string`, true if object store location does not exist
 
@@ -933,7 +931,6 @@ Example:
           keyValue:
             fileCount: "{{ .Phases.DescribeBackupsFromObjectStore.Output.fileCount }}"
             size: "{{ .Phases.DescribeBackupsFromObjectStore.Output.size }}"
-            snapshotIDs: "{{ .Phases.DescribeBackupsFromObjectStore.snapshotIDs }}"
             passwordIncorrect: "{{ .Phases.DescribeBackupsFromObjectStore.Output.passwordIncorrect }}"
             repoDoesNotExist: "{{ .Phases.DescribeBackupsFromObjectStore.Output.repoDoesNotExist }}"
       phases:
