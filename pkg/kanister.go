@@ -18,14 +18,19 @@ import (
 	"context"
 	"sync"
 
+	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
+const (
+	DefaultVersion = "v0.0.0"
+)
+
 var (
 	funcMu sync.RWMutex
-	funcs  = make(map[string]Func)
+	funcs  = make(map[string]map[semver.Version]Func)
 )
 
 // Func allows custom actions to be executed.
@@ -35,16 +40,38 @@ type Func interface {
 	Exec(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error)
 }
 
-// Register allows Funcs to be references by User Defined YAMLs
+// Register allows Funcs to be referenced by User Defined YAMLs
 func Register(f Func) error {
+	version := *semver.MustParse(DefaultVersion)
 	funcMu.Lock()
 	defer funcMu.Unlock()
 	if f == nil {
 		return errors.Errorf("kanister: Cannot register nil function")
 	}
-	if _, dup := funcs[f.Name()]; dup {
-		panic("kanister: Register called twice for function " + f.Name())
+	if _, ok := funcs[f.Name()][version]; ok {
+		panic("kanister: Register called twice for function " + f.Name() + " with version " + DefaultVersion)
 	}
-	funcs[f.Name()] = f
+	if _, ok := funcs[f.Name()]; !ok {
+		funcs[f.Name()] = make(map[semver.Version]Func)
+	}
+	funcs[f.Name()][version] = f
+	return nil
+}
+
+// RegisterVersion allows Kanister Functions to be registered with the given version
+func RegisterVersion(f Func, v string) error {
+	version := *semver.MustParse(v)
+	funcMu.Lock()
+	defer funcMu.Unlock()
+	if f == nil {
+		return errors.Errorf("kanister: Cannot register nil function")
+	}
+	if _, ok := funcs[f.Name()][version]; ok {
+		panic("kanister: Register called twice for function " + f.Name() + " with version " + v)
+	}
+	if _, ok := funcs[f.Name()]; !ok {
+		funcs[f.Name()] = make(map[semver.Version]Func)
+	}
+	funcs[f.Name()][version] = f
 	return nil
 }

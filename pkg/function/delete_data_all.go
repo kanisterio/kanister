@@ -38,7 +38,9 @@ const (
 	DeleteDataAllReclaimSpace = "reclaimSpace"
 	// DeleteDataAllBackupInfo provides backup info required for delete
 	DeleteDataAllBackupInfo = "backupInfo"
-	deleteDataAllJobPrefix  = "delete-data-all-"
+	// DeleteDataAllPodOverrideArg contains pod specs to override default pod specs
+	DeleteDataAllPodOverrideArg = "podOverride"
+	deleteDataAllJobPrefix      = "delete-data-all-"
 )
 
 func init() {
@@ -72,8 +74,12 @@ func (*deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = OptArg(args, DeleteDataAllReclaimSpace, &reclaimSpace, false); err != nil {
 		return nil, err
 	}
-	// Validate profile
-	if err = validateProfile(tp.Profile); err != nil {
+	podOverride, err := GetPodSpecOverride(tp, args, DeleteDataAllPodOverrideArg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
 	cli, err := kube.NewClient()
@@ -92,7 +98,7 @@ func (*deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		deleteIdentifiers = append(deleteIdentifiers, info.BackupID)
 	}
 
-	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, targetPaths, nil, deleteIdentifiers, deleteDataAllJobPrefix)
+	return deleteData(ctx, cli, tp, reclaimSpace, namespace, encryptionKey, targetPaths, nil, deleteIdentifiers, deleteDataAllJobPrefix, podOverride)
 }
 
 func (*deleteDataAllFunc) RequiredArgs() []string {

@@ -30,7 +30,9 @@ import (
 )
 
 const (
-	testSecretName = "unitetestsecret"
+	testSecretName    = "unitetestsecret"
+	testOldSecretName = "oldibmsecret"
+	oldTestTomlPath   = "./testdata/correct/libconfig_old.toml"
 )
 
 type KubeTestIBMClient struct {
@@ -87,4 +89,53 @@ func (s KubeTestIBMClient) TestIBMSecret(c *C) {
 	c.Assert(*ibmCli, FitsTypeOf, client{})
 	_, err = ibmCli.Service.ListSnapshots()
 	c.Assert(err, IsNil)
+}
+
+func (s KubeTestIBMClient) TestIBMOldSecret(c *C) {
+	apiKey := os.Getenv(IBMApiKeyEnv)
+	err := os.Unsetenv(IBMApiKeyEnv)
+	c.Assert(err, IsNil)
+	defer os.Setenv(IBMApiKeyEnv, apiKey)
+	secData, err := ioutil.ReadFile(oldTestTomlPath)
+	c.Assert(err, IsNil)
+	secretData := make(map[string][]byte)
+	secretData[IBMK8sSecretData] = secData
+
+	s.k8scli, err = kube.NewClient()
+	c.Assert(err, IsNil)
+	k8sSec := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testOldSecretName,
+		},
+		Type: v1.SecretTypeOpaque,
+		Data: secretData,
+	}
+	s.k8sSec, err = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Create(&k8sSec)
+	defer s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Delete(testOldSecretName, &metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
+	slAPIKey, ok := os.LookupEnv(IBMSLApiKeyEnv)
+	c.Check(slAPIKey, NotNil)
+	c.Check(ok, Equals, true)
+	slAPIUsername, ok := os.LookupEnv(IBMSLApiUsernameEnv)
+	c.Check(slAPIUsername, NotNil)
+	c.Check(ok, Equals, true)
+	ibmCli, err := newClient(context.Background(), map[string]string{CfgSecretNameArgName: testOldSecretName, SLAPIKeyArgName: slAPIKey, SLAPIUsernameArgName: slAPIUsername})
+	c.Assert(err, IsNil)
+	c.Assert(ibmCli, NotNil)
+	c.Assert(ibmCli.Service, NotNil)
+	defer ibmCli.Service.Close()
+	defer s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Delete(testOldSecretName, &metav1.DeleteOptions{})
+	c.Assert(*ibmCli, FitsTypeOf, client{})
+	_, err = ibmCli.Service.ListSnapshots()
+	c.Assert(err, IsNil)
+}
+
+func (s *KubeTestIBMClient) TestSecretWSLApiKey(c *C) {
+	testSlKey := "TestSlKey"
+	testSlUserName := "TestUserName"
+	ibmCfg, err := getDefIBMStoreSecret(context.Background(), map[string]string{CfgSecretNameArgName: testSecretName, SLAPIKeyArgName: testSlKey, SLAPIUsernameArgName: testSlUserName})
+	c.Assert(err, IsNil)
+	c.Assert(ibmCfg, NotNil)
+	c.Assert(ibmCfg.Softlayer.SoftlayerAPIKey, Equals, testSlKey)
+	c.Assert(ibmCfg.Softlayer.SoftlayerUsername, Equals, testSlUserName)
 }

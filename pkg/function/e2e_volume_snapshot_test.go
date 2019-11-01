@@ -311,7 +311,7 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	actions := []string{"backup", "restore", "delete"}
 	bp := newVolumeSnapshotBlueprint()
 	for _, action := range actions {
-		phases, err := kanister.GetPhases(*bp, action, *s.tp)
+		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *s.tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			c.Assert(param.InitPhaseParams(ctx, s.cli, s.tp, p.Name(), p.Objects()), IsNil)

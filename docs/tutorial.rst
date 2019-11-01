@@ -33,7 +33,7 @@ This tutorial begins by deploying a sample application. The application is
 contrived, but useful for demonstrating Kanister's features. The application
 appends the current time to a log file every second. The application's container
 includes the aws command-line client which we'll use later in the tutorial. The
-application is installed in the `default` namespace.
+application is installed in the ``default`` namespace.
 
 .. code-block:: yaml
 
@@ -67,16 +67,16 @@ The first Kanister CustomResource we're going to deploy is a Blueprint.
 Blueprints are a set of instructions that tell the controller how to perform
 actions on an application. An action consists of one or more phases. Each phase
 invokes a :doc:`Kanister Function </functions>`. All Kanister functions accept a
-list of strings. The `args` field in a Blueprint's phase is rendered and passed
+list of strings. The ``args`` field in a Blueprint's phase is rendered and passed
 into the specified Function.
 
 For more on CustomResources in Kanister, see :ref:`architecture`.
 
 
-The Blueprint we'll create has a single action called `backup`.  The action
-`backup` has a single phase named `backupToS3`. `backupToS3` invokes the
-Kanister function `KubeExec`, which is similar to invoking "`kubectl exec ...`".
-At this stage, we'll use `KubeExec` to echo our time log's name and
+The Blueprint we'll create has a single action called ``backup``.  The action
+``backup`` has a single phase named ``backupToS3``. ``backupToS3`` invokes the
+Kanister function ``KubeExec``, which is similar to invoking ``kubectl exec ...``.
+At this stage, we'll use ``KubeExec`` to echo our time log's name and
 :doc:`Kanister's parameter templating </functions>` to specify the container
 with our log.
 
@@ -122,8 +122,8 @@ The next CustomResource we'll deploy is an ActionSet. An ActionSet is created
 each time you want to execute any Kanister actions. The ActionSet contains all
 the runtime information the controller needs during execution. It may contain
 multiple actions, each acting on a different Kubernetes object. The ActionSet
-we're about to create in this tutorial specifies the `time-logger` Deployment we
-created earlier and selects the `backup` action inside our Blueprint.
+we're about to create in this tutorial specifies the ``time-logger`` Deployment we
+created earlier and selects the ``backup`` action inside our Blueprint.
 
 
 First ActionSet
@@ -215,7 +215,7 @@ have access to.
   EOF
 
 We modify the Blueprint to consume the path from the ConfigMap. We give it a
-name `location` in the `configMapNames` section. We can access the values in the
+name ``location`` in the ``configMapNames`` section. We can access the values in the
 map through Argument templating. For now we'll just print the path name to
 stdout, but eventually we'll backup the time log to that path.
 
@@ -247,7 +247,7 @@ stdout, but eventually we'll backup the time log to that path.
               echo "{{ .ConfigMaps.location.Data.path }}"
   EOF
 
-We create a new ActionSet that maps the name in the Blueprint, `location`, to
+We create a new ActionSet that maps the name in the Blueprint, ``location``, to
 a reference to the ConfigMap we just created.
 
 .. code-block:: yaml
@@ -312,11 +312,11 @@ Base64 credentials and put them below.
     aws_secret_access_key: XXXX
 
 
-Give the secret the name `aws` in the Blueprint the secret in the `secretNames`
+Give the secret the name ``aws`` in the Blueprint the secret in the ``secretNames``
 section. We can then consume it through templates and assign it to bash
 variables. Because we now have access to the bucket in the ConfigMap, we can
 also push the log to S3. In this Secret, we store the credentials as binary
-data. We can use the templating engine `toString` and `quote` functions, courtesy of sprig.
+data. We can use the templating engine ``toString`` and ``quote`` functions, courtesy of sprig.
 
 For more on this templating, see :ref:`templates`
 
@@ -352,7 +352,7 @@ For more on this templating, see :ref:`templates`
   EOF
 
 Create a new ActionSet that has the name-to-Secret reference in its action's
-`secrets` field.
+``secrets`` field.
 
 .. code-block:: yaml
 
@@ -399,7 +399,7 @@ Artifacts.
 Output Artifacts
 ----------------
 
-In our example, we'll create an outputArtifact called `timeLog` that contains
+In our example, we'll create an outputArtifact called ``timeLog`` that contains
 the full path of our data in S3. This path's base will be configured using a
 ConfigMap.
 
@@ -444,16 +444,16 @@ ActionSet status.
 Input Artifacts
 ---------------
 
-Kanister can consume artifacts it creates using `inputArtifacts`.
-`inputArtifacts` are named in Blueprints and are explicitly listed in the
+Kanister can consume artifacts it creates using ``inputArtifacts``.
+``inputArtifacts`` are named in Blueprints and are explicitly listed in the
 ActionSet.
 
 In our example we'll restore an older time log. We have already pushed one to S3
 and created an Artifact using the backup action. We'll now restore that time log
 by using a new restore action.
 
-We create a new ActionSet on our `time-logger` deployment with the action name
-`restore`. This time we also include the full path in S3 as an Artifact.
+We create a new ActionSet on our ``time-logger`` deployment with the action name
+``restore``. This time we also include the full path in S3 as an Artifact.
 
 .. code-block:: yaml
 
@@ -482,7 +482,7 @@ We create a new ActionSet on our `time-logger` deployment with the action name
   EOF
 
 We add a restore action to the Blueprint. This action does not need the
-ConfigMap because the `inputArtifact` contains the fully specified path.
+ConfigMap because the ``inputArtifact`` contains the fully specified path.
 
 .. code-block:: yaml
 
@@ -563,8 +563,8 @@ Using kanctl to Chain ActionSets
 ================================
 
 So far in this tutorial, we have shown you how to manually create action
-sets via yaml files. In some cases, an action depends on a previous action,
+sets via YAML files. In some cases, an action depends on a previous action,
 and manually updating the action set to use artifacts created by the
 previous action set can be cumbersome. In situations like this, it is
-useful to instead use `kanctl`. To learn how to leverage `kanctl` to
+useful to instead use ``kanctl``. To learn how to leverage ``kanctl`` to
 create action sets, see :ref:`architecture` .

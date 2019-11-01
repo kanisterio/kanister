@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -27,8 +26,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -68,19 +69,14 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		if len(pvcNames) > 0 {
 			pvcName = pvcNames[i]
 		}
-		config := make(map[string]string)
-		if err = ValidateProfile(profile, pvcInfo.Type); err != nil {
+		if err = ValidateLocationForBlockstorage(profile, pvcInfo.Type); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
-		switch pvcInfo.Type {
-		case blockstorage.TypeEBS:
+		config := getConfig(profile, pvcInfo.Type)
+		if pvcInfo.Type == blockstorage.TypeEBS {
 			config[awsconfig.ConfigRegion] = pvcInfo.Region
-			config[awsconfig.AccessKeyID] = profile.Credential.KeyPair.ID
-			config[awsconfig.SecretAccessKey] = profile.Credential.KeyPair.Secret
-		case blockstorage.TypeGPD:
-			config[blockstorage.GoogleProjectID] = profile.Credential.KeyPair.ID
-			config[blockstorage.GoogleServiceKey] = profile.Credential.KeyPair.Secret
 		}
+
 		provider, err := getter.Get(pvcInfo.Type, config)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not get storage provider %v", pvcInfo.Type)
@@ -116,7 +112,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to create PV for volume %v", *vol)
 		}
-		log.Infof("Restore/Create volume from snapshot completed for pvc: %s, volume: %s", pvc, pv)
+		log.Print("Restore/Create volume from snapshot completed", field.M{"PVC": pvc, "Volume": pv})
 		providerList[pvcInfo.PVCName] = provider
 	}
 	return providerList, nil

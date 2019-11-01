@@ -51,6 +51,9 @@ dockers:
   image_templates:
   - 'kanisterio/postgres-kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
+- image_templates:
+  - 'kanisterio/postgresql:{{ .Tag }}'
+  dockerfile: 'docker/postgresql/Dockerfile'
 - binaries:
   - kando
   image_templates:
@@ -73,6 +76,9 @@ dockers:
   - 'examples/helm/kanister/kanister-mongodb-replicaset/image/90forceyes'
   - 'examples/helm/kanister/kanister-mongodb-replicaset/image/config'
   - 'examples/helm/kanister/kanister-mongodb-replicaset/image/gbl_env.sh'
+- image_templates:
+  - 'kanisterio/mongodb:{{ .Tag }}'
+  dockerfile: 'docker/mongodb/Dockerfile'
 
 snapshot:
   name_template: '{{ .Tag }}'

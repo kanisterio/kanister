@@ -21,6 +21,8 @@ import (
 	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/output"
@@ -83,13 +85,14 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = Arg(args, KubeExecPodNameArg, &pod); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, KubeExecContainerNameArg, &container); err != nil {
+	if err = OptArg(args, KubeExecContainerNameArg, &container, ""); err != nil {
 		return nil, err
 	}
 	if err = Arg(args, KubeExecCommandArg, &cmd); err != nil {
 		return nil, err
 	}
-
+	ctx = field.Context(ctx, consts.PodNameKey, pod)
+	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
@@ -102,5 +105,5 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 }
 
 func (*kubeExecFunc) RequiredArgs() []string {
-	return []string{KubeExecNamespaceArg, KubeExecPodNameArg, KubeExecContainerNameArg, KubeExecCommandArg}
+	return []string{KubeExecNamespaceArg, KubeExecPodNameArg, KubeExecCommandArg}
 }

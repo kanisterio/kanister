@@ -24,9 +24,9 @@ local setup. To do so, please run the following command.
 
 You also need to install the Kanister controller
 
-.. code-block:: console
+.. substitution-code-block:: console
 
-   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.21.0
+   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=|version|
 
 Kanister-Enabled Applications
 =============================

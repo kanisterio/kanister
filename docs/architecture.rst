@@ -54,10 +54,10 @@ Blueprints
 Blueprint CRs are a set of instructions that tell the controller how to perform
 actions on a specific application.
 
-A Blueprint contains a field called `Actions` which is a mapping of Action Name
-to `BlueprintAction`.
+A Blueprint contains a field called ``Actions`` which is a mapping of Action Name
+to ``BlueprintAction``.
 
-The definition of a `BlueprintAction` is:
+The definition of a ``BlueprintAction`` is:
 
 .. code-block:: go
   :linenos:
@@ -73,16 +73,16 @@ The definition of a `BlueprintAction` is:
       Phases             []BlueprintPhase    `json:"phases"`
   }
 
-- `Kind` represents the type of Kubernetes object this BlueprintAction is written for.
+- ``Kind`` represents the type of Kubernetes object this BlueprintAction is written for.
   Specifying this is optional and going forward, if this is specified, Kanister will
-  enforce that it matches the `Object` kind specified in an ActionSet referencing this
+  enforce that it matches the ``Object`` kind specified in an ActionSet referencing this
   BlueprintAction
-- `ConfigMapNames`, `SecretNames`, `InputArtifactNames` are optional
+- ``ConfigMapNames``, ``SecretNames``, ``InputArtifactNames`` are optional
   but, if specified, they list named parameters that must be included by
-  the `ActionSet`.
-- `OutputArtifacts` is an optional map of rendered parameters made available
-  to the `BlueprintAction`.
-- `Phases` is a required list of `BlueprintPhases`. These phases are invoked
+  the ``ActionSet``.
+- ``OutputArtifacts`` is an optional map of rendered parameters made available
+  to the ``BlueprintAction``.
+- ``Phases`` is a required list of ``BlueprintPhases``. These phases are invoked
   in order when executing this Action.
 
 .. code-block:: go
@@ -96,13 +96,13 @@ The definition of a `BlueprintAction` is:
       Args       map[string]interface{}     `json:"args"`
   }
 
-- `Func` is required as the name of a registered Kanister function.
+- ``Func`` is required as the name of a registered Kanister function.
   See :ref:`functions` for the list of  functions supported by the controller.
-- `Name` is mostly cosmetic. It is useful in quickly identifying which
+- ``Name`` is mostly cosmetic. It is useful in quickly identifying which
   phases the controller has finished executing.
-- `Object` is a map of references to the Kubernetes objects on which
+- ``Object`` is a map of references to the Kubernetes objects on which
   the action will be performed.
-- `Args` is a map of named arguments that the controller will pass to
+- ``Args`` is a map of named arguments that the controller will pass to
   the Kanister function.
   String argument values can be templates that the controller will
   render using the template parameters. Each argument is rendered
@@ -153,21 +153,24 @@ as follows:
       Secrets map[string]ObjectReference    `json:"secrets"`
       Options map[string]string             `json:"options"`
       Profile *ObjectReference              `json:"profile"`
+      PodOverride map[string]interface{}    `json:"podOverride,omitempty"`
   }
 
-- `Name` is required and specifies the action in the Blueprint.
-- `Object` is a required reference to the Kubernetes object on which
+- ``Name`` is required and specifies the action in the Blueprint.
+- ``Object`` is a required reference to the Kubernetes object on which
   the action will be performed.
-- `Blueprint` is a required name of the Blueprint that contains the
+- ``Blueprint`` is a required name of the Blueprint that contains the
    action to run.
-- `Artifacts` are input Artifacts passed to the Blueprint. This must
+- ``Artifacts`` are input Artifacts passed to the Blueprint. This must
   contain an Artifact for each name listed in the BlueprintAction's
   InputArtifacts.
-- `ConfigMaps` and `Secrets`, similar to `Artifacts`, are a mappings of names
+- ``ConfigMaps`` and ``Secrets``, similar to ``Artifacts``, are a mappings of names
   specified in the Blueprint referencing the Kubernetes object to be used.
-- `Profile` is a reference to a :ref:`Profile<profiles>` Kubernetes
+- ``Profile`` is a reference to a :ref:`Profile<profiles>` Kubernetes
   CustomResource that will be made available to the Blueprint.
-- `Options` is used to specify additional values to be used in the Blueprint
+- ``Options`` is used to specify additional values to be used in the Blueprint
+- ``PodOverride`` is used to specify pod specs that will override default specs
+  of the Pod created while executing functions like KubeTask, PrepareData, etc.
 
 As a reference, below is an example of a ActionSpec.
 
@@ -229,8 +232,8 @@ which will stop the execution of the actions.
     actionset.cr.kanister.io "s3backup-j4z6f" deleted
 
 .. note::
-    Since ActionSets are `Custom Resources`, Kubernetes allows users to delete them like any other API objects.
-    Currently, `deleting` an ActionSet to stop execution is an **alpha** feature.
+    Since ActionSets are ``Custom Resources``, Kubernetes allows users to delete them like any other API objects.
+    Currently, *deleting* an ActionSet to stop execution is an **alpha** feature.
 
 .. _profiles:
 
@@ -240,7 +243,7 @@ Profiles
 Profile CRs capture information about a location for data operation artifacts
 and corresponding credentials that will be made available to a Blueprint.
 
-The definition of a `Profile` is:
+The definition of a ``Profile`` is:
 
 .. code-block:: go
   :linenos:
@@ -252,14 +255,14 @@ The definition of a `Profile` is:
     SkipSSLVerify     bool       `json:"skipSSLVerify"`
   }
 
-- `SkipSSLVerify` is boolean and specifies whether skipping SkipSSLVerify
-  verification is allowed when operating with the `Location`. If omitted from
-  a CR definition it default to `false`
-- `Location` is required and used to specify the location that the Blueprint
+- ``SkipSSLVerify`` is boolean and specifies whether skipping SkipSSLVerify
+  verification is allowed when operating with the ``Location``. If omitted from
+  a CR definition it default to ``false``
+- ``Location`` is required and used to specify the location that the Blueprint
   can use. Currently, only s3 compliant locations are supported. If any of
   the sub-components are omitted, they will be treated as "".
 
-  The definition of `Location` is as follows:
+  The definition of ``Location`` is as follows:
 
 .. code-block:: go
   :linenos:
@@ -282,11 +285,11 @@ The definition of a `Profile` is:
     Region   string       `json:"region"`
   }
 
-- `Credential` is required and used to specify the credentials associated with
-  the `Location`. Currently, only key pair s3, gcs and azure location credentials are
+- ``Credential`` is required and used to specify the credentials associated with
+  the ``Location``. Currently, only key pair s3, gcs and azure location credentials are
   supported.
 
-  The definition of `Credential` is as follows:
+  The definition of ``Credential`` is as follows:
 
 .. code-block:: go
   :linenos:
@@ -311,10 +314,10 @@ The definition of a `Profile` is:
     Secret      ObjectReference `json:"secret"`
   }
 
-- `IDField` and `SecretField` are required and specify the corresponding
-  keys in the secret under which the `KeyPair` credentials are stored.
-- `Secret` is required reference to a Kubernetes Secret object storing the
-  `KeyPair` credentials.
+- ``IDField`` and ``SecretField`` are required and specify the corresponding
+  keys in the secret under which the ``KeyPair`` credentials are stored.
+- ``Secret`` is required reference to a Kubernetes Secret object storing the
+  ``KeyPair`` credentials.
 
 As a reference, below is an example of a Profile and the corresponding secret.
 
@@ -359,7 +362,7 @@ Controller
 ==========
 
 The Kanister controller is a Kubernetes Deployment and is installed easily using
-`kubectl`. See :ref:`install` for more information on deploying the controller.
+``kubectl``. See :ref:`install` for more information on deploying the controller.
 
 Execution Walkthrough
 ---------------------
@@ -385,7 +388,7 @@ Within an ActionSet, individual Actions are run in parallel.
 Currently the user is responsible for cleaning up ActionSets once they complete.
 
 During execution, Kanister controller emits events to the respective ActionSets.
-In above example, the execution transitions of ActionSet `s3backup-j4z6f` can be
+In above example, the execution transitions of ActionSet ``s3backup-j4z6f`` can be
 seen by using the following command:
 
 .. code-block:: bash

@@ -20,14 +20,15 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -60,19 +61,14 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 	// providerList required for unit testing
 	providerList := make(map[string]blockstorage.Provider)
 	for _, pvcInfo := range PVCData {
-		config := make(map[string]string)
-		if err = ValidateProfile(profile, pvcInfo.Type); err != nil {
+		if err = ValidateLocationForBlockstorage(profile, pvcInfo.Type); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
-		switch pvcInfo.Type {
-		case blockstorage.TypeEBS:
+		config := getConfig(profile, pvcInfo.Type)
+		if pvcInfo.Type == blockstorage.TypeEBS {
 			config[awsconfig.ConfigRegion] = pvcInfo.Region
-			config[awsconfig.AccessKeyID] = profile.Credential.KeyPair.ID
-			config[awsconfig.SecretAccessKey] = profile.Credential.KeyPair.Secret
-		case blockstorage.TypeGPD:
-			config[blockstorage.GoogleProjectID] = profile.Credential.KeyPair.ID
-			config[blockstorage.GoogleServiceKey] = profile.Credential.KeyPair.Secret
 		}
+
 		provider, err := getter.Get(pvcInfo.Type, config)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not get storage provider")
@@ -80,7 +76,7 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 		snapshot, err := provider.SnapshotGet(ctx, pvcInfo.SnapshotID)
 		if err != nil {
 			if strings.Contains(err.Error(), SnapshotDoesNotExistError) {
-				log.Debugf("Snapshot %s already deleted", pvcInfo.SnapshotID)
+				log.Debug().Print("Snapshot already deleted", field.M{"SnapshotID": pvcInfo.SnapshotID})
 			} else {
 				return nil, errors.Wrapf(err, "Failed to get Snapshot from Provider")
 			}
@@ -88,7 +84,7 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 		if err = provider.SnapshotDelete(ctx, snapshot); err != nil {
 			return nil, err
 		}
-		log.Infof("Successfully deleted snapshot  %s", pvcInfo.SnapshotID)
+		log.Print("Successfully deleted snapshot", field.M{"SnapshotID": pvcInfo.SnapshotID})
 		providerList[pvcInfo.PVCName] = provider
 	}
 	return providerList, nil
