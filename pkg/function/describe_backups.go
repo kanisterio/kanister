@@ -40,7 +40,6 @@ const (
 	DescribeBackupsJobPrefix         = "describe-backups-"
 	DescribeBackupsFileCount         = "fileCount"
 	DescribeBackupsSize              = "size"
-	DescribeBackupsSnapshotIDs       = "snapshotIDs"
 	DescribeBackupsPasswordIncorrect = "passwordIncorrect"
 	DescribeBackupsRepoDoesNotExist  = "repoUnavailable"
 	rawDataStatsMode                 = "raw-data"
@@ -86,13 +85,12 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			return nil, err
 		}
 		defer CleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
-		snapshotIDs, err := restic.GetSnapshotIDs(tp.Profile, cli, targetPath, encryptionKey, namespace, pod.Name, pod.Spec.Containers[0].Name)
+		err = restic.CheckIfRepoIsReachable(tp.Profile, targetPath, encryptionKey, cli, namespace, pod.Name, pod.Spec.Containers[0].Name)
 		switch {
 		case err == nil:
 			break
 		case strings.Contains(err.Error(), restic.PasswordIncorrect):
 			return map[string]interface{}{
-					DescribeBackupsSnapshotIDs:       nil,
 					DescribeBackupsFileCount:         nil,
 					DescribeBackupsSize:              nil,
 					DescribeBackupsPasswordIncorrect: "true",
@@ -102,7 +100,6 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 
 		case strings.Contains(err.Error(), restic.RepoDoesNotExist):
 			return map[string]interface{}{
-					DescribeBackupsSnapshotIDs:       nil,
 					DescribeBackupsFileCount:         nil,
 					DescribeBackupsSize:              nil,
 					DescribeBackupsPasswordIncorrect: "false",
@@ -129,7 +126,6 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			return nil, errors.New("Failed to parse snapshot stats from logs")
 		}
 		return map[string]interface{}{
-				DescribeBackupsSnapshotIDs:       snapshotIDs,
 				DescribeBackupsFileCount:         fc,
 				DescribeBackupsSize:              size,
 				DescribeBackupsPasswordIncorrect: "false",

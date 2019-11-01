@@ -575,7 +575,6 @@ func (s *DataSuite) TestDescribeBackups(c *C) {
 	// Test DescribeBackups
 	bp2 := *newDescribeBackupsBlueprint()
 	out2 := runAction(c, bp2, "describeBackups", tp)
-	c.Assert(out2[DescribeBackupsSnapshotIDs], NotNil)
 	c.Assert(out2[DescribeBackupsFileCount].(string), Not(Equals), "")
 	c.Assert(out2[DescribeBackupsSize].(string), Not(Equals), "")
 	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Not(Equals), "")
