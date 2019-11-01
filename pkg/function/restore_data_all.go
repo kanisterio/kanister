@@ -22,9 +22,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
-
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/restic"
@@ -62,10 +61,10 @@ func (*restoreDataAllFunc) Name() string {
 	return "RestoreDataAll"
 }
 
-func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, []string, sp.JSONMap, error) {
+func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, []string, crv1alpha1.JSONMap, error) {
 	var restorePath, encryptionKey, pods string
 	var ps []string
-	var podOverride sp.JSONMap
+	var podOverride crv1alpha1.JSONMap
 	var err error
 
 	if err = OptArg(args, RestoreDataAllRestorePathArg, &restorePath, "/"); err != nil {
@@ -120,8 +119,7 @@ func (*restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 		return nil, err
 	}
 
-	// Validate profile
-	if err = validateProfile(tp.Profile); err != nil {
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
 	cli, err := kube.NewClient()
@@ -139,7 +137,7 @@ func (*restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	output := make(map[string]interface{})
 	for _, pod := range pods {
 		go func(pod string) {
-			vols, err := fetchPodVolumes(pod, tp)
+			vols, err := FetchPodVolumes(pod, tp)
 			var out map[string]interface{}
 			if err != nil {
 				errChan <- errors.Wrapf(err, "Failed to get volumes of pod %s", pod)

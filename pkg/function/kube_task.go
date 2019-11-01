@@ -19,10 +19,10 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
-	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -50,7 +50,7 @@ func (*kubeTaskFunc) Name() string {
 	return "KubeTask"
 }
 
-func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image string, command []string, podOverride sp.JSONMap) (map[string]interface{}, error) {
+func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image string, command []string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
 	var serviceAccount string
 	var err error
 	if namespace == "" {

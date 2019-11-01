@@ -272,6 +272,7 @@ func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]st
 		}
 		config[awsconfig.AccessKeyID] = accessKey
 		config[awsconfig.SecretAccessKey] = secretAccessKey
+		config[awsconfig.ConfigRole] = os.Getenv(awsconfig.ConfigRole)
 	case blockstorage.TypeGPD:
 		creds, ok := os.LookupEnv(blockstorage.GoogleCloudCreds)
 		if !ok {

@@ -88,8 +88,7 @@ func (*backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		return nil, err
 	}
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
-	// Validate the Profile
-	if err = validateProfile(tp.Profile); err != nil {
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
 	cli, err := kube.NewClient()

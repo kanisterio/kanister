@@ -130,7 +130,7 @@ func getBucket(ctx context.Context, pType objectstore.ProviderType, profile para
 		Endpoint:      profile.Location.Endpoint,
 		SkipSSLVerify: profile.SkipSSLVerify,
 	}
-	secret, err := getOSSecret(pType, profile.Credential)
+	secret, err := getOSSecret(ctx, pType, profile.Credential)
 	if err != nil {
 		return nil, err
 	}
@@ -141,11 +141,11 @@ func getBucket(ctx context.Context, pType objectstore.ProviderType, profile para
 	return provider.GetBucket(ctx, profile.Location.Bucket)
 }
 
-func getOSSecret(pType objectstore.ProviderType, cred param.Credential) (*objectstore.Secret, error) {
+func getOSSecret(ctx context.Context, pType objectstore.ProviderType, cred param.Credential) (*objectstore.Secret, error) {
 	secret := &objectstore.Secret{}
 	switch pType {
 	case objectstore.ProviderTypeS3:
-		return getAWSSecret(cred)
+		return getAWSSecret(ctx, cred)
 	case objectstore.ProviderTypeGCS:
 		secret.Type = objectstore.SecretTypeGcpServiceAccountKey
 		secret.Gcp = &objectstore.SecretGcp{
@@ -164,7 +164,7 @@ func getOSSecret(pType objectstore.ProviderType, cred param.Credential) (*object
 	return secret, nil
 }
 
-func getAWSSecret(cred param.Credential) (*objectstore.Secret, error) {
+func getAWSSecret(ctx context.Context, cred param.Credential) (*objectstore.Secret, error) {
 	os := &objectstore.Secret{
 		Type: objectstore.SecretTypeAwsAccessKey,
 	}
@@ -176,7 +176,7 @@ func getAWSSecret(cred param.Credential) (*objectstore.Secret, error) {
 		}
 		return os, nil
 	case param.CredentialTypeSecret:
-		creds, err := secrets.ExtractAWSCredentials(cred.Secret)
+		creds, err := secrets.ExtractAWSCredentials(ctx, cred.Secret)
 		if err != nil {
 			return nil, err
 		}

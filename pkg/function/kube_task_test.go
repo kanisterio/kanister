@@ -20,9 +20,8 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -127,7 +126,7 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 		StatefulSet: &param.StatefulSetParams{
 			Namespace: s.namespace,
 		},
-		PodOverride: sp.JSONMap{
+		PodOverride: crv1alpha1.JSONMap{
 			"containers": []map[string]interface{}{
 				{
 					"name":            "container",
@@ -153,7 +152,7 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 		},
 	} {
 
-		phases, err := kanister.GetPhases(*tc.bp, action, tp)
+		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
 		c.Assert(phases, HasLen, len(tc.outs))
 		for i, p := range phases {

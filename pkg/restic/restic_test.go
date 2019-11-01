@@ -21,6 +21,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -168,6 +169,18 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 				"restic",
 			},
 		},
+	} {
+		args, err := resticArgs(tc.profile, tc.repo, tc.password)
+		c.Assert(err, IsNil)
+		c.Assert(args, DeepEquals, tc.expected)
+	}
+}
+
+func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *C) {
+	for _, tc := range []struct {
+		profile *param.Profile
+		output  Checker
+	}{
 		{
 			profile: &param.Profile{
 				Location: v1alpha1.Location{
@@ -179,28 +192,38 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 					Secret: &v1.Secret{
 						Type: "secrets.kanister.io/aws",
 						Data: map[string][]byte{
-							"access_key_id":     []byte("id"),
-							"secret_access_key": []byte("secret"),
-							"session_token":     []byte("token"),
+							"access_key_id":     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
+							"secret_access_key": []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
+							"role":              []byte(config.GetEnvOrSkip(c, "role")),
 						},
 					},
 				},
 			},
-			repo:     "repo",
-			password: "my-secret",
-			expected: []string{
-				"export AWS_ACCESS_KEY_ID=id\n",
-				"export AWS_SECRET_ACCESS_KEY=secret\n",
-				"export AWS_SESSION_TOKEN=token\n",
-				"export RESTIC_REPOSITORY=s3:endpoint/repo\n",
-				"export RESTIC_PASSWORD=my-secret\n",
-				"restic",
+			output: IsNil,
+		},
+		{
+			profile: &param.Profile{
+				Location: v1alpha1.Location{
+					Type:     v1alpha1.LocationTypeS3Compliant,
+					Endpoint: "endpoint", // Also remove all of the trailing slashes
+				},
+				Credential: param.Credential{
+					Type: param.CredentialTypeSecret,
+					Secret: &v1.Secret{
+						Type: "secrets.kanister.io/aws",
+						Data: map[string][]byte{
+							"access_key_id":     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
+							"secret_access_key": []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
+							"role":              []byte("arn:aws:iam::000000000000:role/test-fake-role"),
+						},
+					},
+				},
 			},
+			output: NotNil,
 		},
 	} {
-		args, err := resticArgs(tc.profile, tc.repo, tc.password)
-		c.Assert(err, IsNil)
-		c.Assert(args, DeepEquals, tc.expected)
+		_, err := resticArgs(tc.profile, "repo", "my-secret")
+		c.Assert(err, tc.output)
 	}
 }
 

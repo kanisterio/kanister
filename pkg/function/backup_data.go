@@ -15,7 +15,6 @@
 package function
 
 import (
-	"bytes"
 	"context"
 
 	"github.com/pkg/errors"
@@ -23,7 +22,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
@@ -50,6 +48,10 @@ const (
 	BackupDataOutputBackupID = "backupID"
 	// BackupDataOutputBackupTag is the key used for returning backupTag output
 	BackupDataOutputBackupTag = "backupTag"
+	// BackupDataOutputBackupFileCount is the key used for returning backup file count
+	BackupDataOutputBackupFileCount = "fileCount"
+	// BackupDataOutputBackupSize is the key used for returning backup size
+	BackupDataOutputBackupSize = "size"
 )
 
 func init() {
@@ -62,23 +64,6 @@ type backupDataFunc struct{}
 
 func (*backupDataFunc) Name() string {
 	return "BackupData"
-}
-
-func validateProfile(profile *param.Profile) error {
-	if profile == nil {
-		return errors.New("Profile must be non-nil")
-	}
-	if err := ValidateCredentials(&profile.Credential); err != nil {
-		return err
-	}
-	switch profile.Location.Type {
-	case crv1alpha1.LocationTypeS3Compliant:
-	case crv1alpha1.LocationTypeGCS:
-	case crv1alpha1.LocationTypeAzure:
-	default:
-		return errors.New("Location type not supported")
-	}
-	return nil
 }
 
 func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -104,8 +89,7 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	}
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
-	// Validate the Profile
-	if err = validateProfile(tp.Profile); err != nil {
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
 	cli, err := kube.NewClient()
@@ -117,10 +101,10 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		return nil, errors.Wrapf(err, "Failed to backup data")
 	}
 	output := map[string]interface{}{
-		BackupDataOutputBackupID:       backupOutputs.backupID,
-		BackupDataOutputBackupTag:      backupOutputs.backupTag,
-		BackupDataStatsOutputFileCount: backupOutputs.fileCount,
-		BackupDataStatsOutputSize:      backupOutputs.backupSize,
+		BackupDataOutputBackupID:        backupOutputs.backupID,
+		BackupDataOutputBackupTag:       backupOutputs.backupTag,
+		BackupDataOutputBackupFileCount: backupOutputs.fileCount,
+		BackupDataOutputBackupSize:      backupOutputs.backupSize,
 	}
 	return output, nil
 }
@@ -138,11 +122,11 @@ type backupDataParsedOutput struct {
 }
 
 func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey string, tp param.TemplateParams) (backupDataParsedOutput, error) {
-	pw, err := getPodWriter(cli, ctx, namespace, pod, container, tp.Profile)
+	pw, err := GetPodWriter(cli, ctx, namespace, pod, container, tp.Profile)
 	if err != nil {
 		return backupDataParsedOutput{}, err
 	}
-	defer cleanUpCredsFile(ctx, pw, namespace, pod, container)
+	defer CleanUpCredsFile(ctx, pw, namespace, pod, container)
 	if err = restic.GetOrCreateRepository(cli, namespace, pod, container, backupArtifactPrefix, encryptionKey, tp.Profile); err != nil {
 		return backupDataParsedOutput{}, err
 	}
@@ -174,22 +158,4 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 		backupTag:  backupTag,
 		fileCount:  fileCount,
 		backupSize: backupSize}, nil
-}
-
-func getPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podName, containerName string, profile *param.Profile) (*kube.PodWriter, error) {
-	if profile.Location.Type == crv1alpha1.LocationTypeGCS {
-		pw := kube.NewPodWriter(cli, restic.GoogleCloudCredsFilePath, bytes.NewBufferString(profile.Credential.KeyPair.Secret))
-		if err := pw.Write(ctx, namespace, podName, containerName); err != nil {
-			return nil, err
-		}
-		return pw, nil
-	}
-	return nil, nil
-}
-func cleanUpCredsFile(ctx context.Context, pw *kube.PodWriter, namespace, podName, containerName string) {
-	if pw != nil {
-		if err := pw.Remove(ctx, namespace, podName, containerName); err != nil {
-			log.Error().WithContext(ctx).Print("Could not delete the temp file")
-		}
-	}
 }

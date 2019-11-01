@@ -42,8 +42,8 @@ func ObjectStoreProfileOrSkip(c *check.C, osType objectstore.ProviderType, locat
 	case objectstore.ProviderTypeS3:
 		key = GetEnvOrSkip(c, awsconfig.AccessKeyID)
 		val = GetEnvOrSkip(c, awsconfig.SecretAccessKey)
-		if session, ok := os.LookupEnv(awsconfig.SessionToken); ok {
-			return s3ProfileWithSecretCredential(location, key, val, session)
+		if role, ok := os.LookupEnv(awsconfig.ConfigRole); ok {
+			return s3ProfileWithSecretCredential(location, key, val, role)
 		}
 	case objectstore.ProviderTypeGCS:
 		GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
@@ -76,7 +76,7 @@ func GetEnvOrSkip(c *check.C, varName string) string {
 	return v
 }
 
-func s3ProfileWithSecretCredential(location crv1alpha1.Location, accessKeyID, secretAccessKey, sessionToken string) *param.Profile {
+func s3ProfileWithSecretCredential(location crv1alpha1.Location, accessKeyID, secretAccessKey, role string) *param.Profile {
 	return &param.Profile{
 		Location: location,
 		Credential: param.Credential{
@@ -86,7 +86,7 @@ func s3ProfileWithSecretCredential(location crv1alpha1.Location, accessKeyID, se
 				Data: map[string][]byte{
 					"access_key_id":     []byte(accessKeyID),
 					"secret_access_key": []byte(secretAccessKey),
-					"session_token":     []byte(sessionToken),
+					"role":              []byte(role),
 				},
 			},
 		},

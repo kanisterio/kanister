@@ -17,8 +17,8 @@ package function
 import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
-	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -51,8 +51,8 @@ func ArgExists(args map[string]interface{}, argName string) bool {
 }
 
 // GetPodSpecOverride merges PodOverride specs passed in args and TemplateParams and returns combined Override specs
-func GetPodSpecOverride(tp param.TemplateParams, args map[string]interface{}, argName string) (sp.JSONMap, error) {
-	var podOverride sp.JSONMap
+func GetPodSpecOverride(tp param.TemplateParams, args map[string]interface{}, argName string) (crv1alpha1.JSONMap, error) {
+	var podOverride crv1alpha1.JSONMap
 	var err error
 	if err = OptArg(args, KubeTaskPodOverrideArg, &podOverride, tp.PodOverride); err != nil {
 		return nil, err

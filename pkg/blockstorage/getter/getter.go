@@ -42,7 +42,7 @@ func New() Getter {
 func (*getter) Get(storageType blockstorage.Type, config map[string]string) (blockstorage.Provider, error) {
 	switch storageType {
 	case blockstorage.TypeEBS:
-		return awsebs.NewProvider(config)
+		return awsebs.NewProvider(context.TODO(), config)
 	case blockstorage.TypeSoftlayerBlock:
 		return ibm.NewProvider(context.TODO(), config)
 	case blockstorage.TypeGPD:

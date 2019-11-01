@@ -44,6 +44,9 @@ const (
 	ActionSetResourceNamePlural = "actionsets"
 )
 
+// JSONMap contains PodOverride specs.
+type JSONMap sp.JSONMap
+
 var _ runtime.Object = (*ActionSet)(nil)
 
 // +genclient
@@ -101,13 +104,13 @@ type ActionSpec struct {
 	Profile *ObjectReference `json:"profile"`
 	// PodOverride is used to specify pod specs that will override the
 	// default pod specs
-	PodOverride sp.JSONMap `json:"podOverride,omitempty"`
+	PodOverride JSONMap `json:"podOverride,omitempty"`
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
 	Options map[string]string `json:"options"`
-	// Version will be used to select the version of Kanister functions
+	// PreferredVersion will be used to select the preferred version of Kanister functions
 	// to be executed for this action
-	Version string `json:"version"`
+	PreferredVersion string `json:"preferredVersion"`
 }
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
