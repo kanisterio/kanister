@@ -108,9 +108,9 @@ type ActionSpec struct {
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
 	Options map[string]string `json:"options"`
-	// Version will be used to select the version of Kanister functions
+	// PreferredVersion will be used to select the preferred version of Kanister functions
 	// to be executed for this action
-	Version string `json:"version"`
+	PreferredVersion string `json:"preferredVersion"`
 }
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
