@@ -162,7 +162,7 @@ func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace, ver
 						Name:      TestProfileName,
 						Namespace: namespace,
 					},
-					Version: version,
+					PreferredVersion: version,
 				},
 			},
 		},
