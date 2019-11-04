@@ -439,13 +439,13 @@ func SnapshotIDsFromSnapshotCommand(output string) ([]string, error) {
 }
 
 // SpaceFreedFromPruneLog gets the space freed from the prune log output
-// Reference logging commad from restic codebase:
+// For reference, here is the logging command from restic codebase:
 // Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
 //		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
 func SpaceFreedFromPruneLog(output string) string {
 	var spaceFreed string
 	logs := regexp.MustCompile("[\n]").Split(output, -1)
-	// Log should contain "will delete x packs and rewrite y packs, this frees zz.zzz [[GMK]i]B"
+	// Log should contain "will delete x packs and rewrite y packs, this frees zz.zzz [[TGMK]i]B"
 	pattern := regexp.MustCompile(`^will delete \d+ packs and rewrite \d+ packs, this frees ([\d]+(\.[\d]+)?\s([TGMK]i)?B)$`)
 	for _, l := range logs {
 		match := pattern.FindAllStringSubmatch(l, 1)
