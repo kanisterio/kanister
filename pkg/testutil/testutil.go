@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -141,7 +141,7 @@ func NewTestProfile(namespace string, secretName string) *crv1alpha1.Profile {
 }
 
 // NewTestActionSet function returns a pointer to a new ActionSet test object
-func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace string) *crv1alpha1.ActionSet {
+func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace, version string) *crv1alpha1.ActionSet {
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-actionset-",
@@ -162,6 +162,7 @@ func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace stri
 						Name:      TestProfileName,
 						Namespace: namespace,
 					},
+					PreferredVersion: version,
 				},
 			},
 		},

@@ -23,11 +23,12 @@ import (
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
+	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned/scheme"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
@@ -268,42 +269,72 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			funcNames []string
 			args      [][]string
 			name      string
+			version   string
 		}{
 			{
 				funcNames: []string{testutil.WaitFuncName},
 				name:      "WaitFunc",
+				version:   kanister.DefaultVersion,
 			},
 			{
 				funcNames: []string{testutil.WaitFuncName, testutil.WaitFuncName},
 				name:      "WaitWait",
+				version:   kanister.DefaultVersion,
 			},
 			{
 				funcNames: []string{testutil.FailFuncName},
 				name:      "FailFunc",
+				version:   kanister.DefaultVersion,
 			},
 			{
 				funcNames: []string{testutil.WaitFuncName, testutil.FailFuncName},
 				name:      "WaitFail",
+				version:   kanister.DefaultVersion,
 			},
 			{
 				funcNames: []string{testutil.FailFuncName, testutil.WaitFuncName},
 				name:      "FailWait",
+				version:   kanister.DefaultVersion,
 			},
 			{
 				funcNames: []string{testutil.ArgFuncName},
 				name:      "ArgFunc",
+				version:   kanister.DefaultVersion,
 			},
 			{
 				funcNames: []string{testutil.ArgFuncName, testutil.FailFuncName},
 				name:      "ArgFail",
+				version:   kanister.DefaultVersion,
 			},
 			{
 				funcNames: []string{testutil.OutputFuncName},
 				name:      "OutputFunc",
+				version:   kanister.DefaultVersion,
 			},
 			{
 				funcNames: []string{testutil.CancelFuncName},
 				name:      "CancelFunc",
+				version:   kanister.DefaultVersion,
+			},
+			{
+				funcNames: []string{testutil.ArgFuncName},
+				name:      "ArgFuncVersion",
+				version:   testutil.TestVersion,
+			},
+			{
+				funcNames: []string{testutil.ArgFuncName},
+				name:      "ArgFuncVersionFallback",
+				version:   "v1.2.3",
+			},
+			{
+				funcNames: []string{testutil.ArgFuncName},
+				name:      "ArgFuncNoActionSetVersion",
+				version:   "",
+			},
+			{
+				funcNames: []string{testutil.VersionMismatchFuncName},
+				name:      "VersionMismatchFunc",
+				version:   "v1.2.3",
 			},
 		} {
 			var err error
@@ -324,7 +355,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			}
 
 			// Add an actionset that references that blueprint.
-			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace)
+			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace, tc.version)
 			as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 			as, err = s.crCli.ActionSets(s.namespace).Create(as)
 			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
@@ -352,6 +383,9 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 					c.Assert(err, IsNil)
 					c.Assert(testutil.CancelFuncOut().Error(), DeepEquals, "context canceled")
 					cancel = true
+				case testutil.VersionMismatchFuncName:
+					final = crv1alpha1.StateFailed
+					c.Assert(err, IsNil)
 				}
 			}
 
@@ -442,7 +476,7 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
-	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace)
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(as)
 	c.Assert(err, IsNil)
@@ -472,7 +506,7 @@ func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
-	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace)
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(as)
 	c.Assert(err, IsNil)
