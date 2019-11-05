@@ -199,7 +199,7 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
 	pc := objectstore.ProviderConfig{Type: pType}
-	secret, err := osSecretFromProfile(pType, p, cli)
+	secret, err := osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
 	}
@@ -228,7 +228,7 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 	default:
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-	secret, err = osSecretFromProfile(pType, p, cli)
+	secret, err = osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
 	}
@@ -265,7 +265,7 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	default:
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-	secret, err = osSecretFromProfile(pType, p, cli)
+	secret, err = osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
 	}
@@ -294,7 +294,7 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	return nil
 }
 
-func osSecretFromProfile(pType objectstore.ProviderType, p *crv1alpha1.Profile, cli kubernetes.Interface) (*objectstore.Secret, error) {
+func osSecretFromProfile(ctx context.Context, pType objectstore.ProviderType, p *crv1alpha1.Profile, cli kubernetes.Interface) (*objectstore.Secret, error) {
 	var key, value []byte
 	var ok bool
 	secret := &objectstore.Secret{}
@@ -319,7 +319,7 @@ func osSecretFromProfile(pType objectstore.ProviderType, p *crv1alpha1.Profile, 
 		if err != nil {
 			return nil, errorf("Could not fetch the secret specified in credential")
 		}
-		creds, err := secrets.ExtractAWSCredentials(s)
+		creds, err := secrets.ExtractAWSCredentials(ctx, s)
 		if err != nil {
 			return nil, err
 		}
