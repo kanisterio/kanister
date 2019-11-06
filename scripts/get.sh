@@ -59,7 +59,7 @@ verifySupported() {
         exit 1
     fi
 
-    local required_tools=("curl")
+    local required_tools=("curl" "shasum")
     for tool in "${required_tools[@]}"; do
         if ! type "${tool}" > /dev/null; then
             echo "${tool} is required"
@@ -86,7 +86,7 @@ downloadFile() {
 
     local release_url="${RELEASES_URL}/download/${version}"
     local kanister_dist="${DIST_NAME}_${version}_${OS}_${ARCH}.tar.gz"
-    local kanister_checksum="${DIST_NAME}_${version}_checksums.txt"
+    local kanister_checksum="checksums.txt"
 
     local download_url="${release_url}/${kanister_dist}"
     local checksum_url="${release_url}/${kanister_checksum}"
@@ -103,7 +103,7 @@ downloadFile() {
     pushd "${KANISTER_TMP_ROOT}"
     local filtered_checksum="./${kanister_dist}.sha256"
     grep "${kanister_dist}" < "${kanister_checksum}" > "${filtered_checksum}"
-    sha256sum -c "${filtered_checksum}"
+    shasum -a 256 -c "${filtered_checksum}"
     popd
 }
 
