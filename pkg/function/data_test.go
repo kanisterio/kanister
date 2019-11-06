@@ -189,6 +189,26 @@ func newDescribeBackupsBlueprint() *crv1alpha1.Blueprint {
 	}
 }
 
+func newCheckRepositoryBlueprint() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"checkRepository": &crv1alpha1.BlueprintAction{
+				Kind: param.StatefulSetKind,
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testCheckRepository",
+						Func: "CheckRepository",
+						Args: map[string]interface{}{
+							CheckRepositoryArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
+							CheckRepositoryEncryptionKeyArg:  "{{ .Secrets.backupKey.Data.password | toString }}",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func newLocationDeleteBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
@@ -613,4 +633,54 @@ func (s *DataSuite) TestDescribeBackupsRepoNotAvailable(c *C) {
 	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], c.TestName())
 	out2 := runAction(c, bp2, "describeBackups", tp)
 	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Equals, "true")
+}
+
+func (s *DataSuite) TestCheckRepository(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	// Test CheckRepository
+	bp2 := *newCheckRepositoryBlueprint()
+	out2 := runAction(c, bp2, "checkRepository", tp)
+	c.Assert(out2[CheckRepositoryPasswordIncorrect].(string), Equals, "false")
+	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), Equals, "false")
+}
+
+func (s *DataSuite) TestCheckRepositoryWrongPassword(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg], "abcdef")
+	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = "foobar"
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	// Test CheckRepository
+	bp2 := *newCheckRepositoryBlueprint()
+	bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg], "abcdef")
+	out2 := runAction(c, bp2, "checkRepository", tp)
+	c.Assert(out2[CheckRepositoryPasswordIncorrect].(string), Equals, "true")
+}
+
+func (s *DataSuite) TestCheckRepositoryRepoNotAvailable(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	// Test CheckRepository
+	bp2 := *newCheckRepositoryBlueprint()
+	bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg], c.TestName())
+	out2 := runAction(c, bp2, "checkRepository", tp)
+	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), Equals, "true")
 }
