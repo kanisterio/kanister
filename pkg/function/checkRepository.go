@@ -99,11 +99,10 @@ func CheckRepositoryPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 
 func (*CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var getCheckRepositoryArtifactPrefix, encryptionKey string
-	var err error
-	if err = Arg(args, CheckRepositoryArtifactPrefixArg, &getCheckRepositoryArtifactPrefix); err != nil {
+	if err := Arg(args, CheckRepositoryArtifactPrefixArg, &getCheckRepositoryArtifactPrefix); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, CheckRepositoryEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
+	if err := OptArg(args, CheckRepositoryEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
 	podOverride, err := GetPodSpecOverride(tp, args, CheckRepositoryPodOverrideArg)

@@ -647,8 +647,8 @@ func (s *DataSuite) TestCheckRepository(c *C) {
 	// Test CheckRepository
 	bp2 := *newCheckRepositoryBlueprint()
 	out2 := runAction(c, bp2, "checkRepository", tp)
-	c.Assert(out2[CheckRepositoryPasswordIncorrect].(string), Not(Equals), "")
-	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), Not(Equals), "")
+	c.Assert(out2[CheckRepositoryPasswordIncorrect].(string), Equals, "false")
+	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), Equals, "false")
 }
 
 func (s *DataSuite) TestCheckRepositoryWrongPassword(c *C) {
