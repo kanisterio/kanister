@@ -115,6 +115,20 @@ func NewTestProfileSecret() *v1.Secret {
 	}
 }
 
+// NewTestProfileSecretWithRole function returns a pointer to a new Secret test object with role.
+func NewTestProfileSecretWithRole(role string) *v1.Secret {
+	return &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-secret-",
+		},
+		Data: map[string][]byte{
+			"id":     []byte("foo"),
+			"secret": []byte("bar"),
+			"role":   []byte(role),
+		},
+	}
+}
+
 // NewTestProfile function returns a pointer to a new Profile test object that
 // passes validation.
 func NewTestProfile(namespace string, secretName string) *crv1alpha1.Profile {
