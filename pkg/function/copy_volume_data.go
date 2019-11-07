@@ -149,6 +149,12 @@ func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 		return nil, err
 	}
 
+	if err = ValidateProfile(tp.Profile); err != nil {
+		return nil, errors.Wrapf(err, "Failed to validate Profile")
+	}
+
+	targetPath = ResolveArtifactPrefix(targetPath, tp.Profile)
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")

@@ -194,6 +194,9 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
+
+	backupArtifactPrefix = ResolveArtifactPrefix(backupArtifactPrefix, tp.Profile)
+
 	if len(vols) == 0 {
 		// Fetch Volumes
 		vols, err = FetchPodVolumes(pod, tp)

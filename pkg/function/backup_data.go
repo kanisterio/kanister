@@ -87,15 +87,19 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = OptArg(args, BackupDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
-	ctx = field.Context(ctx, consts.PodNameKey, pod)
-	ctx = field.Context(ctx, consts.ContainerNameKey, container)
+
 	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
+
+	backupArtifactPrefix = ResolveArtifactPrefix(backupArtifactPrefix, tp.Profile)
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
+	ctx = field.Context(ctx, consts.PodNameKey, pod)
+	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	backupOutputs, err := backupData(ctx, cli, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey, tp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to backup data")

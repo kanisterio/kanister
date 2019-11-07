@@ -87,10 +87,13 @@ func (*backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = OptArg(args, BackupDataAllEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
-	ctx = field.Context(ctx, consts.ContainerNameKey, container)
+
 	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
+
+	backupArtifactPrefix = ResolveArtifactPrefix(backupArtifactPrefix, tp.Profile)
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
@@ -108,6 +111,7 @@ func (*backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	} else {
 		ps = strings.Fields(pods)
 	}
+	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	return backupDataAll(ctx, cli, namespace, ps, container, backupArtifactPrefix, includePath, encryptionKey, tp)
 }
 
