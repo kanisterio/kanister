@@ -15,14 +15,21 @@
 package testutil
 
 import (
+	"context"
 	"fmt"
+	"os"
 
+	"golang.org/x/oauth2/google"
+	compute "google.golang.org/api/compute/v1"
+	"gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/blockstorage"
+	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 )
 
 // NewTestPVC function returns a pointer to a new PVC test object
@@ -135,6 +142,68 @@ func NewTestProfile(namespace string, secretName string) *crv1alpha1.Profile {
 				},
 				IDField:     "id",
 				SecretField: "secret",
+			},
+		},
+	}
+}
+
+// NewSecretProfile figures out Provider type from the location type and
+// returns a pointer to Secret and Profile
+func NewSecretProfile(c *check.C, name, namespace string, location crv1alpha1.Location) (*v1.Secret, *crv1alpha1.Profile, error) {
+	var key, val string
+	data := make(map[string]string)
+
+	switch location.Type {
+	case crv1alpha1.LocationTypeS3Compliant:
+		key = os.Getenv(awsconfig.AccessKeyID)
+		val = os.Getenv(awsconfig.SecretAccessKey)
+		if role := os.Getenv(awsconfig.ConfigRole); role != "" {
+			data["role"] = role
+		}
+	case crv1alpha1.LocationTypeGCS:
+		os.Getenv(blockstorage.GoogleCloudCreds)
+		creds, err := google.FindDefaultCredentials(context.Background(), compute.ComputeScope)
+		if err != nil {
+			return nil, nil, err
+		}
+		key = creds.ProjectID
+		val = string(creds.JSON)
+	case crv1alpha1.LocationTypeAzure:
+		key = os.Getenv(blockstorage.AzureStorageAccount)
+		val = os.Getenv(blockstorage.AzureStorageKey)
+	}
+	data["access_key_id"] = key
+	data["secret_access_key"] = val
+	return NewProfileSecret(name, data), NewProfile(name, namespace, location), nil
+}
+
+// NewProfileSecret function returns a pointer to a new Secret test object.
+func NewProfileSecret(name string, data map[string]string) *v1.Secret {
+	return &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		StringData: data,
+	}
+}
+
+// NewProfile function returns a pointer to a new Profile object that
+// passes validation.
+func NewProfile(name, namespace string, location crv1alpha1.Location) *crv1alpha1.Profile {
+	return &crv1alpha1.Profile{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Location: location,
+		Credential: crv1alpha1.Credential{
+			Type: crv1alpha1.CredentialTypeKeyPair,
+			KeyPair: &crv1alpha1.KeyPair{
+				Secret: crv1alpha1.ObjectReference{
+					Name:      name,
+					Namespace: namespace,
+				},
+				IDField:     "access_key_id",
+				SecretField: "secret_access_key",
 			},
 		},
 	}
