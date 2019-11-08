@@ -400,3 +400,38 @@ func (s *ResticDataSuite) TestGetSpaceFreedFromPruneLog(c *C) {
 		c.Check(spaceFreed, Equals, tc.expectedSpaceFreed)
 	}
 }
+
+func (s *ResticDataSuite) TestResticSizeStringParser(c *C) {
+	for _, tc := range []struct {
+		input         string
+		expectedSizeB int64
+	}{
+		{input: "11235 B", expectedSizeB: 11235},
+		{input: "11235 KB", expectedSizeB: 0},
+		{input: "11235 MB", expectedSizeB: 0},
+		{input: "11235 GB", expectedSizeB: 0},
+		{input: "11235 TB", expectedSizeB: 0},
+		{input: "11235 TiB", expectedSizeB: 11235 * (1 << 40)},
+		{input: "11235 GiB", expectedSizeB: 11235 * (1 << 30)},
+		{input: "11235 MiB", expectedSizeB: 11235 * (1 << 20)},
+		{input: "11235 KiB", expectedSizeB: 11235 * (1 << 10)},
+		{input: "", expectedSizeB: 0},
+		{input: "asdf", expectedSizeB: 0},
+		{input: "123 asdf", expectedSizeB: 0},
+		{input: "asdf GiB", expectedSizeB: 0},
+		{input: "11235", expectedSizeB: 0},
+		{input: "1.1 GiB", expectedSizeB: 1181116006},
+		{input: "1.1235 GiB", expectedSizeB: 1206348939},
+		{input: " 1.1235 GiB", expectedSizeB: 0},
+		{input: "1.1235  GiB", expectedSizeB: 0},
+		{input: "1.1235  GiB ", expectedSizeB: 0},
+		{input: "1.1235 GiB ", expectedSizeB: 0},
+		{input: "1.1235 GiB GiB", expectedSizeB: 0},
+		{input: "1.1235 1 GiB", expectedSizeB: 0},
+		{input: "-1.1235 GiB", expectedSizeB: 0},
+		{input: "GiB 1.1235", expectedSizeB: 0},
+	} {
+		parsedSize := ParseResticSizeStringBytes(tc.input)
+		c.Check(parsedSize, Equals, tc.expectedSizeB)
+	}
+}
