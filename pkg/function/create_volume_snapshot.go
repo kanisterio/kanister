@@ -48,6 +48,8 @@ var (
 )
 
 const (
+	// CreateVolumeSnapshotFuncName gives the name of the function
+	CreateVolumeSnapshotFuncName     = "CreateVolumeSnapshot"
 	CreateVolumeSnapshotNamespaceArg = "namespace"
 	CreateVolumeSnapshotPVCsArg      = "pvcs"
 	CreateVolumeSnapshotSkipWaitArg  = "skipWait"
@@ -56,7 +58,7 @@ const (
 type createVolumeSnapshotFunc struct{}
 
 func (*createVolumeSnapshotFunc) Name() string {
-	return "CreateVolumeSnapshot"
+	return CreateVolumeSnapshotFuncName
 }
 
 type VolumeSnapshotInfo struct {
