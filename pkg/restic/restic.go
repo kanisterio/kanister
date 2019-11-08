@@ -342,26 +342,38 @@ func SnapshotIDFromBackupLog(output string) string {
 }
 
 // SnapshotStatsFromBackupLog gets the Snapshot file count and size from Backup Command log
-func SnapshotStatsFromBackupLog(output string) (fileCount string, backupSize string) {
+func SnapshotStatsFromBackupLog(output string) (fileCount string, backupSize string, phySize string) {
 	if output == "" {
-		return "", ""
+		return "", "", ""
 	}
 	logs := regexp.MustCompile("[\n]").Split(output, -1)
 	// Log should contain "processed %d files, %.3f [Xi]B in mm:ss"
-	pattern := regexp.MustCompile(`processed\s([\d]+)\sfiles,\s([\d]+(\.[\d]+)?\s([TGMK]i)?B)\sin\s`)
+	logicalPattern := regexp.MustCompile(`processed\s([\d]+)\sfiles,\s([\d]+(\.[\d]+)?\s([TGMK]i)?B)\sin\s`)
+	physicalPattern := regexp.MustCompile(`^Added to the repo: ([\d]+(\.[\d]+)?\s([TGMK]i)?B)$`)
+
 	for _, l := range logs {
-		match := pattern.FindAllStringSubmatch(l, 1)
-		if match != nil {
-			if len(match) >= 1 && len(match[0]) >= 3 {
+		logMatch := logicalPattern.FindAllStringSubmatch(l, 1)
+		phyMatch := physicalPattern.FindAllStringSubmatch(l, 1)
+		switch {
+		case logMatch != nil:
+			if len(logMatch) >= 1 && len(logMatch[0]) >= 3 {
 				// Expect in order:
 				// 0: entire match,
 				// 1: first submatch == file count,
 				// 2: second submatch == size string
-				return match[0][1], match[0][2]
+				fileCount = logMatch[0][1]
+				backupSize = logMatch[0][2]
+			}
+		case phyMatch != nil:
+			if len(phyMatch) >= 1 && len(phyMatch[0]) >= 2 {
+				// Expect in order:
+				// 0: entire match,
+				// 1: first submatch == size string,
+				phySize = phyMatch[0][1]
 			}
 		}
 	}
-	return "", ""
+	return fileCount, backupSize, phySize
 }
 
 // SnapshotStatsFromStatsLog gets the Snapshot Stats from Stats Command log

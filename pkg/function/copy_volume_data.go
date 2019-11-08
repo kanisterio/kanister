@@ -47,6 +47,7 @@ const (
 	CopyVolumeDataPodOverrideArg               = "podOverride"
 	CopyVolumeDataOutputBackupFileCount        = "fileCount"
 	CopyVolumeDataOutputBackupSize             = "size"
+	CopyVolumeDataOutputPhysicalSize           = "phySize"
 )
 
 func init() {
@@ -113,7 +114,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 		if backupID == "" {
 			return nil, errors.New("Failed to parse the backup ID from logs")
 		}
-		fileCount, backupSize := restic.SnapshotStatsFromBackupLog(stdout)
+		fileCount, backupSize, phySize := restic.SnapshotStatsFromBackupLog(stdout)
 		if backupSize == "" {
 			log.Debug().Print("Could not parse backup stats from backup log")
 		}
@@ -124,6 +125,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 				CopyVolumeDataOutputBackupTag:              backupTag,
 				CopyVolumeDataOutputBackupFileCount:        fileCount,
 				CopyVolumeDataOutputBackupSize:             backupSize,
+				CopyVolumeDataOutputPhysicalSize:           phySize,
 			},
 			nil
 	}

@@ -119,6 +119,7 @@ type backupDataParsedOutput struct {
 	backupTag  string
 	fileCount  string
 	backupSize string
+	phySize    string
 }
 
 func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey string, tp param.TemplateParams) (backupDataParsedOutput, error) {
@@ -149,7 +150,7 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 		return backupDataParsedOutput{}, errors.New("Failed to parse the backup ID from logs")
 	}
 	// Get the file count and size of the backup from log
-	fileCount, backupSize := restic.SnapshotStatsFromBackupLog(stdout)
+	fileCount, backupSize, phySize := restic.SnapshotStatsFromBackupLog(stdout)
 	if fileCount == "" || backupSize == "" {
 		log.Debug().Print("Could not parse backup stats from backup log")
 	}
@@ -157,5 +158,7 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 		backupID:   backupID,
 		backupTag:  backupTag,
 		fileCount:  fileCount,
-		backupSize: backupSize}, nil
+		backupSize: backupSize,
+		phySize:    phySize,
+	}, nil
 }
