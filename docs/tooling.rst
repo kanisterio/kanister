@@ -383,11 +383,8 @@ Installation of the tools requires `Go <https://golang.org/doc/install>`_ to be 
 
 .. code-block:: bash
 
-  # Installing kanctl
-  $ go install -v github.com/kanisterio/kanister/cmd/kanctl
-
-  # Installing kando
-  $ go install -v github.com/kanisterio/kanister/cmd/kando
+  # The script installs both kanctl and kando
+  $ curl https://raw.githubusercontent.com/kanisterio/kanister/master/scripts/get.sh | bash
 
 
 Docker Image

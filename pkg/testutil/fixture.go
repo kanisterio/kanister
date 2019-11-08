@@ -29,6 +29,7 @@ import (
 	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 const (
@@ -84,9 +85,9 @@ func s3ProfileWithSecretCredential(location crv1alpha1.Location, accessKeyID, se
 			Secret: &v1.Secret{
 				Type: "secrets.kanister.io/aws",
 				Data: map[string][]byte{
-					"access_key_id":     []byte(accessKeyID),
-					"secret_access_key": []byte(secretAccessKey),
-					"role":              []byte(role),
+					secrets.AWSAccessKeyID:     []byte(accessKeyID),
+					secrets.AWSSecretAccessKey: []byte(secretAccessKey),
+					secrets.ConfigRole:         []byte(role),
 				},
 			},
 		},

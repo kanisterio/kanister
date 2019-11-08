@@ -16,11 +16,9 @@ const (
 	AWSSecretType string = "secrets.kanister.io/aws"
 
 	// AWSAccessKeyID is the key for AWS access key ID.
-	AWSAccessKeyID string = "access_key_id"
+	AWSAccessKeyID string = "aws_access_key_id"
 	// AWSSecretAccessKey is the key for AWS secret access key.
-	AWSSecretAccessKey string = "secret_access_key"
-	// AWSSessionToken is the key for optional AWS session token.
-	AWSSessionToken string = "session_token"
+	AWSSecretAccessKey string = "aws_secret_access_key"
 	// ConfigRole represents the key for the ARN of the role which can be assumed.
 	// It is optional.
 	ConfigRole         = "role"
