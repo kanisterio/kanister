@@ -50,9 +50,9 @@ const (
 	AzureStorageAccountFlag = "storage-account"
 	AzureStorageKeyFlag     = "storage-key"
 
-	idField           = "access_key_id"
-	secretField       = "secret_access_key"
-	roleField         = "role" // required only for AWS IAM role
+	idField           = secrets.AWSAccessKeyID
+	secretField       = secrets.AWSSecretAccessKey
+	roleField         = secrets.ConfigRole // required only for AWS IAM role
 	skipSSLVerifyFlag = "skip-SSL-verification"
 
 	schemaValidation      = "Validate Profile schema"
