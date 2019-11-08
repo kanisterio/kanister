@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -454,4 +455,45 @@ func SpaceFreedFromPruneLog(output string) string {
 		}
 	}
 	return spaceFreed
+}
+
+// ParseResticSizeStringBytes parses size strings as formatted by restic to
+// a int64 number of bytes
+func ParseResticSizeStringBytes(sizeStr string) int64 {
+	components := regexp.MustCompile(`[\s]`).Split(sizeStr, -1)
+	if len(components) != 2 {
+		return 0
+	}
+	sizeNumStr := components[0]
+	sizeNum, err := strconv.ParseFloat(sizeNumStr, 64)
+	if err != nil {
+		return 0
+	}
+	if sizeNum < 0 {
+		return 0
+	}
+	magnitudeStr := components[1]
+	pattern := regexp.MustCompile(`^(([TGMK]i)?B)$`)
+	match := pattern.FindAllStringSubmatch(magnitudeStr, 1)
+	if match != nil {
+		if len(match) != 1 || len(match[0]) != 3 {
+			return 0
+		}
+		magnitude := match[0][1]
+		switch magnitude {
+		case "TiB":
+			return int64(sizeNum * (1 << 40))
+		case "GiB":
+			return int64(sizeNum * (1 << 30))
+		case "MiB":
+			return int64(sizeNum * (1 << 20))
+		case "KiB":
+			return int64(sizeNum * (1 << 10))
+		case "B":
+			return int64(sizeNum)
+		default:
+			return 0
+		}
+	}
+	return 0
 }
