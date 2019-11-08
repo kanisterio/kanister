@@ -71,7 +71,7 @@ func newPrepareDataBlueprint(kind, pvc string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
 						Name: "test1",
-						Func: "PrepareData",
+						Func: PrepareDataFuncName,
 						Args: map[string]interface{}{
 							PrepareDataNamespaceArg: fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							PrepareDataImageArg:     "busybox",
@@ -84,7 +84,7 @@ func newPrepareDataBlueprint(kind, pvc string) *crv1alpha1.Blueprint {
 					},
 					{
 						Name: "test2",
-						Func: "PrepareData",
+						Func: PrepareDataFuncName,
 						Args: map[string]interface{}{
 							PrepareDataNamespaceArg: fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							PrepareDataImageArg:     "busybox",
@@ -98,7 +98,7 @@ func newPrepareDataBlueprint(kind, pvc string) *crv1alpha1.Blueprint {
 					},
 					{
 						Name: "test3",
-						Func: "PrepareData",
+						Func: PrepareDataFuncName,
 						Args: map[string]interface{}{
 							PrepareDataNamespaceArg: fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							PrepareDataImageArg:     "busybox",

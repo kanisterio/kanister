@@ -88,7 +88,7 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
-						Func: "KubeExec",
+						Func: KubeExecFuncName,
 						Args: map[string]interface{}{
 							KubeExecNamespaceArg:     fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							KubeExecPodNameArg:       fmt.Sprintf("{{ index .%s.Pods 1 }}", kind),
@@ -103,7 +103,7 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
-						Func: "ScaleWorkload",
+						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
 							ScaleWorkloadReplicas: 0,
 						},
@@ -115,7 +115,7 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
-						Func: "ScaleWorkload",
+						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
 							ScaleWorkloadReplicas: "2",
 						},
