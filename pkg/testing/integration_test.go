@@ -37,12 +37,18 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
+type secretProfile struct {
+	secret  *v1.Secret
+	profile *crv1alpha1.Profile
+}
+
 type IntegrationSuite struct {
 	name      string
 	cli       kubernetes.Interface
 	crCli     crclient.CrV1alpha1Interface
 	app       app.App
 	bp        app.Blueprinter
+	profile   *secretProfile
 	namespace string
 	skip      bool
 	cancel    context.CancelFunc
@@ -54,7 +60,25 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "rds-postgres-test",
 	app:       app.NewPostgresDB(),
 	bp:        app.NewPostgresBP(),
+	profile:   newSecretProfile("", "", ""),
 })
+
+func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
+	_, location := testutil.GetObjectstoreLocation()
+	location.Bucket = bucket
+	location.Endpoint = endpoint
+	location.Prefix = prefix
+
+	secret, profile, err := testutil.NewSecretProfileFromLocation(location)
+	if err != nil {
+		log.Errorf("Failed to create profile. %s", err.Error())
+		return nil
+	}
+	return &secretProfile{
+		secret:  secret,
+		profile: profile,
+	}
+}
 
 func (s *IntegrationSuite) SetUpSuite(c *C) {
 	ctx := context.Background()
@@ -90,6 +114,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	// Execute e2e workflow
 	log.Infof("Running e2e integration test for %s", s.name)
+
 	// Check config
 	err := s.app.Init(ctx)
 	if err != nil {
@@ -98,8 +123,13 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		c.Skip(err.Error())
 	}
 
+	// Create namespace
 	err = createNamespace(s.cli, s.namespace)
 	c.Assert(err, IsNil)
+
+	// Create profile
+	c.Assert(s.profile, NotNil)
+	profileName := s.createProfile(c)
 
 	// Install db
 	err = s.app.Install(ctx, s.namespace)
@@ -109,16 +139,6 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	ok, err := s.app.IsReady(ctx)
 	c.Assert(err, IsNil)
 	c.Assert(ok, Equals, true)
-
-	// Create profile
-	_, location := testutil.ObjectstoreLocationOrSkip()
-	secret, profile, err := testutil.NewSecretProfile(c, s.name, s.namespace, location)
-	c.Assert(err, IsNil)
-
-	_, err = s.cli.CoreV1().Secrets(s.namespace).Create(secret)
-	c.Assert(err, IsNil)
-	_, err = s.crCli.Profiles(s.namespace).Create(profile)
-	c.Assert(err, IsNil)
 
 	// Create blueprint
 	bp := s.bp.Blueprint()
@@ -150,8 +170,11 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		secrets = a.Secrets()
 	}
 
+	// Validate Blueprint
+	validateBlueprint(c, *bp, configMaps, secrets)
+
 	// Create ActionSet specs
-	as := newActionSet(bp.GetName(), profile.GetName(), s.namespace, s.app.Object(), configMaps, secrets)
+	as := newActionSet(bp.GetName(), profileName, s.namespace, s.app.Object(), configMaps, secrets)
 
 	// Take backup
 	backup := s.createActionset(ctx, c, as, "backup")
@@ -203,19 +226,50 @@ func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectRef
 					},
 					ConfigMaps: configMaps,
 					Secrets:    secrets,
-					PodOverride: map[string]interface{}{
-						"containers": []map[string]interface{}{
-							{
-								"name":            "container",
-								"imagePullPolicy": "IfNotPresent",
-							},
-						},
-					},
 				},
 			},
 		},
 	}
+}
 
+func (s *IntegrationSuite) createProfile(c *C) string {
+	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(s.profile.secret)
+	c.Assert(err, IsNil)
+
+	// set secret ref in profile
+	s.profile.profile.Credential.KeyPair.Secret = crv1alpha1.ObjectReference{
+		Name:      secret.GetName(),
+		Namespace: secret.GetNamespace(),
+	}
+	profile, err := s.crCli.Profiles(s.namespace).Create(s.profile.profile)
+	c.Assert(err, IsNil)
+
+	return profile.GetName()
+}
+
+func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[string]crv1alpha1.ObjectReference) {
+	for _, action := range bp.Actions {
+		// Validate BP action ConfigMapNames with the app.ConfigMaps references
+		for _, bpc := range action.ConfigMapNames {
+			validConfig := false
+			for appc, _ := range configMaps {
+				if appc == bpc {
+					validConfig = true
+				}
+			}
+			c.Assert(validConfig, Equals, true)
+		}
+		// Validate BP action SecretNames with the app.Secrets reference
+		for _, bps := range action.SecretNames {
+			validSecret := false
+			for apps, _ := range secrets {
+				if apps == bps {
+					validSecret = true
+				}
+			}
+			c.Assert(validSecret, Equals, true)
+		}
+	}
 }
 
 // createActionset creates and wait for actionset to complete

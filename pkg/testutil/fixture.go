@@ -36,8 +36,8 @@ const (
 	TestS3Region     = "us-west-2"
 )
 
-// ObjectstoreLocationOrSkip figures out which location to use based on creds set as env vars
-func ObjectstoreLocationOrSkip() (objectstore.ProviderType, crv1alpha1.Location) {
+// GetObjectstoreLocation finds out which location to use based on creds set as env vars
+func GetObjectstoreLocation() (objectstore.ProviderType, crv1alpha1.Location) {
 	// Check if S3 provider
 	var provider objectstore.ProviderType
 	var location crv1alpha1.Location
@@ -64,10 +64,6 @@ func ObjectstoreLocationOrSkip() (objectstore.ProviderType, crv1alpha1.Location)
 		}
 		provider = objectstore.ProviderTypeAzure
 	}
-	location.Bucket = os.Getenv("LOCATION_BUCKET")
-	location.Endpoint = os.Getenv("LOCATION_ENDPOINT")
-	location.Prefix = os.Getenv("LOCATION_PREFIX")
-
 	return provider, location
 }
 
