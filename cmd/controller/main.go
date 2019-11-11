@@ -30,6 +30,7 @@ import (
 
 	"k8s.io/client-go/rest"
 
+	_ "github.com/kanisterio/kanister/pkg/blueprint"
 	"github.com/kanisterio/kanister/pkg/controller"
 	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/handler"

@@ -2,6 +2,8 @@ project_name: kanister
 before:
   hooks:
   - go mod download
+  - go get -u github.com/gobuffalo/packr/v2/packr2
+  - ./build/pre-hooks.sh
 builds:
 - id: kanctl
   binary: kanctl
@@ -35,6 +37,8 @@ builds:
   env: *env
   goos: *goos
   goarch: *goarch
+  hooks:
+    post: ./build/post-hooks.sh
 dockers:
 - binaries:
   - controller
