@@ -16,15 +16,15 @@ implements the following go interface:
       RequiredArgs() []string
   }
 
-Kanister Functions are registered by the return value of `Name()`, which must be
+Kanister Functions are registered by the return value of ``Name()``, which must be
 static.
 
-Each phase in a Blueprint executes a Kanister Function.  The `Func` field in
-a `BlueprintPhase` is used to lookup a Kanister Function.  After
-`BlueprintPhase.Args` are rendered, they are passed into the Kanister Function's
-`Exec()` method.
+Each phase in a Blueprint executes a Kanister Function.  The ``Func`` field in
+a ``BlueprintPhase`` is used to lookup a Kanister Function.  After
+``BlueprintPhase.Args`` are rendered, they are passed into the Kanister Function's
+``Exec()`` method.
 
-The `RequiredArgs` method returns the list of argument names that are required.
+The ``RequiredArgs`` method returns the list of argument names that are required.
 
 Existing Functions
 ==================
@@ -49,7 +49,7 @@ KubeExec is similar to running
 
    `namespace`, Yes, `string`, namespace in which to execute
    `pod`, Yes, `string`, name of the pod in which to execute
-   `container`, Yes, `string`, name of the container in which to execute
+   `container`, No , `string`, (required if pod contains more than 1 container) name of the container in which to execute
    `command`, Yes, `[]string`,  command list to execute
 
 Example:
@@ -121,6 +121,7 @@ This allows you to run a new Pod from a Blueprint.
    `namespace`, Yes, `string`, namespace in which to execute
    `image`, Yes, `string`, image to be used for executing the task
    `command`, Yes, `[]string`,  command list to execute
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Example:
 
@@ -132,6 +133,10 @@ Example:
     args:
       namespace: "{{ .Deployment.Namespace }}"
       image: busybox
+      podOverride:
+        containers:
+        - name: container
+          imagePullPolicy: IfNotPresent
       command:
         - sh
         - -c
@@ -155,10 +160,10 @@ It is similar to running
 
 .. code-block:: bash
 
-  `kubectl scale deployment <DEPLOYMENT-NAME> --replicas=<NUMBER OF REPLICAS> --namespace <NAMESPACE>`
+  kubectl scale deployment <DEPLOYMENT-NAME> --replicas=<NUMBER OF REPLICAS> --namespace <NAMESPACE>
 
 This can be useful if the workload needs to be shutdown before processing
-certain data operations. For example, it may be useful to use `ScaleWorkload`
+certain data operations. For example, it may be useful to use ``ScaleWorkload``
 to stop a database process before restoring files.
 
 .. csv-table::
@@ -222,17 +227,18 @@ ScaleWorkload.
 
    `namespace`, Yes, `string`, namespace in which to execute
    `image`, Yes, `string`, image to be used the command
-   `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available.
+   `volumes`, No, `map[string]string`, Mapping of ``pvcName`` to ``mountPath`` under which the volume will be available.
    `command`, Yes, `[]string`,  command list to execute
    `serviceaccount`, No, `string`,  service account info
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
-   The `volumes` argument does not support `subPath` mounts so the
-   data manipulation logic needs to be aware of any `subPath` mounts
+   The ``volumes`` argument does not support ``subPath`` mounts so the
+   data manipulation logic needs to be aware of any ``subPath`` mounts
    that may have been used when mounting a PVC in the primary
    application container.
-   If `volumes` argument is not specified, all volumes belonging to the protected object
-   will be mounted at the predefined path `/mnt/prepare_data/<pvcName>`
+   If ``volumes`` argument is not specified, all volumes belonging to the protected object
+   will be mounted at the predefined path ``/mnt/prepare_data/<pvcName>``
 
 Example:
 
@@ -268,7 +274,7 @@ This function backs up data from a container into any object store
 supported by Kanister.
 
 .. note::
-   It is important that the application includes a `kanister-tools`
+   It is important that the application includes a ``kanister-tools``
    sidecar container. This sidecar is necessary to run the
    tools that capture path on a volume and store it on the object store.
 
@@ -327,7 +333,7 @@ This function concurrently backs up data from one or more pods into an any
 object store supported by Kanister.
 
 .. note::
-   It is important that the application includes a `kanister-tools`
+   It is important that the application includes a ``kanister-tools``
    sidecar container. This sidecar is necessary to run the
    tools that capture path on a volume and store it on the object store.
 
@@ -407,12 +413,13 @@ and restores data to the specified path.
    `pod`, No, `string`, pod to which the volumes are attached
    `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
-   The `image` argument requires the use of `kanisterio/kanister-tools`
+   The ``image`` argument requires the use of ``kanisterio/kanister-tools``
    image since it includes the required tools to restore data from
    the object store.
-   Between the `pod` and `volumes` arguments, exactly one argument
+   Between the ``pod`` and ``volumes`` arguments, exactly one argument
    must be specified.
 
 Example:
@@ -420,10 +427,10 @@ Example:
 Consider a scenario where you wish to restore the data backed up by the
 :ref:`backupdata` function. We will first scale down the application,
 restore the data and then scale it back up.
-For this phase, we will use the `backupInfo` Artifact provided by
+For this phase, we will use the ``backupInfo`` Artifact provided by
 backup function.
 
-.. code-block:: yaml
+.. substitution-code-block:: yaml
   :linenos:
 
   - func: ScaleWorkload
@@ -438,7 +445,7 @@ backup function.
     args:
       namespace: "{{ .Deployment.Namespace }}"
       pod: "{{ index .Deployment.Pods 0 }}"
-      image: kanisterio/kanister-tools:0.21.0
+      image: kanisterio/kanister-tools:|version|
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
   - func: ScaleWorkload
@@ -481,6 +488,7 @@ respective PVCs and restores data to the specified path.
    `pods`, No, `string`, pods to which the volumes are attached
    `encryptionKey`, No, `string`, encryption key to be used during backups
    `backupInfo`, Yes, `string`, snapshot info generated as output in BackupDataAll function
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
    The `image` argument requires the use of `kanisterio/kanister-tools`
@@ -493,12 +501,12 @@ Example:
 
 Consider a scenario where you wish to restore the data backed up by the
 :ref:`backupdataall` function. We will first scale down the application,
-restore the data and then scale it back up. We will not specify `pods` in
+restore the data and then scale it back up. We will not specify ``pods`` in
 args, so this function will restore data on all pods concurrently.
-For this phase, we will use the `params` Artifact provided by
+For this phase, we will use the ``params`` Artifact provided by
 BackupDataAll function.
 
-.. code-block:: yaml
+.. substitution-code-block:: yaml
   :linenos:
 
   - func: ScaleWorkload
@@ -512,7 +520,7 @@ BackupDataAll function.
     name: RestoreFromObjectStore
     args:
       namespace: "{{ .Deployment.Namespace }}"
-      image: kanisterio/kanister-tools:0.21.0
+      image: kanisterio/kanister-tools:|version|
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupInfo: "{{ .ArtifactsIn.params.KeyValue.backupInfo }}"
   - func: ScaleWorkload
@@ -549,6 +557,7 @@ Arguments:
    `volume`, Yes, `string`, name of the source PVC
    `dataArtifactPrefix`, Yes, `string`, path on the object store to store the data in
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Outputs:
 
@@ -564,7 +573,7 @@ Outputs:
 
 Example:
 
-If the ActionSet `Object` is a PersistentVolumeClaim:
+If the ActionSet ``Object`` is a PersistentVolumeClaim:
 
 .. code-block:: yaml
   :linenos:
@@ -591,12 +600,13 @@ This function deletes the snapshot data backed up by the BackupData function.
    `backupIdentifier`, No, `string`, (required if backupTag not provided) unique snapshot id generated during backup
    `backupTag`, No, `string`, (required if backupIdentifier not provided) unique tag added during the backup
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Example:
 
 Consider a scenario where you wish to delete the data backed up by the
 :ref:`backupdata` function.
-For this phase, we will use the `backupInfo` Artifact provided by backup function.
+For this phase, we will use the ``backupInfo`` Artifact provided by backup function.
 
 .. code-block:: yaml
   :linenos:
@@ -625,12 +635,13 @@ BackupDataAll function.
    `backupInfo`, Yes, `string`, snapshot info generated as output in BackupDataAll function
    `encryptionKey`, No, `string`, encryption key to be used during backups
    `reclaimSpace`, No, `bool`, provides a way to specify if space should be reclaimed
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Example:
 
 Consider a scenario where you wish to delete all the data backed up by the
 :ref:`backupdataall` function.
-For this phase, we will use the `params` Artifact provided by backup function.
+For this phase, we will use the ``params`` Artifact provided by backup function.
 
 .. code-block:: yaml
   :linenos:
@@ -657,7 +668,7 @@ from an object store.
    `artifact`, Yes, `string`, artifact to be deleted from the object store
 
 .. note::
-   The Kubernetes job uses the `kanisterio/kanister-tools` image,
+   The Kubernetes job uses the ``kanisterio/kanister-tools`` image,
    since it includes all the tools required to delete the artifact
    from an object store.
 
@@ -696,7 +707,7 @@ Arguments:
    `pvcs`, No, `[]string`, list of names of PVCs to be backed up
    `skipWait`, No, `bool`, initiate but do not wait for the snapshot operation to complete
 
-When no PVCs are specified in the `pvcs` argument above, all PVCs in use by a
+When no PVCs are specified in the ``pvcs`` argument above, all PVCs in use by a
 Deployment or StatefulSet will be backed up.
 
 Outputs:
@@ -711,7 +722,7 @@ Outputs:
 Example:
 
 Consider a scenario where you wish to backup all PVCs of a deployment. The output
-of this phase is saved to an Artifact named `backupInfo`, shown below:
+of this phase is saved to an Artifact named ``backupInfo``, shown below:
 
 .. code-block:: yaml
   :linenos:
@@ -818,6 +829,115 @@ Example:
       namespace: "{{ .Deployment.Namespace }}"
       snapshots: "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}"
 
+BackupDataStats
+---------------
+
+This function get stats for the backed up data from the object store location
+
+.. note::
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that get the information from the object store.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `backupArtifactPrefix`, Yes, `string`, path to the object store location
+   `backupID`, Yes, `string`, unique snapshot id generated during backup
+   `mode`, No, `string`, mode in which stats are expected
+   `encryptionKey`, No, `string`, encryption key to be used for backups
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `mode`,`string`, mode of the output stats
+   `fileCount`,`string`, number of files in backup
+   `size`, `string`, size of the number of files in backup
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backupStats:
+      type: Deployment
+      outputArtifacts:
+        backupStats:
+          keyValue:
+            mode: "{{ .Phases.BackupDataStatsFromObjectStore.Output.mode }}"
+            fileCount: "{{ .Phases.BackupDataStatsFromObjectStore.Output.fileCount }}"
+            size: "{{ .Phases.BackupDataStatsFromObjectStore.Output.size }}"
+      phases:
+        - func: BackupDataStats
+          name: BackupDataStatsFromObjectStore
+          args:
+            namespace: "{{ .Deployment.Namespace }}"
+            backupArtifactPrefix: s3-bucket/path/artifactPrefix
+            mode: restore-size
+            backupID: "{{ .ArtifactsIn.snapshot.KeyValue.backupIdentifier }}"
+
+DescribeBackups
+---------------
+
+This function describes the backups for an object store location
+
+.. note::
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that get the information from the object store.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `backupArtifactPrefix`, Yes, `string`, path to the object store location
+   `encryptionKey`, No, `string`, encryption key to be used for backups
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `fileCount`,`string`, number of files in backup object store location
+   `size`, `string`, size of the number of files in in backup object store location
+   `passwordIncorrect`, `string`, true if encryption key is incorrect
+   `repoDoesNotExist`, `string`, true if object store location does not exist
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backupStats:
+      type: Deployment
+      outputArtifacts:
+        backupStats:
+          keyValue:
+            fileCount: "{{ .Phases.DescribeBackupsFromObjectStore.Output.fileCount }}"
+            size: "{{ .Phases.DescribeBackupsFromObjectStore.Output.size }}"
+            passwordIncorrect: "{{ .Phases.DescribeBackupsFromObjectStore.Output.passwordIncorrect }}"
+            repoDoesNotExist: "{{ .Phases.DescribeBackupsFromObjectStore.Output.repoDoesNotExist }}"
+      phases:
+        - func: DescribeBackups
+          name: DescribeBackupsFromObjectStore
+          args:
+            backupArtifactPrefix: s3-bucket/path/artifactPrefix
 
 Registering Functions
 ---------------------

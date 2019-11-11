@@ -22,6 +22,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -36,6 +38,8 @@ var (
 )
 
 const (
+	// KubeExecAllFuncName gives the function name
+	KubeExecAllFuncName          = "KubeExecAll"
 	KubeExecAllNamespaceArg      = "namespace"
 	KubeExecAllPodsNameArg       = "pods"
 	KubeExecAllContainersNameArg = "containers"
@@ -45,7 +49,7 @@ const (
 type kubeExecAllFunc struct{}
 
 func (*kubeExecAllFunc) Name() string {
-	return "KubeExecAll"
+	return KubeExecAllFuncName
 }
 
 func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -69,14 +73,14 @@ func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	}
 	ps := strings.Fields(pods)
 	cs := strings.Fields(containers)
-	return execAll(cli, namespace, ps, cs, cmd)
+	return execAll(ctx, cli, namespace, ps, cs, cmd)
 }
 
 func (*kubeExecAllFunc) RequiredArgs() []string {
 	return []string{KubeExecAllNamespaceArg, KubeExecAllPodsNameArg, KubeExecAllContainersNameArg, KubeExecAllCommandArg}
 }
 
-func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []string, cmd []string) (map[string]interface{}, error) {
+func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps []string, cs []string, cmd []string) (map[string]interface{}, error) {
 	numContainers := len(ps) * len(cs)
 	errChan := make(chan error, numContainers)
 	output := ""
@@ -84,6 +88,8 @@ func execAll(cli kubernetes.Interface, namespace string, ps []string, cs []strin
 	for _, p := range ps {
 		for _, c := range cs {
 			go func(p string, c string) {
+				ctx = field.Context(ctx, consts.PodNameKey, p)
+				ctx = field.Context(ctx, consts.ContainerNameKey, c)
 				stdout, stderr, err := kube.Exec(cli, namespace, p, c, cmd, nil)
 				format.Log(p, c, stdout)
 				format.Log(p, c, stderr)

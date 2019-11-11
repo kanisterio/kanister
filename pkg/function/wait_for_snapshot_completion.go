@@ -36,13 +36,15 @@ var (
 )
 
 const (
+	// WaitForSnapshotCompletionFuncName gives the function name
+	WaitForSnapshotCompletionFuncName     = "WaitForSnapshotCompletion"
 	WaitForSnapshotCompletionSnapshotsArg = "snapshots"
 )
 
 type waitForSnapshotCompletionFunc struct{}
 
 func (*waitForSnapshotCompletionFunc) Name() string {
-	return "WaitForSnapshotCompletion"
+	return WaitForSnapshotCompletionFuncName
 }
 
 func (*waitForSnapshotCompletionFunc) RequiredArgs() []string {
@@ -65,7 +67,7 @@ func waitForSnapshotsCompletion(ctx context.Context, snapshotinfo string, profil
 	}
 	for _, pvcInfo := range PVCData {
 		config := make(map[string]string)
-		if err = ValidateProfile(profile, pvcInfo.Type); err != nil {
+		if err = ValidateLocationForBlockstorage(profile, pvcInfo.Type); err != nil {
 			return errors.Wrap(err, "Profile validation failed")
 		}
 		switch pvcInfo.Type {

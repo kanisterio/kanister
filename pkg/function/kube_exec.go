@@ -17,11 +17,12 @@ package function
 import (
 	"context"
 	"regexp"
-	"strings"
 
 	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/output"
@@ -37,6 +38,8 @@ var (
 )
 
 const (
+	// KubeExecFuncName gives the function name
+	KubeExecFuncName         = "KubeExec"
 	KubeExecNamespaceArg     = "namespace"
 	KubeExecPodNameArg       = "pod"
 	KubeExecContainerNameArg = "container"
@@ -46,7 +49,7 @@ const (
 type kubeExecFunc struct{}
 
 func (*kubeExecFunc) Name() string {
-	return "KubeExec"
+	return KubeExecFuncName
 }
 
 func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
@@ -56,7 +59,7 @@ func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
 	var op map[string]interface{}
 	logs := regexp.MustCompile("[\n]").Split(out, -1)
 	for _, l := range logs {
-		opObj, err := parseLogLineForOutput(l)
+		opObj, err := output.Parse(l)
 		if err != nil {
 			return nil, err
 		}
@@ -67,20 +70,6 @@ func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
 			op = make(map[string]interface{})
 		}
 		op[opObj.Key] = opObj.Value
-	}
-	return op, nil
-}
-
-var outputRE = regexp.MustCompile(`###Phase-output###:(.*?)*$`)
-
-func parseLogLineForOutput(l string) (*output.Output, error) {
-	if !strings.Contains(l, output.PhaseOpString) {
-		return nil, nil
-	}
-	match := outputRE.FindAllStringSubmatch(l, 1)
-	op, err := output.UnmarshalOutput(match[0][1])
-	if err != nil {
-		return nil, err
 	}
 	return op, nil
 }
@@ -98,13 +87,14 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = Arg(args, KubeExecPodNameArg, &pod); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, KubeExecContainerNameArg, &container); err != nil {
+	if err = OptArg(args, KubeExecContainerNameArg, &container, ""); err != nil {
 		return nil, err
 	}
 	if err = Arg(args, KubeExecCommandArg, &cmd); err != nil {
 		return nil, err
 	}
-
+	ctx = field.Context(ctx, consts.PodNameKey, pod)
+	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
@@ -117,5 +107,5 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 }
 
 func (*kubeExecFunc) RequiredArgs() []string {
-	return []string{KubeExecNamespaceArg, KubeExecPodNameArg, KubeExecContainerNameArg, KubeExecCommandArg}
+	return []string{KubeExecNamespaceArg, KubeExecPodNameArg, KubeExecCommandArg}
 }

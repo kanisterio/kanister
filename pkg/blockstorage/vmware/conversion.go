@@ -1,0 +1,83 @@
+package vmware
+
+import (
+	"strings"
+
+	"github.com/pkg/errors"
+	"github.com/vmware/govmomi/vim25/types"
+
+	"github.com/kanisterio/kanister/pkg/blockstorage"
+)
+
+func convertFromObjectToVolume(vso *types.VStorageObject) (*blockstorage.Volume, error) {
+	if vso == nil {
+		return nil, errors.New("Empty object")
+	}
+	return &blockstorage.Volume{
+		Type:         blockstorage.TypeFCD,
+		ID:           vso.Config.Id.Id,
+		CreationTime: blockstorage.TimeStamp(vso.Config.CreateTime),
+		Size:         vso.Config.CapacityInMB / 1024,
+		Az:           "",
+		Iops:         0,
+		Encrypted:    false,
+		VolumeType:   "",
+		Tags:         blockstorage.VolumeTags{},
+		Attributes:   map[string]string{},
+	}, nil
+}
+
+func convertFromObjectToSnapshot(vso *types.VStorageObjectSnapshotInfoVStorageObjectSnapshot, volID string) (*blockstorage.Snapshot, error) {
+	if vso == nil {
+		return nil, errors.New("Empty opbject")
+	}
+	return &blockstorage.Snapshot{
+		Type:         blockstorage.TypeFCD,
+		CreationTime: blockstorage.TimeStamp(vso.CreateTime),
+		ID:           snapshotFullID(volID, vso.Id.Id),
+		Size:         0,
+		Region:       "",
+		Encrypted:    false,
+	}, nil
+}
+
+// vimID wraps ID string with vim25.ID struct.
+func vimID(id string) types.ID {
+	return types.ID{
+		Id: id,
+	}
+}
+
+func snapshotFullID(volID, snapshotID string) string {
+	return volID + ":" + snapshotID
+}
+
+func splitSnapshotFullID(fullID string) (volID string, snapshotID string, err error) {
+	split := strings.Split(fullID, ":")
+	if len(split) != 2 {
+		return "", "", errors.New("Malformed full ID for snapshot")
+	}
+	if len(split[0]) == 0 || len(split[1]) == 0 {
+		return "", "", errors.New("Malformed volume ID or snapshot ID")
+	}
+	return split[0], split[1], nil
+}
+
+func convertKeyValueToTags(kvs []types.KeyValue) []*blockstorage.KeyValue {
+	tags := make(map[string]string)
+	for _, kv := range kvs {
+		tags[kv.Key] = kv.Value
+	}
+	return blockstorage.MapToKeyValue(tags)
+}
+
+func convertTagsToKeyValue(tags map[string]string) []types.KeyValue {
+	result := make([]types.KeyValue, 0)
+	for k, v := range tags {
+		var kv types.KeyValue
+		kv.Key = k
+		kv.Value = v
+		result = append(result, kv)
+	}
+	return result
+}

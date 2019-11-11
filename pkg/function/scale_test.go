@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
@@ -88,7 +88,7 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
-						Func: "KubeExec",
+						Func: KubeExecFuncName,
 						Args: map[string]interface{}{
 							KubeExecNamespaceArg:     fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							KubeExecPodNameArg:       fmt.Sprintf("{{ index .%s.Pods 1 }}", kind),
@@ -103,7 +103,7 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
-						Func: "ScaleWorkload",
+						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
 							ScaleWorkloadReplicas: 0,
 						},
@@ -115,7 +115,7 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testScale",
-						Func: "ScaleWorkload",
+						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
 							ScaleWorkloadReplicas: "2",
 						},
@@ -159,7 +159,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, d), s.crCli, as)
 		c.Assert(err, IsNil)
 		bp := newScaleBlueprint(kind)
-		phases, err := kanister.GetPhases(*bp, action, *tp)
+		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			_, err = p.Exec(context.Background(), *bp, action, *tp)
@@ -208,7 +208,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
 		c.Assert(err, IsNil)
 		bp := newScaleBlueprint(kind)
-		phases, err := kanister.GetPhases(*bp, action, *tp)
+		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			_, err = p.Exec(context.Background(), *bp, action, *tp)

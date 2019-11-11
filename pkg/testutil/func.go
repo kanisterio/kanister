@@ -24,11 +24,13 @@ import (
 )
 
 const (
-	FailFuncName   = "FailFunc"
-	WaitFuncName   = "WaitFunc"
-	ArgFuncName    = "ArgFunc"
-	OutputFuncName = "OutputFunc"
-	CancelFuncName = "CancelFunc"
+	FailFuncName            = "FailFunc"
+	WaitFuncName            = "WaitFunc"
+	ArgFuncName             = "ArgFunc"
+	OutputFuncName          = "OutputFunc"
+	CancelFuncName          = "CancelFunc"
+	VersionMismatchFuncName = "VerMisFunc"
+	TestVersion             = "v1.0.0"
 )
 
 var (
@@ -66,6 +68,10 @@ func cancelFunc(ctx context.Context, tp param.TemplateParams, args map[string]in
 	return nil, ctx.Err()
 }
 
+func versionMismatchFunc(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	return nil, nil
+}
+
 func init() {
 	failFuncCh = make(chan error)
 	waitFuncCh = make(chan struct{})
@@ -77,10 +83,16 @@ func init() {
 	registerMockKanisterFunc(ArgFuncName, argsFunc)
 	registerMockKanisterFunc(OutputFuncName, outputFunc)
 	registerMockKanisterFunc(CancelFuncName, cancelFunc)
+	registerMockKanisterFuncWithVersion(ArgFuncName, TestVersion, argsFunc)
+	registerMockKanisterFuncWithVersion(VersionMismatchFuncName, TestVersion, versionMismatchFunc)
 }
 
 func registerMockKanisterFunc(name string, f func(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error)) {
 	kanister.Register(&mockKanisterFunc{name: name, f: f})
+}
+
+func registerMockKanisterFuncWithVersion(name, version string, f func(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error)) {
+	kanister.RegisterVersion(&mockKanisterFunc{name: name, f: f}, version)
 }
 
 var _ kanister.Func = (*mockKanisterFunc)(nil)

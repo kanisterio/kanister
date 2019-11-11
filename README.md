@@ -43,7 +43,7 @@ To get started or to better understand kanister, see the
 
 For troubleshooting help, you can email the [mailing
 list](https://groups.google.com/forum/#!forum/kanisterio), reach out to us on
-[Slack](https://kasten.typeform.com/to/QBcw8T), or file a [Github
+[Slack](https://join.slack.com/t/kanisterio/shared_invite/enQtNzg2MDc4NzA0ODY4LTU1NDU2NDZhYjk3YmE5MWNlZWMwYzk1NjNjOGQ3NjAyMjcxMTIyNTE1YzZlMzgwYmIwNWFkNjU0NGFlMzNjNTk), or file a [Github
 issue](https://github.com/kanisterio/kanister/issues).
 
 ## Presentations

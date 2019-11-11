@@ -191,7 +191,7 @@ func CreateFromSource(ctx context.Context, snapCli snapshotclient.Interface, sou
 				Name:      snapshotName,
 			},
 			VolumeSnapshotClassName: source.VolumeSnapshotClassName,
-			DeletionPolicy:          &deletionPolicy,
+			DeletionPolicy:          deletionPolicy,
 		},
 	}
 	snap := &snapshot.VolumeSnapshot{
@@ -239,10 +239,10 @@ func getContent(ctx context.Context, snapCli snapshotclient.Interface, contentNa
 	return snapCli.VolumesnapshotV1alpha1().VolumeSnapshotContents().Get(contentName, metav1.GetOptions{})
 }
 
-func getDeletionPolicyFromClass(snapCli snapshotclient.Interface, snapClassName string) (snapshot.DeletionPolicy, error) {
+func getDeletionPolicyFromClass(snapCli snapshotclient.Interface, snapClassName string) (*snapshot.DeletionPolicy, error) {
 	vsc, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshotClasses().Get(snapClassName, metav1.GetOptions{})
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to find VolumeSnapshotClass: %s", snapClassName)
+		return nil, errors.Wrapf(err, "Failed to find VolumeSnapshotClass: %s", snapClassName)
 	}
-	return *vsc.DeletionPolicy, nil
+	return vsc.DeletionPolicy, nil
 }
