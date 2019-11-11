@@ -24,12 +24,16 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
 const (
+	// BackupDataAllFuncName gives the name of the function
+	BackupDataAllFuncName = "BackupDataAll"
 	// BackupDataAllNamespaceArg provides the namespace
 	BackupDataAllNamespaceArg = "namespace"
 	// BackupDataAllPodsArg provides the pods connected to the data volumes
@@ -61,7 +65,7 @@ var _ kanister.Func = (*backupDataAllFunc)(nil)
 type backupDataAllFunc struct{}
 
 func (*backupDataAllFunc) Name() string {
-	return "BackupDataAll"
+	return BackupDataAllFuncName
 }
 
 func (*backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -85,8 +89,8 @@ func (*backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = OptArg(args, BackupDataAllEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
-	// Validate the Profile
-	if err = validateProfile(tp.Profile); err != nil {
+	ctx = field.Context(ctx, consts.ContainerNameKey, container)
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
 	cli, err := kube.NewClient()
@@ -121,9 +125,10 @@ func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace stri
 	// Run the command
 	for _, pod := range ps {
 		go func(pod string, container string) {
-			backupID, backupTag, err := backupData(ctx, cli, namespace, pod, container, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), includePath, encryptionKey, tp)
+			ctx = field.Context(ctx, consts.PodNameKey, pod)
+			backupOutputs, err := backupData(ctx, cli, namespace, pod, container, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), includePath, encryptionKey, tp)
 			errChan <- errors.Wrapf(err, "Failed to backup data for pod %s", pod)
-			outChan <- BackupInfo{PodName: pod, BackupID: backupID, BackupTag: backupTag}
+			outChan <- BackupInfo{PodName: pod, BackupID: backupOutputs.backupID, BackupTag: backupOutputs.backupTag}
 		}(pod, container)
 	}
 	errs := make([]string, 0, len(ps))

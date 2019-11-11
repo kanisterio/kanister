@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/backup"
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
@@ -39,6 +38,7 @@ type efs struct {
 	*backup.Backup
 	accountID string
 	region    string
+	role      string
 }
 
 var _ blockstorage.Provider = (*efs)(nil)
@@ -60,8 +60,8 @@ const (
 )
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
-func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, role, err := awsconfig.GetConfig(config)
+func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
+	awsConfig, region, err := awsconfig.GetConfig(ctx, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get configuration for EFS")
 	}
@@ -78,17 +78,14 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 		return nil, errors.New("Account ID is empty")
 	}
 	accountID := *user.Account
-	creds := awsConfig.Credentials
-	if role != "" {
-		creds = stscreds.NewCredentials(s, role)
-	}
-	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
-	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
+	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
+	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
 	return &efs{
 		EFS:       efsCli,
 		Backup:    backupCli,
 		region:    region,
 		accountID: accountID,
+		role:      config[awsconfig.ConfigRole],
 	}, nil
 }
 
@@ -285,14 +282,48 @@ func (e *efs) getBackupTags(ctx context.Context, arn string) (map[string]string,
 }
 
 func (e *efs) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
+	mts, err := e.getMountTargets(ctx, volume.ID)
+	if isVolumeNotFound(err) {
+		return nil
+	}
+	err = e.deleteMountTargets(ctx, mts)
+	if err != nil {
+		return errors.Wrap(err, "Failed to delete mount targets")
+	}
+
 	req := &awsefs.DeleteFileSystemInput{}
 	req.SetFileSystemId(volume.ID)
-
-	_, err := e.DeleteFileSystemWithContext(ctx, req)
+	_, err = e.DeleteFileSystemWithContext(ctx, req)
 	if isVolumeNotFound(err) {
 		return nil
 	}
 	return err
+}
+
+func (e *efs) getMountTargets(ctx context.Context, fsID string) ([]*awsefs.MountTargetDescription, error) {
+	mts := make([]*awsefs.MountTargetDescription, 0)
+	for resp, req := emptyResponseRequestForMountTargets(); resp.NextMarker != nil; req.Marker = resp.NextMarker {
+		var err error
+		req.SetFileSystemId(fsID)
+		resp, err = e.DescribeMountTargetsWithContext(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		mts = append(mts, resp.MountTargets...)
+	}
+	return mts, nil
+}
+
+func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetDescription) error {
+	for _, mt := range mts {
+		req := &awsefs.DeleteMountTargetInput{}
+		req.SetMountTargetId(*mt.MountTargetId)
+		_, err := e.DeleteMountTargetWithContext(ctx, req)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (e *efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
@@ -546,15 +577,9 @@ func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*a
 }
 
 func (e *efs) getMountPointAndSecurityGroupTags(ctx context.Context, id string) (map[string]string, error) {
-	mts := make([]*awsefs.MountTargetDescription, 0)
-	for resp, req := emptyResponseRequestForMountTargets(); resp.NextMarker != nil; req.Marker = resp.NextMarker {
-		var err error
-		req.SetFileSystemId(id)
-		resp, err = e.DescribeMountTargetsWithContext(ctx, req)
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get mount targets")
-		}
-		mts = append(mts, resp.MountTargets...)
+	mts, err := e.getMountTargets(ctx, id)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get mount target for the volume")
 	}
 	resultTags := make(map[string]string)
 	for _, mt := range mts {

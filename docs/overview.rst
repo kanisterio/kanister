@@ -58,13 +58,13 @@ package manager.
 The following commands will install Kanister, Kanister-enabled MySQL
 and backup to an AWS S3 bucket.
 
-.. code-block:: bash
+.. substitution-code-block:: bash
 
   # Add Kanister Charts
   helm repo add kanister http://charts.kanister.io
 
   # Install the Kanister Controller
-  helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.21.0
+  helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=|version|
 
   # Install MySQL and configure its Kanister Blueprint.
   # Also create a Profile CR that can be used in ActionSets

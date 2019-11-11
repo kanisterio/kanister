@@ -84,7 +84,7 @@ func (s *LocationSuite) SetUpSuite(c *C) {
 
 	s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	pc := objectstore.ProviderConfig{Type: s.osType}
-	secret, err := getOSSecret(s.osType, s.profile.Credential)
+	secret, err := getOSSecret(ctx, s.osType, s.profile.Credential)
 	c.Check(err, IsNil)
 	s.provider, err = objectstore.NewProvider(ctx, pc, secret)
 	c.Check(err, IsNil)

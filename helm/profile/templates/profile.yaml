@@ -8,8 +8,8 @@ metadata:
 type: Opaque
 data:
   {{- if .Values.aws.accessKey }}
-  access_key_id: {{ .Values.aws.accessKey | b64enc | quote }}
-  secret_access_key: {{ .Values.aws.secretKey | b64enc | quote }}
+  aws_access_key_id: {{ .Values.aws.accessKey | b64enc | quote }}
+  aws_secret_access_key: {{ .Values.aws.secretKey | b64enc | quote }}
   {{- else if .Values.gcp.projectID }}
   project_id: {{ .Values.gcp.projectID | b64enc | quote }}
   service_key: {{ .Values.gcp.serviceKey | b64enc | quote }}
@@ -36,8 +36,8 @@ credential:
   type: keyPair
   keyPair:
     {{- if .Values.aws.accessKey }}
-    idField: access_key_id
-    secretField: secret_access_key
+    idField: aws_access_key_id
+    secretField: aws_secret_access_key
     {{- else if .Values.gcp.projectID }}
     idField: project_id
     secretField: service_key

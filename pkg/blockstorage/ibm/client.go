@@ -23,11 +23,11 @@ import (
 	ibmprov "github.com/IBM/ibmcloud-storage-volume-lib/lib/provider"
 	ibmprovutils "github.com/IBM/ibmcloud-storage-volume-lib/provider/utils"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 // IBM Cloud environment variable names
@@ -76,6 +76,28 @@ type client struct {
 
 //newClient returns a Client struct
 func newClient(ctx context.Context, args map[string]string) (*client, error) {
+	return handleClientPanic(func() (*client, error) {
+		return newClientUnsafe(ctx, args)
+	})
+}
+
+func handleClientPanic(f func() (*client, error)) (c *client, err error) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			return
+		}
+		if e, ok := r.(error); ok {
+			err = errors.Wrap(e, "IBM client panicked during initialization")
+		} else {
+			err = errors.Errorf("IBM client panicked during initialization: %s", r)
+		}
+	}()
+	return f()
+}
+
+// newClientUnsafe may panic. See https://github.com/IBM/ibmcloud-storage-volume-lib/issues/79
+func newClientUnsafe(ctx context.Context, args map[string]string) (*client, error) {
 
 	zaplog, _ := zap.NewProduction()
 	defer zaplog.Sync() // nolint: errcheck
@@ -109,6 +131,12 @@ func newClient(ctx context.Context, args map[string]string) (*client, error) {
 }
 
 func findDefaultConfig(ctx context.Context, args map[string]string, zaplog *zap.Logger) (*ibmcfg.Config, error) {
+	// Cheking if IBM store secret is present
+	ibmCfg, err := getDefIBMStoreSecret(ctx, args)
+	if err == nil {
+		return ibmCfg, nil
+	}
+	log.WithError(err).Print("Could not get IBM default store secret")
 	// Checking if an api key is provided via args
 	// If it present will use api value and default Softlayer config
 	if apik, ok := args[APIKeyArgName]; ok {
@@ -119,13 +147,6 @@ func findDefaultConfig(ctx context.Context, args map[string]string, zaplog *zap.
 			Bluemix:   &blueMixCfg,
 			VPC:       &vpcCfg,
 		}, nil
-	}
-	// Cheking if IBM store secret is present
-	ibmCfg, err := getDefIBMStoreSecret(ctx, args)
-	if err != nil {
-		log.WithError(err).Info("Could not get IBM default store secret")
-	} else {
-		return ibmCfg, nil
 	}
 	// Final attemp to get Config, by using default lib code path
 	defPath := ibmcfg.GetConfPath()
@@ -153,7 +174,18 @@ func getDefIBMStoreSecret(ctx context.Context, args map[string]string) (*ibmcfg.
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to read Default IBM storage secret.")
 	}
-	retConfig := ibmcfg.Config{Softlayer: &softLayerCfg}
+	retConfig := ibmcfg.Config{
+		Softlayer: &softLayerCfg,
+		Bluemix:   &ibmcfg.BluemixConfig{},
+		VPC:       &ibmcfg.VPCProviderConfig{},
+	}
 	_, err = toml.Decode(string(storeSecret.Data[IBMK8sSecretData]), &retConfig)
+	if slapi, ok := args[SLAPIKeyArgName]; ok {
+		retConfig.Softlayer.SoftlayerAPIKey = slapi
+	}
+	if slusername, ok := args[SLAPIUsernameArgName]; ok {
+		retConfig.Softlayer.SoftlayerUsername = slusername
+	}
+
 	return &retConfig, err
 }

@@ -15,3 +15,10 @@ func (in *Phase) DeepCopyInto(out *Phase) {
 	// TODO: Handle 'Output' map[string]interface{}
 	return
 }
+
+// DeepCopyInto handles JSONMap deep copies, copying the receiver, writing into out. in must be non-nil.
+// The auto-generated function does not handle the map[string]interface{} type
+func (in *JSONMap) DeepCopyInto(out *JSONMap) {
+	*out = *in
+	return
+}

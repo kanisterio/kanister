@@ -22,7 +22,7 @@ import (
 
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
@@ -185,7 +185,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
 						Name: "testBackupVolume",
-						Func: "CreateVolumeSnapshot",
+						Func: CreateVolumeSnapshotFuncName,
 						Args: map[string]interface{}{
 							CreateVolumeSnapshotNamespaceArg: "{{ .StatefulSet.Namespace }}",
 							CreateVolumeSnapshotSkipWaitArg:  true,
@@ -193,7 +193,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 					},
 					{
 						Name: "waitOnSnapshots",
-						Func: "WaitForSnapshotCompletion",
+						Func: WaitForSnapshotCompletionFuncName,
 						Args: map[string]interface{}{
 							WaitForSnapshotCompletionSnapshotsArg: "{{ .Phases.testBackupVolume.Output.volumeSnapshotInfo }}",
 						},
@@ -208,7 +208,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
 						Name: "testShutdownPod",
-						Func: "ScaleWorkload",
+						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
 							ScaleWorkloadNamespaceArg: "{{ .StatefulSet.Namespace }}",
 							ScaleWorkloadReplicas:     0,
@@ -216,7 +216,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 					},
 					{
 						Name: "testRestoreVolume",
-						Func: "CreateVolumeFromSnapshot",
+						Func: CreateVolumeFromSnapshotFuncName,
 						Args: map[string]interface{}{
 							CreateVolumeFromSnapshotNamespaceArg: "{{ .StatefulSet.Namespace }}",
 							CreateVolumeFromSnapshotManifestArg:  "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}",
@@ -224,7 +224,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 					},
 					{
 						Name: "testBringupPod",
-						Func: "ScaleWorkload",
+						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
 							ScaleWorkloadNamespaceArg: "{{ .StatefulSet.Namespace }}",
 							ScaleWorkloadReplicas:     1,
@@ -240,7 +240,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
 						Name: "deleteVolumeSnapshot",
-						Func: "DeleteVolumeSnapshot",
+						Func: DeleteVolumeSnapshotFuncName,
 						Args: map[string]interface{}{
 							DeleteVolumeSnapshotNamespaceArg: "{{ .StatefulSet.Namespace }}",
 							DeleteVolumeSnapshotManifestArg:  "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}",
@@ -311,7 +311,7 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	actions := []string{"backup", "restore", "delete"}
 	bp := newVolumeSnapshotBlueprint()
 	for _, action := range actions {
-		phases, err := kanister.GetPhases(*bp, action, *s.tp)
+		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *s.tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			c.Assert(param.InitPhaseParams(ctx, s.cli, s.tp, p.Name(), p.Objects()), IsNil)

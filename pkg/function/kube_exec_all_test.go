@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
@@ -89,7 +89,7 @@ func newExecAllBlueprint(kind string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "echoSomething",
-						Func: "KubeExecAll",
+						Func: KubeExecAllFuncName,
 						Args: map[string]interface{}{
 							KubeExecAllNamespaceArg:      fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							KubeExecAllPodsNameArg:       fmt.Sprintf("{{ range .%s.Pods }} {{.}}{{ end }}", kind),
@@ -129,7 +129,7 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 
 	action := "echo"
 	bp := newExecAllBlueprint(kind)
-	phases, err := kanister.GetPhases(*bp, action, *tp)
+	phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
 		_, err = p.Exec(ctx, *bp, action, *tp)
@@ -163,7 +163,7 @@ func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 
 	action := "echo"
 	bp := newExecAllBlueprint(kind)
-	phases, err := kanister.GetPhases(*bp, action, *tp)
+	phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
 		_, err = p.Exec(ctx, *bp, action, *tp)

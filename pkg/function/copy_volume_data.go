@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
@@ -27,12 +27,15 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/restic"
 )
 
 const (
-	kanisterToolsImage                         = "kanisterio/kanister-tools:0.21.0"
+	kanisterToolsImage = "kanisterio/kanister-tools:0.21.0"
+	// CopyVolumeDataFuncName gives the function name
+	CopyVolumeDataFuncName                     = "CopyVolumeData"
 	copyVolumeDataMountPoint                   = "/mnt/vol_data/%s"
 	copyVolumeDataJobPrefix                    = "copy-vol-data-"
 	CopyVolumeDataNamespaceArg                 = "namespace"
@@ -43,6 +46,9 @@ const (
 	CopyVolumeDataOutputBackupArtifactLocation = "backupArtifactLocation"
 	CopyVolumeDataEncryptionKeyArg             = "encryptionKey"
 	CopyVolumeDataOutputBackupTag              = "backupTag"
+	CopyVolumeDataPodOverrideArg               = "podOverride"
+	CopyVolumeDataOutputBackupFileCount        = "fileCount"
+	CopyVolumeDataOutputBackupSize             = "size"
 )
 
 func init() {
@@ -54,10 +60,10 @@ var _ kanister.Func = (*copyVolumeDataFunc)(nil)
 type copyVolumeDataFunc struct{}
 
 func (*copyVolumeDataFunc) Name() string {
-	return "CopyVolumeData"
+	return CopyVolumeDataFuncName
 }
 
-func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc, targetPath, encryptionKey string) (map[string]interface{}, error) {
+func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc, targetPath, encryptionKey string, podOverride map[string]interface{}) (map[string]interface{}, error) {
 	// Validate PVC exists
 	if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvc, metav1.GetOptions{}); err != nil {
 		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
@@ -70,6 +76,7 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 		Image:        kanisterToolsImage,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      map[string]string{pvc: mountPoint},
+		PodOverride:  podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := copyVolumeDataPodFunc(cli, tp, namespace, mountPoint, targetPath, encryptionKey)
@@ -82,18 +89,21 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
-		pw, err := getPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
+		pw, err := GetPodWriter(cli, ctx, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name, tp.Profile)
 		if err != nil {
 			return nil, err
 		}
-		defer cleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+		defer CleanUpCredsFile(ctx, pw, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		// Get restic repository
 		if err := restic.GetOrCreateRepository(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, targetPath, encryptionKey, tp.Profile); err != nil {
 			return nil, err
 		}
 		// Copy data to object store
 		backupTag := rand.String(10)
-		cmd := restic.BackupCommandByTag(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey)
+		cmd, err := restic.BackupCommandByTag(tp.Profile, targetPath, backupTag, mountPoint, encryptionKey)
+		if err != nil {
+			return nil, err
+		}
 		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
@@ -105,11 +115,17 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 		if backupID == "" {
 			return nil, errors.New("Failed to parse the backup ID from logs")
 		}
+		fileCount, backupSize := restic.SnapshotStatsFromBackupLog(stdout)
+		if backupSize == "" {
+			log.Debug().Print("Could not parse backup stats from backup log")
+		}
 		return map[string]interface{}{
 				CopyVolumeDataOutputBackupID:               backupID,
 				CopyVolumeDataOutputBackupRoot:             mountPoint,
 				CopyVolumeDataOutputBackupArtifactLocation: targetPath,
 				CopyVolumeDataOutputBackupTag:              backupTag,
+				CopyVolumeDataOutputBackupFileCount:        fileCount,
+				CopyVolumeDataOutputBackupSize:             backupSize,
 			},
 			nil
 	}
@@ -130,11 +146,16 @@ func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	if err = OptArg(args, CopyVolumeDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
+	podOverride, err := GetPodSpecOverride(tp, args, CopyVolumeDataPodOverrideArg)
+	if err != nil {
+		return nil, err
+	}
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return copyVolumeData(ctx, cli, tp, namespace, vol, targetPath, encryptionKey)
+	return copyVolumeData(ctx, cli, tp, namespace, vol, targetPath, encryptionKey, podOverride)
 }
 
 func (*copyVolumeDataFunc) RequiredArgs() []string {

@@ -24,6 +24,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 // ActionSet function validates the ActionSet and returns an error if it is invalid.
@@ -135,21 +136,38 @@ func ProfileSchema(p *crv1alpha1.Profile) error {
 	if !supported(p.Location.Type) {
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-	if p.Credential.Type != crv1alpha1.CredentialTypeKeyPair {
-		return errorf("unknown or unsupported credential type '%s'", p.Credential.Type)
+	if err := validateCredentialType(&p.Credential); err != nil {
+		return err
 	}
 	if p.Location.Type == crv1alpha1.LocationTypeS3Compliant {
 		if p.Location.Bucket != "" && p.Location.Endpoint == "" && p.Location.Region == "" {
 			return errorf("Bucket region not specified")
 		}
 	}
-	if p.Credential.KeyPair.Secret.Name == "" {
-		return errorf("secret for bucket credentials not specified")
-	}
-	if p.Credential.KeyPair.SecretField == "" || p.Credential.KeyPair.IDField == "" {
-		return errorf("secret field or id field empty")
-	}
 	return nil
+}
+
+func validateCredentialType(creds *crv1alpha1.Credential) error {
+	switch creds.Type {
+	case crv1alpha1.CredentialTypeKeyPair:
+		if creds.KeyPair.Secret.Name == "" {
+			return errorf("Secret for bucket credentials not specified")
+		}
+		if creds.KeyPair.SecretField == "" || creds.KeyPair.IDField == "" {
+			return errorf("Secret field or id field empty")
+		}
+		return nil
+	case crv1alpha1.CredentialTypeSecret:
+		if creds.Secret.Name == "" {
+			return errorf("Secret name is empty")
+		}
+		if creds.Secret.Namespace == "" {
+			return errorf("Secret namespace is empty")
+		}
+		return nil
+	default:
+		return errorf("Unsupported credential type '%s'", creds.Type)
+	}
 }
 
 func supported(t crv1alpha1.LocationType) bool {
@@ -181,7 +199,7 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
 	pc := objectstore.ProviderConfig{Type: pType}
-	secret, err := osSecretFromProfile(pType, p, cli)
+	secret, err := osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
 	}
@@ -210,7 +228,7 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 	default:
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-	secret, err = osSecretFromProfile(pType, p, cli)
+	secret, err = osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
 	}
@@ -247,7 +265,7 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	default:
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-	secret, err = osSecretFromProfile(pType, p, cli)
+	secret, err = osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
 	}
@@ -276,24 +294,44 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	return nil
 }
 
-func osSecretFromProfile(pType objectstore.ProviderType, p *crv1alpha1.Profile, cli kubernetes.Interface) (*objectstore.Secret, error) {
+func osSecretFromProfile(ctx context.Context, pType objectstore.ProviderType, p *crv1alpha1.Profile, cli kubernetes.Interface) (*objectstore.Secret, error) {
 	var key, value []byte
 	var ok bool
 	secret := &objectstore.Secret{}
-	kp := p.Credential.KeyPair
-	if kp == nil {
-		return nil, errorf("invalid credentials kv cannot be nil")
+	switch p.Credential.Type {
+	case crv1alpha1.CredentialTypeKeyPair:
+		kp := p.Credential.KeyPair
+		if kp == nil {
+			return nil, errorf("Invalid credentials kv cannot be nil")
+		}
+		s, err := cli.CoreV1().Secrets(kp.Secret.Namespace).Get(kp.Secret.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, errorf("Could not fetch the secret specified in credential")
+		}
+		if key, ok = s.Data[kp.IDField]; !ok {
+			return nil, errorf("Key '%s' not found in secret '%s:%s'", kp.IDField, s.GetNamespace(), s.GetName())
+		}
+		if value, ok = s.Data[kp.SecretField]; !ok {
+			return nil, errorf("Value '%s' not found in secret '%s:%s'", kp.SecretField, s.GetNamespace(), s.GetName())
+		}
+	case crv1alpha1.CredentialTypeSecret:
+		s, err := cli.CoreV1().Secrets(p.Credential.Secret.Namespace).Get(p.Credential.Secret.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, errorf("Could not fetch the secret specified in credential")
+		}
+		creds, err := secrets.ExtractAWSCredentials(ctx, s)
+		if err != nil {
+			return nil, err
+		}
+		secret.Type = objectstore.SecretTypeAwsAccessKey
+		secret.Aws = &objectstore.SecretAws{
+			AccessKeyID:     creds.AccessKeyID,
+			SecretAccessKey: creds.SecretAccessKey,
+			SessionToken:    creds.SessionToken,
+		}
+		return secret, nil
 	}
-	s, err := cli.CoreV1().Secrets(kp.Secret.Namespace).Get(kp.Secret.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, errorf("could not fetch the secret specified in credential")
-	}
-	if key, ok = s.Data[kp.IDField]; !ok {
-		return nil, errorf("Key '%s' not found in secret '%s:%s'", kp.IDField, s.GetNamespace(), s.GetName())
-	}
-	if value, ok = s.Data[kp.SecretField]; !ok {
-		return nil, errorf("Value '%s' not found in secret '%s:%s'", kp.SecretField, s.GetNamespace(), s.GetName())
-	}
+
 	switch pType {
 	case objectstore.ProviderTypeS3:
 		secret.Type = objectstore.SecretTypeAwsAccessKey

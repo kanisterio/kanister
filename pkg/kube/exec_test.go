@@ -74,6 +74,7 @@ func (s *ExecSuite) TearDownSuite(c *C) {
 		c.Assert(err, IsNil)
 	}
 }
+
 func (s *ExecSuite) TestExecEcho(c *C) {
 	cmd := []string{"sh", "-c", "cat -"}
 	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
@@ -84,4 +85,14 @@ func (s *ExecSuite) TestExecEcho(c *C) {
 		c.Assert(stdout, Equals, "badabing")
 		c.Assert(stderr, Equals, "")
 	}
+}
+
+func (s *ExecSuite) TestExecEchoDefaultContainer(c *C) {
+	cmd := []string{"sh", "-c", "cat -"}
+	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
+	stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, "", cmd, bytes.NewBufferString("badabing"))
+	c.Assert(err, IsNil)
+	c.Assert(stdout, Equals, "badabing")
+	c.Assert(stderr, Equals, "")
 }

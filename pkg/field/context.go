@@ -10,8 +10,10 @@ const ctxKey = contextKey(43)
 
 // FromContext returns the fields present in ctx if any
 func FromContext(ctx context.Context) Fields {
-	if s, ok := ctx.Value(ctxKey).(Fields); ok {
-		return s
+	if ctx != nil {
+		if s, ok := ctx.Value(ctxKey).(Fields); ok {
+			return s
+		}
 	}
 	return nil
 }

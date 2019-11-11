@@ -18,24 +18,23 @@ package awsebs
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jpillora/backoff"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 var _ blockstorage.Provider = (*ebsStorage)(nil)
@@ -61,20 +60,20 @@ func (s *ebsStorage) Type() blockstorage.Type {
 }
 
 // NewProvider returns a provider for the EBS storage type in the specified region
-func NewProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, role, err := awsconfig.GetConfig(config)
+func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
+	awsConfig, region, err := awsconfig.GetConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
-	ec2Cli, err := newEC2Client(region, awsConfig, role)
+	ec2Cli, err := newEC2Client(region, awsConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
-	return &ebsStorage{ec2Cli: ec2Cli, role: role}, nil
+	return &ebsStorage{ec2Cli: ec2Cli, role: config[awsconfig.ConfigRole]}, nil
 }
 
 // newEC2Client returns ec2 client struct.
-func newEC2Client(awsRegion string, config *aws.Config, role string) (*EC2, error) {
+func newEC2Client(awsRegion string, config *aws.Config) (*EC2, error) {
 	if config == nil {
 		return nil, errors.New("Invalid empty AWS config")
 	}
@@ -82,11 +81,7 @@ func newEC2Client(awsRegion string, config *aws.Config, role string) (*EC2, erro
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session for EFS")
 	}
-	creds := config.Credentials
-	if role != "" {
-		creds = stscreds.NewCredentials(s, role)
-	}
-	conf := config.WithMaxRetries(maxRetries).WithRegion(awsRegion).WithCredentials(creds)
+	conf := config.WithMaxRetries(maxRetries).WithRegion(awsRegion).WithCredentials(config.Credentials)
 	return &EC2{EC2: ec2.New(s, conf)}, nil
 }
 
@@ -120,7 +115,7 @@ func (s *ebsStorage) VolumeGet(ctx context.Context, id string, zone string) (*bl
 	dvi := &ec2.DescribeVolumesInput{VolumeIds: volIDs}
 	dvo, err := s.ec2Cli.DescribeVolumesWithContext(ctx, dvi)
 	if err != nil {
-		log.Errorf("Failed to get volumes %v Error: %+v", aws.StringValueSlice(volIDs), err)
+		log.WithError(err).Print("Failed to get volumes", field.M{"VolumeIds": volIDs})
 		return nil, err
 	}
 	if len(dvo.Volumes) != len(volIDs) {
@@ -229,7 +224,7 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		return nil, errors.Errorf("Snapshot %v destination ID must be empty", to)
 	}
 	// Copy operation must be initiated from the destination region.
-	ec2Cli, err := newEC2Client(to.Region, s.ec2Cli.Config.Copy(), "")
+	ec2Cli, err := newEC2Client(to.Region, s.ec2Cli.Config.Copy())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
@@ -237,7 +232,7 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	// independent of whether or not the snapshot is encrypted.
 	var presignedURL *string
 	if to.Region != from.Region {
-		fromCli, err2 := newEC2Client(from.Region, s.ec2Cli.Config.Copy(), "")
+		fromCli, err2 := newEC2Client(from.Region, s.ec2Cli.Config.Copy())
 		if err2 != nil {
 			return nil, errors.Wrap(err2, "Could not create client to presign URL for snapshot copy request")
 		}
@@ -307,7 +302,7 @@ func (s *ebsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 			Tags:         mapToEC2Tags(ktags.GetTags(tags)),
 		},
 	})
-	log.Infof("Snapshotting EBS volume: %s", *csi.VolumeId)
+	log.Print("Snapshotting EBS volume", field.M{"volume_id": *csi.VolumeId})
 	csi.SetDryRun(s.ec2Cli.DryRun)
 	snap, err := s.ec2Cli.CreateSnapshotWithContext(ctx, csi)
 	if err != nil && !isDryRunErr(err) {
@@ -339,14 +334,14 @@ func (s *ebsStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *
 }
 
 func (s *ebsStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
-	log.Infof("EBS Snapshot ID %s", snapshot.ID)
+	log.Print("Deleting EBS Snapshot", field.M{"SnapshotID": snapshot.ID})
 	rmsi := &ec2.DeleteSnapshotInput{}
 	rmsi.SetSnapshotId(snapshot.ID)
 	rmsi.SetDryRun(s.ec2Cli.DryRun)
 	_, err := s.ec2Cli.DeleteSnapshotWithContext(ctx, rmsi)
 	if isSnapNotFoundErr(err) {
 		// If the snapshot is already deleted, we log, but don't return an error.
-		log.Debugf("Snapshot already deleted")
+		log.Debug().Print("Snapshot already deleted")
 		return nil
 	}
 	if err != nil && !isDryRunErr(err) {
@@ -376,7 +371,7 @@ func (s *ebsStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volu
 	_, err := s.ec2Cli.DeleteVolumeWithContext(ctx, rmvi)
 	if isVolNotFoundErr(err) {
 		// If the volume is already deleted, we log, but don't return an error.
-		log.Debugf("Volume already deleted")
+		log.Debug().Print("Volume already deleted")
 		return nil
 	}
 	if err != nil && !isDryRunErr(err) {
@@ -455,7 +450,7 @@ func createVolume(ctx context.Context, ec2Cli *EC2, cvi *ec2.CreateVolumeInput, 
 		return "", nil
 	}
 	if err != nil {
-		log.Errorf("Failed to create volume for %v Error: %+v", *cvi, err)
+		log.WithError(err).Print("Failed to create volume", field.M{"input": cvi})
 		return "", err
 	}
 
@@ -475,7 +470,7 @@ func getSnapshots(ctx context.Context, ec2Cli *EC2, snapIDs []*string) ([]*ec2.S
 	}
 	// TODO: handle paging and continuation
 	if len(dso.Snapshots) != len(snapIDs) {
-		log.Errorf("Did not find all requested snapshots, snapshots_requested: %p, snapshots_found: %p", snapIDs, dso.Snapshots)
+		log.Error().Print("Did not find all requested snapshots", field.M{"snapshots_requested": snapIDs, "snapshots_found": dso.Snapshots})
 		// TODO: Move mapping to HTTP error to the caller
 		return nil, errors.New("Object not found")
 	}
@@ -522,7 +517,7 @@ func waitOnVolume(ctx context.Context, ec2Cli *EC2, vol *ec2.Volume) error {
 	for {
 		dvo, err := ec2Cli.DescribeVolumesWithContext(ctx, dvi)
 		if err != nil {
-			log.Errorf("Failed to describe volume %s Error: %+v", aws.StringValue(vol.VolumeId), err)
+			log.WithError(err).Print("Failed to describe volume", field.M{"VolumeID": aws.StringValue(vol.VolumeId)})
 			return err
 		}
 		if len(dvo.Volumes) != 1 {
@@ -533,10 +528,10 @@ func waitOnVolume(ctx context.Context, ec2Cli *EC2, vol *ec2.Volume) error {
 			return errors.New("Creating EBS volume failed")
 		}
 		if *s.State == ec2.VolumeStateAvailable {
-			log.Infof("Volume %s complete", *vol.VolumeId)
+			log.Print("Volume creation complete", field.M{"VolumeID": *vol.VolumeId})
 			return nil
 		}
-		log.Infof("Volume %s state: %s", *vol.VolumeId, *s.State)
+		log.Print("Update", field.M{"Volume": *vol.VolumeId, "State": *s.State})
 		time.Sleep(volWaitBackoff.Duration())
 	}
 }
@@ -568,10 +563,10 @@ func waitOnSnapshotID(ctx context.Context, ec2Cli *EC2, snapID string) error {
 			return false, errors.New("Snapshot EBS volume failed")
 		}
 		if *s.State == ec2.SnapshotStateCompleted {
-			log.Infof("Snapshot with snapshot_id: %s completed", snapID)
+			log.Print("Snapshot completed", field.M{"SnapshotID": snapID})
 			return true, nil
 		}
-		log.Debugf("Snapshot progress: snapshot_id: %s, progress: %s", snapID, fmt.Sprintf("%+v", *s.Progress))
+		log.Debug().Print("Snapshot progress", field.M{"snapshot_id": snapID, "progress": *s.Progress})
 		return false, nil
 	})
 }
@@ -579,7 +574,7 @@ func waitOnSnapshotID(ctx context.Context, ec2Cli *EC2, snapID string) error {
 // GetRegionFromEC2Metadata retrieves the region from the EC2 metadata service.
 // Only works when the call is performed from inside AWS
 func GetRegionFromEC2Metadata() (string, error) {
-	log.Debug("Retrieving region from metadata")
+	log.Debug().Print("Retrieving region from metadata")
 	conf := aws.Config{
 		HTTPClient: &http.Client{
 			Transport: http.DefaultTransport,
@@ -599,7 +594,7 @@ func (s *ebsStorage) FromRegion(ctx context.Context, region string) ([]string, e
 }
 
 func (s *ebsStorage) queryRegionToZones(ctx context.Context, region string) ([]string, error) {
-	ec2Cli, err := newEC2Client(region, s.ec2Cli.Config.Copy(), "")
+	ec2Cli, err := newEC2Client(region, s.ec2Cli.Config.Copy())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}

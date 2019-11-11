@@ -19,24 +19,28 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
 const (
-	defaultMountPoint         = "/mnt/prepare_data/%s"
-	prepareDataJobPrefix      = "prepare-data-job-"
+	defaultMountPoint    = "/mnt/prepare_data/%s"
+	prepareDataJobPrefix = "prepare-data-job-"
+	// PrepareDataFuncName gives the function name
+	PrepareDataFuncName       = "PrepareData"
 	PrepareDataNamespaceArg   = "namespace"
 	PrepareDataImageArg       = "image"
 	PrepareDataCommandArg     = "command"
 	PrepareDataVolumes        = "volumes"
 	PrepareDataServiceAccount = "serviceaccount"
+	PrepareDataPodOverrideArg = "podOverride"
 )
 
 func init() {
@@ -48,7 +52,7 @@ var _ kanister.Func = (*prepareDataFunc)(nil)
 type prepareDataFunc struct{}
 
 func (*prepareDataFunc) Name() string {
-	return "PrepareData"
+	return PrepareDataFuncName
 }
 
 func getVolumes(tp param.TemplateParams) (map[string]string, error) {
@@ -73,7 +77,7 @@ func getVolumes(tp param.TemplateParams) (map[string]string, error) {
 	return vols, nil
 }
 
-func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, serviceAccount, image string, vols map[string]string, command ...string) (map[string]interface{}, error) {
+func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, serviceAccount, image string, vols map[string]string, podOverride crv1alpha1.JSONMap, command ...string) (map[string]interface{}, error) {
 	// Validate volumes
 	for pvc := range vols {
 		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvc, metav1.GetOptions{}); err != nil {
@@ -87,6 +91,7 @@ func prepareData(ctx context.Context, cli kubernetes.Interface, namespace, servi
 		Command:            command,
 		Volumes:            vols,
 		ServiceAccountName: serviceAccount,
+		PodOverride:        podOverride,
 	}
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := prepareDataPodFunc(cli)
@@ -130,6 +135,11 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 	if err = OptArg(args, PrepareDataServiceAccount, &serviceAccount, ""); err != nil {
 		return nil, err
 	}
+	podOverride, err := GetPodSpecOverride(tp, args, PrepareDataPodOverrideArg)
+	if err != nil {
+		return nil, err
+	}
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
@@ -139,7 +149,7 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 			return nil, err
 		}
 	}
-	return prepareData(ctx, cli, namespace, serviceAccount, image, vols, command...)
+	return prepareData(ctx, cli, namespace, serviceAccount, image, vols, podOverride, command...)
 }
 
 func (*prepareDataFunc) RequiredArgs() []string {

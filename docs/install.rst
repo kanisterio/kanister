@@ -15,7 +15,7 @@ Prerequisites
 * `kubectl <https://kubernetes.io/docs/tasks/tools/install-kubectl/>`_ installed
   and setup
 
-* `helm <https://helm.sh>`_ installed and initialized using the command `helm init`
+* `helm <https://helm.sh>`_ installed and initialized using the command ``helm init``
 
 * :ref:`kanctl <tooling>` installed
 
@@ -27,15 +27,15 @@ Prerequisites
 Deploying via Helm
 ==================
 
-This will install the Kanister controller in the `kanister` namespace
+This will install the Kanister controller in the ``kanister`` namespace
 
-.. code-block:: bash
+.. substitution-code-block:: bash
 
    # Add Kanister charts
    $ helm repo add kanister https://charts.kanister.io/
 
    # Install the Kanister operator controller using helm
-   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.21.0
+   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=|version|
 
    # Create an S3 Compliant Kanister profile using kanctl
    $ kanctl create profile s3compliant --bucket <bucket> --access-key ${AWS_ACCESS_KEY_ID} \
@@ -49,7 +49,7 @@ Building and Deploying from Source
 
 Use the following commands to build, package, and deploy the controller to your
 Kubernetes cluster. It will push the controller docker image to your docker repo
-`"<MY REGISTRY>"` and the controller will be deployed in the default namespace.
+``<MY REGISTRY>`` and the controller will be deployed in the default namespace.
 
 .. code-block:: bash
 
@@ -67,11 +67,11 @@ Deploy a Released Version
 -------------------------
 
 To deploy a released version of the controller, issue the command below. Modify
-the namespace fields in `bundle.yaml.in` to deploy in a namespace of your
-choice. By default, the controller will be deployed into the `default`
+the namespace fields in ``bundle.yaml.in`` to deploy in a namespace of your
+choice. By default, the controller will be deployed into the ``default``
 namespace.
 
-.. code-block:: bash
+.. substitution-code-block:: bash
 
-   # Deploy controller version 0.21.0 to Kubernetes
-   $ make deploy VERSION="0.21.0"
+   # Deploy controller version |version| to Kubernetes
+   $ make deploy VERSION="|version|"
