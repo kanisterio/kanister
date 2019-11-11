@@ -28,7 +28,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crclient "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controller"
-	_ "github.com/kanisterio/kanister/pkg/function"
+	"github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
@@ -111,7 +111,7 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 				Kind: "Deployment",
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
-						Func: "KubeExec",
+						Func: function.KubeExecFuncName,
 						Name: "test-kube-exec",
 						Args: map[string]interface{}{
 							"namespace": "{{ .Deployment.Namespace }}",
@@ -223,7 +223,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 				Kind: "Deployment",
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
-						Func: "KubeTask",
+						Func: function.KubeTaskFuncName,
 						Name: "test-kube-task",
 						Args: map[string]interface{}{
 							"image":     "kanisterio/kanister-tools:0.21.0",

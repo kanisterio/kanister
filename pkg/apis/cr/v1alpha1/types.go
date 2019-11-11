@@ -265,8 +265,8 @@ const (
 // Credential
 type Credential struct {
 	Type    CredentialType   `json:"type"`
-	KeyPair *KeyPair         `json:"keyPair"`
-	Secret  *ObjectReference `json:"secret"`
+	KeyPair *KeyPair         `json:"keyPair,omitempty"`
+	Secret  *ObjectReference `json:"secret,omitempty"`
 }
 
 // KeyPair

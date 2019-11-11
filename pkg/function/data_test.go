@@ -126,7 +126,7 @@ func newRestoreDataBlueprint(pvc, identifierArg, identifierVal string) *crv1alph
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testRestore",
-						Func: "RestoreData",
+						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							RestoreDataImageArg:                "kanisterio/kanister-tools:0.21.0",
@@ -153,7 +153,7 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testBackup",
-						Func: "BackupData",
+						Func: BackupDataFuncName,
 						Args: map[string]interface{}{
 							BackupDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							BackupDataPodArg:                  "{{ index .StatefulSet.Pods 0 }}",
@@ -177,10 +177,30 @@ func newDescribeBackupsBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testDescribeBackups",
-						Func: "DescribeBackups",
+						Func: DescribeBackupsFuncName,
 						Args: map[string]interface{}{
 							DescribeBackupsArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							DescribeBackupsEncryptionKeyArg:  "{{ .Secrets.backupKey.Data.password | toString }}",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func newCheckRepositoryBlueprint() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"checkRepository": &crv1alpha1.BlueprintAction{
+				Kind: param.StatefulSetKind,
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testCheckRepository",
+						Func: CheckRepositoryFuncName,
+						Args: map[string]interface{}{
+							CheckRepositoryArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
+							CheckRepositoryEncryptionKeyArg:  "{{ .Secrets.backupKey.Data.password | toString }}",
 						},
 					},
 				},
@@ -197,7 +217,7 @@ func newLocationDeleteBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testLocationDelete",
-						Func: "LocationDelete",
+						Func: LocationDeleteFuncName,
 						Args: map[string]interface{}{
 							LocationDeleteArtifactArg: "{{ .Profile.Location.Bucket }}",
 						},
@@ -216,7 +236,7 @@ func newBackupDataAllBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testBackupDataAll",
-						Func: "BackupDataAll",
+						Func: BackupDataAllFuncName,
 						Args: map[string]interface{}{
 							BackupDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							BackupDataAllContainerArg:            "{{ index .StatefulSet.Containers 0 0 }}",
@@ -238,7 +258,7 @@ func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testRestoreDataAll",
-						Func: "RestoreDataAll",
+						Func: RestoreDataAllFuncName,
 						Args: map[string]interface{}{
 							RestoreDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							RestoreDataAllImageArg:                "kanisterio/kanister-tools:0.21.0",
@@ -260,8 +280,8 @@ func newDeleteDataAllBlueprint() *crv1alpha1.Blueprint {
 				Kind: param.StatefulSetKind,
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
-						Name: "testDelete",
-						Func: "DeleteDataAll",
+						Name: "testDeleteDataAll",
+						Func: DeleteDataAllFuncName,
 						Args: map[string]interface{}{
 							DeleteDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							DeleteDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
@@ -419,7 +439,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
 						Name: "test1",
-						Func: "PrepareData",
+						Func: PrepareDataFuncName,
 						Args: map[string]interface{}{
 							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
 							PrepareDataImageArg:     "busybox",
@@ -436,7 +456,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testCopy",
-						Func: "CopyVolumeData",
+						Func: CopyVolumeDataFuncName,
 						Args: map[string]interface{}{
 							CopyVolumeDataNamespaceArg:      "{{ .PVC.Namespace }}",
 							CopyVolumeDataVolumeArg:         "{{ .PVC.Name }}",
@@ -449,7 +469,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testRestore",
-						Func: "RestoreData",
+						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
 							RestoreDataImageArg:                "kanisterio/kanister-tools:0.21.0",
@@ -465,7 +485,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 			"checkfile": {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
-						Func: "PrepareData",
+						Func: PrepareDataFuncName,
 						Args: map[string]interface{}{
 							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
 							PrepareDataImageArg:     "busybox",
@@ -483,7 +503,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testDelete",
-						Func: "DeleteData",
+						Func: DeleteDataFuncName,
 						Args: map[string]interface{}{
 							DeleteDataNamespaceArg:            "{{ .PVC.Namespace }}",
 							DeleteDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
@@ -613,4 +633,54 @@ func (s *DataSuite) TestDescribeBackupsRepoNotAvailable(c *C) {
 	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], c.TestName())
 	out2 := runAction(c, bp2, "describeBackups", tp)
 	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Equals, "true")
+}
+
+func (s *DataSuite) TestCheckRepository(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	// Test CheckRepository
+	bp2 := *newCheckRepositoryBlueprint()
+	out2 := runAction(c, bp2, "checkRepository", tp)
+	c.Assert(out2[CheckRepositoryPasswordIncorrect].(string), Equals, "false")
+	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), Equals, "false")
+}
+
+func (s *DataSuite) TestCheckRepositoryWrongPassword(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg], "abcdef")
+	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = "foobar"
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	// Test CheckRepository
+	bp2 := *newCheckRepositoryBlueprint()
+	bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg], "abcdef")
+	out2 := runAction(c, bp2, "checkRepository", tp)
+	c.Assert(out2[CheckRepositoryPasswordIncorrect].(string), Equals, "true")
+}
+
+func (s *DataSuite) TestCheckRepositoryRepoNotAvailable(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+
+	// Test CheckRepository
+	bp2 := *newCheckRepositoryBlueprint()
+	bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg], c.TestName())
+	out2 := runAction(c, bp2, "checkRepository", tp)
+	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), Equals, "true")
 }

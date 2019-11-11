@@ -86,7 +86,7 @@ downloadFile() {
 
     local release_url="${RELEASES_URL}/download/${version}"
     local kanister_dist="${DIST_NAME}_${version}_${OS}_${ARCH}.tar.gz"
-    local kanister_checksum="${DIST_NAME}_${version}_checksums.txt"
+    local kanister_checksum="checksums.txt"
 
     local download_url="${release_url}/${kanister_dist}"
     local checksum_url="${release_url}/${kanister_checksum}"

@@ -36,13 +36,15 @@ var (
 )
 
 const (
+	// WaitForSnapshotCompletionFuncName gives the function name
+	WaitForSnapshotCompletionFuncName     = "WaitForSnapshotCompletion"
 	WaitForSnapshotCompletionSnapshotsArg = "snapshots"
 )
 
 type waitForSnapshotCompletionFunc struct{}
 
 func (*waitForSnapshotCompletionFunc) Name() string {
-	return "WaitForSnapshotCompletion"
+	return WaitForSnapshotCompletionFuncName
 }
 
 func (*waitForSnapshotCompletionFunc) RequiredArgs() []string {
