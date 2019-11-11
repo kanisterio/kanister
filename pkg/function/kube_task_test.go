@@ -64,7 +64,7 @@ func (s *KubeTaskSuite) TearDownSuite(c *C) {
 func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "testOutput",
-		Func: "KubeTask",
+		Func: KubeTaskFuncName,
 		Args: map[string]interface{}{
 			KubeTaskNamespaceArg: namespace,
 			KubeTaskImageArg:     "kanisterio/kanister-tools:0.20.0",
@@ -80,7 +80,7 @@ func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 func sleepPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "testSleep",
-		Func: "KubeTask",
+		Func: KubeTaskFuncName,
 		Args: map[string]interface{}{
 			KubeTaskNamespaceArg: namespace,
 			KubeTaskImageArg:     "ubuntu:latest",
@@ -95,7 +95,7 @@ func sleepPhase(namespace string) crv1alpha1.BlueprintPhase {
 func tickPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "testTick",
-		Func: "KubeTask",
+		Func: KubeTaskFuncName,
 		Args: map[string]interface{}{
 			KubeTaskNamespaceArg: namespace,
 			KubeTaskImageArg:     "alpine:3.10",
