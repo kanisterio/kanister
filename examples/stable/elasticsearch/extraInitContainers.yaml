@@ -1,0 +1,9 @@
+extraInitContainers: |
+  - name: file-permissions
+    image: "{{ .Values.image }}:{{ .Values.imageTag }}"
+    command: ['chown', '-R', '1000:1000', '/usr/share/elasticsearch/data']
+    volumeMounts:
+    {{- if .Values.persistence.enabled }}
+    - name: "{{ template "uname" . }}"
+      mountPath: /usr/share/elasticsearch/data
+    {{- end }}
