@@ -17,6 +17,7 @@ package discovery
 import (
 	"context"
 
+	"github.com/kanisterio/kanister/pkg/filter"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -35,6 +36,28 @@ func NamespacedGVRs(ctx context.Context, cli discovery.DiscoveryInterface) ([]sc
 	arls, err := cli.ServerPreferredNamespacedResources()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to list APIResources")
+	}
+	return apiToGroupVersion(arls)
+}
+
+func NamespacedGVRsIgnoreAPIGroupErr(ctx context.Context, cli discovery.DiscoveryInterface, exclude filter.ResourceTypeMatcher) ([]schema.GroupVersionResource, error) {
+	arls, err := cli.ServerPreferredNamespacedResources()
+	if err == nil {
+		return apiToGroupVersion(arls)
+	}
+	out, _ := err.(*discovery.ErrGroupDiscoveryFailed)
+	for k, _ := range out.Groups {
+		gvr := schema.GroupVersionResource{Group: k.Group, Version: k.Version, Resource: ""}
+		typeMatched := false
+		for _, rtr := range exclude {
+			if rtr.Matches(gvr) {
+				typeMatched = true
+				continue
+			}
+		}
+		if !typeMatched {
+			return nil, errors.Wrapf(err, "Failed to list APIResources for APIGroup:%s", k)
+		}
 	}
 	return apiToGroupVersion(arls)
 }
