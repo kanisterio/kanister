@@ -387,7 +387,7 @@ func (pbp PostgresBP) Blueprint() *crv1alpha1.Blueprint {
 						Name: "backupSnapshot",
 						Args: map[string]interface{}{
 							"namespace": "rds-postgres-test",
-							"image":     "kanisterio/postgres-kanister-tools:0.21.0",
+							"image":     "kanisterio/postgres-kanister-tools:0.22.0",
 							"command": []string{
 								"bash",
 								"-o",
@@ -423,7 +423,7 @@ func (pbp PostgresBP) Blueprint() *crv1alpha1.Blueprint {
 						Name: "restoreSnapshot",
 						Args: map[string]interface{}{
 							"namespace": "rds-postgres-test",
-							"image":     "kanisterio/postgres-kanister-tools:0.21.0",
+							"image":     "kanisterio/postgres-kanister-tools:0.22.0",
 							"command": []string{
 								"bash",
 								"-o",
@@ -461,7 +461,7 @@ func (pbp PostgresBP) Blueprint() *crv1alpha1.Blueprint {
 						Name: "deleteSnapshot",
 						Args: map[string]interface{}{
 							"namespace": "rds-postgres-test",
-							"image":     "kanisterio/postgres-kanister-tools:0.21.0",
+							"image":     "kanisterio/postgres-kanister-tools:0.22.0",
 							"command": []string{
 								"bash",
 								"-o",
