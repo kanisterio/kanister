@@ -164,8 +164,8 @@ Remove Blueprint and Profile CR
 ```bash
 $ kubectl delete blueprints.cr.kanister.io postgresql-blueprint -n kasten-io
 
-$ kubectl get profiles.cr.kanister.io -n postgres-test
+$ kubectl get profiles.cr.kanister.io -n pgtest
 NAME               AGE
 s3-profile-zvrg9   125m
-$ kubectl delete profiles.cr.kanister.io s3-profile-zvrg9 -n postgres-test
+$ kubectl delete profiles.cr.kanister.io s3-profile-zvrg9 -n pgtest
 ```

@@ -179,7 +179,7 @@ func newDescribeBackupsBlueprint() *crv1alpha1.Blueprint {
 						Name: "testDescribeBackups",
 						Func: DescribeBackupsFuncName,
 						Args: map[string]interface{}{
-							DescribeBackupsArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
+							DescribeBackupsArtifactPrefixArg: "{{ .Profile.Location.Prefix }}",
 							DescribeBackupsEncryptionKeyArg:  "{{ .Secrets.backupKey.Data.password | toString }}",
 						},
 					},

@@ -3,6 +3,8 @@ package function
 import (
 	"bytes"
 	"context"
+	"path"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
@@ -98,4 +100,13 @@ func FetchPodVolumes(pod string, tp param.TemplateParams) (map[string]string, er
 	default:
 		return nil, errors.New("Invalid Template Params")
 	}
+}
+
+// ResolveArtifactPrefix appends the bucket name as a suffix to the given artifact path if not already present
+func ResolveArtifactPrefix(artifactPrefix string, profile *param.Profile) string {
+	ps := strings.Split(artifactPrefix, "/")
+	if ps[0] == profile.Location.Bucket {
+		return artifactPrefix
+	}
+	return path.Join(profile.Location.Bucket, artifactPrefix)
 }

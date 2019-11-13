@@ -170,6 +170,9 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
+
+	deleteArtifactPrefix = ResolveArtifactPrefix(deleteArtifactPrefix, tp.Profile)
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
