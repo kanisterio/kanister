@@ -97,6 +97,7 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 					DescribeBackupsSize:              nil,
 					DescribeBackupsPasswordIncorrect: "true",
 					DescribeBackupsRepoDoesNotExist:  "false",
+					FunctionOutputVersion:            kanister.DefaultVersion,
 				},
 				nil
 
@@ -106,6 +107,7 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 					DescribeBackupsSize:              nil,
 					DescribeBackupsPasswordIncorrect: "false",
 					DescribeBackupsRepoDoesNotExist:  "true",
+					FunctionOutputVersion:            kanister.DefaultVersion,
 				},
 				nil
 		default:
@@ -132,6 +134,7 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 				DescribeBackupsSize:              size,
 				DescribeBackupsPasswordIncorrect: "false",
 				DescribeBackupsRepoDoesNotExist:  "false",
+				FunctionOutputVersion:            kanister.DefaultVersion,
 			},
 			nil
 	}

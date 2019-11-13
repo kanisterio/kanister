@@ -360,6 +360,7 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 		c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
 		c.Check(out[BackupDataStatsOutputFileCount].(string), Not(Equals), "")
 		c.Check(out[BackupDataStatsOutputSize].(string), Not(Equals), "")
+		c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 		options := map[string]string{
 			BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
@@ -387,6 +388,7 @@ func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
 		c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
 		c.Check(out[BackupDataStatsOutputFileCount].(string), Not(Equals), "")
 		c.Check(out[BackupDataStatsOutputSize].(string), Not(Equals), "")
+		c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 		options := map[string]string{
 			BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
@@ -409,6 +411,7 @@ func (s *DataSuite) TestBackupRestoreDeleteDataAll(c *C) {
 	bp := *newBackupDataAllBlueprint()
 	out := runAction(c, bp, "backup", tp)
 	c.Assert(out[BackupDataAllOutput].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 	output := make(map[string]BackupInfo)
 	c.Assert(json.Unmarshal([]byte(out[BackupDataAllOutput].(string)), &output), IsNil)
@@ -532,6 +535,7 @@ func (s *DataSuite) TestCopyData(c *C) {
 	c.Assert(out[CopyVolumeDataOutputBackupRoot].(string), Not(Equals), "")
 	c.Assert(out[CopyVolumeDataOutputBackupArtifactLocation].(string), Not(Equals), "")
 	c.Assert(out[CopyVolumeDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 	options := map[string]string{
 		CopyVolumeDataOutputBackupID:               out[CopyVolumeDataOutputBackupID].(string),
 		CopyVolumeDataOutputBackupRoot:             out[CopyVolumeDataOutputBackupRoot].(string),
@@ -591,6 +595,7 @@ func (s *DataSuite) TestDescribeBackups(c *C) {
 	out := runAction(c, bp, "backup", tp)
 	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 	// Test DescribeBackups
 	bp2 := *newDescribeBackupsBlueprint()
@@ -599,6 +604,7 @@ func (s *DataSuite) TestDescribeBackups(c *C) {
 	c.Assert(out2[DescribeBackupsSize].(string), Not(Equals), "")
 	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Not(Equals), "")
 	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Not(Equals), "")
+	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 }
 
 func (s *DataSuite) TestDescribeBackupsWrongPassword(c *C) {
@@ -611,12 +617,14 @@ func (s *DataSuite) TestDescribeBackupsWrongPassword(c *C) {
 	out := runAction(c, bp, "backup", tp)
 	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 	// Test DescribeBackups
 	bp2 := *newDescribeBackupsBlueprint()
 	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], "abcde")
 	out2 := runAction(c, bp2, "describeBackups", tp)
 	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Equals, "true")
+	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 }
 
 func (s *DataSuite) TestDescribeBackupsRepoNotAvailable(c *C) {
@@ -627,12 +635,14 @@ func (s *DataSuite) TestDescribeBackupsRepoNotAvailable(c *C) {
 	out := runAction(c, bp, "backup", tp)
 	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 	// Test DescribeBackups
 	bp2 := *newDescribeBackupsBlueprint()
 	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], c.TestName())
 	out2 := runAction(c, bp2, "describeBackups", tp)
 	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Equals, "true")
+	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 }
 
 func (s *DataSuite) TestCheckRepository(c *C) {
@@ -643,12 +653,14 @@ func (s *DataSuite) TestCheckRepository(c *C) {
 	out := runAction(c, bp, "backup", tp)
 	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 	// Test CheckRepository
 	bp2 := *newCheckRepositoryBlueprint()
 	out2 := runAction(c, bp2, "checkRepository", tp)
 	c.Assert(out2[CheckRepositoryPasswordIncorrect].(string), Equals, "false")
 	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), Equals, "false")
+	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 }
 
 func (s *DataSuite) TestCheckRepositoryWrongPassword(c *C) {
@@ -661,6 +673,7 @@ func (s *DataSuite) TestCheckRepositoryWrongPassword(c *C) {
 	out := runAction(c, bp, "backup", tp)
 	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 	// Test CheckRepository
 	bp2 := *newCheckRepositoryBlueprint()
@@ -677,10 +690,12 @@ func (s *DataSuite) TestCheckRepositoryRepoNotAvailable(c *C) {
 	out := runAction(c, bp, "backup", tp)
 	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 	// Test CheckRepository
 	bp2 := *newCheckRepositoryBlueprint()
 	bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg], c.TestName())
 	out2 := runAction(c, bp2, "checkRepository", tp)
 	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), Equals, "true")
+	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 }

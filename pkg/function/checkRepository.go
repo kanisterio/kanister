@@ -75,27 +75,25 @@ func CheckRepositoryPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			break
 		case strings.Contains(err.Error(), restic.PasswordIncorrect):
 			return map[string]interface{}{
-					CheckRepositoryPasswordIncorrect: "true",
-					CheckRepositoryRepoDoesNotExist:  "false",
-				},
-				nil
-
+				CheckRepositoryPasswordIncorrect: "true",
+				CheckRepositoryRepoDoesNotExist:  "false",
+				FunctionOutputVersion:            kanister.DefaultVersion,
+			}, nil
 		case strings.Contains(err.Error(), restic.RepoDoesNotExist):
 			return map[string]interface{}{
-
-					CheckRepositoryPasswordIncorrect: "false",
-					CheckRepositoryRepoDoesNotExist:  "true",
-				},
-				nil
+				CheckRepositoryPasswordIncorrect: "false",
+				CheckRepositoryRepoDoesNotExist:  "true",
+				FunctionOutputVersion:            kanister.DefaultVersion,
+			}, nil
 		default:
 			return nil, err
 
 		}
 		return map[string]interface{}{
-				CheckRepositoryPasswordIncorrect: "false",
-				CheckRepositoryRepoDoesNotExist:  "false",
-			},
-			nil
+			CheckRepositoryPasswordIncorrect: "false",
+			CheckRepositoryRepoDoesNotExist:  "false",
+			FunctionOutputVersion:            kanister.DefaultVersion,
+		}, nil
 	}
 }
 

@@ -126,6 +126,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 				CopyVolumeDataOutputBackupTag:              backupTag,
 				CopyVolumeDataOutputBackupFileCount:        fileCount,
 				CopyVolumeDataOutputBackupSize:             backupSize,
+				FunctionOutputVersion:                      kanister.DefaultVersion,
 			},
 			nil
 	}
