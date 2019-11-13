@@ -89,7 +89,7 @@ func newExecAllBlueprint(kind string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "echoSomething",
-						Func: "KubeExecAll",
+						Func: KubeExecAllFuncName,
 						Args: map[string]interface{}{
 							KubeExecAllNamespaceArg:      fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							KubeExecAllPodsNameArg:       fmt.Sprintf("{{ range .%s.Pods }} {{.}}{{ end }}", kind),

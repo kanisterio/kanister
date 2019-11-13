@@ -38,6 +38,8 @@ var (
 )
 
 const (
+	// KubeExecFuncName gives the function name
+	KubeExecFuncName         = "KubeExec"
 	KubeExecNamespaceArg     = "namespace"
 	KubeExecPodNameArg       = "pod"
 	KubeExecContainerNameArg = "container"
@@ -47,7 +49,7 @@ const (
 type kubeExecFunc struct{}
 
 func (*kubeExecFunc) Name() string {
-	return "KubeExec"
+	return KubeExecFuncName
 }
 
 func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {

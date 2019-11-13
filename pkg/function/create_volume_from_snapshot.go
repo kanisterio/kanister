@@ -42,6 +42,8 @@ var (
 )
 
 const (
+	// CreateVolumeFromSnapshotFuncName gives the name of the function
+	CreateVolumeFromSnapshotFuncName     = "CreateVolumeFromSnapshot"
 	CreateVolumeFromSnapshotNamespaceArg = "namespace"
 	CreateVolumeFromSnapshotManifestArg  = "snapshots"
 	CreateVolumeFromSnapshotPVCNamesArg  = "pvcNames"
@@ -50,7 +52,7 @@ const (
 type createVolumeFromSnapshotFunc struct{}
 
 func (*createVolumeFromSnapshotFunc) Name() string {
-	return "CreateVolumeFromSnapshot"
+	return CreateVolumeFromSnapshotFuncName
 }
 
 func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotinfo string, pvcNames []string, profile *param.Profile, getter getter.Getter) (map[string]blockstorage.Provider, error) {

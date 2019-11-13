@@ -31,6 +31,8 @@ import (
 )
 
 const (
+	// DescribeBackupsFuncName gives the function name
+	DescribeBackupsFuncName = "DescribeBackups"
 	// DescribeBackupsArtifactPrefixArg provides the path to restore backed up data
 	DescribeBackupsArtifactPrefixArg = "backupArtifactPrefix"
 	// DescribeBackupsEncryptionKeyArg provides the encryption key to be used for deletes
@@ -54,7 +56,7 @@ var _ kanister.Func = (*DescribeBackupsFunc)(nil)
 type DescribeBackupsFunc struct{}
 
 func (*DescribeBackupsFunc) Name() string {
-	return "DescribeBackups"
+	return DescribeBackupsFuncName
 }
 
 func describeBackups(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, encryptionKey, targetPaths, jobPrefix string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {

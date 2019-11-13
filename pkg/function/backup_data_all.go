@@ -32,6 +32,8 @@ import (
 )
 
 const (
+	// BackupDataAllFuncName gives the name of the function
+	BackupDataAllFuncName = "BackupDataAll"
 	// BackupDataAllNamespaceArg provides the namespace
 	BackupDataAllNamespaceArg = "namespace"
 	// BackupDataAllPodsArg provides the pods connected to the data volumes
@@ -63,7 +65,7 @@ var _ kanister.Func = (*backupDataAllFunc)(nil)
 type backupDataAllFunc struct{}
 
 func (*backupDataAllFunc) Name() string {
-	return "BackupDataAll"
+	return BackupDataAllFuncName
 }
 
 func (*backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

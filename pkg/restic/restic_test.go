@@ -23,6 +23,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 type ResticDataSuite struct{}
@@ -153,8 +154,8 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 					Secret: &v1.Secret{
 						Type: "secrets.kanister.io/aws",
 						Data: map[string][]byte{
-							"access_key_id":     []byte("id"),
-							"secret_access_key": []byte("secret"),
+							secrets.AWSAccessKeyID:     []byte("id"),
+							secrets.AWSSecretAccessKey: []byte("secret"),
 						},
 					},
 				},
@@ -192,9 +193,9 @@ func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *C) {
 					Secret: &v1.Secret{
 						Type: "secrets.kanister.io/aws",
 						Data: map[string][]byte{
-							"access_key_id":     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
-							"secret_access_key": []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
-							"role":              []byte(config.GetEnvOrSkip(c, "role")),
+							secrets.AWSAccessKeyID:     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
+							secrets.AWSSecretAccessKey: []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
+							secrets.ConfigRole:         []byte(config.GetEnvOrSkip(c, "role")),
 						},
 					},
 				},
@@ -212,9 +213,9 @@ func (s *ResticDataSuite) TestResticArgsWithAWSRole(c *C) {
 					Secret: &v1.Secret{
 						Type: "secrets.kanister.io/aws",
 						Data: map[string][]byte{
-							"access_key_id":     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
-							"secret_access_key": []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
-							"role":              []byte("arn:aws:iam::000000000000:role/test-fake-role"),
+							secrets.AWSAccessKeyID:     []byte(config.GetEnvOrSkip(c, "AWS_ACCESS_KEY_ID")),
+							secrets.AWSSecretAccessKey: []byte(config.GetEnvOrSkip(c, "AWS_SECRET_ACCESS_KEY")),
+							secrets.ConfigRole:         []byte("arn:aws:iam::000000000000:role/test-fake-role"),
 						},
 					},
 				},

@@ -16,6 +16,8 @@ import (
 )
 
 const (
+	// CheckRepositoryFuncName gives the name of the function
+	CheckRepositoryFuncName = "CheckRepository"
 	// CheckRepositoryArtifactPrefixArg provides the path to restore backed up data
 	CheckRepositoryArtifactPrefixArg = "backupArtifactPrefix"
 	// CheckRepositoryEncryptionKeyArg provides the encryption key to be used for deletes
@@ -36,7 +38,7 @@ var _ kanister.Func = (*CheckRepositoryFunc)(nil)
 type CheckRepositoryFunc struct{}
 
 func (*CheckRepositoryFunc) Name() string {
-	return "CheckRepository"
+	return CheckRepositoryFuncName
 }
 
 func CheckRepository(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, encryptionKey, targetPaths, jobPrefix string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {

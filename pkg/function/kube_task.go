@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -31,7 +31,9 @@ import (
 )
 
 const (
-	jobPrefix              = "kanister-job-"
+	jobPrefix = "kanister-job-"
+	// KubeTaskFuncName gives the function name
+	KubeTaskFuncName       = "KubeTask"
 	KubeTaskNamespaceArg   = "namespace"
 	KubeTaskImageArg       = "image"
 	KubeTaskCommandArg     = "command"
@@ -47,7 +49,7 @@ var _ kanister.Func = (*kubeTaskFunc)(nil)
 type kubeTaskFunc struct{}
 
 func (*kubeTaskFunc) Name() string {
-	return "KubeTask"
+	return KubeTaskFuncName
 }
 
 func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image string, command []string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {

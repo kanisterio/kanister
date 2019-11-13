@@ -53,17 +53,17 @@ const (
 	objectsFlagName          = "objects"
 )
 
-type performParams struct {
-	namespace  string
-	actionName string
-	parentName string
-	blueprint  string
-	dryRun     bool
-	objects    []crv1alpha1.ObjectReference
-	options    map[string]string
-	profile    *crv1alpha1.ObjectReference
-	secrets    map[string]crv1alpha1.ObjectReference
-	configMaps map[string]crv1alpha1.ObjectReference
+type PerformParams struct {
+	Namespace  string
+	ActionName string
+	ParentName string
+	Blueprint  string
+	DryRun     bool
+	Objects    []crv1alpha1.ObjectReference
+	Options    map[string]string
+	Profile    *crv1alpha1.ObjectReference
+	Secrets    map[string]crv1alpha1.ObjectReference
+	ConfigMaps map[string]crv1alpha1.ObjectReference
 }
 
 func newActionSetCmd() *cobra.Command {
@@ -115,18 +115,18 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 	return perform(ctx, crCli, params)
 }
 
-func perform(ctx context.Context, crCli versioned.Interface, params *performParams) error {
+func perform(ctx context.Context, crCli versioned.Interface, params *PerformParams) error {
 	var as *crv1alpha1.ActionSet
 	var err error
 
 	switch {
-	case params.parentName != "":
-		pas, err := crCli.CrV1alpha1().ActionSets(params.namespace).Get(params.parentName, metav1.GetOptions{})
+	case params.ParentName != "":
+		pas, err := crCli.CrV1alpha1().ActionSets(params.Namespace).Get(params.ParentName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
-		as, err = childActionSet(pas, params)
-	case len(params.objects) > 0:
+		as, err = ChildActionSet(pas, params)
+	case len(params.Objects) > 0:
 		as, err = newActionSet(params)
 	default:
 		return errors.New("no objects found to perform action set. Please pass a valid parent action set and/or selector")
@@ -134,32 +134,32 @@ func perform(ctx context.Context, crCli versioned.Interface, params *performPara
 	if err != nil {
 		return err
 	}
-	if params.dryRun {
+	if params.DryRun {
 		return printActionSet(as)
 	}
-	return createActionSet(ctx, crCli, params.namespace, as)
+	return createActionSet(ctx, crCli, params.Namespace, as)
 }
 
-func newActionSet(params *performParams) (*crv1alpha1.ActionSet, error) {
-	if params.actionName == "" {
+func newActionSet(params *PerformParams) (*crv1alpha1.ActionSet, error) {
+	if params.ActionName == "" {
 		return nil, errors.New("action required to create new action set")
 	}
-	if params.blueprint == "" {
+	if params.Blueprint == "" {
 		return nil, errors.New("blueprint required to create new action set")
 	}
-	actions := make([]crv1alpha1.ActionSpec, 0, len(params.objects))
-	for _, obj := range params.objects {
+	actions := make([]crv1alpha1.ActionSpec, 0, len(params.Objects))
+	for _, obj := range params.Objects {
 		actions = append(actions, crv1alpha1.ActionSpec{
-			Name:       params.actionName,
-			Blueprint:  params.blueprint,
+			Name:       params.ActionName,
+			Blueprint:  params.Blueprint,
 			Object:     obj,
-			Secrets:    params.secrets,
-			ConfigMaps: params.configMaps,
-			Profile:    params.profile,
-			Options:    params.options,
+			Secrets:    params.Secrets,
+			ConfigMaps: params.ConfigMaps,
+			Profile:    params.Profile,
+			Options:    params.Options,
 		})
 	}
-	name := fmt.Sprintf("%s-", params.actionName)
+	name := fmt.Sprintf("%s-", params.ActionName)
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: name,
@@ -170,12 +170,12 @@ func newActionSet(params *performParams) (*crv1alpha1.ActionSet, error) {
 	}, nil
 }
 
-func childActionSet(parent *crv1alpha1.ActionSet, params *performParams) (*crv1alpha1.ActionSet, error) {
+func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1alpha1.ActionSet, error) {
 	if parent.Status == nil || parent.Status.State != crv1alpha1.StateComplete {
 		return nil, errors.Errorf("Request parent ActionSet %s has not been executed", parent.GetName())
 	}
 
-	actions := make([]crv1alpha1.ActionSpec, 0, len(parent.Status.Actions)*max(1, len(params.objects)))
+	actions := make([]crv1alpha1.ActionSpec, 0, len(parent.Status.Actions)*max(1, len(params.Objects)))
 	for aidx, pa := range parent.Status.Actions {
 		as := crv1alpha1.ActionSpec{
 			Name:       parent.Spec.Actions[aidx].Name,
@@ -185,26 +185,26 @@ func childActionSet(parent *crv1alpha1.ActionSet, params *performParams) (*crv1a
 			Secrets:    parent.Spec.Actions[aidx].Secrets,
 			ConfigMaps: parent.Spec.Actions[aidx].ConfigMaps,
 			Profile:    parent.Spec.Actions[aidx].Profile,
-			Options:    mergeOptions(params.options, parent.Spec.Actions[aidx].Options),
+			Options:    mergeOptions(params.Options, parent.Spec.Actions[aidx].Options),
 		}
 		// Apply overrides
-		if params.actionName != "" {
-			as.Name = params.actionName
+		if params.ActionName != "" {
+			as.Name = params.ActionName
 		}
-		if params.blueprint != "" {
-			as.Blueprint = params.blueprint
+		if params.Blueprint != "" {
+			as.Blueprint = params.Blueprint
 		}
-		if len(params.secrets) > 0 {
-			as.Secrets = params.secrets
+		if len(params.Secrets) > 0 {
+			as.Secrets = params.Secrets
 		}
-		if len(params.configMaps) > 0 {
-			as.ConfigMaps = params.configMaps
+		if len(params.ConfigMaps) > 0 {
+			as.ConfigMaps = params.ConfigMaps
 		}
-		if params.profile != nil {
-			as.Profile = params.profile
+		if params.Profile != nil {
+			as.Profile = params.Profile
 		}
-		if len(params.objects) > 0 {
-			for _, obj := range params.objects {
+		if len(params.Objects) > 0 {
+			for _, obj := range params.Objects {
 				asCopy := as.DeepCopy()
 				asCopy.Object = obj
 
@@ -217,8 +217,8 @@ func childActionSet(parent *crv1alpha1.ActionSet, params *performParams) (*crv1a
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: func() string {
-				if params.actionName != "" {
-					return fmt.Sprintf("%s-%s-", params.actionName, parent.GetName())
+				if params.ActionName != "" {
+					return fmt.Sprintf("%s-%s-", params.ActionName, parent.GetName())
 				}
 				return fmt.Sprintf("%s-", parent.GetName())
 			}(),
@@ -250,7 +250,7 @@ func printActionSet(as *crv1alpha1.ActionSet) error {
 	return nil
 }
 
-func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Interface) (*performParams, error) {
+func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Interface) (*PerformParams, error) {
 	if len(args) != 0 {
 		return nil, newArgsLengthError("expected 0 arguments. got %#v", args)
 	}
@@ -282,17 +282,17 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	if err != nil {
 		return nil, err
 	}
-	return &performParams{
-		namespace:  ns,
-		actionName: actionName,
-		parentName: parentName,
-		blueprint:  blueprint,
-		dryRun:     dryRun,
-		objects:    objects,
-		options:    options,
-		secrets:    secrets,
-		configMaps: cms,
-		profile:    profile,
+	return &PerformParams{
+		Namespace:  ns,
+		ActionName: actionName,
+		ParentName: parentName,
+		Blueprint:  blueprint,
+		DryRun:     dryRun,
+		Objects:    objects,
+		Options:    options,
+		Secrets:    secrets,
+		ConfigMaps: cms,
+		Profile:    profile,
 	}, nil
 }
 
@@ -567,7 +567,7 @@ func parseName(k string, r string) (namespace, name string, err error) {
 	return m[1], m[2], nil
 }
 
-func verifyParams(ctx context.Context, p *performParams, cli kubernetes.Interface, crCli versioned.Interface) error {
+func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface) error {
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
@@ -576,10 +576,10 @@ func verifyParams(ctx context.Context, p *performParams, cli kubernetes.Interfac
 	// Blueprint
 	go func() {
 		defer wg.Done()
-		if p.blueprint != "" {
-			_, err := crCli.CrV1alpha1().Blueprints(p.namespace).Get(p.blueprint, metav1.GetOptions{})
+		if p.Blueprint != "" {
+			_, err := crCli.CrV1alpha1().Blueprints(p.Namespace).Get(p.Blueprint, metav1.GetOptions{})
 			if err != nil {
-				msgs <- errors.Wrapf(err, notFoundTmpl, "blueprint", p.blueprint, p.namespace)
+				msgs <- errors.Wrapf(err, notFoundTmpl, "blueprint", p.Blueprint, p.Namespace)
 			}
 		}
 	}()
@@ -587,10 +587,10 @@ func verifyParams(ctx context.Context, p *performParams, cli kubernetes.Interfac
 	// Profile
 	go func() {
 		defer wg.Done()
-		if p.profile != nil {
-			_, err := crCli.CrV1alpha1().Profiles(p.profile.Namespace).Get(p.profile.Name, metav1.GetOptions{})
+		if p.Profile != nil {
+			_, err := crCli.CrV1alpha1().Profiles(p.Profile.Namespace).Get(p.Profile.Name, metav1.GetOptions{})
 			if err != nil {
-				msgs <- errors.Wrapf(err, notFoundTmpl, "profile", p.profile.Name, p.profile.Namespace)
+				msgs <- errors.Wrapf(err, notFoundTmpl, "profile", p.Profile.Name, p.Profile.Namespace)
 			}
 		}
 	}()
@@ -599,7 +599,7 @@ func verifyParams(ctx context.Context, p *performParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		var err error
-		for _, obj := range p.objects {
+		for _, obj := range p.Objects {
 			switch obj.Kind {
 			case param.DeploymentKind:
 				_, err = cli.AppsV1().Deployments(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
@@ -626,7 +626,7 @@ func verifyParams(ctx context.Context, p *performParams, cli kubernetes.Interfac
 	// ConfigMaps
 	go func() {
 		defer wg.Done()
-		for _, cm := range p.configMaps {
+		for _, cm := range p.ConfigMaps {
 			_, err := cli.CoreV1().ConfigMaps(cm.Namespace).Get(cm.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "config map", cm.Name, cm.Namespace)
@@ -637,7 +637,7 @@ func verifyParams(ctx context.Context, p *performParams, cli kubernetes.Interfac
 	// Secrets
 	go func() {
 		defer wg.Done()
-		for _, secret := range p.secrets {
+		for _, secret := range p.Secrets {
 			_, err := cli.CoreV1().Secrets(secret.Namespace).Get(secret.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "secret", secret.Name, secret.Namespace)
