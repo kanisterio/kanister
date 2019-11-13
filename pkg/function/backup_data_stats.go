@@ -30,6 +30,8 @@ import (
 
 const (
 	backupDataStatsJobPrefix = "backup-data-stats-"
+	// BackupDataStatsFuncName gives the name of the stats function
+	BackupDataStatsFuncName = "BackupDataStats"
 	// BackupDataStatsNamespaceArg provides the namespace
 	BackupDataStatsNamespaceArg = "namespace"
 	// BackupDataStatsBackupArtifactPrefixArg provides the path to store artifacts on the object store
@@ -55,7 +57,7 @@ var _ kanister.Func = (*BackupDataStatsFunc)(nil)
 type BackupDataStatsFunc struct{}
 
 func (*BackupDataStatsFunc) Name() string {
-	return "BackupDataStats"
+	return BackupDataStatsFuncName
 }
 
 func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, encryptionKey, backupArtifactPrefix, backupID, mode, jobPrefix string) (map[string]interface{}, error) {
@@ -123,9 +125,13 @@ func (*BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err = OptArg(args, BackupDataStatsEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
+
 	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
+
+	backupArtifactPrefix = ResolveArtifactPrefix(backupArtifactPrefix, tp.Profile)
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")

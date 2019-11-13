@@ -32,6 +32,8 @@ import (
 )
 
 const (
+	// BackupDataFuncName gives the name of the function
+	BackupDataFuncName = "BackupData"
 	// BackupDataNamespaceArg provides the namespace
 	BackupDataNamespaceArg = "namespace"
 	// BackupDataPodArg provides the pod connected to the data volume
@@ -63,7 +65,7 @@ var _ kanister.Func = (*backupDataFunc)(nil)
 type backupDataFunc struct{}
 
 func (*backupDataFunc) Name() string {
-	return "BackupData"
+	return BackupDataFuncName
 }
 
 func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -87,15 +89,19 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = OptArg(args, BackupDataEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
-	ctx = field.Context(ctx, consts.PodNameKey, pod)
-	ctx = field.Context(ctx, consts.ContainerNameKey, container)
+
 	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
+
+	backupArtifactPrefix = ResolveArtifactPrefix(backupArtifactPrefix, tp.Profile)
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
+	ctx = field.Context(ctx, consts.PodNameKey, pod)
+	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	backupOutputs, err := backupData(ctx, cli, namespace, pod, container, backupArtifactPrefix, includePath, encryptionKey, tp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to backup data")

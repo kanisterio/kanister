@@ -45,6 +45,8 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 
 SRC_DIRS := cmd pkg # directories which hold app source (not vendored)
 
+INTEGRATION_TEST_DIR := pkg/testing # directory which hold workflow tests
+
 ALL_ARCH := amd64 arm arm64 ppc64le
 
 # Set default base image dynamically for each arch
@@ -165,6 +167,9 @@ deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 
 test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
+
+integration-test: build-dirs
+	@$(MAKE) run CMD='-c "TEST_INTEGRATION=true ./build/test.sh $(INTEGRATION_TEST_DIR)"'
 
 codegen:
 	@$(MAKE) run CMD='-c "./build/codegen.sh"'

@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -31,8 +31,10 @@ import (
 )
 
 const (
-	defaultMountPoint         = "/mnt/prepare_data/%s"
-	prepareDataJobPrefix      = "prepare-data-job-"
+	defaultMountPoint    = "/mnt/prepare_data/%s"
+	prepareDataJobPrefix = "prepare-data-job-"
+	// PrepareDataFuncName gives the function name
+	PrepareDataFuncName       = "PrepareData"
 	PrepareDataNamespaceArg   = "namespace"
 	PrepareDataImageArg       = "image"
 	PrepareDataCommandArg     = "command"
@@ -50,7 +52,7 @@ var _ kanister.Func = (*prepareDataFunc)(nil)
 type prepareDataFunc struct{}
 
 func (*prepareDataFunc) Name() string {
-	return "PrepareData"
+	return PrepareDataFuncName
 }
 
 func getVolumes(tp param.TemplateParams) (map[string]string, error) {

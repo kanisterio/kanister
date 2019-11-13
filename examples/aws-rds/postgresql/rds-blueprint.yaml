@@ -17,7 +17,7 @@ actions:
       name: backupSnapshots
       args:
         namespace: "{{ .Deployment.Namespace }}"
-        image: "kanisterio/postgres-kanister-tools:0.21.0"
+        image: "kanisterio/postgres-kanister-tools:0.22.0"
         command:
           - bash
           - -o
@@ -58,7 +58,7 @@ actions:
       name: restoreSnapshots
       args:
         namespace: "{{ .Deployment.Namespace }}"
-        image: "kanisterio/postgres-kanister-tools:0.21.0"
+        image: "kanisterio/postgres-kanister-tools:0.22.0"
         command:
           - bash
           - -o
@@ -101,7 +101,7 @@ actions:
       name: restoreSnapshots
       args:
         namespace: "{{ .Deployment.Namespace }}"
-        image: "kanisterio/postgres-kanister-tools:0.21.0"
+        image: "kanisterio/postgres-kanister-tools:0.22.0"
         command:
           - bash
           - -o

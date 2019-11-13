@@ -41,6 +41,8 @@ var (
 )
 
 const (
+	// DeleteVolumeSnapshotFuncName gives the function name
+	DeleteVolumeSnapshotFuncName     = "DeleteVolumeSnapshot"
 	DeleteVolumeSnapshotNamespaceArg = "namespace"
 	DeleteVolumeSnapshotManifestArg  = "snapshots"
 	SnapshotDoesNotExistError        = "does not exist"
@@ -49,7 +51,7 @@ const (
 type deleteVolumeSnapshotFunc struct{}
 
 func (*deleteVolumeSnapshotFunc) Name() string {
-	return "DeleteVolumeSnapshot"
+	return DeleteVolumeSnapshotFuncName
 }
 
 func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotinfo string, profile *param.Profile, getter getter.Getter) (map[string]blockstorage.Provider, error) {

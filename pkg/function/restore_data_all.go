@@ -31,6 +31,8 @@ import (
 
 const (
 	restoreDataAllJobPrefix = "restore-data-all-"
+	// RestoreDataAllFuncName gives the function name
+	RestoreDataAllFuncName = "RestoreDataAll"
 	// RestoreDataAllNamespaceArg provides the namespace
 	RestoreDataAllNamespaceArg = "namespace"
 	// RestoreDataAllImageArg provides the image of the container with required tools
@@ -58,7 +60,7 @@ var _ kanister.Func = (*restoreDataAllFunc)(nil)
 type restoreDataAllFunc struct{}
 
 func (*restoreDataAllFunc) Name() string {
-	return "RestoreDataAll"
+	return RestoreDataAllFuncName
 }
 
 func validateAndGetRestoreAllOptArgs(args map[string]interface{}, tp param.TemplateParams) (string, string, []string, crv1alpha1.JSONMap, error) {

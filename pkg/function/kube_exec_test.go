@@ -90,7 +90,7 @@ func newKubeExecBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "echoSomething",
-						Func: "KubeExec",
+						Func: KubeExecFuncName,
 						Args: map[string]interface{}{
 							KubeExecNamespaceArg:     "{{ .StatefulSet.Namespace }}",
 							KubeExecPodNameArg:       "{{ index .StatefulSet.Pods 0 }}",
@@ -173,11 +173,11 @@ func (s *KubeExecTest) TestParseLogAndCreateOutput(c *C) {
 		errChecker Checker
 		outChecker Checker
 	}{
-		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.21.0\"}", map[string]interface{}{"version": "0.21.0"}, IsNil, NotNil},
-		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.21.0\"}\n###Phase-output###: {\"key\":\"path\",\"value\":\"/backup/path\"}",
-			map[string]interface{}{"version": "0.21.0", "path": "/backup/path"}, IsNil, NotNil},
-		{"Random message ###Phase-output###: {\"key\":\"version\",\"value\":\"0.21.0\"}", map[string]interface{}{"version": "0.21.0"}, IsNil, NotNil},
-		{"Random message with newline \n###Phase-output###: {\"key\":\"version\",\"value\":\"0.21.0\"}", map[string]interface{}{"version": "0.21.0"}, IsNil, NotNil},
+		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.22.0\"}", map[string]interface{}{"version": "0.22.0"}, IsNil, NotNil},
+		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.22.0\"}\n###Phase-output###: {\"key\":\"path\",\"value\":\"/backup/path\"}",
+			map[string]interface{}{"version": "0.22.0", "path": "/backup/path"}, IsNil, NotNil},
+		{"Random message ###Phase-output###: {\"key\":\"version\",\"value\":\"0.22.0\"}", map[string]interface{}{"version": "0.22.0"}, IsNil, NotNil},
+		{"Random message with newline \n###Phase-output###: {\"key\":\"version\",\"value\":\"0.22.0\"}", map[string]interface{}{"version": "0.22.0"}, IsNil, NotNil},
 		{"###Phase-output###: Invalid message", nil, NotNil, IsNil},
 		{"Random message", nil, IsNil, IsNil},
 	} {

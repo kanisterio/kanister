@@ -68,6 +68,41 @@ func (s *UtilsTestSuite) TestFetchPodVolumes(c *C) {
 	}
 }
 
+func (s *UtilsTestSuite) TestResolveArtifactPrefix(c *C) {
+	for _, tc := range []struct {
+		prefix   string
+		expected string
+	}{
+		{
+			prefix:   "test-bucket/prefix",
+			expected: "test-bucket/prefix",
+		},
+		{
+			prefix:   "test-bucket/pre/fix",
+			expected: "test-bucket/pre/fix",
+		},
+		{
+			prefix:   "prefix",
+			expected: "test-bucket/prefix",
+		},
+		{
+			prefix:   "pre/fix",
+			expected: "test-bucket/pre/fix",
+		},
+		{
+			prefix:   "",
+			expected: "test-bucket",
+		},
+		{
+			prefix:   "test-bucket",
+			expected: "test-bucket",
+		},
+	} {
+		res := ResolveArtifactPrefix(tc.prefix, newValidProfile())
+		c.Check(res, Equals, tc.expected)
+	}
+}
+
 func newValidProfile() *param.Profile {
 	return &param.Profile{
 		Location: crv1alpha1.Location{

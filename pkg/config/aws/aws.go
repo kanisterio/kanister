@@ -35,6 +35,8 @@ const (
 	SecretAccessKey = "AWS_SECRET_ACCESS_KEY"
 	// SessionToken represents AWS Session Key
 	SessionToken = "AWS_SESSION_TOKEN"
+	// Region represents AWS region
+	Region = "AWS_REGION"
 
 	assumeRoleDuration = 25 * time.Minute
 )
