@@ -152,5 +152,8 @@ func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace stri
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to encode JSON data")
 	}
-	return map[string]interface{}{BackupDataAllOutput: string(manifestData)}, nil
+	return map[string]interface{}{
+		BackupDataAllOutput:   string(manifestData),
+		FunctionOutputVersion: kanister.DefaultVersion,
+	}, nil
 }

@@ -111,6 +111,7 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		BackupDataOutputBackupTag:       backupOutputs.backupTag,
 		BackupDataOutputBackupFileCount: backupOutputs.fileCount,
 		BackupDataOutputBackupSize:      backupOutputs.backupSize,
+		FunctionOutputVersion:           kanister.DefaultVersion,
 	}
 	return output, nil
 }

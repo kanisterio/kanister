@@ -102,6 +102,7 @@ func backupDataStatsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 				BackupDataStatsOutputMode:      mode,
 				BackupDataStatsOutputFileCount: fc,
 				BackupDataStatsOutputSize:      size,
+				FunctionOutputVersion:          kanister.DefaultVersion,
 			},
 			nil
 	}

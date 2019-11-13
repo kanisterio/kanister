@@ -17,6 +17,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
+const (
+	FunctionOutputVersion = "version"
+)
+
 // ValidateCredentials verifies if the given credentials have appropriate values set
 func ValidateCredentials(creds *param.Credential) error {
 	if creds == nil {
