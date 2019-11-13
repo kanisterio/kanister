@@ -46,7 +46,7 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, region string, sourceZo
 	cli, err := kube.NewClient()
 	if err == nil {
 		nzs, rs, errzr := NodeZonesAndRegion(ctx, cli)
-		if err != nil {
+		if errzr != nil {
 			log.WithError(errzr).Print("Ignoring error getting Node availability zones.")
 		}
 		if len(nzs) != 0 {
