@@ -40,7 +40,7 @@ func NamespacedGVRs(ctx context.Context, cli discovery.DiscoveryInterface) ([]sc
 	return apiToGroupVersion(arls)
 }
 
-func NamespacedGVRsIgnoreAPIGroupErr(ctx context.Context, cli discovery.DiscoveryInterface, exclude filter.ResourceTypeMatcher) ([]schema.GroupVersionResource, error) {
+func NamespacedGVRsIgnoreGroupErrs(ctx context.Context, cli discovery.DiscoveryInterface, exclude filter.ResourceTypeMatcher) ([]schema.GroupVersionResource, error) {
 	arls, err := cli.ServerPreferredNamespacedResources()
 	if err == nil {
 		return apiToGroupVersion(arls)
