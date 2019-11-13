@@ -51,4 +51,5 @@ func (s *DiscoverSuite) TestDiscover(c *C) {
 		c.Assert(gvr.Version, Not(Equals), "")
 		c.Assert(gvr.Resource, Not(Equals), "")
 	}
+
 }
