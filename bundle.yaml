@@ -16,7 +16,6 @@ rules:
   verbs:
   - "*"
 - apiGroups:
-  - extensions
   - apps
   resources:
   - "*"
@@ -42,7 +41,6 @@ rules:
   - delete
 - apiGroups:
   - batch
-  - extensions
   resources:
   - "*"
   verbs:

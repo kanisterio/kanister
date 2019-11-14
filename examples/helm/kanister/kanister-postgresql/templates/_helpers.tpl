@@ -29,7 +29,7 @@ Return the appropriate apiVersion for networkpolicy.
 */}}
 {{- define "postgresql.networkPolicy.apiVersion" -}}
 {{- if and (ge .Capabilities.KubeVersion.Minor "4") (le .Capabilities.KubeVersion.Minor "6") -}}
-"extensions/v1beta1"
+"networking.k8s.io/v1"
 {{- else if ge .Capabilities.KubeVersion.Minor "7" -}}
 "networking.k8s.io/v1"
 {{- end -}}
