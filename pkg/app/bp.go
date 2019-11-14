@@ -15,25 +15,32 @@
 package app
 
 import (
+	"fmt"
 	log "github.com/sirupsen/logrus"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	bp "github.com/kanisterio/kanister/pkg/blueprint"
 )
 
+const (
+	blueprintsRepo = "./blueprints"
+)
+
 // Blueprint implements Blueprint() to return Blueprint specs for the app
 type Blueprint struct {
-	app string
+	app  string
+	path string
 }
 
 func NewBlueprint(app string) Blueprinter {
 	return Blueprint{
-		app: app,
+		app:  app,
+		path: fmt.Sprintf("%s/%s-blueprint.yaml", blueprintsRepo, app),
 	}
 }
 
 func (b Blueprint) Blueprint() *crv1alpha1.Blueprint {
-	bpr, err := bp.ReadFromFile(b.app)
+	bpr, err := bp.ReadFromFile(b.path)
 	if err != nil {
 		log.Errorf("Failed to read Blueprint for %s: %s", b.app, err.Error())
 	}
