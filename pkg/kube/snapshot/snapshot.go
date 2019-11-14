@@ -95,7 +95,7 @@ func Get(ctx context.Context, snapCli snapshotclient.Interface, name, namespace 
 // 'name' is the name of the VolumeSnapshot that will be deleted.
 // 'namespace' is the namespace of the VolumeSnapshot that will be deleted.
 func Delete(ctx context.Context, snapCli snapshotclient.Interface, name, namespace string) error {
-	if err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Delete(name, &metav1.DeleteOptions{}); err == nil || !apierrors.IsNotFound(err) {
+	if err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Delete(name, &metav1.DeleteOptions{}); !apierrors.IsNotFound(err) {
 		return err
 	}
 	// If the Snapshot does not exist, that's an acceptable error and we ignore it
