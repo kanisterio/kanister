@@ -59,7 +59,7 @@ var _ = Suite(&IntegrationSuite{
 	name:      "rds-postgres",
 	namespace: "rds-postgres-test",
 	app:       app.NewPostgresDB(),
-	bp:        app.NewPostgresBP(),
+	bp:        app.NewBlueprint("rds-postgres"),
 	profile:   newSecretProfile("", "", ""),
 })
 
@@ -142,6 +142,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	// Create blueprint
 	bp := s.bp.Blueprint()
+	c.Assert(bp, NotNil)
 	_, err = s.crCli.Blueprints(s.namespace).Create(bp)
 	c.Assert(err, IsNil)
 
