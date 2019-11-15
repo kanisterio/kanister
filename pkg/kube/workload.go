@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
-	v1beta1ext "k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -144,9 +143,9 @@ func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, na
 var errNotFound = fmt.Errorf("not found")
 
 // FetchReplicaSet fetches the replicaset matching the specified owner UID
-func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*v1beta1ext.ReplicaSet, error) {
+func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*appsv1.ReplicaSet, error) {
 	opts := metav1.ListOptions{}
-	rss, err := cli.ExtensionsV1beta1().ReplicaSets(namespace).List(opts)
+	rss, err := cli.AppsV1().ReplicaSets(namespace).List(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not list ReplicaSets")
 	}
