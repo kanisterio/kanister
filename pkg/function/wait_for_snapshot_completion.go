@@ -65,22 +65,16 @@ func waitForSnapshotsCompletion(ctx context.Context, snapshotinfo string, profil
 	if err != nil {
 		return errors.Wrapf(err, "Could not decode JSON data")
 	}
+
 	for _, pvcInfo := range PVCData {
-		config := make(map[string]string)
 		if err = ValidateLocationForBlockstorage(profile, pvcInfo.Type); err != nil {
 			return errors.Wrap(err, "Profile validation failed")
 		}
-		switch pvcInfo.Type {
-		case blockstorage.TypeEBS:
+		config := getConfig(profile, pvcInfo.Type)
+		if pvcInfo.Type == blockstorage.TypeEBS {
 			config[awsconfig.ConfigRegion] = pvcInfo.Region
-			config[awsconfig.AccessKeyID] = profile.Credential.KeyPair.ID
-			config[awsconfig.SecretAccessKey] = profile.Credential.KeyPair.Secret
-		case blockstorage.TypeGPD:
-			config[blockstorage.GoogleProjectID] = profile.Credential.KeyPair.ID
-			config[blockstorage.GoogleServiceKey] = profile.Credential.KeyPair.Secret
-		default:
-			return errors.New("Storage provider not supported " + string(pvcInfo.Type))
 		}
+
 		provider, err := getter.Get(pvcInfo.Type, config)
 		if err != nil {
 			return errors.Wrapf(err, "Could not get storage provider %v", pvcInfo.Type)
