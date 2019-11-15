@@ -1,7 +1,7 @@
 {{- if .Values.client.ingress.enabled -}}
 {{- $fullName := include "elasticsearch.client.fullname" . -}}
 {{- $ingressPath := .Values.client.ingress.path -}}
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: {{ $fullName }}
