@@ -21,6 +21,7 @@ import (
 	snapshotclient "github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -94,7 +95,11 @@ func Get(ctx context.Context, snapCli snapshotclient.Interface, name, namespace 
 // 'name' is the name of the VolumeSnapshot that will be deleted.
 // 'namespace' is the namespace of the VolumeSnapshot that will be deleted.
 func Delete(ctx context.Context, snapCli snapshotclient.Interface, name, namespace string) error {
-	return snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Delete(name, &metav1.DeleteOptions{})
+	if err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Delete(name, &metav1.DeleteOptions{}); !apierrors.IsNotFound(err) {
+		return err
+	}
+	// If the Snapshot does not exist, that's an acceptable error and we ignore it
+	return nil
 }
 
 // Clone will clone the VolumeSnapshot to namespace 'cloneNamespace'.

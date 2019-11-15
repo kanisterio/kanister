@@ -126,6 +126,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 				CopyVolumeDataOutputBackupTag:              backupTag,
 				CopyVolumeDataOutputBackupFileCount:        fileCount,
 				CopyVolumeDataOutputBackupSize:             backupSize,
+				FunctionOutputVersion:                      kanister.DefaultVersion,
 			},
 			nil
 	}
@@ -150,6 +151,12 @@ func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	if err != nil {
 		return nil, err
 	}
+
+	if err = ValidateProfile(tp.Profile); err != nil {
+		return nil, errors.Wrapf(err, "Failed to validate Profile")
+	}
+
+	targetPath = ResolveArtifactPrefix(targetPath, tp.Profile)
 
 	cli, err := kube.NewClient()
 	if err != nil {

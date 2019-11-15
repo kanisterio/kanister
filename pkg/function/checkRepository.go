@@ -75,33 +75,31 @@ func CheckRepositoryPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			break
 		case strings.Contains(err.Error(), restic.PasswordIncorrect):
 			return map[string]interface{}{
-					CheckRepositoryPasswordIncorrect: "true",
-					CheckRepositoryRepoDoesNotExist:  "false",
-				},
-				nil
-
+				CheckRepositoryPasswordIncorrect: "true",
+				CheckRepositoryRepoDoesNotExist:  "false",
+				FunctionOutputVersion:            kanister.DefaultVersion,
+			}, nil
 		case strings.Contains(err.Error(), restic.RepoDoesNotExist):
 			return map[string]interface{}{
-
-					CheckRepositoryPasswordIncorrect: "false",
-					CheckRepositoryRepoDoesNotExist:  "true",
-				},
-				nil
+				CheckRepositoryPasswordIncorrect: "false",
+				CheckRepositoryRepoDoesNotExist:  "true",
+				FunctionOutputVersion:            kanister.DefaultVersion,
+			}, nil
 		default:
 			return nil, err
 
 		}
 		return map[string]interface{}{
-				CheckRepositoryPasswordIncorrect: "false",
-				CheckRepositoryRepoDoesNotExist:  "false",
-			},
-			nil
+			CheckRepositoryPasswordIncorrect: "false",
+			CheckRepositoryRepoDoesNotExist:  "false",
+			FunctionOutputVersion:            kanister.DefaultVersion,
+		}, nil
 	}
 }
 
 func (*CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var getCheckRepositoryArtifactPrefix, encryptionKey string
-	if err := Arg(args, CheckRepositoryArtifactPrefixArg, &getCheckRepositoryArtifactPrefix); err != nil {
+	var checkRepositoryArtifactPrefix, encryptionKey string
+	if err := Arg(args, CheckRepositoryArtifactPrefixArg, &checkRepositoryArtifactPrefix); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, CheckRepositoryEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
@@ -115,11 +113,14 @@ func (*CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
+
+	checkRepositoryArtifactPrefix = ResolveArtifactPrefix(checkRepositoryArtifactPrefix, tp.Profile)
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return CheckRepository(ctx, cli, tp, encryptionKey, getCheckRepositoryArtifactPrefix, CheckRepositoryJobPrefix, podOverride)
+	return CheckRepository(ctx, cli, tp, encryptionKey, checkRepositoryArtifactPrefix, CheckRepositoryJobPrefix, podOverride)
 }
 
 func (*CheckRepositoryFunc) RequiredArgs() []string {

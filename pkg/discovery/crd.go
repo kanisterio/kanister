@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filter
+package discovery
 
 import (
 	"context"
 
+	"github.com/kanisterio/kanister/pkg/filter"
 	"github.com/pkg/errors"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -24,7 +25,7 @@ import (
 )
 
 // CRDMatcher returns a ResourceTypeMatcher that matches all CRs in this cluster.
-func CRDMatcher(ctx context.Context, cli crdclient.Interface) (ResourceTypeMatcher, error) {
+func CRDMatcher(ctx context.Context, cli crdclient.Interface) (filter.ResourceTypeMatcher, error) {
 	crds, err := cli.ApiextensionsV1beta1().CustomResourceDefinitions().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to query CRDs in cluster")
@@ -32,10 +33,10 @@ func CRDMatcher(ctx context.Context, cli crdclient.Interface) (ResourceTypeMatch
 	return crdsToMatcher(crds.Items), nil
 }
 
-func crdsToMatcher(crds []apiextensions.CustomResourceDefinition) ResourceTypeMatcher {
-	gvrs := make(ResourceTypeMatcher, 0, len(crds))
+func crdsToMatcher(crds []apiextensions.CustomResourceDefinition) filter.ResourceTypeMatcher {
+	gvrs := make(filter.ResourceTypeMatcher, 0, len(crds))
 	for _, crd := range crds {
-		gvr := ResourceTypeRequirement{
+		gvr := filter.ResourceTypeRequirement{
 			Group:    crd.Spec.Group,
 			Version:  crd.Spec.Version,
 			Resource: crd.Spec.Names.Plural,

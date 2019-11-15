@@ -11,7 +11,7 @@ set -o xtrace
 set -o pipefail
 
 DIST_NAME="kanister"
-BIN_NAMES=("kanctl" "kando")
+BIN_NAMES=("kanctl")
 RELEASES_URL="https://github.com/kanisterio/kanister/releases"
 
 : ${KANISTER_INSTALL_DIR:="/usr/local/bin"}
@@ -35,6 +35,8 @@ initArch() {
 initOS() {
     OS=$(uname | tr '[:upper:]' '[:lower:]')
     case "$OS" in
+        # On linux we also support kando
+        linux) BIN_NAMES=("kanctl" "kando");;
         # Minimalist GNU for Windows
         mingw*) OS='windows';;
     esac
