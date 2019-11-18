@@ -12,24 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
+package helm
 
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"strings"
+	"time"
 
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
-type HelmClient struct{}
+const DefaultCommandTimeout = 5 * time.Minute
 
-func NewHelmClient() HelmClient {
-	return HelmClient{}
+type CliClient struct{}
+
+func NewCliClient() Client {
+	return &CliClient{}
 }
 
 // AddRepo adds new helm repo and fetches latest charts
-func (h *HelmClient) AddRepo(ctx context.Context, name, url string) error {
+func (h CliClient) AddRepo(ctx context.Context, name, url string) error {
 	log.Debug().Print("Adding helm repo", field.M{"name": name, "url": url})
 	out, err := RunCmdWithTimeout(ctx, "helm", []string{"repo", "add", name, url})
 	if err != nil {
@@ -43,7 +48,7 @@ func (h *HelmClient) AddRepo(ctx context.Context, name, url string) error {
 }
 
 // UpdateRepo fetches latest helm charts from the repo
-func (h HelmClient) UpdateRepo(ctx context.Context) error {
+func (h CliClient) UpdateRepo(ctx context.Context) error {
 	log.Debug().Print("Fetching latest helm charts from the helm repos")
 	out, err := RunCmdWithTimeout(ctx, "helm", []string{"repo", "update"})
 	if err != nil {
@@ -54,13 +59,13 @@ func (h HelmClient) UpdateRepo(ctx context.Context) error {
 }
 
 // Install installs helm chart with given release name
-func (h HelmClient) Install(ctx context.Context, chart, release, namespace string, values map[string]string) error {
+func (h CliClient) Install(ctx context.Context, chart, release, namespace string, values map[string]string) error {
 	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "release": release, "namespace": namespace})
 	var setVals string
 	for k, v := range values {
 		setVals += fmt.Sprintf("%s=%s,", k, v)
 	}
-	out, err := RunCmdWithTimeout(ctx, "helm", []string{"install", release, "--namespace", namespace, chart, "--set", setVals})
+	out, err := RunCmdWithTimeout(ctx, "helm", []string{"install", release, "--namespace", namespace, chart, "--set", setVals, "--wait"})
 	if err != nil {
 		return err
 	}
@@ -69,7 +74,7 @@ func (h HelmClient) Install(ctx context.Context, chart, release, namespace strin
 }
 
 // Uninstall deletes helm release
-func (h HelmClient) Uninstall(ctx context.Context, release, namespace string) error {
+func (h CliClient) Uninstall(ctx context.Context, release, namespace string) error {
 	log.Debug().Print("Uninstalling helm chart", field.M{"release": release, "namespace": namespace})
 	out, err := RunCmdWithTimeout(ctx, "helm", []string{"delete", release, "--namespace", namespace})
 	if err != nil {
@@ -80,7 +85,7 @@ func (h HelmClient) Uninstall(ctx context.Context, release, namespace string) er
 }
 
 // RemoveRepo removes helm repo
-func (h *HelmClient) RemoveRepo(ctx context.Context, name string) error {
+func (h CliClient) RemoveRepo(ctx context.Context, name string) error {
 	log.Debug().Print("Removing helm repo", field.M{"name": name})
 	out, err := RunCmdWithTimeout(ctx, "helm", []string{"repo", "remove", name})
 	if err != nil {
@@ -88,4 +93,13 @@ func (h *HelmClient) RemoveRepo(ctx context.Context, name string) error {
 	}
 	log.Debug().Print("Result", field.M{"output": out})
 	return nil
+}
+
+// RunCmdWithTimeout executes command on host with DefaultCommandTimeout timeout
+func RunCmdWithTimeout(ctx context.Context, command string, args []string) (string, error) {
+	log.Debug().Print("Executing command", field.M{"command": command, "args": args})
+	ctx, cancel := context.WithTimeout(ctx, DefaultCommandTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, command, args...).CombinedOutput()
+	return strings.TrimSpace(string(out)), err
 }
