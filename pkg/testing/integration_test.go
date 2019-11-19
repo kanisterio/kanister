@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -78,6 +78,14 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "mysql-test",
 	app:       app.NewMysqlDB("mysql"),
 	bp:        app.NewBlueprint("mysql"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
+
+var _ = Suite(&IntegrationSuite{
+	name:      "elasticsearch",
+	namespace: "es-test",
+	app:       app.NewElasticsearchInstance("https://helm.elastic.co", "elastic", "elasticsearch"),
+	bp:        app.NewBlueprint("elasticsearch"),
 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
