@@ -28,6 +28,8 @@ import (
 )
 
 const (
+	// DeleteDataAllFuncName gives the name of the function
+	DeleteDataAllFuncName = "DeleteDataAll"
 	// DeleteDataAllNamespaceArg provides the namespace
 	DeleteDataAllNamespaceArg = "namespace"
 	// DeleteDataAllBackupArtifactPrefixArg provides the path to restore backed up data
@@ -52,7 +54,7 @@ var _ kanister.Func = (*deleteDataAllFunc)(nil)
 type deleteDataAllFunc struct{}
 
 func (*deleteDataAllFunc) Name() string {
-	return "DeleteDataAll"
+	return DeleteDataAllFuncName
 }
 
 func (*deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

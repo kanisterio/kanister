@@ -32,6 +32,8 @@ import (
 )
 
 const (
+	// DeleteDataFuncName gives the function name
+	DeleteDataFuncName = "DeleteData"
 	// DeleteDataNamespaceArg provides the namespace
 	DeleteDataNamespaceArg = "namespace"
 	// DeleteDataBackupArtifactPrefixArg provides the path to restore backed up data
@@ -58,7 +60,7 @@ var _ kanister.Func = (*deleteDataFunc)(nil)
 type deleteDataFunc struct{}
 
 func (*deleteDataFunc) Name() string {
-	return "DeleteData"
+	return DeleteDataFuncName
 }
 
 func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string, jobPrefix string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
@@ -174,6 +176,9 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
+
+	deleteArtifactPrefix = ResolveArtifactPrefix(deleteArtifactPrefix, tp.Profile)
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")

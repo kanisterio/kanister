@@ -33,7 +33,9 @@ import (
 )
 
 const (
-	kanisterToolsImage                         = "kanisterio/kanister-tools:0.21.0"
+	kanisterToolsImage = "kanisterio/kanister-tools:0.22.0"
+	// CopyVolumeDataFuncName gives the function name
+	CopyVolumeDataFuncName                     = "CopyVolumeData"
 	copyVolumeDataMountPoint                   = "/mnt/vol_data/%s"
 	copyVolumeDataJobPrefix                    = "copy-vol-data-"
 	CopyVolumeDataNamespaceArg                 = "namespace"
@@ -58,7 +60,7 @@ var _ kanister.Func = (*copyVolumeDataFunc)(nil)
 type copyVolumeDataFunc struct{}
 
 func (*copyVolumeDataFunc) Name() string {
-	return "CopyVolumeData"
+	return CopyVolumeDataFuncName
 }
 
 func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc, targetPath, encryptionKey string, podOverride map[string]interface{}) (map[string]interface{}, error) {
@@ -124,6 +126,7 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 				CopyVolumeDataOutputBackupTag:              backupTag,
 				CopyVolumeDataOutputBackupFileCount:        fileCount,
 				CopyVolumeDataOutputBackupSize:             backupSize,
+				FunctionOutputVersion:                      kanister.DefaultVersion,
 			},
 			nil
 	}
@@ -148,6 +151,12 @@ func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	if err != nil {
 		return nil, err
 	}
+
+	if err = ValidateProfile(tp.Profile); err != nil {
+		return nil, errors.Wrapf(err, "Failed to validate Profile")
+	}
+
+	targetPath = ResolveArtifactPrefix(targetPath, tp.Profile)
 
 	cli, err := kube.NewClient()
 	if err != nil {

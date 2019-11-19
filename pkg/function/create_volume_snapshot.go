@@ -48,6 +48,8 @@ var (
 )
 
 const (
+	// CreateVolumeSnapshotFuncName gives the name of the function
+	CreateVolumeSnapshotFuncName     = "CreateVolumeSnapshot"
 	CreateVolumeSnapshotNamespaceArg = "namespace"
 	CreateVolumeSnapshotPVCsArg      = "pvcs"
 	CreateVolumeSnapshotSkipWaitArg  = "skipWait"
@@ -56,7 +58,7 @@ const (
 type createVolumeSnapshotFunc struct{}
 
 func (*createVolumeSnapshotFunc) Name() string {
-	return "CreateVolumeSnapshot"
+	return CreateVolumeSnapshotFuncName
 }
 
 type VolumeSnapshotInfo struct {
@@ -95,6 +97,8 @@ func ValidateLocationForBlockstorage(profile *param.Profile, sType blockstorage.
 		if profile.Location.Type != crv1alpha1.LocationTypeGCS {
 			return errors.Errorf("Location type %s not supported for blockstorage type %s", profile.Location.Type, sType)
 		}
+	default:
+		return errors.Errorf("Storage provider not supported %s", sType)
 	}
 	return nil
 }

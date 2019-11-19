@@ -31,6 +31,8 @@ import (
 )
 
 const (
+	// DescribeBackupsFuncName gives the function name
+	DescribeBackupsFuncName = "DescribeBackups"
 	// DescribeBackupsArtifactPrefixArg provides the path to restore backed up data
 	DescribeBackupsArtifactPrefixArg = "backupArtifactPrefix"
 	// DescribeBackupsEncryptionKeyArg provides the encryption key to be used for deletes
@@ -54,7 +56,7 @@ var _ kanister.Func = (*DescribeBackupsFunc)(nil)
 type DescribeBackupsFunc struct{}
 
 func (*DescribeBackupsFunc) Name() string {
-	return "DescribeBackups"
+	return DescribeBackupsFuncName
 }
 
 func describeBackups(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, encryptionKey, targetPaths, jobPrefix string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
@@ -95,6 +97,7 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 					DescribeBackupsSize:              nil,
 					DescribeBackupsPasswordIncorrect: "true",
 					DescribeBackupsRepoDoesNotExist:  "false",
+					FunctionOutputVersion:            kanister.DefaultVersion,
 				},
 				nil
 
@@ -104,6 +107,7 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 					DescribeBackupsSize:              nil,
 					DescribeBackupsPasswordIncorrect: "false",
 					DescribeBackupsRepoDoesNotExist:  "true",
+					FunctionOutputVersion:            kanister.DefaultVersion,
 				},
 				nil
 		default:
@@ -130,15 +134,16 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 				DescribeBackupsSize:              size,
 				DescribeBackupsPasswordIncorrect: "false",
 				DescribeBackupsRepoDoesNotExist:  "false",
+				FunctionOutputVersion:            kanister.DefaultVersion,
 			},
 			nil
 	}
 }
 
 func (*DescribeBackupsFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var getDescribeBackupsArtifactPrefix, encryptionKey string
+	var describeBackupsArtifactPrefix, encryptionKey string
 	var err error
-	if err = Arg(args, DescribeBackupsArtifactPrefixArg, &getDescribeBackupsArtifactPrefix); err != nil {
+	if err = Arg(args, DescribeBackupsArtifactPrefixArg, &describeBackupsArtifactPrefix); err != nil {
 		return nil, err
 	}
 	if err = OptArg(args, DescribeBackupsEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
@@ -152,11 +157,14 @@ func (*DescribeBackupsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, err
 	}
+
+	describeBackupsArtifactPrefix = ResolveArtifactPrefix(describeBackupsArtifactPrefix, tp.Profile)
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return describeBackups(ctx, cli, tp, encryptionKey, getDescribeBackupsArtifactPrefix, DescribeBackupsJobPrefix, podOverride)
+	return describeBackups(ctx, cli, tp, encryptionKey, describeBackupsArtifactPrefix, DescribeBackupsJobPrefix, podOverride)
 }
 
 func (*DescribeBackupsFunc) RequiredArgs() []string {
