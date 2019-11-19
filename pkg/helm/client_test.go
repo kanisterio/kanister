@@ -12,44 +12,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package discovery
+package helm
 
 import (
 	"context"
 	"testing"
 
 	. "gopkg.in/check.v1"
-
-	"github.com/kanisterio/kanister/pkg/kube"
 )
+
+type ExecSuite struct {
+	command string
+	args    []string
+	output  string
+	err     bool
+}
+
+// Valid command
+var _ = Suite(&ExecSuite{
+	command: "echo",
+	args:    []string{"success"},
+	output:  "success",
+})
+
+// Invalid command
+var _ = Suite(&ExecSuite{
+	command: "invalid",
+	err:     true,
+})
+
+// Check timeout
+var _ = Suite(&ExecSuite{
+	command: "sleep",
+	args:    []string{"11m"},
+	err:     true,
+})
 
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
 
-type DiscoverSuite struct{}
-
-var _ = Suite(&DiscoverSuite{})
-
-func (s *DiscoverSuite) TestDiscover(c *C) {
+func (s *ExecSuite) TestRunCmdWithTimeout(c *C) {
 	ctx := context.Background()
-	cli, err := kube.NewClient()
-	c.Assert(err, IsNil)
-	gvrs, err := AllGVRs(ctx, cli.Discovery())
-	c.Assert(err, IsNil)
-	c.Assert(gvrs, Not(HasLen), 0)
-	for _, gvr := range gvrs {
-		c.Assert(gvr.Empty(), Equals, false)
-		c.Assert(gvr.Version, Not(Equals), "")
-		c.Assert(gvr.Resource, Not(Equals), "")
+	out, err := RunCmdWithTimeout(ctx, s.command, s.args)
+	if s.err {
+		c.Assert(err, NotNil)
+		return
 	}
-
-	gvrs, err = NamespacedGVRs(ctx, cli.Discovery())
 	c.Assert(err, IsNil)
-	c.Assert(gvrs, Not(HasLen), 0)
-	for _, gvr := range gvrs {
-		c.Assert(gvr.Empty(), Equals, false)
-		c.Assert(gvr.Version, Not(Equals), "")
-		c.Assert(gvr.Resource, Not(Equals), "")
-	}
-
+	c.Assert(out, Equals, s.output)
 }

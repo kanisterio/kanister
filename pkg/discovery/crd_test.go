@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filter
+package discovery
 
 import (
 	"context"
 
+	"github.com/kanisterio/kanister/pkg/filter"
+	"github.com/kanisterio/kanister/pkg/kube"
 	. "gopkg.in/check.v1"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-
-	"github.com/kanisterio/kanister/pkg/discovery"
-	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 type CRDSuite struct{}
@@ -38,13 +37,13 @@ func (s *CRDSuite) TestCRDMatcher(c *C) {
 	g, err := CRDMatcher(ctx, cli)
 	c.Assert(err, IsNil)
 
-	gvrs, err := discovery.NamespacedGVRs(ctx, cli.Discovery())
+	gvrs, err := NamespacedGVRs(ctx, cli.Discovery())
 	c.Assert(err, IsNil)
 	c.Assert(gvrs, Not(HasLen), 0)
 
 	// We assume there's at least one CRD in the cluster.
-	igvrs := GroupVersionResourceList(gvrs).Include(g)
-	egvrs := GroupVersionResourceList(gvrs).Exclude(g)
+	igvrs := filter.GroupVersionResourceList(gvrs).Include(g)
+	egvrs := filter.GroupVersionResourceList(gvrs).Exclude(g)
 	c.Assert(igvrs, Not(HasLen), 0)
 	c.Assert(egvrs, Not(HasLen), 0)
 	c.Assert(len(igvrs)+len(egvrs), Equals, len(gvrs))

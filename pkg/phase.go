@@ -63,7 +63,7 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 				return nil, err
 			}
 			if err = checkRequiredArgs(p.f.RequiredArgs(), args); err != nil {
-				return nil, errors.Wrapf(err, "Reqired args missing for function %s", p.f.Name())
+				return nil, errors.Wrapf(err, "Required args missing for function %s", p.f.Name())
 			}
 			p.args = args
 		}

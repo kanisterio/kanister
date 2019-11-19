@@ -9,7 +9,7 @@ This example is to demonstrate how Kanister can be integrated with AWS RDS insta
 ## Prerequisites
 
 - Kubernetes 1.10+
-- Kanister controller version 0.21.0 installed in your cluster
+- Kanister controller version 0.22.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Create RDS instance on AWS
@@ -164,8 +164,8 @@ Remove Blueprint and Profile CR
 ```bash
 $ kubectl delete blueprints.cr.kanister.io postgresql-blueprint -n kasten-io
 
-$ kubectl get profiles.cr.kanister.io -n postgres-test
+$ kubectl get profiles.cr.kanister.io -n pgtest
 NAME               AGE
 s3-profile-zvrg9   125m
-$ kubectl delete profiles.cr.kanister.io s3-profile-zvrg9 -n postgres-test
+$ kubectl delete profiles.cr.kanister.io s3-profile-zvrg9 -n pgtest
 ```

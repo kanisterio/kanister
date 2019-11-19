@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
-	v1beta1ext "k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -86,6 +85,15 @@ func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespa
 	return len(runningPods) == int(*ss.Spec.Replicas), nil
 }
 
+// StatefulSetPods returns list of running and notrunning pods created by the deployment.
+func StatefulSetPods(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Pod, []v1.Pod, error) {
+	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "could not get StatefulSet{Namespace: %s, Name: %s}", namespace, name)
+	}
+	return FetchPods(kubeCli, namespace, ss.GetUID())
+}
+
 // WaitOnStatefulSetReady waits for the stateful set to be ready
 func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) error {
 	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
@@ -130,6 +138,19 @@ func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespac
 	return len(notRunningPods) == 0, nil
 }
 
+// DeploymentPods returns list of running and notrunning pods created by the deployment.
+func DeploymentPods(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Pod, []v1.Pod, error) {
+	d, err := kubeCli.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "could not get Deployment{Namespace: %s, Name: %s}", namespace, name)
+	}
+	rs, err := FetchReplicaSet(kubeCli, namespace, d.GetUID(), d.Annotations[RevisionAnnotation])
+	if err != nil {
+		return nil, nil, err
+	}
+	return FetchPods(kubeCli, namespace, rs.GetUID())
+}
+
 // WaitOnDeploymentReady waits for the deployment to be ready
 func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) error {
 	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
@@ -144,9 +165,9 @@ func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, na
 var errNotFound = fmt.Errorf("not found")
 
 // FetchReplicaSet fetches the replicaset matching the specified owner UID
-func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*v1beta1ext.ReplicaSet, error) {
+func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*appsv1.ReplicaSet, error) {
 	opts := metav1.ListOptions{}
-	rss, err := cli.ExtensionsV1beta1().ReplicaSets(namespace).List(opts)
+	rss, err := cli.AppsV1().ReplicaSets(namespace).List(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not list ReplicaSets")
 	}
@@ -227,6 +248,15 @@ func DeploymentVolumes(cli kubernetes.Interface, d *appsv1.Deployment) (volNameT
 		volNameToPvc[v.Name] = v.PersistentVolumeClaim.ClaimName
 	}
 	return volNameToPvc
+}
+
+// PodContainers returns list of containers specified by the pod
+func PodContainers(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Container, error) {
+	p, err := kubeCli.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get Pod{Namespace: %s, Name: %s}", namespace, name)
+	}
+	return p.Spec.Containers, nil
 }
 
 // From getPersistentVolumeClaimName() in stateful_set_utils.go in the K8s repository
