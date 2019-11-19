@@ -376,3 +376,78 @@ func (s *ResticDataSuite) TestGetSnapshotStatsFromBackupLog(c *C) {
 		c.Check(phy, Equals, tc.expectedphy)
 	}
 }
+
+func (s *ResticDataSuite) TestGetSpaceFreedFromPruneLog(c *C) {
+	for _, tc := range []struct {
+		log                string
+		expectedSpaceFreed string
+	}{
+		{log: "will delete 1 packs and rewrite 1 packs, this frees 11.235 KiB", expectedSpaceFreed: "11.235 KiB"},
+		{log: "will delete 1 packs and rewrite 1 packs, this frees 0 KiB", expectedSpaceFreed: "0 KiB"},
+		{log: "will delete 1 packs and rewrite 1 packs, this frees 0.0 KiB", expectedSpaceFreed: "0.0 KiB"},
+		{log: "will delete 0 packs and rewrite 0 packs, this frees 11.235 KiB", expectedSpaceFreed: "11.235 KiB"},
+		{log: "will delete 1 pack and rewrite 1 packs, this frees 11.235 KiB", expectedSpaceFreed: ""},
+		{log: "will delete 1 packs and rewrite 1 pack, this frees 11.235 KiB", expectedSpaceFreed: ""},
+		{log: "will delete 1 packs and rewrite 1 packs, this frees  KiB", expectedSpaceFreed: ""},
+		{log: "will delete 1 packs and rewrite 1 packs, this frees KiB", expectedSpaceFreed: ""},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 KiB", expectedSpaceFreed: "11.235 KiB"},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees  11.235 KiB", expectedSpaceFreed: ""},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 KiB ", expectedSpaceFreed: ""},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235  KiB", expectedSpaceFreed: ""},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 KB", expectedSpaceFreed: ""},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 MB", expectedSpaceFreed: ""},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 GB", expectedSpaceFreed: ""},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 TB", expectedSpaceFreed: ""},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 PiB", expectedSpaceFreed: ""},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 TiB", expectedSpaceFreed: "11.235 TiB"},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 GiB", expectedSpaceFreed: "11.235 GiB"},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 MiB", expectedSpaceFreed: "11.235 MiB"},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 iB", expectedSpaceFreed: ""},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 B", expectedSpaceFreed: "11.235 B"},
+		{log: "this frees 11.235 B", expectedSpaceFreed: ""},
+		{log: "Some unrelated log\nwill delete 100 packs and rewrite 100 packs, this frees 11.235 B\nSome more unrelated logs\n\n", expectedSpaceFreed: "11.235 B"},
+		{log: "Some unrelated log\nwill delete 100 packs and rewrite 100 packs, this frees 11.235 B\n", expectedSpaceFreed: "11.235 B"},
+		{log: "Some unrelated log\nwill delete 100 packs and rewrite 100 packs, this frees 11.235 B", expectedSpaceFreed: "11.235 B"},
+		{log: "\nwill delete 100 packs and rewrite 100 packs, this frees 11.235 B\nSome more unrelated logs\n\n", expectedSpaceFreed: "11.235 B"},
+		{log: "will delete 100 packs and rewrite 100 packs, this frees 11.235 B\nSome more unrelated logs\n\n", expectedSpaceFreed: "11.235 B"},
+		{log: "Some unrelated log in the same line, will delete 100 packs and rewrite 100 packs, this frees 11.235 B", expectedSpaceFreed: ""},
+	} {
+		spaceFreed := SpaceFreedFromPruneLog(tc.log)
+		c.Check(spaceFreed, Equals, tc.expectedSpaceFreed)
+	}
+}
+
+func (s *ResticDataSuite) TestResticSizeStringParser(c *C) {
+	for _, tc := range []struct {
+		input         string
+		expectedSizeB int64
+	}{
+		{input: "11235 B", expectedSizeB: 11235},
+		{input: "11235 KB", expectedSizeB: 0},
+		{input: "11235 MB", expectedSizeB: 0},
+		{input: "11235 GB", expectedSizeB: 0},
+		{input: "11235 TB", expectedSizeB: 0},
+		{input: "11235 TiB", expectedSizeB: 11235 * (1 << 40)},
+		{input: "11235 GiB", expectedSizeB: 11235 * (1 << 30)},
+		{input: "11235 MiB", expectedSizeB: 11235 * (1 << 20)},
+		{input: "11235 KiB", expectedSizeB: 11235 * (1 << 10)},
+		{input: "", expectedSizeB: 0},
+		{input: "asdf", expectedSizeB: 0},
+		{input: "123 asdf", expectedSizeB: 0},
+		{input: "asdf GiB", expectedSizeB: 0},
+		{input: "11235", expectedSizeB: 0},
+		{input: "1.1 GiB", expectedSizeB: 1181116006},
+		{input: "1.1235 GiB", expectedSizeB: 1206348939},
+		{input: " 1.1235 GiB", expectedSizeB: 0},
+		{input: "1.1235  GiB", expectedSizeB: 0},
+		{input: "1.1235  GiB ", expectedSizeB: 0},
+		{input: "1.1235 GiB ", expectedSizeB: 0},
+		{input: "1.1235 GiB GiB", expectedSizeB: 0},
+		{input: "1.1235 1 GiB", expectedSizeB: 0},
+		{input: "-1.1235 GiB", expectedSizeB: 0},
+		{input: "GiB 1.1235", expectedSizeB: 0},
+	} {
+		parsedSize := ParseResticSizeStringBytes(tc.input)
+		c.Check(parsedSize, Equals, tc.expectedSizeB)
+	}
+}
