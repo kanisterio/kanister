@@ -98,7 +98,7 @@ func ValidateLocationForBlockstorage(profile *param.Profile, sType blockstorage.
 			return errors.Errorf("Location type %s not supported for blockstorage type %s", profile.Location.Type, sType)
 		}
 	default:
-		return errors.Errorf("Storage provider not supported %s" + sType)
+		return errors.Errorf("Storage provider not supported %s", sType)
 	}
 	return nil
 }
