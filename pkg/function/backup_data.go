@@ -54,6 +54,8 @@ const (
 	BackupDataOutputBackupFileCount = "fileCount"
 	// BackupDataOutputBackupSize is the key used for returning backup size
 	BackupDataOutputBackupSize = "size"
+	// BackupDataOutputBackupPhysicalSize is the key used for returning physical size taken by the snapshot
+	BackupDataOutputBackupPhysicalSize = "phySize"
 )
 
 func init() {
@@ -107,11 +109,12 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 		return nil, errors.Wrapf(err, "Failed to backup data")
 	}
 	output := map[string]interface{}{
-		BackupDataOutputBackupID:        backupOutputs.backupID,
-		BackupDataOutputBackupTag:       backupOutputs.backupTag,
-		BackupDataOutputBackupFileCount: backupOutputs.fileCount,
-		BackupDataOutputBackupSize:      backupOutputs.backupSize,
-		FunctionOutputVersion:           kanister.DefaultVersion,
+		BackupDataOutputBackupID:           backupOutputs.backupID,
+		BackupDataOutputBackupTag:          backupOutputs.backupTag,
+		BackupDataOutputBackupFileCount:    backupOutputs.fileCount,
+		BackupDataOutputBackupSize:         backupOutputs.backupSize,
+		BackupDataOutputBackupPhysicalSize: backupOutputs.phySize,
+		FunctionOutputVersion:              kanister.DefaultVersion,
 	}
 	return output, nil
 }
