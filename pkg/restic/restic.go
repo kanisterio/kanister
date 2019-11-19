@@ -349,6 +349,7 @@ func SnapshotStatsFromBackupLog(output string) (fileCount string, backupSize str
 	logs := regexp.MustCompile("[\n]").Split(output, -1)
 	// Log should contain "processed %d files, %.3f [Xi]B in mm:ss"
 	logicalPattern := regexp.MustCompile(`processed\s([\d]+)\sfiles,\s([\d]+(\.[\d]+)?\s([TGMK]i)?B)\sin\s`)
+	// Log should contain "Added to the repo: %.3f [Xi]B"
 	physicalPattern := regexp.MustCompile(`^Added to the repo: ([\d]+(\.[\d]+)?\s([TGMK]i)?B)$`)
 
 	for _, l := range logs {
