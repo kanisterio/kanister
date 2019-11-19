@@ -85,6 +85,15 @@ func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespa
 	return len(runningPods) == int(*ss.Spec.Replicas), nil
 }
 
+// StatefulSetPods returns list of running and notrunning pods created by the deployment.
+func StatefulSetPods(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Pod, []v1.Pod, error) {
+	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "could not get StatefulSet{Namespace: %s, Name: %s}", namespace, name)
+	}
+	return FetchPods(kubeCli, namespace, ss.GetUID())
+}
+
 // WaitOnStatefulSetReady waits for the stateful set to be ready
 func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) error {
 	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
@@ -127,6 +136,19 @@ func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespac
 	// Wait for things to settle. This check *is* required since the deployment controller
 	// excludes any pods not running from its replica count(s)
 	return len(notRunningPods) == 0, nil
+}
+
+// DeploymentPods returns list of running and notrunning pods created by the deployment.
+func DeploymentPods(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Pod, []v1.Pod, error) {
+	d, err := kubeCli.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "could not get Deployment{Namespace: %s, Name: %s}", namespace, name)
+	}
+	rs, err := FetchReplicaSet(kubeCli, namespace, d.GetUID(), d.Annotations[RevisionAnnotation])
+	if err != nil {
+		return nil, nil, err
+	}
+	return FetchPods(kubeCli, namespace, rs.GetUID())
 }
 
 // WaitOnDeploymentReady waits for the deployment to be ready
@@ -226,6 +248,15 @@ func DeploymentVolumes(cli kubernetes.Interface, d *appsv1.Deployment) (volNameT
 		volNameToPvc[v.Name] = v.PersistentVolumeClaim.ClaimName
 	}
 	return volNameToPvc
+}
+
+// PodContainers returns list of containers specified by the pod
+func PodContainers(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Container, error) {
+	p, err := kubeCli.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get Pod{Namespace: %s, Name: %s}", namespace, name)
+	}
+	return p.Spec.Containers, nil
 }
 
 // From getPersistentVolumeClaimName() in stateful_set_utils.go in the K8s repository
