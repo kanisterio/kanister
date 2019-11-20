@@ -44,7 +44,7 @@ const (
 	DescribeBackupsSize              = "size"
 	DescribeBackupsPasswordIncorrect = "passwordIncorrect"
 	DescribeBackupsRepoDoesNotExist  = "repoUnavailable"
-	rawDataStatsMode                 = "raw-data"
+	RawDataStatsMode                 = "raw-data"
 )
 
 func init() {
@@ -114,7 +114,7 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			return nil, err
 
 		}
-		cmd, err := restic.StatsCommandByID(tp.Profile, targetPath, "" /* get all snapshot stats */, rawDataStatsMode, encryptionKey)
+		cmd, err := restic.StatsCommandByID(tp.Profile, targetPath, "" /* get all snapshot stats */, RawDataStatsMode, encryptionKey)
 		if err != nil {
 			return nil, err
 		}

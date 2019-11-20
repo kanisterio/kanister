@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -48,6 +49,8 @@ const (
 	// DeleteDataPodOverrideArg contains pod specs to override default pod specs
 	DeleteDataPodOverrideArg = "podOverride"
 	deleteDataJobPrefix      = "delete-data-"
+	// DeleteDataOutputSpaceFreed is the key for the output reporting the space freed
+	DeleteDataOutputSpaceFreed = "spaceFreed"
 )
 
 func init() {
@@ -106,6 +109,7 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 			}
 			deleteIdentifiers = append(deleteIdentifiers, deleteIdentifier)
 		}
+		var spaceFreedTotal int64
 		for i, deleteIdentifier := range deleteIdentifiers {
 			cmd, err := restic.ForgetCommandByID(tp.Profile, targetPaths[i], deleteIdentifier, encryptionKey)
 			if err != nil {
@@ -118,26 +122,30 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 				return nil, errors.Wrapf(err, "Failed to forget data")
 			}
 			if reclaimSpace {
-				err := pruneData(cli, tp, pod, namespace, encryptionKey, targetPaths[i])
+				spaceFreedStr, err := pruneData(cli, tp, pod, namespace, encryptionKey, targetPaths[i])
 				if err != nil {
 					return nil, errors.Wrapf(err, "Error executing prune command")
 				}
+				spaceFreedTotal += restic.ParseResticSizeStringBytes(spaceFreedStr)
 			}
 		}
 
-		return nil, nil
+		return map[string]interface{}{
+			DeleteDataOutputSpaceFreed: fmt.Sprintf("%d B", spaceFreedTotal),
+		}, nil
 	}
 }
 
-func pruneData(cli kubernetes.Interface, tp param.TemplateParams, pod *v1.Pod, namespace, encryptionKey, targetPath string) error {
+func pruneData(cli kubernetes.Interface, tp param.TemplateParams, pod *v1.Pod, namespace, encryptionKey, targetPath string) (string, error) {
 	cmd, err := restic.PruneCommand(tp.Profile, targetPath, encryptionKey)
 	if err != nil {
-		return err
+		return "", err
 	}
 	stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 	format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
-	return errors.Wrapf(err, "Failed to prune data after forget")
+	spaceFreed := restic.SpaceFreedFromPruneLog(stdout)
+	return spaceFreed, errors.Wrapf(err, "Failed to prune data after forget")
 }
 
 func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
