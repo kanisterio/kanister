@@ -159,6 +159,10 @@ func (esi *ElasticsearchInstance) Ping(ctx context.Context) error {
 	// since we will be EXECing into the pod where ES is running, wec an use localhost to query it
 	pingCMD := []string{"sh", "-c", fmt.Sprintf("curl %s", esi.elasticsearchURL)}
 	stdout, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, pingCMD, nil)
+	// the question here is do we have to check the stderr as well. Or checking jus err would suffice
+	// if there is some issue pinging the ES instance lets say the port is wrong. The stderr would be
+	// curl: (7) Failed to connect to ::1: Cannot assign requested address + std output of curl command
+	// but the same exit code 7 will be assigned to err as well. that why I think checking just err would work.
 
 	format.Log(podname, containername, stdout)
 	format.Log(podname, containername, stderr)
