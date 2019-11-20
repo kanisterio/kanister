@@ -18,9 +18,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/helm"
@@ -76,6 +78,27 @@ func NewElasticsearchInstance(helmrepoURL, helmChart, helmAppname string) App {
 }
 
 func (esi *ElasticsearchInstance) Init(ctx context.Context) error {
+	var ok bool
+	_, ok = os.LookupEnv(awsconfig.Region)
+	if !ok {
+		return fmt.Errorf("Env var %s is not set", awsconfig.Region)
+	}
+
+	// If sessionToken is set, accessID and secretKey not required
+	_, ok = os.LookupEnv(awsconfig.SessionToken)
+	if ok {
+		return nil
+	}
+
+	_, ok = os.LookupEnv(awsconfig.AccessKeyID)
+	if !ok {
+		return fmt.Errorf("Env var %s is not set", awsconfig.AccessKeyID)
+	}
+	_, ok = os.LookupEnv(awsconfig.SecretAccessKey)
+	if !ok {
+		return fmt.Errorf("Env var %s is not set", awsconfig.SecretAccessKey)
+	}
+
 	cfg, err := kube.LoadConfig()
 	if err != nil {
 		return err
