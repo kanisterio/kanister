@@ -40,16 +40,16 @@ $ helm repo add elastic https://helm.elastic.co
 
 Then install the sample Elasticsearch application with the release name `my-release` in its own namespace
 `es-test` using the command below. Make sure you have the kanister controller running in namespace `kasten-io` which is the default setting in Elasticsearch charts. Otherwise, you will also have to set the `kanister.controller_namespace` parameter value to the respective kanister controller namespace in the following command:
-
+Please make a note that this command will be different if you are using helm version 3
 ```bash
-$ helm install --namespace es-test --name elasticsearch elastic/elasticsearch --set antiAffinity=soft -f extraInitContainers.yaml
+$ helm install --namespace es-test --name elasticsearch elastic/elasticsearch --set antiAffinity=soft
 ```
 
 The command deploys Elasticsearch on the Kubernetes cluster in the default
 configuration.
 
 ```bash
-kanctl --namespace kasten-io create profile --bucket infracloud.kanister.io --region ap-south-1 s3compliant --access-key "AKIAIOSFODNN7EXAMPLE" --secret-key "wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY"
+kanctl --namespace es-test create profile --bucket <bucket-name> --region ap-south-1 s3compliant --access-key <aws-access-key> --secret-key <aws-secret-key>
 ```
 This command creates a profile which we will use later.
 
