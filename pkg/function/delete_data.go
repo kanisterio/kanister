@@ -49,6 +49,8 @@ const (
 	// DeleteDataPodOverrideArg contains pod specs to override default pod specs
 	DeleteDataPodOverrideArg = "podOverride"
 	deleteDataJobPrefix      = "delete-data-"
+	// DeleteDataOutputSpaceFreed is the key for the output reporting the space freed
+	DeleteDataOutputSpaceFreed = "spaceFreed"
 )
 
 func init() {
@@ -129,7 +131,7 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 		}
 
 		return map[string]interface{}{
-			"spaceFreed": fmt.Sprintf("%d B", spaceFreedTotal),
+			DeleteDataOutputSpaceFreed: fmt.Sprintf("%d B", spaceFreedTotal),
 		}, nil
 	}
 }
