@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -27,7 +26,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -152,8 +150,8 @@ func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
 
 func (esi *ElasticsearchInstance) Ping(ctx context.Context) error {
 	log.Print("Pinging the application to check if its accessible.", field.M{"app": "elasticsearch"})
-	podname, containername, err := esi.GetPodAndContianerName()
-	if err != nil {
+	podname, containername, err := esi.getPodAndContianerName(ctx)
+	if err != nil || podname == "" {
 		log.WithError(err).Print("Error getting container to ping the application.", field.M{"app": "elasticsearch"})
 		return err
 	}
@@ -173,8 +171,8 @@ func (esi *ElasticsearchInstance) Ping(ctx context.Context) error {
 	return nil
 }
 func (esi *ElasticsearchInstance) Insert(ctx context.Context, n int) error {
-	podname, containername, err := esi.GetPodAndContianerName()
-	if err != nil {
+	podname, containername, err := esi.getPodAndContianerName(ctx)
+	if err != nil || podname == "" {
 		log.WithError(err).Print("Error getting pod and container to insert the documents in the index.", field.M{"app": "elasticsearch"})
 		return err
 	}
@@ -186,7 +184,7 @@ func (esi *ElasticsearchInstance) Insert(ctx context.Context, n int) error {
 		format.Log(podname, containername, stderr)
 		if err != nil {
 			log.WithError(err).Print("Error while inserting a document into index.", field.M{"app": "elasticsearch", "index": esi.indexname})
-			// even and insert failed we will have to return becasue
+			// even one insert failed we will have to return becasue
 			// the count wont  match anyway and the test will fail
 			return err
 		}
@@ -195,9 +193,9 @@ func (esi *ElasticsearchInstance) Insert(ctx context.Context, n int) error {
 	return nil
 }
 
-func (esi *ElasticsearchInstance) Count(context.Context) (int, error) {
-	podname, containername, err := esi.GetPodAndContianerName()
-	if err != nil {
+func (esi *ElasticsearchInstance) Count(ctx context.Context) (int, error) {
+	podname, containername, err := esi.getPodAndContianerName(ctx)
+	if err != nil || podname == "" {
 		log.WithError(err).Print("Error getting pod and container name to get the count of the documents.", field.M{"app": "elasticsearch", "index": esi.indexname})
 		return 0, err
 	}
@@ -223,8 +221,8 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 	log.Print("Resetting the application.", field.M{"app": "elasticsearch"})
 
 	// delete the index and then create it, in order to reset the es application
-	podname, containername, err := esi.GetPodAndContianerName()
-	if err != nil {
+	podname, containername, err := esi.getPodAndContianerName(ctx)
+	if err != nil || podname == "" {
 		log.WithError(err).Print("Error while getting pod and container to reset the application.", field.M{"app": "elasticsearch"})
 		return err
 	}
@@ -254,27 +252,14 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 	return nil
 }
 
-// GetPodAndContianerName takes namespace as input and returns the pod and container that is running in
-// that namespace for deployment that was created through helm
-// use the function after the PR https://github.com/kanisterio/kanister/pull/418/
-func (esi *ElasticsearchInstance) GetPodAndContianerName() (string, string, error) {
-	statefulset, err := esi.cli.AppsV1().StatefulSets(esi.namespace).Get("elasticsearch-master", metav1.GetOptions{})
-	if err != nil {
-		log.WithError(err).Print("Error getting statefulset to ping.", field.M{"app": "elasticsearch"})
+func (esi *ElasticsearchInstance) getPodAndContianerName(ctx context.Context) (string, string, error) {
+
+	runningPods, notRunningPods, err := kube.StatefulSetPods(ctx, esi.cli, esi.namespace, "elasticsearch-master")
+
+	if err != nil || len(notRunningPods) != 0 {
+		log.WithError(err).Print("Error getting the pods of statefulset.", field.M{"app": "elasticsearch", "statefulsetname": "elasticsearch-master"})
 		return "", "", err
 	}
-	statefulsetSelector := statefulset.Spec.Selector.MatchLabels
-	var podLabelSelector []string
-	for key, value := range statefulsetSelector {
-		podLabelSelector = append(podLabelSelector, key+"="+value)
-	}
 
-	pods, err := esi.cli.CoreV1().Pods(esi.namespace).List(metav1.ListOptions{
-		LabelSelector: strings.Join(podLabelSelector, ","),
-	})
-	if err != nil {
-		return "", "", fmt.Errorf("Error while getting pods of the deployment %s", err.Error())
-	}
-
-	return pods.Items[0].Name, pods.Items[0].Spec.Containers[0].Name, nil
+	return runningPods[0].Name, runningPods[0].Spec.Containers[0].Name, nil
 }
