@@ -1,0 +1,84 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: postgres-bp
+actions:
+  backup:
+    kind: StatefulSet
+    outputArtifacts:
+      cloudObject:
+        keyValue:
+          backupLocation: "{{ .Phases.pgDump.Output.backupLocation }}"
+    phases:
+    - func: KubeTask
+      name: pgDump
+      objects:
+        pgSecret:
+          kind: Secret
+          name: '{{ .Object.metadata.labels.release }}-postgresql'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        image: kanisterio/postgres-kanister-tools:0.22.1
+        namespace: '{{ .StatefulSet.Namespace }}'
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          export PGHOST='{{ .Object.metadata.labels.release }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+          export PGUSER='postgres'
+          export PGPASSWORD='{{ index .Phases.pgDump.Secrets.pgSecret.Data "postgresql-password" | toString }}'
+          BACKUP_LOCATION=pg_backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/backup.sql.gz
+          pg_dumpall --clean -U $PGUSER | gzip -c | kando location push --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" -
+          kando output backupLocation "${BACKUP_LOCATION}"
+  restore:
+    kind: StatefulSet
+    inputArtifactNames:
+    - cloudObject
+    phases:
+    - func: KubeTask
+      name: pgRestore
+      objects:
+        pgSecret:
+          kind: Secret
+          name: '{{ .Object.metadata.labels.release }}-postgresql'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        image: kanisterio/postgres-kanister-tools:0.22.1
+        namespace: '{{ .StatefulSet.Namespace }}'
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          export PGHOST='{{ .Object.metadata.labels.release }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+          export PGUSER='postgres'
+          export PGPASSWORD='{{ index .Phases.pgRestore.Secrets.pgSecret.Data "postgresql-password" | toString }}'
+          BACKUP_LOCATION={{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}
+          kando location pull --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" - | gunzip -c -f | psql -q -U "${PGUSER}"
+  delete:
+    kind: StatefulSet
+    inputArtifactNames:
+      - cloudObject
+    phases:
+    - func: KubeTask
+      name: deleteDump
+      args:
+        image: kanisterio/postgres-kanister-tools:0.22.1
+        namespace: "{{ .StatefulSet.Namespace }}"
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}'
+

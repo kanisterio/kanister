@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,9 +29,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/app"
 	crclient "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controller"
+	"github.com/kanisterio/kanister/pkg/field"
 	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kanctl"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
@@ -55,7 +56,8 @@ type IntegrationSuite struct {
 	cancel    context.CancelFunc
 }
 
-// Add app test suites
+// INTEGRATION TEST APPLICATIONS
+
 // rds-postgres app
 var _ = Suite(&IntegrationSuite{
 	name:      "rds-postgres",
@@ -65,12 +67,21 @@ var _ = Suite(&IntegrationSuite{
 	profile:   newSecretProfile("", "", ""),
 })
 
-// postgresql-pitr app
+// pitr-postgresql app
 var _ = Suite(&IntegrationSuite{
 	name:      "pitr-postgres",
 	namespace: "pitr-postgres-test",
 	app:       app.NewPostgresDB(),
 	bp:        app.NewPITRBlueprint("pitr-postgres"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
+
+// postgres app
+var _ = Suite(&IntegrationSuite{
+	name:      "postgres",
+	namespace: "postgres-test",
+	app:       app.NewPostgresDB(),
+	bp:        app.NewBlueprint("postgres"),
 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
@@ -82,7 +93,7 @@ func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
 
 	secret, profile, err := testutil.NewSecretProfileFromLocation(location)
 	if err != nil {
-		log.Errorf("Failed to create profile. %s", err.Error())
+		log.Error().WithError(err).Print("Failed to create profile.")
 		return nil
 	}
 	return &secretProfile{
@@ -124,12 +135,12 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	defer cancel()
 
 	// Execute e2e workflow
-	log.Infof("Running e2e integration test for %s", s.name)
+	log.Info().Print("Running e2e integration test.", field.M{"app": s.name})
 
 	// Check config
 	err := s.app.Init(ctx)
 	if err != nil {
-		log.Infof("Skipping integration test for %s. Reason: %s", s.name, err.Error())
+		log.Info().Print("Skipping integration test.", field.M{"app": s.name, "reason": err.Error()})
 		s.skip = true
 		c.Skip(err.Error())
 	}
@@ -195,6 +206,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	var restoreOptions map[string]string
 	if b, ok := s.bp.(app.PITRBlueprinter); ok {
 		pitr := b.FormatPITR(time.Now())
+		log.Info().Print("Saving timestamp for PITR", field.M{"pitr": pitr})
 		restoreOptions = map[string]string{
 			"pitr": pitr,
 		}

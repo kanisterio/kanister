@@ -109,7 +109,7 @@ func (pdb *PostgresDB) Init(ctx context.Context) error {
 }
 
 func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
-	log.Info().Print("Installing helm chart.", field.M{"app": "postgresql", "release": pdb.chart.release, "namespace": pdb.namespace})
+	log.Info().Print("Installing helm chart.", field.M{"app": "postgresql", "release": pdb.chart.release, "namespace": ns})
 	pdb.namespace = ns
 
 	// Create helm client
