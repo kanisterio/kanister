@@ -46,7 +46,7 @@ $ helm install --namespace es-test --name elasticsearch elastic/elasticsearch --
 ```
 If you are running helm version `v3.0.0`, please use the commands below:
 ```bash
-$ create namespace es-test
+$ kubectl create namespace es-test
 $ helm install --namespace es-test elasticsearch elastic/elasticsearch --set antiAffinity=soft
 ```
 
