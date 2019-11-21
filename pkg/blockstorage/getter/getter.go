@@ -16,10 +16,12 @@ package getter
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
+	"github.com/kanisterio/kanister/pkg/blockstorage/azure"
 	"github.com/kanisterio/kanister/pkg/blockstorage/gcepd"
 	"github.com/kanisterio/kanister/pkg/blockstorage/ibm"
 )
@@ -41,6 +43,8 @@ func New() Getter {
 // Get returns a provider for the requested storage type in the specified region
 func (*getter) Get(storageType blockstorage.Type, config map[string]string) (blockstorage.Provider, error) {
 	switch storageType {
+	case blockstorage.TypeAD:
+		return azure.NewProvider(config)
 	case blockstorage.TypeEBS:
 		return awsebs.NewProvider(context.TODO(), config)
 	case blockstorage.TypeSoftlayerBlock:

@@ -9,9 +9,12 @@ replace (
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go v31.1.0+incompatible // indirect
-	github.com/Azure/go-autorest/autorest v0.5.0 // indirect
-	github.com/Azure/go-autorest/autorest/to v0.2.0 // indirect
+	contrib.go.opencensus.io/exporter/ocagent v0.4.12 // indirect
+	github.com/Azure/azure-sdk-for-go v36.2.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.9.2
+	github.com/Azure/go-autorest/autorest/azure/auth v0.4.0
+	github.com/Azure/go-autorest/autorest/to v0.3.0
+	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.3.0 // indirect
 	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
@@ -34,6 +37,7 @@ require (
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/googleapis/gnostic v0.3.0 // indirect
+	github.com/gophercloud/gophercloud v0.6.0 // indirect
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
@@ -46,6 +50,7 @@ require (
 	github.com/lib/pq v1.2.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
+	github.com/marstr/guid v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect

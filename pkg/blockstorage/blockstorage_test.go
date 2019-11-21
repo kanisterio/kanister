@@ -51,6 +51,9 @@ var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeEBS, stor
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-b"})
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-c__us-west1-a"})
 
+// Azure takes than 7.5 mins to finish.
+var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeAD, storageRegion: "", storageAZ: "westus"})
+
 func (s *BlockStorageProviderSuite) SetUpSuite(c *C) {
 	var err error
 	config := s.getConfig(c, s.storageRegion)
