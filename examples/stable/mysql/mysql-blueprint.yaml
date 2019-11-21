@@ -70,5 +70,5 @@ actions:
         - pipefail
         - -c
         - |
-          s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.path }}"
+          s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
           kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}
