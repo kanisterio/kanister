@@ -55,11 +55,20 @@ type IntegrationSuite struct {
 }
 
 // Add app test suites
+// rds-postgres app
+//var _ = Suite(&IntegrationSuite{
+//	name:      "rds-postgres",
+//	namespace: "rds-postgres-test",
+//	app:       app.NewRDSPostgresDB(),
+//	bp:        app.NewBlueprint("rds-postgres"),
+//	profile:   newSecretProfile("", "", ""),
+//})
+// postgresql app
 var _ = Suite(&IntegrationSuite{
-	name:      "rds-postgres",
-	namespace: "rds-postgres-test",
+	name:      "postgresql",
+	namespace: "postgres-test",
 	app:       app.NewPostgresDB(),
-	bp:        app.NewBlueprint("rds-postgres"),
+	bp:        app.NewBlueprint("postgresql"),
 	profile:   newSecretProfile("", "", ""),
 })
 
@@ -330,18 +339,18 @@ func createNamespace(cli kubernetes.Interface, name string) error {
 }
 
 func (s *IntegrationSuite) TearDownSuite(c *C) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Uninstall app
-	if !s.skip {
-		err := s.app.Uninstall(ctx)
-		c.Assert(err, IsNil)
-	}
-
-	// Delete namespace
-	s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
-	if s.cancel != nil {
-		s.cancel()
-	}
+	//	ctx, cancel := context.WithCancel(context.Background())
+	//	defer cancel()
+	//
+	//	// Uninstall app
+	//	if !s.skip {
+	//		err := s.app.Uninstall(ctx)
+	//		c.Assert(err, IsNil)
+	//	}
+	//
+	//	// Delete namespace
+	//	s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+	//	if s.cancel != nil {
+	//		s.cancel()
+	//	}
 }
