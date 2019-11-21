@@ -17,6 +17,7 @@ package testing
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -56,20 +57,21 @@ type IntegrationSuite struct {
 
 // Add app test suites
 // rds-postgres app
-//var _ = Suite(&IntegrationSuite{
-//	name:      "rds-postgres",
-//	namespace: "rds-postgres-test",
-//	app:       app.NewRDSPostgresDB(),
-//	bp:        app.NewBlueprint("rds-postgres"),
-//	profile:   newSecretProfile("", "", ""),
-//})
-// postgresql app
 var _ = Suite(&IntegrationSuite{
-	name:      "postgresql",
-	namespace: "postgres-test",
-	app:       app.NewPostgresDB(),
-	bp:        app.NewBlueprint("postgresql"),
+	name:      "rds-postgres",
+	namespace: "rds-postgres-test",
+	app:       app.NewRDSPostgresDB(),
+	bp:        app.NewBlueprint("rds-postgres"),
 	profile:   newSecretProfile("", "", ""),
+})
+
+// postgresql-pitr app
+var _ = Suite(&IntegrationSuite{
+	name:      "pitr-postgres",
+	namespace: "pitr-postgres-test",
+	app:       app.NewPostgresDB(),
+	bp:        app.NewPITRBlueprint("pitr-postgres"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
 func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
@@ -185,10 +187,27 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	// Create ActionSet specs
 	as := newActionSet(bp.GetName(), profileName, s.namespace, s.app.Object(), configMaps, secrets)
-
 	// Take backup
-	backup := s.createActionset(ctx, c, as, "backup")
+	backup := s.createActionset(ctx, c, as, "backup", nil)
 	c.Assert(len(backup), Not(Equals), 0)
+
+	// Save timestamp for PITR
+	var restoreOptions map[string]string
+	if b, ok := s.bp.(app.PITRBlueprinter); ok {
+		pitr := b.FormatPITR(time.Now())
+		restoreOptions = map[string]string{
+			"pitr": pitr,
+		}
+		// Add few more entries with timestamp > pitr
+		time.Sleep(time.Second)
+		if a, ok := s.app.(app.DatabaseApp); ok {
+			c.Assert(a.Insert(ctx, 2), IsNil)
+
+			count, err := a.Count(ctx)
+			c.Assert(err, IsNil)
+			c.Assert(count, Equals, testEntries+2)
+		}
+	}
 
 	// Reset DB
 	if a, ok := s.app.(app.DatabaseApp); ok {
@@ -203,7 +222,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Restore backup
 	pas, err := s.crCli.ActionSets(s.namespace).Get(backup, metav1.GetOptions{})
 	c.Assert(err, IsNil)
-	s.createActionset(ctx, c, pas, "restore")
+	s.createActionset(ctx, c, pas, "restore", restoreOptions)
 
 	// Verify data
 	if a, ok := s.app.(app.DatabaseApp); ok {
@@ -216,7 +235,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	}
 
 	// Delete snapshots
-	s.createActionset(ctx, c, pas, "delete")
+	s.createActionset(ctx, c, pas, "delete", nil)
 }
 
 func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectReference, configMaps, secrets map[string]crv1alpha1.ObjectReference) *crv1alpha1.ActionSet {
@@ -283,15 +302,17 @@ func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[st
 }
 
 // createActionset creates and wait for actionset to complete
-func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1alpha1.ActionSet, action string) string {
+func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1alpha1.ActionSet, action string, options map[string]string) string {
 	var err error
 	switch action {
 	case "backup":
+		as.Spec.Actions[0].Options = options
 		as, err = s.crCli.ActionSets(s.namespace).Create(as)
 		c.Assert(err, IsNil)
 	case "restore", "delete":
 		as, err = restoreActionSetSpecs(as, action)
 		c.Assert(err, IsNil)
+		as.Spec.Actions[0].Options = options
 		as, err = s.crCli.ActionSets(s.namespace).Create(as)
 		c.Assert(err, IsNil)
 	default:
@@ -339,18 +360,18 @@ func createNamespace(cli kubernetes.Interface, name string) error {
 }
 
 func (s *IntegrationSuite) TearDownSuite(c *C) {
-	//	ctx, cancel := context.WithCancel(context.Background())
-	//	defer cancel()
-	//
-	//	// Uninstall app
-	//	if !s.skip {
-	//		err := s.app.Uninstall(ctx)
-	//		c.Assert(err, IsNil)
-	//	}
-	//
-	//	// Delete namespace
-	//	s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
-	//	if s.cancel != nil {
-	//		s.cancel()
-	//	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Uninstall app
+	if !s.skip {
+		err := s.app.Uninstall(ctx)
+		c.Assert(err, IsNil)
+	}
+
+	// Delete namespace
+	s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+	if s.cancel != nil {
+		s.cancel()
+	}
 }
