@@ -70,7 +70,7 @@ actions:
             {{- end }}
 
             set +o xtrace
-            {{- if eq .Profile.Credential.Type "keyPair" }}
+            {{- if .Profile.Credential.KeyPair }}
               echo "{{ .Profile.Credential.KeyPair.Secret }}" > "${env_wal_secret_access_key}"
               echo "{{ .Profile.Credential.KeyPair.ID }}" > "${env_wal_access_key_id}"
             {{- else }}
@@ -98,7 +98,7 @@ actions:
             s3_cmd+=(s3 cp - "${s3_path}")
 
             set +o xtrace
-            {{- if eq .Profile.Credential.Type "keyPair" }}
+            {{- if .Profile.Credential.KeyPair }}
               export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
               export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
             {{- else }}
@@ -167,7 +167,7 @@ actions:
             s3_cmd+=(s3 cp "${s3_path}" -)
 
             set +o xtrace
-            {{- if eq .Profile.Credential.Type "keyPair" }}
+            {{- if .Profile.Credential.KeyPair }}
               export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
               export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
             {{- else }}
@@ -272,7 +272,7 @@ actions:
           - |
             # Set S3 access keys.
             set +o xtrace
-            {{- if eq .Profile.Credential.Type "keyPair" }}
+            {{- if .Profile.Credential.KeyPair }}
               export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
               export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
             {{- else }}
