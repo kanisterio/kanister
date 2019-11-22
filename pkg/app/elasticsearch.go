@@ -18,16 +18,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/field"
-	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -50,55 +48,35 @@ type ElasticsearchPingOutput struct {
 	} `json:"hits"`
 }
 
-type chartInfo struct {
-	helmrepoURL string
-	helmchart   string
-	helmAppname string
-}
-
 type ElasticsearchInstance struct {
 	cli              kubernetes.Interface
 	namespace        string
+	name             string
 	indexname        string
-	chart            chartInfo
+	chart            helm.ChartInfo
 	elasticsearchURL string
 }
 
-func NewElasticsearchInstance(helmrepoURL, helmChart, helmAppname string) App {
+func NewElasticsearchInstance(name string) App {
 	return &ElasticsearchInstance{
+		name:      name,
 		namespace: "es-test",
 		indexname: "testindex",
-		chart: chartInfo{
-			helmrepoURL: helmrepoURL,
-			helmchart:   helmChart,
-			helmAppname: helmAppname,
+		chart: helm.ChartInfo{
+			Release:  name,
+			RepoUrl:  helm.ElasticRepoURL,
+			Chart:    "elasticsearch",
+			RepoName: helm.ElasticRepoName,
+			Values: map[string]string{
+				"antiAffinity": "sort",
+				"replicas":     "1",
+			},
 		},
 		elasticsearchURL: "localhost:9200",
 	}
 }
 
 func (esi *ElasticsearchInstance) Init(ctx context.Context) error {
-	var ok bool
-	_, ok = os.LookupEnv(awsconfig.Region)
-	if !ok {
-		return fmt.Errorf("Env var %s is not set", awsconfig.Region)
-	}
-
-	// If sessionToken is set, accessID and secretKey not required
-	_, ok = os.LookupEnv(awsconfig.SessionToken)
-	if ok {
-		return nil
-	}
-
-	_, ok = os.LookupEnv(awsconfig.AccessKeyID)
-	if !ok {
-		return fmt.Errorf("Env var %s is not set", awsconfig.AccessKeyID)
-	}
-	_, ok = os.LookupEnv(awsconfig.SecretAccessKey)
-	if !ok {
-		return fmt.Errorf("Env var %s is not set", awsconfig.SecretAccessKey)
-	}
-
 	cfg, err := kube.LoadConfig()
 	if err != nil {
 		return err
@@ -114,19 +92,16 @@ func (esi *ElasticsearchInstance) Init(ctx context.Context) error {
 
 func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string) error {
 	esi.namespace = namespace
-
 	// Get the HELM cli
 	cli := helm.NewCliClient()
 
-	log.Print("Installing the application using helm.", field.M{"app": "elasticsearch"})
-	err := cli.AddRepo(ctx, esi.chart.helmchart, esi.chart.helmrepoURL)
+	log.Print("Installing the application using helm.", field.M{"app": esi.name})
+	err := cli.AddRepo(ctx, esi.chart.RepoName, esi.chart.RepoUrl)
 	if err != nil {
-		log.WithError(err).Print("Error while adding help repo.", field.M{"app": "elasticsearch"})
 		return err
 	}
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.helmchart, esi.chart.helmAppname), "elasticsearch", esi.namespace, map[string]string{"antiAffinity": "soft", "replicas": "1"})
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.name, esi.namespace, esi.chart.Values)
 	if err != nil {
-		log.WithError(err).Print("Error while installing the instance.", field.M{"app": "elasticsearch"})
 		return err
 	}
 
@@ -134,37 +109,34 @@ func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string)
 }
 
 func (esi *ElasticsearchInstance) IsReady(ctx context.Context) (bool, error) {
-	log.Print("Waiting for the application to be ready.", field.M{"app": "elasticsearch"})
+	log.Print("Waiting for the application to be ready.", field.M{"app": esi.name})
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()
 
-	err := kube.WaitOnStatefulSetReady(ctx, esi.cli, esi.namespace, "elasticsearch-master")
+	err := kube.WaitOnStatefulSetReady(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
 	if err != nil {
-		log.WithError(err).Print("Error while waiting for statefulset to be ready.", field.M{"app": "elasticsearch"})
 		return false, err
 	}
 
-	log.Print("Application is ready.", field.M{"app": "elasticsearch "})
+	log.Print("Application is ready.", field.M{"app": esi.name})
 	return true, nil
 }
 
 func (esi *ElasticsearchInstance) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		Kind:      "StatefulSet",
-		Name:      "elasticsearch-master",
+		Name:      fmt.Sprintf("%s-master", esi.name),
 		Namespace: esi.namespace,
 	}
 }
 
 func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
-
 	cli := helm.NewCliClient()
+	log.Print("UnInstalling the application using helm.", field.M{"app": esi.name})
 
-	log.Print("UnInstalling the application using helm.", field.M{"app": "elasticsearch"})
-
-	err := cli.Uninstall(ctx, "elasticsearch", esi.namespace)
+	err := cli.Uninstall(ctx, esi.name, esi.namespace)
 	if err != nil {
-		log.WithError(err).Print("Error while UnInstalling the instance.", field.M{"app": "elasticsearch"})
+		errors.Wrapf(err, "Error uninstalling the application %s", esi.name)
 		return err
 	}
 
@@ -172,121 +144,85 @@ func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
 }
 
 func (esi *ElasticsearchInstance) Ping(ctx context.Context) error {
-	log.Print("Pinging the application to check if its accessible.", field.M{"app": "elasticsearch"})
-	podname, containername, err := esi.getPodAndContianerName(ctx)
+	log.Print("Pinging the application to check if its accessible.", field.M{"app": esi.name})
+	podname, containername, err := getPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
 	if err != nil || podname == "" {
-		log.WithError(err).Print("Error getting container to ping the application.", field.M{"app": "elasticsearch"})
+		errors.Wrapf(err, "Error getting the pod and container name to Ping application %s.", esi.name)
 		return err
 	}
 
-	// since we will be EXECing into the pod where ES is running, wec an use localhost to query it
 	pingCMD := []string{"sh", "-c", fmt.Sprintf("curl %s", esi.elasticsearchURL)}
-	stdout, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, pingCMD, nil)
-	// the question here is do we have to check the stderr as well. Or checking jus err would suffice
-	// if there is some issue pinging the ES instance lets say the port is wrong. The stderr would be
-	// curl: (7) Failed to connect to ::1: Cannot assign requested address + std output of curl command
-	// but the same exit code 7 will be assigned to err as well. that why I think checking just err would work.
-
-	format.Log(podname, containername, stdout)
-	format.Log(podname, containername, stderr)
-	// check the stdout then return
+	_, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, pingCMD, nil)
 	if err != nil {
-		log.WithError(err).Print("Error while pinginng the application.", field.M{"app": "elasticsearch"})
-		return err
+		return errors.Wrapf(err, "Failed to ping the application. Error:%s", stderr)
 	}
 
 	return nil
 }
-func (esi *ElasticsearchInstance) Insert(ctx context.Context, n int) error {
-	podname, containername, err := esi.getPodAndContianerName(ctx)
+func (esi *ElasticsearchInstance) Insert(ctx context.Context) error {
+	podname, containername, err := getPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
 	if err != nil || podname == "" {
-		log.WithError(err).Print("Error getting pod and container to insert the documents in the index.", field.M{"app": "elasticsearch"})
 		return err
 	}
-	log.Print("Inserting document into the elastics search index.", field.M{"app": "elaticsearch"})
+
 	addDocumentToIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X POST %s/%s/_doc/?refresh=true -H 'Content-Type: application/json' -d'{\"appname\": \"kanister\" }'", esi.elasticsearchURL, esi.indexname)}
-	for i := 0; i < n; i++ {
-		stdout, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, addDocumentToIndexCMD, nil)
-		format.Log(podname, containername, stdout)
-		format.Log(podname, containername, stderr)
-		if err != nil {
-			log.WithError(err).Print("Error while inserting a document into index.", field.M{"app": "elasticsearch", "index": esi.indexname})
-			// even one insert failed we will have to return becasue
-			// the count wont  match anyway and the test will fail
-			return err
-		}
-		log.Print("After inserting a document to the ES index the index is ", field.M{"app": "elasticsearch", "output": stdout})
+	_, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, addDocumentToIndexCMD, nil)
+
+	if err != nil {
+		errors.Wrapf(err, "Error %s inserting document to an index %s.", stderr, esi.indexname)
+		// even one insert failed we will have to return becasue
+		// the count wont  match anyway and the test will fail
+		return err
 	}
+	log.Print("A document was inserted into the elastics search index.", field.M{"app": esi.name})
 	return nil
 }
 
 func (esi *ElasticsearchInstance) Count(ctx context.Context) (int, error) {
-	podname, containername, err := esi.getPodAndContianerName(ctx)
+	podname, containername, err := getPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
 	if err != nil || podname == "" {
-		log.WithError(err).Print("Error getting pod and container name to get the count of the documents.", field.M{"app": "elasticsearch", "index": esi.indexname})
 		return 0, err
 	}
+
 	documentCountCMD := []string{"sh", "-c", fmt.Sprintf("curl %s/%s/_search?pretty", esi.elasticsearchURL, esi.indexname)}
 	stdout, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, documentCountCMD, nil)
-	format.Log(podname, containername, stdout)
-	format.Log(podname, containername, stderr)
 	if err != nil {
-		log.WithError(err).Print("Error counting the ES documents.", field.M{"app": "elasticsearch", "index": esi.indexname})
-		return 0, err
+		return 0, errors.Wrapf(err, "Error %s Counting the documents in an index.", stderr)
 	}
 
 	// convert the output to ElasticsearchPingOutput object so that we can get the document count
 	pingOutput := ElasticsearchPingOutput{}
-	json.Unmarshal([]byte(stdout), &pingOutput)
+	err = json.Unmarshal([]byte(stdout), &pingOutput)
+	if err != nil {
+		return 0, err
+	}
 
-	log.Print("Hit count that we have in count is ", field.M{"app": "elasticsearch", "count": pingOutput.Hits.Total.Value})
-
+	log.Print("Hit count that we have in count is ", field.M{"app": esi.name, "count": pingOutput.Hits.Total.Value})
 	return pingOutput.Hits.Total.Value, nil
 }
 
 func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
-	log.Print("Resetting the application.", field.M{"app": "elasticsearch"})
+	log.Print("Resetting the application.", field.M{"app": esi.name})
 
 	// delete the index and then create it, in order to reset the es application
-	podname, containername, err := esi.getPodAndContianerName(ctx)
+	podname, containername, err := getPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
 	if err != nil || podname == "" {
-		log.WithError(err).Print("Error while getting pod and container to reset the application.", field.M{"app": "elasticsearch"})
 		return err
 	}
 
 	deleteIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X DELETE %s/%s?pretty", esi.elasticsearchURL, esi.indexname)}
-	stdout, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, deleteIndexCMD, nil)
-	// check the stdout
-	log.Print("Output that we have after deleting the index ", field.M{"app": "elasticsearch", "output": stdout})
-	format.Log(podname, containername, stdout)
-	format.Log(podname, containername, stderr)
+	_, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, deleteIndexCMD, nil)
 	if err != nil {
-		log.WithError(err).Print("Error while deleting the index to reset the application.", field.M{"app": "elasticsearch", "index": esi.indexname})
+		errors.Wrapf(err, "Error %s while deleting the index %s to reset the application.", stderr, esi.indexname)
 		return err
 	}
 
 	// create the index
 	createIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X PUT %s/%s?pretty", esi.elasticsearchURL, esi.indexname)}
-	stdout, stderr, err = kube.Exec(esi.cli, esi.namespace, podname, containername, createIndexCMD, nil)
-	format.Log(podname, containername, stdout)
-	format.Log(podname, containername, stderr)
-	log.Print("Output that we have after creating the index ", field.M{"app": "elasticsearch", "output": stdout})
+	_, stderr, err = kube.Exec(esi.cli, esi.namespace, podname, containername, createIndexCMD, nil)
 	if err != nil {
-		log.WithError(err).Print("Error while creating the index.", field.M{"app": "elasticsearch"})
-		return err
+		return errors.Wrapf(err, "Error %s: Resetting the application.", stderr)
 	}
 
 	return nil
-}
-
-func (esi *ElasticsearchInstance) getPodAndContianerName(ctx context.Context) (string, string, error) {
-
-	runningPods, notRunningPods, err := kube.StatefulSetPods(ctx, esi.cli, esi.namespace, "elasticsearch-master")
-
-	if err != nil || len(notRunningPods) != 0 {
-		log.WithError(err).Print("Error getting the pods of statefulset.", field.M{"app": "elasticsearch", "statefulsetname": "elasticsearch-master"})
-		return "", "", err
-	}
-
-	return runningPods[0].Name, runningPods[0].Spec.Containers[0].Name, nil
 }

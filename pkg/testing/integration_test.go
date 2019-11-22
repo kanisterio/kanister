@@ -84,7 +84,7 @@ var _ = Suite(&IntegrationSuite{
 var _ = Suite(&IntegrationSuite{
 	name:      "elasticsearch",
 	namespace: "es-test",
-	app:       app.NewElasticsearchInstance("https://helm.elastic.co", "elastic", "elasticsearch"),
+	app:       app.NewElasticsearchInstance("elasticsearch"),
 	bp:        app.NewBlueprint("elasticsearch"),
 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
@@ -104,6 +104,7 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "postgres-test",
 	app:       app.NewPostgresDB("postgres"),
 	bp:        app.NewBlueprint("postgres"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
 func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {

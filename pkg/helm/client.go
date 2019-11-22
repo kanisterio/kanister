@@ -30,6 +30,10 @@ type HelmVersion string
 const (
 	DefaultCommandTimeout = 5 * time.Minute
 
+	// Add elastic charts url
+	ElasticRepoName = "elastic"
+	ElasticRepoURL  = "https://helm.elastic.co"
+
 	// Add stable charts url
 	StableRepoName = "stable"
 	StableRepoURL  = "https://kubernetes-charts.storage.googleapis.com"
