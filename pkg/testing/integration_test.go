@@ -89,6 +89,23 @@ var _ = Suite(&IntegrationSuite{
 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
+// pitr-postgresql app
+var _ = Suite(&IntegrationSuite{
+	name:      "pitr-postgres",
+	namespace: "pitr-postgres-test",
+	app:       app.NewPostgresDB("pitr-postgres"),
+	bp:        app.NewPITRBlueprint("pitr-postgres"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
+
+// postgres app
+var _ = Suite(&IntegrationSuite{
+	name:      "postgres",
+	namespace: "postgres-test",
+	app:       app.NewPostgresDB("postgres"),
+	bp:        app.NewBlueprint("postgres"),
+})
+
 func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
 	_, location := testutil.GetObjectstoreLocation()
 	location.Bucket = bucket
