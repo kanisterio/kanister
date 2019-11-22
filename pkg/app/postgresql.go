@@ -45,7 +45,7 @@ func NewPostgresDB(name string) App {
 		chart: helm.ChartInfo{
 			Release:  name,
 			RepoName: helm.StableRepoName,
-			RepoUrl:  helm.StableRepoURL,
+			RepoURL:  helm.StableRepoURL,
 			Chart:    "postgresql",
 			Values: map[string]string{
 				"image.repository":                      "kanisterio/postgresql",
@@ -68,7 +68,7 @@ func (pdb *PostgresDB) Init(ctx context.Context) error {
 	// Instantiate Client SDKs
 	cfg, err := kube.LoadConfig()
 	if err != nil {
-		return nil
+		return err
 	}
 	pdb.cli, err = kubernetes.NewForConfig(cfg)
 	if err != nil {
@@ -85,7 +85,7 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 	cli := helm.NewCliClient()
 
 	// Add helm repo and fetch charts
-	if err := cli.AddRepo(ctx, pdb.chart.RepoName, pdb.chart.RepoUrl); err != nil {
+	if err := cli.AddRepo(ctx, pdb.chart.RepoName, pdb.chart.RepoURL); err != nil {
 		return err
 	}
 	// Install helm chart

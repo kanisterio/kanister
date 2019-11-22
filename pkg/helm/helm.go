@@ -35,7 +35,7 @@ type Client interface {
 type ChartInfo struct {
 	Release  string
 	Chart    string
-	RepoUrl  string
+	RepoURL  string
 	RepoName string
 	Values   map[string]string
 }

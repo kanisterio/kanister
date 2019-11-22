@@ -70,7 +70,7 @@ func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
 	// Instantiate Client SDKs
 	cfg, err := kube.LoadConfig()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	var ok bool
