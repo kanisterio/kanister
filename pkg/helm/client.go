@@ -25,7 +25,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
-const DefaultCommandTimeout = 5 * time.Minute
+const (
+	DefaultCommandTimeout = 5 * time.Minute
+
+	// Add stable charts url
+	StableRepoName = "stable"
+	StableRepoURL  = "https://kubernetes-charts.storage.googleapis.com"
+)
 
 type CliClient struct{}
 

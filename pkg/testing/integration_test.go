@@ -93,7 +93,6 @@ func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
 
 	secret, profile, err := testutil.NewSecretProfileFromLocation(location)
 	if err != nil {
-		log.Error().WithError(err).Print("Failed to create profile.")
 		return nil
 	}
 	return &secretProfile{
@@ -150,7 +149,11 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	c.Assert(err, IsNil)
 
 	// Create profile
-	c.Assert(s.profile, NotNil)
+	if s.profile == nil {
+		log.Info().Print("Skipping integration test. Could not create profile. Please check if required credentials are set.", field.M{"app": s.name})
+		s.skip = true
+		c.Skip("Could not create a Profile")
+	}
 	profileName := s.createProfile(c)
 
 	// Install db

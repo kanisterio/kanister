@@ -67,9 +67,5 @@ func NewPITRBlueprint(app string) Blueprinter {
 }
 
 func (b PITRBlueprint) FormatPITR(pitr time.Time) string {
-	loc, err := time.LoadLocation("GMT")
-	if err != nil {
-		return pitr.Format("2006-01-02T15:04:05Z")
-	}
-	return pitr.In(loc).Format("2006-01-02T15:04:05Z")
+	return pitr.UTC().Format("2006-01-02T15:04:05Z")
 }

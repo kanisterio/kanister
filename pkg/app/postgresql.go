@@ -17,7 +17,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -27,7 +26,6 @@ import (
 	"github.com/pkg/errors"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -43,26 +41,17 @@ type chartInfo struct {
 }
 
 type PostgresDB struct {
-	cli           kubernetes.Interface
-	chart         chartInfo
-	password      string
-	namespace     string
-	podName       string
-	containerName string
-}
-
-type PostgresBP struct {
-	name         string
-	appNamespace string
+	cli       kubernetes.Interface
+	chart     chartInfo
+	namespace string
 }
 
 func NewPostgresDB() App {
 	return &PostgresDB{
-		password: "test@54321",
 		chart: chartInfo{
 			release:  "my-postgres",
-			repoName: "stable",
-			repoUrl:  "https://kubernetes-charts.storage.googleapis.com",
+			repoName: helm.StableRepoName,
+			repoUrl:  helm.StableRepoURL,
 			chart:    "postgresql",
 			values: map[string]string{
 				"image.repository":                      "kanisterio/postgresql",
@@ -90,20 +79,6 @@ func (pdb *PostgresDB) Init(ctx context.Context) error {
 	pdb.cli, err = kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return err
-	}
-
-	if _, ok := os.LookupEnv(awsconfig.Region); !ok {
-		return fmt.Errorf("Env var %s is not set", awsconfig.Region)
-	}
-	// If sessionToken is set, accessID and secretKey not required
-	if _, ok := os.LookupEnv(awsconfig.SessionToken); ok {
-		return nil
-	}
-	if _, ok := os.LookupEnv(awsconfig.AccessKeyID); !ok {
-		return fmt.Errorf("Env var %s is not set", awsconfig.AccessKeyID)
-	}
-	if _, ok := os.LookupEnv(awsconfig.SecretAccessKey); !ok {
-		return fmt.Errorf("Env var %s is not set", awsconfig.SecretAccessKey)
 	}
 	return nil
 }

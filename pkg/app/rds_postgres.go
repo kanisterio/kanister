@@ -23,6 +23,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
+	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -54,11 +55,6 @@ type RDSPostgresDB struct {
 	sqlDB           *sql.DB
 }
 
-type RDSPostgresBP struct {
-	name         string
-	appNamespace string
-}
-
 func NewRDSPostgresDB() App {
 	return &RDSPostgresDB{
 		id:       "test-postgresql-instance",
@@ -69,7 +65,17 @@ func NewRDSPostgresDB() App {
 }
 
 func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
+	// Instantiate Client SDKs
+	cfg, err := kube.LoadConfig()
+	if err != nil {
+		return nil
+	}
+
 	var ok bool
+	pdb.cli, err = kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
 	pdb.region, ok = os.LookupEnv(awsconfig.Region)
 	if !ok {
 		return fmt.Errorf("Env var %s is not set", awsconfig.Region)
@@ -89,17 +95,6 @@ func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
 	if !ok {
 		return fmt.Errorf("Env var %s is not set", awsconfig.SecretAccessKey)
 	}
-
-	// Instantiate Client SDKs
-	cfg, err := kube.LoadConfig()
-	if err != nil {
-		return nil
-	}
-	pdb.cli, err = kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -308,8 +303,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	// Create rds client
 	rds, err := testutil.NewRDSClient(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
 	if err != nil {
-		log.Error().WithError(err).Print("Failed to create rds client. You may need to delete RDS resources manually.", field.M{"app": "rds-postgresql"})
-		return err
+		return errors.Wrap(err, "Failed to create rds client. You may need to delete RDS resources manually. app=rds-postgresql")
 	}
 
 	// Delete rds instance
@@ -319,10 +313,9 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {
 			case awsrds.ErrCodeDBInstanceNotFoundFault:
-				log.Info().Print("Rds instance already deleted: ErrCodeDBInstanceNotFoundFault.", field.M{"app": "rds-postgresql", "id": pdb.id})
+				log.Info().Print("RDS instance already deleted: ErrCodeDBInstanceNotFoundFault.", field.M{"app": "rds-postgresql", "id": pdb.id})
 			default:
-				log.Error().WithError(err).Print("Failed to delete rds instance. You may need to delete it manually.", field.M{"app": "rds-postgresql", "id": pdb.id})
-				return err
+				return errors.Wrapf(err, "Failed to delete rds instance. You may need to delete it manually. app=rds-postgresql id=%s", pdb.id)
 			}
 		}
 	}
@@ -332,16 +325,14 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 		log.Info().Print("Waiting for rds to be deleted", field.M{"app": "rds-postgresql"})
 		err = rds.WaitUntilDBInstanceDeleted(ctx, pdb.id)
 		if err != nil {
-			log.Error().Print("Failed to wait for rds instance till delete succeeds.", field.M{"app": "rds-postgresql", "id": pdb.id})
-			return err
+			return errors.Wrapf(err, "Failed to wait for rds instance till delete succeeds. app=rds-postgresql id=%s", pdb.id)
 		}
 	}
 
 	// Create ec2 client
 	ec2, err := testutil.NewEC2Client(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
 	if err != nil {
-		log.Error().WithError(err).Print("Failed to ec2 client. You may need to delete EC2 resources manually.", field.M{"app": "rds-postgresql"})
-		return err
+		return errors.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
 	}
 
 	// Delete security group
@@ -353,8 +344,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 			case "InvalidGroup.NotFound":
 				log.Error().Print("Security group pgtest-sg already deleted: InvalidGroup.NotFound.", field.M{"app": "rds-postgresql"})
 			default:
-				log.Error().WithError(err).Print("Failed to delete security group. You may need to delete it manually.", field.M{"app": "rds-postgresql", "name": "pgtest-sg"})
-				return err
+				return errors.Wrap(err, "Failed to delete security group. You may need to delete it manually. app=rds-postgresql name=pgtest-sg")
 			}
 		}
 	}
