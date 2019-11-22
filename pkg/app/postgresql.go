@@ -32,28 +32,22 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
-type chartInfo struct {
-	release  string
-	chart    string
-	repoUrl  string
-	repoName string
-	values   map[string]string
-}
-
 type PostgresDB struct {
+	name      string
 	cli       kubernetes.Interface
-	chart     chartInfo
+	chart     helm.ChartInfo
 	namespace string
 }
 
-func NewPostgresDB() App {
+func NewPostgresDB(name string) App {
 	return &PostgresDB{
-		chart: chartInfo{
-			release:  "my-postgres",
-			repoName: helm.StableRepoName,
-			repoUrl:  helm.StableRepoURL,
-			chart:    "postgresql",
-			values: map[string]string{
+		name: name,
+		chart: helm.ChartInfo{
+			Release:  name,
+			RepoName: helm.StableRepoName,
+			RepoUrl:  helm.StableRepoURL,
+			Chart:    "postgresql",
+			Values: map[string]string{
 				"image.repository":                      "kanisterio/postgresql",
 				"image.tag":                             "0.22.0",
 				"postgresqlPassword":                    "test@54321",
@@ -67,7 +61,7 @@ func NewPostgresDB() App {
 }
 
 func (pdb *PostgresDB) getStatefulSetName() string {
-	return fmt.Sprintf("%s-postgresql", pdb.chart.release)
+	return fmt.Sprintf("%s-postgresql", pdb.chart.Release)
 }
 
 func (pdb *PostgresDB) Init(ctx context.Context) error {
@@ -84,18 +78,18 @@ func (pdb *PostgresDB) Init(ctx context.Context) error {
 }
 
 func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
-	log.Info().Print("Installing helm chart.", field.M{"app": "postgresql", "release": pdb.chart.release, "namespace": ns})
+	log.Info().Print("Installing helm chart.", field.M{"app": pdb.name, "release": pdb.chart.Release, "namespace": ns})
 	pdb.namespace = ns
 
 	// Create helm client
 	cli := helm.NewCliClient()
 
 	// Add helm repo and fetch charts
-	if err := cli.AddRepo(ctx, pdb.chart.repoName, pdb.chart.repoUrl); err != nil {
+	if err := cli.AddRepo(ctx, pdb.chart.RepoName, pdb.chart.RepoUrl); err != nil {
 		return err
 	}
 	// Install helm chart
-	if err := cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.repoName, pdb.chart.chart), pdb.chart.release, pdb.namespace, pdb.chart.values); err != nil {
+	if err := cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Release, pdb.namespace, pdb.chart.Values); err != nil {
 		return err
 	}
 	return nil
@@ -146,24 +140,23 @@ func (pdb *PostgresDB) Ping(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to ping postgresql DB. %s", stderr)
 	}
-	log.Info().Print("Connected to database.", field.M{"app": "postgresql"})
+	log.Info().Print("Connected to database.", field.M{"app": pdb.name})
 	return nil
 }
 
-func (pdb PostgresDB) Insert(ctx context.Context, n int) error {
+func (pdb PostgresDB) Insert(ctx context.Context) error {
 	// Get pod and container name
 	pod, container, err := getPodContainerFromStatefulSet(ctx, pdb.cli, pdb.namespace, pdb.getStatefulSetName())
 	if err != nil {
 		return err
 	}
-	for i := 0; i < n; i++ {
-		cmd := fmt.Sprintf("PGPASSWORD=${POSTGRES_PASSWORD} psql -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\"")
-		_, stderr, err := kube.Exec(pdb.cli, pdb.namespace, pod, container, []string{"sh", "-c", cmd}, nil)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to create db in postgresql. %s", stderr)
-		}
-		log.Info().Print("Inserted a row in test db.", field.M{"app": "postgresql"})
+
+	cmd := fmt.Sprintf("PGPASSWORD=${POSTGRES_PASSWORD} psql -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\"")
+	_, stderr, err := kube.Exec(pdb.cli, pdb.namespace, pod, container, []string{"sh", "-c", cmd}, nil)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create db in postgresql. %s", stderr)
 	}
+	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
 	return nil
 }
 
@@ -187,7 +180,7 @@ func (pdb PostgresDB) Count(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, errors.Wrapf(err, "Failed to count db entries in postgresql. %s ", stderr)
 	}
-	log.Info().Print("Counting rows in test db.", field.M{"app": "postgresql", "count": count})
+	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": count})
 	return count, nil
 }
 
@@ -218,22 +211,22 @@ func (pdb PostgresDB) Reset(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create table in postgresql. %s ", stderr)
 	}
-	log.Info().Print("Database reset successful!", field.M{"app": "postgresql"})
+	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
 	return nil
 }
 
 func (pdb PostgresDB) Uninstall(ctx context.Context) error {
-	log.Info().Print("Uninstalling helm chart.", field.M{"app": "postgresql", "release": pdb.chart.release, "namespace": pdb.namespace})
+	log.Info().Print("Uninstalling helm chart.", field.M{"app": pdb.name, "release": pdb.chart.Release, "namespace": pdb.namespace})
 	// Create helm client
 	cli := helm.NewCliClient()
 
 	// Install helm chart
-	if err := cli.Uninstall(ctx, pdb.chart.release, pdb.namespace); err != nil {
+	if err := cli.Uninstall(ctx, pdb.chart.Release, pdb.namespace); err != nil {
 		return err
 	}
 
 	// Add helm repo and fetch charts
-	if err := cli.RemoveRepo(ctx, pdb.chart.repoName); err != nil {
+	if err := cli.RemoveRepo(ctx, pdb.chart.RepoName); err != nil {
 		return err
 	}
 	return nil

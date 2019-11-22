@@ -40,6 +40,7 @@ import (
 )
 
 type RDSPostgresDB struct {
+	name            string
 	cli             kubernetes.Interface
 	namespace       string
 	id              string
@@ -55,8 +56,9 @@ type RDSPostgresDB struct {
 	sqlDB           *sql.DB
 }
 
-func NewRDSPostgresDB() App {
+func NewRDSPostgresDB(name string) App {
 	return &RDSPostgresDB{
+		name:     name,
 		id:       "test-postgresql-instance",
 		dbname:   "postgres",
 		username: "master",
@@ -109,7 +111,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	}
 
 	// Create security group
-	log.Info().Print("Creating security group.", field.M{"app": "rds-postgresql", "name": "pgtest-sg"})
+	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": "pgtest-sg"})
 	sg, err := ec2.CreateSecurityGroup(ctx, "pgtest-sg", "pgtest-security-group")
 	if err != nil {
 		return err
@@ -117,7 +119,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	pdb.securityGroupID = *sg.GroupId
 
 	// Add ingress rule
-	log.Info().Print("Adding ingress rule to security group.", field.M{"app": "rds-postgresql"})
+	log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
 	_, err = ec2.AuthorizeSecurityGroupIngress(ctx, "pgtest-sg", "0.0.0.0/0", "tcp", 5432)
 	if err != nil {
 		return err
@@ -130,14 +132,14 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	}
 
 	// Create RDS instance
-	log.Info().Print("Creating RDS instance.", field.M{"app": "rds-postgresql", "id": pdb.id})
+	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
 	_, err = rds.CreateDBInstance(ctx, 20, "db.t2.micro", pdb.id, "postgres", pdb.username, pdb.password, pdb.securityGroupID)
 	if err != nil {
 		return err
 	}
 
 	// Wait for DB to be ready
-	log.Info().Print("Waiting for rds to be ready.", field.M{"app": "rds-postgresql"})
+	log.Info().Print("Waiting for rds to be ready.", field.M{"app": pdb.name})
 	err = rds.WaitUntilDBInstanceAvailable(ctx, pdb.id)
 	if err != nil {
 		return err
@@ -234,20 +236,18 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 	}
 
 	pdb.sqlDB = db
-	log.Info().Print("Connected to database.", field.M{"app": "rds-postgresql"})
+	log.Info().Print("Connected to database.", field.M{"app": pdb.name})
 	return nil
 }
 
-func (pdb RDSPostgresDB) Insert(ctx context.Context, n int) error {
-	for i := 0; i < n; i++ {
-		now := time.Now().Format(time.RFC3339Nano)
-		stmt := "INSERT INTO inventory (name) VALUES ($1);"
-		_, err := pdb.sqlDB.Exec(stmt, now)
-		if err != nil {
-			return err
-		}
-		log.Info().Print("Inserted a row in test db.", field.M{"app": "rds-postgresql"})
+func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
+	now := time.Now().Format(time.RFC3339Nano)
+	stmt := "INSERT INTO inventory (name) VALUES ($1);"
+	_, err := pdb.sqlDB.Exec(stmt, now)
+	if err != nil {
+		return err
 	}
+	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
 	return nil
 }
 
@@ -259,7 +259,7 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	log.Info().Print("Counting rows in test db.", field.M{"app": "rds-postgresql", "count": count})
+	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": count})
 	return count, nil
 }
 
@@ -275,7 +275,7 @@ func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
 		return err
 	}
 
-	log.Info().Print("Database reset successful!", field.M{"app": "rds-postgresql"})
+	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
 	return nil
 }
 
@@ -307,13 +307,13 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	}
 
 	// Delete rds instance
-	log.Info().Print("Deleting rds instance", field.M{"app": "rds-postgresql"})
+	log.Info().Print("Deleting rds instance", field.M{"app": pdb.name})
 	_, err = rds.DeleteDBInstance(ctx, pdb.id)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {
 			case awsrds.ErrCodeDBInstanceNotFoundFault:
-				log.Info().Print("RDS instance already deleted: ErrCodeDBInstanceNotFoundFault.", field.M{"app": "rds-postgresql", "id": pdb.id})
+				log.Info().Print("RDS instance already deleted: ErrCodeDBInstanceNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
 			default:
 				return errors.Wrapf(err, "Failed to delete rds instance. You may need to delete it manually. app=rds-postgresql id=%s", pdb.id)
 			}
@@ -322,7 +322,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 
 	// Waiting for rds to be deleted
 	if err == nil {
-		log.Info().Print("Waiting for rds to be deleted", field.M{"app": "rds-postgresql"})
+		log.Info().Print("Waiting for rds to be deleted", field.M{"app": pdb.name})
 		err = rds.WaitUntilDBInstanceDeleted(ctx, pdb.id)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to wait for rds instance till delete succeeds. app=rds-postgresql id=%s", pdb.id)
@@ -336,13 +336,13 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	}
 
 	// Delete security group
-	log.Info().Print("Deleting security group.", field.M{"app": "rds-postgresql"})
+	log.Info().Print("Deleting security group.", field.M{"app": pdb.name})
 	_, err = ec2.DeleteSecurityGroup(ctx, "pgtest-sg")
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {
 			case "InvalidGroup.NotFound":
-				log.Error().Print("Security group pgtest-sg already deleted: InvalidGroup.NotFound.", field.M{"app": "rds-postgresql"})
+				log.Error().Print("Security group pgtest-sg already deleted: InvalidGroup.NotFound.", field.M{"app": pdb.name})
 			default:
 				return errors.Wrap(err, "Failed to delete security group. You may need to delete it manually. app=rds-postgresql name=pgtest-sg")
 			}

@@ -30,3 +30,12 @@ type Client interface {
 	// Uninstall deletes helm release from the given namespace
 	Uninstall(ctx context.Context, release, namespace string) error
 }
+
+// ChartInfo holds information to fetch and install helm chart
+type ChartInfo struct {
+	Release  string
+	Chart    string
+	RepoUrl  string
+	RepoName string
+	Values   map[string]string
+}

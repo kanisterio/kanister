@@ -62,7 +62,7 @@ type IntegrationSuite struct {
 var _ = Suite(&IntegrationSuite{
 	name:      "rds-postgres",
 	namespace: "rds-postgres-test",
-	app:       app.NewRDSPostgresDB(),
+	app:       app.NewRDSPostgresDB("rds-postgres"),
 	bp:        app.NewBlueprint("rds-postgres"),
 	profile:   newSecretProfile("", "", ""),
 })
@@ -71,7 +71,7 @@ var _ = Suite(&IntegrationSuite{
 var _ = Suite(&IntegrationSuite{
 	name:      "pitr-postgres",
 	namespace: "pitr-postgres-test",
-	app:       app.NewPostgresDB(),
+	app:       app.NewPostgresDB("pitr-postgres"),
 	bp:        app.NewPITRBlueprint("pitr-postgres"),
 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
@@ -80,7 +80,7 @@ var _ = Suite(&IntegrationSuite{
 var _ = Suite(&IntegrationSuite{
 	name:      "postgres",
 	namespace: "postgres-test",
-	app:       app.NewPostgresDB(),
+	app:       app.NewPostgresDB("postgres"),
 	bp:        app.NewBlueprint("postgres"),
 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
@@ -182,8 +182,9 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		c.Assert(err, IsNil)
 
 		// Add few entries
-		err = a.Insert(ctx, testEntries)
-		c.Assert(err, IsNil)
+		for i := 0; i < testEntries; i++ {
+			c.Assert(a.Insert(ctx), IsNil)
+		}
 
 		count, err := a.Count(ctx)
 		c.Assert(err, IsNil)
@@ -216,7 +217,8 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		// Add few more entries with timestamp > pitr
 		time.Sleep(time.Second)
 		if a, ok := s.app.(app.DatabaseApp); ok {
-			c.Assert(a.Insert(ctx, 2), IsNil)
+			c.Assert(a.Insert(ctx), IsNil)
+			c.Assert(a.Insert(ctx), IsNil)
 
 			count, err := a.Count(ctx)
 			c.Assert(err, IsNil)
