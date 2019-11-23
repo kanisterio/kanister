@@ -51,7 +51,7 @@ var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeEBS, stor
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-b"})
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-c__us-west1-a"})
 
-// Azure takes than 7.5 mins to finish.
+// Azure takes a little more time to finish.
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeAD, storageRegion: "", storageAZ: "westus"})
 
 func (s *BlockStorageProviderSuite) SetUpSuite(c *C) {
@@ -263,6 +263,32 @@ func (s *BlockStorageProviderSuite) checkStdTagsExist(c *C, actual map[string]st
 func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]string {
 	config := make(map[string]string)
 	switch s.storageType {
+	case blockstorage.TypeAD:
+		creds, ok := os.LookupEnv(blockstorage.AzureSubscriptionId)
+		if !ok {
+			c.Skip("The necessary env variable AZURE_SUBSCRIPTION_ID is not set.")
+		}
+		config[blockstorage.AzureSubscriptionId] = creds
+		creds, ok = os.LookupEnv(blockstorage.AzureTenantId)
+		if !ok {
+			c.Skip("The necessary env variable AZURE_TENANT_ID is not set.")
+		}
+		config[blockstorage.AzureTenantId] = creds
+		creds, ok = os.LookupEnv(blockstorage.AzureCientId)
+		if !ok {
+			c.Skip("The necessary env variable AZURE_CLIENT_ID is not set.")
+		}
+		config[blockstorage.AzureCientId] = creds
+		creds, ok = os.LookupEnv(blockstorage.AzureClentSecret)
+		if !ok {
+			c.Skip("The necessary env variable AZURE_CLIENT_SECRET is not set.")
+		}
+		config[blockstorage.AzureClentSecret] = creds
+		creds, ok = os.LookupEnv(blockstorage.AzureResurceGroup)
+		if !ok {
+			c.Skip("The necessary env variable AZURE_RESOURCE_GROUP is not set.")
+		}
+		config[blockstorage.AzureResurceGroup] = creds
 	case blockstorage.TypeEBS:
 		config[awsconfig.ConfigRegion] = region
 		accessKey, ok := os.LookupEnv(awsconfig.AccessKeyID)
@@ -282,6 +308,8 @@ func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]st
 			c.Skip("The necessary env variable GOOGLE_APPLICATION_CREDENTIALS is not set.")
 		}
 		config[blockstorage.GoogleCloudCreds] = creds
+	default:
+		c.Errorf("Unknown blockstorage storage type %v", s.storageType)
 	}
 	return config
 }
