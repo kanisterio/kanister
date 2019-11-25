@@ -47,6 +47,7 @@ func NewPostgresDB(name string) App {
 			RepoName: helm.StableRepoName,
 			RepoURL:  helm.StableRepoURL,
 			Chart:    "postgresql",
+			Version:  "7.6.0",
 			Values: map[string]string{
 				"image.repository":                      "kanisterio/postgresql",
 				"image.tag":                             "0.22.0",
@@ -82,14 +83,14 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 	pdb.namespace = ns
 
 	// Create helm client
-	cli := helm.NewCliClient()
+	cli := helm.NewCliClient(helm.V3)
 
 	// Add helm repo and fetch charts
 	if err := cli.AddRepo(ctx, pdb.chart.RepoName, pdb.chart.RepoURL); err != nil {
 		return err
 	}
 	// Install helm chart
-	if err := cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Release, pdb.namespace, pdb.chart.Values); err != nil {
+	if err := cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Version, pdb.chart.Release, pdb.namespace, pdb.chart.Values); err != nil {
 		return err
 	}
 	return nil
@@ -218,7 +219,7 @@ func (pdb PostgresDB) Reset(ctx context.Context) error {
 func (pdb PostgresDB) Uninstall(ctx context.Context) error {
 	log.Info().Print("Uninstalling helm chart.", field.M{"app": pdb.name, "release": pdb.chart.Release, "namespace": pdb.namespace})
 	// Create helm client
-	cli := helm.NewCliClient()
+	cli := helm.NewCliClient(helm.V3)
 
 	// Install helm chart
 	if err := cli.Uninstall(ctx, pdb.chart.Release, pdb.namespace); err != nil {
