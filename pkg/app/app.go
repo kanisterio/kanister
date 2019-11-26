@@ -49,7 +49,7 @@ type DatabaseApp interface {
 	// accessable.
 	Ping(context.Context) error
 	// Insert adds n entries to the database.
-	Insert(ctx context.Context, n int) error
+	Insert(ctx context.Context) error
 	// Count returns the number of entries in the database.
 	Count(context.Context) (int, error)
 	// Reset Removes all entries from the database.
