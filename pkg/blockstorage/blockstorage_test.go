@@ -47,11 +47,9 @@ type BlockStorageProviderSuite struct {
 	snapshots     []*blockstorage.Snapshot
 }
 
-var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeEBS, storageRegion: clusterRegionAWS, storageAZ: "us-west-2b"})
-var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-b"})
-var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-c__us-west1-a"})
-
-// Azure takes a little more time to finish.
+// var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeEBS, storageRegion: clusterRegionAWS, storageAZ: "us-west-2b"})
+// var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-b"})
+// var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-c__us-west1-a"})
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeAD, storageRegion: "", storageAZ: "westus"})
 
 func (s *BlockStorageProviderSuite) SetUpSuite(c *C) {
@@ -262,30 +260,27 @@ func (s *BlockStorageProviderSuite) checkStdTagsExist(c *C, actual map[string]st
 
 func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]string {
 	config := make(map[string]string)
+	var creds string
+	var ok bool
 	switch s.storageType {
 	case blockstorage.TypeAD:
-		creds, ok := os.LookupEnv(blockstorage.AzureSubscriptionId)
-		if !ok {
+		if creds, ok = os.LookupEnv(blockstorage.AzureSubscriptionID); !ok {
 			c.Skip("The necessary env variable AZURE_SUBSCRIPTION_ID is not set.")
 		}
-		config[blockstorage.AzureSubscriptionId] = creds
-		creds, ok = os.LookupEnv(blockstorage.AzureTenantId)
-		if !ok {
+		config[blockstorage.AzureSubscriptionID] = creds
+		if creds, ok = os.LookupEnv(blockstorage.AzureTenantID); !ok {
 			c.Skip("The necessary env variable AZURE_TENANT_ID is not set.")
 		}
-		config[blockstorage.AzureTenantId] = creds
-		creds, ok = os.LookupEnv(blockstorage.AzureCientId)
-		if !ok {
+		config[blockstorage.AzureTenantID] = creds
+		if creds, ok = os.LookupEnv(blockstorage.AzureCientID); !ok {
 			c.Skip("The necessary env variable AZURE_CLIENT_ID is not set.")
 		}
-		config[blockstorage.AzureCientId] = creds
-		creds, ok = os.LookupEnv(blockstorage.AzureClentSecret)
-		if !ok {
+		config[blockstorage.AzureCientID] = creds
+		if creds, ok = os.LookupEnv(blockstorage.AzureClentSecret); !ok {
 			c.Skip("The necessary env variable AZURE_CLIENT_SECRET is not set.")
 		}
 		config[blockstorage.AzureClentSecret] = creds
-		creds, ok = os.LookupEnv(blockstorage.AzureResurceGroup)
-		if !ok {
+		if creds, ok = os.LookupEnv(blockstorage.AzureResurceGroup); !ok {
 			c.Skip("The necessary env variable AZURE_RESOURCE_GROUP is not set.")
 		}
 		config[blockstorage.AzureResurceGroup] = creds

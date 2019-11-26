@@ -28,9 +28,9 @@ const (
 	GoogleServiceKey    = "serviceKey"
 	AzureStorageAccount = "AZURE_STORAGE_ACCOUNT_NAME"
 	AzureStorageKey     = "AZURE_STORAGE_ACCOUNT_KEY"
-	AzureSubscriptionId = "AZURE_SUBSCRIPTION_ID"
-	AzureTenantId       = "AZURE_TENANT_ID"
-	AzureCientId        = "AZURE_CLIENT_ID"
+	AzureSubscriptionID = "AZURE_SUBSCRIPTION_ID"
+	AzureTenantID       = "AZURE_TENANT_ID"
+	AzureCientID        = "AZURE_CLIENT_ID"
 	AzureClentSecret    = "AZURE_CLIENT_SECRET"
 	AzureResurceGroup   = "AZURE_RESOURCE_GROUP"
 )
