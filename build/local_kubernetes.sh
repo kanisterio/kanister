@@ -59,6 +59,10 @@ start_localkube() {
     export KUBECONFIG=${KUBECONFIG}:${HOME}/.kube/config_bk; kubectl config view --flatten > "${HOME}/.kube/config"
     wait_for_nodes
     wait_for_pods
+
+    kubectl patch storageclass standard -p '{"metadata": {"annotations":{"storageclass.beta.kubernetes.io/is-default-class":"false"}}}'
+    kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.11/deploy/local-path-storage.yaml
+    kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.beta.kubernetes.io/is-default-class":"true"}}}'
 }
 
 stop_localkube() {
