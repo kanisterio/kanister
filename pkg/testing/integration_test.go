@@ -17,9 +17,9 @@ package testing
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,9 +29,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/app"
 	crclient "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controller"
+	"github.com/kanisterio/kanister/pkg/field"
 	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kanctl"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
@@ -54,12 +56,14 @@ type IntegrationSuite struct {
 	cancel    context.CancelFunc
 }
 
-// Add app test suites
+// INTEGRATION TEST APPLICATIONS
+
+// rds-postgres app
 var _ = Suite(&IntegrationSuite{
 	name:      "rds-postgres",
 	namespace: "rds-postgres-test",
-	app:       app.NewPostgresDB(),
-	bp:        app.NewPostgresBP(),
+	app:       app.NewRDSPostgresDB("rds-postgres"),
+	bp:        app.NewBlueprint("rds-postgres"),
 	profile:   newSecretProfile("", "", ""),
 })
 
@@ -71,7 +75,6 @@ func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
 
 	secret, profile, err := testutil.NewSecretProfileFromLocation(location)
 	if err != nil {
-		log.Errorf("Failed to create profile. %s", err.Error())
 		return nil
 	}
 	return &secretProfile{
@@ -113,12 +116,12 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	defer cancel()
 
 	// Execute e2e workflow
-	log.Infof("Running e2e integration test for %s", s.name)
+	log.Info().Print("Running e2e integration test.", field.M{"app": s.name})
 
 	// Check config
 	err := s.app.Init(ctx)
 	if err != nil {
-		log.Infof("Skipping integration test for %s. Reason: %s", s.name, err.Error())
+		log.Info().Print("Skipping integration test.", field.M{"app": s.name, "reason": err.Error()})
 		s.skip = true
 		c.Skip(err.Error())
 	}
@@ -128,7 +131,11 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	c.Assert(err, IsNil)
 
 	// Create profile
-	c.Assert(s.profile, NotNil)
+	if s.profile == nil {
+		log.Info().Print("Skipping integration test. Could not create profile. Please check if required credentials are set.", field.M{"app": s.name})
+		s.skip = true
+		c.Skip("Could not create a Profile")
+	}
 	profileName := s.createProfile(c)
 
 	// Install db
@@ -142,6 +149,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	// Create blueprint
 	bp := s.bp.Blueprint()
+	c.Assert(bp, NotNil)
 	_, err = s.crCli.Blueprints(s.namespace).Create(bp)
 	c.Assert(err, IsNil)
 
@@ -156,8 +164,9 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		c.Assert(err, IsNil)
 
 		// Add few entries
-		err = a.Insert(ctx, testEntries)
-		c.Assert(err, IsNil)
+		for i := 0; i < testEntries; i++ {
+			c.Assert(a.Insert(ctx), IsNil)
+		}
 
 		count, err := a.Count(ctx)
 		c.Assert(err, IsNil)
@@ -175,10 +184,29 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	// Create ActionSet specs
 	as := newActionSet(bp.GetName(), profileName, s.namespace, s.app.Object(), configMaps, secrets)
-
 	// Take backup
-	backup := s.createActionset(ctx, c, as, "backup")
+	backup := s.createActionset(ctx, c, as, "backup", nil)
 	c.Assert(len(backup), Not(Equals), 0)
+
+	// Save timestamp for PITR
+	var restoreOptions map[string]string
+	if b, ok := s.bp.(app.PITRBlueprinter); ok {
+		pitr := b.FormatPITR(time.Now())
+		log.Info().Print("Saving timestamp for PITR", field.M{"pitr": pitr})
+		restoreOptions = map[string]string{
+			"pitr": pitr,
+		}
+		// Add few more entries with timestamp > pitr
+		time.Sleep(time.Second)
+		if a, ok := s.app.(app.DatabaseApp); ok {
+			c.Assert(a.Insert(ctx), IsNil)
+			c.Assert(a.Insert(ctx), IsNil)
+
+			count, err := a.Count(ctx)
+			c.Assert(err, IsNil)
+			c.Assert(count, Equals, testEntries+2)
+		}
+	}
 
 	// Reset DB
 	if a, ok := s.app.(app.DatabaseApp); ok {
@@ -193,7 +221,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Restore backup
 	pas, err := s.crCli.ActionSets(s.namespace).Get(backup, metav1.GetOptions{})
 	c.Assert(err, IsNil)
-	s.createActionset(ctx, c, pas, "restore")
+	s.createActionset(ctx, c, pas, "restore", restoreOptions)
 
 	// Verify data
 	if a, ok := s.app.(app.DatabaseApp); ok {
@@ -206,7 +234,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	}
 
 	// Delete snapshots
-	s.createActionset(ctx, c, pas, "delete")
+	s.createActionset(ctx, c, pas, "delete", nil)
 }
 
 func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectReference, configMaps, secrets map[string]crv1alpha1.ObjectReference) *crv1alpha1.ActionSet {
@@ -273,15 +301,17 @@ func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[st
 }
 
 // createActionset creates and wait for actionset to complete
-func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1alpha1.ActionSet, action string) string {
+func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1alpha1.ActionSet, action string, options map[string]string) string {
 	var err error
 	switch action {
 	case "backup":
+		as.Spec.Actions[0].Options = options
 		as, err = s.crCli.ActionSets(s.namespace).Create(as)
 		c.Assert(err, IsNil)
 	case "restore", "delete":
 		as, err = restoreActionSetSpecs(as, action)
 		c.Assert(err, IsNil)
+		as.Spec.Actions[0].Options = options
 		as, err = s.crCli.ActionSets(s.namespace).Create(as)
 		c.Assert(err, IsNil)
 	default:
