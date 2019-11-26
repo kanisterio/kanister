@@ -26,7 +26,17 @@ type Client interface {
 	// RemoveRepo removes helm repo
 	RemoveRepo(ctx context.Context, name string) error
 	// Install installs helm chart with given release name in the namespace
-	Install(ctx context.Context, chart, release, namespace string, values map[string]string) error
+	Install(ctx context.Context, chart, version, release, namespace string, values map[string]string) error
 	// Uninstall deletes helm release from the given namespace
 	Uninstall(ctx context.Context, release, namespace string) error
+}
+
+// ChartInfo holds information to fetch and install helm chart
+type ChartInfo struct {
+	Release  string
+	Chart    string
+	RepoURL  string
+	RepoName string
+	Version  string
+	Values   map[string]string
 }
