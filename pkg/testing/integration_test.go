@@ -61,6 +61,10 @@ type IntegrationSuite struct {
 	cancel    context.CancelFunc
 }
 
+const (
+	maxRetries = 10
+)
+
 // INTEGRATION TEST APPLICATIONS
 
 // rds-postgres app

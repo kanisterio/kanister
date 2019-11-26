@@ -47,7 +47,7 @@ type DatabaseApp interface {
 	App
 	// Ping will issue trivial request to the database to see if it is
 	// accessable.
-	Ping(context.Context) error
+	Ping(context.Context) (bool, error)
 	// Insert adds n entries to the database.
 	Insert(ctx context.Context) error
 	// Count returns the number of entries in the database.

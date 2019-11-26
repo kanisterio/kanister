@@ -29,6 +29,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// ElasticsearchPingOutput struct gets mapped to the output of curl <es-host>:<es-port>/<index-name>/_search?pretty
+// which actually returns details about all the documents of a specific ES index (index-name)
+// if, due to any reason, there is change in how Elasticsearch responds to  above query, below
+// struct is subject to change.
 type ElasticsearchPingOutput struct {
 	Took     int  `json:"took"`
 	TimedOut bool `json:"timed_out"`
@@ -143,49 +147,34 @@ func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
 	return nil
 }
 
-func (esi *ElasticsearchInstance) Ping(ctx context.Context) error {
+func (esi *ElasticsearchInstance) Ping(ctx context.Context) (bool, error) {
 	log.Print("Pinging the application to check if its accessible.", field.M{"app": esi.name})
-	podname, containername, err := getPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
-	if err != nil || podname == "" {
-		errors.Wrapf(err, "Error getting the pod and container name to Ping application %s.", esi.name)
-		return err
-	}
 
 	pingCMD := []string{"sh", "-c", fmt.Sprintf("curl %s", esi.elasticsearchURL)}
-	_, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, pingCMD, nil)
+	_, stderr, err := esi.execCommand(ctx, pingCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to ping the application. Error:%s", stderr)
+		return false, errors.Wrapf(err, "Failed to ping the application. Error:%s", stderr)
 	}
 
-	return nil
+	return true, nil
 }
 func (esi *ElasticsearchInstance) Insert(ctx context.Context) error {
-	podname, containername, err := getPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
-	if err != nil || podname == "" {
-		return err
-	}
-
 	addDocumentToIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X POST %s/%s/_doc/?refresh=true -H 'Content-Type: application/json' -d'{\"appname\": \"kanister\" }'", esi.elasticsearchURL, esi.indexname)}
-	_, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, addDocumentToIndexCMD, nil)
-
+	_, stderr, err := esi.execCommand(ctx, addDocumentToIndexCMD)
 	if err != nil {
 		errors.Wrapf(err, "Error %s inserting document to an index %s.", stderr, esi.indexname)
 		// even one insert failed we will have to return becasue
 		// the count wont  match anyway and the test will fail
 		return err
 	}
+
 	log.Print("A document was inserted into the elastics search index.", field.M{"app": esi.name})
 	return nil
 }
 
 func (esi *ElasticsearchInstance) Count(ctx context.Context) (int, error) {
-	podname, containername, err := getPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
-	if err != nil || podname == "" {
-		return 0, err
-	}
-
 	documentCountCMD := []string{"sh", "-c", fmt.Sprintf("curl %s/%s/_search?pretty", esi.elasticsearchURL, esi.indexname)}
-	stdout, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, documentCountCMD, nil)
+	stdout, stderr, err := esi.execCommand(ctx, documentCountCMD)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error %s Counting the documents in an index.", stderr)
 	}
@@ -205,13 +194,8 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 	log.Print("Resetting the application.", field.M{"app": esi.name})
 
 	// delete the index and then create it, in order to reset the es application
-	podname, containername, err := getPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
-	if err != nil || podname == "" {
-		return err
-	}
-
 	deleteIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X DELETE %s/%s?pretty", esi.elasticsearchURL, esi.indexname)}
-	_, stderr, err := kube.Exec(esi.cli, esi.namespace, podname, containername, deleteIndexCMD, nil)
+	_, stderr, err := esi.execCommand(ctx, deleteIndexCMD)
 	if err != nil {
 		errors.Wrapf(err, "Error %s while deleting the index %s to reset the application.", stderr, esi.indexname)
 		return err
@@ -219,10 +203,19 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 
 	// create the index
 	createIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X PUT %s/%s?pretty", esi.elasticsearchURL, esi.indexname)}
-	_, stderr, err = kube.Exec(esi.cli, esi.namespace, podname, containername, createIndexCMD, nil)
+	_, stderr, err = esi.execCommand(ctx, createIndexCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s: Resetting the application.", stderr)
 	}
 
 	return nil
+}
+
+func (esi *ElasticsearchInstance) execCommand(ctx context.Context, command []string) (string, string, error) {
+	podname, containername, err := getPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
+	if err != nil || podname == "" {
+		errors.Wrapf(err, "Error getting the pod and container name %s.", esi.name)
+		return "", "", err
+	}
+	return kube.Exec(esi.cli, esi.namespace, podname, containername, command, nil)
 }
