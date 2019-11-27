@@ -23,21 +23,24 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/testutil"
 
 	// Initialize pq driver
 	_ "github.com/lib/pq"
 )
 
-type PostgresDB struct {
+type RDSPostgresDB struct {
+	name            string
 	cli             kubernetes.Interface
 	namespace       string
 	id              string
@@ -53,13 +56,9 @@ type PostgresDB struct {
 	sqlDB           *sql.DB
 }
 
-type PostgresBP struct {
-	name         string
-	appNamespace string
-}
-
-func NewPostgresDB() App {
-	return &PostgresDB{
+func NewRDSPostgresDB(name string) App {
+	return &RDSPostgresDB{
+		name:     name,
 		id:       "test-postgresql-instance",
 		dbname:   "postgres",
 		username: "master",
@@ -67,8 +66,18 @@ func NewPostgresDB() App {
 	}
 }
 
-func (pdb *PostgresDB) Init(ctx context.Context) error {
+func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
+	// Instantiate Client SDKs
+	cfg, err := kube.LoadConfig()
+	if err != nil {
+		return err
+	}
+
 	var ok bool
+	pdb.cli, err = kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
 	pdb.region, ok = os.LookupEnv(awsconfig.Region)
 	if !ok {
 		return fmt.Errorf("Env var %s is not set", awsconfig.Region)
@@ -88,21 +97,10 @@ func (pdb *PostgresDB) Init(ctx context.Context) error {
 	if !ok {
 		return fmt.Errorf("Env var %s is not set", awsconfig.SecretAccessKey)
 	}
-
-	// Instantiate Client SDKs
-	cfg, err := kube.LoadConfig()
-	if err != nil {
-		return nil
-	}
-	pdb.cli, err = kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
+func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	var err error
 	pdb.namespace = ns
 
@@ -113,7 +111,7 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 	}
 
 	// Create security group
-	log.Info("PostgresDB: creating security group")
+	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": "pgtest-sg"})
 	sg, err := ec2.CreateSecurityGroup(ctx, "pgtest-sg", "pgtest-security-group")
 	if err != nil {
 		return err
@@ -121,7 +119,7 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 	pdb.securityGroupID = *sg.GroupId
 
 	// Add ingress rule
-	log.Info("PostgresDB: adding ingress rule to security group")
+	log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
 	_, err = ec2.AuthorizeSecurityGroupIngress(ctx, "pgtest-sg", "0.0.0.0/0", "tcp", 5432)
 	if err != nil {
 		return err
@@ -134,14 +132,14 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 	}
 
 	// Create RDS instance
-	log.Info("PostgresDB: creating rds instance")
+	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
 	_, err = rds.CreateDBInstance(ctx, 20, "db.t2.micro", pdb.id, "postgres", pdb.username, pdb.password, pdb.securityGroupID)
 	if err != nil {
 		return err
 	}
 
 	// Wait for DB to be ready
-	log.Info("PostgresDB: Waiting for rds to be ready")
+	log.Info().Print("Waiting for rds to be ready.", field.M{"app": pdb.name})
 	err = rds.WaitUntilDBInstanceAvailable(ctx, pdb.id)
 	if err != nil {
 		return err
@@ -198,11 +196,11 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 	return nil
 }
 
-func (pdb *PostgresDB) IsReady(ctx context.Context) (bool, error) {
+func (pdb *RDSPostgresDB) IsReady(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (pdb *PostgresDB) Object() crv1alpha1.ObjectReference {
+func (pdb *RDSPostgresDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		Kind:      "namespace",
 		Name:      pdb.namespace,
@@ -211,7 +209,7 @@ func (pdb *PostgresDB) Object() crv1alpha1.ObjectReference {
 }
 
 // Ping makes and tests DB connection
-func (pdb *PostgresDB) Ping(ctx context.Context) error {
+func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 	// Get connection info from configmap
 	dbconfig, err := pdb.cli.CoreV1().ConfigMaps(pdb.namespace).Get("dbconfig", metav1.GetOptions{})
 	if err != nil {
@@ -238,24 +236,22 @@ func (pdb *PostgresDB) Ping(ctx context.Context) error {
 	}
 
 	pdb.sqlDB = db
-	log.Info("Successfully created connection to database")
+	log.Info().Print("Connected to database.", field.M{"app": pdb.name})
 	return nil
 }
 
-func (pdb PostgresDB) Insert(ctx context.Context, n int) error {
-	for i := 0; i < n; i++ {
-		now := time.Now().Format(time.RFC3339Nano)
-		stmt := "INSERT INTO inventory (name) VALUES ($1);"
-		_, err := pdb.sqlDB.Exec(stmt, now)
-		if err != nil {
-			return err
-		}
-		log.Info("Inserted a row")
+func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
+	now := time.Now().Format(time.RFC3339Nano)
+	stmt := "INSERT INTO inventory (name) VALUES ($1);"
+	_, err := pdb.sqlDB.Exec(stmt, now)
+	if err != nil {
+		return err
 	}
+	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
 	return nil
 }
 
-func (pdb PostgresDB) Count(ctx context.Context) (int, error) {
+func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	stmt := "SELECT COUNT(*) FROM inventory;"
 	row := pdb.sqlDB.QueryRow(stmt)
 	var count int
@@ -263,27 +259,27 @@ func (pdb PostgresDB) Count(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	log.Infof("Found %d rows\n", count)
+	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": count})
 	return count, nil
 }
 
-func (pdb PostgresDB) Reset(ctx context.Context) error {
+func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
 	_, err := pdb.sqlDB.Exec("DROP TABLE IF EXISTS inventory;")
 	if err != nil {
 		return err
 	}
-	log.Info("Finished dropping table (if existed)")
 
 	// Create table.
 	_, err = pdb.sqlDB.Exec("CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50));")
 	if err != nil {
 		return err
 	}
-	log.Info("Finished creating table")
+
+	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
 	return nil
 }
 
-func (pdb PostgresDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
+func (pdb RDSPostgresDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
 		"dbconfig": crv1alpha1.ObjectReference{
 			Kind:      "configmap",
@@ -293,7 +289,7 @@ func (pdb PostgresDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 	}
 }
 
-func (pdb PostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
+func (pdb RDSPostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
 		"dbsecret": crv1alpha1.ObjectReference{
 			Kind:      "secret",
@@ -303,57 +299,52 @@ func (pdb PostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
 	}
 }
 
-func (pdb PostgresDB) Uninstall(ctx context.Context) error {
+func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	// Create rds client
 	rds, err := testutil.NewRDSClient(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
 	if err != nil {
-		log.Errorf("Failed to create rds client: %s. You may need to delete RDS resources manually", err.Error())
-		return err
+		return errors.Wrap(err, "Failed to create rds client. You may need to delete RDS resources manually. app=rds-postgresql")
 	}
 
 	// Delete rds instance
-	log.Info("PostgresDB: deleting rds instance")
+	log.Info().Print("Deleting rds instance", field.M{"app": pdb.name})
 	_, err = rds.DeleteDBInstance(ctx, pdb.id)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {
 			case awsrds.ErrCodeDBInstanceNotFoundFault:
-				log.Infof("Rds instance %s already deleted: ErrCodeDBInstanceNotFoundFault", pdb.id)
+				log.Info().Print("RDS instance already deleted: ErrCodeDBInstanceNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
 			default:
-				log.Errorf("Failed to delete rds instance %s: %s. You may need to delete it manually", pdb.id, err.Error())
-				return err
+				return errors.Wrapf(err, "Failed to delete rds instance. You may need to delete it manually. app=rds-postgresql id=%s", pdb.id)
 			}
 		}
 	}
 
 	// Waiting for rds to be deleted
 	if err == nil {
-		log.Info("PostgresDB: Waiting for rds to be deleted")
+		log.Info().Print("Waiting for rds to be deleted", field.M{"app": pdb.name})
 		err = rds.WaitUntilDBInstanceDeleted(ctx, pdb.id)
 		if err != nil {
-			log.Errorf("Failed to wait for rds instance %s till delete succeeds: %s", pdb.id, err.Error())
-			return err
+			return errors.Wrapf(err, "Failed to wait for rds instance till delete succeeds. app=rds-postgresql id=%s", pdb.id)
 		}
 	}
 
 	// Create ec2 client
 	ec2, err := testutil.NewEC2Client(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
 	if err != nil {
-		log.Errorf("Failed to ec2 rds client: %s. You may need to delete EC2 resources manually", err.Error())
-		return err
+		return errors.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
 	}
 
 	// Delete security group
-	log.Info("PostgresDB: deleting security group")
+	log.Info().Print("Deleting security group.", field.M{"app": pdb.name})
 	_, err = ec2.DeleteSecurityGroup(ctx, "pgtest-sg")
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {
 			case "InvalidGroup.NotFound":
-				log.Errorf("Security group pgtest-sg already deleted: InvalidGroup.NotFound")
+				log.Error().Print("Security group pgtest-sg already deleted: InvalidGroup.NotFound.", field.M{"app": pdb.name})
 			default:
-				log.Errorf("Failed to delete security group pgtest-sg: %s. You may need to delete it manually", err.Error())
-				return err
+				return errors.Wrap(err, "Failed to delete security group. You may need to delete it manually. app=rds-postgresql name=pgtest-sg")
 			}
 		}
 	}
