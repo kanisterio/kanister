@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -85,29 +85,12 @@ var _ = Suite(&IntegrationSuite{
 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
+// Elasticsearch app
 var _ = Suite(&IntegrationSuite{
 	name:      "elasticsearch",
 	namespace: "es-test",
 	app:       app.NewElasticsearchInstance("elasticsearch"),
 	bp:        app.NewBlueprint("elasticsearch"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
-})
-
-// pitr-postgresql app
-var _ = Suite(&IntegrationSuite{
-	name:      "pitr-postgres",
-	namespace: "pitr-postgres-test",
-	app:       app.NewPostgresDB("pitr-postgres"),
-	bp:        app.NewPITRBlueprint("pitr-postgres"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
-})
-
-// postgres app
-var _ = Suite(&IntegrationSuite{
-	name:      "postgres",
-	namespace: "postgres-test",
-	app:       app.NewPostgresDB("postgres"),
-	bp:        app.NewBlueprint("postgres"),
 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 

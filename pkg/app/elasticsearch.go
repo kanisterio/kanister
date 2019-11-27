@@ -29,6 +29,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+const (
+	esWaitTimeout = 3 * time.Minute
+)
+
 // ElasticsearchPingOutput struct gets mapped to the output of curl <es-host>:<es-port>/<index-name>/_search?pretty
 // which actually returns details about all the documents of a specific ES index (index-name)
 // if, due to any reason, there is change in how Elasticsearch responds to  above query, below
@@ -68,9 +72,10 @@ func NewElasticsearchInstance(name string) App {
 		indexname: "testindex",
 		chart: helm.ChartInfo{
 			Release:  name,
-			RepoUrl:  helm.ElasticRepoURL,
+			RepoURL:  helm.ElasticRepoURL,
 			Chart:    "elasticsearch",
 			RepoName: helm.ElasticRepoName,
+			Version:  "7.4.1",
 			Values: map[string]string{
 				"antiAffinity": "sort",
 				"replicas":     "1",
@@ -97,24 +102,25 @@ func (esi *ElasticsearchInstance) Init(ctx context.Context) error {
 func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string) error {
 	esi.namespace = namespace
 	// Get the HELM cli
-	cli := helm.NewCliClient()
+	cli := helm.NewCliClient(helm.V3)
 
 	log.Print("Installing the application using helm.", field.M{"app": esi.name})
-	err := cli.AddRepo(ctx, esi.chart.RepoName, esi.chart.RepoUrl)
-	if err != nil {
-		return err
-	}
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.name, esi.namespace, esi.chart.Values)
+	err := cli.AddRepo(ctx, esi.chart.RepoName, esi.chart.RepoURL)
 	if err != nil {
 		return err
 	}
 
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.name, esi.namespace, esi.chart.Values)
+	if err != nil {
+		return err
+	}
+	log.Print("Application was installed succcessfully.", field.M{"app": esi.name})
 	return nil
 }
 
 func (esi *ElasticsearchInstance) IsReady(ctx context.Context) (bool, error) {
 	log.Print("Waiting for the application to be ready.", field.M{"app": esi.name})
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
+	ctx, cancel := context.WithTimeout(ctx, esWaitTimeout)
 	defer cancel()
 
 	err := kube.WaitOnStatefulSetReady(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
@@ -135,7 +141,7 @@ func (esi *ElasticsearchInstance) Object() crv1alpha1.ObjectReference {
 }
 
 func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
-	cli := helm.NewCliClient()
+	cli := helm.NewCliClient(helm.V3)
 	log.Print("UnInstalling the application using helm.", field.M{"app": esi.name})
 
 	err := cli.Uninstall(ctx, esi.name, esi.namespace)
@@ -147,16 +153,17 @@ func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
 	return nil
 }
 
-func (esi *ElasticsearchInstance) Ping(ctx context.Context) (bool, error) {
+func (esi *ElasticsearchInstance) Ping(ctx context.Context) error {
 	log.Print("Pinging the application to check if its accessible.", field.M{"app": esi.name})
 
 	pingCMD := []string{"sh", "-c", fmt.Sprintf("curl %s", esi.elasticsearchURL)}
 	_, stderr, err := esi.execCommand(ctx, pingCMD)
 	if err != nil {
-		return false, errors.Wrapf(err, "Failed to ping the application. Error:%s", stderr)
+		return errors.Wrapf(err, "Failed to ping the application. Error:%s", stderr)
 	}
 
-	return true, nil
+	log.Print("Ping to the application was successful.", field.M{"app": esi.name})
+	return nil
 }
 func (esi *ElasticsearchInstance) Insert(ctx context.Context) error {
 	addDocumentToIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X POST %s/%s/_doc/?refresh=true -H 'Content-Type: application/json' -d'{\"appname\": \"kanister\" }'", esi.elasticsearchURL, esi.indexname)}
