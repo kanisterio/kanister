@@ -40,8 +40,8 @@ import (
 )
 
 const (
-	// appWaitTimeout decides the time we are going to wait for app to be ready 
-	appWaitTimeout = 1*time.Minute
+	// appWaitTimeout decides the time we are going to wait for app to be ready
+	appWaitTimeout = 1 * time.Minute
 )
 
 type secretProfile struct {
@@ -172,8 +172,8 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Add test entries to DB
 	if a, ok := s.app.(app.DatabaseApp); ok {
 		// wait for application to be actually ready
-		timeoutCtx, cancel := context.WithTimeout(ctx, appWaitTimeout)
-		defer cancel()
+		timeoutCtx, waitCancel := context.WithTimeout(ctx, appWaitTimeout)
+		defer waitCancel()
 		err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 			err := a.Ping(ctx)
 			if err != nil {
@@ -251,8 +251,8 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Verify data
 	if a, ok := s.app.(app.DatabaseApp); ok {
 		// wait for application to be actually ready
-		timeoutCtx, cancel := context.WithTimeout(ctx, appWaitTimeout)
-		defer cancel()
+		timeoutCtx, waitCancel := context.WithTimeout(ctx, appWaitTimeout)
+		defer waitCancel()
 		err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 			err := a.Ping(ctx)
 			if err != nil {

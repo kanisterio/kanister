@@ -29,6 +29,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+const (
+	mysqlWaitTimeout = 5 * time.Minute
+)
+
 type MysqlDB struct {
 	cli       kubernetes.Interface
 	namespace string
@@ -91,7 +95,7 @@ func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
 
 func (mdb *MysqlDB) IsReady(ctx context.Context) (bool, error) {
 	log.Print("Waiting for the mysql instance to be ready.", field.M{"app": mdb.name})
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
+	ctx, cancel := context.WithTimeout(ctx, mysqlWaitTimeout)
 	defer cancel()
 	err := kube.WaitOnDeploymentReady(ctx, mdb.cli, mdb.namespace, mdb.name)
 	if err != nil {
