@@ -146,8 +146,7 @@ func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
 
 	err := cli.Uninstall(ctx, esi.name, esi.namespace)
 	if err != nil {
-		errors.Wrapf(err, "Error uninstalling the application %s", esi.name)
-		return err
+		return errors.Wrapf(err, "Error uninstalling the application %s", esi.name)
 	}
 
 	return nil
@@ -169,10 +168,9 @@ func (esi *ElasticsearchInstance) Insert(ctx context.Context) error {
 	addDocumentToIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X POST %s/%s/_doc/?refresh=true -H 'Content-Type: application/json' -d'{\"appname\": \"kanister\" }'", esi.elasticsearchURL, esi.indexname)}
 	_, stderr, err := esi.execCommand(ctx, addDocumentToIndexCMD)
 	if err != nil {
-		errors.Wrapf(err, "Error %s inserting document to an index %s.", stderr, esi.indexname)
 		// even one insert failed we will have to return becasue
 		// the count wont  match anyway and the test will fail
-		return err
+		return errors.Wrapf(err, "Error %s inserting document to an index %s.", stderr, esi.indexname)
 	}
 
 	log.Print("A document was inserted into the elastics search index.", field.M{"app": esi.name})
