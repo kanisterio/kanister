@@ -172,17 +172,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Add test entries to DB
 	if a, ok := s.app.(app.DatabaseApp); ok {
 		// wait for application to be actually ready
-		timeoutCtx, waitCancel := context.WithTimeout(ctx, appWaitTimeout)
-		defer waitCancel()
-		err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
-			err := a.Ping(ctx)
-			if err != nil {
-				return false, nil
-			} else {
-				return true, nil
-			}
-		})
-
+		err = pingAppAndWait(ctx, a)
 		c.Assert(err, IsNil)
 
 		err = a.Reset(ctx)
@@ -251,17 +241,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Verify data
 	if a, ok := s.app.(app.DatabaseApp); ok {
 		// wait for application to be actually ready
-		timeoutCtx, waitCancel := context.WithTimeout(ctx, appWaitTimeout)
-		defer waitCancel()
-		err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
-			err := a.Ping(ctx)
-			if err != nil {
-				return false, nil
-			} else {
-				return true, nil
-			}
-		})
-
+		err = pingAppAndWait(ctx, a)
 		c.Assert(err, IsNil)
 
 		count, err := a.Count(ctx)
@@ -409,4 +389,18 @@ func (s *IntegrationSuite) TearDownSuite(c *C) {
 	if s.cancel != nil {
 		s.cancel()
 	}
+}
+
+func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, appWaitTimeout)
+	defer waitCancel()
+	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		err := a.Ping(ctx)
+		if err != nil {
+			return false, nil
+		} else {
+			return true, nil
+		}
+	})
+	return err
 }

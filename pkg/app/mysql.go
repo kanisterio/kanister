@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	mysqlWaitTimeout = 5 * time.Minute
+	mysqlWaitTimeout = 1 * time.Minute
 )
 
 type MysqlDB struct {
