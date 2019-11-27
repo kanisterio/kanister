@@ -166,6 +166,9 @@ func (mdb *MysqlDB) Count(ctx context.Context) (int, error) {
 	}
 	// get the returned cound and convert it to int, to return
 	rowsReturned, err := strconv.Atoi((strings.Split(stdout, "\n")[1]))
+	if err != nil {
+		return 0, errors.Wrapf(err, "Error while converting row count to int.")
+	}
 	log.Print("Count that we received from application is.", field.M{"app": mdb.name, "count": rowsReturned})
 	return rowsReturned, nil
 }
