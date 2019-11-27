@@ -39,6 +39,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
+const (
+	// appWaitTimeout decides the time we are going to wait for app to be ready
+	appWaitTimeout = 1 * time.Minute
+)
+
 type secretProfile struct {
 	secret  *v1.Secret
 	profile *crv1alpha1.Profile
@@ -65,6 +70,15 @@ var _ = Suite(&IntegrationSuite{
 	app:       app.NewRDSPostgresDB("rds-postgres"),
 	bp:        app.NewBlueprint("rds-postgres"),
 	profile:   newSecretProfile("", "", ""),
+})
+
+// mysql app
+var _ = Suite(&IntegrationSuite{
+	name:      "mysql",
+	namespace: "mysql-test",
+	app:       app.NewMysqlDB("mysql"),
+	bp:        app.NewBlueprint("mysql"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
 func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
@@ -157,7 +171,8 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	testEntries := 3
 	// Add test entries to DB
 	if a, ok := s.app.(app.DatabaseApp); ok {
-		err = a.Ping(ctx)
+		// wait for application to be actually ready
+		err = pingAppAndWait(ctx, a)
 		c.Assert(err, IsNil)
 
 		err = a.Reset(ctx)
@@ -225,7 +240,8 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	// Verify data
 	if a, ok := s.app.(app.DatabaseApp); ok {
-		err = a.Ping(ctx)
+		// wait for application to be actually ready
+		err = pingAppAndWait(ctx, a)
 		c.Assert(err, IsNil)
 
 		count, err := a.Count(ctx)
@@ -373,4 +389,18 @@ func (s *IntegrationSuite) TearDownSuite(c *C) {
 	if s.cancel != nil {
 		s.cancel()
 	}
+}
+
+func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, appWaitTimeout)
+	defer waitCancel()
+	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		err := a.Ping(ctx)
+		if err != nil {
+			return false, nil
+		} else {
+			return true, nil
+		}
+	})
+	return err
 }
