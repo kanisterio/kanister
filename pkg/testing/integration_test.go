@@ -39,6 +39,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
+const (
+	// appWaitTimeout decides the time we are going to wait for app to be ready 
+	appWaitTimeout = 1*time.Minute
+)
+
 type secretProfile struct {
 	secret  *v1.Secret
 	profile *crv1alpha1.Profile
@@ -167,7 +172,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Add test entries to DB
 	if a, ok := s.app.(app.DatabaseApp); ok {
 		// wait for application to be actually ready
-		timeoutCtx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		timeoutCtx, cancel := context.WithTimeout(ctx, appWaitTimeout)
 		defer cancel()
 		err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 			err := a.Ping(ctx)
@@ -246,7 +251,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Verify data
 	if a, ok := s.app.(app.DatabaseApp); ok {
 		// wait for application to be actually ready
-		timeoutCtx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		timeoutCtx, cancel := context.WithTimeout(ctx, appWaitTimeout)
 		defer cancel()
 		err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 			err := a.Ping(ctx)

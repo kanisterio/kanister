@@ -29,10 +29,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const (
-	helmVersion = "helmv3"
-)
-
 type MysqlDB struct {
 	cli       kubernetes.Interface
 	namespace string
@@ -77,7 +73,7 @@ func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
 
 	mdb.namespace = namespace
 
-	cli := helm.NewCliClient(helmVersion)
+	cli := helm.NewCliClient(helm.V3)
 	log.Print("Adding repo.", field.M{"app": mdb.name})
 	err := cli.AddRepo(ctx, mdb.chart.RepoName, mdb.chart.RepoURL)
 	if err != nil {
@@ -117,7 +113,7 @@ func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (mdb *MysqlDB) Uninstall(ctx context.Context) error {
-	cli := helm.NewCliClient(helmVersion)
+	cli := helm.NewCliClient(helm.V3)
 
 	err := cli.Uninstall(ctx, mdb.name, mdb.namespace)
 	if err != nil {
