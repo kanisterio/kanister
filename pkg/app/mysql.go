@@ -29,6 +29,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+const (
+	helmVersion = "helmv3"
+)
+
 type MysqlDB struct {
 	cli       kubernetes.Interface
 	namespace string
@@ -73,7 +77,7 @@ func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
 
 	mdb.namespace = namespace
 
-	cli := helm.NewCliClient("helmv3")
+	cli := helm.NewCliClient(helmVersion)
 	log.Print("Adding repo.", field.M{"app": mdb.name})
 	err := cli.AddRepo(ctx, mdb.chart.RepoName, mdb.chart.RepoURL)
 	if err != nil {
@@ -90,7 +94,7 @@ func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
 }
 
 func (mdb *MysqlDB) IsReady(ctx context.Context) (bool, error) {
-	log.Print("Waiting for the mysql instance to be ready.", field.M{"app": "mysql"})
+	log.Print("Waiting for the mysql instance to be ready.", field.M{"app": mdb.name})
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()
 	err := kube.WaitOnDeploymentReady(ctx, mdb.cli, mdb.namespace, mdb.name)
@@ -113,7 +117,7 @@ func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (mdb *MysqlDB) Uninstall(ctx context.Context) error {
-	cli := helm.NewCliClient("helmv3")
+	cli := helm.NewCliClient(helmVersion)
 
 	err := cli.Uninstall(ctx, mdb.name, mdb.namespace)
 	if err != nil {

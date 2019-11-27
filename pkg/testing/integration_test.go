@@ -67,6 +67,15 @@ var _ = Suite(&IntegrationSuite{
 	profile:   newSecretProfile("", "", ""),
 })
 
+// mysql app
+var _ = Suite(&IntegrationSuite{
+	name:      "mysql",
+	namespace: "mysql-test",
+	app:       app.NewMysqlDB("mysql"),
+	bp:        app.NewBlueprint("mysql"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
+
 func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
 	_, location := testutil.GetObjectstoreLocation()
 	location.Bucket = bucket
@@ -157,7 +166,18 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	testEntries := 3
 	// Add test entries to DB
 	if a, ok := s.app.(app.DatabaseApp); ok {
-		err = a.Ping(ctx)
+		// wait for application to be actually ready
+		timeoutCtx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
+		err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+			err := a.Ping(ctx)
+			if err != nil {
+				return false, nil
+			} else {
+				return true, nil
+			}
+		})
+
 		c.Assert(err, IsNil)
 
 		err = a.Reset(ctx)
@@ -225,7 +245,18 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	// Verify data
 	if a, ok := s.app.(app.DatabaseApp); ok {
-		err = a.Ping(ctx)
+		// wait for application to be actually ready
+		timeoutCtx, cancel := context.WithTimeout(ctx, 1*time.Minute)
+		defer cancel()
+		err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+			err := a.Ping(ctx)
+			if err != nil {
+				return false, nil
+			} else {
+				return true, nil
+			}
+		})
+
 		c.Assert(err, IsNil)
 
 		count, err := a.Count(ctx)
