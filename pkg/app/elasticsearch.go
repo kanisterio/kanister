@@ -198,8 +198,7 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 	deleteIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X DELETE %s/%s?pretty", esi.elasticsearchURL, esi.indexname)}
 	_, stderr, err := esi.execCommand(ctx, deleteIndexCMD)
 	if err != nil {
-		errors.Wrapf(err, "Error %s while deleting the index %s to reset the application.", stderr, esi.indexname)
-		return err
+		return errors.Wrapf(err, "Error %s while deleting the index %s to reset the application.", stderr, esi.indexname)
 	}
 
 	// create the index
@@ -215,8 +214,7 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 func (esi *ElasticsearchInstance) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podname, containername, err := getPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
 	if err != nil || podname == "" {
-		errors.Wrapf(err, "Error getting the pod and container name %s.", esi.name)
-		return "", "", err
+		return "", "", errors.Wrapf(err, "Error getting the pod and container name %s.", esi.name)
 	}
 	return kube.Exec(esi.cli, esi.namespace, podname, containername, command, nil)
 }
