@@ -99,6 +99,15 @@ var _ = Suite(&IntegrationSuite{
 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
+// Elasticsearch app
+var _ = Suite(&IntegrationSuite{
+	name:      "elasticsearch",
+	namespace: "es-test",
+	app:       app.NewElasticsearchInstance("elasticsearch"),
+	bp:        app.NewBlueprint("elasticsearch"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
+
 func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
 	_, location := testutil.GetObjectstoreLocation()
 	location.Bucket = bucket
