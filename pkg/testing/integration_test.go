@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -82,29 +82,38 @@ var _ = Suite(&IntegrationSuite{
 })
 
 // postgres app
-var _ = Suite(&IntegrationSuite{
-	name:      "postgres",
-	namespace: "postgres-test",
-	app:       app.NewPostgresDB("postgres"),
-	bp:        app.NewBlueprint("postgres"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
-})
+// var _ = Suite(&IntegrationSuite{
+// 	name:      "postgres",
+// 	namespace: "postgres-test",
+// 	app:       app.NewPostgresDB("postgres"),
+// 	bp:        app.NewBlueprint("postgres"),
+// 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+// })
 
 // mysql app
-var _ = Suite(&IntegrationSuite{
-	name:      "mysql",
-	namespace: "mysql-test",
-	app:       app.NewMysqlDB("mysql"),
-	bp:        app.NewBlueprint("mysql"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
-})
+// var _ = Suite(&IntegrationSuite{
+// 	name:      "mysql",
+// 	namespace: "mysql-test",
+// 	app:       app.NewMysqlDB("mysql"),
+// 	bp:        app.NewBlueprint("mysql"),
+// 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+// })
 
 // Elasticsearch app
+// var _ = Suite(&IntegrationSuite{
+// 	name:      "elasticsearch",
+// 	namespace: "es-test",
+// 	app:       app.NewElasticsearchInstance("elasticsearch"),
+// 	bp:        app.NewBlueprint("elasticsearch"),
+// 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+// })
+
+// Mongodb app
 var _ = Suite(&IntegrationSuite{
-	name:      "elasticsearch",
-	namespace: "es-test",
-	app:       app.NewElasticsearchInstance("elasticsearch"),
-	bp:        app.NewBlueprint("elasticsearch"),
+	name:      "mongo",
+	namespace: "mongo-test",
+	app:       app.NewMongoDB("mongo"),
+	bp:        app.NewBlueprint("mongo"),
 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
