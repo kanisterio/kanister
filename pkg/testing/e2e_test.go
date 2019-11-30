@@ -83,7 +83,7 @@ func (s *E2ESuite) TearDownSuite(c *C) {
 }
 
 func (s *E2ESuite) TestKubeExec(c *C) {
-	ctx, can := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, can := context.WithTimeout(context.Background(), 60*time.Second)
 	defer can()
 
 	// Create a test Deployment
