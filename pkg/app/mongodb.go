@@ -34,7 +34,6 @@ import (
 type MongoDB struct {
 	cli       kubernetes.Interface
 	namespace string
-	dbname    string
 	username  string
 	password  string
 	name      string
@@ -43,7 +42,6 @@ type MongoDB struct {
 
 func NewMongoDB(name string) App {
 	return &MongoDB{
-		dbname:   "admin",
 		username: "root",
 		name:     name,
 		chart: helm.ChartInfo{
@@ -77,7 +75,7 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
 
 	cli := helm.NewCliClient(helm.V3)
-	log.Print("Appdig repo for the application.", field.M{"app": mongo.name})
+	log.Print("Adding repo for the application.", field.M{"app": mongo.name})
 
 	err := cli.AddRepo(ctx, mongo.chart.RepoName, mongo.chart.RepoURL)
 	if err != nil {
@@ -130,11 +128,8 @@ func (mongo *MongoDB) Uninstall(ctx context.Context) error {
 
 	log.Print("Uninstalling application.", field.M{"app": mongo.name})
 	err := cli.Uninstall(ctx, mongo.name, mongo.namespace)
-	if err != nil {
-		return errors.Wrapf(err, "Error while uninstalling the application.")
-	}
 
-	return nil
+	return errors.Wrapf(err, "Error while uninstalling the application.")
 }
 
 func (mongo *MongoDB) Ping(ctx context.Context) error {
@@ -157,6 +152,10 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 	// this ismaster field is true
 	re := regexp.MustCompile("\"ismaster\" : ([a-z]*),")
 	match := re.FindStringSubmatch(isMasterStdout)
+
+	if len(match) < 2 {
+		return errors.Wrap(errors.New("ismaster not in the output while checking if the monogdb is node."), "Error while checking if the mongodb node is master:")
+	}
 
 	isMaster, err := strconv.ParseBool(match[1])
 	if err != nil {
@@ -204,11 +203,8 @@ func (mongo *MongoDB) Reset(ctx context.Context) error {
 	// and deletion admin database is prohibited
 	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.drop()\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
-	if err != nil {
-		return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
-	}
 
-	return nil
+	return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
 }
 
 func (mongo *MongoDB) execCommand(ctx context.Context, command []string) (string, string, error) {

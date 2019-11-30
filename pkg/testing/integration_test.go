@@ -432,11 +432,7 @@ func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {
 	defer waitCancel()
 	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		err := a.Ping(ctx)
-		if err != nil {
-			return false, nil
-		} else {
-			return true, nil
-		}
+		return err == nil, nil
 	})
 	return err
 }
