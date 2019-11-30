@@ -41,7 +41,7 @@ import (
 
 const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
-	appWaitTimeout = 1 * time.Minute
+	appWaitTimeout = 2 * time.Minute
 )
 
 type secretProfile struct {
@@ -82,31 +82,31 @@ var _ = Suite(&IntegrationSuite{
 })
 
 // postgres app
-// var _ = Suite(&IntegrationSuite{
-// 	name:      "postgres",
-// 	namespace: "postgres-test",
-// 	app:       app.NewPostgresDB("postgres"),
-// 	bp:        app.NewBlueprint("postgres"),
-// 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
-// })
+var _ = Suite(&IntegrationSuite{
+	name:      "postgres",
+	namespace: "postgres-test",
+	app:       app.NewPostgresDB("postgres"),
+	bp:        app.NewBlueprint("postgres"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
 
 // mysql app
-// var _ = Suite(&IntegrationSuite{
-// 	name:      "mysql",
-// 	namespace: "mysql-test",
-// 	app:       app.NewMysqlDB("mysql"),
-// 	bp:        app.NewBlueprint("mysql"),
-// 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
-// })
+var _ = Suite(&IntegrationSuite{
+	name:      "mysql",
+	namespace: "mysql-test",
+	app:       app.NewMysqlDB("mysql"),
+	bp:        app.NewBlueprint("mysql"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
 
 // Elasticsearch app
-// var _ = Suite(&IntegrationSuite{
-// 	name:      "elasticsearch",
-// 	namespace: "es-test",
-// 	app:       app.NewElasticsearchInstance("elasticsearch"),
-// 	bp:        app.NewBlueprint("elasticsearch"),
-// 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
-// })
+var _ = Suite(&IntegrationSuite{
+	name:      "elasticsearch",
+	namespace: "es-test",
+	app:       app.NewElasticsearchInstance("elasticsearch"),
+	bp:        app.NewBlueprint("elasticsearch"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
 
 // Mongodb app
 var _ = Suite(&IntegrationSuite{

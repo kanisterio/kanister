@@ -17,6 +17,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -46,9 +47,10 @@ func NewMongoDB(name string) App {
 		name:     name,
 		chart: helm.ChartInfo{
 			Release:  name,
-			RepoUrl:  helm.StableRepoURL,
+			RepoURL:  helm.StableRepoURL,
 			Chart:    "mongodb",
 			RepoName: helm.StableRepoName,
+			Version:  "7.4.6",
 			Values: map[string]string{
 				"replicaSet.enabled":  "true",
 				"image.repository":    "kanisterio/mongodb",
@@ -66,26 +68,23 @@ func (mongo *MongoDB) Init(ctx context.Context) error {
 		return err
 	}
 	mongo.cli, err = kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
 
-	cli := helm.NewCliClient()
+	cli := helm.NewCliClient(helm.V3)
 	log.Print("Appdig repo for the application.", field.M{"app": mongo.name})
 
-	err := cli.AddRepo(ctx, mongo.chart.RepoName, mongo.chart.RepoUrl)
+	err := cli.AddRepo(ctx, mongo.chart.RepoName, mongo.chart.RepoURL)
 	if err != nil {
 		return err
 	}
 
 	log.Print("Installing application using helm.", field.M{"app": mongo.name})
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.name, mongo.namespace, mongo.chart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.name, mongo.namespace, mongo.chart.Values)
 
 	if err != nil {
 		return err
@@ -126,7 +125,7 @@ func (mongo *MongoDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (mongo *MongoDB) Uninstall(ctx context.Context) error {
-	cli := helm.NewCliClient()
+	cli := helm.NewCliClient(helm.V3)
 
 	log.Print("Uninstalling application.", field.M{"app": mongo.name})
 	err := cli.Uninstall(ctx, mongo.name, mongo.namespace)
@@ -137,16 +136,37 @@ func (mongo *MongoDB) Uninstall(ctx context.Context) error {
 	return nil
 }
 
-func (mongo *MongoDB) Ping(ctx context.Context) (bool, error) {
+func (mongo *MongoDB) Ping(ctx context.Context) error {
 	log.Print("Pinging the application.", field.M{"app": mongo.name})
 	pingCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.slaveOk(); db\"", mongo.username)}
 	_, stderr, err := mongo.execCommand(ctx, pingCMD)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while pinging the mongodb application %s", stderr)
+		return errors.Wrapf(err, "Error while pinging the mongodb application %s", stderr)
+	}
+
+	// even after ping is successful, it takes some time for primary pod to becomd the master
+	// we will have to wait for that so that the write subsequent write requests wont fail.
+	isMasterCMD := []string{"sh", "-c", fmt.Sprintf(" mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.isMaster()\"", mongo.username)}
+	isMasterStdout, stderr, err := mongo.execCommand(ctx, isMasterCMD)
+	if err != nil {
+		return errors.Wrapf(err, "Error %s checking if the pod is master.", stderr)
+	}
+
+	// extract the ismaster field from the output and make sure
+	// this ismaster field is true
+	re := regexp.MustCompile("\"ismaster\" : ([a-z]*),")
+	match := re.FindStringSubmatch(isMasterStdout)
+
+	isMaster, err := strconv.ParseBool(match[1])
+	if err != nil {
+		return errors.Wrapf(err, "Error converting ismaster value.")
+	}
+	if !isMaster {
+		return errors.New("Error while getting ismaster value from output.")
 	}
 
 	log.Print("Ping was successful to application.", field.M{"app": mongo.name})
-	return true, nil
+	return nil
 }
 
 func (mongo *MongoDB) Insert(ctx context.Context) error {
@@ -173,18 +193,18 @@ func (mongo *MongoDB) Count(ctx context.Context) (int, error) {
 		return 0, err
 	}
 
-	log.Print("Count that we are returning from count is.", field.M{"app": "mongodb", "count": noOfRecords})
+	log.Print("Count that we are returning from count method is.", field.M{"app": "mongodb", "count": noOfRecords})
 	return noOfRecords, nil
 }
 func (mongo *MongoDB) Reset(ctx context.Context) error {
 	log.Print("Resetting the application.", field.M{"app": mongo.name})
-	// delete all the entries from the restaurants/dummy colleciton
-	// we are not deleting the database becasue we are dealing with admin
-	// database here and deletion admin database is prohibited
-	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.drop()\"", mongo.username)}
-	_, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
+	// delete all the entries from the restaurants dummy colleciton
+	// we are not deleting the database becasue we are dealing with admin database here
+	// and deletion admin database is prohibited
+	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.drop()\"", mongo.username)}
+	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s, resetting the mongodb application.", stderr)
+		return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
 	}
 
 	return nil
