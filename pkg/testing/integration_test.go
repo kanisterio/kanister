@@ -39,6 +39,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
+const (
+	// appWaitTimeout decides the time we are going to wait for app to be ready
+	appWaitTimeout = 2 * time.Minute
+)
+
 type secretProfile struct {
 	secret  *v1.Secret
 	profile *crv1alpha1.Profile
@@ -65,6 +70,51 @@ var _ = Suite(&IntegrationSuite{
 	app:       app.NewRDSPostgresDB("rds-postgres"),
 	bp:        app.NewBlueprint("rds-postgres"),
 	profile:   newSecretProfile("", "", ""),
+})
+
+// pitr-postgresql app
+var _ = Suite(&IntegrationSuite{
+	name:      "pitr-postgres",
+	namespace: "pitr-postgres-test",
+	app:       app.NewPostgresDB("pitr-postgres"),
+	bp:        app.NewPITRBlueprint("pitr-postgres"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
+
+// postgres app
+var _ = Suite(&IntegrationSuite{
+	name:      "postgres",
+	namespace: "postgres-test",
+	app:       app.NewPostgresDB("postgres"),
+	bp:        app.NewBlueprint("postgres"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
+
+// mysql app
+var _ = Suite(&IntegrationSuite{
+	name:      "mysql",
+	namespace: "mysql-test",
+	app:       app.NewMysqlDB("mysql"),
+	bp:        app.NewBlueprint("mysql"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
+
+// Elasticsearch app
+var _ = Suite(&IntegrationSuite{
+	name:      "elasticsearch",
+	namespace: "es-test",
+	app:       app.NewElasticsearchInstance("elasticsearch"),
+	bp:        app.NewBlueprint("elasticsearch"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
+
+// Mongodb app
+var _ = Suite(&IntegrationSuite{
+	name:      "mongo",
+	namespace: "mongo-test",
+	app:       app.NewMongoDB("mongo"),
+	bp:        app.NewBlueprint("mongo"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
 func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
@@ -157,7 +207,8 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	testEntries := 3
 	// Add test entries to DB
 	if a, ok := s.app.(app.DatabaseApp); ok {
-		err = a.Ping(ctx)
+		// wait for application to be actually ready
+		err = pingAppAndWait(ctx, a)
 		c.Assert(err, IsNil)
 
 		err = a.Reset(ctx)
@@ -225,7 +276,8 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	// Verify data
 	if a, ok := s.app.(app.DatabaseApp); ok {
-		err = a.Ping(ctx)
+		// wait for application to be actually ready
+		err = pingAppAndWait(ctx, a)
 		c.Assert(err, IsNil)
 
 		count, err := a.Count(ctx)
@@ -373,4 +425,14 @@ func (s *IntegrationSuite) TearDownSuite(c *C) {
 	if s.cancel != nil {
 		s.cancel()
 	}
+}
+
+func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, appWaitTimeout)
+	defer waitCancel()
+	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		err := a.Ping(ctx)
+		return err == nil, nil
+	})
+	return err
 }

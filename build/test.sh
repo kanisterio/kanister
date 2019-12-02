@@ -28,7 +28,7 @@ TARGETS=$(for d in "$@"; do echo ./$d/...; done)
 TAGS=""
 
 if [[ -n "${TEST_INTEGRATION+x}" ]]; then
-    TAGS="-tags=integration -timeout 30m"
+    TAGS="-tags=integration -timeout 50m"
 fi
 
 echo "Running tests:"
