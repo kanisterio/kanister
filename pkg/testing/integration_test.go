@@ -17,6 +17,7 @@ package testing
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -78,7 +79,7 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "pitr-postgres-test",
 	app:       app.NewPostgresDB("pitr-postgres"),
 	bp:        app.NewPITRBlueprint("pitr-postgres"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+	profile:   newSecretProfile("test.kanister.io", "", ""),
 })
 
 // postgres app
@@ -87,7 +88,7 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "postgres-test",
 	app:       app.NewPostgresDB("postgres"),
 	bp:        app.NewBlueprint("postgres"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+	profile:   newSecretProfile("test.kanister.io", "", ""),
 })
 
 // mysql app
@@ -96,7 +97,7 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "mysql-test",
 	app:       app.NewMysqlDB("mysql"),
 	bp:        app.NewBlueprint("mysql"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+	profile:   newSecretProfile("test.kanister.io", "", ""),
 })
 
 // Elasticsearch app
@@ -105,7 +106,7 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "es-test",
 	app:       app.NewElasticsearchInstance("elasticsearch"),
 	bp:        app.NewBlueprint("elasticsearch"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+	profile:   newSecretProfile("test.kanister.io", "", ""),
 })
 
 // Mongodb app
@@ -114,7 +115,7 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "mongo-test",
 	app:       app.NewMongoDB("mongo"),
 	bp:        app.NewBlueprint("mongo"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+	profile:   newSecretProfile("test.kanister.io", "", ""),
 })
 
 func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
@@ -122,6 +123,20 @@ func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
 	location.Bucket = bucket
 	location.Endpoint = endpoint
 	location.Prefix = prefix
+
+	// Override values if env vars are set
+	buck, ok := os.LookupEnv("LOCATION_BUCKET")
+	if ok {
+		location.Bucket = buck
+	}
+	ep, ok := os.LookupEnv("LOCATION_ENDPOINT")
+	if ok {
+		location.Endpoint = ep
+	}
+	pre, ok := os.LookupEnv("LOCATION_PREFIX")
+	if ok {
+		location.Prefix = pre
+	}
 
 	secret, profile, err := testutil.NewSecretProfileFromLocation(location)
 	if err != nil {

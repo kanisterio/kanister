@@ -29,7 +29,8 @@ TAGS=""
 INTEGRATION_TEST_DIR=pkg/testing
 # Degree of parallelism for integration tests
 DOP="4"
-
+# Use minio as s3 storage
+ENABLE_MINIO=true
 
 echo -n "Checking gofmt: "
 ERRS=$(find "$@" -type f -name \*.go | xargs gofmt -l 2>&1 || true)
@@ -58,11 +59,19 @@ echo
 
 echo "Running tests:"
 if [[ -n "${TEST_INTEGRATION+x}" ]]; then
+    if [[ -n "${ENABLE_MINIO+x}" ]]; then
+        source build/minio.sh
+        installminio
+    fi
     pushd ${INTEGRATION_TEST_DIR}
     TAGS="-tags=integration -timeout 50m -check.suitep ${DOP}"
     TARGETS="."
     go test -v ${TAGS} -installsuffix "static" ${TARGETS} -check.v
     popd
+    if [[ -n "${ENABLE_MINIO+x}" ]]; then
+        source build/minio.sh
+        uninstallminio
+    fi
 else
    go test -v ${TAGS} -installsuffix "static" -i ${TARGETS}
    go test -v ${TAGS} ${TARGETS} -list .

@@ -67,13 +67,16 @@ func NewRDSPostgresDB(name string) App {
 }
 
 func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
+	val, ok := os.LookupEnv("SKIP_RDS_POSTGRES")
+	if ok && val == "true" {
+		return errors.New("SKIP_RDS_POSTGRES is set true")
+	}
 	// Instantiate Client SDKs
 	cfg, err := kube.LoadConfig()
 	if err != nil {
 		return err
 	}
 
-	var ok bool
 	pdb.cli, err = kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return err

@@ -29,6 +29,7 @@ jobs:
       script:
       - make build
       - make test
+      - make integration-test
       before_cache:
       - sudo chown -R travis:travis ./.go
       after_script:
