@@ -41,7 +41,7 @@ import (
 
 const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
-	appWaitTimeout = 1 * time.Minute
+	appWaitTimeout = 2 * time.Minute
 )
 
 type secretProfile struct {
@@ -105,6 +105,15 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "es-test",
 	app:       app.NewElasticsearchInstance("elasticsearch"),
 	bp:        app.NewBlueprint("elasticsearch"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+})
+
+// Mongodb app
+var _ = Suite(&IntegrationSuite{
+	name:      "mongo",
+	namespace: "mongo-test",
+	app:       app.NewMongoDB("mongo"),
+	bp:        app.NewBlueprint("mongo"),
 	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
@@ -423,11 +432,7 @@ func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {
 	defer waitCancel()
 	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		err := a.Ping(ctx)
-		if err != nil {
-			return false, nil
-		} else {
-			return true, nil
-		}
+		return err == nil, nil
 	})
 	return err
 }

@@ -1,0 +1,102 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: mongodb-blueprint
+actions:
+  backup:
+    type: StatefulSet
+    outputArtifacts:
+      backupInfo:
+        keyValue:
+          backupIdentifier: "{{ .Phases.backupSnapshots.Output.BackupAllInfo }}"
+    phases:
+    - func: BackupDataAll
+      name: backupSnapshots
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        container: "mongodb-primary"
+        includePath: /bitnami/mongodb
+        backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-backups/{{ .StatefulSet.Name }}/rs_backup"
+  restore:
+    type: StatefulSet
+    phases:
+    # Scale down mongodb replicas
+    - func: ScaleWorkload
+      name: shutdownSecondary
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        name: "{{ .Object.metadata.labels.release }}-mongodb-secondary"
+        kind: StatefulSet
+        replicas: 0
+    - func: ScaleWorkload
+      name: shutdownPrimary
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        name: "{{ .Object.metadata.labels.release }}-mongodb-primary"
+        kind: StatefulSet
+        replicas: 0
+    - func: ScaleWorkload
+      name: shutdownArbiter
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        name: "{{ .Object.metadata.labels.release }}-mongodb-arbiter"
+        kind: StatefulSet
+        replicas: 0
+
+    # Restore data to primary db
+    - func: RestoreDataAll
+      name: restorePrimary
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: kanisterio/kanister-tools:0.22.0
+        backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-backups/{{ .StatefulSet.Name }}/rs_backup"
+        backupInfo: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
+
+    # Delete data from secondary replicas to perform initial sync
+    # https://docs.mongodb.com/manual/tutorial/restore-replica-set-from-backup/#update-secondaries-using-initial-sync
+    - func: PrepareData
+      name: syncSecondary
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: busybox
+        volumes:
+          datadir-{{ .Object.metadata.labels.release }}-mongodb-secondary-0: "/mongo/secondary"
+        command:
+          - sh
+          - -c
+          - |
+            rm -rf /mongo/secondary/data/db/*
+
+    # Restart mongo replicas
+    - func: ScaleWorkload
+      name: startPrimary
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        name: "{{ .StatefulSet.Name }}"
+        kind: StatefulSet
+        replicas: 1
+    - func: ScaleWorkload
+      name: startSecondary
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        name: "{{ .Object.metadata.labels.release }}-mongodb-secondary"
+        kind: StatefulSet
+        replicas: 1
+    - func: ScaleWorkload
+      name: startArbiter
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        name: "{{ .Object.metadata.labels.release }}-mongodb-arbiter"
+        kind: StatefulSet
+        replicas: 1
+
+  delete:
+    type: StatefulSet
+    phases:
+    - func: DeleteDataAll
+      name: deleteSnapshots
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-backups/{{ .StatefulSet.Name }}/rs_backup"
+        backupInfo: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
+        reclaimSpace: true
