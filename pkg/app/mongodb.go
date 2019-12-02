@@ -31,11 +31,14 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
+const (
+	mongoWaitTimeout = 5 * time.Minute
+)
+
 type MongoDB struct {
 	cli       kubernetes.Interface
 	namespace string
 	username  string
-	password  string
 	name      string
 	chart     helm.ChartInfo
 }
@@ -67,13 +70,11 @@ func (mongo *MongoDB) Init(ctx context.Context) error {
 		return err
 	}
 	mongo.cli, err = kubernetes.NewForConfig(cfg)
-
 	return err
 }
 
 func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
-
 	cli := helm.NewCliClient(helm.V3)
 	log.Print("Adding repo for the application.", field.M{"app": mongo.name})
 
@@ -84,7 +85,6 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 
 	log.Print("Installing application using helm.", field.M{"app": mongo.name})
 	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.name, mongo.namespace, mongo.chart.Values)
-
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 }
 
 func (mongo *MongoDB) IsReady(ctx context.Context) (bool, error) {
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
+	ctx, cancel := context.WithTimeout(ctx, mongoWaitTimeout)
 	defer cancel()
 
 	err := kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-primary", mongo.name))
@@ -125,10 +125,8 @@ func (mongo *MongoDB) Object() crv1alpha1.ObjectReference {
 
 func (mongo *MongoDB) Uninstall(ctx context.Context) error {
 	cli := helm.NewCliClient(helm.V3)
-
 	log.Print("Uninstalling application.", field.M{"app": mongo.name})
 	err := cli.Uninstall(ctx, mongo.name, mongo.namespace)
-
 	return errors.Wrapf(err, "Error while uninstalling the application.")
 }
 
@@ -152,7 +150,6 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 	// this ismaster field is true
 	re := regexp.MustCompile("\"ismaster\" : ([a-z]*),")
 	match := re.FindStringSubmatch(isMasterStdout)
-
 	if len(match) < 2 {
 		return errors.Wrap(errors.New("ismaster not in the output while checking if the monogdb is node."), "Error while checking if the mongodb node is master:")
 	}
@@ -203,7 +200,6 @@ func (mongo *MongoDB) Reset(ctx context.Context) error {
 	// and deletion admin database is prohibited
 	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.drop()\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
-
 	return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
 }
 
