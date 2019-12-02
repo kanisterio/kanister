@@ -496,8 +496,10 @@ func (c *Controller) logAndErrorEvent(ctx context.Context, msg, reason string, e
 		c.recorder.Event(o, corev1.EventTypeWarning, reason, fmt.Sprintf("%s %s", msg, err))
 		switch v := o.(type) {
 		case *crv1alpha1.ActionSet:
-			errStr := fmt.Sprintf("Reason:%s, Msg:%s, Err:%s", reason, msg, err)
-			v.Status.ErrorLogs = append(v.Status.ErrorLogs, errStr)
+			v.Status.Error = crv1alpha1.Error{
+				Cause:   err.Error(),
+				Message: msg,
+			}
 		}
 	}
 
