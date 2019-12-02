@@ -42,14 +42,19 @@ Then install the sample Elasticsearch application with the release name `my-rele
 `es-test` using the command below. Make sure you have the kanister controller running in namespace `kasten-io` which is the default setting in Elasticsearch charts. Otherwise, you will also have to set the `kanister.controller_namespace` parameter value to the respective kanister controller namespace in the following command:
 
 ```bash
-$ helm install --namespace es-test --name elasticsearch elastic/elasticsearch --set antiAffinity=soft -f extraInitContainers.yaml
+$ helm install --namespace es-test --name elasticsearch elastic/elasticsearch --set antiAffinity=soft
+```
+If you are running helm version `v3.0.0`, please use the commands below:
+```bash
+$ kubectl create namespace es-test
+$ helm install --namespace es-test elasticsearch elastic/elasticsearch --set antiAffinity=soft
 ```
 
 The command deploys Elasticsearch on the Kubernetes cluster in the default
 configuration.
 
 ```bash
-kanctl --namespace kasten-io create profile --bucket infracloud.kanister.io --region ap-south-1 s3compliant --access-key "AKIAIOSFODNN7EXAMPLE" --secret-key "wJalrXUtnFEMI%K7MDENG%bPxRfiCYEXAMPLEKEY"
+kanctl --namespace es-test create profile --bucket <bucket-name> --region ap-south-1 s3compliant --access-key <aws-access-key> --secret-key <aws-secret-key>
 ```
 This command creates a profile which we will use later.
 
@@ -214,4 +219,3 @@ $ kubectl delete pvc -l release=my-release,component=data
 ## Configuration
 
 If you're on a single node cluster, you'd need to set the antiAffinity to soft while installing the helm chart by running `--set antiAffinity=soft` so that pods are not stuck in the pending state. For other configurations of elasticsearch helm chart, please refer https://github.com/elastic/helm-charts/blob/master/elasticsearch/README.md
-

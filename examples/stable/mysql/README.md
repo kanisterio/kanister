@@ -30,9 +30,9 @@ The command deploys an instance MySQL in `mysql-test` namespace on Kubernetes cl
 
 By default a random password will be generated for the root user. For setting your own password, use the `mysqlRootPassword` param as shown above.
 
-You can retrieve your root password by running the following command. Make sure to replace [YOUR_RELEASE_NAME]:
+You can retrieve your root password by running the following command. Make sure to replace [YOUR_RELEASE_NAME] and [YOUR_NAMESPACE]:
 
-    `kubectl get secret my-release-mysql -o jsonpath="{.data.mysql-root-password[*]}" | base64 --decode`
+    `kubectl get secret [YOUR_RELEASE_NAME] -n [YOUR_NAMESPACE] -o jsonpath="{.data.mysql-root-password}" | base64 --decode`
 
 > **Tip**: List all releases using `helm list`
 

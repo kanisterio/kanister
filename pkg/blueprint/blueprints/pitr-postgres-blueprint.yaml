@@ -1,18 +1,24 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: postgresql-blueprint
 actions:
   backup:
-    type: Deployment
+    type: StatefulSet
     outputArtifacts:
       manifest:
         keyValue:
-          prefix: 'postgres-backups/{{ .Deployment.Name }}'
-          path: 'postgres-backups/{{ .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt'
+          prefix: 'postgres-backups/{{ .StatefulSet.Name }}'
+          path: 'postgres-backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt'
+    secretNames:
+    - postgresql
     phases:
     - func: KubeExec
       name: baseBackup
       args:
-        namespace: "{{ .Deployment.Namespace }}"
-        pod: "{{ index .Deployment.Pods 0 }}"
-        container: postgresql
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        container: "{{ .StatefulSet.Name }}"
         command:
           - bash
           - -o
@@ -34,7 +40,7 @@ actions:
             then
               # Setup wal-e s3 connection parameters.
               timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
-              wale_s3_prefix="s3://{{ .Profile.Location.Bucket }}/postgres-backups/{{ .Deployment.Name }}/${timeline}"
+              wale_s3_prefix="s3://{{ .Profile.Location.Bucket }}/postgres-backups/{{ .StatefulSet.Name }}/${timeline}"
               echo "${wale_s3_prefix}" > "${env_wal_prefix}"
             fi
 
@@ -80,7 +86,7 @@ actions:
             set -o xtrace
 
             # Create and push a base-backup to the object store.
-            envdir "${env_dir}" wal-e backup-push "${PGDATA}"
+            PGPASSWORD="{{ index .Secrets.postgresql.Data "postgresql-password" | toString }}" envdir "${env_dir}" wal-e backup-push "${PGDATA}"
             backup_name=$(envdir "${env_dir}" wal-e backup-list | tail -n +2 | sort -k2 | tail -n 1 | awk '{print $1}')
 
             # Create a manifest that references the backup we created and the current timeline.
@@ -94,7 +100,7 @@ actions:
             {{- if .Profile.Location.Region }}
               s3_cmd+=(--region "{{ .Profile.Location.Region | quote}}")
             {{- end }}
-            s3_path="s3://{{ .Profile.Location.Bucket }}/postgres-backups/{{ .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt"
+            s3_path="s3://{{ .Profile.Location.Bucket }}/postgres-backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt"
             s3_cmd+=(s3 cp - "${s3_path}")
 
             set +o xtrace
@@ -112,25 +118,24 @@ actions:
             wale_s3_prefix=$(cat "${env_wal_prefix}")
             EOF
   restore:
-    type: Deployment
+    type: StatefulSet
     inputArtifactNames:
       - manifest
-      - pitr
     phases:
     - func: ScaleWorkload
       name: shutdownPod
       args:
-        namespace: "{{ .Deployment.Namespace }}"
-        name: "{{ .Deployment.Name }}"
-        kind: deployment
+        namespace: "{{ .StatefulSet.Namespace }}"
+        name: "{{ .StatefulSet.Name }}"
+        kind: statefulset
         replicas: 0
     - func: PrepareData
       name: performRestore
       args:
-        image: kanisterio/postgres:v0.3.0
-        namespace: "{{ .Deployment.Namespace }}"
+        image: "kanisterio/postgresql:0.22.0"
+        namespace: "{{ .StatefulSet.Namespace }}"
         volumes:
-          "{{ .Deployment.Name }}": "/pg"
+          "data-{{ .StatefulSet.Name }}-0": "/bitnami/postgresql"
         command:
           - bash
           - -o
@@ -144,11 +149,11 @@ actions:
           - -c
           - |
             # The PG PVC maybe mounted under a subpath
-            pgdata="/pg/postgresql-db"
+            PGDATA="/bitnami/postgresql/data"
 
             # Prepare the environment variable directory.
             # Bring the backup to a separate folder first
-            recover_dir="${pgdata}/kanister-restore"
+            recover_dir="${PGDATA}/kanister-restore"
             env_dir="${recover_dir}/env"
             mkdir -p  "${env_dir}"
 
@@ -212,54 +217,70 @@ actions:
             # Move the files to the data directory
 
             # TODO: Currently .conf files unchanged. Include in backup in future
-            ls -d ${pgdata}/kanister-restore/* | sed 's/kanister-restore\///' | xargs -t rm -fr
-            mv ${pgdata}/kanister-restore/* ${pgdata}/
-            rm -fr ${pgdata}/kanister-restore
-            chown postgres:postgres -R ${pgdata}/*
+            ls -d ${PGDATA}/kanister-restore/* | sed 's/kanister-restore\///' | xargs -t rm -fr
+            mv ${PGDATA}/kanister-restore/* ${PGDATA}/
+            rm -fr ${PGDATA}/kanister-restore
 
             # Create the recovery file that will apply the WAL files.
-            cat << EOF > "${pgdata}"/recovery.conf
-            restore_command = 'wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
-            {{- if and (and .ArtifactsIn.pitr .ArtifactsIn.pitr.KeyValue) .ArtifactsIn.pitr.KeyValue.time }}
-            recovery_target_time = '{{ toDate "2006-01-02T15:04:05.000Z07:00" .ArtifactsIn.pitr.KeyValue.time | date "2006-01-02 15:04:05 MST" }}'
+            cat << EOF > "${PGDATA}"/recovery.conf
+            restore_command = 'envdir "${PGDATA}/env" wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
+            {{- if .Options }}
+            {{- if .Options.pitr }}
+            recovery_target_time = '{{ toDate "2006-01-02T15:04:05Z" .Options.pitr | date "2006-01-02 15:04:05 GMT" }}'
+            {{- end }}
             {{- end }}
             EOF
             sync
+
+            # Create required configuration dir/config files
+            # Create empty conf.d directory
+            if [ ! -d $PGDATA/conf.d ]; then
+                mkdir $PGDATA/conf.d
+            fi
+
+            # Create default postgresql.conf
+            cp /opt/bitnami/postgresql/share/postgresql.conf.sample $PGDATA/postgresql.conf
+
+            # Create default pg_hba.conf
+            cat << EOF > $PGDATA/pg_hba.conf
+            host     all             all             0.0.0.0/0               trust
+            host     all             all             ::1/128                 trust
+            EOF
 
             # Complete the recovery based on recovery.conf.
             # The timeout for applying the WALs is currently 10 hours.
             # Starting this instance with WAL archival off so that we don't pollute the current timeline
             # Once the WALs have been applied, we shutdown the database.
-            cat ${pgdata}/recovery.conf
+
             PG_CTL="$(which pg_ctl)"
-            su - postgres --preserve-environment -c "${PG_CTL} -D ${pgdata} -w start -t 36000 -o '-c archive_mode=off'"
+            ${PG_CTL} -D ${PGDATA} -w start -t 36000 -o '-c archive_mode=off --config-file=$PGDATA/postgresql.conf --hba_file=$PGDATA/pg_hba.conf'
 
             echo "Recovery succeeded!"
             # Gracefully shutdown to complete
-            su - postgres --preserve-environment -c "${PG_CTL} -D ${pgdata} -w stop -t 300 --mode fast"
+            ${PG_CTL} -D ${PGDATA} -w stop -t 300 --mode fast
 
             # Recovery is now complete and can switch to new WAL timeline
-            env_wal_prefix="${pgdata}/env/WALE_S3_PREFIX"
+            env_wal_prefix="${PGDATA}/env/WALE_S3_PREFIX"
             timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
             wale_s3_prefix="s3://{{ .Profile.Location.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.prefix }}/${timeline}"
             echo "${wale_s3_prefix}" > "${env_wal_prefix}"
     - func: ScaleWorkload
       name: restartPod
       args:
-        namespace: "{{ .Deployment.Namespace }}"
-        name: "{{ .Deployment.Name }}"
-        kind: deployment
+        kind: statefulset
+        name: '{{ .StatefulSet.Name }}'
+        namespace: '{{ .StatefulSet.Namespace }}'
         replicas: 1
   delete:
-    type: Deployment
+    type: StatefulSet
     inputArtifactNames:
       - manifest
     phases:
     - func: KubeTask
       name: deleteArtifact
       args:
-        namespace: "{{ .Deployment.Namespace }}"
-        image: "kanisterio/postgres:v0.3.0"
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: "kanisterio/postgresql:0.22.0"
         command:
           - bash
           - -o

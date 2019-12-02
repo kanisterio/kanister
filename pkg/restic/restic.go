@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -342,26 +343,39 @@ func SnapshotIDFromBackupLog(output string) string {
 }
 
 // SnapshotStatsFromBackupLog gets the Snapshot file count and size from Backup Command log
-func SnapshotStatsFromBackupLog(output string) (fileCount string, backupSize string) {
+func SnapshotStatsFromBackupLog(output string) (fileCount string, backupSize string, phySize string) {
 	if output == "" {
-		return "", ""
+		return "", "", ""
 	}
 	logs := regexp.MustCompile("[\n]").Split(output, -1)
 	// Log should contain "processed %d files, %.3f [Xi]B in mm:ss"
-	pattern := regexp.MustCompile(`processed\s([\d]+)\sfiles,\s([\d]+(\.[\d]+)?\s([TGMK]i)?B)\sin\s`)
+	logicalPattern := regexp.MustCompile(`processed\s([\d]+)\sfiles,\s([\d]+(\.[\d]+)?\s([TGMK]i)?B)\sin\s`)
+	// Log should contain "Added to the repo: %.3f [Xi]B"
+	physicalPattern := regexp.MustCompile(`^Added to the repo: ([\d]+(\.[\d]+)?\s([TGMK]i)?B)$`)
+
 	for _, l := range logs {
-		match := pattern.FindAllStringSubmatch(l, 1)
-		if match != nil {
-			if len(match) >= 1 && len(match[0]) >= 3 {
+		logMatch := logicalPattern.FindAllStringSubmatch(l, 1)
+		phyMatch := physicalPattern.FindAllStringSubmatch(l, 1)
+		switch {
+		case logMatch != nil:
+			if len(logMatch) >= 1 && len(logMatch[0]) >= 3 {
 				// Expect in order:
 				// 0: entire match,
 				// 1: first submatch == file count,
 				// 2: second submatch == size string
-				return match[0][1], match[0][2]
+				fileCount = logMatch[0][1]
+				backupSize = logMatch[0][2]
+			}
+		case phyMatch != nil:
+			if len(phyMatch) >= 1 && len(phyMatch[0]) >= 2 {
+				// Expect in order:
+				// 0: entire match,
+				// 1: first submatch == size string,
+				phySize = phyMatch[0][1]
 			}
 		}
 	}
-	return "", ""
+	return fileCount, backupSize, phySize
 }
 
 // SnapshotStatsFromStatsLog gets the Snapshot Stats from Stats Command log
@@ -436,4 +450,63 @@ func SnapshotIDsFromSnapshotCommand(output string) ([]string, error) {
 		}
 	}
 	return snapIds, nil
+}
+
+// SpaceFreedFromPruneLog gets the space freed from the prune log output
+// For reference, here is the logging command from restic codebase:
+// Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
+//		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
+func SpaceFreedFromPruneLog(output string) string {
+	var spaceFreed string
+	logs := regexp.MustCompile("[\n]").Split(output, -1)
+	// Log should contain "will delete x packs and rewrite y packs, this frees zz.zzz [[TGMK]i]B"
+	pattern := regexp.MustCompile(`^will delete \d+ packs and rewrite \d+ packs, this frees ([\d]+(\.[\d]+)?\s([TGMK]i)?B)$`)
+	for _, l := range logs {
+		match := pattern.FindAllStringSubmatch(l, 1)
+		if len(match) > 0 && len(match[0]) > 1 {
+			spaceFreed = match[0][1]
+		}
+	}
+	return spaceFreed
+}
+
+// ParseResticSizeStringBytes parses size strings as formatted by restic to
+// a int64 number of bytes
+func ParseResticSizeStringBytes(sizeStr string) int64 {
+	components := regexp.MustCompile(`[\s]`).Split(sizeStr, -1)
+	if len(components) != 2 {
+		return 0
+	}
+	sizeNumStr := components[0]
+	sizeNum, err := strconv.ParseFloat(sizeNumStr, 64)
+	if err != nil {
+		return 0
+	}
+	if sizeNum < 0 {
+		return 0
+	}
+	magnitudeStr := components[1]
+	pattern := regexp.MustCompile(`^(([TGMK]i)?B)$`)
+	match := pattern.FindAllStringSubmatch(magnitudeStr, 1)
+	if match != nil {
+		if len(match) != 1 || len(match[0]) != 3 {
+			return 0
+		}
+		magnitude := match[0][1]
+		switch magnitude {
+		case "TiB":
+			return int64(sizeNum * (1 << 40))
+		case "GiB":
+			return int64(sizeNum * (1 << 30))
+		case "MiB":
+			return int64(sizeNum * (1 << 20))
+		case "KiB":
+			return int64(sizeNum * (1 << 10))
+		case "B":
+			return int64(sizeNum)
+		default:
+			return 0
+		}
+	}
+	return 0
 }
