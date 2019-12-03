@@ -45,8 +45,6 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 
 SRC_DIRS := cmd pkg # directories which hold app source (not vendored)
 
-INTEGRATION_TEST_DIR := pkg/testing # directory which hold workflow tests
-
 ALL_ARCH := amd64 arm arm64 ppc64le
 
 # Set default base image dynamically for each arch
@@ -169,7 +167,7 @@ test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
 
 integration-test: build-dirs
-	@$(MAKE) run CMD='-c "TEST_INTEGRATION=true ./build/test.sh $(INTEGRATION_TEST_DIR)"'
+	@$(MAKE) run CMD='-c "TEST_INTEGRATION=true ./build/test.sh $(SRC_DIRS)"'
 
 codegen:
 	@$(MAKE) run CMD='-c "./build/codegen.sh"'
@@ -214,7 +212,7 @@ ifeq ($(DOCKER_BUILD),"true")
 		-v /var/run/docker.sock:/var/run/docker.sock                \
 		-w /go/src/$(PKG)                                           \
 		$(BUILD_IMAGE)                                              \
-		/bin/sh $(CMD)
+		/bin/bash $(CMD)
 else
 	@/bin/bash $(CMD)
 endif
