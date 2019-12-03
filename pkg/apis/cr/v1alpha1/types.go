@@ -149,7 +149,7 @@ const (
 )
 
 type Error struct {
-	Message string
+	Message string `json:"message"`
 }
 
 // Phase is subcomponent of an action.
