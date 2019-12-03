@@ -149,7 +149,6 @@ const (
 )
 
 type Error struct {
-	Cause   string
 	Message string
 }
 
