@@ -194,13 +194,8 @@ func (pdb PostgresDB) Uninstall(ctx context.Context) error {
 	// Create helm client
 	cli := helm.NewCliClient(helm.V3)
 
-	// Install helm chart
-	if err := cli.Uninstall(ctx, pdb.chart.Release, pdb.namespace); err != nil {
-		return err
-	}
-
-	// Add helm repo and fetch charts
-	return cli.RemoveRepo(ctx, pdb.chart.RepoName)
+	// Uninstall helm chart
+	return errors.Wrapf(cli.Uninstall(ctx, pdb.chart.Release, pdb.namespace), "Failed to uninstall %s helm release", pdb.chart.Release)
 }
 
 func (pdb PostgresDB) execCommand(ctx context.Context, command []string) (string, string, error) {
