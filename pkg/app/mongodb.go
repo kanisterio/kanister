@@ -54,10 +54,9 @@ func NewMongoDB(name string) App {
 			RepoName: helm.StableRepoName,
 			Version:  "7.4.6",
 			Values: map[string]string{
-				"replicaSet.enabled":  "true",
-				"image.repository":    "kanisterio/mongodb",
-				"image.tag":           "0.22.0",
-				"mongodbRootPassword": "secretpassword",
+				"replicaSet.enabled": "true",
+				"image.repository":   "kanisterio/mongodb",
+				"image.tag":          "0.22.0",
 			},
 		},
 	}
