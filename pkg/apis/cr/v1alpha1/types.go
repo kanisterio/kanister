@@ -117,6 +117,7 @@ type ActionSpec struct {
 type ActionSetStatus struct {
 	State   State          `json:"state"`
 	Actions []ActionStatus `json:"actions"`
+	Error   Error          `json:"error,omitempty"`
 }
 
 // ActionStatus is updated as we execute phases.
@@ -146,6 +147,10 @@ const (
 	// StateComplete means this action or phase finished successfully.
 	StateComplete State = "complete"
 )
+
+type Error struct {
+	Message string `json:"message"`
+}
 
 // Phase is subcomponent of an action.
 type Phase struct {
