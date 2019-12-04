@@ -33,4 +33,15 @@ jobs:
       - sudo chown -R travis:travis ./.go
       after_script:
       - make stop-kind
-
+    - stage: test
+      install:
+      - make go-mod-download
+      before_script:
+      - make start-kind
+      - make install-minio
+      script:
+      - make integration-test
+      before_cache:
+      - sudo chown -R travis:travis ./.go
+      after_script:
+      - make stop-kind
