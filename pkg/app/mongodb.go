@@ -96,19 +96,12 @@ func (mongo *MongoDB) IsReady(ctx context.Context) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, mongoWaitTimeout)
 	defer cancel()
 
-	err := kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-primary", mongo.name))
-	if err != nil {
-		return false, err
-	}
-
-	err = kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-secondary", mongo.name))
-	if err != nil {
-		return false, err
-	}
-
-	err = kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-arbiter", mongo.name))
-	if err != nil {
-		return false, err
+	statefSets := []string{"mongodb-primary", "mongodb-secondary", "mongodb-arbiter"}
+	for _, resource := range statefSets {
+		err := kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-%s", mongo.name, resource))
+		if err != nil {
+			return false, err
+		}
 	}
 
 	log.Print("Application is ready.", field.M{"app": mongo.name})
