@@ -54,10 +54,9 @@ func NewMongoDB(name string) App {
 			RepoName: helm.StableRepoName,
 			Version:  "7.4.6",
 			Values: map[string]string{
-				"replicaSet.enabled":  "true",
-				"image.repository":    "kanisterio/mongodb",
-				"image.tag":           "0.22.0",
-				"mongodbRootPassword": "secretpassword",
+				"replicaSet.enabled": "true",
+				"image.repository":   "kanisterio/mongodb",
+				"image.tag":          "0.22.0",
 			},
 		},
 	}
@@ -96,19 +95,12 @@ func (mongo *MongoDB) IsReady(ctx context.Context) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, mongoWaitTimeout)
 	defer cancel()
 
-	err := kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-primary", mongo.name))
-	if err != nil {
-		return false, err
-	}
-
-	err = kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-secondary", mongo.name))
-	if err != nil {
-		return false, err
-	}
-
-	err = kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-arbiter", mongo.name))
-	if err != nil {
-		return false, err
+	statefSets := []string{"mongodb-primary", "mongodb-secondary", "mongodb-arbiter"}
+	for _, resource := range statefSets {
+		err := kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-%s", mongo.name, resource))
+		if err != nil {
+			return false, err
+		}
 	}
 
 	log.Print("Application is ready.", field.M{"app": mongo.name})
@@ -185,13 +177,13 @@ func (mongo *MongoDB) Count(ctx context.Context) (int, error) {
 		return 0, errors.Wrapf(err, "Error %s while counting the data in mongodb collection.", stderr)
 	}
 
-	noOfRecords, err := strconv.Atoi(stdout)
+	count, err := strconv.Atoi(stdout)
 	if err != nil {
 		return 0, err
 	}
 
-	log.Print("Count that we are returning from count method is.", field.M{"app": "mongodb", "count": noOfRecords})
-	return noOfRecords, nil
+	log.Print("Count that we are returning from count method is.", field.M{"app": "mongodb", "count": count})
+	return count, nil
 }
 func (mongo *MongoDB) Reset(ctx context.Context) error {
 	log.Print("Resetting the application.", field.M{"app": mongo.name})
