@@ -178,13 +178,13 @@ func (mongo *MongoDB) Count(ctx context.Context) (int, error) {
 		return 0, errors.Wrapf(err, "Error %s while counting the data in mongodb collection.", stderr)
 	}
 
-	noOfRecords, err := strconv.Atoi(stdout)
+	count, err := strconv.Atoi(stdout)
 	if err != nil {
 		return 0, err
 	}
 
-	log.Print("Count that we are returning from count method is.", field.M{"app": "mongodb", "count": noOfRecords})
-	return noOfRecords, nil
+	log.Print("Count that we are returning from count method is.", field.M{"app": "mongodb", "count": count})
+	return count, nil
 }
 func (mongo *MongoDB) Reset(ctx context.Context) error {
 	log.Print("Resetting the application.", field.M{"app": mongo.name})
