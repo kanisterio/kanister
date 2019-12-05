@@ -1,0 +1,187 @@
+// Copyright 2019 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package app
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/helm"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
+)
+
+const (
+	casWaitTimeout = 5 * time.Minute
+	cqlTimeout     = "300"
+)
+
+// CassandraInstance defines structure a cassandra databse application
+type CassandraInstance struct {
+	cli       kubernetes.Interface
+	namespace string
+	name      string
+	chart     helm.ChartInfo
+}
+
+// NewCassandraInstance returns new cassandra application
+func NewCassandraInstance(name string) App {
+	return &CassandraInstance{
+		name:      name,
+		namespace: "cassandra-test",
+		chart: helm.ChartInfo{
+			Release:  name,
+			RepoURL:  helm.IncubatorRepoURL,
+			Chart:    "cassandra",
+			RepoName: helm.IncubatorRepoName,
+			Version:  "0.13.3",
+			Values: map[string]string{
+				"image.repo":          "viveksinghggits/cassandra",
+				"image.tag":           "0.22.0",
+				"config.cluster_size": "2",
+			},
+		},
+	}
+}
+
+// Init initializes the database application
+func (cas *CassandraInstance) Init(context.Context) error {
+	cfg, err := kube.LoadConfig()
+	if err != nil {
+		return err
+	}
+
+	cas.cli, err = kubernetes.NewForConfig(cfg)
+	return err
+}
+
+// Install is used to install the initialized application
+func (cas *CassandraInstance) Install(ctx context.Context, namespace string) error {
+	cas.namespace = namespace
+
+	log.Print("Installing application.", field.M{"app": cas.name})
+	cli := helm.NewCliClient(helm.V3)
+	err := cli.AddRepo(ctx, cas.chart.RepoName, cas.chart.RepoURL)
+	if err != nil {
+		return err
+	}
+
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cas.chart.RepoName, cas.chart.Chart), cas.chart.Version, cas.name, cas.namespace, cas.chart.Values)
+	if err != nil {
+		return err
+	}
+	log.Print("Application was installed successfully.", field.M{"app": cas.name})
+	return nil
+}
+
+// IsReady waits for the application to be ready
+func (cas *CassandraInstance) IsReady(ctx context.Context) (bool, error) {
+	log.Print("Wainting for application to be ready.", field.M{"app": cas.name})
+	ctx, cancel := context.WithTimeout(ctx, casWaitTimeout)
+	defer cancel()
+
+	err := kube.WaitOnStatefulSetReady(ctx, cas.cli, cas.namespace, cas.name)
+	if err != nil {
+		return false, err
+	}
+
+	log.Print("Application is ready.", field.M{"app": cas.name})
+	return true, nil
+}
+
+// Object returns the kubernetes resource that is being referred by db application installation
+func (cas *CassandraInstance) Object() crv1alpha1.ObjectReference {
+	return crv1alpha1.ObjectReference{
+		Kind:      "StatefulSet",
+		Name:      cas.name,
+		Namespace: cas.namespace,
+	}
+}
+
+// Uninstall us used to remove the datbase application
+func (cas *CassandraInstance) Uninstall(ctx context.Context) error {
+	log.Print("Uninstalling application.", field.M{"app": cas.name})
+	cli := helm.NewCliClient(helm.V3)
+	err := cli.Uninstall(ctx, cas.name, cas.namespace)
+	return errors.Wrapf(err, "Error uninstalling application.", field.M{"app": cas.name})
+}
+
+// Ping is used to ping the application to check the datbase connectivity
+func (cas *CassandraInstance) Ping(ctx context.Context) error {
+	log.Print("Pinging the application.", field.M{"app": cas.name})
+
+	pingCMD := []string{"sh", "-c", "cqlsh -e 'describe cluster'"}
+	_, stderr, err := cas.execCommand(ctx, pingCMD)
+	if err != nil {
+		return errors.Wrapf(err, "Error %s while pinging the database.", stderr)
+	}
+	return nil
+}
+
+// Insert is used to insert the  records into the database
+func (cas *CassandraInstance) Insert(ctx context.Context) error {
+	log.Print("Inserting records into the database.", field.M{"app": cas.name})
+	insertCMD := []string{"sh", "-c", fmt.Sprintf("cqlsh -e \"insert into restaurants.guests (id, firstname, lastname, birthday)  values (5b6962dd-3f90-4c93-8f61-eabfa4a803e2, 'Vivek', 'Singh', '2015-02-18');\" --request-timeout=%s", cqlTimeout)}
+	_, stderr, err := cas.execCommand(ctx, insertCMD)
+	if err != nil {
+		return errors.Wrapf(err, "Error %s inserting records into the database.", stderr)
+	}
+	return nil
+}
+
+// Count will return the number of records, there are inside the database's table
+func (cas *CassandraInstance) Count(context.Context) (int, error) {
+	countCMD := []string{"sh", "-c", "cqlsh -e \"select count(firstname) from restaurants.guests;\" "}
+
+	return 0, nil
+}
+
+// Reset is used to reset or imitate disaster, in the database
+func (cas *CassandraInstance) Reset(ctx context.Context) error {
+	// delete keyspace and table if they already exist
+	delRes := []string{"sh", "-c", fmt.Sprintf("cqlsh -e 'drop table if exists restaurants.guests; drop keyspace if exists restaurants;' --request-timeout=%s", cqlTimeout)}
+	_, stderr, err := cas.execCommand(ctx, delRes)
+	if err != nil {
+		return errors.Wrapf(err, "Error %s deleting resources while reseting application.", stderr)
+	}
+
+	// create the keyspace
+	createKS := []string{"sh", "-c", fmt.Sprintf("cqlsh -e \"create keyspace restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 3};\" --request-timeout=%s", cqlTimeout)}
+	_, stderr, err = cas.execCommand(ctx, createKS)
+	if err != nil {
+		return errors.Wrapf(err, "Error %s while creating the keyspace for application.", stderr)
+	}
+
+	// create the table
+	createTab := []string{"sh", "-c", fmt.Sprintf("cqlsh -e \"create table restaurants.guests (id UUID primary key, firstname text, lastname text, birthday timestamp);\" --request-timeout=%s", cqlTimeout)}
+	_, stderr, err = cas.execCommand(ctx, createTab)
+	if err != nil {
+		return errors.Wrapf(err, "Error %s creating table.", stderr)
+	}
+	return nil
+}
+
+func (cas *CassandraInstance) execCommand(ctx context.Context, command []string) (string, string, error) {
+	podname, containername, err := getPodContainerFromStatefulSet(ctx, cas.cli, cas.namespace, "cassandra")
+	if err != nil || podname == "" {
+		return "", "", errors.Wrapf(err, "Error getting the pod and container name %s.", cas.name)
+	}
+	return kube.Exec(cas.cli, cas.namespace, podname, containername, command, nil)
+}
