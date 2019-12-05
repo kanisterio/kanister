@@ -65,6 +65,20 @@ func GetObjectstoreLocation() (objectstore.ProviderType, crv1alpha1.Location) {
 		}
 		provider = objectstore.ProviderTypeAzure
 	}
+
+	// Set location bucket, endpoints and prefix
+	location.Bucket = TestS3BucketName
+
+	// Override values if env vars are set
+	if buck, ok := os.LookupEnv("LOCATION_BUCKET"); ok {
+		location.Bucket = buck
+	}
+	if ep, ok := os.LookupEnv("LOCATION_ENDPOINT"); ok {
+		location.Endpoint = ep
+	}
+	if pre, ok := os.LookupEnv("LOCATION_PREFIX"); ok {
+		location.Prefix = pre
+	}
 	return provider, location
 }
 

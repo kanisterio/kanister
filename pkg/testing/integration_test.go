@@ -63,14 +63,15 @@ type IntegrationSuite struct {
 
 // INTEGRATION TEST APPLICATIONS
 
-// rds-postgres app
-var _ = Suite(&IntegrationSuite{
-	name:      "rds-postgres",
-	namespace: "rds-postgres-test",
-	app:       app.NewRDSPostgresDB("rds-postgres"),
-	bp:        app.NewBlueprint("rds-postgres"),
-	profile:   newSecretProfile("", "", ""),
-})
+// Skipping rds-postgres app since it doesn't work with MinIO
+//// rds-postgres app
+//var _ = Suite(&IntegrationSuite{
+//	name:      "rds-postgres",
+//	namespace: "rds-postgres-test",
+//	app:       app.NewRDSPostgresDB("rds-postgres"),
+//	bp:        app.NewBlueprint("rds-postgres"),
+//	profile:   newSecretProfile("", "", ""),
+//})
 
 // pitr-postgresql app
 var _ = Suite(&IntegrationSuite{
@@ -78,7 +79,7 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "pitr-postgres-test",
 	app:       app.NewPostgresDB("pitr-postgres"),
 	bp:        app.NewPITRBlueprint("pitr-postgres"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+	profile:   newSecretProfile(),
 })
 
 // postgres app
@@ -87,7 +88,7 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "postgres-test",
 	app:       app.NewPostgresDB("postgres"),
 	bp:        app.NewBlueprint("postgres"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+	profile:   newSecretProfile(),
 })
 
 // mysql app
@@ -96,7 +97,7 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "mysql-test",
 	app:       app.NewMysqlDB("mysql"),
 	bp:        app.NewBlueprint("mysql"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+	profile:   newSecretProfile(),
 })
 
 // Elasticsearch app
@@ -105,7 +106,7 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "es-test",
 	app:       app.NewElasticsearchInstance("elasticsearch"),
 	bp:        app.NewBlueprint("elasticsearch"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+	profile:   newSecretProfile(),
 })
 
 // Mongodb app
@@ -114,15 +115,11 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "mongo-test",
 	app:       app.NewMongoDB("mongo"),
 	bp:        app.NewBlueprint("mongo"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+	profile:   newSecretProfile(),
 })
 
-func newSecretProfile(bucket, endpoint, prefix string) *secretProfile {
+func newSecretProfile() *secretProfile {
 	_, location := testutil.GetObjectstoreLocation()
-	location.Bucket = bucket
-	location.Endpoint = endpoint
-	location.Prefix = prefix
-
 	secret, profile, err := testutil.NewSecretProfileFromLocation(location)
 	if err != nil {
 		return nil

@@ -66,14 +66,13 @@ actions:
 
               # Region will be ignored for S3 compatible object store so skipping.
               rm -rf ${env_wal_region}
-            {{- else }}
-              # Region is required when no endpoint is used (AWS S3).
-              wale_s3_region="us-east-1"
-              {{- if .Profile.Location.Region }}
-                wale_s3_region="{{ .Profile.Location.Region | quote}}"
-              {{- end }}
-              echo "${wale_s3_region}" > "${env_wal_region}"
             {{- end }}
+            # Region is required when no endpoint is used (AWS S3).
+            wale_s3_region="us-east-1"
+            {{- if .Profile.Location.Region }}
+              wale_s3_region="{{ .Profile.Location.Region | quote}}"
+            {{- end }}
+            echo "${wale_s3_region}" > "${env_wal_region}"
 
             set +o xtrace
             {{- if .Profile.Credential.KeyPair }}
@@ -201,15 +200,15 @@ actions:
               export WALE_S3_ENDPOINT="${wale_s3_endpoint}"
 
               # Region will be ignored for S3 compatible object store so skipping.
-            {{- else }}
-              # Region is required when no endpoint is used (AWS S3).
-              {{- if .Profile.Location.Region }}
-                wale_s3_region="{{ .Profile.Location.Region | quote}}"
-              {{- else }}
-                wale_s3_region="us-east-1"
-              {{- end }}
-              export AWS_REGION="${wale_s3_region}"
             {{- end }}
+
+            # Region is required when no endpoint is used (AWS S3).
+            {{- if .Profile.Location.Region }}
+              wale_s3_region="{{ .Profile.Location.Region | quote}}"
+            {{- else }}
+              wale_s3_region="us-east-1"
+            {{- end }}
+            export AWS_REGION="${wale_s3_region}"
 
             # Can now get the backup with the old prefix
             wal-e --s3-prefix "${old_wale_prefix}" backup-fetch "${recover_dir}" "${backup_name}"
@@ -329,28 +328,27 @@ actions:
             # Setup configuration for wal-e.
             {{- if .Profile.Location.Endpoint }}
               wale_s3_endpoint="{{ .Profile.Location.Endpoint | quote}}"
-              wale_s3_endpoint-${wale_s3_endpoint,,}
+              wale_s3_endpoint=${wale_s3_endpoint,,}
               {{- if .Profile.SkipSSLVerify }}
                 # Since wal-e does not support skip-ssl-verify switch to http://
                 wale_s3_endpoint="${wale_s3_endpoint/https/http}"
               {{- end }}
 
               # Add the scheme that wal-e requires
-              wale_s3_endpoint="${wale_s3_endpoint/https\:\/\//https+path://}"
-              wale_s3_endpoint="${wale_s3_endpoint/http\:\/\//http+path://}"
+              wale_s3_endpoint="${wale_s3_endpoint//https\:\/\//https+path://}"
+              wale_s3_endpoint="${wale_s3_endpoint//http\:\/\//http+path://}"
 
               export WALE_S3_ENDPOINT="${wale_s3_endpoint}"
 
               # Region will be ignored for S3 compatible object store so skipping.
-            {{- else }}
-              # Region is required when no endpoint is used (AWS S3).
-              {{- if .Profile.Location.Region }}
-                wale_s3_region="{{ .Profile.Location.Region | quote}}"
-              {{- else }}
-                wale_s3_region="us-east-1"
-              {{- end }}
-              export AWS_REGION="${wale_s3_region}"
             {{- end }}
+            # Region is required when no endpoint is used (AWS S3).
+            {{- if .Profile.Location.Region }}
+              wale_s3_region="{{ .Profile.Location.Region | quote}}"
+            {{- else }}
+              wale_s3_region="us-east-1"
+            {{- end }}
+            export AWS_REGION="${wale_s3_region}"
 
             # Count the number of backups. If there are none left, delete the WALs as well.
             wal-e --s3-prefix "${wale_prefix}" backup-list

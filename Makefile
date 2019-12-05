@@ -167,7 +167,7 @@ test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
 
 integration-test: build-dirs
-	@$(MAKE) run CMD='-c "TEST_INTEGRATION=true ./build/test.sh $(SRC_DIRS)"'
+	@$(MAKE) run CMD='-c "./build/integration-test.sh"'
 
 codegen:
 	@$(MAKE) run CMD='-c "./build/codegen.sh"'
@@ -256,6 +256,12 @@ start-kind:
 
 tiller:
 	@/bin/bash ./build/init_tiller.sh
+
+install-minio:
+	@$(MAKE) run CMD='-c "./build/minio.sh install_minio"'
+
+uninstall-minio:
+	@$(MAKE) run CMD='-c "./build/minio.sh uninstall_minio"'
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
