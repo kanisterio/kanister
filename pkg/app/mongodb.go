@@ -16,8 +16,8 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -34,6 +34,11 @@ import (
 const (
 	mongoWaitTimeout = 5 * time.Minute
 )
+
+// IsMaster struct gets mapped to the output of the mongo command that checks if node is master or not.
+type IsMasterOutput struct {
+	Ismaster bool `json:"ismaster"`
+}
 
 type MongoDB struct {
 	cli       kubernetes.Interface
@@ -132,26 +137,20 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 
 	// even after ping is successful, it takes some time for primary pod to becomd the master
 	// we will have to wait for that so that the write subsequent write requests wont fail.
-	isMasterCMD := []string{"sh", "-c", fmt.Sprintf(" mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.isMaster()\"", mongo.username)}
-	isMasterStdout, stderr, err := mongo.execCommand(ctx, isMasterCMD)
+	isMasterCMD := []string{"sh", "-c", fmt.Sprintf(" mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"JSON.stringify(db.isMaster())\"", mongo.username)}
+	stdout, stderr, err := mongo.execCommand(ctx, isMasterCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s checking if the pod is master.", stderr)
 	}
 
-	// extract the ismaster field from the output and make sure
-	// this ismaster field is true
-	re := regexp.MustCompile("\"ismaster\" : ([a-z]*),")
-	match := re.FindStringSubmatch(isMasterStdout)
-	if len(match) < 2 {
-		return errors.Wrap(errors.New("ismaster not in the output while checking if the monogdb is node."), "Error while checking if the mongodb node is master:")
-	}
-
-	isMaster, err := strconv.ParseBool(match[1])
+	// convert the mongo's output to go struct so that we can check if the pod has become master or not.
+	op := IsMasterOutput{}
+	err = json.Unmarshal([]byte(stdout), &op)
 	if err != nil {
-		return errors.Wrapf(err, "Error converting ismaster value.")
+		return errors.Wrapf(err, "Error unmarshalling the ismaster ouptut.")
 	}
-	if !isMaster {
-		return errors.New("Error while getting ismaster value from output.")
+	if !op.Ismaster {
+		return errors.New("The pod is not master yet.")
 	}
 
 	log.Print("Ping was successful to application.", field.M{"app": mongo.name})
