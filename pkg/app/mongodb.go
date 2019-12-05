@@ -146,8 +146,11 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 	// convert the mongo's output to go struct so that we can check if the pod has become master or not.
 	op := IsMasterOutput{}
 	err = json.Unmarshal([]byte(stdout), &op)
+	if err != nil {
+		return errors.Wrapf(err, "Error unmarshalling the ismaster ouptut.")
+	}
 	if !op.Ismaster {
-		return errors.New("Error while getting ismaster value from output.")
+		return errors.New("The pod is not master yet.")
 	}
 
 	log.Print("Ping was successful to application.", field.M{"app": mongo.name})
