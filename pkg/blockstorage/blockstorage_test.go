@@ -198,7 +198,7 @@ func (s *BlockStorageProviderSuite) TestSnapshotsList(c *C) {
 	c.Assert(snaps, FitsTypeOf, []*blockstorage.Snapshot{})
 	c.Assert(snaps, Not(HasLen), 0)
 	c.Assert(snaps[0].Type, Equals, s.provider.Type())
-	s.provider.SnapshotDelete(context.Background(), testSnaphot)
+	_ = s.provider.SnapshotDelete(context.Background(), testSnaphot)
 }
 
 // Helpers

@@ -104,6 +104,6 @@ func printStage(description string, i indicator) {
 	case fail:
 		fmt.Printf("Failed the '%s' check.. %s\n", description, i)
 	default:
-		fmt.Printf(description)
+		fmt.Println(description)
 	}
 }

@@ -156,7 +156,7 @@ func patchDefaultPodSpecs(defaultPodSpecs v1.PodSpec, override crv1alpha1.JSONMa
 
 	// Convert merged json to v1.PodSPec object
 	podSpec := v1.PodSpec{}
-	json.Unmarshal(mergedPatch, &podSpec)
+	err = json.Unmarshal(mergedPatch, &podSpec)
 	if err != nil {
 		return podSpec, err
 	}
@@ -173,7 +173,7 @@ func CreateAndMergeJsonPatch(original, override crv1alpha1.JSONMap) (crv1alpha1.
 
 	// Convert merged json to map[string]interface{}
 	var merged map[string]interface{}
-	json.Unmarshal(mergedPatch, &merged)
+	err = json.Unmarshal(mergedPatch, &merged)
 	if err != nil {
 		return nil, err
 	}

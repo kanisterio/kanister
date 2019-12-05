@@ -42,7 +42,6 @@ type ibmCloud struct {
 }
 
 const (
-	maxRetries     = 10
 	defaultTimeout = time.Duration(time.Minute * 5)
 )
 
@@ -227,7 +226,7 @@ func (s *ibmCloud) SnapshotCreate(ctx context.Context, volume blockstorage.Volum
 		ibmvol.SnapshotSpace = ibmvol.Capacity
 		err = s.cli.Service.OrderSnapshot(*ibmvol)
 		if err != nil {
-			if strings.Contains(err.Error(), "already has snapshot space") != true {
+			if !strings.Contains(err.Error(), "already has snapshot space") {
 				return nil, errors.Wrapf(err, "Failed to order Snapshot space, volume_id :%s", volume.ID)
 			}
 		}

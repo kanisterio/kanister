@@ -78,7 +78,7 @@ func (d *directory) ListDirectories(ctx context.Context) (map[string]Directory, 
 		return nil, errors.New("invalid entry")
 	}
 
-	directories := make(map[string]Directory, 0)
+	directories := make(map[string]Directory)
 
 	err := stow.Walk(d.bucket.container, cloudName(d.path), 10000,
 		func(item stow.Item, err error) error {
@@ -122,7 +122,7 @@ func (d *directory) ListObjects(ctx context.Context) ([]string, error) {
 				return err
 			}
 			objName := strings.TrimPrefix(item.Name(), cloudName(d.path))
-			if objName != "" && strings.Index(objName, "/") == -1 {
+			if objName != "" && !strings.Contains(objName, "/") {
 				objects = append(objects, objName)
 			}
 			return nil

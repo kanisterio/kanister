@@ -135,9 +135,10 @@ func (s *gpdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 func (s *gpdStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
 	var op *compute.Operation
 	var err error
+	var region string
 
 	if isMultiZone(volume.Az) {
-		region, err := getRegionFromZones(volume.Az)
+		region, err = getRegionFromZones(volume.Az)
 		if err != nil {
 			return err
 		}
@@ -470,11 +471,12 @@ func (s *gpdStorage) waitOnOperation(ctx context.Context, op *compute.Operation,
 
 	return poll.WaitWithBackoff(ctx, waitBackoff, func(ctx context.Context) (bool, error) {
 		var err error
+		var region string
 		switch {
 		case zone == "":
 			op, err = s.service.GlobalOperations.Get(s.project, op.Name).Context(ctx).Do()
 		case isMultiZone(zone):
-			region, err := getRegionFromZones(zone)
+			region, err = getRegionFromZones(zone)
 			if err != nil {
 				return false, err
 			}

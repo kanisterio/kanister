@@ -78,7 +78,7 @@ func (s *KubeExecTest) SetUpSuite(c *C) {
 
 func (s *KubeExecTest) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 

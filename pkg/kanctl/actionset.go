@@ -116,12 +116,12 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 }
 
 func perform(ctx context.Context, crCli versioned.Interface, params *PerformParams) error {
-	var as *crv1alpha1.ActionSet
+	var as, pas *crv1alpha1.ActionSet
 	var err error
 
 	switch {
 	case params.ParentName != "":
-		pas, err := crCli.CrV1alpha1().ActionSets(params.Namespace).Get(params.ParentName, metav1.GetOptions{})
+		pas, err = crCli.CrV1alpha1().ActionSets(params.Namespace).Get(params.ParentName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -246,7 +246,7 @@ func printActionSet(as *crv1alpha1.ActionSet) error {
 	if err != nil {
 		return errors.New("could not convert generated action set to YAML")
 	}
-	fmt.Printf(string(asYAML))
+	fmt.Printf("%s", asYAML)
 	return nil
 }
 
