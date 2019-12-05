@@ -25,11 +25,6 @@ export CGO_ENABLED=0
 export GO111MODULE=on
 
 TARGETS=$(for d in "$@"; do echo ./$d/...; done)
-TAGS=""
-INTEGRATION_TEST_DIR=pkg/testing
-# Degree of parallelism for integration tests
-DOP="4"
-
 
 echo -n "Checking gofmt: "
 ERRS=$(find "$@" -type f -name \*.go | xargs gofmt -l 2>&1 || true)
@@ -57,18 +52,10 @@ fi
 echo
 
 echo "Running tests:"
-if [[ -n "${TEST_INTEGRATION+x}" ]]; then
-    pushd ${INTEGRATION_TEST_DIR}
-    TAGS="-tags=integration -timeout 50m -check.suitep ${DOP}"
-    TARGETS="."
-    go test -v ${TAGS} -installsuffix "static" ${TARGETS} -check.v
-    popd
-else
-   go test -v ${TAGS} -installsuffix "static" -i ${TARGETS}
-   go test -v ${TAGS} ${TARGETS} -list .
-   go test -v ${TAGS} -installsuffix "static" ${TARGETS} -check.v
-   echo
-fi
+go test -v -installsuffix "static" -i ${TARGETS}
+go test -v ${TARGETS} -list .
+go test -v -installsuffix "static" ${TARGETS} -check.v
+echo
 
 echo "PASS"
 echo
