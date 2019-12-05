@@ -6,6 +6,7 @@ replace (
 	cloud.google.com/go => github.com/GoogleCloudPlatform/google-cloud-go v0.1.1-0.20160913182117-3b1ae45394a2
 	github.com/graymeta/stow => github.com/kastenhq/stow v0.1.2-kasten
 	github.com/rook/operator-kit => github.com/kastenhq/operator-kit v0.0.0-20180316185208-859e831cc18d
+	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
 
 require (
@@ -73,7 +74,6 @@ require (
 	k8s.io/apiextensions-apiserver v0.0.0-20190708181606-527eacf2d4b7
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
 	k8s.io/client-go v11.0.1-0.20190708175433-62e1c231c5dc+incompatible
-	k8s.io/code-generator v0.0.0-20190311093542-50b561225d70 // indirect
 	k8s.io/klog v0.3.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20190709113604-33be087ad058 // indirect
 	k8s.io/utils v0.0.0-20190712204705-3dccf664f023 // indirect

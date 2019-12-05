@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2019 The Kanister Authors.
 #
@@ -26,16 +26,10 @@ export GO111MODULE=on
 
 TARGETS=$(for d in "$@"; do echo ./$d/...; done)
 TAGS=""
+INTEGRATION_TEST_DIR=pkg/testing
+# Degree of parallelism for integration tests
+DOP="4"
 
-if [[ -n "${TEST_INTEGRATION+x}" ]]; then
-    TAGS="-tags=integration -timeout 50m"
-fi
-
-echo "Running tests:"
-go test -v ${TAGS} -installsuffix "static" -i ${TARGETS}
-go test -v ${TAGS} ${TARGETS} -list .
-go test -v ${TAGS} -installsuffix "static" ${TARGETS} -check.v
-echo
 
 echo -n "Checking gofmt: "
 ERRS=$(find "$@" -type f -name \*.go | xargs gofmt -l 2>&1 || true)
@@ -60,5 +54,21 @@ if [ -n "${ERRS}" ]; then
     # but don't exit on failures.
     #exit 1
 fi
+echo
+
+echo "Running tests:"
+if [[ -n "${TEST_INTEGRATION+x}" ]]; then
+    pushd ${INTEGRATION_TEST_DIR}
+    TAGS="-tags=integration -timeout 50m -check.suitep ${DOP}"
+    TARGETS="."
+    go test -v ${TAGS} -installsuffix "static" ${TARGETS} -check.v
+    popd
+else
+   go test -v ${TAGS} -installsuffix "static" -i ${TARGETS}
+   go test -v ${TAGS} ${TARGETS} -list .
+   go test -v ${TAGS} -installsuffix "static" ${TARGETS} -check.v
+   echo
+fi
+
 echo "PASS"
 echo

@@ -299,6 +299,10 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 	}
 	if err != nil {
 		as.Status.State = crv1alpha1.StateFailed
+		as.Status.Error = crv1alpha1.Error{
+			Message: err.Error(),
+		}
+
 	} else {
 		as.Status.State = crv1alpha1.StatePending
 		as.Status.Actions = actions
@@ -360,6 +364,9 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[i].Name)
 			c.logAndErrorEvent(ctx, fmt.Sprintf("Failed to launch Action %s:", as.GetName()), reason, err, as, bp)
 			as.Status.State = crv1alpha1.StateFailed
+			as.Status.Error = crv1alpha1.Error{
+				Message: err.Error(),
+			}
 			as.Status.Actions[i].Phases[0].State = crv1alpha1.StateFailed
 			_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(as)
 			return errors.WithStack(err)
@@ -406,6 +413,9 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			if err != nil {
 				rf = func(ras *crv1alpha1.ActionSet) error {
 					ras.Status.State = crv1alpha1.StateFailed
+					ras.Status.Error = crv1alpha1.Error{
+						Message: err.Error(),
+					}
 					ras.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateFailed
 					return nil
 				}
@@ -453,6 +463,9 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		if err != nil {
 			af = func(ras *crv1alpha1.ActionSet) error {
 				ras.Status.State = crv1alpha1.StateFailed
+				ras.Status.Error = crv1alpha1.Error{
+					Message: err.Error(),
+				}
 				return nil
 			}
 		} else {
