@@ -11,6 +11,8 @@ COPY --from=goreleaser/goreleaser:v0.116.0 /bin/goreleaser /usr/local/bin/
 
 COPY --from=alpine/helm:3.0.0 /usr/bin/helm /usr/local/bin/
 
+COPY --from=golangci/golangci-lint:v1.21.0 /usr/bin/golangci-lint /usr/local/bin/
+
 RUN wget -O /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.5.1/kind-linux-amd64 \
     && chmod +x /usr/local/bin/kind
 
