@@ -7,9 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"kio/errors"
 )
 
 const (
@@ -66,7 +65,7 @@ func NewFluentbitHook(endpoint string) *FluentbitHook {
 func dial(endpoint string) (net.Conn, error) {
 	conn, err := net.DialTimeout("tcp", endpoint, defaultConnTimeout)
 	if err != nil {
-		return nil, errors.CastOrWrap(err, "Fluentbit connection problem")
+		return nil, errors.Wrap(err, "Fluentbit connection problem")
 	}
 	return conn, nil
 }
@@ -75,12 +74,12 @@ func dial(endpoint string) (net.Conn, error) {
 func handle(msgs []byte, endpoint string) error {
 	conn, err := dial(endpoint)
 	if err != nil {
-		return errors.CastOrWrap(err, "Fluentbit connection error")
+		return errors.Wrap(err, "Fluentbit connection error")
 	}
 	defer conn.Close() // nolint: errcheck
 	_, err = conn.Write(msgs)
 	if err != nil {
-		return errors.CastOrWrap(err, "Fluentbit write error")
+		return errors.Wrap(err, "Fluentbit write error")
 	}
 	return nil
 }
