@@ -209,7 +209,7 @@ func (mdb *MysqlDB) Secrets() map[string]crv1alpha1.ObjectReference {
 }
 
 func (mdb *MysqlDB) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podname, containername, err := getPodContainerFromDeployment(ctx, mdb.cli, mdb.namespace, mdb.name)
+	podname, containername, err := kube.GetPodContainerFromDeployment(ctx, mdb.cli, mdb.namespace, mdb.name)
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", mdb.name)
 	}

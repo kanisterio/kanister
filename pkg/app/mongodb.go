@@ -195,7 +195,7 @@ func (mongo *MongoDB) Reset(ctx context.Context) error {
 }
 
 func (mongo *MongoDB) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podName, containerName, err := getPodContainerFromStatefulSet(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-primary", mongo.name))
+	podName, containerName, err := kube.GetPodContainerFromStatefulSet(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-primary", mongo.name))
 	if err != nil || podName == "" {
 		return "", "", err
 	}
