@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -116,6 +116,15 @@ var _ = Suite(&IntegrationSuite{
 	app:       app.NewMongoDB("mongo"),
 	bp:        app.NewBlueprint("mongo"),
 	profile:   newSecretProfile(),
+})
+
+// Cassandra App
+var _ = Suite(&IntegrationSuite{
+	name:      "cassandra",
+	namespace: "cassandra-test",
+	app:       app.NewCassandraInstance("cassandra"),
+	bp:        app.NewBlueprint("cassandra"),
+	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
 })
 
 func newSecretProfile() *secretProfile {

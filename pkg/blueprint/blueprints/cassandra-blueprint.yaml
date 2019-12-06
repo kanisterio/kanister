@@ -1,0 +1,187 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: cassandra-blueprint
+actions:
+  backup:
+    type: StatefulSet
+    outputArtifacts:
+      params:
+        keyValue:
+          backupPrefixLocation: "{{ .Phases.getBackupPrefixLocation.Output.backupPrefixLocation }}"
+          snapshotPrefix: "{{ .Phases.getBackupPrefixLocation.Output.localSnapshotPrefixLocation }}"
+          replicaCount: "{{ .Phases.getBackupPrefixLocation.Output.replicaCount }}"
+          backupInfo: "{{ .Phases.backupToObjectStore.Output.BackupAllInfo }}"
+    phases:
+    - func: KubeExecAll 
+      name: getBackupPrefixLocation
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pods: "{{ range .StatefulSet.Pods }} {{.}}{{end}}"
+        containers: cassandra
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - xtrace
+          - -o
+          - pipefail
+          - -c
+          - |
+            BACKUP_PREFIX_LOCATION={{ .Profile.Location.Bucket }}/cassandra_backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}
+            LOCAL_SNAPSHOT_PREFIX_LOCATION=/cassandra_data/kanister_backups
+            kando output backupPrefixLocation $BACKUP_PREFIX_LOCATION
+            kando output localSnapshotPrefixLocation $LOCAL_SNAPSHOT_PREFIX_LOCATION
+            kando output replicaCount {{ len .StatefulSet.Pods }}
+    - func: KubeExecAll
+      name: takeSnapshots
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pods: "{{ range .StatefulSet.Pods }} {{.}}{{end}}"
+        containers: "cassandra"
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - xtrace
+          - -o
+          - pipefail
+          - -c
+          - |
+            nodetool cleanup
+            nodetool snapshot -t ${HOSTNAME}
+            snapshot_prefix={{ .Phases.getBackupPrefixLocation.Output.localSnapshotPrefixLocation }}
+            mkdir -p ${snapshot_prefix}/${HOSTNAME}
+            cd /var/lib/cassandra/data
+            if [ -n "$(ls -A | grep -v  -w "system" | grep -v  -w "system_traces")" ]
+            then
+              cp -r `ls -A | grep -v  -w "system" | grep -v  -w "system_traces"` ${snapshot_prefix}/${HOSTNAME}/
+              cd ${snapshot_prefix}/${HOSTNAME}/
+              cqlsh -e "DESCRIBE SCHEMA" > schema.cql
+            fi  
+            sleep 300
+            nodetool clearsnapshot
+    - func: BackupDataAll
+      name: backupToObjectStore
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pods: "{{ range .StatefulSet.Pods }} {{.}}{{end}}"
+        container: cassandra
+        includePath: "{{ .Phases.getBackupPrefixLocation.Output.localSnapshotPrefixLocation }}"
+        backupArtifactPrefix: "{{ .Phases.getBackupPrefixLocation.Output.backupPrefixLocation }}"
+    - func: KubeExec
+      name: deleteLocalBackup
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pod: "{{ index .StatefulSet.Pods 0}}"
+        containers: "cassandra"
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - xtrace
+          - -o
+          - pipefail
+          - -c
+          - |
+            rm -rf {{ .Phases.getBackupPrefixLocation.Output.localSnapshotPrefixLocation }}
+  restore:
+    type: StatefulSet
+    inputArtifactNames:
+      - params
+    phases:
+    - func: ScaleWorkload
+      name: shutdownPod
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        name: "{{ .StatefulSet.Name }}"
+        kind: StatefulSet
+        replicas: 0
+    - func: RestoreDataAll
+      name: restoreFromObjectStore
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: kanisterio/kanister-tools:0.21.0
+        backupArtifactPrefix: "{{ .ArtifactsIn.params.KeyValue.backupPrefixLocation }}"
+        pods: "{{ range .StatefulSet.Pods }} {{.}}{{end}}"
+        restorePath: "/var/lib/cassandra"
+        backupInfo: "{{ .ArtifactsIn.params.KeyValue.backupInfo }}"
+    - func: ScaleWorkload
+      name: bringupPod
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        name: "{{ .StatefulSet.Name }}"
+        kind: StatefulSet
+        replicas: "{{ .ArtifactsIn.params.KeyValue.replicaCount }}"
+    - func: KubeExec
+      name: restoreSnapshot
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        containers: "cassandra"
+        command:
+          - bash
+          - -o
+          - xtrace
+          - -o
+          - pipefail
+          - -c
+          - |
+            local_snapshot_prefix=/var/lib/cassandra/cassandra_data/kanister_backups/${HOSTNAME}
+            echo $(ls $local_snapshot_prefix)
+            echo 'local_snapshot_prefix is -'$local_snapshot_prefix
+            if [ -n "$(ls ${local_snapshot_prefix}/)" ]
+            then
+              timeout=300
+              while true
+              do
+                VAR=$((cqlsh -e "DESCRIBE keyspaces;" --request-timeout=6000) 2>&1)
+                if [[ $VAR != *"Could not connect to localhost"* ]]
+                then
+                  break
+                fi
+                if [[ $timeout -le 0 ]]
+                then
+                   echo "Timed out waiting for cqlsh to configure.."
+                   exit 1
+                fi
+                sleep 2
+                timeout=$((timeout-2))
+              done
+              set -o errexit
+              keyspacestodel=$(echo DESCRIBE keyspaces | cqlsh --request-timeout=6000 | xargs -n1 echo | grep -v ^system || true)
+              for ks in $keyspacestodel; do
+                echo "drop keyspace if exists $ks;" | cqlsh --request-timeout=6000
+              done
+              cqlsh -e "$(cat ${local_snapshot_prefix}/schema.cql)" --request-timeout=6000
+              rm ${local_snapshot_prefix}/schema.cql
+              list="$(ls ${local_snapshot_prefix}/)"
+              cp -r ${local_snapshot_prefix}/. /var/lib/cassandra/data/
+              cd /var/lib/cassandra/data/
+              for keyspace in $list
+              do
+                cd $keyspace
+                for table in *
+                do
+                  sstableloader -d ${HOSTNAME} $table/
+                done
+                cd ..
+              done
+              #nodetool clearsnapshot
+            fi
+            rm -rf {{ .ArtifactsIn.params.KeyValue.snapshotPrefix }}
+  delete:
+    type: StatefulSet
+    inputArtifactNames:
+      - params
+    phases:
+    - func: DeleteDataAll
+      name: deleteFromObjectStore
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        backupArtifactPrefix: "{{ .ArtifactsIn.params.KeyValue.backupPrefixLocation }}"
+        backupInfo: "{{ .ArtifactsIn.params.KeyValue.backupInfo }}"
+        reclaimSpace: true

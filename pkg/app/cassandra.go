@@ -17,6 +17,8 @@ package app
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -29,7 +31,7 @@ import (
 )
 
 const (
-	casWaitTimeout = 5 * time.Minute
+	casWaitTimeout = 10 * time.Minute
 	cqlTimeout     = "300"
 )
 
@@ -120,7 +122,11 @@ func (cas *CassandraInstance) Uninstall(ctx context.Context) error {
 	log.Print("Uninstalling application.", field.M{"app": cas.name})
 	cli := helm.NewCliClient(helm.V3)
 	err := cli.Uninstall(ctx, cas.name, cas.namespace)
-	return errors.Wrapf(err, "Error uninstalling application.", field.M{"app": cas.name})
+	if err != nil {
+		return errors.Wrapf(err, "Error uninstalling cassandra app.")
+	}
+	log.Print("Application was uninstalled successfully.", field.M{"app": cas.name})
+	return nil
 }
 
 // Ping is used to ping the application to check the datbase connectivity
@@ -132,13 +138,14 @@ func (cas *CassandraInstance) Ping(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error %s while pinging the database.", stderr)
 	}
+	log.Print("Ping to the application was successful.", field.M{"app": cas.name})
 	return nil
 }
 
 // Insert is used to insert the  records into the database
 func (cas *CassandraInstance) Insert(ctx context.Context) error {
 	log.Print("Inserting records into the database.", field.M{"app": cas.name})
-	insertCMD := []string{"sh", "-c", fmt.Sprintf("cqlsh -e \"insert into restaurants.guests (id, firstname, lastname, birthday)  values (5b6962dd-3f90-4c93-8f61-eabfa4a803e2, 'Vivek', 'Singh', '2015-02-18');\" --request-timeout=%s", cqlTimeout)}
+	insertCMD := []string{"sh", "-c", fmt.Sprintf("cqlsh -e \"insert into restaurants.guests (id, firstname, lastname, birthday)  values (uuid(), 'Vivek', 'Singh', '2015-02-18');\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, insertCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s inserting records into the database.", stderr)
@@ -147,10 +154,19 @@ func (cas *CassandraInstance) Insert(ctx context.Context) error {
 }
 
 // Count will return the number of records, there are inside the database's table
-func (cas *CassandraInstance) Count(context.Context) (int, error) {
+func (cas *CassandraInstance) Count(ctx context.Context) (int, error) {
+	log.Print("Counting number of records in the database.", field.M{"app": cas.name})
 	countCMD := []string{"sh", "-c", "cqlsh -e \"select count(firstname) from restaurants.guests;\" "}
-
-	return 0, nil
+	stdout, stderr, err := cas.execCommand(ctx, countCMD)
+	if err != nil {
+		return 0, errors.Wrapf(err, "Error %s counting the number of records in the database.", stderr)
+	}
+	// parse stdout to get the number of rows in the table
+	count, err := strconv.Atoi(strings.Trim(strings.Split(stdout, "\n")[2], " "))
+	if err != nil {
+		return 0, errors.Wrapf(err, "Error converting count value into int.")
+	}
+	return count, nil
 }
 
 // Reset is used to reset or imitate disaster, in the database
