@@ -79,6 +79,11 @@ dockers:
 - image_templates:
   - 'kanisterio/mongodb:{{ .Tag }}'
   dockerfile: 'docker/mongodb/Dockerfile'
+- binaries:
+  - kando
+  image_templates:
+  - 'kanisterio/cassandra:{{ .Tag }}'
+  dockerfile: 'docker/cassandra/Dockerfile'
 
 snapshot:
   name_template: '{{ .Tag }}'
