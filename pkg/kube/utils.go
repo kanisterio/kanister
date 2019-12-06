@@ -12,19 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package app
+package kube
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/kanisterio/kanister/pkg/kube"
 	"k8s.io/client-go/kubernetes"
 )
 
 // GetPodContainerFromDeployment returns a pod and container running the deployment
 func GetPodContainerFromDeployment(ctx context.Context, cli kubernetes.Interface, namespace, deployName string) (podName string, containerName string, err error) {
-	pod, _, err := kube.DeploymentPods(ctx, cli, namespace, deployName)
+	pod, _, err := DeploymentPods(ctx, cli, namespace, deployName)
 	if err != nil {
 		return podName, containerName, err
 	}
@@ -32,7 +31,7 @@ func GetPodContainerFromDeployment(ctx context.Context, cli kubernetes.Interface
 		return podName, containerName, fmt.Errorf("Unable to find ready pod for deployment %s/%s", namespace, deployName)
 	}
 	podName = pod[0].GetName()
-	container, err := kube.PodContainers(ctx, cli, namespace, podName)
+	container, err := PodContainers(ctx, cli, namespace, podName)
 	if err != nil {
 		return podName, containerName, err
 	}
@@ -44,7 +43,7 @@ func GetPodContainerFromDeployment(ctx context.Context, cli kubernetes.Interface
 
 // GetPodContainerFromStatefulSet returns a pod and container running the stateful set
 func GetPodContainerFromStatefulSet(ctx context.Context, cli kubernetes.Interface, namespace, ssName string) (podName string, containerName string, err error) {
-	pod, _, err := kube.StatefulSetPods(ctx, cli, namespace, ssName)
+	pod, _, err := StatefulSetPods(ctx, cli, namespace, ssName)
 	if err != nil {
 		return podName, containerName, err
 	}
@@ -52,7 +51,7 @@ func GetPodContainerFromStatefulSet(ctx context.Context, cli kubernetes.Interfac
 		return podName, containerName, fmt.Errorf("Unable to find ready pod for statefulset %s/%s", namespace, ssName)
 	}
 	podName = pod[0].GetName()
-	container, err := kube.PodContainers(ctx, cli, namespace, podName)
+	container, err := PodContainers(ctx, cli, namespace, podName)
 	if err != nil {
 		return podName, containerName, err
 	}

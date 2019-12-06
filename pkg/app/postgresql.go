@@ -200,7 +200,7 @@ func (pdb PostgresDB) Uninstall(ctx context.Context) error {
 
 func (pdb PostgresDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	// Get pod and container name
-	pod, container, err := GetPodContainerFromStatefulSet(ctx, pdb.cli, pdb.namespace, pdb.getStatefulSetName())
+	pod, container, err := kube.GetPodContainerFromStatefulSet(ctx, pdb.cli, pdb.namespace, pdb.getStatefulSetName())
 	if err != nil {
 		return "", "", err
 	}
