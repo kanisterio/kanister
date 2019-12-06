@@ -1,7 +1,7 @@
 apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
-  name: k10-cassandra-bp-xk5c2
+  name: cassandra-blueprint
 actions:
   backup:
     type: StatefulSet
@@ -152,6 +152,10 @@ actions:
                 timeout=$((timeout-2))
               done
               set -o errexit
+              keyspacestodel=$(echo DESCRIBE keyspaces | cqlsh --request-timeout=6000 | xargs -n1 echo | grep -v ^system || true)
+              for ks in $keyspacestodel; do
+                echo "drop keyspace if exists $ks;" | cqlsh --request-timeout=6000
+              done
               cqlsh -e "$(cat ${local_snapshot_prefix}/schema.cql)" --request-timeout=6000
               rm ${local_snapshot_prefix}/schema.cql
               list="$(ls ${local_snapshot_prefix}/)"
