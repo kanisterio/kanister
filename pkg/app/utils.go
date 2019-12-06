@@ -22,7 +22,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func getPodContainerFromDeployment(ctx context.Context, cli kubernetes.Interface, namespace, deployName string) (podName string, containerName string, err error) {
+// GetPodContainerFromDeployment returns a pod and container running the deployment
+func GetPodContainerFromDeployment(ctx context.Context, cli kubernetes.Interface, namespace, deployName string) (podName string, containerName string, err error) {
 	pod, _, err := kube.DeploymentPods(ctx, cli, namespace, deployName)
 	if err != nil {
 		return podName, containerName, err
@@ -41,7 +42,8 @@ func getPodContainerFromDeployment(ctx context.Context, cli kubernetes.Interface
 	return podName, container[0].Name, nil
 }
 
-func getPodContainerFromStatefulSet(ctx context.Context, cli kubernetes.Interface, namespace, ssName string) (podName string, containerName string, err error) {
+// GetPodContainerFromStatefulSet returns a pod and container running the stateful set
+func GetPodContainerFromStatefulSet(ctx context.Context, cli kubernetes.Interface, namespace, ssName string) (podName string, containerName string, err error) {
 	pod, _, err := kube.StatefulSetPods(ctx, cli, namespace, ssName)
 	if err != nil {
 		return podName, containerName, err

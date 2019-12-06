@@ -212,7 +212,7 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 }
 
 func (esi *ElasticsearchInstance) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podname, containername, err := getPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
+	podname, containername, err := GetPodContainerFromStatefulSet(ctx, esi.cli, esi.namespace, fmt.Sprintf("%s-master", esi.name))
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error getting the pod and container name %s.", esi.name)
 	}
