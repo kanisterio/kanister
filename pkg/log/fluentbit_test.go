@@ -82,7 +82,7 @@ Loop:
 				break Loop
 			}
 		}
-		l.SetDeadline(time.Now().Add(2 * time.Second))
+		_ = l.SetDeadline(time.Now().Add(2 * time.Second))
 		conn, aerr := l.Accept()
 		if aerr != nil {
 			continue
@@ -114,7 +114,7 @@ func pushMultipleLogs(hook *FluentbitHook, logsAmount int, sleepAfterNLogs int, 
 	for i := 0; i < logsAmount; i++ {
 		e := logrus.NewEntry(nil).WithField(strconv.Itoa(i), i)
 		e.Level = logrus.InfoLevel
-		hook.Fire(e)
+		_ = hook.Fire(e)
 		if timeout != 0 && deadline.Before(time.Now()) {
 			return false
 		}
