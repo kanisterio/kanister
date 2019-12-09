@@ -16,9 +16,7 @@ const (
 	fakeEndPoint = "127.0.0.1:25000"
 )
 
-type FluentbitSuite struct {
-	endFlag chan bool
-}
+type FluentbitSuite struct{}
 
 var _ = Suite(&FluentbitSuite{})
 
