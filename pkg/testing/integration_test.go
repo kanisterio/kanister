@@ -124,7 +124,7 @@ var _ = Suite(&IntegrationSuite{
 	namespace: "cassandra-test",
 	app:       app.NewCassandraInstance("cassandra"),
 	bp:        app.NewBlueprint("cassandra"),
-	profile:   newSecretProfile("infracloud.kanister.io", "", ""),
+	profile:   newSecretProfile(),
 })
 
 func newSecretProfile() *secretProfile {

@@ -31,8 +31,11 @@ import (
 )
 
 const (
+	// cassandra timeout for waiting it to be ready.
 	casWaitTimeout = 10 * time.Minute
-	cqlTimeout     = "300"
+	// cql (cassandra query language) timesout in 10 seconds by default
+	// this is to support custom timeout so that queries will not fail.
+	cqlTimeout = "300"
 )
 
 // CassandraInstance defines structure a cassandra databse application
@@ -145,7 +148,7 @@ func (cas *CassandraInstance) Ping(ctx context.Context) error {
 // Insert is used to insert the  records into the database
 func (cas *CassandraInstance) Insert(ctx context.Context) error {
 	log.Print("Inserting records into the database.", field.M{"app": cas.name})
-	insertCMD := []string{"sh", "-c", fmt.Sprintf("cqlsh -e \"insert into restaurants.guests (id, firstname, lastname, birthday)  values (uuid(), 'Vivek', 'Singh', '2015-02-18');\" --request-timeout=%s", cqlTimeout)}
+	insertCMD := []string{"sh", "-c", fmt.Sprintf("cqlsh -e \"insert into restaurants.guests (id, firstname, lastname, birthday)  values (uuid(), 'Tom', 'Singh', '2015-02-18');\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, insertCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s inserting records into the database.", stderr)
@@ -155,8 +158,7 @@ func (cas *CassandraInstance) Insert(ctx context.Context) error {
 
 // Count will return the number of records, there are inside the database's table
 func (cas *CassandraInstance) Count(ctx context.Context) (int, error) {
-	log.Print("Counting number of records in the database.", field.M{"app": cas.name})
-	countCMD := []string{"sh", "-c", "cqlsh -e \"select count(firstname) from restaurants.guests;\" "}
+	countCMD := []string{"sh", "-c", "cqlsh -e \"select count(*) from restaurants.guests;\" "}
 	stdout, stderr, err := cas.execCommand(ctx, countCMD)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error %s counting the number of records in the database.", stderr)
@@ -164,8 +166,9 @@ func (cas *CassandraInstance) Count(ctx context.Context) (int, error) {
 	// parse stdout to get the number of rows in the table
 	count, err := strconv.Atoi(strings.Trim(strings.Split(stdout, "\n")[2], " "))
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error converting count value into int.")
+		return 0, errors.Wrapf(err, "Error, converting count value into int.")
 	}
+	log.Print("Counted number of records in the database.", field.M{"app": cas.name, "count": count})
 	return count, nil
 }
 
@@ -175,7 +178,7 @@ func (cas *CassandraInstance) Reset(ctx context.Context) error {
 	delRes := []string{"sh", "-c", fmt.Sprintf("cqlsh -e 'drop table if exists restaurants.guests; drop keyspace if exists restaurants;' --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, delRes)
 	if err != nil {
-		return errors.Wrapf(err, "Error %s deleting resources while reseting application.", stderr)
+		return errors.Wrapf(err, "Error %s, deleting resources while reseting application.", stderr)
 	}
 
 	// create the keyspace
@@ -195,7 +198,7 @@ func (cas *CassandraInstance) Reset(ctx context.Context) error {
 }
 
 func (cas *CassandraInstance) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podname, containername, err := getPodContainerFromStatefulSet(ctx, cas.cli, cas.namespace, "cassandra")
+	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, cas.cli, cas.namespace, "cassandra")
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error getting the pod and container name %s.", cas.name)
 	}
