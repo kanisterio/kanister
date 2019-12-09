@@ -76,7 +76,7 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 
 func (s *ScaleSuite) TearDownTest(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 

@@ -52,7 +52,7 @@ const (
 )
 
 func init() {
-	kanister.Register(&restoreDataAllFunc{})
+	_ = kanister.Register(&restoreDataAllFunc{})
 }
 
 var _ kanister.Func = (*restoreDataAllFunc)(nil)

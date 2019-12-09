@@ -36,7 +36,7 @@ const (
 )
 
 func init() {
-	kanister.Register(&scaleWorkloadFunc{})
+	_ = kanister.Register(&scaleWorkloadFunc{})
 }
 
 var (

@@ -217,7 +217,7 @@ func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespa
 		return errors.Wrapf(err, "Could not get Statefulset{Namespace %s, Name: %s}", namespace, name)
 	}
 	ss.Spec.Replicas = &replicas
-	ss, err = kubeCli.AppsV1().StatefulSets(namespace).Update(ss)
+	_, err = kubeCli.AppsV1().StatefulSets(namespace).Update(ss)
 	if err != nil {
 		return errors.Wrapf(err, "Could not update Statefulset{Namespace %s, Name: %s}", namespace, name)
 	}
@@ -230,7 +230,7 @@ func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespac
 		return errors.Wrapf(err, "Could not get Deployment{Namespace %s, Name: %s}", namespace, name)
 	}
 	d.Spec.Replicas = &replicas
-	d, err = kubeCli.AppsV1().Deployments(namespace).Update(d)
+	_, err = kubeCli.AppsV1().Deployments(namespace).Update(d)
 	if err != nil {
 		return errors.Wrapf(err, "Could not update Deployment{Namespace %s, Name: %s}", namespace, name)
 	}

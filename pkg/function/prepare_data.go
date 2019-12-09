@@ -44,7 +44,7 @@ const (
 )
 
 func init() {
-	kanister.Register(&prepareDataFunc{})
+	_ = kanister.Register(&prepareDataFunc{})
 }
 
 var _ kanister.Func = (*prepareDataFunc)(nil)

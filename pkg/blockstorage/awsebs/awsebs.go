@@ -536,11 +536,6 @@ func waitOnVolume(ctx context.Context, ec2Cli *EC2, vol *ec2.Volume) error {
 	}
 }
 
-// waitOnSnapshot waits for the snapshot to be created
-func waitOnSnapshot(ctx context.Context, ec2Cli *EC2, snap *ec2.Snapshot) error {
-	return waitOnSnapshotID(ctx, ec2Cli, *snap.SnapshotId)
-}
-
 func waitOnSnapshotID(ctx context.Context, ec2Cli *EC2, snapID string) error {
 	snapWaitBackoff := backoff.Backoff{
 		Factor: 2,

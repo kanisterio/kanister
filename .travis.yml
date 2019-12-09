@@ -45,3 +45,6 @@ jobs:
       - sudo chown -R travis:travis ./.go
       after_script:
       - make stop-kind
+    - stage: test
+      script:
+      - make golint

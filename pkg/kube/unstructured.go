@@ -34,7 +34,7 @@ func FetchUnstructuredObject(resource schema.GroupVersionResource, namespace, na
 // TODO: deprecate `FetchUnstructuredObject`
 func FetchUnstructuredObjectWithCli(cli dynamic.Interface, resource schema.GroupVersionResource, namespace, name string) (runtime.Unstructured, error) {
 	if namespace == "" {
-		cli.Resource(resource).Get(name, metav1.GetOptions{})
+		_, _ = cli.Resource(resource).Get(name, metav1.GetOptions{})
 	}
 	return cli.Resource(resource).Namespace(namespace).Get(name, metav1.GetOptions{})
 }

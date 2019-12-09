@@ -40,7 +40,7 @@ import (
 )
 
 func init() {
-	kanister.Register(&createVolumeSnapshotFunc{})
+	_ = kanister.Register(&createVolumeSnapshotFunc{})
 }
 
 var (
@@ -126,7 +126,6 @@ func createVolumeSnapshot(ctx context.Context, tp param.TemplateParams, cli kube
 			} else {
 				PVCData = append(PVCData, *volSnapInfo)
 			}
-			return
 		}(vol)
 	}
 	wg.Wait()

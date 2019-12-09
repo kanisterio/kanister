@@ -100,7 +100,7 @@ func push(ctx context.Context, p PushParams, ord int) error {
 			return err
 		}
 	}
-	ap, err := readArtifactPathFile(p.ArtifactFile)
+	ap, _ := readArtifactPathFile(p.ArtifactFile)
 	log.Debug().Print("Pushing output from Command ", field.M{"order": ord, "command": p.Command, "Environment": env})
 	return pushWithEnv(ctx, p.Command, ap, ord, prof, env)
 }
@@ -133,7 +133,7 @@ func pushWithEnv(ctx context.Context, c []string, suffix string, ord int, prof p
 	}
 	// Delete old data
 	prev := fmt.Sprintf("%s-%d", suffix, ord-1)
-	location.Delete(ctx, prof, prev)
+	_ = location.Delete(ctx, prof, prev)
 	return nil
 }
 

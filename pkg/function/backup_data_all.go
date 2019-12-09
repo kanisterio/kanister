@@ -57,7 +57,7 @@ type BackupInfo struct {
 }
 
 func init() {
-	kanister.Register(&backupDataAllFunc{})
+	_ = kanister.Register(&backupDataAllFunc{})
 }
 
 var _ kanister.Func = (*backupDataAllFunc)(nil)

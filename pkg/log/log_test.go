@@ -14,9 +14,7 @@ import (
 )
 
 const (
-	infoLevelStr  = "info"
-	errorLevelStr = "error"
-	debugLevelStr = "debug"
+	infoLevelStr = "info"
 )
 
 type LogSuite struct{}
@@ -33,6 +31,7 @@ func (s *LogSuite) TestWithNilError(c *C) {
 	WithError(nil).Print("Message")
 }
 
+// nolint
 func (s *LogSuite) TestWithNilContext(c *C) {
 	log.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339Nano})
 	// Should not panic

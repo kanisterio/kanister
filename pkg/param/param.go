@@ -264,7 +264,7 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 func filterByKind(refs map[string]crv1alpha1.ObjectReference, kind string) map[string]crv1alpha1.ObjectReference {
 	filtered := make(map[string]crv1alpha1.ObjectReference, len(refs))
 	for name, ref := range refs {
-		if strings.ToLower(ref.Kind) != strings.ToLower(kind) {
+		if !strings.EqualFold(ref.Kind, kind) {
 			continue
 		}
 		filtered[name] = ref

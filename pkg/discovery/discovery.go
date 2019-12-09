@@ -49,7 +49,7 @@ func NamespacedGVRsIgnoreGroupErrs(ctx context.Context, cli discovery.DiscoveryI
 	if !ok {
 		return nil, err
 	}
-	for k, _ := range out.Groups {
+	for k := range out.Groups {
 		gvr := schema.GroupVersionResource{Group: k.Group, Version: k.Version, Resource: ""}
 		if !exclude.Any(gvr) {
 			return nil, errors.Wrap(err, "Failed to list APIResources")
