@@ -58,7 +58,7 @@ func NewCassandraInstance(name string) App {
 			RepoName: helm.IncubatorRepoName,
 			Version:  "0.13.3",
 			Values: map[string]string{
-				"image.repo":          "kanisterio/cassandra",
+				"image.repo":          "viveksinghggits/cassandra",
 				"image.tag":           "0.22.0",
 				"config.cluster_size": "2",
 			},
