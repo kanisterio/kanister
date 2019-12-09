@@ -21,6 +21,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
+	"google.golang.org/api/option"
 )
 
 // Client is a wrapper for Client client
@@ -51,7 +52,7 @@ func NewClient(ctx context.Context, servicekey string) (*Client, error) {
 
 	client := oauth2.NewClient(ctx, creds.TokenSource)
 
-	service, err := compute.New(client)
+	service, err := compute.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		return nil, err
 	}

@@ -169,6 +169,9 @@ test: build-dirs
 integration-test: build-dirs
 	@$(MAKE) run CMD='-c "./build/integration-test.sh"'
 
+golint:
+	@$(MAKE) run CMD='-c "./build/golint.sh"'
+
 codegen:
 	@$(MAKE) run CMD='-c "./build/codegen.sh"'
 

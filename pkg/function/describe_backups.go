@@ -48,7 +48,7 @@ const (
 )
 
 func init() {
-	kanister.Register(&DescribeBackupsFunc{})
+	_ = kanister.Register(&DescribeBackupsFunc{})
 }
 
 var _ kanister.Func = (*DescribeBackupsFunc)(nil)

@@ -41,7 +41,7 @@ const (
 )
 
 func init() {
-	kanister.Register(&kubeTaskFunc{})
+	_ = kanister.Register(&kubeTaskFunc{})
 }
 
 var _ kanister.Func = (*kubeTaskFunc)(nil)

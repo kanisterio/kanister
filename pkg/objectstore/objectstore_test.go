@@ -43,7 +43,6 @@ type ObjectStoreProviderSuite struct {
 	root           Bucket // root of the default test bucket
 	suiteDirPrefix string // directory name prefix for all tests in this suite
 	testDir        string // directory name for a given test
-	buckets        []string
 	region         string // bucket region
 }
 
@@ -104,9 +103,9 @@ func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
 	c.Skip("intermittently fails due to rate limits on bucket creation")
 	bucketName := s.createBucketName(c)
 
-	origBuckets, err := s.provider.ListBuckets(ctx)
+	origBuckets, _ := s.provider.ListBuckets(ctx)
 
-	_, err = s.provider.CreateBucket(ctx, bucketName, s.region)
+	_, err := s.provider.CreateBucket(ctx, bucketName, s.region)
 	c.Assert(err, IsNil)
 
 	// Duplicate bucket
@@ -115,7 +114,7 @@ func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
 
 	// Should be one more than buckets. Can be racy with other activity
 	// and so checking for inequality
-	buckets, err := s.provider.ListBuckets(ctx)
+	buckets, _ := s.provider.ListBuckets(ctx)
 	c.Check(len(buckets), Not(Equals), len(origBuckets))
 
 	bucket, err := s.provider.GetBucket(ctx, bucketName)
@@ -180,7 +179,7 @@ func (s *ObjectStoreProviderSuite) TestDirectories(c *C) {
 		dir2 = "directory2"
 	)
 
-	directory, err := rootDirectory.CreateDirectory(ctx, dir1)
+	_, err = rootDirectory.CreateDirectory(ctx, dir1)
 	c.Assert(err, IsNil)
 
 	// Expecting only /dir1
@@ -192,7 +191,7 @@ func (s *ObjectStoreProviderSuite) TestDirectories(c *C) {
 	c.Check(ok, Equals, true)
 
 	// Expecting only /dir1
-	directory, err = rootDirectory.GetDirectory(ctx, dir1)
+	directory, err := rootDirectory.GetDirectory(ctx, dir1)
 	c.Assert(err, IsNil)
 
 	// Expecting /dir1/dir2
@@ -212,7 +211,7 @@ func (s *ObjectStoreProviderSuite) TestDirectories(c *C) {
 	c.Check(directories, HasLen, 1)
 
 	// Get dir1/dir2 from root
-	directory2, err = rootDirectory.GetDirectory(ctx, path.Join(dir1, dir2))
+	_, err = rootDirectory.GetDirectory(ctx, path.Join(dir1, dir2))
 	c.Assert(err, IsNil)
 
 	// Get dir1/dir2 from any directory
@@ -333,7 +332,7 @@ func (s *ObjectStoreProviderSuite) TestObjects(c *C) {
 	c.Check(err, IsNil)
 	c.Check(data, DeepEquals, []byte(data1))
 
-	err = rootDirectory.PutBytes(ctx, obj2, []byte(data2), tags)
+	_ = rootDirectory.PutBytes(ctx, obj2, []byte(data2), tags)
 	data, ntags, err := rootDirectory.GetBytes(ctx, obj2)
 	c.Check(err, IsNil)
 	c.Check(data, DeepEquals, []byte(data2))

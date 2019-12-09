@@ -149,5 +149,5 @@ func (s *PollSuite) TestWaitWithBackoffBackoff(c *C) {
 	now := time.Now()
 	err := WaitWithBackoff(ctx, b, f)
 	c.Assert(err, IsNil)
-	c.Assert(time.Now().Sub(now) > (numIterations-1)*time.Millisecond, Equals, true)
+	c.Assert(time.Since(now) > (numIterations-1)*time.Millisecond, Equals, true)
 }

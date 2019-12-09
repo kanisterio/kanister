@@ -53,7 +53,7 @@ const (
 )
 
 func init() {
-	kanister.Register(&copyVolumeDataFunc{})
+	_ = kanister.Register(&copyVolumeDataFunc{})
 }
 
 var _ kanister.Func = (*copyVolumeDataFunc)(nil)

@@ -52,7 +52,7 @@ func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	io.WriteString(w, string(js))
+	_, _ = io.WriteString(w, string(js))
 }
 
 // NewServer returns a pointer to the http Server

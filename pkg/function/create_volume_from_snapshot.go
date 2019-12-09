@@ -34,7 +34,7 @@ import (
 )
 
 func init() {
-	kanister.Register(&createVolumeFromSnapshotFunc{})
+	_ = kanister.Register(&createVolumeFromSnapshotFunc{})
 }
 
 var (

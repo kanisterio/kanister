@@ -111,7 +111,7 @@ func (s *DataSuite) TearDownSuite(c *C) {
 		c.Assert(err, IsNil)
 	}
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
@@ -403,8 +403,7 @@ func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
 }
 
 func (s *DataSuite) TestBackupRestoreDeleteDataAll(c *C) {
-	var replicas int32
-	replicas = 2
+	replicas := int32(2)
 	tp, pvcs := s.getTemplateParamsAndPVCName(c, replicas)
 
 	// Test backup

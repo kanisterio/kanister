@@ -30,7 +30,7 @@ import (
 )
 
 func init() {
-	kanister.Register(&kubeExecFunc{})
+	_ = kanister.Register(&kubeExecFunc{})
 }
 
 var (
@@ -94,7 +94,7 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		return nil, err
 	}
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
-	ctx = field.Context(ctx, consts.ContainerNameKey, container)
+	_ = field.Context(ctx, consts.ContainerNameKey, container)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)

@@ -28,7 +28,7 @@ import (
 func Pull(ctx context.Context, target io.Writer, p param.Profile, manifest string) error {
 	// Read manifest
 	buf := bytes.NewBuffer(nil)
-	location.Read(ctx, buf, p, manifest)
+	_ = location.Read(ctx, buf, p, manifest)
 	// Read Data
 	data, err := ioutil.ReadAll(buf)
 	if err != nil {
