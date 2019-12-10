@@ -34,6 +34,10 @@ const (
 	ElasticRepoName = "elastic"
 	ElasticRepoURL  = "https://helm.elastic.co"
 
+	// Add incubator charts url
+	IncubatorRepoName = "incubator"
+	IncubatorRepoURL  = "https://kubernetes-charts-incubator.storage.googleapis.com"
+
 	// Add stable charts url
 	StableRepoName = "stable"
 	StableRepoURL  = "https://kubernetes-charts.storage.googleapis.com"
