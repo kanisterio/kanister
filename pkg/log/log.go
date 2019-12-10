@@ -2,7 +2,10 @@ package log
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/kanisterio/kanister/pkg/field"
@@ -20,6 +23,21 @@ const (
 	ErrorLevel Level = Level(logrus.ErrorLevel)
 )
 
+// OutputSink describes the current output sink.
+type OutputSink uint8
+
+// Valid log sinks: stderr or fluentbit
+const (
+	StderrSink OutputSink = iota
+	FluentbitSink
+)
+
+// Names of environment variables to configure the logging sink
+const (
+	LoggingServiceHostEnv = "LOGGING_SVC_SERVICE_HOST"
+	LoggingServicePortEnv = "LOGGING_SVC_SERVICE_PORT_LOGGING"
+)
+
 type logger struct {
 	level Level
 	ctx   context.Context
@@ -28,6 +46,29 @@ type logger struct {
 
 // common logger implementation used in the library
 var log = logrus.New()
+
+// SetOutput sets the output destination.
+func SetOutput(sink OutputSink) error {
+	switch sink {
+	case StderrSink:
+		log.SetOutput(os.Stderr)
+		return nil
+	case FluentbitSink:
+		fbitAddr, ok := os.LookupEnv(LoggingServiceHostEnv)
+		if !ok {
+			return errors.New("Unable to find Fluentbit host address")
+		}
+		fbitPort, ok := os.LookupEnv(LoggingServicePortEnv)
+		if !ok {
+			return errors.New("Unable to find Fluentbit logging port")
+		}
+		hook := NewFluentbitHook(fbitAddr + ":" + fbitPort)
+		log.AddHook(hook)
+		return nil
+	default:
+		return errors.New("not implemented")
+	}
+}
 
 func Info() Logger {
 	return &logger{
@@ -89,4 +130,26 @@ func (l *logger) WithContext(ctx context.Context) Logger {
 func (l *logger) WithError(err error) Logger {
 	l.err = err
 	return l
+}
+
+// Scrapes fields of interest from the logrus.Entry and converts then into a JSON []byte.
+func entryToJSON(entry *logrus.Entry) []byte {
+	data := make(logrus.Fields, len(entry.Data)+3)
+
+	data["Message"] = entry.Message
+	data["Level"] = entry.Level.String()
+	data["Time"] = entry.Time
+
+	for k, v := range entry.Data {
+		data[k] = v
+	}
+
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return nil
+	}
+	n := []byte("\n")
+	bytes = append(bytes, n...)
+
+	return bytes
 }
