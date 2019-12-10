@@ -49,8 +49,7 @@ type CassandraInstance struct {
 // NewCassandraInstance returns new cassandra application
 func NewCassandraInstance(name string) App {
 	return &CassandraInstance{
-		name:      name,
-		namespace: "cassandra-test",
+		name: name,
 		chart: helm.ChartInfo{
 			Release:  name,
 			RepoURL:  helm.IncubatorRepoURL,
@@ -164,6 +163,12 @@ func (cas *CassandraInstance) Count(ctx context.Context) (int, error) {
 		return 0, errors.Wrapf(err, "Error %s counting the number of records in the database.", stderr)
 	}
 	// parse stdout to get the number of rows in the table
+	// the count output from cqlsh is in below format
+	// count
+	// -------
+	// 	3
+	// (1 rows)
+
 	count, err := strconv.Atoi(strings.Trim(strings.Split(stdout, "\n")[2], " "))
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error, converting count value into int.")
