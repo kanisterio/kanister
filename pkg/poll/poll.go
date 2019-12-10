@@ -89,7 +89,7 @@ func WaitWithBackoffWithRetries(ctx context.Context, b backoff.Backoff, numRetri
 		}
 		sleep := b.Duration()
 		if deadline, ok := ctx.Deadline(); ok {
-			ctxSleep := deadline.Sub(time.Now())
+			ctxSleep := time.Until(deadline)
 			sleep = minDuration(sleep, ctxSleep)
 		}
 		t.Reset(sleep)

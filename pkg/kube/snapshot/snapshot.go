@@ -64,7 +64,7 @@ func Create(ctx context.Context, kubeCli kubernetes.Interface, snapCli snapshotc
 		},
 	}
 
-	snap, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Create(snap)
+	_, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Create(snap)
 	if err != nil {
 		return err
 	}

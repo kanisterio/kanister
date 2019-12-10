@@ -267,7 +267,7 @@ func resticAzureArgs(profile *param.Profile, repository string) []string {
 
 // GetOrCreateRepository will check if the repository already exists and initialize one if not
 func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey string, profile *param.Profile) error {
-	stdout, stderr, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
+	_, _, err := getLatestSnapshots(profile, artifactPrefix, encryptionKey, cli, namespace, pod, container)
 	if err == nil {
 		return nil
 	}
@@ -276,7 +276,7 @@ func GetOrCreateRepository(cli kubernetes.Interface, namespace, pod, container, 
 	if err != nil {
 		return errors.Wrap(err, "Failed to create init command")
 	}
-	stdout, stderr, err = kube.Exec(cli, namespace, pod, container, cmd, nil)
+	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	return errors.Wrapf(err, "Failed to create object store backup location")

@@ -175,12 +175,12 @@ func (s *JobSuite) TestJobsDeleteWhileRunning(c *C) {
 
 	origJobCount := getK8sJobCount(clientset, namespace, c)
 	// Start the job that will run for 5 minutes
-	job.Create()
+	_ = job.Create()
 	time.Sleep(100 * time.Millisecond)
 	// Deleting the job should work.
-	job.Delete()
+	_ = job.Delete()
 
-	err = waitForJobCount(clientset, namespace, origJobCount, c)
+	_ = waitForJobCount(clientset, namespace, origJobCount, c)
 	c.Assert(c, NotNil)
 }
 
@@ -200,8 +200,8 @@ func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
 	c.Assert(err, IsNil)
 
 	// Start the job and then delete it immediately.
-	job.Create()
-	job.Delete()
+	_ = job.Create()
+	_ = job.Delete()
 
 	lo := metav1.ListOptions{LabelSelector: "job-name=" + testJobName}
 	jl, err := clientset.BatchV1().Jobs(testJobNamespace).List(lo)
@@ -213,7 +213,7 @@ func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go cancelLater(cancel)
 	// WaitForCompletion should complete when the context is cancelled.
-	err = job.WaitForCompletion(ctx)
+	_ = job.WaitForCompletion(ctx)
 	c.Assert(c, NotNil)
 }
 

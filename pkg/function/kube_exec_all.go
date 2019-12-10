@@ -30,7 +30,7 @@ import (
 )
 
 func init() {
-	kanister.Register(&kubeExecAllFunc{})
+	_ = kanister.Register(&kubeExecAllFunc{})
 }
 
 var (

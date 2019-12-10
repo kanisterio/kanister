@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	kanister.Register(&waitForSnapshotCompletionFunc{})
+	_ = kanister.Register(&waitForSnapshotCompletionFunc{})
 }
 
 var (

@@ -33,7 +33,7 @@ const (
 )
 
 func init() {
-	kanister.Register(&locationDeleteFunc{})
+	_ = kanister.Register(&locationDeleteFunc{})
 }
 
 var _ kanister.Func = (*locationDeleteFunc)(nil)

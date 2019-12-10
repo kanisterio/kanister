@@ -67,7 +67,7 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	// Make sure the CRD's exist.
-	resource.CreateCustomResources(context.Background(), config)
+	_ = resource.CreateCustomResources(context.Background(), config)
 
 	s.cli = cli
 	s.crCli = crCli
@@ -110,7 +110,7 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 
 func (s *ControllerSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
@@ -491,7 +491,7 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	c.Assert(err, IsNil)
 
 	// Check if the artifacts got updated correctly
-	as, err = s.crCli.ActionSets(as.GetNamespace()).Get(as.GetName(), metav1.GetOptions{})
+	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(as.GetName(), metav1.GetOptions{})
 	arts := as.Status.Actions[0].Artifacts
 	c.Assert(arts, NotNil)
 	c.Assert(arts, HasLen, 1)

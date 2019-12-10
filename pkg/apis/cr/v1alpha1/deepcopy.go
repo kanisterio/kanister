@@ -5,7 +5,6 @@ package v1alpha1
 func (in *BlueprintPhase) DeepCopyInto(out *BlueprintPhase) {
 	*out = *in
 	// TODO: Handle 'Args'
-	return
 }
 
 // DeepCopyInto handles the Phase deep copies, copying the receiver, writing into out. in must be non-nil.
@@ -13,12 +12,10 @@ func (in *BlueprintPhase) DeepCopyInto(out *BlueprintPhase) {
 func (in *Phase) DeepCopyInto(out *Phase) {
 	*out = *in
 	// TODO: Handle 'Output' map[string]interface{}
-	return
 }
 
 // DeepCopyInto handles JSONMap deep copies, copying the receiver, writing into out. in must be non-nil.
 // The auto-generated function does not handle the map[string]interface{} type
 func (in *JSONMap) DeepCopyInto(out *JSONMap) {
 	*out = *in
-	return
 }
