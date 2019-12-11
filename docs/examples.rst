@@ -435,3 +435,90 @@ it the perfect platform for mission-critical data. Cassandra's support for
 replicating across multiple data centers is best-in-class, providing lower
 latency for your users and the peace of mind of knowing that you can survive
 regional outages.
+
+To install the Cassandra database we are going to use the standard Cassandra
+chart but customized Cassandra image. We had to customize the official Cassandra
+just to include some Kanister tooling to helm backup and other things. Please
+follow commands to install Cassandra in your machine.
+
+.. code-block:: bash
+
+  # add helm repo
+  $ helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com
+
+  # Update the helm repo list
+  $ helm repo update
+
+  # install the database
+  # replace app-namespace with the namespace you want to deploy the cassandra app in
+  $ helm install --namespace "<app-namespace>" "cassandra" incubator/cassandra --set image.repo=kanisterio/cassandra --set image.tag=0.22.0 --set config.cluster_size=2
+
+
+Once you have Cassandra database' pods up and running we will have to insert some
+records into that database so that we can take of that data to demonstrate the
+backup and restore activity.
+
+We will have to Exec into the pod and use Cassandra query language to insert some
+data into the Cassandra database.
+
+.. code-block:: bash
+
+  # exec into the cassandra pod
+  $ kubectl exec -it -n <app-namespace> cassandra-0 bash
+
+  # once you are inside the pod use `cqlsh` to get into the cassandra CLI and run below commands to create the keyspace
+  cqlsh> create keyspace restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 3};
+
+  # once the keyspace is created let's create a table named guests and some data into that table
+  cqlsh> create table restaurants.guests (id UUID primary key, firstname text, lastname text, birthday timestamp);
+  cqlsh> insert into restaurants.guests (id, firstname, lastname, birthday)  values (5b6962dd-3f90-4c93-8f61-eabfa4a803e2, 'Vivek', 'Singh', '2015-02-18');
+
+  # once you have the data inserted you can list all the data inside a table using the command
+  cqlsh> select * from restaurants.guests;
+
+Once we have inserted data into our Cassandra database, let's go ahead and create Kanister
+Blueprint resource so that we can use this in order to create the ``backup`` Actionset. To
+create the blueprint please follow below command
+
+.. code-block:: bash
+
+  $ kubectl create -f https://raw.githubusercontent.com/kanisterio/kanister/master/pkg/blueprint/blueprints/cassandra-blueprint.yaml -n <kanister-operator-namespace>
+
+Once you have the blueprint created let's go ahead with creating the Actionset
+with ``backup`` action so that we can have ``backup`` of our deployed Cassandra
+database.
+
+Please follow below commands to create the Actionset with ``backup`` action
+
+.. code-block:: bash
+
+  # kanister-operator-namespace will be the namespace where you kanister operator is installed
+  # blueprint-name will be the name of the blueprint that you will get after creating the blueprint from the Create Blueprint step
+  # profile-name will be the profile name you get when you create the profile from Create Profile step
+
+  $ kanctl create actionset --action backup --namespace <kanister-operator-namespace> --blueprint <blueprint-name> --statefulset cassandra/cassandra  --profile cassandra/<profile-name>
+  actionset <backup-actionset-name> created
+
+  # you can check the status of the actionset either by describing the actionset resource or by checking the kanister operator's pod log
+  $ kubectl describe actionset -n <kanister-operator-namespace> <backup-actionset-name>
+
+If the status of Actionset is complete, it means that the Cassandra database backup
+complete. And now that we have taken the backup let's delete the inserted data so
+that we can try to restore that by creating another Actionset with ``restore`` action.
+
+Please follow below commands to delete the entire data that we have inserted
+
+.. code-block:: bash
+
+  # Exec into the cassandra pod
+  $ kubectl exec -it -n <app-namespace> cassandra-0 bash
+
+  # once you are inside the pod use `cqlsh` to get into the cassandra CLI and run below commands to create the keyspace
+  # drop the guests table
+  cqlsh> drop table if exists restaurants.guests;
+
+  # drop restaurants keyspace
+  cqlsh> drop  keyspace  restaurants;
+
+Now that we have delete the data, obviously after taking backup, we can create another
+Actionset with ``restore`` action to restore the data that we have backed up.
