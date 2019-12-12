@@ -180,7 +180,9 @@ func (p *fcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 		return nil, err
 	}
 	// We don't get size information from `SnapshotGet` - so set this to the volume size for now
-	snap.Size = volume.Size
+	if snap.Size == 0 {
+		snap.Size = volume.Size
+	}
 	return snap, nil
 }
 
