@@ -48,8 +48,8 @@ this Profile name while creating ``backup`` and ``restore`` Actionset.
 .. contents:: Application Examples
   :local:
 
-ElasticSearch Example
-=====================
+ElasticSearch
+=============
 ElasticSearch is a distributed, JSON-based search engine. To install ElasticSearch
 we can follow below instructions and use their official helm chart.
 
@@ -150,8 +150,8 @@ restored or not.
 So this is how we can use Kanister to backup and eventually restore out database
 application.
 
-MongoDB Example
-===============
+MongoDB
+=======
 
 MongoDB is a general purpose, document-based, distributed database built for
 modern application developers and for the cloud era.
@@ -260,8 +260,8 @@ Please make sure that the status of the ``restore`` actionset is completed and
 we can login into the MongoDB pod once again to check if the data that we had
 created earlier has been restored.
 
-MySQL Example
-=============
+MySQL
+=====
 MySQL is an open-source relational database management system. In this example we are
 going to install it using helm chart and the will follow the same steps to create
 ``backup`` and then eventually ``restore`` that backup.
@@ -447,12 +447,12 @@ has been restored successfully.
 
 And we can see that the data has been restored successfully.
 
-PostgreSQL Example
-=======================
+PostgreSQL
+==========
 
 
-PostgreSQL-Wale Example
------------------------
+PostgreSQL-Wale
+---------------
 
 PostgreSQL is an object-relational database management system (ORDBMS)
 with an emphasis on the ability to be extended and on standards-compliance.
@@ -718,7 +718,7 @@ Installing PostgreSQL
 
 .. code-block:: bash
 
-  # add repo 
+  # add repo
   $ helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
 
   # update repo list
@@ -752,8 +752,8 @@ Backup and Restore or PostgreSQL
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-Cassandra Example
-=================
+Cassandra
+=========
 
 The Apache Cassandra database is the right choice when you need scale ability
 and high availability without compromising performance. Linear scale ability
