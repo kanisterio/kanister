@@ -37,9 +37,14 @@ MySQL
 MySQL is an open-source relational database management system. Please follow
 `this <examples.html#installing-mysql>`__ link to install MySQL application.
 
-PostgreSQL
-==========
+PostgreSQL Applications
+=======================
 
+PostgreSQL is an object-relational database management system (ORDBMS)
+with an emphasis on the ability to be extended and on standards-compliance.
+
+You can follow `this <examples.html#installing-postgresql-wale>`__ link to
+install PostgreSQL on your cluster.
 
 Cassandra
 =========

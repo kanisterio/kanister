@@ -169,22 +169,27 @@ You can use below command to install the MongoDB application.
   # update the repo list
   $ helm repo update
 
-  # install the application (helm V2)
+  # install the database (helm V2)
   helm install stable/mongodb --name my-release --namespace mongo-test  \
       --set replicaSet.enabled=true                                     \
       --set image.repository=kanisterio/mongodb                         \
       --set image.tag=0.22.0
 
-  # install the application (helm V3)
+  # install the database (helm V3)
   $ kubectl create namespace mongo-test
   helm install my-release stable/mongodb --namespace mongo-test         \
       --set replicaSet.enabled=true                                     \
       --set image.repository=kanisterio/mongodb                         \
       --set image.tag=0.22.0
 
-You can notice that we are using a customized image to get MongoDB installed and
-the only reason we are doing is because we have to install some Kanister tools on
-top of the standard MongoDB image.
+You can notice that we are using a customized image of MongoDB to get it
+installed and the only reason we are doing that is because we have to use some
+Kanister tools on top of the standard MongoDB image that will help us in
+taking backup and restore of the database.
+
+So, in the customized image we are using standard MongoDB as base image and
+then just installing some Kanister tools for ex ``kando`` and an other
+tool ``restic``.
 
 Backup and Restore of MongoDB
 -----------------------------
@@ -442,14 +447,18 @@ has been restored successfully.
 
 And we can see that the data has been restored successfully.
 
-PostgreSQL-Wale Example
+PostgreSQL Example
 =======================
+
+
+PostgreSQL-Wale Example
+-----------------------
 
 PostgreSQL is an object-relational database management system (ORDBMS)
 with an emphasis on the ability to be extended and on standards-compliance.
 
 Installing PostgreSQL-Wale
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can follow below guide to install PostgreSQL-Wale
 
@@ -472,9 +481,31 @@ You can follow below guide to install PostgreSQL-Wale
       --set postgresqlExtendedConf.archiveTimeout=60 \
       --set postgresqlExtendedConf.walLevel=archive
 
+  # install the database (helm V3)
+  $ kubectl create namespace postgres-test
+  helm install stable/postgresql my-release \
+      --namespace postgres-test \
+      --set image.repository=kanisterio/postgresql \
+      --set image.tag=0.22.0 \
+      --set postgresqlPassword=postgres-12345 \
+      --set postgresqlExtendedConf.archiveCommand="'envdir /bitnami/postgresql/data/env wal-e wal-push %p'" \
+      --set postgresqlExtendedConf.archiveMode=true \
+      --set postgresqlExtendedConf.archiveTimeout=60 \
+      --set postgresqlExtendedConf.walLevel=archive
+
+
+You can notice that we are using a customized image of ``postgresql`` to get it
+installed and the only reason we are doing that is because we have to use some
+Kanister tools on top of the standard ``postgresql`` image that will help us in
+taking backup and restore of the database.
+
+So, in the customized image we are using standard ``postgresql`` as base image and
+then just installing some Kanister tools for ex ``kando`` and an other
+tool ``restic``.
 
 Backup and Restore of PostgreSQL-Wale
--------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Once we have PostgreSQL installed we can create the Kanister resources
 that will be used while creating ``Backup`` and ``Restore`` Actionset
 
@@ -678,6 +709,49 @@ successfully.
 
   (2 rows)
 
+
+PostgreSQL
+----------
+
+Installing PostgreSQL
+^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+  # add repo 
+  $ helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
+
+  # update repo list
+  $ helm dependency update
+
+  # install the database (helm V2)
+  $ helm install --namespace kanister --name my-release incubator/patroni
+
+  # install the database (helm V3)
+  $ kubectl create namespace kanister
+  $ helm install my-release --namespace kanister incubator/patroni
+
+
+Backup and Restore or PostgreSQL
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Once we have the application up and running we will have to create the Kanister
+resources Profile and Blueprint that will be used to create the ``backup``
+and ``restore`` Actionset.
+
+// TODO
+
+PostgreSQL on AWS-RDS
+---------------------
+// TODO
+
+Installing PostgreSQL on AWS-RDS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Backup and Restore or PostgreSQL
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 Cassandra Example
 =================
 
@@ -705,9 +779,21 @@ follow commands to install Cassandra in your machine.
   # Update the helm repo list
   $ helm repo update
 
-  # install the database
-  # replace app-namespace with the namespace you want to deploy the cassandra app in
+  # install the database (helm V2)
+  $ helm install --namespace "<app-namespace>"  --name "cassandra" incubator/cassandra --set image.repo=kanisterio/cassandra --set image.tag=0.22.0 --set config.cluster_size=2
+
+  # install the database  (helm V3)
+  $ kubectl create namespace <app-namespace>
   $ helm install --namespace "<app-namespace>" "cassandra" incubator/cassandra --set image.repo=kanisterio/cassandra --set image.tag=0.22.0 --set config.cluster_size=2
+
+You can notice that we are using a customized image of Cassandra to get it
+installed and the only reason we are doing that is because we have to use some
+Kanister tools on top of the standard Cassandra image that will help us in
+taking backup and restore of the database.
+
+So, in the customized image we are using standard Cassandra as base image and
+then just installing some Kanister tools for ex ``kando`` and an other
+tool ``restic``.
 
 
 Backup and Restore of Cassandra
