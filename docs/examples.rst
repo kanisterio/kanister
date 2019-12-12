@@ -11,7 +11,7 @@ Prerequisites Details:
 
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.22.0 installed in the namespace ``kanister-op-namespace``
+* Kanister version 0.22.0 installed in the namespace ``<kanister-op-namespace>``
 
 You can follow :ref:`this <install>` guide to install Kanister, if you don't have it
 installed already.
@@ -51,8 +51,12 @@ this Profile name while creating ``backup`` and ``restore`` Actionset.
 ElasticSearch Example
 =====================
 ElasticSearch is a distributed, JSON-based search engine. To install ElasticSearch
-we can follow below instructions and use their official helm chart. Below commands
-can be followed to install the ElasticSearch cluster in your cluster
+we can follow below instructions and use their official helm chart.
+
+Installing ElasticSearch
+------------------------
+
+Below commands can be followed to install the ElasticSearch cluster in your cluster
 
 .. code-block:: bash
 
@@ -65,6 +69,9 @@ can be followed to install the ElasticSearch cluster in your cluster
   # install the ElasticSearch database (helm V3)
   $ kubectl create namespace es-test
   $ helm install --namespace es-test elasticsearch elastic/elasticsearch --set antiAffinity=soft
+
+Backup and Restore of ElasticSearch
+-----------------------------------
 
 Once we have the database installed. Let's go ahead and insert some records into
 this ElasticSearch instance. To insert the records into ElasticSearch cluster we
@@ -148,6 +155,10 @@ MongoDB Example
 
 MongoDB is a general purpose, document-based, distributed database built for
 modern application developers and for the cloud era.
+
+Installing MongoDB
+------------------
+
 You can use below command to install the MongoDB application.
 
 .. code-block:: bash
@@ -174,6 +185,9 @@ You can use below command to install the MongoDB application.
 You can notice that we are using a customized image to get MongoDB installed and
 the only reason we are doing is because we have to install some Kanister tools on
 top of the standard MongoDB image.
+
+Backup and Restore of MongoDB
+-----------------------------
 
 Once we have the database up and running we will have to insert some records into
 the database, to do that we will have to ``EXEC`` into the MongoDB pod and use
@@ -246,6 +260,10 @@ MySQL Example
 MySQL is an open-source relational database management system. In this example we are
 going to install it using helm chart and the will follow the same steps to create
 ``backup`` and then eventually ``restore`` that backup.
+
+Installing MySQL
+----------------
+
 To install the MySQL database please follow below command
 
 .. code-block:: bash
@@ -266,6 +284,9 @@ To install the MySQL database please follow below command
   helm install my-release stable/mysql --namespace mysql-test     \
       --set mysqlRootPassword='asd#45@mysqlEXAMPLE'               \
       --set persistence.size=10Gi
+
+Backup and Restore of MySQL
+---------------------------
 
 Once we have the MySQL instance running we will have to ``exec`` into the running
 pod and create/insert some data into the MySQL database.
@@ -423,7 +444,239 @@ And we can see that the data has been restored successfully.
 
 PostgreSQL-Wale Example
 =======================
-Details of PostgreSQL example
+
+PostgreSQL is an object-relational database management system (ORDBMS)
+with an emphasis on the ability to be extended and on standards-compliance.
+
+Installing PostgreSQL-Wale
+--------------------------
+
+You can follow below guide to install PostgreSQL-Wale
+
+.. code-block:: bash
+
+  # add repo
+  $ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+
+  # update repo list
+  $ helm repo update
+
+  # install the database (helm V2)
+  helm install stable/postgresql --name my-release \
+      --namespace postgres-test \
+      --set image.repository=kanisterio/postgresql \
+      --set image.tag=0.22.0 \
+      --set postgresqlPassword=postgres-12345 \
+      --set postgresqlExtendedConf.archiveCommand="'envdir /bitnami/postgresql/data/env wal-e wal-push %p'" \
+      --set postgresqlExtendedConf.archiveMode=true \
+      --set postgresqlExtendedConf.archiveTimeout=60 \
+      --set postgresqlExtendedConf.walLevel=archive
+
+
+Backup and Restore of PostgreSQL-Wale
+-------------------------------------
+Once we have PostgreSQL installed we can create the Kanister resources
+that will be used while creating ``Backup`` and ``Restore`` Actionset
+
+Since we already have created Profile resource we will now create Blueprint,
+please follow below command to create the Blueprint
+
+.. code-block:: bash
+
+  # replace kanister-op-namespace with the namespace where your kanister operator is installed.
+  kubectl create -f https://raw.githubusercontent.com/kanisterio/kanister/master/examples/stable/postgresql-wale/postgresql-blueprint.yaml -n <kanister-op-namespace>
+
+Once we have Profile and Blueprint created, we will have to create
+the base backup of the database. Please follow below command to
+create the base backup
+
+.. code-block:: bash
+
+  # Find profile name
+  $ kubectl get profile -n postgres-test
+  NAME               AGE
+  s3-profile-zvrg9   109m
+
+  # Create Actionset
+  # Create a base backup by creating an ActionSet
+  cat << EOF | kubectl create -f -
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: ActionSet
+  metadata:
+      name: pg-base-backup
+      namespace: kasten-io
+  spec:
+      actions:
+      - name: backup
+        blueprint: postgresql-blueprint
+        object:
+          kind: StatefulSet
+          name: my-release-postgresql
+          namespace: postgres-test
+        profile:
+          apiVersion: v1alpha1
+          kind: Profile
+          name: s3-profile-k8s9l
+          namespace: postgres-test
+        secrets:
+          postgresql:
+            name: my-release-postgresql
+            namespace: postgres-test
+  EOF
+
+  # View the status of the actionset
+  $ kubectl --namespace kasten-io describe actionset pg-base-backup
+
+Now let's go ahead with creating some data into the database
+that we just created, this is the data that we will try to restore
+after deleting it manually to imitate disaster.
+
+.. code-block:: bash
+
+  ## Log in into postgresql container and get shell access
+  $ kubectl exec -ti my-release-postgresql-0 -n postgres-test -- bash
+
+  ## use psql cli to add entries in postgresql database
+  $ PGPASSWORD=${POSTGRES_PASSWORD} psql
+  psql (11.5)
+  Type "help" for help.
+
+  ## Create DATABASE
+  postgres=# CREATE DATABASE test;
+  CREATE DATABASE
+  postgres=# \l
+                                    List of databases
+    Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges
+  -----------+----------+----------+-------------+-------------+-----------------------
+  postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
+  template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+            |          |          |             |             | postgres=CTc/postgres
+  template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+            |          |          |             |             | postgres=CTc/postgres
+  test      | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
+  (4 rows)
+
+  ## Create table COMPANY in test database
+  postgres=# \c test
+  You are now connected to database "test" as user "postgres".
+  test=# CREATE TABLE COMPANY(
+  test(#     ID INT PRIMARY KEY     NOT NULL,
+  test(#     NAME           TEXT    NOT NULL,
+  test(#     AGE            INT     NOT NULL,
+  test(#     ADDRESS        CHAR(50),
+  test(#     SALARY         REAL,
+  test(#     CREATED_AT    TIMESTAMP
+  test(# );
+  CREATE TABLE
+
+  ## Insert data into the table
+  test=# INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY,CREATED_AT) VALUES (10, 'Paul', 32, 'California', 20000.00, now());
+  INSERT 0 1
+  test=# select * from company;
+  id | name | age |                      address                       | salary |         created_at
+  ----+------+-----+----------------------------------------------------+--------+----------------------------
+  10 | Paul |  32 | California                                         |  20000 | 2019-09-16 14:39:36.316065
+  (1 row)
+
+  ## Add few more entries
+  test=# INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY,CREATED_AT) VALUES (20, 'Omkar', 32, 'California', 20000.00, now());
+  INSERT 0 1
+  test=# INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY,CREATED_AT) VALUES (30, 'Prasad', 32, 'California', 20000.00, now());
+  INSERT 0 1
+
+  test=# select * from company;
+  id | name  | age |                      address                       | salary |         created_at
+  ----+-------+-----+----------------------------------------------------+--------+----------------------------
+  10 | Paul  |  32 | California                                         |  20000 | 2019-09-16 14:39:36.316065
+  20 | Omkar |  32 | California                                         |  20000 | 2019-09-16 14:40:52.952459
+  30 | Omkar |  32 | California                                         |  20000 | 2019-09-16 14:41:06.433487
+
+
+After inserting the data into the database, let's assume something bad
+happens with the database, and the test database go deleted. To imitate
+let's delete the database manually
+
+.. code-block:: bash
+
+  ## Log in into postgresql container and get shell access
+  $ kubectl exec -ti my-release-postgresql-0 -n postgres-test -- bash
+
+  ## use psql cli to add entries in postgresql database
+  $ PGPASSWORD=${POSTGRES_PASSWORD} psql
+  psql (11.5)
+  Type "help" for help.
+
+  ## Drop database
+  postgres=# \l
+                                    List of databases
+    Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges
+  -----------+----------+----------+-------------+-------------+-----------------------
+  postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
+  template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+            |          |          |             |             | postgres=CTc/postgres
+  template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+            |          |          |             |             | postgres=CTc/postgres
+  test      | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
+  (4 rows)
+
+  postgres=# DROP DATABASE test;
+  DROP DATABASE
+  postgres=# \l
+                                    List of databases
+    Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges
+  -----------+----------+----------+-------------+-------------+-----------------------
+  postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
+  template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+            |          |          |             |             | postgres=CTc/postgres
+  template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+            |          |          |             |             | postgres=CTc/postgres
+  (3 rows)
+
+
+To restore the missing data, you should use the backup that you created before.
+An easy way to do this is to leverage kanctl, a command-line tool that helps
+create ActionSets that depend on other ActionSets:
+
+Let's use PostgreSQL Point-In-Time Recovery to recover data till particular time
+
+.. code-block:: bash
+
+  $ kanctl --namespace kasten-io create actionset --action restore --from pg-base-backup --options pitr=2019-09-16T14:41:00Z
+  actionset restore-pg-base-backup-d7g7w created
+
+  ## NOTE: pitr argument to the command is optional. If you want to restore data till the latest consistent state, you can skip '--options pitr' option
+  # e.g $ kanctl --namespace kasten-io create actionset --action restore --from pg-base-backup
+
+  ## Check status
+  $ kubectl --namespace kasten-io describe actionset restore-pg-base-backup-d7g7w
+
+Once you have verified that the status of the Actionset is complete, you
+can login to the database again to make sure the data has been restored
+successfully.
+
+.. code-block:: bash
+
+  postgres=# \l
+                                    List of databases
+    Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges
+  -----------+----------+----------+-------------+-------------+-----------------------
+  postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
+  template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+            |          |          |             |             | postgres=CTc/postgres
+  template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+            |          |          |             |             | postgres=CTc/postgres
+  test      | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
+  (4 rows)
+
+  postgres=# \c test;
+  You are now connected to database "test" as user "postgres".
+  test=# select * from company;
+  id | name  | age |                      address                       | salary |         created_at
+  ----+-------+-----+----------------------------------------------------+--------+----------------------------
+  10 | Paul  |  32 | California                                         |  20000 | 2019-09-16 14:39:36.316065
+  20 | Omkar |  32 | California                                         |  20000 | 2019-09-16 14:40:52.952459
+
+  (2 rows)
 
 Cassandra Example
 =================
@@ -435,6 +688,9 @@ it the perfect platform for mission-critical data. Cassandra's support for
 replicating across multiple data centers is best-in-class, providing lower
 latency for your users and the peace of mind of knowing that you can survive
 regional outages.
+
+Installing Cassandra
+--------------------
 
 To install the Cassandra database we are going to use the standard Cassandra
 chart but customized Cassandra image. We had to customize the official Cassandra
@@ -454,6 +710,9 @@ follow commands to install Cassandra in your machine.
   $ helm install --namespace "<app-namespace>" "cassandra" incubator/cassandra --set image.repo=kanisterio/cassandra --set image.tag=0.22.0 --set config.cluster_size=2
 
 
+Backup and Restore of Cassandra
+-------------------------------
+
 Once you have Cassandra database' pods up and running we will have to insert some
 records into that database so that we can take of that data to demonstrate the
 backup and restore activity.
@@ -471,7 +730,7 @@ data into the Cassandra database.
 
   # once the keyspace is created let's create a table named guests and some data into that table
   cqlsh> create table restaurants.guests (id UUID primary key, firstname text, lastname text, birthday timestamp);
-  cqlsh> insert into restaurants.guests (id, firstname, lastname, birthday)  values (5b6962dd-3f90-4c93-8f61-eabfa4a803e2, 'Vivek', 'Singh', '2015-02-18');
+  cqlsh> insert into restaurants.guests (id, firstname, lastname, birthday)  values (5b6962dd-3f90-4c93-8f61-eabfa4a803e2, 'Robert', 'Downey Jr.', '2015-02-18');
 
   # once you have the data inserted you can list all the data inside a table using the command
   cqlsh> select * from restaurants.guests;
@@ -520,5 +779,22 @@ Please follow below commands to delete the entire data that we have inserted
   # drop restaurants keyspace
   cqlsh> drop  keyspace  restaurants;
 
-Now that we have delete the data, obviously after taking backup, we can create another
+Now that we have deleted the data, obviously after taking backup, we can create another
 Actionset with ``restore`` action to restore the data that we have backed up.
+
+.. code-block:: bash
+
+  $ kanctl --namespace <kanister-operator-namespace> create actionset --action restore --from "<backup-actionset-name>"
+  actionset <restore-actionset-name> created
+  # you can see the status of the actionset by describing the restore actionset
+  $ kubectl describe actionset -n <kanister-operator-namespace> <restore-actionset-name>
+
+Once you have verified that the status of the Actionset is Complete, you can ``exec``
+into the Cassandra pods once again and verify that the complete data that we took
+backup of has been restored.
+
+.. code-block:: bash
+
+  $ kubectl exec -it -n <app-namespace> cassandra-0 bash
+  # once you are inside the pod use `cqlsh` to get into the cassandra CLI and run below commands to create the keyspace
+  cqlsh> select * from restaurants.guests;

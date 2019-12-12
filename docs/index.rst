@@ -27,4 +27,5 @@ homogeneous operational experience across applications at scale.
    functions
    templates
    troubleshooting
+   installapps
    examples
