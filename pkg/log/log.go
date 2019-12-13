@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/pkg/caller"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -21,6 +23,9 @@ const (
 	InfoLevel Level = Level(logrus.InfoLevel)
 	// ErrorLevel log level.
 	ErrorLevel Level = Level(logrus.ErrorLevel)
+	// LevelVarName is the environment variable that controls
+	// init log levels
+	LevelVarName = "LOG_LEVEL"
 )
 
 // OutputSink describes the current output sink.
@@ -37,6 +42,8 @@ const (
 	LoggingServiceHostEnv = "LOGGING_SVC_SERVICE_HOST"
 	LoggingServicePortEnv = "LOGGING_SVC_SERVICE_PORT_LOGGING"
 )
+
+const errorFieldName = "error"
 
 type logger struct {
 	level Level
@@ -68,6 +75,58 @@ func SetOutput(sink OutputSink) error {
 	default:
 		return errors.New("not implemented")
 	}
+}
+
+// OutputFormat sets the output data format.
+type OutputFormat uint8
+
+const (
+	// TextFormat creates a plain text format log entry (not CEE).
+	TextFormat OutputFormat = iota
+	// JSONFormat create a JSON format log entry.
+	JSONFormat
+)
+
+// Used as a filter to expand (render) the contents of the fields
+type renderFormatter struct {
+	formatter logrus.Formatter //
+}
+
+// SetFormatter sets the output formatter.
+func SetFormatter(format OutputFormat) {
+	switch format {
+	case TextFormat:
+		log.SetFormatter(&renderFormatter{
+			&logrus.TextFormatter{
+				FullTimestamp:   true,
+				TimestampFormat: time.RFC3339Nano}})
+	case JSONFormat:
+		log.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339Nano})
+	default:
+		panic("not implemented")
+	}
+}
+
+var envVarFields field.Fields
+
+// initEnvVarFields populates envVarFields with values from the host's environment.
+func initEnvVarFields() {
+	envVars := []string{
+		"HOSTNAME",
+		"CLUSTER_NAME",
+		"SERVICE_NAME",
+		"VERSION",
+	}
+	for _, e := range envVars {
+		if ev, ok := os.LookupEnv(e); ok {
+			envVarFields = field.Add(envVarFields, strings.ToLower(e), ev)
+		}
+	}
+}
+
+func init() {
+	SetFormatter(TextFormat)
+	initEnvVarFields()
 }
 
 func Info() Logger {
@@ -103,6 +162,17 @@ func WithError(err error) Logger {
 
 func (l *logger) Print(msg string, fields ...field.M) {
 	logFields := make(logrus.Fields)
+
+	frame := caller.GetFrame(3)
+	logFields["Function"] = frame.Function
+	logFields["File"] = frame.File
+	logFields["Line"] = frame.Line
+
+	envFields := envVarFields.Fields()
+	for _, f := range envFields {
+		logFields[f.Key()] = f.Value()
+	}
+
 	if ctxFields := field.FromContext(l.ctx); ctxFields != nil {
 		for _, cf := range ctxFields.Fields() {
 			logFields[cf.Key()] = cf.Value()
@@ -117,7 +187,24 @@ func (l *logger) Print(msg string, fields ...field.M) {
 
 	entry := log.WithFields(logFields)
 	if l.err != nil {
-		entry = entry.WithError(l.err)
+		switch e := err.(type) {
+		case awserr.Error:
+			errFields := make(logrus.Fields)
+			errFields["awsErrorCode"] = e.Code()
+			errFields["awsErrorMessage"] = e.Message()
+			if er, ok := e.(awserr.RequestFailure); ok {
+				errFields["awsRequestStatusCode"] = er.StatusCode()
+				errFields["awsRequestID"] = er.RequestID()
+			}
+			if nextErr := e.OrigErr(); nextErr != nil {
+				errFields[errorFieldName] = nextErr
+			}
+			entry = entry.WithFields(errFields)
+		default:
+			if e != nil {
+				entry = entry.WithError(l.err)
+			}
+		}
 	}
 	entry.Logln(logrus.Level(l.level), msg)
 }
