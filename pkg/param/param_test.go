@@ -89,7 +89,7 @@ func (s *ParamsSuite) SetUpTest(c *C) {
 
 func (s *ParamsSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
@@ -319,7 +319,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 	}
 	_, err = s.cli.CoreV1().Secrets(s.namespace).Create(secret)
 	c.Assert(err, IsNil)
-	defer s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{})
+	defer func() { _ = s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{}) }()
 
 	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
@@ -558,7 +558,7 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 	}
 	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(secret)
 	c.Assert(err, IsNil)
-	defer s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{})
+	defer func() { _ = s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{}) }()
 
 	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)

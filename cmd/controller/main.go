@@ -85,10 +85,9 @@ func main() {
 	// create signals to stop watching the resources
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case <-signalChan:
-		log.Print("shutdown signal received, exiting...")
-		cancel()
-		return
-	}
+
+	// Wait for shutdown signal
+	<-signalChan
+	log.Print("shutdown signal received, exiting...")
+	cancel()
 }

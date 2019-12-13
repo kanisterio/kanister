@@ -34,6 +34,10 @@ const (
 	ElasticRepoName = "elastic"
 	ElasticRepoURL  = "https://helm.elastic.co"
 
+	// Add incubator charts url
+	IncubatorRepoName = "incubator"
+	IncubatorRepoURL  = "https://kubernetes-charts-incubator.storage.googleapis.com"
+
 	// Add stable charts url
 	StableRepoName = "stable"
 	StableRepoURL  = "https://kubernetes-charts.storage.googleapis.com"
@@ -63,7 +67,7 @@ func (h CliClient) AddRepo(ctx context.Context, name, url string) error {
 	log.Debug().Print("Result", field.M{"output": out})
 
 	// Update all repos to fetch the latest charts
-	h.UpdateRepo(ctx)
+	_ = h.UpdateRepo(ctx)
 	return nil
 }
 

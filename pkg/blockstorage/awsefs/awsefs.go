@@ -45,12 +45,10 @@ var _ blockstorage.Provider = (*efs)(nil)
 
 const (
 	generalPurposePerformanceMode = awsefs.PerformanceModeGeneralPurpose
-	maximumIOPerformanceMode      = awsefs.PerformanceModeMaxIo
 	defaultPerformanceMode        = generalPurposePerformanceMode
 
-	burstingThroughputMode    = awsefs.ThroughputModeBursting
-	provisionedThroughputMode = awsefs.ThroughputModeProvisioned
-	defaultThroughputMode     = burstingThroughputMode
+	burstingThroughputMode = awsefs.ThroughputModeBursting
+	defaultThroughputMode  = burstingThroughputMode
 
 	efsType            = "EFS"
 	k10BackupVaultName = "k10vault"

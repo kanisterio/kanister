@@ -36,7 +36,7 @@ func newChroniclePullCommand() *cobra.Command {
 	}
 	cmd.PersistentFlags().StringVarP(&params.suffix, pathFlagName, "s", "", "Specify a path suffix (optional)")
 	cmd.PersistentFlags().StringVarP(&params.profile, profileFlagName, "p", "", "Pass a Profile as a JSON string (required)")
-	cmd.MarkPersistentFlagRequired(profileFlagName)
+	_ = cmd.MarkPersistentFlagRequired(profileFlagName)
 	return cmd
 }
 

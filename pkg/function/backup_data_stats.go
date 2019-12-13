@@ -49,7 +49,7 @@ const (
 )
 
 func init() {
-	kanister.Register(&BackupDataStatsFunc{})
+	_ = kanister.Register(&BackupDataStatsFunc{})
 }
 
 var _ kanister.Func = (*BackupDataStatsFunc)(nil)

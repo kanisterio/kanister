@@ -118,6 +118,15 @@ var _ = Suite(&IntegrationSuite{
 	profile:   newSecretProfile(),
 })
 
+// Cassandra App
+var _ = Suite(&IntegrationSuite{
+	name:      "cassandra",
+	namespace: "cassandra-test",
+	app:       app.NewCassandraInstance("cassandra"),
+	bp:        app.NewBlueprint("cassandra"),
+	profile:   newSecretProfile(),
+})
+
 func newSecretProfile() *secretProfile {
 	_, location := testutil.GetObjectstoreLocation()
 	secret, profile, err := testutil.NewSecretProfileFromLocation(location)

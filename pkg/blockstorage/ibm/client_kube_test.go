@@ -111,7 +111,9 @@ func (s KubeTestIBMClient) TestIBMOldSecret(c *C) {
 		Data: secretData,
 	}
 	s.k8sSec, err = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Create(&k8sSec)
-	defer s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Delete(testOldSecretName, &metav1.DeleteOptions{})
+	defer func() {
+		_ = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Delete(testOldSecretName, &metav1.DeleteOptions{})
+	}()
 	c.Assert(err, IsNil)
 	slAPIKey, ok := os.LookupEnv(IBMSLApiKeyEnv)
 	c.Check(slAPIKey, NotNil)
@@ -124,7 +126,9 @@ func (s KubeTestIBMClient) TestIBMOldSecret(c *C) {
 	c.Assert(ibmCli, NotNil)
 	c.Assert(ibmCli.Service, NotNil)
 	defer ibmCli.Service.Close()
-	defer s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Delete(testOldSecretName, &metav1.DeleteOptions{})
+	defer func() {
+		_ = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Delete(testOldSecretName, &metav1.DeleteOptions{})
+	}()
 	c.Assert(*ibmCli, FitsTypeOf, client{})
 	_, err = ibmCli.Service.ListSnapshots()
 	c.Assert(err, IsNil)

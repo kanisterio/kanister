@@ -54,7 +54,7 @@ const (
 )
 
 func init() {
-	kanister.Register(&deleteDataFunc{})
+	_ = kanister.Register(&deleteDataFunc{})
 }
 
 var _ kanister.Func = (*deleteDataFunc)(nil)
