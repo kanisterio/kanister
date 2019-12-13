@@ -84,6 +84,11 @@ dockers:
   image_templates:
   - 'kanisterio/cassandra:{{ .Tag }}'
   dockerfile: 'docker/cassandra/Dockerfile'
+- binaries:
+  - kando
+  image_templates:
+  - 'kanisterio/couchbase-tools:{{ .Tag }}'
+  dockerfile: 'docker/couchbase-tools/Dockerfile'
 
 snapshot:
   name_template: '{{ .Tag }}'
