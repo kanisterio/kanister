@@ -43,7 +43,8 @@ commands to get controller logs.
 
 If you are not successful in verifying the reason behind the failure,
 please reach out to us on `Slack
-<https://kasten.typeform.com/to/QBcw8T>`_ or file an issue on `GitHub
+<https://join.slack.com/t/kanisterio/shared_invite/enQtNzg2MDc4NzA0ODY4LTU1NDU2NDZhYjk3YmE5MWNlZWMwYzk1NjNjOGQ3NjAyMjcxMTIyNTE1YzZlMzgwYmIwNWFkNjU0NGFlMzNjNTk>`_
+or file an issue on `GitHub
 <https://github.com/kanisterio/kanister/issues>`_. A `mailing list
 <https://groups.google.com/forum/#!forum/kanisterio>`_ is also
 available if needed.
