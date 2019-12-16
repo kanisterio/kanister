@@ -18,6 +18,7 @@ export KUBECONFIG=$HOME/.kube/config
 export KUBE_VERSION=${KUBE_VERSION:-"v1.13.7"}
 export KIND_VERSION=${KIND_VERSION:-"v0.5.1"}
 export LOCAL_CLUSTER_NAME=${LOCAL_CLUSTER_NAME:-"kanister"}
+export LOCAL_PATH_PROV_VERSION="v0.0.11"
 declare -a REQUIRED_BINS=( docker jq go )
 
 if command -v apt-get
@@ -59,6 +60,10 @@ start_localkube() {
     export KUBECONFIG=${KUBECONFIG}:${HOME}/.kube/config_bk; kubectl config view --flatten > "${HOME}/.kube/config"
     wait_for_nodes
     wait_for_pods
+
+    kubectl patch storageclass standard -p '{"metadata": {"annotations":{"storageclass.beta.kubernetes.io/is-default-class":"false"}}}'
+    kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/${LOCAL_PATH_PROV_VERSION}/deploy/local-path-storage.yaml
+    kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.beta.kubernetes.io/is-default-class":"true"}}}'
 }
 
 stop_localkube() {

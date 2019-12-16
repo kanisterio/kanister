@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2019 The Kanister Authors.
 #
@@ -25,17 +25,6 @@ export CGO_ENABLED=0
 export GO111MODULE=on
 
 TARGETS=$(for d in "$@"; do echo ./$d/...; done)
-TAGS=""
-
-if [[ -n "${TEST_INTEGRATION+x}" ]]; then
-    TAGS="-tags=integration -timeout 30m"
-fi
-
-echo "Running tests:"
-go test -v ${TAGS} -installsuffix "static" -i ${TARGETS}
-go test -v ${TAGS} ${TARGETS} -list .
-go test -v ${TAGS} -installsuffix "static" ${TARGETS} -check.v
-echo
 
 echo -n "Checking gofmt: "
 ERRS=$(find "$@" -type f -name \*.go | xargs gofmt -l 2>&1 || true)
@@ -60,5 +49,13 @@ if [ -n "${ERRS}" ]; then
     # but don't exit on failures.
     #exit 1
 fi
+echo
+
+echo "Running tests:"
+go test -v -installsuffix "static" -i ${TARGETS}
+go test -v ${TARGETS} -list .
+go test -v -installsuffix "static" ${TARGETS} -check.v
+echo
+
 echo "PASS"
 echo

@@ -30,7 +30,7 @@ const (
 )
 
 func init() {
-	kanister.Register(&CheckRepositoryFunc{})
+	_ = kanister.Register(&CheckRepositoryFunc{})
 }
 
 var _ kanister.Func = (*CheckRepositoryFunc)(nil)

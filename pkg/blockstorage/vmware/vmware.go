@@ -175,7 +175,15 @@ func (p *fcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	if !ok {
 		return nil, errors.New("Unexpected type")
 	}
-	return p.SnapshotGet(ctx, snapshotFullID(volume.ID, id.Id))
+	snap, err := p.SnapshotGet(ctx, snapshotFullID(volume.ID, id.Id))
+	if err != nil {
+		return nil, err
+	}
+	// We don't get size information from `SnapshotGet` - so set this to the volume size for now
+	if snap.Size == 0 {
+		snap.Size = volume.Size
+	}
+	return snap, nil
 }
 
 func (p *fcdProvider) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blockstorage.Snapshot) error {

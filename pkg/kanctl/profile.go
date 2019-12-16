@@ -106,8 +106,8 @@ func newS3CompliantProfileCmd() *cobra.Command {
 	cmd.Flags().StringP(awsSecretKeyFlag, "s", "", "secret key of the s3 compliant bucket")
 	cmd.Flags().StringP(awsRoleFlag, "R", "", "AWS IAM role")
 
-	cmd.MarkFlagRequired(awsAccessKeyFlag)
-	cmd.MarkFlagRequired(awsSecretKeyFlag)
+	_ = cmd.MarkFlagRequired(awsAccessKeyFlag)
+	_ = cmd.MarkFlagRequired(awsSecretKeyFlag)
 	return cmd
 }
 
@@ -124,8 +124,8 @@ func newGCPProfileCmd() *cobra.Command {
 	cmd.Flags().StringP(gcpProjectIDFlag, "a", "", "Project ID of the google application")
 	cmd.Flags().StringP(gcpServiceKeyFlag, "s", "", "Path to json file containing google application credentials")
 
-	cmd.MarkFlagRequired(gcpProjectIDFlag)
-	cmd.MarkFlagRequired(gcpServiceKeyFlag)
+	_ = cmd.MarkFlagRequired(gcpProjectIDFlag)
+	_ = cmd.MarkFlagRequired(gcpServiceKeyFlag)
 	return cmd
 }
 
@@ -142,8 +142,8 @@ func newAzureProfileCmd() *cobra.Command {
 	cmd.Flags().StringP(AzureStorageAccountFlag, "a", "", "Storage account name of the azure storage")
 	cmd.Flags().StringP(AzureStorageKeyFlag, "s", "", "Storage account key of the azure storage")
 
-	cmd.MarkFlagRequired(AzureStorageAccountFlag)
-	cmd.MarkFlagRequired(AzureStorageKeyFlag)
+	_ = cmd.MarkFlagRequired(AzureStorageAccountFlag)
+	_ = cmd.MarkFlagRequired(AzureStorageKeyFlag)
 	return cmd
 }
 
@@ -342,7 +342,7 @@ func printSecret(secret *v1.Secret) error {
 	if err != nil {
 		return errors.New("could not convert generated secret to YAML")
 	}
-	fmt.Printf(string(secYAML))
+	fmt.Printf("%s", secYAML)
 	return nil
 }
 
@@ -355,7 +355,7 @@ func printProfile(profile *v1alpha1.Profile) error {
 	if err != nil {
 		return errors.New("could not convert generated profile to YAML")
 	}
-	fmt.Printf(string(profYAML))
+	fmt.Printf("%s", profYAML)
 	return nil
 }
 

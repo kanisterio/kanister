@@ -105,10 +105,8 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 		// TODO: remove this tmp channel once https://github.com/rook/operator-kit/pull/11 is merged.
 		chTmp := make(chan struct{})
 		go func() {
-			select {
-			case <-ctx.Done():
-				close(chTmp)
-			}
+			<-ctx.Done()
+			close(chTmp)
 		}()
 		go watcher.Watch(o, chTmp)
 	}
@@ -158,13 +156,13 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		if err := c.onUpdateActionSet(old, new); err != nil {
 			bpName := new.Spec.Actions[0].Blueprint
 			bp, _ := c.crClient.CrV1alpha1().Blueprints(new.GetNamespace()).Get(bpName, v1.GetOptions{})
-			c.logAndErrorEvent(nil, "Callback onUpdateActionSet() failed:", "Error", err, new, bp)
+			c.logAndErrorEvent(context.TODO(), "Callback onUpdateActionSet() failed:", "Error", err, new, bp)
 
 		}
 	case *crv1alpha1.Blueprint:
 		new := newObj.(*crv1alpha1.Blueprint)
 		if err := c.onUpdateBlueprint(old, new); err != nil {
-			c.logAndErrorEvent(nil, "Callback onUpdateBlueprint() failed:", "Error", err, new)
+			c.logAndErrorEvent(context.TODO(), "Callback onUpdateBlueprint() failed:", "Error", err, new)
 		}
 	default:
 		objType := fmt.Sprintf("%T", oldObj)
@@ -178,11 +176,11 @@ func (c *Controller) onDelete(obj interface{}) {
 		if err := c.onDeleteActionSet(v); err != nil {
 			bpName := v.Spec.Actions[0].Blueprint
 			bp, _ := c.crClient.CrV1alpha1().Blueprints(v.GetNamespace()).Get(bpName, v1.GetOptions{})
-			c.logAndErrorEvent(nil, "Callback onDeleteActionSet() failed:", "Error", err, v, bp)
+			c.logAndErrorEvent(context.TODO(), "Callback onDeleteActionSet() failed:", "Error", err, v, bp)
 		}
 	case *crv1alpha1.Blueprint:
 		if err := c.onDeleteBlueprint(v); err != nil {
-			c.logAndErrorEvent(nil, "Callback onDeleteBlueprint() failed:", "Error", err, v)
+			c.logAndErrorEvent(context.TODO(), "Callback onDeleteBlueprint() failed:", "Error", err, v)
 		}
 	default:
 		objType := fmt.Sprintf("%T", obj)
@@ -210,7 +208,7 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 }
 
 func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) error {
-	c.logAndSuccessEvent(nil, fmt.Sprintf("Added blueprint %s", bp.GetName()), "Added", bp)
+	c.logAndSuccessEvent(context.TODO(), fmt.Sprintf("Added blueprint %s", bp.GetName()), "Added", bp)
 	return nil
 }
 
@@ -223,7 +221,7 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 		if newAS.Status == nil {
 			log.Print("Updated ActionSet", field.M{"Actionset": newAS.Name, "Status": "nil"})
 		} else if newAS.Status.State == crv1alpha1.StateComplete {
-			c.logAndSuccessEvent(nil, fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State), "Update Complete", newAS)
+			c.logAndSuccessEvent(context.TODO(), fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State), "Update Complete", newAS)
 		} else {
 			log.Print("Updated ActionSet", field.M{"Actionset": newAS.Name, "Status": newAS.Status.State})
 		}
@@ -299,6 +297,10 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 	}
 	if err != nil {
 		as.Status.State = crv1alpha1.StateFailed
+		as.Status.Error = crv1alpha1.Error{
+			Message: err.Error(),
+		}
+
 	} else {
 		as.Status.State = crv1alpha1.StatePending
 		as.Status.Actions = actions
@@ -360,6 +362,9 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[i].Name)
 			c.logAndErrorEvent(ctx, fmt.Sprintf("Failed to launch Action %s:", as.GetName()), reason, err, as, bp)
 			as.Status.State = crv1alpha1.StateFailed
+			as.Status.Error = crv1alpha1.Error{
+				Message: err.Error(),
+			}
 			as.Status.Actions[i].Phases[0].State = crv1alpha1.StateFailed
 			_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(as)
 			return errors.WithStack(err)
@@ -406,6 +411,9 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			if err != nil {
 				rf = func(ras *crv1alpha1.ActionSet) error {
 					ras.Status.State = crv1alpha1.StateFailed
+					ras.Status.Error = crv1alpha1.Error{
+						Message: err.Error(),
+					}
 					ras.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateFailed
 					return nil
 				}
@@ -453,6 +461,9 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		if err != nil {
 			af = func(ras *crv1alpha1.ActionSet) error {
 				ras.Status.State = crv1alpha1.StateFailed
+				ras.Status.Error = crv1alpha1.Error{
+					Message: err.Error(),
+				}
 				return nil
 			}
 		} else {

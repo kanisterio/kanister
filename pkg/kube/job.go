@@ -190,8 +190,7 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 func (job *Job) Delete() error {
 	batchClient := job.clientset.BatchV1()
 	jobsClient := batchClient.Jobs(job.namespace)
-	var deletePropagation metav1.DeletionPropagation
-	deletePropagation = metav1.DeletePropagationForeground
+	deletePropagation := metav1.DeletePropagationForeground
 	err := jobsClient.Delete(job.name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete job %s", job.name)

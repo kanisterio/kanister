@@ -41,11 +41,8 @@ import (
 )
 
 const (
-	volumeSnapshotInfoKey = "volumeSnapshotInfo"
-	manifestKey           = "manifest"
-	backupInfoKey         = "backupInfo"
-	skipTestErrorMsg      = "Storage type not supported"
-	AWSRegion             = "AWS_REGION"
+	skipTestErrorMsg = "Storage type not supported"
+	AWSRegion        = "AWS_REGION"
 )
 
 type VolumeSnapshotTestSuite struct {
@@ -87,7 +84,7 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	pods, _, err := kube.FetchPods(s.cli, s.namespace, ss.UID)
 	c.Assert(err, IsNil)
 	volToPvc := kube.StatefulSetVolumes(s.cli, ss, &pods[0])
-	pvc, _ := volToPvc[pods[0].Spec.Containers[0].VolumeMounts[0].Name]
+	pvc := volToPvc[pods[0].Spec.Containers[0].VolumeMounts[0].Name]
 	c.Assert(len(pvc) > 0, Equals, true)
 	id, secret, locationType, err := s.getCreds(c, s.cli, s.namespace, pvc)
 	c.Assert(err, IsNil)
@@ -166,7 +163,7 @@ func NewTestProfile(namespace string, secretName string, locationType crv1alpha1
 
 func (s *VolumeSnapshotTestSuite) TearDownTest(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
