@@ -127,6 +127,16 @@ var _ = Suite(&IntegrationSuite{
 	profile:   newSecretProfile(),
 })
 
+// Skip Couchbase app due to resource limitations
+// Couchbase app
+//var _ = Suite(&IntegrationSuite{
+//	name:      "couchbase",
+//	namespace: "couchbase-test",
+//	app:       app.NewCouchbaseDB("couchbase"),
+//	bp:        app.NewBlueprint("couchbase"),
+//	profile:   newSecretProfile(),
+//})
+
 func newSecretProfile() *secretProfile {
 	_, location := testutil.GetObjectstoreLocation()
 	secret, profile, err := testutil.NewSecretProfileFromLocation(location)
@@ -172,7 +182,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	defer cancel()
 
 	// Execute e2e workflow
-	log.Info().Print("Running e2e integration test.", field.M{"app": s.name})
+	log.Info().Print("Running e2e integration test.", field.M{"app": s.name, "testName": c.TestName()})
 
 	// Check config
 	err := s.app.Init(ctx)
