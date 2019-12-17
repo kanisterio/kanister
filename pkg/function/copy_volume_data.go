@@ -36,8 +36,8 @@ const (
 	kanisterToolsImage = "kanisterio/kanister-tools:0.22.0"
 	// CopyVolumeDataFuncName gives the function name
 	CopyVolumeDataFuncName                     = "CopyVolumeData"
-	copyVolumeDataMountPoint                   = "/mnt/vol_data/%s"
-	copyVolumeDataJobPrefix                    = "copy-vol-data-"
+	CopyVolumeDataMountPoint                   = "/mnt/vol_data/%s"
+	CopyVolumeDataJobPrefix                    = "copy-vol-data-"
 	CopyVolumeDataNamespaceArg                 = "namespace"
 	CopyVolumeDataVolumeArg                    = "volume"
 	CopyVolumeDataArtifactPrefixArg            = "dataArtifactPrefix"
@@ -70,10 +70,10 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
 	}
 	// Create a pod with PVCs attached
-	mountPoint := fmt.Sprintf(copyVolumeDataMountPoint, pvc)
+	mountPoint := fmt.Sprintf(CopyVolumeDataMountPoint, pvc)
 	options := &kube.PodOptions{
 		Namespace:    namespace,
-		GenerateName: copyVolumeDataJobPrefix,
+		GenerateName: CopyVolumeDataJobPrefix,
 		Image:        kanisterToolsImage,
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      map[string]string{pvc: mountPoint},
