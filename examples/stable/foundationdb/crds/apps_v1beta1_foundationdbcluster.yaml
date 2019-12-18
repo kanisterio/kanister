@@ -1,0 +1,478 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: foundationdbclusters.apps.foundationdb.org
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .metadata.generation
+    description: Latest generation of the spec
+    name: Generation
+    type: integer
+  - JSONPath: .status.generations.reconciled
+    description: Last reconciled generation of the spec
+    name: Reconciled
+    type: integer
+  - JSONPath: .status.health.healthy
+    description: Database health
+    name: Healthy
+    type: boolean
+  group: apps.foundationdb.org
+  names:
+    kind: FoundationDBCluster
+    plural: foundationdbclusters
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: Spec defines the desired state of the cluster.
+          properties:
+            automationOptions:
+              description: AutomationOptions defines customization for enabling or
+                disabling certain operations in the operator.
+              properties:
+                configureDatabase:
+                  description: ConfigureDatabase defines whether the operator is allowed
+                    to reconfigure the database.
+                  type: boolean
+                deletePods:
+                  description: DeletePods defines whether the operator is allowed
+                    to delete pods in order to recreate them.
+                  type: boolean
+                killProcesses:
+                  description: KillProcesses defines whether the operator is allowed
+                    to bounce fdbserver processes.
+                  type: boolean
+              type: object
+            automountServiceAccountToken:
+              description: AutomountServiceAccountToken defines whether we should
+                automount the service account tokens in the FDB pods.
+              type: boolean
+            configured:
+              description: Configured defines whether we have configured the database
+                yet.
+              type: boolean
+            connectionString:
+              description: ConnectionString defines the contents of the cluster file.
+              type: string
+            containers:
+              description: Containers defines custom containers for the FDB pods.
+              items:
+                type: object
+              type: array
+            customParameters:
+              description: CustomParameters defines additional parameters to pass
+                to the fdbserver processes.
+              items:
+                type: string
+              type: array
+            dataCenter:
+              description: DataCenter defines the data center where these processes
+                are running.
+              type: string
+            databaseConfiguration:
+              description: DatabaseConfiguration defines the database configuration.
+              properties:
+                regions:
+                  description: Regions defines the regions that the database can replicate
+                    in.
+                  items:
+                    properties:
+                      datacenters:
+                        description: The data centers in this region.
+                        items:
+                          properties:
+                            id:
+                              description: The ID of the data center. This must match
+                                the dcid locality field.
+                              type: string
+                            priority:
+                              description: The priority of this data center when we
+                                have to choose a location. Higher priorities are preferred
+                                over lower priorities.
+                              format: int64
+                              type: integer
+                            satellite:
+                              description: Satellite indicates whether the data center
+                                is serving as a satellite for the region. A value
+                                of 1 indicates that it is a satellite, and a value
+                                of 0 indicates that it is not a satellite.
+                              format: int64
+                              type: integer
+                          type: object
+                        type: array
+                    type: object
+                  type: array
+              type: object
+            faultDomain:
+              description: FaultDomain defines the rules for what fault domain to
+                replicate across.
+              properties:
+                key:
+                  description: Key provides a topology key for the fault domain to
+                    replicate across.
+                  type: string
+                value:
+                  description: Value provides a harcoded value to use for the zoneid
+                    for the pods.
+                  type: string
+                valueFrom:
+                  description: ValueFrom provides a field selector to use as the source
+                    of the fault domain.
+                  type: string
+                zoneCount:
+                  description: ZoneCount provides the number of fault domains in the
+                    data center where these processes are running. This is only used
+                    in the `kubernetes-cluster` fault domain strategy.
+                  format: int64
+                  type: integer
+                zoneIndex:
+                  description: ZoneIndex provides the index of this Kubernetes cluster
+                    in the list of KCs in the data center. This is only used in the
+                    `kubernetes-cluster` fault domain strategy.
+                  format: int64
+                  type: integer
+              type: object
+            initContainers:
+              description: InitContainers defines custom init containers for the FDB
+                pods.
+              items:
+                type: object
+              type: array
+            instanceIDPrefix:
+              description: InstanceIDPrefix defines a prefix to append to the instance
+                IDs in the locality fields.
+              type: string
+            logGroup:
+              description: LogGroup defines the log group to use for the trace logs
+                for the cluster.
+              type: string
+            mainContainer:
+              description: MainContainer defines customization for the foundationdb
+                container.
+              properties:
+                enableTls:
+                  description: EnableTLS controls whether we should be listening on
+                    a TLS connection.
+                  type: boolean
+                env:
+                  description: Env provides environment variables.
+                  items:
+                    type: object
+                  type: array
+                imageName:
+                  description: ImageName provides the name of the image to use for
+                    the container, without the version tag.
+                  type: string
+                peerVerificationRules:
+                  description: PeerVerificationRules provides the rules for what client
+                    certificates the process should accept.
+                  type: string
+                securityContext:
+                  description: SecurityContext provides the container's security context.
+                  type: object
+                volumeMounts:
+                  description: VolumeMounts provides volume mounts.
+                  items:
+                    type: object
+                  type: array
+              type: object
+            nextInstanceID:
+              description: NextInstanceID defines the ID to use when creating the
+                next instance.
+              format: int64
+              type: integer
+            pendingRemovals:
+              description: PendingRemovals defines the processes that are pending
+                removal. This maps the name of a pod to its IP address. If a value
+                is left blank, the controller will provide the pod's current IP.
+              type: object
+            podLabels:
+              description: PodLabels defines custom labels to apply to the FDB pods.
+              type: object
+            podSecurityContext:
+              description: PodSecurityContext defines the security context to apply
+                to the FDB pods.
+              type: object
+            processCounts:
+              description: ProcessCounts defines the number of processes to configure
+                for each process class. You can generally omit this, to allow the
+                operator to infer the process counts based on the database configuration.
+              properties:
+                log:
+                  format: int64
+                  type: integer
+                master:
+                  format: int64
+                  type: integer
+                proxy:
+                  format: int64
+                  type: integer
+                resolution:
+                  description: Resolution defines the number of resolution class processes.
+                  format: int64
+                  type: integer
+                resolver:
+                  format: int64
+                  type: integer
+                router:
+                  format: int64
+                  type: integer
+                stateless:
+                  description: Stateless defines the number of stateless class processes.
+                  format: int64
+                  type: integer
+                storage:
+                  description: Storage defines the number of storage class processes.
+                  format: int64
+                  type: integer
+                transaction:
+                  description: Transaction defines the number of transaction class
+                    processes.
+                  format: int64
+                  type: integer
+                unset:
+                  format: int64
+                  type: integer
+              type: object
+            resources:
+              description: Resources defines the resource requirements for the foundationdb
+                containers.
+              type: object
+            runningVersion:
+              description: RunningVersion defines the version of FoundationDB that
+                the cluster is currently running.
+              type: string
+            sidecarContainer:
+              description: SidecarContainer defines customization for the foundationdb-kubernetes-sidecar
+                container.
+              properties:
+                enableTls:
+                  description: EnableTLS controls whether we should be listening on
+                    a TLS connection.
+                  type: boolean
+                env:
+                  description: Env provides environment variables.
+                  items:
+                    type: object
+                  type: array
+                imageName:
+                  description: ImageName provides the name of the image to use for
+                    the container, without the version tag.
+                  type: string
+                peerVerificationRules:
+                  description: PeerVerificationRules provides the rules for what client
+                    certificates the process should accept.
+                  type: string
+                securityContext:
+                  description: SecurityContext provides the container's security context.
+                  type: object
+                volumeMounts:
+                  description: VolumeMounts provides volume mounts.
+                  items:
+                    type: object
+                  type: array
+              type: object
+            sidecarVariables:
+              description: SidecarVariables defines Ccustom variables that the sidecar
+                should make available for substitution in the monitor conf file.
+              items:
+                type: string
+              type: array
+            sidecarVersion:
+              description: 'SidecarVersion defines the build version of the sidecar
+                to use. Deprecated: Use SidecarVersions instead.'
+              format: int64
+              type: integer
+            sidecarVersions:
+              description: SidecarVersions defines the build version of the sidecar
+                to run. This maps an FDB version to the corresponding sidecar build
+                version.
+              type: object
+            storageClass:
+              description: StorageClass defines the storage class for the volumes
+                in the cluster.
+              type: string
+            trustedCAs:
+              description: TrustedCAs defines a list of root CAs the cluster should
+                trust, in PEM format.
+              items:
+                type: string
+              type: array
+            version:
+              description: Version defines the version of FoundationDB the cluster
+                should run.
+              type: string
+            volumeSize:
+              description: VolumeSize defines the size of the volume to use for stateful
+                processes.
+              type: string
+            volumes:
+              description: Volumes defines custom volumes for the FDB pods.
+              items:
+                type: object
+              type: array
+          required:
+          - version
+          - volumeSize
+          type: object
+        status:
+          description: Status defines the current state of the cluster.
+          properties:
+            databaseConfiguration:
+              description: DatabaseConfiguration provides the running configuration
+                of the database.
+              properties:
+                regions:
+                  description: Regions defines the regions that the database can replicate
+                    in.
+                  items:
+                    properties:
+                      datacenters:
+                        description: The data centers in this region.
+                        items:
+                          properties:
+                            id:
+                              description: The ID of the data center. This must match
+                                the dcid locality field.
+                              type: string
+                            priority:
+                              description: The priority of this data center when we
+                                have to choose a location. Higher priorities are preferred
+                                over lower priorities.
+                              format: int64
+                              type: integer
+                            satellite:
+                              description: Satellite indicates whether the data center
+                                is serving as a satellite for the region. A value
+                                of 1 indicates that it is a satellite, and a value
+                                of 0 indicates that it is not a satellite.
+                              format: int64
+                              type: integer
+                          type: object
+                        type: array
+                    type: object
+                  type: array
+              type: object
+            generations:
+              description: Generations provides information about the latest generation
+                to be reconciled, or to reach other stages at which reconciliation
+                can halt.
+              properties:
+                needsBounce:
+                  description: NeedsBounce provides the last generation that is pending
+                    a bounce of fdbserver.
+                  format: int64
+                  type: integer
+                needsConfigurationChange:
+                  description: NeedsConfigurationChange provides the last generation
+                    that is pending a change to configuration.
+                  format: int64
+                  type: integer
+                needsPodDeletion:
+                  description: NeedsPodDeletion provides the last generation that
+                    is pending pods being deleted and recreated.
+                  format: int64
+                  type: integer
+                reconciled:
+                  description: Reconciled provides the last generation that was fully
+                    reconciled.
+                  format: int64
+                  type: integer
+              type: object
+            health:
+              description: Health provides information about the health of the database.
+              properties:
+                available:
+                  description: Available reports whether the database is accepting
+                    reads and writes.
+                  type: boolean
+                dataMovementPriority:
+                  description: DataMovementPriority reports the priority of the highest-priority
+                    data movement in the cluster.
+                  format: int64
+                  type: integer
+                fullReplication:
+                  description: FullReplication reports whether all data are fully
+                    replicated according to the current replication policy.
+                  type: boolean
+                healthy:
+                  description: Healthy reports whether the database is in a fully
+                    healthy state.
+                  type: boolean
+              type: object
+            incorrectProcesses:
+              description: IncorrectProcesses provides the processes that do not have
+                the correct configuration. This will map the names of the pod to the
+                timestamp when we observed the incorrect configuration.
+              type: object
+            missingProcesses:
+              description: MissingProcesses provides the processes that are not reporting
+                to the cluster. This will map the names of the pod to the timestamp
+                when we observed that the process was missing.
+              type: object
+            processCounts:
+              description: ProcessCounts defines the number of processes that are
+                currently running in the cluster.
+              properties:
+                log:
+                  format: int64
+                  type: integer
+                master:
+                  format: int64
+                  type: integer
+                proxy:
+                  format: int64
+                  type: integer
+                resolution:
+                  description: Resolution defines the number of resolution class processes.
+                  format: int64
+                  type: integer
+                resolver:
+                  format: int64
+                  type: integer
+                router:
+                  format: int64
+                  type: integer
+                stateless:
+                  description: Stateless defines the number of stateless class processes.
+                  format: int64
+                  type: integer
+                storage:
+                  description: Storage defines the number of storage class processes.
+                  format: int64
+                  type: integer
+                transaction:
+                  description: Transaction defines the number of transaction class
+                    processes.
+                  format: int64
+                  type: integer
+                unset:
+                  format: int64
+                  type: integer
+              type: object
+          type: object
+  version: v1beta1
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
