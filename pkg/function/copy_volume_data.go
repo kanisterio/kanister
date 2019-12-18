@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	kanisterToolsImage = "kanisterio/kanister-tools:0.22.0"
+	kanisterToolsImage = "kanisterio/kanister-tools:0.23.0"
 	// CopyVolumeDataFuncName gives the function name
 	CopyVolumeDataFuncName                     = "CopyVolumeData"
 	CopyVolumeDataMountPoint                   = "/mnt/vol_data/%s"
