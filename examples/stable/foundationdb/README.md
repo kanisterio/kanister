@@ -84,11 +84,10 @@ $ fdbcli
 
 fdb> writemode on 
 fdb> set name Tom
-fdb> set lastname Singh
+fdb> set lastname Manville
 ```
 
-**Note**
-Steps that are mentioned below are still WIP.
+# Protect the application
 
 Once we have the foundationDB cluster up and running we can go ahead and integrate
 this with Kanister in order to take the backup and restore that backup.
@@ -100,6 +99,7 @@ kanctl create profile s3compliant --access-key <access-key>                 \
                 --secret-key <secret-key>                                   \
                 --bucket infracloud.kanister.io --region <region-name>      \
                 --namespace default
+profile s3-profile-8fs88 created
 
 ```
 
@@ -113,25 +113,114 @@ can be shared between Kanister-enabled application instances.
 ## Create blueprint
 
 In order to perform backup, restore, and delete operations on the running foundationDB,
-we need to create a blueprint.
-You can create that using the command below.
+we need to create a Blueprint.
+You can create the Blueprint using the command below.
 
 ```bash
 kubectl create -f foundationdb-blueprint.yaml -n kanister
 ```
 
+Once we have created the Blueprint let's go ahead and insert some data into the foundationDB
+database.
 
 ### Insert some records
+To insert some records into the database we will have to `EXEC` into the foundationDB pod
+and then run the database command in the `fdbcli` utility
 
+```bash
+# EXEC into the pod 
+$ kubectl exec -it foundationdbcluster-sample-1 -c foundationdb bash
+# get the fdbcli 
+$ fdbcli
+fdb> writemode on
+fdb> set name Tom
+fdb> set companyname Kasten
+fdb> set lasltname Manville
+```
 
 ## Create backup actionset 
 
+To take the backup of the data tha we have just inserted into the database, we will have to create 
+Actionset Kanister resource . Please follow below command to create the Actionset
+
 ```bash
-kanctl create actionset --action backup --namespace kanister --blueprint foundationdb-blueprint  --profile default/s3-profile-wrv4r --statefulset default/fdb-kubernetes-operator-controller-manager
+kanctl create actionset --action backup --namespace kanister --blueprint foundationdb-blueprint  
+    --profile default/s3-profile-8fs88  \
+    --objects apps.foundationdb.org/v1beta1/foundationdbclusters/default/foundationdbcluster-sample
 
 actionset backup-jx2d2 created
+```
+Once you have created the Actionset, you can check the status of the Actionset to make sure the backup
+is completed.
+
+## Disaster strikes!
+Once the backup is completed we can go ahead and delete the data manually from the database to imitate
+disaster.
+
+```bash
+$ kubectl exec -it foundationdbcluster-sample-1 -c foundationdb bash
+$ fdbcli
+fdb> writemode on
+fdb> clearrange '' \xFF
+```
+
+Once you cleared all the keys, we can go ahead to get the value of any key that we have inserted and
+we should not get the value  of that key.
+
+```bash
+$ kubectl exec -it foundationdbcluster-sample-1 -c foundationdb bash
+$ fdbcli
+fdb> get name
+`name': not found
+```
+
+Once we have deleted the data from the database, to imitate the disaster, we will restore the backup that
+we have already created. To restore the backup we will have to create another Actionset, with `restore` action.
+
+```bash
+$ kanctl --namespace kanister create actionset --action restore --from "backup-jx2d2"
+actionset <restore-actionset> created
+```
+Once you have created the restore actionset, you can make sure that the actionset is completed by describing the
+actionset. You can describe the actionset using below command
+
+```bash
+
+$ kubectl describe actionset -n <kanister-operator-namespace> <restore-actionset-name>
+```
+
+## Delete the artifacts
+The artifacts created by the backup action can be cleaned up using the following command:
+
+```bash
+$ kanctl --namespace kanister create actionset --action delete --from "backup-jx2d2"
+actionset "<delete-actionset-name>" created
+
+# View the status of the ActionSet
+$ kubectl --namespace kanister describe actionset <delete-actionset-name>
 
 ```
 
-### Delete the records that we have inserted
+## Troubleshooting
+If you run into any issues with the above commands, you can check the logs of the controller using:
 
+```bash
+$ kubectl --namespace kanister logs -l app=kanister-operator
+```
+you can also check events of the actionset
+
+```bash
+$ kubectl describe actionset <actionset-name> -n kanister
+```
+
+# Delete Blueprint and Profile CR
+
+```bash
+$ kubectl delete blueprints.cr.kanister.io foundationdb-blueprint -n kanister
+
+$ kubectl get profiles.cr.kanister.io -n default
+NAME               AGE
+s3-profile-sph7s   2h
+
+$ kubectl delete profiles.cr.kanister.io s3-profile-sph7s -n default
+```
