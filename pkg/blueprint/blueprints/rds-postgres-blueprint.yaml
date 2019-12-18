@@ -16,7 +16,7 @@ actions:
     - func: KubeTask
       name: backupSnapshots
       args:
-        image: "kanisterio/postgres-kanister-tools:0.22.0"
+        image: "kanisterio/postgres-kanister-tools:0.23.0"
         namespace: "rds-postgres-test"
         command:
           - bash
@@ -48,7 +48,7 @@ actions:
     - func: KubeTask
       name: restoreSnapshots
       args:
-        image: "kanisterio/postgres-kanister-tools:0.22.0"
+        image: "kanisterio/postgres-kanister-tools:0.23.0"
         namespace: "rds-postgres-test"
         command:
           - bash
@@ -81,7 +81,7 @@ actions:
     - func: KubeTask
       name: restoreSnapshots
       args:
-        image: "kanisterio/postgres-kanister-tools:0.22.0"
+        image: "kanisterio/postgres-kanister-tools:0.23.0"
         namespace: "rds-postgres-test"
         command:
           - bash
