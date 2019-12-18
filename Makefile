@@ -167,7 +167,7 @@ test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
 
 integration-test: build-dirs
-	@$(MAKE) run CMD='-c "./build/integration-test.sh"'
+	@$(MAKE) run CMD='-c "./build/integration-test.sh short"'
 
 golint:
 	@$(MAKE) run CMD='-c "./build/golint.sh"'
