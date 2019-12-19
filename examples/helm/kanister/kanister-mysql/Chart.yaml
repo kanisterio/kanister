@@ -15,5 +15,5 @@ sources:
 - https://github.com/kubernetes/charts
 - https://github.com/docker-library/mysql
 - https://kanister.io/
-version: 0.22.0
+version: 0.23.0
 appVersion: 5.7.14
