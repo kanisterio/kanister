@@ -137,6 +137,15 @@ fdb> set name Tom
 fdb> set companyname Kasten
 fdb> set lasltname Manville
 ```
+# Create ClusterRoleBinding
+Since the Kanister resources need access to the the foundationDB cluster that has just been created,
+using the CR, we will have create a `ClusterRoleBinding` to enable that access. You can create that
+resource using below command
+
+```bash
+$ kubectl create -f kanister-clusteradmin-binding.yaml 
+```
+
 
 ## Create backup actionset 
 

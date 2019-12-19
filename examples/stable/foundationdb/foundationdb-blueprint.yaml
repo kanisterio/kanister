@@ -27,13 +27,10 @@ actions:
             #we are manually starting backup_aegnt here because fdb operator doesnt  have support for 
             # backup and restore right now. But they are planning to have it, going further.
             # Once they have the support for backup and restore we will change this to accommodate upstream changes
-            echo '{{ toJson .Profile }}'
             /usr/bin/backup_agent -C /var/dynamic-conf/fdb.cluster  &
             mkdir -p /data/fdbbackup
             chmod -R 777 /data/fdbbackup
-            fdbbackup start  -d file:///data/fdbbackup
-            # sleep for sometime so that the backup is completed
-            sleep 150
+            fdbbackup start  -d file:///data/fdbbackup -w
             pkill -9 backup_agent
             tar zcvf - -C /data/ fdbbackup | kando location push --profile '{{ toJson .Profile }}' --path '/foundationdb-backups/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/backup.tgz' -
             rm -rf /data/fdbbackup              
@@ -59,9 +56,9 @@ actions:
             mkdir -p /data/restored
             kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.fdbBackup.KeyValue.path }}' - | tar zxvf - -C /data/restored
             /usr/bin/backup_agent -C /var/dynamic-conf/fdb.cluster  &
+            fdbcli --exec "writemode on; clearrange '' \xFF"
             backupname=$(ls /data/restored/fdbbackup/)
-            fdbrestore start --dest_cluster_file /var/dynamic-conf/fdb.cluster -r file:///data/restored/fdbbackup/$backupname
-            sleep 120
+            fdbrestore start --dest_cluster_file /var/dynamic-conf/fdb.cluster -r file:///data/restored/fdbbackup/$backupname -w
             pkill -9 backup_agent
   delete:
     phases:
