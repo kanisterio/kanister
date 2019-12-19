@@ -1,15 +1,20 @@
 package log
 
 import (
+	//"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/pkg/caller"
+	"github.com/luci/go-render/render"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/kanisterio/kanister/pkg/caller"
 	"github.com/kanisterio/kanister/pkg/field"
 )
 
@@ -107,6 +112,43 @@ func SetFormatter(format OutputFormat) {
 	}
 }
 
+func formatError(err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := fmt.Sprintf("%+v", err)
+	split := strings.SplitAfter(msg, err.Error())
+	return fmt.Sprintf("Error Message=%s \nStackTrace: %v", split[0], split[1])
+}
+
+func (f *renderFormatter) Format(e *logrus.Entry) ([]byte, error) {
+	if e != nil && len(e.Data) > 0 {
+		cp := *e
+		cp.Buffer = nil
+		data := make(logrus.Fields, len(e.Data))
+
+		// Expand / render the fields in the entry
+		for k, v := range e.Data {
+			switch t := v.(type) {
+			case error:
+				data[k] = formatError(t)
+			case string, fmt.Stringer:
+				data[k] = v
+			default:
+				if k != "time" && k != "field.time" {
+					// Preserve time formatting set in the upstream formatter
+					data[k] = render.Render(v)
+				} else {
+					data[k] = v
+				}
+			}
+		}
+		cp.Data = data
+		return f.formatter.Format(&cp)
+	}
+	return f.formatter.Format(e)
+}
+
 var envVarFields field.Fields
 
 // initEnvVarFields populates envVarFields with values from the host's environment.
@@ -187,7 +229,7 @@ func (l *logger) Print(msg string, fields ...field.M) {
 
 	entry := log.WithFields(logFields)
 	if l.err != nil {
-		switch e := err.(type) {
+		switch e := l.err.(type) {
 		case awserr.Error:
 			errFields := make(logrus.Fields)
 			errFields["awsErrorCode"] = e.Code()
