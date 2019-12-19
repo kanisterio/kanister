@@ -42,6 +42,10 @@ const (
 	StableRepoName = "stable"
 	StableRepoURL  = "https://kubernetes-charts.storage.googleapis.com"
 
+	// Add couchbase chart
+	CouchbaseRepoName = "couchbase"
+	CouchbaseRepoURL  = "https://couchbase-partners.github.io/helm-charts"
+
 	// HelmVersion to differentiate between helm2 and helm3 commands
 	V2 HelmVersion = "helmv2"
 	V3 HelmVersion = "helmv3"
