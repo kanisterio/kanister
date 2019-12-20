@@ -77,3 +77,4 @@ actions:
           - |
             s3path='{{ .ArtifactsIn.fdbBackup.KeyValue.path }}'
             kando location delete --profile '{{ toJson .Profile }}' --path ${s3path}
+            
