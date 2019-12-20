@@ -38,21 +38,10 @@ const (
 // if, due to any reason, there is change in how Elasticsearch responds to  above query, below
 // struct is subject to change.
 type ElasticsearchPingOutput struct {
-	Took     int  `json:"took"`
-	TimedOut bool `json:"timed_out"`
-	Shards   struct {
-		Total      int `json:"total"`
-		Successful int `json:"successful"`
-		Skipped    int `json:"skipped"`
-		Failed     int `json:"failed"`
-	} `json:"_shards"`
 	Hits struct {
 		Total struct {
-			Value    int    `json:"value"`
-			Relation string `json:"relation"`
+			Value int `json:"value"`
 		} `json:"total"`
-		MaxScore interface{}   `json:"max_score"`
-		Hits     []interface{} `json:"hits"`
 	} `json:"hits"`
 }
 
