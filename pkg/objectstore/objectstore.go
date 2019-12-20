@@ -28,8 +28,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
-
-	"github.com/kanisterio/kanister/pkg/config/aws"
 )
 
 const assumeRoleDuration = 90 * time.Minute
@@ -117,36 +115,16 @@ func Supported(t ProviderType) bool {
 }
 
 func s3Config(ctx context.Context, config ProviderConfig, secret *Secret, region string) (stowKind string, stowConfig stow.Config, err error) {
-	var awsAccessKeyID, awsSecretAccessKey, awsSessionToken string
-	if secret != nil {
-		if secret.Type != SecretTypeAwsAccessKey {
-			return "", nil, errors.Errorf("invalid secret type %s", secret.Type)
-		}
-		awsAccessKeyID = secret.Aws.AccessKeyID
-		awsSecretAccessKey = secret.Aws.SecretAccessKey
-		awsSessionToken = secret.Aws.SessionToken
-	} else {
-		var ok bool
-		if awsAccessKeyID, ok = os.LookupEnv(aws.AccessKeyID); !ok {
-			return "", nil, errors.Errorf("%s environment not set", aws.AccessKeyID)
-		}
-		if awsSecretAccessKey, ok = os.LookupEnv(aws.SecretAccessKey); !ok {
-			return "", nil, errors.Errorf("%s environment not set", aws.SecretAccessKey)
-		}
-		if role, ok := os.LookupEnv(aws.ConfigRole); ok {
-			creds, err := aws.SwitchRole(ctx, awsAccessKeyID, awsSecretAccessKey, role, assumeRoleDuration)
-			if err != nil {
-				return "", nil, err
-			}
-			val, err := creds.Get()
-			if err != nil {
-				return "", nil, errors.Wrap(err, "Failed to get AWS credentials")
-			}
-			awsAccessKeyID = val.AccessKeyID
-			awsSecretAccessKey = val.SecretAccessKey
-			awsSessionToken = val.SessionToken
-		}
+	if secret == nil {
+		return "", nil, errors.New("Invalid Secret value: nil")
 	}
+	if secret.Type != SecretTypeAwsAccessKey {
+		return "", nil, errors.Errorf("invalid secret type %s", secret.Type)
+	}
+	awsAccessKeyID := secret.Aws.AccessKeyID
+	awsSecretAccessKey := secret.Aws.SecretAccessKey
+	awsSessionToken := secret.Aws.SessionToken
+
 	cm := stow.ConfigMap{
 		stows3.ConfigAccessKeyID: awsAccessKeyID,
 		stows3.ConfigSecretKey:   awsSecretAccessKey,
