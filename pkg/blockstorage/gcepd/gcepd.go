@@ -270,12 +270,14 @@ func (s *gpdStorage) snapshotParse(ctx context.Context, snap *compute.Snapshot) 
 	if err != nil {
 		log.Error().Print("Cannot parse GCP Snapshot timestamp")
 	}
+	size := (snap.StorageBytes + bytesInGiB - 1) / bytesInGiB
+
 	// TODO: fix getting region from zone
 	return &blockstorage.Snapshot{
 		Encrypted:    encrypted,
 		ID:           snap.Name,
 		Region:       "",
-		Size:         snap.StorageBytes / bytesInGiB,
+		Size:         size,
 		Tags:         blockstorage.MapToKeyValue(snap.Labels),
 		Type:         s.Type(),
 		Volume:       vol,
