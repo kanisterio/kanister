@@ -18,9 +18,8 @@ cluster.
 
 ## Prerequisite 
 
-* Install GO on your machine, see the [Getting Started](https://golang.org/doc/install) guide for more information.
+* Install GO on your machine, see the [Getting Started](https://golang.org/doc/install) guide for more information, and [set GOPATH](https://github.com/golang/go/wiki/SettingGOPATH).
 * Install KubeBuilder and its dependencies on your machine, see [The KubeBuilder Book](https://book.kubebuilder.io/quick-start.html) for more information.
-* Set your $GOPATH.
 * You should have [Kustomize](https://github.com/kubernetes-sigs/kustomize) installed
 on you cluster.
 * Kubernetes 1.9+ with Beta APIs enabled.
@@ -53,7 +52,7 @@ using below command `git clone https://github.com/FoundationDB/fdb-kubernetes-op
 
 ### Create the cluster
 
-Once we have the CRD `FoundationDBCluster` (this wil be taken care by `make rebuild-operator`) created we
+Once we have the CRD `FoundationDBCluster` (this will be taken care by `make rebuild-operator`) created we
 can go ahead with creating the CR for the already created CRD that will spin up a foundationDB
 cluster.
 
@@ -150,7 +149,7 @@ $ kubectl create -f kanister-clusteradmin-binding.yaml
 ## Create backup actionset 
 
 To take the backup of the data tha we have just inserted into the database, we will have to create 
-Actionset Kanister resource . Please follow below command to create the Actionset
+Actionset Kanister resource. Please follow below command to create the Actionset
 
 ```bash
 $ kanctl create actionset --action backup --namespace <kanister-op-ns> --blueprint foundationdb-blueprint  \
