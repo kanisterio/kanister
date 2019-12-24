@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: controller-manager
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+  serviceName: controller-manager-service
+  template:
+    metadata:
+      labels:
+        {{- include "chart.labels" . | nindent 8 }}
+    spec:
+      volumes:
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: {{ .Values.webhook.secret.name }}
+        - name: fdb-certs
+          secret:
+            secretName: {{ .Values.secret.name }}
+      serviceAccountName: default
+      containers:
+      - command:
+        - /manager
+        image: "{{ .Values.operator.image }}:{{ .Values.operator.tag }}"
+        imagePullPolicy: IfNotPresent
+        name: manager
+        volumeMounts:
+          - mountPath: /tmp/cert
+            name: cert
+            readOnly: true
+          - mountPath: /tmp/fdb-certs
+            name: fdb-certs
+            readOnly: true
+        env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: SECRET_NAME
+            value: {{ .Values.secret.name }}
+          - name: DISABLE_SIDECAR_TLS_CHECK
+            value: "1"
+          - name: FDB_TLS_CERTIFICATE_FILE
+            value: /tmp/fdb-certs/cert.pem
+          - name: FDB_TLS_CA_FILE
+            value: /tmp/fdb-certs/cert.pem
+          - name: FDB_TLS_KEY_FILE
+            value: /tmp/fdb-certs/key.pem
+        resources:
+          limits:
+            cpu: 500m
+            memory: 256Mi
+          requests:
+            cpu: 500m
+            memory: 256Mi
+        ports:
+        - containerPort: 9876
+          name: webhook-server
+          protocol: TCP
+      terminationGracePeriodSeconds: 10
