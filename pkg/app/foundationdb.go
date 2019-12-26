@@ -33,7 +33,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
-const fdbReadyTimeout = 4 * time.Minute
+const fdbReadyTimeout = 15 * time.Minute
 
 // FoundationDB has fields of foundationdb instance
 type FoundationDB struct {
