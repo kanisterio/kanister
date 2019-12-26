@@ -21,7 +21,9 @@ import (
 	"os"
 	"time"
 
+	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/session"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -29,11 +31,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/aws"
 	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/kanisterio/kanister/pkg/testutil"
 
 	// Initialize pq driver
 	_ "github.com/lib/pq"
@@ -104,8 +106,13 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	var err error
 	pdb.namespace = ns
 
+	// Create AWS config
+	awsConfig, session, err := pdb.getAWSConfig(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "app=%s", pdb.name)
+	}
 	// Create ec2 client
-	ec2, err := testutil.NewEC2Client(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
+	ec2, err := aws.NewEC2Client(ctx, awsConfig, session)
 	if err != nil {
 		return err
 	}
@@ -126,7 +133,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	}
 
 	// Create rds client
-	rds, err := testutil.NewRDSClient(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
+	rds, err := aws.NewRDSClient(ctx, awsConfig, session)
 	if err != nil {
 		return err
 	}
@@ -300,8 +307,13 @@ func (pdb RDSPostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
 }
 
 func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
+	// Create AWS config
+	awsConfig, session, err := pdb.getAWSConfig(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "app=%s", pdb.name)
+	}
 	// Create rds client
-	rds, err := testutil.NewRDSClient(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
+	rds, err := aws.NewRDSClient(ctx, awsConfig, session)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create rds client. You may need to delete RDS resources manually. app=rds-postgresql")
 	}
@@ -330,7 +342,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	}
 
 	// Create ec2 client
-	ec2, err := testutil.NewEC2Client(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
+	ec2, err := aws.NewEC2Client(ctx, awsConfig, session)
 	if err != nil {
 		return errors.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
 	}
@@ -349,4 +361,13 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (pdb RDSPostgresDB) getAWSConfig(ctx context.Context) (*awssdk.Config, *session.Session, error) {
+	config := make(map[string]string)
+	config[awsconfig.ConfigRegion] = pdb.region
+	config[awsconfig.AccessKeyID] = pdb.accessID
+	config[awsconfig.SecretAccessKey] = pdb.secretKey
+	config[awsconfig.SessionToken] = pdb.sessionToken
+	return aws.NewConfigWithSession(ctx, config)
 }

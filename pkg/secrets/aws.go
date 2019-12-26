@@ -19,6 +19,8 @@ const (
 	AWSAccessKeyID string = "aws_access_key_id"
 	// AWSSecretAccessKey is the key for AWS secret access key.
 	AWSSecretAccessKey string = "aws_secret_access_key"
+	// AWSSessionToken is the key for AWS Session token
+	AWSSessionToken string = "aws_session_token"
 	// ConfigRole represents the key for the ARN of the role which can be assumed.
 	// It is optional.
 	ConfigRole         = "role"
