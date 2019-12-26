@@ -152,7 +152,7 @@ func (fdb *FoundationDB) Ping(ctx context.Context) error {
 	pingCMD := []string{"sh", "-c", "fdbcli"}
 	stdout, stderr, err := fdb.execCommand(ctx, pingCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while pinging the database. Application %s, Err %s", stderr)
+		return errors.Wrapf(err, "Error while pinging the database. Application %s, Err %s", fdb.name, stderr)
 	}
 
 	// This is how we get the output of fdbcli
