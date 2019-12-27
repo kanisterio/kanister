@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/kanisterio/kanister/pkg/config/aws"
+	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
 	"github.com/pkg/errors"
 )
 
@@ -19,6 +19,8 @@ const (
 	AWSAccessKeyID string = "aws_access_key_id"
 	// AWSSecretAccessKey is the key for AWS secret access key.
 	AWSSecretAccessKey string = "aws_secret_access_key"
+	// AWSSessionToken is the key for AWS Session token
+	AWSSessionToken string = "aws_session_token"
 	// ConfigRole represents the key for the ARN of the role which can be assumed.
 	// It is optional.
 	ConfigRole         = "role"
@@ -72,7 +74,7 @@ func ExtractAWSCredentials(ctx context.Context, secret *v1.Secret) (*credentials
 	secretAccessKey := string(secret.Data[AWSSecretAccessKey])
 	role := string(secret.Data[ConfigRole])
 	if role != "" {
-		creds, err := aws.SwitchRole(ctx, accessKeyID, secretAccessKey, role, assumeRoleDuration)
+		creds, err := awsrole.Switch(ctx, accessKeyID, secretAccessKey, role, assumeRoleDuration)
 		if err != nil {
 			return nil, err
 		}

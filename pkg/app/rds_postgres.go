@@ -21,6 +21,7 @@ import (
 	"os"
 	"time"
 
+	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
@@ -29,11 +30,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
+	aws "github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/aws/ec2"
+	"github.com/kanisterio/kanister/pkg/aws/rds"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/kanisterio/kanister/pkg/testutil"
 
 	// Initialize pq driver
 	_ "github.com/lib/pq"
@@ -78,24 +80,24 @@ func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	pdb.region, ok = os.LookupEnv(awsconfig.Region)
+	pdb.region, ok = os.LookupEnv(aws.Region)
 	if !ok {
-		return fmt.Errorf("Env var %s is not set", awsconfig.Region)
+		return fmt.Errorf("Env var %s is not set", aws.Region)
 	}
 
 	// If sessionToken is set, accessID and secretKey not required
-	pdb.sessionToken, ok = os.LookupEnv(awsconfig.SessionToken)
+	pdb.sessionToken, ok = os.LookupEnv(aws.SessionToken)
 	if ok {
 		return nil
 	}
 
-	pdb.accessID, ok = os.LookupEnv(awsconfig.AccessKeyID)
+	pdb.accessID, ok = os.LookupEnv(aws.AccessKeyID)
 	if !ok {
-		return fmt.Errorf("Env var %s is not set", awsconfig.AccessKeyID)
+		return fmt.Errorf("Env var %s is not set", aws.AccessKeyID)
 	}
-	pdb.secretKey, ok = os.LookupEnv(awsconfig.SecretAccessKey)
+	pdb.secretKey, ok = os.LookupEnv(aws.SecretAccessKey)
 	if !ok {
-		return fmt.Errorf("Env var %s is not set", awsconfig.SecretAccessKey)
+		return fmt.Errorf("Env var %s is not set", aws.SecretAccessKey)
 	}
 	return nil
 }
@@ -104,15 +106,20 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	var err error
 	pdb.namespace = ns
 
+	// Create AWS config
+	awsConfig, _, err := pdb.getAWSConfig(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "app=%s", pdb.name)
+	}
 	// Create ec2 client
-	ec2, err := testutil.NewEC2Client(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
+	ec2Cli, err := ec2.NewClient(ctx, awsConfig)
 	if err != nil {
 		return err
 	}
 
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": "pgtest-sg"})
-	sg, err := ec2.CreateSecurityGroup(ctx, "pgtest-sg", "pgtest-security-group")
+	sg, err := ec2Cli.CreateSecurityGroup(ctx, "pgtest-sg", "pgtest-security-group")
 	if err != nil {
 		return err
 	}
@@ -120,33 +127,33 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Add ingress rule
 	log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
-	_, err = ec2.AuthorizeSecurityGroupIngress(ctx, "pgtest-sg", "0.0.0.0/0", "tcp", 5432)
+	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, "pgtest-sg", "0.0.0.0/0", "tcp", 5432)
 	if err != nil {
 		return err
 	}
 
 	// Create rds client
-	rds, err := testutil.NewRDSClient(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
+	rdsCli, err := rds.NewClient(ctx, awsConfig)
 	if err != nil {
 		return err
 	}
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rds.CreateDBInstance(ctx, 20, "db.t2.micro", pdb.id, "postgres", pdb.username, pdb.password, pdb.securityGroupID)
+	_, err = rdsCli.CreateDBInstance(ctx, 20, "db.t2.micro", pdb.id, "postgres", pdb.username, pdb.password, pdb.securityGroupID)
 	if err != nil {
 		return err
 	}
 
 	// Wait for DB to be ready
 	log.Info().Print("Waiting for rds to be ready.", field.M{"app": pdb.name})
-	err = rds.WaitUntilDBInstanceAvailable(ctx, pdb.id)
+	err = rdsCli.WaitUntilDBInstanceAvailable(ctx, pdb.id)
 	if err != nil {
 		return err
 	}
 
 	// Find host of the instance
-	dbInstance, err := rds.DescribeDBInstances(ctx, pdb.id)
+	dbInstance, err := rdsCli.DescribeDBInstances(ctx, pdb.id)
 	if err != nil {
 		return err
 	}
@@ -300,15 +307,20 @@ func (pdb RDSPostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
 }
 
 func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
+	// Create AWS config
+	awsConfig, _, err := pdb.getAWSConfig(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "app=%s", pdb.name)
+	}
 	// Create rds client
-	rds, err := testutil.NewRDSClient(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
+	rdsCli, err := rds.NewClient(ctx, awsConfig)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create rds client. You may need to delete RDS resources manually. app=rds-postgresql")
 	}
 
 	// Delete rds instance
 	log.Info().Print("Deleting rds instance", field.M{"app": pdb.name})
-	_, err = rds.DeleteDBInstance(ctx, pdb.id)
+	_, err = rdsCli.DeleteDBInstance(ctx, pdb.id)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {
@@ -323,21 +335,21 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	// Waiting for rds to be deleted
 	if err == nil {
 		log.Info().Print("Waiting for rds to be deleted", field.M{"app": pdb.name})
-		err = rds.WaitUntilDBInstanceDeleted(ctx, pdb.id)
+		err = rdsCli.WaitUntilDBInstanceDeleted(ctx, pdb.id)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to wait for rds instance till delete succeeds. app=rds-postgresql id=%s", pdb.id)
 		}
 	}
 
 	// Create ec2 client
-	ec2, err := testutil.NewEC2Client(ctx, pdb.accessID, pdb.secretKey, pdb.region, pdb.sessionToken, "")
+	ec2Cli, err := ec2.NewClient(ctx, awsConfig)
 	if err != nil {
 		return errors.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
 	}
 
 	// Delete security group
 	log.Info().Print("Deleting security group.", field.M{"app": pdb.name})
-	_, err = ec2.DeleteSecurityGroup(ctx, "pgtest-sg")
+	_, err = ec2Cli.DeleteSecurityGroup(ctx, "pgtest-sg")
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {
@@ -349,4 +361,13 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (pdb RDSPostgresDB) getAWSConfig(ctx context.Context) (*awssdk.Config, string, error) {
+	config := make(map[string]string)
+	config[aws.ConfigRegion] = pdb.region
+	config[aws.AccessKeyID] = pdb.accessID
+	config[aws.SecretAccessKey] = pdb.secretKey
+	config[aws.SessionToken] = pdb.sessionToken
+	return aws.GetConfig(ctx, config)
 }

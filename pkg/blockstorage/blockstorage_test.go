@@ -22,10 +22,10 @@ import (
 
 	. "gopkg.in/check.v1"
 
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
-	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
