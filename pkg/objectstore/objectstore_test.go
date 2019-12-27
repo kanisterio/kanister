@@ -459,7 +459,7 @@ func getSecret(c *C, ctx context.Context, osType ProviderType) *Secret {
 		awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 		var awsSessionToken string
 		if role, ok := os.LookupEnv(aws.ConfigRole); ok {
-			creds, err := awsrole.SwitchRole(ctx, awsAccessKeyID, awsSecretAccessKey, role, assumeRoleDuration)
+			creds, err := awsrole.Switch(ctx, awsAccessKeyID, awsSecretAccessKey, role, assumeRoleDuration)
 			c.Check(err, IsNil)
 			val, err := creds.Get()
 			c.Check(err, IsNil)
