@@ -43,7 +43,6 @@ const (
 	Region = "AWS_REGION"
 
 	assumeRoleDuration = 25 * time.Minute
-	maxRetries         = 10
 )
 
 // GetConfigFromProfile extracts AWS creds from profile
