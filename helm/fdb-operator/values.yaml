@@ -1,0 +1,13 @@
+
+secret:
+  name: fdb-kubernetes-operator-secrets
+  labels: 
+    app: fdb-kubernetes-operator
+
+operator:
+  image: kanisterio/fdb-kubernetes-operator
+  tag: latest
+
+webhook:
+  secret:
+    name: webhook-server-secret
