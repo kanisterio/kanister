@@ -32,6 +32,7 @@ import (
 	. "gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/aws"
+	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
 )
 
 func Test(t *testing.T) { TestingT(t) }
