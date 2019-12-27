@@ -63,21 +63,6 @@ func GetConfigFromProfile(ctx context.Context, profile *param.Profile) (*aws.Con
 	return GetConfig(ctx, config)
 }
 
-//// NewConfigWithSession creates aws.Config with session
-//func NewConfigWithSession(ctx context.Context, config map[string]string) (*aws.Config, *session.Session, error) {
-//	awsConfig, region, err := GetConfig(ctx, config)
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//
-//	s, err := session.NewSession(awsConfig)
-//	if err != nil {
-//		return nil, nil, errors.Wrap(err, "Failed to create session")
-//	}
-//	creds := awsConfig.Credentials
-//	return awsConfig.WithMaxRetries(maxRetries).WithRegion(region).WithCredentials(creds), s, nil
-//}
-
 // GetConfig returns a configuration to establish AWS connection and connected region name.
 func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Config, region string, err error) {
 	region, ok := config[ConfigRegion]
