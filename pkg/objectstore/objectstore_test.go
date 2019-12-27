@@ -31,7 +31,7 @@ import (
 	"google.golang.org/api/compute/v1"
 	. "gopkg.in/check.v1"
 
-	"github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/kanisterio/kanister/pkg/aws"
 )
 
 func Test(t *testing.T) { TestingT(t) }

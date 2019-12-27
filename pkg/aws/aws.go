@@ -16,52 +16,97 @@ package aws
 
 import (
 	"context"
-	"github.com/pkg/errors"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/pkg/errors"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
+	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 const (
-	maxRetries = 10
+	// ConfigRegion represents region key required in the map "config"
+	ConfigRegion = "region"
+	// ConfigRole represents the key for the ARN of the role which can be assumed.
+	// It is optional.
+	ConfigRole = "role"
+	// AccessKeyID represents AWS Access key ID
+	AccessKeyID = "AWS_ACCESS_KEY_ID"
+	// SecretAccessKey represents AWS Secret Access Key
+	SecretAccessKey = "AWS_SECRET_ACCESS_KEY"
+	// SessionToken represents AWS Session Key
+	SessionToken = "AWS_SESSION_TOKEN"
+	// Region represents AWS region
+	Region = "AWS_REGION"
+
+	assumeRoleDuration = 25 * time.Minute
+	maxRetries         = 10
 )
 
 // GetConfigFromProfile extracts AWS creds from profile
-func GetConfigFromProfile(profile *param.Profile) (map[string]string, error) {
+func GetConfigFromProfile(ctx context.Context, profile *param.Profile) (*aws.Config, string, error) {
 	config := make(map[string]string)
-	if profile.Location.Type != crv1alpha1.LocationTypeS3Compliant {
-		return nil, errors.New("Not a S3Compliant location")
-	}
 
 	if profile.Credential.Type == param.CredentialTypeKeyPair {
-		config[awsconfig.AccessKeyID] = profile.Credential.KeyPair.ID
-		config[awsconfig.SecretAccessKey] = profile.Credential.KeyPair.Secret
+		config[AccessKeyID] = profile.Credential.KeyPair.ID
+		config[SecretAccessKey] = profile.Credential.KeyPair.Secret
 	} else if profile.Credential.Type == param.CredentialTypeSecret {
-		config[awsconfig.AccessKeyID] = string(profile.Credential.Secret.Data[secrets.AWSAccessKeyID])
-		config[awsconfig.SecretAccessKey] = string(profile.Credential.Secret.Data[secrets.AWSSecretAccessKey])
-		config[awsconfig.ConfigRole] = string(profile.Credential.Secret.Data[secrets.ConfigRole])
-		config[awsconfig.SessionToken] = string(profile.Credential.Secret.Data[secrets.AWSSessionToken])
+		config[AccessKeyID] = string(profile.Credential.Secret.Data[secrets.AWSAccessKeyID])
+		config[SecretAccessKey] = string(profile.Credential.Secret.Data[secrets.AWSSecretAccessKey])
+		config[ConfigRole] = string(profile.Credential.Secret.Data[secrets.ConfigRole])
+		config[SessionToken] = string(profile.Credential.Secret.Data[secrets.AWSSessionToken])
 	}
-	config[awsconfig.ConfigRegion] = profile.Location.Region
-	return config, nil
+	config[ConfigRegion] = profile.Location.Region
+	return GetConfig(ctx, config)
 }
 
-// NewConfigWithSession creates aws.Config with session
-func NewConfigWithSession(ctx context.Context, config map[string]string) (*aws.Config, *session.Session, error) {
-	awsConfig, region, err := awsconfig.GetConfig(ctx, config)
-	if err != nil {
-		return nil, nil, err
-	}
+//// NewConfigWithSession creates aws.Config with session
+//func NewConfigWithSession(ctx context.Context, config map[string]string) (*aws.Config, *session.Session, error) {
+//	awsConfig, region, err := GetConfig(ctx, config)
+//	if err != nil {
+//		return nil, nil, err
+//	}
+//
+//	s, err := session.NewSession(awsConfig)
+//	if err != nil {
+//		return nil, nil, errors.Wrap(err, "Failed to create session")
+//	}
+//	creds := awsConfig.Credentials
+//	return awsConfig.WithMaxRetries(maxRetries).WithRegion(region).WithCredentials(creds), s, nil
+//}
 
-	s, err := session.NewSession(awsConfig)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "Failed to create session")
+// GetConfig returns a configuration to establish AWS connection and connected region name.
+func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Config, region string, err error) {
+	region, ok := config[ConfigRegion]
+	if !ok {
+		return nil, "", errors.New("region required for storage type EBS/EFS")
 	}
-	creds := awsConfig.Credentials
-	return awsConfig.WithMaxRetries(maxRetries).WithRegion(region).WithCredentials(creds), s, nil
+	accessKey, ok := config[AccessKeyID]
+	if !ok {
+		return nil, "", errors.New("AWS_ACCESS_KEY_ID required for storage type EBS/EFS")
+	}
+	secretAccessKey, ok := config[SecretAccessKey]
+	if !ok {
+		return nil, "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS/EFS")
+	}
+	role := config[ConfigRole]
+	if role != "" {
+		config, err := assumeRole(ctx, accessKey, secretAccessKey, role)
+		if err != nil {
+			return nil, "", errors.Wrap(err, "Failed to get temporary security credentials")
+		}
+		return config, region, nil
+	}
+	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, "")}, region, nil
+}
+
+func assumeRole(ctx context.Context, accessKey, secretAccessKey, role string) (*aws.Config, error) {
+	creds, err := awsrole.Switch(ctx, accessKey, secretAccessKey, role, assumeRoleDuration)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to switch roles")
+	}
+	return &aws.Config{Credentials: creds}, nil
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aws
+package ec2
 
 import (
 	"context"
@@ -20,17 +20,22 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/pkg/errors"
 )
 
-// EC2 is kasten's wrapper around ec2.EC2 structs
+// EC2 is a wrapper around ec2.EC2 structs
 type EC2 struct {
 	*ec2.EC2
 	DryRun bool
 }
 
 // NewEC2Client returns ec2 client struct.
-func NewEC2Client(ctx context.Context, awsConfig *aws.Config, session *session.Session) (*EC2, error) {
-	return &EC2{EC2: ec2.New(session, awsConfig)}, nil
+func NewClient(ctx context.Context, awsConfig *aws.Config) (*EC2, error) {
+	s, err := session.NewSession(awsConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create session")
+	}
+	return &EC2{EC2: ec2.New(s, awsConfig)}, nil
 }
 
 func (e EC2) DescribeSecurityGroup(ctx context.Context, groupName string) (*ec2.DescribeSecurityGroupsOutput, error) {

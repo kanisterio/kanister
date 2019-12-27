@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aws
+package rds
 
 import (
 	"context"
@@ -20,16 +20,21 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
+	"github.com/pkg/errors"
 )
 
-// RDS is kasten's wrapper around ec2.RDS structs
+// RDS is a wrapper around ec2.RDS structs
 type RDS struct {
 	*rds.RDS
 }
 
 // NewRDSClient returns ec2 client struct.
-func NewRDSClient(ctx context.Context, awsConfig *aws.Config, session *session.Session) (*RDS, error) {
-	return &RDS{RDS: rds.New(session, awsConfig)}, nil
+func NewClient(ctx context.Context, awsConfig *aws.Config) (*RDS, error) {
+	s, err := session.NewSession(awsConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create session")
+	}
+	return &RDS{RDS: rds.New(s, awsConfig)}, nil
 }
 
 // CreateDBInstanceWithContext
