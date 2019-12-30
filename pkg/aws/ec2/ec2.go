@@ -23,6 +23,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	maxRetries = 10
+)
+
 // EC2 is a wrapper around ec2.EC2 structs
 type EC2 struct {
 	*ec2.EC2
@@ -30,12 +34,12 @@ type EC2 struct {
 }
 
 // NewEC2Client returns ec2 client struct.
-func NewClient(ctx context.Context, awsConfig *aws.Config) (*EC2, error) {
+func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*EC2, error) {
 	s, err := session.NewSession(awsConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session")
 	}
-	return &EC2{EC2: ec2.New(s, awsConfig)}, nil
+	return &EC2{EC2: ec2.New(s, awsConfig.WithMaxRetries(maxRetries).WithRegion(region).WithCredentials(awsConfig.Credentials))}, nil
 }
 
 func (e EC2) DescribeSecurityGroup(ctx context.Context, groupName string) (*ec2.DescribeSecurityGroupsOutput, error) {
