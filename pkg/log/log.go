@@ -118,7 +118,11 @@ func formatError(err error) string {
 	}
 	msg := fmt.Sprintf("%+v", err)
 	split := strings.SplitAfter(msg, err.Error())
-	return fmt.Sprintf("Error Message=%s \nStackTrace: %v", split[0], split[1])
+	errMsg := fmt.Sprintf("Error Message=%s", split[0])
+	if len(split) > 1 {
+		return fmt.Sprintf("%s \nStackTrace: %s", errMsg, split[1])
+	}
+	return errMsg
 }
 
 func (f *renderFormatter) Format(e *logrus.Entry) ([]byte, error) {
