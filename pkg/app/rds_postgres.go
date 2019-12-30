@@ -107,12 +107,12 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	pdb.namespace = ns
 
 	// Create AWS config
-	awsConfig, _, err := pdb.getAWSConfig(ctx)
+	awsConfig, region, err := pdb.getAWSConfig(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "app=%s", pdb.name)
 	}
 	// Create ec2 client
-	ec2Cli, err := ec2.NewClient(ctx, awsConfig)
+	ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	}
 
 	// Create rds client
-	rdsCli, err := rds.NewClient(ctx, awsConfig)
+	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
 		return err
 	}
@@ -308,12 +308,12 @@ func (pdb RDSPostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
 
 func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	// Create AWS config
-	awsConfig, _, err := pdb.getAWSConfig(ctx)
+	awsConfig, region, err := pdb.getAWSConfig(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "app=%s", pdb.name)
 	}
 	// Create rds client
-	rdsCli, err := rds.NewClient(ctx, awsConfig)
+	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create rds client. You may need to delete RDS resources manually. app=rds-postgresql")
 	}
@@ -342,7 +342,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	}
 
 	// Create ec2 client
-	ec2Cli, err := ec2.NewClient(ctx, awsConfig)
+	ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
 	if err != nil {
 		return errors.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
 	}
