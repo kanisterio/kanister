@@ -89,6 +89,11 @@ dockers:
   image_templates:
   - 'kanisterio/couchbase-tools:{{ .Tag }}'
   dockerfile: 'docker/couchbase-tools/Dockerfile'
+- binaries:
+  - kando
+  image_templates:
+  - 'kanisterio/foundationdb:6.2.11'
+  dockerfile: 'docker/foundationdb/Dockerfile'
 
 snapshot:
   name_template: '{{ .Tag }}'

@@ -22,6 +22,10 @@ INTEGRATION_TEST_DIR=pkg/testing
 # Degree of parallelism for integration tests
 DOP="8"
 TEST_TIMEOUT="30m"
+# Set default options
+TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
+# Regex to match apps to run in short mode
+SHORT_APPS="^PostgreSQL|^PITRPostgreSQL|MySQL|Elasticsearch|MongoDB"
 
 check_dependencies() {
     # Check if minio is already deployed
@@ -37,9 +41,34 @@ check_dependencies() {
     fi
 }
 
+usage() {
+    cat <<EOM
+Usage: ${0} <app-type>
+Where app-type is one of [short|all]:
+  short: Runs e2e integration tests for part of apps
+  all: Runs e2e integration tests for all apps
+OR
+  You can also provide regex to match apps you want to run.
+EOM
+    exit 1
+}
+
+[ ${#@} -gt 0 ] || usage
+case "${1}" in
+    all)
+        TEST_APPS=".*"
+        ;;
+    short)
+        # Run only part of apps
+        TEST_APPS=${SHORT_APPS}
+        ;;
+    *)
+        TEST_APPS=${1}
+        ;;
+esac
+
 check_dependencies
 echo "Running integration tests:"
 pushd ${INTEGRATION_TEST_DIR}
-TAGS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
-go test -v ${TAGS} -installsuffix "static" . -check.v
+go test -v ${TEST_OPTIONS} -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
 popd

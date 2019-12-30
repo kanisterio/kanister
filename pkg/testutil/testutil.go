@@ -27,8 +27,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 )
 
 // NewTestPVC function returns a pointer to a new PVC test object
@@ -97,7 +97,7 @@ func newTestPodTemplateSpec() v1.PodTemplateSpec {
 			Containers: []v1.Container{
 				v1.Container{
 					Name:    "test-container",
-					Image:   "kanisterio/kanister-tools:0.22.0",
+					Image:   "kanisterio/kanister-tools:0.23.0",
 					Command: []string{"tail"},
 					Args:    []string{"-f", "/dev/null"},
 				},

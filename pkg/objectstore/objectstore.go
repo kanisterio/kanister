@@ -29,7 +29,8 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 
-	"github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/kanisterio/kanister/pkg/aws"
+	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
 )
 
 const assumeRoleDuration = 90 * time.Minute
@@ -134,7 +135,7 @@ func s3Config(ctx context.Context, config ProviderConfig, secret *Secret, region
 			return "", nil, errors.Errorf("%s environment not set", aws.SecretAccessKey)
 		}
 		if role, ok := os.LookupEnv(aws.ConfigRole); ok {
-			creds, err := aws.SwitchRole(ctx, awsAccessKeyID, awsSecretAccessKey, role, assumeRoleDuration)
+			creds, err := awsrole.Switch(ctx, awsAccessKeyID, awsSecretAccessKey, role, assumeRoleDuration)
 			if err != nil {
 				return "", nil, err
 			}

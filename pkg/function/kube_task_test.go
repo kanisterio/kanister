@@ -71,7 +71,7 @@ func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 			KubeTaskCommandArg: []string{
 				"sh",
 				"-c",
-				"kando output version 0.22.0",
+				"kando output version 0.23.0",
 			},
 		},
 	}
@@ -144,7 +144,7 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 			bp: newTaskBlueprint(outputPhase(s.namespace), sleepPhase(s.namespace), tickPhase(s.namespace)),
 			outs: []map[string]interface{}{
 				map[string]interface{}{
-					"version": "0.22.0",
+					"version": "0.23.0",
 				},
 				map[string]interface{}{},
 				map[string]interface{}{},
