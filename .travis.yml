@@ -28,6 +28,7 @@ jobs:
       - make start-kind
       script:
       - make build
+      - make codegen
       - make test
       before_cache:
       - sudo chown -R travis:travis ./.go

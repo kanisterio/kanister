@@ -28,9 +28,9 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"k8s.io/apimachinery/pkg/util/rand"
 
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	kantags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
-	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 )
 
 type efs struct {

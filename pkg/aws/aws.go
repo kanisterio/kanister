@@ -21,6 +21,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/pkg/errors"
+
+	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
+	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 const (
@@ -40,6 +44,23 @@ const (
 
 	assumeRoleDuration = 25 * time.Minute
 )
+
+// GetConfigFromProfile extracts AWS creds from profile
+func GetConfigFromProfile(ctx context.Context, profile *param.Profile) (*aws.Config, string, error) {
+	config := make(map[string]string)
+
+	if profile.Credential.Type == param.CredentialTypeKeyPair {
+		config[AccessKeyID] = profile.Credential.KeyPair.ID
+		config[SecretAccessKey] = profile.Credential.KeyPair.Secret
+	} else if profile.Credential.Type == param.CredentialTypeSecret {
+		config[AccessKeyID] = string(profile.Credential.Secret.Data[secrets.AWSAccessKeyID])
+		config[SecretAccessKey] = string(profile.Credential.Secret.Data[secrets.AWSSecretAccessKey])
+		config[ConfigRole] = string(profile.Credential.Secret.Data[secrets.ConfigRole])
+		config[SessionToken] = string(profile.Credential.Secret.Data[secrets.AWSSessionToken])
+	}
+	config[ConfigRegion] = profile.Location.Region
+	return GetConfig(ctx, config)
+}
 
 // GetConfig returns a configuration to establish AWS connection and connected region name.
 func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Config, region string, err error) {
@@ -67,7 +88,7 @@ func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Co
 }
 
 func assumeRole(ctx context.Context, accessKey, secretAccessKey, role string) (*aws.Config, error) {
-	creds, err := SwitchRole(ctx, accessKey, secretAccessKey, role, assumeRoleDuration)
+	creds, err := awsrole.Switch(ctx, accessKey, secretAccessKey, role, assumeRoleDuration)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to switch roles")
 	}

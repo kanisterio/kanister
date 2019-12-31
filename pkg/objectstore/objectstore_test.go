@@ -31,7 +31,8 @@ import (
 	"google.golang.org/api/compute/v1"
 	. "gopkg.in/check.v1"
 
-	"github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/kanisterio/kanister/pkg/aws"
+	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -458,7 +459,7 @@ func getSecret(c *C, ctx context.Context, osType ProviderType) *Secret {
 		awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 		var awsSessionToken string
 		if role, ok := os.LookupEnv(aws.ConfigRole); ok {
-			creds, err := aws.SwitchRole(ctx, awsAccessKeyID, awsSecretAccessKey, role, assumeRoleDuration)
+			creds, err := awsrole.Switch(ctx, awsAccessKeyID, awsSecretAccessKey, role, assumeRoleDuration)
 			c.Check(err, IsNil)
 			val, err := creds.Get()
 			c.Check(err, IsNil)
