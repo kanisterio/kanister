@@ -41,7 +41,7 @@ import (
 
 const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
-	appWaitTimeout = 2 * time.Minute
+	appWaitTimeout = 3 * time.Minute
 )
 
 type secretProfile struct {
