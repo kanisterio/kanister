@@ -70,16 +70,14 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 	default:
 		return nil, errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY required to initialize AWS credentials")
 	}
-	// If the caller wants to use a specific role, use the credentials initialized above to assume that
-	// role and return those credentials
-	if role := config[ConfigRole]; role != "" {
-		credsForAssumedRole, err := awsrole.Switch(ctx, creds, role, assumeRoleDuration)
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to switch roles")
-		}
-		creds = credsForAssumedRole
+	// If the caller didn't want to assume a different role, we're done
+	if config[ConfigRole] == "" {
+		return creds, nil
 	}
-	return creds, nil
+	// If the caller wants to use a specific role, use the credentials initialized above to assume that
+	// role and return those credentials instead
+	creds, err := awsrole.Switch(ctx, creds, config[ConfigRole], assumeRoleDuration)
+	return creds, errors.Wrap(err, "Failed to switch roles")
 }
 
 // GetConfig returns a configuration to establish AWS connection and connected region name.
