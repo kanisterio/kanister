@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/graymeta/stow"
 	stowaz "github.com/graymeta/stow/azure"
@@ -29,8 +28,6 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 )
-
-const assumeRoleDuration = 90 * time.Minute
 
 // Provider abstracts actions on cloud provider bucket
 type Provider interface {

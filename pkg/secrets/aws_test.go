@@ -31,6 +31,7 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 			expected: &credentials.Value{
 				AccessKeyID:     "key_id",
 				SecretAccessKey: "secret_key",
+				ProviderName:    credentials.StaticProviderName,
 			},
 			errChecker: IsNil,
 		},

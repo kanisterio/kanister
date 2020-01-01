@@ -16,15 +16,16 @@ package aws
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/pkg/errors"
 
 	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
-	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 const (
@@ -33,6 +34,7 @@ const (
 	// ConfigRole represents the key for the ARN of the role which can be assumed.
 	// It is optional.
 	ConfigRole = "role"
+
 	// AccessKeyID represents AWS Access key ID
 	AccessKeyID = "AWS_ACCESS_KEY_ID"
 	// SecretAccessKey represents AWS Secret Access Key
@@ -42,24 +44,40 @@ const (
 	// Region represents AWS region
 	Region = "AWS_REGION"
 
-	assumeRoleDuration = 25 * time.Minute
+	// From AWS SDK "aws/session/env_config.go"
+	webIdentityTokenFilePathEnvKey = "AWS_WEB_IDENTITY_TOKEN_FILE"
+	roleARNEnvKey                  = "AWS_ROLE_ARN"
+
+	// TODO: Make this configurable via `config`
+	assumeRoleDurationDefault = 90 * time.Minute
 )
 
-// GetConfigFromProfile extracts AWS creds from profile
-func GetConfigFromProfile(ctx context.Context, profile *param.Profile) (*aws.Config, string, error) {
-	config := make(map[string]string)
-
-	if profile.Credential.Type == param.CredentialTypeKeyPair {
-		config[AccessKeyID] = profile.Credential.KeyPair.ID
-		config[SecretAccessKey] = profile.Credential.KeyPair.Secret
-	} else if profile.Credential.Type == param.CredentialTypeSecret {
-		config[AccessKeyID] = string(profile.Credential.Secret.Data[secrets.AWSAccessKeyID])
-		config[SecretAccessKey] = string(profile.Credential.Secret.Data[secrets.AWSSecretAccessKey])
-		config[ConfigRole] = string(profile.Credential.Secret.Data[secrets.ConfigRole])
-		config[SessionToken] = string(profile.Credential.Secret.Data[secrets.AWSSessionToken])
+// GetCredentials returns credentials to use for AWS operations
+func GetCredentials(ctx context.Context, config map[string]string) (*credentials.Credentials, error) {
+	var creds *credentials.Credentials
+	assumeRoleDuration := assumeRoleDurationDefault
+	switch {
+	case config[AccessKeyID] != "" && config[SecretAccessKey] != "":
+		// If AccessKeys were provided - use those
+		creds = credentials.NewStaticCredentials(config[AccessKeyID], config[SecretAccessKey], "")
+	case os.Getenv(webIdentityTokenFilePathEnvKey) != "" && os.Getenv(roleARNEnvKey) != "":
+		sess, err := session.NewSessionWithOptions(session.Options{AssumeRoleDuration: assumeRoleDuration})
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to create session to initialize Web Identify credentials")
+		}
+		// If we have credentials to use with a Web Identity provider - use those
+		creds = stscreds.NewWebIdentityCredentials(sess, os.Getenv(roleARNEnvKey), "", os.Getenv(webIdentityTokenFilePathEnvKey))
+	default:
+		return nil, errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY required to initialize AWS credentials")
 	}
-	config[ConfigRegion] = profile.Location.Region
-	return GetConfig(ctx, config)
+	// If the caller didn't want to assume a different role, we're done
+	if config[ConfigRole] == "" {
+		return creds, nil
+	}
+	// If the caller wants to use a specific role, use the credentials initialized above to assume that
+	// role and return those credentials instead
+	creds, err := awsrole.Switch(ctx, creds, config[ConfigRole], assumeRoleDuration)
+	return creds, errors.Wrap(err, "Failed to switch roles")
 }
 
 // GetConfig returns a configuration to establish AWS connection and connected region name.
@@ -68,29 +86,9 @@ func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Co
 	if !ok {
 		return nil, "", errors.New("region required for storage type EBS/EFS")
 	}
-	accessKey, ok := config[AccessKeyID]
-	if !ok {
-		return nil, "", errors.New("AWS_ACCESS_KEY_ID required for storage type EBS/EFS")
-	}
-	secretAccessKey, ok := config[SecretAccessKey]
-	if !ok {
-		return nil, "", errors.New("AWS_SECRET_ACCESS_KEY required for storage type EBS/EFS")
-	}
-	role := config[ConfigRole]
-	if role != "" {
-		config, err := assumeRole(ctx, accessKey, secretAccessKey, role)
-		if err != nil {
-			return nil, "", errors.Wrap(err, "Failed to get temporary security credentials")
-		}
-		return config, region, nil
-	}
-	return &aws.Config{Credentials: credentials.NewStaticCredentials(accessKey, secretAccessKey, "")}, region, nil
-}
-
-func assumeRole(ctx context.Context, accessKey, secretAccessKey, role string) (*aws.Config, error) {
-	creds, err := awsrole.Switch(ctx, accessKey, secretAccessKey, role, assumeRoleDuration)
+	creds, err := GetCredentials(ctx, config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to switch roles")
+		return nil, "", errors.New("could not initialize AWS credentials for operation")
 	}
-	return &aws.Config{Credentials: creds}, nil
+	return &aws.Config{Credentials: creds}, region, nil
 }
