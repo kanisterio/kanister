@@ -2,7 +2,6 @@ package secrets
 
 import (
 	"context"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v1 "k8s.io/api/core/v1"
@@ -23,8 +22,7 @@ const (
 	AWSSessionToken string = "aws_session_token"
 	// ConfigRole represents the key for the ARN of the role which can be assumed.
 	// It is optional.
-	ConfigRole         = "role"
-	assumeRoleDuration = 90 * time.Minute
+	ConfigRole = "role"
 )
 
 // ValidateAWSCredentials validates secret has all necessary information
