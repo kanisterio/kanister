@@ -16,6 +16,7 @@ package rds
 
 import (
 	"context"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -24,7 +25,8 @@ import (
 )
 
 const (
-	maxRetries = 10
+	maxRetries      = 10
+	rdsReadyTimeout = 20 * time.Minute
 )
 
 // RDS is a wrapper around ec2.RDS structs
@@ -56,6 +58,8 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass,
 }
 
 func (r RDS) WaitUntilDBInstanceAvailable(ctx context.Context, instanceID string) error {
+	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
+	defer cancel()
 	dba := &rds.DescribeDBInstancesInput{
 		DBInstanceIdentifier: &instanceID,
 	}
@@ -63,6 +67,8 @@ func (r RDS) WaitUntilDBInstanceAvailable(ctx context.Context, instanceID string
 }
 
 func (r RDS) WaitUntilDBInstanceDeleted(ctx context.Context, instanceID string) error {
+	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
+	defer cancel()
 	dba := &rds.DescribeDBInstancesInput{
 		DBInstanceIdentifier: &instanceID,
 	}
@@ -94,6 +100,8 @@ func (r RDS) CreateDBSnapshot(ctx context.Context, instanceID, snapshotID string
 }
 
 func (r RDS) WaitUntilDBSnapshotAvailable(ctx context.Context, snapshotID string) error {
+	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
+	defer cancel()
 	sni := &rds.DescribeDBSnapshotsInput{
 		DBSnapshotIdentifier: &snapshotID,
 	}
@@ -108,6 +116,8 @@ func (r RDS) DeleteDBSnapshot(ctx context.Context, snapshotID string) (*rds.Dele
 }
 
 func (r RDS) WaitUntilDBSnapshotDeleted(ctx context.Context, snapshotID string) error {
+	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
+	defer cancel()
 	sni := &rds.DescribeDBSnapshotsInput{
 		DBSnapshotIdentifier: &snapshotID,
 	}
