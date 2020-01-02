@@ -55,6 +55,7 @@ const (
 // GetCredentials returns credentials to use for AWS operations
 func GetCredentials(ctx context.Context, config map[string]string) (*credentials.Credentials, error) {
 	var creds *credentials.Credentials
+	var assumedRole string
 	assumeRoleDuration := assumeRoleDurationDefault
 	switch {
 	case config[AccessKeyID] != "" && config[SecretAccessKey] != "":
@@ -67,11 +68,12 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 		}
 		// If we have credentials to use with a Web Identity provider - use those
 		creds = stscreds.NewWebIdentityCredentials(sess, os.Getenv(roleARNEnvKey), "", os.Getenv(webIdentityTokenFilePathEnvKey))
+		assumedRole = os.Getenv(roleARNEnvKey)
 	default:
 		return nil, errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY required to initialize AWS credentials")
 	}
 	// If the caller didn't want to assume a different role, we're done
-	if config[ConfigRole] == "" {
+	if role, ok := config[ConfigRole]; !ok || role == assumedRole {
 		return creds, nil
 	}
 	// If the caller wants to use a specific role, use the credentials initialized above to assume that
@@ -88,7 +90,7 @@ func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Co
 	}
 	creds, err := GetCredentials(ctx, config)
 	if err != nil {
-		return nil, "", errors.New("could not initialize AWS credentials for operation")
+		return nil, "", errors.Wrap(err, "could not initialize AWS credentials for operation")
 	}
 	return &aws.Config{Credentials: creds}, region, nil
 }
