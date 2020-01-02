@@ -16,7 +16,6 @@ package function
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -45,8 +44,6 @@ const (
 	CreateRDSSnapshotSecurityGroupIDArg = "securityGroupID"
 	// RDSSnapshotID provides RDS snapshot ID
 	CreateRDSSnapshotSnapshotIDArg = "snapshotID"
-
-	rdsReadyTimeout = 20 * time.Minute
 )
 
 type createRDSSnapshotFunc struct{}
@@ -78,8 +75,6 @@ func createRDSSnapshot(ctx context.Context, instanceID, sgID, snapshotID string,
 		return nil, errors.Wrapf(err, "Failed to create snapshot")
 	}
 	// Wait until snapshot becomes available
-	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
-	defer cancel()
 	log.Print("Waiting for RDS snapshot to be available", field.M{"SnapshotID": snapshotID})
 	if err := rdsCli.WaitUntilDBSnapshotAvailable(ctx, snapshotID); err != nil {
 		return nil, err
