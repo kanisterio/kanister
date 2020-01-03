@@ -25,7 +25,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
-	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -135,7 +134,7 @@ func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, securityGro
 		return nil, errors.Wrapf(err, "error validating profile")
 	}
 
-	awsConfig, region, err := aws.GetConfigFromProfile(ctx, profile)
+	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting awsconfig from profile")
 	}
@@ -209,6 +208,8 @@ func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, securityGro
 }
 
 func getPostgreSQLRestoreCommand(pgHost, password, backupArtifactPrefix, backupID, username, profilejson, database string) []string {
+	// TODO: use rds dbEngine lib to communicate to the datbase instead of using BASH
+	// TODO: use secrets to read the secrets details don't set as ENV var
 	return []string{
 		"bash",
 		"-o",
