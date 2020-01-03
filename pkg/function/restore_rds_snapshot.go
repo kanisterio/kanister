@@ -75,7 +75,7 @@ func (*restoreRDSSnapshotFunc) Name() string {
 }
 
 func (*restoreRDSSnapshotFunc) RequiredArgs() []string {
-	return []string{RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotSecurityGroupID, RestoreRDSSnapshotDBEngine, RestoreRDSSnapshotUsername, RestoreRDSSnapshotPassword}
+	return []string{RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotSecurityGroupID, RestoreRDSSnapshotDBEngine}
 }
 
 func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -211,6 +211,7 @@ func restoreFromDump(ctx context.Context, image string, command []string) (map[s
 func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID, sgID string) error {
 	// Delete and recreate RDS instance
 	// TODO: Call DeleteRDSSnapshot function instead
+	log.Print("Deleting existing instance.", field.M{"instanceID": instanceID})
 	_, err := rdsCli.DeleteDBInstance(ctx, instanceID)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
