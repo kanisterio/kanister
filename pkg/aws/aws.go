@@ -79,7 +79,7 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 	// When you use role chaining, your new credentials are limited to a maximum duration of one hour
 	// https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html
 	if assumedRole != "" {
-		assumeRoleDuration = 60 * time.Hour
+		assumeRoleDuration = 60 * time.Minute
 	}
 
 	// If the caller wants to use a specific role, use the credentials initialized above to assume that
