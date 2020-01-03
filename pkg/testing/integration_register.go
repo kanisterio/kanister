@@ -141,3 +141,17 @@ var _ = Suite(&RDSPostgreSQL{
 		profile:   newSecretProfile(),
 	},
 })
+
+type FoundationDB struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&FoundationDB{
+	IntegrationSuite{
+		name:      "foundationdb",
+		namespace: "fdb-test",
+		app:       app.NewFoundationDB("foundationdb"),
+		bp:        app.NewBlueprint("foundationdb"),
+		profile:   newSecretProfile(),
+	},
+})

@@ -3,7 +3,7 @@ kind: FoundationDBCluster
 metadata:
   labels:
     controller-tools.k8s.io: "1.0"
-  name: foundationdbcluster-sample
+  name: "{{ .Release.Name }}-sample"
 spec:
   version: 6.2.11
   databaseConfiguration:

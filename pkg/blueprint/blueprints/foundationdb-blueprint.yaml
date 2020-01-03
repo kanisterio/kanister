@@ -14,7 +14,7 @@ actions:
       name: TakeBackup
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        pod: "{{ .Object.metadata.name }}-1"
+        pod: "{{ .Object.metadata.name }}-2"
         container: foundationdb
         command:
           - bash
@@ -43,7 +43,7 @@ actions:
       name: restoreBackup
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        pod: "{{ .Object.metadata.name }}-1"
+        pod: "{{ .Object.metadata.name }}-2"
         container: foundationdb
         command:
           - bash
