@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -70,6 +71,27 @@ func SetOutput(sink OutputSink) error {
 	}
 }
 
+var envVarFields field.Fields
+
+// initEnvVarFields populates envVarFields with values from the host's environment.
+func initEnvVarFields() {
+	envVars := []string{
+		"HOSTNAME",
+		"CLUSTER_NAME",
+		"SERVICE_NAME",
+		"VERSION",
+	}
+	for _, e := range envVars {
+		if ev, ok := os.LookupEnv(e); ok {
+			envVarFields = field.Add(envVarFields, strings.ToLower(e), ev)
+		}
+	}
+}
+
+func init() {
+	initEnvVarFields()
+}
+
 func Info() Logger {
 	return &logger{
 		level: InfoLevel,
@@ -103,6 +125,12 @@ func WithError(err error) Logger {
 
 func (l *logger) Print(msg string, fields ...field.M) {
 	logFields := make(logrus.Fields)
+
+	envFields := envVarFields.Fields()
+	for _, f := range envFields {
+		logFields[f.Key()] = f.Value()
+	}
+
 	if ctxFields := field.FromContext(l.ctx); ctxFields != nil {
 		for _, cf := range ctxFields.Fields() {
 			logFields[cf.Key()] = cf.Value()
