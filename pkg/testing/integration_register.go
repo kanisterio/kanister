@@ -155,3 +155,35 @@ var _ = Suite(&FoundationDB{
 		profile:   newSecretProfile(),
 	},
 })
+
+// rds-postgres-dump app
+// Create snapshot, export data and restore from dump
+type RDSPostgreSQLDump struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&RDSPostgreSQLDump{
+	IntegrationSuite{
+		name:      "rds-postgres-dump",
+		namespace: "rds-postgres-dump-test",
+		app:       app.NewRDSPostgresDB("rds-postgres-dump"),
+		bp:        app.NewBlueprint("rds-postgres-dump"),
+		profile:   newSecretProfile(),
+	},
+})
+
+// rds-postgres-snap app
+// Create snapshot and restore from snapshot
+type RDSPostgreSQLSnap struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&RDSPostgreSQLSnap{
+	IntegrationSuite{
+		name:      "rds-postgres-snap",
+		namespace: "rds-postgres-snap-test",
+		app:       app.NewRDSPostgresDB("rds-postgres-snap"),
+		bp:        app.NewBlueprint("rds-postgres-snap"),
+		profile:   newSecretProfile(),
+	},
+})

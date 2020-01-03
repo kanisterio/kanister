@@ -42,29 +42,31 @@ import (
 )
 
 type RDSPostgresDB struct {
-	name            string
-	cli             kubernetes.Interface
-	namespace       string
-	id              string
-	host            string
-	dbname          string
-	username        string
-	password        string
-	accessID        string
-	secretKey       string
-	region          string
-	sessionToken    string
-	securityGroupID *string
-	sqlDB           *sql.DB
+	name              string
+	cli               kubernetes.Interface
+	namespace         string
+	id                string
+	host              string
+	dbname            string
+	username          string
+	password          string
+	accessID          string
+	secretKey         string
+	region            string
+	sessionToken      string
+	securityGroupID   *string
+	securityGroupName string
+	sqlDB             *sql.DB
 }
 
 func NewRDSPostgresDB(name string) App {
 	return &RDSPostgresDB{
-		name:     name,
-		id:       "test-postgresql-instance",
-		dbname:   "postgres",
-		username: "master",
-		password: "secret99",
+		name:              name,
+		id:                fmt.Sprintf("test-%s", name),
+		securityGroupName: fmt.Sprintf("%s-sg", name),
+		dbname:            "postgres",
+		username:          "master",
+		password:          "secret99",
 	}
 }
 
@@ -118,8 +120,8 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	}
 
 	// Create security group
-	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": "pgtest-sg"})
-	sg, err := ec2Cli.CreateSecurityGroup(ctx, "pgtest-sg", "pgtest-security-group")
+	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
+	sg, err := ec2Cli.CreateSecurityGroup(ctx, pdb.securityGroupName, "kanister-test-security-group")
 	if err != nil {
 		return err
 	}
@@ -127,7 +129,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Add ingress rule
 	log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
-	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, "pgtest-sg", "0.0.0.0/0", "tcp", 5432)
+	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, pdb.securityGroupName, "0.0.0.0/0", "tcp", 5432)
 	if err != nil {
 		return err
 	}
@@ -191,6 +193,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		},
 		StringData: map[string]string{
 			"password":          pdb.password,
+			"username":          pdb.username,
 			"access_key_id":     pdb.accessID,
 			"secret_access_key": pdb.secretKey,
 			"aws_region":        pdb.region,
@@ -349,14 +352,14 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 
 	// Delete security group
 	log.Info().Print("Deleting security group.", field.M{"app": pdb.name})
-	_, err = ec2Cli.DeleteSecurityGroup(ctx, "pgtest-sg")
+	_, err = ec2Cli.DeleteSecurityGroup(ctx, pdb.securityGroupName)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {
 			case "InvalidGroup.NotFound":
-				log.Error().Print("Security group pgtest-sg already deleted: InvalidGroup.NotFound.", field.M{"app": pdb.name})
+				log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
 			default:
-				return errors.Wrap(err, "Failed to delete security group. You may need to delete it manually. app=rds-postgresql name=pgtest-sg")
+				return errors.Wrapf(err, "Failed to delete security group. You may need to delete it manually. app=rds-postgresql name=%s", pdb.securityGroupName)
 			}
 		}
 	}

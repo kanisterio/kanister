@@ -1,0 +1,62 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: rds-postgres-snapshot-bp
+actions:
+  backup:
+    type: Namespace
+    outputArtifacts:
+      backupInfo:
+        keyValue:
+          snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+          instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+    secretNames:
+    - dbsecret
+    configMapNames:
+    - dbconfig
+    phases:
+    - func: CreateRDSSnapshot
+      name: createSnapshot
+      args:
+        instanceID: '{{ index .ConfigMaps.dbconfig.Data "postgres.instanceid" }}'
+        snapshotID: test-postgresql-snap-{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
+  restore:
+    inputArtifactNames:
+    - backupInfo
+    secretNames:
+    - dbsecret
+    kind: Namespace
+    phases:
+    - func: RestoreRDSSnapshot
+      name: restoreSnapshots
+      args:
+        namespace: "rds-postgres-snap-test"
+        instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
+        snapshotID:  "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
+        dbEngine: "PostgreSQL"
+
+  delete:
+    kind: Namespace
+    inputArtifactNames:
+    - backupInfo
+    phases:
+    - func: KubeTask
+      name: deleteSnapshot
+      args:
+        image: "kanisterio/postgres-kanister-tools:0.23.0"
+        namespace: "rds-postgres-snap-test"
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - nounset
+          - -o
+          - xtrace
+          - -c
+          - |
+            set +o xtrace
+            export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+            export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
+            set -o xtrace
+            aws rds delete-db-snapshot --db-snapshot-identifier="{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}" --region "{{ .Profile.Location.Region }}"
