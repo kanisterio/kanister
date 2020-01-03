@@ -65,6 +65,9 @@ const (
 
 	// PostgreSQLEngine stores the postgres appname
 	PostgreSQLEngine RDSDBEngine = "PostgreSQL"
+
+	// PostgresToolsImage is the image that has tools to take backup and restore of rds postgres instance
+	PostgresToolsImage = "kanisterio/postgres-kanister-tools:0.22.1"
 )
 
 // RDSDBEngine is type for the rds db engines
@@ -77,7 +80,8 @@ func (*restoreRDSSnapshotFunc) Name() string {
 }
 
 func (*restoreRDSSnapshotFunc) RequiredArgs() []string {
-	return []string{RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotSecurityGroupID, string(RestoreRDSSnapshotDBEngine)}
+	return []string{RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotSecurityGroupID, string(RestoreRDSSnapshotDBEngine),
+		RestoreRDSSnapshotUsername, RestoreRDSSnapshotPassword}
 }
 
 func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -107,7 +111,7 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		return nil, err
 	}
 
-	if err := OptArg(args, RestoreRDSSnapshotImage, &image, "kanisterio/postgres-kanister-tools:0.22.1"); err != nil {
+	if err := OptArg(args, RestoreRDSSnapshotImage, &image, PostgresToolsImage); err != nil {
 		return nil, err
 	}
 
@@ -216,12 +220,13 @@ func getPostgreSQLRestoreCommand(pgHost, password, backupArtifactPrefix, backupI
 		export PGHOST=%s
 		export PGPASSWORD=%s
 		export PGUSER=%s
+
 		if psql -l | grep -Fwq  "postgres"
 		then 
 		DATABASE=postgres
 		elif psql -l | grep -Fwq  "template1"
 		then 
-		DATABASE=tmeplate1
+		DATABASE=template1
 		else
 		echo "either postgres or template1 database should already be there in the database."
 		EXIT 1
