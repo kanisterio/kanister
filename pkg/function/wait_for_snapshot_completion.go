@@ -21,9 +21,9 @@ import (
 	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
-	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 

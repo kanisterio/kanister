@@ -31,7 +31,7 @@ import (
 	"google.golang.org/api/compute/v1"
 	. "gopkg.in/check.v1"
 
-	"github.com/kanisterio/kanister/pkg/config/aws"
+	"github.com/kanisterio/kanister/pkg/aws"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -74,7 +74,7 @@ func (s *ObjectStoreProviderSuite) SetUpSuite(c *C) {
 
 	s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	pc := ProviderConfig{Type: s.osType}
-	secret := getSecret(c, ctx, s.osType)
+	secret := getSecret(ctx, c, s.osType)
 	s.provider, err = NewProvider(ctx, pc, secret)
 	c.Check(err, IsNil)
 	c.Assert(s.provider, NotNil)
@@ -449,27 +449,25 @@ func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
 	}
 }
 
-func getSecret(c *C, ctx context.Context, osType ProviderType) *Secret {
+func getSecret(ctx context.Context, c *C, osType ProviderType) *Secret {
 	secret := &Secret{}
 	switch osType {
 	case ProviderTypeS3:
 		secret.Type = SecretTypeAwsAccessKey
-		awsAccessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
-		awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
-		var awsSessionToken string
-		if role, ok := os.LookupEnv(aws.ConfigRole); ok {
-			creds, err := aws.SwitchRole(ctx, awsAccessKeyID, awsSecretAccessKey, role, assumeRoleDuration)
-			c.Check(err, IsNil)
-			val, err := creds.Get()
-			c.Check(err, IsNil)
-			awsAccessKeyID = val.AccessKeyID
-			awsSecretAccessKey = val.SecretAccessKey
-			awsSessionToken = val.SessionToken
+		config := map[string]string{
+			aws.AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
+			aws.SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			aws.ConfigRole:      os.Getenv("AWS_ROLE"),
 		}
+		creds, err := aws.GetCredentials(ctx, config)
+		c.Assert(err, IsNil)
+
+		val, err := creds.Get()
+		c.Check(err, IsNil)
 		secret.Aws = &SecretAws{
-			AccessKeyID:     awsAccessKeyID,
-			SecretAccessKey: awsSecretAccessKey,
-			SessionToken:    awsSessionToken,
+			AccessKeyID:     val.AccessKeyID,
+			SecretAccessKey: val.SecretAccessKey,
+			SessionToken:    val.SessionToken,
 		}
 		c.Check(secret.Aws.AccessKeyID, Not(Equals), "")
 		c.Check(secret.Aws.SecretAccessKey, Not(Equals), "")

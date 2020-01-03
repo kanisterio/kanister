@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aws
+package role
 
 import (
 	"context"
@@ -25,15 +25,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-// SwitchRole func uses credentials API to automatically generates New Credentials for a given role.
-func SwitchRole(ctx context.Context, accessKeyID string, secretAccessKey string, role string, duration time.Duration) (*credentials.Credentials, error) {
-	creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")
-	sess, err := session.NewSession(aws.NewConfig().WithCredentials(creds))
+// Switch func uses credentials API to automatically generates New Credentials for a given role.
+func Switch(ctx context.Context, creds *credentials.Credentials, role string, duration time.Duration) (*credentials.Credentials, error) {
+	sess, err := session.NewSession(aws.NewConfig().WithCredentials((creds)))
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session")
 	}
-	creds = stscreds.NewCredentials(sess, role, func(p *stscreds.AssumeRoleProvider) {
+	return stscreds.NewCredentials(sess, role, func(p *stscreds.AssumeRoleProvider) {
 		p.Duration = duration
-	})
-	return creds, nil
+	}), nil
 }
