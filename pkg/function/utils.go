@@ -6,10 +6,12 @@ import (
 	"path"
 	"strings"
 
+	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -109,4 +111,20 @@ func ResolveArtifactPrefix(artifactPrefix string, profile *param.Profile) string
 		return artifactPrefix
 	}
 	return path.Join(profile.Location.Bucket, artifactPrefix)
+}
+
+func getAWSConfigFromProfile(ctx context.Context, profile *param.Profile) (*awssdk.Config, string, error) {
+	// Validate profile secret
+	config := make(map[string]string)
+	if profile.Credential.Type == param.CredentialTypeKeyPair {
+		config[aws.AccessKeyID] = profile.Credential.KeyPair.ID
+		config[aws.SecretAccessKey] = profile.Credential.KeyPair.Secret
+	} else if profile.Credential.Type == param.CredentialTypeSecret {
+		config[aws.AccessKeyID] = string(profile.Credential.Secret.Data[secrets.AWSAccessKeyID])
+		config[aws.SecretAccessKey] = string(profile.Credential.Secret.Data[secrets.AWSSecretAccessKey])
+		config[aws.ConfigRole] = string(profile.Credential.Secret.Data[secrets.ConfigRole])
+		config[aws.SessionToken] = string(profile.Credential.Secret.Data[secrets.AWSSessionToken])
+	}
+	config[aws.ConfigRegion] = profile.Location.Region
+	return aws.GetConfig(ctx, config)
 }

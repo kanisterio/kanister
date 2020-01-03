@@ -17,16 +17,13 @@ package function
 import (
 	"context"
 
-	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
-	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 func init() {
@@ -108,20 +105,4 @@ func (crs *createRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePar
 
 func (*createRDSSnapshotFunc) RequiredArgs() []string {
 	return []string{CreateRDSSnapshotInstanceIDArg, CreateRDSSnapshotSecurityGroupIDArg, CreateRDSSnapshotSnapshotIDArg}
-}
-
-func getAWSConfigFromProfile(ctx context.Context, profile *param.Profile) (*awssdk.Config, string, error) {
-	// Validate profile secret
-	config := make(map[string]string)
-	if profile.Credential.Type == param.CredentialTypeKeyPair {
-		config[aws.AccessKeyID] = profile.Credential.KeyPair.ID
-		config[aws.SecretAccessKey] = profile.Credential.KeyPair.Secret
-	} else if profile.Credential.Type == param.CredentialTypeSecret {
-		config[aws.AccessKeyID] = string(profile.Credential.Secret.Data[secrets.AWSAccessKeyID])
-		config[aws.SecretAccessKey] = string(profile.Credential.Secret.Data[secrets.AWSSecretAccessKey])
-		config[aws.ConfigRole] = string(profile.Credential.Secret.Data[secrets.ConfigRole])
-		config[aws.SessionToken] = string(profile.Credential.Secret.Data[secrets.AWSSessionToken])
-	}
-	config[aws.ConfigRegion] = profile.Location.Region
-	return aws.GetConfig(ctx, config)
 }
