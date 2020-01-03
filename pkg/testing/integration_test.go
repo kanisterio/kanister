@@ -41,7 +41,7 @@ import (
 
 const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
-	appWaitTimeout = 2 * time.Minute
+	appWaitTimeout = 3 * time.Minute
 )
 
 type secretProfile struct {
@@ -60,82 +60,6 @@ type IntegrationSuite struct {
 	skip      bool
 	cancel    context.CancelFunc
 }
-
-// INTEGRATION TEST APPLICATIONS
-
-// Skipping rds-postgres app since it doesn't work with MinIO
-//// rds-postgres app
-//var _ = Suite(&IntegrationSuite{
-//	name:      "rds-postgres",
-//	namespace: "rds-postgres-test",
-//	app:       app.NewRDSPostgresDB("rds-postgres"),
-//	bp:        app.NewBlueprint("rds-postgres"),
-//	profile:   newSecretProfile("", "", ""),
-//})
-
-// pitr-postgresql app
-var _ = Suite(&IntegrationSuite{
-	name:      "pitr-postgres",
-	namespace: "pitr-postgres-test",
-	app:       app.NewPostgresDB("pitr-postgres"),
-	bp:        app.NewPITRBlueprint("pitr-postgres"),
-	profile:   newSecretProfile(),
-})
-
-// postgres app
-var _ = Suite(&IntegrationSuite{
-	name:      "postgres",
-	namespace: "postgres-test",
-	app:       app.NewPostgresDB("postgres"),
-	bp:        app.NewBlueprint("postgres"),
-	profile:   newSecretProfile(),
-})
-
-// mysql app
-var _ = Suite(&IntegrationSuite{
-	name:      "mysql",
-	namespace: "mysql-test",
-	app:       app.NewMysqlDB("mysql"),
-	bp:        app.NewBlueprint("mysql"),
-	profile:   newSecretProfile(),
-})
-
-// Elasticsearch app
-var _ = Suite(&IntegrationSuite{
-	name:      "elasticsearch",
-	namespace: "es-test",
-	app:       app.NewElasticsearchInstance("elasticsearch"),
-	bp:        app.NewBlueprint("elasticsearch"),
-	profile:   newSecretProfile(),
-})
-
-// Mongodb app
-var _ = Suite(&IntegrationSuite{
-	name:      "mongo",
-	namespace: "mongo-test",
-	app:       app.NewMongoDB("mongo"),
-	bp:        app.NewBlueprint("mongo"),
-	profile:   newSecretProfile(),
-})
-
-// Cassandra App
-var _ = Suite(&IntegrationSuite{
-	name:      "cassandra",
-	namespace: "cassandra-test",
-	app:       app.NewCassandraInstance("cassandra"),
-	bp:        app.NewBlueprint("cassandra"),
-	profile:   newSecretProfile(),
-})
-
-// Skip Couchbase app due to resource limitations
-// Couchbase app
-//var _ = Suite(&IntegrationSuite{
-//	name:      "couchbase",
-//	namespace: "couchbase-test",
-//	app:       app.NewCouchbaseDB("couchbase"),
-//	bp:        app.NewBlueprint("couchbase"),
-//	profile:   newSecretProfile(),
-//})
 
 func newSecretProfile() *secretProfile {
 	_, location := testutil.GetObjectstoreLocation()

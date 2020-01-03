@@ -128,5 +128,5 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 }
 
 func (*kubeTaskFunc) RequiredArgs() []string {
-	return []string{KubeTaskNamespaceArg, KubeTaskImageArg, KubeTaskCommandArg}
+	return []string{KubeTaskImageArg, KubeTaskCommandArg}
 }

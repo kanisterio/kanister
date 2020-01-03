@@ -1,0 +1,20 @@
+# Default values for fdb-instance.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+
+
+foundationdb:
+  # should this operator also install and instance of foundationDB
+  installFdbInstance: true
+  # image to be used in the foundationDB instance
+  image: kanisterio/foundationdb
+  tag: 6.2.11
+  # redundancy mode for the foundationdb instance 
+  # https://apple.github.io/foundationdb/configuration.html#choosing-a-redundancy-mode
+  redundancyMode: double
+
+secret:
+  name: fdb-kubernetes-operator-secrets
+  labels: 
+    app: fdb-kubernetes-operator
