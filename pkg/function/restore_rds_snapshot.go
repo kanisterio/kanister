@@ -44,7 +44,7 @@ const (
 	// RestoreRDSSnapshotFuncName will store the name of the function
 	RestoreRDSSnapshotFuncName = "RestoreRDSSnapshot"
 	// RestoreRDSSnapshotDBEngine is type that will store which db we are dealing with
-	RestoreRDSSnapshotDBEngine RDSDBEngine = "dbEngine"
+	RestoreRDSSnapshotDBEngine = "dbEngine"
 	// RestoreRDSSnapshotInstanceID is ID of the target instance
 	RestoreRDSSnapshotInstanceID = "instanceID"
 	// RestoreRDSSnapshotBackupArtifactPrefix stores the prefix of backup in object storage
@@ -75,12 +75,12 @@ func (*restoreRDSSnapshotFunc) Name() string {
 }
 
 func (*restoreRDSSnapshotFunc) RequiredArgs() []string {
-	return []string{RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotSecurityGroupID, string(RestoreRDSSnapshotDBEngine),
-		RestoreRDSSnapshotUsername, RestoreRDSSnapshotPassword}
+	return []string{RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotSecurityGroupID, RestoreRDSSnapshotDBEngine, RestoreRDSSnapshotUsername, RestoreRDSSnapshotPassword}
 }
 
 func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password, dbEngine string
+	var instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password string
+	var dbEngine RDSDBEngine
 
 	if err := Arg(args, RestoreRDSSnapshotInstanceID, &instanceID); err != nil {
 		return nil, err
@@ -91,12 +91,19 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	}
 
 	if snapshotID == "" {
-		// snapshot ID is not provided get backupPrefix and backupID
+		// Snapshot ID is not provided get backupPrefix and backupID
 		if err := Arg(args, RestoreRDSSnapshotBackupArtifactPrefix, &backupArtifactPrefix); err != nil {
 			return nil, err
 		}
 
 		if err := Arg(args, RestoreRDSSnapshotBackupID, &backupID); err != nil {
+			return nil, err
+		}
+
+		if err := Arg(args, RestoreRDSSnapshotUsername, &username); err != nil {
+			return nil, err
+		}
+		if err := Arg(args, RestoreRDSSnapshotPassword, &password); err != nil {
 			return nil, err
 		}
 
@@ -106,108 +113,54 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		return nil, err
 	}
 
-	if err := Arg(args, string(RestoreRDSSnapshotDBEngine), &dbEngine); err != nil {
+	if err := Arg(args, RestoreRDSSnapshotDBEngine, &dbEngine); err != nil {
 		return nil, err
 	}
 
-	if err := Arg(args, RestoreRDSSnapshotUsername, &username); err != nil {
-		return nil, err
-	}
-	if err := Arg(args, RestoreRDSSnapshotPassword, &password); err != nil {
-		return nil, err
-	}
-
-	return restoreRDSSnapshot(ctx, instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password, dbEngine, tp.Profile)
+	return nil, restoreRDSSnapshot(ctx, instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password, dbEngine, tp.Profile)
 }
 
-func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password, dbEngine string, profile *param.Profile) (map[string]interface{}, error) {
+func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, profile *param.Profile) error {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
-		return nil, errors.Wrapf(err, "error validating profile")
+		return errors.Wrapf(err, "Error validating profile")
 	}
 
 	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error getting awsconfig from profile")
+		return errors.Wrapf(err, "Error getting awsconfig from profile")
 	}
 
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error getting rds client from awsconfig")
+		return errors.Wrapf(err, "Error getting rds client from awsconfig")
 	}
 
+	// Restore from snapshot
 	if snapshotID != "" {
-		// TODO: if the instance already exists
-		// delete the db instance
-		_, err = rdsCli.DeleteDBInstance(ctx, instanceID)
-		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				if aerr.Code() != rdserr.ErrCodeDBInstanceNotFoundFault {
-					return nil, err
-				}
-				log.Print("RDS instance is not present ErrCodeDBInstanceNotFoundFault", field.M{"instanceID": instanceID})
-			}
-		} else {
-			// wait for the instance to be deleted
-			err = rdsCli.WaitUntilDBInstanceDeleted(ctx, instanceID)
-			if err != nil {
-				return nil, errors.Wrapf(err, "error waiting for the dbinstance to be available")
-			}
-		}
-
-		log.Print("restoring database from snapshot", field.M{"instanceID": instanceID})
-		// restore from snapshot
-		_, err := rdsCli.RestoreDBInstanceFromDBSnapshot(ctx, instanceID, snapshotID, securityGroupID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "error restoring database instance from snapshot")
-		}
-
-		log.Print("waiting for database to be ready", field.M{"instanceID": instanceID})
-		// wait for instance to be ready
-		err = rdsCli.WaitUntilDBInstanceAvailable(ctx, instanceID)
-		if err != nil {
-			return nil, errors.Wrap(err, "error while waiting for new rds instance to be ready.")
-		}
-
-		return nil, nil
+		return restoreFromSnapshot(ctx, rdsCli, instanceID, snapshotID, securityGroupID)
 	}
 
-	// restore from backup
-	var command []string
-	// convert the profile object to string
-	// profilejson, err := json.Marshal(profile)
-	// if err != nil {
-	// 	return nil, errors.Wrapf(err, "error converting profile object to string")
-	// }
-
+	// Restore from dump
 	descOp, err := rdsCli.DescribeDBInstances(ctx, instanceID)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
 	dbEndpoint := *descOp.DBInstances[0].Endpoint.Address
-
-	command, image, err := prepareCommand(PostgreSQLEngine, RestoreAction, instanceID, dbEndpoint, username, password, backupArtifactPrefix, backupID, profile)
-	// switch dbEngine {
-	// case string(PostgreSQLEngine):
-	// 	command = getPostgreSQLRestoreCommand(dbEndpoint, password, backupArtifactPrefix, backupID, username, string(profilejson), "postgres")
-
-	// default:
-	// 	return nil, errors.New("provided value of dbEngine is incorrect")
-	// }
-
-	return restorePostgreSQLFrom(ctx, image, command)
+	command, image, err := prepareCommand(dbEngine, RestoreAction, instanceID, dbEndpoint, username, password, backupArtifactPrefix, backupID, profile)
+	_, err = restoreFromDump(ctx, image, command)
+	return err
 }
 
 func getPostgreSQLRestoreCommand(pgHost, password, backupArtifactPrefix, backupID, username string, profile *param.Profile) ([]string, error) {
-	// convert the profile object to string
+	// Convert the profile object to string
 	profilejson, err := json.Marshal(profile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error converting profile object to string")
+		return nil, errors.Wrapf(err, "Error converting profile object to string")
 	}
-	// TODO: use rds dbEngine lib to communicate to the datbase instead of using BASH
-	// TODO: use secrets to read the secrets details don't set as ENV var
+	// TODO: Use rds dbEngine lib to communicate to the datbase instead of using BASH
+	// TODO: Use secrets to read the secrets details don't set as ENV var
 	return []string{
 		"bash",
 		"-o",
@@ -236,7 +189,7 @@ func getPostgreSQLRestoreCommand(pgHost, password, backupArtifactPrefix, backupI
 	}, nil
 }
 
-func restorePostgreSQLFrom(ctx context.Context, image string, command []string) (map[string]interface{}, error) {
+func restoreFromDump(ctx context.Context, image string, command []string) (map[string]interface{}, error) {
 	cfg, err := kube.LoadConfig()
 	if err != nil {
 		return nil, err
@@ -244,13 +197,48 @@ func restorePostgreSQLFrom(ctx context.Context, image string, command []string) 
 
 	kubeclient, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error getting kubeclient from kubeconfig")
+		return nil, errors.Wrapf(err, "Error getting kubeclient from kubeconfig")
 	}
 
 	ns, err := kube.GetControllerNamespace()
 	if err != nil {
-		return nil, errors.Wrapf(err, "error getting controller namespace")
+		return nil, errors.Wrapf(err, "Error getting controller namespace")
 	}
 
 	return kubeTask(ctx, kubeclient, ns, image, command, nil)
+}
+
+func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID, sgID string) error {
+	// Delete and recreate RDS instance
+	// TODO: Call DeleteRDSSnapshot function instead
+	_, err := rdsCli.DeleteDBInstance(ctx, instanceID)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() != rdserr.ErrCodeDBInstanceNotFoundFault {
+				return err
+			}
+			log.Print("RDS instance is not present ErrCodeDBInstanceNotFoundFault", field.M{"instanceID": instanceID})
+		}
+	} else {
+		// Wait for the instance to be deleted
+		err = rdsCli.WaitUntilDBInstanceDeleted(ctx, instanceID)
+		if err != nil {
+			return errors.Wrapf(err, "Error waiting for the dbinstance to be available")
+		}
+	}
+
+	log.Print("Restoring database from snapshot.", field.M{"instanceID": instanceID})
+	// Restore from snapshot
+	_, err = rdsCli.RestoreDBInstanceFromDBSnapshot(ctx, instanceID, snapshotID, sgID)
+	if err != nil {
+		return errors.Wrapf(err, "Error restoring database instance from snapshot")
+	}
+
+	log.Print("Waiting for database to be ready.", field.M{"instanceID": instanceID})
+	// Wait for instance to be ready
+	err = rdsCli.WaitUntilDBInstanceAvailable(ctx, instanceID)
+	if err != nil {
+		return errors.Wrap(err, "Error while waiting for new rds instance to be ready.")
+	}
+	return nil
 }
