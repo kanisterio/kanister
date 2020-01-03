@@ -33,7 +33,15 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
-const fdbReadyTimeout = 15 * time.Minute
+const (
+	fdbReadyTimeout = 15 * time.Minute
+
+	// Format of the name of the pods that get generated is of form helmReleaseName-suffix-index
+	// If we run fdb cluster in double redundancy mode, 7 pods get spinned up.
+	// We are using the second pod, because of certain issues in the first pod
+	// that gets spinned up. podNameSuffix stores the suffix-index part
+	podNameSuffix = "sample-2"
+)
 
 // FoundationDB has fields of foundationdb instance
 type FoundationDB struct {
@@ -129,7 +137,9 @@ func (fdb *FoundationDB) Uninstall(ctx context.Context) error {
 }
 
 func (fdb *FoundationDB) getRunningFDBPod() (string, error) {
-	podName := fmt.Sprintf("%s-sample-2", fdb.fdbReleaseName)
+	// Format of the name of the pods that get generated is
+	// helmReleaseName-sample-index
+	podName := fmt.Sprintf("%s-%s", fdb.fdbReleaseName, podNameSuffix)
 	pod, err := fdb.cli.CoreV1().Pods(fdb.namespace).Get(podName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
