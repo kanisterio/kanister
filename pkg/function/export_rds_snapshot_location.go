@@ -169,7 +169,13 @@ func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
 }
 
 func extractAndPushDump(ctx context.Context, dbEngine RDSDBEngine, namespace, instanceID, dbEndpoint, username, password, backupPrefix string, profile *param.Profile) (map[string]interface{}, error) {
-	command, image, err := prepareCommand(dbEngine, BackupAction, instanceID, dbEndpoint, username, password, backupPrefix, profile)
+	// Create unique backupID
+	randomID, err := shortid.Generate()
+	if err != nil {
+		return nil, err
+	}
+	backupID := fmt.Sprintf("backup-%s.tar.gz", randomID)
+	command, image, err := prepareCommand(dbEngine, BackupAction, instanceID, dbEndpoint, username, password, backupPrefix, backupID, profile)
 	if err != nil {
 		return nil, err
 	}
@@ -182,15 +188,16 @@ func extractAndPushDump(ctx context.Context, dbEngine RDSDBEngine, namespace, in
 	return kubeTask(ctx, cli, namespace, image, command, nil)
 }
 
-func prepareCommand(dbEngine RDSDBEngine, action RDSAction, instanceID, dbEndpoint, username, password, backupPrefix string, profile *param.Profile) ([]string, string, error) {
+func prepareCommand(dbEngine RDSDBEngine, action RDSAction, instanceID, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) ([]string, string, error) {
 	switch dbEngine {
 	case PostgrSQLEngine:
 		switch action {
 		case BackupAction:
-			command, err := postgresBackupCommand(instanceID, dbEndpoint, username, password, backupPrefix, profile)
+			command, err := postgresBackupCommand(instanceID, dbEndpoint, username, password, backupPrefix, backupID, profile)
 			return command, postgresToolsImage, err
 		case RestoreAction:
-			fallthrough
+			command, err := getPostgreSQLRestoreCommand(dbEndpoint, password, backupPrefix, backupID, username, profile)
+			return command, PostgresToolsImage, err
 		default:
 		}
 	default:
@@ -198,16 +205,12 @@ func prepareCommand(dbEngine RDSDBEngine, action RDSAction, instanceID, dbEndpoi
 	return nil, "", errors.New("Invalid RDSDBEngine or RDSAction")
 }
 
-func postgresBackupCommand(instanceID, dbEndpoint, username, password, backupPrefix string, profile *param.Profile) ([]string, error) {
+func postgresBackupCommand(instanceID, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) ([]string, error) {
 	profileJson, err := json.Marshal(profile)
 	if err != nil {
 		return nil, err
 	}
-	randomID, err := shortid.Generate()
-	if err != nil {
-		return nil, err
-	}
-	backupID := fmt.Sprintf("backup-%s.tar.gz", randomID)
+
 	// TODO:
 	// 1. Pass and read creds from K8s Secrets
 	// 2. Find list of dbs using correct postgres go sdks

@@ -55,8 +55,7 @@ const (
 	RestoreRDSSnapshotSecurityGroupID = "securityGroupID"
 	// RestoreRDSSnapshotSnapshotID stores the snapshot ID
 	RestoreRDSSnapshotSnapshotID = "snapshotID"
-	// RestoreRDSSnapshotImage stores the image that will be used to run backup and restore commands
-	RestoreRDSSnapshotImage = "image"
+
 	// RestoreRDSSnapshotUsername stores username of the database
 	RestoreRDSSnapshotUsername = "username"
 	// RestoreRDSSnapshotPassword stores the password of the database
@@ -68,9 +67,6 @@ const (
 	// PostgresToolsImage is the image that has tools to take backup and restore of rds postgres instance
 	PostgresToolsImage = "kanisterio/postgres-kanister-tools:0.22.1"
 )
-
-// RDSDBEngine is type for the rds db engines
-type RDSDBEngine string
 
 type restoreRDSSnapshotFunc struct{}
 
@@ -84,7 +80,7 @@ func (*restoreRDSSnapshotFunc) RequiredArgs() []string {
 }
 
 func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, image, username, password, dbEngine string
+	var instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password, dbEngine string
 
 	if err := Arg(args, RestoreRDSSnapshotInstanceID, &instanceID); err != nil {
 		return nil, err
@@ -110,10 +106,6 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		return nil, err
 	}
 
-	if err := OptArg(args, RestoreRDSSnapshotImage, &image, PostgresToolsImage); err != nil {
-		return nil, err
-	}
-
 	if err := Arg(args, string(RestoreRDSSnapshotDBEngine), &dbEngine); err != nil {
 		return nil, err
 	}
@@ -125,10 +117,10 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		return nil, err
 	}
 
-	return restoreRDSSnapshot(ctx, instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, image, username, password, dbEngine, tp.Profile)
+	return restoreRDSSnapshot(ctx, instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password, dbEngine, tp.Profile)
 }
 
-func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, image, username, password, dbEngine string, profile *param.Profile) (map[string]interface{}, error) {
+func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password, dbEngine string, profile *param.Profile) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrapf(err, "error validating profile")
@@ -184,10 +176,10 @@ func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, securityGro
 	// restore from backup
 	var command []string
 	// convert the profile object to string
-	profilejson, err := json.Marshal(profile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error converting profile object to string")
-	}
+	// profilejson, err := json.Marshal(profile)
+	// if err != nil {
+	// 	return nil, errors.Wrapf(err, "error converting profile object to string")
+	// }
 
 	descOp, err := rdsCli.DescribeDBInstances(ctx, instanceID)
 	if err != nil {
@@ -196,18 +188,24 @@ func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, securityGro
 
 	dbEndpoint := *descOp.DBInstances[0].Endpoint.Address
 
-	switch dbEngine {
-	case string(PostgreSQLEngine):
-		command = getPostgreSQLRestoreCommand(dbEndpoint, password, backupArtifactPrefix, backupID, username, string(profilejson), "postgres")
+	command, image, err := prepareCommand(PostgreSQLEngine, RestoreAction, instanceID, dbEndpoint, username, password, backupArtifactPrefix, backupID, profile)
+	// switch dbEngine {
+	// case string(PostgreSQLEngine):
+	// 	command = getPostgreSQLRestoreCommand(dbEndpoint, password, backupArtifactPrefix, backupID, username, string(profilejson), "postgres")
 
-	default:
-		return nil, errors.New("provided value of dbEngine is incorrect")
-	}
+	// default:
+	// 	return nil, errors.New("provided value of dbEngine is incorrect")
+	// }
 
 	return restorePostgreSQLFrom(ctx, image, command)
 }
 
-func getPostgreSQLRestoreCommand(pgHost, password, backupArtifactPrefix, backupID, username, profilejson, database string) []string {
+func getPostgreSQLRestoreCommand(pgHost, password, backupArtifactPrefix, backupID, username string, profile *param.Profile) ([]string, error) {
+	// convert the profile object to string
+	profilejson, err := json.Marshal(profile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error converting profile object to string")
+	}
 	// TODO: use rds dbEngine lib to communicate to the datbase instead of using BASH
 	// TODO: use secrets to read the secrets details don't set as ENV var
 	return []string{
@@ -235,7 +233,7 @@ func getPostgreSQLRestoreCommand(pgHost, password, backupArtifactPrefix, backupI
 
 		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | psql -q -U "${PGUSER}" "${DATABASE}"
 		`, pgHost, password, username, profilejson, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID)),
-	}
+	}, nil
 }
 
 func restorePostgreSQLFrom(ctx context.Context, image string, command []string) (map[string]interface{}, error) {
