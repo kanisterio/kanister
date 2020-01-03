@@ -149,6 +149,9 @@ func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, securityGro
 	}
 	dbEndpoint := *descOp.DBInstances[0].Endpoint.Address
 	command, image, err := prepareCommand(dbEngine, RestoreAction, instanceID, dbEndpoint, username, password, backupArtifactPrefix, backupID, profile)
+	if err != nil {
+		return err
+	}
 	_, err = restoreFromDump(ctx, image, command)
 	return err
 }
