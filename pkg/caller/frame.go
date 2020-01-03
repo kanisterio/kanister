@@ -30,8 +30,14 @@ func GetFrame(depth int) Frame {
 	var frame runtime.Frame
 	frame, _ = frames.Next()
 	filename := frame.File
-	if paths := strings.SplitAfterN(frame.File, "/go/src/", 2); len(paths) > 1 {
+	paths := strings.SplitAfterN(frame.File, "/kanister/", 2)
+	if len(paths) > 1 {
 		filename = paths[1]
+	} else {
+		paths = strings.SplitAfterN(frame.File, "/go/src/", 2)
+		if len(paths) > 1 {
+			filename = paths[1]
+		}
 	}
 	return Frame{Function: frame.Function, File: filename, Line: frame.Line}
 }
