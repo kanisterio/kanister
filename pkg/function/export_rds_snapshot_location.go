@@ -40,6 +40,7 @@ var (
 
 const (
 	ExportRDSSnapshotToLocFuncName           = "ExportRDSSnapshotToLocation"
+	ExportRDSSnapshotToLocNamespaceArg       = "namespace"
 	ExportRDSSnapshotToLocInstanceIDArg      = "instanceID"
 	ExportRDSSnapshotToLocSnapshotIDArg      = "snapshotID"
 	ExportRDSSnapshotToLocDBUsernameArg      = "username"
@@ -65,7 +66,7 @@ func (*exportRDSSnapshotToLocationFunc) Name() string {
 	return ExportRDSSnapshotToLocFuncName
 }
 
-func exportRDSSnapshotToLoc(ctx context.Context, instanceID, snapshotID, username, password, backupPrefix string, dbEngine RDSDBEngine, profile *param.Profile) (map[string]interface{}, error) {
+func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshotID, username, password, backupPrefix string, dbEngine RDSDBEngine, profile *param.Profile) (map[string]interface{}, error) {
 	// Validate profilextractDumpFromDBe
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrapf(err, "Profile Validation failed")
@@ -112,7 +113,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, instanceID, snapshotID, usernam
 	dbEndpoint := *dbInstance.DBInstances[0].Endpoint.Address
 
 	// Extract dump from DB
-	output, err := extractAndPushDump(ctx, dbEngine, tmpInstanceID, dbEndpoint, username, password, backupPrefix, profile)
+	output, err := extractAndPushDump(ctx, dbEngine, namespace, tmpInstanceID, dbEndpoint, username, password, backupPrefix, profile)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +138,11 @@ func exportRDSSnapshotToLoc(ctx context.Context, instanceID, snapshotID, usernam
 }
 
 func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var instanceID, snapshotID, username, password, backupArtifact string
+	var namespace, instanceID, snapshotID, username, password, backupArtifact string
 	var dbEngine RDSDBEngine
+	if err := Arg(args, ExportRDSSnapshotToLocNamespaceArg, &namespace); err != nil {
+		return nil, err
+	}
 	if err := Arg(args, ExportRDSSnapshotToLocInstanceIDArg, &instanceID); err != nil {
 		return nil, err
 	}
@@ -157,14 +161,14 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 	if err := OptArg(args, ExportRDSSnapshotToLocBackupArtPrefixArg, &backupArtifact, instanceID); err != nil {
 		return nil, err
 	}
-	return exportRDSSnapshotToLoc(ctx, instanceID, snapshotID, username, password, backupArtifact, dbEngine, tp.Profile)
+	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, backupArtifact, dbEngine, tp.Profile)
 }
 
 func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
-	return []string{ExportRDSSnapshotToLocInstanceIDArg, ExportRDSSnapshotToLocSnapshotIDArg, ExportRDSSnapshotToLocDBEngineArg}
+	return []string{ExportRDSSnapshotToLocNamespaceArg, ExportRDSSnapshotToLocInstanceIDArg, ExportRDSSnapshotToLocSnapshotIDArg, ExportRDSSnapshotToLocDBEngineArg}
 }
 
-func extractAndPushDump(ctx context.Context, dbEngine RDSDBEngine, instanceID, dbEndpoint, username, password, backupPrefix string, profile *param.Profile) (map[string]interface{}, error) {
+func extractAndPushDump(ctx context.Context, dbEngine RDSDBEngine, namespace, instanceID, dbEndpoint, username, password, backupPrefix string, profile *param.Profile) (map[string]interface{}, error) {
 	command, image, err := prepareCommand(dbEngine, BackupAction, instanceID, dbEndpoint, username, password, backupPrefix, profile)
 	if err != nil {
 		return nil, err
@@ -175,12 +179,6 @@ func extractAndPushDump(ctx context.Context, dbEngine RDSDBEngine, instanceID, d
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-
-	namespace, err := kube.GetControllerNamespace()
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get controller namespace")
-	}
-
 	return kubeTask(ctx, cli, namespace, image, command, nil)
 }
 
