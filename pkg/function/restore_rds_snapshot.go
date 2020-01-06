@@ -51,8 +51,6 @@ const (
 	RestoreRDSSnapshotBackupArtifactPrefix = "backupArtifactPrefix"
 	// RestoreRDSSnapshotBackupID stores the ID of backup in object storage
 	RestoreRDSSnapshotBackupID = "backupID"
-	// RestoreRDSSnapshotSecurityGroupID stores the securitygroup
-	RestoreRDSSnapshotSecurityGroupID = "securityGroupID"
 	// RestoreRDSSnapshotSnapshotID stores the snapshot ID
 	RestoreRDSSnapshotSnapshotID = "snapshotID"
 
@@ -75,11 +73,11 @@ func (*restoreRDSSnapshotFunc) Name() string {
 }
 
 func (*restoreRDSSnapshotFunc) RequiredArgs() []string {
-	return []string{RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotSecurityGroupID, RestoreRDSSnapshotDBEngine}
+	return []string{RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotDBEngine}
 }
 
 func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password string
+	var instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string
 	var dbEngine RDSDBEngine
 
 	if err := Arg(args, RestoreRDSSnapshotInstanceID, &instanceID); err != nil {
@@ -109,18 +107,14 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 
 	}
 
-	if err := Arg(args, RestoreRDSSnapshotSecurityGroupID, &securityGroupID); err != nil {
-		return nil, err
-	}
-
 	if err := Arg(args, RestoreRDSSnapshotDBEngine, &dbEngine); err != nil {
 		return nil, err
 	}
 
-	return nil, restoreRDSSnapshot(ctx, instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password, dbEngine, tp.Profile)
+	return nil, restoreRDSSnapshot(ctx, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, tp.Profile)
 }
 
-func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, securityGroupID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, profile *param.Profile) error {
+func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, profile *param.Profile) error {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return errors.Wrapf(err, "Error validating profile")
@@ -139,7 +133,7 @@ func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, securityGro
 
 	// Restore from snapshot
 	if snapshotID != "" {
-		return restoreFromSnapshot(ctx, rdsCli, instanceID, snapshotID, securityGroupID)
+		return restoreFromSnapshot(ctx, rdsCli, instanceID, snapshotID)
 	}
 
 	// Restore from dump
@@ -211,11 +205,17 @@ func restoreFromDump(ctx context.Context, image string, command []string) (map[s
 	return kubeTask(ctx, kubeclient, ns, image, command, nil)
 }
 
-func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID, sgID string) error {
+func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID string) error {
 	// Delete and recreate RDS instance
 	// TODO: Call DeleteRDSSnapshot function instead
+	// Find security group ids
+	sgIDs, err := findSecurityGroups(ctx, rdsCli, instanceID)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+	}
+
 	log.Print("Deleting existing instance.", field.M{"instanceID": instanceID})
-	_, err := rdsCli.DeleteDBInstance(ctx, instanceID)
+	_, err = rdsCli.DeleteDBInstance(ctx, instanceID)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() != rdserr.ErrCodeDBInstanceNotFoundFault {
@@ -233,7 +233,7 @@ func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snaps
 
 	log.Print("Restoring database from snapshot.", field.M{"instanceID": instanceID})
 	// Restore from snapshot
-	_, err = rdsCli.RestoreDBInstanceFromDBSnapshot(ctx, instanceID, snapshotID, sgID)
+	_, err = rdsCli.RestoreDBInstanceFromDBSnapshot(ctx, instanceID, snapshotID, sgIDs)
 	if err != nil {
 		return errors.Wrapf(err, "Error restoring database instance from snapshot")
 	}
