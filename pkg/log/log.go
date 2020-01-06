@@ -3,8 +3,12 @@ package log
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
+	"time"
 
+	"github.com/luci/go-render/render"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -70,6 +74,83 @@ func SetOutput(sink OutputSink) error {
 	}
 }
 
+// OutputFormat sets the output data format.
+type OutputFormat uint8
+
+const (
+	// TextFormat creates a plain text format log entry (not CEE).
+	TextFormat OutputFormat = iota
+	// JSONFormat create a JSON format log entry.
+	JSONFormat
+)
+
+// Used as a filter to expand (render) the contents of the fields
+type renderFormatter struct {
+	formatter logrus.Formatter
+}
+
+// SetFormatter sets the output formatter.
+func SetFormatter(format OutputFormat) {
+	switch format {
+	case TextFormat:
+		log.SetFormatter(&renderFormatter{
+			&logrus.TextFormatter{
+				FullTimestamp:   true,
+				TimestampFormat: time.RFC3339Nano}})
+	case JSONFormat:
+		log.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339Nano})
+	default:
+		panic("not implemented")
+	}
+}
+
+func formatError(err error) (string, string) {
+	if err == nil {
+		return "", ""
+	}
+	msg := fmt.Sprintf("%+v", err)
+	split := strings.SplitAfter(msg, err.Error())
+
+	if len(split) > 1 {
+		return split[0], split[1]
+	}
+	return split[0], ""
+}
+
+func (f *renderFormatter) Format(e *logrus.Entry) ([]byte, error) {
+	if e != nil && len(e.Data) > 0 {
+		cp := *e
+		cp.Buffer = nil
+		data := make(logrus.Fields, len(e.Data))
+
+		// Expand / render the fields in the entry
+		for k, v := range e.Data {
+			switch t := v.(type) {
+			case error:
+				errmsg, stacktrace := formatError(t)
+				data[k] = errmsg
+				data["stackTrace"] = stacktrace
+			case string, fmt.Stringer:
+				data[k] = v
+			default:
+				if k != "time" && k != "field.time" {
+					// Preserve time formatting set in the upstream formatter
+					data[k] = render.Render(v)
+				} else {
+					data[k] = v
+				}
+			}
+		}
+		cp.Data = data
+		return f.formatter.Format(&cp)
+	}
+	return f.formatter.Format(e)
+}
+
+func init() {
+	SetFormatter(TextFormat)
+}
+
 func Info() Logger {
 	return &logger{
 		level: InfoLevel,
@@ -103,6 +184,7 @@ func WithError(err error) Logger {
 
 func (l *logger) Print(msg string, fields ...field.M) {
 	logFields := make(logrus.Fields)
+
 	if ctxFields := field.FromContext(l.ctx); ctxFields != nil {
 		for _, cf := range ctxFields.Fields() {
 			logFields[cf.Key()] = cf.Value()
