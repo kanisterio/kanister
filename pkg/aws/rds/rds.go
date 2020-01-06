@@ -44,11 +44,11 @@ func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS,
 }
 
 // CreateDBInstanceWithContext
-func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, username, password, sgid string) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, username, password string, sgIDs []*string) (*rds.CreateDBInstanceOutput, error) {
 	dbi := &rds.CreateDBInstanceInput{
 		AllocatedStorage:     &storage,
 		DBInstanceIdentifier: &instanceID,
-		VpcSecurityGroupIds:  []*string{&sgid},
+		VpcSecurityGroupIds:  sgIDs,
 		DBInstanceClass:      &instanceClass,
 		Engine:               &engine,
 		MasterUsername:       &username,
@@ -124,11 +124,11 @@ func (r RDS) WaitUntilDBSnapshotDeleted(ctx context.Context, snapshotID string) 
 	return r.WaitUntilDBSnapshotDeletedWithContext(ctx, sni)
 }
 
-func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, snapshotID, sgID string) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
+func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, snapshotID string, sgIDs []*string) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
 	rdbi := &rds.RestoreDBInstanceFromDBSnapshotInput{
 		DBInstanceIdentifier: &instanceID,
 		DBSnapshotIdentifier: &snapshotID,
-		VpcSecurityGroupIds:  []*string{&sgID},
+		VpcSecurityGroupIds:  sgIDs,
 	}
 	return r.RestoreDBInstanceFromDBSnapshotWithContext(ctx, rdbi)
 }

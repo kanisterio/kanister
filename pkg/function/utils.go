@@ -12,6 +12,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/aws/rds"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -127,4 +128,17 @@ func getAWSConfigFromProfile(ctx context.Context, profile *param.Profile) (*awss
 	}
 	config[aws.ConfigRegion] = profile.Location.Region
 	return aws.GetConfig(ctx, config)
+}
+
+// findSecurityGroups return list of security group IDs associated with the RDS instance
+func findSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string) ([]*string, error) {
+	desc, err := rdsCli.DescribeDBInstances(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	var sgIDs []*string
+	for _, vpc := range desc.DBInstances[0].VpcSecurityGroups {
+		sgIDs = append(sgIDs, vpc.VpcSecurityGroupId)
+	}
+	return sgIDs, err
 }
