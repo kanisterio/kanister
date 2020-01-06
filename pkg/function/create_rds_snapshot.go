@@ -39,8 +39,6 @@ const (
 	CreateRDSSnapshotFuncName = "CreateRDSSnapshot"
 	// CreateRDSSnapshotInstanceIDArg provides rds instance ID
 	CreateRDSSnapshotInstanceIDArg = "instanceID"
-	// CreateRDSSnapshotSecurityGroupIDArg provides RDS instance security group ID
-	CreateRDSSnapshotSecurityGroupIDArg = "securityGroupID"
 	// RDSSnapshotID provides RDS snapshot ID
 	CreateRDSSnapshotSnapshotIDArg = "snapshotID"
 )
@@ -82,9 +80,8 @@ func createRDSSnapshot(ctx context.Context, instanceID, sgID, snapshotID string,
 	}
 
 	output := map[string]interface{}{
-		CreateRDSSnapshotSnapshotIDArg:      snapshotID,
-		CreateRDSSnapshotInstanceIDArg:      instanceID,
-		CreateRDSSnapshotSecurityGroupIDArg: sgID,
+		CreateRDSSnapshotSnapshotIDArg: snapshotID,
+		CreateRDSSnapshotInstanceIDArg: instanceID,
 	}
 	return output, nil
 }
@@ -94,9 +91,6 @@ func (crs *createRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePar
 	if err := Arg(args, CreateRDSSnapshotInstanceIDArg, &instanceID); err != nil {
 		return nil, err
 	}
-	if err := Arg(args, CreateRDSSnapshotSecurityGroupIDArg, &sgID); err != nil {
-		return nil, err
-	}
 	if err := Arg(args, CreateRDSSnapshotSnapshotIDArg, &snapshotID); err != nil {
 		return nil, err
 	}
@@ -104,5 +98,5 @@ func (crs *createRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePar
 }
 
 func (*createRDSSnapshotFunc) RequiredArgs() []string {
-	return []string{CreateRDSSnapshotInstanceIDArg, CreateRDSSnapshotSecurityGroupIDArg, CreateRDSSnapshotSnapshotIDArg}
+	return []string{CreateRDSSnapshotInstanceIDArg, CreateRDSSnapshotSnapshotIDArg}
 }
