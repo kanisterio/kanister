@@ -45,6 +45,8 @@ const (
 	RestoreRDSSnapshotFuncName = "RestoreRDSSnapshot"
 	// RestoreRDSSnapshotDBEngine is type that will store which db we are dealing with
 	RestoreRDSSnapshotDBEngine = "dbEngine"
+	// RestoreRDSSnapshotNamespace for namespace arg
+	RestoreRDSSnapshotNamespace = "namespace"
 	// RestoreRDSSnapshotInstanceID is ID of the target instance
 	RestoreRDSSnapshotInstanceID = "instanceID"
 	// RestoreRDSSnapshotBackupArtifactPrefix stores the prefix of backup in object storage
@@ -73,13 +75,16 @@ func (*restoreRDSSnapshotFunc) Name() string {
 }
 
 func (*restoreRDSSnapshotFunc) RequiredArgs() []string {
-	return []string{RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotDBEngine}
+	return []string{RestoreRDSSnapshotNamespace, RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotDBEngine}
 }
 
 func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string
+	var namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string
 	var dbEngine RDSDBEngine
 
+	if err := Arg(args, RestoreRDSSnapshotNamespace, &namespace); err != nil {
+		return nil, err
+	}
 	if err := Arg(args, RestoreRDSSnapshotInstanceID, &instanceID); err != nil {
 		return nil, err
 	}
@@ -111,10 +116,10 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		return nil, err
 	}
 
-	return nil, restoreRDSSnapshot(ctx, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, tp.Profile)
+	return nil, restoreRDSSnapshot(ctx, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, tp.Profile)
 }
 
-func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, profile *param.Profile) error {
+func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, profile *param.Profile) error {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return errors.Wrapf(err, "Error validating profile")
@@ -146,7 +151,7 @@ func restoreRDSSnapshot(ctx context.Context, instanceID, snapshotID, backupArtif
 	if err != nil {
 		return err
 	}
-	_, err = restoreFromDump(ctx, image, command)
+	_, err = restoreFromDump(ctx, namespace, image, command)
 	return err
 }
 
@@ -186,7 +191,7 @@ func getPostgreSQLRestoreCommand(pgHost, password, backupArtifactPrefix, backupI
 	}, nil
 }
 
-func restoreFromDump(ctx context.Context, image string, command []string) (map[string]interface{}, error) {
+func restoreFromDump(ctx context.Context, namespace, image string, command []string) (map[string]interface{}, error) {
 	cfg, err := kube.LoadConfig()
 	if err != nil {
 		return nil, err
@@ -196,13 +201,7 @@ func restoreFromDump(ctx context.Context, image string, command []string) (map[s
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error getting kubeclient from kubeconfig")
 	}
-
-	ns, err := kube.GetControllerNamespace()
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error getting controller namespace")
-	}
-
-	return kubeTask(ctx, kubeclient, ns, image, command, nil)
+	return kubeTask(ctx, kubeclient, namespace, image, command, nil)
 }
 
 func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID string) error {
