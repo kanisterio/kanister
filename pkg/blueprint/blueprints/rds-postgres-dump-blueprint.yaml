@@ -55,23 +55,7 @@ actions:
     inputArtifactNames:
     - backupInfo
     phases:
-    - func: KubeTask
+    - func: DeleteRDSSnapshot
       name: deleteSnapshot
       args:
-        image: "kanisterio/postgres-kanister-tools:0.23.0"
-        namespace: "rds-postgres-dump-test"
-        command:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - nounset
-          - -o
-          - xtrace
-          - -c
-          - |
-            set +o xtrace
-            export AWS_SECRET_ACCESS_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
-            export AWS_ACCESS_KEY_ID="{{ .Profile.Credential.KeyPair.ID }}"
-            set -o xtrace
-            aws rds delete-db-snapshot --db-snapshot-identifier="{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}" --region "{{ .Profile.Location.Region }}"
+        snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
