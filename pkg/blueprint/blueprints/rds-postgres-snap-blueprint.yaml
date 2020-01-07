@@ -10,8 +10,6 @@ actions:
         keyValue:
           snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
           instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
-    secretNames:
-    - dbsecret
     configMapNames:
     - dbconfig
     phases:
@@ -23,8 +21,6 @@ actions:
   restore:
     inputArtifactNames:
     - backupInfo
-    secretNames:
-    - dbsecret
     kind: Namespace
     phases:
     - func: RestoreRDSSnapshot
@@ -34,7 +30,6 @@ actions:
         instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
         snapshotID:  "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
         dbEngine: "PostgreSQL"
-
   delete:
     kind: Namespace
     inputArtifactNames:
