@@ -16,11 +16,17 @@ package rds
 
 import (
 	"context"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
+)
+
+const (
+	maxRetries      = 10
+	rdsReadyTimeout = 20 * time.Minute
 )
 
 // RDS is a wrapper around ec2.RDS structs
@@ -29,20 +35,20 @@ type RDS struct {
 }
 
 // NewRDSClient returns ec2 client struct.
-func NewClient(ctx context.Context, awsConfig *aws.Config) (*RDS, error) {
+func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS, error) {
 	s, err := session.NewSession(awsConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session")
 	}
-	return &RDS{RDS: rds.New(s, awsConfig)}, nil
+	return &RDS{RDS: rds.New(s, awsConfig.WithMaxRetries(maxRetries).WithRegion(region).WithCredentials(awsConfig.Credentials))}, nil
 }
 
 // CreateDBInstanceWithContext
-func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, username, password, sgid string) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, username, password string, sgIDs []*string) (*rds.CreateDBInstanceOutput, error) {
 	dbi := &rds.CreateDBInstanceInput{
 		AllocatedStorage:     &storage,
 		DBInstanceIdentifier: &instanceID,
-		VpcSecurityGroupIds:  []*string{&sgid},
+		VpcSecurityGroupIds:  sgIDs,
 		DBInstanceClass:      &instanceClass,
 		Engine:               &engine,
 		MasterUsername:       &username,
@@ -52,6 +58,8 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass,
 }
 
 func (r RDS) WaitUntilDBInstanceAvailable(ctx context.Context, instanceID string) error {
+	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
+	defer cancel()
 	dba := &rds.DescribeDBInstancesInput{
 		DBInstanceIdentifier: &instanceID,
 	}
@@ -59,6 +67,8 @@ func (r RDS) WaitUntilDBInstanceAvailable(ctx context.Context, instanceID string
 }
 
 func (r RDS) WaitUntilDBInstanceDeleted(ctx context.Context, instanceID string) error {
+	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
+	defer cancel()
 	dba := &rds.DescribeDBInstancesInput{
 		DBInstanceIdentifier: &instanceID,
 	}
@@ -79,4 +89,46 @@ func (r RDS) DeleteDBInstance(ctx context.Context, instanceID string) (*rds.Dele
 		SkipFinalSnapshot:    &skipSnapshot,
 	}
 	return r.DeleteDBInstanceWithContext(ctx, dbi)
+}
+
+func (r RDS) CreateDBSnapshot(ctx context.Context, instanceID, snapshotID string) (*rds.CreateDBSnapshotOutput, error) {
+	sni := &rds.CreateDBSnapshotInput{
+		DBInstanceIdentifier: &instanceID,
+		DBSnapshotIdentifier: &snapshotID,
+	}
+	return r.CreateDBSnapshotWithContext(ctx, sni)
+}
+
+func (r RDS) WaitUntilDBSnapshotAvailable(ctx context.Context, snapshotID string) error {
+	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
+	defer cancel()
+	sni := &rds.DescribeDBSnapshotsInput{
+		DBSnapshotIdentifier: &snapshotID,
+	}
+	return r.WaitUntilDBSnapshotAvailableWithContext(ctx, sni)
+}
+
+func (r RDS) DeleteDBSnapshot(ctx context.Context, snapshotID string) (*rds.DeleteDBSnapshotOutput, error) {
+	sni := &rds.DeleteDBSnapshotInput{
+		DBSnapshotIdentifier: &snapshotID,
+	}
+	return r.DeleteDBSnapshotWithContext(ctx, sni)
+}
+
+func (r RDS) WaitUntilDBSnapshotDeleted(ctx context.Context, snapshotID string) error {
+	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
+	defer cancel()
+	sni := &rds.DescribeDBSnapshotsInput{
+		DBSnapshotIdentifier: &snapshotID,
+	}
+	return r.WaitUntilDBSnapshotDeletedWithContext(ctx, sni)
+}
+
+func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, snapshotID string, sgIDs []*string) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
+	rdbi := &rds.RestoreDBInstanceFromDBSnapshotInput{
+		DBInstanceIdentifier: &instanceID,
+		DBSnapshotIdentifier: &snapshotID,
+		VpcSecurityGroupIds:  sgIDs,
+	}
+	return r.RestoreDBInstanceFromDBSnapshotWithContext(ctx, rdbi)
 }
