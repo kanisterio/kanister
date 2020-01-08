@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/kanisterio/kanister/pkg/caller"
 	"github.com/kanisterio/kanister/pkg/field"
 )
 
@@ -85,11 +87,36 @@ func initEnvVarFields() {
 		if ev, ok := os.LookupEnv(e); ok {
 			envVarFields = field.Add(envVarFields, strings.ToLower(e), ev)
 		}
+  }
+}
+
+// OutputFormat sets the output data format.
+type OutputFormat uint8
+
+const (
+	// TextFormat creates a plain text format log entry (not CEE).
+	TextFormat OutputFormat = iota
+	// JSONFormat create a JSON format log entry.
+	JSONFormat
+)
+
+// SetFormatter sets the output formatter.
+func SetFormatter(format OutputFormat) {
+	switch format {
+	case TextFormat:
+		log.SetFormatter(&logrus.TextFormatter{
+			FullTimestamp:   true,
+			TimestampFormat: time.RFC3339Nano})
+	case JSONFormat:
+		log.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339Nano})
+	default:
+		panic("not implemented")
 	}
 }
 
 func init() {
-	initEnvVarFields()
+	SetFormatter(TextFormat)
+  initEnvVarFields()
 }
 
 func Info() Logger {
@@ -129,6 +156,11 @@ func (l *logger) Print(msg string, fields ...field.M) {
 	for _, f := range envVarFields.Fields() {
 		logFields[f.Key()] = f.Value()
 	}
+
+	frame := caller.GetFrame(3)
+	logFields["Function"] = frame.Function
+	logFields["File"] = frame.File
+	logFields["Line"] = frame.Line
 
 	if ctxFields := field.FromContext(l.ctx); ctxFields != nil {
 		for _, cf := range ctxFields.Fields() {
