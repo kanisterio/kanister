@@ -3,7 +3,9 @@ package log
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -39,6 +41,8 @@ const (
 	LoggingServicePortEnv = "LOGGING_SVC_SERVICE_PORT_LOGGING"
 )
 
+const stackTrace = "stackTrace"
+
 type logger struct {
 	level Level
 	ctx   context.Context
@@ -69,6 +73,16 @@ func SetOutput(sink OutputSink) error {
 	default:
 		return errors.New("not implemented")
 	}
+}
+
+func addStackTraceField(e *logrus.Entry, err error) *logrus.Entry {
+	if e != nil && err != nil {
+		split := strings.SplitAfter(fmt.Sprintf("%+v", err), err.Error())
+		if len(split) > 1 && len(split[1]) != 0 {
+			return e.WithField(stackTrace, split[1])
+		}
+	}
+	return e
 }
 
 func Info() Logger {
@@ -125,6 +139,7 @@ func (l *logger) Print(msg string, fields ...field.M) {
 	entry := log.WithFields(logFields)
 	if l.err != nil {
 		entry = entry.WithError(l.err)
+		entry = addStackTraceField(entry, l.err)
 	}
 	entry.Logln(logrus.Level(l.level), msg)
 }
