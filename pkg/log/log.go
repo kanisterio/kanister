@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -69,6 +70,34 @@ func SetOutput(sink OutputSink) error {
 	default:
 		return errors.New("not implemented")
 	}
+}
+
+// OutputFormat sets the output data format.
+type OutputFormat uint8
+
+const (
+	// TextFormat creates a plain text format log entry (not CEE).
+	TextFormat OutputFormat = iota
+	// JSONFormat create a JSON format log entry.
+	JSONFormat
+)
+
+// SetFormatter sets the output formatter.
+func SetFormatter(format OutputFormat) {
+	switch format {
+	case TextFormat:
+		log.SetFormatter(&logrus.TextFormatter{
+			FullTimestamp:   true,
+			TimestampFormat: time.RFC3339Nano})
+	case JSONFormat:
+		log.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339Nano})
+	default:
+		panic("not implemented")
+	}
+}
+
+func init() {
+	SetFormatter(TextFormat)
 }
 
 func Info() Logger {
