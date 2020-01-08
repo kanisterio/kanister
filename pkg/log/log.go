@@ -126,8 +126,7 @@ func WithError(err error) Logger {
 func (l *logger) Print(msg string, fields ...field.M) {
 	logFields := make(logrus.Fields)
 
-	envFields := envVarFields.Fields()
-	for _, f := range envFields {
+	for _, f := range envVarFields.Fields() {
 		logFields[f.Key()] = f.Value()
 	}
 
