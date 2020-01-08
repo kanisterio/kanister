@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/kanisterio/kanister/pkg/caller"
 	"github.com/kanisterio/kanister/pkg/field"
 )
 
@@ -132,6 +133,11 @@ func WithError(err error) Logger {
 
 func (l *logger) Print(msg string, fields ...field.M) {
 	logFields := make(logrus.Fields)
+
+	frame := caller.GetFrame(3)
+	logFields["Function"] = frame.Function
+	logFields["File"] = frame.File
+	logFields["Line"] = frame.Line
 
 	if ctxFields := field.FromContext(l.ctx); ctxFields != nil {
 		for _, cf := range ctxFields.Fields() {
