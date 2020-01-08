@@ -16,8 +16,10 @@ package function
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/rand"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
@@ -39,8 +41,8 @@ const (
 	CreateRDSSnapshotFuncName = "CreateRDSSnapshot"
 	// CreateRDSSnapshotInstanceIDArg provides rds instance ID
 	CreateRDSSnapshotInstanceIDArg = "instanceID"
-	// RDSSnapshotID provides RDS snapshot ID
-	CreateRDSSnapshotSnapshotIDArg = "snapshotID"
+	// CreateRDSSnapshotSnapshotID to set snapshotID in output artifact
+	CreateRDSSnapshotSnapshotID = "snapshotID"
 )
 
 type createRDSSnapshotFunc struct{}
@@ -49,54 +51,53 @@ func (*createRDSSnapshotFunc) Name() string {
 	return CreateRDSSnapshotFuncName
 }
 
-func createRDSSnapshot(ctx context.Context, instanceID, sgID, snapshotID string, profile *param.Profile) (map[string]interface{}, error) {
+func createRDSSnapshot(ctx context.Context, instanceID string, profile *param.Profile) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
-		return nil, errors.Wrapf(err, "Profile Validation failed")
+		return nil, errors.Wrap(err, "Profile Validation failed")
 	}
 
 	// Get aws config from profile
 	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to get AWS creds from profile")
 	}
 
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to create RDS client")
 	}
 
 	// Create Snapshot
+	snapshotID := fmt.Sprintf("%s-%s", instanceID, rand.String(10))
+
 	log.Print("Creating RDS snapshot", field.M{"SnapshotID": snapshotID})
-	_, err = rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create snapshot")
+	if _, err := rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID); err != nil {
+		return nil, errors.Wrap(err, "Failed to create snapshot")
 	}
+
 	// Wait until snapshot becomes available
 	log.Print("Waiting for RDS snapshot to be available", field.M{"SnapshotID": snapshotID})
 	if err := rdsCli.WaitUntilDBSnapshotAvailable(ctx, snapshotID); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
 	}
 
 	output := map[string]interface{}{
-		CreateRDSSnapshotSnapshotIDArg: snapshotID,
+		CreateRDSSnapshotSnapshotID:    snapshotID,
 		CreateRDSSnapshotInstanceIDArg: instanceID,
 	}
 	return output, nil
 }
 
 func (crs *createRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var instanceID, sgID, snapshotID string
+	var instanceID string
 	if err := Arg(args, CreateRDSSnapshotInstanceIDArg, &instanceID); err != nil {
 		return nil, err
 	}
-	if err := Arg(args, CreateRDSSnapshotSnapshotIDArg, &snapshotID); err != nil {
-		return nil, err
-	}
-	return createRDSSnapshot(ctx, instanceID, sgID, snapshotID, tp.Profile)
+	return createRDSSnapshot(ctx, instanceID, tp.Profile)
 }
 
 func (*createRDSSnapshotFunc) RequiredArgs() []string {
-	return []string{CreateRDSSnapshotInstanceIDArg, CreateRDSSnapshotSnapshotIDArg}
+	return []string{CreateRDSSnapshotInstanceIDArg}
 }
