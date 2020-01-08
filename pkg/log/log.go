@@ -87,7 +87,7 @@ func initEnvVarFields() {
 		if ev, ok := os.LookupEnv(e); ok {
 			envVarFields = field.Add(envVarFields, strings.ToLower(e), ev)
 		}
-  }
+	}
 }
 
 // OutputFormat sets the output data format.
@@ -116,7 +116,7 @@ func SetFormatter(format OutputFormat) {
 
 func init() {
 	SetFormatter(TextFormat)
-  initEnvVarFields()
+	initEnvVarFields()
 }
 
 func Info() Logger {
