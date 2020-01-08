@@ -16,18 +16,15 @@ package function
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
 	"github.com/kanisterio/kanister/pkg/field"
-	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -63,9 +60,6 @@ const (
 
 	// PostgreSQLEngine stores the postgres appname
 	PostgreSQLEngine RDSDBEngine = "PostgreSQL"
-
-	// PostgresToolsImage is the image that has tools to take backup and restore of rds postgres instance
-	PostgresToolsImage = "kanisterio/postgres-kanister-tools:0.22.1"
 )
 
 type restoreRDSSnapshotFunc struct{}
@@ -109,10 +103,9 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		if err := Arg(args, RestoreRDSSnapshotPassword, &password); err != nil {
 			return nil, err
 		}
-	}
-
-	if err := Arg(args, RestoreRDSSnapshotDBEngine, &dbEngine); err != nil {
-		return nil, err
+		if err := Arg(args, RestoreRDSSnapshotDBEngine, &dbEngine); err != nil {
+			return nil, err
+		}
 	}
 
 	return nil, restoreRDSSnapshot(ctx, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, tp.Profile)
@@ -121,45 +114,41 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, profile *param.Profile) error {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
-		return errors.Wrapf(err, "Error validating profile")
+		return errors.Wrap(err, "Error validating profile")
 	}
 
 	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
 	if err != nil {
-		return errors.Wrapf(err, "Error getting awsconfig from profile")
+		return errors.Wrap(err, "Failed to get AWS creds from profile")
 	}
 
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return errors.Wrapf(err, "Error getting rds client from awsconfig")
+		return errors.Wrap(err, "Failed to create RDS client")
 	}
 
 	// Restore from snapshot
 	if snapshotID != "" {
-		return restoreFromSnapshot(ctx, rdsCli, instanceID, snapshotID)
+		// Find security group ids
+		sgIDs, err := findSecurityGroups(ctx, rdsCli, instanceID)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+		}
+		return restoreFromSnapshot(ctx, rdsCli, instanceID, snapshotID, sgIDs)
 	}
 
 	// Restore from dump
 	descOp, err := rdsCli.DescribeDBInstances(ctx, instanceID)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to describe DB instance. InstanceID=%s", instanceID)
 	}
 	dbEndpoint := *descOp.DBInstances[0].Endpoint.Address
-	command, image, err := prepareCommand(dbEngine, RestoreAction, instanceID, dbEndpoint, username, password, backupArtifactPrefix, backupID, profile)
-	if err != nil {
-		return err
-	}
-	_, err = restoreFromDump(ctx, namespace, image, command)
-	return err
+	_, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, instanceID, dbEndpoint, username, password, backupArtifactPrefix, backupID, profile)
+	return errors.Wrapf(err, "Failed to restore RDS from dump. InstanceID=%s", instanceID)
 }
 
-func getPostgreSQLRestoreCommand(pgHost, password, backupArtifactPrefix, backupID, username string, profile *param.Profile) ([]string, error) {
-	// Convert the profile object to string
-	profilejson, err := json.Marshal(profile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error converting profile object to string")
-	}
+func postgresRestoreCommand(pgHost, username, password, backupArtifactPrefix, backupID string, profile []byte) ([]string, error) {
 	// TODO: Use rds dbEngine lib to communicate to the datbase instead of using BASH
 	// TODO: Use secrets to read the secrets details don't set as ENV var
 	return []string{
@@ -171,8 +160,6 @@ func getPostgreSQLRestoreCommand(pgHost, password, backupArtifactPrefix, backupI
 		"-c",
 		fmt.Sprintf(`
 		export PGHOST=%s
-		export PGPASSWORD=%s
-		export PGUSER=%s
 
 		if psql -l | grep -Fwq  "postgres"
 		then 
@@ -186,35 +173,13 @@ func getPostgreSQLRestoreCommand(pgHost, password, backupArtifactPrefix, backupI
 		fi
 
 		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | psql -q -U "${PGUSER}" "${DATABASE}"
-		`, pgHost, password, username, profilejson, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID)),
+		`, pgHost, password, username, profile, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID)),
 	}, nil
 }
 
-func restoreFromDump(ctx context.Context, namespace, image string, command []string) (map[string]interface{}, error) {
-	cfg, err := kube.LoadConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	kubeclient, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error getting kubeclient from kubeconfig")
-	}
-	return kubeTask(ctx, kubeclient, namespace, image, command, nil)
-}
-
-func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID string) error {
-	// Delete and recreate RDS instance
-	// TODO: Call DeleteRDSSnapshot function instead
-	// Find security group ids
-	sgIDs, err := findSecurityGroups(ctx, rdsCli, instanceID)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
-	}
-
+func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID string, securityGrpIDs []*string) error {
 	log.Print("Deleting existing instance.", field.M{"instanceID": instanceID})
-	_, err = rdsCli.DeleteDBInstance(ctx, instanceID)
-	if err != nil {
+	if _, err := rdsCli.DeleteDBInstance(ctx, instanceID); err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() != rdserr.ErrCodeDBInstanceNotFoundFault {
 				return err
@@ -223,24 +188,19 @@ func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snaps
 		}
 	} else {
 		// Wait for the instance to be deleted
-		err = rdsCli.WaitUntilDBInstanceDeleted(ctx, instanceID)
-		if err != nil {
+		if err := rdsCli.WaitUntilDBInstanceDeleted(ctx, instanceID); err != nil {
 			return errors.Wrapf(err, "Error waiting for the dbinstance to be available")
 		}
 	}
 
 	log.Print("Restoring database from snapshot.", field.M{"instanceID": instanceID})
 	// Restore from snapshot
-	_, err = rdsCli.RestoreDBInstanceFromDBSnapshot(ctx, instanceID, snapshotID, sgIDs)
-	if err != nil {
+	if _, err := rdsCli.RestoreDBInstanceFromDBSnapshot(ctx, instanceID, snapshotID, securityGrpIDs); err != nil {
 		return errors.Wrapf(err, "Error restoring database instance from snapshot")
 	}
 
-	log.Print("Waiting for database to be ready.", field.M{"instanceID": instanceID})
 	// Wait for instance to be ready
-	err = rdsCli.WaitUntilDBInstanceAvailable(ctx, instanceID)
-	if err != nil {
-		return errors.Wrap(err, "Error while waiting for new rds instance to be ready.")
-	}
-	return nil
+	log.Print("Waiting for database to be ready.", field.M{"instanceID": instanceID})
+	err := rdsCli.WaitUntilDBInstanceAvailable(ctx, instanceID)
+	return errors.Wrap(err, "Error while waiting for new rds instance to be ready.")
 }

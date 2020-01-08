@@ -8,6 +8,8 @@ import (
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/pkg/errors"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -141,4 +143,36 @@ func findSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string)
 		sgIDs = append(sgIDs, vpc.VpcSecurityGroupId)
 	}
 	return sgIDs, err
+}
+
+// findRDSEndpoint returns endpoint to access RDS instance
+func findRDSEndpoint(ctx context.Context, rdsCli *rds.RDS, instanceID string) (string, error) {
+	// Find host of the instance
+	dbInstance, err := rdsCli.DescribeDBInstances(ctx, instanceID)
+	if err != nil {
+		return "", err
+	}
+
+	if (len(dbInstance.DBInstances) == 0) || (dbInstance.DBInstances[0].Endpoint == nil) {
+		return "", errors.Errorf("Received nil endpoint")
+	}
+	return *dbInstance.DBInstances[0].Endpoint.Address, nil
+}
+
+func createPostgresSecret(cli kubernetes.Interface, name, namespace, username, password string) error {
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Data: map[string][]byte{
+			"username": []byte(username),
+			"password": []byte(password),
+		},
+	}
+	_, err := cli.CoreV1().Secrets(namespace).Create(secret)
+	return err
+}
+
+func deletePostgresSecret(cli kubernetes.Interface, name, namespace string) error {
+	return cli.CoreV1().Secrets(namespace).Delete(name, &metav1.DeleteOptions{})
 }
