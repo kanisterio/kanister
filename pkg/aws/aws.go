@@ -73,13 +73,13 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 		return nil, errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY required to initialize AWS credentials")
 	}
 	// If the caller didn't want to assume a different role, we're done
-	if role, ok := config[ConfigRole]; !ok || role == assumedRole {
+	if config[ConfigRole] == "" || config[ConfigRole] == assumedRole {
 		return creds, nil
 	}
 	// When you use role chaining, your new credentials are limited to a maximum duration of one hour
 	// https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html
 	if assumedRole != "" {
-		assumeRoleDuration = 60 * time.Hour
+		assumeRoleDuration = 60 * time.Minute
 	}
 
 	// If the caller wants to use a specific role, use the credentials initialized above to assume that
