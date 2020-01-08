@@ -26,7 +26,7 @@ actions:
     - func: RestoreRDSSnapshot
       name: restoreSnapshots
       args:
-        namespace: "rds-postgres-snap-test"
+        namespace: "{{ .Namespace.Name }}"
         instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
         snapshotID:  "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
         dbEngine: "PostgreSQL"

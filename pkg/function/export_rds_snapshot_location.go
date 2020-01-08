@@ -46,7 +46,7 @@ const (
 	ExportRDSSnapshotToLocDBUsernameArg      = "username"
 	ExportRDSSnapshotToLocDBPasswordArg      = "password"
 	ExportRDSSnapshotToLocBackupArtPrefixArg = "backupArtifactPrefix"
-	ExportRDSSnapshotToLocDBEngineArg        = "dbengine"
+	ExportRDSSnapshotToLocDBEngineArg        = "dbEngine"
 	ExportRDSSnapshotToLocBackupID           = "backupID"
 
 	PostgrSQLEngine RDSDBEngine = "PostgreSQL"
