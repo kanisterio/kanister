@@ -118,27 +118,26 @@ func (l *logger) Print(msg string, fields ...field.M) {
 		}
 	}
 
-	entry := log.WithFields(logFields)
-	if l.err != nil {
-		switch e := l.err.(type) {
-		case awserr.Error:
-			errFields := make(logrus.Fields)
-			errFields["awsErrorCode"] = e.Code()
-			errFields["awsErrorMessage"] = e.Message()
-			if er, ok := e.(awserr.RequestFailure); ok {
-				errFields["awsRequestStatusCode"] = er.StatusCode()
-				errFields["awsRequestID"] = er.RequestID()
-			}
-			if nextErr := e.OrigErr(); nextErr != nil {
-				errFields[errorFieldName] = nextErr
-			}
-			entry = entry.WithFields(errFields)
-		default:
-			if e != nil {
-				entry = entry.WithError(l.err)
-			}
+	awsError := false
+	if e, ok := l.err.(awserr.Error); ok {
+		awsError = true
+		logFields["awsErrorCode"] = e.Code()
+		logFields["awsErrorMessage"] = e.Message()
+		if er, ok := e.(awserr.RequestFailure); ok {
+			logFields["awsRequestStatusCode"] = er.StatusCode()
+			logFields["awsRequestID"] = er.RequestID()
+		}
+		if nextErr := e.OrigErr(); nextErr != nil {
+			logFields[errorFieldName] = nextErr
 		}
 	}
+
+	entry := log.WithFields(logFields)
+
+	if l.err != nil && !awsError {
+		entry = entry.WithError(l.err)
+	}
+
 	entry.Logln(logrus.Level(l.level), msg)
 }
 
