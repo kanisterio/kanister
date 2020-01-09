@@ -11,8 +11,6 @@ actions:
           snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
           instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
           backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
-    secretNames:
-    - dbsecret
     configMapNames:
     - dbconfig
     phases:
@@ -23,31 +21,39 @@ actions:
         snapshotID: test-postgresql-dump-{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
     - func: ExportRDSSnapshotToLocation
       name: exportSnapshot
+      objects:
+        dbsecret:
+          kind: Secret
+          name: '{{ index .ConfigMaps.dbconfig.Data "postgres.secret" }}'
+          namespace: "{{ .Namespace.Name }}"
       args:
-        namespace: "rds-postgres-dump-test"
+        namespace: "{{ .Namespace.Name }}"
         instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
-        username: '{{ index .Secrets.dbsecret.Data "username" | toString }}'
-        password: '{{ index .Secrets.dbsecret.Data "password" | toString }}'
-        dbengine: "PostgreSQL"
+        username: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "username" | toString }}'
+        password: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password" | toString }}'
+        dbEngine: "PostgreSQL"
         snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
         backupArtifactPrefix: test-postgresql-instance/postgres
 
   restore:
     inputArtifactNames:
     - backupInfo
-    secretNames:
-    - dbsecret
     kind: Namespace
     phases:
     - func: RestoreRDSSnapshot 
       name: restoreSnapshots
+      objects:
+        dbsecret:
+          kind: Secret
+          name: '{{ index .ConfigMaps.dbconfig.Data "postgres.secret" }}'
+          namespace: "{{ .Namespace.Name }}"
       args:
-        namespace: "rds-postgres-dump-test"
+        namespace: "{{ .Namespace.Name }}"
         backupArtifactPrefix: test-postgresql-instance/postgres
         instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
         backupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.backupID }}"
-        username: '{{ index .Secrets.dbsecret.Data "username" | toString }}'
-        password: '{{ index .Secrets.dbsecret.Data "password" | toString }}'
+        username: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "username" | toString }}'
+        password: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "password" | toString }}'
         dbEngine: "PostgreSQL"
 
   delete:

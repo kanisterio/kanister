@@ -175,6 +175,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 			"postgres.host":       pdb.host,
 			"postgres.database":   pdb.dbname,
 			"postgres.user":       pdb.username,
+			"postgres.secret":     "dbsecret",
 		},
 	}
 	_, err = pdb.cli.CoreV1().ConfigMaps(ns).Create(dbconfig)
