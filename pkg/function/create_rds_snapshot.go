@@ -43,6 +43,8 @@ const (
 	CreateRDSSnapshotInstanceIDArg = "instanceID"
 	// CreateRDSSnapshotSnapshotID to set snapshotID in output artifact
 	CreateRDSSnapshotSnapshotID = "snapshotID"
+	// CreateRDSSnapshotSecurityGroupID to set securityGroupIDs in output artifact
+	CreateRDSSnapshotSecurityGroupID = "securityGroupID"
 )
 
 type createRDSSnapshotFunc struct{}

@@ -133,14 +133,14 @@ func getAWSConfigFromProfile(ctx context.Context, profile *param.Profile) (*awss
 }
 
 // findSecurityGroups return list of security group IDs associated with the RDS instance
-func findSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string) ([]*string, error) {
+func findSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string) ([]string, error) {
 	desc, err := rdsCli.DescribeDBInstances(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
-	var sgIDs []*string
+	var sgIDs []string
 	for _, vpc := range desc.DBInstances[0].VpcSecurityGroups {
-		sgIDs = append(sgIDs, vpc.VpcSecurityGroupId)
+		sgIDs = append(sgIDs, *vpc.VpcSecurityGroupId)
 	}
 	return sgIDs, err
 }
