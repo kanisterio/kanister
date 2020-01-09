@@ -79,6 +79,7 @@ func (*restoreRDSSnapshotFunc) RequiredArgs() []string {
 func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string
 	var dbEngine RDSDBEngine
+	var sgIDs []string
 
 	if err := Arg(args, RestoreRDSSnapshotNamespace, &namespace); err != nil {
 		return nil, err
