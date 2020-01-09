@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -29,6 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/postgres"
 )
 
 func init() {
@@ -80,6 +82,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get AWS creds from profile")
 	}
+
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
@@ -163,7 +166,7 @@ func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
 
 func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, instanceID, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) (map[string]interface{}, error) {
 	// Prepare and execute command with kubetask
-	command, image, err := prepareCommand(dbEngine, BackupAction, instanceID, dbEndpoint, username, password, backupPrefix, backupID, profile)
+	command, image, err := prepareCommand(ctx, dbEngine, action, instanceID, dbEndpoint, username, password, backupPrefix, backupID, profile)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +190,107 @@ func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction
 		}
 	}()
 
-	injectSecret := crv1alpha1.JSONMap{
+	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName))
+}
+
+func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, instanceID, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) ([]string, string, error) {
+	// Convert profile object into json
+	profileJson, err := json.Marshal(profile)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Find list of dbs
+	pg, err := postgres.NewClient(dbEndpoint, username, password, "postgres", "disable")
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Error in creating postgres client")
+	}
+
+	// Test DB connection
+	if err := pg.PingDB(ctx); err != nil {
+		return nil, "", errors.Wrap(err, "Failed to ping postgres database")
+	}
+
+	dbList, err := pg.ListDatabases(ctx)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Error while listing databases")
+	}
+	dbList = filterRestrictedDB(dbList)
+
+	switch dbEngine {
+	case PostgrSQLEngine:
+		switch action {
+		case BackupAction:
+			command, err := postgresBackupCommand(dbEndpoint, username, password, dbList, backupPrefix, backupID, profileJson)
+			return command, postgresToolsImage, err
+		case RestoreAction:
+			command, err := postgresRestoreCommand(dbEndpoint, username, password, dbList, backupPrefix, backupID, profileJson)
+			return command, postgresToolsImage, err
+		}
+	}
+	return nil, "", errors.New("Invalid RDSDBEngine or RDSAction")
+}
+
+func postgresBackupCommand(dbEndpoint, username, password string, dbList []string, backupPrefix, backupID string, profile []byte) ([]string, error) {
+
+	if len(dbList) == 0 {
+		return nil, errors.New("No database found to backup")
+	}
+
+	command := []string{
+		"bash",
+		"-o",
+		"errexit",
+		"-o",
+		"pipefail",
+		"-c",
+		fmt.Sprintf(`
+			export PGHOST=%s
+			BACKUP_PREFIX=%s
+			BACKUP_ID=%s
+
+			mkdir /backup
+			dblist=( %s )
+			for db in "${dblist[@]}";
+			  do echo "backing up $db db" && pg_dump $db -C > /backup/$db.sql;
+			done
+			tar -zc backup | kando location push --profile '%s' --path "${BACKUP_PREFIX}/${BACKUP_ID}" -
+			kando output %s ${BACKUP_ID}`,
+			dbEndpoint, backupPrefix, backupID, strings.Join(dbList, " "), profile, ExportRDSSnapshotToLocBackupID),
+	}
+	return command, nil
+}
+
+func cleanupRDSDB(ctx context.Context, rdsCli *rds.RDS, instanceID string) error {
+	// Deleting tmp instance
+	log.Print("Delete temporary RDS instance.", field.M{"InstanceID": instanceID})
+	if _, err := rdsCli.DeleteDBInstance(ctx, instanceID); err != nil {
+		return err
+	}
+
+	// Wait until instance is deleted
+	log.Print("Waiting for RDS DB instance to be deleted", field.M{"InstanceID": instanceID})
+	return rdsCli.WaitUntilDBInstanceDeleted(ctx, instanceID)
+}
+
+func filterRestrictedDB(dbList []string) []string {
+	// Map of restricted DBs
+	restricted := map[string]bool{
+		"template0": true,
+		"rdsadmin":  true,
+	}
+
+	var validDBs []string
+	for _, db := range dbList {
+		if !restricted[db] {
+			validDBs = append(validDBs, db)
+		}
+	}
+	return validDBs
+}
+
+func injectPostgresSecrets(secretName string) crv1alpha1.JSONMap {
+	return crv1alpha1.JSONMap{
 		"containers": []map[string]interface{}{
 			{
 				"name": "container",
@@ -214,69 +317,4 @@ func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction
 			},
 		},
 	}
-
-	return kubeTask(ctx, cli, namespace, image, command, injectSecret)
-}
-
-func prepareCommand(dbEngine RDSDBEngine, action RDSAction, instanceID, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) ([]string, string, error) {
-	// Convert profile object into json
-	profileJson, err := json.Marshal(profile)
-	if err != nil {
-		return nil, "", err
-	}
-
-	switch dbEngine {
-	case PostgrSQLEngine:
-		switch action {
-		case BackupAction:
-			command, err := postgresBackupCommand(dbEndpoint, username, password, backupPrefix, backupID, profileJson)
-			return command, postgresToolsImage, err
-		case RestoreAction:
-			command, err := postgresRestoreCommand(dbEndpoint, username, password, backupPrefix, backupID, profileJson)
-			return command, postgresToolsImage, err
-		}
-	}
-	return nil, "", errors.New("Invalid RDSDBEngine or RDSAction")
-}
-
-func postgresBackupCommand(dbEndpoint, username, password, backupPrefix, backupID string, profile []byte) ([]string, error) {
-
-	// TODO:
-	// 1. Pass and read creds from K8s Secrets
-	// 2. Find list of dbs using correct postgres go sdks
-	command := []string{
-		"bash",
-		"-o",
-		"errexit",
-		"-o",
-		"pipefail",
-		"-c",
-		fmt.Sprintf(`
-			export PGHOST=%s
-			BACKUP_PREFIX=%s
-			BACKUP_ID=%s
-
-			mkdir /backup
-			restricted=("template0", "rdsadmin")
-			psql -lqt | awk -F "|" '{print $1}' | tr -d " " | sed '/^$/d' |
-			while read db;
-			  do [[ ! ${restricted[@]} =~ ${db} ]] && echo "backing up $db db" && pg_dump $db -C > /backup/$db.sql;
-			done
-			tar -zc backup | kando location push --profile '%s' --path "${BACKUP_PREFIX}/${BACKUP_ID}" -
-			kando output %s ${BACKUP_ID}`,
-			dbEndpoint, backupPrefix, backupID, profile, ExportRDSSnapshotToLocBackupID),
-	}
-	return command, nil
-}
-
-func cleanupRDSDB(ctx context.Context, rdsCli *rds.RDS, instanceID string) error {
-	// Deleting tmp instance
-	log.Print("Delete temporary RDS instance.", field.M{"InstanceID": instanceID})
-	if _, err := rdsCli.DeleteDBInstance(ctx, instanceID); err != nil {
-		return err
-	}
-
-	// Wait until instance is deleted
-	log.Print("Waiting for RDS DB instance to be deleted", field.M{"InstanceID": instanceID})
-	return rdsCli.WaitUntilDBInstanceDeleted(ctx, instanceID)
 }

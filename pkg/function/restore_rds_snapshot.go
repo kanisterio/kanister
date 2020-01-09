@@ -52,6 +52,8 @@ const (
 	RestoreRDSSnapshotBackupID = "backupID"
 	// RestoreRDSSnapshotSnapshotID stores the snapshot ID
 	RestoreRDSSnapshotSnapshotID = "snapshotID"
+	// RestoreRDSSnapshotEndpoint to set endpoint of restored rds instance
+	RestoreRDSSnapshotEndpoint = "endpoint"
 
 	// RestoreRDSSnapshotUsername stores username of the database
 	RestoreRDSSnapshotUsername = "username"
@@ -108,24 +110,24 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		}
 	}
 
-	return nil, restoreRDSSnapshot(ctx, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, tp.Profile)
+	return restoreRDSSnapshot(ctx, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, tp.Profile)
 }
 
-func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, profile *param.Profile) error {
+func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, profile *param.Profile) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
-		return errors.Wrap(err, "Error validating profile")
+		return nil, errors.Wrap(err, "Error validating profile")
 	}
 
 	awsConfig, region, err := getAWSConfigFromProfile(ctx, profile)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get AWS creds from profile")
+		return nil, errors.Wrap(err, "Failed to get AWS creds from profile")
 	}
 
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create RDS client")
+		return nil, errors.Wrap(err, "Failed to create RDS client")
 	}
 
 	// Restore from snapshot
@@ -133,24 +135,33 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 		// Find security group ids
 		sgIDs, err := findSecurityGroups(ctx, rdsCli, instanceID)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+			return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
 		}
-		return restoreFromSnapshot(ctx, rdsCli, instanceID, snapshotID, sgIDs)
+		return nil, restoreFromSnapshot(ctx, rdsCli, instanceID, snapshotID, sgIDs)
 	}
 
 	// Restore from dump
 	descOp, err := rdsCli.DescribeDBInstances(ctx, instanceID)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to describe DB instance. InstanceID=%s", instanceID)
+		return nil, errors.Wrapf(err, "Failed to describe DB instance. InstanceID=%s", instanceID)
 	}
+
 	dbEndpoint := *descOp.DBInstances[0].Endpoint.Address
-	_, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, instanceID, dbEndpoint, username, password, backupArtifactPrefix, backupID, profile)
-	return errors.Wrapf(err, "Failed to restore RDS from dump. InstanceID=%s", instanceID)
+	if _, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, instanceID, dbEndpoint, username, password, backupArtifactPrefix, backupID, profile); err != nil {
+		return nil, errors.Wrapf(err, "Failed to restore RDS from dump. InstanceID=%s", instanceID)
+	}
+
+	return map[string]interface{}{
+		RestoreRDSSnapshotEndpoint: dbEndpoint,
+	}, nil
 }
 
-func postgresRestoreCommand(pgHost, username, password, backupArtifactPrefix, backupID string, profile []byte) ([]string, error) {
-	// TODO: Use rds dbEngine lib to communicate to the datbase instead of using BASH
-	// TODO: Use secrets to read the secrets details don't set as ENV var
+func postgresRestoreCommand(pgHost, username, password string, dbList []string, backupArtifactPrefix, backupID string, profile []byte) ([]string, error) {
+
+	if len(dbList) == 0 {
+		return nil, errors.New("No database found. Atleast one db needed to connect")
+	}
+
 	return []string{
 		"bash",
 		"-o",
@@ -160,20 +171,8 @@ func postgresRestoreCommand(pgHost, username, password, backupArtifactPrefix, ba
 		"-c",
 		fmt.Sprintf(`
 		export PGHOST=%s
-
-		if psql -l | grep -Fwq  "postgres"
-		then 
-		DATABASE=postgres
-		elif psql -l | grep -Fwq  "template1"
-		then 
-		DATABASE=template1
-		else
-		echo "either postgres or template1 database should already be there in the database."
-		EXIT 1
-		fi
-
-		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | psql -q -U "${PGUSER}" "${DATABASE}"
-		`, pgHost, password, username, profile, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID)),
+		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | psql -q -U "${PGUSER}" %s
+		`, pgHost, profile, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID), dbList[0]),
 	}, nil
 }
 
