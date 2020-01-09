@@ -52,6 +52,8 @@ const (
 	RestoreRDSSnapshotBackupID = "backupID"
 	// RestoreRDSSnapshotSnapshotID stores the snapshot ID
 	RestoreRDSSnapshotSnapshotID = "snapshotID"
+	// RestoreRDSSnapshotSecGrpID stores securityGroupID in the args
+	RestoreRDSSnapshotSecGrpID = "securityGroupID"
 	// RestoreRDSSnapshotEndpoint to set endpoint of restored rds instance
 	RestoreRDSSnapshotEndpoint = "endpoint"
 
@@ -77,6 +79,7 @@ func (*restoreRDSSnapshotFunc) RequiredArgs() []string {
 func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string
 	var dbEngine RDSDBEngine
+	var sgIDs []string
 
 	if err := Arg(args, RestoreRDSSnapshotNamespace, &namespace); err != nil {
 		return nil, err
@@ -89,6 +92,11 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		return nil, err
 	}
 
+	if err := OptArg(args, RestoreRDSSnapshotSecGrpID, &sgIDs, ""); err != nil {
+		return nil, err
+	}
+
+	// if snapshotID is nil, we'll try to restore from dumps
 	if snapshotID == "" {
 		// Snapshot ID is not provided get backupPrefix and backupID
 		if err := Arg(args, RestoreRDSSnapshotBackupArtifactPrefix, &backupArtifactPrefix); err != nil {
@@ -110,10 +118,10 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		}
 	}
 
-	return restoreRDSSnapshot(ctx, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, tp.Profile)
+	return restoreRDSSnapshot(ctx, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, sgIDs, tp.Profile)
 }
 
-func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, profile *param.Profile) (map[string]interface{}, error) {
+func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Error validating profile")
@@ -132,10 +140,14 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 
 	// Restore from snapshot
 	if snapshotID != "" {
+
+		// If securityGroupID arg is nil, we will try to find the sgIDs by describing the existing instance
 		// Find security group ids
-		sgIDs, err := findSecurityGroups(ctx, rdsCli, instanceID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+		if sgIDs == nil {
+			sgIDs, err = findSecurityGroups(ctx, rdsCli, instanceID)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+			}
 		}
 		return nil, restoreFromSnapshot(ctx, rdsCli, instanceID, snapshotID, sgIDs)
 	}

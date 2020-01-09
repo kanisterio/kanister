@@ -50,6 +50,7 @@ const (
 	ExportRDSSnapshotToLocDBPasswordArg      = "password"
 	ExportRDSSnapshotToLocBackupArtPrefixArg = "backupArtifactPrefix"
 	ExportRDSSnapshotToLocDBEngineArg        = "dbEngine"
+	ExportRDSSnapshotToLocSecGrpIDArg        = "securityGroupID"
 	ExportRDSSnapshotToLocBackupID           = "backupID"
 
 	PostgrSQLEngine RDSDBEngine = "PostgreSQL"
@@ -72,7 +73,7 @@ func (*exportRDSSnapshotToLocationFunc) Name() string {
 	return ExportRDSSnapshotToLocFuncName
 }
 
-func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshotID, username, password, backupPrefix string, dbEngine RDSDBEngine, profile *param.Profile) (map[string]interface{}, error) {
+func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshotID, username, password, backupPrefix string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
 	// Validate profilextractDumpFromDBe
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Profile Validation failed")
@@ -94,9 +95,12 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 
 	log.Print("Restore RDS instance from snapshot.", field.M{"SnapshotID": snapshotID, "InstanceID": tmpInstanceID})
 
-	sgIDs, err := findSecurityGroups(ctx, rdsCli, instanceID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+	// If securityGroupID arg is nil, we will try to find the sgIDs by describing the existing instance
+	if sgIDs == nil {
+		sgIDs, err = findSecurityGroups(ctx, rdsCli, instanceID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+		}
 	}
 
 	// Create tmp instance from snapshot
@@ -127,6 +131,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 	// Add output artifacts
 	output[ExportRDSSnapshotToLocSnapshotIDArg] = snapshotID
 	output[ExportRDSSnapshotToLocInstanceIDArg] = instanceID
+	output[ExportRDSSnapshotToLocSecGrpIDArg] = sgIDs
 
 	return output, nil
 }
@@ -134,6 +139,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, instanceID, snapshotID, username, password, backupArtifact string
 	var dbEngine RDSDBEngine
+	var sgID []string
 
 	if err := Arg(args, ExportRDSSnapshotToLocNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -156,8 +162,11 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 	if err := OptArg(args, ExportRDSSnapshotToLocBackupArtPrefixArg, &backupArtifact, instanceID); err != nil {
 		return nil, err
 	}
+	if err := OptArg(args, ExportRDSSnapshotToLocSecGrpIDArg, &sgID, nil); err != nil {
+		return nil, err
+	}
 
-	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, backupArtifact, dbEngine, tp.Profile)
+	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, backupArtifact, dbEngine, sgID, tp.Profile)
 }
 
 func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {

@@ -85,9 +85,16 @@ func createRDSSnapshot(ctx context.Context, instanceID string, profile *param.Pr
 		return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
 	}
 
+	// Find security group ids
+	sgIDs, err := findSecurityGroups(ctx, rdsCli, instanceID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+	}
+
 	output := map[string]interface{}{
-		CreateRDSSnapshotSnapshotID:    snapshotID,
-		CreateRDSSnapshotInstanceIDArg: instanceID,
+		CreateRDSSnapshotSnapshotID:      snapshotID,
+		CreateRDSSnapshotInstanceIDArg:   instanceID,
+		CreateRDSSnapshotSecurityGroupID: sgIDs,
 	}
 	return output, nil
 }
