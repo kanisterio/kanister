@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -72,6 +73,23 @@ func SetOutput(sink OutputSink) error {
 	}
 }
 
+var envVarFields field.Fields
+
+// initEnvVarFields populates envVarFields with values from the host's environment.
+func initEnvVarFields() {
+	envVars := []string{
+		"HOSTNAME",
+		"CLUSTER_NAME",
+		"SERVICE_NAME",
+		"VERSION",
+	}
+	for _, e := range envVars {
+		if ev, ok := os.LookupEnv(e); ok {
+			envVarFields = field.Add(envVarFields, strings.ToLower(e), ev)
+		}
+	}
+}
+
 // OutputFormat sets the output data format.
 type OutputFormat uint8
 
@@ -98,6 +116,7 @@ func SetFormatter(format OutputFormat) {
 
 func init() {
 	SetFormatter(TextFormat)
+	initEnvVarFields()
 }
 
 func Info() Logger {
@@ -133,6 +152,10 @@ func WithError(err error) Logger {
 
 func (l *logger) Print(msg string, fields ...field.M) {
 	logFields := make(logrus.Fields)
+
+	for _, f := range envVarFields.Fields() {
+		logFields[f.Key()] = f.Value()
+	}
 
 	frame := caller.GetFrame(3)
 	logFields["Function"] = frame.Function
