@@ -10,9 +10,12 @@ replace (
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go v31.1.0+incompatible // indirect
-	github.com/Azure/go-autorest/autorest v0.5.0 // indirect
-	github.com/Azure/go-autorest/autorest/to v0.2.0 // indirect
+	github.com/Azure/azure-sdk-for-go v38.0.0+incompatible
+	github.com/Azure/go-autorest v13.1.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.9.3
+	github.com/Azure/go-autorest/autorest/azure/auth v0.4.2
+	github.com/Azure/go-autorest/autorest/to v0.3.0 // indirect
+	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.3.0 // indirect
 	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
