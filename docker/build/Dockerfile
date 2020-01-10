@@ -1,4 +1,4 @@
-FROM golang:1.12-alpine3.10
+FROM golang:1.13-alpine3.10
 MAINTAINER Tom Manville <tom@kasten.io>
 
 RUN apk add --update --no-cache ca-certificates bash git docker jq \
