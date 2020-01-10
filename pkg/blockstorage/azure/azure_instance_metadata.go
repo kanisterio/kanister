@@ -108,7 +108,7 @@ func (i *InstanceMetadata) queryMetadataBytes(path, format string) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close() // nolint: errcheck
+	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
 }
