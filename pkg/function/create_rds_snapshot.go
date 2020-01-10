@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -91,10 +92,16 @@ func createRDSSnapshot(ctx context.Context, instanceID string, profile *param.Pr
 		return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
 	}
 
+	// Convert to json format
+	sgIDJson, err := json.Marshal(sgIDs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", instanceID)
+	}
+
 	output := map[string]interface{}{
 		CreateRDSSnapshotSnapshotID:      snapshotID,
 		CreateRDSSnapshotInstanceIDArg:   instanceID,
-		CreateRDSSnapshotSecurityGroupID: sgIDs,
+		CreateRDSSnapshotSecurityGroupID: string(sgIDJson),
 	}
 	return output, nil
 }

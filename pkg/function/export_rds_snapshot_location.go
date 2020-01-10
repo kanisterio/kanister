@@ -128,10 +128,16 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 		return nil, errors.Wrap(err, "Unable to extract and push db dump to location")
 	}
 
+	// Convert to json format
+	sgIDJson, err := json.Marshal(sgIDs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", tmpInstanceID)
+	}
+
 	// Add output artifacts
 	output[ExportRDSSnapshotToLocSnapshotIDArg] = snapshotID
 	output[ExportRDSSnapshotToLocInstanceIDArg] = instanceID
-	output[ExportRDSSnapshotToLocSecGrpIDArg] = sgIDs
+	output[ExportRDSSnapshotToLocSecGrpIDArg] = string(sgIDJson)
 
 	return output, nil
 }
@@ -139,7 +145,6 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, instanceID, snapshotID, username, password, backupArtifact string
 	var dbEngine RDSDBEngine
-	var sgID []string
 
 	if err := Arg(args, ExportRDSSnapshotToLocNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -162,11 +167,14 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 	if err := OptArg(args, ExportRDSSnapshotToLocBackupArtPrefixArg, &backupArtifact, instanceID); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, ExportRDSSnapshotToLocSecGrpIDArg, &sgID, nil); err != nil {
+
+	// Find security groups
+	sgIDs, err := GetSecurityGroups(args, ExportRDSSnapshotToLocSecGrpIDArg)
+	if err != nil {
 		return nil, err
 	}
 
-	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, backupArtifact, dbEngine, sgID, tp.Profile)
+	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, backupArtifact, dbEngine, sgIDs, tp.Profile)
 }
 
 func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
