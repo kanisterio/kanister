@@ -145,7 +145,6 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, instanceID, snapshotID, username, password, backupArtifact string
 	var dbEngine RDSDBEngine
-	var sgID []string
 
 	if err := Arg(args, ExportRDSSnapshotToLocNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -166,9 +165,6 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 		return nil, err
 	}
 	if err := OptArg(args, ExportRDSSnapshotToLocBackupArtPrefixArg, &backupArtifact, instanceID); err != nil {
-		return nil, err
-	}
-	if err := OptArg(args, ExportRDSSnapshotToLocSecGrpIDArg, &sgID, nil); err != nil {
 		return nil, err
 	}
 
