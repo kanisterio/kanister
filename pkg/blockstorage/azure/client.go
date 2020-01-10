@@ -14,7 +14,6 @@ import (
 
 const (
 	defaultSubscriptionEnv = "AZURE_SUBSCRIPTION_ID"
-	// ToDo(ilya): resourcegroup needs to be pulled from metadata
 	defaultResourceGroup = "AZURE_RESOURCE_GROUP"
 )
 
