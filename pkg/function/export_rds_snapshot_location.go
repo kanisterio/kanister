@@ -170,9 +170,6 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 	if err := OptArg(args, ExportRDSSnapshotToLocBackupArtPrefixArg, &backupArtifact, instanceID); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, ExportRDSSnapshotToLocSecGrpIDArg, &sgID, nil); err != nil {
-		return nil, err
-	}
 
 	// Find databases
 	databases, err := GetDatabases(args, ExportRDSSnapshotToLocDatabasesArg)
