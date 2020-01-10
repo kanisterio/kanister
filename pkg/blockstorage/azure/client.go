@@ -17,7 +17,7 @@ const (
 	defaultResourceGroup = "AZURE_RESOURCE_GROUP"
 )
 
-// Client is a Kasten wrapper for Client client
+// Client is a wrapper for Client client
 type Client struct {
 	SubscriptionID  string
 	ResourceGroup   string
