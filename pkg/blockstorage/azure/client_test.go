@@ -18,7 +18,6 @@ func (s *ClientSuite) SetUpSuite(c *C) {
 }
 
 func (s *ClientSuite) TestClient(c *C) {
-	// TODO(ilya): remove skip once build.sh will be supporting az
 	c.Skip("Until Azure will be fully integrated into build.sh")
 	azCli, err := NewClient(context.Background())
 	c.Assert(err, IsNil)
