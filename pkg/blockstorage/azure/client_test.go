@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/kanisterio/kanister/pkg/blockstorage"
+	envconfig "github.com/kanisterio/kanister/pkg/config"
 	. "gopkg.in/check.v1"
 )
 
@@ -33,7 +35,13 @@ func (s *ClientSuite) SetUpSuite(c *C) {
 
 func (s *ClientSuite) TestClient(c *C) {
 	c.Skip("Until Azure will be fully integrated into build.sh")
-	azCli, err := NewClient(context.Background())
+	config := make(map[string]string)
+	config[blockstorage.AzureSubscriptionID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureSubscriptionID)
+	config[blockstorage.AzureTenantID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureTenantID)
+	config[blockstorage.AzureCientID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCientID)
+	config[blockstorage.AzureClentSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClentSecret)
+	config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
+	azCli, err := NewClient(context.Background(), config)
 	c.Assert(err, IsNil)
 
 	c.Assert(azCli.SubscriptionID, NotNil)

@@ -26,6 +26,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	envconfig "github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
@@ -50,6 +51,7 @@ type BlockStorageProviderSuite struct {
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeEBS, storageRegion: clusterRegionAWS, storageAZ: "us-west-2b"})
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-b"})
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-c__us-west1-a"})
+var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeAD, storageRegion: "", storageAZ: "westus"})
 
 func (s *BlockStorageProviderSuite) SetUpSuite(c *C) {
 	var err error
@@ -262,23 +264,22 @@ func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]st
 	switch s.storageType {
 	case blockstorage.TypeEBS:
 		config[awsconfig.ConfigRegion] = region
-		accessKey, ok := os.LookupEnv(awsconfig.AccessKeyID)
-		if !ok {
-			c.Skip("The necessary env variable AWS_ACCESS_KEY_ID is not set.")
-		}
-		secretAccessKey, ok := os.LookupEnv(awsconfig.SecretAccessKey)
-		if !ok {
-			c.Skip("The necessary env variable AWS_SECRET_ACCESS_KEY is not set.")
-		}
+		accessKey := envconfig.GetEnvOrSkip(c, awsconfig.AccessKeyID)
+		secretAccessKey := envconfig.GetEnvOrSkip(c, awsconfig.SecretAccessKey)
 		config[awsconfig.AccessKeyID] = accessKey
 		config[awsconfig.SecretAccessKey] = secretAccessKey
 		config[awsconfig.ConfigRole] = os.Getenv(awsconfig.ConfigRole)
 	case blockstorage.TypeGPD:
-		creds, ok := os.LookupEnv(blockstorage.GoogleCloudCreds)
-		if !ok {
-			c.Skip("The necessary env variable GOOGLE_APPLICATION_CREDENTIALS is not set.")
-		}
+		creds := envconfig.GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
 		config[blockstorage.GoogleCloudCreds] = creds
+	case blockstorage.TypeAD:
+		config[blockstorage.AzureSubscriptionID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureSubscriptionID)
+		config[blockstorage.AzureTenantID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureTenantID)
+		config[blockstorage.AzureCientID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCientID)
+		config[blockstorage.AzureClentSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClentSecret)
+		config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
+	default:
+		c.Errorf("Unknown blockstorage storage type %s", s.storageType)
 	}
 	return config
 }

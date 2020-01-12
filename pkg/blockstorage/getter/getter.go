@@ -20,6 +20,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
+	"github.com/kanisterio/kanister/pkg/blockstorage/azure"
 	"github.com/kanisterio/kanister/pkg/blockstorage/gcepd"
 	"github.com/kanisterio/kanister/pkg/blockstorage/ibm"
 )
@@ -50,6 +51,8 @@ func (*getter) Get(storageType blockstorage.Type, config map[string]string) (blo
 	case blockstorage.TypeSoftlayerFile:
 		config[ibm.SoftlayerFileAttName] = "true"
 		return ibm.NewProvider(context.TODO(), config)
+	case blockstorage.TypeAD:
+		return azure.NewProvider(context.Background(), config)
 	default:
 		return nil, errors.Errorf("Unsupported storage type %v", storageType)
 	}
@@ -65,6 +68,8 @@ func Supported(st blockstorage.Type) bool {
 	case blockstorage.TypeGPD:
 		return true
 	case blockstorage.TypeSoftlayerFile:
+		return true
+	case blockstorage.TypeAD:
 		return true
 	default:
 		return false

@@ -11,7 +11,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	azure "github.com/kanisterio/kanister/pkg/blockstorage/azure"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -25,7 +24,7 @@ const (
 )
 
 type adStorage struct {
-	azCli *azure.Client
+	azCli *Client
 }
 
 func (s *adStorage) Type() blockstorage.Type {
@@ -33,8 +32,8 @@ func (s *adStorage) Type() blockstorage.Type {
 }
 
 // NewProvider returns a provider for the Azure blockstorage type
-func NewProvider(ctx context.Context) (blockstorage.Provider, error) {
-	azCli, err := azure.NewClient(ctx)
+func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
+	azCli, err := NewClient(ctx, config)
 	if err != nil {
 		return nil, err
 	}
