@@ -143,6 +143,7 @@ func createVolumeSnapshot(ctx context.Context, tp param.TemplateParams, cli kube
 	return map[string]interface{}{"volumeSnapshotInfo": string(manifestData)}, nil
 }
 
+// nolint:unparam
 func snapshotVolume(ctx context.Context, volume volumeInfo, namespace string, skipWait bool) (*VolumeSnapshotInfo, error) {
 	provider := volume.provider
 	vol, err := provider.VolumeGet(ctx, volume.volumeID, volume.volZone)

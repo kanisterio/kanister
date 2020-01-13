@@ -54,6 +54,7 @@ func (*deleteVolumeSnapshotFunc) Name() string {
 	return DeleteVolumeSnapshotFuncName
 }
 
+// nolint:unparam
 func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotinfo string, profile *param.Profile, getter getter.Getter) (map[string]blockstorage.Provider, error) {
 	PVCData := []VolumeSnapshotInfo{}
 	err := json.Unmarshal([]byte(snapshotinfo), &PVCData)

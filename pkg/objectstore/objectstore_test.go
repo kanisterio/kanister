@@ -498,6 +498,7 @@ func getSecret(ctx context.Context, c *C, osType ProviderType) *Secret {
 }
 
 // Can be added to a common place in Kanister
+// nolint:unparam
 func getEnvOrSkip(c *C, varName string) string {
 	v := os.Getenv(varName)
 	if v == "" {

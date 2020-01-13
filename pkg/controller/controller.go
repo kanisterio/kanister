@@ -206,11 +206,13 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 	return c.handleActionSet(as)
 }
 
+// nolint:unparam
 func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) error {
 	c.logAndSuccessEvent(context.TODO(), fmt.Sprintf("Added blueprint %s", bp.GetName()), "Added", bp)
 	return nil
 }
 
+// nolint:unparam
 func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error {
 	if err := validate.ActionSet(newAS); err != nil {
 		log.Print("Updated ActionSet", field.M{"ActionSetName": newAS.Name})
@@ -243,11 +245,13 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 	})
 }
 
+// nolint:unparam
 func (c *Controller) onUpdateBlueprint(oldBP, newBP *crv1alpha1.Blueprint) error {
 	log.Print("Updated Blueprint", field.M{"BlueprintName": newBP.Name})
 	return nil
 }
 
+// nolint:unparam
 func (c *Controller) onDeleteActionSet(as *crv1alpha1.ActionSet) error {
 	asName := as.GetName()
 	log.Print("Deleted ActionSet", field.M{"ActionSetName": asName})
@@ -264,6 +268,7 @@ func (c *Controller) onDeleteActionSet(as *crv1alpha1.ActionSet) error {
 	return nil
 }
 
+// nolint:unparam
 func (c *Controller) onDeleteBlueprint(bp *crv1alpha1.Blueprint) error {
 	log.Print("Deleted Blueprint ", field.M{"BlueprintName": bp.GetName()})
 	return nil
