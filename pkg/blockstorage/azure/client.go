@@ -16,19 +16,14 @@ package azure
 
 import (
 	"context"
-	"os"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/pkg/errors"
-)
-
-const (
-	defaultSubscriptionEnv = "AZURE_SUBSCRIPTION_ID"
-	defaultResourceGroup   = "AZURE_RESOURCE_GROUP"
 )
 
 // Client is a wrapper for Client client
@@ -41,7 +36,7 @@ type Client struct {
 }
 
 // NewClient returns a Client struct
-func NewClient(ctx context.Context) (*Client, error) {
+func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	var resourceGroup string
 	var subscriptionID string
 	var ok bool
@@ -49,7 +44,7 @@ func NewClient(ctx context.Context) (*Client, error) {
 
 	metadata := NewInstanceMetadata()
 
-	if resourceGroup, ok = os.LookupEnv(defaultResourceGroup); !ok {
+	if resourceGroup, ok = config[blockstorage.AzureResurceGroup]; !ok {
 		log.Debug().Print("AZURE_RESOURCE_GROUP is not setup")
 		resourceGroup, err = metadata.Text("instance/compute/resourceGroupName")
 		if err != nil {
@@ -57,7 +52,7 @@ func NewClient(ctx context.Context) (*Client, error) {
 		}
 	}
 
-	if subscriptionID, ok = os.LookupEnv(defaultSubscriptionEnv); !ok {
+	if subscriptionID, ok = config[blockstorage.AzureSubscriptionID]; !ok {
 		log.Debug().Print("AZURE_SUBSCRIPTION_ID is not setup")
 		subscriptionID, err = metadata.Text("instance/compute/subscriptionId")
 		if err != nil {
@@ -65,7 +60,7 @@ func NewClient(ctx context.Context) (*Client, error) {
 		}
 	}
 
-	authorizer, err := getAuthorizer(azure.PublicCloud)
+	authorizer, err := getAuthorizer(azure.PublicCloud, config)
 	if err != nil {
 		return nil, err
 	}
@@ -85,24 +80,24 @@ func NewClient(ctx context.Context) (*Client, error) {
 	}, nil
 }
 
-func getAuthorizer(env azure.Environment) (*autorest.BearerAuthorizer, error) {
-	tenantID := os.Getenv("AZURE_TENANT_ID")
-	if tenantID == "" {
-		return nil, errors.New("Cannot get tenantID from environment")
+func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
+	tenantID, ok := config[blockstorage.AzureTenantID]
+	if !ok {
+		return nil, errors.New("Cannot get tenantID from config")
 	}
 
-	clientID := os.Getenv("AZURE_CLIENT_ID")
-	if clientID == "" {
-		return nil, errors.New("Cannot get clientID from environment")
+	clientID, ok := config[blockstorage.AzureCientID]
+	if !ok {
+		return nil, errors.New("Cannot get clientID from config")
 	}
 
-	clientSecret := os.Getenv("AZURE_CLIENT_SECRET")
-	if clientSecret == "" {
-		return nil, errors.New("Cannot get clientSecret from environment")
+	clientSecret, ok := config[blockstorage.AzureClentSecret]
+	if !ok {
+		return nil, errors.New("Cannot get clientSecret from config")
 	}
 
-	config := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
-	a, err := config.Authorizer()
+	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
+	a, err := credConfig.Authorizer()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get Azure authorizer")
 	}
