@@ -52,7 +52,6 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 	s.namespace = cns.Name
 	os.Setenv("POD_NAMESPACE", cns.Name)
 	os.Setenv("POD_SERVICE_ACCOUNT", "default")
-
 }
 
 func (s *KubeTaskSuite) TearDownSuite(c *C) {
@@ -151,7 +150,6 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 			},
 		},
 	} {
-
 		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
 		c.Assert(phases, HasLen, len(tc.outs))

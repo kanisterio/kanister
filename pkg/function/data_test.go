@@ -375,7 +375,6 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 		bp = *newLocationDeleteBlueprint()
 		_ = runAction(c, bp, "delete", tp)
 	}
-
 }
 
 func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
@@ -431,7 +430,6 @@ func (s *DataSuite) TestBackupRestoreDeleteDataAll(c *C) {
 	// Test delete
 	bp = *newDeleteDataAllBlueprint()
 	_ = runAction(c, bp, "delete", tp)
-
 }
 
 func newCopyDataTestBlueprint() crv1alpha1.Blueprint {

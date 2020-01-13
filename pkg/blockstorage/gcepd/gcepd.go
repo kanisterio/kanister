@@ -177,7 +177,6 @@ func (s *gpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 			return nil, err
 		}
 		_, err = s.service.RegionDisks.CreateSnapshot(s.project, region, volume.ID, rb).Context(ctx).Do()
-
 	} else {
 		_, err = s.service.Disks.CreateSnapshot(s.project, volume.Az, volume.ID, rb).Context(ctx).Do()
 	}
@@ -234,12 +233,10 @@ func (s *gpdStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.
 }
 
 func (s *gpdStorage) volumeParse(ctx context.Context, volume interface{}, zone string) *blockstorage.Volume {
-
 	vol := volume.(*compute.Disk)
 	volCreationTime, err := time.Parse(time.RFC3339, vol.CreationTimestamp)
 	if err != nil {
 		log.Error().Print("Cannot parse GCP Disk timestamp")
-
 	}
 
 	return &blockstorage.Volume{

@@ -68,5 +68,4 @@ func (s *LocationSuite) TestLocationObjectStore(c *C) {
 
 	err = locationDelete(ctx, p, dir)
 	c.Assert(err, IsNil)
-
 }

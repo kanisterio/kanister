@@ -378,5 +378,4 @@ func (s *adStorage) SetTags(ctx context.Context, resource interface{}, tags map[
 	default:
 		return errors.New(fmt.Sprintf("Unknown resource type %v", res))
 	}
-
 }

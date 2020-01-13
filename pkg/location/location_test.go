@@ -118,5 +118,4 @@ func (s *LocationSuite) TestWriteAndReadData(c *C) {
 	err = readData(ctx, s.osType, s.profile, buf, s.testpath)
 	c.Check(err, IsNil)
 	c.Check(buf.String(), Equals, teststring)
-
 }

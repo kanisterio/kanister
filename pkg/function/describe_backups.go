@@ -112,7 +112,6 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 				nil
 		default:
 			return nil, err
-
 		}
 		cmd, err := restic.StatsCommandByID(tp.Profile, targetPath, "" /* get all snapshot stats */, RawDataStatsMode, encryptionKey)
 		if err != nil {

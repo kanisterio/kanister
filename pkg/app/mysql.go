@@ -59,7 +59,6 @@ func NewMysqlDB(name string) App {
 }
 
 func (mdb *MysqlDB) Init(ctx context.Context) error {
-
 	cfg, err := kube.LoadConfig()
 	if err != nil {
 		return err
@@ -74,7 +73,6 @@ func (mdb *MysqlDB) Init(ctx context.Context) error {
 }
 
 func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
-
 	mdb.namespace = namespace
 
 	cli := helm.NewCliClient(helm.V3)
@@ -104,11 +102,9 @@ func (mdb *MysqlDB) IsReady(ctx context.Context) (bool, error) {
 
 	log.Print("Application instance is ready.", field.M{"app": mdb.name})
 	return true, nil
-
 }
 
 func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
-
 	return crv1alpha1.ObjectReference{
 		Kind:      "deployment",
 		Name:      mdb.name,

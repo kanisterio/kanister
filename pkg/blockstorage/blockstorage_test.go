@@ -248,7 +248,6 @@ func (s *BlockStorageProviderSuite) checkTagsExist(c *C, actual map[string]strin
 
 	for k, v := range expected {
 		c.Check(actual[k], Equals, v)
-
 	}
 }
 

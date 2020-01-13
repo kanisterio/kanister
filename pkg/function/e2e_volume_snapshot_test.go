@@ -115,7 +115,6 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
 	c.Assert(err, IsNil)
 	s.tp = tp
-
 }
 
 // NewTestProfileSecret function returns a pointer to a new Secret test object.

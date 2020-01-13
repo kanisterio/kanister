@@ -45,7 +45,6 @@ func (s *ResticDataSuite) TestGetSnapshotIDFromTag(c *C) {
 		id, err := SnapshotIDFromSnapshotLog(tc.log)
 		c.Assert(err, tc.checker)
 		c.Assert(id, Equals, tc.expected)
-
 	}
 }
 
@@ -275,7 +274,6 @@ func (s *ResticDataSuite) TestGetSnapshotIDsFromSnapshotCommand(c *C) {
 		ids, err := SnapshotIDsFromSnapshotCommand(tc.log)
 		c.Assert(err, tc.checker)
 		c.Assert(ids, DeepEquals, tc.expected)
-
 	}
 }
 

@@ -109,7 +109,6 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		if err := Arg(args, RestoreRDSSnapshotPassword, &password); err != nil {
 			return nil, err
 		}
-
 	}
 
 	if err := Arg(args, RestoreRDSSnapshotDBEngine, &dbEngine); err != nil {

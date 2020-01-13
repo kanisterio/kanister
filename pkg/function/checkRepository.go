@@ -87,7 +87,6 @@ func CheckRepositoryPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			}, nil
 		default:
 			return nil, err
-
 		}
 		return map[string]interface{}{
 			CheckRepositoryPasswordIncorrect: "false",

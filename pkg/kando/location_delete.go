@@ -33,7 +33,6 @@ func newLocationDeleteCommand() *cobra.Command {
 		},
 	}
 	return cmd
-
 }
 
 func runLocationDelete(cmd *cobra.Command) error {

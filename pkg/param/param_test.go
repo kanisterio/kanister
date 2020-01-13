@@ -151,7 +151,6 @@ func (s *ParamsSuite) TestFetchStatefulSetParams(c *C) {
 			},
 		},
 	})
-
 }
 
 const deploySpec = `

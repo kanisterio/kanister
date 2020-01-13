@@ -142,7 +142,6 @@ func (s *ClientSuite) TestErrorsCases(c *C) {
 	ibmCli, err = newClient(context.Background(), make(map[string]string))
 	c.Assert(err, NotNil)
 	c.Assert(ibmCli, IsNil)
-
 }
 
 func (s *ClientSuite) getCredsMap(c *C) map[string]string {
