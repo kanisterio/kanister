@@ -105,7 +105,6 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	cm, err = s.cli.CoreV1().ConfigMaps(s.namespace).Create(cm)
 	c.Assert(err, IsNil)
 	s.confimap = cm
-
 }
 
 func (s *ControllerSuite) TearDownSuite(c *C) {
@@ -155,7 +154,6 @@ func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, s
 			return false, nil
 		}
 		return false, errors.New(fmt.Sprintf("Unexpected state: %s", as.Status.State))
-
 	})
 	if err == nil {
 		return nil

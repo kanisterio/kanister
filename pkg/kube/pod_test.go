@@ -508,5 +508,4 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 		c.Assert(err, IsNil)
 		c.Assert(podSpec, DeepEquals, test.Expected)
 	}
-
 }

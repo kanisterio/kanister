@@ -333,5 +333,4 @@ func waitforSnapSpaceOrder(ctx context.Context, cli *client, id string) error {
 		log.Debug().Print("Still waiting for Snapshor Space order", field.M{"volume_id": id})
 		return false, nil
 	})
-
 }

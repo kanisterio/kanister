@@ -65,5 +65,4 @@ func (s *ErrorSuite) TestIsError(c *C) {
 	} {
 		c.Check(IsError(tc.err), Equals, tc.is)
 	}
-
 }

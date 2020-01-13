@@ -98,7 +98,6 @@ func handleClientPanic(f func() (*client, error)) (c *client, err error) {
 
 // newClientUnsafe may panic. See https://github.com/IBM/ibmcloud-storage-volume-lib/issues/79
 func newClientUnsafe(ctx context.Context, args map[string]string) (*client, error) {
-
 	zaplog, _ := zap.NewProduction()
 	defer zaplog.Sync() // nolint: errcheck
 

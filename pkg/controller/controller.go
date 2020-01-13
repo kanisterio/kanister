@@ -157,7 +157,6 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			bpName := new.Spec.Actions[0].Blueprint
 			bp, _ := c.crClient.CrV1alpha1().Blueprints(new.GetNamespace()).Get(bpName, v1.GetOptions{})
 			c.logAndErrorEvent(context.TODO(), "Callback onUpdateActionSet() failed:", "Error", err, new, bp)
-
 		}
 	case *crv1alpha1.Blueprint:
 		new := newObj.(*crv1alpha1.Blueprint)
@@ -300,7 +299,6 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 		as.Status.Error = crv1alpha1.Error{
 			Message: err.Error(),
 		}
-
 	} else {
 		as.Status.State = crv1alpha1.StatePending
 		as.Status.Actions = actions
@@ -337,7 +335,6 @@ func (c *Controller) initialActionStatus(namespace string, a crv1alpha1.ActionSp
 		Phases:    phases,
 		Artifacts: bpa.OutputArtifacts,
 	}, nil
-
 }
 
 func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
@@ -506,7 +503,6 @@ func (c *Controller) logAndErrorEvent(ctx context.Context, msg, reason string, e
 		}
 		c.recorder.Event(o, corev1.EventTypeWarning, reason, fmt.Sprintf("%s %s", msg, err))
 	}
-
 }
 
 func (c *Controller) logAndSuccessEvent(ctx context.Context, msg, reason string, objects ...runtime.Object) {

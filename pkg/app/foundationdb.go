@@ -188,7 +188,6 @@ func (fdb *FoundationDB) Insert(ctx context.Context) error {
 
 // Count is used to count the number of records
 func (fdb *FoundationDB) Count(ctx context.Context) (int, error) {
-
 	countCMD := []string{"sh", "-c", "fdbcli --exec \"getrangekeys '' \xFF \""}
 	stdout, stderr, err := fdb.execCommand(ctx, countCMD)
 	if err != nil {

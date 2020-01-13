@@ -37,7 +37,6 @@ func newLocationPushCommand() *cobra.Command {
 		},
 	}
 	return cmd
-
 }
 
 func runLocationPush(cmd *cobra.Command, args []string) error {

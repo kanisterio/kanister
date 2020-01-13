@@ -213,7 +213,6 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		for _, p := range phases {
 			_, err = p.Exec(context.Background(), *bp, action, *tp)
 			c.Assert(err, IsNil)
-
 		}
 		ok, err := kube.StatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 		c.Assert(err, IsNil)

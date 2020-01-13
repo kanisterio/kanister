@@ -123,7 +123,6 @@ func (s TestIBMCloud) TestSnapshotCreate(c *C) {
 	c.Assert(inCloud, Equals, true)
 	err = s.provider.SnapshotDelete(context.Background(), bsSnap)
 	c.Check(err, IsNil)
-
 }
 
 func (s TestIBMCloud) TestVolRestore(c *C) {

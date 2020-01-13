@@ -66,7 +66,6 @@ type Context struct {
 // The resource is of kind CRD if the Kubernetes server is 1.7.0 and above.
 // The resource is of kind TPR if the Kubernetes server is below 1.7.0.
 func CreateCustomResources(context Context, resources []CustomResource) error {
-
 	// CRD is available on v1.7.0 and above. TPR became deprecated on v1.7.0
 	serverVersion, err := context.Clientset.Discovery().ServerVersion()
 	if err != nil {

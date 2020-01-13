@@ -62,7 +62,6 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create RDS client")
-
 	}
 
 	// Delete Snapshot
