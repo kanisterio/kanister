@@ -939,6 +939,214 @@ Example:
           args:
             backupArtifactPrefix: s3-bucket/path/artifactPrefix
 
+CreateRDSSnapshot
+-----------------
+
+This function creates RDS snapshot of running RDS instance.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `instanceID`, Yes, `string`, ID of RDS instance you want to create snapshot of
+
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `snapshotID`,`string`, ID of the RDS snapshot that has been created
+   `instanceID`, `string`, ID of the RDS instance
+   `securityGroupID`, `string`, ``securityGroupID``
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backup:
+      type: Namespace
+      outputArtifacts:
+        backupInfo:
+          keyValue:
+            snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+            instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+            securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+            backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
+      configMapNames:
+      - dbconfig
+      phases:
+      - func: CreateRDSSnapshot
+        name: createSnapshot
+        args:
+          instanceID: '{{ index .ConfigMaps.dbconfig.Data "postgres.instanceid" }}'
+
+
+ExportRDSSnapshotToLocation
+---------------------------
+
+This function spins up a temporary RDS instance, creates and uploads the data
+dump to the configured object storage.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `username`, No, `string`, username of the RDS database instance
+   `password`, No, `string`, password of the RDS database instance
+   `backupArtifactPrefix`, No, `string`, path to store the backup on the object store
+   `databases`, No, `[]string`, list of databases to take backup (if ``nil`` backup of all the database will be taken)
+   `snapshotID`, Yes, `string`, ID of the RDS snapshot
+   `namespace`, Yes, `string`, namespace in which to execute
+   `dbEngine`, Yes, `string`, one of the RDS db engines
+   `instanceID`, Yes, `string`, RDS db instance ID
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `snapshotID`,`string`, ID of the RDS snapshot that has been created
+   `instanceID`, `string`, ID of the RDS instance
+   `backupID`, `string`, unique backup id generated during storing data into object storage
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backup:
+      type: Namespace
+      outputArtifacts:
+        backupInfo:
+          keyValue:
+            backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
+      configMapNames:
+      - dbconfig
+      phases:
+      - func: ExportRDSSnapshotToLocation
+        name: exportSnapshot
+        objects:
+          dbsecret:
+            kind: Secret
+            name: '{{ index .ConfigMaps.dbconfig.Data "postgres.secret" }}'
+            namespace: "{{ .Namespace.Name }}"
+        args:
+          namespace: "{{ .Namespace.Name }}"
+          instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+          securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+          username: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "username" | toString }}'
+          password: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password" | toString }}'
+          dbEngine: "PostgreSQL"
+          snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+          backupArtifactPrefix: test-postgresql-instance/postgres
+
+
+RestoreRDSSnapshot
+------------------
+
+This function restores the an RDS DB either from a RDS snapshot instance or from the
+data dump (if `snapshotID` is nil) that is stored in an object storage.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `username`, No, `string`, username of the RDS database instance
+   `password`, No, `string`, password of the RDS database instance
+   `backupArtifactPrefix`, No, `string`, path to store the backup on the object store
+   `backupID`, No, `string`, unique backup id generated during storing data into object storage
+   `databases`, No, `[]string`, list of databases to take backup (if ``nil`` backup of all the databases will be taken)
+   `snapshotID`, No, `string`, ID of the RDS snapshot
+   `namespace`, Yes, `string`, namespace in which to execute
+   `dbEngine`, Yes, `string`, one of the RDS db engines
+   `instanceID`, Yes, `string`, RDS db instance ID
+   `securityGroupID`, No, `string`, ``securityGroupID``
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `endpoint`,`string`, endpoint of the RDS instance
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    restore:
+    inputArtifactNames:
+    - backupInfo
+    kind: Namespace
+    phases:
+    - func: RestoreRDSSnapshot
+      name: restoreSnapshots
+      objects:
+        dbsecret:
+          kind: Secret
+          name: '{{ index .ConfigMaps.dbconfig.Data "postgres.secret" }}'
+          namespace: "{{ .Namespace.Name }}"
+      args:
+        namespace: "{{ .Namespace.Name }}"
+        backupArtifactPrefix: test-postgresql-instance/postgres
+        instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
+        backupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.backupID }}"
+        securityGroupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
+        username: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "username" | toString }}'
+        password: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "password" | toString }}'
+        dbEngine: "PostgreSQL"
+
+
+DeleteRDSSnapshot
+-----------------
+
+This function deletes the RDS snapshot by the `snapshotID`.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `snapshotID`, No, `string`, ID of the RDS snapshot
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    delete:
+    kind: Namespace
+    inputArtifactNames:
+    - backupInfo
+    phases:
+    - func: DeleteRDSSnapshot
+      name: deleteSnapshot
+      args:
+        snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
+
 Registering Functions
 ---------------------
 
