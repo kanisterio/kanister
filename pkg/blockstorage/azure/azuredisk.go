@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 	azto "github.com/Azure/go-autorest/autorest/to"
@@ -12,11 +13,14 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
 var _ blockstorage.Provider = (*adStorage)(nil)
+
+var _ zone.Mapper = (*adStorage)(nil)
 
 const (
 	volumeNameFmt   = "vol-%s"
@@ -49,6 +53,7 @@ func (s *adStorage) VolumeGet(ctx context.Context, id string, zone string) (*blo
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get volume, volumeID: %s", id)
 	}
+	log.Print("VolumeGet", field.M{"location": azto.String(disk.Location), "zones": azto.StringSlice(disk.Zones)})
 	return s.VolumeParse(ctx, disk)
 }
 
@@ -61,12 +66,17 @@ func (s *adStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 			CreateOption: azcompute.DiskCreateOption(azcompute.DiskCreateOptionTypesEmpty),
 		},
 	}
+	region, id, err := getRegionAndZoneID(volume.Az)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not get region from zone %s", volume.Az)
+	}
 	// TODO(ilya): figure out how to create SKUed disks
 	createDisk := azcompute.Disk{
 		Name:           azto.StringPtr(diskName),
 		Tags:           *azto.StringMapPtr(tags),
-		Location:       azto.StringPtr(volume.Az),
+		Location:       azto.StringPtr(region),
 		DiskProperties: diskProperties,
+		Zones:          azto.StringSlicePtr([]string{id}),
 	}
 	result, err := s.azCli.DisksClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createDisk)
 	if err != nil {
@@ -107,9 +117,13 @@ func (s *adStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot
 func (s *adStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	snapName := fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String())
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
+	region, _, err := getRegionAndZoneID(volume.Az)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not get region from zone %s", volume.Az)
+	}
 	createSnap := azcompute.Snapshot{
 		Name:     azto.StringPtr(snapName),
-		Location: azto.StringPtr(volume.Az),
+		Location: azto.StringPtr(region),
 		Tags:     *azto.StringMapPtr(tags),
 		DiskProperties: &azcompute.DiskProperties{
 			CreationData: &azcompute.CreationData{
@@ -208,13 +222,17 @@ func (s *adStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 	if vol.Tags != nil {
 		tags = azto.StringMap(vol.Tags)
 	}
+	az := azto.String(vol.Location)
+	if z := azto.StringSlice(vol.Zones); len(z) > 0 {
+		az = az + "-" + z[0]
+	}
 
 	return &blockstorage.Volume{
 		Type:         s.Type(),
 		ID:           azto.String(vol.ID),
 		Encrypted:    encrypted,
 		Size:         int64(azto.Int32(vol.DiskSizeGB)),
-		Az:           azto.String(vol.Location),
+		Az:           az,
 		Tags:         blockstorage.MapToKeyValue(tags),
 		VolumeType:   azto.String(vol.Sku.Tier),
 		CreationTime: blockstorage.TimeStamp(vol.DiskProperties.TimeCreated.ToTime()),
@@ -244,7 +262,6 @@ func (s *adStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) 
 	if snap.Tags != nil {
 		tags = azto.StringMap(snap.Tags)
 	}
-
 	return &blockstorage.Snapshot{
 		Encrypted:    encrypted,
 		ID:           azto.String(snap.ID),
@@ -302,6 +319,26 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 			tags[tag.Key] = tag.Value
 		}
 	}
+	z, err := staticRegionToZones(snapshot.Region)
+	if err != nil {
+		return nil, err
+	}
+	var id string
+	if z != nil {
+		zones, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
+		if err != nil {
+			return nil, err
+		}
+		if len(zones) != 1 {
+			return nil, errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
+		}
+		log.Print("zone", field.M{"zones": zones})
+
+		_, id, err = getRegionAndZoneID(zones[0])
+		if err != nil {
+			return nil, errors.Wrapf(err, "Could not get region from zone %s", zones[0])
+		}
+	}
 
 	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
 	tags = blockstorage.SanitizeTags(tags)
@@ -316,6 +353,9 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 			},
 		},
 	}
+	if id != "" {
+		createDisk.Zones = azto.StringSlicePtr([]string{id})
+	}
 	result, err := s.azCli.DisksClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createDisk)
 	if err != nil {
 		return nil, errors.Wrapf(err, "DiskCLient.CreateOrUpdate in VolumeCreateFromSnapshot, diskName: %s, snapshotID: %s", diskName, snapshot.ID)
@@ -328,6 +368,21 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		return nil, err
 	}
 	return s.VolumeGet(ctx, azto.String(disk.ID), snapshot.Volume.Az)
+}
+
+func getRegionAndZoneID(zone string) (string, string, error) {
+	if zone == "" {
+		return "", "", errors.New("zone value is empty")
+	}
+
+	s := strings.Split(zone, "-")
+	var region, zoneID string
+	if len(s) == 2 {
+		region = s[0]
+		zoneID = s[1]
+	}
+	return region, zoneID, nil
+
 }
 
 func (s *adStorage) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
@@ -378,4 +433,22 @@ func (s *adStorage) SetTags(ctx context.Context, resource interface{}, tags map[
 	default:
 		return errors.New(fmt.Sprintf("Unknown resource type %v", res))
 	}
+}
+
+func (s *adStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
+	return staticRegionToZones(region)
+}
+
+func staticRegionToZones(region string) ([]string, error) {
+	switch region {
+	case "westus2":
+		return []string{
+			"westus2-1",
+			"westus2-2",
+			"westus2-3",
+		}, nil
+	case "westus":
+		return nil, nil
+	}
+	return nil, errors.New("cannot get availability zones for region")
 }
