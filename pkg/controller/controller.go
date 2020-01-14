@@ -140,9 +140,7 @@ func (c *Controller) onAdd(obj interface{}) {
 			log.Error().WithError(err).Print("Callback onAddActionSet() failed")
 		}
 	case *crv1alpha1.Blueprint:
-		if err := c.onAddBlueprint(v); err != nil {
-			log.Error().WithError(err).Print("Callback onAddBlueprint() failed")
-		}
+		c.onAddBlueprint(v)
 	default:
 		objType := fmt.Sprintf("%T", o)
 		log.Error().Print("Unknown object type", field.M{"ObjectType": objType})
@@ -153,16 +151,14 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	switch old := oldObj.(type) {
 	case *crv1alpha1.ActionSet:
 		new := newObj.(*crv1alpha1.ActionSet)
-		if err := c.onUpdateActionSet(old, new); err != nil {
+		if err := c.onUpdateActionSet(new); err != nil {
 			bpName := new.Spec.Actions[0].Blueprint
 			bp, _ := c.crClient.CrV1alpha1().Blueprints(new.GetNamespace()).Get(bpName, v1.GetOptions{})
 			c.logAndErrorEvent(context.TODO(), "Callback onUpdateActionSet() failed:", "Error", err, new, bp)
 		}
 	case *crv1alpha1.Blueprint:
 		new := newObj.(*crv1alpha1.Blueprint)
-		if err := c.onUpdateBlueprint(old, new); err != nil {
-			c.logAndErrorEvent(context.TODO(), "Callback onUpdateBlueprint() failed:", "Error", err, new)
-		}
+		c.onUpdateBlueprint(old, new)
 	default:
 		objType := fmt.Sprintf("%T", oldObj)
 		log.Error().Print("Unknown object type", field.M{"ObjectType": objType})
@@ -178,9 +174,7 @@ func (c *Controller) onDelete(obj interface{}) {
 			c.logAndErrorEvent(context.TODO(), "Callback onDeleteActionSet() failed:", "Error", err, v, bp)
 		}
 	case *crv1alpha1.Blueprint:
-		if err := c.onDeleteBlueprint(v); err != nil {
-			c.logAndErrorEvent(context.TODO(), "Callback onDeleteBlueprint() failed:", "Error", err, v)
-		}
+		c.onDeleteBlueprint(v)
 	default:
 		objType := fmt.Sprintf("%T", obj)
 		log.Error().Print("Unknown object type", field.M{"ObjectType": objType})
@@ -206,14 +200,11 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 	return c.handleActionSet(as)
 }
 
-// nolint:unparam
-func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) error {
+func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) {
 	c.logAndSuccessEvent(context.TODO(), fmt.Sprintf("Added blueprint %s", bp.GetName()), "Added", bp)
-	return nil
 }
 
-// nolint:unparam
-func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error {
+func (c *Controller) onUpdateActionSet(newAS *crv1alpha1.ActionSet) error {
 	if err := validate.ActionSet(newAS); err != nil {
 		log.Print("Updated ActionSet", field.M{"ActionSetName": newAS.Name})
 		return err
@@ -245,10 +236,8 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 	})
 }
 
-// nolint:unparam
-func (c *Controller) onUpdateBlueprint(oldBP, newBP *crv1alpha1.Blueprint) error {
-	log.Print("Updated Blueprint", field.M{"BlueprintName": newBP.Name})
-	return nil
+func (c *Controller) onUpdateBlueprint(oldBP, newBP *crv1alpha1.Blueprint) {
+	log.Print("Updated Blueprint", field.M{"BlueprintName": newBP.Name, "OldBlueprintName": oldBP.Name})
 }
 
 // nolint:unparam
@@ -268,10 +257,8 @@ func (c *Controller) onDeleteActionSet(as *crv1alpha1.ActionSet) error {
 	return nil
 }
 
-// nolint:unparam
-func (c *Controller) onDeleteBlueprint(bp *crv1alpha1.Blueprint) error {
+func (c *Controller) onDeleteBlueprint(bp *crv1alpha1.Blueprint) {
 	log.Print("Deleted Blueprint ", field.M{"BlueprintName": bp.GetName()})
-	return nil
 }
 
 func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
