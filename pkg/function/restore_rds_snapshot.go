@@ -141,7 +141,6 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 
 	// Restore from snapshot
 	if snapshotID != "" {
-
 		// If securityGroupID arg is nil, we will try to find the sgIDs by describing the existing instance
 		// Find security group ids
 		if sgIDs == nil {
