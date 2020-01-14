@@ -40,8 +40,17 @@ func NamespacedGVRs(ctx context.Context, cli discovery.DiscoveryInterface) ([]sc
 	return apiToGroupVersion(arls)
 }
 
+func AllGVRsIgnoreGroupErrs(ctx context.Context, cli discovery.DiscoveryInterface, exclude filter.ResourceTypeMatcher) ([]schema.GroupVersionResource, error) {
+	arls, err := cli.ServerPreferredResources()
+	return ignoreGroupErrs(exclude, arls, err)
+}
+
 func NamespacedGVRsIgnoreGroupErrs(ctx context.Context, cli discovery.DiscoveryInterface, exclude filter.ResourceTypeMatcher) ([]schema.GroupVersionResource, error) {
 	arls, err := cli.ServerPreferredNamespacedResources()
+	return ignoreGroupErrs(exclude, arls, err)
+}
+
+func ignoreGroupErrs(exclude filter.ResourceTypeMatcher, arls []*metav1.APIResourceList, err error) ([]schema.GroupVersionResource, error) {
 	if err == nil {
 		return apiToGroupVersion(arls)
 	}
