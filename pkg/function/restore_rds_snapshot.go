@@ -157,7 +157,6 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 }
 
 func postgresRestoreCommand(pgHost, username, password string, dbList []string, backupArtifactPrefix, backupID string, profile []byte) ([]string, error) {
-
 	if len(dbList) == 0 {
 		return nil, errors.New("No database found. Atleast one db needed to connect")
 	}

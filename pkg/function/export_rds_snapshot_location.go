@@ -232,7 +232,6 @@ func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction,
 }
 
 func postgresBackupCommand(dbEndpoint, username, password string, dbList []string, backupPrefix, backupID string, profile []byte) ([]string, error) {
-
 	if len(dbList) == 0 {
 		return nil, errors.New("No database found to backup")
 	}
