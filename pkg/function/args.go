@@ -16,6 +16,7 @@ package function
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -107,4 +108,23 @@ func GetSecurityGroups(args map[string]interface{}, argName string) ([]string, e
 		return sgIDs, err
 	}
 	return nil, errors.Errorf("Invalid %s arg format", argName)
+}
+
+// GetDatabases finds databases values from the argument and retunrs list of databases in slice format.
+// It splits comma separated databases list (e.g "db1,db2,db2") string into a []string.
+// Return error nil if arg does not exist
+func GetDatabases(args map[string]interface{}, argName string) ([]string, error) {
+	if !ArgExists(args, argName) {
+		return nil, nil
+	}
+
+	var databases string
+	if err := OptArg(args, argName, &databases, ""); err != nil {
+		return nil, err
+	}
+
+	if len(databases) == 0 {
+		return nil, nil
+	}
+	return strings.Split(databases, ","), nil
 }

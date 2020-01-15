@@ -33,8 +33,7 @@ actions:
         username: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "username" | toString }}'
         password: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password" | toString }}'
         dbEngine: "PostgreSQL"
-        databases:
-        - '{{ index .ConfigMaps.dbconfig.Data "postgres.database" }}'
+        databases: '{{ index .ConfigMaps.dbconfig.Data "postgres.database" }}'
         snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
         backupArtifactPrefix: test-postgresql-instance/postgres
 

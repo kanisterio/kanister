@@ -160,9 +160,6 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 	if err := Arg(args, ExportRDSSnapshotToLocDBEngineArg, &dbEngine); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, ExportRDSSnapshotToLocDatabasesArg, &databases, nil); err != nil {
-		return nil, err
-	}
 	if err := OptArg(args, ExportRDSSnapshotToLocDBUsernameArg, &username, ""); err != nil {
 		return nil, err
 	}
@@ -170,6 +167,12 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 		return nil, err
 	}
 	if err := OptArg(args, ExportRDSSnapshotToLocBackupArtPrefixArg, &backupArtifact, instanceID); err != nil {
+		return nil, err
+	}
+
+	// Find databases
+	databases, err := GetDatabases(args, ExportRDSSnapshotToLocDatabasesArg)
+	if err != nil {
 		return nil, err
 	}
 
