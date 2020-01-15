@@ -16,6 +16,7 @@ package function
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/mitchellh/mapstructure"
