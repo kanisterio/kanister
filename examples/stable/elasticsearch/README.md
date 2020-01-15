@@ -130,7 +130,7 @@ kubectl create -f ./examples/stable/elasticsearch/elasticsearch-blueprint.yaml -
 You can now take a backup of the Elasticsearch data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller using `kanctl`, a command-line tool that helps create ActionSets as shown below:
 
 ```bash
-$ kanctl create actionset --action backup --namespace kasten-io --blueprint elasticsearch-blueprint --statefulset es-test/elasticsearch-master --options --profile es-test/<PROFILE_NAME>
+$ kanctl create actionset --action backup --namespace kasten-io --blueprint elasticsearch-blueprint --statefulset es-test/elasticsearch-master --profile es-test/<PROFILE_NAME>
 
 $ kubectl --namespace kasten-io get actionsets.cr.kanister.io
 NAME                AGE
