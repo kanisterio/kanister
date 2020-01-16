@@ -15,6 +15,8 @@
 package function
 
 import (
+	"encoding/json"
+
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
@@ -67,4 +69,42 @@ func GetPodSpecOverride(tp param.TemplateParams, args map[string]interface{}, ar
 		}
 	}
 	return podOverride, nil
+}
+
+// GetSecurityGroups finds security group list from input args
+// User can specify securityGroupIDs in the following formats:
+//
+// securityGroupID: '["sgID1", "sgID2"]'	(string) if you are referencing from inputArtifacts
+// OR
+// securityGroupID:
+//    - "sgID1"
+//    - "sgID2"		(list of string) Allows users to pass list in blueprint)
+func GetSecurityGroups(args map[string]interface{}, argName string) ([]string, error) {
+	if !ArgExists(args, argName) {
+		return nil, nil
+	}
+
+	switch args[argName].(type) {
+	case []interface{}, []string:
+		var sgIDs []string
+		if err := OptArg(args, argName, &sgIDs, nil); err != nil {
+			return nil, err
+		}
+		return sgIDs, nil
+	case string:
+		var sgIDBytes []byte
+		var sgIDs []string
+
+		if err := OptArg(args, argName, &sgIDBytes, nil); err != nil {
+			return nil, err
+		}
+		if sgIDBytes == nil {
+			return nil, nil
+		}
+
+		// Convert json to slice
+		err := json.Unmarshal([]byte(sgIDBytes), &sgIDs)
+		return sgIDs, err
+	}
+	return nil, errors.Errorf("Invalid %s arg format", argName)
 }
