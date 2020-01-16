@@ -159,7 +159,7 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 	}
 
 	dbEndpoint := *descOp.DBInstances[0].Endpoint.Address
-	if _, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, instanceID, dbEndpoint, username, password, backupArtifactPrefix, backupID, profile); err != nil {
+	if _, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, dbEndpoint, username, password, backupArtifactPrefix, backupID, profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to restore RDS from dump. InstanceID=%s", instanceID)
 	}
 
@@ -168,6 +168,7 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 	}, nil
 }
 
+// nolint:unparam
 func postgresRestoreCommand(pgHost, username, password string, dbList []string, backupArtifactPrefix, backupID string, profile []byte) ([]string, error) {
 	if len(dbList) == 0 {
 		return nil, errors.New("No database found. Atleast one db needed to connect")
