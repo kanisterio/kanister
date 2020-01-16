@@ -16,8 +16,8 @@ package function
 
 import (
 	"encoding/json"
-	"strings"
 
+	"github.com/ghodss/yaml"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
@@ -118,13 +118,27 @@ func GetDatabases(args map[string]interface{}, argName string) ([]string, error)
 		return nil, nil
 	}
 
-	var databases string
-	if err := OptArg(args, argName, &databases, ""); err != nil {
-		return nil, err
-	}
+	switch args[argName].(type) {
+	case []interface{}, []string:
+		var dbList []string
+		if err := OptArg(args, argName, &dbList, nil); err != nil {
+			return nil, err
+		}
+		return dbList, nil
+	case string:
+		var dbListBytes []byte
+		var dbList []string
 
-	if len(databases) == 0 {
-		return nil, nil
+		if err := OptArg(args, argName, &dbListBytes, nil); err != nil {
+			return nil, err
+		}
+		if dbListBytes == nil {
+			return nil, nil
+		}
+
+		// Convert yaml list to slice of string
+		err := yaml.Unmarshal(dbListBytes, &dbList)
+		return dbList, err
 	}
-	return strings.Split(databases, ","), nil
+	return nil, errors.Errorf("Invalid %s arg format", argName)
 }

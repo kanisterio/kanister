@@ -78,3 +78,59 @@ func (s *ArgsTestSuite) TestGetSecurityGroups(c *C) {
 		c.Check(sgIDs, DeepEquals, tc.sgIDs, Commentf("Test: %s Failed!", tc.name))
 	}
 }
+
+func (s *ArgsTestSuite) TestGetDatabases(c *C) {
+	testCases := []struct {
+		name       string
+		args       map[string]interface{}
+		errChecker Checker
+		dbList     []string
+	}{
+		{
+			name: "Pass databases as string by configmap reference",
+			args: map[string]interface{}{
+				"databases": "- db1\n- db2\n- db3\n",
+			},
+			errChecker: IsNil,
+			dbList:     []string{"db1", "db2", "db3"},
+		},
+		{
+			name: "Pass databases as string slice",
+			args: map[string]interface{}{
+				"databases": []string{"test1", "test2", "test3"},
+			},
+			errChecker: IsNil,
+			dbList:     []string{"test1", "test2", "test3"},
+		},
+		{
+			name: "Pass databases as interface slice",
+			args: map[string]interface{}{
+				"databases": []interface{}{"test1", "test2", "test3"},
+			},
+			errChecker: IsNil,
+			dbList:     []string{"test1", "test2", "test3"},
+		},
+		{
+			name: "Invalid databases format",
+			args: map[string]interface{}{
+				"databases": "not a slice",
+			},
+			errChecker: NotNil,
+			dbList:     nil,
+		},
+		{
+			name: "Nil databases arg",
+			args: map[string]interface{}{
+				"invalid": nil,
+			},
+			errChecker: IsNil,
+			dbList:     nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		dbList, err := GetDatabases(tc.args, "databases")
+		c.Check(err, tc.errChecker, Commentf("Test: %s Failed!", tc.name))
+		c.Check(dbList, DeepEquals, tc.dbList, Commentf("Test: %s Failed!", tc.name))
+	}
+}
