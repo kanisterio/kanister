@@ -66,7 +66,7 @@ func (s *adStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 			CreateOption: azcompute.DiskCreateOption(azcompute.DiskCreateOptionTypesEmpty),
 		},
 	}
-	region, id, err := getRegionAndZoneID(volume.Az)
+	region, id, err := getLocationInfo(volume.Az)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get region from zone %s", volume.Az)
 	}
@@ -76,7 +76,9 @@ func (s *adStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 		Tags:           *azto.StringMapPtr(tags),
 		Location:       azto.StringPtr(region),
 		DiskProperties: diskProperties,
-		Zones:          azto.StringSlicePtr([]string{id}),
+	}
+	if id != "" {
+		createDisk.Zones = azto.StringSlicePtr([]string{id})
 	}
 	result, err := s.azCli.DisksClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createDisk)
 	if err != nil {
@@ -117,7 +119,7 @@ func (s *adStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot
 func (s *adStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	snapName := fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String())
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
-	region, _, err := getRegionAndZoneID(volume.Az)
+	region, _, err := getLocationInfo(volume.Az)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get region from zone %s", volume.Az)
 	}
@@ -319,25 +321,10 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 			tags[tag.Key] = tag.Value
 		}
 	}
-	z, err := staticRegionToZones(snapshot.Region)
+
+	region, id, err := getRegionAndZoneID(ctx, s, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
-	}
-	var id string
-	if z != nil {
-		zones, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
-		if err != nil {
-			return nil, err
-		}
-		if len(zones) != 1 {
-			return nil, errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
-		}
-		log.Print("zone", field.M{"zones": zones})
-
-		_, id, err = getRegionAndZoneID(zones[0])
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not get region from zone %s", zones[0])
-		}
 	}
 
 	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
@@ -345,7 +332,7 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	createDisk := azcompute.Disk{
 		Name:     azto.StringPtr(diskName),
 		Tags:     *azto.StringMapPtr(tags),
-		Location: azto.StringPtr(snapshot.Region),
+		Location: azto.StringPtr(region),
 		DiskProperties: &azcompute.DiskProperties{
 			CreationData: &azcompute.CreationData{
 				CreateOption:     azcompute.Copy,
@@ -370,19 +357,55 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	return s.VolumeGet(ctx, azto.String(disk.ID), snapshot.Volume.Az)
 }
 
-func getRegionAndZoneID(zone string) (string, string, error) {
-	if zone == "" {
+func getRegionAndZoneID(ctx context.Context, s *adStorage, sourceRegion, volAz string) (string, string, error) {
+	//check if region is zoned or not
+	z, err := staticRegionToZones(sourceRegion)
+	if err != nil {
+		return "", "", err
+	}
+	if z != nil {
+		// If source volume has a nonzoned region, then return snapshot region for restoring
+		// volume from snapshot
+		if _, id, err := getLocationInfo(volAz); err == nil {
+			if id == "" {
+				return sourceRegion, "", nil
+			}
+		} else if err != nil {
+			return "", "", err
+		}
+		zones, err := zone.FromSourceRegionZone(ctx, s, sourceRegion, volAz)
+		if err != nil {
+			return "", "", err
+		}
+		if len(zones) != 1 {
+			return "", "", errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
+		}
+
+		region, id, err := getLocationInfo(zones[0])
+		if err != nil {
+			return "", "", errors.Wrapf(err, "Could not get region from zone %s", zones[0])
+		}
+		return region, id, nil
+	}
+
+	// If the snapshot region is a nonzoned, then no need to get zone
+	return sourceRegion, "", nil
+}
+
+func getLocationInfo(az string) (string, string, error) {
+	if az == "" {
 		return "", "", errors.New("zone value is empty")
 	}
 
-	s := strings.Split(zone, "-")
+	s := strings.Split(az, "-")
 	var region, zoneID string
 	if len(s) == 2 {
 		region = s[0]
 		zoneID = s[1]
+	} else {
+		region = s[0]
 	}
 	return region, zoneID, nil
-
 }
 
 func (s *adStorage) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
@@ -441,14 +464,62 @@ func (s *adStorage) FromRegion(ctx context.Context, region string) ([]string, er
 
 func staticRegionToZones(region string) ([]string, error) {
 	switch region {
+	case "australiaeast", "australiasoutheast", "brazilsouth", "canadacentral", "canadaeast", "centralindia", "eastasia", "japanwest", "northcentralus", "southcentralus", "southindia", "ukwest", "westcentralus", "westindia", "westus":
+		return nil, nil
+	case "centralus":
+		return []string{
+			"centralus-1",
+			"centralus-2",
+			"centralus-3",
+		}, nil
+	case "eastus":
+		return []string{
+			"eastus-1",
+			"eastus-2",
+			"eastus-3",
+		}, nil
+	case "eastus2":
+		return []string{
+			"eastus2-1",
+			"eastus2-2",
+			"eastus2-3",
+		}, nil
+	case "japaneast":
+		return []string{
+			"japaneast-1",
+			"japaneast-2",
+			"japaneast-3",
+		}, nil
+	case "northeurope":
+		return []string{
+			"northeurope-1",
+			"northeurope-2",
+			"northeurope-3",
+		}, nil
+	case "southeastasia":
+		return []string{
+			"southeastasia-1",
+			"southeastasia-2",
+			"southeastasia-3",
+		}, nil
+	case "uksouth":
+		return []string{
+			"uksouth-1",
+			"uksouth-2",
+			"uksouth-3",
+		}, nil
+	case "westeurope":
+		return []string{
+			"westeurope-1",
+			"westeurope-2",
+			"westeurope-3",
+		}, nil
 	case "westus2":
 		return []string{
 			"westus2-1",
 			"westus2-2",
 			"westus2-3",
 		}, nil
-	case "westus":
-		return nil, nil
 	}
-	return nil, errors.New("cannot get availability zones for region")
+	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))
 }
