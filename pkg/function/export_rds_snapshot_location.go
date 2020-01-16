@@ -268,7 +268,7 @@ func postgresBackupCommand(dbEndpoint, username, password string, dbList []strin
 			mkdir /backup
 			dblist=( %s )
 			for db in "${dblist[@]}";
-			  do echo "backing up $db db" && pg_dump $db -C > /backup/$db.sql;
+			  do echo "backing up $db db" && pg_dump $db -C --inserts > /backup/$db.sql;
 			done
 			tar -zc backup | kando location push --profile '%s' --path "${BACKUP_PREFIX}/${BACKUP_ID}" -
 			kando output %s ${BACKUP_ID}`,
