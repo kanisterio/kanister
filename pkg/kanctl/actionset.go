@@ -33,6 +33,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const (
@@ -45,6 +46,7 @@ const (
 	pvcFlagName              = "pvc"
 	secretsFlagName          = "secrets"
 	statefulSetFlagName      = "statefulset"
+	deploymentConfigFlagName = "deploymentconfig"
 	sourceFlagName           = "from"
 	selectorFlagName         = "selector"
 	selectorKindFlag         = "kind"
@@ -86,6 +88,7 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().StringSliceP(pvcFlagName, "v", []string{}, "pvc for the action set, comma separated namespace/name pairs (eg: --pvc namespace1/name1,namespace2/name2)")
 	cmd.Flags().StringSliceP(secretsFlagName, "s", []string{}, "secrets for the action set, comma separated ref=namespace/name pairs (eg: --secrets ref1=namespace1/name1,ref2=namespace2/name2)")
 	cmd.Flags().StringSliceP(statefulSetFlagName, "t", []string{}, "statefulset for the action set, comma separated namespace/name pairs (eg: --statefulset namespace1/name1,namespace2/name2)")
+	cmd.Flags().StringSliceP(deploymentConfigFlagName, "D", []string{}, "deploymentconfig for action set, comma separated namespace/name pairs (e.g. --deploymentconfig namespace1/name1,namespace2/name2). Will ideally be used on openshift clusters.")
 	cmd.Flags().StringP(selectorFlagName, "l", "", "k8s selector for objects")
 	cmd.Flags().StringP(selectorKindFlag, "k", "all", "resource kind to apply selector on. Used along with the selector specified using --selector/-l")
 	cmd.Flags().String(selectorNamespaceFlag, "", "namespace to apply selector on. Used along with the selector specified using --selector/-l")
@@ -95,11 +98,11 @@ func newActionSetCmd() *cobra.Command {
 }
 
 func initializeAndPerform(cmd *cobra.Command, args []string) error {
-	cli, crCli, err := initializeClients()
+	cli, crCli, osCli, err := initializeClients()
 	if err != nil {
 		return err
 	}
-	params, err := extractPerformParams(cmd, args, cli)
+	params, err := extractPerformParams(cmd, args, cli, osCli)
 	if err != nil {
 		return err
 	}
@@ -107,7 +110,7 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	valFlag, _ := cmd.Flags().GetBool(skipValidationFlag)
 	if !valFlag {
-		err = verifyParams(ctx, params, cli, crCli)
+		err = verifyParams(ctx, params, cli, crCli, osCli)
 		if err != nil {
 			return err
 		}
@@ -250,7 +253,7 @@ func printActionSet(as *crv1alpha1.ActionSet) error {
 	return nil
 }
 
-func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Interface) (*PerformParams, error) {
+func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Interface, osCli osversioned.Interface) (*PerformParams, error) {
 	if len(args) != 0 {
 		return nil, newArgsLengthError("expected 0 arguments. got %#v", args)
 	}
@@ -270,7 +273,7 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	if err != nil {
 		return nil, err
 	}
-	objects, err := parseObjects(cmd, cli)
+	objects, err := parseObjects(cmd, cli, osCli)
 	if err != nil {
 		return nil, err
 	}
@@ -333,17 +336,19 @@ func parseSecrets(cmd *cobra.Command) (map[string]crv1alpha1.ObjectReference, er
 	return secrets, nil
 }
 
-func parseObjects(cmd *cobra.Command, cli kubernetes.Interface) ([]crv1alpha1.ObjectReference, error) {
+func parseObjects(cmd *cobra.Command, cli kubernetes.Interface, osCli osversioned.Interface) ([]crv1alpha1.ObjectReference, error) {
 	var objects []crv1alpha1.ObjectReference
 	objs := make(map[string][]string)
 
 	deployments, _ := cmd.Flags().GetStringSlice(deploymentFlagName)
 	statefulSets, _ := cmd.Flags().GetStringSlice(statefulSetFlagName)
+	deploymetConfig, _ := cmd.Flags().GetStringSlice(deploymentConfigFlagName)
 	pvcs, _ := cmd.Flags().GetStringSlice(pvcFlagName)
 	namespaces, _ := cmd.Flags().GetStringSlice(namespaceTargetsFlagName)
 
 	objs[param.DeploymentKind] = deployments
 	objs[param.StatefulSetKind] = statefulSets
+	objs[param.DeploymentConfigKind] = deploymetConfig
 	objs[param.PVCKind] = pvcs
 	objs[param.NamespaceKind] = namespaces
 
@@ -370,7 +375,7 @@ func parseObjects(cmd *cobra.Command, cli kubernetes.Interface) ([]crv1alpha1.Ob
 		}
 		kind, _ := cmd.Flags().GetString(selectorKindFlag)
 		sns, _ := cmd.Flags().GetString(selectorNamespaceFlag)
-		fromSelector, err := parseObjectsFromSelector(selector.String(), kind, sns, cli, parsed)
+		fromSelector, err := parseObjectsFromSelector(selector.String(), kind, sns, cli, osCli, parsed)
 		if err != nil {
 			return nil, err
 		}
@@ -397,6 +402,8 @@ func parseObjectsFromCmd(objs map[string][]string, parsed map[string]bool) ([]cr
 				objects = append(objects, crv1alpha1.ObjectReference{Kind: param.DeploymentKind, Namespace: namespace, Name: name})
 			case param.StatefulSetKind:
 				objects = append(objects, crv1alpha1.ObjectReference{Kind: param.StatefulSetKind, Namespace: namespace, Name: name})
+			case param.DeploymentConfigKind:
+				objects = append(objects, crv1alpha1.ObjectReference{Kind: param.DeploymentConfigKind, Namespace: namespace, Name: name})
 			case param.PVCKind:
 				objects = append(objects, crv1alpha1.ObjectReference{Kind: param.PVCKind, Namespace: namespace, Name: name})
 			case param.NamespaceKind:
@@ -437,7 +444,7 @@ func parseGenericObjectReference(s string) (crv1alpha1.ObjectReference, error) {
 	}, nil
 }
 
-func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interface, parsed map[string]bool) ([]crv1alpha1.ObjectReference, error) {
+func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interface, osCli osversioned.Interface, parsed map[string]bool) ([]crv1alpha1.ObjectReference, error) {
 	var objects []crv1alpha1.ObjectReference
 	appendObj := func(kind, namespace, name string) {
 		r := fmt.Sprintf("%s=%s/%s", kind, namespace, name)
@@ -456,6 +463,19 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 		}
 		for _, d := range dpts.Items {
 			appendObj(param.DeploymentKind, d.Namespace, d.Name)
+		}
+		if kind != "all" {
+			break
+		}
+		fallthrough
+	case param.DeploymentConfigKind:
+		// use open shift SDK to get the deployment config resource
+		dcs, err := osCli.AppsV1().DeploymentConfigs(sns).List(metav1.ListOptions{LabelSelector: selector})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get deploymentconfig using select '%s' in namespaces '%s'", selector, sns)
+		}
+		for _, d := range dcs.Items {
+			appendObj(param.DeploymentConfigKind, d.Namespace, d.Name)
 		}
 		if kind != "all" {
 			break
@@ -567,7 +587,7 @@ func parseName(k string, r string) (namespace, name string, err error) {
 	return m[1], m[2], nil
 }
 
-func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface) error {
+func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface) error {
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
@@ -605,6 +625,9 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 				_, err = cli.AppsV1().Deployments(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
 			case param.StatefulSetKind:
 				_, err = cli.AppsV1().StatefulSets(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+			case param.DeploymentConfigKind:
+				// use open shift client to get the deployment config resource
+				_, err = osCli.AppsV1().DeploymentConfigs(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
 			case param.PVCKind:
 				_, err = cli.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
 			case param.NamespaceKind:

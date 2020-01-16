@@ -25,6 +25,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/version"
+
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const (
@@ -72,18 +74,24 @@ func resolveNamespace(cmd *cobra.Command) (string, error) {
 	return kube.ConfigNamespace()
 }
 
-func initializeClients() (kubernetes.Interface, versioned.Interface, error) {
+func initializeClients() (kubernetes.Interface, versioned.Interface, osversioned.Interface, error) {
 	config, err := kube.LoadConfig()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	cli, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "could not get the kubernetes client")
+		return nil, nil, nil, errors.Wrap(err, "could not get the kubernetes client")
 	}
+
+	osCli, err := osversioned.NewForConfig(config)
+	if err != nil {
+		return nil, nil, nil, errors.Wrapf(err, "could not get openshift client")
+	}
+
 	crCli, err := versioned.NewForConfig(config)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "could not get the CRD client")
+		return nil, nil, nil, errors.Wrap(err, "could not get the CRD client")
 	}
-	return cli, crCli, nil
+	return cli, crCli, osCli, nil
 }
