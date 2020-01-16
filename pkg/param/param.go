@@ -175,7 +175,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 			return nil, err
 		}
 		tp.DeploymentConfig = dcp
-		gvr = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "deploymentconfig"}
+		gvr = schema.GroupVersionResource{Group: "apps.openshift.io", Version: "v1", Resource: "deploymentconfigs"}
 	case DeploymentKind:
 		dp, err := fetchDeploymentParams(ctx, cli, as.Object.Namespace, as.Object.Name)
 		if err != nil {

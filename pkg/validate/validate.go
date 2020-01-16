@@ -63,6 +63,8 @@ func actionSpec(s crv1alpha1.ActionSpec) error {
 		fallthrough
 	case param.PVCKind:
 		fallthrough
+	case param.DeploymentConfigKind:
+		fallthrough
 	case param.NamespaceKind:
 		// Known types
 	default:
