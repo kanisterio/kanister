@@ -124,7 +124,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 	backupID := fmt.Sprintf("backup-%s.tar.gz", rand.String(10))
 
 	// Extract dump from DB
-	output, err := execDumpCommand(ctx, dbEngine, BackupAction, namespace, dbEndpoint, username, password, backupPrefix, backupID, profile)
+	output, err := execDumpCommand(ctx, dbEngine, BackupAction, namespace, dbEndpoint, username, password, databases, backupPrefix, backupID, profile)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to extract and push db dump to location")
 	}
@@ -189,9 +189,9 @@ func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
 	return []string{ExportRDSSnapshotToLocNamespaceArg, ExportRDSSnapshotToLocInstanceIDArg, ExportRDSSnapshotToLocSnapshotIDArg, ExportRDSSnapshotToLocDBEngineArg}
 }
 
-func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) (map[string]interface{}, error) {
+func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password string, databases []string, backupPrefix, backupID string, profile *param.Profile) (map[string]interface{}, error) {
 	// Prepare and execute command with kubetask
-	command, image, err := prepareCommand(ctx, dbEngine, action, dbEndpoint, username, password, backupPrefix, backupID, profile)
+	command, image, err := prepareCommand(ctx, dbEngine, action, dbEndpoint, username, password, databases, backupPrefix, backupID, profile)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction
 	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName))
 }
 
-func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) ([]string, string, error) {
+func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, dbEndpoint, username, password string, dbList []string, backupPrefix, backupID string, profile *param.Profile) ([]string, string, error) {
 	// Convert profile object into json
 	profileJson, err := json.Marshal(profile)
 	if err != nil {
