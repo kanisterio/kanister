@@ -22,7 +22,7 @@ TIMEOUT="5m"
 
 echo "Running golangci-lint..."
 
-golangci-lint run --timeout ${TIMEOUT} --skip-dirs ${SKIP_DIR_REGEX} -E maligned,whitespace,gocognit
+golangci-lint run --timeout ${TIMEOUT} --skip-dirs ${SKIP_DIR_REGEX} -E maligned,whitespace,gocognit,unparam -e '`ctx` is unused'
 
 echo "PASS"
 echo

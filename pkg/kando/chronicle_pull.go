@@ -51,6 +51,7 @@ func unmarshalProfile(prof string) (*param.Profile, error) {
 	return p, errors.Wrap(err, "failed to unmarshal profile")
 }
 
+// nolint:unparam
 func runChroniclePull(cmd *cobra.Command, p locationParams, arg string) error {
 	target, err := targetWriter(arg)
 	if err != nil {

@@ -297,6 +297,7 @@ func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encry
 	return nil
 }
 
+// nolint:unparam
 func getLatestSnapshots(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
 	// Use the latest snapshots command to check if the repository exists
 	cmd, err := LatestSnapshotsCommand(profile, artifactPrefix, encryptionKey)
