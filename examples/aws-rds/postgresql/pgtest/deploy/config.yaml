@@ -5,8 +5,9 @@ metadata:
     kasten.io/config: dataservice
   name: dbconfig
 data:
-  postgres.instanceid: test-postgresql-instance
-  postgres.host: test-postgresql-instance.example.ap-south-1.rds.amazonaws.com
-  postgres.databases: postgres
-  postgres.user: master
+  postgres.instanceid: test-rds-postgresql
+  postgres.host: test-rds-postgresql.example.ap-south-1.rds.amazonaws.com
+  postgres.databases: |
+    - postgres
+    - template1
   postgres.secret: dbcreds # name of K8s secret in the same namespace
