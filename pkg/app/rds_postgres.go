@@ -24,6 +24,7 @@ import (
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,7 +48,7 @@ type RDSPostgresDB struct {
 	namespace         string
 	id                string
 	host              string
-	dbname            string
+	databases         []string
 	username          string
 	password          string
 	accessID          string
@@ -64,7 +65,7 @@ func NewRDSPostgresDB(name string) App {
 		name:              name,
 		id:                fmt.Sprintf("test-%s", name),
 		securityGroupName: fmt.Sprintf("%s-sg", name),
-		dbname:            "postgres",
+		databases:         []string{"postgres", "template1"},
 		username:          "master",
 		password:          "secret99",
 	}
@@ -173,7 +174,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		Data: map[string]string{
 			"postgres.instanceid": pdb.id,
 			"postgres.host":       pdb.host,
-			"postgres.database":   pdb.dbname,
+			"postgres.databases":  makeYamlList(pdb.databases),
 			"postgres.user":       pdb.username,
 			"postgres.secret":     "dbsecret",
 		},
@@ -233,7 +234,16 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 		return err
 	}
 
-	var connectionString string = fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], dbsecret.Data["password"], dbconfig.Data["postgres.database"])
+	// Parse databases from config data
+	var databases []string
+	if err := yaml.Unmarshal([]byte(dbconfig.Data["postgres.databases"]), &databases); err != nil {
+		return err
+	}
+	if databases == nil {
+		return errors.New("Databases are missing from configmap")
+	}
+
+	var connectionString string = fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], dbsecret.Data["password"], databases[0])
 
 	// Initialize connection object.
 	db, err := sql.Open("postgres", connectionString)
@@ -374,4 +384,12 @@ func (pdb RDSPostgresDB) getAWSConfig(ctx context.Context) (*awssdk.Config, stri
 	config[aws.SecretAccessKey] = pdb.secretKey
 	config[aws.SessionToken] = pdb.sessionToken
 	return aws.GetConfig(ctx, config)
+}
+
+func makeYamlList(dbs []string) string {
+	dbsYaml := ""
+	for _, db := range dbs {
+		dbsYaml += fmt.Sprintf("- %s\n", db)
+	}
+	return dbsYaml
 }

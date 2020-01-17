@@ -17,6 +17,7 @@ package function
 import (
 	"encoding/json"
 
+	"github.com/ghodss/yaml"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
@@ -105,6 +106,43 @@ func GetSecurityGroups(args map[string]interface{}, argName string) ([]string, e
 		// Convert json to slice
 		err := json.Unmarshal([]byte(sgIDBytes), &sgIDs)
 		return sgIDs, err
+	}
+	return nil, errors.Errorf("Invalid %s arg format", argName)
+}
+
+// GetDatabases finds databases values from the argument and returns list of databases in slice format.
+// The database value can be in either of two formats
+// securityGroupID: "- db1\n- db2\n- db3"	(string) if you are referencing from configmap
+// OR
+// securityGroupID:
+//    - "db1"
+//    - "db2"		(list of string) Allows users to pass list in blueprint
+func GetDatabases(args map[string]interface{}, argName string) ([]string, error) {
+	if !ArgExists(args, argName) {
+		return nil, nil
+	}
+
+	switch args[argName].(type) {
+	case []interface{}, []string:
+		var dbList []string
+		if err := OptArg(args, argName, &dbList, nil); err != nil {
+			return nil, err
+		}
+		return dbList, nil
+	case string:
+		var dbListBytes []byte
+		var dbList []string
+
+		if err := OptArg(args, argName, &dbListBytes, nil); err != nil {
+			return nil, err
+		}
+		if dbListBytes == nil {
+			return nil, nil
+		}
+
+		// Convert yaml list to slice of string
+		err := yaml.Unmarshal(dbListBytes, &dbList)
+		return dbList, err
 	}
 	return nil, errors.Errorf("Invalid %s arg format", argName)
 }

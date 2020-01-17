@@ -50,6 +50,7 @@ const (
 	ExportRDSSnapshotToLocDBPasswordArg      = "password"
 	ExportRDSSnapshotToLocBackupArtPrefixArg = "backupArtifactPrefix"
 	ExportRDSSnapshotToLocDBEngineArg        = "dbEngine"
+	ExportRDSSnapshotToLocDatabasesArg       = "databases"
 	ExportRDSSnapshotToLocSecGrpIDArg        = "securityGroupID"
 	ExportRDSSnapshotToLocBackupID           = "backupID"
 
@@ -73,7 +74,7 @@ func (*exportRDSSnapshotToLocationFunc) Name() string {
 	return ExportRDSSnapshotToLocFuncName
 }
 
-func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshotID, username, password, backupPrefix string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
+func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshotID, username, password string, databases []string, backupPrefix string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
 	// Validate profilextractDumpFromDBe
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Profile Validation failed")
@@ -123,7 +124,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 	backupID := fmt.Sprintf("backup-%s.tar.gz", rand.String(10))
 
 	// Extract dump from DB
-	output, err := execDumpCommand(ctx, dbEngine, BackupAction, namespace, dbEndpoint, username, password, backupPrefix, backupID, profile)
+	output, err := execDumpCommand(ctx, dbEngine, BackupAction, namespace, dbEndpoint, username, password, databases, backupPrefix, backupID, profile)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to extract and push db dump to location")
 	}
@@ -145,6 +146,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, instanceID, snapshotID, username, password, backupArtifact string
 	var dbEngine RDSDBEngine
+	var databases []string
 
 	if err := Arg(args, ExportRDSSnapshotToLocNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -168,22 +170,28 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 		return nil, err
 	}
 
+	// Find databases
+	databases, err := GetDatabases(args, ExportRDSSnapshotToLocDatabasesArg)
+	if err != nil {
+		return nil, err
+	}
+
 	// Find security groups
 	sgIDs, err := GetSecurityGroups(args, ExportRDSSnapshotToLocSecGrpIDArg)
 	if err != nil {
 		return nil, err
 	}
 
-	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, backupArtifact, dbEngine, sgIDs, tp.Profile)
+	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, databases, backupArtifact, dbEngine, sgIDs, tp.Profile)
 }
 
 func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
 	return []string{ExportRDSSnapshotToLocNamespaceArg, ExportRDSSnapshotToLocInstanceIDArg, ExportRDSSnapshotToLocSnapshotIDArg, ExportRDSSnapshotToLocDBEngineArg}
 }
 
-func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) (map[string]interface{}, error) {
+func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password string, databases []string, backupPrefix, backupID string, profile *param.Profile) (map[string]interface{}, error) {
 	// Prepare and execute command with kubetask
-	command, image, err := prepareCommand(ctx, dbEngine, action, dbEndpoint, username, password, backupPrefix, backupID, profile)
+	command, image, err := prepareCommand(ctx, dbEngine, action, dbEndpoint, username, password, databases, backupPrefix, backupID, profile)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +203,7 @@ func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction
 	}
 
 	// Create cred secret
-	secretName := "postgres-secret"
+	secretName := fmt.Sprintf("%s-%s", "postgres-secret", rand.String(10))
 	err = createPostgresSecret(cli, secretName, namespace, username, password)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to create postgres secret")
@@ -210,7 +218,7 @@ func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction
 	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName))
 }
 
-func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) ([]string, string, error) {
+func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, dbEndpoint, username, password string, dbList []string, backupPrefix, backupID string, profile *param.Profile) ([]string, string, error) {
 	// Convert profile object into json
 	profileJson, err := json.Marshal(profile)
 	if err != nil {
@@ -218,21 +226,25 @@ func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction,
 	}
 
 	// Find list of dbs
-	pg, err := postgres.NewClient(dbEndpoint, username, password, "postgres", "disable")
-	if err != nil {
-		return nil, "", errors.Wrap(err, "Error in creating postgres client")
-	}
+	// For backup operation, if database arg is not set, we take backup of all databases
+	if dbList == nil {
+		// If no database is passed, we find list of all the existing databases
+		pg, err := postgres.NewClient(dbEndpoint, username, password, "postgres", "disable")
+		if err != nil {
+			return nil, "", errors.Wrap(err, "Error in creating postgres client")
+		}
 
-	// Test DB connection
-	if err := pg.PingDB(ctx); err != nil {
-		return nil, "", errors.Wrap(err, "Failed to ping postgres database")
-	}
+		// Test DB connection
+		if err := pg.PingDB(ctx); err != nil {
+			return nil, "", errors.Wrap(err, "Failed to ping postgres database")
+		}
 
-	dbList, err := pg.ListDatabases(ctx)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "Error while listing databases")
+		dbList, err = pg.ListDatabases(ctx)
+		if err != nil {
+			return nil, "", errors.Wrap(err, "Error while listing databases")
+		}
+		dbList = filterRestrictedDB(dbList)
 	}
-	dbList = filterRestrictedDB(dbList)
 
 	switch dbEngine {
 	case PostgrSQLEngine:
