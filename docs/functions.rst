@@ -963,7 +963,7 @@ Outputs:
 
    `snapshotID`,`string`, ID of the RDS snapshot that has been created
    `instanceID`, `string`, ID of the RDS instance
-   `securityGroupID`, `string`, ``securityGroupID``
+   `securityGroupID`, `[]string`, AWS Security Group IDs associated with the RDS instance
 
 Example:
 
@@ -992,8 +992,8 @@ Example:
 ExportRDSSnapshotToLocation
 ---------------------------
 
-This function spins up a temporary RDS instance, creates and uploads the data
-dump to the configured object storage.
+This function spins up a temporary RDS instance from the given snapshot, extracts
+database dump and uploads that dump to the configured object storage.
 
 Arguments:
 
@@ -1002,14 +1002,20 @@ Arguments:
    :align: left
    :widths: 5,5,5,15
 
+   `instanceID`, Yes, `string`, RDS db instance ID
+   `namespace`, Yes, `string`, namespace in which to execute the Kanister tools pod for this function
+   `snapshotID`, Yes, `string`, ID of the RDS snapshot
+   `dbEngine`, Yes, `string`, one of the RDS db engines. Supported engine(s): ``PostgreSQL``
    `username`, No, `string`, username of the RDS database instance
    `password`, No, `string`, password of the RDS database instance
    `backupArtifactPrefix`, No, `string`, path to store the backup on the object store
-   `databases`, No, `[]string`, list of databases to take backup (if ``nil`` backup of all the database will be taken)
-   `snapshotID`, Yes, `string`, ID of the RDS snapshot
-   `namespace`, Yes, `string`, namespace in which to execute
-   `dbEngine`, Yes, `string`, one of the RDS db engines
-   `instanceID`, Yes, `string`, RDS db instance ID
+   `databases`, No, `[]string`, list of databases to take backup of
+   `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to temporary RDS instance. ()
+
+.. note::
+   - If ``databases`` argument is not set, backup of all the databases will be taken.
+   - If ``securityGroupID`` argument is not set, ``ExportRDSSnapshotToLocation`` will find out Security Group IDs associated with instance with ``instanceID`` and will pass the same.
+   - If ``backupArtifactPrefix`` argument is not set, ``instanceID`` will be used as `backupArtifactPrefix`.
 
 Outputs:
 
@@ -1021,6 +1027,7 @@ Outputs:
    `snapshotID`,`string`, ID of the RDS snapshot that has been created
    `instanceID`, `string`, ID of the RDS instance
    `backupID`, `string`, unique backup id generated during storing data into object storage
+   `securityGroupID`, `[]string`, AWS Security Group IDs associated with the RDS instance
 
 Example:
 
@@ -1033,10 +1040,19 @@ Example:
       outputArtifacts:
         backupInfo:
           keyValue:
+            snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+            instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+            securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
             backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
       configMapNames:
       - dbconfig
       phases:
+
+      - func: CreateRDSSnapshot
+        name: createSnapshot
+        args:
+          instanceID: '{{ index .ConfigMaps.dbconfig.Data "postgres.instanceid" }}'
+
       - func: ExportRDSSnapshotToLocation
         name: exportSnapshot
         objects:
@@ -1051,6 +1067,7 @@ Example:
           username: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "username" | toString }}'
           password: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password" | toString }}'
           dbEngine: "PostgreSQL"
+          databases: '{{ index .ConfigMaps.dbconfig.Data "postgres.databases" }}'
           snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
           backupArtifactPrefix: test-postgresql-instance/postgres
 
@@ -1058,8 +1075,12 @@ Example:
 RestoreRDSSnapshot
 ------------------
 
-This function restores the an RDS DB either from a RDS snapshot instance or from the
-data dump (if `snapshotID` is nil) that is stored in an object storage.
+This function restores the RDS DB instance either from an RDS snapshot or from the
+data dump (if `snapshotID` is not set) that is stored in an object storage.
+
+.. note::
+   - If `snapshotID` is set, the function will restore RDS instance from the RDS snapshot. Otherwise `backupID` needs to be set to restore the RDS instance from data dump.
+   - While restoring the data from RDS snapshot if RDS instance (where we have to restore the data) doesn't exist, the RDS instance will be created. But if the data is being restored from the Object Storage (data dump) and the RDS instance doesn't exist new RDS instance will not be created and will result in an error.
 
 Arguments:
 
@@ -1068,16 +1089,19 @@ Arguments:
    :align: left
    :widths: 5,5,5,15
 
+   `instanceID`, Yes, `string`, RDS db instance ID
+   `snapshotID`, No, `string`, ID of the RDS snapshot
    `username`, No, `string`, username of the RDS database instance
    `password`, No, `string`, password of the RDS database instance
    `backupArtifactPrefix`, No, `string`, path to store the backup on the object store
    `backupID`, No, `string`, unique backup id generated during storing data into object storage
-   `databases`, No, `[]string`, list of databases to take backup (if ``nil`` backup of all the databases will be taken)
-   `snapshotID`, No, `string`, ID of the RDS snapshot
-   `namespace`, Yes, `string`, namespace in which to execute
-   `dbEngine`, Yes, `string`, one of the RDS db engines
-   `instanceID`, Yes, `string`, RDS db instance ID
-   `securityGroupID`, No, `string`, ``securityGroupID``
+   `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to temporary RDS instance
+   `namespace`, No, `string`, namespace in which to execute. Required if ``snapshotID`` is nil
+   `dbEngine`, No, `string`, one of the RDS db engines. Supported engines: ``PostgreSQL``. Required if ``snapshotID`` is nil
+
+.. note::
+   - If ``snapshotID`` is not set, restore will be done from data dump. In that case ``backupID`` `arg` is required.
+   - If ``securityGroupID`` argument is not set, ``RestoreRDSSnapshot`` will find out Security Group IDs associated with instance with ``instanceID`` and will pass the same.
 
 Outputs:
 
@@ -1093,8 +1117,7 @@ Example:
 .. code-block:: yaml
   :linenos:
 
-  actions:
-    restore:
+  restore:
     inputArtifactNames:
     - backupInfo
     kind: Namespace
