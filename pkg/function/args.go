@@ -110,9 +110,13 @@ func GetSecurityGroups(args map[string]interface{}, argName string) ([]string, e
 	return nil, errors.Errorf("Invalid %s arg format", argName)
 }
 
-// GetDatabases finds databases values from the argument and retunrs list of databases in slice format.
-// It splits comma separated databases list (e.g "db1,db2,db2") string into a []string.
-// Return error nil if arg does not exist
+// GetDatabases finds databases values from the argument and returns list of databases in slice format.
+// The database value can be in either of two formats
+// securityGroupID: "- db1\n- db2\n- db3"	(string) if you are referencing from configmap
+// OR
+// securityGroupID:
+//    - "db1"
+//    - "db2"		(list of string) Allows users to pass list in blueprint
 func GetDatabases(args map[string]interface{}, argName string) ([]string, error) {
 	if !ArgExists(args, argName) {
 		return nil, nil
