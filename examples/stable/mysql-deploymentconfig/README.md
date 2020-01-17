@@ -174,7 +174,7 @@ using the CR, we will have create a `ClusterRoleBinding` to enable that access. 
 resource using below command
 
 ```bash
-$ oc create -f kanister-clusteradmin-binding.yaml 
+~ oc create -f kanister-clusteradmin-binding.yaml 
 ```
 
 
@@ -294,13 +294,13 @@ As you can see the databases as well as the data that was inside those database 
 If you run into any issues with the above commands, you can check the logs of the controller using:
 
 ```bash
-$ oc --namespace kanister logs -l app=kanister-operator
+~ oc --namespace kanister logs -l app=kanister-operator
 ```
 
 you can also check events of the actionset
 
 ```bash
-$ oc describe actionset <actionset-name> -n kanister
+~ oc describe actionset <actionset-name> -n kanister
 ```
 
 
@@ -311,14 +311,14 @@ $ oc describe actionset <actionset-name> -n kanister
 To uninstall/delete the MySQL application:
 
 ```bash
-$ oc delete <resource-name>
+~ oc delete <resource-name>
 ```
 
 ### Delete Kanister resources
 Remove Blueprint and Profile CR
 
 ```bash
-$ oc delete blueprints.cr.kanister.io <blueprint-name> -n kanister
+~ oc delete blueprints.cr.kanister.io <blueprint-name> -n kanister
 
-$ oc delete profiles.cr.kanister.io <profile-name> -n mysql-test
+~ oc delete profiles.cr.kanister.io <profile-name> -n mysql-test
 ```
