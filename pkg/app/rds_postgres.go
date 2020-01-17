@@ -54,7 +54,7 @@ type RDSPostgresDB struct {
 	secretKey         string
 	region            string
 	sessionToken      string
-	securityGroupID   *string
+	securityGroupID   string
 	securityGroupName string
 	sqlDB             *sql.DB
 }
@@ -125,7 +125,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	if err != nil {
 		return err
 	}
-	pdb.securityGroupID = sg.GroupId
+	pdb.securityGroupID = *sg.GroupId
 
 	// Add ingress rule
 	log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
@@ -142,7 +142,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rdsCli.CreateDBInstance(ctx, 20, "db.t2.micro", pdb.id, "postgres", pdb.username, pdb.password, []*string{pdb.securityGroupID})
+	_, err = rdsCli.CreateDBInstance(ctx, 20, "db.t2.micro", pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID})
 	if err != nil {
 		return err
 	}

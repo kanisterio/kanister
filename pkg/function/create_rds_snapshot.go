@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -43,6 +44,8 @@ const (
 	CreateRDSSnapshotInstanceIDArg = "instanceID"
 	// CreateRDSSnapshotSnapshotID to set snapshotID in output artifact
 	CreateRDSSnapshotSnapshotID = "snapshotID"
+	// CreateRDSSnapshotSecurityGroupID to set securityGroupIDs in output artifact
+	CreateRDSSnapshotSecurityGroupID = "securityGroupID"
 )
 
 type createRDSSnapshotFunc struct{}
@@ -83,9 +86,22 @@ func createRDSSnapshot(ctx context.Context, instanceID string, profile *param.Pr
 		return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
 	}
 
+	// Find security group ids
+	sgIDs, err := findSecurityGroups(ctx, rdsCli, instanceID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+	}
+
+	// Convert to json format
+	sgIDJson, err := json.Marshal(sgIDs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", instanceID)
+	}
+
 	output := map[string]interface{}{
-		CreateRDSSnapshotSnapshotID:    snapshotID,
-		CreateRDSSnapshotInstanceIDArg: instanceID,
+		CreateRDSSnapshotSnapshotID:      snapshotID,
+		CreateRDSSnapshotInstanceIDArg:   instanceID,
+		CreateRDSSnapshotSecurityGroupID: string(sgIDJson),
 	}
 	return output, nil
 }

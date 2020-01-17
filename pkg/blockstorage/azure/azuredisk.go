@@ -152,6 +152,7 @@ const (
 var diskIDRe = regexp.MustCompile(diskIDRegEx)
 var snapIDRe = regexp.MustCompile(snapshotIDRegEx)
 
+// nolint:unparam
 func parseDiskID(id string) (subscription string, resourceGroup string, name string, err error) {
 	comps := diskIDRe.FindStringSubmatch(id)
 	if len(comps) != 4 {
@@ -160,6 +161,7 @@ func parseDiskID(id string) (subscription string, resourceGroup string, name str
 	return comps[1], comps[2], comps[3], nil
 }
 
+// nolint:unparam
 func parseSnapshotID(id string) (subscription string, resourceGroup string, name string, err error) {
 	comps := snapIDRe.FindStringSubmatch(id)
 	if len(comps) != 4 {

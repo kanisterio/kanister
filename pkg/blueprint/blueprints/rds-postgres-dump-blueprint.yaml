@@ -10,6 +10,7 @@ actions:
         keyValue:
           snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
           instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+          securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
           backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
     configMapNames:
     - dbconfig
@@ -18,7 +19,6 @@ actions:
       name: createSnapshot
       args:
         instanceID: '{{ index .ConfigMaps.dbconfig.Data "postgres.instanceid" }}'
-        snapshotID: test-postgresql-dump-{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
     - func: ExportRDSSnapshotToLocation
       name: exportSnapshot
       objects:
@@ -29,6 +29,7 @@ actions:
       args:
         namespace: "{{ .Namespace.Name }}"
         instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+        securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
         username: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "username" | toString }}'
         password: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password" | toString }}'
         dbEngine: "PostgreSQL"
@@ -52,6 +53,7 @@ actions:
         backupArtifactPrefix: test-postgresql-instance/postgres
         instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
         backupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.backupID }}"
+        securityGroupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
         username: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "username" | toString }}'
         password: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "password" | toString }}'
         dbEngine: "PostgreSQL"

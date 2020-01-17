@@ -135,6 +135,7 @@ func (s *ControllerSuite) TestWatch(c *C) {
 	time.Sleep(5 * time.Second)
 }
 
+// nolint:unparam
 func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

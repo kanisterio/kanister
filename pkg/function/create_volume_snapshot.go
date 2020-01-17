@@ -120,7 +120,7 @@ func createVolumeSnapshot(ctx context.Context, tp param.TemplateParams, cli kube
 		wg.Add(1)
 		go func(volInfo volumeInfo) {
 			defer wg.Done()
-			volSnapInfo, err := snapshotVolume(ctx, volInfo, namespace, skipWait)
+			volSnapInfo, err := snapshotVolume(ctx, volInfo, skipWait)
 			if err != nil {
 				errstrings = append(errstrings, err.Error())
 			} else {
@@ -143,7 +143,7 @@ func createVolumeSnapshot(ctx context.Context, tp param.TemplateParams, cli kube
 	return map[string]interface{}{"volumeSnapshotInfo": string(manifestData)}, nil
 }
 
-func snapshotVolume(ctx context.Context, volume volumeInfo, namespace string, skipWait bool) (*VolumeSnapshotInfo, error) {
+func snapshotVolume(ctx context.Context, volume volumeInfo, skipWait bool) (*VolumeSnapshotInfo, error) {
 	provider := volume.provider
 	vol, err := provider.VolumeGet(ctx, volume.volumeID, volume.volZone)
 	if err != nil {

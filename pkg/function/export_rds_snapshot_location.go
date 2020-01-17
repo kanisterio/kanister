@@ -50,6 +50,7 @@ const (
 	ExportRDSSnapshotToLocDBPasswordArg      = "password"
 	ExportRDSSnapshotToLocBackupArtPrefixArg = "backupArtifactPrefix"
 	ExportRDSSnapshotToLocDBEngineArg        = "dbEngine"
+	ExportRDSSnapshotToLocSecGrpIDArg        = "securityGroupID"
 	ExportRDSSnapshotToLocBackupID           = "backupID"
 
 	PostgrSQLEngine RDSDBEngine = "PostgreSQL"
@@ -72,7 +73,7 @@ func (*exportRDSSnapshotToLocationFunc) Name() string {
 	return ExportRDSSnapshotToLocFuncName
 }
 
-func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshotID, username, password, backupPrefix string, dbEngine RDSDBEngine, profile *param.Profile) (map[string]interface{}, error) {
+func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshotID, username, password, backupPrefix string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
 	// Validate profilextractDumpFromDBe
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Profile Validation failed")
@@ -94,9 +95,12 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 
 	log.Print("Restore RDS instance from snapshot.", field.M{"SnapshotID": snapshotID, "InstanceID": tmpInstanceID})
 
-	sgIDs, err := findSecurityGroups(ctx, rdsCli, instanceID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+	// If securityGroupID arg is nil, we will try to find the sgIDs by describing the existing instance
+	if sgIDs == nil {
+		sgIDs, err = findSecurityGroups(ctx, rdsCli, instanceID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+		}
 	}
 
 	// Create tmp instance from snapshot
@@ -119,14 +123,21 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 	backupID := fmt.Sprintf("backup-%s.tar.gz", rand.String(10))
 
 	// Extract dump from DB
-	output, err := execDumpCommand(ctx, dbEngine, BackupAction, namespace, tmpInstanceID, dbEndpoint, username, password, backupPrefix, backupID, profile)
+	output, err := execDumpCommand(ctx, dbEngine, BackupAction, namespace, dbEndpoint, username, password, backupPrefix, backupID, profile)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to extract and push db dump to location")
+	}
+
+	// Convert to json format
+	sgIDJson, err := json.Marshal(sgIDs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", tmpInstanceID)
 	}
 
 	// Add output artifacts
 	output[ExportRDSSnapshotToLocSnapshotIDArg] = snapshotID
 	output[ExportRDSSnapshotToLocInstanceIDArg] = instanceID
+	output[ExportRDSSnapshotToLocSecGrpIDArg] = string(sgIDJson)
 
 	return output, nil
 }
@@ -157,16 +168,22 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 		return nil, err
 	}
 
-	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, backupArtifact, dbEngine, tp.Profile)
+	// Find security groups
+	sgIDs, err := GetSecurityGroups(args, ExportRDSSnapshotToLocSecGrpIDArg)
+	if err != nil {
+		return nil, err
+	}
+
+	return exportRDSSnapshotToLoc(ctx, namespace, instanceID, snapshotID, username, password, backupArtifact, dbEngine, sgIDs, tp.Profile)
 }
 
 func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
 	return []string{ExportRDSSnapshotToLocNamespaceArg, ExportRDSSnapshotToLocInstanceIDArg, ExportRDSSnapshotToLocSnapshotIDArg, ExportRDSSnapshotToLocDBEngineArg}
 }
 
-func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, instanceID, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) (map[string]interface{}, error) {
+func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) (map[string]interface{}, error) {
 	// Prepare and execute command with kubetask
-	command, image, err := prepareCommand(ctx, dbEngine, action, instanceID, dbEndpoint, username, password, backupPrefix, backupID, profile)
+	command, image, err := prepareCommand(ctx, dbEngine, action, dbEndpoint, username, password, backupPrefix, backupID, profile)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +210,7 @@ func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction
 	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName))
 }
 
-func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, instanceID, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) ([]string, string, error) {
+func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, dbEndpoint, username, password, backupPrefix, backupID string, profile *param.Profile) ([]string, string, error) {
 	// Convert profile object into json
 	profileJson, err := json.Marshal(profile)
 	if err != nil {
@@ -231,6 +248,7 @@ func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction,
 	return nil, "", errors.New("Invalid RDSDBEngine or RDSAction")
 }
 
+// nolint:unparam
 func postgresBackupCommand(dbEndpoint, username, password string, dbList []string, backupPrefix, backupID string, profile []byte) ([]string, error) {
 	if len(dbList) == 0 {
 		return nil, errors.New("No database found to backup")
@@ -251,7 +269,7 @@ func postgresBackupCommand(dbEndpoint, username, password string, dbList []strin
 			mkdir /backup
 			dblist=( %s )
 			for db in "${dblist[@]}";
-			  do echo "backing up $db db" && pg_dump $db -C > /backup/$db.sql;
+			  do echo "backing up $db db" && pg_dump $db -C --inserts > /backup/$db.sql;
 			done
 			tar -zc backup | kando location push --profile '%s' --path "${BACKUP_PREFIX}/${BACKUP_ID}" -
 			kando output %s ${BACKUP_ID}`,
