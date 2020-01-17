@@ -92,7 +92,7 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	}
 
 	// Find security groups
-	sgIDs, err := GetSecurityGroups(args, RestoreRDSSnapshotSecGrpID)
+	sgIDs, err := GetYamlList(args, RestoreRDSSnapshotSecGrpID)
 	if err != nil {
 		return nil, err
 	}

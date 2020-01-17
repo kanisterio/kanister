@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -129,8 +130,8 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 		return nil, errors.Wrap(err, "Unable to extract and push db dump to location")
 	}
 
-	// Convert to json format
-	sgIDJson, err := json.Marshal(sgIDs)
+	// Convert to yaml format
+	sgIDYaml, err := yaml.Marshal(sgIDs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", tmpInstanceID)
 	}
@@ -138,7 +139,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 	// Add output artifacts
 	output[ExportRDSSnapshotToLocSnapshotIDArg] = snapshotID
 	output[ExportRDSSnapshotToLocInstanceIDArg] = instanceID
-	output[ExportRDSSnapshotToLocSecGrpIDArg] = string(sgIDJson)
+	output[ExportRDSSnapshotToLocSecGrpIDArg] = string(sgIDYaml)
 
 	return output, nil
 }
@@ -146,8 +147,6 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, instanceID, snapshotID, username, password, backupArtifact string
 	var dbEngine RDSDBEngine
-	var databases []string
-	var sgID []string
 
 	if err := Arg(args, ExportRDSSnapshotToLocNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -172,13 +171,13 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 	}
 
 	// Find databases
-	databases, err := GetDatabases(args, ExportRDSSnapshotToLocDatabasesArg)
+	databases, err := GetYamlList(args, ExportRDSSnapshotToLocDatabasesArg)
 	if err != nil {
 		return nil, err
 	}
 
 	// Find security groups
-	sgIDs, err := GetSecurityGroups(args, ExportRDSSnapshotToLocSecGrpIDArg)
+	sgIDs, err := GetYamlList(args, ExportRDSSnapshotToLocSecGrpIDArg)
 	if err != nil {
 		return nil, err
 	}

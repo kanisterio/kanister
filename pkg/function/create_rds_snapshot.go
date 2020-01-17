@@ -16,9 +16,9 @@ package function
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -92,8 +92,8 @@ func createRDSSnapshot(ctx context.Context, instanceID string, profile *param.Pr
 		return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
 	}
 
-	// Convert to json format
-	sgIDJson, err := json.Marshal(sgIDs)
+	// Convert to yaml format
+	sgIDYaml, err := yaml.Marshal(sgIDs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", instanceID)
 	}
@@ -101,7 +101,7 @@ func createRDSSnapshot(ctx context.Context, instanceID string, profile *param.Pr
 	output := map[string]interface{}{
 		CreateRDSSnapshotSnapshotID:      snapshotID,
 		CreateRDSSnapshotInstanceIDArg:   instanceID,
-		CreateRDSSnapshotSecurityGroupID: string(sgIDJson),
+		CreateRDSSnapshotSecurityGroupID: string(sgIDYaml),
 	}
 	return output, nil
 }

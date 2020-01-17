@@ -23,114 +23,58 @@ var _ = Suite(&ArgsTestSuite{})
 type ArgsTestSuite struct {
 }
 
-func (s *ArgsTestSuite) TestGetSecurityGroups(c *C) {
+func (s *ArgsTestSuite) TestGetYamlList(c *C) {
 	testCases := []struct {
 		name       string
 		args       map[string]interface{}
 		errChecker Checker
-		sgIDs      []string
+		valList    []string
 	}{
 		{
-			name: "Pass securityGroupID as string",
+			name: "Pass key as string in case of configmap reference or artifact reference",
 			args: map[string]interface{}{
-				"securityGroupID": "[\"sgID1\", \"sgID2\"]",
+				"key": "- val1\n- val2\n- val3\n",
 			},
 			errChecker: IsNil,
-			sgIDs:      []string{"sgID1", "sgID2"},
+			valList:    []string{"val1", "val2", "val3"},
 		},
 		{
-			name: "Pass securityGroupID as string slice",
+			name: "Pass key as string slice",
 			args: map[string]interface{}{
-				"securityGroupID": []string{"sgIDA", "sgIDB", "SGIDC"},
+				"key": []string{"test1", "test2", "test3"},
 			},
 			errChecker: IsNil,
-			sgIDs:      []string{"sgIDA", "sgIDB", "SGIDC"},
+			valList:    []string{"test1", "test2", "test3"},
 		},
 		{
-			name: "Pass securityGroupID interface slice",
+			name: "Pass key as interface slice",
 			args: map[string]interface{}{
-				"securityGroupID": []interface{}{"sgIDA", "sgIDB", "SGIDC"},
+				"key": []interface{}{"test1", "test2", "test3"},
 			},
 			errChecker: IsNil,
-			sgIDs:      []string{"sgIDA", "sgIDB", "SGIDC"},
+			valList:    []string{"test1", "test2", "test3"},
 		},
 		{
-			name: "Invalid securityGroupID format",
+			name: "Invalid key format",
 			args: map[string]interface{}{
-				"securityGroupID": "not a slice",
+				"key": "not a slice",
 			},
 			errChecker: NotNil,
-			sgIDs:      nil,
+			valList:    nil,
 		},
 		{
-			name: "Nil securityGroupID arg",
+			name: "Nil key arg",
 			args: map[string]interface{}{
 				"invalid": nil,
 			},
 			errChecker: IsNil,
-			sgIDs:      nil,
+			valList:    nil,
 		},
 	}
 
 	for _, tc := range testCases {
-		sgIDs, err := GetSecurityGroups(tc.args, "securityGroupID")
+		valList, err := GetYamlList(tc.args, "key")
 		c.Check(err, tc.errChecker, Commentf("Test: %s Failed!", tc.name))
-		c.Check(sgIDs, DeepEquals, tc.sgIDs, Commentf("Test: %s Failed!", tc.name))
-	}
-}
-
-func (s *ArgsTestSuite) TestGetDatabases(c *C) {
-	testCases := []struct {
-		name       string
-		args       map[string]interface{}
-		errChecker Checker
-		dbList     []string
-	}{
-		{
-			name: "Pass databases as string by configmap reference",
-			args: map[string]interface{}{
-				"databases": "- db1\n- db2\n- db3\n",
-			},
-			errChecker: IsNil,
-			dbList:     []string{"db1", "db2", "db3"},
-		},
-		{
-			name: "Pass databases as string slice",
-			args: map[string]interface{}{
-				"databases": []string{"test1", "test2", "test3"},
-			},
-			errChecker: IsNil,
-			dbList:     []string{"test1", "test2", "test3"},
-		},
-		{
-			name: "Pass databases as interface slice",
-			args: map[string]interface{}{
-				"databases": []interface{}{"test1", "test2", "test3"},
-			},
-			errChecker: IsNil,
-			dbList:     []string{"test1", "test2", "test3"},
-		},
-		{
-			name: "Invalid databases format",
-			args: map[string]interface{}{
-				"databases": "not a slice",
-			},
-			errChecker: NotNil,
-			dbList:     nil,
-		},
-		{
-			name: "Nil databases arg",
-			args: map[string]interface{}{
-				"invalid": nil,
-			},
-			errChecker: IsNil,
-			dbList:     nil,
-		},
-	}
-
-	for _, tc := range testCases {
-		dbList, err := GetDatabases(tc.args, "databases")
-		c.Check(err, tc.errChecker, Commentf("Test: %s Failed!", tc.name))
-		c.Check(dbList, DeepEquals, tc.dbList, Commentf("Test: %s Failed!", tc.name))
+		c.Check(valList, DeepEquals, tc.valList, Commentf("Test: %s Failed!", tc.name))
 	}
 }

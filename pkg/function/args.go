@@ -15,8 +15,6 @@
 package function
 
 import (
-	"encoding/json"
-
 	"github.com/ghodss/yaml"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -72,77 +70,41 @@ func GetPodSpecOverride(tp param.TemplateParams, args map[string]interface{}, ar
 	return podOverride, nil
 }
 
-// GetSecurityGroups finds security group list from input args
-// User can specify securityGroupIDs in the following formats:
-//
-// securityGroupID: '["sgID1", "sgID2"]'	(string) if you are referencing from inputArtifacts
+// GetYamlList parses yaml formatted list arg and converts it into slice of string.
+// Returns nil error, if arg is not present.
+// The value can be in either of two formats:
+// key: "- val1\n- val2\n- val3"	(string) if you are referencing from configmap or
+// 					from a inputArtifacts
 // OR
-// securityGroupID:
-//    - "sgID1"
-//    - "sgID2"		(list of string) Allows users to pass list in blueprint)
-func GetSecurityGroups(args map[string]interface{}, argName string) ([]string, error) {
+// key:
+//    - "val1"
+//    - "val2"		(list of string) Allows users to pass list in blueprint
+func GetYamlList(args map[string]interface{}, argName string) ([]string, error) {
 	if !ArgExists(args, argName) {
 		return nil, nil
 	}
 
 	switch args[argName].(type) {
 	case []interface{}, []string:
-		var sgIDs []string
-		if err := OptArg(args, argName, &sgIDs, nil); err != nil {
+		var valList []string
+		if err := OptArg(args, argName, &valList, nil); err != nil {
 			return nil, err
 		}
-		return sgIDs, nil
+		return valList, nil
 	case string:
-		var sgIDBytes []byte
-		var sgIDs []string
+		var valListBytes []byte
+		var valList []string
 
-		if err := OptArg(args, argName, &sgIDBytes, nil); err != nil {
+		if err := OptArg(args, argName, &valListBytes, nil); err != nil {
 			return nil, err
 		}
-		if sgIDBytes == nil {
-			return nil, nil
-		}
-
-		// Convert json to slice
-		err := json.Unmarshal([]byte(sgIDBytes), &sgIDs)
-		return sgIDs, err
-	}
-	return nil, errors.Errorf("Invalid %s arg format", argName)
-}
-
-// GetDatabases finds databases values from the argument and returns list of databases in slice format.
-// The database value can be in either of two formats
-// securityGroupID: "- db1\n- db2\n- db3"	(string) if you are referencing from configmap
-// OR
-// securityGroupID:
-//    - "db1"
-//    - "db2"		(list of string) Allows users to pass list in blueprint
-func GetDatabases(args map[string]interface{}, argName string) ([]string, error) {
-	if !ArgExists(args, argName) {
-		return nil, nil
-	}
-
-	switch args[argName].(type) {
-	case []interface{}, []string:
-		var dbList []string
-		if err := OptArg(args, argName, &dbList, nil); err != nil {
-			return nil, err
-		}
-		return dbList, nil
-	case string:
-		var dbListBytes []byte
-		var dbList []string
-
-		if err := OptArg(args, argName, &dbListBytes, nil); err != nil {
-			return nil, err
-		}
-		if dbListBytes == nil {
+		if valListBytes == nil {
 			return nil, nil
 		}
 
 		// Convert yaml list to slice of string
-		err := yaml.Unmarshal(dbListBytes, &dbList)
-		return dbList, err
+		err := yaml.Unmarshal(valListBytes, &valList)
+		return valList, err
 	}
 	return nil, errors.Errorf("Invalid %s arg format", argName)
 }
