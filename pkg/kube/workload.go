@@ -22,7 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +31,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/poll"
+	osAppsv1 "github.com/openshift/api/apps/v1"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const (
@@ -308,6 +310,19 @@ func StatefulSetVolumes(cli kubernetes.Interface, sset *appsv1.StatefulSet, pod 
 	for claimTemplateName, podVolName := range claimTemplateNameToPodVolumeName {
 		claimName := fmt.Sprintf(ssetVolumeClaimFmt, claimTemplateName, sset.Name, ordinal)
 		volNameToPvc[podVolName] = claimName
+	}
+	return volNameToPvc
+}
+
+// DeploymentConfigVolumes returns the PVCs references by a pod in this deployment config as a [pod spec volume name]-> [PVC name] map
+// will mostly be used for the applications running in open shift clusters
+func DeploymentConfigVolumes(osCli osversioned.Interface, depConfig *osAppsv1.DeploymentConfig, pod *v1.Pod) (volNameToPvc map[string]string) {
+	volNameToPvc = make(map[string]string)
+	for _, v := range depConfig.Spec.Template.Spec.Volumes {
+		if v.PersistentVolumeClaim == nil {
+			continue
+		}
+		volNameToPvc[v.Name] = v.PersistentVolumeClaim.ClaimName
 	}
 	return volNameToPvc
 }

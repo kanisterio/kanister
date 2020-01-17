@@ -50,6 +50,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/reconcile"
 	"github.com/kanisterio/kanister/pkg/validate"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 // Controller represents a controller object for kanister custom resources
@@ -58,6 +59,7 @@ type Controller struct {
 	crClient         versioned.Interface
 	clientset        kubernetes.Interface
 	dynClient        dynamic.Interface
+	osClient         osversioned.Interface
 	recorder         record.EventRecorder
 	actionSetTombMap sync.Map
 }
@@ -87,9 +89,15 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 		return errors.Wrap(err, "failed to get a k8s dynamic client")
 	}
 
+	osClient, err := osversioned.NewForConfig(c.config)
+	if err != nil {
+		return errors.Wrap(err, "failed to get a openshift client")
+	}
+
 	c.crClient = crClient
 	c.clientset = clientset
 	c.dynClient = dynClient
+	c.osClient = osClient
 	c.recorder = eventer.NewEventRecorder(c.clientset, "Kanister Controller")
 
 	for cr, o := range map[customresource.CustomResource]runtime.Object{
@@ -373,7 +381,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	tp, err := param.New(ctx, c.clientset, c.dynClient, c.crClient, action)
+	tp, err := param.New(ctx, c.clientset, c.dynClient, c.crClient, c.osClient, action)
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,7 @@
 Template Parameters
 *******************
 
-Template Parameters are use to render templates in Blueprints. A ``TemplateParam``
+Template Parameters are used to render templates in Blueprints. A ``TemplateParam``
 struct is constructed based on fields in an ActionSet.
 
 The TemplateParam struct is defined as:
