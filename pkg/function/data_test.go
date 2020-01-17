@@ -36,11 +36,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 type DataSuite struct {
 	cli          kubernetes.Interface
 	crCli        versioned.Interface
+	osCli        osversioned.Interface
 	namespace    string
 	profile      *param.Profile
 	providerType objectstore.ProviderType
@@ -60,6 +62,8 @@ func (s *DataSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	crCli, err := versioned.NewForConfig(config)
 	c.Assert(err, IsNil)
+	osCli, err := osversioned.NewForConfig(config)
+	c.Assert(err, IsNil)
 
 	// Make sure the CRD's exist.
 	err = resource.CreateCustomResources(context.Background(), config)
@@ -67,6 +71,7 @@ func (s *DataSuite) SetUpSuite(c *C) {
 
 	s.cli = cli
 	s.crCli = crCli
+	s.osCli = osCli
 
 	ns := testutil.NewTestNamespace()
 	ns.GenerateName = "kanister-datatest-"
@@ -342,7 +347,7 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.Te
 		},
 	}
 
-	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
+	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
 	c.Assert(err, IsNil)
 	tp.Profile = s.profile
 
@@ -579,7 +584,7 @@ func (s *DataSuite) initPVCTemplateParams(c *C, pvc *v1.PersistentVolumeClaim, o
 		},
 		Options: options,
 	}
-	tp, err := param.New(context.Background(), s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, pvc), s.crCli, as)
+	tp, err := param.New(context.Background(), s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, pvc), s.crCli, s.osCli, as)
 	c.Assert(err, IsNil)
 	tp.Profile = s.profile
 	return tp

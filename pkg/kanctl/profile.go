@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sYAML "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
@@ -154,7 +154,7 @@ func createNewProfile(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	skipValidation, _ := cmd.Flags().GetBool(skipValidationFlag)
 	dryRun, _ := cmd.Flags().GetBool(dryRunFlag)
-	cli, crCli, err := initializeClients()
+	cli, crCli, _, err := initializeClients()
 	if err != nil {
 		return err
 	}
@@ -369,7 +369,7 @@ func createProfile(ctx context.Context, profile *v1alpha1.Profile, crCli version
 
 func performProfileValidation(p *validateParams) error {
 	ctx := context.Background()
-	cli, crCli, err := initializeClients()
+	cli, crCli, _, err := initializeClients()
 	if err != nil {
 		return errors.Wrap(err, "could not initialize clients for validation")
 	}

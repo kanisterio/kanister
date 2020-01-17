@@ -32,11 +32,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 type KubeExecAllTest struct {
 	crCli     versioned.Interface
 	cli       kubernetes.Interface
+	osCli     osversioned.Interface
 	namespace string
 }
 
@@ -49,6 +51,8 @@ func (s *KubeExecAllTest) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	crCli, err := versioned.NewForConfig(config)
 	c.Assert(err, IsNil)
+	osCli, err := osversioned.NewForConfig(config)
+	c.Assert(err, IsNil)
 
 	// Make sure the CRD's exist.
 	err = resource.CreateCustomResources(context.Background(), config)
@@ -56,6 +60,7 @@ func (s *KubeExecAllTest) SetUpSuite(c *C) {
 
 	s.cli = cli
 	s.crCli = crCli
+	s.osCli = osCli
 
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -124,7 +129,7 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 			Namespace: s.namespace,
 		},
 	}
-	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, d), s.crCli, as)
+	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, d), s.crCli, s.osCli, as)
 	c.Assert(err, IsNil)
 
 	action := "echo"
@@ -158,7 +163,7 @@ func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 			Namespace: s.namespace,
 		},
 	}
-	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
+	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
 	c.Assert(err, IsNil)
 
 	action := "echo"

@@ -38,6 +38,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const (
@@ -48,6 +49,7 @@ const (
 type VolumeSnapshotTestSuite struct {
 	cli       kubernetes.Interface
 	crCli     versioned.Interface
+	osCli     osversioned.Interface
 	namespace string
 	tp        *param.TemplateParams
 }
@@ -61,6 +63,8 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	c.Assert(err, IsNil)
 	crCli, err := versioned.NewForConfig(config)
 	c.Assert(err, IsNil)
+	osCli, err := osversioned.NewForConfig(config)
+	c.Assert(err, IsNil)
 
 	// Make sure the CRD's exist.
 	err = resource.CreateCustomResources(context.Background(), config)
@@ -68,6 +72,7 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 
 	s.cli = cli
 	s.crCli = crCli
+	s.osCli = osCli
 
 	ns := testutil.NewTestNamespace()
 
@@ -112,7 +117,7 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 		},
 	}
 
-	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
+	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
 	c.Assert(err, IsNil)
 	s.tp = tp
 }
