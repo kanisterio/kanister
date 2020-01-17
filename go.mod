@@ -52,8 +52,8 @@ require (
 	github.com/lib/pq v1.2.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238
-	github.com/openshift/api v3.9.0+incompatible
-	github.com/openshift/client-go v3.9.0+incompatible
+	github.com/openshift/api v0.0.0-20190402135445-d2f01e7b77a6
+	github.com/openshift/client-go v0.0.0-20190402163854-7cc0953bbbb7
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pkg/errors v0.8.0
 	github.com/renier/xmlrpc v0.0.0-20170708154548-ce4a1a486c03 // indirect
