@@ -78,7 +78,7 @@ func (g GroupVersionResourceList) Exclude(ms ...ResourceTypeMatcher) GroupVersio
 }
 
 func (g GroupVersionResourceList) apply(ms []ResourceTypeMatcher, exclude bool) GroupVersionResourceList {
-	m := joinResourceTypeMatchers(ms...)
+	m := JoinResourceTypeMatchers(ms...)
 	if m.Empty() {
 		return g
 	}
@@ -91,7 +91,8 @@ func (g GroupVersionResourceList) apply(ms []ResourceTypeMatcher, exclude bool) 
 	return filtered
 }
 
-func joinResourceTypeMatchers(ms ...ResourceTypeMatcher) ResourceTypeMatcher {
+// JoinResourceTypeMatchers joins multiple ResourceTypeMatchers into one
+func JoinResourceTypeMatchers(ms ...ResourceTypeMatcher) ResourceTypeMatcher {
 	n := 0
 	for _, m := range ms {
 		n += len(m)
