@@ -35,7 +35,8 @@ install_minishift ()
     echo 'minishift was started successfully.' 
     echo
     echo 'Copying OpenShift client to correct location...'
-    cp  /home/user/.minishift/cache/oc/v3.11.0/linux/oc ${GOPATH}/bin
+    cp  ${HOME}/.minishift/cache/oc/v3.11.0/linux/oc ${GOPATH}/bin
+    oc login -u system:admin
     echo 'Success, you are ready to use minishift.'
 }
 
