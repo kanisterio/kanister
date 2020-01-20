@@ -4,12 +4,12 @@
 
 ## Introduction
 
-This example is to demonstrate how Kanister can be integrated with AWS RDS instance to protect your data using snapshot backup and restore
+This example is to demonstrate how Kanister can be integrated with AWS RDS instance to protect your data using Kanister functions
 
 ## Prerequisites
 
 - Kubernetes 1.10+
-- Kanister controller version 0.23.0 installed in your cluster
+- Kanister controller version 0.24.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Create RDS instance on AWS
@@ -53,10 +53,11 @@ metadata:
     kasten.io/config: dataservice
   name: dbconfig
 data:
-  postgres.instanceid: testinstance
-  postgres.host: testinstance.example.us-west-2.rds.amazonaws.com
-  postgres.databases: mypgsqldb
-  postgres.user: postgres
+  postgres.instanceid: test-rds-postgresql
+  postgres.host: test-rds-postgresql.example.ap-south-1.rds.amazonaws.com
+  postgres.databases: |
+    - postgres
+    - template1
   postgres.secret: dbcreds # name of K8s secret in the same namespace
 ```
 
@@ -70,7 +71,7 @@ Create Profile CR if not created already
 $ kanctl create profile s3compliant --access-key <aws-access-key-id> \
 	--secret-key <aws-secret-key> \
 	--region <region-name> \
-	--namespace pgtest
+	--namespace pgtestrds
 ```
 
 **NOTE:**
@@ -81,27 +82,44 @@ data operations such as backup should go. This is stored as a `profiles.cr.kanis
 requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
 can be shared between Kanister-enabled application instances.
 
+
 ### Create Blueprint
-Create Blueprint in the same namespace as the controller
+
+There are two ways that you can use to backup and restore RDS instance data:
+
+
+1. Create RDS instance snapshot - Using `rds-postgres-snap-blueprint.yaml` Blueprint
+2. Create RDS snapshot, extract postgres data and push that data to S3 storage - Using `rds-postgres-dump-blueprint.yaml` Blueprint 
+
+So as you can see we will have to create a blueprint depending on how are we going to take the backup.
+
+Use `rds-postgres-snap-blueprint.yaml` Blueprint if you want to take backup using RDS snapshots or you can use `rds-postgres-dump-blueprint.yaml` Blueprint if you want to extract postgres dump from snapshot and push to S3 storage
+
 
 ```bash
-$ kubectl create -f ./rds-blueprint.yaml -n kasten-io
+$ kubectl create -f <blueprint> -n kasten-io
 ```
-
 
 ## Protect the Application
 
 You can now take a snapshot of the PostgreSQL RDS instance data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
 
-> If you have deployed your application which uses RDS instance in namespace other than `pgtest`, you need to modify the commands used below to use the correct namespace
+> If you have deployed your application which uses RDS instance in namespace other than `pgtestrds`, you need to modify the commands used below to use the correct namespace
 
 ```bash
-$ kubectl get profile -n pgtest
+$ kubectl get profile -n pgtestrds
 NAME               AGE
 s3-profile-sph7s   2h
 
-$ kanctl create actionset --action backup --deployment pgtest/<name of your app deployment> --config-maps dbconfig=pgtest/dbconfig --profile pgtest/s3-profile-6hmhn -b rds-blueprint -n kasten-io
+
+# Use correct blueprint name (one of `rds-postgres-dump-bp` or `rds-postgres-snapshot-bp`) you have created earlier
+# 
+$ kanctl create actionset --action backup --namespacetargets pgtestrds --config-maps dbconfig=pgtestrds/dbconfig --profile pgtestrds/s3-profile-6hmhn -b <blueprint-name> -n kasten-io
 actionset backup-llfb8 created
+
+# Where, 
+# dbconfig is a configmap holding RDS infromation
+# Please see pgtest/deploy/config.yaml for configmap format
 
 $ kubectl --namespace kasten-io get actionsets.cr.kanister.io
 NAME                 AGE
@@ -117,7 +135,7 @@ To restore the missing data from RDS snapshot, you should use the backup that yo
 
 
 ```bash
-$ kanctl create actionset --namespace kasten-io --action restore --config-maps dbconfig=pgtest/dbconfig --from backup-llfb8
+$ kanctl create actionset --namespace kasten-io --action restore --config-maps dbconfig=pgtestrds/dbconfig --from backup-llfb8
 actionset restore-backup-llfb8-64gqm created
 
 ## Check status
@@ -130,7 +148,7 @@ $ kubectl --namespace kasten-io describe actionset restore-backup-llfb8-64gqm
 The snapshot created by Actionset can be deleted by the following command
 
 ```bash
-$ kanctl create actionset --namespace kasten-io --action delete -c dbconfig=pgtest/dbconfig --from backup-llfb8
+$ kanctl create actionset --namespace kasten-io --action delete -c dbconfig=pgtestrds/dbconfig --from backup-llfb8
 actionset "delete-backup-llfb8-k9ncm" created
 
 ## Check status
@@ -155,17 +173,17 @@ $ kubectl describe actionset restore-backup-md6gb-d7g7w -n kasten-io
 ## Cleanup
 
 ```console
-$ kubectl delete -f ./rds-blueprint.yaml -n kasten-io
+$ kubectl delete -f <blueprint-name> -n kasten-io
 ```
 
 ### Delete CRs
 Remove Blueprint and Profile CR
 
 ```bash
-$ kubectl delete blueprints.cr.kanister.io postgresql-blueprint -n kasten-io
+$ kubectl delete blueprints.cr.kanister.io <blueprint-name> -n kasten-io
 
-$ kubectl get profiles.cr.kanister.io -n pgtest
+$ kubectl get profiles.cr.kanister.io -n pgtestrds
 NAME               AGE
 s3-profile-zvrg9   125m
-$ kubectl delete profiles.cr.kanister.io s3-profile-zvrg9 -n pgtest
+$ kubectl delete profiles.cr.kanister.io s3-profile-zvrg9 -n pgtestrds
 ```

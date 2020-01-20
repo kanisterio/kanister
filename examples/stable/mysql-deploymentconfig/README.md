@@ -14,7 +14,7 @@ cluster's DeploymentConfig resources.
 
 - Setup OpenShift, you can follow steps mentioned below
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.23.0 installed in your cluster in namespace `kanister`
+- Kanister controller version 0.24.0 installed in your cluster in namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 **Note**
@@ -32,6 +32,16 @@ OpenShift cluster. To setup the OpenShift cluster in our local environment we ar
 To install and setup minishift please follow [this guide](https://docs.okd.io/latest/minishift/getting-started/index.html).
 
 Once we have minishift setup we will go ahead and deploy MySQL application on the minishift cluster using DeploymentConfig and try to backup and restore the data from the application.
+
+**Note**
+
+Once you have setup minishift by following the steps mentioned above, you can interact with the cluster using `oc` command line tool. By default 
+you are logged in as developer user, that will prevent us from creating some of the resources so please make sure you login as admin by 
+following below command 
+```
+oc login -u system:admin
+```
+and you are all set to go through rest of this example.
 
 # Install MySQL
 

@@ -60,7 +60,7 @@ const (
 	BackupAction  RDSAction = "backup"
 	RestoreAction RDSAction = "restore"
 
-	postgresToolsImage = "kanisterio/postgres-kanister-tools:0.23.0"
+	postgresToolsImage = "kanisterio/postgres-kanister-tools:0.24.0"
 )
 
 type exportRDSSnapshotToLocationFunc struct{}
@@ -95,8 +95,6 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 	// Create tmp instance from the snapshot
 	tmpInstanceID := fmt.Sprintf("%s-%s", instanceID, rand.String(10))
 
-	log.Print("Restore RDS instance from snapshot.", field.M{"SnapshotID": snapshotID, "InstanceID": tmpInstanceID})
-
 	// If securityGroupID arg is nil, we will try to find the sgIDs by describing the existing instance
 	if sgIDs == nil {
 		sgIDs, err = findSecurityGroups(ctx, rdsCli, instanceID)
@@ -105,6 +103,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 		}
 	}
 
+	log.Print("Spin up temporary RDS instance from the snapshot.", field.M{"SnapshotID": snapshotID, "InstanceID": tmpInstanceID})
 	// Create tmp instance from snapshot
 	if err := restoreFromSnapshot(ctx, rdsCli, tmpInstanceID, snapshotID, sgIDs); err != nil {
 		return nil, errors.Wrapf(err, "Failed to restore snapshot. SnapshotID=%s", snapshotID)
@@ -190,6 +189,10 @@ func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
 }
 
 func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password string, databases []string, backupPrefix, backupID string, profile *param.Profile) (map[string]interface{}, error) {
+	// Trim "\n" from creds
+	username = strings.TrimSpace(username)
+	password = strings.TrimSpace(password)
+
 	// Prepare and execute command with kubetask
 	command, image, err := prepareCommand(ctx, dbEngine, action, dbEndpoint, username, password, databases, backupPrefix, backupID, profile)
 	if err != nil {
