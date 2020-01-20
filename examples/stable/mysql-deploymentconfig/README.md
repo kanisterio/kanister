@@ -33,6 +33,16 @@ To install and setup minishift please follow [this guide](https://docs.okd.io/la
 
 Once we have minishift setup we will go ahead and deploy MySQL application on the minishift cluster using DeploymentConfig and try to backup and restore the data from the application.
 
+**Note**
+
+Once you have setup minishift by following the steps mentioned above, you can interact with the cluster using `oc` command line tool. By default 
+you are logged in as developer user, that will prevent us from creating some of the resources so please make sure you login as admin by 
+following below command 
+```
+oc login -u system:admin
+```
+and you are all set to go through rest of this example.
+
 # Install MySQL
 
 We will follow standard MySQL installation steps that are mentioned [here](https://docs.okd.io/latest/using_images/db_images/mysql.html#initializing-the-database). Once you have the minishift setup, please go ahead and run below commands to deploy the 
