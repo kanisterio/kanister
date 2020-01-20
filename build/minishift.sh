@@ -17,34 +17,38 @@
 set -o errexit
 set -o nounset
 
+TMP_DIR=/tmp/minishift
+
 install_minishift ()
 {
     echo 'Started Deploying minishift...'
+    echo
     echo 'Downloading minishift...'
-    mkdir -p /tmp/minishift/bin
-    wget https://github.com/minishift/minishift/releases/download/v1.34.2/minishift-1.34.2-linux-amd64.tgz  -P /tmp/minishift/
-    tar zxvf /tmp/minishift/minishift-1.34.2-linux-amd64.tgz -C /tmp/minishift/bin
-    #cp /tmp/minishift/minishift-1.34.2-linux-amd64/minishift /usr/local/bin/
-    export PATH=/tmp/minishift/bin:$PATH
+    mkdir -p ${TMP_DIR}
+    wget https://github.com/minishift/minishift/releases/download/v1.34.2/minishift-1.34.2-linux-amd64.tgz  -P ${TMP_DIR}
+    tar zxvf ${TMP_DIR}/minishift-1.34.2-linux-amd64.tgz -C ${TMP_DIR}
+    cp ${TMP_DIR}/minishift-1.34.2-linux-amd64/minishift ${GOPATH}/bin
     echo 'minishift was downloaded'
     echo 
     echo 'Starting minishift...'
     minishift start --vm-driver=${1}
     echo 'minishift was started successfully.' 
     echo
-    echo 'Setting path variable...'
-    eval $(minishift oc-env)
+    echo 'Copying OpenShift client to correct location...'
+    cp  /home/user/.minishift/cache/oc/v3.11.0/linux/oc ${GOPATH}/bin
     echo 'Success, you are ready to use minishift.'
 }
 
 
 uninstall_minishift ()
 {
-    echo 'Stopping minishift...'
     minishift stop
-    echo
-    echo 'Deleting minishift...'
+    echo   
     minishift delete -f
+    rm -rf ${GOPATH}/bin/minishift
+    rm -rf ${GOPATH}/bin/oc
+    rm -rf ${TMP_DIR}
+    echo 'minishift was deleted successfully.'
 }
 
 [ ${#@} -gt 0 ] || usage
