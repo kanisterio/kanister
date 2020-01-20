@@ -40,7 +40,7 @@ DOCKER_BUILD ?= "true"
 DOCKER_CONFIG ?= "$(HOME)/.docker"
 
 # Mention the vm-driver that should be used to install OpenShift
-vm-driver ?= "virtualbox"
+vm-driver ?= "kvm"
 
 ###
 ### These variables should not need tweaking.
