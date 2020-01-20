@@ -1,9 +1,12 @@
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pgtestapp
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: pgtestapp
   template:
     metadata:
       labels:
@@ -11,7 +14,7 @@ spec:
     spec:
       containers:
       - name: pgtestapp
-        image: kastenio/pgtest-amd64:0.1.0
+        image: kanisterio/pgtest-amd64:0.1.0
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -28,9 +31,9 @@ spec:
                 key: postgres.databases
           - name: PG_USER
             valueFrom:
-              configMapKeyRef:
-                name: dbconfig
-                key: postgres.user
+              secretKeyRef:
+                name: dbcreds
+                key: username
           - name: PG_PASSWORD
             valueFrom:
               secretKeyRef:
