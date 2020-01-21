@@ -269,11 +269,11 @@ install-minio:
 uninstall-minio:
 	@$(MAKE) run CMD='-c "./build/minio.sh uninstall_minio"'
 
-install-minishift:
-	@/bin/bash ./build/minishift.sh install_minishift $(vm-driver)
+start-minishift:
+	@/bin/bash ./build/minishift.sh start_minishift $(vm-driver)
 
-uninstall-minishift:
-	@/bin/bash ./build/minishift.sh uninstall_minishift
+stop-minishift:
+	@/bin/bash ./build/minishift.sh stop_minishift
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'

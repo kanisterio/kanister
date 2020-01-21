@@ -21,16 +21,8 @@ export TMP_DIR=/tmp/minishift
 export MINISHIFT_VERSION=1.34.2
 export OC_VERSION=3.11.0
 
-install_minishift ()
+start_minishift ()
 {
-
-    # check if vm-driver was provided or not
-    if [ $# -ne 1 ]
-    then 
-        echo 'Please provide one argument using vm-driver flag.'
-        exit
-    fi
-
     echo 'Started Deploying minishift...'
     echo
     echo 'Downloading minishift...'
@@ -51,7 +43,7 @@ install_minishift ()
 }
 
 
-uninstall_minishift ()
+stop_minishift ()
 {
     minishift stop
     echo   
@@ -62,14 +54,31 @@ uninstall_minishift ()
     echo 'minishift was deleted successfully.'
 }
 
+
+usage() {
+    cat <<EOM
+Usage: ${0} <operation>
+Where operation is one of the following:
+  start_minishift vm-driver=kvm: installs minishift
+  stop_minishift : uninstalls minishift
+EOM
+    exit 1
+}
+
 [ ${#@} -gt 0 ] || usage
 case "${1}" in
         # Alphabetically sorted
-        install_minishift)
-            time -p install_minishift "${2}"
+        start_minishift)
+            # check if vm-driver was provided or not
+            if [ $# -ne 2 ]
+            then 
+                echo 'Please provide vm driver using vm-driver flag.'
+                exit 1
+            fi
+            time -p start_minishift "${2}"
             ;;
-        uninstall_minishift)
-            time -p uninstall_minishift
+        stop_minishift)
+            time -p stop_minishift
             ;;
         *)
             usage
