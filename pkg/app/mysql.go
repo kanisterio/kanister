@@ -160,7 +160,7 @@ func (mdb *MysqlDB) Count(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error while counting the data of the database: %s", stderr)
 	}
-	// get the returned cound and convert it to int, to return
+	// get the returned count and convert it to int, to return
 	rowsReturned, err := strconv.Atoi((strings.Split(stdout, "\n")[1]))
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error while converting row count to int.")
