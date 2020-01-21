@@ -17,17 +17,27 @@
 set -o errexit
 set -o nounset
 
-TMP_DIR=/tmp/minishift
+export TMP_DIR=/tmp/minishift
+export MINISHIFT_VERSION=1.34.2
+export OC_VERSION=3.11.0
 
 install_minishift ()
 {
+
+    # check if vm-driver was provided or not
+    if [ $# -ne 1 ]
+    then 
+        echo 'Please provide one argument using vm-driver flag.'
+        exit
+    fi
+
     echo 'Started Deploying minishift...'
     echo
     echo 'Downloading minishift...'
     mkdir -p ${TMP_DIR}
-    wget https://github.com/minishift/minishift/releases/download/v1.34.2/minishift-1.34.2-linux-amd64.tgz  -P ${TMP_DIR}
-    tar zxvf ${TMP_DIR}/minishift-1.34.2-linux-amd64.tgz -C ${TMP_DIR}
-    cp ${TMP_DIR}/minishift-1.34.2-linux-amd64/minishift ${GOPATH}/bin
+    wget https://github.com/minishift/minishift/releases/download/v${MINISHIFT_VERSION}/minishift-${MINISHIFT_VERSION}-linux-amd64.tgz  -P ${TMP_DIR}
+    tar zxvf ${TMP_DIR}/minishift-${MINISHIFT_VERSION}-linux-amd64.tgz -C ${TMP_DIR}
+    cp ${TMP_DIR}/minishift-${MINISHIFT_VERSION}-linux-amd64/minishift ${GOPATH}/bin
     echo 'minishift was downloaded'
     echo 
     echo 'Starting minishift...'
@@ -35,7 +45,7 @@ install_minishift ()
     echo 'minishift was started successfully.' 
     echo
     echo 'Copying OpenShift client to correct location...'
-    cp  ${HOME}/.minishift/cache/oc/v3.11.0/linux/oc ${GOPATH}/bin
+    cp  ${HOME}/.minishift/cache/oc/v${OC_VERSION}/linux/oc ${GOPATH}/bin
     oc login -u system:admin
     echo 'Success, you are ready to use minishift.'
 }
