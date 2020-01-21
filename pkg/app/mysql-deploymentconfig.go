@@ -163,7 +163,6 @@ func (mdep *MysqlDepConfig) IsReady(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	time.Sleep(2 * time.Minute)
 	log.Print("Application is ready", field.M{"application": mdep.name})
 	return true, nil
 }

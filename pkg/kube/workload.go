@@ -240,7 +240,6 @@ func FetchReplicationController(cli kubernetes.Interface, namespace string, uid 
 	}
 
 	return nil, nil
-
 }
 
 var errNotFound = fmt.Errorf("not found")
