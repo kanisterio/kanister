@@ -80,9 +80,9 @@ func (mdep *MysqlDepConfig) Install(ctx context.Context, namespace string) error
 	mdep.namespace = namespace
 
 	oc := openshift.NewOpenShiftClient()
-	out, err := oc.NewApp(ctx, mdep.namespace, mdep.osAppImage, mdep.envVar)
+	_, err := oc.NewApp(ctx, mdep.namespace, mdep.osAppImage, mdep.envVar)
 	if err != nil {
-		return errors.Wrapf(err, "Error installing app on openshift cluster.", field.M{"app": mdep.name, "out": out})
+		return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mdep.name)
 	}
 
 	err = mdep.createMySQLToolsPod(ctx)
