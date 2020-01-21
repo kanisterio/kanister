@@ -107,6 +107,36 @@ func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, n
 	})
 }
 
+func DeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, cli kubernetes.Interface, namespace, name string) (bool, error) {
+	depConfig, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return false, errors.Wrapf(err, "could not get DeploymentConfig{Namespace: %s, Name: %s}", namespace, name)
+	}
+
+	if deploymentConfigComplete := depConfig.Status.UpdatedReplicas == depConfig.Spec.Replicas &&
+		depConfig.Status.Replicas == depConfig.Spec.Replicas &&
+		depConfig.Status.AvailableReplicas == depConfig.Spec.Replicas &&
+		depConfig.Status.ObservedGeneration >= depConfig.Generation; !deploymentConfigComplete {
+		return false, nil
+	}
+
+	rc, err := FetchReplicationController(cli, namespace, depConfig.GetUID(), depConfig.Annotations[RevisionAnnotation])
+	if err != nil {
+		return false, err
+	}
+
+	runningPods, notRunningPods, err := FetchPods(cli, namespace, rc.GetUID())
+	if err != nil {
+		return false, err
+	}
+
+	if len(runningPods) != int(depConfig.Status.Replicas) {
+		return false, nil
+	}
+
+	return len(notRunningPods) == 0, nil
+}
+
 // DeploymentReady checks to see if the deployment has the desired number of
 // available replicas.
 func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, error) {
@@ -140,6 +170,20 @@ func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespac
 	return len(notRunningPods) == 0, nil
 }
 
+// DeploymentConfigPods return list of running and not running pod created by this/name deployment config
+func DeploymentConfigPods(ctx context.Context, osCli osversioned.Interface, kubeCli kubernetes.Interface, namespace, name string) ([]v1.Pod, []v1.Pod, error) {
+	depConf, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "could not get DeploymentConfig{Namespace: %s, Name: %s}", namespace, name)
+	}
+	rc, err := FetchReplicationController(kubeCli, namespace, depConf.GetUID(), depConf.Annotations[RevisionAnnotation])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return FetchPods(kubeCli, namespace, rc.GetUID())
+}
+
 // DeploymentPods returns list of running and notrunning pods created by the deployment.
 func DeploymentPods(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Pod, []v1.Pod, error) {
 	d, err := kubeCli.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
@@ -162,6 +206,41 @@ func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, na
 		}
 		return ok, err
 	})
+}
+
+// WaitOnDeploymentConfigReady waits for deploymentconfig to be ready
+func WaitOnDeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, kubeCli kubernetes.Interface, namespace, name string) error {
+	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		ok, err := DeploymentConfigReady(ctx, osCli, kubeCli, namespace, name)
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			return false, nil
+		}
+		return ok, err
+	})
+}
+
+func FetchReplicationController(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*v1.ReplicationController, error) {
+	repCtrls, err := cli.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not list ReplicationControllers")
+	}
+	for _, rc := range repCtrls.Items {
+		if len(rc.OwnerReferences) != 1 {
+			continue
+		}
+
+		if rc.OwnerReferences[0].UID != uid {
+			continue
+		}
+
+		if rc.Annotations[RevisionAnnotation] != revision {
+			continue
+		}
+		return &rc, nil
+	}
+
+	return nil, nil
+
 }
 
 var errNotFound = fmt.Errorf("not found")

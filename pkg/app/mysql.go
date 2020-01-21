@@ -148,12 +148,12 @@ func (mdb *MysqlDB) Insert(ctx context.Context) error {
 		return errors.Wrapf(err, "Error while inserting the data into msyql database: %s", stderr)
 	}
 
-	log.Print("Successfully inserted recored in the application.", field.M{"app": mdb.name})
+	log.Print("Successfully inserted records in the application.", field.M{"app": mdb.name})
 	return nil
 }
 
 func (mdb *MysqlDB) Count(ctx context.Context) (int, error) {
-	log.Print("Counting the records from the mysql isntance.", field.M{"app": mdb.name})
+	log.Print("Counting the records from the mysql instance.", field.M{"app": mdb.name})
 
 	selectRowsCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'use testdb; select count(*) from pets; '"}
 	stdout, stderr, err := mdb.execCommand(ctx, selectRowsCMD)
@@ -186,7 +186,7 @@ func (mdb *MysqlDB) Reset(ctx context.Context) error {
 		return errors.Wrapf(err, "Error while creating the mysql table: %s", stderr)
 	}
 
-	log.Print("Rest of the application was successful.", field.M{"app": mdb.name})
+	log.Print("Reset of the application was successful.", field.M{"app": mdb.name})
 	return nil
 }
 
