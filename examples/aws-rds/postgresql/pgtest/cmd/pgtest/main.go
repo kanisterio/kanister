@@ -24,6 +24,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/ghodss/yaml"
+
 	// Initialize pq driver
 	_ "github.com/lib/pq"
 )
@@ -96,10 +98,20 @@ func getInfo() (*pgInfo, error) {
 	if !ok {
 		return nil, fmt.Errorf("%s environment variable not set", pgHostEnv)
 	}
+
 	dbName, ok := os.LookupEnv(pgDBEnv)
 	if !ok {
 		return nil, fmt.Errorf("%s environment variable not set", pgDBEnv)
 	}
+	// Parse databases from config data
+	var databases []string
+	if err := yaml.Unmarshal([]byte(dbName), &databases); err != nil {
+		return nil, err
+	}
+	if databases == nil {
+		return nil, fmt.Errorf("Databases are missing from configmap")
+	}
+
 	user, ok := os.LookupEnv(pgUserEnv)
 	if !ok {
 		return nil, fmt.Errorf("%s environment variable not set", pgUserEnv)
@@ -108,7 +120,7 @@ func getInfo() (*pgInfo, error) {
 	if !ok {
 		return nil, fmt.Errorf("%s environment variable not set", pgPasswordEnv)
 	}
-	return &pgInfo{host: host, dbName: dbName, user: user, password: password}, nil
+	return &pgInfo{host: host, dbName: databases[0], user: user, password: password}, nil
 }
 
 func newPGDB() *pgDB {

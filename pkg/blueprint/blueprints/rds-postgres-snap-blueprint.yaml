@@ -26,11 +26,9 @@ actions:
     - func: RestoreRDSSnapshot
       name: restoreSnapshots
       args:
-        namespace: "{{ .Namespace.Name }}"
         instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
         snapshotID:  "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
         securityGroupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
-        dbEngine: "PostgreSQL"
   delete:
     kind: Namespace
     inputArtifactNames:

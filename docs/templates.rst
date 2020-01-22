@@ -12,19 +12,20 @@ The TemplateParam struct is defined as:
 
   // TemplateParams are use to render templates in Blueprints
   type TemplateParams struct {
-      StatefulSet  StatefulSetParams
-      Deployment   DeploymentParams
-      PVC          PVCParams
-      Namespace    NamespaceParams
-      ArtifactsIn  map[string]crv1alpha1.Artifact // A Kanister Artifact
-      Profile      *Profile
-      ConfigMaps   map[string]v1.ConfigMap
-      Secrets      map[string]v1.Secret
-      Time         string
-      Options      map[string]string
-      Object       map[string]interface{}
-      Phases       map[string]*Phase
-      PodOverride  map[string]interface{}
+    StatefulSet      *StatefulSetParams
+    DeploymentConfig *DeploymentConfigParams
+    Deployment       *DeploymentParams
+    PVC              *PVCParams
+    Namespace        *NamespaceParams
+    ArtifactsIn      map[string]crv1alpha1.Artifact
+    ConfigMaps       map[string]v1.ConfigMap
+    Secrets          map[string]v1.Secret
+    Time             string
+    Profile          *Profile
+    Options          map[string]string
+    Object           map[string]interface{}
+    Phases           map[string]*Phase
+    PodOverride      crv1alpha1.JSONMap
   }
 
 Rendering Templates
@@ -59,8 +60,9 @@ Objects
 
 Kanister operates on the granularity of an ``Object``. As of the current
 release, well known Object types are ``Deployment``, ``StatefulSet``,
-``PersistentVolumeClaim``, or ``Namespace``. The TemplateParams struct
-has one field for each well known object type, which is effectively a union in go.
+``PersistentVolumeClaim``, ``Namespace`` or OpenShift's ``DeploymentConfig``.
+The TemplateParams struct has one field for each well known object type,
+which is effectively a union in go.
 
 Other than the types mentioned above, Kanister can also act on any Kubernetes
 object such as a CRD and the :ref:`object` field in TemplateParams is populated with the
@@ -115,6 +117,34 @@ For example, to access the Name of a Deployment use:
 .. code-block:: go
 
   "{{ index .Deployment.Name }}"
+
+DeploymentConfig
+----------------
+
+DeploymentConfig resources are specific to OpenShift clusters and are
+almost like Deployment resource but have some significant differences.
+Details about DeploymentConfig can be read
+`on this document <https://docs.openshift.com/container-platform/4.1/applications/deployments/what-deployments-are.html>`_.
+DeploymentConfigParams similar to DeploymentParams.
+
+.. code-block:: go
+  :linenos:
+
+  // DeploymentConfigParams are params for DeploymentConfig
+  type DeploymentConfigParams struct {
+    Name                   string
+    Namespace              string
+    Pods                   []string
+    Containers             [][]string
+    PersistentVolumeClaims map[string]map[string]string
+  }
+
+For example, to access the Name of a Deployment use:
+
+.. code-block:: go
+
+  "{{ index .DeploymentConfig.Name }}"
+
 
 Namespace
 ---------
