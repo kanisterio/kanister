@@ -62,7 +62,7 @@ actions:
       name: deleteFromBlobStore
       args:
         image: kanisterio/mysql-sidecar:0.24.0
-        namespace: "{{ .Deployment.Namespace }}"
+        namespace: "{{ .DeploymentConfig.Namespace }}"
         command:
         - bash
         - -o
