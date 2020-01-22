@@ -107,6 +107,7 @@ func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, n
 	})
 }
 
+// DeploymentConfigReady checks to see the deploymentconfig has desired number of available replicas.
 func DeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, cli kubernetes.Interface, namespace, name string) (bool, error) {
 	depConfig, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
@@ -219,6 +220,7 @@ func WaitOnDeploymentConfigReady(ctx context.Context, osCli osversioned.Interfac
 	})
 }
 
+// FetchReplicationController fetches the replication controller that has owner with UID provided uid
 func FetchReplicationController(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*v1.ReplicationController, error) {
 	repCtrls, err := cli.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{})
 	if err != nil {
