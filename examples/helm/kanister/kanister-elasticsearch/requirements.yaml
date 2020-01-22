@@ -1,5 +1,5 @@
 dependencies:
   - name: profile
-    version: "0.23.0"
+    version: "0.24.0"
     condition: profile.create
     repository: "https://charts.kanister.io"

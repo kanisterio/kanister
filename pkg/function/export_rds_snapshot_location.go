@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -59,7 +60,7 @@ const (
 	BackupAction  RDSAction = "backup"
 	RestoreAction RDSAction = "restore"
 
-	postgresToolsImage = "kanisterio/postgres-kanister-tools:0.23.0"
+	postgresToolsImage = "kanisterio/postgres-kanister-tools:0.24.0"
 )
 
 type exportRDSSnapshotToLocationFunc struct{}
@@ -94,8 +95,6 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 	// Create tmp instance from the snapshot
 	tmpInstanceID := fmt.Sprintf("%s-%s", instanceID, rand.String(10))
 
-	log.Print("Restore RDS instance from snapshot.", field.M{"SnapshotID": snapshotID, "InstanceID": tmpInstanceID})
-
 	// If securityGroupID arg is nil, we will try to find the sgIDs by describing the existing instance
 	if sgIDs == nil {
 		sgIDs, err = findSecurityGroups(ctx, rdsCli, instanceID)
@@ -104,6 +103,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 		}
 	}
 
+	log.Print("Spin up temporary RDS instance from the snapshot.", field.M{"SnapshotID": snapshotID, "InstanceID": tmpInstanceID})
 	// Create tmp instance from snapshot
 	if err := restoreFromSnapshot(ctx, rdsCli, tmpInstanceID, snapshotID, sgIDs); err != nil {
 		return nil, errors.Wrapf(err, "Failed to restore snapshot. SnapshotID=%s", snapshotID)
@@ -129,8 +129,8 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 		return nil, errors.Wrap(err, "Unable to extract and push db dump to location")
 	}
 
-	// Convert to json format
-	sgIDJson, err := json.Marshal(sgIDs)
+	// Convert to yaml format
+	sgIDYaml, err := yaml.Marshal(sgIDs)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", tmpInstanceID)
 	}
@@ -138,7 +138,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 	// Add output artifacts
 	output[ExportRDSSnapshotToLocSnapshotIDArg] = snapshotID
 	output[ExportRDSSnapshotToLocInstanceIDArg] = instanceID
-	output[ExportRDSSnapshotToLocSecGrpIDArg] = string(sgIDJson)
+	output[ExportRDSSnapshotToLocSecGrpIDArg] = string(sgIDYaml)
 
 	return output, nil
 }
@@ -146,7 +146,6 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, instanceID, snapshotID, username, password, backupArtifact string
 	var dbEngine RDSDBEngine
-	var databases []string
 
 	if err := Arg(args, ExportRDSSnapshotToLocNamespaceArg, &namespace); err != nil {
 		return nil, err
@@ -171,13 +170,13 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 	}
 
 	// Find databases
-	databases, err := GetDatabases(args, ExportRDSSnapshotToLocDatabasesArg)
+	databases, err := GetYamlList(args, ExportRDSSnapshotToLocDatabasesArg)
 	if err != nil {
 		return nil, err
 	}
 
 	// Find security groups
-	sgIDs, err := GetSecurityGroups(args, ExportRDSSnapshotToLocSecGrpIDArg)
+	sgIDs, err := GetYamlList(args, ExportRDSSnapshotToLocSecGrpIDArg)
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +189,10 @@ func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
 }
 
 func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password string, databases []string, backupPrefix, backupID string, profile *param.Profile) (map[string]interface{}, error) {
+	// Trim "\n" from creds
+	username = strings.TrimSpace(username)
+	password = strings.TrimSpace(password)
+
 	// Prepare and execute command with kubetask
 	command, image, err := prepareCommand(ctx, dbEngine, action, dbEndpoint, username, password, databases, backupPrefix, backupID, profile)
 	if err != nil {

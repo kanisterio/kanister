@@ -73,16 +73,13 @@ func (*restoreRDSSnapshotFunc) Name() string {
 }
 
 func (*restoreRDSSnapshotFunc) RequiredArgs() []string {
-	return []string{RestoreRDSSnapshotNamespace, RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotDBEngine}
+	return []string{RestoreRDSSnapshotInstanceID}
 }
 
 func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string
 	var dbEngine RDSDBEngine
 
-	if err := Arg(args, RestoreRDSSnapshotNamespace, &namespace); err != nil {
-		return nil, err
-	}
 	if err := Arg(args, RestoreRDSSnapshotInstanceID, &instanceID); err != nil {
 		return nil, err
 	}
@@ -92,7 +89,7 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	}
 
 	// Find security groups
-	sgIDs, err := GetSecurityGroups(args, RestoreRDSSnapshotSecGrpID)
+	sgIDs, err := GetYamlList(args, RestoreRDSSnapshotSecGrpID)
 	if err != nil {
 		return nil, err
 	}
@@ -103,11 +100,9 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		if err := Arg(args, RestoreRDSSnapshotBackupArtifactPrefix, &backupArtifactPrefix); err != nil {
 			return nil, err
 		}
-
 		if err := Arg(args, RestoreRDSSnapshotBackupID, &backupID); err != nil {
 			return nil, err
 		}
-
 		if err := Arg(args, RestoreRDSSnapshotUsername, &username); err != nil {
 			return nil, err
 		}
@@ -115,6 +110,9 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 			return nil, err
 		}
 		if err := Arg(args, RestoreRDSSnapshotDBEngine, &dbEngine); err != nil {
+			return nil, err
+		}
+		if err := Arg(args, RestoreRDSSnapshotNamespace, &namespace); err != nil {
 			return nil, err
 		}
 	}
@@ -189,7 +187,7 @@ func postgresRestoreCommand(pgHost, username, password string, dbList []string, 
 }
 
 func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID string, securityGrpIDs []string) error {
-	log.Print("Deleting existing instance.", field.M{"instanceID": instanceID})
+	log.Print("Deleting existing RDS DB instance.", field.M{"instanceID": instanceID})
 	if _, err := rdsCli.DeleteDBInstance(ctx, instanceID); err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			if aerr.Code() != rdserr.ErrCodeDBInstanceNotFoundFault {
@@ -198,20 +196,21 @@ func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snaps
 			log.Print("RDS instance is not present ErrCodeDBInstanceNotFoundFault", field.M{"instanceID": instanceID})
 		}
 	} else {
+		log.Print("Waiting for RDS DB instance to be deleted.", field.M{"instanceID": instanceID})
 		// Wait for the instance to be deleted
 		if err := rdsCli.WaitUntilDBInstanceDeleted(ctx, instanceID); err != nil {
-			return errors.Wrapf(err, "Error waiting for the dbinstance to be available")
+			return errors.Wrapf(err, "Error while waiting RDS DB instance to be deleted")
 		}
 	}
 
-	log.Print("Restoring database from snapshot.", field.M{"instanceID": instanceID})
+	log.Print("Restoring RDS DB instance from snapshot.", field.M{"instanceID": instanceID, "snapshotID": snapshotID})
 	// Restore from snapshot
 	if _, err := rdsCli.RestoreDBInstanceFromDBSnapshot(ctx, instanceID, snapshotID, securityGrpIDs); err != nil {
-		return errors.Wrapf(err, "Error restoring database instance from snapshot")
+		return errors.Wrapf(err, "Error restoring RDS DB instance from snapshot")
 	}
 
 	// Wait for instance to be ready
-	log.Print("Waiting for database to be ready.", field.M{"instanceID": instanceID})
+	log.Print("Waiting for RDS DB instance database to be ready.", field.M{"instanceID": instanceID})
 	err := rdsCli.WaitUntilDBInstanceAvailable(ctx, instanceID)
 	return errors.Wrap(err, "Error while waiting for new rds instance to be ready.")
 }

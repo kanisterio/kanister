@@ -15,7 +15,7 @@ actions:
     - func: KubeTask
       name: dumpToObjectStore
       args:
-        image: kanisterio/mysql-sidecar:0.23.0
+        image: kanisterio/mysql-sidecar:0.24.0
         namespace: "{{ .Deployment.Namespace }}"
         command:
         - bash
@@ -39,7 +39,7 @@ actions:
     - func: KubeTask
       name: restoreFromBlobStore
       args:
-        image: kanisterio/mysql-sidecar:0.23.0
+        image: kanisterio/mysql-sidecar:0.24.0
         namespace: "{{ .Deployment.Namespace }}"
         command:
         - bash
@@ -60,7 +60,7 @@ actions:
     - func: KubeTask
       name: deleteFromBlobStore
       args:
-        image: kanisterio/mysql-sidecar:0.23.0
+        image: kanisterio/mysql-sidecar:0.24.0
         namespace: "{{ .Deployment.Namespace }}"
         command:
         - bash
