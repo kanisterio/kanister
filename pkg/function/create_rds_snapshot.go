@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -43,6 +44,8 @@ const (
 	CreateRDSSnapshotInstanceIDArg = "instanceID"
 	// CreateRDSSnapshotSnapshotID to set snapshotID in output artifact
 	CreateRDSSnapshotSnapshotID = "snapshotID"
+	// CreateRDSSnapshotSecurityGroupID to set securityGroupIDs in output artifact
+	CreateRDSSnapshotSecurityGroupID = "securityGroupID"
 )
 
 type createRDSSnapshotFunc struct{}
@@ -83,9 +86,22 @@ func createRDSSnapshot(ctx context.Context, instanceID string, profile *param.Pr
 		return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
 	}
 
+	// Find security group ids
+	sgIDs, err := findSecurityGroups(ctx, rdsCli, instanceID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+	}
+
+	// Convert to yaml format
+	sgIDYaml, err := yaml.Marshal(sgIDs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", instanceID)
+	}
+
 	output := map[string]interface{}{
-		CreateRDSSnapshotSnapshotID:    snapshotID,
-		CreateRDSSnapshotInstanceIDArg: instanceID,
+		CreateRDSSnapshotSnapshotID:      snapshotID,
+		CreateRDSSnapshotInstanceIDArg:   instanceID,
+		CreateRDSSnapshotSecurityGroupID: string(sgIDYaml),
 	}
 	return output, nil
 }

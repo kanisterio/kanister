@@ -13,7 +13,7 @@ If you want to avoid doing that upgrade to Elasticsearch 5.6 first before moving
 
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.23.0 with `profiles.cr.kanister.io` CRD installed
+* Kanister version 0.24.0 with `profiles.cr.kanister.io` CRD installed
 
 ## StatefulSets Details
 * https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
@@ -130,7 +130,7 @@ kubectl create -f ./examples/stable/elasticsearch/elasticsearch-blueprint.yaml -
 You can now take a backup of the Elasticsearch data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller using `kanctl`, a command-line tool that helps create ActionSets as shown below:
 
 ```bash
-$ kanctl create actionset --action backup --namespace kasten-io --blueprint elasticsearch-blueprint --statefulset es-test/elasticsearch-master --options --profile es-test/<PROFILE_NAME>
+$ kanctl create actionset --action backup --namespace kasten-io --blueprint elasticsearch-blueprint --statefulset es-test/elasticsearch-master --profile es-test/<PROFILE_NAME>
 
 $ kubectl --namespace kasten-io get actionsets.cr.kanister.io
 NAME                AGE

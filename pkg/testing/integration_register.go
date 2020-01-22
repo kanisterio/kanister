@@ -187,3 +187,18 @@ var _ = Suite(&RDSPostgreSQLSnap{
 		profile:   newSecretProfile(),
 	},
 })
+
+// Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
+type MysqlDBDepConfig struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MysqlDBDepConfig{
+	IntegrationSuite{
+		name:      "mysqldb",
+		namespace: "mysqldc-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig"),
+		bp:        app.NewBlueprint("mysql-dep-config"),
+		profile:   newSecretProfile(),
+	},
+})

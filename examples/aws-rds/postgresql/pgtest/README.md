@@ -64,4 +64,7 @@ http://127.0.0.1:8001/api/v1/namespaces/pgtestrds/services/pgtestapp:8080/proxy/
 http://127.0.0.1:8001/api/v1/namespaces/pgtestrds/services/pgtestapp:8080/proxy/insert
 ```
 
-
+### Reset the DB
+```bash
+http://127.0.0.1:8001/api/v1/namespaces/pgtestrds/services/pgtestapp:8080/proxy/reset
+```
