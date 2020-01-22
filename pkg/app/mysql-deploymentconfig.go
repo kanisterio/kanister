@@ -26,6 +26,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/openshift"
+	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -90,8 +91,7 @@ func (mdep *MysqlDepConfig) Install(ctx context.Context, namespace string) error
 		return errors.Wrapf(err, "Error creating mysql tools pod")
 	}
 
-	err = mdep.createMySQLSecret(ctx)
-	return err
+	return mdep.createMySQLSecret(ctx)
 }
 
 // createMySQLSecret creates a secret that will be used to login to running MYSQL instance
@@ -111,11 +111,8 @@ func (mdep *MysqlDepConfig) createMySQLSecret(ctx context.Context) error {
 	}
 
 	_, err := mdep.cli.CoreV1().Secrets(mdep.namespace).Create(mysqlSecret)
-	if err != nil {
-		return errors.Wrapf(err, "Error creating secret for mysqldepconf app.")
-	}
 
-	return nil
+	return errors.Wrapf(err, "Error creating secret for mysqldepconf app.")
 }
 
 // createMySQLToolsPod creates a pod that will be use to run command into mysql instance
@@ -136,8 +133,13 @@ func (mdep *MysqlDepConfig) createMySQLToolsPod(ctx context.Context) error {
 					Resources: v1.ResourceRequirements{},
 					Env: []v1.EnvVar{
 						v1.EnvVar{
-							Name:  "MYSQL_ROOT_PASSWORD",
-							Value: mdep.envVar["MYSQL_ROOT_PASSWORD"],
+							Name: "MYSQL_ROOT_PASSWORD",
+							ValueFrom: &v1.EnvVarSource{
+								SecretKeyRef: &v1.SecretKeySelector{
+									LocalObjectReference: v1.LocalObjectReference{Name: mdep.name},
+									Key:                  "mysql-root-password",
+								},
+							},
 						},
 					},
 				},
@@ -146,11 +148,8 @@ func (mdep *MysqlDepConfig) createMySQLToolsPod(ctx context.Context) error {
 	}
 
 	_, err := mdep.cli.CoreV1().Pods(mdep.namespace).Create(mysqlToolPod)
-	if err != nil {
-		return errors.Wrapf(err, "Error creating mysql tools pod")
-	}
 
-	return nil
+	return errors.Wrapf(err, "Error creating mysql tools pod")
 }
 
 func (mdep *MysqlDepConfig) IsReady(ctx context.Context) (bool, error) {
@@ -161,6 +160,17 @@ func (mdep *MysqlDepConfig) IsReady(ctx context.Context) (bool, error) {
 	err := kube.WaitOnDeploymentConfigReady(ctx, mdep.osCli, mdep.cli, mdep.namespace, mdep.getDepConfName(ctx))
 	if err != nil {
 		return false, err
+	}
+
+	log.Print("Waiting for the MySQL tools pod to be ready.", field.M{"app": mdep.name})
+	// wait for the tools pod to be ready
+	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		running, err := kube.IsPodRunning(mdep.cli, mysqlToolPodName, mdep.namespace)
+		return running, err
+	})
+
+	if err != nil {
+		return false, errors.Wrapf(err, "Error while waiting for mysql tools pod to get ready.")
 	}
 
 	log.Print("Application is ready", field.M{"application": mdep.name})
@@ -176,6 +186,16 @@ func (mdep *MysqlDepConfig) Object() crv1alpha1.ObjectReference {
 }
 
 func (mdep *MysqlDepConfig) Uninstall(ctx context.Context) error {
+	// delete MySQL tools pod
+	err := mdep.cli.CoreV1().Pods(mdep.namespace).Delete(mysqlToolPodName, &metav1.DeleteOptions{})
+	if err != nil {
+		return errors.Wrapf(err, fmt.Sprintf("Error deleting pod %s from namespace %s while uninstalling application %s.", mysqlToolPodName, mdep.namespace, mdep.name))
+	}
+	// delete secret
+	err = mdep.cli.CoreV1().Secrets(mdep.namespace).Delete(mdep.name, &metav1.DeleteOptions{})
+	if err != nil {
+		return errors.Wrapf(err, fmt.Sprintf("Error deleting secret %s from namespace %s while uninstalling appliation %s.", mdep.name, mdep.namespace, mdep.name))
+	}
 	// deleting deployment config that is running the mysql instance
 	return mdep.osCli.AppsV1().DeploymentConfigs(mdep.namespace).Delete(mdep.getDepConfName(ctx), &metav1.DeleteOptions{})
 }

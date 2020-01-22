@@ -130,7 +130,7 @@ func DeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, cli
 		return false, err
 	}
 
-	if len(runningPods) != int(depConfig.Status.Replicas) {
+	if len(runningPods) != int(depConfig.Status.AvailableReplicas) {
 		return false, nil
 	}
 
@@ -403,4 +403,26 @@ func DeploymentConfigVolumes(osCli osversioned.Interface, depConfig *osAppsv1.De
 		volNameToPvc[v.Name] = v.PersistentVolumeClaim.ClaimName
 	}
 	return volNameToPvc
+}
+
+// IsPodRunning checks if the provided pod is ready or not
+func IsPodRunning(cli kubernetes.Interface, podName, podNamespace string) (bool, error) {
+	pod, err := cli.CoreV1().Pods(podNamespace).Get(podName, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	if len(pod.Status.ContainerStatuses) == 0 {
+		return false, errors.New(fmt.Sprintf("Could not find ready pod. Name:%s , Namespace:%s", podName, podNamespace))
+	}
+
+	// loop through the all the container statuses of this pod
+	// and fail fast if any container is not ready
+	for i, v := range pod.Status.ContainerStatuses {
+		if !v.Ready {
+			return false, errors.New(fmt.Sprintf("Container at position %d is not running.", i))
+		}
+	}
+
+	return true, nil
 }
