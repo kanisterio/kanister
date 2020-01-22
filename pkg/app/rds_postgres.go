@@ -214,9 +214,10 @@ func (pdb *RDSPostgresDB) IsReady(ctx context.Context) (bool, error) {
 
 func (pdb *RDSPostgresDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
-		Kind:      "namespace",
-		Name:      pdb.namespace,
-		Namespace: pdb.namespace,
+		APIVersion: "v1",
+		Name:       "dbconfig",
+		Namespace:  pdb.namespace,
+		Resource:   "configmaps",
 	}
 }
 

@@ -4,24 +4,20 @@ metadata:
   name: rds-postgres-snapshot-bp
 actions:
   backup:
-    type: Namespace
     outputArtifacts:
       backupInfo:
         keyValue:
           snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
           instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
           securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
-    configMapNames:
-    - dbconfig
     phases:
     - func: CreateRDSSnapshot
       name: createSnapshot
       args:
-        instanceID: '{{ index .ConfigMaps.dbconfig.Data "postgres.instanceid" }}'
+        instanceID: '{{ index .Object.data "postgres.instanceid" }}'
   restore:
     inputArtifactNames:
     - backupInfo
-    kind: Namespace
     phases:
     - func: RestoreRDSSnapshot
       name: restoreSnapshots
@@ -30,7 +26,6 @@ actions:
         snapshotID:  "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
         securityGroupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
   delete:
-    kind: Namespace
     inputArtifactNames:
     - backupInfo
     phases:
