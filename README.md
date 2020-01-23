@@ -31,10 +31,10 @@ your storage infrastructure.
 
 Stable Helm charts that have been updated with Kanister support.
 
-- **[Elasticsearch](./examples/helm/kanister/kanister-elasticsearch)**
-- **[MongoDB](./examples/helm/kanister/kanister-mongodb-replicaset)**
-- **[MySQL](./examples/helm/kanister/kanister-mysql)**
-- **[PostgreSQL](./examples/helm/kanister/kanister-postgresql)**
+- **[Elasticsearch](./examples/stable/elasticsearch)**
+- **[MongoDB](.examples/stable/mongodb)**
+- **[MySQL](./examples/stable/mysql)**
+- **[PostgreSQL](./examples/stable/postgresql)**
 
 ## Resources
 
