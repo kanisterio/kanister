@@ -30,10 +30,14 @@ your storage infrastructure.
 ## Community Applications
 
 Stable Helm charts that have been updated with Kanister support.
-
+- **[Cassandra](./examples/stable/cassandra)**
+- **[Couchbase](./examples/stable/couchbase)**
 - **[Elasticsearch](./examples/stable/elasticsearch)**
-- **[MongoDB](.examples/stable/mongodb)**
+- **[FoundationDB](./examples/stable/foundationdb)**
+- **[MongoDB](./examples/stable/mongodb)**
+- **[MySQL-deploymentconfig](./examples/stable/mysql-deploymentconfig)**
 - **[MySQL](./examples/stable/mysql)**
+- **[PostgreSQL-wale](./examples/stable/postgresql-wale)**
 - **[PostgreSQL](./examples/stable/postgresql)**
 
 ## Resources
