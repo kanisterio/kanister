@@ -37,7 +37,7 @@ Stable Helm charts that have been updated with Kanister support.
 - **[MongoDB](./examples/stable/mongodb)**
 - **[MySQL-deploymentconfig](./examples/stable/mysql-deploymentconfig)**
 - **[MySQL](./examples/stable/mysql)**
-- **[PostgreSQL-wale](./examples/stable/postgresql-wale)**
+- **[PostgreSQL with Point In Time Recovery (PITR)](./examples/stable/postgresql-wale)**
 - **[PostgreSQL](./examples/stable/postgresql)**
 
 ## Resources
