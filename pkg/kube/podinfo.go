@@ -25,14 +25,14 @@ import (
 
 const (
 	nsFile        = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
-	podNSEnvVar   = "POD_NAMESPACE"
-	podSAEnvVar   = "POD_SERVICE_ACCOUNT"
+	PodNSEnvVar   = "POD_NAMESPACE"
+	PodSAEnvVar   = "POD_SERVICE_ACCOUNT"
 	podNameEnvVar = "POD_NAME"
 )
 
 //GetControllerNamespace returns controller namespace
 func GetControllerNamespace() (string, error) {
-	if ns, ok := os.LookupEnv(podNSEnvVar); ok {
+	if ns, ok := os.LookupEnv(PodNSEnvVar); ok {
 		return ns, nil
 	}
 
@@ -46,7 +46,7 @@ func GetControllerNamespace() (string, error) {
 
 //GetControllerServiceAccount returns controller ServiceAccount
 func GetControllerServiceAccount(k8sclient kubernetes.Interface) (string, error) {
-	if ns, ok := os.LookupEnv(podSAEnvVar); ok {
+	if ns, ok := os.LookupEnv(PodSAEnvVar); ok {
 		return ns, nil
 	}
 	ns, err := GetControllerNamespace()
