@@ -39,6 +39,9 @@ DOCKER_BUILD ?= "true"
 
 DOCKER_CONFIG ?= "$(HOME)/.docker"
 
+# Mention the vm-driver that should be used to install OpenShift
+vm-driver ?= "kvm"
+
 ###
 ### These variables should not need tweaking.
 ###
@@ -265,6 +268,12 @@ install-minio:
 
 uninstall-minio:
 	@$(MAKE) run CMD='-c "./build/minio.sh uninstall_minio"'
+
+start-minishift:
+	@/bin/bash ./build/minishift.sh start_minishift $(vm-driver)
+
+stop-minishift:
+	@/bin/bash ./build/minishift.sh stop_minishift
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'

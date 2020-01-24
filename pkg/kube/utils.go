@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -39,6 +40,28 @@ func GetPodContainerFromDeployment(ctx context.Context, cli kubernetes.Interface
 		return podName, containerName, fmt.Errorf("Unable to find containers in pod %s/%s", namespace, podName)
 	}
 	return podName, container[0].Name, nil
+}
+
+// GetPodContainerFromDeploymentConfig returns a pod and container that is running from the provided deployment config
+func GetPodContainerFromDeploymentConfig(ctx context.Context, osCli osversioned.Interface, cli kubernetes.Interface, namespace, deployConfigName string) (podName, containerName string, err error) {
+	pods, _, err := DeploymentConfigPods(ctx, osCli, cli, namespace, deployConfigName)
+	if err != nil {
+		return podName, containerName, err
+	}
+	if len(pods) == 0 {
+		return podName, containerName, fmt.Errorf("Unable to find ready pod for deploymentconfig %s/%s", namespace, deployConfigName)
+	}
+
+	podName = pods[0].GetName()
+	containers, err := PodContainers(ctx, cli, namespace, podName)
+	if err != nil {
+		return podName, containerName, err
+	}
+
+	if len(containers) == 0 {
+		return podName, containerName, fmt.Errorf("Unable to find containers in pod %s/%s", namespace, podName)
+	}
+	return podName, containers[0].Name, nil
 }
 
 // GetPodContainerFromStatefulSet returns a pod and container running the stateful set
