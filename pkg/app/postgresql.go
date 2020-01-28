@@ -81,10 +81,13 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 	pdb.namespace = ns
 
 	// Create helm client
-	cli := helm.NewCliClient(helm.V3)
+	cli, err := helm.NewCliClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create helm client")
+	}
 
 	// Add helm repo and fetch charts
-	if err := cli.AddRepo(ctx, pdb.chart.RepoName, pdb.chart.RepoURL); err != nil {
+	if err = cli.AddRepo(ctx, pdb.chart.RepoName, pdb.chart.RepoURL); err != nil {
 		return err
 	}
 	// Install helm chart
@@ -191,8 +194,12 @@ func (pdb PostgresDB) Reset(ctx context.Context) error {
 
 func (pdb PostgresDB) Uninstall(ctx context.Context) error {
 	log.Info().Print("Uninstalling helm chart.", field.M{"app": pdb.name, "release": pdb.chart.Release, "namespace": pdb.namespace})
+
 	// Create helm client
-	cli := helm.NewCliClient(helm.V3)
+	cli, err := helm.NewCliClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create helm client")
+	}
 
 	// Uninstall helm chart
 	return errors.Wrapf(cli.Uninstall(ctx, pdb.chart.Release, pdb.namespace), "Failed to uninstall %s helm release", pdb.chart.Release)

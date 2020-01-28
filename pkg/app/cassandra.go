@@ -81,8 +81,11 @@ func (cas *CassandraInstance) Install(ctx context.Context, namespace string) err
 	cas.namespace = namespace
 
 	log.Print("Installing application.", field.M{"app": cas.name})
-	cli := helm.NewCliClient(helm.V3)
-	err := cli.AddRepo(ctx, cas.chart.RepoName, cas.chart.RepoURL)
+	cli, err := helm.NewCliClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create helm client")
+	}
+	err = cli.AddRepo(ctx, cas.chart.RepoName, cas.chart.RepoURL)
 	if err != nil {
 		return err
 	}
@@ -122,8 +125,11 @@ func (cas *CassandraInstance) Object() crv1alpha1.ObjectReference {
 // Uninstall us used to remove the datbase application
 func (cas *CassandraInstance) Uninstall(ctx context.Context) error {
 	log.Print("Uninstalling application.", field.M{"app": cas.name})
-	cli := helm.NewCliClient(helm.V3)
-	err := cli.Uninstall(ctx, cas.name, cas.namespace)
+	cli, err := helm.NewCliClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create helm client")
+	}
+	err = cli.Uninstall(ctx, cas.name, cas.namespace)
 	if err != nil {
 		return errors.Wrapf(err, "Error uninstalling cassandra app.")
 	}
