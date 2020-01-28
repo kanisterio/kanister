@@ -35,7 +35,7 @@ actions:
   restore:
     type: Deployment
     inputArtifactNames:
-     - mysqlCloudDump
+    - mysqlCloudDump
     phases:
     - func: KubeTask
       name: restoreFromBlobStore
