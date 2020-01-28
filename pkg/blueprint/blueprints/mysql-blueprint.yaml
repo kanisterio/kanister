@@ -9,11 +9,14 @@ actions:
       mysqlCloudDump:
         keyValue:
           s3path: "{{ .Phases.dumpToObjectStore.Output.s3path }}"
-    secretNames:
-    - mysql
     phases:
     - func: KubeTask
       name: dumpToObjectStore
+      objects:
+        mysqlSecret:
+          kind: Secret
+          name: '{{ .Deployment.Name }}'
+          namespace: '{{ .Deployment.Namespace }}'
       args:
         image: kanisterio/mysql-sidecar:0.24.0
         namespace: "{{ .Deployment.Namespace }}"
@@ -26,18 +29,21 @@ actions:
         - -c
         - |
           s3_path="/mysql-backups/{{ .Deployment.Namespace }}/{{ .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
-          root_password="{{ index .Secrets.mysql.Data "mysql-root-password" | toString }}"
+          root_password="{{ index .Phases.dumpToObjectStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
           mysqldump -u root --password=${root_password} -h {{ .Deployment.Name }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
           kando output s3path ${s3_path}
   restore:
     type: Deployment
     inputArtifactNames:
-    - mysqlCloudDump
-    secretNames:
-    - mysql
+     - mysqlCloudDump
     phases:
     - func: KubeTask
       name: restoreFromBlobStore
+      objects:
+        mysqlSecret:
+          kind: Secret
+          name: '{{ .Deployment.Name }}'
+          namespace: '{{ .Deployment.Namespace }}'
       args:
         image: kanisterio/mysql-sidecar:0.24.0
         namespace: "{{ .Deployment.Namespace }}"
@@ -50,7 +56,7 @@ actions:
         - -c
         - |
           s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
-          root_password="{{ index .Secrets.mysql.Data "mysql-root-password" | toString }}"
+          root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
           kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -u root --password=${root_password} -h {{ .Deployment.Name }}
   delete:
     type: Deployment
