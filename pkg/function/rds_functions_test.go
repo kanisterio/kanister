@@ -15,6 +15,9 @@
 package function
 
 import (
+	"context"
+	"encoding/json"
+
 	"github.com/kanisterio/kanister/pkg/param"
 	. "gopkg.in/check.v1"
 )
@@ -27,8 +30,8 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 	testCases := []struct {
 		name             string
 		dbEngine         RDSDBEngine
+		dbList           []string
 		action           RDSAction
-		instanceID       string
 		dbEndpoint       string
 		username         string
 		password         string
@@ -42,7 +45,6 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			name:             "PostgreS restore command",
 			dbEngine:         PostgrSQLEngine,
 			action:           RestoreAction,
-			instanceID:       "some-instance-id",
 			dbEndpoint:       "db-endpoint",
 			username:         "dummy-user",
 			password:         "secret-pass",
@@ -50,12 +52,12 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			backupID:         "backup-id",
 			errChecker:       IsNil,
 			deepEqualChecker: DeepEquals,
+			dbList:           []string{"template1"},
 		},
 		{
 			name:             "PostgreS backup command",
 			dbEngine:         PostgrSQLEngine,
 			action:           BackupAction,
-			instanceID:       "some-instance-id",
 			dbEndpoint:       "db-endpoint",
 			username:         "dummy-user",
 			password:         "secret-pass",
@@ -63,23 +65,26 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			backupID:         "backup-id",
 			errChecker:       IsNil,
 			deepEqualChecker: DeepEquals,
+			dbList:           []string{"template1"},
 		},
 	}
 
 	for _, tc := range testCases {
+		profileJson, err := json.Marshal(tc.tp.Profile)
+
 		var command []string
-		var err error
+
 		if tc.dbEngine == PostgrSQLEngine {
 			if tc.action == RestoreAction {
-				command, err = getPostgreSQLRestoreCommand(tc.dbEndpoint, tc.password, tc.backupPrefix, tc.backupID, tc.username, tc.tp.Profile)
+				command, err = postgresRestoreCommand(tc.dbEndpoint, tc.username, tc.password, tc.dbList, tc.backupPrefix, tc.backupID, profileJson)
 				c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
 			} else if tc.action == BackupAction {
-				command, err = postgresBackupCommand(tc.instanceID, tc.dbEndpoint, tc.username, tc.password, tc.backupPrefix, tc.backupID, tc.tp.Profile)
+				command, err = postgresBackupCommand(tc.dbEndpoint, tc.username, tc.password, tc.dbList, tc.backupPrefix, tc.backupID, profileJson)
 				c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
 			}
 		}
 
-		outCommand, _, err := prepareCommand(tc.dbEngine, tc.action, tc.instanceID, tc.dbEndpoint, tc.username, tc.password, tc.backupPrefix, tc.backupID, tc.tp.Profile)
+		outCommand, _, err := prepareCommand(context.Background(), tc.dbEngine, tc.action, tc.dbEndpoint, tc.username, tc.password, tc.dbList, tc.backupPrefix, tc.backupID, tc.tp.Profile)
 		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
 		c.Assert(command, tc.deepEqualChecker, outCommand)
 	}
