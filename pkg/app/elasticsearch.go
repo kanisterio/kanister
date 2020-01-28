@@ -87,10 +87,13 @@ func (esi *ElasticsearchInstance) Init(ctx context.Context) error {
 func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string) error {
 	esi.namespace = namespace
 	// Get the HELM cli
-	cli := helm.NewCliClient(helm.V3)
+	cli, err := helm.NewCliClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create helm client")
+	}
 
 	log.Print("Installing the application using helm.", field.M{"app": esi.name})
-	err := cli.AddRepo(ctx, esi.chart.RepoName, esi.chart.RepoURL)
+	err = cli.AddRepo(ctx, esi.chart.RepoName, esi.chart.RepoURL)
 	if err != nil {
 		return err
 	}
@@ -126,10 +129,13 @@ func (esi *ElasticsearchInstance) Object() crv1alpha1.ObjectReference {
 }
 
 func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
-	cli := helm.NewCliClient(helm.V3)
-	log.Print("UnInstalling the application using helm.", field.M{"app": esi.name})
+	cli, err := helm.NewCliClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create helm client")
+	}
 
-	err := cli.Uninstall(ctx, esi.name, esi.namespace)
+	log.Print("UnInstalling the application using helm.", field.M{"app": esi.name})
+	err = cli.Uninstall(ctx, esi.name, esi.namespace)
 	if err != nil {
 		return errors.Wrapf(err, "Error uninstalling the application %s", esi.name)
 	}
