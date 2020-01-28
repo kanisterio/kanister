@@ -1,1 +1,75 @@
-../../../pkg/blueprint/blueprints/mysql-dep-config-blueprint.yaml
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: mysql-dep-config-blueprint
+actions:
+  backup:
+    type: DeploymentConfig
+    outputArtifacts:
+      mysqlCloudDump:
+        keyValue:
+          s3path: "{{ .Phases.dumpToObjectStore.Output.s3path }}"
+    secretNames:
+    - mysql
+    phases:
+    - func: KubeTask
+      name: dumpToObjectStore
+      args:
+        image: kanisterio/mysql-sidecar:0.24.0
+        namespace: "{{ .DeploymentConfig.Namespace }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          date
+          s3_path="/mysql-backups/{{ .DeploymentConfig.Namespace }}/{{ .DeploymentConfig.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
+          root_password="{{ index .Secrets.mysql.Data "mysql-root-password" | toString }}"
+          mysqldump -u root --password=${root_password} -h {{ .DeploymentConfig.Name }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
+          kando output s3path ${s3_path}
+  restore:
+    type: DeploymentConfig
+    inputArtifactNames:
+    - mysqlCloudDump
+    secretNames:
+    - mysql
+    phases:
+    - func: KubeTask
+      name: restoreFromBlobStore
+      args:
+        image: kanisterio/mysql-sidecar:0.24.0
+        namespace: "{{ .DeploymentConfig.Namespace }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
+          root_password="{{ index .Secrets.mysql.Data "mysql-root-password" | toString }}"
+          kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -u root --password=${root_password} -h {{ .DeploymentConfig.Name }}
+  delete:
+    type: DeploymentConfig
+    inputArtifactNames:
+    - mysqlCloudDump
+    phases:
+    - func: KubeTask
+      name: deleteFromBlobStore
+      args:
+        image: kanisterio/mysql-sidecar:0.24.0
+        namespace: "{{ .DeploymentConfig.Namespace }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
+          kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}
