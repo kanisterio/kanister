@@ -62,7 +62,6 @@ func FindHelmVersion() (HelmVersion, error) {
 		return "", err
 	}
 
-	fmt.Printf("Output of helm version command:%v\n", out)
 	// Trim prefix if output from helm v2
 	out = strings.TrimPrefix(out, "Client: ")
 

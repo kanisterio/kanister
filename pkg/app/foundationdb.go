@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
@@ -77,7 +78,7 @@ func (fdb *FoundationDB) Install(ctx context.Context, namespace string) error {
 
 	helmVersion, err := helm.FindHelmVersion()
 	if err != nil {
-		return errors.Wrap(err, "failed to create helm client")
+		return err
 	}
 
 	var oprARG, instARG []string
@@ -90,7 +91,7 @@ func (fdb *FoundationDB) Install(ctx context.Context, namespace string) error {
 		instARG = []string{"install", fdb.fdbReleaseName, "../../helm/fdb-instance", "-n", fdb.namespace}
 	}
 
-	out, err := helm.RunCmdWithTimeout(ctx, "helm", instARG)
+	out, err := helm.RunCmdWithTimeout(ctx, "helm", oprARG)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing the operator for %s, error is %s.", fdb.name, out)
 	}
