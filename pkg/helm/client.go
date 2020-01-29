@@ -56,12 +56,13 @@ type CliClient struct {
 }
 
 // findHelmVersion returns HelmVersion based on helm binary present in the path
-func findHelmVersion() (HelmVersion, error) {
+func FindHelmVersion() (HelmVersion, error) {
 	out, err := RunCmdWithTimeout(context.TODO(), "helm", []string{"version", "--client", "--short"})
 	if err != nil {
 		return "", err
 	}
 
+	fmt.Printf("Output of helm version command:%v\n", out)
 	// Trim prefix if output from helm v2
 	out = strings.TrimPrefix(out, "Client: ")
 
@@ -75,7 +76,7 @@ func findHelmVersion() (HelmVersion, error) {
 }
 
 func NewCliClient() (Client, error) {
-	version, err := findHelmVersion()
+	version, err := FindHelmVersion()
 	if err != nil {
 		return nil, err
 	}

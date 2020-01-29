@@ -21,16 +21,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -76,13 +75,26 @@ func (fdb *FoundationDB) Init(ctx context.Context) error {
 func (fdb *FoundationDB) Install(ctx context.Context, namespace string) error {
 	fdb.namespace = namespace
 
-	instARG := []string{"install", fdb.oprReleaseName, "../../helm/fdb-operator/", "-n", fdb.namespace}
+	helmVersion, err := helm.FindHelmVersion()
+	if err != nil {
+		return errors.Wrap(err, "failed to create helm client")
+	}
+
+	var instARG, instFDB []string
+	switch helmVersion {
+	case helm.V2:
+		instARG = []string{"install", "../../helm/fdb-operator/", "--name=" + fdb.oprReleaseName, "-n", fdb.namespace}
+		instFDB = []string{"install", "../../helm/fdb-instance", "--name=" + fdb.fdbReleaseName, "-n", fdb.namespace}
+	case helm.V3:
+		instARG = []string{"install", fdb.oprReleaseName, "../../helm/fdb-operator/", "-n", fdb.namespace}
+		instFDB = []string{"install", fdb.fdbReleaseName, "../../helm/fdb-instance", "-n", fdb.namespace}
+	}
+
 	out, err := helm.RunCmdWithTimeout(ctx, "helm", instARG)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing the operator for %s, error is %s.", fdb.name, out)
 	}
 
-	instFDB := []string{"install", fdb.fdbReleaseName, "../../helm/fdb-instance", "-n", fdb.namespace}
 	out, err = helm.RunCmdWithTimeout(ctx, "helm", instFDB)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing the application %s, error is %s", fdb.name, out)
