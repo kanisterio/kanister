@@ -61,11 +61,15 @@ dockers:
   dockerfile: 'examples/helm/kanister/kanister-elasticsearch/image/Dockerfile'
   extra_files:
   - 'examples/helm/kanister/kanister-elasticsearch/image/esdump-setup.sh'
+  build_flag_templates:
+  - "--build-arg=TOOLS_IMAGE=kanisterio/kanister-tools:{{ .Tag }}"
 - binaries:
   - kando
   image_templates:
   - 'kanisterio/mysql-sidecar:{{ .Tag }}'
   dockerfile: 'examples/helm/kanister/kanister-mysql/image/Dockerfile'
+  build_flag_templates:
+  - "--build-arg=TOOLS_IMAGE=kanisterio/kanister-tools:{{ .Tag }}"
 - binaries:
   - kando
   image_templates:
