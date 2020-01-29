@@ -74,10 +74,12 @@ func (mdb *MysqlDB) Init(ctx context.Context) error {
 
 func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
 	mdb.namespace = namespace
-
-	cli := helm.NewCliClient(helm.V3)
+	cli, err := helm.NewCliClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create helm client")
+	}
 	log.Print("Adding repo.", field.M{"app": mdb.name})
-	err := cli.AddRepo(ctx, mdb.chart.RepoName, mdb.chart.RepoURL)
+	err = cli.AddRepo(ctx, mdb.chart.RepoName, mdb.chart.RepoURL)
 	if err != nil {
 		return errors.Wrapf(err, "Error helm repo for app %s.", mdb.name)
 	}
@@ -113,9 +115,11 @@ func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (mdb *MysqlDB) Uninstall(ctx context.Context) error {
-	cli := helm.NewCliClient(helm.V3)
-
-	err := cli.Uninstall(ctx, mdb.name, mdb.namespace)
+	cli, err := helm.NewCliClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create helm client")
+	}
+	err = cli.Uninstall(ctx, mdb.name, mdb.namespace)
 	if err != nil {
 		log.WithError(err).Print("Failed to uninstall app, you will have to uninstall it manually.", field.M{"app": mdb.name})
 		return err
