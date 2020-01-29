@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
@@ -78,7 +78,7 @@ func (fdb *FoundationDB) Install(ctx context.Context, namespace string) error {
 
 	helmVersion, err := helm.FindHelmVersion()
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Couldn't find the helm version.")
 	}
 
 	var oprARG, instARG []string
