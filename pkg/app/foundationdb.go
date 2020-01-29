@@ -76,7 +76,7 @@ func (fdb *FoundationDB) Init(ctx context.Context) error {
 func (fdb *FoundationDB) Install(ctx context.Context, namespace string) error {
 	fdb.namespace = namespace
 
-	helmVersion, err := helm.FindHelmVersion()
+	helmVersion, err := helm.FindVersion()
 	if err != nil {
 		return errors.Wrapf(err, "Couldn't find the helm version.")
 	}
