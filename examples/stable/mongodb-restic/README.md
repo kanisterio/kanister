@@ -22,13 +22,10 @@ To install the chart with the release name `my-release`:
 $ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 $ helm repo update
 
-# Using helm v3
-$ helm install my-release stable/mongodb --namespace mongo-test \
-	--set replicaSet.enabled=true
-
-# Using helm < v3
 $ helm install stable/mongodb --name my-release --namespace mongo-test \
-	--set replicaSet.enabled=true
+	--set replicaSet.enabled=true \
+	--set image.repository=kanisterio/mongodb \
+	--set image.tag=0.24.0
 ```
 
 The command deploys MongoDB on the Kubernetes cluster in the mongo-test namespace

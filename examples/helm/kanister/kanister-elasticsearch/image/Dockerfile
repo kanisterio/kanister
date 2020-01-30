@@ -1,5 +1,6 @@
-FROM kanisterio/kanister-tools:0.24.0
+ARG TOOLS_IMAGE
+FROM $TOOLS_IMAGE
 MAINTAINER Supriya Kharade <supriya@kasten.io>
 
-ADD examples/helm/kanister/kanister-elasticsearch/image/esdump-setup.sh /esdump-setup.sh
-RUN chmod +x /esdump-setup.sh && sync && /esdump-setup.sh
+ADD --chmod=kanister:kanister examples/helm/kanister/kanister-elasticsearch/image/esdump-setup.sh /esdump-setup.sh
+RUN sync && bash /esdump-setup.sh

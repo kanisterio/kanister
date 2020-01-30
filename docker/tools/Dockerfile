@@ -1,10 +1,13 @@
-FROM alpine:3.10
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
 
-RUN apk -v --update add --no-cache bash curl groff less mailcap ca-certificates && \
-    rm -f /var/cache/apk/*
+RUN microdnf install git shadow-utils && \
+    microdnf clean all && \
+    adduser -U kanister
 
-COPY --from=restic/restic:0.9.5 /usr/bin/restic /usr/local/bin/restic
-COPY --from=kanisterio/kopia:alpine-9849fea /kopia/kopia /usr/local/bin/kopia
-ADD kando /usr/local/bin/
+COPY --chown=kanister:kanister --from=restic/restic:0.9.5 /usr/bin/restic /usr/local/bin/restic
+COPY --chown=kanister:kanister --from=kanisterio/kopia:alpine-2fb6bc8 /kopia/kopia /usr/local/bin/kopia
+ADD --chown=kanister:kanister kando /usr/local/bin/
+
+USER kanister
 
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]

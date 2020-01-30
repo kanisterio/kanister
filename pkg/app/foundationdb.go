@@ -76,14 +76,27 @@ func (fdb *FoundationDB) Init(ctx context.Context) error {
 func (fdb *FoundationDB) Install(ctx context.Context, namespace string) error {
 	fdb.namespace = namespace
 
-	instARG := []string{"install", fdb.oprReleaseName, "../../helm/fdb-operator/", "-n", fdb.namespace}
-	out, err := helm.RunCmdWithTimeout(ctx, "helm", instARG)
+	helmVersion, err := helm.FindVersion()
+	if err != nil {
+		return errors.Wrapf(err, "Couldn't find the helm version.")
+	}
+
+	var oprARG, instARG []string
+	switch helmVersion {
+	case helm.V2:
+		oprARG = []string{"install", "../../helm/fdb-operator/", "--name=" + fdb.oprReleaseName, "-n", fdb.namespace}
+		instARG = []string{"install", "../../helm/fdb-instance", "--name=" + fdb.fdbReleaseName, "-n", fdb.namespace}
+	case helm.V3:
+		oprARG = []string{"install", fdb.oprReleaseName, "../../helm/fdb-operator/", "-n", fdb.namespace}
+		instARG = []string{"install", fdb.fdbReleaseName, "../../helm/fdb-instance", "-n", fdb.namespace}
+	}
+
+	out, err := helm.RunCmdWithTimeout(ctx, "helm", oprARG)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing the operator for %s, error is %s.", fdb.name, out)
 	}
 
-	instFDB := []string{"install", fdb.fdbReleaseName, "../../helm/fdb-instance", "-n", fdb.namespace}
-	out, err = helm.RunCmdWithTimeout(ctx, "helm", instFDB)
+	out, err = helm.RunCmdWithTimeout(ctx, "helm", instARG)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing the application %s, error is %s", fdb.name, out)
 	}

@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
+	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	azto "github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
@@ -128,7 +128,7 @@ func (s *adStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volu
 		Name:     azto.StringPtr(snapName),
 		Location: azto.StringPtr(region),
 		Tags:     *azto.StringMapPtr(tags),
-		DiskProperties: &azcompute.DiskProperties{
+		SnapshotProperties: &azcompute.SnapshotProperties{
 			CreationData: &azcompute.CreationData{
 				CreateOption:     azcompute.Copy,
 				SourceResourceID: azto.StringPtr(volume.ID),
@@ -220,8 +220,9 @@ func (s *adStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 		return nil, errors.New(fmt.Sprintf("Volume is not of type *azcompute.Disk, volume: %v", volume))
 	}
 	encrypted := false
-	if vol.DiskProperties.EncryptionSettings != nil {
-		encrypted = true
+	if vol.DiskProperties.EncryptionSettingsCollection != nil &&
+		vol.DiskProperties.EncryptionSettingsCollection.Enabled != nil {
+		encrypted = *vol.DiskProperties.EncryptionSettingsCollection.Enabled
 	}
 	tags := map[string]string{"": ""}
 	if vol.Tags != nil {
@@ -255,13 +256,14 @@ func (s *adStorage) SnapshotParse(ctx context.Context, snapshot interface{}) (*b
 func (s *adStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) *blockstorage.Snapshot {
 	vol := &blockstorage.Volume{
 		Type: s.Type(),
-		ID:   azto.String(snap.DiskProperties.CreationData.SourceResourceID),
+		ID:   azto.String(snap.SnapshotProperties.CreationData.SourceResourceID),
 	}
 
 	snapCreationTime := *snap.TimeCreated
 	encrypted := false
-	if snap.DiskProperties.EncryptionSettings != nil {
-		encrypted = true
+	if snap.SnapshotProperties.EncryptionSettingsCollection != nil &&
+		snap.SnapshotProperties.EncryptionSettingsCollection.Enabled != nil {
+		encrypted = *snap.SnapshotProperties.EncryptionSettingsCollection.Enabled
 	}
 	tags := map[string]string{"": ""}
 	if snap.Tags != nil {
@@ -271,7 +273,7 @@ func (s *adStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) 
 		Encrypted:    encrypted,
 		ID:           azto.String(snap.ID),
 		Region:       azto.String(snap.Location),
-		Size:         int64(azto.Int32(snap.DiskProperties.DiskSizeGB)),
+		Size:         int64(azto.Int32(snap.SnapshotProperties.DiskSizeGB)),
 		Tags:         blockstorage.MapToKeyValue(tags),
 		Type:         s.Type(),
 		Volume:       vol,

@@ -61,11 +61,15 @@ dockers:
   dockerfile: 'examples/helm/kanister/kanister-elasticsearch/image/Dockerfile'
   extra_files:
   - 'examples/helm/kanister/kanister-elasticsearch/image/esdump-setup.sh'
+  build_flag_templates:
+  - "--build-arg=TOOLS_IMAGE=kanisterio/kanister-tools:{{ .Tag }}"
 - binaries:
   - kando
   image_templates:
   - 'kanisterio/mysql-sidecar:{{ .Tag }}'
   dockerfile: 'examples/helm/kanister/kanister-mysql/image/Dockerfile'
+  build_flag_templates:
+  - "--build-arg=TOOLS_IMAGE=kanisterio/kanister-tools:{{ .Tag }}"
 - binaries:
   - kando
   image_templates:
@@ -76,7 +80,9 @@ dockers:
   - 'examples/helm/kanister/kanister-mongodb-replicaset/image/90forceyes'
   - 'examples/helm/kanister/kanister-mongodb-replicaset/image/config'
   - 'examples/helm/kanister/kanister-mongodb-replicaset/image/gbl_env.sh'
-- image_templates:
+- binaries:
+  - kando
+  image_templates:
   - 'kanisterio/mongodb:{{ .Tag }}'
   dockerfile: 'docker/mongodb/Dockerfile'
 - binaries:

@@ -28,9 +28,8 @@ if [ -z "${ARCH:-""}" ]; then
     echo "ARCH must be set"
     exit 1
 fi
-if [ -z "${BASEIMAGE:-""}" ]; then
-    echo "BASEIMAGE must be set"
-    exit 1
+if [ -n "${BASEIMAGE:-""}" ]; then
+    baseimagearg="--build-arg base_image=${BASEIMAGE}"
 fi
 if [ -z "${IMAGE:-""}" ]; then
     echo "IMAGE must be set"
@@ -48,8 +47,7 @@ fi
 sed                                \
     -e "s|ARG_BIN|${BIN}|g"        \
     -e "s|ARG_ARCH|${ARCH}|g"      \
-    -e "s|ARG_FROM|${BASEIMAGE}|g" \
     -e "s|ARG_SOURCE_BIN|${SOURCE_BIN}|g" \
     Dockerfile.in > .dockerfile-${ARCH}
-docker build -t ${IMAGE}:${VERSION} -f .dockerfile-${ARCH} .
+docker build ${baseimagearg:-} -t ${IMAGE}:${VERSION} -f .dockerfile-${ARCH} .
 docker images -q ${IMAGE}:${VERSION}
