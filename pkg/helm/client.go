@@ -55,8 +55,8 @@ type CliClient struct {
 	version HelmVersion
 }
 
-// findHelmVersion returns HelmVersion based on helm binary present in the path
-func findHelmVersion() (HelmVersion, error) {
+// FindVersion returns HelmVersion based on helm binary present in the path
+func FindVersion() (HelmVersion, error) {
 	out, err := RunCmdWithTimeout(context.TODO(), "helm", []string{"version", "--client", "--short"})
 	if err != nil {
 		return "", err
@@ -75,7 +75,7 @@ func findHelmVersion() (HelmVersion, error) {
 }
 
 func NewCliClient() (Client, error) {
-	version, err := findHelmVersion()
+	version, err := FindVersion()
 	if err != nil {
 		return nil, err
 	}
