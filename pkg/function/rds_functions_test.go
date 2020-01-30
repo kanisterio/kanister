@@ -16,7 +16,8 @@ package function
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/kanisterio/kanister/pkg/param"
 	. "gopkg.in/check.v1"
@@ -40,6 +41,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 		errChecker       Checker
 		deepEqualChecker Checker
 		tp               param.TemplateParams
+		command          []string
 	}{
 		{
 			name:             "PostgreS restore command",
@@ -53,6 +55,12 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			errChecker:       IsNil,
 			deepEqualChecker: DeepEquals,
 			dbList:           []string{"template1"},
+			command: []string{"bash", "-o", "errexit", "-o", "pipefail", "-c",
+				fmt.Sprintf(`
+		export PGHOST=%s
+		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | psql -q -U "${PGUSER}" %s
+		`, "db-endpoint", "null", fmt.Sprintf("%s/%s", "/backup/postgres-backup", "backup-id"), []string{"template1"}[0]),
+			},
 		},
 		{
 			name:             "PostgreS backup command",
@@ -66,26 +74,42 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			errChecker:       IsNil,
 			deepEqualChecker: DeepEquals,
 			dbList:           []string{"template1"},
+			command: []string{"bash", "-o", "errexit", "-o", "pipefail", "-c",
+				fmt.Sprintf(`
+			export PGHOST=%s
+			BACKUP_PREFIX=%s
+			BACKUP_ID=%s
+
+			mkdir /backup
+			dblist=( %s )
+			for db in "${dblist[@]}";
+			  do echo "backing up $db db" && pg_dump $db -C --inserts > /backup/$db.sql;
+			done
+			tar -zc backup | kando location push --profile '%s' --path "${BACKUP_PREFIX}/${BACKUP_ID}" -
+			kando output %s ${BACKUP_ID}`,
+					"db-endpoint", "/backup/postgres-backup", "backup-id", strings.Join([]string{"template1"}, " "), "null", ExportRDSSnapshotToLocBackupID),
+			},
+		},
+		{
+			name:             "PostgreS backup command",
+			dbEngine:         "MySQLDBEngine",
+			action:           BackupAction,
+			dbEndpoint:       "db-endpoint",
+			username:         "dummy-user",
+			password:         "secret-pass",
+			backupPrefix:     "/backup/postgres-backup",
+			backupID:         "backup-id",
+			errChecker:       NotNil,
+			deepEqualChecker: DeepEquals,
+			dbList:           []string{"template1"},
+			command:          nil,
 		},
 	}
 
 	for _, tc := range testCases {
-		profileJson, err := json.Marshal(tc.tp.Profile)
-
-		var command []string
-
-		if tc.dbEngine == PostgrSQLEngine {
-			if tc.action == RestoreAction {
-				command, err = postgresRestoreCommand(tc.dbEndpoint, tc.username, tc.password, tc.dbList, tc.backupPrefix, tc.backupID, profileJson)
-				c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
-			} else if tc.action == BackupAction {
-				command, err = postgresBackupCommand(tc.dbEndpoint, tc.username, tc.password, tc.dbList, tc.backupPrefix, tc.backupID, profileJson)
-				c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
-			}
-		}
-
 		outCommand, _, err := prepareCommand(context.Background(), tc.dbEngine, tc.action, tc.dbEndpoint, tc.username, tc.password, tc.dbList, tc.backupPrefix, tc.backupID, tc.tp.Profile)
+
 		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
-		c.Assert(command, tc.deepEqualChecker, outCommand)
+		c.Assert(outCommand, tc.deepEqualChecker, tc.command)
 	}
 }
