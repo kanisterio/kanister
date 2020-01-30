@@ -3,9 +3,9 @@ package function
 import (
 	"bytes"
 	"context"
+	"os"
 	"path"
 	"strings"
-	"os"
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/pkg/errors"
@@ -24,9 +24,10 @@ import (
 )
 
 const (
-	FunctionOutputVersion = "version"
-	kanisterToolsImage    = "kanisterio/kanister-tools:0.24.2"
-    kanisterToolsImageEnvName = "KANISTER_TOOLS"
+	// FunctionOutputVersion returns version
+	FunctionOutputVersion     = "version"
+	kanisterToolsImage        = "kanisterio/kanister-tools:0.24.2"
+	kanisterToolsImageEnvName = "KANISTER_TOOLS"
 )
 
 func getKanisterToolsImage() string {
