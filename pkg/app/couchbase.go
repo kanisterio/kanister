@@ -88,15 +88,18 @@ func (cb *CouchbaseDB) Install(ctx context.Context, ns string) error {
 	cb.namespace = ns
 
 	// Create helm client
-	cli := helm.NewCliClient(helm.V3)
+	cli, err := helm.NewCliClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create helm client")
+	}
 
 	// Add helm repo and fetch charts
-	if err := cli.AddRepo(ctx, cb.operatorChart.RepoName, cb.operatorChart.RepoURL); err != nil {
+	if err = cli.AddRepo(ctx, cb.operatorChart.RepoName, cb.operatorChart.RepoURL); err != nil {
 		return errors.Wrapf(err, "Failed to install helm repo. app=%s repo=%s", cb.name, cb.operatorChart.RepoName)
 	}
 
 	// Install cb operator
-	err := cli.Install(ctx, fmt.Sprintf("%s/%s", cb.operatorChart.RepoName, cb.operatorChart.Chart), cb.operatorChart.Version, cb.operatorChart.Release, cb.namespace, cb.operatorChart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cb.operatorChart.RepoName, cb.operatorChart.Chart), cb.operatorChart.Version, cb.operatorChart.Release, cb.namespace, cb.operatorChart.Values)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", cb.name, cb.operatorChart.Chart, cb.operatorChart.Release)
 	}
@@ -237,11 +240,14 @@ func (cb CouchbaseDB) Reset(ctx context.Context) error {
 
 func (cb CouchbaseDB) Uninstall(ctx context.Context) error {
 	// Create helm client
-	cli := helm.NewCliClient(helm.V3)
+	cli, err := helm.NewCliClient()
+	if err != nil {
+		return errors.Wrap(err, "failed to create helm client")
+	}
 
 	// Uninstall couchbase-cluster helm chart
 	log.Info().Print("Uninstalling helm charts.", field.M{"app": cb.name, "release": cb.operatorChart.Release, "namespace": cb.namespace})
-	err := cli.Uninstall(ctx, cb.clusterChart.Release, cb.namespace)
+	err = cli.Uninstall(ctx, cb.clusterChart.Release, cb.namespace)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to uninstall %s helm release", cb.clusterChart.Release)
 	}

@@ -1,3 +1,4 @@
-FROM kanisterio/kanister-tools:0.24.0
+ARG TOOLS_IMAGE
+FROM $TOOLS_IMAGE
 RUN apk -v --update add --no-cache mysql-client && \
     rm -f /var/cache/apk/*

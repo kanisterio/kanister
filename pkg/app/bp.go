@@ -31,8 +31,8 @@ const (
 // Blueprint implements Blueprint() to return Blueprint specs for the app
 // Blueprint() returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
 type AppBlueprint struct {
-	app  string
-	path string
+	App  string
+	Path string
 }
 
 // PITRBlueprint implements Blueprint() to return Blueprint with PITR
@@ -43,15 +43,15 @@ type PITRBlueprint struct {
 
 func NewBlueprint(app string) Blueprinter {
 	return &AppBlueprint{
-		app:  app,
-		path: fmt.Sprintf("%s/%s-blueprint.yaml", blueprintsRepo, app),
+		App:  app,
+		Path: fmt.Sprintf("%s/%s-blueprint.yaml", blueprintsRepo, app),
 	}
 }
 
 func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
-	bpr, err := bp.ReadFromFile(b.path)
+	bpr, err := bp.ReadFromFile(b.Path)
 	if err != nil {
-		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.app})
+		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.App})
 	}
 	return bpr
 }
@@ -60,8 +60,8 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 func NewPITRBlueprint(app string) Blueprinter {
 	return &PITRBlueprint{
 		AppBlueprint{
-			app:  app,
-			path: fmt.Sprintf("%s/%s-blueprint.yaml", blueprintsRepo, app),
+			App:  app,
+			Path: fmt.Sprintf("%s/%s-blueprint.yaml", blueprintsRepo, app),
 		},
 	}
 }

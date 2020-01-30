@@ -55,10 +55,34 @@ type CliClient struct {
 	version HelmVersion
 }
 
-func NewCliClient(version HelmVersion) Client {
+// FindVersion returns HelmVersion based on helm binary present in the path
+func FindVersion() (HelmVersion, error) {
+	out, err := RunCmdWithTimeout(context.TODO(), "helm", []string{"version", "--client", "--short"})
+	if err != nil {
+		return "", err
+	}
+
+	// Trim prefix if output from helm v2
+	out = strings.TrimPrefix(out, "Client: ")
+
+	if strings.HasPrefix(out, "v2") {
+		return V2, nil
+	}
+	if strings.HasPrefix(out, "v3") {
+		return V3, nil
+	}
+	return "", fmt.Errorf("Unsupported helm version %s", out)
+}
+
+func NewCliClient() (Client, error) {
+	version, err := FindVersion()
+	if err != nil {
+		return nil, err
+	}
+
 	return &CliClient{
 		version: version,
-	}
+	}, nil
 }
 
 // AddRepo adds new helm repo and fetches latest charts
