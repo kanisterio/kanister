@@ -15,6 +15,7 @@ import (
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -329,18 +330,23 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		return nil, err
 	}
 
+	_, rg, name, err := parseDiskID(snapshot.Volume.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get info for volume with ID %s", snapshot.Volume.ID)
+	}
+	disk, err := s.azCli.DisksClient.Get(ctx, rg, name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get volume, volumeID: %s", snapshot.Volume.ID)
+	}
+
+	log.Print("VolumeCreateFromSnapshot", field.M{"region": region, "id": id})
 	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
 	tags = blockstorage.SanitizeTags(tags)
 	createDisk := azcompute.Disk{
-		Name:     azto.StringPtr(diskName),
-		Tags:     *azto.StringMapPtr(tags),
-		Location: azto.StringPtr(region),
-		DiskProperties: &azcompute.DiskProperties{
-			CreationData: &azcompute.CreationData{
-				CreateOption:     azcompute.Copy,
-				SourceResourceID: azto.StringPtr(snapshot.ID),
-			},
-		},
+		Name:           azto.StringPtr(diskName),
+		Tags:           *azto.StringMapPtr(tags),
+		Location:       azto.StringPtr(region),
+		DiskProperties: disk.DiskProperties,
 	}
 	if id != "" {
 		createDisk.Zones = azto.StringSlicePtr([]string{id})
@@ -352,7 +358,7 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	if err = result.WaitForCompletionRef(ctx, s.azCli.DisksClient.Client); err != nil {
 		return nil, errors.Wrapf(err, "DiskCLient.CreateOrUpdate in VolumeCreateFromSnapshot, diskName: %s, snapshotID: %s", diskName, snapshot.ID)
 	}
-	disk, err := result.Result(*s.azCli.DisksClient)
+	disk, err = result.Result(*s.azCli.DisksClient)
 	if err != nil {
 		return nil, err
 	}
@@ -360,38 +366,30 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 }
 
 func getRegionAndZoneID(ctx context.Context, s *adStorage, sourceRegion, volAz string) (string, string, error) {
-	//check if region is zoned or not
-	z, err := staticRegionToZones(sourceRegion)
+	//check if current node region is zoned or not
+	cli, err := kube.NewClient()
 	if err != nil {
 		return "", "", err
 	}
-	if z != nil {
-		// If source volume has a nonzoned region, then return snapshot region for restoring
-		// volume from snapshot
-		if _, id, err := getLocationInfo(volAz); err == nil {
-			if id == "" {
-				return sourceRegion, "", nil
-			}
-		} else if err != nil {
-			return "", "", err
-		}
-		zones, err := zone.FromSourceRegionZone(ctx, s, sourceRegion, volAz)
-		if err != nil {
-			return "", "", err
-		}
-		if len(zones) != 1 {
-			return "", "", errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
-		}
-
-		region, id, err := getLocationInfo(zones[0])
-		if err != nil {
-			return "", "", errors.Wrapf(err, "Could not get region from zone %s", zones[0])
-		}
-		return region, id, nil
+	zs, region, err := zone.NodeZonesAndRegion(ctx, cli)
+	if err != nil {
+		return "", "", err
+	}
+	if len(zs) == 0 {
+		log.Print("Non-zone region", field.M{"region": region})
+		return region, "", nil
 	}
 
-	// If the snapshot region is a nonzoned, then no need to get zone
-	return sourceRegion, "", nil
+	zones, err := zone.FromSourceRegionZone(ctx, s, sourceRegion, volAz)
+	if err != nil {
+		return "", "", err
+	}
+	if len(zones) != 1 {
+		return "", "", errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
+	}
+
+	region, id, err := getLocationInfo(zones[0])
+	return region, id, errors.Wrapf(err, "Could not get region from zone %s", zones[0])
 }
 
 func getLocationInfo(az string) (string, string, error) {
