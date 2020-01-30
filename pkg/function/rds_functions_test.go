@@ -29,32 +29,30 @@ var _ = Suite(&RDSFunctionsTest{})
 
 func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 	testCases := []struct {
-		name             string
-		dbEngine         RDSDBEngine
-		dbList           []string
-		action           RDSAction
-		dbEndpoint       string
-		username         string
-		password         string
-		backupPrefix     string
-		backupID         string
-		errChecker       Checker
-		deepEqualChecker Checker
-		tp               param.TemplateParams
-		command          []string
+		name         string
+		dbEngine     RDSDBEngine
+		dbList       []string
+		action       RDSAction
+		dbEndpoint   string
+		username     string
+		password     string
+		backupPrefix string
+		backupID     string
+		errChecker   Checker
+		tp           param.TemplateParams
+		command      []string
 	}{
 		{
-			name:             "PostgreS restore command",
-			dbEngine:         PostgrSQLEngine,
-			action:           RestoreAction,
-			dbEndpoint:       "db-endpoint",
-			username:         "dummy-user",
-			password:         "secret-pass",
-			backupPrefix:     "/backup/postgres-backup",
-			backupID:         "backup-id",
-			errChecker:       IsNil,
-			deepEqualChecker: DeepEquals,
-			dbList:           []string{"template1"},
+			name:         "PostgreS restore command",
+			dbEngine:     PostgrSQLEngine,
+			action:       RestoreAction,
+			dbEndpoint:   "db-endpoint",
+			username:     "dummy-user",
+			password:     "secret-pass",
+			backupPrefix: "/backup/postgres-backup",
+			backupID:     "backup-id",
+			errChecker:   IsNil,
+			dbList:       []string{"template1"},
 			command: []string{"bash", "-o", "errexit", "-o", "pipefail", "-c",
 				fmt.Sprintf(`
 		export PGHOST=%s
@@ -63,17 +61,16 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			},
 		},
 		{
-			name:             "PostgreS backup command",
-			dbEngine:         PostgrSQLEngine,
-			action:           BackupAction,
-			dbEndpoint:       "db-endpoint",
-			username:         "dummy-user",
-			password:         "secret-pass",
-			backupPrefix:     "/backup/postgres-backup",
-			backupID:         "backup-id",
-			errChecker:       IsNil,
-			deepEqualChecker: DeepEquals,
-			dbList:           []string{"template1"},
+			name:         "PostgreS backup command",
+			dbEngine:     PostgrSQLEngine,
+			action:       BackupAction,
+			dbEndpoint:   "db-endpoint",
+			username:     "dummy-user",
+			password:     "secret-pass",
+			backupPrefix: "/backup/postgres-backup",
+			backupID:     "backup-id",
+			errChecker:   IsNil,
+			dbList:       []string{"template1"},
 			command: []string{"bash", "-o", "errexit", "-o", "pipefail", "-c",
 				fmt.Sprintf(`
 			export PGHOST=%s
@@ -91,18 +88,17 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			},
 		},
 		{
-			name:             "PostgreS backup command",
-			dbEngine:         "MySQLDBEngine",
-			action:           BackupAction,
-			dbEndpoint:       "db-endpoint",
-			username:         "dummy-user",
-			password:         "secret-pass",
-			backupPrefix:     "/backup/postgres-backup",
-			backupID:         "backup-id",
-			errChecker:       NotNil,
-			deepEqualChecker: DeepEquals,
-			dbList:           []string{"template1"},
-			command:          nil,
+			name:         "PostgreS backup command",
+			dbEngine:     "MySQLDBEngine",
+			action:       BackupAction,
+			dbEndpoint:   "db-endpoint",
+			username:     "dummy-user",
+			password:     "secret-pass",
+			backupPrefix: "/backup/postgres-backup",
+			backupID:     "backup-id",
+			errChecker:   NotNil,
+			dbList:       []string{"template1"},
+			command:      nil,
 		},
 	}
 
@@ -110,6 +106,6 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 		outCommand, _, err := prepareCommand(context.Background(), tc.dbEngine, tc.action, tc.dbEndpoint, tc.username, tc.password, tc.dbList, tc.backupPrefix, tc.backupID, tc.tp.Profile)
 
 		c.Check(err, tc.errChecker, Commentf("Case %s failed", tc.name))
-		c.Assert(outCommand, tc.deepEqualChecker, tc.command)
+		c.Assert(outCommand, DeepEquals, tc.command)
 	}
 }
