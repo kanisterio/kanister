@@ -5,10 +5,11 @@ import (
 	"context"
 	"path"
 	"strings"
+	"os"
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -24,7 +25,16 @@ import (
 
 const (
 	FunctionOutputVersion = "version"
+	kanisterToolsImage    = "kanisterio/kanister-tools:0.24.0"
+    kanisterToolsImageEnvName = "KANISTER_TOOLS"
 )
+
+func getKanisterToolsImage() string {
+	if val, ok := os.LookupEnv(kanisterToolsImageEnvName); ok {
+		return val
+	}
+	return kanisterToolsImage
+}
 
 // ValidateCredentials verifies if the given credentials have appropriate values set
 func ValidateCredentials(creds *param.Credential) error {
