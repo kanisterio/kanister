@@ -33,7 +33,6 @@ import (
 )
 
 const (
-	kanisterToolsImage = "kanisterio/kanister-tools:0.24.0"
 	// CopyVolumeDataFuncName gives the function name
 	CopyVolumeDataFuncName                     = "CopyVolumeData"
 	CopyVolumeDataMountPoint                   = "/mnt/vol_data/%s"
@@ -74,7 +73,7 @@ func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.Temp
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: CopyVolumeDataJobPrefix,
-		Image:        kanisterToolsImage,
+		Image:        getKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      map[string]string{pvc: mountPoint},
 		PodOverride:  podOverride,
