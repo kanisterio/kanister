@@ -65,7 +65,7 @@ func backupDataStats(ctx context.Context, cli kubernetes.Interface, tp param.Tem
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
-		Image:        kanisterToolsImage,
+		Image:        getKanisterToolsImage(),
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		PodOverride:  podOverride,
 	}
