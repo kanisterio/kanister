@@ -100,7 +100,7 @@ spec:
           mountPath: /etc/mysql/conf.d
         {{- end }}
       - name: kanister-sidecar
-        image: kanisterio/mysql-sidecar:0.24.0
+        image: kanisterio/mysql-sidecar:0.25.0
         imagePullPolicy: Always
         env:
         {{- if .Values.mysqlAllowEmptyPassword }}
