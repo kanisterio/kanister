@@ -26,7 +26,7 @@ import (
 const (
 	// FunctionOutputVersion returns version
 	FunctionOutputVersion     = "version"
-	kanisterToolsImage        = "kanisterio/kanister-tools:0.24.2"
+	kanisterToolsImage        = "kanisterio/kanister-tools:0.25.0"
 	kanisterToolsImageEnvName = "KANISTER_TOOLS"
 )
 
