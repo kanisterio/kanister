@@ -57,7 +57,7 @@ The command will configure a location where artifacts resulting from Kanister da
 Create Blueprint in the same namespace as the controller
 
 ```bash
-$ kubectl create -f ./mongodb-blueprint.yaml -n kasten-io
+$ kubectl create -f ./mongo-blueprint.yaml -n kasten-io
 ```
 
 Once MongoDB is running, you can populate it with some data. Let's add a collection called "restaurants" to a test database:
