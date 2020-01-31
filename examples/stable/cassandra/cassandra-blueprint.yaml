@@ -14,7 +14,7 @@ actions:
           backupInfo: "{{ .Phases.backupToObjectStore.Output.BackupAllInfo }}"
           restorePathPrefix: "/var/lib/cassandra"
     phases:
-    - func: KubeExecAll 
+    - func: KubeExecAll
       name: getBackupPrefixLocation
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
@@ -61,7 +61,7 @@ actions:
               cp -r `ls -A | grep -v  -w "system" | grep -v  -w "system_traces"` ${snapshot_prefix}/${HOSTNAME}/
               cd ${snapshot_prefix}/${HOSTNAME}/
               cqlsh -e "DESCRIBE SCHEMA" > schema.cql
-            fi  
+            fi
             sleep 300
             nodetool clearsnapshot
     - func: BackupDataAll
@@ -105,7 +105,7 @@ actions:
       name: restoreFromObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: kanisterio/kanister-tools:0.24.0
+        image: kanisterio/kanister-tools:0.25.0
         backupArtifactPrefix: "{{ .ArtifactsIn.params.KeyValue.backupPrefixLocation }}"
         pods: "{{ range .StatefulSet.Pods }} {{.}}{{end}}"
         restorePath: "{{ .ArtifactsIn.params.KeyValue.restorePathPrefix }}"
