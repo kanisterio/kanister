@@ -9,7 +9,7 @@ This example is to demonstrate how Kanister can be integrated with AWS RDS insta
 ## Prerequisites
 
 - Kubernetes 1.10+
-- Kanister controller version 0.24.0 installed in your cluster
+- Kanister controller version 0.25.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Create RDS instance on AWS
@@ -89,7 +89,7 @@ There are two ways that you can use to backup and restore RDS instance data:
 
 
 1. Create RDS instance snapshot - Using `rds-postgres-snap-blueprint.yaml` Blueprint
-2. Create RDS snapshot, extract postgres data and push that data to S3 storage - Using `rds-postgres-dump-blueprint.yaml` Blueprint 
+2. Create RDS snapshot, extract postgres data and push that data to S3 storage - Using `rds-postgres-dump-blueprint.yaml` Blueprint
 
 So as you can see we will have to create a blueprint depending on how are we going to take the backup.
 
@@ -113,11 +113,11 @@ s3-profile-sph7s   2h
 
 
 # Use correct blueprint name (one of `rds-postgres-dump-bp` or `rds-postgres-snapshot-bp`) you have created earlier
-# 
+#
 $ kanctl create actionset --action backup --namespacetargets pgtestrds --config-maps dbconfig=pgtestrds/dbconfig --profile pgtestrds/s3-profile-6hmhn -b <blueprint-name> -n kasten-io
 actionset backup-llfb8 created
 
-# Where, 
+# Where,
 # dbconfig is a configmap holding RDS infromation
 # Please see pgtest/deploy/config.yaml for configmap format
 

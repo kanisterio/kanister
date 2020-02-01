@@ -16,7 +16,7 @@ to create this README that can be used to create a simple foundationDB
 cluster.
 
 
-## Prerequisite 
+## Prerequisite
 
 * Install GO on your machine, see the [Getting Started](https://golang.org/doc/install) guide for more information, and [set GOPATH](https://github.com/golang/go/wiki/SettingGOPATH).
 * Install KubeBuilder and its dependencies on your machine, see [The KubeBuilder Book](https://book.kubebuilder.io/quick-start.html) for more information.
@@ -24,7 +24,7 @@ cluster.
 on you cluster.
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.24.0 with `profiles.cr.kanister.io` CRD installed.
+* Kanister version 0.25.0 with `profiles.cr.kanister.io` CRD installed.
 
 # Installation
 
@@ -63,14 +63,14 @@ $ kubectl create -f local_cluster.yaml
 ```
 
 If you now go ahead and try to list all the pods, you will be able to see
-that there are some pods running for foundationDB cluster. 
+that there are some pods running for foundationDB cluster.
 By default we are running this cluster in double
 [redundancy mode](https://apple.github.io/foundationdb/configuration.html#choosing-a-redundancy-mode),
 because we faced some issues while running it as single redundancy mode, and
 have discussion going on about that, [here](https://forums.foundationdb.org/t/connecting-to-the-database-using-fdbcli-results-in-an-error/1841).
 
 Once we have the database pods up and running let's try to exec into a pod and
-then try to insert some key value pairs  in the database 
+then try to insert some key value pairs  in the database
 
 ```bash
 # exec into the foundation db pod
@@ -79,7 +79,7 @@ $ kubectl exec -it foundationdbcluster-sample-1 -c foundationdb bash
 # once you are in the foundation DB pod get the fdbcli to run the command
 $ fdbcli
 
-fdb> writemode on 
+fdb> writemode on
 fdb> set name Tom
 fdb> set lastname Manville
 ```
@@ -90,7 +90,7 @@ Once we have the foundationDB cluster up and running we can go ahead and integra
 this with Kanister in order to take the backup and restore that backup. To achieve
 that we will have to create below mentioned Kanister resources
 
-## Create profile 
+## Create profile
 
 ```bash
 kanctl create profile s3compliant --access-key <access-key>                 \
@@ -127,9 +127,9 @@ To insert some records into the database we will have to `EXEC` into the foundat
 and then run the database command using the `fdbcli` utility
 
 ```bash
-# EXEC into the pod 
+# EXEC into the pod
 $ kubectl exec -it foundationdbcluster-sample-1 -c foundationdb bash
-# get the fdbcli 
+# get the fdbcli
 $ fdbcli
 fdb> writemode on
 fdb> set name Tom
@@ -142,13 +142,13 @@ using the CR, we will have create a `ClusterRoleBinding` to enable that access. 
 resource using below command
 
 ```bash
-$ kubectl create -f kanister-clusteradmin-binding.yaml 
+$ kubectl create -f kanister-clusteradmin-binding.yaml
 ```
 
 
-## Create backup actionset 
+## Create backup actionset
 
-To take the backup of the data tha we have just inserted into the database, we will have to create 
+To take the backup of the data tha we have just inserted into the database, we will have to create
 Actionset Kanister resource. Please follow below command to create the Actionset
 
 ```bash
