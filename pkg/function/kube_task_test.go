@@ -70,7 +70,7 @@ func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 			KubeTaskCommandArg: []string{
 				"sh",
 				"-c",
-				"kando output version 0.25.0",
+				"kando output version 0.26.0",
 			},
 		},
 	}

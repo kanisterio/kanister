@@ -10,7 +10,7 @@ actions:
       name: backupToObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/es-sidecar:0.25.0"
+        image: "kanisterio/es-sidecar:0.26.0"
         command:
         - bash
         - -o
