@@ -5,5 +5,5 @@ RUN dnf install -y mysql-community-client
 
 FROM $TOOLS_IMAGE
 
-COPY --from=builder --chown=kanister:kanister /usr/lib64/mysql /usr/lib64/
-COPY --from=builder --chown=kanister:kanister /usr/bin/mysql* /usr/bin/
+COPY --from=builder /usr/lib64/mysql /usr/lib64/
+COPY --from=builder /usr/bin/mysql* /usr/bin/
