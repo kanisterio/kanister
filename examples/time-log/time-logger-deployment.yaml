@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
       - name: test-container
-        image: kanisterio/kanister-tools:0.25.0
+        image: kanisterio/kanister-tools:0.26.0
         command: ["sh", "-c"]
         args: ["while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"]
         volumeMounts:
