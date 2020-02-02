@@ -12,7 +12,7 @@ Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment
 
 - Kubernetes 1.10+
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.24.0 installed in your cluster
+- Kanister controller version 0.26.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Installing the Chart
@@ -38,7 +38,7 @@ In case, if you don't have `Kanister` installed already, you can use following c
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
-$ helm install --name kanister --namespace kasten-io kanister/kanister-operator --set image.tag=0.24.0
+$ helm install --name kanister --namespace kasten-io kanister/kanister-operator --set image.tag=0.26.0
 ```
 
 ## Integrating with Kanister
@@ -81,7 +81,7 @@ $ PGPASSWORD=${POSTGRES_PASSWORD} psql -U $POSTGRES_USER
 psql (11.6)
 Type "help" for help.
 
-## Create DATABASE 
+## Create DATABASE
 postgres=# CREATE DATABASE test;
 CREATE DATABASE
 postgres=# \l
@@ -182,9 +182,9 @@ postgres=# DROP DATABASE test;
 DROP DATABASE
 postgres=# \l
                                   List of databases
-   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges   
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges
 -----------+----------+----------+-------------+-------------+-----------------------
- postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
  template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
            |          |          |             |             | postgres=CTc/postgres
  template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
