@@ -21,7 +21,7 @@ actions:
           - -c
           - |
             s3_path="/mysql-backups/{{ .Deployment.Namespace }}/{{ .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
-            mysqldump --column-statistics=0 -u root --password="${MYSQL_ROOT_PASSWORD}" --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
+            mysqldump --column-statistics=0 -h {{ .Deployment.Name }} -u root --password="${MYSQL_ROOT_PASSWORD}" --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
   restore:
     type: Deployment
     inputArtifactNames:
@@ -42,7 +42,7 @@ actions:
           - -c
           - |
             s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.path }}"
-            kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -u root --password="${MYSQL_ROOT_PASSWORD}"
+            kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -h {{ .Deployment.Name }} -u root --password="${MYSQL_ROOT_PASSWORD}"
   delete:
     type: Deployment
     inputArtifactNames:
