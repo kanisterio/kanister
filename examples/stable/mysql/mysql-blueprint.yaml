@@ -30,7 +30,7 @@ actions:
         - |
           s3_path="/mysql-backups/{{ .Deployment.Namespace }}/{{ .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
           root_password="{{ index .Phases.dumpToObjectStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-          mysqldump -u root --password=${root_password} -h {{ .Deployment.Name }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
+          mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ .Deployment.Name }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
           kando output s3path ${s3_path}
   restore:
     type: Deployment
