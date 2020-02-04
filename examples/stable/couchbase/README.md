@@ -21,7 +21,7 @@ To install the chart with the release name `cb-example`:
 ```bash
 #NOTE:
 #  If you are using helm V2, you need to add --name flag in the installation command
-$ helm repo add helm repo add couchbase https://couchbase-partners.github.io/helm-charts
+$ helm repo add couchbase https://couchbase-partners.github.io/helm-charts
 $ helm repo update
 # Create couchbase-test namespace
 $ kubectl create ns couchbase-test
