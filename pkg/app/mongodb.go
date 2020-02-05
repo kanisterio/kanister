@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 
@@ -165,7 +166,7 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 
 func (mongo *MongoDB) Insert(ctx context.Context) error {
 	log.Print("Inserting documents into collection.", field.M{"app": mongo.name})
-	insertCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.insert({'name' : 'Tom', 'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.username)}
+	insertCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.insert({'_id': '%s','name' : 'Tom', 'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.username, uuid.New())}
 	_, stderr, err := mongo.execCommand(ctx, insertCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s while inserting data data into mongodb collection.", stderr)
