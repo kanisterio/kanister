@@ -51,7 +51,7 @@ type BlockStorageProviderSuite struct {
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeEBS, storageRegion: clusterRegionAWS, storageAZ: "us-west-2b"})
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-b"})
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-c__us-west1-a"})
-var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeAD, storageRegion: "", storageAZ: "westus2-1"})
+var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeAD, storageRegion: "", storageAZ: "eastus2-1"})
 
 func (s *BlockStorageProviderSuite) SetUpSuite(c *C) {
 	var err error
@@ -117,26 +117,28 @@ func (s *BlockStorageProviderSuite) TestCreateSnapshot(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(snapshotGet.ID, Equals, snapshot.ID)
 
-	// Also test creating a volume from this snapshot
-	tags = map[string]string{testTagKey: testTagValue, "kanister.io/testname": c.TestName()}
-	vol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), *snapshot, tags)
-	c.Assert(err, IsNil)
-	s.volumes = append(s.volumes, vol)
-	for _, tag := range snapshot.Volume.Tags {
-		if _, found := tags[tag.Key]; !found {
-			tags[tag.Key] = tag.Value
+	if s.provider.Type() != blockstorage.TypeAD {
+		// Also test creating a volume from this snapshot
+		tags = map[string]string{testTagKey: testTagValue, "kanister.io/testname": c.TestName()}
+		vol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), *snapshot, tags)
+		c.Assert(err, IsNil)
+		s.volumes = append(s.volumes, vol)
+		for _, tag := range snapshot.Volume.Tags {
+			if _, found := tags[tag.Key]; !found {
+				tags[tag.Key] = tag.Value
+			}
 		}
-	}
-	// Check tags were merged
-	s.checkTagsExist(c, blockstorage.KeyValueToMap(vol.Tags), tags)
-	s.checkStdTagsExist(c, blockstorage.KeyValueToMap(vol.Tags))
+		// Check tags were merged
+		s.checkTagsExist(c, blockstorage.KeyValueToMap(vol.Tags), tags)
+		s.checkStdTagsExist(c, blockstorage.KeyValueToMap(vol.Tags))
 
-	err = s.provider.SnapshotDelete(context.Background(), snapshot)
-	c.Assert(err, IsNil)
-	// We ensure that multiple deletions are handled.
-	err = s.provider.SnapshotDelete(context.Background(), snapshot)
-	c.Assert(err, IsNil)
-	s.snapshots = nil
+		err = s.provider.SnapshotDelete(context.Background(), snapshot)
+		c.Assert(err, IsNil)
+		// We ensure that multiple deletions are handled.
+		err = s.provider.SnapshotDelete(context.Background(), snapshot)
+		c.Assert(err, IsNil)
+		s.snapshots = nil
+	}
 }
 
 func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {

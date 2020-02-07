@@ -219,7 +219,5 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 	for r := range regionSet {
 		region = append(region, r)
 	}
-	log.Print("zoneset", field.M{"z": zoneSet})
-	log.Print("regionset", field.M{"R": region})
 	return zoneSet, region[0], nil
 }

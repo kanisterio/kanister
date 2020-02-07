@@ -54,7 +54,6 @@ func (s *adStorage) VolumeGet(ctx context.Context, id string, zone string) (*blo
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get volume, volumeID: %s", id)
 	}
-	log.Print("VolumeGet", field.M{"location": azto.String(disk.Location), "zones": azto.StringSlice(disk.Zones)})
 	return s.VolumeParse(ctx, disk)
 }
 
@@ -332,23 +331,18 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		return nil, err
 	}
 
-	_, rg, name, err := parseDiskID(snapshot.Volume.ID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get info for volume with ID %s", snapshot.Volume.ID)
-	}
-	disk, err := s.azCli.DisksClient.Get(ctx, rg, name)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get volume, volumeID: %s", snapshot.Volume.ID)
-	}
-
-	log.Print("VolumeCreateFromSnapshot", field.M{"region": region, "id": id})
 	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
 	tags = blockstorage.SanitizeTags(tags)
 	createDisk := azcompute.Disk{
-		Name:           azto.StringPtr(diskName),
-		Tags:           *azto.StringMapPtr(tags),
-		Location:       azto.StringPtr(region),
-		DiskProperties: disk.DiskProperties,
+		Name:     azto.StringPtr(diskName),
+		Tags:     *azto.StringMapPtr(tags),
+		Location: azto.StringPtr(region),
+		DiskProperties: &azcompute.DiskProperties{
+			CreationData: &azcompute.CreationData{
+				CreateOption:     azcompute.Copy,
+				SourceResourceID: azto.StringPtr(snapshot.ID),
+			},
+		},
 	}
 	if id != "" {
 		createDisk.Zones = azto.StringSlicePtr([]string{id})
@@ -360,7 +354,7 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	if err = result.WaitForCompletionRef(ctx, s.azCli.DisksClient.Client); err != nil {
 		return nil, errors.Wrapf(err, "DiskCLient.CreateOrUpdate in VolumeCreateFromSnapshot, diskName: %s, snapshotID: %s", diskName, snapshot.ID)
 	}
-	disk, err = result.Result(*s.azCli.DisksClient)
+	disk, err := result.Result(*s.azCli.DisksClient)
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +372,6 @@ func getRegionAndZoneID(ctx context.Context, s *adStorage, sourceRegion, volAz s
 		return "", "", err
 	}
 	if len(zs) == 0 {
-		log.Print("Non-zone region", field.M{"region": region})
 		return region, "", nil
 	}
 
