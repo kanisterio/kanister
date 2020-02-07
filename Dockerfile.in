@@ -1,10 +1,8 @@
 ARG base_image=registry.access.redhat.com/ubi8/ubi-minimal:8.1
 FROM ${base_image}
 MAINTAINER Tom Manville<tom@kasten.io>
-RUN microdnf install git shadow-utils && \
-    microdnf clean all && \
-    adduser -U kanister
+RUN microdnf install git && \
+    microdnf clean all
 
-USER kanister
-ADD --chown=kanister:kanister ARG_SOURCE_BIN /ARG_BIN
+ADD ARG_SOURCE_BIN /ARG_BIN
 ENTRYPOINT ["/ARG_BIN"]

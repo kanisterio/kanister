@@ -10,11 +10,14 @@ actions:
         keyValue:
           prefix: 'postgres-backups/{{ .StatefulSet.Name }}'
           path: 'postgres-backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/manifest.txt'
-    secretNames:
-    - postgresql
     phases:
     - func: KubeExec
       name: baseBackup
+      objects:
+        postgresqlSecret:
+          kind: Secret
+          name: '{{ .StatefulSet.Name }}'
+          namespace: '{{ .StatefulSet.Namespace }}'
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
         pod: "{{ index .StatefulSet.Pods 0 }}"
@@ -85,7 +88,7 @@ actions:
             set -o xtrace
 
             # Create and push a base-backup to the object store.
-            PGPASSWORD="{{ index .Secrets.postgresql.Data "postgresql-password" | toString }}" envdir "${env_dir}" wal-e backup-push "${PGDATA}"
+            PGPASSWORD="{{ index .Phases.baseBackup.Secrets.postgresqlSecret.Data "postgresql-password" | toString }}" envdir "${env_dir}" wal-e backup-push "${PGDATA}"
             backup_name=$(envdir "${env_dir}" wal-e backup-list | tail -n +2 | sort -k2 | tail -n 1 | awk '{print $1}')
 
             # Create a manifest that references the backup we created and the current timeline.
@@ -131,7 +134,7 @@ actions:
     - func: PrepareData
       name: performRestore
       args:
-        image: "kanisterio/postgresql:0.24.0"
+        image: "kanisterio/postgresql:0.26.0"
         namespace: "{{ .StatefulSet.Namespace }}"
         volumes:
           "data-{{ .StatefulSet.Name }}-0": "/bitnami/postgresql"
@@ -279,7 +282,7 @@ actions:
       name: deleteArtifact
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/postgresql:0.24.0"
+        image: "kanisterio/postgresql:0.26.0"
         command:
           - bash
           - -o

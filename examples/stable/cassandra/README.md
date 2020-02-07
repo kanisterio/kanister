@@ -1,4 +1,4 @@
-# Cassandra 
+# Cassandra
 
 As the official documentation of [Cassandra](http://cassandra.apache.org/) says, using this database is the right choice when you need scalability and high availability without compromising performance. [Linear scalability](http://techblog.netflix.com/2011/11/benchmarking-cassandra-scalability-on.html) and proven fault-tolerance on commodity hardware or cloud infrastructure, make it the perfect platform for mission-critical data. Cassandra's support for replicating across multiple datacenters is best-in-class, providing lower latency for your users and the peace of mind of knowing that you can survive regional outages.
 
@@ -7,7 +7,7 @@ As the official documentation of [Cassandra](http://cassandra.apache.org/) says,
 * Kubernetes 1.9+
 * Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
 * PV support on the underlying infrastructure
-* Kanister controller version 0.24.0 installed in your cluster, let's say in namespace `<kanister-operator-namespace>`
+* Kanister controller version 0.26.0 installed in your cluster, let's say in namespace `<kanister-operator-namespace>`
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 To install kanister and related tools you can follow [this](https://docs.kanister.io/install.html#install) link.
@@ -17,18 +17,18 @@ The helm commands that are mentioned in this document are run with the helm vers
 
 ## Chart Details
 
-We will be using [cassandra helm chart](https://github.com/helm/charts/tree/master/incubator/cassandra) from official helm repo wchich bootstraps a [cassandra](http://cassandra.apache.org/) cluster on Kubernetes. 
+We will be using [cassandra helm chart](https://github.com/helm/charts/tree/master/incubator/cassandra) from official helm repo wchich bootstraps a [cassandra](http://cassandra.apache.org/) cluster on Kubernetes.
 
 You can decide the number of nodes that will be there in your configured cassandra cluster using the flag `--set config.cluster_size=n` where `n` is the number of nodes you want in your cassandra cluster. For this demo example we will be spinning up our cassandra cluster with 2 nodes.
 
 ## Installing the Chart
 
-To install the cassandra in your Kubernetes cluster you can run below command 
+To install the cassandra in your Kubernetes cluster you can run below command
 ```bash
 $ helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com
 $ helm repo update
-# remove app-namespace with the namespace you want to deploy the cassandra app in 
-$ helm install --namespace "<app-namespace>" "cassandra" incubator/cassandra --set image.repo=kanisterio/cassandra --set image.tag=0.24.0 --set config.cluster_size=2
+# remove app-namespace with the namespace you want to deploy the cassandra app in
+$ helm install --namespace "<app-namespace>" "cassandra" incubator/cassandra --set image.repo=kanisterio/cassandra --set image.tag=0.26.0 --set config.cluster_size=2
 ```
 This command will install cassandra on your Kubernetes cluster with 2 nodes. You can notice that we are using custom image of cassandra in the helm to install the cassandra cluster. The reason is we have to use some Kanister tools to take backup, so only change that we have done is including that tooling on top of statndard `cassandra:3.11.3` image.
 
@@ -63,20 +63,20 @@ Once  cassandra is running, we will have to populate some data into the cassandr
 
 Let's add a [keyspace](https://docs.datastax.com/en/dse/5.1/cql/cql/cql_using/cqlKeyspacesAbout.html) called `restaurants`
 ```bash
-# EXEC to the cassandra pod 
+# EXEC to the cassandra pod
 $ kubectl exec -it -n <app-namespace> cassandra-0 bash
-# once you are inside the pod use `cqlsh` to get into the cassandra CLI and run below commands to create the keyspace 
+# once you are inside the pod use `cqlsh` to get into the cassandra CLI and run below commands to create the keyspace
 cqlsh> create keyspace restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 3};
-# once the keyspace is created let's create a table named guests and some data into that table 
+# once the keyspace is created let's create a table named guests and some data into that table
 cqlsh> create table restaurants.guests (id UUID primary key, firstname text, lastname text, birthday timestamp);
 cqlsh> insert into restaurants.guests (id, firstname, lastname, birthday)  values (5b6962dd-3f90-4c93-8f61-eabfa4a803e2, 'Vivek', 'Singh', '2015-02-18');
-cqlsh> insert into restaurants.guests (id, firstname, lastname, birthday)  values (5b6962dd-3f90-4c93-8f61-eabfa4a803e3, 'Tom', 'Singh', '2015-02-18'); 
+cqlsh> insert into restaurants.guests (id, firstname, lastname, birthday)  values (5b6962dd-3f90-4c93-8f61-eabfa4a803e3, 'Tom', 'Singh', '2015-02-18');
 cqlsh> insert into restaurants.guests (id, firstname, lastname, birthday)  values (5b6962dd-3f90-4c93-8f61-eabfa4a803e4, 'Prasad', 'Hemsworth', '2015-02-18');
 # once you have the data inserted you can list all the data inside a table using the command
 cqlsh> select * from restaurants.guests;
 ```
 
-### Protect the application 
+### Protect the application
 The next step is to protect the application/data that we just stored, so that if something bad happens we have the backup data to restore. To protect the application we will have to take the backup of the database using [Actionset](https://1docs.kanister.io/architecture.html#actionsets) Kanister resource.
 Create an Actionset in the same name space as the kanister controller
 ```bash
@@ -94,11 +94,11 @@ Please make sure the status of the Actionset is completed.
 Let's say someone accidentally deleted the `restaurants` keyspace and `guests` table using the following command in the cassandra pod. To imitate that you will have to follow these steps manually
 ```bash
 $ kubectl exec -it -n <app-namespace> cassandra-0 bash
-# once you are inside the pod use `cqlsh` to get into the cassandra CLI and run below commands to create the keyspace 
+# once you are inside the pod use `cqlsh` to get into the cassandra CLI and run below commands to create the keyspace
 # drop the guests table
 cqlsh> drop table if exists restaurants.guests;
-# drop restaurants keyspace 
-cqlsh> drop  keyspace  restaurants;    
+# drop restaurants keyspace
+cqlsh> drop  keyspace  restaurants;
 ```
 If you run the same command that you ran earlier to get all the data you should not see any records from the guests table
 ```bash
@@ -118,7 +118,7 @@ $ kubectl describe actionset -n <kanister-operator-namespace> <restore-actionset
 Once you have verified that the status of the Actionset `<restore-actionset>` is completed. You can check if the data is restored or not by `EXEC`ing into the cassandra pod and selecting all the data from the table.
 ```bash
 $ kubectl exec -it -n <app-namespace> cassandra-0 bash
-# once you are inside the pod use `cqlsh` to get into the cassandra CLI and run below commands to create the keyspace 
+# once you are inside the pod use `cqlsh` to get into the cassandra CLI and run below commands to create the keyspace
 cqlsh> select * from restaurants.guests;
 ```
 and you should be able to see all the records that you have inserted earlier. And that simply means that we were able to restore the data into the cassandra database.

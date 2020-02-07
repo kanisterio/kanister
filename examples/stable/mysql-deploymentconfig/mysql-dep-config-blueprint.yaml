@@ -15,7 +15,7 @@ actions:
     - func: KubeTask
       name: dumpToObjectStore
       args:
-        image: kanisterio/mysql-sidecar:0.24.0
+        image: kanisterio/mysql-sidecar:0.26.0
         namespace: "{{ .DeploymentConfig.Namespace }}"
         command:
         - bash
@@ -28,7 +28,7 @@ actions:
           date
           s3_path="/mysql-backups/{{ .DeploymentConfig.Namespace }}/{{ .DeploymentConfig.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
           root_password="{{ index .Secrets.mysql.Data "mysql-root-password" | toString }}"
-          mysqldump -u root --password=${root_password} -h {{ .DeploymentConfig.Name }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
+          mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ .DeploymentConfig.Name }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
           kando output s3path ${s3_path}
   restore:
     type: DeploymentConfig
@@ -40,7 +40,7 @@ actions:
     - func: KubeTask
       name: restoreFromBlobStore
       args:
-        image: kanisterio/mysql-sidecar:0.24.0
+        image: kanisterio/mysql-sidecar:0.26.0
         namespace: "{{ .DeploymentConfig.Namespace }}"
         command:
         - bash
@@ -61,7 +61,7 @@ actions:
     - func: KubeTask
       name: deleteFromBlobStore
       args:
-        image: kanisterio/mysql-sidecar:0.24.0
+        image: kanisterio/mysql-sidecar:0.26.0
         namespace: "{{ .DeploymentConfig.Namespace }}"
         command:
         - bash

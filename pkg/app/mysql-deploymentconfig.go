@@ -39,7 +39,7 @@ const (
 	mysqlDepConfigWaitTimeout = 1 * time.Minute
 	mysqlToolPodName          = "mysql-tools-pod"
 	mysqlToolContainerName    = "mysql-tools-container"
-	mysqlToolImage            = "kanisterio/mysql-sidecar:0.24.0"
+	mysqlToolImage            = "kanisterio/mysql-sidecar:0.26.0"
 )
 
 type MysqlDepConfig struct {

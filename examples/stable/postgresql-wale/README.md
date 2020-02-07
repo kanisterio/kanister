@@ -12,7 +12,7 @@ Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment
 
 - Kubernetes 1.10+
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.24.0 installed in your cluster
+- Kanister controller version 0.26.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Installing the Chart
@@ -25,7 +25,7 @@ $ helm repo update
 $ helm install stable/postgresql --name my-release \
 	--namespace postgres-test \
 	--set image.repository=kanisterio/postgresql \
-	--set image.tag=0.24.0 \
+	--set image.tag=0.26.0 \
 	--set postgresqlPassword=postgres-12345 \
 	--set postgresqlExtendedConf.archiveCommand="'envdir /bitnami/postgresql/data/env wal-e wal-push %p'" \
 	--set postgresqlExtendedConf.archiveMode=true \
@@ -41,7 +41,7 @@ In case, if you don't have `Kanister` installed already, you can use following c
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
-$ helm install --name kanister --namespace kasten-io kanister/kanister-operator --set image.tag=0.24.0
+$ helm install --name kanister --namespace kasten-io kanister/kanister-operator --set image.tag=0.26.0
 ```
 
 ## Integrating with Kanister
@@ -126,7 +126,7 @@ $ PGPASSWORD=${POSTGRES_PASSWORD} psql
 psql (11.5)
 Type "help" for help.
 
-## Create DATABASE 
+## Create DATABASE
 postgres=# CREATE DATABASE test;
 CREATE DATABASE
 postgres=# \l
@@ -207,9 +207,9 @@ postgres=# DROP DATABASE test;
 DROP DATABASE
 postgres=# \l
                                   List of databases
-   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges   
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges
 -----------+----------+----------+-------------+-------------+-----------------------
- postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
  template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
            |          |          |             |             | postgres=CTc/postgres
  template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
@@ -224,7 +224,7 @@ To restore the missing data, you should use the backup that you created before. 
 Let's use PostgreSQL Point-In-Time Recovery to recover data till perticular time
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action restore --from pg-base-backup --options pitr=2019-09-16T14:41:00Z 
+$ kanctl --namespace kasten-io create actionset --action restore --from pg-base-backup --options pitr=2019-09-16T14:41:00Z
 actionset restore-pg-base-backup-d7g7w created
 
 ## NOTE: pitr argument to the command is optional. If you want to restore data till the latest consistent state, you can skip '--options pitr' option
@@ -256,7 +256,7 @@ test=# select * from company;
 ----+-------+-----+----------------------------------------------------+--------+----------------------------
  10 | Paul  |  32 | California                                         |  20000 | 2019-09-16 14:39:36.316065
  20 | Omkar |  32 | California                                         |  20000 | 2019-09-16 14:40:52.952459
- 
+
 (2 rows)
 
 
