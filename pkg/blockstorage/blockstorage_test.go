@@ -143,12 +143,24 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 	c.Skip("Sometimes, snapcopy takes over 10 minutes. go test declares failure if tests are that slow.")
 
 	srcSnapshot := s.createSnapshot(c)
-	dstSnapshot := &blockstorage.Snapshot{
-		Type:      srcSnapshot.Type,
-		Encrypted: false,
-		Size:      srcSnapshot.Size,
-		Region:    "us-east-1",
-		Volume:    nil,
+	var dstSnapshot *blockstorage.Snapshot
+	switch s.storageType {
+	case blockstorage.TypeEBS:
+		dstSnapshot = &blockstorage.Snapshot{
+			Type:      srcSnapshot.Type,
+			Encrypted: false,
+			Size:      srcSnapshot.Size,
+			Region:    "us-east-1",
+			Volume:    nil,
+		}
+	case blockstorage.TypeAD:
+		dstSnapshot = &blockstorage.Snapshot{
+			Type:      srcSnapshot.Type,
+			Encrypted: false,
+			Size:      srcSnapshot.Size,
+			Region:    "westus2",
+			Volume:    nil,
+		}
 	}
 	snap, err := s.provider.SnapshotCopy(context.TODO(), *srcSnapshot, *dstSnapshot)
 	c.Assert(err, IsNil)
@@ -166,6 +178,8 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 	c.Check(snapDetails.Size, Equals, srcSnapshot.Size)
 
 	err = provider.SnapshotDelete(context.TODO(), snap)
+	c.Assert(err, IsNil)
+	err = provider.SnapshotDelete(context.TODO(), srcSnapshot)
 	c.Assert(err, IsNil)
 }
 
@@ -277,6 +291,9 @@ func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]st
 		config[blockstorage.AzureCientID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCientID)
 		config[blockstorage.AzureClentSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClentSecret)
 		config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
+		config[blockstorage.AzureMigrateStorageAccount] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageAccount)
+		config[blockstorage.AzureMigrateStorageKey] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageKey)
+		config[blockstorage.AzureMigrateStorageAccountID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageAccountID)
 	default:
 		c.Errorf("Unknown blockstorage storage type %s", s.storageType)
 	}

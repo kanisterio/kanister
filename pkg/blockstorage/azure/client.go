@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -28,17 +29,19 @@ import (
 
 // Client is a wrapper for Client client
 type Client struct {
-	SubscriptionID  string
-	ResourceGroup   string
-	Authorizer      *autorest.BearerAuthorizer
-	DisksClient     *compute.DisksClient
-	SnapshotsClient *compute.SnapshotsClient
+	SubscriptionID       string
+	ResourceGroup        string
+	Authorizer           *autorest.BearerAuthorizer
+	DisksClient          *compute.DisksClient
+	SnapshotsClient      *compute.SnapshotsClient
+	StorageServiceClient storage.Client
+	StorageAccountID     string
 }
 
 // NewClient returns a Client struct
 func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	var resourceGroup string
-	var subscriptionID string
+	var subscriptionID, storageAccountID string
 	var ok bool
 	var err error
 
@@ -60,6 +63,10 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		}
 	}
 
+	if storageAccountID, ok = config[blockstorage.AzureMigrateStorageAccountID]; !ok {
+		return nil, errors.New("Cannot get StorageAccountID from config")
+	}
+
 	authorizer, err := getAuthorizer(azure.PublicCloud, config)
 	if err != nil {
 		return nil, err
@@ -71,12 +78,19 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	snapshotsClient := compute.NewSnapshotsClient(subscriptionID)
 	snapshotsClient.Authorizer = authorizer
 
+	storageCli, err := storage.NewBasicClient(config[blockstorage.AzureMigrateStorageAccount], config[blockstorage.AzureMigrateStorageKey])
+	if err != nil {
+		return nil, errors.Wrap(err, "Cannot get storage service client")
+	}
+
 	return &Client{
-		SubscriptionID:  subscriptionID,
-		Authorizer:      authorizer,
-		DisksClient:     &disksClient,
-		SnapshotsClient: &snapshotsClient,
-		ResourceGroup:   resourceGroup,
+		SubscriptionID:       subscriptionID,
+		Authorizer:           authorizer,
+		DisksClient:          &disksClient,
+		SnapshotsClient:      &snapshotsClient,
+		ResourceGroup:        resourceGroup,
+		StorageServiceClient: storageCli,
+		StorageAccountID:     storageAccountID,
 	}, nil
 }
 
