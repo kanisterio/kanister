@@ -446,7 +446,7 @@ func (e *efs) setBackupTags(ctx context.Context, arn string, tags map[string]str
 		ResourceArn: &arn,
 		Tags:        convertToBackupTags(tags),
 	}
-	_, err := e.TagResourceWithContext(ctx, req)
+	_, err := e.Backup.TagResourceWithContext(ctx, req)
 	return err
 }
 
