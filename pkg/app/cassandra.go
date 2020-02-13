@@ -51,7 +51,7 @@ func NewCassandraInstance(name string) App {
 	return &CassandraInstance{
 		name: name,
 		chart: helm.ChartInfo{
-			Release:  name,
+			Release:  AppendRandString(name),
 			RepoURL:  helm.IncubatorRepoURL,
 			Chart:    "cassandra",
 			RepoName: helm.IncubatorRepoName,
@@ -90,7 +90,7 @@ func (cas *CassandraInstance) Install(ctx context.Context, namespace string) err
 		return err
 	}
 
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cas.chart.RepoName, cas.chart.Chart), cas.chart.Version, cas.name, cas.namespace, cas.chart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cas.chart.RepoName, cas.chart.Chart), cas.chart.Version, cas.chart.Release, cas.namespace, cas.chart.Values)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (cas *CassandraInstance) IsReady(ctx context.Context) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, casWaitTimeout)
 	defer cancel()
 
-	err := kube.WaitOnStatefulSetReady(ctx, cas.cli, cas.namespace, cas.name)
+	err := kube.WaitOnStatefulSetReady(ctx, cas.cli, cas.namespace, cas.chart.Release)
 	if err != nil {
 		return false, err
 	}
@@ -117,7 +117,7 @@ func (cas *CassandraInstance) IsReady(ctx context.Context) (bool, error) {
 func (cas *CassandraInstance) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		Kind:      "StatefulSet",
-		Name:      cas.name,
+		Name:      cas.chart.Release,
 		Namespace: cas.namespace,
 	}
 }
@@ -129,7 +129,7 @@ func (cas *CassandraInstance) Uninstall(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
-	err = cli.Uninstall(ctx, cas.name, cas.namespace)
+	err = cli.Uninstall(ctx, cas.chart.Release, cas.namespace)
 	if err != nil {
 		return errors.Wrapf(err, "Error uninstalling cassandra app.")
 	}

@@ -54,7 +54,7 @@ func NewMongoDB(name string) App {
 		username: "root",
 		name:     name,
 		chart: helm.ChartInfo{
-			Release:  name,
+			Release:  AppendRandString(name),
 			RepoURL:  helm.StableRepoURL,
 			Chart:    "mongodb",
 			RepoName: helm.StableRepoName,
@@ -92,7 +92,7 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	}
 
 	log.Print("Installing application using helm.", field.M{"app": mongo.name})
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.name, mongo.namespace, mongo.chart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.chart.Release, mongo.namespace, mongo.chart.Values)
 	if err != nil {
 		return err
 	}
@@ -101,12 +101,13 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 }
 
 func (mongo *MongoDB) IsReady(ctx context.Context) (bool, error) {
+	log.Print("Waiting for application to be ready", field.M{"app": mongo.name})
 	ctx, cancel := context.WithTimeout(ctx, mongoWaitTimeout)
 	defer cancel()
 
-	statefSets := []string{"mongodb-primary", "mongodb-secondary", "mongodb-arbiter"}
+	statefSets := []string{fmt.Sprintf("%s-mongodb-primary", mongo.chart.Release), fmt.Sprintf("%s-mongodb-secondary", mongo.chart.Release), fmt.Sprintf("%s-mongodb-arbiter", mongo.chart.Release)}
 	for _, resource := range statefSets {
-		err := kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-%s", mongo.name, resource))
+		err := kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, resource)
 		if err != nil {
 			return false, err
 		}
@@ -119,7 +120,7 @@ func (mongo *MongoDB) IsReady(ctx context.Context) (bool, error) {
 func (mongo *MongoDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		Kind:      "StatefulSet",
-		Name:      fmt.Sprintf("%s-mongodb-primary", mongo.name),
+		Name:      fmt.Sprintf("%s-mongodb-primary", mongo.chart.Release),
 		Namespace: mongo.namespace,
 	}
 }
@@ -130,7 +131,7 @@ func (mongo *MongoDB) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create helm client")
 	}
 	log.Print("Uninstalling application.", field.M{"app": mongo.name})
-	err = cli.Uninstall(ctx, mongo.name, mongo.namespace)
+	err = cli.Uninstall(ctx, mongo.chart.Release, mongo.namespace)
 	return errors.Wrapf(err, "Error while uninstalling the application.")
 }
 
@@ -157,7 +158,7 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 		return errors.Wrapf(err, "Error unmarshalling the ismaster ouptut.")
 	}
 	if !op.Ismaster {
-		return errors.New("The pod is not master yet.")
+		return errors.New("the pod is not master yet")
 	}
 
 	log.Print("Ping was successful to application.", field.M{"app": mongo.name})
@@ -193,8 +194,8 @@ func (mongo *MongoDB) Count(ctx context.Context) (int, error) {
 }
 func (mongo *MongoDB) Reset(ctx context.Context) error {
 	log.Print("Resetting the application.", field.M{"app": mongo.name})
-	// delete all the entries from the restaurants dummy colleciton
-	// we are not deleting the database becasue we are dealing with admin database here
+	// delete all the entries from the restaurants dummy collection
+	// we are not deleting the database because we are dealing with admin database here
 	// and deletion admin database is prohibited
 	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.drop()\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
@@ -202,7 +203,7 @@ func (mongo *MongoDB) Reset(ctx context.Context) error {
 }
 
 func (mongo *MongoDB) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podName, containerName, err := kube.GetPodContainerFromStatefulSet(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-primary", mongo.name))
+	podName, containerName, err := kube.GetPodContainerFromStatefulSet(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-primary", mongo.chart.Release))
 	if err != nil || podName == "" {
 		return "", "", err
 	}

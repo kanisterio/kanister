@@ -44,7 +44,7 @@ func NewPostgresDB(name string) App {
 	return &PostgresDB{
 		name: name,
 		chart: helm.ChartInfo{
-			Release:  name,
+			Release:  AppendRandString(name),
 			RepoName: helm.StableRepoName,
 			RepoURL:  helm.StableRepoURL,
 			Chart:    "postgresql",

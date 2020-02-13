@@ -60,7 +60,7 @@ func NewElasticsearchInstance(name string) App {
 		namespace: "es-test",
 		indexname: "testindex",
 		chart: helm.ChartInfo{
-			Release:  name,
+			Release:  AppendRandString(name),
 			RepoURL:  helm.ElasticRepoURL,
 			Chart:    "elasticsearch",
 			RepoName: helm.ElasticRepoName,
@@ -98,11 +98,11 @@ func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string)
 		return err
 	}
 
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.name, esi.namespace, esi.chart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.chart.Release, esi.namespace, esi.chart.Values)
 	if err != nil {
 		return err
 	}
-	log.Print("Application was installed succcessfully.", field.M{"app": esi.name})
+	log.Print("Application was installed successfully.", field.M{"app": esi.name})
 	return nil
 }
 
@@ -135,7 +135,7 @@ func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
 	}
 
 	log.Print("UnInstalling the application using helm.", field.M{"app": esi.name})
-	err = cli.Uninstall(ctx, esi.name, esi.namespace)
+	err = cli.Uninstall(ctx, esi.chart.Release, esi.namespace)
 	if err != nil {
 		return errors.Wrapf(err, "Error uninstalling the application %s", esi.name)
 	}
