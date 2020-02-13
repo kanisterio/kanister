@@ -60,7 +60,7 @@ func NewElasticsearchInstance(name string) App {
 		namespace: "es-test",
 		indexname: "testindex",
 		chart: helm.ChartInfo{
-			Release:  AppendRandString(name),
+			Release:  appendRandString(name),
 			RepoURL:  helm.ElasticRepoURL,
 			Chart:    "elasticsearch",
 			RepoName: helm.ElasticRepoName,

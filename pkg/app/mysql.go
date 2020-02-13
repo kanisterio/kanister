@@ -44,7 +44,7 @@ func NewMysqlDB(name string) App {
 	return &MysqlDB{
 		name: name,
 		chart: helm.ChartInfo{
-			Release:  AppendRandString(name),
+			Release:  appendRandString(name),
 			RepoURL:  helm.StableRepoURL,
 			Chart:    "mysql",
 			RepoName: helm.StableRepoName,

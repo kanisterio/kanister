@@ -51,7 +51,7 @@ func NewCassandraInstance(name string) App {
 	return &CassandraInstance{
 		name: name,
 		chart: helm.ChartInfo{
-			Release:  AppendRandString(name),
+			Release:  appendRandString(name),
 			RepoURL:  helm.IncubatorRepoURL,
 			Chart:    "cassandra",
 			RepoName: helm.IncubatorRepoName,

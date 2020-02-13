@@ -56,8 +56,8 @@ type FoundationDB struct {
 func NewFoundationDB(name string) App {
 	return &FoundationDB{
 		name:           name,
-		oprReleaseName: AppendRandString("fdb-operator"),
-		fdbReleaseName: AppendRandString("fdb-instance"),
+		oprReleaseName: appendRandString("fdb-operator"),
+		fdbReleaseName: appendRandString("fdb-instance"),
 	}
 }
 

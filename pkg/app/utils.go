@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 )
 
-// AppendRandString, appends a random string to the passed string value
-func AppendRandString(name string) string {
+// appendRandString, appends a random string to the passed string value
+func appendRandString(name string) string {
 	return fmt.Sprintf("%s-%s", name, rand.String(5))
 }

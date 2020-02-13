@@ -54,7 +54,7 @@ func NewMongoDB(name string) App {
 		username: "root",
 		name:     name,
 		chart: helm.ChartInfo{
-			Release:  AppendRandString(name),
+			Release:  appendRandString(name),
 			RepoURL:  helm.StableRepoURL,
 			Chart:    "mongodb",
 			RepoName: helm.StableRepoName,
