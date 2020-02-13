@@ -44,7 +44,7 @@ func NewMysqlDB(name string) App {
 	return &MysqlDB{
 		name: name,
 		chart: helm.ChartInfo{
-			Release:  name,
+			Release:  appendRandString(name),
 			RepoURL:  helm.StableRepoURL,
 			Chart:    "mysql",
 			RepoName: helm.StableRepoName,
@@ -97,7 +97,7 @@ func (mdb *MysqlDB) IsReady(ctx context.Context) (bool, error) {
 	log.Print("Waiting for the mysql instance to be ready.", field.M{"app": mdb.name})
 	ctx, cancel := context.WithTimeout(ctx, mysqlWaitTimeout)
 	defer cancel()
-	err := kube.WaitOnDeploymentReady(ctx, mdb.cli, mdb.namespace, mdb.name)
+	err := kube.WaitOnDeploymentReady(ctx, mdb.cli, mdb.namespace, mdb.chart.Release)
 	if err != nil {
 		return false, err
 	}
@@ -109,7 +109,7 @@ func (mdb *MysqlDB) IsReady(ctx context.Context) (bool, error) {
 func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		Kind:      "deployment",
-		Name:      mdb.name,
+		Name:      mdb.chart.Release,
 		Namespace: mdb.namespace,
 	}
 }
@@ -119,7 +119,7 @@ func (mdb *MysqlDB) Uninstall(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
-	err = cli.Uninstall(ctx, mdb.name, mdb.namespace)
+	err = cli.Uninstall(ctx, mdb.chart.Release, mdb.namespace)
 	if err != nil {
 		log.WithError(err).Print("Failed to uninstall app, you will have to uninstall it manually.", field.M{"app": mdb.name})
 		return err
@@ -202,14 +202,14 @@ func (mdb *MysqlDB) Secrets() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
 		"mysql": crv1alpha1.ObjectReference{
 			Kind:      "Secret",
-			Name:      mdb.name,
+			Name:      mdb.chart.Release,
 			Namespace: mdb.namespace,
 		},
 	}
 }
 
 func (mdb *MysqlDB) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podname, containername, err := kube.GetPodContainerFromDeployment(ctx, mdb.cli, mdb.namespace, mdb.name)
+	podname, containername, err := kube.GetPodContainerFromDeployment(ctx, mdb.cli, mdb.namespace, mdb.chart.Release)
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", mdb.name)
 	}

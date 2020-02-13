@@ -53,14 +53,14 @@ func NewCouchbaseDB(name string) App {
 	return &CouchbaseDB{
 		name: name,
 		operatorChart: helm.ChartInfo{
-			Release:  fmt.Sprintf("%s-operator", name),
+			Release:  appendRandString(fmt.Sprintf("%s-operator", name)),
 			RepoName: helm.CouchbaseRepoName,
 			RepoURL:  helm.CouchbaseRepoURL,
 			Chart:    "couchbase-operator",
 			Version:  "0.1.2",
 		},
 		clusterChart: helm.ChartInfo{
-			Release: name,
+			Release: appendRandString(name),
 			Chart:   "couchbase-cluster",
 			Version: "0.1.2",
 			Values: map[string]string{
