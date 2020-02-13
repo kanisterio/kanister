@@ -49,5 +49,5 @@ sed                                \
     -e "s|ARG_ARCH|${ARCH}|g"      \
     -e "s|ARG_SOURCE_BIN|${SOURCE_BIN}|g" \
     Dockerfile.in > .dockerfile-${ARCH}
-docker build ${baseimagearg:-} -t ${IMAGE}:${VERSION} -f .dockerfile-${ARCH} .
+docker build --pull ${baseimagearg:-} -t ${IMAGE}:${VERSION} -f .dockerfile-${ARCH} .
 docker images -q ${IMAGE}:${VERSION}
