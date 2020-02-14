@@ -157,7 +157,7 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 	// Get the snapshot ID from log
 	backupID := restic.SnapshotIDFromBackupLog(stdout)
 	if backupID == "" {
-		return backupDataParsedOutput{}, errors.New("Failed to parse the backup ID from logs")
+		return backupDataParsedOutput{}, errors.Errorf("Failed to parse the backup ID from logs", "backup logs", stdout)
 	}
 	// Get the file count and size of the backup from log
 	fileCount, backupSize, phySize := restic.SnapshotStatsFromBackupLog(stdout)
