@@ -33,10 +33,12 @@ func (oc OpenShiftClient) CreateNamespace(ctx context.Context, namespace string)
 	return helm.RunCmdWithTimeout(ctx, "oc", command)
 }
 
+// NewApp install a new application in the openshift
+// cluster using ``oc new-app`` command
 func (oc OpenShiftClient) NewApp(ctx context.Context, namespace, osAppImage string, envVar map[string]string) (string, error) {
 	var formedVars []string
 	for k, v := range envVar {
-		formedVars = append(formedVars, "-e", fmt.Sprintf("%s=%s", k, v))
+		formedVars = append(formedVars, "-p", fmt.Sprintf("%s=%s", k, v))
 	}
 
 	command := append([]string{"new-app", "-n", namespace, osAppImage}, formedVars...)
