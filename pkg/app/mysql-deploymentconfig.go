@@ -55,7 +55,7 @@ type MysqlDepConfig struct {
 func NewMysqlDepConfig(name string) App {
 	return &MysqlDepConfig{
 		name:       name,
-		dbTemplate: fmt.Sprintf("https://raw.githubusercontent.com/openshift/origin/master/examples/db-templates/%s-persistent-template.json", mysqlDepConfigName),
+		dbTemplate: getOpenShiftDBTemplate(mysqlDepConfigName),
 		envVar: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "secretpassword",
 		},
@@ -87,6 +87,9 @@ func (mdep *MysqlDepConfig) Install(ctx context.Context, namespace string) error
 		return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mdep.name)
 	}
 
+	// we are creating a tool pod will be executing the commands from this pod
+	// because we are not able to login to deployment config mysql instance using the env var
+	// MYSQL_ROOT_PASSWORD that gets set
 	err = mdep.createMySQLToolsPod(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "Error creating mysql tools pod")
@@ -117,8 +120,6 @@ func (mdep *MysqlDepConfig) createMySQLSecret(ctx context.Context) error {
 }
 
 // createMySQLToolsPod creates a pod that will be use to run command into mysql instance
-// we had to do this because, the secret to login to mysql instance doesnt get created
-// when we deploy mysql using deploymentConfig on openshift cluster.
 func (mdep *MysqlDepConfig) createMySQLToolsPod(ctx context.Context) error {
 	mysqlToolPod := &v1.Pod{
 		TypeMeta: metav1.TypeMeta{
@@ -289,10 +290,3 @@ func (mdep *MysqlDepConfig) execCommand(ctx context.Context, command []string) (
 	}
 	return stdout, stderr, err
 }
-
-// getDepConfName returns the name of the deployment config that is running the mysql instance
-// it gets generated on the openshift image that we have provided thats why we are getting the
-// name from app image
-// func (mdep *MysqlDepConfig) getDepConfName(ctx context.Context) string {
-// 	return strings.Split(mdep.osAppImage, "/")[1]
-// }
