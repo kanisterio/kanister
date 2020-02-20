@@ -38,7 +38,7 @@ $ helm install mysql-release stable/mysql --namespace mysql-test \
 
 ```
 
-The command deploys an instance of MySQL in `mysql-test` namespace on Kubernetes cluster with default configurations.
+The command deploys a MySQL instance in the `mysql-test` namespace.
 
 By default a random password will be generated for the root user. For setting your own password, use the `mysqlRootPassword` param as shown above.
 
