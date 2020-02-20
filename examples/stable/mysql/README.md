@@ -145,7 +145,7 @@ $ kubectl --namespace kanister describe actionset backup-rslmb
 Let's say someone accidentally deleted the test database using the following command:
 ```bash
 # Connect to MySQL by running a shell inside MySQL's pod
-$ kubectl exec -ti $(kubectl get pods -n mysql-test --selector=app=mysql-release-mysql -o=jsonpath='{.items[0].metadata.name}') -n mysql-test -- bash
+$ kubectl exec -ti $(kubectl get pods -n mysql-test --selector=app=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql-test -- bash
 
 $ mysql --user=root --password=asd#45@mysqlEXAMPLE
 
