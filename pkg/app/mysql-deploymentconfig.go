@@ -120,8 +120,6 @@ func (mdep *MysqlDepConfig) createMySQLSecret(ctx context.Context) error {
 }
 
 // createMySQLToolsPod creates a pod that will be use to run command into mysql instance
-// we had to do this because, the secret to login to mysql instance doesnt get created
-// when we deploy mysql using deploymentConfig on openshift cluster.
 func (mdep *MysqlDepConfig) createMySQLToolsPod(ctx context.Context) error {
 	mysqlToolPod := &v1.Pod{
 		TypeMeta: metav1.TypeMeta{
@@ -292,13 +290,3 @@ func (mdep *MysqlDepConfig) execCommand(ctx context.Context, command []string) (
 	}
 	return stdout, stderr, err
 }
-<<<<<<< HEAD
-=======
-
-// getDepConfName returns the name of the deployment config that is running the mysql instance
-// it gets generated on the openshift image that we have provided thats why we are getting the
-// name from app image
-// func (mdep *MysqlDepConfig) getDepConfName(ctx context.Context) string {
-// 	return strings.Split(mdep.osAppImage, "/")[1]
-// }
->>>>>>> Add another way to install databases on openshift cluster
