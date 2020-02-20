@@ -43,7 +43,7 @@ Stable Helm charts that have been updated with Kanister support.
 
 ## Kanister in action for MySQL Database
 
-[![asciicast](https://asciinema.org/a/303227.svg)](https://asciinema.org/a/303227)
+[![asciicast](https://asciinema.org/a/303241.svg)](https://asciinema.org/a/303241)
 
 
 ## Resources
