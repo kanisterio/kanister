@@ -40,6 +40,12 @@ Stable Helm charts that have been updated with Kanister support.
 - **[PostgreSQL with Point In Time Recovery (PITR)](./examples/stable/postgresql-wale)**
 - **[PostgreSQL](./examples/stable/postgresql)**
 
+
+## Kanister in action for MySQL Database
+
+[![asciicast](https://asciinema.org/a/303227.svg)](https://asciinema.org/a/303227)
+
+
 ## Resources
 
 To get started or to better understand kanister, see the
