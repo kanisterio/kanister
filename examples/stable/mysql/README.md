@@ -42,9 +42,9 @@ The command deploys a MySQL instance in the `mysql-test` namespace.
 
 By default a random password will be generated for the root user. For setting your own password, use the `mysqlRootPassword` param as shown above.
 
-You can retrieve your root password by running the following command. Make sure to replace [MYSQL_RELEASE_NAME] and [MYSQL_RELEASE_NAMESPACE]:
+You can retrieve your root password by running the following command. Make sure to replace [YOUR_RELEASE_NAME] and [YOUR_NAMESPACE]:
 
-    `kubectl get secret [MYSQL_RELEASE_NAME] --namespace [MYSQL_RELEASE_NAMESPACE] -o jsonpath="{.data.mysql-root-password}" | base64 --decode`
+    `kubectl get secret [YOUR_RELEASE_NAME] --namespace [YOUR_NAMESPACE] -o jsonpath="{.data.mysql-root-password}" | base64 --decode`
 
 > **Tip**: List all releases using `helm list` (Helm Version 2) or `helm list --all-namespaces`, in case of Helm Version 3.
 
