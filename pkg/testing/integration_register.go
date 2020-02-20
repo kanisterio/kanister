@@ -202,3 +202,18 @@ var _ = Suite(&MysqlDBDepConfig{
 		profile:   newSecretProfile(),
 	},
 })
+
+// MongoDB deployed on openshift cluster
+type MongoDBDepConfig struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MongoDBDepConfig{
+	IntegrationSuite{
+		name:      "mongodb",
+		namespace: "mongodb-test",
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig"),
+		bp:        app.NewBlueprint("mongo-dep-config"),
+		profile:   newSecretProfile(),
+	},
+})
