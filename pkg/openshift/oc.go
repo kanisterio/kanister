@@ -41,7 +41,7 @@ func (oc OpenShiftClient) NewApp(ctx context.Context, namespace, dpTemplate stri
 		formedVars = append(formedVars, "-p", fmt.Sprintf("%s=%s", k, v))
 	}
 
-	command := append([]string{"new-app", "-n", namespace, "-f", dpTemplate}, formedVars...)
+	command := append([]string{"new-app", "-n", namespace, dpTemplate}, formedVars...)
 	out, err := helm.RunCmdWithTimeout(ctx, "oc", command)
 
 	return out, err
