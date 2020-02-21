@@ -20,7 +20,18 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 )
 
+const (
+	dbTemplateURI = "https://raw.githubusercontent.com/openshift/origin/master/examples/db-templates/%s-persistent-template.json"
+)
+
 // appendRandString, appends a random string to the passed string value
 func appendRandString(name string) string {
 	return fmt.Sprintf("%s-%s", name, rand.String(5))
+}
+
+// getOpenShiftDBTemplate accepts the application name and returns the
+// db template for that application
+// https://github.com/openshift/origin/tree/master/examples/db-templates
+func getOpenShiftDBTemplate(appName string) string {
+	return fmt.Sprintf(dbTemplateURI, appName)
 }
