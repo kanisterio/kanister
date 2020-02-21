@@ -99,7 +99,7 @@ func isZoneValid(ctx context.Context, m Mapper, zone, region string) bool {
 
 // WithUnknownNodeZones get the zone list  for the region
 func WithUnknownNodeZones(ctx context.Context, m Mapper, region string, sourceZone string, newZones map[string]struct{}) string {
-	// We could not the zones of the nodes, so we return an arbitrary one.
+	// We could not get the zones of the nodes, so we return an arbitrary one.
 	zs, err := m.FromRegion(ctx, region)
 	if err != nil || len(zs) == 0 {
 		// If all else fails, we return the original AZ.
@@ -196,11 +196,14 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 	if err != nil {
 		return nil, "", errors.Wrap(err, nodeZonesErr)
 	}
-	zoneSet := make(map[string]struct{}, len(ns.Items))
+	zoneSet := make(map[string]struct{})
 	regionSet := make(map[string]struct{})
 	for _, n := range ns.Items {
 		if v, ok := n.Labels[kubevolume.PVZoneLabelName]; ok {
-			zoneSet[v] = struct{}{}
+			// make sure it is not a faultDomain
+			if len(v) > 1 {
+				zoneSet[v] = struct{}{}
+			}
 		}
 		if v, ok := n.Labels[kubevolume.PVRegionLabelName]; ok {
 			regionSet[v] = struct{}{}
