@@ -41,6 +41,7 @@ type PostgreSQLDepConfig struct {
 	namespace      string
 	opeshiftClient openshift.OSClient
 	dbTemplate     string
+	label          string
 }
 
 func NewPostgreSQLDepConfig(name string) App {
