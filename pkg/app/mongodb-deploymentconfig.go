@@ -46,6 +46,7 @@ type MongoDBDepConfig struct {
 	envVar     map[string]string
 	user       string
 	label      string
+	osClient   openshift.OSClient
 }
 
 func NewMongoDBDepConfig(name string) App {
@@ -56,7 +57,8 @@ func NewMongoDBDepConfig(name string) App {
 		envVar: map[string]string{
 			"MONGODB_ADMIN_PASSWORD": "secretpassword",
 		},
-		label: getLabelOfApp(mongoDepConfigName),
+		label:    getLabelOfApp(mongoDepConfigName),
+		osClient: openshift.NewOpenShiftClient(),
 	}
 }
 
@@ -79,8 +81,7 @@ func (mongo *MongoDBDepConfig) Init(context.Context) error {
 func (mongo *MongoDBDepConfig) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
 
-	oc := openshift.NewOpenShiftClient()
-	_, err := oc.NewApp(ctx, mongo.namespace, mongo.dbTemplate, mongo.envVar)
+	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, mongo.dbTemplate, mongo.envVar)
 
 	return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mongo.name)
 }
@@ -108,8 +109,7 @@ func (mongo *MongoDBDepConfig) Object() crv1alpha1.ObjectReference {
 }
 
 func (mongo *MongoDBDepConfig) Uninstall(ctx context.Context) error {
-	oc := openshift.NewOpenShiftClient()
-	_, err := oc.DeleteApp(ctx, mongo.namespace, mongo.label)
+	_, err := mongo.osClient.DeleteApp(ctx, mongo.namespace, mongo.label)
 	return err
 }
 
