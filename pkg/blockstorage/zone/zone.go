@@ -235,6 +235,14 @@ func GetReadySchedulableNodes(cli kubernetes.Interface) (*v1.NodeList, error) {
 	Filter(ns, func(node v1.Node) bool {
 		return IsNodeSchedulable(&node)
 	})
+	log.Info().Print("Available nodes- ")
+	for _, item := range ns.Items {
+		zone := ""
+		if v, ok := item.Labels[kubevolume.PVZoneLabelName]; ok {
+			zone = v
+		}
+		log.Info().Print("Node name", field.M{"name": item.Name, "zone": zone})
+	}
 	if len(ns.Items) == 0 {
 		return nil, errors.New("There are currently no ready, schedulable nodes in the cluster")
 	}
