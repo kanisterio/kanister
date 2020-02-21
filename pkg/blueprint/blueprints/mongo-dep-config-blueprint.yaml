@@ -11,7 +11,7 @@ actions:
           path: '/mongodb-replicaset-backups/{{ .DeploymentConfig.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs_backup.gz'
     phases:
     - func: KubeTask
-      name: takeConsistentBackup
+      name: mongoDump
       objects:
         mongosecret:
           kind: Secret
@@ -29,7 +29,7 @@ actions:
           - -c
           - |
             host="{{ .DeploymentConfig.Name }}.{{ .DeploymentConfig.Namespace }}.svc.cluster.local"
-            dbPassword='{{ index .Phases.takeConsistentBackup.Secrets.mongosecret.Data "database-admin-password" | toString }}'
+            dbPassword='{{ index .Phases.mongoDump.Secrets.mongosecret.Data "database-admin-password" | toString }}'
             dump_cmd="mongodump --gzip --archive --host ${host} -u admin -p ${dbPassword}"
             echo $dump_cmd
             ${dump_cmd} | kando location push --profile '{{ toJson .Profile }}' --path '/mongodb-replicaset-backups/{{ .DeploymentConfig.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs_backup.gz' -

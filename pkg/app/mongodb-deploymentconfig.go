@@ -35,9 +35,6 @@ import (
 const (
 	mongoDepConfigName        = "mongodb"
 	mongoDepConfigWaitTimeout = 2 * time.Minute
-	mongoToolPodName          = "mongo-tools-pod"
-	mongoToolContainerName    = "mongo-tools-container"
-	mongoToolImage            = "kanisterio/mongo-sidecar:0.26.0"
 )
 
 type MongoDBDepConfig struct {
@@ -48,6 +45,7 @@ type MongoDBDepConfig struct {
 	dbTemplate string
 	envVar     map[string]string
 	user       string
+	label      string
 }
 
 func NewMongoDBDepConfig(name string) App {
@@ -58,6 +56,7 @@ func NewMongoDBDepConfig(name string) App {
 		envVar: map[string]string{
 			"MONGODB_ADMIN_PASSWORD": "secretpassword",
 		},
+		label: getLabelOfApp(mongoDepConfigName),
 	}
 }
 
@@ -82,69 +81,9 @@ func (mongo *MongoDBDepConfig) Install(ctx context.Context, namespace string) er
 
 	oc := openshift.NewOpenShiftClient()
 	_, err := oc.NewApp(ctx, mongo.namespace, mongo.dbTemplate, mongo.envVar)
-	if err != nil {
-		return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mongo.name)
-	}
 
-	return nil
+	return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mongo.name)
 }
-
-// func (mongo *MongoDBDepConfig) createMongoSecret(context.Context) error {
-
-// 	mongoSecret := &v1.Secret{
-// 		TypeMeta: metav1.TypeMeta{
-// 			Kind:       "Pod",
-// 			APIVersion: "v1",
-// 		},
-// 		ObjectMeta: metav1.ObjectMeta{
-// 			Name:      mongo.name,
-// 			Namespace: mongo.namespace,
-// 		},
-// 		Data: map[string][]byte{
-// 			"mongodb-root-password": []byte(mongo.envVar["MONGODB_ADMIN_PASSWORD"]),
-// 		},
-// 	}
-
-// 	_, err := mongo.cli.CoreV1().Secrets(mongo.namespace).Create(mongoSecret)
-
-// 	return errors.Wrapf(err, "Error creating secret for %s app.", mongo.name)
-// }
-
-// func (mongo *MongoDBDepConfig) createMongoToolsPod(ctx context.Context) error {
-// 	mongoPod := &v1.Pod{
-// 		TypeMeta: metav1.TypeMeta{
-// 			Kind:       "Pod",
-// 			APIVersion: "v1",
-// 		},
-// 		ObjectMeta: metav1.ObjectMeta{
-// 			Name: mongoToolPodName,
-// 		},
-// 		Spec: v1.PodSpec{
-// 			Containers: []v1.Container{
-// 				v1.Container{
-// 					Name:      mongoToolContainerName,
-// 					Image:     mongoToolImage,
-// 					Resources: v1.ResourceRequirements{},
-// 					Env: []v1.EnvVar{
-// 						v1.EnvVar{
-// 							Name: "MONGODB_ROOT_PASSWORD",
-// 							ValueFrom: &v1.EnvVarSource{
-// 								SecretKeyRef: &v1.SecretKeySelector{
-// 									LocalObjectReference: v1.LocalObjectReference{Name: mongo.name},
-// 									Key:                  "mongodb-root-password",
-// 								},
-// 							},
-// 						},
-// 					},
-// 				},
-// 			},
-// 		},
-// 	}
-
-// 	_, err := mongo.cli.CoreV1().Pods(mongo.namespace).Create(mongoPod)
-
-// 	return errors.Wrapf(err, "Error creating %s tools pod", mongo.name)
-// }
 
 func (mongo *MongoDBDepConfig) IsReady(ctx context.Context) (bool, error) {
 	log.Info().Print("Waiting for application to be ready.", field.M{"app": mongo.name})
@@ -168,8 +107,10 @@ func (mongo *MongoDBDepConfig) Object() crv1alpha1.ObjectReference {
 	}
 }
 
-func (mongo *MongoDBDepConfig) Uninstall(context.Context) error {
-	return nil
+func (mongo *MongoDBDepConfig) Uninstall(ctx context.Context) error {
+	oc := openshift.NewOpenShiftClient()
+	_, err := oc.DeleteApp(ctx, mongo.namespace, mongo.label)
+	return err
 }
 
 func (mongo *MongoDBDepConfig) Ping(ctx context.Context) error {
@@ -231,8 +172,6 @@ func (mongo *MongoDBDepConfig) execCommand(ctx context.Context, command []string
 	}
 	stdout, stderr, err := kube.Exec(mongo.cli, mongo.namespace, podName, containerName, command, nil)
 	log.Print("Executing the command in pod and contianer", field.M{"pod": podName, "container": containerName, "cmd": command})
-	if err != nil {
-		return stdout, stderr, errors.Wrapf(err, "Error executing command in the pod")
-	}
-	return stdout, stderr, err
+
+	return stdout, stderr, errors.Wrapf(err, "Error executing command in the pod")
 }
