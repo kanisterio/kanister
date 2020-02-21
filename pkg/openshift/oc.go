@@ -42,7 +42,13 @@ func (oc OpenShiftClient) NewApp(ctx context.Context, namespace, dpTemplate stri
 	}
 
 	command := append([]string{"new-app", "-n", namespace, dpTemplate}, formedVars...)
-	out, err := helm.RunCmdWithTimeout(ctx, "oc", command)
+	return helm.RunCmdWithTimeout(ctx, "oc", command)
+}
 
-	return out, err
+// DeleteApp deletes an application that is deployed on OpenShift cluster
+// oc delete all -n <ns-name> -l <label>
+// openshift adds a specific label to all the resources, while deploying an application
+func (oc OpenShiftClient) DeleteApp(ctx context.Context, namespace, label string) (string, error) {
+	delCommand := []string{"delete", "all", "-n", namespace, "-l", label}
+	return helm.RunCmdWithTimeout(ctx, "oc", delCommand)
 }

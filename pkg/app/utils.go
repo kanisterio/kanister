@@ -35,3 +35,9 @@ func appendRandString(name string) string {
 func getOpenShiftDBTemplate(appName string) string {
 	return fmt.Sprintf(dbTemplateURI, appName)
 }
+
+// getLabelOfApp returns label of the passed application this label can be
+// used to delete all the resources that were created while deploying this application
+func getLabelOfApp(appName string) string {
+	return fmt.Sprintf("app=%s-persistent", appName)
+}
