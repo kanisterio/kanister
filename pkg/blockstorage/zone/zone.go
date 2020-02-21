@@ -229,13 +229,16 @@ func GetReadySchedulableNodes(cli kubernetes.Interface) (*v1.NodeList, error) {
 	ns, err := cli.CoreV1().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
 		"spec.unschedulable": "false",
 	}.AsSelector().String()})
+	if err != nil {
+		return nil, err
+	}
 	Filter(ns, func(node v1.Node) bool {
 		return IsNodeSchedulable(&node)
 	})
 	if len(ns.Items) == 0 {
 		return nil, errors.New("There are currently no ready, schedulable nodes in the cluster")
 	}
-	return ns, err
+	return ns, nil
 }
 
 // Filter filters nodes in NodeList in place, removing nodes that do not
