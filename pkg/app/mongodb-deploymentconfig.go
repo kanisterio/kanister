@@ -126,7 +126,6 @@ func (mongo *MongoDBDepConfig) Ping(ctx context.Context) error {
 }
 
 func (mongo *MongoDBDepConfig) Insert(ctx context.Context) error {
-
 	log.Print("Inserting documents into collection.", field.M{"app": mongo.name})
 	insertCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"db.restaurants.insert({'_id': '%s','name' : 'Tom', 'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.user, uuid.New())}
 	_, stderr, err := mongo.execCommand(ctx, insertCMD)
