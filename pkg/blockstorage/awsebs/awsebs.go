@@ -584,19 +584,27 @@ func GetRegionFromEC2Metadata() (string, error) {
 }
 
 func (s *ebsStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
+	zones, err := s.queryRegionToZones(ctx, region)
+	if err != nil {
+		log.Error().Print("Ignoring error", field.M{"error": err.Error()})
+	}
+	if len(zones) > 0 {
+		return zones, nil
+	}
 	// Fall back to using a static map.
 	return staticRegionToZones(region)
 }
 
 func (s *ebsStorage) queryRegionToZones(ctx context.Context, region string) ([]string, error) {
-	ec2Cli, err := newEC2Client(region, s.ec2Cli.Config.Copy())
-	if err != nil {
-		return nil, errors.Wrapf(err, "Could not get EC2 client")
+	regionKey := "region-name"
+	dazi := &ec2.DescribeAvailabilityZonesInput{
+		Filters: []*ec2.Filter{
+			&ec2.Filter{Name: &regionKey, Values: []*string{&region}},
+		},
 	}
-	dazi := &ec2.DescribeAvailabilityZonesInput{}
-	dazo, err := ec2Cli.DescribeAvailabilityZonesWithContext(ctx, dazi)
+	dazo, err := s.ec2Cli.DescribeAvailabilityZonesWithContext(ctx, dazi)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get AZs for region %s", region)
+		return []string{}, errors.Wrapf(err, "Failed to get AZs for region %s", region)
 	}
 	azs := make([]string, 0, len(dazo.AvailabilityZones))
 	for _, az := range dazo.AvailabilityZones {

@@ -34,40 +34,81 @@ type ZoneSuite struct{}
 
 var _ = Suite(&ZoneSuite{})
 
-func (s ZoneSuite) TestConsistentZone(c *C) {
-	// We don't care what the answer is as long as it's consistent.
+func (s ZoneSuite) TestSanitizeZones(c *C) {
 	for _, tc := range []struct {
-		sourceZone string
-		nzs        map[string]struct{}
-		out        string
+		availableZones map[string]struct{}
+		validZoneNames []string
+		out            map[string]struct{}
 	}{
 		{
-			sourceZone: "",
-			nzs: map[string]struct{}{
-				"zone1": {},
+			availableZones: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
 			},
-			out: "zone1",
+			validZoneNames: []string{
+				"us-west1-a",
+				"us-west1-b",
+				"us-west1-c",
+			},
+			out: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
+			},
 		},
 		{
-			sourceZone: "",
-			nzs: map[string]struct{}{
-				"zone1": {},
-				"zone2": {},
+			availableZones: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
 			},
-			out: "zone2",
+			validZoneNames: []string{
+				"us-west1a",
+				"us-west1b",
+				"us-west1c",
+			},
+			out: map[string]struct{}{
+				"us-west1a": {},
+				"us-west1b": {},
+				"us-west1c": {},
+			},
 		},
 		{
-			sourceZone: "from1",
-			nzs: map[string]struct{}{
-				"zone1": {},
-				"zone2": {},
+			availableZones: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
 			},
-			out: "zone1",
+			validZoneNames: []string{
+				"us-west1a",
+				"us-west1b",
+				"us-west1c",
+				"us-west1d",
+			},
+			out: map[string]struct{}{
+				"us-west1a": {},
+				"us-west1b": {},
+				"us-west1c": {},
+			},
+		},
+		{
+			availableZones: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
+			},
+			validZoneNames: []string{
+				"us-west1",
+				"us-west2",
+			},
+			out: map[string]struct{}{
+				"us-west1": {},
+			},
 		},
 	} {
-		out, err := consistentZone(tc.sourceZone, tc.nzs, make(map[string]struct{}))
-		c.Assert(err, IsNil)
-		c.Assert(out, Equals, tc.out)
+		out := sanitizeAvailableZones(tc.availableZones, tc.validZoneNames)
+		c.Assert(out, DeepEquals, tc.out)
 	}
 }
 

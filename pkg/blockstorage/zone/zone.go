@@ -16,15 +16,15 @@ package zone
 
 import (
 	"context"
-	"hash/fnv"
 	"sort"
-	"strings"
 
+	"github.com/agnivade/levenshtein"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/pkg/errors"
+	//	"github.com/schollz/closestmatch"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -42,44 +42,50 @@ type (
 // It will return a minimum of 0 and a maximum of zones equal to the length of sourceZones.
 // Depending on the length of the slice returned, the blockstorage providers will decide if
 // a regional volume or a zonal volume should be created.
-func FromSourceRegionZone(ctx context.Context, m Mapper, region string, sourceZones ...string) ([]string, error) {
+func FromSourceRegionZone(ctx context.Context, m Mapper, sourceRegion string, sourceZones ...string) ([]string, error) {
 	newZones := make(map[string]struct{})
+	validZoneNames, err := m.FromRegion(ctx, sourceRegion)
+	if err != nil || len(validZoneNames) == 0 {
+		// maybe error out right here.
+		log.WithError(err).Print("Using original AZ.", field.M{"region": sourceRegion})
+		return sourceZones, nil
+	}
 	cli, err := kube.NewClient()
 	if err == nil {
-		nzs, rs, errzr := NodeZonesAndRegion(ctx, cli)
-		if errzr != nil {
-			log.WithError(errzr).Print("Ignoring error getting Node availability zones.")
+		availableZones, availableRegion, err := NodeZonesAndRegion(ctx, cli)
+		if err != nil {
+			// log
+			goto Validate
 		}
-		if len(nzs) != 0 {
-			for _, zone := range sourceZones {
-				var z string
-				// getZoneFromKnownNodeZones() func makes sure that all zones
-				// added to newZones[] are unique and not repeated.
-				z, err = getZoneFromKnownNodeZones(ctx, zone, nzs, newZones)
-				if err == nil && isZoneValid(ctx, m, z, rs) {
-					newZones[z] = struct{}{}
-				}
-				if err != nil {
-					log.WithError(err).Print("Ignoring error getting Zone from KnownNodeZones.")
-				}
-			}
+		if availableRegion != sourceRegion {
+			log.Error().Print("Source region and available region mismatch", field.M{"sourceRegion": sourceRegion, "availableRegion": availableRegion})
 		}
-	}
-	if len(newZones) == 0 {
+		if len(availableZones) <= 0 {
+			// log return nil, errors.Errorf("Could not get zone for region %s and sourceZones %s", availableRegion, sourceZones)
+			goto Validate
+		}
+
+		sanitizedAvailableZones := sanitizeAvailableZones(availableZones, validZoneNames)
+
+		// Add all available valid source zones
 		for _, zone := range sourceZones {
-			// WithUnknownNodeZones() func makes sure that all zones
-			// added to newZones[] are unique and not repeated.
-			newZone := WithUnknownNodeZones(ctx, m, region, zone, newZones)
-			if newZone != "" {
-				newZones[newZone] = struct{}{}
+			z := getZoneFromKnownNodeZones(zone, sanitizedAvailableZones)
+			if z != "" {
+				newZones[z] = struct{}{}
+			}
+		}
+
+		// If source zones aren't available and valid add all valid available zones
+		if len(newZones) == 0 {
+			for zone := range sanitizedAvailableZones {
+				newZones[zone] = struct{}{}
 			}
 		}
 	}
-
+Validate:
 	if len(newZones) == 0 {
-		return nil, errors.Errorf("Could not get zone for region %s and sourceZones %s", region, sourceZones)
+		return nil, errors.Errorf("Unable to find valid availabilty zones for region (%s)", sourceRegion)
 	}
-
 	var zones []string
 	for z := range newZones {
 		zones = append(zones, z)
@@ -87,101 +93,43 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, region string, sourceZo
 	return zones, nil
 }
 
-func isZoneValid(ctx context.Context, m Mapper, zone, region string) bool {
-	if validZones, err := m.FromRegion(ctx, region); err == nil {
-		for _, z := range validZones {
-			if zone == z {
-				return true
-			}
+func sanitizeAvailableZones(availableZones map[string]struct{}, validZoneNames []string) map[string]struct{} {
+	sanitizedZones := map[string]struct{}{}
+	for zone := range availableZones {
+		if isZoneValid(zone, validZoneNames) {
+			sanitizedZones[zone] = struct{}{}
+		} else {
+			closestMatch := levenshteinMatch(zone, validZoneNames)
+			log.Debug().Print("Exact match not found for available zone, using closest match",
+				field.M{"availableZone": zone, "closestMatch": closestMatch})
+			sanitizedZones[closestMatch] = struct{}{}
+		}
+	}
+	return sanitizedZones
+}
+
+func levenshteinMatch(input string, options []string) string {
+	sort.Slice(options, func(i, j int) bool {
+		return levenshtein.ComputeDistance(input, options[i]) < levenshtein.ComputeDistance(input, options[j])
+	})
+	return options[0]
+}
+
+func isZoneValid(zone string, validZones []string) bool {
+	for _, z := range validZones {
+		if zone == z {
+			return true
 		}
 	}
 	return false
 }
 
-// WithUnknownNodeZones get the zone list  for the region
-func WithUnknownNodeZones(ctx context.Context, m Mapper, region string, sourceZone string, newZones map[string]struct{}) string {
-	// We could not the zones of the nodes, so we return an arbitrary one.
-	zs, err := m.FromRegion(ctx, region)
-	if err != nil || len(zs) == 0 {
-		// If all else fails, we return the original AZ.
-		log.WithError(err).Print("Using original AZ.", field.M{"region": region})
+// If the original zone is available, we return that one.
+func getZoneFromKnownNodeZones(sourceZone string, availableZones map[string]struct{}) string {
+	if _, ok := availableZones[sourceZone]; ok {
 		return sourceZone
 	}
-
-	// We look for a zone with the same suffix.
-	for _, z := range zs {
-		if getZoneSuffixesMatch(z, sourceZone) {
-			// check if zone z is already added to newZones
-			if _, ok := newZones[z]; ok {
-				continue
-			}
-			return z
-		}
-	}
-
-	// We return an arbitrary zone in the region.
-	for i := range zs {
-		// check if zone zs[i] is already added to newZones
-		if _, ok := newZones[zs[i]]; ok {
-			continue
-		}
-		return zs[i]
-	}
-
 	return ""
-}
-
-func getZoneFromKnownNodeZones(ctx context.Context, sourceZone string, nzs map[string]struct{}, newZones map[string]struct{}) (string, error) {
-	// If the original zone is available, we return that one.
-	if _, ok := nzs[sourceZone]; ok {
-		return sourceZone, nil
-	}
-
-	// If there's an available zone with the zone suffix, we use that one.
-	for nz := range nzs {
-		if getZoneSuffixesMatch(nz, sourceZone) {
-			// check if zone nz is already added to newZones
-			if _, ok := newZones[nz]; ok {
-				continue
-			}
-			return nz, nil
-		}
-	}
-	// If any nodes are available, return an arbitrary one.
-	return consistentZone(sourceZone, nzs, newZones)
-}
-
-func consistentZone(sourceZone string, nzs map[string]struct{}, newZones map[string]struct{}) (string, error) {
-	if len(nzs) == 0 {
-		return "", errors.New("could not restore volume: no zone found")
-	}
-	s := make([]string, 0, len(nzs))
-	for nz := range nzs {
-		s = append(s, nz)
-	}
-	sort.Slice(s, func(i, j int) bool {
-		return strings.Compare(s[i], s[j]) < 0
-	})
-	h := fnv.New32()
-	if _, err := h.Write([]byte(sourceZone)); err != nil {
-		return "", errors.Errorf("failed to hash source zone %s: %s", sourceZone, err.Error())
-	}
-	i := int(h.Sum32()) % len(nzs)
-
-	// check if zone s[i] is already added to newZones
-	if _, ok := newZones[s[i]]; ok {
-		return "", nil
-	}
-	return s[i], nil
-}
-
-func getZoneSuffixesMatch(zone1, zone2 string) bool {
-	if zone1 == "" || zone2 == "" {
-		return zone1 == zone2
-	}
-	a1 := zone1[len(zone1)-1]
-	a2 := zone2[len(zone2)-1]
-	return a1 == a2
 }
 
 const (
@@ -200,6 +148,10 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 	zoneSet := make(map[string]struct{}, len(ns.Items))
 	regionSet := make(map[string]struct{})
 	for _, n := range ns.Items {
+		// For kubernetes 1.17 onwards failureDomain annotations are being deprecated
+		// and will need to use topology.kubernetes.io/zone=us-east-1c and
+		// topology.kubernetes.io/region=us-east-1
+		// https://kubernetes.io/docs/reference/kubernetes-api/labels-annotations-taints/#topologykubernetesioregion
 		if v, ok := n.Labels[kubevolume.PVZoneLabelName]; ok {
 			zoneSet[v] = struct{}{}
 		}
@@ -235,14 +187,6 @@ func GetReadySchedulableNodes(cli kubernetes.Interface) (*v1.NodeList, error) {
 	Filter(ns, func(node v1.Node) bool {
 		return IsNodeSchedulable(&node)
 	})
-	log.Info().Print("Available nodes- ")
-	for _, item := range ns.Items {
-		zone := ""
-		if v, ok := item.Labels[kubevolume.PVZoneLabelName]; ok {
-			zone = v
-		}
-		log.Info().Print("Node name", field.M{"name": item.Name, "zone": zone})
-	}
 	if len(ns.Items) == 0 {
 		return nil, errors.New("There are currently no ready, schedulable nodes in the cluster")
 	}

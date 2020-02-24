@@ -21,6 +21,7 @@ require (
 	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
 	github.com/Masterminds/semver v1.4.2
 	github.com/Masterminds/sprig v2.15.0+incompatible
+	github.com/agnivade/levenshtein v1.0.3
 	github.com/aokoli/goutils v1.1.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a // indirect
 	github.com/aws/aws-sdk-go v1.29.0
@@ -58,6 +59,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/renier/xmlrpc v0.0.0-20170708154548-ce4a1a486c03 // indirect
 	github.com/satori/go.uuid v1.2.0
+	github.com/schollz/closestmatch v2.1.0+incompatible
 	github.com/sirupsen/logrus v1.4.2
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
 	github.com/spf13/cobra v0.0.3
