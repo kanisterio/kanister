@@ -172,6 +172,9 @@ test: build-dirs
 integration-test: build-dirs
 	@$(MAKE) run CMD='-c "./build/integration-test.sh short"'
 
+openshift-test:
+	@/bin/bash ./build/integration-test.sh openshift
+
 golint:
 	@$(MAKE) run CMD='-c "./build/golint.sh"'
 
@@ -277,4 +280,3 @@ stop-minishift:
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
-

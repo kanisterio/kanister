@@ -309,3 +309,58 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	_, _, err = NodeZonesAndRegion(ctx, cli)
 	c.Assert(err, NotNil)
 }
+
+func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
+	ctx := context.Background()
+	node1 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node1",
+			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-1"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+	node2 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node2",
+			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-2"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+	node3 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node3",
+			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-3"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+	expectedZone := make(map[string]struct{})
+	expectedZone["westus2-1"] = struct{}{}
+	expectedZone["westus2-2"] = struct{}{}
+	expectedZone["westus2-3"] = struct{}{}
+	cli := fake.NewSimpleClientset(node1, node2, node3)
+	z, r, err := NodeZonesAndRegion(ctx, cli)
+	c.Assert(err, IsNil)
+	c.Assert(reflect.DeepEqual(z, expectedZone), Equals, true)
+	c.Assert(r, Equals, "westus2")
+}

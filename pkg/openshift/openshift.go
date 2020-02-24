@@ -25,4 +25,8 @@ type OSClient interface {
 	// NewApp installs new app in the openshift clsuter
 	// similar to oc new-app ...
 	NewApp(ctx context.Context, namespace, osAppImage string, envVar map[string]string) (string, error)
+
+	// DeleteApp delete an app from the openshift cluster
+	// similar to oc delete all -n <ns> -l <label>
+	DeleteApp(ctx context.Context, namespace, label string) (string, error)
 }

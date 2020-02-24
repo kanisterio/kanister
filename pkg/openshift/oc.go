@@ -33,14 +33,22 @@ func (oc OpenShiftClient) CreateNamespace(ctx context.Context, namespace string)
 	return helm.RunCmdWithTimeout(ctx, "oc", command)
 }
 
-func (oc OpenShiftClient) NewApp(ctx context.Context, namespace, osAppImage string, envVar map[string]string) (string, error) {
+// NewApp install a new application in the openshift
+// cluster using ``oc new-app`` command
+func (oc OpenShiftClient) NewApp(ctx context.Context, namespace, dpTemplate string, envVar map[string]string) (string, error) {
 	var formedVars []string
 	for k, v := range envVar {
-		formedVars = append(formedVars, "-e", fmt.Sprintf("%s=%s", k, v))
+		formedVars = append(formedVars, "-p", fmt.Sprintf("%s=%s", k, v))
 	}
 
-	command := append([]string{"new-app", "-n", namespace, osAppImage}, formedVars...)
-	out, err := helm.RunCmdWithTimeout(ctx, "oc", command)
+	command := append([]string{"new-app", "-n", namespace, dpTemplate}, formedVars...)
+	return helm.RunCmdWithTimeout(ctx, "oc", command)
+}
 
-	return out, err
+// DeleteApp deletes an application that is deployed on OpenShift cluster
+// oc delete all -n <ns-name> -l <label>
+// openshift adds a specific label to all the resources, while deploying an application
+func (oc OpenShiftClient) DeleteApp(ctx context.Context, namespace, label string) (string, error) {
+	delCommand := []string{"delete", "all", "-n", namespace, "-l", label}
+	return helm.RunCmdWithTimeout(ctx, "oc", delCommand)
 }

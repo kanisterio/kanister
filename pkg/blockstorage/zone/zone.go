@@ -209,7 +209,7 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 	if err != nil {
 		return nil, "", errors.Wrap(err, nodeZonesErr)
 	}
-	zoneSet := make(map[string]struct{}, len(ns.Items))
+	zoneSet := make(map[string]struct{})
 	regionSet := make(map[string]struct{})
 	for _, n := range ns.Items {
 		// For kubernetes 1.17 onwards failureDomain annotations are being deprecated
@@ -217,7 +217,10 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 		// topology.kubernetes.io/region=us-east-1
 		// https://kubernetes.io/docs/reference/kubernetes-api/labels-annotations-taints/#topologykubernetesioregion
 		if v, ok := n.Labels[kubevolume.PVZoneLabelName]; ok {
-			zoneSet[v] = struct{}{}
+			// make sure it is not a faultDomain
+			if len(v) > 1 {
+				zoneSet[v] = struct{}{}
+			}
 		}
 		if v, ok := n.Labels[kubevolume.PVRegionLabelName]; ok {
 			regionSet[v] = struct{}{}
