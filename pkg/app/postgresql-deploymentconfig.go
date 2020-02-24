@@ -21,13 +21,13 @@ import (
 	"strings"
 	"time"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -47,7 +47,6 @@ type PostgreSQLDepConfig struct {
 	opeshiftClient openshift.OSClient
 	dbTemplate     string
 	label          string
-	params         map[string]string
 	envVar         map[string]string
 }
 
@@ -81,7 +80,7 @@ func (pgres *PostgreSQLDepConfig) Init(ctx context.Context) error {
 func (pgres *PostgreSQLDepConfig) Install(ctx context.Context, namespace string) error {
 	pgres.namespace = namespace
 
-	_, err := pgres.opeshiftClient.NewApp(ctx, pgres.namespace, pgres.dbTemplate, pgres.envVar, pgres.params)
+	_, err := pgres.opeshiftClient.NewApp(ctx, pgres.namespace, pgres.dbTemplate, pgres.envVar, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing application %s on openshift cluster", pgres.name)
 	}

@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	mysqlDepConfigWaitTimeout = 2 * time.Minute
+	mysqlDepConfigWaitTimeout = 4 * time.Minute
 	mysqlToolPodName          = "mysql-tools-pod"
 	mysqlToolContainerName    = "mysql-tools-container"
 	mysqlToolImage            = "kanisterio/mysql-sidecar:0.26.0"
@@ -50,7 +50,6 @@ type MysqlDepConfig struct {
 	namespace  string
 	dbTemplate string
 	envVar     map[string]string
-	params     map[string]string
 }
 
 func NewMysqlDepConfig(name string) App {
@@ -83,7 +82,7 @@ func (mdep *MysqlDepConfig) Install(ctx context.Context, namespace string) error
 	mdep.namespace = namespace
 
 	oc := openshift.NewOpenShiftClient()
-	_, err := oc.NewApp(ctx, mdep.namespace, mdep.dbTemplate, mdep.envVar, mdep.params)
+	_, err := oc.NewApp(ctx, mdep.namespace, mdep.dbTemplate, mdep.envVar, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mdep.name)
 	}
