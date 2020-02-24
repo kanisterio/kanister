@@ -113,11 +113,11 @@ func (s ZoneSuite) TestSanitizeZones(c *C) {
 				"us-west1-c": {},
 			},
 			validZoneNames: []string{
-				"tommy",
-				"wallace",
+				"east",
+				"west",
 			},
 			out: map[string]struct{}{
-				"wallace": {},
+				"west": {},
 			},
 		},
 	} {
