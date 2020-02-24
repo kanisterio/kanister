@@ -106,6 +106,20 @@ func (s ZoneSuite) TestSanitizeZones(c *C) {
 				"us-west1": {},
 			},
 		},
+		{
+			availableZones: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
+			},
+			validZoneNames: []string{
+				"tommy",
+				"wallace",
+			},
+			out: map[string]struct{}{
+				"wallace": {},
+			},
+		},
 	} {
 		out := sanitizeAvailableZones(tc.availableZones, tc.validZoneNames)
 		c.Assert(out, DeepEquals, tc.out)

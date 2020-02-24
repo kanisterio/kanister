@@ -18,17 +18,16 @@ import (
 	"context"
 	"sort"
 
-	"github.com/agnivade/levenshtein"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/pkg/errors"
-	//	"github.com/schollz/closestmatch"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
+	"unicode/utf8"
 )
 
 type (
@@ -110,7 +109,7 @@ func sanitizeAvailableZones(availableZones map[string]struct{}, validZoneNames [
 
 func levenshteinMatch(input string, options []string) string {
 	sort.Slice(options, func(i, j int) bool {
-		return levenshtein.ComputeDistance(input, options[i]) < levenshtein.ComputeDistance(input, options[j])
+		return ComputeDistance(input, options[i]) < ComputeDistance(input, options[j])
 	})
 	return options[0]
 }
@@ -135,6 +134,71 @@ func getZoneFromKnownNodeZones(sourceZone string, availableZones map[string]stru
 const (
 	nodeZonesErr = `Failed to get Node availability zones.`
 )
+
+// ComputeDistance computes the levenshtein distance between the two
+// strings passed as an argument. The return value is the levenshtein distance
+// Source https://github.com/agnivade/levenshtein/blob/master/levenshtein.go#L15
+func ComputeDistance(a, b string) int {
+	if len(a) == 0 {
+		return utf8.RuneCountInString(b)
+	}
+
+	if len(b) == 0 {
+		return utf8.RuneCountInString(a)
+	}
+
+	if a == b {
+		return 0
+	}
+
+	// We need to convert to []rune if the strings are non-ASCII.
+	// This could be avoided by using utf8.RuneCountInString
+	// and then doing some juggling with rune indices,
+	// but leads to far more bounds checks. It is a reasonable trade-off.
+	s1 := []rune(a)
+	s2 := []rune(b)
+
+	// swap to save some memory O(min(a,b)) instead of O(a)
+	if len(s1) > len(s2) {
+		s1, s2 = s2, s1
+	}
+	lenS1 := len(s1)
+	lenS2 := len(s2)
+
+	// init the row
+	x := make([]uint16, lenS1+1)
+	// we start from 1 because index 0 is already 0.
+	for i := 1; i < len(x); i++ {
+		x[i] = uint16(i)
+	}
+
+	// make a dummy bounds check to prevent the 2 bounds check down below.
+	// The one inside the loop is particularly costly.
+	_ = x[lenS1]
+	// fill in the rest
+	for i := 1; i <= lenS2; i++ {
+		prev := uint16(i)
+		var current uint16
+		for j := 1; j <= lenS1; j++ {
+			if s2[i-1] == s1[j-1] {
+				current = x[j-1] // match
+			} else {
+				current = min(min(x[j-1]+1, prev+1), x[j]+1)
+			}
+			x[j-1] = prev
+			prev = current
+		}
+		x[lenS1] = prev
+	}
+	return int(x[lenS1])
+}
+
+func min(a, b uint16) uint16 {
+	if a < b {
+		return a
+	}
+	return b
+}
 
 // NodeZonesAndRegion returns cloud provider failure-domain region and zones as reported by K8s
 func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[string]struct{}, string, error) {
