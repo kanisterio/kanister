@@ -82,6 +82,14 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, sourceRegion string, so
 		}
 	}
 Validate:
+	// If Kubernetes provides zones are invalid use sourceZones
+	if len(newZones) == 0 {
+		for _, zone := range sourceZones {
+			if isZoneValid(zone, validZoneNames) {
+				newZones[zone] = struct{}{}
+			}
+		}
+	}
 	if len(newZones) == 0 {
 		return nil, errors.Errorf("Unable to find valid availabilty zones for region (%s)", sourceRegion)
 	}
