@@ -65,7 +65,7 @@ case "${1}" in
         # Run only part of apps
         TEST_APPS=${SHORT_APPS}
         ;;
-    oc)
+    openshift)
         # Run only openshift apps
         TEST_APPS=${OC_APPS}
         ;;
