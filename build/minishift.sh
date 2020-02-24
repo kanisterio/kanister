@@ -31,14 +31,16 @@ start_minishift ()
     tar zxvf ${TMP_DIR}/minishift-${MINISHIFT_VERSION}-linux-amd64.tgz -C ${TMP_DIR}
     cp ${TMP_DIR}/minishift-${MINISHIFT_VERSION}-linux-amd64/minishift ${GOPATH}/bin
     echo 'minishift was downloaded'
-    echo 
+    echo
     echo 'Starting minishift...'
     minishift start --vm-driver=${1}
-    echo 'minishift was started successfully.' 
+    echo 'minishift was started successfully.'
     echo
     echo 'Copying OpenShift client to correct location...'
     cp  ${HOME}/.minishift/cache/oc/v${OC_VERSION}/linux/oc ${GOPATH}/bin
     oc login -u system:admin
+    # https://github.com/minio/minio/issues/6524#issuecomment-451689375
+    oc adm policy add-scc-to-group anyuid system:authenticated
     echo 'Success, you are ready to use minishift.'
 }
 
@@ -46,7 +48,7 @@ start_minishift ()
 stop_minishift ()
 {
     minishift stop
-    echo   
+    echo
     minishift delete -f
     rm -rf ${GOPATH}/bin/minishift
     rm -rf ${GOPATH}/bin/oc
@@ -71,7 +73,7 @@ case "${1}" in
         start_minishift)
             # check if vm-driver was provided or not
             if [ $# -ne 2 ]
-            then 
+            then
                 echo 'Please provide vm driver using vm-driver flag.'
                 exit 1
             fi
