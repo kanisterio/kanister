@@ -34,7 +34,7 @@ import (
 
 const (
 	mongoDepConfigName        = "mongodb"
-	mongoDepConfigWaitTimeout = 2 * time.Minute
+	mongoDepConfigWaitTimeout = 4 * time.Minute
 )
 
 type MongoDBDepConfig struct {
