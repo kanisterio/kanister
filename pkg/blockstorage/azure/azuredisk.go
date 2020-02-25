@@ -374,8 +374,7 @@ func getRegionAndZoneID(ctx context.Context, s *adStorage, sourceRegion, volAz s
 	if len(zs) == 0 {
 		return region, "", nil
 	}
-
-	zones, err := zone.FromSourceRegionZone(ctx, s, sourceRegion, volAz)
+	zones, err := zone.FromSourceRegionZone(ctx, s, cli, sourceRegion, volAz)
 	if err != nil {
 		return "", "", err
 	}

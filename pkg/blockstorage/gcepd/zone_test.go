@@ -27,35 +27,29 @@ type ZoneSuite struct{}
 var _ = Suite(&ZoneSuite{})
 
 func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
-	ctx := context.Background()
+	defaultZones := []string{"us-west-2a", "us-west-2b", "us-west-2c"}
 	for _, tc := range []struct {
-		region string
-		in     string
-		out    string
+		zones []string
+		in    string
+		out   string
 	}{
 		{
-			region: "us-west2",
-			in:     "us-west2-a",
-			out:    "us-west2-a",
+			zones: defaultZones,
+			in:    "us-west-2a",
+			out:   "us-west-2a",
 		},
 		{
-			region: "us-west2",
-			in:     "us-east1-f",
-			out:    "us-west2-a",
+			zones: defaultZones,
+			in:    "us-east-1f",
+			out:   "us-west-2a",
 		},
 		{
-			region: "us-west2",
-			in:     "us-east2-b",
-			out:    "us-west2-b",
-		},
-		{
-			region: "us-west2",
-			in:     "us-east1-f",
-			out:    "us-west2-a",
+			zones: defaultZones,
+			in:    "us-east-2b",
+			out:   "us-west-2b",
 		},
 	} {
-		var t = &gcpTest{}
-		z := zone.WithUnknownNodeZones(ctx, t, tc.region, tc.in, make(map[string]struct{}))
+		z := zone.LevenshteinMatch(tc.in, tc.zones)
 		c.Assert(z, Not(Equals), "")
 		if tc.out != "" {
 			c.Assert(z, Equals, tc.out)
