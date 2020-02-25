@@ -27,7 +27,7 @@ TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # Regex to match apps to run in short mode
 SHORT_APPS="^PostgreSQL$|^PITRPostgreSQL|MySQL|Elasticsearch|^MongoDB$"
 # OCAPPS has all the apps that are to be tested against openshift cluster
-OC_APPS="MysqlDBDepConfig|MongoDBDepConfig"
+OC_APPS="MysqlDBDepConfig|MongoDBDepConfig|PostgreSQLDepConfig"
 
 check_dependencies() {
     # Check if minio is already deployed
