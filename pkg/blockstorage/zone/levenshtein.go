@@ -38,34 +38,7 @@ package zone
 import (
 	"sort"
 	"unicode/utf8"
-
-	"github.com/kanisterio/kanister/pkg/field"
-	"github.com/kanisterio/kanister/pkg/log"
 )
-
-func sanitizeAvailableZones(availableZones map[string]struct{}, validZoneNames []string) map[string]struct{} {
-	sanitizedZones := map[string]struct{}{}
-	for zone := range availableZones {
-		if isZoneNameValid(zone, validZoneNames) {
-			sanitizedZones[zone] = struct{}{}
-		} else {
-			closestMatch := levenshteinMatch(zone, validZoneNames)
-			log.Debug().Print("Exact match not found for available zone, using closest match",
-				field.M{"availableZone": zone, "closestMatch": closestMatch})
-			sanitizedZones[closestMatch] = struct{}{}
-		}
-	}
-	return sanitizedZones
-}
-
-func isZoneNameValid(zone string, validZones []string) bool {
-	for _, z := range validZones {
-		if zone == z {
-			return true
-		}
-	}
-	return false
-}
 
 func levenshteinMatch(input string, options []string) string {
 	sort.Slice(options, func(i, j int) bool {
