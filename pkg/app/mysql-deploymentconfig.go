@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	mysqlDepConfigWaitTimeout = 2 * time.Minute
+	mysqlDepConfigWaitTimeout = 4 * time.Minute
 	mysqlToolPodName          = "mysql-tools-pod"
 	mysqlToolContainerName    = "mysql-tools-container"
 	mysqlToolImage            = "kanisterio/mysql-sidecar:0.26.0"
@@ -82,7 +82,7 @@ func (mdep *MysqlDepConfig) Install(ctx context.Context, namespace string) error
 	mdep.namespace = namespace
 
 	oc := openshift.NewOpenShiftClient()
-	_, err := oc.NewApp(ctx, mdep.namespace, mdep.dbTemplate, mdep.envVar)
+	_, err := oc.NewApp(ctx, mdep.namespace, mdep.dbTemplate, mdep.envVar, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mdep.name)
 	}
@@ -102,7 +102,7 @@ func (mdep *MysqlDepConfig) Install(ctx context.Context, namespace string) error
 func (mdep *MysqlDepConfig) createMySQLSecret(ctx context.Context) error {
 	mysqlSecret := &v1.Secret{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
+			Kind:       "Secret",
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
