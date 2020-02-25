@@ -375,12 +375,12 @@ func getRegionAndZoneID(ctx context.Context, s *adStorage, sourceRegion, volAz s
 		return region, "", nil
 	}
 
-	zones, err := zone.FromSourceRegionZone(ctx, s, sourceRegion, volAz)
+	zones, err := zone.FromSourceRegionZone(ctx, s, cli, sourceRegion, volAz)
 	if err != nil {
 		return "", "", err
 	}
 	if len(zones) != 1 {
-		return "", "", errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
+		log.Debug().Print("Length of zone slice is greater than 1", field.M{"numberOfZones": len(zones)})
 	}
 
 	region, id, err := getLocationInfo(zones[0])

@@ -26,7 +26,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jpillora/backoff"
-	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
 
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
@@ -34,7 +33,9 @@ import (
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 var _ blockstorage.Provider = (*ebsStorage)(nil)
@@ -407,13 +408,13 @@ func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	if snapshot.Volume.VolumeType == "" || snapshot.Volume.Az == "" || snapshot.Volume.Tags == nil {
 		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s, VolumeTags: %v", snapshot.Volume.VolumeType, snapshot.Volume.Az, snapshot.Volume.Tags)
 	}
-
-	zones, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
+	cli, _ := kube.NewClient()
+	zones, err := zone.FromSourceRegionZone(ctx, s, cli, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
 	if len(zones) != 1 {
-		return nil, errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
+		log.Debug().Print("Length of zone slice is greater than 1", field.M{"numberOfZones": len(zones)})
 	}
 	cvi := &ec2.CreateVolumeInput{
 		AvailabilityZone: aws.String(zones[0]),
