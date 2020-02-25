@@ -97,7 +97,6 @@ func getAvailableZones(ctx context.Context, newZones map[string]struct{}, kubeCl
 			newZones[zone] = struct{}{}
 		}
 	}
-	return
 }
 
 func isZoneValid(zone string, validZones []string) bool {
