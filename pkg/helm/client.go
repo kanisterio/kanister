@@ -79,7 +79,6 @@ func FindVersion(helmBin string) (HelmVersion, error) {
 }
 
 func NewCliClient(helmBin string) (Client, error) {
-
 	if helmBin == "" {
 		helmBin = HelmDefaultBinName
 	}
