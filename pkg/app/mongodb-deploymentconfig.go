@@ -43,10 +43,10 @@ type MongoDBDepConfig struct {
 	name       string
 	namespace  string
 	dbTemplate string
-	envVar     map[string]string
 	user       string
 	label      string
 	osClient   openshift.OSClient
+	params     map[string]string
 }
 
 func NewMongoDBDepConfig(name string) App {
@@ -54,7 +54,7 @@ func NewMongoDBDepConfig(name string) App {
 		name:       name,
 		dbTemplate: getOpenShiftDBTemplate(mongoDepConfigName),
 		user:       "admin",
-		envVar: map[string]string{
+		params: map[string]string{
 			"MONGODB_ADMIN_PASSWORD": "secretpassword",
 		},
 		label:    getLabelOfApp(mongoDepConfigName),
@@ -81,7 +81,7 @@ func (mongo *MongoDBDepConfig) Init(context.Context) error {
 func (mongo *MongoDBDepConfig) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
 
-	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, mongo.dbTemplate, mongo.envVar)
+	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, mongo.dbTemplate, nil, mongo.params)
 
 	return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mongo.name)
 }
