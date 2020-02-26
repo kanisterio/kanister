@@ -47,7 +47,6 @@ type CouchbaseDB struct {
 	cli           kubernetes.Interface
 	operatorChart helm.ChartInfo
 	clusterChart  helm.ChartInfo
-	helmBin       string
 }
 
 func NewCouchbaseDB(name string) App {
@@ -89,7 +88,7 @@ func (cb *CouchbaseDB) Install(ctx context.Context, ns string) error {
 	cb.namespace = ns
 
 	// Create helm client
-	cli, err := helm.NewCliClient(cb.helmBin)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
@@ -241,7 +240,7 @@ func (cb CouchbaseDB) Reset(ctx context.Context) error {
 
 func (cb CouchbaseDB) Uninstall(ctx context.Context) error {
 	// Create helm client
-	cli, err := helm.NewCliClient(cb.helmBin)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}

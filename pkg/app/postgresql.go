@@ -38,7 +38,6 @@ type PostgresDB struct {
 	cli       kubernetes.Interface
 	chart     helm.ChartInfo
 	namespace string
-	helmBin   string
 }
 
 func NewPostgresDB(name string) App {
@@ -82,7 +81,7 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 	pdb.namespace = ns
 
 	// Create helm client
-	cli, err := helm.NewCliClient(pdb.helmBin)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
@@ -197,7 +196,7 @@ func (pdb PostgresDB) Uninstall(ctx context.Context) error {
 	log.Info().Print("Uninstalling helm chart.", field.M{"app": pdb.name, "release": pdb.chart.Release, "namespace": pdb.namespace})
 
 	// Create helm client
-	cli, err := helm.NewCliClient(pdb.helmBin)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}

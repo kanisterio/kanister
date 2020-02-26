@@ -17,6 +17,7 @@ package helm
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -50,8 +51,8 @@ const (
 	V2 HelmVersion = "helmv2"
 	V3 HelmVersion = "helmv3"
 
-	// HelmDefaultBinName varible with default helm binary name.
-	HelmDefaultBinName = "helm"
+	// HelmBinNameEnvVar env var to pass a helm bin name into kanister test apps
+	HelmBinNameEnvVar = "KANISTER_HELM_BIN"
 )
 
 type CliClient struct {
@@ -60,8 +61,8 @@ type CliClient struct {
 }
 
 // FindVersion returns HelmVersion based on helm binary present in the path
-func FindVersion(helmBin string) (HelmVersion, error) {
-	out, err := RunCmdWithTimeout(context.TODO(), helmBin, []string{"version", "--client", "--short"})
+func FindVersion() (HelmVersion, error) {
+	out, err := RunCmdWithTimeout(context.TODO(), GetHelmBinName(), []string{"version", "--client", "--short"})
 	if err != nil {
 		return "", err
 	}
@@ -78,19 +79,24 @@ func FindVersion(helmBin string) (HelmVersion, error) {
 	return "", fmt.Errorf("Unsupported helm version %s", out)
 }
 
-func NewCliClient(helmBin string) (Client, error) {
-	if helmBin == "" {
-		helmBin = HelmDefaultBinName
+// GetHelmBinName returns a helm bin name from env var
+func GetHelmBinName() string {
+	if helmBin, ok := os.LookupEnv(HelmBinNameEnvVar); ok {
+		return helmBin
 	}
+	return "helm"
+}
 
-	version, err := FindVersion(helmBin)
+func NewCliClient() (Client, error) {
+
+	version, err := FindVersion()
 	if err != nil {
 		return nil, err
 	}
 
 	return &CliClient{
 		version: version,
-		helmBin: helmBin,
+		helmBin: GetHelmBinName(),
 	}, nil
 }
 

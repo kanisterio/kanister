@@ -47,7 +47,6 @@ type MongoDB struct {
 	username  string
 	name      string
 	chart     helm.ChartInfo
-	helmBin   string
 }
 
 func NewMongoDB(name string) App {
@@ -81,7 +80,7 @@ func (mongo *MongoDB) Init(ctx context.Context) error {
 
 func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
-	cli, err := helm.NewCliClient(mongo.helmBin)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
@@ -127,7 +126,7 @@ func (mongo *MongoDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (mongo *MongoDB) Uninstall(ctx context.Context) error {
-	cli, err := helm.NewCliClient(mongo.helmBin)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}

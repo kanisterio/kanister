@@ -76,7 +76,7 @@ func (fdb *FoundationDB) Init(ctx context.Context) error {
 func (fdb *FoundationDB) Install(ctx context.Context, namespace string) error {
 	fdb.namespace = namespace
 
-	helmVersion, err := helm.FindVersion("")
+	helmVersion, err := helm.FindVersion()
 	if err != nil {
 		return errors.Wrapf(err, "Couldn't find the helm version.")
 	}
@@ -91,12 +91,12 @@ func (fdb *FoundationDB) Install(ctx context.Context, namespace string) error {
 		instARG = []string{"install", fdb.fdbReleaseName, "../../helm/fdb-instance", "-n", fdb.namespace}
 	}
 
-	out, err := helm.RunCmdWithTimeout(ctx, helm.HelmDefaultBinName, oprARG)
+	out, err := helm.RunCmdWithTimeout(ctx, helm.GetHelmBinName(), oprARG)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing the operator for %s, error is %s.", fdb.name, out)
 	}
 
-	out, err = helm.RunCmdWithTimeout(ctx, helm.HelmDefaultBinName, instARG)
+	out, err = helm.RunCmdWithTimeout(ctx, helm.GetHelmBinName(), instARG)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing the application %s, error is %s", fdb.name, out)
 	}
@@ -138,13 +138,13 @@ func (fdb *FoundationDB) Object() crv1alpha1.ObjectReference {
 // Uninstall used to uninstall the database
 func (fdb *FoundationDB) Uninstall(ctx context.Context) error {
 	unintFDB := []string{"delete", "-n", fdb.namespace, fdb.fdbReleaseName}
-	out, err := helm.RunCmdWithTimeout(ctx, helm.HelmDefaultBinName, unintFDB)
+	out, err := helm.RunCmdWithTimeout(ctx, helm.GetHelmBinName(), unintFDB)
 	if err != nil {
 		return errors.Wrapf(err, "Error uninstalling the fdb instance. Error=%s", out)
 	}
 
 	uninstOpr := []string{"delete", "-n", fdb.namespace, fdb.oprReleaseName}
-	out, err = helm.RunCmdWithTimeout(ctx, helm.HelmDefaultBinName, uninstOpr)
+	out, err = helm.RunCmdWithTimeout(ctx, helm.GetHelmBinName(), uninstOpr)
 
 	return errors.Wrapf(err, "Error uninstalling the operator. Error=%s", out)
 }

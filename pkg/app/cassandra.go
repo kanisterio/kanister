@@ -44,7 +44,6 @@ type CassandraInstance struct {
 	namespace string
 	name      string
 	chart     helm.ChartInfo
-	helmBin   string
 }
 
 // NewCassandraInstance returns new cassandra application
@@ -82,7 +81,7 @@ func (cas *CassandraInstance) Install(ctx context.Context, namespace string) err
 	cas.namespace = namespace
 
 	log.Print("Installing application.", field.M{"app": cas.name})
-	cli, err := helm.NewCliClient(cas.helmBin)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
@@ -126,7 +125,7 @@ func (cas *CassandraInstance) Object() crv1alpha1.ObjectReference {
 // Uninstall us used to remove the datbase application
 func (cas *CassandraInstance) Uninstall(ctx context.Context) error {
 	log.Print("Uninstalling application.", field.M{"app": cas.name})
-	cli, err := helm.NewCliClient(cas.helmBin)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
