@@ -17,6 +17,7 @@ package helm
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -49,15 +50,19 @@ const (
 	// HelmVersion to differentiate between helm2 and helm3 commands
 	V2 HelmVersion = "helmv2"
 	V3 HelmVersion = "helmv3"
+
+	// HelmBinNameEnvVar env var to pass a helm bin name into kanister test apps
+	HelmBinNameEnvVar = "KANISTER_HELM_BIN"
 )
 
 type CliClient struct {
 	version HelmVersion
+	helmBin string
 }
 
 // FindVersion returns HelmVersion based on helm binary present in the path
 func FindVersion() (HelmVersion, error) {
-	out, err := RunCmdWithTimeout(context.TODO(), "helm", []string{"version", "--client", "--short"})
+	out, err := RunCmdWithTimeout(context.TODO(), GetHelmBinName(), []string{"version", "--client", "--short"})
 	if err != nil {
 		return "", err
 	}
@@ -74,6 +79,14 @@ func FindVersion() (HelmVersion, error) {
 	return "", fmt.Errorf("Unsupported helm version %s", out)
 }
 
+// GetHelmBinName returns a helm bin name from env var
+func GetHelmBinName() string {
+	if helmBin, ok := os.LookupEnv(HelmBinNameEnvVar); ok {
+		return helmBin
+	}
+	return "helm"
+}
+
 func NewCliClient() (Client, error) {
 	version, err := FindVersion()
 	if err != nil {
@@ -82,13 +95,14 @@ func NewCliClient() (Client, error) {
 
 	return &CliClient{
 		version: version,
+		helmBin: GetHelmBinName(),
 	}, nil
 }
 
 // AddRepo adds new helm repo and fetches latest charts
 func (h CliClient) AddRepo(ctx context.Context, name, url string) error {
 	log.Debug().Print("Adding helm repo", field.M{"name": name, "url": url})
-	out, err := RunCmdWithTimeout(ctx, "helm", []string{"repo", "add", name, url})
+	out, err := RunCmdWithTimeout(ctx, h.helmBin, []string{"repo", "add", name, url})
 	if err != nil {
 		return err
 	}
@@ -102,7 +116,7 @@ func (h CliClient) AddRepo(ctx context.Context, name, url string) error {
 // UpdateRepo fetches latest helm charts from the repo
 func (h CliClient) UpdateRepo(ctx context.Context) error {
 	log.Debug().Print("Fetching latest helm charts from the helm repos")
-	out, err := RunCmdWithTimeout(ctx, "helm", []string{"repo", "update"})
+	out, err := RunCmdWithTimeout(ctx, h.helmBin, []string{"repo", "update"})
 	if err != nil {
 		return err
 	}
@@ -125,7 +139,7 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 		cmd = []string{"install", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
 	}
 
-	out, err := RunCmdWithTimeout(ctx, "helm", cmd)
+	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
 	if err != nil {
 		return err
 	}
@@ -144,7 +158,7 @@ func (h CliClient) Uninstall(ctx context.Context, release, namespace string) err
 		cmd = []string{"delete", "--purge", release}
 	}
 
-	out, err := RunCmdWithTimeout(ctx, "helm", cmd)
+	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
 	if err != nil {
 		return err
 	}
@@ -155,7 +169,7 @@ func (h CliClient) Uninstall(ctx context.Context, release, namespace string) err
 // RemoveRepo removes helm repo
 func (h CliClient) RemoveRepo(ctx context.Context, name string) error {
 	log.Debug().Print("Removing helm repo", field.M{"name": name})
-	out, err := RunCmdWithTimeout(ctx, "helm", []string{"repo", "remove", name})
+	out, err := RunCmdWithTimeout(ctx, h.helmBin, []string{"repo", "remove", name})
 	if err != nil {
 		return err
 	}
