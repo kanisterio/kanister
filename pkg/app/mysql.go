@@ -38,6 +38,7 @@ type MysqlDB struct {
 	namespace string
 	name      string
 	chart     helm.ChartInfo
+	helmBin   string
 }
 
 func NewMysqlDB(name string) App {
@@ -74,7 +75,7 @@ func (mdb *MysqlDB) Init(ctx context.Context) error {
 
 func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
 	mdb.namespace = namespace
-	cli, err := helm.NewCliClient()
+	cli, err := helm.NewCliClient(mdb.helmBin)
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
@@ -115,7 +116,7 @@ func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (mdb *MysqlDB) Uninstall(ctx context.Context) error {
-	cli, err := helm.NewCliClient()
+	cli, err := helm.NewCliClient(mdb.helmBin)
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
