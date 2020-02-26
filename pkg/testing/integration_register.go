@@ -217,3 +217,18 @@ var _ = Suite(&MongoDBDepConfig{
 		profile:   newSecretProfile(),
 	},
 })
+
+// PostgreSQL deployed on openshift cluster
+type PostgreSQLDepConfig struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&PostgreSQLDepConfig{
+	IntegrationSuite{
+		name:      "postgresdepconf",
+		namespace: "postgresdepconf-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf"),
+		bp:        app.NewBlueprint("postgres-dep-config"),
+		profile:   newSecretProfile(),
+	},
+})
