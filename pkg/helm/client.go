@@ -88,7 +88,6 @@ func GetHelmBinName() string {
 }
 
 func NewCliClient() (Client, error) {
-
 	version, err := FindVersion()
 	if err != nil {
 		return nil, err

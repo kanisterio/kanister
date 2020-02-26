@@ -38,7 +38,6 @@ type MysqlDB struct {
 	namespace string
 	name      string
 	chart     helm.ChartInfo
-	helmBin   string
 }
 
 func NewMysqlDB(name string) App {
