@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -28,8 +29,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/log"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
 )
 
 type (
@@ -201,18 +200,13 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 	zoneSet := make(map[string]struct{})
 	regionSet := make(map[string]struct{})
 	for _, n := range ns.Items {
-		// For kubernetes 1.17 onwards failureDomain annotations are being deprecated
-		// and will need to use topology.kubernetes.io/zone=us-east-1c and
-		// topology.kubernetes.io/region=us-east-1
-		// https://kubernetes.io/docs/reference/kubernetes-api/labels-annotations-taints/#topologykubernetesioregion
-		if v, ok := n.Labels[kubevolume.PVZoneLabelName]; ok {
-			// make sure it is not a faultDomain
-			if len(v) > 1 {
-				zoneSet[v] = struct{}{}
-			}
+		zone := kubevolume.GetZoneFromNode(n)
+		if zone != "" {
+			zoneSet[zone] = struct{}{}
 		}
-		if v, ok := n.Labels[kubevolume.PVRegionLabelName]; ok {
-			regionSet[v] = struct{}{}
+		region := kubevolume.GetRegionFromNode(n)
+		if region != "" {
+			regionSet[region] = struct{}{}
 		}
 	}
 	if len(regionSet) > 1 {
@@ -234,32 +228,28 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 // Derived from "k8s.io/kubernetes/test/e2e/framework/node"
 // TODO: check for taints as well
 func GetReadySchedulableNodes(cli kubernetes.Interface) (*v1.NodeList, error) {
-	ns, err := cli.CoreV1().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
-		"spec.unschedulable": "false",
-	}.AsSelector().String()})
+	ns, err := cli.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
-	Filter(ns, func(node v1.Node) bool {
-		return IsNodeSchedulable(&node)
-	})
+	total := len(ns.Items)
+	var unschedulable, notReady int
+	var l []v1.Node
+	for _, node := range ns.Items {
+		if !IsNodeReady(&node) {
+			notReady++
+		} else if !IsNodeSchedulable(&node) {
+			unschedulable++
+		} else {
+			l = append(l, node)
+		}
+	}
+	ns.Items = l
+	log.Info().Print("Available nodes status", field.M{"total": total, "unschedulable": unschedulable, "notReady": notReady})
 	if len(ns.Items) == 0 {
 		return nil, errors.New("There are currently no ready, schedulable nodes in the cluster")
 	}
 	return ns, nil
-}
-
-// Filter filters nodes in NodeList in place, removing nodes that do not
-// satisfy the given condition
-// Derived from "k8s.io/kubernetes/test/e2e/framework/node"
-func Filter(nodeList *v1.NodeList, fn func(node v1.Node) bool) {
-	var l []v1.Node
-	for _, node := range nodeList.Items {
-		if fn(node) {
-			l = append(l, node)
-		}
-	}
-	nodeList.Items = l
 }
 
 // IsNodeSchedulable returns true if:
@@ -270,7 +260,7 @@ func IsNodeSchedulable(node *v1.Node) bool {
 	if node == nil {
 		return false
 	}
-	return !node.Spec.Unschedulable && IsNodeReady(node)
+	return !node.Spec.Unschedulable
 }
 
 // IsNodeReady returns true if:

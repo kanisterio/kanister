@@ -436,3 +436,63 @@ func (s ZoneSuite) TestSanitizeZones(c *C) {
 		c.Assert(out, DeepEquals, tc.out)
 	}
 }
+
+func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
+	node1 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node1",
+			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-1"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+	node2 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node2",
+			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-2"},
+		},
+		Spec: v1.NodeSpec{
+			Unschedulable: true,
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+	node3 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node3",
+			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-3"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "False",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+
+	cli := fake.NewSimpleClientset(node1, node2, node3)
+	nl, err := GetReadySchedulableNodes(cli)
+	c.Assert(err, IsNil)
+	c.Assert(len(nl.Items), Equals, 1)
+
+	node1.Spec = v1.NodeSpec{
+		Unschedulable: true,
+	}
+	cli = fake.NewSimpleClientset(node1, node2, node3)
+	nl, err = GetReadySchedulableNodes(cli)
+	c.Assert(err, NotNil)
+}
