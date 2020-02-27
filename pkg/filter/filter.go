@@ -16,6 +16,10 @@ package filter
 
 import (
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -108,18 +112,36 @@ func JoinResourceTypeMatchers(ms ...ResourceTypeMatcher) ResourceTypeMatcher {
 
 // ResourceRequirement allows specifying a resource requirement by type and/or name
 type ResourceRequirement struct {
+	// Provides the Name of the resource object
 	v1.LocalObjectReference `json:",inline,omitempty"`
+	// Provides the Group, Version, and Resource values (GVR)
 	ResourceTypeRequirement `json:",inline,omitempty"`
+	// Specifies a set of label requirements to be used as filters for matches
+	metav1.LabelSelector `json:",inline,omitempty"`
 }
 
 // Matches returns true if the specified resource name/GVR matches the requirement
-func (r ResourceRequirement) Matches(name string, gvr schema.GroupVersionResource) bool {
+func (r ResourceRequirement) Matches(name string, gvr schema.GroupVersionResource, obj runtime.Object) bool {
 	// If the requirement does not specify a resource name - only check the
 	// ResourceTypeRequirement i.e. GVR match
+	isMatch := false
 	if r.LocalObjectReference.Name == "" {
-		return r.ResourceTypeRequirement.Matches(gvr)
+		isMatch = r.ResourceTypeRequirement.Matches(gvr)
+	} else {
+		isMatch = matches(r.Name, name) && r.ResourceTypeRequirement.Matches(gvr)
 	}
-	return matches(r.Name, name) && r.ResourceTypeRequirement.Matches(gvr)
+	if isMatch && (len(r.MatchExpressions) != 0 || len(r.MatchLabels) != 0) {
+		ls := &metav1.LabelSelector{MatchLabels: r.MatchLabels, MatchExpressions: r.MatchExpressions}
+		s, err := metav1.LabelSelectorAsSelector(ls)
+		if err != nil {
+			accessor := meta.NewAccessor()
+			if ls, errr := accessor.Labels(obj); errr != nil {
+				lsSet := labels.Set(ls)
+				isMatch = s.Matches(lsSet)
+			}
+		}
+	}
+	return isMatch
 }
 
 type ResourceMatcher []ResourceRequirement
@@ -151,9 +173,9 @@ func (rm ResourceMatcher) TypeMatcher(usageInclusion bool) ResourceTypeMatcher {
 
 // Any returns true if the specified resource matches any of the requirements
 // in `ResourceMatcher`
-func (g ResourceMatcher) Any(name string, gvr schema.GroupVersionResource) bool {
+func (g ResourceMatcher) Any(name string, gvr schema.GroupVersionResource, obj runtime.Object) bool {
 	for _, req := range g {
-		if req.Matches(name, gvr) {
+		if req.Matches(name, gvr, obj) {
 			return true
 		}
 	}
@@ -162,9 +184,9 @@ func (g ResourceMatcher) Any(name string, gvr schema.GroupVersionResource) bool 
 
 // All returns true if the specified resource matches all of the requirements
 // in `ResourceMatcher`
-func (g ResourceMatcher) All(name string, gvr schema.GroupVersionResource) bool {
+func (g ResourceMatcher) All(name string, gvr schema.GroupVersionResource, obj runtime.Object) bool {
 	for _, req := range g {
-		if !req.Matches(name, gvr) {
+		if !req.Matches(name, gvr, obj) {
 			return false
 		}
 	}
@@ -179,6 +201,7 @@ func (g ResourceMatcher) All(name string, gvr schema.GroupVersionResource) bool 
 type Resource struct {
 	Name string
 	GVR  schema.GroupVersionResource
+	runtime.Object
 }
 
 // ResourceList is a collection of Resource objects
@@ -202,7 +225,7 @@ func (rl ResourceList) apply(m ResourceMatcher, exclude bool) ResourceList {
 	}
 	filtered := make([]Resource, 0, len(rl))
 	for _, r := range rl {
-		if exclude != m.Any(r.Name, r.GVR) {
+		if exclude != m.Any(r.Name, r.GVR, r.Object) {
 			filtered = append(filtered, r)
 		}
 	}
