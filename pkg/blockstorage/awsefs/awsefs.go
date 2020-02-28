@@ -446,7 +446,7 @@ func (e *efs) setBackupTags(ctx context.Context, arn string, tags map[string]str
 		ResourceArn: &arn,
 		Tags:        convertToBackupTags(tags),
 	}
-	_, err := e.TagResourceWithContext(ctx, req)
+	_, err := e.Backup.TagResourceWithContext(ctx, req)
 	return err
 }
 
@@ -454,11 +454,11 @@ func (e *efs) setEFSTags(ctx context.Context, id string, tags map[string]string)
 	if len(tags) == 0 {
 		return nil
 	}
-	req := &awsefs.CreateTagsInput{
-		FileSystemId: &id,
-		Tags:         convertToEFSTags(tags),
+	req := &awsefs.TagResourceInput{
+		ResourceId: &id,
+		Tags:       convertToEFSTags(tags),
 	}
-	_, err := e.CreateTagsWithContext(ctx, req)
+	_, err := e.EFS.TagResource(req)
 	return err
 }
 

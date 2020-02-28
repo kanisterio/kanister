@@ -13,12 +13,16 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 var _ blockstorage.Provider = (*adStorage)(nil)
+
+var _ zone.Mapper = (*adStorage)(nil)
 
 const (
 	volumeNameFmt   = "vol-%s"
@@ -63,12 +67,19 @@ func (s *adStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 			CreateOption: azcompute.DiskCreateOption(azcompute.DiskCreateOptionTypesEmpty),
 		},
 	}
+	region, id, err := getLocationInfo(volume.Az)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not get region from zone %s", volume.Az)
+	}
 	// TODO(ilya): figure out how to create SKUed disks
 	createDisk := azcompute.Disk{
 		Name:           azto.StringPtr(diskName),
 		Tags:           *azto.StringMapPtr(tags),
-		Location:       azto.StringPtr(volume.Az),
+		Location:       azto.StringPtr(region),
 		DiskProperties: diskProperties,
+	}
+	if id != "" {
+		createDisk.Zones = azto.StringSlicePtr([]string{id})
 	}
 	result, err := s.azCli.DisksClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createDisk)
 	if err != nil {
@@ -209,9 +220,13 @@ func (s *adStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
 func (s *adStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	snapName := fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String())
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
+	region, _, err := getLocationInfo(volume.Az)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not get region from zone %s", volume.Az)
+	}
 	createSnap := azcompute.Snapshot{
 		Name:     azto.StringPtr(snapName),
-		Location: azto.StringPtr(volume.Az),
+		Location: azto.StringPtr(region),
 		Tags:     *azto.StringMapPtr(tags),
 		SnapshotProperties: &azcompute.SnapshotProperties{
 			CreationData: &azcompute.CreationData{
@@ -313,13 +328,17 @@ func (s *adStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 	if vol.Tags != nil {
 		tags = azto.StringMap(vol.Tags)
 	}
+	az := azto.String(vol.Location)
+	if z := azto.StringSlice(vol.Zones); len(z) > 0 {
+		az = az + "-" + z[0]
+	}
 
 	return &blockstorage.Volume{
 		Type:         s.Type(),
 		ID:           azto.String(vol.ID),
 		Encrypted:    encrypted,
 		Size:         int64(azto.Int32(vol.DiskSizeGB)),
-		Az:           azto.String(vol.Location),
+		Az:           az,
 		Tags:         blockstorage.MapToKeyValue(tags),
 		VolumeType:   azto.String(vol.Sku.Tier),
 		CreationTime: blockstorage.TimeStamp(vol.DiskProperties.TimeCreated.ToTime()),
@@ -350,7 +369,6 @@ func (s *adStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) 
 	if snap.Tags != nil {
 		tags = azto.StringMap(snap.Tags)
 	}
-
 	return &blockstorage.Snapshot{
 		Encrypted:    encrypted,
 		ID:           azto.String(snap.ID),
@@ -409,18 +427,26 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		}
 	}
 
+	region, id, err := getRegionAndZoneID(ctx, s, snapshot.Region, snapshot.Volume.Az)
+	if err != nil {
+		return nil, err
+	}
+
 	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
 	tags = blockstorage.SanitizeTags(tags)
 	createDisk := azcompute.Disk{
 		Name:     azto.StringPtr(diskName),
 		Tags:     *azto.StringMapPtr(tags),
-		Location: azto.StringPtr(snapshot.Region),
+		Location: azto.StringPtr(region),
 		DiskProperties: &azcompute.DiskProperties{
 			CreationData: &azcompute.CreationData{
 				CreateOption:     azcompute.Copy,
 				SourceResourceID: azto.StringPtr(snapshot.ID),
 			},
 		},
+	}
+	if id != "" {
+		createDisk.Zones = azto.StringSlicePtr([]string{id})
 	}
 	result, err := s.azCli.DisksClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createDisk)
 	if err != nil {
@@ -434,6 +460,48 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		return nil, err
 	}
 	return s.VolumeGet(ctx, azto.String(disk.ID), snapshot.Volume.Az)
+}
+
+func getRegionAndZoneID(ctx context.Context, s *adStorage, sourceRegion, volAz string) (string, string, error) {
+	//check if current node region is zoned or not
+	cli, err := kube.NewClient()
+	if err != nil {
+		return "", "", err
+	}
+	zs, region, err := zone.NodeZonesAndRegion(ctx, cli)
+	if err != nil {
+		return "", "", err
+	}
+	if len(zs) == 0 {
+		return region, "", nil
+	}
+
+	zones, err := zone.FromSourceRegionZone(ctx, s, sourceRegion, volAz)
+	if err != nil {
+		return "", "", err
+	}
+	if len(zones) != 1 {
+		return "", "", errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
+	}
+
+	region, id, err := getLocationInfo(zones[0])
+	return region, id, errors.Wrapf(err, "Could not get region from zone %s", zones[0])
+}
+
+func getLocationInfo(az string) (string, string, error) {
+	if az == "" {
+		return "", "", errors.New("zone value is empty")
+	}
+
+	s := strings.Split(az, "-")
+	var region, zoneID string
+	if len(s) == 2 {
+		region = s[0]
+		zoneID = s[1]
+	} else {
+		region = s[0]
+	}
+	return region, zoneID, nil
 }
 
 func (s *adStorage) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
@@ -484,4 +552,70 @@ func (s *adStorage) SetTags(ctx context.Context, resource interface{}, tags map[
 	default:
 		return errors.New(fmt.Sprintf("Unknown resource type %v", res))
 	}
+}
+
+func (s *adStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
+	return staticRegionToZones(region)
+}
+
+func staticRegionToZones(region string) ([]string, error) {
+	switch region {
+	case "australiaeast", "australiasoutheast", "brazilsouth", "canadacentral", "canadaeast", "centralindia", "eastasia", "japanwest", "northcentralus", "southcentralus", "southindia", "ukwest", "westcentralus", "westindia", "westus":
+		return nil, nil
+	case "centralus":
+		return []string{
+			"centralus-1",
+			"centralus-2",
+			"centralus-3",
+		}, nil
+	case "eastus":
+		return []string{
+			"eastus-1",
+			"eastus-2",
+			"eastus-3",
+		}, nil
+	case "eastus2":
+		return []string{
+			"eastus2-1",
+			"eastus2-2",
+			"eastus2-3",
+		}, nil
+	case "japaneast":
+		return []string{
+			"japaneast-1",
+			"japaneast-2",
+			"japaneast-3",
+		}, nil
+	case "northeurope":
+		return []string{
+			"northeurope-1",
+			"northeurope-2",
+			"northeurope-3",
+		}, nil
+	case "southeastasia":
+		return []string{
+			"southeastasia-1",
+			"southeastasia-2",
+			"southeastasia-3",
+		}, nil
+	case "uksouth":
+		return []string{
+			"uksouth-1",
+			"uksouth-2",
+			"uksouth-3",
+		}, nil
+	case "westeurope":
+		return []string{
+			"westeurope-1",
+			"westeurope-2",
+			"westeurope-3",
+		}, nil
+	case "westus2":
+		return []string{
+			"westus2-1",
+			"westus2-2",
+			"westus2-3",
+		}, nil
+	}
+	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))
 }
