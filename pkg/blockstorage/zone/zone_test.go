@@ -495,5 +495,5 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 	cli = fake.NewSimpleClientset(node1, node2, node3)
 	nl, err = GetReadySchedulableNodes(cli)
 	c.Assert(err, NotNil)
-	c.Assert(len(nl.Items), Equals, 0)
+	c.Assert(nl, IsNil)
 }
