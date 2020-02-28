@@ -272,7 +272,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	node2 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-2"},
+			Labels: map[string]string{kubevolume.PVTopologyRegionLabelName: "westus2", kubevolume.PVTopologyZoneLabelName: "westus2-2"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
