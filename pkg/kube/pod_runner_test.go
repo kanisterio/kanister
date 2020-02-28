@@ -112,7 +112,8 @@ func (s *PodRunnerTestSuite) TestPodRunner_Quota(c *C) {
 			},
 		},
 	}
-	q, err = cli.CoreV1().ResourceQuotas(ns.GetName()).Create(q)
+	_, err = cli.CoreV1().ResourceQuotas(ns.GetName()).Create(q)
+	c.Assert(err, IsNil)
 
 	ctx := context.Background()
 	pr := NewPodRunner(cli, &PodOptions{
