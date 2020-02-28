@@ -33,7 +33,7 @@ var _ = Suite(&PITRPostgreSQL{
 		name:      "pitr-postgres",
 		namespace: "pitr-postgres-test",
 		app:       app.NewPostgresDB("pitr-postgres"),
-		bp:        app.NewPITRBlueprint("pitr-postgres"),
+		bp:        app.NewPITRBlueprint("pitr-postgres", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -48,7 +48,7 @@ var _ = Suite(&PostgreSQL{
 		name:      "postgres",
 		namespace: "postgres-test",
 		app:       app.NewPostgresDB("postgres"),
-		bp:        app.NewBlueprint("postgres"),
+		bp:        app.NewBlueprint("postgres", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -63,7 +63,7 @@ var _ = Suite(&MySQL{
 		name:      "mysql",
 		namespace: "mysql-test",
 		app:       app.NewMysqlDB("mysql"),
-		bp:        app.NewBlueprint("mysql"),
+		bp:        app.NewBlueprint("mysql", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -78,7 +78,7 @@ var _ = Suite(&Elasticsearch{
 		name:      "elasticsearch",
 		namespace: "es-test",
 		app:       app.NewElasticsearchInstance("elasticsearch"),
-		bp:        app.NewBlueprint("elasticsearch"),
+		bp:        app.NewBlueprint("elasticsearch", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -93,7 +93,7 @@ var _ = Suite(&MongoDB{
 		name:      "mongo",
 		namespace: "mongo-test",
 		app:       app.NewMongoDB("mongo"),
-		bp:        app.NewBlueprint("mongo"),
+		bp:        app.NewBlueprint("mongo", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -107,7 +107,7 @@ var _ = Suite(&Cassandra{IntegrationSuite{
 	name:      "cassandra",
 	namespace: "cassandra-test",
 	app:       app.NewCassandraInstance("cassandra"),
-	bp:        app.NewBlueprint("cassandra"),
+	bp:        app.NewBlueprint("cassandra", ""),
 	profile:   newSecretProfile(),
 },
 })
@@ -122,7 +122,7 @@ var _ = Suite(&Couchbase{
 		name:      "couchbase",
 		namespace: "couchbase-test",
 		app:       app.NewCouchbaseDB("couchbase"),
-		bp:        app.NewBlueprint("couchbase"),
+		bp:        app.NewBlueprint("couchbase", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -137,7 +137,7 @@ var _ = Suite(&RDSPostgreSQL{
 		name:      "rds-postgres",
 		namespace: "rds-postgres-test",
 		app:       app.NewRDSPostgresDB("rds-postgres"),
-		bp:        app.NewBlueprint("rds-postgres"),
+		bp:        app.NewBlueprint("rds-postgres", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -151,7 +151,7 @@ var _ = Suite(&FoundationDB{
 		name:      "foundationdb",
 		namespace: "fdb-test",
 		app:       app.NewFoundationDB("foundationdb"),
-		bp:        app.NewBlueprint("foundationdb"),
+		bp:        app.NewBlueprint("foundationdb", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -167,7 +167,7 @@ var _ = Suite(&RDSPostgreSQLDump{
 		name:      "rds-postgres-dump",
 		namespace: "rds-postgres-dump-test",
 		app:       app.NewRDSPostgresDB("rds-postgres-dump"),
-		bp:        app.NewBlueprint("rds-postgres-dump"),
+		bp:        app.NewBlueprint("rds-postgres-dump", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -183,7 +183,7 @@ var _ = Suite(&RDSPostgreSQLSnap{
 		name:      "rds-postgres-snap",
 		namespace: "rds-postgres-snap-test",
 		app:       app.NewRDSPostgresDB("rds-postgres-snap"),
-		bp:        app.NewBlueprint("rds-postgres-snap"),
+		bp:        app.NewBlueprint("rds-postgres-snap", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -198,7 +198,7 @@ var _ = Suite(&MysqlDBDepConfig{
 		name:      "mysqldc",
 		namespace: "mysqldc-test",
 		app:       app.NewMysqlDepConfig("mysqldeploymentconfig"),
-		bp:        app.NewBlueprint("mysql-dep-config"),
+		bp:        app.NewBlueprint("mysql-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -213,7 +213,7 @@ var _ = Suite(&MongoDBDepConfig{
 		name:      "mongodb",
 		namespace: "mongodb-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig"),
-		bp:        app.NewBlueprint("mongo-dep-config"),
+		bp:        app.NewBlueprint("mongo-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
 })
@@ -228,7 +228,7 @@ var _ = Suite(&PostgreSQLDepConfig{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf-test",
 		app:       app.NewPostgreSQLDepConfig("postgresdepconf"),
-		bp:        app.NewBlueprint("postgres-dep-config"),
+		bp:        app.NewBlueprint("postgres-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
 })

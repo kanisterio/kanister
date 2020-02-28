@@ -38,7 +38,7 @@ application is installed in the ``default`` namespace.
 .. code-block:: yaml
 
   $ cat <<EOF | kubectl create -f -
-  apiVersion: apps/v1beta1
+  apiVersion: apps/v1
   kind: Deployment
   metadata:
     name: time-logger

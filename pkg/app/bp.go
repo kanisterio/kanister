@@ -41,10 +41,13 @@ type PITRBlueprint struct {
 	AppBlueprint
 }
 
-func NewBlueprint(app string) Blueprinter {
+func NewBlueprint(app string, bpReposPath string) Blueprinter {
+	if bpReposPath == "" {
+		bpReposPath = blueprintsRepo
+	}
 	return &AppBlueprint{
 		App:  app,
-		Path: fmt.Sprintf("%s/%s-blueprint.yaml", blueprintsRepo, app),
+		Path: fmt.Sprintf("%s/%s-blueprint.yaml", bpReposPath, app),
 	}
 }
 
@@ -57,11 +60,14 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 }
 
 // Blueprint returns Blueprint placed at ./blueprints/{app-name}-blueprint.yaml
-func NewPITRBlueprint(app string) Blueprinter {
+func NewPITRBlueprint(app string, bpReposPath string) Blueprinter {
+	if bpReposPath == "" {
+		bpReposPath = blueprintsRepo
+	}
 	return &PITRBlueprint{
 		AppBlueprint{
 			App:  app,
-			Path: fmt.Sprintf("%s/%s-blueprint.yaml", blueprintsRepo, app),
+			Path: fmt.Sprintf("%s/%s-blueprint.yaml", bpReposPath, app),
 		},
 	}
 }
