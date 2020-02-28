@@ -199,7 +199,7 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 	}
 	zoneSet := make(map[string]struct{})
 	regionSet := make(map[string]struct{})
-	for _, n := range ns.Items {
+	for _, n := range ns {
 		zone := kubevolume.GetZoneFromNode(n)
 		if zone != "" {
 			zoneSet[zone] = struct{}{}
@@ -227,7 +227,7 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 // 2) Needs to be ready.
 // Derived from "k8s.io/kubernetes/test/e2e/framework/node"
 // TODO: check for taints as well
-func GetReadySchedulableNodes(cli kubernetes.Interface) (*v1.NodeList, error) {
+func GetReadySchedulableNodes(cli kubernetes.Interface) ([]v1.Node, error) {
 	ns, err := cli.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -236,37 +236,37 @@ func GetReadySchedulableNodes(cli kubernetes.Interface) (*v1.NodeList, error) {
 	var unschedulable, notReady int
 	var l []v1.Node
 	for _, node := range ns.Items {
-		if !IsNodeReady(&node) {
+		switch {
+		case !isNodeReady(&node):
 			notReady++
-		} else if !IsNodeSchedulable(&node) {
+		case !isNodeSchedulable(&node):
 			unschedulable++
-		} else {
+		default:
 			l = append(l, node)
 		}
 	}
-	ns.Items = l
 	log.Info().Print("Available nodes status", field.M{"total": total, "unschedulable": unschedulable, "notReady": notReady})
-	if len(ns.Items) == 0 {
+	if len(l) == 0 {
 		return nil, errors.New("There are currently no ready, schedulable nodes in the cluster")
 	}
-	return ns, nil
+	return l, nil
 }
 
-// IsNodeSchedulable returns true if:
+// isNodeSchedulable returns true if:
 // 1) doesn't have "unschedulable" field set
 // 2) it also returns true from IsNodeReady
 // Derived from "k8s.io/kubernetes/test/e2e/framework/node"
-func IsNodeSchedulable(node *v1.Node) bool {
+func isNodeSchedulable(node *v1.Node) bool {
 	if node == nil {
 		return false
 	}
 	return !node.Spec.Unschedulable
 }
 
-// IsNodeReady returns true if:
+// isNodeReady returns true if:
 // 1) it's Ready condition is set to true
 // Derived from "k8s.io/kubernetes/test/e2e/framework/node"
-func IsNodeReady(node *v1.Node) bool {
+func isNodeReady(node *v1.Node) bool {
 	for _, cond := range node.Status.Conditions {
 		if cond.Type == v1.NodeReady {
 			if cond.Status == v1.ConditionTrue {
