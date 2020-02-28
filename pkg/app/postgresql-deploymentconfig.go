@@ -139,7 +139,7 @@ func (pgres *PostgreSQLDepConfig) Uninstall(ctx context.Context) error {
 
 func (pgres *PostgreSQLDepConfig) Ping(ctx context.Context) error {
 	cmd := "pg_isready -U 'postgres' -h 127.0.0.1 -p 5432"
-	_, stderr, err := pgres.execCommand(ctx, []string{"sh", "-c", cmd})
+	_, stderr, err := pgres.execCommand(ctx, []string{"bash", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to ping postgresql deployment config DB. %s", stderr)
 	}
@@ -149,7 +149,7 @@ func (pgres *PostgreSQLDepConfig) Ping(ctx context.Context) error {
 
 func (pgres *PostgreSQLDepConfig) Insert(ctx context.Context) error {
 	cmd := fmt.Sprintf("psql -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\"")
-	_, stderr, err := pgres.execCommand(ctx, []string{"sh", "-c", cmd})
+	_, stderr, err := pgres.execCommand(ctx, []string{"bash", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create db in postgresql deployment config. %s", stderr)
 	}
@@ -159,7 +159,7 @@ func (pgres *PostgreSQLDepConfig) Insert(ctx context.Context) error {
 
 func (pgres *PostgreSQLDepConfig) Count(ctx context.Context) (int, error) {
 	cmd := "psql -d test -c 'SELECT COUNT(*) FROM company;'"
-	stdout, stderr, err := pgres.execCommand(ctx, []string{"sh", "-c", cmd})
+	stdout, stderr, err := pgres.execCommand(ctx, []string{"bash", "-c", cmd})
 	if err != nil {
 		return 0, errors.Wrapf(err, "Failed to count db entries in postgresql deployment config. %s ", stderr)
 	}
@@ -178,21 +178,21 @@ func (pgres *PostgreSQLDepConfig) Count(ctx context.Context) (int, error) {
 
 func (pgres *PostgreSQLDepConfig) Reset(ctx context.Context) error {
 	cmd := "psql -c 'DROP DATABASE IF EXISTS test;'"
-	_, stderr, err := pgres.execCommand(ctx, []string{"sh", "-c", cmd})
+	_, stderr, err := pgres.execCommand(ctx, []string{"bash", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to drop db from postgresql deployment config. %s ", stderr)
 	}
 
 	// Create database
 	cmd = "psql -c 'CREATE DATABASE test;'"
-	_, stderr, err = pgres.execCommand(ctx, []string{"sh", "-c", cmd})
+	_, stderr, err = pgres.execCommand(ctx, []string{"bash", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create db in postgresql deployment config %s ", stderr)
 	}
 
 	// Create table
 	cmd = "psql -d test -c 'CREATE TABLE COMPANY(ID SERIAL PRIMARY KEY NOT NULL, NAME TEXT NOT NULL, AGE INT NOT NULL, CREATED_AT TIMESTAMP);'"
-	_, stderr, err = pgres.execCommand(ctx, []string{"sh", "-c", cmd})
+	_, stderr, err = pgres.execCommand(ctx, []string{"bash", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create table in postgresql deployment config %s ", stderr)
 	}
