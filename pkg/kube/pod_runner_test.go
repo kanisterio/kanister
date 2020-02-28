@@ -19,7 +19,10 @@ import (
 
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/testing"
 )
@@ -28,7 +31,7 @@ type PodRunnerTestSuite struct{}
 
 var _ = Suite(&PodRunnerTestSuite{})
 
-func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {
+func (s *PodRunnerTestSuite) TestPodRunner_ContextCanceled(c *C) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cli := fake.NewSimpleClientset()
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
@@ -51,7 +54,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {
 	pr := NewPodRunner(cli, &PodOptions{})
 	returned := make(chan struct{})
 	go func() {
-		_, err := pr.Run(ctx, makePodRunnerTestFunc(deleted))
+		_, err := pr.Run(ctx, makePodRunnerTestNilFunc(deleted))
 		c.Assert(err, IsNil)
 		close(returned)
 	}()
@@ -60,9 +63,65 @@ func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {
 	<-returned
 }
 
-func makePodRunnerTestFunc(deleted chan struct{}) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+func makePodRunnerTestNilFunc(deleted chan struct{}) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-		<-deleted
 		return nil, nil
 	}
+}
+
+func makePodRunnerTestEchoFunc(c *C, cli kubernetes.Interface) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
+		err := WaitForPodReady(ctx, cli, pod.GetNamespace(), pod.GetName())
+		c.Assert(err, IsNil)
+
+		cmd := []string{"sh", "-c", "echo hello!"}
+		stdout, stderr, err := Exec(cli, pod.GetNamespace(), pod.GetName(), defaultContainerName, cmd, nil)
+		c.Log(stdout)
+		c.Log(stderr)
+		c.Assert(err, IsNil)
+		c.Assert(stdout, Equals, "hello!")
+		return nil, nil
+	}
+}
+
+func (s *PodRunnerTestSuite) TestPodRunner_Quota(c *C) {
+	cli, err := NewClient()
+	c.Assert(err, IsNil)
+
+	// Create namespace  for test.
+	ns := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-podrunner-quota-",
+		},
+	}
+	ns, err = cli.CoreV1().Namespaces().Create(ns)
+	c.Assert(err, IsNil)
+	defer func() {
+		err = cli.CoreV1().Namespaces().Delete(ns.GetName(), nil)
+		c.Assert(err, IsNil)
+	}()
+
+	q := &v1.ResourceQuota{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "ns-quota",
+		},
+		Spec: v1.ResourceQuotaSpec{
+			Hard: v1.ResourceList{
+				v1.ResourceCPU:    resource.MustParse("10"),
+				v1.ResourceMemory: resource.MustParse("10Gi"),
+			},
+		},
+	}
+	q, err = cli.CoreV1().ResourceQuotas(ns.GetName()).Create(q)
+
+	ctx := context.Background()
+	pr := NewPodRunner(cli, &PodOptions{
+		Namespace:    ns.GetName(),
+		GenerateName: "runner-test-quota-",
+		Image:        "kanisterio/kanister-tools:0.26.0",
+	})
+	ch := make(chan struct{})
+	close(ch)
+	_, err = pr.Run(ctx, makePodRunnerTestEchoFunc(c, cli))
+	c.Assert(err, IsNil)
 }
