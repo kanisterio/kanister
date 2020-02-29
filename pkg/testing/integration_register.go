@@ -195,7 +195,7 @@ type MysqlDBDepConfig struct {
 
 var _ = Suite(&MysqlDBDepConfig{
 	IntegrationSuite{
-		name:      "mysqldb",
+		name:      "mysqldc",
 		namespace: "mysqldc-test",
 		app:       app.NewMysqlDepConfig("mysqldeploymentconfig"),
 		bp:        app.NewBlueprint("mysql-dep-config", ""),
