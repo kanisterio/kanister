@@ -22,7 +22,6 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
@@ -43,25 +42,17 @@ type PodOptions struct {
 	PodOverride        crv1alpha1.JSONMap
 }
 
-const defaultContainerName = "container"
-
 // CreatePod creates a pod with a single container based on the specified image
 func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
 	volumeMounts, podVolumes := createVolumeSpecs(opts.Volumes)
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
 			{
-				Name:            defaultContainerName,
+				Name:            "container",
 				Image:           opts.Image,
 				Command:         opts.Command,
 				ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
 				VolumeMounts:    volumeMounts,
-				Resources: v1.ResourceRequirements{
-					Limits: v1.ResourceList{
-						v1.ResourceCPU:    resource.MustParse("100m"),
-						v1.ResourceMemory: resource.MustParse("128Mi"),
-					},
-				},
 			},
 		},
 		// RestartPolicy dictates when the containers of the pod should be restarted.
