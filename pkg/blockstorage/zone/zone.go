@@ -74,7 +74,7 @@ func isNil(i interface{}) bool {
 func getAvailableZones(ctx context.Context, newZones map[string]struct{}, kubeCli kubernetes.Interface, validZoneNames []string, sourceZones []string, sourceRegion string) {
 	availableZones, availableRegion, err := NodeZonesAndRegion(ctx, kubeCli)
 	if err != nil {
-		log.Info().Print("No available zones found", field.M{"error": err.Error()})
+		log.WithError(err).Print("No available zones found")
 		return
 	}
 	if availableRegion != sourceRegion {
@@ -118,7 +118,7 @@ func getZoneFromKnownNodeZones(sourceZone string, availableZones map[string]stru
 }
 
 const (
-	nodeZonesErr = `Failed to get Node availability zones.`
+	nodeZonesErr = `Failed to get Node availability zones`
 )
 
 // NodeZonesAndRegion returns cloud provider failure-domain region and zones as reported by K8s
