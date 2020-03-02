@@ -163,3 +163,95 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	c.Assert(reflect.DeepEqual(z, expectedZone), Equals, true)
 	c.Assert(r, Equals, "westus2")
 }
+
+func (s ZoneSuite) TestSanitizeZones(c *C) {
+	for _, tc := range []struct {
+		availableZones map[string]struct{}
+		validZoneNames []string
+		out            map[string]struct{}
+	}{
+		{
+			availableZones: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
+			},
+			validZoneNames: []string{
+				"us-west1-a",
+				"us-west1-b",
+				"us-west1-c",
+			},
+			out: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
+			},
+		},
+		{
+			availableZones: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
+			},
+			validZoneNames: []string{
+				"us-west1a",
+				"us-west1b",
+				"us-west1c",
+			},
+			out: map[string]struct{}{
+				"us-west1a": {},
+				"us-west1b": {},
+				"us-west1c": {},
+			},
+		},
+		{
+			availableZones: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
+			},
+			validZoneNames: []string{
+				"us-west1a",
+				"us-west1b",
+				"us-west1c",
+				"us-west1d",
+			},
+			out: map[string]struct{}{
+				"us-west1a": {},
+				"us-west1b": {},
+				"us-west1c": {},
+			},
+		},
+		{
+			availableZones: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
+			},
+			validZoneNames: []string{
+				"us-west1",
+				"us-west2",
+			},
+			out: map[string]struct{}{
+				"us-west1": {},
+			},
+		},
+		{
+			availableZones: map[string]struct{}{
+				"us-west1-a": {},
+				"us-west1-b": {},
+				"us-west1-c": {},
+			},
+			validZoneNames: []string{
+				"east",
+				"west",
+			},
+			out: map[string]struct{}{
+				"west": {},
+			},
+		},
+	} {
+		out := sanitizeAvailableZones(tc.availableZones, tc.validZoneNames)
+		c.Assert(out, DeepEquals, tc.out)
+	}
+}
