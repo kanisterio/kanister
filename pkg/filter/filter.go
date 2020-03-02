@@ -131,12 +131,7 @@ type ResourceRequirement struct {
 func (r ResourceRequirement) Matches(name string, gvr schema.GroupVersionResource, resourceLabels map[string]string) bool {
 	// If the requirement does not specify a resource name - only check the
 	// ResourceTypeRequirement i.e. GVR match
-	isMatch := false
-	if r.LocalObjectReference.Name == "" {
-		isMatch = r.ResourceTypeRequirement.Matches(gvr)
-	} else {
-		isMatch = matches(r.Name, name) && r.ResourceTypeRequirement.Matches(gvr)
-	}
+	isMatch := matches(r.Name, name) && r.ResourceTypeRequirement.Matches(gvr)
 	if isMatch && len(resourceLabels) != 0 && (len(r.MatchExpressions) != 0 || len(r.MatchLabels) != 0) {
 		lsSel := &metav1.LabelSelector{MatchLabels: r.MatchLabels, MatchExpressions: r.MatchExpressions}
 		if sel, err := metav1.LabelSelectorAsSelector(lsSel); err == nil {
