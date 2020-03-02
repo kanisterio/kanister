@@ -19,6 +19,7 @@ import (
 
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -225,46 +226,46 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 		{
 			m: nil,
 			gvrs: []schema.GroupVersionResource{
-				schema.GroupVersionResource{},
+				{},
 			},
 			include: []schema.GroupVersionResource{
-				schema.GroupVersionResource{},
+				{},
 			},
 			exclude: []schema.GroupVersionResource{
-				schema.GroupVersionResource{},
+				{},
 			},
 		},
 		{
 			m: ResourceTypeMatcher{},
 			gvrs: []schema.GroupVersionResource{
-				schema.GroupVersionResource{},
+				{},
 			},
 			include: []schema.GroupVersionResource{
-				schema.GroupVersionResource{},
+				{},
 			},
 			exclude: []schema.GroupVersionResource{
-				schema.GroupVersionResource{},
+				{},
 			},
 		},
 		{
 			m: ResourceTypeMatcher{ResourceTypeRequirement{}},
 			gvrs: []schema.GroupVersionResource{
-				schema.GroupVersionResource{},
+				{},
 			},
 			include: []schema.GroupVersionResource{
-				schema.GroupVersionResource{},
+				{},
 			},
 			exclude: []schema.GroupVersionResource{},
 		},
 		{
 			m: ResourceTypeMatcher{ResourceTypeRequirement{}},
 			gvrs: []schema.GroupVersionResource{
-				schema.GroupVersionResource{
+				{
 					Group: "mygroup",
 				},
 			},
 			include: []schema.GroupVersionResource{
-				schema.GroupVersionResource{
+				{
 					Group: "mygroup",
 				},
 			},
@@ -277,12 +278,12 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 				},
 			},
 			gvrs: []schema.GroupVersionResource{
-				schema.GroupVersionResource{
+				{
 					Group: "mygroup",
 				},
 			},
 			include: []schema.GroupVersionResource{
-				schema.GroupVersionResource{
+				{
 					Group: "mygroup",
 				},
 			},
@@ -298,51 +299,51 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 				},
 			},
 			gvrs: []schema.GroupVersionResource{
-				schema.GroupVersionResource{
+				{
 					Group: "mygroup",
 				},
-				schema.GroupVersionResource{
+				{
 					Version: "myversion",
 				},
-				schema.GroupVersionResource{
+				{
 					Group:   "mygroup",
 					Version: "myversion",
 				},
-				schema.GroupVersionResource{
+				{
 					Group:   "mygroup",
 					Version: "yourversion",
 				},
-				schema.GroupVersionResource{
+				{
 					Group:   "yourgroup",
 					Version: "myversion",
 				},
-				schema.GroupVersionResource{
+				{
 					Group:   "yourgroup",
 					Version: "yourversion",
 				},
 			},
 			include: []schema.GroupVersionResource{
-				schema.GroupVersionResource{
+				{
 					Group: "mygroup",
 				},
-				schema.GroupVersionResource{
+				{
 					Version: "myversion",
 				},
-				schema.GroupVersionResource{
+				{
 					Group:   "mygroup",
 					Version: "myversion",
 				},
-				schema.GroupVersionResource{
+				{
 					Group:   "mygroup",
 					Version: "yourversion",
 				},
-				schema.GroupVersionResource{
+				{
 					Group:   "yourgroup",
 					Version: "myversion",
 				},
 			},
 			exclude: []schema.GroupVersionResource{
-				schema.GroupVersionResource{
+				{
 					Group:   "yourgroup",
 					Version: "yourversion",
 				},
@@ -360,11 +361,11 @@ func (s *FilterSuite) TestJoin(c *C) {
 		out ResourceTypeMatcher
 	}{
 		{
-			m:   []ResourceTypeMatcher{ResourceTypeMatcher{}, ResourceTypeMatcher{}},
+			m:   []ResourceTypeMatcher{{}, {}},
 			out: ResourceTypeMatcher{},
 		},
 		{
-			m:   []ResourceTypeMatcher{ResourceTypeMatcher{}, ResourceTypeMatcher{}},
+			m:   []ResourceTypeMatcher{{}, {}},
 			out: ResourceTypeMatcher{},
 		},
 	} {
@@ -375,10 +376,14 @@ func (s *FilterSuite) TestJoin(c *C) {
 func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 	ssTypeRequirement := ResourceTypeRequirement{Group: "apps", Resource: "statefulsets"}
 	pvcTypeRequirement := ResourceTypeRequirement{Version: "v1", Resource: "persistentvolumeclaims"}
-	ss1 := Resource{Name: "ss1", GVR: schema.GroupVersionResource{Group: "apps", Resource: "statefulsets"}}
-	ss2 := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Group: "apps", Resource: "statefulsets"}}
-	pvc1 := Resource{Name: "pvc1", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"}}
-	pvc2 := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"}}
+	ss1 := Resource{Name: "ss1", GVR: schema.GroupVersionResource{Group: "apps", Resource: "statefulsets"},
+		ResourceLabels: map[string]string{"testkey1": "testval1"}}
+	ss2 := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Group: "apps", Resource: "statefulsets"},
+		ResourceLabels: map[string]string{"testkey2": "testval2"}}
+	pvc1 := Resource{Name: "pvc1", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"},
+		ResourceLabels: map[string]string{"testkey1": "testval1"}}
+	pvc2 := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"},
+		ResourceLabels: map[string]string{"testkey2": "testval2"}}
 
 	for _, tc := range []struct {
 		m         ResourceMatcher
@@ -389,9 +394,9 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 		{
 			// No matcher, empty resource list
 			m:         nil,
-			resources: []Resource{Resource{}},
-			include:   []Resource{Resource{}},
-			exclude:   []Resource{Resource{}},
+			resources: []Resource{{}},
+			include:   []Resource{{}},
+			exclude:   []Resource{{}},
 		},
 		{
 			// No matcher, include/exclude is a no-op
@@ -448,6 +453,18 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 			// Match a specific resource name only (no GVR), matches mulitple resources
 			m: ResourceMatcher{
 				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "specificname"}},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{ss2, pvc2},
+			exclude:   []Resource{ss1, pvc1},
+		},
+		{
+			// Match by labels
+			m: ResourceMatcher{
+				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "specificname"},
+					LabelSelector: metav1.LabelSelector{MatchLabels: map[string]string{
+						"testkey2": "testval2", // Include only the labels with 2
+					}}},
 			},
 			resources: []Resource{ss1, ss2, pvc1, pvc2},
 			include:   []Resource{ss2, pvc2},

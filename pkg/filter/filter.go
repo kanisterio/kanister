@@ -139,7 +139,7 @@ func (r ResourceRequirement) Matches(name string, gvr schema.GroupVersionResourc
 	}
 	if isMatch && len(resourceLabels) != 0 && (len(r.MatchExpressions) != 0 || len(r.MatchLabels) != 0) {
 		lsSel := &metav1.LabelSelector{MatchLabels: r.MatchLabels, MatchExpressions: r.MatchExpressions}
-		if sel, err := metav1.LabelSelectorAsSelector(lsSel); err != nil {
+		if sel, err := metav1.LabelSelectorAsSelector(lsSel); err == nil {
 			lsSet := labels.Set(resourceLabels)
 			isMatch = sel.Matches(lsSet)
 		}
