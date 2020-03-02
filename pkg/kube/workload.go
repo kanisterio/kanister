@@ -135,7 +135,18 @@ func DeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, cli
 		return false, nil
 	}
 
-	return len(notRunningPods) == 0, nil
+	// notRunningPods also has the pods that are in `Completed` or PodSucceeded phase.
+	// these pods should get exited automatically, but in some OpenShift clusters they
+	// are not. To handle that we are not considering `Completed` pods to be NotRunning pods here
+	failedPodsCount := 0
+	for _, v := range notRunningPods {
+		if v.Status.Phase == v1.PodSucceeded {
+			continue
+		}
+		failedPodsCount++
+	}
+
+	return failedPodsCount == 0, nil
 }
 
 // DeploymentReady checks to see if the deployment has the desired number of
