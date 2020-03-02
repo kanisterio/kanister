@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -99,7 +100,7 @@ func isZoneValid(ctx context.Context, m Mapper, zone, region string) bool {
 
 // WithUnknownNodeZones get the zone list  for the region
 func WithUnknownNodeZones(ctx context.Context, m Mapper, region string, sourceZone string, newZones map[string]struct{}) string {
-	// We could not the zones of the nodes, so we return an arbitrary one.
+	// We could not get the zones of the nodes, so we return an arbitrary one.
 	zs, err := m.FromRegion(ctx, region)
 	if err != nil || len(zs) == 0 {
 		// If all else fails, we return the original AZ.
@@ -192,18 +193,20 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 	if cli == nil {
 		return nil, "", errors.New(nodeZonesErr)
 	}
-	ns, err := cli.CoreV1().Nodes().List(metav1.ListOptions{})
+	ns, err := GetReadySchedulableNodes(cli)
 	if err != nil {
 		return nil, "", errors.Wrap(err, nodeZonesErr)
 	}
-	zoneSet := make(map[string]struct{}, len(ns.Items))
+	zoneSet := make(map[string]struct{})
 	regionSet := make(map[string]struct{})
-	for _, n := range ns.Items {
-		if v, ok := n.Labels[kubevolume.PVZoneLabelName]; ok {
-			zoneSet[v] = struct{}{}
+	for _, n := range ns {
+		zone := kubevolume.GetZoneFromNode(n)
+		if zone != "" {
+			zoneSet[zone] = struct{}{}
 		}
-		if v, ok := n.Labels[kubevolume.PVRegionLabelName]; ok {
-			regionSet[v] = struct{}{}
+		region := kubevolume.GetRegionFromNode(n)
+		if region != "" {
+			regionSet[region] = struct{}{}
 		}
 	}
 	if len(regionSet) > 1 {
@@ -217,4 +220,83 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 		region = append(region, r)
 	}
 	return zoneSet, region[0], nil
+}
+
+// GetReadySchedulableNodes addresses the common use case of getting nodes you can do work on.
+// 1) Needs to be schedulable.
+// 2) Needs to be ready.
+// Derived from "k8s.io/kubernetes/test/e2e/framework/node"
+// TODO: check for taints as well
+func GetReadySchedulableNodes(cli kubernetes.Interface) ([]v1.Node, error) {
+	ns, err := cli.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	total := len(ns.Items)
+	var unschedulable, notReady int
+	var l []v1.Node
+	for _, node := range ns.Items {
+		switch {
+		case !isNodeReady(&node):
+			notReady++
+		case !isNodeSchedulable(&node):
+			unschedulable++
+		default:
+			l = append(l, node)
+		}
+	}
+	log.Info().Print("Available nodes status", field.M{"total": total, "unschedulable": unschedulable, "notReady": notReady})
+	if len(l) == 0 {
+		return nil, errors.New("There are currently no ready, schedulable nodes in the cluster")
+	}
+	return l, nil
+}
+
+// isNodeSchedulable returns true if:
+// 1) doesn't have "unschedulable" field set
+// 2) it also returns true from IsNodeReady
+// Derived from "k8s.io/kubernetes/test/e2e/framework/node"
+func isNodeSchedulable(node *v1.Node) bool {
+	if node == nil {
+		return false
+	}
+	return !node.Spec.Unschedulable
+}
+
+// isNodeReady returns true if:
+// 1) it's Ready condition is set to true
+// Derived from "k8s.io/kubernetes/test/e2e/framework/node"
+func isNodeReady(node *v1.Node) bool {
+	for _, cond := range node.Status.Conditions {
+		if cond.Type == v1.NodeReady {
+			if cond.Status == v1.ConditionTrue {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func sanitizeAvailableZones(availableZones map[string]struct{}, validZoneNames []string) map[string]struct{} {
+	sanitizedZones := map[string]struct{}{}
+	for zone := range availableZones {
+		if isZoneNameValid(zone, validZoneNames) {
+			sanitizedZones[zone] = struct{}{}
+		} else {
+			closestMatch := levenshteinMatch(zone, validZoneNames)
+			log.Debug().Print("Exact match not found for available zone, using closest match",
+				field.M{"availableZone": zone, "closestMatch": closestMatch})
+			sanitizedZones[closestMatch] = struct{}{}
+		}
+	}
+	return sanitizedZones
+}
+
+func isZoneNameValid(zone string, validZones []string) bool {
+	for _, z := range validZones {
+		if zone == z {
+			return true
+		}
+	}
+	return false
 }
