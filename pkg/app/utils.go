@@ -21,9 +21,9 @@ import (
 )
 
 const (
-	dbTemplateURI             = "https://raw.githubusercontent.com/openshift/origin/v3.11.0/examples/db-templates/%s-%s-template.json"
-	persistentStorage storage = "persistent"
-	ephemeralStorage  storage = "ephemeral"
+	dbTemplateURI = "https://raw.githubusercontent.com/openshift/origin/v3.11.0/examples/db-templates/%s-%s-template.json"
+	//persistentStorage storage = "persistent"
+	ephemeralStorage storage = "ephemeral"
 )
 
 type storage string
