@@ -16,6 +16,9 @@ package zone
 
 import (
 	"context"
+	"hash/fnv"
+	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -35,7 +38,7 @@ type (
 )
 
 // FromSourceRegionZone gets the zones from the given region and sourceZones
-// It will return a minimum of 1 and a maximum of zones equal to the length zones available from kubernetes.
+// It will return a minimum of 1 and a maximum of zones equal to the length of sourceZones
 // If no zones are found it will return an error.
 // Depending on the length of the slice returned, the blockstorage providers will decide if
 // a regional volume or a zonal volume should be created.
@@ -83,18 +86,43 @@ func getAvailableZones(ctx context.Context, kubeCli kubernetes.Interface, validZ
 	sanitizedAvailableZones := SanitizeAvailableZones(availableZones, validZoneNames)
 	// Add all available valid source zones
 	for _, zone := range sourceZones {
-		z := getZoneFromKnownNodeZones(zone, sanitizedAvailableZones)
-		if z != "" {
+		if z := getZoneFromAvailableZones(zone, sanitizedAvailableZones); z != "" {
 			newZones[z] = struct{}{}
 		}
 	}
-	// If source zones aren't available and valid add all valid available zones
+	// If source zones aren't available get consistent zone from available zones
 	if len(newZones) == 0 {
-		for zone := range sanitizedAvailableZones {
-			newZones[zone] = struct{}{}
+		for _, zone := range sourceZones {
+			if z := consistentZone(zone, sanitizedAvailableZones); z != "" {
+				newZones[z] = struct{}{}
+			}
 		}
 	}
 	return newZones
+}
+
+// consistentZone will return the same zone given a source and a list of zones.
+// This output however can change if the list changes, which would impact
+// multi volume restores.
+func consistentZone(sourceZone string, availableZones map[string]struct{}) string {
+	// shouldn't hit this case as we catch it in the caller
+	if len(availableZones) == 0 {
+		return ""
+	}
+	s := make([]string, 0, len(availableZones))
+	for zone := range availableZones {
+		s = append(s, zone)
+	}
+	sort.Slice(s, func(i, j int) bool {
+		return strings.Compare(s[i], s[j]) < 0
+	})
+	h := fnv.New32()
+	if _, err := h.Write([]byte(sourceZone)); err != nil {
+		log.Info().Print("failed to hash source zone", field.M{"sourceZone": sourceZone})
+		return ""
+	}
+	i := int(h.Sum32()) % len(availableZones)
+	return s[i]
 }
 
 func isZoneValid(zone string, validZones []string) bool {
@@ -107,7 +135,7 @@ func isZoneValid(zone string, validZones []string) bool {
 }
 
 // If the original zone is available, we return that one.
-func getZoneFromKnownNodeZones(sourceZone string, availableZones map[string]struct{}) string {
+func getZoneFromAvailableZones(sourceZone string, availableZones map[string]struct{}) string {
 	if _, ok := availableZones[sourceZone]; ok {
 		return sourceZone
 	}

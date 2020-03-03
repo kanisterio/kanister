@@ -483,14 +483,14 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 			inRegion: "us-west-2",
 			inZones:  []string{"us-west-2f"},
 			inCli:    cli,
-			outZones: []string{"us-west-2a", "us-west-2b", "us-west-2c"},
+			outZones: []string{"us-west-2b"},
 			outErr:   nil,
 		},
 		{ // Source zone not found but other valid zones available
 			inRegion: "us-west-2",
 			inZones:  []string{"us-west-2f"},
 			inCli:    cli,
-			outZones: []string{"us-west-2a", "us-west-2b", "us-west-2c"},
+			outZones: []string{"us-west-2b"},
 			outErr:   nil,
 		},
 		{ // Source zones found
@@ -626,4 +626,35 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 	nl, err = GetReadySchedulableNodes(cli)
 	c.Assert(err, NotNil)
 	c.Assert(nl, IsNil)
+}
+
+func (s ZoneSuite) TestConsistentZones(c *C) {
+	// no available zones
+	z := consistentZone("source", map[string]struct{}{})
+	c.Assert(z, Equals, "")
+
+	az1 := map[string]struct{}{
+		"a": struct{}{},
+		"b": struct{}{},
+		"c": struct{}{},
+	}
+
+	az2 := map[string]struct{}{
+		"c": struct{}{},
+		"a": struct{}{},
+		"b": struct{}{},
+	}
+
+	z1 := consistentZone("x", az1)
+	z2 := consistentZone("x", az2)
+
+	c.Assert(z1, Equals, z2)
+
+	// different lists result in different zones
+	az2["d"] = struct{}{}
+	z1 = consistentZone("x", az1)
+	z2 = consistentZone("x", az2)
+
+	c.Assert(z1, Not(Equals), z2)
+
 }

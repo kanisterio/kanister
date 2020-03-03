@@ -419,7 +419,7 @@ func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		return nil, err
 	}
 	if len(zones) != 1 {
-		log.Debug().Print("Length of zone slice is greater than 1", field.M{"numberOfZones": len(zones)})
+		return nil, errors.Errorf("Length of zone slice should be 1, got %d", len(zones))
 	}
 	cvi := &ec2.CreateVolumeInput{
 		AvailabilityZone: aws.String(zones[0]),
