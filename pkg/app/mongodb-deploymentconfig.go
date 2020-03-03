@@ -34,7 +34,7 @@ import (
 
 const (
 	mongoDepConfigName        = "mongodb"
-	mongoDepConfigWaitTimeout = 4 * time.Minute
+	mongoDepConfigWaitTimeout = 5 * time.Minute
 )
 
 type MongoDBDepConfig struct {
@@ -52,7 +52,7 @@ type MongoDBDepConfig struct {
 func NewMongoDBDepConfig(name string) App {
 	return &MongoDBDepConfig{
 		name:       name,
-		dbTemplate: getOpenShiftDBTemplate(mongoDepConfigName),
+		dbTemplate: getOpenShiftDBTemplate(mongoDepConfigName, ephemeralStorage),
 		user:       "admin",
 		params: map[string]string{
 			"MONGODB_ADMIN_PASSWORD": "secretpassword",

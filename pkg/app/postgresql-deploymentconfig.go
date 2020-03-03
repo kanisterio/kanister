@@ -36,7 +36,7 @@ import (
 
 const (
 	postgresDepConfigName          = "postgresql"
-	postgreSQLDepConfigWaitTimeout = 2 * time.Minute
+	postgreSQLDepConfigWaitTimeout = 5 * time.Minute
 )
 
 type PostgreSQLDepConfig struct {
@@ -54,7 +54,7 @@ func NewPostgreSQLDepConfig(name string) App {
 	return &PostgreSQLDepConfig{
 		name:           name,
 		opeshiftClient: openshift.NewOpenShiftClient(),
-		dbTemplate:     getOpenShiftDBTemplate(postgresDepConfigName),
+		dbTemplate:     getOpenShiftDBTemplate(postgresDepConfigName, ephemeralStorage),
 		label:          getLabelOfApp(postgresDepConfigName),
 		envVar: map[string]string{
 			"POSTGRESQL_ADMIN_PASSWORD": "secretpassword",

@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	mysqlDepConfigWaitTimeout = 4 * time.Minute
+	mysqlDepConfigWaitTimeout = 5 * time.Minute
 	mysqlToolPodName          = "mysql-tools-pod"
 	mysqlToolContainerName    = "mysql-tools-container"
 	mysqlToolImage            = "kanisterio/mysql-sidecar:0.26.0"
@@ -55,7 +55,7 @@ type MysqlDepConfig struct {
 func NewMysqlDepConfig(name string) App {
 	return &MysqlDepConfig{
 		name:       name,
-		dbTemplate: getOpenShiftDBTemplate(mysqlDepConfigName),
+		dbTemplate: getOpenShiftDBTemplate(mysqlDepConfigName, ephemeralStorage),
 		envVar: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "secretpassword",
 		},
