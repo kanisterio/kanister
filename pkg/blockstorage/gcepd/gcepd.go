@@ -359,7 +359,7 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	var zones []string
 	var region string
 	// Validate Zones
-	if _, err = getRegionFromZones(snapshot.Volume.Az); err != nil {
+	if region, err = getRegionFromZones(snapshot.Volume.Az); err != nil {
 		return nil, errors.Wrapf(err, "Could not validate zones: %s", snapshot.Volume.Az)
 	}
 	zones = splitZones(snapshot.Volume.Az)
@@ -367,7 +367,7 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	if err != nil {
 		return nil, err
 	}
-	zones, err = zone.FromSourceRegionZone(ctx, s, cli, snapshot.Region, zones...)
+	zones, err = zone.FromSourceRegionZone(ctx, s, cli, region, zones...)
 	if err != nil {
 		return nil, err
 	}
