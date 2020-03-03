@@ -127,18 +127,25 @@ type ResourceRequirement struct {
 	metav1.LabelSelector `json:",inline,omitempty"`
 }
 
-// Matches returns true if the specified resource name/GVR matches the requirement
+// Matches returns true if the specified resource name/GVR/labels matches the requirement
 func (r ResourceRequirement) Matches(name string, gvr schema.GroupVersionResource, resourceLabels map[string]string) bool {
 	// If the requirement does not specify a resource name - only check the
 	// ResourceTypeRequirement i.e. GVR match
-	matchFound := matches(r.Name, name) && r.ResourceTypeRequirement.Matches(gvr)
-	if !matchFound || (len(resourceLabels) == 0 && len(r.MatchExpressions) == 0 && len(r.MatchLabels) == 0) {
-		return matchFound
+	if !(matches(r.Name, name) && r.ResourceTypeRequirement.Matches(gvr)) {
+		return false
 	}
-	if sel, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{MatchLabels: r.MatchLabels, MatchExpressions: r.MatchExpressions}); err == nil {
-		matchFound = sel.Matches(labels.Set(resourceLabels))
+	if len(resourceLabels) == 0 || (len(r.MatchExpressions) == 0 && len(r.MatchLabels) == 0) {
+		// If there are no resourceLabels to be matched, the LabelSelector is ignored.
+		// If there is no LabelSelector defined, the specified resourceLabels are ignored.
+		return true
 	}
-	return matchFound
+	sel, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
+	if err != nil {
+		// A match was found on Name or GVR but labels could not be evaluated.
+		// True is returned as a match as if no LabelSelector had been provided.
+		return true
+	}
+	return sel.Matches(labels.Set(resourceLabels))
 }
 
 // ResourceMatcher is a collection of ResourceRequirement objects for filtering resources
