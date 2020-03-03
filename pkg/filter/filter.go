@@ -129,21 +129,24 @@ type ResourceRequirement struct {
 
 // Matches returns true if the specified resource name/GVR/labels matches the requirement
 func (r ResourceRequirement) Matches(name string, gvr schema.GroupVersionResource, resourceLabels map[string]string) bool {
-	// If the requirement does not specify a resource name - only check the
-	// ResourceTypeRequirement i.e. GVR match
+	// If ResourceRequirement Name/GVR value of empty string matches on any specified in parameters.
+	// If ResourceRequirement Name/GVR value specified, exact match on parameter is required.
 	if !(matches(r.Name, name) && r.ResourceTypeRequirement.Matches(gvr)) {
 		return false
 	}
-	if len(resourceLabels) == 0 || (len(r.MatchExpressions) == 0 && len(r.MatchLabels) == 0) {
-		// If there are no resourceLabels to be matched, the LabelSelector is ignored.
-		// If there is no LabelSelector defined, the specified resourceLabels are ignored.
+	if len(resourceLabels) == 0 && len(r.MatchExpressions) == 0 && len(r.MatchLabels) == 0 {
+		// If there are no resourceLabels and no LabelSelector we return match of GVR from above.
 		return true
+	}
+	if len(resourceLabels) == 0 && (len(r.MatchExpressions) != 0 || len(r.MatchLabels) != 0) {
+		// If there are no resource labels but a LabelSelector exists we return no match.
+		return false
 	}
 	sel, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
 	if err != nil {
 		// A match was found on Name or GVR but labels could not be evaluated.
 		// True is returned as a match as if no LabelSelector had been provided.
-		return true
+		return false
 	}
 	return sel.Matches(labels.Set(resourceLabels))
 }

@@ -385,6 +385,11 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 	pvc2 := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"},
 		ResourceLabels: map[string]string{"testkey2": "testval2"}}
 
+	ss1nl := Resource{Name: "ss1", GVR: schema.GroupVersionResource{Group: "apps", Resource: "statefulsets"}}
+	ss2nl := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Group: "apps", Resource: "statefulsets"}}
+	pvc1nl := Resource{Name: "pvc1", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"}}
+	pvc2nl := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"}}
+
 	for _, tc := range []struct {
 		m         ResourceMatcher
 		resources ResourceList
@@ -459,7 +464,7 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 			exclude:   []Resource{ss1, pvc1},
 		},
 		{
-			// Match by labels
+			// Match by GVR and labels
 			m: ResourceMatcher{
 				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "specificname"},
 					LabelSelector: metav1.LabelSelector{MatchLabels: map[string]string{
@@ -469,6 +474,28 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 			resources: []Resource{ss1, ss2, pvc1, pvc2},
 			include:   []Resource{ss2, pvc2},
 			exclude:   []Resource{ss1, pvc1},
+		},
+		{
+			// Match by labels only
+			m: ResourceMatcher{
+				ResourceRequirement{LabelSelector: metav1.LabelSelector{MatchLabels: map[string]string{
+					"testkey2": "testval2", // Include only resources with these labels
+				}}},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{ss2, pvc2},
+			exclude:   []Resource{ss1, pvc1},
+		},
+		{
+			// Match by labels only but with resources without labels
+			m: ResourceMatcher{
+				ResourceRequirement{LabelSelector: metav1.LabelSelector{MatchLabels: map[string]string{
+					"testkey2": "testval2", // Include only resources with these labels
+				}}},
+			},
+			resources: []Resource{ss1nl, ss2nl, pvc1nl, pvc2nl},
+			include:   []Resource{}, // There are no resources with the required labels
+			exclude:   []Resource{ss1nl, ss2nl, pvc1nl, pvc2nl},
 		},
 	} {
 		c.Check(tc.resources.Include(tc.m), DeepEquals, tc.include)
