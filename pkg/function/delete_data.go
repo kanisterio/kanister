@@ -78,6 +78,7 @@ func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.Template
 	return pr.Run(ctx, podFunc)
 }
 
+// nolint:gocognit
 func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 		// Wait for pod to reach running state

@@ -373,6 +373,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	return nil
 }
 
+// nolint:gocognit
 func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aIDX int) error {
 	action := as.Spec.Actions[aIDX]
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing action %s", action.Name), "Started Action", as)
