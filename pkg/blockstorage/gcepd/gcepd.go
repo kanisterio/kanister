@@ -363,7 +363,10 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		return nil, errors.Wrapf(err, "Could not validate zones: %s", snapshot.Volume.Az)
 	}
 	zones = splitZones(snapshot.Volume.Az)
-	cli, _ := kube.NewClient()
+	cli, err := kube.NewClient()
+	if err != nil {
+		return nil, err
+	}
 	zones, err = zone.FromSourceRegionZone(ctx, s, cli, snapshot.Region, zones...)
 	if err != nil {
 		return nil, err
