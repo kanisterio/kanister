@@ -35,7 +35,8 @@ type (
 )
 
 // FromSourceRegionZone gets the zones from the given region and sourceZones
-// It will return a minimum of 0 and a maximum of zones equal to the length zones available from kubernetes.
+// It will return a minimum of 1 and a maximum of zones equal to the length zones available from kubernetes.
+// If no zones are found it will return an error.
 // Depending on the length of the slice returned, the blockstorage providers will decide if
 // a regional volume or a zonal volume should be created.
 func FromSourceRegionZone(ctx context.Context, m Mapper, kubeCli kubernetes.Interface, sourceRegion string, sourceZones ...string) ([]string, error) {
