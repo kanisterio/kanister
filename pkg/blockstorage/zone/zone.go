@@ -21,7 +21,6 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/kanisterio/kanister/pkg/field"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
@@ -63,21 +62,8 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, kubeCli kubernetes.Inte
 	return zones, nil
 }
 
-func isNilClientSet(i kubernetes.Interface) bool {
-	var ret bool
-	switch i.(type) {
-	case *kubernetes.Clientset:
-		v := i.(*kubernetes.Clientset)
-		ret = v == nil
-	case *fake.Clientset:
-		v := i.(*fake.Clientset)
-		ret = v == nil
-	}
-	return ret
-}
-
 func getAvailableZones(ctx context.Context, kubeCli kubernetes.Interface, validZoneNames []string, sourceZones []string, sourceRegion string) map[string]struct{} {
-	if kubeCli == nil || isNilClientSet(kubeCli) {
+	if kubeCli == nil {
 		return map[string]struct{}{}
 	}
 	newZones := make(map[string]struct{})

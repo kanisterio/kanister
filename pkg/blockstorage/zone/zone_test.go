@@ -25,6 +25,7 @@ import (
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -453,7 +454,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 	for _, tc := range []struct {
 		inRegion string
 		inZones  []string
-		inCli    *fake.Clientset
+		inCli    kubernetes.Interface
 		outZones []string
 		outErr   error
 	}{
