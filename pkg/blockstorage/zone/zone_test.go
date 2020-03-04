@@ -656,5 +656,4 @@ func (s ZoneSuite) TestConsistentZones(c *C) {
 	z2 = consistentZone("x", az2)
 
 	c.Assert(z1, Not(Equals), z2)
-
 }
