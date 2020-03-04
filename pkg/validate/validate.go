@@ -24,6 +24,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 // ActionSet function validates the ActionSet and returns an error if it is invalid.
@@ -61,6 +62,8 @@ func actionSpec(s crv1alpha1.ActionSpec) error {
 	case param.DeploymentKind:
 		fallthrough
 	case param.PVCKind:
+		fallthrough
+	case param.DeploymentConfigKind:
 		fallthrough
 	case param.NamespaceKind:
 		// Known types
@@ -198,7 +201,7 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
 	pc := objectstore.ProviderConfig{Type: pType}
-	secret, err := osSecretFromProfile(pType, p, cli)
+	secret, err := osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
 	}
@@ -227,7 +230,7 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 	default:
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-	secret, err = osSecretFromProfile(pType, p, cli)
+	secret, err = osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
 	}
@@ -264,7 +267,7 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	default:
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-	secret, err = osSecretFromProfile(pType, p, cli)
+	secret, err = osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
 	}
@@ -293,24 +296,44 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	return nil
 }
 
-func osSecretFromProfile(pType objectstore.ProviderType, p *crv1alpha1.Profile, cli kubernetes.Interface) (*objectstore.Secret, error) {
+func osSecretFromProfile(ctx context.Context, pType objectstore.ProviderType, p *crv1alpha1.Profile, cli kubernetes.Interface) (*objectstore.Secret, error) {
 	var key, value []byte
 	var ok bool
 	secret := &objectstore.Secret{}
-	kp := p.Credential.KeyPair
-	if kp == nil {
-		return nil, errorf("invalid credentials kv cannot be nil")
+	switch p.Credential.Type {
+	case crv1alpha1.CredentialTypeKeyPair:
+		kp := p.Credential.KeyPair
+		if kp == nil {
+			return nil, errorf("Invalid credentials kv cannot be nil")
+		}
+		s, err := cli.CoreV1().Secrets(kp.Secret.Namespace).Get(kp.Secret.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, errorf("Could not fetch the secret specified in credential")
+		}
+		if key, ok = s.Data[kp.IDField]; !ok {
+			return nil, errorf("Key '%s' not found in secret '%s:%s'", kp.IDField, s.GetNamespace(), s.GetName())
+		}
+		if value, ok = s.Data[kp.SecretField]; !ok {
+			return nil, errorf("Value '%s' not found in secret '%s:%s'", kp.SecretField, s.GetNamespace(), s.GetName())
+		}
+	case crv1alpha1.CredentialTypeSecret:
+		s, err := cli.CoreV1().Secrets(p.Credential.Secret.Namespace).Get(p.Credential.Secret.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, errorf("Could not fetch the secret specified in credential")
+		}
+		creds, err := secrets.ExtractAWSCredentials(ctx, s)
+		if err != nil {
+			return nil, err
+		}
+		secret.Type = objectstore.SecretTypeAwsAccessKey
+		secret.Aws = &objectstore.SecretAws{
+			AccessKeyID:     creds.AccessKeyID,
+			SecretAccessKey: creds.SecretAccessKey,
+			SessionToken:    creds.SessionToken,
+		}
+		return secret, nil
 	}
-	s, err := cli.CoreV1().Secrets(kp.Secret.Namespace).Get(kp.Secret.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, errorf("could not fetch the secret specified in credential")
-	}
-	if key, ok = s.Data[kp.IDField]; !ok {
-		return nil, errorf("Key '%s' not found in secret '%s:%s'", kp.IDField, s.GetNamespace(), s.GetName())
-	}
-	if value, ok = s.Data[kp.SecretField]; !ok {
-		return nil, errorf("Value '%s' not found in secret '%s:%s'", kp.SecretField, s.GetNamespace(), s.GetName())
-	}
+
 	switch pType {
 	case objectstore.ProviderTypeS3:
 		secret.Type = objectstore.SecretTypeAwsAccessKey

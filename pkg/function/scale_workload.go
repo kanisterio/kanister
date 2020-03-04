@@ -27,6 +27,8 @@ import (
 )
 
 const (
+	// ScaleWorkloadFuncName gives the function name
+	ScaleWorkloadFuncName     = "ScaleWorkload"
 	ScaleWorkloadNamespaceArg = "namespace"
 	ScaleWorkloadNameArg      = "name"
 	ScaleWorkloadKindArg      = "kind"
@@ -34,7 +36,7 @@ const (
 )
 
 func init() {
-	kanister.Register(&scaleWorkloadFunc{})
+	_ = kanister.Register(&scaleWorkloadFunc{})
 }
 
 var (
@@ -44,7 +46,7 @@ var (
 type scaleWorkloadFunc struct{}
 
 func (*scaleWorkloadFunc) Name() string {
-	return "ScaleWorkload"
+	return ScaleWorkloadFuncName
 }
 
 func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

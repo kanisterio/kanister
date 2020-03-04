@@ -39,6 +39,9 @@ DOCKER_BUILD ?= "true"
 
 DOCKER_CONFIG ?= "$(HOME)/.docker"
 
+# Mention the vm-driver that should be used to install OpenShift
+vm-driver ?= "kvm"
+
 ###
 ### These variables should not need tweaking.
 ###
@@ -65,7 +68,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= kanisterio/build:v0.0.5
+BUILD_IMAGE ?= kanisterio/build:v0.0.7
 DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
 
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
@@ -166,6 +169,15 @@ deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
 
+integration-test: build-dirs
+	@$(MAKE) run CMD='-c "./build/integration-test.sh short"'
+
+openshift-test:
+	@/bin/bash ./build/integration-test.sh openshift
+
+golint:
+	@$(MAKE) run CMD='-c "./build/golint.sh"'
+
 codegen:
 	@$(MAKE) run CMD='-c "./build/codegen.sh"'
 
@@ -209,7 +221,7 @@ ifeq ($(DOCKER_BUILD),"true")
 		-v /var/run/docker.sock:/var/run/docker.sock                \
 		-w /go/src/$(PKG)                                           \
 		$(BUILD_IMAGE)                                              \
-		/bin/sh $(CMD)
+		/bin/bash $(CMD)
 else
 	@/bin/bash $(CMD)
 endif
@@ -254,6 +266,17 @@ start-kind:
 tiller:
 	@/bin/bash ./build/init_tiller.sh
 
+install-minio:
+	@$(MAKE) run CMD='-c "./build/minio.sh install_minio"'
+
+uninstall-minio:
+	@$(MAKE) run CMD='-c "./build/minio.sh uninstall_minio"'
+
+start-minishift:
+	@/bin/bash ./build/minishift.sh start_minishift $(vm-driver)
+
+stop-minishift:
+	@/bin/bash ./build/minishift.sh stop_minishift
+
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
-

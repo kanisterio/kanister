@@ -35,7 +35,6 @@ type ResourceWatcher struct {
 	namespace             string
 	resourceEventHandlers cache.ResourceEventHandlerFuncs
 	client                rest.Interface
-	scheme                *runtime.Scheme
 }
 
 // NewWatcher creates an instance of a custom resource watcher for the given resource
@@ -51,7 +50,7 @@ func NewWatcher(resource CustomResource, namespace string, handlers cache.Resour
 // Watch begins watching the custom resource (TPR/CRD). The call will block until a Done signal is raised during in the context.
 // When the watch has detected a create, update, or delete event, it will handled by the functions in the resourceEventHandlers. After the callback returns, the watch loop will continue for the next event.
 // If the callback returns an error, the error will be logged.
-func (w *ResourceWatcher) Watch(objType runtime.Object, done <-chan struct{}) error {
+func (w *ResourceWatcher) Watch(objType runtime.Object, done <-chan struct{}) {
 	source := cache.NewListWatchFromClient(
 		w.client,
 		w.resource.Plural,
@@ -73,5 +72,4 @@ func (w *ResourceWatcher) Watch(objType runtime.Object, done <-chan struct{}) er
 
 	go controller.Run(done)
 	<-done
-	return nil
 }

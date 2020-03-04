@@ -1,0 +1,65 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: rds-postgres-dump-bp
+actions:
+  backup:
+    outputArtifacts:
+      backupInfo:
+        keyValue:
+          snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+          instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+          securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+          backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
+    phases:
+    - func: CreateRDSSnapshot
+      name: createSnapshot
+      args:
+        instanceID: '{{ index .Object.data "postgres.instanceid" }}'
+    - func: ExportRDSSnapshotToLocation
+      name: exportSnapshot
+      objects:
+        dbsecret:
+          kind: Secret
+          name: '{{ index .Object.data "postgres.secret" }}'
+          namespace: "{{ .Object.metadata.namespace }}"
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+        securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+        username: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "username" | toString }}'
+        password: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password" | toString }}'
+        dbEngine: "PostgreSQL"
+        databases: '{{ index .Object.data "postgres.databases" }}'
+        snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+        backupArtifactPrefix: test-postgresql-instance/postgres
+
+  restore:
+    inputArtifactNames:
+    - backupInfo
+    phases:
+    - func: RestoreRDSSnapshot 
+      name: restoreSnapshots
+      objects:
+        dbsecret:
+          kind: Secret
+          name: '{{ index .Object.data "postgres.secret" }}'
+          namespace: "{{ .Object.metadata.namespace }}"
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        backupArtifactPrefix: test-postgresql-instance/postgres
+        instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
+        backupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.backupID }}"
+        securityGroupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
+        username: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "username" | toString }}'
+        password: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "password" | toString }}'
+        dbEngine: "PostgreSQL"
+
+  delete:
+    inputArtifactNames:
+    - backupInfo
+    phases:
+    - func: DeleteRDSSnapshot
+      name: deleteSnapshot
+      args:
+        snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"

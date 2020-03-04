@@ -22,7 +22,7 @@ import (
 
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic/fake"
@@ -31,26 +31,25 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
-	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const (
-	volumeSnapshotInfoKey = "volumeSnapshotInfo"
-	manifestKey           = "manifest"
-	backupInfoKey         = "backupInfo"
-	skipTestErrorMsg      = "Storage type not supported"
-	AWSRegion             = "AWS_REGION"
+	skipTestErrorMsg = "Storage type not supported"
+	AWSRegion        = "AWS_REGION"
 )
 
 type VolumeSnapshotTestSuite struct {
 	cli       kubernetes.Interface
 	crCli     versioned.Interface
+	osCli     osversioned.Interface
 	namespace string
 	tp        *param.TemplateParams
 }
@@ -64,6 +63,8 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	c.Assert(err, IsNil)
 	crCli, err := versioned.NewForConfig(config)
 	c.Assert(err, IsNil)
+	osCli, err := osversioned.NewForConfig(config)
+	c.Assert(err, IsNil)
 
 	// Make sure the CRD's exist.
 	err = resource.CreateCustomResources(context.Background(), config)
@@ -71,6 +72,7 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 
 	s.cli = cli
 	s.crCli = crCli
+	s.osCli = osCli
 
 	ns := testutil.NewTestNamespace()
 
@@ -87,7 +89,7 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	pods, _, err := kube.FetchPods(s.cli, s.namespace, ss.UID)
 	c.Assert(err, IsNil)
 	volToPvc := kube.StatefulSetVolumes(s.cli, ss, &pods[0])
-	pvc, _ := volToPvc[pods[0].Spec.Containers[0].VolumeMounts[0].Name]
+	pvc := volToPvc[pods[0].Spec.Containers[0].VolumeMounts[0].Name]
 	c.Assert(len(pvc) > 0, Equals, true)
 	id, secret, locationType, err := s.getCreds(c, s.cli, s.namespace, pvc)
 	c.Assert(err, IsNil)
@@ -115,10 +117,9 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 		},
 	}
 
-	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
+	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
 	c.Assert(err, IsNil)
 	s.tp = tp
-
 }
 
 // NewTestProfileSecret function returns a pointer to a new Secret test object.
@@ -166,7 +167,7 @@ func NewTestProfile(namespace string, secretName string, locationType crv1alpha1
 
 func (s *VolumeSnapshotTestSuite) TearDownTest(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
@@ -185,7 +186,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
 						Name: "testBackupVolume",
-						Func: "CreateVolumeSnapshot",
+						Func: CreateVolumeSnapshotFuncName,
 						Args: map[string]interface{}{
 							CreateVolumeSnapshotNamespaceArg: "{{ .StatefulSet.Namespace }}",
 							CreateVolumeSnapshotSkipWaitArg:  true,
@@ -193,7 +194,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 					},
 					{
 						Name: "waitOnSnapshots",
-						Func: "WaitForSnapshotCompletion",
+						Func: WaitForSnapshotCompletionFuncName,
 						Args: map[string]interface{}{
 							WaitForSnapshotCompletionSnapshotsArg: "{{ .Phases.testBackupVolume.Output.volumeSnapshotInfo }}",
 						},
@@ -208,7 +209,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
 						Name: "testShutdownPod",
-						Func: "ScaleWorkload",
+						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
 							ScaleWorkloadNamespaceArg: "{{ .StatefulSet.Namespace }}",
 							ScaleWorkloadReplicas:     0,
@@ -216,7 +217,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 					},
 					{
 						Name: "testRestoreVolume",
-						Func: "CreateVolumeFromSnapshot",
+						Func: CreateVolumeFromSnapshotFuncName,
 						Args: map[string]interface{}{
 							CreateVolumeFromSnapshotNamespaceArg: "{{ .StatefulSet.Namespace }}",
 							CreateVolumeFromSnapshotManifestArg:  "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}",
@@ -224,7 +225,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 					},
 					{
 						Name: "testBringupPod",
-						Func: "ScaleWorkload",
+						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
 							ScaleWorkloadNamespaceArg: "{{ .StatefulSet.Namespace }}",
 							ScaleWorkloadReplicas:     1,
@@ -240,7 +241,7 @@ func newVolumeSnapshotBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
 						Name: "deleteVolumeSnapshot",
-						Func: "DeleteVolumeSnapshot",
+						Func: DeleteVolumeSnapshotFuncName,
 						Args: map[string]interface{}{
 							DeleteVolumeSnapshotNamespaceArg: "{{ .StatefulSet.Namespace }}",
 							DeleteVolumeSnapshotManifestArg:  "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}",
@@ -311,7 +312,7 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	actions := []string{"backup", "restore", "delete"}
 	bp := newVolumeSnapshotBlueprint()
 	for _, action := range actions {
-		phases, err := kanister.GetPhases(*bp, action, *s.tp)
+		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *s.tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			c.Assert(param.InitPhaseParams(ctx, s.cli, s.tp, p.Name(), p.Objects()), IsNil)

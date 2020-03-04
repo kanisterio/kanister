@@ -20,7 +20,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -52,26 +52,25 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 	s.namespace = cns.Name
 	os.Setenv("POD_NAMESPACE", cns.Name)
 	os.Setenv("POD_SERVICE_ACCOUNT", "default")
-
 }
 
 func (s *KubeTaskSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
 func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "testOutput",
-		Func: "KubeTask",
+		Func: KubeTaskFuncName,
 		Args: map[string]interface{}{
 			KubeTaskNamespaceArg: namespace,
 			KubeTaskImageArg:     "kanisterio/kanister-tools:0.20.0",
 			KubeTaskCommandArg: []string{
 				"sh",
 				"-c",
-				"kando output version 0.21.0",
+				"kando output version 0.26.0",
 			},
 		},
 	}
@@ -80,7 +79,7 @@ func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 func sleepPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "testSleep",
-		Func: "KubeTask",
+		Func: KubeTaskFuncName,
 		Args: map[string]interface{}{
 			KubeTaskNamespaceArg: namespace,
 			KubeTaskImageArg:     "ubuntu:latest",
@@ -95,7 +94,7 @@ func sleepPhase(namespace string) crv1alpha1.BlueprintPhase {
 func tickPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "testTick",
-		Func: "KubeTask",
+		Func: KubeTaskFuncName,
 		Args: map[string]interface{}{
 			KubeTaskNamespaceArg: namespace,
 			KubeTaskImageArg:     "alpine:3.10",
@@ -126,6 +125,14 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 		StatefulSet: &param.StatefulSetParams{
 			Namespace: s.namespace,
 		},
+		PodOverride: crv1alpha1.JSONMap{
+			"containers": []map[string]interface{}{
+				{
+					"name":            "container",
+					"imagePullPolicy": "Always",
+				},
+			},
+		},
 	}
 	action := "test"
 	for _, tc := range []struct {
@@ -136,15 +143,14 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 			bp: newTaskBlueprint(outputPhase(s.namespace), sleepPhase(s.namespace), tickPhase(s.namespace)),
 			outs: []map[string]interface{}{
 				map[string]interface{}{
-					"version": "0.21.0",
+					"version": "0.26.0",
 				},
 				map[string]interface{}{},
 				map[string]interface{}{},
 			},
 		},
 	} {
-
-		phases, err := kanister.GetPhases(*tc.bp, action, tp)
+		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
 		c.Assert(phases, HasLen, len(tc.outs))
 		for i, p := range phases {

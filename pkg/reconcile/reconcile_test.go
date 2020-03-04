@@ -42,10 +42,6 @@ type ReconcileSuite struct {
 
 var _ = Suite(&ReconcileSuite{})
 
-const (
-	namespace = "default"
-)
-
 func (s *ReconcileSuite) SetUpSuite(c *C) {
 	// Setup Clients
 	config, err := kube.LoadConfig()
@@ -106,7 +102,7 @@ func (s *ReconcileSuite) SetUpSuite(c *C) {
 
 func (s *ReconcileSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 

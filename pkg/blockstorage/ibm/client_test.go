@@ -29,7 +29,6 @@ import (
 )
 
 const (
-	testTomlPath        = "testdata/correct"
 	testBogusPath       = "testdata/incorrect"
 	workAroundEnv       = "IBM_STORE_TOML"
 	IBMApiKeyEnv        = "IBM_API_KEY"
@@ -97,8 +96,8 @@ func (s *ClientSuite) TestIBMClientSoftlayerFile(c *C) {
 	args := s.getCredsMap(c)
 	args[SoftlayerFileAttName] = "true"
 	ibmCli, err := newClient(context.Background(), args)
-	defer ibmCli.Service.Close()
 	c.Assert(err, IsNil)
+	defer ibmCli.Service.Close()
 	c.Assert(ibmCli.Service, NotNil)
 	c.Assert(*ibmCli, FitsTypeOf, client{})
 	c.Assert(ibmCli.SLCfg.SoftlayerBlockEnabled, Equals, false)
@@ -143,7 +142,6 @@ func (s *ClientSuite) TestErrorsCases(c *C) {
 	ibmCli, err = newClient(context.Background(), make(map[string]string))
 	c.Assert(err, NotNil)
 	c.Assert(ibmCli, IsNil)
-
 }
 
 func (s *ClientSuite) getCredsMap(c *C) map[string]string {

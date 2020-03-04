@@ -27,10 +27,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/kanisterio/kanister/pkg/envdir"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/location"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -47,7 +48,7 @@ func (p PushParams) Validate() error {
 }
 
 func Push(p PushParams) error {
-	log.Debugf("%#v", p)
+	log.Debug().Print("", field.M{"PushParams": p})
 	ctx := setupSignalHandler(context.Background())
 	var i int
 	for {
@@ -75,10 +76,10 @@ func setupSignalHandler(ctx context.Context) context.Context {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		log.Infof("Shutting down process")
+		log.Print("Shutting down process")
 		can()
 		<-c
-		log.Infof("Killing process")
+		log.Print("Killing process")
 		os.Exit(1)
 	}()
 	return ctx
@@ -99,8 +100,8 @@ func push(ctx context.Context, p PushParams, ord int) error {
 			return err
 		}
 	}
-	ap, err := readArtifactPathFile(p.ArtifactFile)
-	log.Debugf("Pushing output from Command %d: %v. Environment: %v", ord, p.Command, env)
+	ap, _ := readArtifactPathFile(p.ArtifactFile)
+	log.Debug().Print("Pushing output from Command ", field.M{"order": ord, "command": p.Command, "Environment": env})
 	return pushWithEnv(ctx, p.Command, ap, ord, prof, env)
 }
 
@@ -132,7 +133,7 @@ func pushWithEnv(ctx context.Context, c []string, suffix string, ord int, prof p
 	}
 	// Delete old data
 	prev := fmt.Sprintf("%s-%d", suffix, ord-1)
-	location.Delete(ctx, prof, prev)
+	_ = location.Delete(ctx, prof, prev)
 	return nil
 }
 

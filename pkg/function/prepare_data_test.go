@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -59,7 +59,7 @@ func (s *PrepareDataSuite) SetUpSuite(c *C) {
 
 func (s *PrepareDataSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
@@ -71,7 +71,7 @@ func newPrepareDataBlueprint(kind, pvc string) *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
 						Name: "test1",
-						Func: "PrepareData",
+						Func: PrepareDataFuncName,
 						Args: map[string]interface{}{
 							PrepareDataNamespaceArg: fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							PrepareDataImageArg:     "busybox",
@@ -84,7 +84,7 @@ func newPrepareDataBlueprint(kind, pvc string) *crv1alpha1.Blueprint {
 					},
 					{
 						Name: "test2",
-						Func: "PrepareData",
+						Func: PrepareDataFuncName,
 						Args: map[string]interface{}{
 							PrepareDataNamespaceArg: fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							PrepareDataImageArg:     "busybox",
@@ -98,7 +98,7 @@ func newPrepareDataBlueprint(kind, pvc string) *crv1alpha1.Blueprint {
 					},
 					{
 						Name: "test3",
-						Func: "PrepareData",
+						Func: PrepareDataFuncName,
 						Args: map[string]interface{}{
 							PrepareDataNamespaceArg: fmt.Sprintf("{{ .%s.Namespace }}", kind),
 							PrepareDataImageArg:     "busybox",
@@ -144,7 +144,7 @@ func (s *PrepareDataSuite) TestPrepareData(c *C) {
 		}
 		action := "test"
 		bp := newPrepareDataBlueprint(kind, createdPVC.Name)
-		phases, err := kanister.GetPhases(*bp, action, tp)
+		phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			_, err = p.Exec(ctx, *bp, action, tp)

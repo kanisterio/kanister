@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/backup"
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
@@ -29,9 +28,9 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"k8s.io/apimachinery/pkg/util/rand"
 
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	kantags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
-	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
 )
 
 type efs struct {
@@ -39,18 +38,17 @@ type efs struct {
 	*backup.Backup
 	accountID string
 	region    string
+	role      string
 }
 
 var _ blockstorage.Provider = (*efs)(nil)
 
 const (
 	generalPurposePerformanceMode = awsefs.PerformanceModeGeneralPurpose
-	maximumIOPerformanceMode      = awsefs.PerformanceModeMaxIo
 	defaultPerformanceMode        = generalPurposePerformanceMode
 
-	burstingThroughputMode    = awsefs.ThroughputModeBursting
-	provisionedThroughputMode = awsefs.ThroughputModeProvisioned
-	defaultThroughputMode     = burstingThroughputMode
+	burstingThroughputMode = awsefs.ThroughputModeBursting
+	defaultThroughputMode  = burstingThroughputMode
 
 	efsType            = "EFS"
 	k10BackupVaultName = "k10vault"
@@ -60,8 +58,8 @@ const (
 )
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
-func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
-	awsConfig, region, role, err := awsconfig.GetConfig(config)
+func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
+	awsConfig, region, err := awsconfig.GetConfig(ctx, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get configuration for EFS")
 	}
@@ -78,17 +76,14 @@ func NewEFSProvider(config map[string]string) (blockstorage.Provider, error) {
 		return nil, errors.New("Account ID is empty")
 	}
 	accountID := *user.Account
-	creds := awsConfig.Credentials
-	if role != "" {
-		creds = stscreds.NewCredentials(s, role)
-	}
-	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
-	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(creds).WithMaxRetries(maxRetries))
+	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
+	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
 	return &efs{
 		EFS:       efsCli,
 		Backup:    backupCli,
 		region:    region,
 		accountID: accountID,
+		role:      config[awsconfig.ConfigRole],
 	}, nil
 }
 
@@ -451,7 +446,7 @@ func (e *efs) setBackupTags(ctx context.Context, arn string, tags map[string]str
 		ResourceArn: &arn,
 		Tags:        convertToBackupTags(tags),
 	}
-	_, err := e.TagResourceWithContext(ctx, req)
+	_, err := e.Backup.TagResourceWithContext(ctx, req)
 	return err
 }
 
@@ -459,11 +454,11 @@ func (e *efs) setEFSTags(ctx context.Context, id string, tags map[string]string)
 	if len(tags) == 0 {
 		return nil
 	}
-	req := &awsefs.CreateTagsInput{
-		FileSystemId: &id,
-		Tags:         convertToEFSTags(tags),
+	req := &awsefs.TagResourceInput{
+		ResourceId: &id,
+		Tags:       convertToEFSTags(tags),
 	}
-	_, err := e.CreateTagsWithContext(ctx, req)
+	_, err := e.EFS.TagResource(req)
 	return err
 }
 

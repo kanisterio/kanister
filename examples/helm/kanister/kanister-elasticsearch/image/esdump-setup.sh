@@ -1,10 +1,10 @@
 #! /bin/sh
 
+apk add --update bash
 apk add --update nodejs
-# install the latest version if not installed already!
-npm install -g npm
+apk add --update npm
 
-npm install -g yo grunt-cli bower express
+npm install -g npm yo grunt-cli bower express
 
 # check locations and packages are correct
 which node

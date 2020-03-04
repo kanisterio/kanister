@@ -7,7 +7,7 @@
 * Kubernetes 1.9+
 * Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
 * PV support on the underlying infrastructure
-* Kanister controller version 0.21.0 installed in your cluster
+* Kanister controller version 0.26.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Chart Details
@@ -22,10 +22,13 @@ To install the chart with the release name `my-release`:
 $ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 $ helm repo update
 
+# Using helm v3
+$ helm install my-release stable/mongodb --namespace mongo-test \
+	--set replicaSet.enabled=true
+
+# Using helm < v3
 $ helm install stable/mongodb --name my-release --namespace mongo-test \
-	--set replicaSet.enabled=true \
-	--set image.repository=kanisterio/mongodb \
-	--set image.tag=0.21.0
+	--set replicaSet.enabled=true
 ```
 
 The command deploys MongoDB on the Kubernetes cluster in the mongo-test namespace
@@ -54,7 +57,7 @@ The command will configure a location where artifacts resulting from Kanister da
 Create Blueprint in the same namespace as the controller
 
 ```bash
-$ kubectl create -f ./mongodb-blueprint.yaml -n kasten-io
+$ kubectl create -f ./mongo-blueprint.yaml -n kasten-io
 ```
 
 Once MongoDB is running, you can populate it with some data. Let's add a collection called "restaurants" to a test database:

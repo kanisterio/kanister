@@ -111,25 +111,17 @@ func Supported(t ProviderType) bool {
 	return t == ProviderTypeS3 || t == ProviderTypeGCS || t == ProviderTypeAzure
 }
 
-func s3Config(config ProviderConfig, secret *Secret, region string) (stowKind string, stowConfig stow.Config, err error) {
-	var awsAccessKeyID, awsSecretAccessKey, awsSessionToken string
-	if secret != nil {
-		if secret.Type != SecretTypeAwsAccessKey {
-			return "", nil, errors.Errorf("invalid secret type %s", secret.Type)
-		}
-		awsAccessKeyID = secret.Aws.AccessKeyID
-		awsSecretAccessKey = secret.Aws.SecretAccessKey
-		awsSessionToken = secret.Aws.SessionToken
-	} else {
-		var ok bool
-		if awsAccessKeyID, ok = os.LookupEnv("AWS_ACCESS_KEY_ID"); !ok {
-			return "", nil, errors.New("AWS_ACCESS_KEY environment not set")
-		}
-		if awsSecretAccessKey, ok = os.LookupEnv("AWS_SECRET_ACCESS_KEY"); !ok {
-			return "", nil, errors.New("AWS_SECRET_ACCESS_KEY environment not set")
-		}
-		awsSessionToken = os.Getenv("AWS_SESSION_TOKEN")
+func s3Config(ctx context.Context, config ProviderConfig, secret *Secret, region string) (stowKind string, stowConfig stow.Config, err error) {
+	if secret == nil {
+		return "", nil, errors.New("Invalid Secret value: nil")
 	}
+	if secret.Type != SecretTypeAwsAccessKey {
+		return "", nil, errors.Errorf("invalid secret type %s", secret.Type)
+	}
+	awsAccessKeyID := secret.Aws.AccessKeyID
+	awsSecretAccessKey := secret.Aws.SecretAccessKey
+	awsSessionToken := secret.Aws.SessionToken
+
 	cm := stow.ConfigMap{
 		stows3.ConfigAccessKeyID: awsAccessKeyID,
 		stows3.ConfigSecretKey:   awsSecretAccessKey,
@@ -200,7 +192,7 @@ func azureConfig(ctx context.Context, secret *Secret) (stowKind string, stowConf
 func getConfig(ctx context.Context, config ProviderConfig, secret *Secret, region string) (stowKind string, stowConfig stow.Config, err error) {
 	switch config.Type {
 	case ProviderTypeS3:
-		return s3Config(config, secret, region)
+		return s3Config(ctx, config, secret, region)
 	case ProviderTypeGCS:
 		return gcsConfig(ctx, secret)
 	case ProviderTypeAzure:

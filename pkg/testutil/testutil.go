@@ -15,14 +15,20 @@
 package testutil
 
 import (
+	"context"
 	"fmt"
+	"os"
 
+	"golang.org/x/oauth2/google"
+	compute "google.golang.org/api/compute/v1"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
 // NewTestPVC function returns a pointer to a new PVC test object
@@ -91,7 +97,7 @@ func newTestPodTemplateSpec() v1.PodTemplateSpec {
 			Containers: []v1.Container{
 				v1.Container{
 					Name:    "test-container",
-					Image:   "kanisterio/kanister-tools:0.21.0",
+					Image:   "kanisterio/kanister-tools:0.26.0",
 					Command: []string{"tail"},
 					Args:    []string{"-f", "/dev/null"},
 				},
@@ -111,6 +117,20 @@ func NewTestProfileSecret() *v1.Secret {
 		StringData: map[string]string{
 			"id":     "foo",
 			"secret": "bar",
+		},
+	}
+}
+
+// NewTestProfileSecretWithRole function returns a pointer to a new Secret test object with role.
+func NewTestProfileSecretWithRole(role string) *v1.Secret {
+	return &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-secret-",
+		},
+		Data: map[string][]byte{
+			"id":     []byte("foo"),
+			"secret": []byte("bar"),
+			"role":   []byte(role),
 		},
 	}
 }
@@ -140,8 +160,68 @@ func NewTestProfile(namespace string, secretName string) *crv1alpha1.Profile {
 	}
 }
 
+// NewSecretProfileFromLocation figures out Provider type from the location type and
+// returns a pointer to Secret and Profile
+func NewSecretProfileFromLocation(location crv1alpha1.Location) (*v1.Secret, *crv1alpha1.Profile, error) {
+	var key, val string
+	data := make(map[string]string)
+
+	switch location.Type {
+	case crv1alpha1.LocationTypeS3Compliant:
+		key = os.Getenv(awsconfig.AccessKeyID)
+		val = os.Getenv(awsconfig.SecretAccessKey)
+		if role := os.Getenv(awsconfig.ConfigRole); role != "" {
+			data["role"] = role
+		}
+	case crv1alpha1.LocationTypeGCS:
+		os.Getenv(blockstorage.GoogleCloudCreds)
+		creds, err := google.FindDefaultCredentials(context.Background(), compute.ComputeScope)
+		if err != nil {
+			return nil, nil, err
+		}
+		key = creds.ProjectID
+		val = string(creds.JSON)
+	case crv1alpha1.LocationTypeAzure:
+		key = os.Getenv(blockstorage.AzureStorageAccount)
+		val = os.Getenv(blockstorage.AzureStorageKey)
+	default:
+		return nil, nil, fmt.Errorf("Invalid location type '%s'", location.Type)
+	}
+	data["access_key_id"] = key
+	data["secret_access_key"] = val
+	return NewProfileSecret(data), NewProfile(location), nil
+}
+
+// NewProfileSecret function returns a pointer to a new Secret test object.
+func NewProfileSecret(data map[string]string) *v1.Secret {
+	return &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-secret-",
+		},
+		StringData: data,
+	}
+}
+
+// NewProfile function returns a pointer to a new Profile object that
+// passes validation.
+func NewProfile(location crv1alpha1.Location) *crv1alpha1.Profile {
+	return &crv1alpha1.Profile{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-profile-",
+		},
+		Location: location,
+		Credential: crv1alpha1.Credential{
+			Type: crv1alpha1.CredentialTypeKeyPair,
+			KeyPair: &crv1alpha1.KeyPair{
+				IDField:     "access_key_id",
+				SecretField: "secret_access_key",
+			},
+		},
+	}
+}
+
 // NewTestActionSet function returns a pointer to a new ActionSet test object
-func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace string) *crv1alpha1.ActionSet {
+func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace, version string) *crv1alpha1.ActionSet {
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-actionset-",
@@ -162,6 +242,7 @@ func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace stri
 						Name:      TestProfileName,
 						Namespace: namespace,
 					},
+					PreferredVersion: version,
 				},
 			},
 		},

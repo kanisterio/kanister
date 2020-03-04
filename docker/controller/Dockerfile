@@ -1,6 +1,5 @@
-FROM alpine:3.10
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
 MAINTAINER Tom Manville<tom@kasten.io>
-RUN apk -v --update add --no-cache ca-certificates && \
-	rm -f /var/cache/apk/*
+
 ADD controller /controller
 ENTRYPOINT ["/controller"]

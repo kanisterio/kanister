@@ -53,22 +53,7 @@ func Wait(ctx context.Context, f Func) error {
 // WaitWithBackoff calls a function until it returns true, an error, or until
 // the context is done.
 func WaitWithBackoff(ctx context.Context, b backoff.Backoff, f Func) error {
-	for {
-		if ok, err := f(ctx); err != nil || ok {
-			return err
-		}
-		select {
-		case <-ctx.Done():
-			return errors.WithStack(ctx.Err())
-		default:
-		}
-		sleep := b.Duration()
-		if deadline, ok := ctx.Deadline(); ok {
-			ctxSleep := deadline.Sub(time.Now())
-			sleep = minDuration(sleep, ctxSleep)
-		}
-		time.Sleep(sleep)
-	}
+	return WaitWithBackoffWithRetries(ctx, b, 0, IsNeverRetryable, f)
 }
 
 // WaitWithRetries will invoke a function `f` until it returns true or the
@@ -88,28 +73,31 @@ func WaitWithBackoffWithRetries(ctx context.Context, b backoff.Backoff, numRetri
 		return errors.New("numRetries must be non-negative")
 	}
 
+	t := time.NewTimer(0)
+	<-t.C
 	retries := 0
 	for {
 		ok, err := f(ctx)
-		if err != nil {
+		switch {
+		case err != nil:
 			if !r(err) || retries >= numRetries {
 				return err
 			}
 			retries++
-		} else if ok {
+		case ok:
 			return nil
-		}
-		select {
-		case <-ctx.Done():
-			return errors.Wrap(ctx.Err(), "Context done while polling")
-		default:
 		}
 		sleep := b.Duration()
 		if deadline, ok := ctx.Deadline(); ok {
-			ctxSleep := deadline.Sub(time.Now())
+			ctxSleep := time.Until(deadline)
 			sleep = minDuration(sleep, ctxSleep)
 		}
-		time.Sleep(sleep)
+		t.Reset(sleep)
+		select {
+		case <-ctx.Done():
+			return errors.Wrap(ctx.Err(), "Context done while polling")
+		case <-t.C:
+		}
 	}
 }
 

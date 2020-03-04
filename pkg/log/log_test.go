@@ -14,9 +14,7 @@ import (
 )
 
 const (
-	infoLevelStr  = "info"
-	errorLevelStr = "error"
-	debugLevelStr = "debug"
+	infoLevelStr = "info"
 )
 
 type LogSuite struct{}
@@ -33,6 +31,7 @@ func (s *LogSuite) TestWithNilError(c *C) {
 	WithError(nil).Print("Message")
 }
 
+// nolint
 func (s *LogSuite) TestWithNilContext(c *C) {
 	log.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339Nano})
 	// Should not panic
@@ -42,6 +41,16 @@ func (s *LogSuite) TestWithNilContext(c *C) {
 func (s *LogSuite) TestLogMessage(c *C) {
 	const text = "Some useful text."
 	testLogMessage(c, text, Print)
+}
+
+func (s *LogSuite) TestLogWithFields(c *C) {
+	const text = "Some useful text."
+	entry := testLogMessage(c, text, Print, field.M{"key": "value"})
+	c.Assert(entry["level"], Equals, infoLevelStr)
+	// Error should not be set in the log entry
+	c.Assert(entry["error"], Equals, nil)
+	// A field with "key" should be set in the log entry
+	c.Assert(entry["key"], Equals, "value")
 }
 
 func (s *LogSuite) TestLogWithError(c *C) {
@@ -84,11 +93,11 @@ func (s *LogSuite) TestLogWithContextFieldsAndError(c *C) {
 	c.Assert(entry["key"], Equals, "value")
 }
 
-func testLogMessage(c *C, msg string, print func(string)) map[string]interface{} {
+func testLogMessage(c *C, msg string, print func(string, ...field.M), fields ...field.M) map[string]interface{} {
 	log.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339Nano})
 	var memLog bytes.Buffer
 	log.SetOutput(&memLog)
-	print(msg)
+	print(msg, fields...)
 	var entry map[string]interface{}
 	err := json.Unmarshal(memLog.Bytes(), &entry)
 	c.Assert(err, IsNil)

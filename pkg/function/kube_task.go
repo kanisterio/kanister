@@ -18,10 +18,11 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -30,14 +31,17 @@ import (
 )
 
 const (
-	jobPrefix            = "kanister-job-"
-	KubeTaskNamespaceArg = "namespace"
-	KubeTaskImageArg     = "image"
-	KubeTaskCommandArg   = "command"
+	jobPrefix = "kanister-job-"
+	// KubeTaskFuncName gives the function name
+	KubeTaskFuncName       = "KubeTask"
+	KubeTaskNamespaceArg   = "namespace"
+	KubeTaskImageArg       = "image"
+	KubeTaskCommandArg     = "command"
+	KubeTaskPodOverrideArg = "podOverride"
 )
 
 func init() {
-	kanister.Register(&kubeTaskFunc{})
+	_ = kanister.Register(&kubeTaskFunc{})
 }
 
 var _ kanister.Func = (*kubeTaskFunc)(nil)
@@ -45,17 +49,21 @@ var _ kanister.Func = (*kubeTaskFunc)(nil)
 type kubeTaskFunc struct{}
 
 func (*kubeTaskFunc) Name() string {
-	return "KubeTask"
+	return KubeTaskFuncName
 }
 
-func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image string, command []string) (map[string]interface{}, error) {
+func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image string, command []string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
 	var serviceAccount string
 	var err error
+
+	controllerNs, err := kube.GetControllerNamespace()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get controller namespace")
+	}
 	if namespace == "" {
-		namespace, err = kube.GetControllerNamespace()
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to get controller namespace")
-		}
+		namespace = controllerNs
+	}
+	if namespace == controllerNs {
 		serviceAccount, err = kube.GetControllerServiceAccount(cli)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get Controller Service Account")
@@ -67,7 +75,9 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 		Image:              image,
 		Command:            command,
 		ServiceAccountName: serviceAccount,
+		PodOverride:        podOverride,
 	}
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := kubeTaskPodFunc(cli)
 	return pr.Run(ctx, podFunc)
@@ -109,13 +119,18 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, KubeTaskNamespaceArg, &namespace, ""); err != nil {
 		return nil, err
 	}
+	podOverride, err := GetPodSpecOverride(tp, args, KubeTaskPodOverrideArg)
+	if err != nil {
+		return nil, err
+	}
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return kubeTask(ctx, cli, namespace, image, command)
+	return kubeTask(ctx, cli, namespace, image, command, podOverride)
 }
 
 func (*kubeTaskFunc) RequiredArgs() []string {
-	return []string{KubeTaskNamespaceArg, KubeTaskImageArg, KubeTaskCommandArg}
+	return []string{KubeTaskImageArg, KubeTaskCommandArg}
 }

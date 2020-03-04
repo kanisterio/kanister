@@ -30,11 +30,21 @@ your storage infrastructure.
 ## Community Applications
 
 Stable Helm charts that have been updated with Kanister support.
+- **[Cassandra](./examples/stable/cassandra)**
+- **[Couchbase](./examples/stable/couchbase)**
+- **[Elasticsearch](./examples/stable/elasticsearch)**
+- **[FoundationDB](./examples/stable/foundationdb)**
+- **[MongoDB](./examples/stable/mongodb)**
+- **[MySQL on OpenShift using DeploymentConfig](./examples/stable/mysql-deploymentconfig)**
+- **[MySQL](./examples/stable/mysql)**
+- **[PostgreSQL with Point In Time Recovery (PITR)](./examples/stable/postgresql-wale)**
+- **[PostgreSQL](./examples/stable/postgresql)**
 
-- **[Elasticsearch](./examples/helm/kanister/kanister-elasticsearch)**
-- **[MongoDB](./examples/helm/kanister/kanister-mongodb-replicaset)**
-- **[MySQL](./examples/helm/kanister/kanister-mysql)**
-- **[PostgreSQL](./examples/helm/kanister/kanister-postgresql)**
+
+## Kanister in action for MySQL Database
+
+[![asciicast](https://asciinema.org/a/303478.svg)](https://asciinema.org/a/303478?speed=1.5)
+
 
 ## Resources
 
@@ -43,7 +53,7 @@ To get started or to better understand kanister, see the
 
 For troubleshooting help, you can email the [mailing
 list](https://groups.google.com/forum/#!forum/kanisterio), reach out to us on
-[Slack](https://kasten.typeform.com/to/QBcw8T), or file a [Github
+[Slack](https://join.slack.com/t/kanisterio/shared_invite/enQtNzg2MDc4NzA0ODY4LTU1NDU2NDZhYjk3YmE5MWNlZWMwYzk1NjNjOGQ3NjAyMjcxMTIyNTE1YzZlMzgwYmIwNWFkNjU0NGFlMzNjNTk), or file a [Github
 issue](https://github.com/kanisterio/kanister/issues).
 
 ## Presentations

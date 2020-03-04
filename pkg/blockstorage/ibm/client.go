@@ -23,11 +23,11 @@ import (
 	ibmprov "github.com/IBM/ibmcloud-storage-volume-lib/lib/provider"
 	ibmprovutils "github.com/IBM/ibmcloud-storage-volume-lib/provider/utils"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 // IBM Cloud environment variable names
@@ -98,7 +98,6 @@ func handleClientPanic(f func() (*client, error)) (c *client, err error) {
 
 // newClientUnsafe may panic. See https://github.com/IBM/ibmcloud-storage-volume-lib/issues/79
 func newClientUnsafe(ctx context.Context, args map[string]string) (*client, error) {
-
 	zaplog, _ := zap.NewProduction()
 	defer zaplog.Sync() // nolint: errcheck
 
@@ -136,7 +135,7 @@ func findDefaultConfig(ctx context.Context, args map[string]string, zaplog *zap.
 	if err == nil {
 		return ibmCfg, nil
 	}
-	log.WithError(err).Info("Could not get IBM default store secret")
+	log.WithError(err).Print("Could not get IBM default store secret")
 	// Checking if an api key is provided via args
 	// If it present will use api value and default Softlayer config
 	if apik, ok := args[APIKeyArgName]; ok {

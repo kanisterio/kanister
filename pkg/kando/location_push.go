@@ -37,7 +37,6 @@ func newLocationPushCommand() *cobra.Command {
 		},
 	}
 	return cmd
-
 }
 
 func runLocationPush(cmd *cobra.Command, args []string) error {
@@ -62,7 +61,7 @@ func sourceReader(source string) (io.Reader, error) {
 	}
 	fi, err := os.Stdin.Stat()
 	if err != nil {
-		errors.Wrap(err, "Failed to Stat stdin")
+		return nil, errors.Wrap(err, "Failed to Stat stdin")
 	}
 	if fi.Mode()&os.ModeNamedPipe == 0 {
 		return nil, errors.New("Stdin must be piped when the source parameter is \"-\"")

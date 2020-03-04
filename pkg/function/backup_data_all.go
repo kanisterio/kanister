@@ -32,6 +32,8 @@ import (
 )
 
 const (
+	// BackupDataAllFuncName gives the name of the function
+	BackupDataAllFuncName = "BackupDataAll"
 	// BackupDataAllNamespaceArg provides the namespace
 	BackupDataAllNamespaceArg = "namespace"
 	// BackupDataAllPodsArg provides the pods connected to the data volumes
@@ -55,7 +57,7 @@ type BackupInfo struct {
 }
 
 func init() {
-	kanister.Register(&backupDataAllFunc{})
+	_ = kanister.Register(&backupDataAllFunc{})
 }
 
 var _ kanister.Func = (*backupDataAllFunc)(nil)
@@ -63,7 +65,7 @@ var _ kanister.Func = (*backupDataAllFunc)(nil)
 type backupDataAllFunc struct{}
 
 func (*backupDataAllFunc) Name() string {
-	return "BackupDataAll"
+	return BackupDataAllFuncName
 }
 
 func (*backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -87,11 +89,13 @@ func (*backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	if err = OptArg(args, BackupDataAllEncryptionKeyArg, &encryptionKey, restic.GeneratePassword()); err != nil {
 		return nil, err
 	}
-	ctx = field.Context(ctx, consts.ContainerNameKey, container)
-	// Validate the Profile
-	if err = validateProfile(tp.Profile); err != nil {
+
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
+
+	backupArtifactPrefix = ResolveArtifactPrefix(backupArtifactPrefix, tp.Profile)
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
@@ -109,6 +113,7 @@ func (*backupDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	} else {
 		ps = strings.Fields(pods)
 	}
+	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	return backupDataAll(ctx, cli, namespace, ps, container, backupArtifactPrefix, includePath, encryptionKey, tp)
 }
 
@@ -125,9 +130,9 @@ func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace stri
 	for _, pod := range ps {
 		go func(pod string, container string) {
 			ctx = field.Context(ctx, consts.PodNameKey, pod)
-			backupID, backupTag, err := backupData(ctx, cli, namespace, pod, container, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), includePath, encryptionKey, tp)
+			backupOutputs, err := backupData(ctx, cli, namespace, pod, container, fmt.Sprintf("%s/%s", backupArtifactPrefix, pod), includePath, encryptionKey, tp)
 			errChan <- errors.Wrapf(err, "Failed to backup data for pod %s", pod)
-			outChan <- BackupInfo{PodName: pod, BackupID: backupID, BackupTag: backupTag}
+			outChan <- BackupInfo{PodName: pod, BackupID: backupOutputs.backupID, BackupTag: backupOutputs.backupTag}
 		}(pod, container)
 	}
 	errs := make([]string, 0, len(ps))
@@ -147,5 +152,8 @@ func backupDataAll(ctx context.Context, cli kubernetes.Interface, namespace stri
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to encode JSON data")
 	}
-	return map[string]interface{}{BackupDataAllOutput: string(manifestData)}, nil
+	return map[string]interface{}{
+		BackupDataAllOutput:   string(manifestData),
+		FunctionOutputVersion: kanister.DefaultVersion,
+	}, nil
 }

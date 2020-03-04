@@ -18,12 +18,12 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 // PodRunner specifies Kubernetes Client and PodOptions needed for creating Pod
@@ -57,7 +57,7 @@ func (p *PodRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (
 		<-ctx.Done()
 		err := DeletePod(context.Background(), p.cli, pod)
 		if err != nil {
-			log.Error("Failed to delete pod ", err.Error())
+			log.WithError(err).Print("Failed to delete pod", field.M{"PodName": pod.Name})
 		}
 	}()
 	return fn(ctx, pod)

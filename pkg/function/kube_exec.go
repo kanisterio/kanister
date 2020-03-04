@@ -30,7 +30,7 @@ import (
 )
 
 func init() {
-	kanister.Register(&kubeExecFunc{})
+	_ = kanister.Register(&kubeExecFunc{})
 }
 
 var (
@@ -38,6 +38,8 @@ var (
 )
 
 const (
+	// KubeExecFuncName gives the function name
+	KubeExecFuncName         = "KubeExec"
 	KubeExecNamespaceArg     = "namespace"
 	KubeExecPodNameArg       = "pod"
 	KubeExecContainerNameArg = "container"
@@ -47,7 +49,7 @@ const (
 type kubeExecFunc struct{}
 
 func (*kubeExecFunc) Name() string {
-	return "KubeExec"
+	return KubeExecFuncName
 }
 
 func parseLogAndCreateOutput(out string) (map[string]interface{}, error) {
@@ -85,14 +87,14 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = Arg(args, KubeExecPodNameArg, &pod); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, KubeExecContainerNameArg, &container); err != nil {
+	if err = OptArg(args, KubeExecContainerNameArg, &container, ""); err != nil {
 		return nil, err
 	}
 	if err = Arg(args, KubeExecCommandArg, &cmd); err != nil {
 		return nil, err
 	}
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
-	ctx = field.Context(ctx, consts.ContainerNameKey, container)
+	_ = field.Context(ctx, consts.ContainerNameKey, container)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
@@ -105,5 +107,5 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 }
 
 func (*kubeExecFunc) RequiredArgs() []string {
-	return []string{KubeExecNamespaceArg, KubeExecPodNameArg, KubeExecContainerNameArg, KubeExecCommandArg}
+	return []string{KubeExecNamespaceArg, KubeExecPodNameArg, KubeExecCommandArg}
 }

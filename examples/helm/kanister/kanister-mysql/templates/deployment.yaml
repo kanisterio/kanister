@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "mysql.fullname" . }}
@@ -10,6 +10,9 @@ metadata:
   annotations:
     kanister.kasten.io/blueprint: {{ template "mysql.fullname" . }}-blueprint
 spec:
+  selector:
+    matchLabels:
+      app: {{ template "mysql.fullname" . }}
   template:
     metadata:
       labels:
@@ -100,7 +103,7 @@ spec:
           mountPath: /etc/mysql/conf.d
         {{- end }}
       - name: kanister-sidecar
-        image: kanisterio/mysql-sidecar:0.21.0
+        image: kanisterio/mysql-sidecar:0.26.0
         imagePullPolicy: Always
         env:
         {{- if .Values.mysqlAllowEmptyPassword }}

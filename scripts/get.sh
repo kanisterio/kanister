@@ -11,7 +11,7 @@ set -o xtrace
 set -o pipefail
 
 DIST_NAME="kanister"
-BIN_NAMES=("kanctl" "kando")
+BIN_NAMES=("kanctl")
 RELEASES_URL="https://github.com/kanisterio/kanister/releases"
 
 : ${KANISTER_INSTALL_DIR:="/usr/local/bin"}
@@ -35,6 +35,8 @@ initArch() {
 initOS() {
     OS=$(uname | tr '[:upper:]' '[:lower:]')
     case "$OS" in
+        # On linux we also support kando
+        linux) BIN_NAMES=("kanctl" "kando");;
         # Minimalist GNU for Windows
         mingw*) OS='windows';;
     esac
@@ -59,7 +61,7 @@ verifySupported() {
         exit 1
     fi
 
-    local required_tools=("curl")
+    local required_tools=("curl" "shasum")
     for tool in "${required_tools[@]}"; do
         if ! type "${tool}" > /dev/null; then
             echo "${tool} is required"
@@ -86,7 +88,7 @@ downloadFile() {
 
     local release_url="${RELEASES_URL}/download/${version}"
     local kanister_dist="${DIST_NAME}_${version}_${OS}_${ARCH}.tar.gz"
-    local kanister_checksum="${DIST_NAME}_${version}_checksums.txt"
+    local kanister_checksum="checksums.txt"
 
     local download_url="${release_url}/${kanister_dist}"
     local checksum_url="${release_url}/${kanister_checksum}"
@@ -103,7 +105,7 @@ downloadFile() {
     pushd "${KANISTER_TMP_ROOT}"
     local filtered_checksum="./${kanister_dist}.sha256"
     grep "${kanister_dist}" < "${kanister_checksum}" > "${filtered_checksum}"
-    sha256sum -c "${filtered_checksum}"
+    shasum -a 256 -c "${filtered_checksum}"
     popd
 }
 
@@ -138,7 +140,7 @@ cleanup() {
 }
 
 main() {
-    version="${1:-"0.21.0"}"
+    version="${1:-"0.26.0"}"
     initArch
     initOS
     verifySupported

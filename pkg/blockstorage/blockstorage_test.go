@@ -20,13 +20,15 @@ import (
 	"strings"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	. "gopkg.in/check.v1"
 
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
-	awsconfig "github.com/kanisterio/kanister/pkg/config/aws"
+	envconfig "github.com/kanisterio/kanister/pkg/config"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
@@ -49,6 +51,7 @@ type BlockStorageProviderSuite struct {
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeEBS, storageRegion: clusterRegionAWS, storageAZ: "us-west-2b"})
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-b"})
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeGPD, storageRegion: "", storageAZ: "us-west1-c__us-west1-a"})
+var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeAD, storageRegion: "", storageAZ: "eastus2-1"})
 
 func (s *BlockStorageProviderSuite) SetUpSuite(c *C) {
 	var err error
@@ -114,26 +117,28 @@ func (s *BlockStorageProviderSuite) TestCreateSnapshot(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(snapshotGet.ID, Equals, snapshot.ID)
 
-	// Also test creating a volume from this snapshot
-	tags = map[string]string{testTagKey: testTagValue, "kanister.io/testname": c.TestName()}
-	vol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), *snapshot, tags)
-	c.Assert(err, IsNil)
-	s.volumes = append(s.volumes, vol)
-	for _, tag := range snapshot.Volume.Tags {
-		if _, found := tags[tag.Key]; !found {
-			tags[tag.Key] = tag.Value
+	if s.provider.Type() != blockstorage.TypeAD {
+		// Also test creating a volume from this snapshot
+		tags = map[string]string{testTagKey: testTagValue, "kanister.io/testname": c.TestName()}
+		vol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), *snapshot, tags)
+		c.Assert(err, IsNil)
+		s.volumes = append(s.volumes, vol)
+		for _, tag := range snapshot.Volume.Tags {
+			if _, found := tags[tag.Key]; !found {
+				tags[tag.Key] = tag.Value
+			}
 		}
-	}
-	// Check tags were merged
-	s.checkTagsExist(c, blockstorage.KeyValueToMap(vol.Tags), tags)
-	s.checkStdTagsExist(c, blockstorage.KeyValueToMap(vol.Tags))
+		// Check tags were merged
+		s.checkTagsExist(c, blockstorage.KeyValueToMap(vol.Tags), tags)
+		s.checkStdTagsExist(c, blockstorage.KeyValueToMap(vol.Tags))
 
-	err = s.provider.SnapshotDelete(context.Background(), snapshot)
-	c.Assert(err, IsNil)
-	// We ensure that multiple deletions are handled.
-	err = s.provider.SnapshotDelete(context.Background(), snapshot)
-	c.Assert(err, IsNil)
-	s.snapshots = nil
+		err = s.provider.SnapshotDelete(context.Background(), snapshot)
+		c.Assert(err, IsNil)
+		// We ensure that multiple deletions are handled.
+		err = s.provider.SnapshotDelete(context.Background(), snapshot)
+		c.Assert(err, IsNil)
+		s.snapshots = nil
+	}
 }
 
 func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
@@ -150,7 +155,7 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 	snap, err := s.provider.SnapshotCopy(context.TODO(), *srcSnapshot, *dstSnapshot)
 	c.Assert(err, IsNil)
 
-	log.Infof("Copied snapshot %v to %v", srcSnapshot.ID, snap.ID)
+	log.Print("Snapshot copied", field.M{"FromSnapshotID": srcSnapshot.ID, "ToSnapshotID": snap.ID})
 
 	config := s.getConfig(c, dstSnapshot.Region)
 	provider, err := getter.New().Get(s.storageType, config)
@@ -197,7 +202,7 @@ func (s *BlockStorageProviderSuite) TestSnapshotsList(c *C) {
 	c.Assert(snaps, FitsTypeOf, []*blockstorage.Snapshot{})
 	c.Assert(snaps, Not(HasLen), 0)
 	c.Assert(snaps[0].Type, Equals, s.provider.Type())
-	s.provider.SnapshotDelete(context.Background(), testSnaphot)
+	_ = s.provider.SnapshotDelete(context.Background(), testSnaphot)
 }
 
 // Helpers
@@ -245,7 +250,6 @@ func (s *BlockStorageProviderSuite) checkTagsExist(c *C, actual map[string]strin
 
 	for k, v := range expected {
 		c.Check(actual[k], Equals, v)
-
 	}
 }
 
@@ -261,22 +265,22 @@ func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]st
 	switch s.storageType {
 	case blockstorage.TypeEBS:
 		config[awsconfig.ConfigRegion] = region
-		accessKey, ok := os.LookupEnv(awsconfig.AccessKeyID)
-		if !ok {
-			c.Skip("The necessary env variable AWS_ACCESS_KEY_ID is not set.")
-		}
-		secretAccessKey, ok := os.LookupEnv(awsconfig.SecretAccessKey)
-		if !ok {
-			c.Skip("The necessary env variable AWS_SECRET_ACCESS_KEY is not set.")
-		}
+		accessKey := envconfig.GetEnvOrSkip(c, awsconfig.AccessKeyID)
+		secretAccessKey := envconfig.GetEnvOrSkip(c, awsconfig.SecretAccessKey)
 		config[awsconfig.AccessKeyID] = accessKey
 		config[awsconfig.SecretAccessKey] = secretAccessKey
+		config[awsconfig.ConfigRole] = os.Getenv(awsconfig.ConfigRole)
 	case blockstorage.TypeGPD:
-		creds, ok := os.LookupEnv(blockstorage.GoogleCloudCreds)
-		if !ok {
-			c.Skip("The necessary env variable GOOGLE_APPLICATION_CREDENTIALS is not set.")
-		}
+		creds := envconfig.GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
 		config[blockstorage.GoogleCloudCreds] = creds
+	case blockstorage.TypeAD:
+		config[blockstorage.AzureSubscriptionID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureSubscriptionID)
+		config[blockstorage.AzureTenantID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureTenantID)
+		config[blockstorage.AzureCientID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCientID)
+		config[blockstorage.AzureClentSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClentSecret)
+		config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
+	default:
+		c.Errorf("Unknown blockstorage storage type %s", s.storageType)
 	}
 	return config
 }

@@ -49,7 +49,7 @@ KubeExec is similar to running
 
    `namespace`, Yes, `string`, namespace in which to execute
    `pod`, Yes, `string`, name of the pod in which to execute
-   `container`, Yes, `string`, name of the container in which to execute
+   `container`, No , `string`, (required if pod contains more than 1 container) name of the container in which to execute
    `command`, Yes, `[]string`,  command list to execute
 
 Example:
@@ -121,6 +121,7 @@ This allows you to run a new Pod from a Blueprint.
    `namespace`, Yes, `string`, namespace in which to execute
    `image`, Yes, `string`, image to be used for executing the task
    `command`, Yes, `[]string`,  command list to execute
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Example:
 
@@ -132,6 +133,10 @@ Example:
     args:
       namespace: "{{ .Deployment.Namespace }}"
       image: busybox
+      podOverride:
+        containers:
+        - name: container
+          imagePullPolicy: IfNotPresent
       command:
         - sh
         - -c
@@ -225,6 +230,7 @@ ScaleWorkload.
    `volumes`, No, `map[string]string`, Mapping of ``pvcName`` to ``mountPath`` under which the volume will be available.
    `command`, Yes, `[]string`,  command list to execute
    `serviceaccount`, No, `string`,  service account info
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
    The ``volumes`` argument does not support ``subPath`` mounts so the
@@ -407,6 +413,7 @@ and restores data to the specified path.
    `pod`, No, `string`, pod to which the volumes are attached
    `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
    The ``image`` argument requires the use of ``kanisterio/kanister-tools``
@@ -481,6 +488,7 @@ respective PVCs and restores data to the specified path.
    `pods`, No, `string`, pods to which the volumes are attached
    `encryptionKey`, No, `string`, encryption key to be used during backups
    `backupInfo`, Yes, `string`, snapshot info generated as output in BackupDataAll function
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
    The `image` argument requires the use of `kanisterio/kanister-tools`
@@ -549,6 +557,7 @@ Arguments:
    `volume`, Yes, `string`, name of the source PVC
    `dataArtifactPrefix`, Yes, `string`, path on the object store to store the data in
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Outputs:
 
@@ -591,6 +600,7 @@ This function deletes the snapshot data backed up by the BackupData function.
    `backupIdentifier`, No, `string`, (required if backupTag not provided) unique snapshot id generated during backup
    `backupTag`, No, `string`, (required if backupIdentifier not provided) unique tag added during the backup
    `encryptionKey`, No, `string`, encryption key to be used during backups
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Example:
 
@@ -625,6 +635,7 @@ BackupDataAll function.
    `backupInfo`, Yes, `string`, snapshot info generated as output in BackupDataAll function
    `encryptionKey`, No, `string`, encryption key to be used during backups
    `reclaimSpace`, No, `bool`, provides a way to specify if space should be reclaimed
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 Example:
 
@@ -818,6 +829,346 @@ Example:
       namespace: "{{ .Deployment.Namespace }}"
       snapshots: "{{ .ArtifactsIn.backupInfo.KeyValue.manifest }}"
 
+BackupDataStats
+---------------
+
+This function get stats for the backed up data from the object store location
+
+.. note::
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that get the information from the object store.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `backupArtifactPrefix`, Yes, `string`, path to the object store location
+   `backupID`, Yes, `string`, unique snapshot id generated during backup
+   `mode`, No, `string`, mode in which stats are expected
+   `encryptionKey`, No, `string`, encryption key to be used for backups
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `mode`,`string`, mode of the output stats
+   `fileCount`,`string`, number of files in backup
+   `size`, `string`, size of the number of files in backup
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backupStats:
+      type: Deployment
+      outputArtifacts:
+        backupStats:
+          keyValue:
+            mode: "{{ .Phases.BackupDataStatsFromObjectStore.Output.mode }}"
+            fileCount: "{{ .Phases.BackupDataStatsFromObjectStore.Output.fileCount }}"
+            size: "{{ .Phases.BackupDataStatsFromObjectStore.Output.size }}"
+      phases:
+        - func: BackupDataStats
+          name: BackupDataStatsFromObjectStore
+          args:
+            namespace: "{{ .Deployment.Namespace }}"
+            backupArtifactPrefix: s3-bucket/path/artifactPrefix
+            mode: restore-size
+            backupID: "{{ .ArtifactsIn.snapshot.KeyValue.backupIdentifier }}"
+
+DescribeBackups
+---------------
+
+This function describes the backups for an object store location
+
+.. note::
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that get the information from the object store.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `backupArtifactPrefix`, Yes, `string`, path to the object store location
+   `encryptionKey`, No, `string`, encryption key to be used for backups
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `fileCount`,`string`, number of files in backup object store location
+   `size`, `string`, size of the number of files in in backup object store location
+   `passwordIncorrect`, `string`, true if encryption key is incorrect
+   `repoDoesNotExist`, `string`, true if object store location does not exist
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backupStats:
+      type: Deployment
+      outputArtifacts:
+        backupStats:
+          keyValue:
+            fileCount: "{{ .Phases.DescribeBackupsFromObjectStore.Output.fileCount }}"
+            size: "{{ .Phases.DescribeBackupsFromObjectStore.Output.size }}"
+            passwordIncorrect: "{{ .Phases.DescribeBackupsFromObjectStore.Output.passwordIncorrect }}"
+            repoDoesNotExist: "{{ .Phases.DescribeBackupsFromObjectStore.Output.repoDoesNotExist }}"
+      phases:
+        - func: DescribeBackups
+          name: DescribeBackupsFromObjectStore
+          args:
+            backupArtifactPrefix: s3-bucket/path/artifactPrefix
+
+CreateRDSSnapshot
+-----------------
+
+This function creates RDS snapshot of running RDS instance.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `instanceID`, Yes, `string`, ID of RDS instance you want to create snapshot of
+
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `snapshotID`,`string`, ID of the RDS snapshot that has been created
+   `instanceID`, `string`, ID of the RDS instance
+   `securityGroupID`, `[]string`, AWS Security Group IDs associated with the RDS instance
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backup:
+      type: Namespace
+      outputArtifacts:
+        backupInfo:
+          keyValue:
+            snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+            instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+            securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+            backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
+      configMapNames:
+      - dbconfig
+      phases:
+      - func: CreateRDSSnapshot
+        name: createSnapshot
+        args:
+          instanceID: '{{ index .ConfigMaps.dbconfig.Data "postgres.instanceid" }}'
+
+
+ExportRDSSnapshotToLocation
+---------------------------
+
+This function spins up a temporary RDS instance from the given snapshot, extracts
+database dump and uploads that dump to the configured object storage.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `instanceID`, Yes, `string`, RDS db instance ID
+   `namespace`, Yes, `string`, namespace in which to execute the Kanister tools pod for this function
+   `snapshotID`, Yes, `string`, ID of the RDS snapshot
+   `dbEngine`, Yes, `string`, one of the RDS db engines. Supported engine(s): ``PostgreSQL``
+   `username`, No, `string`, username of the RDS database instance
+   `password`, No, `string`, password of the RDS database instance
+   `backupArtifactPrefix`, No, `string`, path to store the backup on the object store
+   `databases`, No, `[]string`, list of databases to take backup of
+   `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to temporary RDS instance. ()
+
+.. note::
+   - If ``databases`` argument is not set, backup of all the databases will be taken.
+   - If ``securityGroupID`` argument is not set, ``ExportRDSSnapshotToLocation`` will find out Security Group IDs associated with instance with ``instanceID`` and will pass the same.
+   - If ``backupArtifactPrefix`` argument is not set, ``instanceID`` will be used as `backupArtifactPrefix`.
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `snapshotID`,`string`, ID of the RDS snapshot that has been created
+   `instanceID`, `string`, ID of the RDS instance
+   `backupID`, `string`, unique backup id generated during storing data into object storage
+   `securityGroupID`, `[]string`, AWS Security Group IDs associated with the RDS instance
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backup:
+      type: Namespace
+      outputArtifacts:
+        backupInfo:
+          keyValue:
+            snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+            instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+            securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+            backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
+      configMapNames:
+      - dbconfig
+      phases:
+
+      - func: CreateRDSSnapshot
+        name: createSnapshot
+        args:
+          instanceID: '{{ index .ConfigMaps.dbconfig.Data "postgres.instanceid" }}'
+
+      - func: ExportRDSSnapshotToLocation
+        name: exportSnapshot
+        objects:
+          dbsecret:
+            kind: Secret
+            name: '{{ index .ConfigMaps.dbconfig.Data "postgres.secret" }}'
+            namespace: "{{ .Namespace.Name }}"
+        args:
+          namespace: "{{ .Namespace.Name }}"
+          instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+          securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+          username: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "username" | toString }}'
+          password: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password" | toString }}'
+          dbEngine: "PostgreSQL"
+          databases: '{{ index .ConfigMaps.dbconfig.Data "postgres.databases" }}'
+          snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+          backupArtifactPrefix: test-postgresql-instance/postgres
+
+
+RestoreRDSSnapshot
+------------------
+
+This function restores the RDS DB instance either from an RDS snapshot or from the
+data dump (if `snapshotID` is not set) that is stored in an object storage.
+
+.. note::
+   - If `snapshotID` is set, the function will restore RDS instance from the RDS snapshot. Otherwise `backupID` needs to be set to restore the RDS instance from data dump.
+   - While restoring the data from RDS snapshot if RDS instance (where we have to restore the data) doesn't exist, the RDS instance will be created. But if the data is being restored from the Object Storage (data dump) and the RDS instance doesn't exist new RDS instance will not be created and will result in an error.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `instanceID`, Yes, `string`, RDS db instance ID
+   `snapshotID`, No, `string`, ID of the RDS snapshot
+   `username`, No, `string`, username of the RDS database instance
+   `password`, No, `string`, password of the RDS database instance
+   `backupArtifactPrefix`, No, `string`, path to store the backup on the object store
+   `backupID`, No, `string`, unique backup id generated during storing data into object storage
+   `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to temporary RDS instance
+   `namespace`, No, `string`, namespace in which to execute. Required if ``snapshotID`` is nil
+   `dbEngine`, No, `string`, one of the RDS db engines. Supported engines: ``PostgreSQL``. Required if ``snapshotID`` is nil
+
+.. note::
+   - If ``snapshotID`` is not set, restore will be done from data dump. In that case ``backupID`` `arg` is required.
+   - If ``securityGroupID`` argument is not set, ``RestoreRDSSnapshot`` will find out Security Group IDs associated with instance with ``instanceID`` and will pass the same.
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `endpoint`,`string`, endpoint of the RDS instance
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  restore:
+    inputArtifactNames:
+    - backupInfo
+    kind: Namespace
+    phases:
+    - func: RestoreRDSSnapshot
+      name: restoreSnapshots
+      objects:
+        dbsecret:
+          kind: Secret
+          name: '{{ index .ConfigMaps.dbconfig.Data "postgres.secret" }}'
+          namespace: "{{ .Namespace.Name }}"
+      args:
+        namespace: "{{ .Namespace.Name }}"
+        backupArtifactPrefix: test-postgresql-instance/postgres
+        instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
+        backupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.backupID }}"
+        securityGroupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
+        username: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "username" | toString }}'
+        password: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "password" | toString }}'
+        dbEngine: "PostgreSQL"
+
+
+DeleteRDSSnapshot
+-----------------
+
+This function deletes the RDS snapshot by the `snapshotID`.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `snapshotID`, No, `string`, ID of the RDS snapshot
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    delete:
+    kind: Namespace
+    inputArtifactNames:
+    - backupInfo
+    phases:
+    - func: DeleteRDSSnapshot
+      name: deleteSnapshot
+      args:
+        snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
 
 Registering Functions
 ---------------------

@@ -39,6 +39,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crfake "github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"
 	"github.com/kanisterio/kanister/pkg/kube"
+	osfake "github.com/openshift/client-go/apps/clientset/versioned/fake"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -89,7 +90,7 @@ func (s *ParamsSuite) SetUpTest(c *C) {
 
 func (s *ParamsSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
@@ -151,7 +152,6 @@ func (s *ParamsSuite) TestFetchStatefulSetParams(c *C) {
 			},
 		},
 	})
-
 }
 
 const deploySpec = `
@@ -319,10 +319,12 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 	}
 	_, err = s.cli.CoreV1().Secrets(s.namespace).Create(secret)
 	c.Assert(err, IsNil)
-	defer s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{})
+	defer func() { _ = s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{}) }()
 
 	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
+
+	osCli := osfake.NewSimpleClientset()
 
 	crCli := crfake.NewSimpleClientset()
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
@@ -373,7 +375,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 	artsTpl["kindArtifact"] = crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": template}}
 	artsTpl["objectNameArtifact"] = crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": unstructuredTemplate}}
 
-	tp, err := New(ctx, s.cli, dynCli, crCli, as)
+	tp, err := New(ctx, s.cli, dynCli, crCli, osCli, as)
 	c.Assert(err, IsNil)
 	c.Assert(tp.ConfigMaps["myCM"].Data, DeepEquals, map[string]string{"someKey": "some-value"})
 	c.Assert(tp.Options, DeepEquals, map[string]string{"podName": "some-pod"})
@@ -510,8 +512,10 @@ func (s *ParamsSuite) TestProfile(c *C) {
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
+	osCli := osfake.NewSimpleClientset()
+
 	ctx := context.Background()
-	tp, err := New(ctx, cli, dynCli, crCli, as.Spec.Actions[0])
+	tp, err := New(ctx, cli, dynCli, crCli, osCli, as.Spec.Actions[0])
 	c.Assert(err, IsNil)
 	c.Assert(tp.Profile, NotNil)
 	c.Assert(tp.Profile, DeepEquals, &Profile{
@@ -558,7 +562,7 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 	}
 	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(secret)
 	c.Assert(err, IsNil)
-	defer s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{})
+	defer func() { _ = s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{}) }()
 
 	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
@@ -567,6 +571,7 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 	c.Assert(err, IsNil)
 	dynCli := s.getDynamicClient(c, pvc)
 	crCli := crfake.NewSimpleClientset()
+	osCli := osfake.NewSimpleClientset()
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
 	c.Assert(err, IsNil)
 	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("profName", metav1.GetOptions{})
@@ -588,12 +593,12 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 			},
 		},
 	}
-	tp, err := New(ctx, s.cli, dynCli, crCli, as)
+	tp, err := New(ctx, s.cli, dynCli, crCli, osCli, as)
 	c.Assert(err, IsNil)
 	c.Assert(tp.Phases, IsNil)
 	err = InitPhaseParams(ctx, s.cli, tp, "backup", nil)
 	c.Assert(err, IsNil)
-	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.21.0"})
+	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.26.0"})
 	c.Assert(tp.Phases, HasLen, 1)
 	c.Assert(tp.Phases["backup"], NotNil)
 	c.Assert(tp.Secrets, HasLen, 1)

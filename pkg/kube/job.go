@@ -19,11 +19,13 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const defautlJobPodName = "kanister-job-pod"
@@ -52,7 +54,7 @@ func NewJob(clientset kubernetes.Interface, jobName string, namespace string, se
 	}
 
 	if namespace == "" {
-		log.Debug("No namespace specified. Using \"default\".")
+		log.Debug().Print("No namespace specified. Using \"default\".")
 		namespace = "default"
 	}
 
@@ -114,7 +116,7 @@ func (job *Job) Create() error {
 		return errors.Wrapf(err, "Failed to create job %s", job.name)
 	}
 	job.name = newJob.Name
-	log.Infof("New job %s created", job.name)
+	log.Print("New job created", field.M{"JobName": job.name})
 
 	return nil
 }
@@ -172,7 +174,7 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 			conditions := k8sJob.Status.Conditions
 			for _, condition := range conditions {
 				if condition.Type == batch.JobComplete {
-					log.Infof("Job %s reported complete\n", job.name)
+					log.Print("Job reported complete\n", field.M{"JobName": job.name})
 					return nil
 				} else if condition.Type == batch.JobFailed {
 					return errors.Errorf("Job %s failed", job.name)
@@ -188,13 +190,12 @@ func (job *Job) WaitForCompletion(ctx context.Context) error {
 func (job *Job) Delete() error {
 	batchClient := job.clientset.BatchV1()
 	jobsClient := batchClient.Jobs(job.namespace)
-	var deletePropagation metav1.DeletionPropagation
-	deletePropagation = metav1.DeletePropagationForeground
+	deletePropagation := metav1.DeletePropagationForeground
 	err := jobsClient.Delete(job.name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete job %s", job.name)
 	}
-	log.Printf("Deleted job %s", job.name)
+	log.Print("Deleted job", field.M{"JobName": job.name})
 
 	return nil
 }

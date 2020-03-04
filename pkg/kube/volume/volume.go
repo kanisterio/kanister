@@ -39,8 +39,12 @@ const (
 	pvcGenerateName  = "kanister-pvc-"
 	// PVZoneLabelName is a known k8s label. used to specify volume zone
 	PVZoneLabelName = "failure-domain.beta.kubernetes.io/zone"
+	// PVTopologyZoneLabelName is a known k8s label. used to specify volume zone for kubernetes 1.17 onwards
+	PVTopologyZoneLabelName = "topology.kubernetes.io/zone"
 	// PVRegionLabelName is a known k8s label
 	PVRegionLabelName = "failure-domain.beta.kubernetes.io/region"
+	// PVTopologyRegionLabelName is a known k8s label. used to specify volume region for kubernetes 1.17 onwards
+	PVTopologyRegionLabelName = "topology.kubernetes.io/region"
 	// NoPVCNameSpecified is used by the caller to indicate that the PVC name
 	// should be auto-generated
 	NoPVCNameSpecified = ""
@@ -251,4 +255,24 @@ func labelSelector(labels map[string]string) string {
 func zoneToRegion(zone string) string {
 	r, _ := regexp.Compile("-?[a-z]$")
 	return r.ReplaceAllString(zone, "")
+}
+
+func GetZoneFromNode(node v1.Node) string {
+	var zone string
+	if v, ok := node.Labels[PVZoneLabelName]; ok {
+		zone = v
+	} else if v, ok := node.Labels[PVTopologyZoneLabelName]; ok {
+		zone = v
+	}
+	return zone
+}
+
+func GetRegionFromNode(node v1.Node) string {
+	var region string
+	if v, ok := node.Labels[PVRegionLabelName]; ok {
+		region = v
+	} else if v, ok := node.Labels[PVTopologyRegionLabelName]; ok {
+		region = v
+	}
+	return region
 }

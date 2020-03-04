@@ -12,7 +12,7 @@ Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment
 
 - Kubernetes 1.10+
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.21.0 installed in your cluster
+- Kanister controller version 0.26.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Installing the Chart
@@ -22,15 +22,12 @@ To install the chart with the release name `my-release`:
 $ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 $ helm repo update
 
-$ helm install stable/postgresql --name my-release \
-	--namespace postgres-test \
-	--set image.repository=kanisterio/postgresql \
-	--set image.tag=0.21.0 \
-	--set postgresqlPassword=postgres-12345 \
-	--set postgresqlExtendedConf.archiveCommand="'envdir /bitnami/postgresql/data/env wal-e wal-push %p'" \
-	--set postgresqlExtendedConf.archiveMode=true \
-	--set postgresqlExtendedConf.archiveTimeout=60 \
-	--set postgresqlExtendedConf.walLevel=archive
+# If you are using helm v3
+$ kubectl create ns postgres-test
+$ helm install my-release --namespace postgres-test stable/postgresql
+
+# If you are using helm v2
+$ helm install --name my-release --namespace postgres-test stable/postgresql
 ```
 
 The command deploys PostgreSQL on the Kubernetes cluster in the default configuration.
@@ -41,7 +38,7 @@ In case, if you don't have `Kanister` installed already, you can use following c
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
-$ helm install --name kanister --namespace kasten-io kanister/kanister-operator --set image.tag=0.21.0
+$ helm install --name kanister --namespace kasten-io kanister/kanister-operator --set image.tag=0.26.0
 ```
 
 ## Integrating with Kanister
@@ -56,7 +53,7 @@ Create Profile CR if not created already
 $ kanctl create profile s3compliant --access-key <aws-access-key-id> \
 	--secret-key <aws-secret-key> \
 	--bucket <s3-bucket-name> --region <region-name> \
-	--namespace mysql-test
+	--namespace postgres-test
 ```
 
 **NOTE:**
@@ -71,50 +68,8 @@ can be shared between Kanister-enabled application instances.
 Create Blueprint in the same namespace as the controller
 
 ```bash
-$ kubectl create -f ./postgresql-blueprint.yaml -n kasten-io
+$ kubectl create -f ./postgres-blueprint.yaml -n kasten-io
 ```
-
-### Create a Base Backup
-Create an ActionSet in the same namespace as the controller to trigger a backup. This will also setup log shipping that enables restoring to point-in-time restore
-
-```bash
-# Find profile name
-$ kubectl get profile -n postgres-test
-NAME               AGE
-s3-profile-zvrg9   109m
-
-# Create Actionset
-# Create a base backup by creating an ActionSet
-cat << EOF | kubectl create -f -
-apiVersion: cr.kanister.io/v1alpha1
-kind: ActionSet
-metadata:
-    name: pg-base-backup
-    namespace: kasten-io
-spec:
-    actions:
-    - name: backup
-      blueprint: postgresql-blueprint
-      object:
-        kind: StatefulSet
-        name: my-release-postgresql
-        namespace: postgres-test
-      profile:
-        apiVersion: v1alpha1
-        kind: Profile
-        name: s3-profile-k8s9l
-        namespace: postgres-test
-      secrets:
-        postgresql:
-          name: my-release-postgresql
-          namespace: postgres-test
-EOF
-
-# View the status of the actionset
-$ kubectl --namespace kasten-io describe actionset pg-base-backup
-```
-
-
 
 Once Postgres is running, you can populate it with some data. Let's add a table called "company" to a "test" database:
 ```
@@ -122,11 +77,11 @@ Once Postgres is running, you can populate it with some data. Let's add a table 
 $ kubectl exec -ti my-release-postgresql-0 -n postgres-test -- bash
 
 ## use psql cli to add entries in postgresql database
-$ PGPASSWORD=${POSTGRES_PASSWORD} psql
-psql (11.5)
+$ PGPASSWORD=${POSTGRES_PASSWORD} psql -U $POSTGRES_USER
+psql (11.6)
 Type "help" for help.
 
-## Create DATABASE 
+## Create DATABASE
 postgres=# CREATE DATABASE test;
 CREATE DATABASE
 postgres=# \l
@@ -177,6 +132,26 @@ test=# select * from company;
  30 | Omkar |  32 | California                                         |  20000 | 2019-09-16 14:41:06.433487
 ```
 
+## Protect the Application
+
+You can now take a backup of the PostgresDB data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
+
+```bash
+$ kubectl get profile -n postgres-test
+NAME               AGE
+s3-profile-7d6wt   7m25s
+
+$ kanctl create actionset --action backup --namespace kasten-io --blueprint postgres-bp --statefulset postgres-test/my-release-postgresql --profile postgres-test/s3-profile-7d6wt
+actionset backup-llfb8 created
+
+$ kubectl --namespace kasten-io get actionsets.cr.kanister.io
+NAME           AGE
+backup-glptq   38s
+
+# View the status of the actionset
+$ kubectl --namespace kasten-io describe actionset backup-glptq
+```
+
 ### Disaster strikes!
 
 Let's say someone accidentally deleted the test database using the following command:
@@ -186,7 +161,7 @@ Let's say someone accidentally deleted the test database using the following com
 $ kubectl exec -ti my-release-postgresql-0 -n postgres-test -- bash
 
 ## use psql cli to add entries in postgresql database
-$ PGPASSWORD=${POSTGRES_PASSWORD} psql
+$ PGPASSWORD=${POSTGRES_PASSWORD} psql -U ${POSTGRES_USER}
 psql (11.5)
 Type "help" for help.
 
@@ -207,9 +182,9 @@ postgres=# DROP DATABASE test;
 DROP DATABASE
 postgres=# \l
                                   List of databases
-   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges   
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges
 -----------+----------+----------+-------------+-------------+-----------------------
- postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
  template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
            |          |          |             |             | postgres=CTc/postgres
  template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
@@ -221,17 +196,12 @@ postgres=# \l
 
 To restore the missing data, you should use the backup that you created before. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
 
-Let's use PostgreSQL Point-In-Time Recovery to recover data till perticular time
-
 ```bash
-$ kanctl --namespace kasten-io create actionset --action restore --from pg-base-backup --options pitr=2019-09-16T14:41:00Z 
-actionset restore-pg-base-backup-d7g7w created
-
-## NOTE: pitr argument to the command is optional. If you want to restore data till the latest consistent state, you can skip '--options pitr' option
-# e.g $ kanctl --namespace kasten-io create actionset --action restore --from pg-base-backup
+$ kanctl --namespace kasten-io create actionset --action restore --from backup-glptq
+actionset restore-backup-glptq-6jzt4 created
 
 ## Check status
-$ kubectl --namespace kasten-io describe actionset restore-pg-base-backup-d7g7w
+$ kubectl --namespace kasten-io describe actionset restore-backup-glptq-6jzt4
 ```
 
 Once the ActionSet status is set to "complete", you can see that the data has been successfully restored to PostgreSQL
@@ -252,14 +222,24 @@ postgres=# \l
 postgres=# \c test;
 You are now connected to database "test" as user "postgres".
 test=# select * from company;
- id | name  | age |                      address                       | salary |         created_at
-----+-------+-----+----------------------------------------------------+--------+----------------------------
- 10 | Paul  |  32 | California                                         |  20000 | 2019-09-16 14:39:36.316065
- 20 | Omkar |  32 | California                                         |  20000 | 2019-09-16 14:40:52.952459
- 
-(2 rows)
+ id |  name  | age |                      address                       | salary |         created_at
+----+--------+-----+----------------------------------------------------+--------+----------------------------
+ 10 | Paul   |  32 | California                                         |  20000 | 2019-12-23 07:13:10.459499
+ 20 | Omkar  |  32 | California                                         |  20000 | 2019-12-23 07:13:20.953172
+ 30 | Prasad |  32 | California                                         |  20000 | 2019-12-23 07:13:29.15668
+(3 rows)
+```
 
+### Delete the Artifacts
 
+The artifacts created by the backup action can be cleaned up using the following command:
+
+```bash
+$ kanctl --namespace kasten-io create actionset --action delete --from backup-glptq
+actionset delete-backup-glptq-cq6bw created
+
+# View the status of the ActionSet
+$ kubectl --namespace kasten-io describe actionset delete-backup-glptq-cq6bw
 ```
 
 ## Troubleshooting
@@ -273,7 +253,7 @@ $ kubectl --namespace kasten-io logs -l app=kanister-operator
 you can also check events of the actionset
 
 ```bash
-$ kubectl describe actionset restore-backup-md6gb-d7g7w -n kasten-io
+$ kubectl describe actionset <actionset-name> -n kasten-io
 ```
 
 ## Cleanup
@@ -282,21 +262,22 @@ $ kubectl describe actionset restore-backup-md6gb-d7g7w -n kasten-io
 
 To uninstall/delete the `my-release` deployment:
 
-```console
-$ helm delete my-release
-```
+```bash
+# If you are using helm v2
+$ helm delete --purge my-release
 
-The command removes all the Kubernetes components associated with the chart and deletes the release.
-To completely remove the release include the `--purge` flag.
+# If you are using helm v3
+$ helm delete my-release -n postgres-test
+```
 
 ### Delete CRs
 Remove Blueprint and Profile CR
 
 ```bash
-$ kubectl delete blueprints.cr.kanister.io postgresql-blueprint -n kasten-io
+$ kubectl delete blueprints.cr.kanister.io postgres-bp -n kasten-io
 
 $ kubectl get profiles.cr.kanister.io -n postgres-test
 NAME               AGE
-s3-profile-zvrg9   125m
-$ kubectl delete profiles.cr.kanister.io s3-profile-zvrg9 -n postgres-test
+s3-profile-7d6wt   17m
+$ kubectl delete profiles.cr.kanister.io ss3-profile-7d6w -n postgres-test
 ```

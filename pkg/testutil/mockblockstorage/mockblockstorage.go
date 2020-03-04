@@ -223,7 +223,6 @@ func (p *Provider) AddSnapID(id string) {
 	if present := CheckID(id, p.SnapIDList); !present {
 		p.SnapIDList = append(p.SnapIDList, id)
 	}
-	return
 }
 
 // AddDeletedSnapID adds id to the list of delted snapshot id's
@@ -231,7 +230,6 @@ func (p *Provider) AddDeletedSnapID(id string) {
 	if present := CheckID(id, p.DeletedSnapIDList); !present {
 		p.DeletedSnapIDList = append(p.DeletedSnapIDList, id)
 	}
-	return
 }
 
 // AddVolID adds id to the list of volume id's
@@ -239,7 +237,6 @@ func (p *Provider) AddVolID(id string) {
 	if present := CheckID(id, p.VolIDList); !present {
 		p.VolIDList = append(p.VolIDList, id)
 	}
-	return
 }
 
 // CheckID checks if the id is present in the list

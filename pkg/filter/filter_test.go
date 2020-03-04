@@ -368,7 +368,7 @@ func (s *FilterSuite) TestJoin(c *C) {
 			out: ResourceTypeMatcher{},
 		},
 	} {
-		c.Check(joinResourceTypeMatchers(tc.m...), DeepEquals, tc.out)
+		c.Check(JoinResourceTypeMatchers(tc.m...), DeepEquals, tc.out)
 	}
 }
 

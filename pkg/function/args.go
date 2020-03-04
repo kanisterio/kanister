@@ -15,8 +15,13 @@
 package function
 
 import (
+	"github.com/ghodss/yaml"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
+
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 // Arg returns the value of the specified argument
@@ -44,4 +49,62 @@ func OptArg(args map[string]interface{}, argName string, result interface{}, def
 func ArgExists(args map[string]interface{}, argName string) bool {
 	_, ok := args[argName]
 	return ok
+}
+
+// GetPodSpecOverride merges PodOverride specs passed in args and TemplateParams and returns combined Override specs
+func GetPodSpecOverride(tp param.TemplateParams, args map[string]interface{}, argName string) (crv1alpha1.JSONMap, error) {
+	var podOverride crv1alpha1.JSONMap
+	var err error
+	if err = OptArg(args, KubeTaskPodOverrideArg, &podOverride, tp.PodOverride); err != nil {
+		return nil, err
+	}
+
+	// Check if PodOverride specs are passed through actionset
+	// If yes, override podOverride specs
+	if tp.PodOverride != nil {
+		podOverride, err = kube.CreateAndMergeJsonPatch(podOverride, tp.PodOverride)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return podOverride, nil
+}
+
+// GetYamlList parses yaml formatted list arg and converts it into slice of string.
+// Returns nil error, if arg is not present.
+// The value can be in either of two formats:
+// key: "- val1\n- val2\n- val3"	(string) if you are referencing from configmap or
+// 					from a inputArtifacts
+// OR
+// key:
+//    - "val1"
+//    - "val2"		(list of string) Allows users to pass list in blueprint
+func GetYamlList(args map[string]interface{}, argName string) ([]string, error) {
+	if !ArgExists(args, argName) {
+		return nil, nil
+	}
+
+	switch args[argName].(type) {
+	case []interface{}, []string:
+		var valList []string
+		if err := OptArg(args, argName, &valList, nil); err != nil {
+			return nil, err
+		}
+		return valList, nil
+	case string:
+		var valListBytes []byte
+		var valList []string
+
+		if err := OptArg(args, argName, &valListBytes, nil); err != nil {
+			return nil, err
+		}
+		if valListBytes == nil {
+			return nil, nil
+		}
+
+		// Convert yaml list to slice of string
+		err := yaml.Unmarshal(valListBytes, &valList)
+		return valList, err
+	}
+	return nil, errors.Errorf("Invalid %s arg format", argName)
 }

@@ -16,7 +16,6 @@ rules:
   verbs:
   - "*"
 - apiGroups:
-  - extensions
   - apps
   resources:
   - "*"
@@ -42,7 +41,6 @@ rules:
   - delete
 - apiGroups: 
   - batch
-  - extensions
   resources: 
   - "*"
   verbs: 
@@ -74,7 +72,7 @@ subjects:
   name: kanister-operator
   namespace: kanister
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kanister-operator

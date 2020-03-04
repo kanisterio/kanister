@@ -35,7 +35,7 @@ const testContent = "test-content"
 func (s *LocationSuite) TestLocationObjectStore(c *C) {
 	location := crv1alpha1.Location{
 		Type:   crv1alpha1.LocationTypeS3Compliant,
-		Bucket: testutil.GetEnvOrSkip(c, testutil.TestS3BucketName),
+		Bucket: testutil.TestS3BucketName,
 	}
 	p := testutil.ObjectStoreProfileOrSkip(c, objectstore.ProviderTypeS3, location)
 	ctx := context.Background()
@@ -68,5 +68,4 @@ func (s *LocationSuite) TestLocationObjectStore(c *C) {
 
 	err = locationDelete(ctx, p, dir)
 	c.Assert(err, IsNil)
-
 }

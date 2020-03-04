@@ -26,12 +26,14 @@ import (
 )
 
 const (
+	// LocationDeleteFuncName gives the function name
+	LocationDeleteFuncName = "LocationDelete"
 	// LocationDeleteArtifactArg provides the path to the artifacts on the object store
 	LocationDeleteArtifactArg = "artifact"
 )
 
 func init() {
-	kanister.Register(&locationDeleteFunc{})
+	_ = kanister.Register(&locationDeleteFunc{})
 }
 
 var _ kanister.Func = (*locationDeleteFunc)(nil)
@@ -39,7 +41,7 @@ var _ kanister.Func = (*locationDeleteFunc)(nil)
 type locationDeleteFunc struct{}
 
 func (*locationDeleteFunc) Name() string {
-	return "LocationDelete"
+	return LocationDeleteFuncName
 }
 
 func (*locationDeleteFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
@@ -48,8 +50,7 @@ func (*locationDeleteFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 	if err = Arg(args, LocationDeleteArtifactArg, &artifact); err != nil {
 		return nil, err
 	}
-	// Validate the Profile
-	if err = validateProfile(tp.Profile); err != nil {
+	if err = ValidateProfile(tp.Profile); err != nil {
 		return nil, errors.Wrapf(err, "Failed to validate Profile")
 	}
 	return nil, location.Delete(ctx, *tp.Profile, strings.TrimPrefix(artifact, tp.Profile.Location.Bucket))

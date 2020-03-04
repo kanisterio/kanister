@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
@@ -35,11 +36,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 type DataSuite struct {
 	cli          kubernetes.Interface
 	crCli        versioned.Interface
+	osCli        osversioned.Interface
 	namespace    string
 	profile      *param.Profile
 	providerType objectstore.ProviderType
@@ -59,6 +62,8 @@ func (s *DataSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	crCli, err := versioned.NewForConfig(config)
 	c.Assert(err, IsNil)
+	osCli, err := osversioned.NewForConfig(config)
+	c.Assert(err, IsNil)
 
 	// Make sure the CRD's exist.
 	err = resource.CreateCustomResources(context.Background(), config)
@@ -66,6 +71,7 @@ func (s *DataSuite) SetUpSuite(c *C) {
 
 	s.cli = cli
 	s.crCli = crCli
+	s.osCli = osCli
 
 	ns := testutil.NewTestNamespace()
 	ns.GenerateName = "kanister-datatest-"
@@ -98,6 +104,9 @@ func (s *DataSuite) SetUpSuite(c *C) {
 	location.Prefix = "testBackupRestoreLocDelete"
 	location.Bucket = testBucketName
 	s.profile = testutil.ObjectStoreProfileOrSkip(c, s.providerType, location)
+
+	os.Setenv("POD_NAMESPACE", s.namespace)
+	os.Setenv("POD_SERVICE_ACCOUNT", "default")
 }
 
 func (s *DataSuite) TearDownSuite(c *C) {
@@ -107,7 +116,7 @@ func (s *DataSuite) TearDownSuite(c *C) {
 		c.Assert(err, IsNil)
 	}
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
@@ -122,10 +131,10 @@ func newRestoreDataBlueprint(pvc, identifierArg, identifierVal string) *crv1alph
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testRestore",
-						Func: "RestoreData",
+						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataImageArg:                "kanisterio/kanister-tools:0.21.0",
+							RestoreDataImageArg:                "kanisterio/kanister-tools:0.26.0",
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataRestorePathArg:          "/mnt/data",
 							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
@@ -149,7 +158,7 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testBackup",
-						Func: "BackupData",
+						Func: BackupDataFuncName,
 						Args: map[string]interface{}{
 							BackupDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							BackupDataPodArg:                  "{{ index .StatefulSet.Pods 0 }}",
@@ -157,6 +166,46 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 							BackupDataIncludePathArg:          "/etc",
 							BackupDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							BackupDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func newDescribeBackupsBlueprint() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"describeBackups": &crv1alpha1.BlueprintAction{
+				Kind: param.StatefulSetKind,
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testDescribeBackups",
+						Func: DescribeBackupsFuncName,
+						Args: map[string]interface{}{
+							DescribeBackupsArtifactPrefixArg: "{{ .Profile.Location.Prefix }}",
+							DescribeBackupsEncryptionKeyArg:  "{{ .Secrets.backupKey.Data.password | toString }}",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func newCheckRepositoryBlueprint() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"checkRepository": &crv1alpha1.BlueprintAction{
+				Kind: param.StatefulSetKind,
+				Phases: []crv1alpha1.BlueprintPhase{
+					crv1alpha1.BlueprintPhase{
+						Name: "testCheckRepository",
+						Func: CheckRepositoryFuncName,
+						Args: map[string]interface{}{
+							CheckRepositoryArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
+							CheckRepositoryEncryptionKeyArg:  "{{ .Secrets.backupKey.Data.password | toString }}",
 						},
 					},
 				},
@@ -173,7 +222,7 @@ func newLocationDeleteBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testLocationDelete",
-						Func: "LocationDelete",
+						Func: LocationDeleteFuncName,
 						Args: map[string]interface{}{
 							LocationDeleteArtifactArg: "{{ .Profile.Location.Bucket }}",
 						},
@@ -192,7 +241,7 @@ func newBackupDataAllBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testBackupDataAll",
-						Func: "BackupDataAll",
+						Func: BackupDataAllFuncName,
 						Args: map[string]interface{}{
 							BackupDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							BackupDataAllContainerArg:            "{{ index .StatefulSet.Containers 0 0 }}",
@@ -214,10 +263,10 @@ func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testRestoreDataAll",
-						Func: "RestoreDataAll",
+						Func: RestoreDataAllFuncName,
 						Args: map[string]interface{}{
 							RestoreDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataAllImageArg:                "kanisterio/kanister-tools:0.21.0",
+							RestoreDataAllImageArg:                "kanisterio/kanister-tools:0.26.0",
 							RestoreDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataAllBackupInfo:              fmt.Sprintf("{{ .Options.%s }}", BackupDataAllOutput),
 							RestoreDataAllRestorePathArg:          "/mnt/data",
@@ -236,8 +285,8 @@ func newDeleteDataAllBlueprint() *crv1alpha1.Blueprint {
 				Kind: param.StatefulSetKind,
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
-						Name: "testDelete",
-						Func: "DeleteDataAll",
+						Name: "testDeleteDataAll",
+						Func: DeleteDataAllFuncName,
 						Args: map[string]interface{}{
 							DeleteDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
 							DeleteDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
@@ -298,7 +347,7 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.Te
 		},
 	}
 
-	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
+	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
 	c.Assert(err, IsNil)
 	tp.Profile = s.profile
 
@@ -314,6 +363,9 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 		out := runAction(c, bp, "backup", tp)
 		c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 		c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+		c.Check(out[BackupDataStatsOutputFileCount].(string), Not(Equals), "")
+		c.Check(out[BackupDataStatsOutputSize].(string), Not(Equals), "")
+		c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 		options := map[string]string{
 			BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
@@ -328,7 +380,6 @@ func (s *DataSuite) TestBackupRestoreDeleteData(c *C) {
 		bp = *newLocationDeleteBlueprint()
 		_ = runAction(c, bp, "delete", tp)
 	}
-
 }
 
 func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
@@ -339,6 +390,9 @@ func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
 		out := runAction(c, bp, "backup", tp)
 		c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
 		c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+		c.Check(out[BackupDataStatsOutputFileCount].(string), Not(Equals), "")
+		c.Check(out[BackupDataStatsOutputSize].(string), Not(Equals), "")
+		c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 		options := map[string]string{
 			BackupDataOutputBackupID:  out[BackupDataOutputBackupID].(string),
@@ -353,14 +407,14 @@ func (s *DataSuite) TestBackupRestoreDataWithSnapshotID(c *C) {
 }
 
 func (s *DataSuite) TestBackupRestoreDeleteDataAll(c *C) {
-	var replicas int32
-	replicas = 2
+	replicas := int32(2)
 	tp, pvcs := s.getTemplateParamsAndPVCName(c, replicas)
 
 	// Test backup
 	bp := *newBackupDataAllBlueprint()
 	out := runAction(c, bp, "backup", tp)
 	c.Assert(out[BackupDataAllOutput].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 
 	output := make(map[string]BackupInfo)
 	c.Assert(json.Unmarshal([]byte(out[BackupDataAllOutput].(string)), &output), IsNil)
@@ -381,7 +435,6 @@ func (s *DataSuite) TestBackupRestoreDeleteDataAll(c *C) {
 	// Test delete
 	bp = *newDeleteDataAllBlueprint()
 	_ = runAction(c, bp, "delete", tp)
-
 }
 
 func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
@@ -391,7 +444,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
 						Name: "test1",
-						Func: "PrepareData",
+						Func: PrepareDataFuncName,
 						Args: map[string]interface{}{
 							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
 							PrepareDataImageArg:     "busybox",
@@ -408,7 +461,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testCopy",
-						Func: "CopyVolumeData",
+						Func: CopyVolumeDataFuncName,
 						Args: map[string]interface{}{
 							CopyVolumeDataNamespaceArg:      "{{ .PVC.Namespace }}",
 							CopyVolumeDataVolumeArg:         "{{ .PVC.Name }}",
@@ -421,10 +474,10 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testRestore",
-						Func: "RestoreData",
+						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
-							RestoreDataImageArg:                "kanisterio/kanister-tools:0.21.0",
+							RestoreDataImageArg:                "kanisterio/kanister-tools:0.26.0",
 							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
 							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupTag),
 							RestoreDataVolsArg: map[string]string{
@@ -437,7 +490,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 			"checkfile": {
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
-						Func: "PrepareData",
+						Func: PrepareDataFuncName,
 						Args: map[string]interface{}{
 							PrepareDataNamespaceArg: "{{ .PVC.Namespace }}",
 							PrepareDataImageArg:     "busybox",
@@ -455,7 +508,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "testDelete",
-						Func: "DeleteData",
+						Func: DeleteDataFuncName,
 						Args: map[string]interface{}{
 							DeleteDataNamespaceArg:            "{{ .PVC.Namespace }}",
 							DeleteDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
@@ -484,6 +537,7 @@ func (s *DataSuite) TestCopyData(c *C) {
 	c.Assert(out[CopyVolumeDataOutputBackupRoot].(string), Not(Equals), "")
 	c.Assert(out[CopyVolumeDataOutputBackupArtifactLocation].(string), Not(Equals), "")
 	c.Assert(out[CopyVolumeDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 	options := map[string]string{
 		CopyVolumeDataOutputBackupID:               out[CopyVolumeDataOutputBackupID].(string),
 		CopyVolumeDataOutputBackupRoot:             out[CopyVolumeDataOutputBackupRoot].(string),
@@ -504,7 +558,7 @@ func (s *DataSuite) TestCopyData(c *C) {
 }
 
 func runAction(c *C, bp crv1alpha1.Blueprint, action string, tp *param.TemplateParams) map[string]interface{} {
-	phases, err := kanister.GetPhases(bp, action, *tp)
+	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, *tp)
 	c.Assert(err, IsNil)
 	out := make(map[string]interface{})
 	for _, p := range phases {
@@ -530,8 +584,120 @@ func (s *DataSuite) initPVCTemplateParams(c *C, pvc *v1.PersistentVolumeClaim, o
 		},
 		Options: options,
 	}
-	tp, err := param.New(context.Background(), s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, pvc), s.crCli, as)
+	tp, err := param.New(context.Background(), s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, pvc), s.crCli, s.osCli, as)
 	c.Assert(err, IsNil)
 	tp.Profile = s.profile
 	return tp
+}
+func (s *DataSuite) TestDescribeBackups(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
+
+	// Test DescribeBackups
+	bp2 := *newDescribeBackupsBlueprint()
+	out2 := runAction(c, bp2, "describeBackups", tp)
+	c.Assert(out2[DescribeBackupsFileCount].(string), Not(Equals), "")
+	c.Assert(out2[DescribeBackupsSize].(string), Not(Equals), "")
+	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Not(Equals), "")
+	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Not(Equals), "")
+	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
+}
+
+func (s *DataSuite) TestDescribeBackupsWrongPassword(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg], "abcde")
+	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = "foobar"
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
+
+	// Test DescribeBackups
+	bp2 := *newDescribeBackupsBlueprint()
+	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], "abcde")
+	out2 := runAction(c, bp2, "describeBackups", tp)
+	c.Assert(out2[DescribeBackupsPasswordIncorrect].(string), Equals, "true")
+	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
+}
+
+func (s *DataSuite) TestDescribeBackupsRepoNotAvailable(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
+
+	// Test DescribeBackups
+	bp2 := *newDescribeBackupsBlueprint()
+	bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["describeBackups"].Phases[0].Args[DescribeBackupsArtifactPrefixArg], c.TestName())
+	out2 := runAction(c, bp2, "describeBackups", tp)
+	c.Assert(out2[DescribeBackupsRepoDoesNotExist].(string), Equals, "true")
+	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
+}
+
+func (s *DataSuite) TestCheckRepository(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
+
+	// Test CheckRepository
+	bp2 := *newCheckRepositoryBlueprint()
+	out2 := runAction(c, bp2, "checkRepository", tp)
+	c.Assert(out2[CheckRepositoryPasswordIncorrect].(string), Equals, "false")
+	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), Equals, "false")
+	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
+}
+
+func (s *DataSuite) TestCheckRepositoryWrongPassword(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp.Actions["backup"].Phases[0].Args[BackupDataBackupArtifactPrefixArg], "abcdef")
+	bp.Actions["backup"].Phases[0].Args[BackupDataEncryptionKeyArg] = "foobar"
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
+
+	// Test CheckRepository
+	bp2 := *newCheckRepositoryBlueprint()
+	bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg], "abcdef")
+	out2 := runAction(c, bp2, "checkRepository", tp)
+	c.Assert(out2[CheckRepositoryPasswordIncorrect].(string), Equals, "true")
+}
+
+func (s *DataSuite) TestCheckRepositoryRepoNotAvailable(c *C) {
+	tp, _ := s.getTemplateParamsAndPVCName(c, 1)
+
+	// Test backup
+	bp := *newBackupDataBlueprint()
+	out := runAction(c, bp, "backup", tp)
+	c.Assert(out[BackupDataOutputBackupID].(string), Not(Equals), "")
+	c.Assert(out[BackupDataOutputBackupTag].(string), Not(Equals), "")
+	c.Assert(out[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
+
+	// Test CheckRepository
+	bp2 := *newCheckRepositoryBlueprint()
+	bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg] = fmt.Sprintf("%s/%s", bp2.Actions["checkRepository"].Phases[0].Args[CheckRepositoryArtifactPrefixArg], c.TestName())
+	out2 := runAction(c, bp2, "checkRepository", tp)
+	c.Assert(out2[CheckRepositoryRepoDoesNotExist].(string), Equals, "true")
+	c.Assert(out2[FunctionOutputVersion].(string), Equals, kanister.DefaultVersion)
 }

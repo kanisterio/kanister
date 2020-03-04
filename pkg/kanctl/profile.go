@@ -26,13 +26,14 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sYAML "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/kanisterio/kanister/pkg/validate"
 )
 
@@ -43,13 +44,15 @@ const (
 	regionFlag              = "region"
 	awsAccessKeyFlag        = "access-key"
 	awsSecretKeyFlag        = "secret-key"
+	awsRoleFlag             = "role"
 	gcpProjectIDFlag        = "project-id"
 	gcpServiceKeyFlag       = "service-key"
 	AzureStorageAccountFlag = "storage-account"
 	AzureStorageKeyFlag     = "storage-key"
 
-	idField           = "access_key_id"
-	secretField       = "secret_access_key"
+	idField           = secrets.AWSAccessKeyID
+	secretField       = secrets.AWSSecretAccessKey
+	roleField         = secrets.ConfigRole // required only for AWS IAM role
 	skipSSLVerifyFlag = "skip-SSL-verification"
 
 	schemaValidation      = "Validate Profile schema"
@@ -101,9 +104,10 @@ func newS3CompliantProfileCmd() *cobra.Command {
 
 	cmd.Flags().StringP(awsAccessKeyFlag, "a", "", "access key of the s3 compliant bucket")
 	cmd.Flags().StringP(awsSecretKeyFlag, "s", "", "secret key of the s3 compliant bucket")
+	cmd.Flags().StringP(awsRoleFlag, "R", "", "AWS IAM role")
 
-	cmd.MarkFlagRequired(awsAccessKeyFlag)
-	cmd.MarkFlagRequired(awsSecretKeyFlag)
+	_ = cmd.MarkFlagRequired(awsAccessKeyFlag)
+	_ = cmd.MarkFlagRequired(awsSecretKeyFlag)
 	return cmd
 }
 
@@ -120,8 +124,8 @@ func newGCPProfileCmd() *cobra.Command {
 	cmd.Flags().StringP(gcpProjectIDFlag, "a", "", "Project ID of the google application")
 	cmd.Flags().StringP(gcpServiceKeyFlag, "s", "", "Path to json file containing google application credentials")
 
-	cmd.MarkFlagRequired(gcpProjectIDFlag)
-	cmd.MarkFlagRequired(gcpServiceKeyFlag)
+	_ = cmd.MarkFlagRequired(gcpProjectIDFlag)
+	_ = cmd.MarkFlagRequired(gcpServiceKeyFlag)
 	return cmd
 }
 
@@ -138,8 +142,8 @@ func newAzureProfileCmd() *cobra.Command {
 	cmd.Flags().StringP(AzureStorageAccountFlag, "a", "", "Storage account name of the azure storage")
 	cmd.Flags().StringP(AzureStorageKeyFlag, "s", "", "Storage account key of the azure storage")
 
-	cmd.MarkFlagRequired(AzureStorageAccountFlag)
-	cmd.MarkFlagRequired(AzureStorageKeyFlag)
+	_ = cmd.MarkFlagRequired(AzureStorageAccountFlag)
+	_ = cmd.MarkFlagRequired(AzureStorageKeyFlag)
 	return cmd
 }
 
@@ -150,7 +154,7 @@ func createNewProfile(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	skipValidation, _ := cmd.Flags().GetBool(skipValidationFlag)
 	dryRun, _ := cmd.Flags().GetBool(dryRunFlag)
-	cli, crCli, err := initializeClients()
+	cli, crCli, _, err := initializeClients()
 	if err != nil {
 		return err
 	}
@@ -163,7 +167,7 @@ func createNewProfile(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	profile := constructProfile(lP, secret)
+	profile := constructProfile(lP, secret, string(secret.StringData[roleField]))
 	if dryRun {
 		// Just perform schema validation and print YAML
 		if err := validate.ProfileSchema(profile); err != nil {
@@ -229,7 +233,29 @@ func getLocationParams(cmd *cobra.Command) (*locationParams, error) {
 	}, nil
 }
 
-func constructProfile(lP *locationParams, secret *v1.Secret) *v1alpha1.Profile {
+func constructProfile(lP *locationParams, secret *v1.Secret, role string) *v1alpha1.Profile {
+	var creds v1alpha1.Credential
+	if role == "" {
+		creds = v1alpha1.Credential{
+			Type: v1alpha1.CredentialTypeKeyPair,
+			KeyPair: &v1alpha1.KeyPair{
+				IDField:     idField,
+				SecretField: secretField,
+				Secret: v1alpha1.ObjectReference{
+					Name:      secret.GetName(),
+					Namespace: secret.GetNamespace(),
+				},
+			},
+		}
+	} else {
+		creds = v1alpha1.Credential{
+			Type: v1alpha1.CredentialTypeSecret,
+			Secret: &v1alpha1.ObjectReference{
+				Name:      secret.GetName(),
+				Namespace: secret.GetNamespace(),
+			},
+		}
+	}
 	return &v1alpha1.Profile{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    lP.namespace,
@@ -242,30 +268,23 @@ func constructProfile(lP *locationParams, secret *v1.Secret) *v1alpha1.Profile {
 			Prefix:   lP.prefix,
 			Region:   lP.region,
 		},
-		Credential: v1alpha1.Credential{
-			Type: v1alpha1.CredentialTypeKeyPair,
-			KeyPair: &v1alpha1.KeyPair{
-				IDField:     idField,
-				SecretField: secretField,
-				Secret: v1alpha1.ObjectReference{
-					Name:      secret.GetName(),
-					Namespace: secret.GetNamespace(),
-				},
-			},
-		},
+		Credential:    creds,
 		SkipSSLVerify: lP.skipSSLVerify,
 	}
 }
 
 func constructSecret(ctx context.Context, lP *locationParams, cmd *cobra.Command) (*v1.Secret, error) {
 	data := make(map[string]string, 2)
+	var roleKey string
 	secretname := ""
 	switch lP.locationType {
 	case v1alpha1.LocationTypeS3Compliant:
 		accessKey, _ := cmd.Flags().GetString(awsAccessKeyFlag)
 		secretKey, _ := cmd.Flags().GetString(awsSecretKeyFlag)
+		roleKey, _ = cmd.Flags().GetString(awsRoleFlag)
 		data[idField] = accessKey
 		data[secretField] = secretKey
+		data[roleField] = roleKey
 		secretname = "s3"
 	case v1alpha1.LocationTypeGCS:
 		projectID, _ := cmd.Flags().GetString(gcpProjectIDFlag)
@@ -284,13 +303,17 @@ func constructSecret(ctx context.Context, lP *locationParams, cmd *cobra.Command
 		data[secretField] = storageKey
 		secretname = "azure"
 	}
-	return &v1.Secret{
+	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf(secretFormat, secretname, randString(6)),
 			Namespace: lP.namespace,
 		},
 		StringData: data,
-	}, nil
+	}
+	if roleKey != "" {
+		secret.Type = v1.SecretType(secrets.AWSSecretType)
+	}
+	return secret, nil
 }
 
 func createSecret(ctx context.Context, s *v1.Secret, cli kubernetes.Interface) (*v1.Secret, error) {
@@ -319,7 +342,7 @@ func printSecret(secret *v1.Secret) error {
 	if err != nil {
 		return errors.New("could not convert generated secret to YAML")
 	}
-	fmt.Printf(string(secYAML))
+	fmt.Printf("%s", secYAML)
 	return nil
 }
 
@@ -332,7 +355,7 @@ func printProfile(profile *v1alpha1.Profile) error {
 	if err != nil {
 		return errors.New("could not convert generated profile to YAML")
 	}
-	fmt.Printf(string(profYAML))
+	fmt.Printf("%s", profYAML)
 	return nil
 }
 
@@ -346,7 +369,7 @@ func createProfile(ctx context.Context, profile *v1alpha1.Profile, crCli version
 
 func performProfileValidation(p *validateParams) error {
 	ctx := context.Background()
-	cli, crCli, err := initializeClients()
+	cli, crCli, _, err := initializeClients()
 	if err != nil {
 		return errors.Wrap(err, "could not initialize clients for validation")
 	}

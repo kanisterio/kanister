@@ -36,7 +36,6 @@ func newLocationPullCommand() *cobra.Command {
 		},
 	}
 	return cmd
-
 }
 
 func runLocationPull(cmd *cobra.Command, args []string) error {

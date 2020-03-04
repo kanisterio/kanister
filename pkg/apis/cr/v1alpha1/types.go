@@ -22,10 +22,10 @@ which also has the apache 2.0 license.
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 )
 
 const (
@@ -43,6 +43,9 @@ const (
 	ActionSetResourceName       = "actionset"
 	ActionSetResourceNamePlural = "actionsets"
 )
+
+// JSONMap contains PodOverride specs.
+type JSONMap sp.JSONMap
 
 var _ runtime.Object = (*ActionSet)(nil)
 
@@ -99,18 +102,22 @@ type ActionSpec struct {
 	// Profile is use to specify the location where store artifacts and the
 	// credentials authorized to access them.
 	Profile *ObjectReference `json:"profile"`
-	// PodOverride is use to specify pod specs that will override the
+	// PodOverride is used to specify pod specs that will override the
 	// default pod specs
-	PodOverride v1.PodSpec `json:"podOverride,omitempty"`
+	PodOverride JSONMap `json:"podOverride,omitempty"`
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
 	Options map[string]string `json:"options"`
+	// PreferredVersion will be used to select the preferred version of Kanister functions
+	// to be executed for this action
+	PreferredVersion string `json:"preferredVersion"`
 }
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
 type ActionSetStatus struct {
 	State   State          `json:"state"`
 	Actions []ActionStatus `json:"actions"`
+	Error   Error          `json:"error,omitempty"`
 }
 
 // ActionStatus is updated as we execute phases.
@@ -140,6 +147,10 @@ const (
 	// StateComplete means this action or phase finished successfully.
 	StateComplete State = "complete"
 )
+
+type Error struct {
+	Message string `json:"message"`
+}
 
 // Phase is subcomponent of an action.
 type Phase struct {
@@ -259,8 +270,8 @@ const (
 // Credential
 type Credential struct {
 	Type    CredentialType   `json:"type"`
-	KeyPair *KeyPair         `json:"keyPair"`
-	Secret  *ObjectReference `json:"secret"`
+	KeyPair *KeyPair         `json:"keyPair,omitempty"`
+	Secret  *ObjectReference `json:"secret,omitempty"`
 }
 
 // KeyPair

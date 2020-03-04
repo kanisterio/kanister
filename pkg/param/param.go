@@ -30,25 +30,37 @@ import (
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/secrets"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const timeFormat = time.RFC3339Nano
 
 // TemplateParams are the values that will change between separate runs of Phases.
 type TemplateParams struct {
-	StatefulSet *StatefulSetParams
-	Deployment  *DeploymentParams
-	PVC         *PVCParams
-	Namespace   *NamespaceParams
-	ArtifactsIn map[string]crv1alpha1.Artifact
-	ConfigMaps  map[string]v1.ConfigMap
-	Secrets     map[string]v1.Secret
-	Time        string
-	Profile     *Profile
-	Options     map[string]string
-	Object      map[string]interface{}
-	Phases      map[string]*Phase
-	PodOverride v1.PodSpec
+	StatefulSet      *StatefulSetParams
+	DeploymentConfig *DeploymentConfigParams
+	Deployment       *DeploymentParams
+	PVC              *PVCParams
+	Namespace        *NamespaceParams
+	ArtifactsIn      map[string]crv1alpha1.Artifact
+	ConfigMaps       map[string]v1.ConfigMap
+	Secrets          map[string]v1.Secret
+	Time             string
+	Profile          *Profile
+	Options          map[string]string
+	Object           map[string]interface{}
+	Phases           map[string]*Phase
+	PodOverride      crv1alpha1.JSONMap
+}
+
+// DeploymentConfigParams are params for deploymentconfig, will be used if working on open shift cluster
+// https://docs.openshift.com/container-platform/4.1/applications/deployments/what-deployments-are.html
+type DeploymentConfigParams struct {
+	Name                   string
+	Namespace              string
+	Pods                   []string
+	Containers             [][]string
+	PersistentVolumeClaims map[string]map[string]string
 }
 
 // StatefulSetParams are params for stateful sets.
@@ -115,15 +127,16 @@ type Phase struct {
 }
 
 const (
-	DeploymentKind  = "deployment"
-	StatefulSetKind = "statefulset"
-	PVCKind         = "pvc"
-	NamespaceKind   = "namespace"
-	SecretKind      = "secret"
+	DeploymentKind       = "deployment"
+	StatefulSetKind      = "statefulset"
+	DeploymentConfigKind = "deploymentconfig"
+	PVCKind              = "pvc"
+	NamespaceKind        = "namespace"
+	SecretKind           = "secret"
 )
 
 // New function fetches and returns the desired params
-func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface, crCli versioned.Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
+func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface, crCli versioned.Interface, osCli osversioned.Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
 	secrets, err := fetchSecrets(ctx, cli, as.Secrets)
 	if err != nil {
 		return nil, err
@@ -156,6 +169,13 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 		}
 		tp.StatefulSet = ssp
 		gvr = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}
+	case DeploymentConfigKind:
+		dcp, err := fetchDeploymentConfigParams(ctx, cli, osCli, as.Object.Namespace, as.Object.Name)
+		if err != nil {
+			return nil, err
+		}
+		tp.DeploymentConfig = dcp
+		gvr = schema.GroupVersionResource{Group: "apps.openshift.io", Version: "v1", Resource: "deploymentconfigs"}
 	case DeploymentKind:
 		dp, err := fetchDeploymentParams(ctx, cli, as.Object.Namespace, as.Object.Name)
 		if err != nil {
@@ -264,7 +284,7 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 func filterByKind(refs map[string]crv1alpha1.ObjectReference, kind string) map[string]crv1alpha1.ObjectReference {
 	filtered := make(map[string]crv1alpha1.ObjectReference, len(refs))
 	for name, ref := range refs {
-		if strings.ToLower(ref.Kind) != strings.ToLower(kind) {
+		if !strings.EqualFold(ref.Kind, kind) {
 			continue
 		}
 		filtered[name] = ref
@@ -320,6 +340,38 @@ func fetchStatefulSetParams(ctx context.Context, cli kubernetes.Interface, names
 		}
 	}
 	return ssp, nil
+}
+
+func fetchDeploymentConfigParams(ctx context.Context, cli kubernetes.Interface, osCli osversioned.Interface, namespace, name string) (*DeploymentConfigParams, error) {
+	// we will have to have another OpenShift cli to get the deployment config resource
+	// because deploymentconfig is not standard kubernetes resource.
+	dc, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	dcp := &DeploymentConfigParams{
+		Name:                   name,
+		Namespace:              namespace,
+		Pods:                   []string{},
+		Containers:             [][]string{},
+		PersistentVolumeClaims: make(map[string]map[string]string),
+	}
+
+	pods, _, err := kube.FetchPods(cli, namespace, dc.UID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range pods {
+		dcp.Pods = append(dcp.Pods, p.Name)
+		dcp.Containers = append(dcp.Containers, containerNames(p))
+		if pvcToMountPath := volumes(p, kube.DeploymentConfigVolumes(osCli, dc, &p)); len(pvcToMountPath) > 0 {
+			dcp.PersistentVolumeClaims[p.Name] = pvcToMountPath
+		}
+	}
+
+	return dcp, nil
 }
 
 func fetchDeploymentParams(ctx context.Context, cli kubernetes.Interface, namespace, name string) (*DeploymentParams, error) {

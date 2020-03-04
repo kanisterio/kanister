@@ -33,11 +33,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 type KubeExecTest struct {
 	cli       kubernetes.Interface
 	crCli     versioned.Interface
+	osCli     osversioned.Interface
 	namespace string
 }
 
@@ -50,6 +52,8 @@ func (s *KubeExecTest) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	crCli, err := versioned.NewForConfig(config)
 	c.Assert(err, IsNil)
+	osCli, err := osversioned.NewForConfig(config)
+	c.Assert(err, IsNil)
 
 	// Make sure the CRD's exist.
 	err = resource.CreateCustomResources(context.Background(), config)
@@ -57,6 +61,7 @@ func (s *KubeExecTest) SetUpSuite(c *C) {
 
 	s.cli = cli
 	s.crCli = crCli
+	s.osCli = osCli
 
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -78,7 +83,7 @@ func (s *KubeExecTest) SetUpSuite(c *C) {
 
 func (s *KubeExecTest) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
 	}
 }
 
@@ -90,7 +95,7 @@ func newKubeExecBlueprint() *crv1alpha1.Blueprint {
 				Phases: []crv1alpha1.BlueprintPhase{
 					crv1alpha1.BlueprintPhase{
 						Name: "echoSomething",
-						Func: "KubeExec",
+						Func: KubeExecFuncName,
 						Args: map[string]interface{}{
 							KubeExecNamespaceArg:     "{{ .StatefulSet.Namespace }}",
 							KubeExecPodNameArg:       "{{ index .StatefulSet.Pods 0 }}",
@@ -153,12 +158,12 @@ func (s *KubeExecTest) TestKubeExec(c *C) {
 			Namespace: s.namespace,
 		},
 	}
-	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, as)
+	tp, err := param.New(ctx, s.cli, fake.NewSimpleDynamicClient(k8sscheme.Scheme, ss), s.crCli, s.osCli, as)
 	c.Assert(err, IsNil)
 
 	action := "echo"
 	bp := newKubeExecBlueprint()
-	phases, err := kanister.GetPhases(*bp, action, *tp)
+	phases, err := kanister.GetPhases(*bp, action, kanister.DefaultVersion, *tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
 		_, err = p.Exec(context.Background(), *bp, action, *tp)
@@ -173,11 +178,11 @@ func (s *KubeExecTest) TestParseLogAndCreateOutput(c *C) {
 		errChecker Checker
 		outChecker Checker
 	}{
-		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.21.0\"}", map[string]interface{}{"version": "0.21.0"}, IsNil, NotNil},
-		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.21.0\"}\n###Phase-output###: {\"key\":\"path\",\"value\":\"/backup/path\"}",
-			map[string]interface{}{"version": "0.21.0", "path": "/backup/path"}, IsNil, NotNil},
-		{"Random message ###Phase-output###: {\"key\":\"version\",\"value\":\"0.21.0\"}", map[string]interface{}{"version": "0.21.0"}, IsNil, NotNil},
-		{"Random message with newline \n###Phase-output###: {\"key\":\"version\",\"value\":\"0.21.0\"}", map[string]interface{}{"version": "0.21.0"}, IsNil, NotNil},
+		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.26.0\"}", map[string]interface{}{"version": "0.26.0"}, IsNil, NotNil},
+		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.26.0\"}\n###Phase-output###: {\"key\":\"path\",\"value\":\"/backup/path\"}",
+			map[string]interface{}{"version": "0.26.0", "path": "/backup/path"}, IsNil, NotNil},
+		{"Random message ###Phase-output###: {\"key\":\"version\",\"value\":\"0.26.0\"}", map[string]interface{}{"version": "0.26.0"}, IsNil, NotNil},
+		{"Random message with newline \n###Phase-output###: {\"key\":\"version\",\"value\":\"0.26.0\"}", map[string]interface{}{"version": "0.26.0"}, IsNil, NotNil},
 		{"###Phase-output###: Invalid message", nil, NotNil, IsNil},
 		{"Random message", nil, IsNil, IsNil},
 	} {

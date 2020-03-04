@@ -146,7 +146,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *C) {
 	err = Delete(context.Background(), fakeSnapCli, snap.Name, snap.Namespace)
 	c.Assert(err, IsNil)
 	err = Delete(context.Background(), fakeSnapCli, snap.Name, snap.Namespace)
-	c.Assert(err, NotNil)
+	c.Assert(err, IsNil)
 }
 
 func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
@@ -253,7 +253,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	}
 	pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.sourceNamespace).Create(pvc)
 	c.Assert(err, IsNil)
-	poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+	_ = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(pvc.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -281,7 +281,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshot(c *C) {
 
 	_, err = volume.CreatePVCFromSnapshot(ctx, s.cli, s.snapCli, s.targetNamespace, volumeCloneName, "", snapshotCloneName, nil)
 	c.Assert(err, IsNil)
-	poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+	_ = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.targetNamespace).Get(volumeCloneName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -294,7 +294,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	volumeCloneName += "-2"
 	_, err = volume.CreatePVCFromSnapshot(ctx, s.cli, s.snapCli, s.targetNamespace, volumeCloneName, "", snapshotCloneName, &sizeNew)
 	c.Assert(err, IsNil)
-	poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+	_ = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.targetNamespace).Get(volumeCloneName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -307,7 +307,6 @@ func (s *SnapshotTestSuite) TestVolumeSnapshot(c *C) {
 
 	err = Delete(ctx, s.snapCli, snap.Name, snap.Namespace)
 	c.Assert(err, NotNil)
-
 }
 
 func (s *SnapshotTestSuite) cleanupNamespace(c *C, ns string) {

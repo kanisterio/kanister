@@ -30,7 +30,7 @@ import (
 )
 
 func init() {
-	kanister.Register(&kubeExecAllFunc{})
+	_ = kanister.Register(&kubeExecAllFunc{})
 }
 
 var (
@@ -38,6 +38,8 @@ var (
 )
 
 const (
+	// KubeExecAllFuncName gives the function name
+	KubeExecAllFuncName          = "KubeExecAll"
 	KubeExecAllNamespaceArg      = "namespace"
 	KubeExecAllPodsNameArg       = "pods"
 	KubeExecAllContainersNameArg = "containers"
@@ -47,7 +49,7 @@ const (
 type kubeExecAllFunc struct{}
 
 func (*kubeExecAllFunc) Name() string {
-	return "KubeExecAll"
+	return KubeExecAllFuncName
 }
 
 func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

@@ -28,13 +28,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 
 	"github.com/kanisterio/kanister/pkg/controller"
 	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/handler"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
 )
 
@@ -44,30 +44,33 @@ func main() {
 	s := handler.NewServer()
 	defer func() {
 		if err := s.Shutdown(ctx); err != nil {
-			log.Errorf("Failed to shutdown health check server: %+v", err)
+			log.WithError(err).Print("Failed to shutdown health check server")
 		}
 	}()
 	go func() {
 		if err := s.ListenAndServe(); err != nil {
-			log.Errorf("Failed to shutdown health check server: %+v", err)
+			log.WithError(err).Print("Failed to shutdown health check server")
 		}
 	}()
 
 	// Initialize the clients.
-	log.Infof("Getting kubernetes context")
+	log.Print("Getting kubernetes context")
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.Fatalf("Failed to get k8s config. %+v", err)
+		log.WithError(err).Print("Failed to get k8s config")
+		return
 	}
 
 	// Make sure the CRD's exist.
 	if err := resource.CreateCustomResources(ctx, config); err != nil {
-		log.Fatalf("Failed to create CustomResources. %+v", err)
+		log.WithError(err).Print("Failed to create CustomResources.")
+		return
 	}
 
 	ns, err := kube.GetControllerNamespace()
 	if err != nil {
-		log.Fatalf("Failed to determine this pod's namespace %+v", err)
+		log.WithError(err).Print("Failed to determine this pod's namespace.")
+		return
 	}
 
 	// Create and start the watcher.
@@ -75,16 +78,16 @@ func main() {
 	c := controller.New(config)
 	err = c.StartWatch(ctx, ns)
 	if err != nil {
-		log.Fatalf("Failed to start controller. %+v", err)
+		log.WithError(err).Print("Failed to start controller.")
+		return
 	}
 
 	// create signals to stop watching the resources
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case <-signalChan:
-		log.Infof("shutdown signal received, exiting...")
-		cancel()
-		return
-	}
+
+	// Wait for shutdown signal
+	<-signalChan
+	log.Print("shutdown signal received, exiting...")
+	cancel()
 }

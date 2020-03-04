@@ -30,6 +30,8 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/aws"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -41,7 +43,6 @@ type ObjectStoreProviderSuite struct {
 	root           Bucket // root of the default test bucket
 	suiteDirPrefix string // directory name prefix for all tests in this suite
 	testDir        string // directory name for a given test
-	buckets        []string
 	region         string // bucket region
 }
 
@@ -73,7 +74,7 @@ func (s *ObjectStoreProviderSuite) SetUpSuite(c *C) {
 
 	s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	pc := ProviderConfig{Type: s.osType}
-	secret := getSecret(c, s.osType)
+	secret := getSecret(ctx, c, s.osType)
 	s.provider, err = NewProvider(ctx, pc, secret)
 	c.Check(err, IsNil)
 	c.Assert(s.provider, NotNil)
@@ -102,9 +103,9 @@ func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
 	c.Skip("intermittently fails due to rate limits on bucket creation")
 	bucketName := s.createBucketName(c)
 
-	origBuckets, err := s.provider.ListBuckets(ctx)
+	origBuckets, _ := s.provider.ListBuckets(ctx)
 
-	_, err = s.provider.CreateBucket(ctx, bucketName, s.region)
+	_, err := s.provider.CreateBucket(ctx, bucketName, s.region)
 	c.Assert(err, IsNil)
 
 	// Duplicate bucket
@@ -113,7 +114,7 @@ func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
 
 	// Should be one more than buckets. Can be racy with other activity
 	// and so checking for inequality
-	buckets, err := s.provider.ListBuckets(ctx)
+	buckets, _ := s.provider.ListBuckets(ctx)
 	c.Check(len(buckets), Not(Equals), len(origBuckets))
 
 	bucket, err := s.provider.GetBucket(ctx, bucketName)
@@ -178,7 +179,7 @@ func (s *ObjectStoreProviderSuite) TestDirectories(c *C) {
 		dir2 = "directory2"
 	)
 
-	directory, err := rootDirectory.CreateDirectory(ctx, dir1)
+	_, err = rootDirectory.CreateDirectory(ctx, dir1)
 	c.Assert(err, IsNil)
 
 	// Expecting only /dir1
@@ -190,7 +191,7 @@ func (s *ObjectStoreProviderSuite) TestDirectories(c *C) {
 	c.Check(ok, Equals, true)
 
 	// Expecting only /dir1
-	directory, err = rootDirectory.GetDirectory(ctx, dir1)
+	directory, err := rootDirectory.GetDirectory(ctx, dir1)
 	c.Assert(err, IsNil)
 
 	// Expecting /dir1/dir2
@@ -210,7 +211,7 @@ func (s *ObjectStoreProviderSuite) TestDirectories(c *C) {
 	c.Check(directories, HasLen, 1)
 
 	// Get dir1/dir2 from root
-	directory2, err = rootDirectory.GetDirectory(ctx, path.Join(dir1, dir2))
+	_, err = rootDirectory.GetDirectory(ctx, path.Join(dir1, dir2))
 	c.Assert(err, IsNil)
 
 	// Get dir1/dir2 from any directory
@@ -331,7 +332,7 @@ func (s *ObjectStoreProviderSuite) TestObjects(c *C) {
 	c.Check(err, IsNil)
 	c.Check(data, DeepEquals, []byte(data1))
 
-	err = rootDirectory.PutBytes(ctx, obj2, []byte(data2), tags)
+	_ = rootDirectory.PutBytes(ctx, obj2, []byte(data2), tags)
 	data, ntags, err := rootDirectory.GetBytes(ctx, obj2)
 	c.Check(err, IsNil)
 	c.Check(data, DeepEquals, []byte(data2))
@@ -418,7 +419,8 @@ func checkNoItemsWithPrefix(c *C, cont stow.Container, prefix string) {
 }
 
 func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
-	if s.osType != ProviderTypeS3 {
+	role := os.Getenv(aws.ConfigRole)
+	if s.osType != ProviderTypeS3 || role != "" {
 		c.Skip("Test only applicable to S3")
 	}
 	ctx := context.Background()
@@ -447,15 +449,25 @@ func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
 	}
 }
 
-func getSecret(c *C, osType ProviderType) *Secret {
+func getSecret(ctx context.Context, c *C, osType ProviderType) *Secret {
 	secret := &Secret{}
 	switch osType {
 	case ProviderTypeS3:
 		secret.Type = SecretTypeAwsAccessKey
+		config := map[string]string{
+			aws.AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
+			aws.SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			aws.ConfigRole:      os.Getenv("AWS_ROLE"),
+		}
+		creds, err := aws.GetCredentials(ctx, config)
+		c.Assert(err, IsNil)
+
+		val, err := creds.Get()
+		c.Check(err, IsNil)
 		secret.Aws = &SecretAws{
-			AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
-			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
-			SessionToken:    os.Getenv("AWS_SESSION_TOKEN"),
+			AccessKeyID:     val.AccessKeyID,
+			SecretAccessKey: val.SecretAccessKey,
+			SessionToken:    val.SessionToken,
 		}
 		c.Check(secret.Aws.AccessKeyID, Not(Equals), "")
 		c.Check(secret.Aws.SecretAccessKey, Not(Equals), "")
@@ -486,12 +498,11 @@ func getSecret(c *C, osType ProviderType) *Secret {
 }
 
 // Can be added to a common place in Kanister
-func getEnvOrSkip(c *C, varName string) string {
+func getEnvOrSkip(c *C, varName string) {
 	v := os.Getenv(varName)
 	if v == "" {
 		c.Skip("Required environment variable '" + varName + "' not set")
 	}
-	return v
 }
 
 func cleanupBucketDirectory(c *C, bucket Bucket, directory string) {

@@ -20,6 +20,7 @@ import (
 	. "gopkg.in/check.v1"
 	"k8s.io/client-go/kubernetes"
 
+	kanister "github.com/kanisterio/kanister/pkg"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 )
@@ -98,7 +99,7 @@ func testCRs(c *C, cli crclientv1alpha1.CrV1alpha1Interface, namespace, poKind, 
 		c.Assert(err, IsNil)
 	}()
 
-	as := NewTestActionSet(namespace, bp.GetName(), poKind, poName, namespace)
+	as := NewTestActionSet(namespace, bp.GetName(), poKind, poName, namespace, kanister.DefaultVersion)
 	as = ActionSetWithConfigMap(as, "")
 	as, err = cli.ActionSets(namespace).Create(as)
 	c.Assert(err, IsNil)

@@ -1,9 +1,13 @@
 package secrets
 
 import (
+	"context"
+
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/kanisterio/kanister/pkg/aws"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -11,11 +15,14 @@ const (
 	AWSSecretType string = "secrets.kanister.io/aws"
 
 	// AWSAccessKeyID is the key for AWS access key ID.
-	AWSAccessKeyID string = "access_key_id"
+	AWSAccessKeyID string = "aws_access_key_id"
 	// AWSSecretAccessKey is the key for AWS secret access key.
-	AWSSecretAccessKey string = "secret_access_key"
-	// AWSSessionToken is the key for optional AWS session token.
-	AWSSessionToken string = "session_token"
+	AWSSecretAccessKey string = "aws_secret_access_key"
+	// AWSSessionToken is the key for AWS Session token
+	AWSSessionToken string = "aws_session_token"
+	// ConfigRole represents the key for the ARN of the role which can be assumed.
+	// It is optional.
+	ConfigRole = "role"
 )
 
 // ValidateAWSCredentials validates secret has all necessary information
@@ -32,14 +39,14 @@ func ValidateAWSCredentials(secret *v1.Secret) error {
 	if string(secret.Type) != AWSSecretType {
 		return errors.New("Secret is not AWS secret")
 	}
-	if _, ok := secret.Data[AWSAccessKeyID]; !ok {
-		return errors.New("awsAccessKeyID is a required field")
+	count := 0
+	if _, ok := secret.Data[AWSAccessKeyID]; ok {
+		count++
 	}
-	if _, ok := secret.Data[AWSSecretAccessKey]; !ok {
-		return errors.New("awsSecretAccessKey is a required field")
+	if _, ok := secret.Data[AWSSecretAccessKey]; ok {
+		count++
 	}
-	count := 2
-	if _, ok := secret.Data[AWSSessionToken]; ok {
+	if _, ok := secret.Data[ConfigRole]; ok {
 		count++
 	}
 	if len(secret.Data) > count {
@@ -53,20 +60,26 @@ func ValidateAWSCredentials(secret *v1.Secret) error {
 // Extracted values from the secrets are:
 // - access_key_id (required)
 // - secret_access_key (required)
-// - session_token (optional)
+// - role (optional)
 //
 // If the type of the secret is not "secret.kanister.io/aws", it returns an error.
 // If the required types are not avaialable in the secrets, it returns an errror.
-func ExtractAWSCredentials(secret *v1.Secret) (*credentials.Value, error) {
+func ExtractAWSCredentials(ctx context.Context, secret *v1.Secret) (*credentials.Value, error) {
 	if err := ValidateAWSCredentials(secret); err != nil {
 		return nil, err
 	}
-	accessKeyID := secret.Data[AWSAccessKeyID]
-	secretAccessKey := secret.Data[AWSSecretAccessKey]
-	sessionToken := secret.Data[AWSSessionToken]
-	return &credentials.Value{
-		AccessKeyID:     string(accessKeyID),
-		SecretAccessKey: string(secretAccessKey),
-		SessionToken:    string(sessionToken),
-	}, nil
+	config := map[string]string{
+		aws.AccessKeyID:     string(secret.Data[AWSAccessKeyID]),
+		aws.SecretAccessKey: string(secret.Data[AWSSecretAccessKey]),
+		aws.ConfigRole:      string(secret.Data[ConfigRole]),
+	}
+	creds, err := aws.GetCredentials(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	val, err := creds.Get()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get AWS credentials")
+	}
+	return &val, nil
 }
