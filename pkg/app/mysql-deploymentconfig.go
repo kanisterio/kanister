@@ -52,13 +52,13 @@ type MysqlDepConfig struct {
 	storageType storage
 }
 
-func NewMysqlDepConfig(name string) App {
+func NewMysqlDepConfig(name string, storageType storage) App {
 	return &MysqlDepConfig{
 		name: name,
 		envVar: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "secretpassword",
 		},
-		storageType: ephemeralStorage,
+		storageType: storageType,
 	}
 }
 

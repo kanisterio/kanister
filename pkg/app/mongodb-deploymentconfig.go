@@ -49,7 +49,7 @@ type MongoDBDepConfig struct {
 	storageType storage
 }
 
-func NewMongoDBDepConfig(name string) App {
+func NewMongoDBDepConfig(name string, storageType storage) App {
 	return &MongoDBDepConfig{
 		name: name,
 		user: "admin",
@@ -58,7 +58,7 @@ func NewMongoDBDepConfig(name string) App {
 		},
 		label:       getLabelOfApp(mongoDepConfigName),
 		osClient:    openshift.NewOpenShiftClient(),
-		storageType: ephemeralStorage,
+		storageType: storageType,
 	}
 }
 
@@ -81,7 +81,7 @@ func (mongo *MongoDBDepConfig) Init(context.Context) error {
 func (mongo *MongoDBDepConfig) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
 
-	dbTemplate := getOpenShiftDBTemplate(mongoDepConfigName, ephemeralStorage)
+	dbTemplate := getOpenShiftDBTemplate(mongoDepConfigName, mongo.storageType)
 
 	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, dbTemplate, nil, mongo.params)
 

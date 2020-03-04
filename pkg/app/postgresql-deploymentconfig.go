@@ -50,7 +50,7 @@ type PostgreSQLDepConfig struct {
 	storageType    storage
 }
 
-func NewPostgreSQLDepConfig(name string) App {
+func NewPostgreSQLDepConfig(name string, storageType storage) App {
 	return &PostgreSQLDepConfig{
 		name:           name,
 		opeshiftClient: openshift.NewOpenShiftClient(),
@@ -58,7 +58,7 @@ func NewPostgreSQLDepConfig(name string) App {
 		envVar: map[string]string{
 			"POSTGRESQL_ADMIN_PASSWORD": "secretpassword",
 		},
-		storageType: ephemeralStorage,
+		storageType: storageType,
 	}
 }
 
