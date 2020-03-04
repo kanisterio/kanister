@@ -1,0 +1,87 @@
+package kube
+
+import (
+	"context"
+
+	osapps "github.com/openshift/api/apps/v1"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
+	. "gopkg.in/check.v1"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+)
+
+type WorkloadSuite struct{}
+
+var _ = Suite(&WorkloadSuite{})
+
+func (s *WorkloadSuite) TestScaleDeploymentConfig(c *C) {
+	// Get K8s client
+	cfg, err := LoadConfig()
+	c.Assert(err, IsNil)
+	cli, err := kubernetes.NewForConfig(cfg)
+	c.Assert(err, IsNil)
+
+	// Check if we're in OpenShift
+	ctx := context.Background()
+	ok, err := IsOSAppsGroupAvailable(ctx, cli.Discovery())
+	c.Assert(err, IsNil)
+	if !ok {
+		c.Skip("Skipping test since this only runs on OpenShift")
+	}
+
+	// Create a test namespace
+	ns := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "dc-scale-test-",
+		},
+	}
+	ns, err = cli.CoreV1().Namespaces().Create(ns)
+	c.Assert(err, IsNil)
+	defer func() {
+		err = cli.CoreV1().Namespaces().Delete(ns.GetName(), nil)
+		c.Assert(err, IsNil)
+	}()
+
+	// Create simple DeploymentConfig
+	dc := newDeploymentConfig()
+	osCli, err := osversioned.NewForConfig(cfg)
+	c.Assert(err, IsNil)
+	dc, err = osCli.Apps().DeploymentConfigs(ns.GetName()).Create(dc)
+	c.Assert(err, IsNil)
+
+	err = ScaleDeploymentConfig(ctx, cli, osCli, dc.GetNamespace(), dc.GetName(), 0)
+	c.Assert(err, IsNil)
+	err = ScaleDeploymentConfig(ctx, cli, osCli, dc.GetNamespace(), dc.GetName(), 1)
+	c.Assert(err, IsNil)
+}
+
+func newDeploymentConfig() *osapps.DeploymentConfig {
+	return &osapps.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "tmp",
+		},
+		Spec: osapps.DeploymentConfigSpec{
+			Replicas: 1,
+			Selector: map[string]string{
+				"app": "test",
+			},
+			Template: &v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "test",
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						v1.Container{
+							Image:   "alpine",
+							Name:    "container",
+							Command: []string{"tail", "-f", "/dev/null"},
+						},
+					},
+				},
+			},
+		},
+	}
+}
