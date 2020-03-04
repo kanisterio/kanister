@@ -497,6 +497,41 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 			include:   []Resource{}, // There are no resources with the required labels
 			exclude:   []Resource{ss1nl, ss2nl, pvc1nl, pvc2nl},
 		},
+		{
+			// Match by labels using well formed match expression
+			m: ResourceMatcher{
+				ResourceRequirement{LabelSelector: metav1.LabelSelector{MatchExpressions: []metav1.LabelSelectorRequirement{
+					{
+						Key:      "testkey2",
+						Operator: metav1.LabelSelectorOpIn,
+						Values:   []string{"testval2", "testval3"},
+					},
+				}}},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{ss2, pvc2},
+			exclude:   []Resource{ss1, pvc1},
+		},
+		{
+			// Match by labels using mal-formed match expression
+			// Will return error of: '"notsupported" is not a valid pod selector operator'
+			// on call to metav1.LabelSelectorAsSelector
+			// so filter will treat it as if labels to match were supplied
+			// but no MatchExpressions or MatchLabels were provided and
+			// will then return false in the Matches method.
+			m: ResourceMatcher{
+				ResourceRequirement{LabelSelector: metav1.LabelSelector{MatchExpressions: []metav1.LabelSelectorRequirement{
+					{
+						Key:      "testkey2",
+						Operator: "notsupported",
+						Values:   []string{"testval2", "testval3"},
+					},
+				}}},
+			},
+			resources: []Resource{ss1, ss2, pvc1, pvc2},
+			include:   []Resource{},
+			exclude:   []Resource{ss1, ss2, pvc1, pvc2},
+		},
 	} {
 		c.Check(tc.resources.Include(tc.m), DeepEquals, tc.include)
 		c.Check(tc.resources.Exclude(tc.m), DeepEquals, tc.exclude)
