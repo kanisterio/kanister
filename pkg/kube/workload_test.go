@@ -47,7 +47,7 @@ func (s *WorkloadSuite) TestScaleDeploymentConfig(c *C) {
 	dc := newDeploymentConfig()
 	osCli, err := osversioned.NewForConfig(cfg)
 	c.Assert(err, IsNil)
-	dc, err = osCli.Apps().DeploymentConfigs(ns.GetName()).Create(dc)
+	dc, err = osCli.AppsV1().DeploymentConfigs(ns.GetName()).Create(dc)
 	c.Assert(err, IsNil)
 
 	err = ScaleDeploymentConfig(ctx, cli, osCli, dc.GetNamespace(), dc.GetName(), 0)
