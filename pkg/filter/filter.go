@@ -134,8 +134,8 @@ func (r ResourceRequirement) Matches(name string, gvr schema.GroupVersionResourc
 	if !matches(r.Name, name) || !r.ResourceTypeRequirement.Matches(gvr) {
 		return false
 	}
-	if len(resourceLabels) == 0 && len(r.MatchExpressions) == 0 && len(r.MatchLabels) == 0 {
-		// If there are no resourceLabels and no LabelSelector we return match of GVR from above.
+	if len(r.MatchExpressions) == 0 && len(r.MatchLabels) == 0 {
+		// If there is no LabelSelector we return match of Name/GVR
 		return true
 	}
 	sel, err := metav1.LabelSelectorAsSelector(&r.LabelSelector)
