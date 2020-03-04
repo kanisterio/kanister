@@ -129,9 +129,9 @@ type ResourceRequirement struct {
 
 // Matches returns true if the specified resource name/GVR/labels matches the requirement
 func (r ResourceRequirement) Matches(name string, gvr schema.GroupVersionResource, resourceLabels map[string]string) bool {
-	// If ResourceRequirement Name/GVR value of empty string matches on any specified in parameters.
-	// If ResourceRequirement Name/GVR value specified, exact match on parameter is required.
-	if !(matches(r.Name, name) && r.ResourceTypeRequirement.Matches(gvr)) {
+	// If Name or GVR is not a match, return false
+	// Empty string for Name or GVR will match any value
+	if !matches(r.Name, name) || !r.ResourceTypeRequirement.Matches(gvr) {
 		return false
 	}
 	if len(resourceLabels) == 0 && len(r.MatchExpressions) == 0 && len(r.MatchLabels) == 0 {

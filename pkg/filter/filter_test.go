@@ -390,6 +390,8 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 	pvc1nl := Resource{Name: "pvc1", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"}}
 	pvc2nl := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Version: "v1", Resource: "persistentvolumeclaims"}}
 
+	ss2diff := Resource{Name: "specificname", GVR: schema.GroupVersionResource{Group: "diffapps", Resource: "diffname"}}
+
 	for _, tc := range []struct {
 		m         ResourceMatcher
 		resources ResourceList
@@ -462,6 +464,17 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 			resources: []Resource{ss1, ss2, pvc1, pvc2},
 			include:   []Resource{ss2, pvc2},
 			exclude:   []Resource{ss1, pvc1},
+		},
+		{
+			// Match a specific resource name with different GVR, matches only one object
+			m: ResourceMatcher{
+				ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "specificname"},
+					ResourceTypeRequirement: ssTypeRequirement,
+				},
+			},
+			resources: []Resource{ss1, ss2diff, pvc1, pvc2},
+			include:   []Resource{},
+			exclude:   []Resource{ss1, ss2diff, pvc1, pvc2},
 		},
 		{
 			// Match by GVR and labels
