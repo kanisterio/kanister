@@ -61,7 +61,7 @@ func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 
 	cfg, err := kube.LoadConfig()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Failed to load Kubernetes config")
 	}
 	cli, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
@@ -75,7 +75,7 @@ func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	case param.DeploymentConfigKind:
 		osCli, err := osversioned.NewForConfig(cfg)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "Failed to create OpenShift client")
 		}
 		return nil, kube.ScaleDeploymentConfig(ctx, cli, osCli, namespace, name, replicas)
 	}
