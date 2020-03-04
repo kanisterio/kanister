@@ -513,6 +513,21 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 			exclude:   []Resource{ss1, pvc1},
 		},
 		{
+			// Match where resources have no labels but using match expression with not in
+			m: ResourceMatcher{
+				ResourceRequirement{LabelSelector: metav1.LabelSelector{MatchExpressions: []metav1.LabelSelectorRequirement{
+					{
+						Key:      "testkey2",
+						Operator: metav1.LabelSelectorOpNotIn,
+						Values:   []string{"testval2", "testval3"},
+					},
+				}}},
+			},
+			resources: []Resource{ss1nl, ss2nl, pvc1nl, pvc2nl},
+			include:   []Resource{ss1nl, ss2nl, pvc1nl, pvc2nl},
+			exclude:   []Resource{},
+		},
+		{
 			// Match by labels using mal-formed match expression
 			// Will return error of: '"notsupported" is not a valid pod selector operator'
 			// on call to metav1.LabelSelectorAsSelector
