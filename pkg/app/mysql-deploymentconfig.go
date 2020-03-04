@@ -44,21 +44,21 @@ const (
 )
 
 type MysqlDepConfig struct {
-	cli        kubernetes.Interface
-	osCli      osversioned.Interface
-	name       string
-	namespace  string
-	dbTemplate string
-	envVar     map[string]string
+	cli         kubernetes.Interface
+	osCli       osversioned.Interface
+	name        string
+	namespace   string
+	envVar      map[string]string
+	storageType storage
 }
 
 func NewMysqlDepConfig(name string) App {
 	return &MysqlDepConfig{
-		name:       name,
-		dbTemplate: getOpenShiftDBTemplate(mysqlDepConfigName, ephemeralStorage),
+		name: name,
 		envVar: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "secretpassword",
 		},
+		storageType: ephemeralStorage,
 	}
 }
 
@@ -81,8 +81,10 @@ func (mdep *MysqlDepConfig) Init(context.Context) error {
 func (mdep *MysqlDepConfig) Install(ctx context.Context, namespace string) error {
 	mdep.namespace = namespace
 
+	dbTemplate := getOpenShiftDBTemplate(mysqlDepConfigName, mdep.storageType)
+
 	oc := openshift.NewOpenShiftClient()
-	_, err := oc.NewApp(ctx, mdep.namespace, mdep.dbTemplate, mdep.envVar, nil)
+	_, err := oc.NewApp(ctx, mdep.namespace, dbTemplate, mdep.envVar, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mdep.name)
 	}

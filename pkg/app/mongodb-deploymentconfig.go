@@ -38,27 +38,27 @@ const (
 )
 
 type MongoDBDepConfig struct {
-	cli        kubernetes.Interface
-	osCli      osversioned.Interface
-	name       string
-	namespace  string
-	dbTemplate string
-	user       string
-	label      string
-	osClient   openshift.OSClient
-	params     map[string]string
+	cli         kubernetes.Interface
+	osCli       osversioned.Interface
+	name        string
+	namespace   string
+	user        string
+	label       string
+	osClient    openshift.OSClient
+	params      map[string]string
+	storageType storage
 }
 
 func NewMongoDBDepConfig(name string) App {
 	return &MongoDBDepConfig{
-		name:       name,
-		dbTemplate: getOpenShiftDBTemplate(mongoDepConfigName, ephemeralStorage),
-		user:       "admin",
+		name: name,
+		user: "admin",
 		params: map[string]string{
 			"MONGODB_ADMIN_PASSWORD": "secretpassword",
 		},
-		label:    getLabelOfApp(mongoDepConfigName),
-		osClient: openshift.NewOpenShiftClient(),
+		label:       getLabelOfApp(mongoDepConfigName),
+		osClient:    openshift.NewOpenShiftClient(),
+		storageType: ephemeralStorage,
 	}
 }
 
@@ -81,7 +81,9 @@ func (mongo *MongoDBDepConfig) Init(context.Context) error {
 func (mongo *MongoDBDepConfig) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
 
-	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, mongo.dbTemplate, nil, mongo.params)
+	dbTemplate := getOpenShiftDBTemplate(mongoDepConfigName, ephemeralStorage)
+
+	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, dbTemplate, nil, mongo.params)
 
 	return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mongo.name)
 }

@@ -45,20 +45,20 @@ type PostgreSQLDepConfig struct {
 	osCli          osversioned.Interface
 	namespace      string
 	opeshiftClient openshift.OSClient
-	dbTemplate     string
 	label          string
 	envVar         map[string]string
+	storageType    storage
 }
 
 func NewPostgreSQLDepConfig(name string) App {
 	return &PostgreSQLDepConfig{
 		name:           name,
 		opeshiftClient: openshift.NewOpenShiftClient(),
-		dbTemplate:     getOpenShiftDBTemplate(postgresDepConfigName, ephemeralStorage),
 		label:          getLabelOfApp(postgresDepConfigName),
 		envVar: map[string]string{
 			"POSTGRESQL_ADMIN_PASSWORD": "secretpassword",
 		},
+		storageType: ephemeralStorage,
 	}
 }
 
@@ -80,7 +80,9 @@ func (pgres *PostgreSQLDepConfig) Init(ctx context.Context) error {
 func (pgres *PostgreSQLDepConfig) Install(ctx context.Context, namespace string) error {
 	pgres.namespace = namespace
 
-	_, err := pgres.opeshiftClient.NewApp(ctx, pgres.namespace, pgres.dbTemplate, pgres.envVar, nil)
+	dbTemplate := getOpenShiftDBTemplate(postgresDepConfigName, pgres.storageType)
+
+	_, err := pgres.opeshiftClient.NewApp(ctx, pgres.namespace, dbTemplate, pgres.envVar, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing application %s on openshift cluster", pgres.name)
 	}
