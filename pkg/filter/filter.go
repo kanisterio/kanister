@@ -127,6 +127,10 @@ type ResourceRequirement struct {
 	metav1.LabelSelector `json:",inline,omitempty"`
 }
 
+// DeepCopyInto is currently unimplemented.
+func (in ResourceRequirement) DeepCopyInto(out *ResourceRequirement) {
+}
+
 // Matches returns true if the specified resource name/GVR/labels matches the requirement
 func (r ResourceRequirement) Matches(name string, gvr schema.GroupVersionResource, resourceLabels map[string]string) bool {
 	// If Name or GVR is not a match, return false
