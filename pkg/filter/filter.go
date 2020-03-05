@@ -127,6 +127,13 @@ type ResourceRequirement struct {
 	metav1.LabelSelector `json:",inline,omitempty"`
 }
 
+// DeepCopyInto provides explicit deep copy implementation to avoid
+func (r ResourceRequirement) DeepCopyInto(out *ResourceRequirement) {
+	r.LocalObjectReference.DeepCopyInto(&out.LocalObjectReference)
+	(*out).ResourceTypeRequirement = r.ResourceTypeRequirement
+	r.LabelSelector.DeepCopyInto(&out.LabelSelector)
+}
+
 // Matches returns true if the specified resource name/GVR/labels matches the requirement
 func (r ResourceRequirement) Matches(name string, gvr schema.GroupVersionResource, resourceLabels map[string]string) bool {
 	// If Name or GVR is not a match, return false
