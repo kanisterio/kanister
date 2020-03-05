@@ -45,7 +45,6 @@ type PostgreSQLDepConfig struct {
 	osCli          osversioned.Interface
 	namespace      string
 	opeshiftClient openshift.OSClient
-	label          string
 	envVar         map[string]string
 	storageType    storage
 }
@@ -54,7 +53,6 @@ func NewPostgreSQLDepConfig(name string, storageType storage) App {
 	return &PostgreSQLDepConfig{
 		name:           name,
 		opeshiftClient: openshift.NewOpenShiftClient(),
-		label:          getLabelOfApp(postgresDepConfigName),
 		envVar: map[string]string{
 			"POSTGRESQL_ADMIN_PASSWORD": "secretpassword",
 		},
@@ -135,7 +133,7 @@ func (pgres *PostgreSQLDepConfig) Object() crv1alpha1.ObjectReference {
 }
 
 func (pgres *PostgreSQLDepConfig) Uninstall(ctx context.Context) error {
-	_, err := pgres.opeshiftClient.DeleteApp(ctx, pgres.namespace, pgres.label)
+	_, err := pgres.opeshiftClient.DeleteApp(ctx, pgres.namespace, getLabelOfApp(postgresDepConfigName, pgres.storageType))
 	return err
 }
 
