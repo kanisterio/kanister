@@ -565,3 +565,30 @@ func (s *FilterSuite) TestResourceIncludeExclude(c *C) {
 		c.Check(tc.resources.Exclude(tc.m), DeepEquals, tc.exclude)
 	}
 }
+
+func (s *FilterSuite) TestResourceRequirementDeepCopyInto(c *C) {
+	rr := ResourceRequirement{LocalObjectReference: v1.LocalObjectReference{Name: "specificname"},
+		ResourceTypeRequirement: ResourceTypeRequirement{Group: "apps", Resource: "statefulsets"},
+		LabelSelector: metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"testkey2": "testval2",
+			},
+			MatchExpressions: []metav1.LabelSelectorRequirement{
+				{
+					Key:      "testkey2",
+					Operator: "notsupported",
+					Values:   []string{"testval2", "testval3"},
+				},
+			}},
+	}
+	var rrCopy ResourceRequirement
+	rr.DeepCopyInto(&rrCopy)
+	c.Check(rr, DeepEquals, rrCopy)
+	// Change original and check again to be sure is not equals
+	rr.LocalObjectReference.Name = "newval"
+	c.Check(rr, Not(DeepEquals), rrCopy)
+	rr.LocalObjectReference.Name = "specificname"
+	c.Check(rr, DeepEquals, rrCopy)
+	rr.ResourceTypeRequirement.Group = "newgroup"
+	c.Check(rr, Not(DeepEquals), rrCopy)
+}
