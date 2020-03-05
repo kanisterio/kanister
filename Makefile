@@ -81,13 +81,13 @@ IMAGE_NAME := $(BIN)
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
 BUILD_IMAGE ?= kanisterio/build:v0.0.7
+CGO_BUILD_IMAGE ?= kanisterio/cgo-build:v2
 DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
 
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
 
 GITHUB_TOKEN ?= ""
 
-CGO_BUILD_IMAGE=kanisterio/cgo-build:v1
 VDDK_MNT:=/opt/vddk
 VDDK_MNT_FLAG:=
 ASTROLABE_REPO_MNT:= /opt/vmware/astrolabe

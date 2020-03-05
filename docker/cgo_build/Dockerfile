@@ -14,14 +14,7 @@ RUN /build_image/01-tools/install.sh
 COPY 02-go/ /build_image/02-go/
 RUN /build_image/02-go/install.sh
 
-#COPY --from=bitnami/kubectl:1.13.4 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
-
 COPY --from=goreleaser/goreleaser:v0.116.0 /bin/goreleaser /usr/local/bin/
-
-# COPY --from=alpine/helm:3.0.0 /usr/bin/helm /usr/local/bin/
-
-# RUN wget -O /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.5.1/kind-linux-amd64 \
-#     && chmod +x /usr/local/bin/kind
 
 # Include a copy of the Dockerfile in the image.
 COPY Dockerfile /build_image
