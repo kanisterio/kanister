@@ -6,3 +6,4 @@
 /.vendor
 /bin
 /dist
+/go_vsnap.*

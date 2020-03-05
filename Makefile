@@ -37,10 +37,20 @@ PWD := $$(pwd)
 # Whether to build inside a containerized build environment
 DOCKER_BUILD ?= "true"
 
-DOCKER_CONFIG ?= "$(HOME)/.docker"
+DOCKER_CONFIG ?= $(HOME)/.docker
 
 # Mention the vm-driver that should be used to install OpenShift
 vm-driver ?= "kvm"
+
+# To create the optional vSphere snapshot copy tool the following must be specified to make:
+#
+#   VDDK=/host/path/to/vddk
+#   ASTROLABE_REPO=/host/path/to/local/clone/of/https://github.com/vmware-tanzu/astrolabe
+#
+# The VDDK must be downloaded from VMware and extracted somewhere on the host file system.
+# We consume VDDK through the astrolabe package which embeds a gvddk package.
+# This requires direct access to the package to handle module references so we need local
+# repo access to find the module. 
 
 ###
 ### These variables should not need tweaking.
@@ -49,6 +59,8 @@ vm-driver ?= "kvm"
 SRC_DIRS := cmd pkg # directories which hold app source (not vendored)
 
 ALL_ARCH := amd64 arm arm64 ppc64le
+
+EXTRA_BUILD_TARGETS :=
 
 # Set default base image dynamically for each arch
 ifeq ($(ARCH),amd64)
@@ -75,6 +87,17 @@ DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
 
 GITHUB_TOKEN ?= ""
 
+CGO_BUILD_IMAGE=kanisterio/cgo-build:v1
+VDDK_MNT:=/opt/vddk
+VDDK_MNT_FLAG:=
+ASTROLABE_REPO_MNT:= /opt/vmware/astrolabe
+ifdef VDDK
+ifdef ASTROLABE_REPO
+	VDDK_MNT_FLAG:=-v "$(VDDK):$(VDDK_MNT)" -v "$(ASTROLABE_REPO):$(ASTROLABE_REPO_MNT)"
+	EXTRA_BUILD_TARGETS := $(EXTRA_BUILD_TARGETS) bin/$(ARCH)/vsnap_copy
+endif # ASTROLABE_REPO
+endif # VDDK
+
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
 # If you want to build AND push all containers, see the 'all-push' rule.
@@ -95,7 +118,7 @@ all-container: $(addprefix container-, $(ALL_ARCH))
 
 all-push: $(addprefix push-, $(ALL_ARCH))
 
-build: bin/$(ARCH)/$(BIN)
+build: bin/$(ARCH)/$(BIN) $(EXTRA_BUILD_TARGETS)
 
 bin/$(ARCH)/$(BIN):
 	@echo "building: $@"
@@ -105,10 +128,20 @@ bin/$(ARCH)/$(BIN):
 		PKG=$(PKG)         \
 		./build/build.sh   \
 	"'
+
+bin/$(ARCH)/vsnap_copy:
+	@echo "building: $@"
+	$(MAKE) run CMD='-c "  \
+		GOARCH=$(ARCH)     \
+		VERSION=$(VERSION) \
+		PKG=$(PKG)         \
+		./build/build_vsnap_copy.sh  \
+	"' BUILD_IMAGE=$(CGO_BUILD_IMAGE)
+
 # Example: make shell CMD="-c 'date > datefile'"
 shell: build-dirs
 	@echo "launching a shell in the containerized build environment"
-	@docker run                                      \
+	docker run                                      \
 		-ti                                          \
 		--rm                                         \
 		--privileged                                 \
@@ -118,11 +151,16 @@ shell: build-dirs
 		-v "${HOME}/.kube:/root/.kube"               \
 		-v "$(PWD):/go/src/$(PKG)"                   \
 		-v "$(PWD)/bin/$(ARCH):/go/bin"              \
+		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)" \
+		$(VDDK_MNT_FLAG)                             \
 		-v "$(DOCKER_CONFIG):/root/.docker"          \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-w /go/src/$(PKG)                            \
 		$(BUILD_IMAGE)                               \
-		/bin/sh
+		/bin/bash -l
+
+cgo_shell: build-dirs
+	$(MAKE) shell BUILD_IMAGE=$(CGO_BUILD_IMAGE)
 
 DOTFILE_IMAGE = $(subst :,_,$(subst /,_,$(IMAGE))-$(VERSION))
 
@@ -207,7 +245,7 @@ build-dirs:
 run: build-dirs
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running CMD in the containerized build environment"
-	@docker run                                                     \
+	docker run                                                     \
 		--rm                                                        \
 		--net host                                                  \
 		-e GITHUB_TOKEN=$(GITHUB_TOKEN)                             \
@@ -217,6 +255,7 @@ ifeq ($(DOCKER_BUILD),"true")
 		-v "$(PWD):/go/src/$(PKG)"                                  \
 		-v "$(PWD)/bin/$(ARCH):/go/bin"                             \
 		-v "$(PWD)/.go/std/$(ARCH):/usr/local/go/pkg/linux_$(ARCH)" \
+		$(VDDK_MNT_FLAG)                                            \
 		-v "$(DOCKER_CONFIG):/root/.docker"                         \
 		-v /var/run/docker.sock:/var/run/docker.sock                \
 		-w /go/src/$(PKG)                                           \

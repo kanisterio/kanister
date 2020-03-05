@@ -1,0 +1,2 @@
+APT::Get::Assume-Yes "true";
+APT::Get::Upgrade-Allow-New "true";
