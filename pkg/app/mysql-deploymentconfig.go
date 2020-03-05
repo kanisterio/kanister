@@ -23,7 +23,6 @@ import (
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
-
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -86,11 +85,8 @@ func (mdep *MysqlDepConfig) Install(ctx context.Context, namespace string) error
 
 	oc := openshift.NewOpenShiftClient()
 	_, err := oc.NewApp(ctx, mdep.namespace, dbTemplate, nil, mdep.params)
-	if err != nil {
-		return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mdep.name)
-	}
 
-	return nil
+	return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mdep.name)
 }
 
 func (mdep *MysqlDepConfig) IsReady(ctx context.Context) (bool, error) {
