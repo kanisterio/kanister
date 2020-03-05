@@ -10,7 +10,6 @@ import (
 	azto "github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
@@ -30,8 +29,7 @@ const (
 )
 
 type adStorage struct {
-	azCli   *Client
-	kubeCli kubernetes.Interface
+	azCli *Client
 }
 
 func (s *adStorage) Type() blockstorage.Type {
@@ -44,11 +42,7 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 	if err != nil {
 		return nil, err
 	}
-	kubeCli, err := kube.NewClient()
-	if err != nil {
-		return nil, err
-	}
-	return &adStorage{azCli: azCli, kubeCli: kubeCli}, nil
+	return &adStorage{azCli: azCli}, nil
 }
 
 func (s *adStorage) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
@@ -332,7 +326,7 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		}
 	}
 
-	region, id, err := s.getRegionAndZoneID(ctx, snapshot.Region, snapshot.Volume.Az)
+	region, id, err := getRegionAndZoneID(ctx, s, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
@@ -367,9 +361,13 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	return s.VolumeGet(ctx, azto.String(disk.ID), snapshot.Volume.Az)
 }
 
-func (s *adStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz string) (string, string, error) {
+func getRegionAndZoneID(ctx context.Context, s *adStorage, sourceRegion, volAz string) (string, string, error) {
 	//check if current node region is zoned or not
-	zs, region, err := zone.NodeZonesAndRegion(ctx, s.kubeCli)
+	cli, err := kube.NewClient()
+	if err != nil {
+		return "", "", err
+	}
+	zs, region, err := zone.NodeZonesAndRegion(ctx, cli)
 	if err != nil {
 		return "", "", err
 	}
@@ -377,7 +375,7 @@ func (s *adStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz 
 		return region, "", nil
 	}
 
-	zones, err := zone.FromSourceRegionZone(ctx, s, s.kubeCli, sourceRegion, volAz)
+	zones, err := zone.FromSourceRegionZone(ctx, s, sourceRegion, volAz)
 	if err != nil {
 		return "", "", err
 	}
