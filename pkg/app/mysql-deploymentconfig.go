@@ -35,9 +35,6 @@ import (
 
 const (
 	mysqlDepConfigWaitTimeout = 5 * time.Minute
-	mysqlToolPodName          = "mysql-tools-pod"
-	mysqlToolContainerName    = "mysql-tools-container"
-	mysqlToolImage            = "kanisterio/mysql-sidecar:0.26.0"
 	mysqlDepConfigName        = "mysql"
 )
 
