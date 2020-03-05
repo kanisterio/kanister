@@ -19,7 +19,9 @@ import (
 	"strconv"
 	"strings"
 
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -57,7 +59,11 @@ func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		return nil, err
 	}
 
-	cli, err := kube.NewClient()
+	cfg, err := kube.LoadConfig()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to load Kubernetes config")
+	}
+	cli, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
@@ -66,9 +72,14 @@ func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 		return nil, kube.ScaleStatefulSet(ctx, cli, namespace, name, replicas)
 	case param.DeploymentKind:
 		return nil, kube.ScaleDeployment(ctx, cli, namespace, name, replicas)
-	default:
-		return nil, errors.New("Workload type not supported " + kind)
+	case param.DeploymentConfigKind:
+		osCli, err := osversioned.NewForConfig(cfg)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to create OpenShift client")
+		}
+		return nil, kube.ScaleDeploymentConfig(ctx, cli, osCli, namespace, name, replicas)
 	}
+	return nil, errors.New("Workload type not supported " + kind)
 }
 
 func (*scaleWorkloadFunc) RequiredArgs() []string {
@@ -110,6 +121,10 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, k
 		kind = param.DeploymentKind
 		name = tp.Deployment.Name
 		namespace = tp.Deployment.Namespace
+	case tp.DeploymentConfig != nil:
+		kind = param.DeploymentConfigKind
+		name = tp.DeploymentConfig.Name
+		namespace = tp.DeploymentConfig.Namespace
 	default:
 		if !ArgExists(args, ScaleWorkloadNamespaceArg) || !ArgExists(args, ScaleWorkloadNameArg) || !ArgExists(args, ScaleWorkloadKindArg) {
 			return namespace, kind, name, replicas, errors.New("Workload information not available via defaults or namespace/name/kind parameters")
