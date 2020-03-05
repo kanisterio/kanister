@@ -104,6 +104,9 @@ func getAvailableZones(ctx context.Context, kubeCli kubernetes.Interface, validZ
 // consistentZone will return the same zone given a source and a list of zones.
 // This output however can change if the list changes, which would impact
 // multi volume restores.
+// There are 2 main purposes of this method. One is to avoid returning the same
+// zone from a list of zones (the first one) if the sourceZone is differnet.
+// The second is to have it return the same zone everytime if the sourceZone doesn't change.
 func consistentZone(sourceZone string, availableZones map[string]struct{}) string {
 	// shouldn't hit this case as we catch it in the caller
 	if len(availableZones) == 0 {
