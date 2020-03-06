@@ -330,6 +330,19 @@ func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespac
 	return WaitOnDeploymentReady(ctx, kubeCli, namespace, name)
 }
 
+func ScaleDeploymentConfig(ctx context.Context, kubeCli kubernetes.Interface, osCli osversioned.Interface, namespace string, name string, replicas int32) error {
+	dc, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Could not get DeploymentConfig{Namespace %s, Name: %s}", namespace, name)
+	}
+	dc.Spec.Replicas = replicas
+	_, err = osCli.AppsV1().DeploymentConfigs(namespace).Update(dc)
+	if err != nil {
+		return errors.Wrapf(err, "Could not update DeploymentConfig{Namespace %s, Name: %s}", namespace, name)
+	}
+	return WaitOnDeploymentConfigReady(ctx, osCli, kubeCli, namespace, name)
+}
+
 // DeploymentVolumes returns the PVCs referenced by this deployment as a [pods spec volume name]->[PVC name] map
 func DeploymentVolumes(cli kubernetes.Interface, d *appsv1.Deployment) (volNameToPvc map[string]string) {
 	volNameToPvc = make(map[string]string)
