@@ -26,23 +26,26 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jpillora/backoff"
-	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
 
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 var _ blockstorage.Provider = (*ebsStorage)(nil)
 var _ zone.Mapper = (*ebsStorage)(nil)
 
 type ebsStorage struct {
-	ec2Cli *EC2
-	role   string
+	ec2Cli  *EC2
+	role    string
+	kubeCli kubernetes.Interface
 }
 
 // EC2 is kasten's wrapper around ec2.EC2 structs
@@ -69,7 +72,11 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
-	return &ebsStorage{ec2Cli: ec2Cli, role: config[awsconfig.ConfigRole]}, nil
+	kubeCli, err := kube.NewClient()
+	if err != nil {
+		return nil, err
+	}
+	return &ebsStorage{ec2Cli: ec2Cli, role: config[awsconfig.ConfigRole], kubeCli: kubeCli}, nil
 }
 
 // newEC2Client returns ec2 client struct.
@@ -407,8 +414,7 @@ func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	if snapshot.Volume.VolumeType == "" || snapshot.Volume.Az == "" || snapshot.Volume.Tags == nil {
 		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s, VolumeTags: %v", snapshot.Volume.VolumeType, snapshot.Volume.Az, snapshot.Volume.Tags)
 	}
-
-	zones, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
+	zones, err := zone.FromSourceRegionZone(ctx, s, s.kubeCli, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
