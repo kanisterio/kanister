@@ -305,6 +305,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	c.Assert(reflect.DeepEqual(z, expectedZone), Equals, true)
 	c.Assert(r, Equals, "westus2")
 
+	// error case
 	cli = fake.NewSimpleClientset(node4, node5)
 	_, _, err = NodeZonesAndRegion(ctx, cli)
 	c.Assert(err, NotNil)
