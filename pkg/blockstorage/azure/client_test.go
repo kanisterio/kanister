@@ -41,7 +41,6 @@ func (s *ClientSuite) TestClient(c *C) {
 	config[blockstorage.AzureCientID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCientID)
 	config[blockstorage.AzureClentSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClentSecret)
 	config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
-	config[blockstorage.AzureMigrateStorageAccountID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageAccountID)
 	config[blockstorage.AzureMigrateStorageAccount] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageAccount)
 	config[blockstorage.AzureMigrateStorageKey] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageKey)
 	azCli, err := NewClient(context.Background(), config)
