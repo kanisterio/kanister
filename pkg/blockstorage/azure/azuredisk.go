@@ -369,7 +369,11 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 
 func (s *adStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz string) (string, string, error) {
 	//check if current node region is zoned or not
-	zs, region, err := zone.NodeZonesAndRegion(ctx, s.kubeCli)
+	kubeCli, err := kube.NewClient()
+	if err != nil {
+		return "", "", err
+	}
+	zs, region, err := zone.NodeZonesAndRegion(ctx, kubeCli)
 	if err != nil {
 		return "", "", err
 	}
@@ -377,7 +381,7 @@ func (s *adStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz 
 		return region, "", nil
 	}
 
-	zones, err := zone.FromSourceRegionZone(ctx, s, s.kubeCli, sourceRegion, volAz)
+	zones, err := zone.FromSourceRegionZone(ctx, s, kubeCli, sourceRegion, volAz)
 	if err != nil {
 		return "", "", err
 	}

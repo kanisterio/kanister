@@ -414,7 +414,11 @@ func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	if snapshot.Volume.VolumeType == "" || snapshot.Volume.Az == "" || snapshot.Volume.Tags == nil {
 		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s, VolumeTags: %v", snapshot.Volume.VolumeType, snapshot.Volume.Az, snapshot.Volume.Tags)
 	}
-	zones, err := zone.FromSourceRegionZone(ctx, s, s.kubeCli, snapshot.Region, snapshot.Volume.Az)
+	kubeCli, err := kube.NewClient()
+	if err != nil {
+		return nil, err
+	}
+	zones, err := zone.FromSourceRegionZone(ctx, s, kubeCli, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
