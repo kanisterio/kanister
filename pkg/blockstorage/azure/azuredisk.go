@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/storage"
 	azto "github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
@@ -25,8 +26,10 @@ var _ blockstorage.Provider = (*adStorage)(nil)
 var _ zone.Mapper = (*adStorage)(nil)
 
 const (
-	volumeNameFmt   = "vol-%s"
-	snapshotNameFmt = "snap-%s"
+	volumeNameFmt     = "vol-%s"
+	snapshotNameFmt   = "snap-%s"
+	copyContainerName = "vhdscontainer"
+	copyBlobName      = "kanistercopyblob.vhd"
 )
 
 type adStorage struct {
@@ -154,12 +157,13 @@ func (s *adStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot
 		return nil, errors.Wrap(err, "SnapshotsClient.Copy failure to grant snapshot access")
 	}
 	blobStorageClient := s.azCli.StorageServiceClient.GetBlobService()
-	container := blobStorageClient.GetContainerReference("vhds")
+	container := blobStorageClient.GetContainerReference(copyContainerName)
 	_, err = container.CreateIfNotExists(nil)
 	if err != nil {
 		return nil, err
 	}
-	blob := container.GetBlobReference("blobname.vhd")
+	blob := container.GetBlobReference(copyBlobName)
+	defer deleteBlob(blob)
 
 	err = blob.Copy(*accessURI.AccessSAS, nil)
 	if err != nil {
@@ -214,6 +218,13 @@ func (s *adStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
 	_, err := s.azCli.SnapshotsClient.RevokeAccess(ctx, rg, name)
 	if err != nil {
 		log.Print("Failed to revoke access from snapshot", field.M{"snapshot": ID})
+	}
+}
+
+func deleteBlob(blob *storage.Blob) {
+	_, err := blob.DeleteIfExists(nil)
+	if err != nil {
+		log.Print("Failed to delete blob", field.M{"blob": copyBlobName})
 	}
 }
 

@@ -44,6 +44,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	var subscriptionID, storageAccountID string
 	var ok bool
 	var err error
+	var storageCli storage.Client
 
 	metadata := NewInstanceMetadata()
 
@@ -63,10 +64,6 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		}
 	}
 
-	if storageAccountID, ok = config[blockstorage.AzureMigrateStorageAccountID]; !ok {
-		return nil, errors.New("Cannot get StorageAccountID from config")
-	}
-
 	authorizer, err := getAuthorizer(azure.PublicCloud, config)
 	if err != nil {
 		return nil, err
@@ -78,9 +75,13 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	snapshotsClient := compute.NewSnapshotsClient(subscriptionID)
 	snapshotsClient.Authorizer = authorizer
 
-	storageCli, err := storage.NewBasicClient(config[blockstorage.AzureMigrateStorageAccount], config[blockstorage.AzureMigrateStorageKey])
-	if err != nil {
-		return nil, errors.Wrap(err, "Cannot get storage service client")
+	migrateStorageAccount := config[blockstorage.AzureMigrateStorageAccount]
+	if migrateStorageAccount != "" && config[blockstorage.AzureMigrateStorageKey] != "" {
+		storageCli, err = storage.NewBasicClient(migrateStorageAccount, config[blockstorage.AzureMigrateStorageKey])
+		if err != nil {
+			return nil, errors.Wrap(err, "Cannot get storage service client")
+		}
+		storageAccountID = "/subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroup + "/providers/Microsoft.Storage/storageAccounts/" + migrateStorageAccount
 	}
 
 	return &Client{
