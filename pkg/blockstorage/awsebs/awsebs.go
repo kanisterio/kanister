@@ -410,7 +410,7 @@ func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	}
 	kubeCli, err := kube.NewClient()
 	if err != nil {
-		return nil, err
+		log.WithError(err).Print("Failed to initialize kubernetes client")
 	}
 	zones, err := zone.FromSourceRegionZone(ctx, s, kubeCli, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {

@@ -364,7 +364,8 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	}
 	kubeCli, err := kube.NewClient()
 	if err != nil {
-		return nil, err
+		// TODO: Pull KubeCli creation out of kanister
+		log.WithError(err).Print("Failed to initialize kubernetes client")
 	}
 	zones = splitZones(snapshot.Volume.Az)
 	zones, err = zone.FromSourceRegionZone(ctx, s, kubeCli, region, zones...)
