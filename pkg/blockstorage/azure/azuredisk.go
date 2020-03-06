@@ -29,7 +29,7 @@ const (
 	volumeNameFmt     = "vol-%s"
 	snapshotNameFmt   = "snap-%s"
 	copyContainerName = "vhdscontainer"
-	copyBlobName      = "kanistercopyblob.vhd"
+	copyBlobName      = "copy-blob-%s.vhd"
 )
 
 type adStorage struct {
@@ -162,8 +162,9 @@ func (s *adStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot
 	if err != nil {
 		return nil, err
 	}
-	blob := container.GetBlobReference(copyBlobName)
-	defer deleteBlob(blob)
+	blobName := fmt.Sprintf(copyBlobName, name)
+	blob := container.GetBlobReference(blobName)
+	defer deleteBlob(blob, blobName)
 
 	err = blob.Copy(*accessURI.AccessSAS, nil)
 	if err != nil {
@@ -221,10 +222,10 @@ func (s *adStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
 	}
 }
 
-func deleteBlob(blob *storage.Blob) {
+func deleteBlob(blob *storage.Blob, blobName string) {
 	_, err := blob.DeleteIfExists(nil)
 	if err != nil {
-		log.Print("Failed to delete blob", field.M{"blob": copyBlobName})
+		log.Print("Failed to delete blob", field.M{"blob": blobName})
 	}
 }
 
