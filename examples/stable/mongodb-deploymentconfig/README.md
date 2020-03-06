@@ -33,7 +33,7 @@ Once we have minishift setup we will go ahead and deploy MongoDB application on 
 
 Once you have setup minishift by following the steps mentioned above, you can interact with the cluster using `oc` command line tool. By default
 you are logged in as developer user, that will prevent us from creating some of the resources so please make sure you login as admin by
-following below command
+the following command
 
 ```bash
 oc login -u system:admin
