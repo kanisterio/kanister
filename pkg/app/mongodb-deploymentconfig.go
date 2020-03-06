@@ -43,7 +43,6 @@ type MongoDBDepConfig struct {
 	name        string
 	namespace   string
 	user        string
-	label       string
 	osClient    openshift.OSClient
 	params      map[string]string
 	storageType storage
@@ -56,7 +55,6 @@ func NewMongoDBDepConfig(name string, storageType storage) App {
 		params: map[string]string{
 			"MONGODB_ADMIN_PASSWORD": "secretpassword",
 		},
-		label:       getLabelOfApp(mongoDepConfigName),
 		osClient:    openshift.NewOpenShiftClient(),
 		storageType: storageType,
 	}
@@ -111,7 +109,7 @@ func (mongo *MongoDBDepConfig) Object() crv1alpha1.ObjectReference {
 }
 
 func (mongo *MongoDBDepConfig) Uninstall(ctx context.Context) error {
-	_, err := mongo.osClient.DeleteApp(ctx, mongo.namespace, mongo.label)
+	_, err := mongo.osClient.DeleteApp(ctx, mongo.namespace, getLabelOfApp(mongoDepConfigName, mongo.storageType))
 	return err
 }
 

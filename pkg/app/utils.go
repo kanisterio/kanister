@@ -45,6 +45,6 @@ func getOpenShiftDBTemplate(appName string, storageType storage) string {
 
 // getLabelOfApp returns label of the passed application this label can be
 // used to delete all the resources that were created while deploying this application
-func getLabelOfApp(appName string) string {
-	return fmt.Sprintf("app=%s-persistent", appName)
+func getLabelOfApp(appName string, storageType storage) string {
+	return fmt.Sprintf("app=%s-%s", appName, storageType)
 }
