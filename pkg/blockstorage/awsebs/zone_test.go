@@ -27,30 +27,39 @@ type ZoneSuite struct{}
 var _ = Suite(&ZoneSuite{})
 
 func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
-	defaultZones := []string{"us-west-2a", "us-west-2b", "us-west-2c"}
+	ctx := context.Background()
 	for _, tc := range []struct {
-		zones []string
-		in    map[string]struct{}
-		out   map[string]struct{}
+		region string
+		in     string
+		out    string
 	}{
 		{
-			zones: defaultZones,
-			in:    map[string]struct{}{"us-west-2a": struct{}{}},
-			out:   map[string]struct{}{"us-west-2a": struct{}{}},
+			region: "us-west-2",
+			in:     "us-west-2a",
+			out:    "us-west-2a",
 		},
 		{
-			zones: defaultZones,
-			in:    map[string]struct{}{"us-east-1f": struct{}{}},
-			out:   map[string]struct{}{"us-west-2a": struct{}{}},
+			region: "us-west-2",
+			in:     "us-east-1f",
+			out:    "us-west-2a",
 		},
 		{
-			zones: defaultZones,
-			in:    map[string]struct{}{"us-east-2b": struct{}{}},
-			out:   map[string]struct{}{"us-west-2b": struct{}{}},
+			region: "us-west-2",
+			in:     "us-east-2b",
+			out:    "us-west-2b",
+		},
+		{
+			region: "us-west-2",
+			in:     "us-east-1f",
+			out:    "us-west-2a",
 		},
 	} {
-		z := zone.SanitizeAvailableZones(tc.in, tc.zones)
-		c.Assert(z, DeepEquals, tc.out)
+		var t = &ebsTest{}
+		z := zone.WithUnknownNodeZones(ctx, t, tc.region, tc.in, make(map[string]struct{}))
+		c.Assert(z, Not(Equals), "")
+		if tc.out != "" {
+			c.Assert(z, Equals, tc.out)
+		}
 	}
 }
 
