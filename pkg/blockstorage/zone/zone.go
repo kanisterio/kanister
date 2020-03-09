@@ -43,13 +43,13 @@ type (
 // Depending on the length of the slice returned, the blockstorage providers will decide if
 // a regional volume or a zonal volume should be created.
 func FromSourceRegionZone(ctx context.Context, m Mapper, kubeCli kubernetes.Interface, sourceRegion string, sourceZones ...string) ([]string, error) {
-	validZoneNames, err := m.FromRegion(ctx, sourceRegion)
-	if err != nil || len(validZoneNames) == 0 {
-		return nil, errors.Wrapf(err, "No provider zones for region (%s)", sourceRegion)
-	}
-	newZones := getAvailableZones(ctx, kubeCli, validZoneNames, sourceZones, sourceRegion)
-	// If Kubernetes provided zones are invalid use valid sourceZones
+	newZones := getAvailableZones(ctx, m, kubeCli, sourceZones, sourceRegion)
+	// If Kubernetes provided zones are invalid use valid sourceZones from sourceRegion
 	if len(newZones) == 0 {
+		validZoneNames, err := m.FromRegion(ctx, sourceRegion)
+		if err != nil || len(validZoneNames) == 0 {
+			return nil, errors.Wrapf(err, "No provider zones for region (%s)", sourceRegion)
+		}
 		for _, zone := range sourceZones {
 			if isZoneValid(zone, validZoneNames) {
 				newZones[zone] = struct{}{}
@@ -66,11 +66,10 @@ func FromSourceRegionZone(ctx context.Context, m Mapper, kubeCli kubernetes.Inte
 	return zones, nil
 }
 
-func getAvailableZones(ctx context.Context, kubeCli kubernetes.Interface, validZoneNames []string, sourceZones []string, sourceRegion string) map[string]struct{} {
+func getAvailableZones(ctx context.Context, m Mapper, kubeCli kubernetes.Interface, sourceZones []string, sourceRegion string) map[string]struct{} {
 	if kubeCli == nil {
 		return map[string]struct{}{}
 	}
-	newZones := make(map[string]struct{})
 	availableZones, availableRegion, err := NodeZonesAndRegion(ctx, kubeCli)
 	if err != nil {
 		log.WithError(err).Print("No available zones found")
@@ -79,12 +78,14 @@ func getAvailableZones(ctx context.Context, kubeCli kubernetes.Interface, validZ
 	if availableRegion != sourceRegion {
 		log.Info().Print("Source region and available region mismatch", field.M{"sourceRegion": sourceRegion, "availableRegion": availableRegion})
 	}
-	if len(availableZones) <= 0 { // Will never occur, NodeZonesAndRegion returns error if empty
-		log.Info().Print("No available zones found", field.M{"availableRegion": availableRegion})
+	// TODO: validate availableRegion
+	validZoneNames, err := m.FromRegion(ctx, availableRegion)
+	if err != nil || len(validZoneNames) == 0 {
 		return map[string]struct{}{}
 	}
 	sanitizedAvailableZones := SanitizeAvailableZones(availableZones, validZoneNames)
 	// Add all available valid source zones
+	newZones := make(map[string]struct{})
 	for _, zone := range sourceZones {
 		if z := getZoneFromAvailableZones(zone, sanitizedAvailableZones); z != "" {
 			newZones[z] = struct{}{}

@@ -449,7 +449,69 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 	}
 
+	gceNode1 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node1",
+			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west2", kubevolume.PVZoneLabelName: "us-west2-a"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+
+	gceNode2 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node2",
+			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west2", kubevolume.PVZoneLabelName: "us-west2-b"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+
+	gceNode3 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node3",
+			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west2", kubevolume.PVZoneLabelName: "us-west2-c"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+
+	noZonesNode := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "noZoneNode",
+			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-east2", kubevolume.PVZoneLabelName: "us-east2-c"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+
 	cli := fake.NewSimpleClientset(node1, node2, node3)
+	cligce := fake.NewSimpleClientset(gceNode1, gceNode2, gceNode3)
+	cliNoZoneNode := fake.NewSimpleClientset(noZonesNode)
 	cliEmpty := fake.NewSimpleClientset()
 
 	for _, tc := range []struct {
@@ -464,6 +526,13 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 			inZones:  []string{"us-west-2a"},
 			inCli:    cli,
 			outZones: []string{"us-west-2a"},
+			outErr:   nil,
+		},
+		{ //success case gce multi region
+			inRegion: "us-west1",
+			inZones:  []string{"us-west1-a"},
+			inCli:    cligce,
+			outZones: []string{"us-west2-a"},
 			outErr:   nil,
 		},
 		{ // No valid zones found
@@ -515,26 +584,33 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 			outZones: []string{"us-west-2a"},
 			outErr:   nil,
 		},
-		{ // Region Mismatch, continue normally
+		{ // Region Mismatch, continue normally, consistent zone
 			inRegion: "us-west2",
-			inZones:  []string{"us-west-2a", "us-west-2b"},
+			inZones:  []string{"us-west2-a", "us-west2-b"},
 			inCli:    cli,
-			outZones: []string{"us-west-2a", "us-west-2b"},
+			outZones: []string{"us-west-2b", "us-west-2c"},
 			outErr:   nil,
 		},
 		{ // No zones in region
 			inRegion: "empty",
 			inZones:  []string{"us-west-2a", "us-west-2b"},
-			inCli:    cli,
+			inCli:    cliNoZoneNode,
 			outZones: nil,
 			outErr:   fmt.Errorf(".*No provider zones for region.*"),
 		},
 		{ // Error fetching zones for region
 			inRegion: "other error",
 			inZones:  []string{"us-west-2a", "us-west-2b"},
-			inCli:    cli,
+			inCli:    cliNoZoneNode,
 			outZones: nil,
 			outErr:   fmt.Errorf(".*No provider zones for region.*"),
+		},
+		{ // use Source Region zones
+			inRegion: "us-west-2",
+			inZones:  []string{"us-west-2a"},
+			inCli:    cliNoZoneNode,
+			outZones: []string{"us-west-2a"},
+			outErr:   nil,
 		},
 	} {
 		out, err := FromSourceRegionZone(ctx, t, tc.inCli, tc.inRegion, tc.inZones...)
@@ -559,7 +635,11 @@ func (et *ebsTest) FromRegion(ctx context.Context, region string) ([]string, err
 	case "us-west-2":
 		return []string{"us-west-2a", "us-west-2b", "us-west-2c"}, nil
 	case "us-west2":
-		return []string{"us-west-2a", "us-west-2b", "us-west-2c"}, nil
+		return []string{"us-west2-a", "us-west2-b", "us-west2-c"}, nil
+	case "us-west1":
+		return []string{"us-west1-a", "us-west1-b", "us-west1-c"}, nil
+	case "us-east2":
+		return []string{}, nil
 	case "empty":
 		return []string{}, nil
 	case "noValidZones":
