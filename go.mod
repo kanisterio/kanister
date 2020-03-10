@@ -22,7 +22,6 @@ require (
 	github.com/Masterminds/semver v1.4.2
 	github.com/Masterminds/sprig v2.15.0+incompatible
 	github.com/aokoli/goutils v1.1.0 // indirect
-	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a // indirect
 	github.com/aws/aws-sdk-go v1.29.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
@@ -33,10 +32,10 @@ require (
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/go-openapi/errors v0.19.2 // indirect
 	github.com/go-openapi/spec v0.19.5 // indirect
-	github.com/go-openapi/strfmt v0.0.0-20170822153411-610b6cacdcde
+	github.com/go-openapi/strfmt v0.19.3
 	github.com/go-openapi/swag v0.19.6 // indirect
+	github.com/go-openapi/validate v0.19.6 // indirect
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/googleapis/gnostic v0.3.0 // indirect
@@ -51,7 +50,7 @@ require (
 	github.com/kubernetes-csi/external-snapshotter v1.1.0
 	github.com/lib/pq v1.2.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
-	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/openshift/api v0.0.0-20190402135445-d2f01e7b77a6
 	github.com/openshift/client-go v0.0.0-20190402163854-7cc0953bbbb7
 	github.com/pborman/uuid v1.2.0 // indirect
@@ -62,6 +61,7 @@ require (
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/vmware-tanzu/astrolabe v0.0.0-20200212013147-0405bf54c686
 	github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect

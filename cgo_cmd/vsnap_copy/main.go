@@ -15,22 +15,69 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
+	"github.com/vmware-tanzu/astrolabe/pkg/astrolabe"
 	"github.com/vmware-tanzu/astrolabe/pkg/ivd"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	kvm "github.com/kanisterio/kanister/pkg/blockstorage/vmware"
+	"github.com/kanisterio/kanister/pkg/location"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 func main() {
+	ctx := context.Background()
+
+	snapshot := flag.String("snapid", "", "snapshot id of the form type:volumeID:snapshotID")
+	vcHost := flag.String("vchost", "", "vSphere endpoint")
+	vcUser := flag.String("vcuser", "", "vSphere username")
+	vcPass := flag.String("vcpass", "", "vSphere password")
+	s3ID := flag.String("s3id", "", "s3 Access ID")
+	s3Secret := flag.String("s3secret", "", "s3 Secret")
+	s3Bucket := flag.String("s3bucket", "", "s3 Bucket")
+	s3Endpoint := flag.String("s3ep", "", "s3 Endpoint")
+	s3Region := flag.String("s3region", "", "s3 Region")
+	s3Prefix := flag.String("s3prefix", "", "s3 Prefix")
+
+	flag.Parse()
+	if *snapshot == "" {
+		fmt.Printf("Error: snapshot id required")
+		return
+	}
+
 	config := map[string]string{
-		kvm.VSphereEndpointKey: "hostname",
-		kvm.VSphereUsernameKey: "user",
-		kvm.VSpherePasswordKey: "password",
+		kvm.VSphereEndpointKey: *vcHost,
+		kvm.VSphereUsernameKey: *vcUser,
+		kvm.VSpherePasswordKey: *vcPass,
 		"s3URLBase":            "justToPlacateIVD",
 	}
-	fmt.Printf("Error: %v", throwAwayJustForLinking(config))
+
+	profile := param.Profile{
+		Location: crv1alpha1.Location{
+			Type:     crv1alpha1.LocationTypeS3Compliant,
+			Bucket:   *s3Bucket,
+			Endpoint: *s3Endpoint,
+			Prefix:   *s3Prefix,
+			Region:   *s3Region,
+		},
+		Credential: param.Credential{
+			Type: param.CredentialTypeKeyPair,
+			KeyPair: &param.KeyPair{
+				ID:     *s3ID,
+				Secret: *s3Secret,
+			},
+		},
+		SkipSSLVerify: false,
+	}
+	// expecting a snapshot id of the form type:volumeID:snapshotID
+	err := copySnapshotToObjectStore(ctx, config, profile, *snapshot)
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+	}
 }
 
 // Based on code in:
@@ -61,4 +108,29 @@ func throwAwayJustForLinking(config map[string]string) error {
 	}
 	_, err := ivd.NewIVDProtectedEntityTypeManagerFromConfig(params, s3URLBase, logrus.New())
 	return err
+}
+
+func copySnapshotToObjectStore(ctx context.Context, config map[string]string, profile param.Profile, snapshot string) error {
+	fmt.Println(snapshot)
+	snapManager, err := NewSnapshotManager(config)
+	if err != nil {
+		return err
+	}
+
+	// expecting a snapshot id of the form type:volumeID:snapshotID
+	peID, err := astrolabe.NewProtectedEntityIDFromString(snapshot)
+	if err != nil {
+		return err
+	}
+	pe, err := snapManager.ivdPETM.GetProtectedEntity(ctx, peID)
+	if err != nil {
+		return err
+	}
+
+	reader, err := pe.GetDataReader(ctx)
+	if err != nil {
+		return err
+	}
+	path := ""
+	return location.Write(ctx, reader, profile, path)
 }
