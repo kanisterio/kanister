@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/azure-sdk-for-go/storage"
@@ -186,7 +187,10 @@ func (s *adStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 
 	var copyOptions *storage.CopyOptions
 	if t, ok := ctx.Deadline(); ok {
-		time := uint(t.Second())
+		time := uint(t.Sub(time.Now()).Seconds())
+		if time <= 0 {
+			return nil, errors.New("Context deadline exceeded, cannot copy snapshot")
+		}
 		copyOptions = &storage.CopyOptions{
 			Timeout: time,
 		}
