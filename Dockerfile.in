@@ -11,5 +11,7 @@ LABEL name=ARG_BIN \
 RUN microdnf install git && \
     microdnf clean all
 
+COPY licenses /licenses/licenses
+
 ADD ARG_SOURCE_BIN /ARG_BIN
 ENTRYPOINT ["/ARG_BIN"]
