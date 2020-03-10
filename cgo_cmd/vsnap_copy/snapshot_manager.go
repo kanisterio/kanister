@@ -19,30 +19,28 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/vmware-tanzu/astrolabe/pkg/ivd"
-
-	kvm "github.com/kanisterio/kanister/pkg/blockstorage/vmware"
 )
 
 type SnapshotManager struct {
-	config  map[string]string
+	config  *VSphereCreds
 	ivdPETM *ivd.IVDProtectedEntityTypeManager
 }
 
-func NewSnapshotManager(config map[string]string) (*SnapshotManager, error) {
-	ep, ok := config[kvm.VSphereEndpointKey]
-	if !ok {
+func NewSnapshotManager(config *VSphereCreds) (*SnapshotManager, error) {
+	ep := config.VCHost
+	if ep == "" {
 		return nil, fmt.Errorf("missing endpoint value")
 	}
-	username, ok := config[kvm.VSphereUsernameKey]
-	if !ok {
+	username := config.VCUser
+	if username == "" {
 		return nil, fmt.Errorf("missing username value")
 	}
-	password, ok := config[kvm.VSpherePasswordKey]
-	if !ok {
+	password := config.VCPass
+	if password == "" {
 		return nil, fmt.Errorf("missing password value")
 	}
-	s3URLBase, ok := config["s3URLBase"]
-	if !ok {
+	s3URLBase := config.VCS3UrlBase
+	if s3URLBase == "" {
 		return nil, fmt.Errorf("missing s3URLBase value")
 	}
 	params := map[string]interface{}{
@@ -59,16 +57,3 @@ func NewSnapshotManager(config map[string]string) (*SnapshotManager, error) {
 		ivdPETM: ivdPETM,
 	}, nil
 }
-
-// func (s *SnapshotManager) CreateVolumeFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot) (astrolabe.ProtectedEntityID, error) {
-// 	provider, err := kvm.NewProvider(s.config)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	tags := map[string]string{}
-// 	vol, err := provider.VolumeCreateFromSnapshot(ctx, snapshot, tags)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return astrolabe.NewProtectedEntityIDFromString(vol.ID)
-// }

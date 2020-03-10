@@ -15,122 +15,76 @@
 package main
 
 import (
-	"context"
-	"flag"
-	"fmt"
+	"os"
+	// "github.com/sirupsen/logrus"
+	// "github.com/vmware-tanzu/astrolabe/pkg/astrolabe"
+	// "github.com/vmware-tanzu/astrolabe/pkg/ivd"
+	"encoding/json"
 
-	"github.com/sirupsen/logrus"
-	"github.com/vmware-tanzu/astrolabe/pkg/astrolabe"
-	"github.com/vmware-tanzu/astrolabe/pkg/ivd"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	kvm "github.com/kanisterio/kanister/pkg/blockstorage/vmware"
-	"github.com/kanisterio/kanister/pkg/location"
+	// crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	// kvm "github.com/kanisterio/kanister/pkg/blockstorage/vmware"
+	// "github.com/kanisterio/kanister/pkg/location"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
 func main() {
-	ctx := context.Background()
+	Execute()
+}
 
-	snapshot := flag.String("snapid", "", "snapshot id of the form type:volumeID:snapshotID")
-	vcHost := flag.String("vchost", "", "vSphere endpoint")
-	vcUser := flag.String("vcuser", "", "vSphere username")
-	vcPass := flag.String("vcpass", "", "vSphere password")
-	s3ID := flag.String("s3id", "", "s3 Access ID")
-	s3Secret := flag.String("s3secret", "", "s3 Secret")
-	s3Bucket := flag.String("s3bucket", "", "s3 Bucket")
-	s3Endpoint := flag.String("s3ep", "", "s3 Endpoint")
-	s3Region := flag.String("s3region", "", "s3 Region")
-	s3Prefix := flag.String("s3prefix", "", "s3 Prefix")
+const (
+	pathFlagName    = "path"
+	profileFlagName = "profile"
+	vSphereCreds    = "vcreds"
+)
 
-	flag.Parse()
-	if *snapshot == "" {
-		fmt.Printf("Error: snapshot id required")
-		return
-	}
-
-	config := map[string]string{
-		kvm.VSphereEndpointKey: *vcHost,
-		kvm.VSphereUsernameKey: *vcUser,
-		kvm.VSpherePasswordKey: *vcPass,
-		"s3URLBase":            "justToPlacateIVD",
-	}
-
-	profile := param.Profile{
-		Location: crv1alpha1.Location{
-			Type:     crv1alpha1.LocationTypeS3Compliant,
-			Bucket:   *s3Bucket,
-			Endpoint: *s3Endpoint,
-			Prefix:   *s3Prefix,
-			Region:   *s3Region,
-		},
-		Credential: param.Credential{
-			Type: param.CredentialTypeKeyPair,
-			KeyPair: &param.KeyPair{
-				ID:     *s3ID,
-				Secret: *s3Secret,
-			},
-		},
-		SkipSSLVerify: false,
-	}
-	// expecting a snapshot id of the form type:volumeID:snapshotID
-	err := copySnapshotToObjectStore(ctx, config, profile, *snapshot)
-	if err != nil {
-		fmt.Printf("Error: %v", err)
+func Execute() {
+	root := newRootCommand()
+	if err := root.Execute(); err != nil {
+		log.WithError(err).Print("vsnapcopy failed to execute")
+		os.Exit(1)
 	}
 }
 
-// Based on code in:
-// - kanister/pkg/blockstorage/vmware
-// - vmware/astrolabe/pkg/ivd
-func throwAwayJustForLinking(config map[string]string) error {
-	ep, ok := config[kvm.VSphereEndpointKey]
-	if !ok {
-		return fmt.Errorf("missing endpoint value")
+func newRootCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "vsnapcopy",
+		Short: "push, pull from object storage",
 	}
-	username, ok := config[kvm.VSphereUsernameKey]
-	if !ok {
-		return fmt.Errorf("missing username value")
-	}
-	password, ok := config[kvm.VSpherePasswordKey]
-	if !ok {
-		return fmt.Errorf("missing password value")
-	}
-	s3URLBase, ok := config["s3URLBase"]
-	if !ok {
-		return fmt.Errorf("missing s3URLBase value")
-	}
-
-	params := map[string]interface{}{
-		"vcHost":     ep,
-		"vcUser":     username,
-		"vcPassword": password,
-	}
-	_, err := ivd.NewIVDProtectedEntityTypeManagerFromConfig(params, s3URLBase, logrus.New())
-	return err
+	cmd.AddCommand(newSnapshotPushCommand())
+	//cmd.AddCommand(newSnapshotPullCommand())
+	cmd.PersistentFlags().StringP(pathFlagName, "s", "", "Specify a path suffix (optional)")
+	cmd.PersistentFlags().StringP(profileFlagName, "p", "", "Pass a Profile as a JSON string (required)")
+	cmd.PersistentFlags().StringP(vSphereCreds, "v", "", "Pass vSphereCredentials as a JSON string (required)")
+	_ = cmd.MarkFlagRequired(profileFlagName)
+	_ = cmd.MarkFlagRequired(vSphereCreds)
+	return cmd
 }
 
-func copySnapshotToObjectStore(ctx context.Context, config map[string]string, profile param.Profile, snapshot string) error {
-	fmt.Println(snapshot)
-	snapManager, err := NewSnapshotManager(config)
-	if err != nil {
-		return err
-	}
+func pathFlag(cmd *cobra.Command) string {
+	return cmd.Flag(pathFlagName).Value.String()
+}
 
-	// expecting a snapshot id of the form type:volumeID:snapshotID
-	peID, err := astrolabe.NewProtectedEntityIDFromString(snapshot)
-	if err != nil {
-		return err
-	}
-	pe, err := snapManager.ivdPETM.GetProtectedEntity(ctx, peID)
-	if err != nil {
-		return err
-	}
+func unmarshalProfileFlag(cmd *cobra.Command) (*param.Profile, error) {
+	profileJSON := cmd.Flag(profileFlagName).Value.String()
+	p := &param.Profile{}
+	err := json.Unmarshal([]byte(profileJSON), p)
+	return p, errors.Wrap(err, "failed to unmarshal profile")
+}
 
-	reader, err := pe.GetDataReader(ctx)
-	if err != nil {
-		return err
-	}
-	path := ""
-	return location.Write(ctx, reader, profile, path)
+type VSphereCreds struct {
+	VCHost      string `json:"vchost"`
+	VCUser      string `json:"vcuser"`
+	VCPass      string `json:"vcpass"`
+	VCS3UrlBase string `json:"s3urlbase"`
+}
+
+func unmarshalVSphereCredentials(cmd *cobra.Command) (*VSphereCreds, error) {
+	credJSON := cmd.Flag(vSphereCreds).Value.String()
+	creds := &VSphereCreds{}
+	err := json.Unmarshal([]byte(credJSON), creds)
+	return creds, errors.Wrap(err, "failed to unmarshal vsphere credentials")
 }
