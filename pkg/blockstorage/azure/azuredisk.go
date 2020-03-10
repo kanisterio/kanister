@@ -117,6 +117,21 @@ func (s *adStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volum
 }
 
 func (s *adStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
+	return nil, errors.New("Copy Snapshot not implemented")
+}
+
+func (s *adStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+	migrateStorageAccount := args[blockstorage.AzureMigrateStorageAccount]
+	if migrateStorageAccount == "" || args[blockstorage.AzureMigrateStorageKey] == "" {
+		return nil, errors.Errorf("Required args %s and %s  for snapshot copy not available", blockstorage.AzureMigrateStorageAccount, blockstorage.AzureMigrateStorageKey)
+	}
+
+	storageCli, err := storage.NewBasicClient(migrateStorageAccount, args[blockstorage.AzureMigrateStorageKey])
+	if err != nil {
+		return nil, errors.Wrap(err, "Cannot get storage service client")
+	}
+	storageAccountID := "/subscriptions/" + s.azCli.SubscriptionID + "/resourceGroups/" + s.azCli.ResourceGroup + "/providers/Microsoft.Storage/storageAccounts/" + migrateStorageAccount
+
 	_, rg, name, err := parseSnapshotID(from.ID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "SnapshotsClient.Copy: Failure in parsing snapshot ID %s", from.ID)
@@ -156,7 +171,7 @@ func (s *adStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot
 	if err != nil {
 		return nil, errors.Wrap(err, "SnapshotsClient.Copy failure to grant snapshot access")
 	}
-	blobStorageClient := s.azCli.StorageServiceClient.GetBlobService()
+	blobStorageClient := storageCli.GetBlobService()
 	container := blobStorageClient.GetContainerReference(copyContainerName)
 	_, err = container.CreateIfNotExists(nil)
 	if err != nil {
@@ -188,7 +203,7 @@ func (s *adStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot
 		SnapshotProperties: &azcompute.SnapshotProperties{
 			CreationData: &azcompute.CreationData{
 				CreateOption:     azcompute.Import,
-				StorageAccountID: azto.StringPtr(s.azCli.StorageAccountID),
+				StorageAccountID: azto.StringPtr(storageAccountID),
 				SourceURI:        azto.StringPtr(blobURI),
 			},
 		},

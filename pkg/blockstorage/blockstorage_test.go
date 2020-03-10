@@ -46,6 +46,7 @@ type BlockStorageProviderSuite struct {
 	provider      blockstorage.Provider
 	volumes       []*blockstorage.Volume
 	snapshots     []*blockstorage.Snapshot
+	args          map[string]string
 }
 
 var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeEBS, storageRegion: clusterRegionAWS, storageAZ: "us-west-2b"})
@@ -55,6 +56,7 @@ var _ = Suite(&BlockStorageProviderSuite{storageType: blockstorage.TypeAD, stora
 
 func (s *BlockStorageProviderSuite) SetUpSuite(c *C) {
 	var err error
+	s.args = make(map[string]string)
 	config := s.getConfig(c, s.storageRegion)
 	s.provider, err = getter.New().Get(s.storageType, config)
 	c.Assert(err, IsNil)
@@ -144,6 +146,8 @@ func (s *BlockStorageProviderSuite) TestCreateSnapshot(c *C) {
 func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 	c.Skip("Sometimes, snapcopy takes over 10 minutes. go test declares failure if tests are that slow.")
 
+	var snap *blockstorage.Snapshot
+	var err error
 	srcSnapshot := s.createSnapshot(c)
 	var dstSnapshot *blockstorage.Snapshot
 	switch s.storageType {
@@ -163,9 +167,14 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 			Region:    "westus2",
 			Volume:    nil,
 		}
+		snap, err = s.provider.SnapshotCopyWithArgs(context.TODO(), *srcSnapshot, *dstSnapshot, s.args)
+		c.Assert(err, IsNil)
 	}
-	snap, err := s.provider.SnapshotCopy(context.TODO(), *srcSnapshot, *dstSnapshot)
-	c.Assert(err, IsNil)
+
+	if s.storageType != blockstorage.TypeAD {
+		snap, err = s.provider.SnapshotCopy(context.TODO(), *srcSnapshot, *dstSnapshot)
+		c.Assert(err, IsNil)
+	}
 
 	log.Print("Snapshot copied", field.M{"FromSnapshotID": srcSnapshot.ID, "ToSnapshotID": snap.ID})
 
@@ -293,8 +302,8 @@ func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]st
 		config[blockstorage.AzureCientID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCientID)
 		config[blockstorage.AzureClentSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClentSecret)
 		config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
-		config[blockstorage.AzureMigrateStorageAccount] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageAccount)
-		config[blockstorage.AzureMigrateStorageKey] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageKey)
+		s.args[blockstorage.AzureMigrateStorageAccount] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageAccount)
+		s.args[blockstorage.AzureMigrateStorageKey] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageKey)
 	default:
 		c.Errorf("Unknown blockstorage storage type %s", s.storageType)
 	}

@@ -29,6 +29,7 @@ type Provider interface {
 	VolumeGet(ctx context.Context, id string, zone string) (*Volume, error)
 	// Snapshot operations
 	SnapshotCopy(ctx context.Context, from Snapshot, to Snapshot) (*Snapshot, error)
+	SnapshotCopyWithArgs(ctx context.Context, from Snapshot, to Snapshot, args map[string]string) (*Snapshot, error)
 	SnapshotCreate(ctx context.Context, volume Volume, tags map[string]string) (*Snapshot, error)
 	SnapshotCreateWaitForCompletion(context.Context, *Snapshot) error
 	SnapshotDelete(context.Context, *Snapshot) error
