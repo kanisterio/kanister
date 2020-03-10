@@ -1,6 +1,13 @@
 ARG base_image=registry.access.redhat.com/ubi8/ubi-minimal:8.1
 FROM ${base_image}
+ARG kanister_version
 MAINTAINER Tom Manville<tom@kasten.io>
+LABEL name=ARG_BIN \
+      vendor="Kanister" \
+      version="${kanister_version}" \
+      release="${kanister_version}" \
+      summary="Application-level data management for Kubernetes" \
+      description="“An extensible open-source framework for application-level data management on Kubernetes"
 RUN microdnf install git && \
     microdnf clean all
 
