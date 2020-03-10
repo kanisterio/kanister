@@ -96,6 +96,11 @@ func GetPodContainerFromStatefulSet(ctx context.Context, cli kubernetes.Interfac
 	return podName, container[0].Name, nil
 }
 
+// Following functions get the regions and zones from
+// labels on Nodes and Persistent Volumes
+// As of kubernetes 1.17 the "failure.domain" annotation
+// has been deprecated in favor of the "topology" annotation
+
 func GetZoneFromNode(node v1.Node) string {
 	return GetZoneFromLabels(node.Labels)
 }
