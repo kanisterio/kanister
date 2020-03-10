@@ -79,6 +79,8 @@ func getAvailableZones(ctx context.Context, m Mapper, kubeCli kubernetes.Interfa
 		log.Info().Print("Source region and available region mismatch", field.M{"sourceRegion": sourceRegion, "availableRegion": availableRegion})
 	}
 	// TODO: validate availableRegion
+	// if we fail to get zones from the available region,
+	// we will defer to the source region for the zones.
 	validZoneNames, err := m.FromRegion(ctx, availableRegion)
 	if err != nil || len(validZoneNames) == 0 {
 		return map[string]struct{}{}
