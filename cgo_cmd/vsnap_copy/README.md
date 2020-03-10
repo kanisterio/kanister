@@ -7,13 +7,13 @@ This is an application intended to copy data between and object store and a vSph
 ### push
 - **description:** Writes data from a vSphere snapshot to an object store.
 - **inputs:** 
-- - snapshotID 
-- - (-p) [profile](https://docs.kanister.io/architecture.html#profiles)
-- - (-v) vsphere credentials. Must have the json form - 
-```bash
-{ "vchost":"xxxx", "vcuser":"xxxx", "vcpass":"xxxx", "s3urlbase": "xxxx"}'
-``` 
-- - (-s) an optional path
+  - snapshotID 
+  - (-p) [profile](https://docs.kanister.io/architecture.html#profiles)
+  - (-v) vsphere credentials. Must have the json form - 
+    ```bash
+    { "vchost":"xxxx", "vcuser":"xxxx", "vcpass":"xxxx", "s3urlbase": "xxxx"}'
+    ``` 
+  - (-s) an optional path
 
 - **example usage:**
 ```bash
