@@ -50,7 +50,6 @@ func (s *ClientSuite) TestClient(c *C) {
 	c.Assert(azCli.Authorizer, NotNil)
 	c.Assert(azCli.DisksClient, NotNil)
 	c.Assert(azCli.SnapshotsClient, NotNil)
-	c.Assert(azCli.StorageServiceClient, NotNil)
 	_, err = azCli.DisksClient.List(context.Background())
 	c.Assert(err, IsNil)
 }

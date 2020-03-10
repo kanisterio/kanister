@@ -120,13 +120,16 @@ func (s *adStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot
 	return nil, errors.New("Copy Snapshot not implemented")
 }
 
+// SnapshotCopyWithArgs func: args map should contain non-empty StorageAccountName(AZURE_MIGRATE_STORAGE_ACCOUNT_NAME)
+// and StorageKey(AZURE_MIGRATE_STORAGE_ACCOUNT_KEY)
 func (s *adStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
 	migrateStorageAccount := args[blockstorage.AzureMigrateStorageAccount]
-	if migrateStorageAccount == "" || args[blockstorage.AzureMigrateStorageKey] == "" {
+	migrateStorageKey := args[blockstorage.AzureMigrateStorageKey]
+	if migrateStorageAccount == "" || migrateStorageKey == "" {
 		return nil, errors.Errorf("Required args %s and %s  for snapshot copy not available", blockstorage.AzureMigrateStorageAccount, blockstorage.AzureMigrateStorageKey)
 	}
 
-	storageCli, err := storage.NewBasicClient(migrateStorageAccount, args[blockstorage.AzureMigrateStorageKey])
+	storageCli, err := storage.NewBasicClient(migrateStorageAccount, migrateStorageKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "Cannot get storage service client")
 	}
@@ -149,7 +152,7 @@ func (s *adStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 
 	snapshotsGrantAccessFuture, err := s.azCli.SnapshotsClient.GrantAccess(ctx, rg, name, gad)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to grant Read access to snapshot: %s", from.ID)
+		return nil, errors.Wrapf(err, "Failed to grant read access to snapshot: %s", from.ID)
 	}
 	defer s.revokeAccess(ctx, rg, name, from.ID)
 
@@ -181,7 +184,14 @@ func (s *adStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	blob := container.GetBlobReference(blobName)
 	defer deleteBlob(blob, blobName)
 
-	err = blob.Copy(*accessURI.AccessSAS, nil)
+	var copyOptions *storage.CopyOptions
+	if t, ok := ctx.Deadline(); ok {
+		time := uint(t.Second())
+		copyOptions = &storage.CopyOptions{
+			Timeout: time,
+		}
+	}
+	err = blob.Copy(*accessURI.AccessSAS, copyOptions)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to copy disk to blob")
 	}
