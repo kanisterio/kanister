@@ -15,18 +15,12 @@
 package main
 
 import (
-	"os"
-	// "github.com/sirupsen/logrus"
-	// "github.com/vmware-tanzu/astrolabe/pkg/astrolabe"
-	// "github.com/vmware-tanzu/astrolabe/pkg/ivd"
 	"encoding/json"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	// crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	// kvm "github.com/kanisterio/kanister/pkg/blockstorage/vmware"
-	// "github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
