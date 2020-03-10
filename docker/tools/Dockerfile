@@ -1,6 +1,6 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
 ARG kan_tools_version="test-version"
-LABEL name="kasniter-tools" \
+LABEL name="kanister-tools" \
     vendor="Kanister" \
     version="${kan_tools_version}" \
     release="${kan_tools_version}" \
