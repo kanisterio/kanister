@@ -19,7 +19,19 @@ import (
 	"fmt"
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+)
+
+const (
+	// FDZoneLabelName is a known k8s label. used to specify volume zone
+	FDZoneLabelName = "failure-domain.beta.kubernetes.io/zone"
+	// TopologyZoneLabelName is a known k8s label. used to specify volume zone for kubernetes 1.17 onwards
+	TopologyZoneLabelName = "topology.kubernetes.io/zone"
+	// FDRegionLabelName is a known k8s label
+	FDRegionLabelName = "failure-domain.beta.kubernetes.io/region"
+	// TopologyRegionLabelName is a known k8s label. used to specify volume region for kubernetes 1.17 onwards
+	TopologyRegionLabelName = "topology.kubernetes.io/region"
 )
 
 // GetPodContainerFromDeployment returns a pod and container running the deployment
@@ -82,4 +94,40 @@ func GetPodContainerFromStatefulSet(ctx context.Context, cli kubernetes.Interfac
 		return podName, containerName, fmt.Errorf("Unable to find containers in pod %s/%s", namespace, podName)
 	}
 	return podName, container[0].Name, nil
+}
+
+func GetZoneFromNode(node v1.Node) string {
+	return GetZoneFromLabels(node.Labels)
+}
+
+func GetZoneFromPV(pv v1.PersistentVolume) string {
+	return GetZoneFromLabels(pv.Labels)
+}
+
+func GetZoneFromLabels(labels map[string]string) string {
+	var zone string
+	if v, ok := labels[FDZoneLabelName]; ok {
+		zone = v
+	} else if v, ok := labels[TopologyZoneLabelName]; ok {
+		zone = v
+	}
+	return zone
+}
+
+func GetRegionFromNode(node v1.Node) string {
+	return GetRegionFromLabels(node.Labels)
+}
+
+func GetRegionFromPV(pv v1.PersistentVolume) string {
+	return GetRegionFromLabels(pv.Labels)
+}
+
+func GetRegionFromLabels(labels map[string]string) string {
+	var region string
+	if v, ok := labels[FDRegionLabelName]; ok {
+		region = v
+	} else if v, ok := labels[TopologyRegionLabelName]; ok {
+		region = v
+	}
+	return region
 }

@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/field"
-	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -164,11 +164,11 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 	zoneSet := make(map[string]struct{})
 	regionSet := make(map[string]struct{})
 	for _, n := range ns {
-		zone := kubevolume.GetZoneFromNode(n)
+		zone := kube.GetZoneFromNode(n)
 		if zone != "" {
 			zoneSet[zone] = struct{}{}
 		}
-		region := kubevolume.GetRegionFromNode(n)
+		region := kube.GetRegionFromNode(n)
 		if region != "" {
 			regionSet[region] = struct{}{}
 		}
