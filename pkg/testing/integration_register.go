@@ -195,9 +195,9 @@ type MysqlDBDepConfig struct {
 
 var _ = Suite(&MysqlDBDepConfig{
 	IntegrationSuite{
-		name:      "mysqldb",
+		name:      "mysqldc",
 		namespace: "mysqldc-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig"),
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.EphemeralStorage),
 		bp:        app.NewBlueprint("mysql-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -212,7 +212,7 @@ var _ = Suite(&MongoDBDepConfig{
 	IntegrationSuite{
 		name:      "mongodb",
 		namespace: "mongodb-test",
-		app:       app.NewMongoDBDepConfig("mongodeploymentconfig"),
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.EphemeralStorage),
 		bp:        app.NewBlueprint("mongo-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -227,7 +227,7 @@ var _ = Suite(&PostgreSQLDepConfig{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf"),
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.EphemeralStorage),
 		bp:        app.NewBlueprint("postgres-dep-config", ""),
 		profile:   newSecretProfile(),
 	},

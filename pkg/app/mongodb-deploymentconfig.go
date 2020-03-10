@@ -34,31 +34,29 @@ import (
 
 const (
 	mongoDepConfigName        = "mongodb"
-	mongoDepConfigWaitTimeout = 4 * time.Minute
+	mongoDepConfigWaitTimeout = 5 * time.Minute
 )
 
 type MongoDBDepConfig struct {
-	cli        kubernetes.Interface
-	osCli      osversioned.Interface
-	name       string
-	namespace  string
-	dbTemplate string
-	user       string
-	label      string
-	osClient   openshift.OSClient
-	params     map[string]string
+	cli         kubernetes.Interface
+	osCli       osversioned.Interface
+	name        string
+	namespace   string
+	user        string
+	osClient    openshift.OSClient
+	params      map[string]string
+	storageType storage
 }
 
-func NewMongoDBDepConfig(name string) App {
+func NewMongoDBDepConfig(name string, storageType storage) App {
 	return &MongoDBDepConfig{
-		name:       name,
-		dbTemplate: getOpenShiftDBTemplate(mongoDepConfigName),
-		user:       "admin",
+		name: name,
+		user: "admin",
 		params: map[string]string{
 			"MONGODB_ADMIN_PASSWORD": "secretpassword",
 		},
-		label:    getLabelOfApp(mongoDepConfigName),
-		osClient: openshift.NewOpenShiftClient(),
+		osClient:    openshift.NewOpenShiftClient(),
+		storageType: storageType,
 	}
 }
 
@@ -81,7 +79,9 @@ func (mongo *MongoDBDepConfig) Init(context.Context) error {
 func (mongo *MongoDBDepConfig) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
 
-	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, mongo.dbTemplate, nil, mongo.params)
+	dbTemplate := getOpenShiftDBTemplate(mongoDepConfigName, mongo.storageType)
+
+	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, dbTemplate, nil, mongo.params)
 
 	return errors.Wrapf(err, "Error installing app %s on openshift cluster.", mongo.name)
 }
@@ -109,14 +109,14 @@ func (mongo *MongoDBDepConfig) Object() crv1alpha1.ObjectReference {
 }
 
 func (mongo *MongoDBDepConfig) Uninstall(ctx context.Context) error {
-	_, err := mongo.osClient.DeleteApp(ctx, mongo.namespace, mongo.label)
+	_, err := mongo.osClient.DeleteApp(ctx, mongo.namespace, getLabelOfApp(mongoDepConfigName, mongo.storageType))
 	return err
 }
 
 func (mongo *MongoDBDepConfig) Ping(ctx context.Context) error {
 	log.Print("Pinging the application", field.M{"app": mongo.name})
 
-	pingCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db\"", mongo.user)}
+	pingCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db\"", mongo.user)}
 	_, stderr, err := mongo.execCommand(ctx, pingCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while Pinging the database %s, %s", stderr, err)
@@ -127,7 +127,7 @@ func (mongo *MongoDBDepConfig) Ping(ctx context.Context) error {
 
 func (mongo *MongoDBDepConfig) Insert(ctx context.Context) error {
 	log.Print("Inserting documents into collection.", field.M{"app": mongo.name})
-	insertCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"db.restaurants.insert({'_id': '%s','name' : 'Tom', 'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.user, uuid.New())}
+	insertCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"db.restaurants.insert({'_id': '%s','name' : 'Tom', 'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.user, uuid.New())}
 	_, stderr, err := mongo.execCommand(ctx, insertCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s while inserting data data into mongodb collection.", stderr)
@@ -139,7 +139,7 @@ func (mongo *MongoDBDepConfig) Insert(ctx context.Context) error {
 
 func (mongo *MongoDBDepConfig) Count(ctx context.Context) (int, error) {
 	log.Print("Counting documents of collection.", field.M{"app": mongo.name})
-	countCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.count()\"", mongo.user)}
+	countCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.count()\"", mongo.user)}
 	stdout, stderr, err := mongo.execCommand(ctx, countCMD)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error %s while counting the data in mongodb collection.", stderr)
@@ -159,7 +159,7 @@ func (mongo *MongoDBDepConfig) Reset(ctx context.Context) error {
 	// delete all the entries from the restaurants dummy collection
 	// we are not deleting the database because we are dealing with admin database here
 	// and deletion admin database is prohibited
-	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.drop()\"", mongo.user)}
+	deleteDBCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.drop()\"", mongo.user)}
 	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
 	return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
 }

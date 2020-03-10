@@ -464,7 +464,7 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		}
 	}
 
-	region, id, err := getRegionAndZoneID(ctx, s, snapshot.Region, snapshot.Volume.Az)
+	region, id, err := s.getRegionAndZoneID(ctx, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
@@ -499,13 +499,13 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	return s.VolumeGet(ctx, azto.String(disk.ID), snapshot.Volume.Az)
 }
 
-func getRegionAndZoneID(ctx context.Context, s *adStorage, sourceRegion, volAz string) (string, string, error) {
+func (s *adStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz string) (string, string, error) {
 	//check if current node region is zoned or not
-	cli, err := kube.NewClient()
+	kubeCli, err := kube.NewClient()
 	if err != nil {
 		return "", "", err
 	}
-	zs, region, err := zone.NodeZonesAndRegion(ctx, cli)
+	zs, region, err := zone.NodeZonesAndRegion(ctx, kubeCli)
 	if err != nil {
 		return "", "", err
 	}
@@ -513,7 +513,7 @@ func getRegionAndZoneID(ctx context.Context, s *adStorage, sourceRegion, volAz s
 		return region, "", nil
 	}
 
-	zones, err := zone.FromSourceRegionZone(ctx, s, sourceRegion, volAz)
+	zones, err := zone.FromSourceRegionZone(ctx, s, kubeCli, sourceRegion, volAz)
 	if err != nil {
 		return "", "", err
 	}

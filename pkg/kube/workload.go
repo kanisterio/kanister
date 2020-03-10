@@ -135,7 +135,18 @@ func DeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, cli
 		return false, nil
 	}
 
-	return len(notRunningPods) == 0, nil
+	// notRunningPods also has the pods that are in `Completed` or PodSucceeded phase.
+	// these pods should get exited automatically, but in some OpenShift clusters they
+	// are not. To handle that we are not considering `Completed` pods to be NotRunning pods here
+	failedPodsCount := 0
+	for _, v := range notRunningPods {
+		if v.Status.Phase == v1.PodSucceeded {
+			continue
+		}
+		failedPodsCount++
+	}
+
+	return failedPodsCount == 0, nil
 }
 
 // DeploymentReady checks to see if the deployment has the desired number of
@@ -317,6 +328,19 @@ func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespac
 		return errors.Wrapf(err, "Could not update Deployment{Namespace %s, Name: %s}", namespace, name)
 	}
 	return WaitOnDeploymentReady(ctx, kubeCli, namespace, name)
+}
+
+func ScaleDeploymentConfig(ctx context.Context, kubeCli kubernetes.Interface, osCli osversioned.Interface, namespace string, name string, replicas int32) error {
+	dc, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Could not get DeploymentConfig{Namespace %s, Name: %s}", namespace, name)
+	}
+	dc.Spec.Replicas = replicas
+	_, err = osCli.AppsV1().DeploymentConfigs(namespace).Update(dc)
+	if err != nil {
+		return errors.Wrapf(err, "Could not update DeploymentConfig{Namespace %s, Name: %s}", namespace, name)
+	}
+	return WaitOnDeploymentConfigReady(ctx, osCli, kubeCli, namespace, name)
 }
 
 // DeploymentVolumes returns the PVCs referenced by this deployment as a [pods spec volume name]->[PVC name] map

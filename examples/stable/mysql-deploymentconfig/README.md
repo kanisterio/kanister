@@ -43,37 +43,27 @@ oc login -u system:admin
 ```
 and you are all set to go through rest of this example.
 
+It is not necessary to use minishift to go through this example, you can go through this example as long as you have an OpenShift cluster setup.
+
 # Install MySQL
 
-We will follow standard MySQL installation steps that are mentioned [here](https://docs.okd.io/latest/using_images/db_images/mysql.html#initializing-the-database). Once you have the minishift setup, please go ahead and run below commands to deploy the
+We will follow the steps that are suggested by OpenShift and can be found [here](https://github.com/openshift/origin/tree/master/examples/db-templates). Once you have the minishift setup, please go ahead and run below commands to deploy the
 MySQL application
 
 ```bash
 ~ oc create ns mysql-test
-~ oc new-app \
-    -e MYSQL_USER=vivek \
-    -e MYSQL_PASSWORD=vivek \
-    -e MYSQL_DATABASE=testdb \
-    -e MYSQL_ROOT_PASSWORD=viveksingh \
-    openshift/mysql-56-centos7 -n mysql-test
+~ oc new-app https://raw.githubusercontent.com/openshift/origin/master/examples/db-templates/mysql-ephemeral-template.json \
+        -n mysql-test \
+        -p MYSQL_ROOT_PASSWORD=secretpassword
 ```
 
-**Note**
-
-After deploying the application we will manually have to create a secret that is going to store the root credential to this mysql instance.
-Please follow below command to create the secret resource
-
-```bash
-~ oc create secret generic mysql --from-literal=mysql-root-password=viveksingh -n mysql-test
-secret/mysql created
-```
 
 Once you have deployed the MySQL application, please verify the status of the MySQL pod using below command to make sure the pod is in `running` status
 
 ```bash
 ~ oc get pods -n mysql-test
 NAME                       READY     STATUS    RESTARTS   AGE
-mysql-56-centos7-1-9v5cg   1/1       Running   0          27s
+mysql-1-bzgcr              1/1       Running   0          27s
 ```
 
 ## Integrating with Kanister
@@ -121,10 +111,10 @@ to do so
 ```bash
 ~ oc get pods -n mysql-test
 NAME                       READY     STATUS    RESTARTS   AGE
-mysql-56-centos7-1-9v5cg   1/1       Running   0          13m
+mysql-1-bzgcr              1/1       Running   0          13m
 
 # Exec into the pod and insert some data
-~ oc exec -it -n mysql-test mysql-56-centos7-1-9v5cg bash
+~ oc exec -it -n mysql-test mysql-1-bzgcr bash
 bash-4.2$  mysql -u root
 Welcome to the MySQL monitor.  Commands end with ; or \g.
 Your MySQL connection id is 1
@@ -178,15 +168,6 @@ mysql> select * from employees;
 
 ```
 
-# Create ClusterRoleBinding
-Since the Kanister resources need access to the the foundationDB cluster that has just been created,
-using the CR, we will have create a `ClusterRoleBinding` to enable that access. You can create that `ClusterRoleBinding`
-resource using below command
-
-```bash
-~ oc create -f kanister-clusteradmin-binding.yaml
-```
-
 
 ## Protect the Application
 
@@ -219,10 +200,10 @@ Let's say someone accidentally deleted the databases that we have created using 
 ```bash
 ~ oc get pods -n mysql-test
 NAME                       READY     STATUS    RESTARTS   AGE
-mysql-56-centos7-1-9v5cg   1/1       Running   0          13m
+mysql-1-bzgcr              1/1       Running   0          13m
 
 # Exec into the pod and insert some data
-~ oc exec -it -n mysql-test mysql-56-centos7-1-9v5cg bash
+~ oc exec -it -n mysql-test mysql-1-bzgcr bash
 bash-4.2$  mysql -u root
 Welcome to the MySQL monitor.  Commands end with ; or \g.
 Your MySQL connection id is 1

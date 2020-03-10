@@ -33,6 +33,7 @@ import (
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -362,11 +363,16 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	var zones []string
 	var region string
 	// Validate Zones
-	if _, err = getRegionFromZones(snapshot.Volume.Az); err != nil {
+	if region, err = getRegionFromZones(snapshot.Volume.Az); err != nil {
 		return nil, errors.Wrapf(err, "Could not validate zones: %s", snapshot.Volume.Az)
 	}
+	kubeCli, err := kube.NewClient()
+	if err != nil {
+		// TODO: Pull KubeCli creation out of kanister
+		log.WithError(err).Print("Failed to initialize kubernetes client")
+	}
 	zones = splitZones(snapshot.Volume.Az)
-	zones, err = zone.FromSourceRegionZone(ctx, s, snapshot.Region, zones...)
+	zones, err = zone.FromSourceRegionZone(ctx, s, kubeCli, region, zones...)
 	if err != nil {
 		return nil, err
 	}
