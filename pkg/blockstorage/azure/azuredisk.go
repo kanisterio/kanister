@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/storage"
 	azto "github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
@@ -17,6 +19,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 var _ blockstorage.Provider = (*adStorage)(nil)
@@ -24,8 +27,10 @@ var _ blockstorage.Provider = (*adStorage)(nil)
 var _ zone.Mapper = (*adStorage)(nil)
 
 const (
-	volumeNameFmt   = "vol-%s"
-	snapshotNameFmt = "snap-%s"
+	volumeNameFmt     = "vol-%s"
+	snapshotNameFmt   = "snap-%s"
+	copyContainerName = "vhdscontainer"
+	copyBlobName      = "copy-blob-%s.vhd"
 )
 
 type adStorage struct {
@@ -114,6 +119,143 @@ func (s *adStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volum
 
 func (s *adStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
 	return nil, errors.New("Copy Snapshot not implemented")
+}
+
+// SnapshotCopyWithArgs func: args map should contain non-empty StorageAccountName(AZURE_MIGRATE_STORAGE_ACCOUNT_NAME)
+// and StorageKey(AZURE_MIGRATE_STORAGE_ACCOUNT_KEY)
+func (s *adStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+	migrateStorageAccount := args[blockstorage.AzureMigrateStorageAccount]
+	migrateStorageKey := args[blockstorage.AzureMigrateStorageKey]
+	if migrateStorageAccount == "" || migrateStorageKey == "" {
+		return nil, errors.Errorf("Required args %s and %s  for snapshot copy not available", blockstorage.AzureMigrateStorageAccount, blockstorage.AzureMigrateStorageKey)
+	}
+
+	storageCli, err := storage.NewBasicClient(migrateStorageAccount, migrateStorageKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "Cannot get storage service client")
+	}
+	storageAccountID := "/subscriptions/" + s.azCli.SubscriptionID + "/resourceGroups/" + s.azCli.ResourceGroup + "/providers/Microsoft.Storage/storageAccounts/" + migrateStorageAccount
+
+	_, rg, name, err := parseSnapshotID(from.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "SnapshotsClient.Copy: Failure in parsing snapshot ID %s", from.ID)
+	}
+	_, err = s.azCli.SnapshotsClient.Get(ctx, rg, name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "SnapshotsClient.Copy: Failed to get snapshot with ID %s", from.ID)
+	}
+
+	duration := int32(3600)
+	gad := azcompute.GrantAccessData{
+		Access:            azcompute.Read,
+		DurationInSeconds: &duration,
+	}
+
+	snapshotsGrantAccessFuture, err := s.azCli.SnapshotsClient.GrantAccess(ctx, rg, name, gad)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to grant read access to snapshot: %s", from.ID)
+	}
+	defer s.revokeAccess(ctx, rg, name, from.ID)
+
+	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		_, err := snapshotsGrantAccessFuture.Result(*s.azCli.SnapshotsClient)
+		if err != nil {
+			if strings.Contains(err.Error(), "asynchronous operation has not completed") {
+				return false, nil
+			}
+			return false, err
+		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "SnapshotsClient.Copy failure to grant snapshot access")
+	}
+
+	accessURI, err := snapshotsGrantAccessFuture.Result(*s.azCli.SnapshotsClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "SnapshotsClient.Copy failure to grant snapshot access")
+	}
+	blobStorageClient := storageCli.GetBlobService()
+	container := blobStorageClient.GetContainerReference(copyContainerName)
+	_, err = container.CreateIfNotExists(nil)
+	if err != nil {
+		return nil, err
+	}
+	blobName := fmt.Sprintf(copyBlobName, name)
+	blob := container.GetBlobReference(blobName)
+	defer deleteBlob(blob, blobName)
+
+	var copyOptions *storage.CopyOptions
+	if t, ok := ctx.Deadline(); ok {
+		time := time.Until(t).Seconds()
+		if time <= 0 {
+			return nil, errors.New("Context deadline exceeded, cannot copy snapshot")
+		}
+		copyOptions = &storage.CopyOptions{
+			Timeout: uint(time),
+		}
+	}
+	err = blob.Copy(*accessURI.AccessSAS, copyOptions)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to copy disk to blob")
+	}
+	blobURI := blob.GetURL()
+
+	snapName := fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String())
+	var tags = make(map[string]string)
+	for _, tag := range from.Volume.Tags {
+		if _, found := tags[tag.Key]; !found {
+			tags[tag.Key] = tag.Value
+		}
+	}
+	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
+
+	createSnap := azcompute.Snapshot{
+		Name:     azto.StringPtr(snapName),
+		Location: azto.StringPtr(to.Region),
+		Tags:     *azto.StringMapPtr(tags),
+		SnapshotProperties: &azcompute.SnapshotProperties{
+			CreationData: &azcompute.CreationData{
+				CreateOption:     azcompute.Import,
+				StorageAccountID: azto.StringPtr(storageAccountID),
+				SourceURI:        azto.StringPtr(blobURI),
+			},
+		},
+	}
+
+	result, err := s.azCli.SnapshotsClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, snapName, createSnap)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to copy snapshot from source snapshot %v", from)
+	}
+	err = result.WaitForCompletionRef(ctx, s.azCli.SnapshotsClient.Client)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to copy snapshot from source snapshot %v", from)
+	}
+	rs, err := result.Result(*s.azCli.SnapshotsClient)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error in getting result of Snapshot copy operation, snaphotName %s", snapName)
+	}
+
+	snap, err := s.SnapshotGet(ctx, azto.String(rs.ID))
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to Get Snapshot after create, snaphotName %s", snapName)
+	}
+	*snap.Volume = *from.Volume
+	return snap, nil
+}
+
+func (s *adStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
+	_, err := s.azCli.SnapshotsClient.RevokeAccess(ctx, rg, name)
+	if err != nil {
+		log.Print("Failed to revoke access from snapshot", field.M{"snapshot": ID})
+	}
+}
+
+func deleteBlob(blob *storage.Blob, blobName string) {
+	_, err := blob.DeleteIfExists(nil)
+	if err != nil {
+		log.Print("Failed to delete blob", field.M{"blob": blobName})
+	}
 }
 
 func (s *adStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {

@@ -165,6 +165,10 @@ func (s *gpdStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapsho
 	return nil, errors.Errorf("Not implemented")
 }
 
+func (s *gpdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+	return nil, errors.New("Copy Snapshot with Args not implemented")
+}
+
 func (s *gpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	rb := &compute.Snapshot{
 		Name:   fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String()),
