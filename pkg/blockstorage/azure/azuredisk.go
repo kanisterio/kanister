@@ -187,12 +187,12 @@ func (s *adStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 
 	var copyOptions *storage.CopyOptions
 	if t, ok := ctx.Deadline(); ok {
-		time := uint(time.Until(t).Seconds())
-		if time == 0 {
+		time := time.Until(t).Seconds()
+		if time <= 0 {
 			return nil, errors.New("Context deadline exceeded, cannot copy snapshot")
 		}
 		copyOptions = &storage.CopyOptions{
-			Timeout: time,
+			Timeout: uint(time),
 		}
 	}
 	err = blob.Copy(*accessURI.AccessSAS, copyOptions)
