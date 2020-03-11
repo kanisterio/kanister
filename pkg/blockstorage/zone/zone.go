@@ -165,7 +165,10 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 	regionSet := make(map[string]struct{})
 	for _, n := range ns {
 		zone := kube.GetZoneFromNode(n)
-		if zone != "" {
+		// make sure it is not a faultDomain
+		// For Example: all non-zonal cluster nodes in azure get addigned a faultDomain(0/1)
+		// for "failure-domain.beta.kubernetes.io/zone" label
+		if len(zone) > 1 {
 			zoneSet[zone] = struct{}{}
 		}
 		region := kube.GetRegionFromNode(n)

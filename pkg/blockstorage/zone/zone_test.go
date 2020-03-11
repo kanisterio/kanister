@@ -262,10 +262,25 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 			},
 		},
 	}
-	// error nodes
+	// non-zonal node (FaultDomain)
 	node4 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node4",
+			Labels: map[string]string{kube.FDRegionLabelName: "westus", kube.FDZoneLabelName: "0"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+	// error nodes
+	node5 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node5",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-4"},
 		},
 		Status: v1.NodeStatus{
@@ -277,9 +292,9 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 			},
 		},
 	}
-	node5 := &v1.Node{
+	node6 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   "node5",
+			Name:   "node6",
 			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-5"},
 		},
 		Spec: v1.NodeSpec{
@@ -305,8 +320,15 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	c.Assert(reflect.DeepEqual(z, expectedZone), Equals, true)
 	c.Assert(r, Equals, "westus2")
 
+	// non-zonal cluster test
+	cli = fake.NewSimpleClientset(node4)
+	z, r, err = NodeZonesAndRegion(ctx, cli)
+	c.Assert(err, IsNil)
+	c.Assert(len(z) == 0, Equals, true)
+	c.Assert(r, Equals, "westus")
+
 	// error case
-	cli = fake.NewSimpleClientset(node4, node5)
+	cli = fake.NewSimpleClientset(node5, node6)
 	_, _, err = NodeZonesAndRegion(ctx, cli)
 	c.Assert(err, NotNil)
 }
