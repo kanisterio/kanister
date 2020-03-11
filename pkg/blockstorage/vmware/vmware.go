@@ -162,10 +162,6 @@ func (p *fcdProvider) SnapshotCopy(ctx context.Context, from blockstorage.Snapsh
 	return nil, errors.New("Not implemented")
 }
 
-func (p *fcdProvider) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
-	return nil, errors.New("Copy Snapshot with Args not implemented")
-}
-
 func (p *fcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	task, err := p.gom.CreateSnapshot(ctx, vimID(volume.ID), noDescription)
 	if err != nil {

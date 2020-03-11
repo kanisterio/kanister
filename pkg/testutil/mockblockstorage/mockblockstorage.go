@@ -148,11 +148,6 @@ func (p *Provider) SnapshotCopy(ctx context.Context, from, to blockstorage.Snaps
 	return p.MockSnapshot(), nil
 }
 
-// SnapshotCopyWithArgs mock
-func (p *Provider) SnapshotCopyWithArgs(ctx context.Context, from, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
-	return p.MockSnapshot(), nil
-}
-
 // SnapshotCreate mock
 func (p *Provider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	return p.MockSnapshot(), nil

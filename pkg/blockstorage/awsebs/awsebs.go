@@ -294,10 +294,6 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	return rs, nil
 }
 
-func (s *ebsStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
-	return nil, errors.New("Copy Snapshot with Args not implemented")
-}
-
 func (s *ebsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	// Snapshot the EBS volume
 	csi := (&ec2.CreateSnapshotInput{}).SetVolumeId(volume.ID)

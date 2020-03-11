@@ -214,10 +214,6 @@ func (s *ibmCloud) SnapshotCopy(ctx context.Context, from, to blockstorage.Snaps
 	return nil, errors.New("Not implemented")
 }
 
-func (s *ibmCloud) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
-	return nil, errors.New("Copy Snapshot with Args not implemented")
-}
-
 func (s *ibmCloud) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	alltags := ktags.GetTags(tags)
 	ibmvol, err := s.cli.Service.GetVolume(volume.ID)

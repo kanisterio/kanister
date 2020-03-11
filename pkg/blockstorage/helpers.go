@@ -22,19 +22,17 @@ import (
 
 // Google Cloud environment variable names
 const (
-	GoogleCloudZone            = "CLOUDSDK_COMPUTE_ZONE"
-	GoogleCloudCreds           = "GOOGLE_APPLICATION_CREDENTIALS"
-	GoogleProjectID            = "projectID"
-	GoogleServiceKey           = "serviceKey"
-	AzureStorageAccount        = "AZURE_STORAGE_ACCOUNT_NAME"
-	AzureStorageKey            = "AZURE_STORAGE_ACCOUNT_KEY"
-	AzureSubscriptionID        = "AZURE_SUBSCRIPTION_ID"
-	AzureTenantID              = "AZURE_TENANT_ID"
-	AzureCientID               = "AZURE_CLIENT_ID"
-	AzureClentSecret           = "AZURE_CLIENT_SECRET"
-	AzureResurceGroup          = "AZURE_RESOURCE_GROUP"
-	AzureMigrateStorageAccount = "AZURE_MIGRATE_STORAGE_ACCOUNT_NAME"
-	AzureMigrateStorageKey     = "AZURE_MIGRATE_STORAGE_ACCOUNT_KEY"
+	GoogleCloudZone     = "CLOUDSDK_COMPUTE_ZONE"
+	GoogleCloudCreds    = "GOOGLE_APPLICATION_CREDENTIALS"
+	GoogleProjectID     = "projectID"
+	GoogleServiceKey    = "serviceKey"
+	AzureStorageAccount = "AZURE_STORAGE_ACCOUNT_NAME"
+	AzureStorageKey     = "AZURE_STORAGE_ACCOUNT_KEY"
+	AzureSubscriptionID = "AZURE_SUBSCRIPTION_ID"
+	AzureTenantID       = "AZURE_TENANT_ID"
+	AzureCientID        = "AZURE_CLIENT_ID"
+	AzureClentSecret    = "AZURE_CLIENT_SECRET"
+	AzureResurceGroup   = "AZURE_RESOURCE_GROUP"
 )
 
 // SanitizeTags are used to sanitize the tags

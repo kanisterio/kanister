@@ -336,10 +336,6 @@ func (e *efs) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to b
 	return nil, errors.New("Not implemented")
 }
 
-func (e *efs) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
-	return nil, errors.New("Copy Snapshot with Args not implemented")
-}
-
 func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	err := e.createK10DefaultBackupVault()
 	if err != nil {
