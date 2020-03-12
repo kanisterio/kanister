@@ -110,13 +110,12 @@ func GetZoneFromPV(pv v1.PersistentVolume) string {
 }
 
 func GetZoneFromLabels(labels map[string]string) string {
-	var zone string
 	if v, ok := labels[FDZoneLabelName]; ok {
-		zone = v
+		return v
 	} else if v, ok := labels[TopologyZoneLabelName]; ok {
-		zone = v
+		return v
 	}
-	return zone
+	return ""
 }
 
 func GetRegionFromNode(node v1.Node) string {
@@ -128,11 +127,10 @@ func GetRegionFromPV(pv v1.PersistentVolume) string {
 }
 
 func GetRegionFromLabels(labels map[string]string) string {
-	var region string
 	if v, ok := labels[FDRegionLabelName]; ok {
-		region = v
+		return v
 	} else if v, ok := labels[TopologyRegionLabelName]; ok {
-		region = v
+		return v
 	}
-	return region
+	return ""
 }
