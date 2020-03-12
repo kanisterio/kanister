@@ -34,7 +34,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
 	"github.com/kanisterio/kanister/pkg/kube"
-	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
@@ -202,7 +201,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
 		// Get Region from PV label or EC2 metadata
-		if pvRegion, ok := pvLabels[kubevolume.PVRegionLabelName]; ok {
+		if pvRegion := kube.GetRegionFromLabels(pvLabels); pvRegion != "" {
 			region = pvRegion
 		} else {
 			region, err = awsebs.GetRegionFromEC2Metadata()
@@ -210,7 +209,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 				return nil, err
 			}
 		}
-		if pvZone, ok := pvLabels[kubevolume.PVZoneLabelName]; ok {
+		if pvZone := kube.GetZoneFromLabels(pvLabels); pvZone != "" {
 			config := getConfig(tp.Profile, blockstorage.TypeEBS)
 			config[awsconfig.ConfigRegion] = region
 			provider, err = getter.Get(blockstorage.TypeEBS, config)
@@ -227,7 +226,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 		if err = ValidateLocationForBlockstorage(tp.Profile, blockstorage.TypeGPD); err != nil {
 			return nil, errors.Wrap(err, "Profile validation failed")
 		}
-		if pvZone, ok := pvLabels[kubevolume.PVZoneLabelName]; ok {
+		if pvZone := kube.GetZoneFromLabels(pvLabels); pvZone != "" {
 			config := getConfig(tp.Profile, blockstorage.TypeGPD)
 			provider, err = getter.Get(blockstorage.TypeGPD, config)
 			if err != nil {
