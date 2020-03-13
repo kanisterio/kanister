@@ -13,7 +13,7 @@ If you want to avoid doing that upgrade to Elasticsearch 5.6 first before moving
 
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.26.0 with `profiles.cr.kanister.io` CRD installed
+* Kanister version 0.27.0 with `profiles.cr.kanister.io` CRD installed
 
 ## StatefulSets Details
 * https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/

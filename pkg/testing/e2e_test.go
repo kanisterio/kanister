@@ -226,7 +226,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 						Func: function.KubeTaskFuncName,
 						Name: "test-kube-task",
 						Args: map[string]interface{}{
-							"image":     "kanisterio/kanister-tools:0.26.0",
+							"image":     "kanisterio/kanister-tools:0.27.0",
 							"namespace": "{{ .Deployment.Namespace }}",
 							"command":   []string{"echo", "default specs"},
 							"podOverride": map[string]interface{}{
