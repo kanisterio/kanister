@@ -24,27 +24,20 @@ import (
 
 	snapshotclient "github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
 	pvMatchLabelName = "kanisterpvmatchid"
 	pvcGenerateName  = "kanister-pvc-"
-	// PVZoneLabelName is a known k8s label. used to specify volume zone
-	PVZoneLabelName = "failure-domain.beta.kubernetes.io/zone"
-	// PVTopologyZoneLabelName is a known k8s label. used to specify volume zone for kubernetes 1.17 onwards
-	PVTopologyZoneLabelName = "topology.kubernetes.io/zone"
-	// PVRegionLabelName is a known k8s label
-	PVRegionLabelName = "failure-domain.beta.kubernetes.io/region"
-	// PVTopologyRegionLabelName is a known k8s label. used to specify volume region for kubernetes 1.17 onwards
-	PVTopologyRegionLabelName = "topology.kubernetes.io/region"
 	// NoPVCNameSpecified is used by the caller to indicate that the PVC name
 	// should be auto-generated
 	NoPVCNameSpecified = ""
@@ -193,14 +186,15 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 		pv.Spec.PersistentVolumeSource.AWSElasticBlockStore = &v1.AWSElasticBlockStoreVolumeSource{
 			VolumeID: vol.ID,
 		}
-		pv.ObjectMeta.Labels[PVZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[PVRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
 	case blockstorage.TypeGPD:
 		pv.Spec.PersistentVolumeSource.GCEPersistentDisk = &v1.GCEPersistentDiskVolumeSource{
 			PDName: vol.ID,
 		}
-		pv.ObjectMeta.Labels[PVZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[PVRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
+
 	default:
 		return "", errors.Errorf("Volume type %v(%T) not supported ", volType, volType)
 	}
@@ -255,24 +249,4 @@ func labelSelector(labels map[string]string) string {
 func zoneToRegion(zone string) string {
 	r, _ := regexp.Compile("-?[a-z]$")
 	return r.ReplaceAllString(zone, "")
-}
-
-func GetZoneFromNode(node v1.Node) string {
-	var zone string
-	if v, ok := node.Labels[PVZoneLabelName]; ok {
-		zone = v
-	} else if v, ok := node.Labels[PVTopologyZoneLabelName]; ok {
-		zone = v
-	}
-	return zone
-}
-
-func GetRegionFromNode(node v1.Node) string {
-	var region string
-	if v, ok := node.Labels[PVRegionLabelName]; ok {
-		region = v
-	} else if v, ok := node.Labels[PVTopologyRegionLabelName]; ok {
-		region = v
-	}
-	return region
 }

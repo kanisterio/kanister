@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/field"
-	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -164,14 +164,14 @@ func NodeZonesAndRegion(ctx context.Context, cli kubernetes.Interface) (map[stri
 	zoneSet := make(map[string]struct{})
 	regionSet := make(map[string]struct{})
 	for _, n := range ns {
-		zone := kubevolume.GetZoneFromNode(n)
+		zone := kube.GetZoneFromNode(n)
 		// make sure it is not a faultDomain
-		// For Example: all non-zonal cluster nodes in azure get addigned a faultDomain(0/1)
+		// For Example: all non-zonal cluster nodes in azure get assigned a faultDomain(0/1)
 		// for "failure-domain.beta.kubernetes.io/zone" label
 		if len(zone) > 1 {
 			zoneSet[zone] = struct{}{}
 		}
-		region := kubevolume.GetRegionFromNode(n)
+		region := kube.GetRegionFromNode(n)
 		if region != "" {
 			regionSet[region] = struct{}{}
 		}
