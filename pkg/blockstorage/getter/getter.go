@@ -17,6 +17,7 @@ package getter
 import (
 	"context"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
@@ -27,7 +28,7 @@ import (
 
 // Getter is a resolver for a storage provider.
 type Getter interface {
-	Get(blockstorage.Type, map[string]string) (blockstorage.Provider, error)
+	Get(blockstorage.Type, kubernetes.Interface, map[string]string) (blockstorage.Provider, error)
 }
 
 var _ Getter = (*getter)(nil)
@@ -40,19 +41,19 @@ func New() Getter {
 }
 
 // Get returns a provider for the requested storage type in the specified region
-func (*getter) Get(storageType blockstorage.Type, config map[string]string) (blockstorage.Provider, error) {
+func (*getter) Get(storageType blockstorage.Type, kubeCli kubernetes.Interface, config map[string]string) (blockstorage.Provider, error) {
 	switch storageType {
 	case blockstorage.TypeEBS:
-		return awsebs.NewProvider(context.TODO(), config)
+		return awsebs.NewProvider(context.TODO(), config, kubeCli)
 	case blockstorage.TypeSoftlayerBlock:
 		return ibm.NewProvider(context.TODO(), config)
 	case blockstorage.TypeGPD:
-		return gcepd.NewProvider(config)
+		return gcepd.NewProvider(config, kubeCli)
 	case blockstorage.TypeSoftlayerFile:
 		config[ibm.SoftlayerFileAttName] = "true"
 		return ibm.NewProvider(context.TODO(), config)
 	case blockstorage.TypeAD:
-		return azure.NewProvider(context.Background(), config)
+		return azure.NewProvider(context.Background(), config, kubeCli)
 	default:
 		return nil, errors.Errorf("Unsupported storage type %v", storageType)
 	}
