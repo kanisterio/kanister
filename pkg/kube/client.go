@@ -17,6 +17,7 @@ package kube
 import (
 	snapshot "github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes" // Load the GCP plugin - required to authenticate against
 	// GKE clusters
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -74,6 +75,21 @@ func NewSnapshotClient() (snapshot.Interface, error) {
 
 	// creates the clientset
 	clientset, err := snapshot.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+// NewDynamicClient returns a Dynamic client configured by the Kanister environment.
+func NewDynamicClient() (dynamic.Interface, error) {
+	config, err := LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// creates the clientset
+	clientset, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
