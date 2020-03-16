@@ -21,6 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
@@ -49,7 +50,7 @@ func NewGetter() getter.Getter {
 }
 
 // Get returns a provider for the requested storage type in the specified region
-func (*mockGetter) Get(storageType blockstorage.Type, config map[string]string) (blockstorage.Provider, error) {
+func (*mockGetter) Get(storageType blockstorage.Type, kubeCli kubernetes.Interface, config map[string]string) (blockstorage.Provider, error) {
 	// TODO(tom): we might want to honor these settings.
 	switch storageType {
 	case blockstorage.TypeEBS:
