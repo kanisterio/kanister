@@ -209,7 +209,7 @@ func (cas *CassandraInstance) Reset(ctx context.Context) error {
 }
 
 func (cas *CassandraInstance) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, cas.cli, cas.namespace, "cassandra")
+	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, cas.cli, cas.namespace, cas.chart.Release)
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error getting the pod and container name %s.", cas.name)
 	}
