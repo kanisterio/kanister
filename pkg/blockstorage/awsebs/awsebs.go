@@ -27,6 +27,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jpillora/backoff"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
 
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
@@ -42,8 +43,9 @@ var _ blockstorage.Provider = (*ebsStorage)(nil)
 var _ zone.Mapper = (*ebsStorage)(nil)
 
 type ebsStorage struct {
-	ec2Cli *EC2
-	role   string
+	ec2Cli  *EC2
+	role    string
+	kubeCli kubernetes.Interface
 }
 
 // EC2 is kasten's wrapper around ec2.EC2 structs
@@ -61,7 +63,7 @@ func (s *ebsStorage) Type() blockstorage.Type {
 }
 
 // NewProvider returns a provider for the EBS storage type in the specified region
-func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
+func NewProvider(ctx context.Context, config map[string]string, kubeCli kubernetes.Interface) (blockstorage.Provider, error) {
 	awsConfig, region, err := awsconfig.GetConfig(ctx, config)
 	if err != nil {
 		return nil, err
@@ -70,7 +72,7 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
-	return &ebsStorage{ec2Cli: ec2Cli, role: config[awsconfig.ConfigRole]}, nil
+	return &ebsStorage{ec2Cli: ec2Cli, role: config[awsconfig.ConfigRole], kubeCli: kubeCli}, nil
 }
 
 // newEC2Client returns ec2 client struct.
