@@ -22,16 +22,17 @@ import (
 	"strings"
 	"time"
 
-	snapshotclient "github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
@@ -99,8 +100,10 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 // 'snapshotName' is the name of the VolumeSnapshot that will be used for restoring.
 // 'namespace' is the namespace of the VolumeSnapshot. The PVC will be restored to the same namepsace.
 // 'restoreSize' will override existing restore size from snapshot content if provided.
-func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, snapCli snapshotclient.Interface, namespace, volumeName, storageClassName, snapshotName string, restoreSize *int) (string, error) {
-	snap, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Get(snapshotName, metav1.GetOptions{})
+func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, dynCli dynamic.Interface, namespace, volumeName, storageClassName, snapshotName string, restoreSize *int) (string, error) {
+	sns := snapshot.NewSnapshotAlpha(dynCli, kubeCli)
+	//snap, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Get(snapshotName, metav1.GetOptions{})
+	snap, err := sns.Get(ctx, snapshotName, namespace)
 	if err != nil {
 		return "", err
 	}
