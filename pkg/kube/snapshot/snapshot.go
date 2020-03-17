@@ -16,6 +16,11 @@ package snapshot
 
 import (
 	"context"
+
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1alpha1"
 )
 
 type Snapshotter interface {
@@ -31,7 +36,7 @@ type Snapshotter interface {
 	//
 	// 'name' is the name of the VolumeSnapshot that will be returned.
 	// 'namespace' is the namespace of the VolumeSnapshot that will be returned.
-	Get(ctx context.Context, name, namespace string) (*VolumeSnapshot, error)
+	Get(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error)
 	// Delete will delete the VolumeSnapshot and returns any error as a result.
 	//
 	// 'name' is the name of the VolumeSnapshot that will be deleted.
@@ -71,20 +76,10 @@ type Source struct {
 	VolumeSnapshotClassName string
 }
 
-// VolumeSnapshot contains Snapshot metadata
-type VolumeSnapshot struct {
-	metav1.ObjectMeta `json:"metadata"`
-	Spec              SnapshotSpec   `json:"spec"`
-	Status            SnapshotStatus `json:"status"`
-}
-
-type SnapshotSpec struct {
-	SnapshotContentName string `json:"snapshotContentName"`
-}
-
-type SnapshotStatus struct {
-	CreationTime *metav1.Time         `json:"creationTime"`
-	RestoreSize  *resource.Quantity   `json:"restoreSize"`
-	ReadyToUse   bool                 `json:"readyToUse"`
-	Error        *storage.VolumeError `json:"error"`
+// NewSnapshotter creates and return new Snapshotter object
+func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) Snapshotter {
+	return &SnapshotAlpha{
+		kubeCli: kubeCli,
+		dynCli:  dynCli,
+	}
 }
