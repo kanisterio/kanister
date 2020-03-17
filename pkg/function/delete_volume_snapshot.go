@@ -72,7 +72,7 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 			config[awsconfig.ConfigRegion] = pvcInfo.Region
 		}
 
-		provider, err := getter.Get(pvcInfo.Type, config)
+		provider, err := getter.Get(pvcInfo.Type, cli, config)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not get storage provider")
 		}

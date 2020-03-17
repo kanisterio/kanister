@@ -212,7 +212,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 		if pvZone := kube.GetZoneFromLabels(pvLabels); pvZone != "" {
 			config := getConfig(tp.Profile, blockstorage.TypeEBS)
 			config[awsconfig.ConfigRegion] = region
-			provider, err = getter.Get(blockstorage.TypeEBS, config)
+			provider, err = getter.Get(blockstorage.TypeEBS, kubeCli, config)
 			if err != nil {
 				return nil, errors.Wrap(err, "Could not get storage provider")
 			}
@@ -228,7 +228,7 @@ func getPVCInfo(ctx context.Context, kubeCli kubernetes.Interface, namespace str
 		}
 		if pvZone := kube.GetZoneFromLabels(pvLabels); pvZone != "" {
 			config := getConfig(tp.Profile, blockstorage.TypeGPD)
-			provider, err = getter.Get(blockstorage.TypeGPD, config)
+			provider, err = getter.Get(blockstorage.TypeGPD, kubeCli, config)
 			if err != nil {
 				return nil, errors.Wrap(err, "Could not get storage provider")
 			}
