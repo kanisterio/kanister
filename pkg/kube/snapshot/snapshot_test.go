@@ -170,7 +170,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 
 	vsc := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": fmt.Sprintf("%s/%s", snapshot.Group, snapshot.VersionAlpha),
+			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 			"kind":       snapshot.VolSnapClassKind,
 			"metadata": map[string]interface{}{
 				"name": fakeClass,
@@ -182,7 +182,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 
 	content := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": fmt.Sprintf("%s/%s", snapshot.Group, snapshot.VersionAlpha),
+			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 			"kind":       snapshot.VolSnapContentKind,
 			"metadata": map[string]interface{}{
 				"name": fakeContentName,
@@ -203,7 +203,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 
 	snap := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": fmt.Sprintf("%s/%s", snapshot.Group, snapshot.VersionAlpha),
+			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 			"kind":       snapshot.VolSnapKind,
 			"metadata": map[string]interface{}{
 				"name":      fakeSnapshotName,
@@ -424,7 +424,7 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 	} {
 		vsc := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": fmt.Sprintf("%s/%s", snapshot.Group, snapshot.VersionAlpha),
+				"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 				"kind":       snapshot.VolSnapClassKind,
 				"metadata": map[string]interface{}{
 					"name": tc.name,

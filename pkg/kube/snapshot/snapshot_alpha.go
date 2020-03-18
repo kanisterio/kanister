@@ -37,26 +37,19 @@ import (
 const (
 	pvcKind = "PersistentVolumeClaim"
 
-	VersionAlpha = "v1alpha1"
-	Group        = "snapshot.storage.k8s.io"
-
 	// Snapshot resource Kinds
 	VolSnapClassKind   = "VolumeSnapshotClass"
 	VolSnapKind        = "VolumeSnapshot"
 	VolSnapContentKind = "VolumeSnapshotContent"
-
-	volSnapClassResource   = "volumesnapshotclasses"
-	volSnapResource        = "volumesnapshots"
-	volSnapContentResource = "volumesnapshotcontents"
 )
 
 var (
 	// VolSnapGVR specifies GVR schema for VolumeSnapshots
-	VolSnapGVR = schema.GroupVersionResource{Group: Group, Version: VersionAlpha, Resource: volSnapResource}
+	VolSnapGVR = schema.GroupVersionResource{Group: v1alpha1.GroupName, Version: v1alpha1.Version, Resource: v1alpha1.VolumeSnapshotResourcePlural}
 	// VolSnapClassGVR specifies GVR schema for VolumeSnapshotClasses
-	VolSnapClassGVR = schema.GroupVersionResource{Group: Group, Version: VersionAlpha, Resource: volSnapClassResource}
+	VolSnapClassGVR = schema.GroupVersionResource{Group: v1alpha1.GroupName, Version: v1alpha1.Version, Resource: v1alpha1.VolumeSnapshotClassResourcePlural}
 	// VolSnapContentGVR specifies GVR schema for VolumeSnapshotContents
-	VolSnapContentGVR = schema.GroupVersionResource{Group: Group, Version: VersionAlpha, Resource: volSnapContentResource}
+	VolSnapContentGVR = schema.GroupVersionResource{Group: v1alpha1.GroupName, Version: v1alpha1.Version, Resource: v1alpha1.VolumeSnapshotContentResourcePlural}
 )
 
 type SnapshotAlpha struct {
@@ -188,7 +181,7 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 
 	content := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": fmt.Sprintf("%s/%s", Group, VersionAlpha),
+			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 			"kind":       VolSnapContentKind,
 			"metadata": map[string]interface{}{
 				"name": contentName,
@@ -211,7 +204,7 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 
 	snap := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": fmt.Sprintf("%s/%s", Group, VersionAlpha),
+			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 			"kind":       VolSnapKind,
 			"metadata": map[string]interface{}{
 				"name": snapshotName,
@@ -289,7 +282,7 @@ func (sna *SnapshotAlpha) getDeletionPolicyFromClass(snapClassName string) (stri
 func (sna *SnapshotAlpha) createVolumeSnapshot(name, namespace string, pvcObjectRef corev1.ObjectReference, snapClassName string) error {
 	snap := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": fmt.Sprintf("%s/%s", Group, VersionAlpha),
+			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 			"kind":       VolSnapKind,
 			"metadata": map[string]interface{}{
 				"name":      name,

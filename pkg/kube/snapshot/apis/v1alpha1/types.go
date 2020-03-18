@@ -30,6 +30,9 @@ const (
 	VolumeSnapshotResourcePlural = "volumesnapshots"
 	// VolumeSnapshotClassResourcePlural is "volumesnapshotclasses"
 	VolumeSnapshotClassResourcePlural = "volumesnapshotclasses"
+
+	GroupName = "snapshot.storage.k8s.io"
+	Version   = "v1alpha1"
 )
 
 // VolumeSnapshot is a user's request for taking a snapshot. Upon successful creation of the actual
