@@ -438,6 +438,7 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 		}
 
 		_, err := dynCli.Resource(snapshot.VolSnapClassGVR).Namespace("").Create(vsc, metav1.CreateOptions{})
+		c.Assert(err, IsNil)
 		name, err := fakeSs.GetVolumeSnapshotClass(tc.testKey, tc.testValue)
 		c.Assert(err, tc.check)
 		if err == nil {
