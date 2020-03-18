@@ -18,6 +18,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"time"
 
 	json "github.com/json-iterator/go"
 	"github.com/pkg/errors"
@@ -30,6 +31,9 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
+
+// podReadyWaitTimeout is the time to wait for pod to be ready
+const podReadyWaitTimeout = 5 * time.Minute // Q: Is 5 minutes sufficient?
 
 // PodOptions specifies options for `CreatePod`
 type PodOptions struct {
@@ -114,7 +118,9 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 
 // WaitForPodReady waits for a pod to exit the pending state
 func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
-	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, podReadyWaitTimeout)
+	defer waitCancel()
+	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		p, err := cli.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -123,7 +129,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 		// check if nodes are up and available
 		n := strings.Split(p.NodeName, "/")
 		if n[0] != "" {
-			ns, err := cli.CoreV1().Nodes().Get(n[0], metav1.GetOptions{})
+			node, err := cli.CoreV1().Nodes().Get(n[0], metav1.GetOptions{})
 			if err != nil {
 				return false, errors.Wrapf(err, "Failed to get node %s", n[0])
 			}
@@ -152,19 +158,6 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 				} else if pvc.Status.Phase == v1.ClaimLost {
 					return false, errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, name, v1.ClaimLost)
 				}
-			}
-		}
-
-		// check if container is in healthy state
-		for _, container := range p.Status.InitContainerStatuses {
-			if container.State == v1.ContainerStateWaiting {
-				// Might not need to check container state
-			}
-		}
-
-		for _, container = range p.Status.ContainerStatus {
-			if container.State == v1.ContainerStateWaiting {
-				// Might not need to check container state
 			}
 		}
 
