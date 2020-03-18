@@ -64,6 +64,23 @@ type SnapshotAlpha struct {
 	dynCli  dynamic.Interface
 }
 
+func (sna *SnapshotAlpha) GetVolumeSnapshotClass(annotationKey, annotationValue string) (string, error) {
+	us, err := sna.dynCli.Resource(VolSnapClassGVR).Namespace("").List(metav1.ListOptions{})
+	if err != nil {
+		return "", errors.Errorf("Failed to get VolumeSnapshotClasses in the cluster: %v", err)
+	}
+	if us == nil || len(us.Items) == 0 {
+		return "", errors.Errorf("Failed to find any VolumeSnapshotClass in the cluster: %v", err)
+	}
+	for _, vsc := range us.Items {
+		ans := vsc.GetAnnotations()
+		if val, ok := ans[annotationKey]; ok && val == annotationValue {
+			return vsc.GetName(), nil
+		}
+	}
+	return "", errors.Errorf("Failed to find VolumesnapshotClass with %s annotation in the cluster", annotationKey)
+}
+
 // Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
 func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, volumeName string, snapshotClass *string, waitForReady bool) error {
 	if _, err := sna.kubeCli.CoreV1().PersistentVolumeClaims(namespace).Get(volumeName, metav1.GetOptions{}); err != nil {

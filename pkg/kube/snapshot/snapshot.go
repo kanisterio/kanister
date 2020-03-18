@@ -24,6 +24,12 @@ import (
 )
 
 type Snapshotter interface {
+	// GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
+	//
+	// 'annotationKey' is the annotation key which has to be present on VolumeSnapshotClass.
+	// 'annotationValue' is the value for annotationKey in VolumeSnapshotClass spec.
+	// This returns error if no VolumeSnapshotClass found.
+	GetVolumeSnapshotClass(annotationKey, annotationValue string) (string, error)
 	// Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
 	//
 	// 'name' is the name of the VolumeSnapshot.

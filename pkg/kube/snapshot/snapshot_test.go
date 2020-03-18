@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
-	snapshotfake "k8s.io/client-go/dynamic/fake"
+	dynfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -131,7 +131,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *C) {
 	volName := "pvc-1-fake"
 	scheme := runtime.NewScheme()
 	fakeCli := fake.NewSimpleClientset()
-	fakeSs := snapshot.NewSnapshotter(fakeCli, snapshotfake.NewSimpleDynamicClient(scheme))
+	fakeSs := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
 
 	size, err := resource.ParseQuantity("1Gi")
 	c.Assert(err, IsNil)
@@ -221,7 +221,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 	}
 
 	scheme := runtime.NewScheme()
-	dynCli := snapshotfake.NewSimpleDynamicClient(scheme)
+	dynCli := dynfake.NewSimpleDynamicClient(scheme)
 	fakeTargetNamespace := "new-ns"
 	fakeClone := "clone-1"
 
@@ -370,5 +370,78 @@ func (s *SnapshotTestSuite) cleanupNamespace(c *C, ns string) {
 	err := s.cli.CoreV1().Namespaces().Delete(ns, &metav1.DeleteOptions{})
 	if err != nil {
 		c.Logf("Failed to delete namespace, Namespace: %s, Error: %v", ns, err)
+	}
+}
+
+func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
+	scheme := runtime.NewScheme()
+	dynCli := dynfake.NewSimpleDynamicClient(scheme)
+
+	fakeSs := snapshot.NewSnapshotter(nil, dynCli)
+	_, err := fakeSs.GetVolumeSnapshotClass("test-annotation", "value")
+	c.Assert(err, NotNil)
+
+	for _, tc := range []struct {
+		name            string
+		annotationKey   string
+		annotationValue string
+		testKey         string
+		testValue       string
+		check           Checker
+	}{
+		{
+			name:            "test-1",
+			annotationKey:   "test-1",
+			annotationValue: "true",
+			testKey:         "test-1",
+			testValue:       "true",
+			check:           IsNil,
+		},
+		{
+			name:            "test-2",
+			annotationKey:   "",
+			annotationValue: "",
+			testKey:         "",
+			testValue:       "",
+			check:           IsNil,
+		},
+		{
+			name:            "test-3",
+			annotationKey:   "test-3",
+			annotationValue: "false",
+			testKey:         "invalid",
+			testValue:       "false",
+			check:           NotNil,
+		},
+		{
+			name:            "test-4",
+			annotationKey:   "test-4",
+			annotationValue: "false",
+			testKey:         "test-4",
+			testValue:       "true",
+			check:           NotNil,
+		},
+	} {
+		vsc := &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": fmt.Sprintf("%s/%s", snapshot.Group, snapshot.VersionAlpha),
+				"kind":       snapshot.VolSnapClassKind,
+				"metadata": map[string]interface{}{
+					"name": tc.name,
+					"annotations": map[string]interface{}{
+						tc.annotationKey: tc.annotationValue,
+					},
+				},
+				"snapshotter":    fakeDriver,
+				"deletionPolicy": "Delete",
+			},
+		}
+
+		_, err := dynCli.Resource(snapshot.VolSnapClassGVR).Namespace("").Create(vsc, metav1.CreateOptions{})
+		name, err := fakeSs.GetVolumeSnapshotClass(tc.testKey, tc.testValue)
+		c.Assert(err, tc.check)
+		if err == nil {
+			c.Assert(name, Equals, tc.name)
+		}
 	}
 }
