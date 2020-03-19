@@ -62,9 +62,8 @@ func (s *PodSuite) TearDownSuite(c *C) {
 }
 
 func (s *PodSuite) TestPod(c *C) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	pod, err := CreatePod(context.Background(), s.cli, &PodOptions{
+	ctx := context.Background()
+	pod, err := CreatePod(ctx, s.cli, &PodOptions{
 		Namespace:    s.namespace,
 		GenerateName: "test-",
 		Image:        "kanisterio/kanister-tools:0.27.0",
@@ -78,8 +77,7 @@ func (s *PodSuite) TestPod(c *C) {
 func (s *PodSuite) TestPodWithVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
 	vols := map[string]string{"pvc-test": "/mnt/data1"}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
+	ctx := context.Background()
 	var p *v1.Pod
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 		fmt.Println("found pod")
@@ -99,6 +97,7 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 		Volumes:      vols,
 	})
 	c.Assert(err, IsNil)
+	c.Assert(WaitForPodReady(ctx, s.cli, s.namespace, pod.Name), IsNil)
 	c.Assert(pod.Spec.Volumes, HasLen, 1)
 	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, "pvc-test")
 	c.Assert(pod.Spec.Containers[0].VolumeMounts[0].MountPath, Equals, "/mnt/data1")
