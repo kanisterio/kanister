@@ -24,6 +24,7 @@ import (
 
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -76,7 +77,22 @@ func (s *PodSuite) TestPod(c *C) {
 
 func (s *PodSuite) TestPodWithVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
-	vols := map[string]string{"pvc-test": "/mnt/data1"}
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pvc-test",
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: *resource.NewQuantity(1, resource.BinarySI),
+				},
+			},
+		},
+	}
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+	c.Assert(err, IsNil)
+	vols := map[string]string{pvc.Name: "/mnt/data1"}
 	ctx := context.Background()
 	var p *v1.Pod
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
