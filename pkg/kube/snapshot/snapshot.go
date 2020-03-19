@@ -34,10 +34,10 @@ type Snapshotter interface {
 	//
 	// 'name' is the name of the VolumeSnapshot.
 	// 'namespace' is namespace of the PVC. VolumeSnapshot will be crated in the same namespace.
-	// 'volumeName' is the name of the PVC of which we will take snapshot. It must be in the same namespace 'ns'.
+	// 'pvcName' is the name of the PVC of which we will take snapshot. It must be in the same namespace 'ns'.
 	// 'waitForReady' will block the caller until the snapshot status is 'ReadyToUse'.
 	// or 'ctx.Done()' is signalled. Otherwise it will return immediately after the snapshot is cut.
-	Create(ctx context.Context, name, namespace, volumeName string, snapshotClass *string, waitForReady bool) error
+	Create(ctx context.Context, name, namespace, pvcName string, snapshotClass *string, waitForReady bool) error
 	// Get will return the VolumeSnapshot in the namespace 'namespace' with given 'name'.
 	//
 	// 'name' is the name of the VolumeSnapshot that will be returned.

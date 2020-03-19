@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2020 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ type SnapshotAlpha struct {
 	dynCli  dynamic.Interface
 }
 
+// GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
 func (sna *SnapshotAlpha) GetVolumeSnapshotClass(annotationKey, annotationValue string) (string, error) {
 	us, err := sna.dynCli.Resource(VolSnapClassGVR).Namespace("").List(metav1.ListOptions{})
 	if err != nil {
@@ -71,19 +72,19 @@ func (sna *SnapshotAlpha) GetVolumeSnapshotClass(annotationKey, annotationValue 
 			return vsc.GetName(), nil
 		}
 	}
-	return "", errors.Errorf("Failed to find VolumesnapshotClass with %s annotation in the cluster", annotationKey)
+	return "", errors.Errorf("Failed to find VolumesnapshotClass with %s=%s annotation in the cluster", annotationKey, annotationValue)
 }
 
-// Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
-func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, volumeName string, snapshotClass *string, waitForReady bool) error {
-	if _, err := sna.kubeCli.CoreV1().PersistentVolumeClaims(namespace).Get(volumeName, metav1.GetOptions{}); err != nil {
+// Create creates a VolumeSnapshot and returns it or any error that happened meanwhile.
+func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName string, snapshotClass *string, waitForReady bool) error {
+	if _, err := sna.kubeCli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{}); err != nil {
 		if k8errors.IsNotFound(err) {
-			return errors.Errorf("Failed to find PVC %s, Namespace %s", volumeName, namespace)
+			return errors.Errorf("Failed to find PVC %s, Namespace %s", pvcName, namespace)
 		}
-		return errors.Errorf("Failed to query PVC %s, Namespace %s: %v", volumeName, namespace, err)
+		return errors.Errorf("Failed to query PVC %s, Namespace %s: %v", pvcName, namespace, err)
 	}
 
-	err := sna.createVolumeSnapshot(name, namespace, corev1.ObjectReference{Kind: pvcKind, Name: volumeName}, *snapshotClass)
+	err := sna.createVolumeSnapshot(name, namespace, corev1.ObjectReference{Kind: pvcKind, Name: pvcName}, *snapshotClass)
 	if err != nil {
 		return err
 	}
@@ -101,7 +102,7 @@ func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, volumeNam
 	return err
 }
 
-// Get will return the VolumeSnapshot in the namespace 'namespace' with given 'name'.
+// Get will return the VolumeSnapshot in the 'namespace' with given 'name'.
 func (sna *SnapshotAlpha) Get(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error) {
 	us, err := sna.dynCli.Resource(VolSnapGVR).Namespace(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
@@ -115,7 +116,7 @@ func (sna *SnapshotAlpha) Get(ctx context.Context, name, namespace string) (*v1a
 
 // Delete will delete the VolumeSnapshot and returns any error as a result.
 func (sna *SnapshotAlpha) Delete(ctx context.Context, name, namespace string) error {
-	if err := sna.dynCli.Resource(VolSnapGVR).Namespace(namespace).Delete(name, &metav1.DeleteOptions{}); !apierrors.IsNotFound(err) {
+	if err := sna.dynCli.Resource(VolSnapGVR).Namespace(namespace).Delete(name, &metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
 
@@ -207,7 +208,8 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 			"kind":       VolSnapKind,
 			"metadata": map[string]interface{}{
-				"name": snapshotName,
+				"name":      snapshotName,
+				"namespace": namespace,
 			},
 			"spec": map[string]interface{}{
 				"snapshotContentName": contentName,
