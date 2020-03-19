@@ -194,7 +194,7 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 				"volumeSnapshotRef": map[string]interface{}{
 					"kind":      VolSnapKind,
 					"name":      snapshotName,
-					"namespace": snapshotName,
+					"namespace": namespace,
 				},
 				"snapshotClassName": source.VolumeSnapshotClassName,
 				"deletionPolicy":    deletionPolicy,
