@@ -18,6 +18,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"strings"
 	"time"
 
 	json "github.com/json-iterator/go"
@@ -127,13 +128,13 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 		}
 
 		// check if nodes are up and available
-		n := strings.Split(p.NodeName, "/")
+		n := strings.Split(p.Spec.NodeName, "/")
 		if n[0] != "" {
 			node, err := cli.CoreV1().Nodes().Get(n[0], metav1.GetOptions{})
 			if err != nil {
 				return false, errors.Wrapf(err, "Failed to get node %s", n[0])
 			}
-			if !kube.IsNodeReady(&node) || !kube.IsNodeSchedulable(&node) {
+			if !IsNodeReady(&node) || !IsNodeSchedulable(&node) {
 				return false, errors.Errorf("Node %s is currently not ready/schedulable", n[0])
 			}
 		}
@@ -146,7 +147,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 		}
 
 		// check if pvc and pv are up and ready to mount
-		for _, vol := range p.PodSpec.Volumes {
+		for _, vol := range p.Spec.Volumes {
 			if vol.VolumeSource.PersistentVolumeClaim != nil {
 				pvcName := vol.VolumeSource.PersistentVolumeClaim.ClaimName
 				pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
@@ -154,7 +155,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 					return false, errors.Wrapf(err, "Failed to get pvc %s", pvcName)
 				}
 				if pvc.Status.Phase == v1.ClaimPending {
-					// check pod events to see if there is any Failed mount error
+					return false, nil
 				} else if pvc.Status.Phase == v1.ClaimLost {
 					return false, errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, name, v1.ClaimLost)
 				}
