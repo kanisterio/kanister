@@ -147,24 +147,41 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 		}
 
 		// check if pvc and pv are up and ready to mount
-		for _, vol := range p.Spec.Volumes {
-			if vol.VolumeSource.PersistentVolumeClaim != nil {
-				pvcName := vol.VolumeSource.PersistentVolumeClaim.ClaimName
-				pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
-				if err != nil {
-					return false, errors.Wrapf(err, "Failed to get pvc %s", pvcName)
-				}
-				if pvc.Status.Phase == v1.ClaimPending {
-					return false, nil
-				} else if pvc.Status.Phase == v1.ClaimLost {
-					return false, errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, name, v1.ClaimLost)
-				}
-			}
+		if err := checkPVCAndPVStatus(p, cli, namespace); err != nil {
+			return false, err
 		}
 
 		return p.Status.Phase != v1.PodPending && p.Status.Phase != "", nil
 	})
 	return errors.Wrapf(err, "Pod did not transition into running state. Namespace:%s, Name:%s", namespace, name)
+}
+
+func checkPVCAndPVStatus(p *v1.Pod, cli kubernetes.Interface, namespace string) error {
+	for _, vol := range p.Spec.Volumes {
+		if vol.VolumeSource.PersistentVolumeClaim != nil {
+			pvcName := vol.VolumeSource.PersistentVolumeClaim.ClaimName
+			pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
+			if err != nil {
+				return errors.Wrapf(err, "Failed to get pvc %s", pvcName)
+			}
+			if pvc.Status.Phase == v1.ClaimPending {
+				pvName := pvc.Spec.VolumeName
+				if pvName == "" {
+					return errors.Errorf("PVC %s in namespace %s not bound", pvcName, namespace)
+				}
+				pv, err := cli.CoreV1().PersistentVolumes().Get(pvName, metav1.GetOptions{})
+				if err != nil {
+					return errors.Wrapf(err, "Failed to get PV %s, namespace: %s", pvName, namespace)
+				}
+				if pv.Status.Phase == v1.VolumeFailed {
+					return errors.Errorf("PV %s associated with pvc %s has status: %s message: %s reason:%s namespace:%s", pvName, pvcName, v1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
+				}
+			} else if pvc.Status.Phase == v1.ClaimLost {
+				return errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, name, v1.ClaimLost)
+			}
+		}
+	}
+	return nil
 }
 
 // WaitForPodCompletion waits for a pod to reach a terminal state
