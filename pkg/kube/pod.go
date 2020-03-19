@@ -134,7 +134,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 			if err != nil {
 				return false, errors.Wrapf(err, "Failed to get node %s", n[0])
 			}
-			if !IsNodeReady(&node) || !IsNodeSchedulable(&node) {
+			if !IsNodeReady(node) || !IsNodeSchedulable(node) {
 				return false, errors.Errorf("Node %s is currently not ready/schedulable", n[0])
 			}
 		}
