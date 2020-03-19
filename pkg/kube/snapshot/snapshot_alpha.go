@@ -84,7 +84,7 @@ func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName s
 		return errors.Errorf("Failed to query PVC %s, Namespace %s: %v", pvcName, namespace, err)
 	}
 
-	err := sna.createVolumeSnapshot(name, namespace, corev1.ObjectReference{Kind: pvcKind, Name: pvcName}, *snapshotClass)
+	err := sna.createVolumeSnapshot(name, namespace, corev1.ObjectReference{Kind: pvcKind, Name: pvcName, Namespace: namespace}, *snapshotClass)
 	if err != nil {
 		return err
 	}
