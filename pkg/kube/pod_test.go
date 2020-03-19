@@ -97,7 +97,7 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 		Volumes:      vols,
 	})
 	c.Assert(err, IsNil)
-	c.Assert(WaitForPodReady(ctx, s.cli, s.namespace, pod.Name), IsNil)
+	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), IsNil)
 	c.Assert(pod.Spec.Volumes, HasLen, 1)
 	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, "pvc-test")
 	c.Assert(pod.Spec.Containers[0].VolumeMounts[0].MountPath, Equals, "/mnt/data1")
