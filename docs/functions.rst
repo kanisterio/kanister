@@ -91,7 +91,7 @@ Example:
 .. code-block:: yaml
   :linenos:
 
-  - func: KubeExec
+  - func: KubeExecAll
     name: examplePhase
     args:
       namespace: "{{ .Deployment.Namespace }}"
