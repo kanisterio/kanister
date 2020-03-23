@@ -321,5 +321,4 @@ func getSnapshotClassbyAnnotation(dynCli dynamic.Interface, gvr schema.GroupVers
 		}
 	}
 	return "", errors.Errorf("Failed to find VolumesnapshotClass with %s=%s annotation in the cluster", annotationKey, annotationValue)
-
 }

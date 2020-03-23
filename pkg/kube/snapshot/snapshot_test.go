@@ -248,7 +248,6 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotAlpha(c *C) {
 	}
 	c.Logf("VolumeSnapshot test - source namespace: %s - target namespace: %s", s.sourceNamespace, s.targetNamespace)
 	s.testVolumeSnapshot(c, s.snapshotterAlpha, s.storageClassCSIAlpha, s.snapshotClassAlpha)
-
 }
 
 func (s *SnapshotTestSuite) TestVolumeSnapshotBeta(c *C) {
@@ -260,7 +259,6 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotBeta(c *C) {
 	}
 	c.Logf("VolumeSnapshot test - source namespace: %s - target namespace: %s", s.sourceNamespace, s.targetNamespace)
 	s.testVolumeSnapshot(c, s.snapshotterBeta, s.storageClassCSIBeta, s.snapshotClassBeta)
-
 }
 
 func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapshotter, storageClass *string, snapshotClass *string) {
