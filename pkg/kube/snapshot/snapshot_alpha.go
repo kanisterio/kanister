@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,36 +42,18 @@ const (
 	VolSnapContentKind = "VolumeSnapshotContent"
 )
 
-var (
-	// VolSnapGVR specifies GVR schema for VolumeSnapshots
-	VolSnapGVR = schema.GroupVersionResource{Group: v1alpha1.GroupName, Version: v1alpha1.Version, Resource: v1alpha1.VolumeSnapshotResourcePlural}
-	// VolSnapClassGVR specifies GVR schema for VolumeSnapshotClasses
-	VolSnapClassGVR = schema.GroupVersionResource{Group: v1alpha1.GroupName, Version: v1alpha1.Version, Resource: v1alpha1.VolumeSnapshotClassResourcePlural}
-	// VolSnapContentGVR specifies GVR schema for VolumeSnapshotContents
-	VolSnapContentGVR = schema.GroupVersionResource{Group: v1alpha1.GroupName, Version: v1alpha1.Version, Resource: v1alpha1.VolumeSnapshotContentResourcePlural}
-)
-
 type SnapshotAlpha struct {
 	kubeCli kubernetes.Interface
 	dynCli  dynamic.Interface
 }
 
+func NewSnapshotAlpha(kubeCli kubernetes.Interface, dynCli dynamic.Interface) Snapshotter {
+	return &SnapshotAlpha{kubeCli: kubeCli, dynCli: dynCli}
+}
+
 // GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
 func (sna *SnapshotAlpha) GetVolumeSnapshotClass(annotationKey, annotationValue string) (string, error) {
-	us, err := sna.dynCli.Resource(VolSnapClassGVR).Namespace("").List(metav1.ListOptions{})
-	if err != nil {
-		return "", errors.Errorf("Failed to get VolumeSnapshotClasses in the cluster: %v", err)
-	}
-	if us == nil || len(us.Items) == 0 {
-		return "", errors.Errorf("Failed to find any VolumeSnapshotClass in the cluster: %v", err)
-	}
-	for _, vsc := range us.Items {
-		ans := vsc.GetAnnotations()
-		if val, ok := ans[annotationKey]; ok && val == annotationValue {
-			return vsc.GetName(), nil
-		}
-	}
-	return "", errors.Errorf("Failed to find VolumesnapshotClass with %s=%s annotation in the cluster", annotationKey, annotationValue)
+	return getSnapshotClassbyAnnotation(sna.dynCli, v1alpha1.VolSnapClassGVR, annotationKey, annotationValue)
 }
 
 // Create creates a VolumeSnapshot and returns it or any error that happened meanwhile.
@@ -84,7 +65,8 @@ func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName s
 		return errors.Errorf("Failed to query PVC %s, Namespace %s: %v", pvcName, namespace, err)
 	}
 
-	err := sna.createVolumeSnapshot(name, namespace, corev1.ObjectReference{Kind: pvcKind, Name: pvcName, Namespace: namespace}, *snapshotClass)
+	snap := UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, "", *snapshotClass)
+	_, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Create(snap, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -104,7 +86,7 @@ func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName s
 
 // Get will return the VolumeSnapshot in the 'namespace' with given 'name'.
 func (sna *SnapshotAlpha) Get(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error) {
-	us, err := sna.dynCli.Resource(VolSnapGVR).Namespace(namespace).Get(name, metav1.GetOptions{})
+	us, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +98,7 @@ func (sna *SnapshotAlpha) Get(ctx context.Context, name, namespace string) (*v1a
 
 // Delete will delete the VolumeSnapshot and returns any error as a result.
 func (sna *SnapshotAlpha) Delete(ctx context.Context, name, namespace string) error {
-	if err := sna.dynCli.Resource(VolSnapGVR).Namespace(namespace).Delete(name, &metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
+	if err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Delete(name, &metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
 
@@ -127,18 +109,7 @@ func (sna *SnapshotAlpha) Delete(ctx context.Context, name, namespace string) er
 // Clone will clone the VolumeSnapshot to namespace 'cloneNamespace'.
 // Underlying VolumeSnapshotContent will be cloned with a different name.
 func (sna *SnapshotAlpha) Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool) error {
-	snap, err := sna.Get(ctx, name, namespace)
-	if err != nil {
-		return err
-	}
-	if !snap.Status.ReadyToUse {
-		return errors.Errorf("Original snapshot is not ready, VolumeSnapshot: %s, Namespace: %s", cloneName, cloneNamespace)
-	}
-	if snap.Spec.SnapshotContentName == "" {
-		return errors.Errorf("Original snapshot does not have content, VolumeSnapshot: %s, Namespace: %s", cloneName, cloneNamespace)
-	}
-
-	_, err = sna.Get(ctx, cloneName, cloneNamespace)
+	_, err := sna.Get(ctx, cloneName, cloneNamespace)
 	if err == nil {
 		return errors.Errorf("Target snapshot already exists in target namespace, Volumesnapshot: %s, Namespace: %s", cloneName, cloneNamespace)
 	}
@@ -159,6 +130,13 @@ func (sna *SnapshotAlpha) GetSource(ctx context.Context, snapshotName, namespace
 	if err != nil {
 		return nil, errors.Errorf("Failed to get snapshot, VolumeSnapshot: %s, Error: %v", snapshotName, err)
 	}
+	if !snap.Status.ReadyToUse {
+		return nil, errors.Errorf("Snapshot is not ready, VolumeSnapshot: %s, Namespace: %s", snapshotName, namespace)
+	}
+	if snap.Spec.SnapshotContentName == "" {
+		return nil, errors.Errorf("Snapshot does not have content, VolumeSnapshot: %s, Namespace: %s", snapshotName, namespace)
+	}
+
 	cont, err := sna.getContent(ctx, snap.Spec.SnapshotContentName)
 	if err != nil {
 		return nil, errors.Errorf("Failed to get snapshot content, VolumeSnapshot: %s, VolumeSnapshotContent: %s, Error: %v", snapshotName, snap.Spec.SnapshotContentName, err)
@@ -179,50 +157,13 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 		return errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
-
-	content := &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
-			"kind":       VolSnapContentKind,
-			"metadata": map[string]interface{}{
-				"name": contentName,
-			},
-			"spec": map[string]interface{}{
-				"csiVolumeSnapshotSource": map[string]interface{}{
-					"driver":         source.Driver,
-					"snapshotHandle": source.Handle,
-				},
-				"volumeSnapshotRef": map[string]interface{}{
-					"kind":      VolSnapKind,
-					"name":      snapshotName,
-					"namespace": namespace,
-				},
-				"snapshotClassName": source.VolumeSnapshotClassName,
-				"deletionPolicy":    deletionPolicy,
-			},
-		},
-	}
-
-	snap := &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
-			"kind":       VolSnapKind,
-			"metadata": map[string]interface{}{
-				"name":      snapshotName,
-				"namespace": namespace,
-			},
-			"spec": map[string]interface{}{
-				"snapshotContentName": contentName,
-				"snapshotClassName":   source.VolumeSnapshotClassName,
-			},
-		},
-	}
-
-	_, err = sna.dynCli.Resource(VolSnapContentGVR).Namespace("").Create(content, metav1.CreateOptions{})
+	content := UnstructuredVolumeSnapshotContentBeta(contentName, snapshotName, namespace, deletionPolicy, source.Driver, source.Handle, source.VolumeSnapshotClassName)
+	snap := UnstructuredVolumeSnapshotAlpha(snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName)
+	_, err = sna.dynCli.Resource(v1alpha1.VolSnapContentGVR).Namespace("").Create(content, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Errorf("Failed to create content, VolumesnapshotContent: %s, Error: %v", content.GetName(), err)
 	}
-	_, err = sna.dynCli.Resource(VolSnapGVR).Namespace(namespace).Create(snap, metav1.CreateOptions{})
+	_, err = sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Create(snap, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Errorf("Failed to create content, Volumesnapshot: %s, Error: %v", snap.GetName(), err)
 	}
@@ -238,7 +179,7 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 // has status 'ReadyToUse' or 'ctx.Done()' is signalled.
 func (sna *SnapshotAlpha) WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error {
 	return poll.Wait(ctx, func(context.Context) (bool, error) {
-		us, err := sna.dynCli.Resource(VolSnapGVR).Namespace(namespace).Get(snapshotName, metav1.GetOptions{})
+		us, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(snapshotName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -256,7 +197,7 @@ func (sna *SnapshotAlpha) WaitOnReadyToUse(ctx context.Context, snapshotName, na
 }
 
 func (sna *SnapshotAlpha) getContent(ctx context.Context, contentName string) (*v1alpha1.VolumeSnapshotContent, error) {
-	us, err := sna.dynCli.Resource(VolSnapContentGVR).Namespace("").Get(contentName, metav1.GetOptions{})
+	us, err := sna.dynCli.Resource(v1alpha1.VolSnapContentGVR).Namespace("").Get(contentName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +210,7 @@ func (sna *SnapshotAlpha) getContent(ctx context.Context, contentName string) (*
 }
 
 func (sna *SnapshotAlpha) getDeletionPolicyFromClass(snapClassName string) (string, error) {
-	us, err := sna.dynCli.Resource(VolSnapClassGVR).Namespace("").Get(snapClassName, metav1.GetOptions{})
+	us, err := sna.dynCli.Resource(v1alpha1.VolSnapClassGVR).Namespace("").Get(snapClassName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to find VolumeSnapshotClass: %s", snapClassName)
 	}
@@ -281,7 +222,7 @@ func (sna *SnapshotAlpha) getDeletionPolicyFromClass(snapClassName string) (stri
 	return vsc.DeletionPolicy, nil
 }
 
-func (sna *SnapshotAlpha) createVolumeSnapshot(name, namespace string, pvcObjectRef corev1.ObjectReference, snapClassName string) error {
+func UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, contentName, snapClassName string) *unstructured.Unstructured {
 	snap := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
@@ -290,19 +231,66 @@ func (sna *SnapshotAlpha) createVolumeSnapshot(name, namespace string, pvcObject
 				"name":      name,
 				"namespace": namespace,
 			},
+		},
+	}
+	if pvcName != "" {
+		snap.Object["spec"] = map[string]interface{}{
+			"source": map[string]interface{}{
+				"kind":      pvcKind,
+				"name":      pvcName,
+				"namespace": namespace,
+			},
+			"snapshotClassName": snapClassName,
+			"deletionPolicy":    "Delete",
+		}
+	}
+	if contentName != "" {
+		snap.Object["spec"] = map[string]interface{}{
+			"snapshotContentName": contentName,
+			"snapshotClassName":   snapClassName,
+			"deletionPolicy":      "Delete",
+		}
+	}
+	return snap
+}
+
+func UnstructuredVolumeSnapshotContentAlpha(name, snapshotName, snapshotNs, deletionPolicy, driver, handle, snapClassName string) *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
+			"kind":       VolSnapContentKind,
+			"metadata": map[string]interface{}{
+				"name": name,
+			},
 			"spec": map[string]interface{}{
-				"source": map[string]interface{}{
-					"kind":      pvcObjectRef.Kind,
-					"name":      pvcObjectRef.Name,
-					"namespace": pvcObjectRef.Namespace,
+				"csiVolumeSnapshotSource": map[string]interface{}{
+					"driver":         driver,
+					"snapshotHandle": handle,
+				},
+				"volumeSnapshotRef": map[string]interface{}{
+					"kind":      VolSnapKind,
+					"name":      snapshotName,
+					"namespace": snapshotNs,
 				},
 				"snapshotClassName": snapClassName,
+				"deletionPolicy":    deletionPolicy,
 			},
 		},
 	}
+}
 
-	_, err := sna.dynCli.Resource(VolSnapGVR).Namespace(namespace).Create(snap, metav1.CreateOptions{})
-	return err
+func UnstructuredVolumeSnapshotClassAlpha(name, driver, deletionPolicy string) *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
+			"kind":       VolSnapClassKind,
+			"metadata": map[string]interface{}{
+				"name": name,
+			},
+			"snapshotter":    driver,
+			"deletionPolicy": deletionPolicy,
+		},
+	}
 }
 
 // TransformUnstructured maps Unstructured object to object pointed by value
@@ -316,4 +304,22 @@ func TransformUnstructured(u *unstructured.Unstructured, value interface{}) erro
 		return errors.Errorf("Failed to Unmarshal unstructured object: %v", err)
 	}
 	return nil
+}
+
+func getSnapshotClassbyAnnotation(dynCli dynamic.Interface, gvr schema.GroupVersionResource, annotationKey, annotationValue string) (string, error) {
+	us, err := dynCli.Resource(gvr).Namespace("").List(metav1.ListOptions{})
+	if err != nil {
+		return "", errors.Errorf("Failed to get VolumeSnapshotClasses in the cluster: %v", err)
+	}
+	if us == nil || len(us.Items) == 0 {
+		return "", errors.Errorf("Failed to find any VolumeSnapshotClass in the cluster: %v", err)
+	}
+	for _, vsc := range us.Items {
+		ans := vsc.GetAnnotations()
+		if val, ok := ans[annotationKey]; ok && val == annotationValue {
+			return vsc.GetName(), nil
+		}
+	}
+	return "", errors.Errorf("Failed to find VolumesnapshotClass with %s=%s annotation in the cluster", annotationKey, annotationValue)
+
 }
