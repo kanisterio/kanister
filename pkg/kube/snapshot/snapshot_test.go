@@ -16,6 +16,7 @@ package snapshot_test
 
 import (
 	"context"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -373,6 +374,45 @@ func (s *SnapshotTestSuite) cleanupNamespace(c *C, ns string) {
 	err := s.cli.CoreV1().Namespaces().Delete(ns, &metav1.DeleteOptions{})
 	if err != nil {
 		c.Logf("Failed to delete namespace, Namespace: %s, Error: %v", ns, err)
+	}
+}
+
+func (s *SnapshotTestSuite) TestNewSnapshotter(c *C) {
+	fakeCli := fake.NewSimpleClientset()
+	_, err := snapshot.NewSnapshotter(fakeCli, nil)
+	c.Assert(err, NotNil)
+	for _, tc := range []struct {
+		apiResources metav1.APIResourceList
+		expected     string
+		check        Checker
+	}{
+		{
+			apiResources: metav1.APIResourceList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "VolumeSnapshot",
+					APIVersion: "v1alpha1",
+				},
+				GroupVersion: "snapshot.storage.k8s.io/v1alpha1",
+			},
+			expected: "*snapshot.SnapshotAlpha",
+			check:    IsNil,
+		},
+		{
+			apiResources: metav1.APIResourceList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "VolumeSnapshot",
+					APIVersion: "v1beta1",
+				},
+				GroupVersion: "snapshot.storage.k8s.io/v1beta1",
+			},
+			expected: "*snapshot.SnapshotBeta",
+			check:    IsNil,
+		},
+	} {
+		fakeCli.Resources = []*metav1.APIResourceList{&tc.apiResources}
+		ss, err := snapshot.NewSnapshotter(fakeCli, nil)
+		c.Assert(err, tc.check)
+		c.Assert(reflect.TypeOf(ss).String(), Equals, tc.expected)
 	}
 }
 
