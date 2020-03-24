@@ -23,7 +23,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -62,17 +62,48 @@ func (s *PodSuite) TearDownSuite(c *C) {
 }
 
 func (s *PodSuite) TestPod(c *C) {
+	// get controllers's namespace
+	cns, err := GetControllerNamespace()
+	c.Assert(err, IsNil)
+
+	// get controller's SA
+	sa, err := GetControllerServiceAccount(s.cli)
+	c.Assert(err, IsNil)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	pod, err := CreatePod(context.Background(), s.cli, &PodOptions{
-		Namespace:    s.namespace,
-		GenerateName: "test-",
-		Image:        "kanisterio/kanister-tools:0.28.0",
-		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-	})
-	c.Assert(err, IsNil)
-	c.Assert(WaitForPodReady(ctx, s.cli, s.namespace, pod.Name), IsNil)
-	c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
+
+	podOptions := []*PodOptions{
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        "kanisterio/kanister-tools:0.28.0",
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		},
+		{
+			Namespace:          s.namespace,
+			GenerateName:       "test-",
+			Image:              "kanisterio/kanister-tools:0.28.0",
+			Command:            []string{"sh", "-c", "tail -f /dev/null"},
+			ServiceAccountName: "dummy-sa",
+		},
+	}
+
+	for _, po := range podOptions {
+		pod, err := CreatePod(context.Background(), s.cli, po)
+
+		// we have not specified the SA, if the pod is being created in the
+		// same ns as controller's, controller's SA should have been set.
+		if po.ServiceAccountName != "" && s.namespace == cns {
+			c.Assert(pod.Spec.ServiceAccountName, Equals, sa)
+		} else {
+			c.Assert(pod.Spec.ServiceAccountName, Equals, po.ServiceAccountName)
+		}
+
+		c.Assert(err, IsNil)
+		c.Assert(WaitForPodReady(ctx, s.cli, s.namespace, pod.Name), IsNil)
+		c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
+	}
 }
 
 func (s *PodSuite) TestPodWithVolumes(c *C) {
