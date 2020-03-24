@@ -16,6 +16,7 @@ package snapshot_test
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -54,8 +55,8 @@ type SnapshotTestSuite struct {
 	dynCli               dynamic.Interface
 	snapshotClassAlpha   *string
 	snapshotClassBeta    *string
-	storageClassCSIAlpha *string
-	storageClassCSIBeta  *string
+	storageClassCSIAlpha string
+	storageClassCSIBeta  string
 }
 
 var _ = Suite(&SnapshotTestSuite{})
@@ -88,20 +89,19 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 	s.snapshotterAlpha = snapshot.NewSnapshotAlpha(cli, dynCli)
 	s.snapshotterBeta = snapshot.NewSnapshotBeta(cli, dynCli)
 
-	var snapClass, driverAlpha, driverBeta string
 	// Find alpha VolumeSnapshotClass name
-	snapClass, driverAlpha = findSnapshotClassName(c, s.dynCli, v1alpha1.VolSnapClassGVR, v1alpha1.VolumeSnapshotClass{})
-	s.snapshotClassAlpha = &snapClass
-	snapClass, driverBeta = findSnapshotClassName(c, s.dynCli, v1beta1.VolSnapClassGVR, v1beta1.VolumeSnapshotClass{})
-	s.snapshotClassBeta = &snapClass
+	snapClassAlpha, driverAlpha := findSnapshotClassName(c, s.dynCli, v1alpha1.VolSnapClassGVR, v1alpha1.VolumeSnapshotClass{})
+	s.snapshotClassAlpha = &snapClassAlpha
+	snapClassBeta, driverBeta := findSnapshotClassName(c, s.dynCli, v1beta1.VolSnapClassGVR, v1beta1.VolumeSnapshotClass{})
+	s.snapshotClassBeta = &snapClassBeta
 	storageClasses, err := cli.StorageV1().StorageClasses().List(metav1.ListOptions{})
 	c.Assert(err, IsNil)
 	for _, class := range storageClasses.Items {
 		if class.Provisioner == driverAlpha {
-			s.storageClassCSIAlpha = &class.Name
+			s.storageClassCSIAlpha = class.Name
 		}
 		if class.Provisioner == driverBeta {
-			s.storageClassCSIBeta = &class.Name
+			s.storageClassCSIBeta = class.Name
 		}
 	}
 
@@ -244,7 +244,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotAlpha(c *C) {
 	if s.snapshotClassAlpha == nil {
 		c.Skip("No Volumesnapshotclass in the cluster, create a volumesnapshotclass in the cluster")
 	}
-	if s.storageClassCSIAlpha == nil {
+	if s.storageClassCSIAlpha == "" {
 		c.Skip("No Storageclass with CSI provisioner, install CSI and create a storageclass for it")
 	}
 	c.Logf("VolumeSnapshot test - source namespace: %s - target namespace: %s", s.sourceNamespace, s.targetNamespace)
@@ -255,19 +255,21 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotBeta(c *C) {
 	if s.snapshotClassBeta == nil {
 		c.Skip("No Volumesnapshotclass in the cluster, create a volumesnapshotclass in the cluster")
 	}
-	if s.storageClassCSIBeta == nil {
+	if s.storageClassCSIBeta == "" {
 		c.Skip("No Storageclass with CSI provisioner, install CSI and create a storageclass for it")
 	}
 	c.Logf("VolumeSnapshot test - source namespace: %s - target namespace: %s", s.sourceNamespace, s.targetNamespace)
 	s.testVolumeSnapshot(c, s.snapshotterBeta, s.storageClassCSIBeta, s.snapshotClassBeta)
 }
 
-func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapshotter, storageClass *string, snapshotClass *string) {
+func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapshotter, storageClass string, snapshotClass *string) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
 	size, err := resource.ParseQuantity("1Gi")
 	c.Assert(err, IsNil)
+
+	fmt.Printf("StorageClas:: %s\n", storageClass)
 
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -281,7 +283,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 					corev1.ResourceName(corev1.ResourceStorage): size,
 				},
 			},
-			StorageClassName: storageClass,
+			StorageClassName: &storageClass,
 		},
 	}
 	pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.sourceNamespace).Create(pvc)
