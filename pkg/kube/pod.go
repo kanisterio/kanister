@@ -174,7 +174,7 @@ func checkPVCAndPVStatus(p *v1.Pod, cli kubernetes.Interface, namespace string) 
 					return errors.Wrapf(err, "Failed to get PV %s, namespace: %s", pvName, namespace)
 				}
 				if pv.Status.Phase == v1.VolumeFailed {
-					return errors.Errorf("PV %s associated with pvc %s has status: %s message: %s reason: %s namespace: %s", pvName, pvcName, v1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
+					return errors.Errorf("PV %s associated with PVC %s has status: %s message: %s reason: %s namespace: %s", pvName, pvcName, v1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
 				}
 			} else if pvc.Status.Phase == v1.ClaimLost {
 				return errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, p.Name, v1.ClaimLost)
