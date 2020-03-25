@@ -162,7 +162,7 @@ func checkPVCAndPVStatus(p *v1.Pod, cli kubernetes.Interface, namespace string) 
 			pvcName := vol.VolumeSource.PersistentVolumeClaim.ClaimName
 			pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
 			if err != nil {
-				return errors.Wrapf(err, "Failed to get pvc %s", pvcName)
+				return errors.Wrapf(err, "Failed to get PVC %s", pvcName)
 			}
 			if pvc.Status.Phase == v1.ClaimPending {
 				pvName := pvc.Spec.VolumeName
