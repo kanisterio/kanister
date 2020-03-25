@@ -148,10 +148,8 @@ func IsNodeSchedulable(node *v1.Node) bool {
 // Derived from "k8s.io/kubernetes/test/e2e/framework/node"
 func IsNodeReady(node *v1.Node) bool {
 	for _, cond := range node.Status.Conditions {
-		if cond.Type == v1.NodeReady {
-			if cond.Status == v1.ConditionTrue {
-				return true
-			}
+		if cond.Type == v1.NodeReady && cond.Status == v1.ConditionTrue {
+			return true
 		}
 	}
 	return false
