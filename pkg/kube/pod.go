@@ -163,28 +163,30 @@ func checkNodesStatus(p *v1.Pod, cli kubernetes.Interface) error {
 	return nil
 }
 
+// checkPVCAndPVStatus does the following:
+// 1. if PVC is present then check the status of PVC
+// 	1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
+// 2. if PVC not present then wait for timeout
 func checkPVCAndPVStatus(p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 	for _, vol := range p.Spec.Volumes {
 		if vol.VolumeSource.PersistentVolumeClaim != nil {
 			pvcName := vol.VolumeSource.PersistentVolumeClaim.ClaimName
 			pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
-			if err != nil {
-				return errors.Wrapf(err, "Failed to get PVC %s", pvcName)
-			}
-			if pvc.Status.Phase == v1.ClaimPending {
-				pvName := pvc.Spec.VolumeName
-				if pvName == "" {
-					return errors.Errorf("PVC %s in namespace %s not bound", pvcName, namespace)
+			// if err != nil then wait for timeout, since sometimes in case of statefulsets,they trigger creation of a volume
+			if err == nil {
+				if pvc.Status.Phase == v1.ClaimPending {
+					pvName := pvc.Spec.VolumeName
+					if pvName != "" {
+						pv, err := cli.CoreV1().PersistentVolumes().Get(pvName, metav1.GetOptions{})
+						if err == nil {
+							if pv.Status.Phase == v1.VolumeFailed {
+								return errors.Errorf("PV %s associated with PVC %s has status: %s message: %s reason: %s namespace: %s", pvName, pvcName, v1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
+							}
+						}
+					}
+				} else if pvc.Status.Phase == v1.ClaimLost {
+					return errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, p.Name, v1.ClaimLost)
 				}
-				pv, err := cli.CoreV1().PersistentVolumes().Get(pvName, metav1.GetOptions{})
-				if err != nil {
-					return errors.Wrapf(err, "Failed to get PV %s, namespace: %s", pvName, namespace)
-				}
-				if pv.Status.Phase == v1.VolumeFailed {
-					return errors.Errorf("PV %s associated with PVC %s has status: %s message: %s reason: %s namespace: %s", pvName, pvcName, v1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
-				}
-			} else if pvc.Status.Phase == v1.ClaimLost {
-				return errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, p.Name, v1.ClaimLost)
 			}
 		}
 	}
