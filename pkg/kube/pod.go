@@ -34,7 +34,7 @@ import (
 )
 
 // podReadyWaitTimeout is the time to wait for pod to be ready
-const podReadyWaitTimeout = 5 * time.Minute // Q: Is 5 minutes sufficient?
+const podReadyWaitTimeout = 5 * time.Minute
 
 // PodOptions specifies options for `CreatePod`
 type PodOptions struct {
