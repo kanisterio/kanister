@@ -23,7 +23,6 @@ import (
 	storage "k8s.io/api/storage/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
@@ -36,15 +35,6 @@ const (
 
 	GroupName = "snapshot.storage.k8s.io"
 	Version   = "v1alpha1"
-)
-
-var (
-	// VolSnapGVR specifies GVR schema for VolumeSnapshots
-	VolSnapGVR = schema.GroupVersionResource{Group: GroupName, Version: Version, Resource: VolumeSnapshotResourcePlural}
-	// VolSnapClassGVR specifies GVR schema for VolumeSnapshotClasses
-	VolSnapClassGVR = schema.GroupVersionResource{Group: GroupName, Version: Version, Resource: VolumeSnapshotClassResourcePlural}
-	// VolSnapContentGVR specifies GVR schema for VolumeSnapshotContents
-	VolSnapContentGVR = schema.GroupVersionResource{Group: GroupName, Version: Version, Resource: VolumeSnapshotContentResourcePlural}
 )
 
 // VolumeSnapshot is a user's request for taking a snapshot. Upon successful creation of the actual

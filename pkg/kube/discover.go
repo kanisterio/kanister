@@ -2,7 +2,6 @@ package kube
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/client-go/discovery"
 )
@@ -18,23 +17,6 @@ func IsOSAppsGroupAvailable(ctx context.Context, cli discovery.DiscoveryInterfac
 	for _, g := range sgs.Groups {
 		if g.Name == osAppsGroupName {
 			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// IsGroupVersionAvailable returns true if given group/version is registered.
-func IsGroupVersionAvailable(ctx context.Context, cli discovery.DiscoveryInterface, groupName, version string) (bool, error) {
-	sgs, err := cli.ServerGroups()
-	if err != nil {
-		return false, err
-	}
-
-	for _, g := range sgs.Groups {
-		for _, v := range g.Versions {
-			if fmt.Sprintf("%s/%s", groupName, version) == v.GroupVersion {
-				return true, nil
-			}
 		}
 	}
 	return false, nil

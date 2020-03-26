@@ -17,13 +17,10 @@ package snapshot
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1beta1"
 )
 
 type Snapshotter interface {
@@ -86,21 +83,9 @@ type Source struct {
 }
 
 // NewSnapshotter creates and return new Snapshotter object
-func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Snapshotter, error) {
-	ctx := context.Background()
-	exists, err := kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), v1alpha1.GroupName, v1alpha1.Version)
-	if err != nil {
-		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
+func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) Snapshotter {
+	return &SnapshotAlpha{
+		kubeCli: kubeCli,
+		dynCli:  dynCli,
 	}
-	if exists {
-		return NewSnapshotAlpha(kubeCli, dynCli), nil
-	}
-	exists, err = kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), v1beta1.GroupName, v1beta1.Version)
-	if err != nil {
-		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
-	}
-	if exists {
-		return NewSnapshotBeta(kubeCli, dynCli), nil
-	}
-	return nil, errors.New("Snapshot resources not supported")
 }
