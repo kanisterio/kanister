@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	pvcKind = "PersistentVolumeClaim"
+	PVCKind = "PersistentVolumeClaim"
 
 	// Snapshot resource Kinds
 	VolSnapClassKind   = "VolumeSnapshotClass"
@@ -236,7 +236,7 @@ func UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, contentName, snap
 	if pvcName != "" {
 		snap.Object["spec"] = map[string]interface{}{
 			"source": map[string]interface{}{
-				"kind":      pvcKind,
+				"kind":      PVCKind,
 				"name":      pvcName,
 				"namespace": namespace,
 			},

@@ -93,7 +93,7 @@ func (sna *SnapshotBeta) Get(ctx context.Context, name, namespace string) (*v1al
 	vsa.ObjectMeta = vs.ObjectMeta
 	if vs.Spec.Source.PersistentVolumeClaimName != nil {
 		vsa.Spec.Source = &corev1.TypedLocalObjectReference{
-			Kind: pvcKind,
+			Kind: PVCKind,
 			Name: *vs.Spec.Source.PersistentVolumeClaimName,
 		}
 	}
