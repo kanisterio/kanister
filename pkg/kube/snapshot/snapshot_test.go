@@ -16,7 +16,6 @@ package snapshot_test
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -209,11 +208,11 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 			"boundVolumeSnapshotContentName": fakeContentName,
 			"creationTime":                   metav1.Now().Format("2006-01-02T15:04:05Z"),
 		}
-		_, err := dynCli.Resource(tc.snapClassGVR).Namespace("").Create(tc.snapClassSpec, metav1.CreateOptions{})
+		_, err := dynCli.Resource(tc.snapClassGVR).Create(tc.snapClassSpec, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 		_, err = dynCli.Resource(tc.snapGVR).Namespace(defaultNamespace).Create(tc.snapSpec, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
-		_, err = dynCli.Resource(tc.contentGVR).Namespace("").Create(tc.contentSpec, metav1.CreateOptions{})
+		_, err = dynCli.Resource(tc.contentGVR).Create(tc.contentSpec, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
 		_, err = tc.fakeSs.Get(context.Background(), fakeSnapshotName, defaultNamespace)
@@ -225,7 +224,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		clone, err := tc.fakeSs.Get(context.Background(), fakeClone, fakeTargetNamespace)
 		c.Assert(err, IsNil)
 
-		us, err := dynCli.Resource(tc.contentGVR).Namespace("").Get(clone.Spec.SnapshotContentName, metav1.GetOptions{})
+		us, err := dynCli.Resource(tc.contentGVR).Get(clone.Spec.SnapshotContentName, metav1.GetOptions{})
 		c.Assert(err, IsNil)
 		err = snapshot.TransformUnstructured(us, tc.snapContentObject)
 		c.Assert(err, IsNil)
@@ -268,8 +267,6 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 
 	size, err := resource.ParseQuantity("1Gi")
 	c.Assert(err, IsNil)
-
-	fmt.Printf("StorageClas:: %s\n", storageClass)
 
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -495,7 +492,7 @@ func (tc snapshotClassTC) testGetSnapshotClass(c *C, dynCli dynamic.Interface, f
 			tc.annotationKey: tc.annotationValue,
 		},
 	}
-	_, err := dynCli.Resource(gvr).Namespace("").Create(snapClass, metav1.CreateOptions{})
+	_, err := dynCli.Resource(gvr).Create(snapClass, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	name, err := fakeSs.GetVolumeSnapshotClass(tc.testKey, tc.testValue)
 	c.Assert(err, tc.check)
@@ -506,14 +503,14 @@ func (tc snapshotClassTC) testGetSnapshotClass(c *C, dynCli dynamic.Interface, f
 
 func findSnapshotClassName(c *C, dynCli dynamic.Interface, gvr schema.GroupVersionResource, object interface{}) (string, string) {
 	// Find alpha VolumeSnapshotClass name
-	us, err := dynCli.Resource(gvr).Namespace("").List(metav1.ListOptions{})
+	us, err := dynCli.Resource(gvr).List(metav1.ListOptions{})
 	if err != nil && !k8errors.IsNotFound(err) {
 		c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
 		c.Fail()
 	}
 	var snapshotterName, snapshotClass string
 	if (us != nil) && len(us.Items) != 0 {
-		usClass, err := dynCli.Resource(gvr).Namespace("").Get(us.Items[0].GetName(), metav1.GetOptions{})
+		usClass, err := dynCli.Resource(gvr).Get(us.Items[0].GetName(), metav1.GetOptions{})
 		if err != nil {
 			c.Logf("Failed to get VolumeSnapshotClass, skipping test. Error: %v", err)
 			c.Fail()

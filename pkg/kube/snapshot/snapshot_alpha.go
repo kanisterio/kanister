@@ -66,8 +66,7 @@ func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName s
 	}
 
 	snap := UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, "", *snapshotClass)
-	_, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Create(snap, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Create(snap, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 
@@ -75,12 +74,11 @@ func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName s
 		return nil
 	}
 
-	err = sna.WaitOnReadyToUse(ctx, name, namespace)
-	if err != nil {
+	if err := sna.WaitOnReadyToUse(ctx, name, namespace); err != nil {
 		return err
 	}
 
-	_, err = sna.Get(ctx, name, namespace)
+	_, err := sna.Get(ctx, name, namespace)
 	return err
 }
 
@@ -92,8 +90,7 @@ func (sna *SnapshotAlpha) Get(ctx context.Context, name, namespace string) (*v1a
 	}
 
 	vs := &v1alpha1.VolumeSnapshot{}
-	err = TransformUnstructured(us, vs)
-	return vs, err
+	return vs, TransformUnstructured(us, vs)
 }
 
 // Delete will delete the VolumeSnapshot and returns any error as a result.
@@ -159,20 +156,17 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
 	content := UnstructuredVolumeSnapshotContentAlpha(contentName, snapshotName, namespace, deletionPolicy, source.Driver, source.Handle, source.VolumeSnapshotClassName)
 	snap := UnstructuredVolumeSnapshotAlpha(snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName)
-	_, err = sna.dynCli.Resource(v1alpha1.VolSnapContentGVR).Namespace("").Create(content, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapContentGVR).Create(content, metav1.CreateOptions{}); err != nil {
 		return errors.Errorf("Failed to create content, VolumesnapshotContent: %s, Error: %v", content.GetName(), err)
 	}
-	_, err = sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Create(snap, metav1.CreateOptions{})
-	if err != nil {
+	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Create(snap, metav1.CreateOptions{}); err != nil {
 		return errors.Errorf("Failed to create content, Volumesnapshot: %s, Error: %v", snap.GetName(), err)
 	}
 	if !waitForReady {
 		return nil
 	}
 
-	err = sna.WaitOnReadyToUse(ctx, snapshotName, namespace)
-	return err
+	return sna.WaitOnReadyToUse(ctx, snapshotName, namespace)
 }
 
 // WaitOnReadyToUse will block until the Volumesnapshot in namespace 'namespace' with name 'snapshotName'
@@ -184,8 +178,7 @@ func (sna *SnapshotAlpha) WaitOnReadyToUse(ctx context.Context, snapshotName, na
 			return false, err
 		}
 		vs := v1alpha1.VolumeSnapshot{}
-		err = TransformUnstructured(us, &vs)
-		if err != nil {
+		if err := TransformUnstructured(us, &vs); err != nil {
 			return false, err
 		}
 		// Error can be set while waiting for creation
@@ -197,26 +190,24 @@ func (sna *SnapshotAlpha) WaitOnReadyToUse(ctx context.Context, snapshotName, na
 }
 
 func (sna *SnapshotAlpha) getContent(ctx context.Context, contentName string) (*v1alpha1.VolumeSnapshotContent, error) {
-	us, err := sna.dynCli.Resource(v1alpha1.VolSnapContentGVR).Namespace("").Get(contentName, metav1.GetOptions{})
+	us, err := sna.dynCli.Resource(v1alpha1.VolSnapContentGVR).Get(contentName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	vsc := v1alpha1.VolumeSnapshotContent{}
-	err = TransformUnstructured(us, &vsc)
-	if err != nil {
+	if err := TransformUnstructured(us, &vsc); err != nil {
 		return nil, err
 	}
 	return &vsc, nil
 }
 
 func (sna *SnapshotAlpha) getDeletionPolicyFromClass(snapClassName string) (string, error) {
-	us, err := sna.dynCli.Resource(v1alpha1.VolSnapClassGVR).Namespace("").Get(snapClassName, metav1.GetOptions{})
+	us, err := sna.dynCli.Resource(v1alpha1.VolSnapClassGVR).Get(snapClassName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to find VolumeSnapshotClass: %s", snapClassName)
 	}
 	vsc := v1alpha1.VolumeSnapshotClass{}
-	err = TransformUnstructured(us, &vsc)
-	if err != nil {
+	if err := TransformUnstructured(us, &vsc); err != nil {
 		return "", err
 	}
 	return vsc.DeletionPolicy, nil
@@ -297,17 +288,14 @@ func UnstructuredVolumeSnapshotClassAlpha(name, driver, deletionPolicy string) *
 func TransformUnstructured(u *unstructured.Unstructured, value interface{}) error {
 	b, err := json.Marshal(u.Object)
 	if err != nil {
-		return errors.Errorf("Failed to Marshal unstructured object: %v", err)
+		return errors.Wrapf(err, "Failed to Marshal unstructured object")
 	}
 	err = json.Unmarshal(b, value)
-	if err != nil {
-		return errors.Errorf("Failed to Unmarshal unstructured object: %v", err)
-	}
-	return nil
+	return errors.Wrapf(err, "Failed to Unmarshal unstructured object")
 }
 
 func getSnapshotClassbyAnnotation(dynCli dynamic.Interface, gvr schema.GroupVersionResource, annotationKey, annotationValue string) (string, error) {
-	us, err := dynCli.Resource(gvr).Namespace("").List(metav1.ListOptions{})
+	us, err := dynCli.Resource(gvr).List(metav1.ListOptions{})
 	if err != nil {
 		return "", errors.Errorf("Failed to get VolumeSnapshotClasses in the cluster: %v", err)
 	}
