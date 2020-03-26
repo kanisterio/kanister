@@ -175,7 +175,6 @@ func (mdb *MysqlDB) Count(ctx context.Context) (int, error) {
 }
 
 func (mdb *MysqlDB) Reset(ctx context.Context) error {
-
 	timeoutCtx, waitCancel := context.WithTimeout(ctx, mysqlWaitTimeout)
 	defer waitCancel()
 	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
