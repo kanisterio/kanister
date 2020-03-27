@@ -40,8 +40,9 @@ type PodSuite struct {
 }
 
 const (
-	dummySAName  = "dummy-sa"
-	controllerSA = "controller-sa"
+	dummySAName        = "dummy-sa"
+	controllerSA       = "controller-sa"
+	kanisterToolsImage = "kanisterio/kanister-tools:0.28.0"
 )
 
 var _ = Suite(&PodSuite{})
@@ -92,26 +93,26 @@ func (s *PodSuite) TestPod(c *C) {
 		{
 			Namespace:    s.namespace,
 			GenerateName: "test-",
-			Image:        "kanisterio/kanister-tools:0.28.0",
+			Image:        kanisterToolsImage,
 			Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		},
 		{
 			Namespace:          s.namespace,
 			GenerateName:       "test-",
-			Image:              "kanisterio/kanister-tools:0.28.0",
+			Image:              kanisterToolsImage,
 			Command:            []string{"sh", "-c", "tail -f /dev/null"},
 			ServiceAccountName: dummySAName,
 		},
 		{
 			Namespace:    cns,
 			GenerateName: "test-",
-			Image:        "kanisterio/kanister-tools:0.28.0",
+			Image:        kanisterToolsImage,
 			Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		},
 		{
 			Namespace:          cns,
 			GenerateName:       "test-",
-			Image:              "kanisterio/kanister-tools:0.28.0",
+			Image:              kanisterToolsImage,
 			Command:            []string{"sh", "-c", "tail -f /dev/null"},
 			ServiceAccountName: dummySAName,
 		},
