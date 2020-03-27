@@ -101,7 +101,10 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 // 'namespace' is the namespace of the VolumeSnapshot. The PVC will be restored to the same namepsace.
 // 'restoreSize' will override existing restore size from snapshot content if provided.
 func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, dynCli dynamic.Interface, namespace, volumeName, storageClassName, snapshotName string, restoreSize *int) (string, error) {
-	sns := snapshot.NewSnapshotter(kubeCli, dynCli)
+	sns, err := snapshot.NewSnapshotter(kubeCli, dynCli)
+	if err != nil {
+		return "", err
+	}
 	snap, err := sns.Get(ctx, snapshotName, namespace)
 	if err != nil {
 		return "", err
