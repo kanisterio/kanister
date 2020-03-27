@@ -54,7 +54,7 @@ echo
 echo "Running tests:"
 go test -v -installsuffix "static" -i ${TARGETS}
 go test -v ${TARGETS} -list .
-go test -v -installsuffix "static" ${TARGETS} -check.v
+go test -v -installsuffix "static" ${TARGETS} -check.vv
 echo
 
 echo "PASS"

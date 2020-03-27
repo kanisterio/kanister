@@ -16,9 +16,10 @@ package kube
 
 import (
 	"context"
+	"os"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/testing"
@@ -27,6 +28,14 @@ import (
 type PodRunnerTestSuite struct{}
 
 var _ = Suite(&PodRunnerTestSuite{})
+
+const (
+	podRunnerNS = "pod-runner-test"
+)
+
+func (s *PodRunnerTestSuite) SetUpSuite(c *C) {
+	os.Setenv("POD_NAMESPACE", podRunnerNS)
+}
 
 func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -48,7 +57,9 @@ func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {
 		close(deleted)
 		return true, nil, nil
 	})
-	pr := NewPodRunner(cli, &PodOptions{})
+	pr := NewPodRunner(cli, &PodOptions{
+		Namespace: podRunnerNS,
+	})
 	returned := make(chan struct{})
 	go func() {
 		_, err := pr.Run(ctx, makePodRunnerTestFunc(deleted))
