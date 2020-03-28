@@ -182,6 +182,7 @@ func getVolStatus(p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 // 2. if PVC not present then wait for timeout
 func checkPVCAndPVStatus(vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 	if vol.VolumeSource.PersistentVolumeClaim == nil {
+		// wait for timeout
 		return nil
 	}
 	pvcName := vol.VolumeSource.PersistentVolumeClaim.ClaimName
@@ -192,16 +193,19 @@ func checkPVCAndPVStatus(vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, nam
 	}
 	if pvc.Status.Phase == v1.ClaimPending {
 		pvName := pvc.Spec.VolumeName
-		if pvName != "" {
-			pv, err := cli.CoreV1().PersistentVolumes().Get(pvName, metav1.GetOptions{})
-			if err != nil {
-				// wait for timeout
-				return nil
-			}
-			if pv.Status.Phase == v1.VolumeFailed {
-				return errors.Errorf("PV %s associated with PVC %s has status: %s message: %s reason: %s namespace: %s", pvName, pvcName, v1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
-			}
+		if pvName == "" {
+			// wait for timeout
+			return nil
 		}
+		pv, err := cli.CoreV1().PersistentVolumes().Get(pvName, metav1.GetOptions{})
+		if err != nil {
+			// wait for timeout
+			return nil
+		}
+		if pv.Status.Phase == v1.VolumeFailed {
+			return errors.Errorf("PV %s associated with PVC %s has status: %s message: %s reason: %s namespace: %s", pvName, pvcName, v1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
+		}
+
 	} else if pvc.Status.Phase == v1.ClaimLost {
 		return errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, p.Name, v1.ClaimLost)
 	}
