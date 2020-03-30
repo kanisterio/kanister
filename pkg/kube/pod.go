@@ -24,6 +24,7 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
@@ -188,9 +189,14 @@ func checkPVCAndPVStatus(vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, nam
 	pvcName := vol.VolumeSource.PersistentVolumeClaim.ClaimName
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
 	if err != nil {
-		// Do not return err, wait for timeout, since sometimes in case of statefulsets, they trigger creation of a volume
-		return nil
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			// Do not return err, wait for timeout, since sometimes in case of statefulsets, they trigger creation of a volume
+			return nil
+		} else {
+			return errors.Wrapf(err, "Failed to get PVC %s", pvcName)
+		}
 	}
+
 	if pvc.Status.Phase == v1.ClaimPending {
 		pvName := pvc.Spec.VolumeName
 		if pvName == "" {
@@ -199,9 +205,14 @@ func checkPVCAndPVStatus(vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, nam
 		}
 		pv, err := cli.CoreV1().PersistentVolumes().Get(pvName, metav1.GetOptions{})
 		if err != nil {
-			// wait for timeout
-			return nil
+			if apierrors.IsNotFound(errors.Cause(err)) {
+				// wait for timeout
+				return nil
+			} else {
+				return errors.Wrapf(err, "Failed to get PV %s", pvName)
+			}
 		}
+
 		if pv.Status.Phase == v1.VolumeFailed {
 			return errors.Errorf("PV %s associated with PVC %s has status: %s message: %s reason: %s namespace: %s", pvName, pvcName, v1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
 		}

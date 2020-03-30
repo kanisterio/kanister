@@ -77,6 +77,8 @@ func (s *PodSuite) TestPod(c *C) {
 
 func (s *PodSuite) TestPodWithVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
+	_, err1 := cli.CoreV1().PersistentVolumeClaims(s.namespace).Get("fake-pvc", metav1.GetOptions{})
+	c.Assert(err1, IsNil)
 	pvc := &v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pvc-test",
