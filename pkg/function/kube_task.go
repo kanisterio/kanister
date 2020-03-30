@@ -53,29 +53,12 @@ func (*kubeTaskFunc) Name() string {
 }
 
 func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image string, command []string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
-	var serviceAccount string
-	var err error
-
-	controllerNs, err := kube.GetControllerNamespace()
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get controller namespace")
-	}
-	if namespace == "" {
-		namespace = controllerNs
-	}
-	if namespace == controllerNs {
-		serviceAccount, err = kube.GetControllerServiceAccount(cli)
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get Controller Service Account")
-		}
-	}
 	options := &kube.PodOptions{
-		Namespace:          namespace,
-		GenerateName:       jobPrefix,
-		Image:              image,
-		Command:            command,
-		ServiceAccountName: serviceAccount,
-		PodOverride:        podOverride,
+		Namespace:    namespace,
+		GenerateName: jobPrefix,
+		Image:        image,
+		Command:      command,
+		PodOverride:  podOverride,
 	}
 
 	pr := kube.NewPodRunner(cli, options)
