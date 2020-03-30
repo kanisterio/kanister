@@ -23,7 +23,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
+	"github.com/kanisterio/kanister/pkg/blockstorage/utils/getter"
 )
 
 var _ blockstorage.Provider = (*Provider)(nil)
@@ -111,9 +111,9 @@ func (p *Provider) VolumeCreate(context.Context, blockstorage.Volume) (*blocksto
 }
 
 // VolumeCreateFromSnapshot mock
-func (p *Provider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
+func (p *Provider) VolumeCreateFromSnapshot(ctx context.Context, args *blockstorage.VolumeCreateFromSnapshotArgs) (*blockstorage.Volume, error) {
 	vol := blockstorage.Volume{
-		Type:       snapshot.Type,
+		Type:       args.Snapshot.Type,
 		ID:         fmt.Sprintf("vol-%s", uuid.NewV1().String()),
 		Az:         "AZ",
 		Encrypted:  false,
