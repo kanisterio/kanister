@@ -16,6 +16,8 @@ package blockstorage
 
 import (
 	"context"
+
+	"k8s.io/api/core/v1"
 )
 
 // Provider abstracts actions on underlying storage
@@ -24,7 +26,7 @@ type Provider interface {
 	Type() Type
 	// Volume operations
 	VolumeCreate(context.Context, Volume) (*Volume, error)
-	VolumeCreateFromSnapshot(ctx context.Context, snapshot Snapshot, tags map[string]string) (*Volume, error)
+	VolumeCreateFromSnapshot(ctx context.Context, args *VolumeCreateFromSnapshotArgs) (*Volume, error)
 	VolumeDelete(context.Context, *Volume) error
 	VolumeGet(ctx context.Context, id string, zone string) (*Volume, error)
 	// Snapshot operations
@@ -42,6 +44,12 @@ type Provider interface {
 	SetTags(ctx context.Context, resource interface{}, tags map[string]string) error
 	VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*Volume, error)
 	SnapshotsList(ctx context.Context, tags map[string]string) ([]*Snapshot, error)
+}
+
+type VolumeCreateFromSnapshotArgs struct {
+	Snapshot       *Snapshot
+	Tags           map[string]string
+	TransformedPVC *v1.PersistentVolumeClaim
 }
 
 // RestoreTargeter implements the SnapshotRestoreTargets method

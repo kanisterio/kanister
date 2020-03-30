@@ -19,7 +19,7 @@ import (
 
 	. "gopkg.in/check.v1"
 
-	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
+	"github.com/kanisterio/kanister/pkg/blockstorage/utils/zone"
 )
 
 type ZoneSuite struct{}

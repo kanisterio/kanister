@@ -133,7 +133,11 @@ func (s TestIBMCloud) TestVolRestore(c *C) {
 	defer s.provider.SnapshotDelete(context.Background(), bsSnap) // nolint: errcheck
 	c.Assert(err, IsNil)
 	tTags := map[string]string{"ibmblock_unit_test_restore_vol": fmt.Sprintf("test-vol-%d", time.Now().Unix())}
-	resVol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), *bsSnap, tTags)
+	args := &blockstorage.VolumeCreateFromSnapshotArgs{
+		Snapshot: bsSnap,
+		Tags:     tTags,
+	}
+	resVol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), args)
 	c.Assert(err, IsNil)
 	cVol, err := s.cli.Service.GetVolume(resVol.ID)
 	c.Assert(err, IsNil)

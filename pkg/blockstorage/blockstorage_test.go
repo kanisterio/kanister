@@ -24,8 +24,8 @@ import (
 
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
-	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	"github.com/kanisterio/kanister/pkg/blockstorage/utils/getter"
+	ktags "github.com/kanisterio/kanister/pkg/blockstorage/utils/tags"
 	envconfig "github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -122,7 +122,11 @@ func (s *BlockStorageProviderSuite) TestCreateSnapshot(c *C) {
 	if s.provider.Type() != blockstorage.TypeAD {
 		// Also test creating a volume from this snapshot
 		tags = map[string]string{testTagKey: testTagValue, "kanister.io/testname": c.TestName()}
-		vol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), *snapshot, tags)
+		args := &blockstorage.VolumeCreateFromSnapshotArgs{
+			Snapshot: snapshot,
+			Tags:     tags,
+		}
+		vol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), args)
 		c.Assert(err, IsNil)
 		s.volumes = append(s.volumes, vol)
 		for _, tag := range snapshot.Volume.Tags {

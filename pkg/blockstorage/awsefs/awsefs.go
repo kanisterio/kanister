@@ -30,7 +30,7 @@ import (
 
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	kantags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	kantags "github.com/kanisterio/kanister/pkg/blockstorage/utils/tags"
 )
 
 type efs struct {
@@ -118,17 +118,17 @@ func (e *efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*bl
 	return vol, nil
 }
 
-func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
+func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, args *blockstorage.VolumeCreateFromSnapshotArgs) (*blockstorage.Volume, error) {
 	reqM := &backup.GetRecoveryPointRestoreMetadataInput{}
 	reqM.SetBackupVaultName(k10BackupVaultName)
-	reqM.SetRecoveryPointArn(snapshot.ID)
+	reqM.SetRecoveryPointArn(args.Snapshot.ID)
 
 	respM, err := e.GetRecoveryPointRestoreMetadataWithContext(ctx, reqM)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get backup tag from recovery point directly")
 	}
 	rpTags := convertFromBackupTags(respM.RestoreMetadata)
-	rp2Tags, err := e.getBackupTags(ctx, snapshot.ID)
+	rp2Tags, err := e.getBackupTags(ctx, args.Snapshot.ID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get backup tag from recovery point")
 	}
@@ -145,7 +145,7 @@ func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorag
 	req := &backup.StartRestoreJobInput{}
 	req.SetIamRoleArn(awsDefaultServiceBackupRole(e.accountID))
 	req.SetMetadata(convertToBackupTags(filteredTags))
-	req.SetRecoveryPointArn(snapshot.ID)
+	req.SetRecoveryPointArn(args.Snapshot.ID)
 	req.SetResourceType(efsType)
 
 	resp, err := e.StartRestoreJobWithContext(ctx, req)

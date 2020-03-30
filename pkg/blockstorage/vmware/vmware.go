@@ -15,7 +15,7 @@ import (
 	"github.com/vmware/govmomi/vslm"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	ktags "github.com/kanisterio/kanister/pkg/blockstorage/utils/tags"
 )
 
 var _ blockstorage.Provider = (*fcdProvider)(nil)
@@ -102,8 +102,8 @@ func (p *fcdProvider) VolumeCreate(ctx context.Context, volume blockstorage.Volu
 	return nil, errors.New("Not implemented")
 }
 
-func (p *fcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
-	volID, snapshotID, err := splitSnapshotFullID(snapshot.ID)
+func (p *fcdProvider) VolumeCreateFromSnapshot(ctx context.Context, args *blockstorage.VolumeCreateFromSnapshotArgs) (*blockstorage.Volume, error) {
+	volID, snapshotID, err := splitSnapshotFullID(args.Snapshot.ID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to split snapshot full ID")
 	}
@@ -125,7 +125,7 @@ func (p *fcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blo
 	}
 	tagsCNS := make(map[string]string)
 	tagsCNS["cns.tag"] = "1"
-	tags = ktags.Union(tags, tagsCNS)
+	tags := ktags.Union(args.Tags, tagsCNS)
 	if err = p.SetTags(ctx, vol, tags); err != nil {
 		return nil, errors.Wrap(err, "Failed to set tags")
 	}

@@ -14,8 +14,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
-	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
+	ktags "github.com/kanisterio/kanister/pkg/blockstorage/utils/tags"
+	"github.com/kanisterio/kanister/pkg/blockstorage/utils/zone"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -459,22 +459,22 @@ func (s *adStorage) SnapshotsList(ctx context.Context, tags map[string]string) (
 	return snaps, nil
 }
 
-func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
+func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, args *blockstorage.VolumeCreateFromSnapshotArgs) (*blockstorage.Volume, error) {
 	// Incorporate pre-existing tags if overrides don't already exist
 	// in provided tags
-	for _, tag := range snapshot.Volume.Tags {
-		if _, found := tags[tag.Key]; !found {
-			tags[tag.Key] = tag.Value
+	for _, tag := range args.Snapshot.Volume.Tags {
+		if _, found := args.Tags[tag.Key]; !found {
+			args.Tags[tag.Key] = tag.Value
 		}
 	}
 
-	region, id, err := s.getRegionAndZoneID(ctx, snapshot.Region, snapshot.Volume.Az)
+	region, id, err := s.getRegionAndZoneID(ctx, args.Snapshot.Region, args.Snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
 
 	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
-	tags = blockstorage.SanitizeTags(tags)
+	tags := blockstorage.SanitizeTags(args.Tags)
 	createDisk := azcompute.Disk{
 		Name:     azto.StringPtr(diskName),
 		Tags:     *azto.StringMapPtr(tags),
@@ -482,7 +482,7 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		DiskProperties: &azcompute.DiskProperties{
 			CreationData: &azcompute.CreationData{
 				CreateOption:     azcompute.Copy,
-				SourceResourceID: azto.StringPtr(snapshot.ID),
+				SourceResourceID: azto.StringPtr(args.Snapshot.ID),
 			},
 		},
 	}
@@ -491,16 +491,16 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	}
 	result, err := s.azCli.DisksClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createDisk)
 	if err != nil {
-		return nil, errors.Wrapf(err, "DiskCLient.CreateOrUpdate in VolumeCreateFromSnapshot, diskName: %s, snapshotID: %s", diskName, snapshot.ID)
+		return nil, errors.Wrapf(err, "DiskCLient.CreateOrUpdate in VolumeCreateFromSnapshot, diskName: %s, snapshotID: %s", diskName, args.Snapshot.ID)
 	}
 	if err = result.WaitForCompletionRef(ctx, s.azCli.DisksClient.Client); err != nil {
-		return nil, errors.Wrapf(err, "DiskCLient.CreateOrUpdate in VolumeCreateFromSnapshot, diskName: %s, snapshotID: %s", diskName, snapshot.ID)
+		return nil, errors.Wrapf(err, "DiskCLient.CreateOrUpdate in VolumeCreateFromSnapshot, diskName: %s, snapshotID: %s", diskName, args.Snapshot.ID)
 	}
 	disk, err := result.Result(*s.azCli.DisksClient)
 	if err != nil {
 		return nil, err
 	}
-	return s.VolumeGet(ctx, azto.String(disk.ID), snapshot.Volume.Az)
+	return s.VolumeGet(ctx, azto.String(disk.ID), args.Snapshot.Volume.Az)
 }
 
 func (s *adStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz string) (string, string, error) {

@@ -30,8 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
-	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
+	ktags "github.com/kanisterio/kanister/pkg/blockstorage/utils/tags"
+	"github.com/kanisterio/kanister/pkg/blockstorage/utils/zone"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -334,28 +334,28 @@ func (s *gpdStorage) SnapshotsList(ctx context.Context, tags map[string]string) 
 	return snaps, nil
 }
 
-func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
-	snap, err := s.service.Snapshots.Get(s.project, snapshot.ID).Context(ctx).Do()
+func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, args *blockstorage.VolumeCreateFromSnapshotArgs) (*blockstorage.Volume, error) {
+	snap, err := s.service.Snapshots.Get(s.project, args.Snapshot.ID).Context(ctx).Do()
 	if err != nil {
 		return nil, err
 	}
 
-	if snapshot.Volume.VolumeType == "" || snapshot.Volume.Az == "" {
-		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s", snapshot.Volume.VolumeType, snapshot.Volume.Az)
+	if args.Snapshot.Volume.VolumeType == "" || args.Snapshot.Volume.Az == "" {
+		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s", args.Snapshot.Volume.VolumeType, args.Snapshot.Volume.Az)
 	}
 
 	// Incorporate pre-existing tags if overrides don't already exist
 	// in provided tags
-	for _, tag := range snapshot.Volume.Tags {
-		if _, found := tags[tag.Key]; !found {
-			tags[tag.Key] = tag.Value
+	for _, tag := range args.Snapshot.Volume.Tags {
+		if _, found := args.Tags[tag.Key]; !found {
+			args.Tags[tag.Key] = tag.Value
 		}
 	}
 	createDisk := &compute.Disk{
 		Name:           fmt.Sprintf(volumeNameFmt, uuid.NewV1().String()),
-		SizeGb:         snapshot.Volume.Size,
-		Type:           snapshot.Volume.VolumeType,
-		Labels:         blockstorage.SanitizeTags(ktags.GetTags(tags)),
+		SizeGb:         args.Snapshot.Volume.Size,
+		Type:           args.Snapshot.Volume.VolumeType,
+		Labels:         blockstorage.SanitizeTags(ktags.GetTags(args.Tags)),
 		SourceSnapshot: snap.SelfLink,
 	}
 
@@ -363,15 +363,15 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	var zones []string
 	var region string
 	// Validate Zones
-	if region, err = getRegionFromZones(snapshot.Volume.Az); err != nil {
-		return nil, errors.Wrapf(err, "Could not validate zones: %s", snapshot.Volume.Az)
+	if region, err = getRegionFromZones(args.Snapshot.Volume.Az); err != nil {
+		return nil, errors.Wrapf(err, "Could not validate zones: %s", args.Snapshot.Volume.Az)
 	}
 	kubeCli, err := kube.NewClient()
 	if err != nil {
 		// TODO: Pull KubeCli creation out of kanister
 		log.WithError(err).Print("Failed to initialize kubernetes client")
 	}
-	zones = splitZones(snapshot.Volume.Az)
+	zones = splitZones(args.Snapshot.Volume.Az)
 	zones, err = zone.FromSourceRegionZone(ctx, s, kubeCli, region, zones...)
 	if err != nil {
 		return nil, err

@@ -32,7 +32,7 @@ import (
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/awsebs"
-	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
+	"github.com/kanisterio/kanister/pkg/blockstorage/utils/getter"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"

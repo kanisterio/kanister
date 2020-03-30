@@ -18,7 +18,7 @@ import (
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	kantags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	kantags "github.com/kanisterio/kanister/pkg/blockstorage/utils/tags"
 )
 
 func filterAvailable(descriptions []*awsefs.FileSystemDescription) []*awsefs.FileSystemDescription {

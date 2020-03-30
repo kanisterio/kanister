@@ -17,7 +17,7 @@ package blockstorage
 import (
 	"bytes"
 
-	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	ktags "github.com/kanisterio/kanister/pkg/blockstorage/utils/tags"
 )
 
 // Google Cloud environment variable names

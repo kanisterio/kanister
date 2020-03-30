@@ -25,7 +25,7 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
+	"github.com/kanisterio/kanister/pkg/blockstorage/utils/getter"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"

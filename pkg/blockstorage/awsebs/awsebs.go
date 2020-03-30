@@ -30,8 +30,8 @@ import (
 
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
-	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
+	ktags "github.com/kanisterio/kanister/pkg/blockstorage/utils/tags"
+	"github.com/kanisterio/kanister/pkg/blockstorage/utils/zone"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -405,18 +405,18 @@ func setResourceTags(ctx context.Context, ec2Cli *EC2, resourceID string, tags m
 	return nil
 }
 
-func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
-	if snapshot.Volume == nil {
+func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, args *blockstorage.VolumeCreateFromSnapshotArgs) (*blockstorage.Volume, error) {
+	if args.Snapshot.Volume == nil {
 		return nil, errors.New("Snapshot volume information not available")
 	}
-	if snapshot.Volume.VolumeType == "" || snapshot.Volume.Az == "" || snapshot.Volume.Tags == nil {
-		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s, VolumeTags: %v", snapshot.Volume.VolumeType, snapshot.Volume.Az, snapshot.Volume.Tags)
+	if args.Snapshot.Volume.VolumeType == "" || args.Snapshot.Volume.Az == "" || args.Snapshot.Volume.Tags == nil {
+		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s, VolumeTags: %v", args.Snapshot.Volume.VolumeType, args.Snapshot.Volume.Az, args.Snapshot.Volume.Tags)
 	}
 	kubeCli, err := kube.NewClient()
 	if err != nil {
 		log.WithError(err).Print("Failed to initialize kubernetes client")
 	}
-	zones, err := zone.FromSourceRegionZone(ctx, s, kubeCli, snapshot.Region, snapshot.Volume.Az)
+	zones, err := zone.FromSourceRegionZone(ctx, s, kubeCli, args.Snapshot.Region, args.Snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
@@ -425,25 +425,25 @@ func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	}
 	cvi := &ec2.CreateVolumeInput{
 		AvailabilityZone: aws.String(zones[0]),
-		SnapshotId:       aws.String(snapshot.ID),
-		VolumeType:       aws.String(string(snapshot.Volume.VolumeType)),
+		SnapshotId:       aws.String(args.Snapshot.ID),
+		VolumeType:       aws.String(string(args.Snapshot.Volume.VolumeType)),
 	}
 	// io1 type *requires* IOPS. Others *cannot* specify them.
-	if snapshot.Volume.VolumeType == ec2.VolumeTypeIo1 {
-		cvi.Iops = aws.Int64(snapshot.Volume.Iops)
+	if args.Snapshot.Volume.VolumeType == ec2.VolumeTypeIo1 {
+		cvi.Iops = aws.Int64(args.Snapshot.Volume.Iops)
 	}
 	// Incorporate pre-existing tags.
-	for _, tag := range snapshot.Volume.Tags {
-		if _, found := tags[tag.Key]; !found {
-			tags[tag.Key] = tag.Value
+	for _, tag := range args.Snapshot.Volume.Tags {
+		if _, found := args.Tags[tag.Key]; !found {
+			args.Tags[tag.Key] = tag.Value
 		}
 	}
 
-	volID, err := createVolume(ctx, s.ec2Cli, cvi, ktags.GetTags(tags))
+	volID, err := createVolume(ctx, s.ec2Cli, cvi, ktags.GetTags(args.Tags))
 	if err != nil {
 		return nil, err
 	}
-	return s.VolumeGet(ctx, volID, snapshot.Volume.Az)
+	return s.VolumeGet(ctx, volID, args.Snapshot.Volume.Az)
 }
 
 // createVolume creates an EBS volume using the specified parameters

@@ -30,7 +30,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	bsibmutils "github.com/kanisterio/kanister/pkg/blockstorage/ibm/utils"
-	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	ktags "github.com/kanisterio/kanister/pkg/blockstorage/utils/tags"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
@@ -284,37 +284,37 @@ func (s *ibmCloud) SetTags(ctx context.Context, resource interface{}, tags map[s
 	return nil
 }
 
-func (s *ibmCloud) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
-	if snapshot.Volume == nil {
+func (s *ibmCloud) VolumeCreateFromSnapshot(ctx context.Context, args *blockstorage.VolumeCreateFromSnapshotArgs) (*blockstorage.Volume, error) {
+	if args.Snapshot.Volume == nil {
 		return nil, errors.New("Snapshot volume information not available")
 	}
 
 	// Incorporate pre-existing tags.
-	for _, tag := range snapshot.Volume.Tags {
-		if _, found := tags[tag.Key]; !found {
-			tags[tag.Key] = tag.Value
+	for _, tag := range args.Snapshot.Volume.Tags {
+		if _, found := args.Tags[tag.Key]; !found {
+			args.Tags[tag.Key] = tag.Value
 		}
 	}
-	snap, err := s.cli.Service.GetSnapshot(snapshot.ID)
+	snap, err := s.cli.Service.GetSnapshot(args.Snapshot.ID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get Snapshot for Volume Restore, snapshot_id %s", snapshot.ID)
+		return nil, errors.Wrapf(err, "Failed to get Snapshot for Volume Restore, snapshot_id %s", args.Snapshot.ID)
 	}
 	// Temporary fix for Softlayer backend bug
 	// GetSnapshot doens't return correct Volume info
-	snap.VolumeID = snapshot.Volume.ID
-	snap.Volume.VolumeID = snapshot.Volume.ID
+	snap.VolumeID = args.Snapshot.Volume.ID
+	snap.Volume.VolumeID = args.Snapshot.Volume.ID
 	log.Debug().Print("Creating Volume from Snapshot with new volume ID", field.M{"inputSnapshot": snap})
 
-	vol, err := s.cli.Service.CreateVolumeFromSnapshot(*snap, tags)
+	vol, err := s.cli.Service.CreateVolumeFromSnapshot(*snap, args.Tags)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create Volume from Snapshot, snapshot_id %s", snapshot.ID)
+		return nil, errors.Wrapf(err, "Failed to create Volume from Snapshot, snapshot_id %s", args.Snapshot.ID)
 	}
 
 	if err = bsibmutils.AuthorizeSoftLayerFileHosts(ctx, vol, s.cli.Service); err != nil {
 		return nil, errors.Wrap(err, "Failed to add Authorized Hosts to new volume, without Authorized Hosts ibm storage will not be able to mount volume to kubernetes node")
 	}
 
-	return s.VolumeGet(ctx, vol.VolumeID, snapshot.Volume.Az)
+	return s.VolumeGet(ctx, vol.VolumeID, args.Snapshot.Volume.Az)
 }
 
 func waitforSnapSpaceOrder(ctx context.Context, cli *client, id string) error {
