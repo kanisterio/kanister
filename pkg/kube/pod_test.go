@@ -86,8 +86,8 @@ func (s *PodSuite) TestPod(c *C) {
 	// get controller's SA
 	sa, err := GetControllerServiceAccount(fake.NewSimpleClientset())
 	c.Assert(err, IsNil)
- 
-  ctx := context.Background()
+
+	ctx := context.Background()
 	podOptions := []*PodOptions{
 		{
 			Namespace:    s.namespace,
