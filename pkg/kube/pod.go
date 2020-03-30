@@ -44,6 +44,26 @@ type PodOptions struct {
 
 // CreatePod creates a pod with a single container based on the specified image
 func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+	// If Namespace is not specified, use the controller Namespace.
+	cns, err := GetControllerNamespace()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get controller namespace")
+	}
+	ns := opts.Namespace
+	if ns == "" {
+		ns = cns
+	}
+
+	// If a ServiceAccount is not specified and we are in the controller's
+	// namespace, use the same service account as the controller.
+	sa := opts.ServiceAccountName
+	if sa == "" && ns == cns {
+		sa, err = GetControllerServiceAccount(cli)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get Controller Service Account")
+		}
+	}
+
 	volumeMounts, podVolumes := createVolumeSpecs(opts.Volumes)
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
@@ -55,12 +75,13 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 				VolumeMounts:    volumeMounts,
 			},
 		},
-		// RestartPolicy dictates when the containers of the pod should be restarted.
-		// The possible values include Always, OnFailure and Never with Always being the default.
-		// OnFailure policy will result in failed containers being restarted with an exponential back-off delay.
+		// RestartPolicy dictates when the containers of the pod should be
+		// restarted.  The possible values include Always, OnFailure and Never
+		// with Always being the default.  OnFailure policy will result in
+		// failed containers being restarted with an exponential back-off delay.
 		RestartPolicy:      v1.RestartPolicyOnFailure,
 		Volumes:            podVolumes,
-		ServiceAccountName: opts.ServiceAccountName,
+		ServiceAccountName: sa,
 	}
 
 	// Patch default Pod Specs if needed
@@ -72,13 +93,12 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
-			Namespace:    opts.Namespace,
 		},
 		Spec: patchedSpecs,
 	}
-	pod, err = cli.CoreV1().Pods(opts.Namespace).Create(pod)
+	pod, err = cli.CoreV1().Pods(ns).Create(pod)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", ns, opts.GenerateName)
 	}
 	return pod, nil
 }

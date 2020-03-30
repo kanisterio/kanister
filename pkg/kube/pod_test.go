@@ -19,11 +19,12 @@ package kube
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -37,6 +38,12 @@ type PodSuite struct {
 	cli       kubernetes.Interface
 	namespace string
 }
+
+const (
+	dummySAName        = "dummy-sa"
+	controllerSA       = "controller-sa"
+	kanisterToolsImage = "kanisterio/kanister-tools:0.28.0"
+)
 
 var _ = Suite(&PodSuite{})
 
@@ -52,6 +59,15 @@ func (s *PodSuite) SetUpSuite(c *C) {
 	ns, err = s.cli.CoreV1().Namespaces().Create(ns)
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
+
+	os.Setenv("POD_NAMESPACE", ns.Name)
+	os.Setenv("POD_SERVICE_ACCOUNT", controllerSA)
+
+	err = s.createServiceAccount(dummySAName, s.namespace)
+	c.Assert(err, IsNil)
+
+	err = s.createServiceAccount(controllerSA, s.namespace)
+	c.Assert(err, IsNil)
 }
 
 func (s *PodSuite) TearDownSuite(c *C) {
@@ -62,17 +78,80 @@ func (s *PodSuite) TearDownSuite(c *C) {
 }
 
 func (s *PodSuite) TestPod(c *C) {
+	// get controllers's namespace
+	cns, err := GetControllerNamespace()
+	c.Assert(err, IsNil)
+
+	// get controller's SA
+	sa, err := GetControllerServiceAccount(fake.NewSimpleClientset())
+	c.Assert(err, IsNil)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	pod, err := CreatePod(context.Background(), s.cli, &PodOptions{
-		Namespace:    s.namespace,
-		GenerateName: "test-",
-		Image:        "kanisterio/kanister-tools:0.28.0",
-		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-	})
-	c.Assert(err, IsNil)
-	c.Assert(WaitForPodReady(ctx, s.cli, s.namespace, pod.Name), IsNil)
-	c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
+
+	podOptions := []*PodOptions{
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        kanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		},
+		{
+			Namespace:          s.namespace,
+			GenerateName:       "test-",
+			Image:              kanisterToolsImage,
+			Command:            []string{"sh", "-c", "tail -f /dev/null"},
+			ServiceAccountName: dummySAName,
+		},
+		{
+			Namespace:    cns,
+			GenerateName: "test-",
+			Image:        kanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		},
+		{
+			Namespace:          cns,
+			GenerateName:       "test-",
+			Image:              kanisterToolsImage,
+			Command:            []string{"sh", "-c", "tail -f /dev/null"},
+			ServiceAccountName: dummySAName,
+		},
+	}
+
+	for _, po := range podOptions {
+		pod, err := CreatePod(context.Background(), s.cli, po)
+
+		// we have not specified the SA, if the pod is being created in the
+		// same ns as controller's, controller's SA should have been set.
+		if po.ServiceAccountName == "" && po.Namespace == cns {
+			c.Assert(pod.Spec.ServiceAccountName, Equals, sa)
+		} else {
+			var expectedSA string
+			if po.ServiceAccountName == "" {
+				expectedSA = "default"
+			} else {
+				expectedSA = po.ServiceAccountName
+			}
+			c.Assert(pod.Spec.ServiceAccountName, Equals, expectedSA)
+		}
+
+		c.Assert(err, IsNil)
+		c.Assert(WaitForPodReady(ctx, s.cli, po.Namespace, pod.Name), IsNil)
+		c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
+	}
+}
+
+func (s *PodSuite) createServiceAccount(name, ns string) error {
+	sa := v1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+	}
+	if _, err := s.cli.CoreV1().ServiceAccounts(ns).Create(&sa); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *PodSuite) TestPodWithVolumes(c *C) {
