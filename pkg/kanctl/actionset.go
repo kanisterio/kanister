@@ -430,7 +430,7 @@ func parseGenericObjects(objs []string) ([]crv1alpha1.ObjectReference, error) {
 
 func parseGenericObjectReference(s string) (crv1alpha1.ObjectReference, error) {
 	// Looking for group/version/resource/namespace/name
-	reg := regexp.MustCompile(`([\w-.]+)/([\w-.]+)/([\w-.]+)/([\w-.]+)/([\w-.]+)`)
+	reg := regexp.MustCompile(`([\w-.]*)/([\w-.]+)/([\w-.]+)/([\w-.]+)/([\w-.]+)`)
 	m := reg.FindStringSubmatch(s)
 	if len(m) != 6 {
 		return crv1alpha1.ObjectReference{}, errors.Errorf("Expected group/version/resource/namespace/name. Got %s %d", s, len(m))
