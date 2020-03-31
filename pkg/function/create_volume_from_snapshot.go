@@ -104,7 +104,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 			Snapshot: snapshot,
 			Tags:     tags,
 		}
-		vol, err := provider.VolumeCreateFromSnapshot(ctx, *snapshot, tags)
+		vol, err := provider.VolumeCreateFromSnapshot(ctx, args)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create volume from snapshot, snapID: %s", snapshot.ID)
 		}
