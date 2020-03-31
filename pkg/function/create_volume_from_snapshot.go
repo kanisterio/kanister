@@ -100,6 +100,10 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		snapshot.Volume.VolumeType = pvcInfo.VolumeType
 		snapshot.Volume.Az = pvcInfo.Az
 		snapshot.Volume.Tags = pvcInfo.Tags
+		args := &blockstorage.VolumeCreateFromSnapshotArgs{
+			Snapshot: snapshot,
+			Tags:     tags,
+		}
 		vol, err := provider.VolumeCreateFromSnapshot(ctx, *snapshot, tags)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create volume from snapshot, snapID: %s", snapshot.ID)
