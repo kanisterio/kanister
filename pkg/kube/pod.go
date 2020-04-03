@@ -34,8 +34,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
-// podReadyWaitTimeout is the time to wait for pod to be ready
-const podReadyWaitTimeout = 5 * time.Minute
+const (
+	// podReadyWaitTimeout is the time to wait for pod to be ready
+	podReadyWaitTimeout = 5 * time.Minute
+	errAccessingNode    = "Failed to get node"
+)
 
 // PodOptions specifies options for `CreatePod`
 type PodOptions struct {
@@ -149,7 +152,8 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 		}
 
 		// check if nodes are up and available
-		if err := checkNodesStatus(p, cli); err != nil {
+		err = checkNodesStatus(p, cli)
+		if err != nil && !strings.Contains(err.Error(), errAccessingNode) {
 			return false, err
 		}
 
@@ -175,7 +179,7 @@ func checkNodesStatus(p *v1.Pod, cli kubernetes.Interface) error {
 	if n[0] != "" {
 		node, err := cli.CoreV1().Nodes().Get(n[0], metav1.GetOptions{})
 		if err != nil {
-			return errors.Wrapf(err, "Failed to get node %s", n[0])
+			return errors.Wrapf(err, "%s %s", errAccessingNode, n[0])
 		}
 		if !IsNodeReady(node) || !IsNodeSchedulable(node) {
 			return errors.Errorf("Node %s is currently not ready/schedulable", n[0])
