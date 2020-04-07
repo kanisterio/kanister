@@ -232,3 +232,18 @@ var _ = Suite(&PostgreSQLDepConfig{
 		profile:   newSecretProfile(),
 	},
 })
+
+// PostgreSQL version 9.6 that Aruba uses
+type PostgreSQLDB struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&PostgreSQLDB{
+	IntegrationSuite{
+		name:      "postgresqldb",
+		namespace: "postgresqldb-test",
+		app:       app.NewPostgresSQLDB("postgresqldb"),
+		bp:        app.NewBlueprint("postgresqldb-9.6", ""),
+		profile:   newSecretProfile(),
+	},
+})

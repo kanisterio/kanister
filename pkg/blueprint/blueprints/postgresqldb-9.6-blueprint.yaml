@@ -1,0 +1,33 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: pg-default
+actions:
+  backup:
+    kind: StatefulSet
+    outputArtifacts:
+      cloudObject:
+        keyValue:
+          backupLocation: "{{ .Phases.pgBaseBackup.Output.backupLocation }}"
+    phases:
+    - func: KubeTask
+      name: pgBaseBackup
+      args:
+        image: kanisterio/postgres-kanister-tools:9.6
+        namespace: '{{ .Object.metadata.namespace }}'
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          export TARGET_DIR=/var/pg_basebackup
+          export PGUSER=postgres
+          export PGHOST='{{ .Object.metadata.labels.release }}.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+          BACKUP_LOCATION=pgvm_backups/{{ .Object.metadata.namespace }}/{{ .Object.metadata.name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/pgvm_backup.tar.gz
+          pg_basebackup -x -h $PGHOST -D $TARGET_DIR --format=tar -z -Z 9 -w -v -P -U $PGUSER
+          tar cvzf  /var/pgvm_backup.tar.gz -C $TARGET_DIR .
+          kando location push --profile '{{ toJson .Profile }}'  /var/pgvm_backup.tar.gz --path "${BACKUP_LOCATION}"
+          kando output backupLocation "${BACKUP_LOCATION}"
