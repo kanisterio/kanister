@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -39,6 +40,7 @@ type PostgresSQLDB struct {
 
 const (
 	postgresUser = "postgres"
+	waitToCount  = 2 * time.Minute
 )
 
 func NewPostgresSQLDB(name string) App {
@@ -51,13 +53,13 @@ func NewPostgresSQLDB(name string) App {
 			RepoURL:  helm.StableRepoURL,
 			Version:  "8.6.4",
 			Values: map[string]string{
-				"image.tag": "9.6.17-debian-10-r57",
-				//"postgresqlConfiguration": `{"walLevel":  "replica", "maxWalSenders": "2"}`,
-				// 				"pgHbaConfiguration": `host     all             all             0.0.0.0/0               md5
-				// host     all             postgres             0.0.0.0/0               md5
-				// local     all             postgres            md5
-				// host	 replication	 postgres	     0.0.0.0/0	             md5
-				// 				`,
+				"image.repository": "kanisterio/postgresql",
+				"image.tag":        "0.28.0",
+				"pgHbaConfiguration": `host     all             all             0.0.0.0/0               trust
+host     all             postgres             0.0.0.0/0               trust
+local     all             postgres            trust
+host	 replication	 postgres	     0.0.0.0/0	             trust
+				`,
 				"postgresqlPassword":   "secretpassword",
 				"replication.password": "secretreplpassword",
 			},
@@ -151,6 +153,11 @@ func (pg *PostgresSQLDB) Insert(ctx context.Context) error {
 }
 
 func (pg *PostgresSQLDB) Count(ctx context.Context) (int, error) {
+	// When we restore the backup PostgreSQL pod gets restarted wait for that pod
+	// to be runningg again.
+	// Unfortunately we can not poll to wait for pod to be ready.
+	time.Sleep(waitToCount)
+
 	cmd := fmt.Sprintf("PGPASSWORD=${POSTGRES_PASSWORD} psql -d test -c 'SELECT COUNT(*) FROM company;' -U %s", postgresUser)
 	stdout, stderr, err := pg.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {

@@ -243,7 +243,7 @@ var _ = Suite(&PostgreSQLDB{
 		name:      "postgresqldb",
 		namespace: "postgresqldb-test",
 		app:       app.NewPostgresSQLDB("postgresqldb"),
-		bp:        app.NewBlueprint("postgresqldb-9.6", ""),
+		bp:        app.NewBlueprint("postgresqldb-pgbasebackup", ""),
 		profile:   newSecretProfile(),
 	},
 })

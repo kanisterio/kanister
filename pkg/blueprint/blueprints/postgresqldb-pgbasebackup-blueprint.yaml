@@ -31,3 +31,41 @@ actions:
           tar cvzf  /var/pgvm_backup.tar.gz -C $TARGET_DIR .
           kando location push --profile '{{ toJson .Profile }}'  /var/pgvm_backup.tar.gz --path "${BACKUP_LOCATION}"
           kando output backupLocation "${BACKUP_LOCATION}"
+  restore:
+    kind: StatefulSet
+    phases:
+    - func: KubeExec
+      name: restoreData
+      args:
+        namespace: '{{ .Object.metadata.namespace }}'
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        container: '{{ .Object.metadata.labels.release }}'
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          mkdir -p /bitnami/postgresql/restore_pgbasebackup
+          kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}' - | tar -C /bitnami/postgresql/restore_pgbasebackup -zvx
+          rm -rf /bitnami/postgresql/data/*
+          tar -xC /bitnami/postgresql/data -f /bitnami/postgresql/restore_pgbasebackup/base.tar.gz
+  delete:
+    type: StatefulSet
+    phases:
+    - func: KubeTask
+      name: deleteFromObjectStore
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: "kanisterio/es-sidecar:0.28.0"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}'
