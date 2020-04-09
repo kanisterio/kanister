@@ -156,6 +156,7 @@ func (pg *PostgresSQLDB) Count(ctx context.Context) (int, error) {
 	// When we restore the backup PostgreSQL pod gets restarted wait for that pod
 	// to be runningg again.
 	// Unfortunately we can not poll to wait for pod to be ready.
+
 	time.Sleep(waitToCount)
 
 	cmd := fmt.Sprintf("PGPASSWORD=${POSTGRES_PASSWORD} psql -d test -c 'SELECT COUNT(*) FROM company;' -U %s", postgresUser)
