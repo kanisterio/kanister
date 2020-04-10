@@ -41,6 +41,13 @@ type PostgresSQLDB struct {
 const (
 	postgresUser = "postgres"
 	waitToCount  = 2 * time.Minute
+	// this conf, allow us to run pg_basebackup and psql form anywhere witout password
+	// TODO: make this work with md5 instead of trust
+	pgHbaConf = `host all all 0.0.0.0/0 trust
+					host all postgres 0.0.0.0/0 trust
+					local all postgres trust
+					host replication postgres 0.0.0.0/0 trust
+					`
 )
 
 func NewPostgresSQLDB(name string) App {
@@ -53,13 +60,9 @@ func NewPostgresSQLDB(name string) App {
 			RepoURL:  helm.StableRepoURL,
 			Version:  "8.6.4",
 			Values: map[string]string{
-				"image.repository": "kanisterio/postgresql",
-				"image.tag":        "0.28.0",
-				"pgHbaConfiguration": `host     all             all             0.0.0.0/0               trust
-host     all             postgres             0.0.0.0/0               trust
-local     all             postgres            trust
-host	 replication	 postgres	     0.0.0.0/0	             trust
-				`,
+				"image.repository":     "kanisterio/postgresql",
+				"image.tag":            "0.28.0",
+				"pgHbaConfiguration":   pgHbaConf,
 				"postgresqlPassword":   "secretpassword",
 				"replication.password": "secretreplpassword",
 			},
