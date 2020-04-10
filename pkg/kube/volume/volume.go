@@ -106,7 +106,7 @@ type CreatePVCFromSnapshotArgs struct {
 	StorageClassName string
 	SnapshotName     string
 	RestoreSize      *int
-	Labels           *metav1.LabelSelector
+	Labels           map[string]string
 }
 
 // CreatePVCFromSnapshot will restore a volume and returns the resulting
@@ -132,6 +132,9 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 	snapshotKind := "VolumeSnapshot"
 	snapshotAPIGroup := "snapshot.storage.k8s.io"
 	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: args.Labels,
+		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 			DataSource: &v1.TypedLocalObjectReference{
@@ -144,7 +147,6 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 					v1.ResourceStorage: *size,
 				},
 			},
-			Selector: args.Labels,
 		},
 	}
 	if args.VolumeName != "" {
