@@ -93,11 +93,12 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 }
 
 // CreatePVCFromSnapshotArgs describes the arguments for CreatePVCFromSnapshot
-// 'volumeName' is the name of the PVC that will be restored from the snapshot.
-// 'storageClassName' is the name of the storage class used to create the PVC.
-// 'snapshotName' is the name of the VolumeSnapshot that will be used for restoring.
-// 'namespace' is the namespace of the VolumeSnapshot. The PVC will be restored to the same namepsace.
-// 'restoreSize' will override existing restore size from snapshot content if provided.
+// 'VolumeName' is the name of the PVC that will be restored from the snapshot.
+// 'StorageClassName' is the name of the storage class used to create the PVC.
+// 'SnapshotName' is the name of the VolumeSnapshot that will be used for restoring.
+// 'Namespace' is the namespace of the VolumeSnapshot. The PVC will be restored to the same namepsace.
+// 'RestoreSize' will override existing restore size from snapshot content if provided.
+// 'Labels' will be added to the PVC.
 type CreatePVCFromSnapshotArgs struct {
 	KubeCli          kubernetes.Interface
 	DynCli           dynamic.Interface

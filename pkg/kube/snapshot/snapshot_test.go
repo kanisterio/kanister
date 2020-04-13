@@ -341,7 +341,9 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		StorageClassName: "",
 		SnapshotName:     snapshotCloneName,
 		RestoreSize:      &sizeNew,
-		Labels:           nil,
+		Labels: map[string]string{
+			"label1": "testLabel",
+		},
 	}
 	_, err = volume.CreatePVCFromSnapshot(ctx, args)
 	c.Assert(err, IsNil)
@@ -350,6 +352,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		if err != nil {
 			return false, err
 		}
+		c.Assert(pvc.Labels, Equals, args.Labels)
 		return pvc.Status.Phase == corev1.ClaimBound, nil
 	})
 
