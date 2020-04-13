@@ -17,4 +17,4 @@ sources:
 - https://github.com/kansiterio/blueprint-helm-charts
 - https://github.com/kubernetes/charts
 - https://github.com/docker-library/postgres
-version: 0.28.0
+version: 0.29.0
