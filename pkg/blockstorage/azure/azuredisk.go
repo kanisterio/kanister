@@ -381,7 +381,7 @@ func (s *adStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 		Size:         int64(azto.Int32(vol.DiskSizeGB)),
 		Az:           az,
 		Tags:         blockstorage.MapToKeyValue(tags),
-		VolumeType:   azto.String(vol.Sku.Tier),
+		VolumeType:   string(vol.Sku.Name),
 		CreationTime: blockstorage.TimeStamp(vol.DiskProperties.TimeCreated.ToTime()),
 		Attributes:   map[string]string{"Users": azto.String(vol.ManagedBy)},
 	}, nil
@@ -488,6 +488,14 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	}
 	if id != "" {
 		createDisk.Zones = azto.StringSlicePtr([]string{id})
+	}
+	saTypes := azcompute.PossibleDiskStorageAccountTypesValues()
+	for _, saType := range saTypes {
+		if string(saType) == snapshot.Volume.VolumeType {
+			createDisk.Sku = &azcompute.DiskSku{
+				Name: saType,
+			}
+		}
 	}
 	result, err := s.azCli.DisksClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createDisk)
 	if err != nil {
