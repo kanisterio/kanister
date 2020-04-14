@@ -489,8 +489,7 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	if id != "" {
 		createDisk.Zones = azto.StringSlicePtr([]string{id})
 	}
-	saTypes := azcompute.PossibleDiskStorageAccountTypesValues()
-	for _, saType := range saTypes {
+	for _, saType := range azcompute.PossibleDiskStorageAccountTypesValues() {
 		if string(saType) == snapshot.Volume.VolumeType {
 			createDisk.Sku = &azcompute.DiskSku{
 				Name: saType,
