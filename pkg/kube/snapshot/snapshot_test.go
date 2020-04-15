@@ -310,8 +310,17 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	volumeCloneName := pvc.Name + "-clone"
 	err = snapshotter.Clone(ctx, snapshotName, s.sourceNamespace, snapshotCloneName, s.targetNamespace, wait)
 	c.Assert(err, IsNil)
-
-	_, err = volume.CreatePVCFromSnapshot(ctx, s.cli, s.dynCli, s.targetNamespace, volumeCloneName, "", snapshotCloneName, nil)
+	args := &volume.CreatePVCFromSnapshotArgs{
+		KubeCli:          s.cli,
+		DynCli:           s.dynCli,
+		Namespace:        s.targetNamespace,
+		VolumeName:       volumeCloneName,
+		StorageClassName: "",
+		SnapshotName:     snapshotCloneName,
+		RestoreSize:      nil,
+		Labels:           nil,
+	}
+	_, err = volume.CreatePVCFromSnapshot(ctx, args)
 	c.Assert(err, IsNil)
 	_ = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.targetNamespace).Get(volumeCloneName, metav1.GetOptions{})
@@ -324,13 +333,26 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	// Try with a greater restore size.
 	sizeNew := 2
 	volumeCloneName += "-2"
-	_, err = volume.CreatePVCFromSnapshot(ctx, s.cli, s.dynCli, s.targetNamespace, volumeCloneName, "", snapshotCloneName, &sizeNew)
+	args = &volume.CreatePVCFromSnapshotArgs{
+		KubeCli:          s.cli,
+		DynCli:           s.dynCli,
+		Namespace:        s.targetNamespace,
+		VolumeName:       volumeCloneName,
+		StorageClassName: "",
+		SnapshotName:     snapshotCloneName,
+		RestoreSize:      &sizeNew,
+		Labels: map[string]string{
+			"label1": "testLabel",
+		},
+	}
+	_, err = volume.CreatePVCFromSnapshot(ctx, args)
 	c.Assert(err, IsNil)
 	_ = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.targetNamespace).Get(volumeCloneName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
+		c.Assert(pvc.Labels, Equals, args.Labels)
 		return pvc.Status.Phase == corev1.ClaimBound, nil
 	})
 
