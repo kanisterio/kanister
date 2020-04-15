@@ -1,0 +1,71 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: pg-default
+actions:
+  backup:
+    kind: StatefulSet
+    outputArtifacts:
+      cloudObject:
+        keyValue:
+          backupLocation: "{{ .Phases.pgBaseBackup.Output.backupLocation }}"
+    phases:
+    - func: KubeTask
+      name: pgBaseBackup
+      args:
+        image: kanisterio/postgres-kanister-tools:9.6
+        namespace: '{{ .Object.metadata.namespace }}'
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          export TARGET_DIR=/var/pg_basebackup
+          export PGUSER=postgres
+          export PGHOST='{{ .Object.metadata.labels.release }}.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+          BACKUP_LOCATION=pgvm_backups/{{ .Object.metadata.namespace }}/{{ .Object.metadata.name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/pgvm_backup.tar.gz
+          pg_basebackup -x -h $PGHOST -D $TARGET_DIR --format=tar -z -Z 9 -w -v -P -U $PGUSER
+          tar cvzf  /var/pgvm_backup.tar.gz -C $TARGET_DIR .
+          kando location push --profile '{{ toJson .Profile }}'  /var/pgvm_backup.tar.gz --path "${BACKUP_LOCATION}"
+          kando output backupLocation "${BACKUP_LOCATION}"
+  restore:
+    kind: StatefulSet
+    phases:
+    - func: KubeExec
+      name: restoreData
+      args:
+        namespace: '{{ .Object.metadata.namespace }}'
+        pod: "{{ index .StatefulSet.Pods 0 }}"
+        container: '{{ .Object.metadata.labels.release }}'
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          mkdir -p /bitnami/postgresql/restore_pgbasebackup
+          kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}' - | tar -C /bitnami/postgresql/restore_pgbasebackup -zvx
+          rm -rf /bitnami/postgresql/data/*
+          tar -xC /bitnami/postgresql/data -f /bitnami/postgresql/restore_pgbasebackup/base.tar.gz
+  delete:
+    type: StatefulSet
+    phases:
+    - func: KubeTask
+      name: deleteFromObjectStore
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: "kanisterio/es-sidecar:0.28.0"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}'

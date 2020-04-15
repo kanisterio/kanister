@@ -14,4 +14,6 @@ RUN set -x \
 	&& pip3 install wal-e[aws] \
 	&& pip3 install awscli
 
+ADD kando /usr/local/bin/
+
 USER postgres
