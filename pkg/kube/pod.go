@@ -36,7 +36,7 @@ import (
 
 const (
 	// podReadyWaitTimeout is the time to wait for pod to be ready
-	podReadyWaitTimeout = 5 * time.Minute
+	podReadyWaitTimeout = 15 * time.Minute
 	errAccessingNode    = "Failed to get node"
 )
 
