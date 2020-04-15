@@ -157,7 +157,7 @@ func (pg *PostgresSQLDB) Insert(ctx context.Context) error {
 
 func (pg *PostgresSQLDB) Count(ctx context.Context) (int, error) {
 	// When we restore the backup PostgreSQL pod gets restarted wait for that pod
-	// to be runningg again.
+	// to be running again.
 	// Unfortunately we can not poll to wait for pod to be ready.
 
 	time.Sleep(waitToCount)
