@@ -209,7 +209,7 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 	if err != nil {
 		return err
 	}
-	_, err = provider.GetBucket(ctx, bucketName)
+	_, err = provider.GetBucket(ctx, bucketName, p.Location.Region)
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 	if err != nil {
 		return err
 	}
-	bucket, err := provider.GetBucket(ctx, p.Location.Bucket)
+	bucket, err := provider.GetBucket(ctx, p.Location.Bucket, p.Location.Region)
 	if err != nil {
 		return err
 	}
@@ -282,7 +282,7 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	if err != nil {
 		return err
 	}
-	bucket, err := provider.GetBucket(ctx, p.Location.Bucket)
+	bucket, err := provider.GetBucket(ctx, p.Location.Bucket, p.Location.Region)
 	if err != nil {
 		return err
 	}
