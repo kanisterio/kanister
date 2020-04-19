@@ -123,7 +123,7 @@ func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
 	c.Check(len(buckets), Not(Equals), len(origBuckets))
 
 	// Check if deletion succeeds
-	err = s.provider.DeleteBucket(ctx, bucketName)
+	err = s.provider.DeleteBucket(ctx, bucketName, s.region)
 	c.Check(err, IsNil)
 }
 
