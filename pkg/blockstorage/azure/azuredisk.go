@@ -606,6 +606,22 @@ func (s *adStorage) FromRegion(ctx context.Context, region string) ([]string, er
 	return staticRegionToZones(region)
 }
 
+func (s *adStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blockstorage.Snapshot) (global bool, regionsAndZones map[string][]string, err error) {
+	// A few checks from VolumeCreateFromSnapshot
+	if snapshot.Volume == nil {
+		return false, nil, errors.New("Snapshot volume information not available")
+	}
+	if snapshot.Volume.VolumeType == "" {
+		return false, nil, errors.Errorf("Required VolumeType not set")
+	}
+
+	zl, err := staticRegionToZones(snapshot.Region)
+	if err != nil {
+		return false, nil, err
+	}
+	return false, map[string][]string{snapshot.Region: zl}, nil
+}
+
 func staticRegionToZones(region string) ([]string, error) {
 	switch region {
 	case "australiaeast", "australiasoutheast", "brazilsouth", "canadacentral", "canadaeast", "centralindia", "eastasia", "japanwest", "northcentralus", "southcentralus", "southindia", "ukwest", "westcentralus", "westindia", "westus":
