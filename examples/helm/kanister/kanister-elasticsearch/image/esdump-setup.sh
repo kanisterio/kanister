@@ -1,5 +1,6 @@
 #! /bin/sh
 
+# Use mc microdnf
 apk add --update bash
 apk add --update nodejs
 apk add --update npm
