@@ -50,5 +50,4 @@ func (s *BucketSuite) TestRegionEndpointMismatch(c *C) {
 	err = p.DeleteBucket(ctx, bn, r)
 	c.Assert(err, ErrorMatches, ahmRe)
 	c.Assert(err, NotNil)
-
 }
