@@ -496,7 +496,7 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 			}
 		}
 	}
-	if createDisk.Sku.Name == "" {
+	if createDisk.Sku == nil || createDisk.Sku.Name == "" {
 		return nil, errors.New(fmt.Sprintf("Invalid disk skuName %s", snapshot.Volume.VolumeType))
 	}
 	result, err := s.azCli.DisksClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, diskName, createDisk)
