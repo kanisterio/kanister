@@ -17,8 +17,8 @@ package objectstore
 import "context"
 
 // GetOrCreateBucket is a helper function to access the package level getOrCreateBucket
-func GetOrCreateBucket(ctx context.Context, p Provider, bucketName string, region string) (Directory, error) {
-	return p.getOrCreateBucket(ctx, bucketName, region)
+func GetOrCreateBucket(ctx context.Context, p Provider, bucketName string) (Directory, error) {
+	return p.getOrCreateBucket(ctx, bucketName)
 }
 
 // IsS3Provider is a helper function to find out if a provider is an s3Provider

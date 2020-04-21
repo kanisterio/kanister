@@ -128,6 +128,7 @@ func getBucket(ctx context.Context, pType objectstore.ProviderType, profile para
 	pc := objectstore.ProviderConfig{
 		Type:          pType,
 		Endpoint:      profile.Location.Endpoint,
+		Region:        profile.Location.Region,
 		SkipSSLVerify: profile.SkipSSLVerify,
 	}
 	secret, err := getOSSecret(ctx, pType, profile.Credential)

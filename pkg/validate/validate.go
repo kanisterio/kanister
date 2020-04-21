@@ -200,7 +200,10 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 	default:
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-	pc := objectstore.ProviderConfig{Type: pType}
+	pc := objectstore.ProviderConfig{
+		Type:   pType,
+		Region: p.Location.Region,
+	}
 	secret, err := osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
@@ -237,6 +240,7 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 	pc := objectstore.ProviderConfig{
 		Type:          pType,
 		Endpoint:      p.Location.Endpoint,
+		Region:        p.Location.Region,
 		SkipSSLVerify: p.SkipSSLVerify,
 	}
 	provider, err := objectstore.NewProvider(ctx, pc, secret)
