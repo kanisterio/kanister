@@ -46,7 +46,6 @@ func GetEnvOrSkip(c *check.C, varName string) string {
 
 // due to cycle imports issues pks/kube can not be used
 func newKubeClient() (kubernetes.Interface, error) {
-
 	c, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
