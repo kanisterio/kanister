@@ -138,7 +138,8 @@ func getBucket(ctx context.Context, pType objectstore.ProviderType, profile para
 	if err != nil {
 		return nil, err
 	}
-	return provider.GetBucket(ctx, profile.Location.Bucket)
+
+	return provider.GetBucket(ctx, profile.Location.Bucket, profile.Location.Region)
 }
 
 func getOSSecret(ctx context.Context, pType objectstore.ProviderType, cred param.Credential) (*objectstore.Secret, error) {

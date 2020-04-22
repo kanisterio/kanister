@@ -117,20 +117,20 @@ func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
 	buckets, _ := s.provider.ListBuckets(ctx)
 	c.Check(len(buckets), Not(Equals), len(origBuckets))
 
-	bucket, err := s.provider.GetBucket(ctx, bucketName)
+	bucket, err := s.provider.GetBucket(ctx, bucketName, s.region)
 	c.Assert(err, IsNil)
 	c.Logf("Created bucket: %s", bucket)
 	c.Check(len(buckets), Not(Equals), len(origBuckets))
 
 	// Check if deletion succeeds
-	err = s.provider.DeleteBucket(ctx, bucketName)
+	err = s.provider.DeleteBucket(ctx, bucketName, s.region)
 	c.Check(err, IsNil)
 }
 
 func (s *ObjectStoreProviderSuite) TestCreateExistingBucket(c *C) {
 	ctx := context.Background()
 	// The bucket should already exist, the suite setup creates it
-	d, err := s.provider.GetBucket(ctx, testBucketName)
+	d, err := s.provider.GetBucket(ctx, testBucketName, s.region)
 	c.Check(err, IsNil)
 	c.Check(d, NotNil)
 	d, err = s.provider.CreateBucket(ctx, testBucketName, s.region)
@@ -144,7 +144,7 @@ func (s *ObjectStoreProviderSuite) TestGetNonExistingBucket(c *C) {
 	}
 	ctx := context.Background()
 	bucketName := s.createBucketName(c)
-	bucket, err := s.provider.GetBucket(ctx, bucketName)
+	bucket, err := s.provider.GetBucket(ctx, bucketName, s.region)
 	c.Check(err, NotNil)
 	c.Assert(IsBucketNotFoundError(err), Equals, true)
 	c.Check(bucket, IsNil)

@@ -36,10 +36,10 @@ type Provider interface {
 	CreateBucket(ctx context.Context, bucketName, region string) (Bucket, error)
 
 	// GetBucket access a specific bucket
-	GetBucket(context.Context, string) (Bucket, error)
+	GetBucket(context.Context, string, string) (Bucket, error)
 
 	// DeleteBucket deletes the bucket
-	DeleteBucket(context.Context, string) error
+	DeleteBucket(context.Context, string, string) error
 
 	// ListBuckets returns all buckets and their Directory handle
 	ListBuckets(context.Context) (map[string]Bucket, error)

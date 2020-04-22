@@ -71,8 +71,8 @@ func (p *provider) CreateBucket(ctx context.Context, bucketName, region string) 
 
 // GetBucket gets the handle for the specified bucket. Buckets are searched using prefix search;
 // if multiple buckets matched the name, then returns an error
-func (p *provider) GetBucket(ctx context.Context, bucketName string) (Bucket, error) {
-	location, err := getStowLocation(ctx, p.config, p.secret, "")
+func (p *provider) GetBucket(ctx context.Context, bucketName string, region string) (Bucket, error) {
+	location, err := getStowLocation(ctx, p.config, p.secret, region)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (p *provider) ListBuckets(ctx context.Context) (map[string]Bucket, error) {
 // DeleteBucket removes the cloud provider bucket. Does not sanity check.
 // For safety, does not delete buckets with contents. Caller should ensure
 // that bucket is empty.
-func (p *provider) DeleteBucket(ctx context.Context, bucketName string) error {
+func (p *provider) DeleteBucket(ctx context.Context, bucketName, region string) error {
 	location, err := getStowLocation(ctx, p.config, p.secret, "")
 	if err != nil {
 		return err
@@ -139,7 +139,7 @@ func (p *provider) DeleteBucket(ctx context.Context, bucketName string) error {
 }
 
 func (p *provider) getOrCreateBucket(ctx context.Context, bucketName, region string) (Bucket, error) {
-	d, err := p.GetBucket(ctx, bucketName)
+	d, err := p.GetBucket(ctx, bucketName, region)
 	if err == nil {
 		return d, nil
 	}
@@ -151,15 +151,16 @@ type s3Provider struct {
 	*provider
 }
 
-func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, error) {
-	hostEndPoint := p.hostEndPoint
-	var region string
-	if hostEndPoint == "" {
+func (p *s3Provider) GetBucket(ctx context.Context, bucketName string, region string) (Bucket, error) {
+	if region == "" {
 		var err error
 		region, err = p.getRegionForBucket(ctx, bucketName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not get region for bucket %s", bucketName)
 		}
+	}
+	hostEndPoint := p.hostEndPoint
+	if hostEndPoint == "" {
 		hostEndPoint = awsS3Endpoint(region)
 	}
 	location, err := getStowLocation(ctx, p.config, p.secret, region)
@@ -183,8 +184,10 @@ func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, 
 	return bucket, nil
 }
 
-func (p *s3Provider) DeleteBucket(ctx context.Context, bucketName string) error {
-	region, _ := p.getRegionForBucket(ctx, bucketName)
+func (p *s3Provider) DeleteBucket(ctx context.Context, bucketName, region string) error {
+	if region == "" {
+		region, _ = p.getRegionForBucket(ctx, bucketName)
+	}
 	location, err := getStowLocation(ctx, p.config, p.secret, region)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get location for bucket deletion. bucket: %s", bucketName)
@@ -198,7 +201,7 @@ func (p *s3Provider) getRegionForBucket(ctx context.Context, bucketName string) 
 }
 
 func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName, region string) (Bucket, error) {
-	d, err := p.GetBucket(ctx, bucketName)
+	d, err := p.GetBucket(ctx, bucketName, region)
 	if IsBucketNotFoundError(err) {
 		// Create bucket when it does not exist
 		return p.CreateBucket(ctx, bucketName, region)
