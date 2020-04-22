@@ -47,8 +47,8 @@ type bucket struct {
 }
 
 // CreateBucket creates the bucket. Bucket naming rules are provider dependent.
-func (p *provider) CreateBucket(ctx context.Context, bucketName, region string) (Bucket, error) {
-	location, err := getStowLocation(ctx, p.config, p.secret, region)
+func (p *provider) CreateBucket(ctx context.Context, bucketName string) (Bucket, error) {
+	location, err := getStowLocation(ctx, p.config, p.secret)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (p *provider) CreateBucket(ctx context.Context, bucketName, region string) 
 // GetBucket gets the handle for the specified bucket. Buckets are searched using prefix search;
 // if multiple buckets matched the name, then returns an error
 func (p *provider) GetBucket(ctx context.Context, bucketName string) (Bucket, error) {
-	location, err := getStowLocation(ctx, p.config, p.secret, "")
+	location, err := getStowLocation(ctx, p.config, p.secret)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (p *provider) ListBuckets(ctx context.Context) (map[string]Bucket, error) {
 	// Walk all the buckets
 	buckets := make(map[string]Bucket)
 
-	location, err := getStowLocation(ctx, p.config, p.secret, "")
+	location, err := getStowLocation(ctx, p.config, p.secret)
 	if err != nil {
 		return nil, err
 	}
@@ -131,20 +131,20 @@ func (p *provider) ListBuckets(ctx context.Context) (map[string]Bucket, error) {
 // For safety, does not delete buckets with contents. Caller should ensure
 // that bucket is empty.
 func (p *provider) DeleteBucket(ctx context.Context, bucketName string) error {
-	location, err := getStowLocation(ctx, p.config, p.secret, "")
+	location, err := getStowLocation(ctx, p.config, p.secret)
 	if err != nil {
 		return err
 	}
 	return location.RemoveContainer(bucketName)
 }
 
-func (p *provider) getOrCreateBucket(ctx context.Context, bucketName, region string) (Bucket, error) {
+func (p *provider) getOrCreateBucket(ctx context.Context, bucketName string) (Bucket, error) {
 	d, err := p.GetBucket(ctx, bucketName)
 	if err == nil {
 		return d, nil
 	}
 	// Attempt creating it
-	return p.CreateBucket(ctx, bucketName, region)
+	return p.CreateBucket(ctx, bucketName)
 }
 
 type s3Provider struct {
@@ -152,17 +152,15 @@ type s3Provider struct {
 }
 
 func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, error) {
-	hostEndPoint := p.hostEndPoint
-	var region string
-	if hostEndPoint == "" {
+	cfg := p.config
+	if cfg.Region == "" {
 		var err error
-		region, err = p.getRegionForBucket(ctx, bucketName)
+		cfg.Region, err = p.getRegionForBucket(ctx, bucketName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not get region for bucket %s", bucketName)
 		}
-		hostEndPoint = awsS3Endpoint(region)
 	}
-	location, err := getStowLocation(ctx, p.config, p.secret, region)
+	location, err := getStowLocation(ctx, cfg, p.secret)
 	if err != nil {
 		return nil, err
 	}
@@ -172,6 +170,10 @@ func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, 
 	}
 	dir := &directory{
 		path: "/",
+	}
+	hostEndPoint := p.hostEndPoint
+	if hostEndPoint == "" {
+		hostEndPoint = awsS3Endpoint(cfg.Region)
 	}
 	bucket := &bucket{
 		directory:    dir,
@@ -184,8 +186,13 @@ func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, 
 }
 
 func (p *s3Provider) DeleteBucket(ctx context.Context, bucketName string) error {
-	region, _ := p.getRegionForBucket(ctx, bucketName)
-	location, err := getStowLocation(ctx, p.config, p.secret, region)
+	cfg := p.config
+	if cfg.Region == "" {
+		// We swalllow this error because region may not be required. If it is,
+		// we'll fail in the next few lines.
+		cfg.Region, _ = p.getRegionForBucket(ctx, bucketName)
+	}
+	location, err := getStowLocation(ctx, p.config, p.secret)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get location for bucket deletion. bucket: %s", bucketName)
 	}
@@ -197,11 +204,11 @@ func (p *s3Provider) getRegionForBucket(ctx context.Context, bucketName string) 
 	return GetS3BucketRegion(ctx, bucketName, "")
 }
 
-func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName, region string) (Bucket, error) {
+func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName string) (Bucket, error) {
 	d, err := p.GetBucket(ctx, bucketName)
 	if IsBucketNotFoundError(err) {
 		// Create bucket when it does not exist
-		return p.CreateBucket(ctx, bucketName, region)
+		return p.CreateBucket(ctx, bucketName)
 	}
 	return d, err
 }

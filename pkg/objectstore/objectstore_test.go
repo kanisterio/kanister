@@ -70,16 +70,13 @@ func (s *ObjectStoreProviderSuite) SetUpSuite(c *C) {
 		c.Fatalf("Unrecognized objectstore '%s'", s.osType)
 	}
 	var err error
-	ctx := context.Background()
 
 	s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	pc := ProviderConfig{Type: s.osType}
-	secret := getSecret(ctx, c, s.osType)
-	s.provider, err = NewProvider(ctx, pc, secret)
-	c.Check(err, IsNil)
-	c.Assert(s.provider, NotNil)
 
-	s.root, err = GetOrCreateBucket(ctx, s.provider, testBucketName, s.region)
+	s.initProvider(c, s.region)
+
+	ctx := context.Background()
+	s.root, err = GetOrCreateBucket(ctx, s.provider, testBucketName)
 	c.Check(err, IsNil)
 	c.Assert(s.root, NotNil)
 	// While two concurrent instances could potentially collide, the probability
@@ -97,6 +94,19 @@ func (s *ObjectStoreProviderSuite) TearDownTest(c *C) {
 	}
 }
 
+func (s *ObjectStoreProviderSuite) initProvider(c *C, region string) {
+	ctx := context.Background()
+	var err error
+	pc := ProviderConfig{
+		Type:   s.osType,
+		Region: region,
+	}
+	secret := getSecret(ctx, c, s.osType)
+	s.provider, err = NewProvider(ctx, pc, secret)
+	c.Check(err, IsNil)
+	c.Assert(s.provider, NotNil)
+}
+
 // Verifies bucket operations, create/delete/list
 func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
 	ctx := context.Background()
@@ -105,11 +115,11 @@ func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
 
 	origBuckets, _ := s.provider.ListBuckets(ctx)
 
-	_, err := s.provider.CreateBucket(ctx, bucketName, s.region)
+	_, err := s.provider.CreateBucket(ctx, bucketName)
 	c.Assert(err, IsNil)
 
 	// Duplicate bucket
-	_, err = s.provider.CreateBucket(ctx, bucketName, s.region)
+	_, err = s.provider.CreateBucket(ctx, bucketName)
 	c.Assert(err, Not(IsNil))
 
 	// Should be one more than buckets. Can be racy with other activity
@@ -133,7 +143,7 @@ func (s *ObjectStoreProviderSuite) TestCreateExistingBucket(c *C) {
 	d, err := s.provider.GetBucket(ctx, testBucketName)
 	c.Check(err, IsNil)
 	c.Check(d, NotNil)
-	d, err = s.provider.CreateBucket(ctx, testBucketName, s.region)
+	d, err = s.provider.CreateBucket(ctx, testBucketName)
 	c.Check(err, NotNil)
 	c.Check(d, IsNil)
 }
@@ -156,7 +166,8 @@ func (s *ObjectStoreProviderSuite) TestCreateExistingBucketS3Regions(c *C) {
 	}
 	ctx := context.Background()
 	for _, region := range []string{"us-east-2", testRegionS3, "us-east-1", "us-west-1"} {
-		d, err := s.provider.CreateBucket(ctx, testBucketName, region)
+		s.initProvider(c, region)
+		d, err := s.provider.CreateBucket(ctx, testBucketName)
 		c.Check(err, NotNil)
 		c.Check(d, IsNil)
 	}
@@ -427,7 +438,8 @@ func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
 	buckets, err := s.provider.ListBuckets(ctx)
 	c.Check(err, IsNil)
 	for _, region := range []string{testRegionS3, "us-east-1", "us-east-2", "us-west-1"} {
-		b, err := GetOrCreateBucket(ctx, s.provider, testBucketName, region)
+		s.initProvider(c, region)
+		b, err := GetOrCreateBucket(ctx, s.provider, testBucketName)
 		c.Check(err, IsNil, Commentf("Region: %s", region))
 		c.Check(b, NotNil)
 		if b == nil {
