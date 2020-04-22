@@ -113,21 +113,25 @@ type CreatePVCFromSnapshotArgs struct {
 // CreatePVCFromSnapshot will restore a volume and returns the resulting
 // PersistentVolumeClaim and any error that happened in the process.
 func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs) (string, error) {
-	sns, err := snapshot.NewSnapshotter(args.KubeCli, args.DynCli)
-	if err != nil {
-		return "", err
-	}
-	snap, err := sns.Get(ctx, args.SnapshotName, args.Namespace)
-	if err != nil {
-		return "", err
-	}
-	size := snap.Status.RestoreSize
-	if args.RestoreSize != nil {
+	var size *resource.Quantity
+	if args.RestoreSize == nil {
+		sns, err := snapshot.NewSnapshotter(args.KubeCli, args.DynCli)
+		if err != nil {
+			return "", err
+		}
+		snap, err := sns.Get(ctx, args.SnapshotName, args.Namespace)
+		if err != nil {
+			return "", err
+		}
+
+		size = snap.Status.RestoreSize
+	} else {
 		s := resource.MustParse(fmt.Sprintf("%dGi", *args.RestoreSize))
 		size = &s
 	}
+
 	if size == nil {
-		return "", fmt.Errorf("Restore size is empty and no restore size argument given, Volumesnapshot: %s", snap.Name)
+		return "", fmt.Errorf("Restore size is empty and no restore size argument given, Volumesnapshot: %s", args.SnapshotName)
 	}
 
 	snapshotKind := "VolumeSnapshot"
@@ -159,7 +163,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 		pvc.Spec.StorageClassName = &args.StorageClassName
 	}
 
-	pvc, err = args.KubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(pvc)
+	pvc, err := args.KubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(pvc)
 	if err != nil {
 		if args.VolumeName != "" && apierrors.IsAlreadyExists(err) {
 			return args.VolumeName, nil
