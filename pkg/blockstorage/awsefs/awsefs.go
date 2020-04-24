@@ -373,10 +373,10 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 		return nil, errors.Wrap(err, "Failed to set backup tags")
 	}
 
-	req = &backup.DescribeRecoveryPointInput{}
-	req.SetBackupVaultName(k10BackupVaultName)
-	req.SetRecoveryPointArn(*resp.RecoveryPointArn)
-	describeRP, err := e.DescribeRecoveryPointWithContext(ctx, req)
+	req2 := &backup.DescribeRecoveryPointInput{}
+	req2.SetBackupVaultName(k10BackupVaultName)
+	req2.SetRecoveryPointArn(*resp.RecoveryPointArn)
+	describeRP, err := e.DescribeRecoveryPointWithContext(ctx, req2)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get recovery point information")
 	}
