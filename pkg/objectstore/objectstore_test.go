@@ -85,6 +85,7 @@ func (s *ObjectStoreProviderSuite) SetUpSuite(c *C) {
 }
 
 func (s *ObjectStoreProviderSuite) SetUpTest(c *C) {
+	s.initProvider(c, s.region)
 	s.testDir = s.suiteDirPrefix + "-" + c.TestName()
 }
 
@@ -436,27 +437,33 @@ func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
 	}
 	ctx := context.Background()
 	buckets, err := s.provider.ListBuckets(ctx)
-	c.Check(err, IsNil)
-	for _, region := range []string{testRegionS3, "us-east-1", "us-east-2", "us-west-1"} {
-		s.initProvider(c, region)
-		b, err := GetOrCreateBucket(ctx, s.provider, testBucketName)
-		c.Check(err, IsNil, Commentf("Region: %s", region))
-		c.Check(b, NotNil)
-		if b == nil {
-			continue
-		}
-		// Make sure no new bucket was created
-		newBuckets, err := s.provider.ListBuckets(ctx)
-		c.Check(err, IsNil)
-		c.Check(newBuckets, HasLen, len(buckets))
+	c.Assert(err, IsNil)
+	b, err := GetOrCreateBucket(ctx, s.provider, testBucketName)
+	c.Assert(err, IsNil)
+	c.Assert(b, NotNil)
+	// Make sure no new bucket was created
+	newBuckets, err := s.provider.ListBuckets(ctx)
+	c.Assert(err, IsNil)
+	c.Assert(newBuckets, HasLen, len(buckets))
 
-		l, err := b.ListObjects(ctx)
+	l, err := b.ListObjects(ctx)
+	c.Assert(err, IsNil)
+	c.Assert(l, NotNil)
+	objectName := s.suiteDirPrefix + "foo"
+	err = b.PutBytes(ctx, objectName, []byte("content"), nil)
+	c.Assert(err, IsNil)
+	err = b.Delete(ctx, objectName)
+	c.Assert(err, IsNil)
+}
+
+func (s *ObjectStoreProviderSuite) TestBucketWrongRegion(c *C) {
+	ctx := context.Background()
+	for _, region := range []string{"us-east-1", "us-east-2", "us-west-1"} {
+		s.initProvider(c, region)
+		b, err := s.provider.GetBucket(ctx, testBucketName)
 		c.Check(err, IsNil)
-		c.Check(l, NotNil)
-		objectName := s.suiteDirPrefix + region + "foo"
-		err = b.PutBytes(ctx, objectName, []byte("content"), nil)
-		c.Check(err, IsNil)
-		err = b.Delete(ctx, objectName)
+		c.Check(b, NotNil)
+		_, err = b.ListObjects(ctx)
 		c.Check(err, IsNil)
 	}
 }

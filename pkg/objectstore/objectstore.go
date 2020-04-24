@@ -16,7 +16,6 @@ package objectstore
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 
@@ -221,8 +220,4 @@ func getHostURI(config ProviderConfig) string {
 	default:
 		return config.Endpoint
 	}
-}
-
-func awsS3Endpoint(region string) string {
-	return fmt.Sprintf(awsS3HostFmt, region)
 }
