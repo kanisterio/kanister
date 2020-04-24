@@ -18,6 +18,7 @@ package objectstore
 
 import (
 	"context"
+	"fmt"
 	"path"
 
 	"github.com/graymeta/stow"
@@ -44,6 +45,7 @@ type bucket struct {
 	container    stow.Container // stow bucket
 	location     stow.Location  // Authenticated stow handle
 	hostEndPoint string         // E.g., https://s3-us-west-2.amazonaws.com/bucket1
+	region       string         // E.g., us-west-2
 }
 
 // CreateBucket creates the bucket. Bucket naming rules are provider dependent.
@@ -64,6 +66,7 @@ func (p *provider) CreateBucket(ctx context.Context, bucketName string) (Bucket,
 		container:    c,
 		location:     location,
 		hostEndPoint: path.Join(p.hostEndPoint, c.ID()),
+		region:       p.config.Region,
 	}
 	dir.bucket = bucket
 	return bucket, nil
@@ -97,7 +100,6 @@ func (p *provider) GetBucket(ctx context.Context, bucketName string) (Bucket, er
 func (p *provider) ListBuckets(ctx context.Context) (map[string]Bucket, error) {
 	// Walk all the buckets
 	buckets := make(map[string]Bucket)
-
 	location, err := getStowLocation(ctx, p.config, p.secret)
 	if err != nil {
 		return nil, err
@@ -151,14 +153,22 @@ type s3Provider struct {
 	*provider
 }
 
+// Stow uses path-style requests when specifying an endpoint.
+// https://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html#path-style-access
+// https://github.com/graymeta/stow/blob/master/s3/config.go#L159
+
+const awsS3HostFmt = "https://s3.%s.amazonaws.com"
+
+func awsS3Endpoint(region string) string {
+	return fmt.Sprintf(awsS3HostFmt, region)
+}
+
 func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, error) {
 	cfg := p.config
-	if cfg.Region == "" {
-		var err error
-		cfg.Region, err = p.getRegionForBucket(ctx, bucketName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not get region for bucket %s", bucketName)
-		}
+	var err error
+	cfg.Region, err = p.getRegionForBucket(ctx, bucketName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not get region for bucket %s", bucketName)
 	}
 	location, err := getStowLocation(ctx, cfg, p.secret)
 	if err != nil {
@@ -180,6 +190,7 @@ func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, 
 		container:    c,
 		location:     location,
 		hostEndPoint: path.Join(hostEndPoint, c.ID()),
+		region:       cfg.Region,
 	}
 	dir.bucket = bucket
 	return bucket, nil
@@ -201,7 +212,7 @@ func (p *s3Provider) DeleteBucket(ctx context.Context, bucketName string) error 
 
 // returns the region for a particular bucket
 func (p *s3Provider) getRegionForBucket(ctx context.Context, bucketName string) (string, error) {
-	return GetS3BucketRegion(ctx, bucketName, "")
+	return GetS3BucketRegion(ctx, bucketName, p.config.Region)
 }
 
 func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName string) (Bucket, error) {
