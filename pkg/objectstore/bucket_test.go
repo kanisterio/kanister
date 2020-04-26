@@ -36,9 +36,10 @@ func (s *BucketSuite) TestInvalidS3RegionEndpointMismatch(c *C) {
 	)
 	c.Assert(err, IsNil)
 
-	// Get Bucket will use the regions correct endpoint.
+	// Get Bucket will use the region's correct endpoint.
 	_, err = p.GetBucket(ctx, bn)
-	c.Assert(IsBucketNotFoundError(err), Equals, true)
+	c.Assert(err, ErrorMatches, ahmRe)
+	c.Assert(err, NotNil)
 
 	_, err = p.CreateBucket(ctx, bn)
 	c.Assert(err, ErrorMatches, ahmRe)
@@ -123,4 +124,126 @@ func checkProviderWithBucket(c *C, ctx context.Context, p Provider, bucketName, 
 	c.Assert(bu.region, Equals, region)
 	_, err = b.ListObjects(ctx)
 	c.Assert(err, IsNil)
+}
+
+func (s *BucketSuite) TestGetRegionForBucket(c *C) {
+	ctx := context.Background()
+	const pt = ProviderTypeS3
+	secret := getSecret(ctx, c, pt)
+
+	// Ensure existingBucket exists and non-existing bucket does not
+	const existingBucket = testBucketName
+	const nonExistantBucket = "kanister-test-should-not-exist"
+	pc := ProviderConfig{
+		Type:   pt,
+		Region: testRegionS3,
+	}
+	p, err := NewProvider(ctx, pc, secret)
+	c.Assert(err, IsNil)
+	_, err = p.getOrCreateBucket(ctx, existingBucket)
+	c.Assert(err, IsNil)
+	_, err = p.GetBucket(ctx, nonExistantBucket)
+	c.Assert(IsBucketNotFoundError(err), Equals, true)
+
+	for _, tc := range []struct {
+		bucketName   string
+		endpoint     string
+		clientRegion string
+		bucketRegion string
+		valid        bool
+	}{
+		{
+			bucketName:   existingBucket,
+			endpoint:     "",
+			clientRegion: "",
+			bucketRegion: testRegionS3,
+			valid:        true,
+		},
+		{
+			bucketName:   existingBucket,
+			endpoint:     "",
+			clientRegion: "us-west-1",
+			bucketRegion: testRegionS3,
+			valid:        true,
+		},
+		{
+			bucketName:   existingBucket,
+			endpoint:     "",
+			clientRegion: testRegionS3,
+			bucketRegion: testRegionS3,
+			valid:        true,
+		},
+		{
+			bucketName:   existingBucket,
+			endpoint:     "",
+			clientRegion: "asdf",
+			bucketRegion: testRegionS3,
+			valid:        false,
+		},
+		{
+			bucketName:   nonExistantBucket,
+			endpoint:     "",
+			clientRegion: testRegionS3,
+			bucketRegion: "",
+			valid:        false,
+		},
+		{
+			bucketName:   nonExistantBucket,
+			endpoint:     "",
+			clientRegion: "",
+			bucketRegion: "",
+			valid:        false,
+		},
+		// We don't yet have credentials for the following in CI, but can be
+		// used for manual tests
+		{
+			bucketName:   existingBucket,
+			endpoint:     "http://127.0.0.1:9000",
+			clientRegion: "tom-minio-region",
+			bucketRegion: "tom-minio-region",
+			valid:        false,
+		},
+		{
+			bucketName:   existingBucket,
+			endpoint:     "http://127.0.0.1:9000",
+			clientRegion: "asdf",
+			bucketRegion: "tom-minio-region",
+			valid:        false,
+		},
+		{
+			bucketName:   existingBucket,
+			endpoint:     "https://play.min.io:9000",
+			clientRegion: "",
+			bucketRegion: "minio-region",
+			valid:        false,
+		},
+		{
+			bucketName:   "tom-test-govcloud",
+			endpoint:     "",
+			clientRegion: "us-gov-east-1",
+			bucketRegion: "us-gov-west-1",
+			valid:        false,
+		},
+	} {
+		p, err := NewProvider(
+			ctx,
+			ProviderConfig{
+				Type:     pt,
+				Endpoint: tc.endpoint,
+				Region:   tc.clientRegion,
+			},
+			secret,
+		)
+		c.Assert(err, IsNil)
+
+		sp, ok := p.(*s3Provider)
+		c.Assert(ok, Equals, true)
+		rfb, err := sp.GetRegionForBucket(ctx, tc.bucketName)
+		if tc.valid {
+			c.Assert(err, IsNil)
+			c.Assert(rfb, Equals, tc.bucketRegion)
+		} else {
+			c.Assert(err, NotNil)
+		}
+	}
 }

@@ -21,6 +21,9 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
 )
@@ -166,7 +169,7 @@ func awsS3Endpoint(region string) string {
 func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, error) {
 	cfg := p.config
 	var err error
-	cfg.Region, err = p.getRegionForBucket(ctx, bucketName)
+	cfg.Region, err = p.GetRegionForBucket(ctx, bucketName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get region for bucket %s", bucketName)
 	}
@@ -201,7 +204,7 @@ func (p *s3Provider) DeleteBucket(ctx context.Context, bucketName string) error 
 	if cfg.Region == "" {
 		// We swalllow this error because region may not be required. If it is,
 		// we'll fail in the next few lines.
-		cfg.Region, _ = p.getRegionForBucket(ctx, bucketName)
+		cfg.Region, _ = p.GetRegionForBucket(ctx, bucketName)
 	}
 	location, err := getStowLocation(ctx, p.config, p.secret)
 	if err != nil {
@@ -210,9 +213,34 @@ func (p *s3Provider) DeleteBucket(ctx context.Context, bucketName string) error 
 	return location.RemoveContainer(bucketName)
 }
 
-// returns the region for a particular bucket
-func (p *s3Provider) getRegionForBucket(ctx context.Context, bucketName string) (string, error) {
-	return GetS3BucketRegion(ctx, bucketName, p.config.Region)
+// GetRegionForBucketreturns the region for a particular bucket. It does not
+// the region set in the provider config is used as a hint, but may differ than
+// the actual region of the bucket. If the bucket does not have a region, then
+// the return value will be "",
+func (p *s3Provider) GetRegionForBucket(ctx context.Context, bucketName string) (string, error) {
+	cfg, r, err := awsConfig(ctx, p.config, *p.secret.Aws)
+	if err != nil {
+		return "", err
+	}
+	s, err := session.NewSession(cfg)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create session, region = %s", r)
+	}
+	cli := s3.New(s)
+	if cli == nil {
+		return "", errors.New("failed to create s3 client")
+	}
+	gbli := &s3.GetBucketLocationInput{
+		Bucket: aws.String(bucketName),
+	}
+	gblo, err := cli.GetBucketLocation(gbli)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get bucket location")
+	}
+	if gblo.LocationConstraint != nil {
+		return *gblo.LocationConstraint, nil
+	}
+	return "", nil
 }
 
 func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName string) (Bucket, error) {
