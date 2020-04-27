@@ -213,10 +213,10 @@ func (p *s3Provider) DeleteBucket(ctx context.Context, bucketName string) error 
 	return location.RemoveContainer(bucketName)
 }
 
-// GetRegionForBucketreturns the region for a particular bucket. It does not
-// the region set in the provider config is used as a hint, but may differ than
-// the actual region of the bucket. If the bucket does not have a region, then
-// the return value will be "",
+// GetRegionForBucket returns the region for a particular bucket. It does not
+// use the region set in the provider config is used as a hint, but may differ
+// from the actual region of the bucket. If the bucket does not have a region,
+// then the return value will be "".
 func (p *s3Provider) GetRegionForBucket(ctx context.Context, bucketName string) (string, error) {
 	cfg, r, err := awsConfig(ctx, p.config, *p.secret.Aws)
 	if err != nil {

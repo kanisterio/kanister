@@ -133,7 +133,7 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 
 	// Ensure existingBucket exists and non-existing bucket does not
 	const existingBucket = testBucketName
-	const nonExistantBucket = "kanister-test-should-not-exist"
+	const nonExistentBucket = "kanister-test-should-not-exist"
 	pc := ProviderConfig{
 		Type:   pt,
 		Region: testRegionS3,
@@ -142,7 +142,7 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 	c.Assert(err, IsNil)
 	_, err = p.getOrCreateBucket(ctx, existingBucket)
 	c.Assert(err, IsNil)
-	_, err = p.GetBucket(ctx, nonExistantBucket)
+	_, err = p.GetBucket(ctx, nonExistentBucket)
 	c.Assert(IsBucketNotFoundError(err), Equals, true)
 
 	for _, tc := range []struct {
@@ -181,14 +181,14 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 			valid:        false,
 		},
 		{
-			bucketName:   nonExistantBucket,
+			bucketName:   nonExistentBucket,
 			endpoint:     "",
 			clientRegion: testRegionS3,
 			bucketRegion: "",
 			valid:        false,
 		},
 		{
-			bucketName:   nonExistantBucket,
+			bucketName:   nonExistentBucket,
 			endpoint:     "",
 			clientRegion: "",
 			bucketRegion: "",
