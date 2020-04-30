@@ -44,6 +44,7 @@ type ObjectStoreProviderSuite struct {
 	suiteDirPrefix string // directory name prefix for all tests in this suite
 	testDir        string // directory name for a given test
 	region         string // bucket region
+	endpoint       string // bucket region
 }
 
 const (
@@ -99,8 +100,9 @@ func (s *ObjectStoreProviderSuite) initProvider(c *C, region string) {
 	ctx := context.Background()
 	var err error
 	pc := ProviderConfig{
-		Type:   s.osType,
-		Region: region,
+		Type:     s.osType,
+		Region:   region,
+		Endpoint: s.endpoint,
 	}
 	secret := getSecret(ctx, c, s.osType)
 	s.provider, err = NewProvider(ctx, pc, secret)

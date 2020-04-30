@@ -2,6 +2,7 @@ package objectstore
 
 import (
 	"context"
+	"fmt"
 
 	. "gopkg.in/check.v1"
 )
@@ -99,18 +100,20 @@ func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *C) {
 	}()
 
 	// Check the bucket's region is r1
-	checkProviderWithBucket(c, ctx, p1, bn, r1)
+	err = checkProviderWithBucket(c, ctx, p1, bn, r1)
+	c.Assert(err, IsNil)
 
 	// We can read a bucket even though it our provider's does not match, as
 	// long as we don't specify an endpoint.
-	checkProviderWithBucket(c, ctx, p2, bn, r1)
+	err = checkProviderWithBucket(c, ctx, p2, bn, r1)
+	c.Assert(err, IsNil)
 
-	// Specifying an endpoint causes this to fail.
-	_, err = p3.GetBucket(ctx, bn)
-	c.Assert(err, ErrorMatches, ahmRe)
+	// Specifying an the wrong endpoint causes bucket ops to fail.
+	err = checkProviderWithBucket(c, ctx, p3, bn, r1)
+	c.Assert(err, NotNil)
 }
 
-func checkProviderWithBucket(c *C, ctx context.Context, p Provider, bucketName, region string) {
+func checkProviderWithBucket(c *C, ctx context.Context, p Provider, bucketName, region string) error {
 	bs, err := p.ListBuckets(ctx)
 	c.Assert(err, IsNil)
 	_, ok := bs[bucketName]
@@ -118,12 +121,16 @@ func checkProviderWithBucket(c *C, ctx context.Context, p Provider, bucketName, 
 	b, err := p.GetBucket(ctx, bucketName)
 	c.Assert(err, IsNil)
 	c.Assert(b, NotNil)
-	bu, ok := b.(*bucket)
+
+	s3p, ok := p.(*s3Provider)
 	c.Assert(ok, Equals, true)
-	c.Assert(bu, NotNil)
-	c.Assert(bu.region, Equals, region)
-	_, err = b.ListObjects(ctx)
+	c.Assert(s3p, NotNil)
+	r, err := s3p.GetRegionForBucket(ctx, bucketName)
 	c.Assert(err, IsNil)
+	c.Assert(r, Equals, region)
+
+	_, err = b.ListObjects(ctx)
+	return err
 }
 
 func (s *BucketSuite) TestGetRegionForBucket(c *C) {
@@ -137,10 +144,13 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 	pc := ProviderConfig{
 		Type:   pt,
 		Region: testRegionS3,
+		//Region:   "tom-minio-region",
+		//Endpoint: "http://127.0.0.1:9000",
 	}
 	p, err := NewProvider(ctx, pc, secret)
 	c.Assert(err, IsNil)
 	_, err = p.getOrCreateBucket(ctx, existingBucket)
+	c.Log(fmt.Sprintf("%+v", err))
 	c.Assert(err, IsNil)
 	_, err = p.GetBucket(ctx, nonExistentBucket)
 	c.Assert(IsBucketNotFoundError(err), Equals, true)
@@ -235,15 +245,16 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 			secret,
 		)
 		c.Assert(err, IsNil)
+		cmt := Commentf("Case: %#v", tc)
 
 		sp, ok := p.(*s3Provider)
 		c.Assert(ok, Equals, true)
 		rfb, err := sp.GetRegionForBucket(ctx, tc.bucketName)
 		if tc.valid {
-			c.Assert(err, IsNil)
-			c.Assert(rfb, Equals, tc.bucketRegion)
+			c.Assert(err, IsNil, cmt)
+			c.Assert(rfb, Equals, tc.bucketRegion, cmt)
 		} else {
-			c.Assert(err, NotNil)
+			c.Assert(err, NotNil, cmt)
 		}
 	}
 }
