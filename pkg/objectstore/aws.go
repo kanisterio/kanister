@@ -16,13 +16,14 @@ package objectstore
 
 import (
 	"context"
+	"crypto/tls"
+	"net/http"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	kaws "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/pkg/errors"
 )
 
@@ -31,14 +32,6 @@ const (
 	noSuchBucket   = s3.ErrCodeNoSuchBucket
 	gcsS3NotFound  = "not found"
 )
-
-func config(region string) *aws.Config {
-	c := aws.NewConfig()
-	if region != "" {
-		return c.WithRegion(region)
-	}
-	return c
-}
 
 func IsBucketNotFoundError(err error) bool {
 	if err == nil {
@@ -51,11 +44,32 @@ func IsBucketNotFoundError(err error) bool {
 	return strings.Contains(err.Error(), gcsS3NotFound)
 }
 
-func GetS3BucketRegion(ctx context.Context, bucketName, regionHint string) (string, error) {
-	r := s3.NormalizeBucketLocation(regionHint)
-	s, err := session.NewSession(config(r))
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to create session, region = %s", r)
+func awsConfig(ctx context.Context, pc ProviderConfig, s SecretAws) (*aws.Config, string, error) {
+	c := map[string]string{
+		kaws.AccessKeyID:     s.AccessKeyID,
+		kaws.SecretAccessKey: s.SecretAccessKey,
+		kaws.SessionToken:    s.SessionToken,
+		kaws.ConfigRegion:    s3.NormalizeBucketLocation(pc.Region),
+		//TODO: Add aws.ConfigRole to profile
 	}
-	return s3manager.GetBucketRegion(ctx, s, bucketName, r)
+	cfg, r, err := kaws.GetConfig(ctx, c)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to create aws config")
+	}
+	cfg = cfg.WithRegion(r)
+	if pc.Endpoint != "" {
+		cfg = cfg.WithEndpoint(pc.Endpoint).WithS3ForcePathStyle(true)
+	}
+	if pc.SkipSSLVerify {
+		h := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		}
+		cfg = cfg.WithHTTPClient(h)
+	}
+
+	return cfg, r, nil
 }
