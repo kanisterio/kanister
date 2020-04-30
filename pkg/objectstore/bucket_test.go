@@ -150,6 +150,8 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 	pc := ProviderConfig{
 		Type:   pt,
 		Region: testRegionS3,
+		//Region:   "tom-minio-region",
+		//Endpoint: "http://127.0.0.1:9000",
 	}
 	p, err := NewProvider(ctx, pc, secret)
 	c.Assert(err, IsNil)
