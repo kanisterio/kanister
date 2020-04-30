@@ -221,7 +221,6 @@ func s3Endpoint(c ProviderConfig) string {
 		r = c.Region
 	}
 	return awsS3Endpoint(r)
-
 }
 
 // Stow uses path-style requests when specifying an endpoint.
