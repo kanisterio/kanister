@@ -153,14 +153,14 @@ func (p *provider) bucketConfig(ctx context.Context, bucketName string) (Provide
 
 func s3BucketConfig(ctx context.Context, c ProviderConfig, s *Secret, bucketName string) (ProviderConfig, error) {
 	if s == nil || s.Aws == nil {
-		return c, errors.New("AWS Secret regquired to get region")
+		return c, errors.New("AWS Secret required to get region")
 	}
 	r, err := s3BucketRegion(ctx, c, *s, bucketName)
 	if err != nil {
 		log.Debug().
 			WithContext(ctx).
 			WithError(err).
-			Print("Could get config for bucket", field.M{"config": c})
+			Print("Couldn't get config for bucket", field.M{"config": c})
 		return c, nil
 	}
 	c.Region = r
@@ -177,7 +177,7 @@ type s3Provider struct {
 // then the return value will be "".
 func (p *s3Provider) GetRegionForBucket(ctx context.Context, bucketName string) (string, error) {
 	if p.secret == nil || p.secret.Aws == nil {
-		return "", errors.New("AWS Secret regquired to get region")
+		return "", errors.New("AWS Secret required to get region")
 	}
 	return s3BucketRegion(ctx, p.config, *p.secret, bucketName)
 }
