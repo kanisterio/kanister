@@ -19,6 +19,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/kanisterio/kanister/pkg/config"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
@@ -44,7 +45,7 @@ func GetTags(inputTags map[string]string) map[string]string {
 // GetStdTags returns a set of standard tags to use for tagging resources
 func GetStdTags() map[string]string {
 	version := os.Getenv("VERSION")
-	clustername := os.Getenv("CLUSTER_NAME")
+	clustername, _ := config.GetClusterName(nil)
 
 	stdTags := map[string]string{
 		ClusterTagKey: clustername,

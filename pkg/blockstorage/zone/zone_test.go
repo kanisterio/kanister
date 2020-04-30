@@ -16,15 +16,17 @@ package zone
 
 import (
 	"context"
+	"fmt"
 	"reflect"
+	"sort"
 	"testing"
 
+	"github.com/kanisterio/kanister/pkg/kube"
 	. "gopkg.in/check.v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
-
-	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -34,49 +36,12 @@ type ZoneSuite struct{}
 
 var _ = Suite(&ZoneSuite{})
 
-func (s ZoneSuite) TestConsistentZone(c *C) {
-	// We don't care what the answer is as long as it's consistent.
-	for _, tc := range []struct {
-		sourceZone string
-		nzs        map[string]struct{}
-		out        string
-	}{
-		{
-			sourceZone: "",
-			nzs: map[string]struct{}{
-				"zone1": {},
-			},
-			out: "zone1",
-		},
-		{
-			sourceZone: "",
-			nzs: map[string]struct{}{
-				"zone1": {},
-				"zone2": {},
-			},
-			out: "zone2",
-		},
-		{
-			sourceZone: "from1",
-			nzs: map[string]struct{}{
-				"zone1": {},
-				"zone2": {},
-			},
-			out: "zone1",
-		},
-	} {
-		out, err := consistentZone(tc.sourceZone, tc.nzs, make(map[string]struct{}))
-		c.Assert(err, IsNil)
-		c.Assert(out, Equals, tc.out)
-	}
-}
-
 func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	ctx := context.Background()
 	node1 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west2", kubevolume.PVZoneLabelName: "us-west2-a"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-a"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -90,7 +55,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	node2 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west2", kubevolume.PVZoneLabelName: "us-west2-b"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-b"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -104,7 +69,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	node3 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west2", kubevolume.PVZoneLabelName: "us-west2-c"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -119,7 +84,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	node4 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node4",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west2", kubevolume.PVZoneLabelName: "us-west2-c"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -133,7 +98,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 	node5 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node5",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west2", kubevolume.PVZoneLabelName: "us-west2-c"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
 		},
 		Spec: v1.NodeSpec{
 			Unschedulable: true,
@@ -167,7 +132,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	node1 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west-2", kubevolume.PVZoneLabelName: "us-west-2a"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2a"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -181,7 +146,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	node2 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west-2", kubevolume.PVZoneLabelName: "us-west-2b"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2b"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -195,7 +160,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	node3 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west-2", kubevolume.PVZoneLabelName: "us-west-2c"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2c"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -210,7 +175,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	node4 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node4",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west-2", kubevolume.PVZoneLabelName: "us-west-2c"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2c"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -224,7 +189,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 	node5 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node5",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west-2", kubevolume.PVZoneLabelName: "us-west-2c"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2c"},
 		},
 		Spec: v1.NodeSpec{
 			Unschedulable: true,
@@ -258,7 +223,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	node1 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-1"},
+			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-1"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -272,7 +237,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	node2 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
-			Labels: map[string]string{kubevolume.PVTopologyRegionLabelName: "westus2", kubevolume.PVTopologyZoneLabelName: "westus2-2"},
+			Labels: map[string]string{kube.TopologyRegionLabelName: "westus2", kube.TopologyZoneLabelName: "westus2-2"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -286,7 +251,22 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	node3 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-3"},
+			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-3"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+	// non-zonal node (FaultDomain)
+	node4 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node4",
+			Labels: map[string]string{kube.FDRegionLabelName: "westus", kube.FDZoneLabelName: "0"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -298,10 +278,10 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 		},
 	}
 	// error nodes
-	node4 := &v1.Node{
+	node5 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   "node4",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west2", kubevolume.PVZoneLabelName: "us-west2-4"},
+			Name:   "node5",
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-4"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -312,10 +292,10 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 			},
 		},
 	}
-	node5 := &v1.Node{
+	node6 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   "node5",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "us-west2", kubevolume.PVZoneLabelName: "us-west2-5"},
+			Name:   "node6",
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-5"},
 		},
 		Spec: v1.NodeSpec{
 			Unschedulable: true,
@@ -340,7 +320,15 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 	c.Assert(reflect.DeepEqual(z, expectedZone), Equals, true)
 	c.Assert(r, Equals, "westus2")
 
-	cli = fake.NewSimpleClientset(node4, node5)
+	// non-zonal cluster test
+	cli = fake.NewSimpleClientset(node4)
+	z, r, err = NodeZonesAndRegion(ctx, cli)
+	c.Assert(err, IsNil)
+	c.Assert(len(z) == 0, Equals, true)
+	c.Assert(r, Equals, "westus")
+
+	// error case
+	cli = fake.NewSimpleClientset(node5, node6)
 	_, _, err = NodeZonesAndRegion(ctx, cli)
 	c.Assert(err, NotNil)
 }
@@ -432,16 +420,18 @@ func (s ZoneSuite) TestSanitizeZones(c *C) {
 			},
 		},
 	} {
-		out := sanitizeAvailableZones(tc.availableZones, tc.validZoneNames)
+		out := SanitizeAvailableZones(tc.availableZones, tc.validZoneNames)
 		c.Assert(out, DeepEquals, tc.out)
 	}
 }
 
-func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
+func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
+	ctx := context.Background()
+	var t = &ebsTest{}
 	node1 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node1",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-1"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2a"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -455,7 +445,251 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 	node2 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node2",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-2"},
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2b"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+	node3 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node3",
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west-2", kube.FDZoneLabelName: "us-west-2c"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+
+	gceNode1 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node1",
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-a"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+
+	gceNode2 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node2",
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-b"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+
+	gceNode3 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node3",
+			Labels: map[string]string{kube.FDRegionLabelName: "us-west2", kube.FDZoneLabelName: "us-west2-c"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+
+	noZonesNode := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "noZoneNode",
+			Labels: map[string]string{kube.FDRegionLabelName: "us-east2", kube.FDZoneLabelName: "us-east2-c"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+
+	cli := fake.NewSimpleClientset(node1, node2, node3)
+	cligce := fake.NewSimpleClientset(gceNode1, gceNode2, gceNode3)
+	cliNoZoneNode := fake.NewSimpleClientset(noZonesNode)
+	cliEmpty := fake.NewSimpleClientset()
+
+	for _, tc := range []struct {
+		inRegion string
+		inZones  []string
+		inCli    kubernetes.Interface
+		outZones []string
+		outErr   error
+	}{
+		{ //success case
+			inRegion: "us-west-2",
+			inZones:  []string{"us-west-2a"},
+			inCli:    cli,
+			outZones: []string{"us-west-2a"},
+			outErr:   nil,
+		},
+		{ //success case gce multi region
+			inRegion: "us-west1",
+			inZones:  []string{"us-west1-a"},
+			inCli:    cligce,
+			outZones: []string{"us-west2-a"},
+			outErr:   nil,
+		},
+		{ // No valid zones found
+			inRegion: "noValidZones",
+			inZones:  []string{"us-west-2a"},
+			inCli:    nil,
+			outZones: nil,
+			outErr:   fmt.Errorf(".*Unable to find valid availabilty zones for region.*"),
+		},
+		{ // Kubernetes provided zones are invalid use valid sourceZones
+			inRegion: "us-west-2",
+			inZones:  []string{"us-west-2a", "us-west-2b", "us-west-2d"},
+			inCli:    nil,
+			outZones: []string{"us-west-2a", "us-west-2b"},
+			outErr:   fmt.Errorf(".*Unable to find valid availabilty zones for region.*"),
+		},
+		{ // Source zone not found but other valid zones available
+			inRegion: "us-west-2",
+			inZones:  []string{"us-west-2f"},
+			inCli:    cli,
+			outZones: []string{"us-west-2b"},
+			outErr:   nil,
+		},
+		{ // Source zone not found but other valid zones available
+			inRegion: "us-west-2",
+			inZones:  []string{"us-west-2f"},
+			inCli:    cli,
+			outZones: []string{"us-west-2b"},
+			outErr:   nil,
+		},
+		{ // Source zones found
+			inRegion: "us-west-2",
+			inZones:  []string{"us-west-2a", "us-west-2b"},
+			inCli:    cli,
+			outZones: []string{"us-west-2a", "us-west-2b"},
+			outErr:   nil,
+		},
+		{ // One source zone found
+			inRegion: "us-west-2",
+			inZones:  []string{"us-west-2a", "us-west-2f"},
+			inCli:    cli,
+			outZones: []string{"us-west-2a"},
+			outErr:   nil,
+		},
+		{ // No available zones found
+			inRegion: "us-west-2",
+			inZones:  []string{"us-west-2a", "us-west-2f"},
+			inCli:    cliEmpty,
+			outZones: []string{"us-west-2a"},
+			outErr:   nil,
+		},
+		{ // Region Mismatch, continue normally, consistent zone
+			inRegion: "us-west2",
+			inZones:  []string{"us-west2-a", "us-west2-b"},
+			inCli:    cli,
+			outZones: []string{"us-west-2b", "us-west-2c"},
+			outErr:   nil,
+		},
+		{ // No zones in region
+			inRegion: "empty",
+			inZones:  []string{"us-west-2a", "us-west-2b"},
+			inCli:    cliNoZoneNode,
+			outZones: nil,
+			outErr:   fmt.Errorf(".*No provider zones for region.*"),
+		},
+		{ // Error fetching zones for region
+			inRegion: "other error",
+			inZones:  []string{"us-west-2a", "us-west-2b"},
+			inCli:    cliNoZoneNode,
+			outZones: nil,
+			outErr:   fmt.Errorf(".*No provider zones for region.*"),
+		},
+		{ // use Source Region zones
+			inRegion: "us-west-2",
+			inZones:  []string{"us-west-2a"},
+			inCli:    cliNoZoneNode,
+			outZones: []string{"us-west-2a"},
+			outErr:   nil,
+		},
+	} {
+		out, err := FromSourceRegionZone(ctx, t, tc.inCli, tc.inRegion, tc.inZones...)
+		sort.Strings(out)
+		sort.Strings(tc.outZones)
+		c.Assert(out, DeepEquals, tc.outZones)
+		if err != nil {
+			c.Assert(err, ErrorMatches, tc.outErr.Error())
+		} else {
+			c.Assert(err, IsNil)
+		}
+	}
+}
+
+var _ Mapper = (*ebsTest)(nil)
+
+type ebsTest struct{}
+
+func (et *ebsTest) FromRegion(ctx context.Context, region string) ([]string, error) {
+	// Fall back to using a static map.
+	switch region {
+	case "us-west-2":
+		return []string{"us-west-2a", "us-west-2b", "us-west-2c"}, nil
+	case "us-west2":
+		return []string{"us-west2-a", "us-west2-b", "us-west2-c"}, nil
+	case "us-west1":
+		return []string{"us-west1-a", "us-west1-b", "us-west1-c"}, nil
+	case "us-east2":
+		return []string{}, nil
+	case "empty":
+		return []string{}, nil
+	case "noValidZones":
+		return []string{"no", "valid", "zones"}, nil
+	default:
+		return nil, fmt.Errorf("Some error")
+	}
+}
+
+func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
+	node1 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node1",
+			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-1"},
+		},
+		Status: v1.NodeStatus{
+			Conditions: []v1.NodeCondition{
+				v1.NodeCondition{
+					Status: "True",
+					Type:   "Ready",
+				},
+			},
+		},
+	}
+	node2 := &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "node2",
+			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-2"},
 		},
 		Spec: v1.NodeSpec{
 			Unschedulable: true,
@@ -472,7 +706,7 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 	node3 := &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node3",
-			Labels: map[string]string{kubevolume.PVRegionLabelName: "westus2", kubevolume.PVZoneLabelName: "westus2-3"},
+			Labels: map[string]string{kube.FDRegionLabelName: "westus2", kube.FDZoneLabelName: "westus2-3"},
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
@@ -483,7 +717,6 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 			},
 		},
 	}
-
 	cli := fake.NewSimpleClientset(node1, node2, node3)
 	nl, err := GetReadySchedulableNodes(cli)
 	c.Assert(err, IsNil)
@@ -496,4 +729,34 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 	nl, err = GetReadySchedulableNodes(cli)
 	c.Assert(err, NotNil)
 	c.Assert(nl, IsNil)
+}
+
+func (s ZoneSuite) TestConsistentZones(c *C) {
+	// no available zones
+	z := consistentZone("source", map[string]struct{}{})
+	c.Assert(z, Equals, "")
+
+	az1 := map[string]struct{}{
+		"a": struct{}{},
+		"b": struct{}{},
+		"c": struct{}{},
+	}
+
+	az2 := map[string]struct{}{
+		"c": struct{}{},
+		"a": struct{}{},
+		"b": struct{}{},
+	}
+
+	z1 := consistentZone("x", az1)
+	z2 := consistentZone("x", az2)
+
+	c.Assert(z1, Equals, z2)
+
+	// different lists result in different zones
+	az2["d"] = struct{}{}
+	z1 = consistentZone("x", az1)
+	z2 = consistentZone("x", az2)
+
+	c.Assert(z1, Not(Equals), z2)
 }

@@ -58,7 +58,7 @@ func NewCassandraInstance(name string) App {
 			Version:  "0.13.3",
 			Values: map[string]string{
 				"image.repo":          "kanisterio/cassandra",
-				"image.tag":           "0.26.0",
+				"image.tag":           "0.29.0",
 				"config.cluster_size": "2",
 			},
 		},
@@ -209,7 +209,7 @@ func (cas *CassandraInstance) Reset(ctx context.Context) error {
 }
 
 func (cas *CassandraInstance) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, cas.cli, cas.namespace, "cassandra")
+	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, cas.cli, cas.namespace, cas.chart.Release)
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error getting the pod and container name %s.", cas.name)
 	}

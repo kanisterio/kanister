@@ -16,7 +16,6 @@ package objectstore
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 
@@ -33,7 +32,7 @@ import (
 type Provider interface {
 	// CreateBucket creates a new bucket. Bucket name must
 	// honors provider naming restrictions
-	CreateBucket(ctx context.Context, bucketName, region string) (Bucket, error)
+	CreateBucket(context.Context, string) (Bucket, error)
 
 	// GetBucket access a specific bucket
 	GetBucket(context.Context, string) (Bucket, error)
@@ -45,7 +44,7 @@ type Provider interface {
 	ListBuckets(context.Context) (map[string]Bucket, error)
 
 	// getOrCreateBucket creates bucket if it does not already exist
-	getOrCreateBucket(ctx context.Context, bucketName, region string) (Bucket, error)
+	getOrCreateBucket(ctx context.Context, bucketName string) (Bucket, error)
 }
 
 // Bucket abstracts the object store of different cloud providers
@@ -95,10 +94,10 @@ type Directory interface {
 
 // NewProvider creates a new Provider
 func NewProvider(ctx context.Context, config ProviderConfig, secret *Secret) (Provider, error) {
+	config.Endpoint = providerEndpoint(config)
 	p := &provider{
-		hostEndPoint: getHostURI(config),
-		config:       config,
-		secret:       secret,
+		config: config,
+		secret: secret,
 	}
 	if p.config.Type == ProviderTypeS3 {
 		return &s3Provider{provider: p}, nil
@@ -106,12 +105,19 @@ func NewProvider(ctx context.Context, config ProviderConfig, secret *Secret) (Pr
 	return p, nil
 }
 
+func providerEndpoint(c ProviderConfig) string {
+	if c.Type == ProviderTypeGCS {
+		return googleGCSHost
+	}
+	return c.Endpoint
+}
+
 // Supported returns true if the object store type is supported
 func Supported(t ProviderType) bool {
 	return t == ProviderTypeS3 || t == ProviderTypeGCS || t == ProviderTypeAzure
 }
 
-func s3Config(ctx context.Context, config ProviderConfig, secret *Secret, region string) (stowKind string, stowConfig stow.Config, err error) {
+func s3Config(ctx context.Context, config ProviderConfig, secret *Secret) (stowKind string, stowConfig stow.Config, err error) {
 	if secret == nil {
 		return "", nil, errors.New("Invalid Secret value: nil")
 	}
@@ -127,8 +133,8 @@ func s3Config(ctx context.Context, config ProviderConfig, secret *Secret, region
 		stows3.ConfigSecretKey:   awsSecretAccessKey,
 		stows3.ConfigToken:       awsSessionToken,
 	}
-	if region != "" {
-		cm[stows3.ConfigRegion] = region
+	if config.Region != "" {
+		cm[stows3.ConfigRegion] = config.Region
 	}
 	if config.Endpoint != "" {
 		cm[stows3.ConfigEndpoint] = config.Endpoint
@@ -189,10 +195,10 @@ func azureConfig(ctx context.Context, secret *Secret) (stowKind string, stowConf
 	}, nil
 }
 
-func getConfig(ctx context.Context, config ProviderConfig, secret *Secret, region string) (stowKind string, stowConfig stow.Config, err error) {
+func getConfig(ctx context.Context, config ProviderConfig, secret *Secret) (stowKind string, stowConfig stow.Config, err error) {
 	switch config.Type {
 	case ProviderTypeS3:
-		return s3Config(ctx, config, secret, region)
+		return s3Config(ctx, config, secret)
 	case ProviderTypeGCS:
 		return gcsConfig(ctx, secret)
 	case ProviderTypeAzure:
@@ -202,8 +208,8 @@ func getConfig(ctx context.Context, config ProviderConfig, secret *Secret, regio
 	}
 }
 
-func getStowLocation(ctx context.Context, config ProviderConfig, secret *Secret, region string) (stow.Location, error) {
-	kind, stowConfig, err := getConfig(ctx, config, secret, region)
+func getStowLocation(ctx context.Context, config ProviderConfig, secret *Secret) (stow.Location, error) {
+	kind, stowConfig, err := getConfig(ctx, config, secret)
 	if err != nil {
 		return nil, err
 	}
@@ -212,17 +218,4 @@ func getStowLocation(ctx context.Context, config ProviderConfig, secret *Secret,
 		return nil, errors.Wrapf(err, "could not create store provider %+v", config)
 	}
 	return location, nil
-}
-
-func getHostURI(config ProviderConfig) string {
-	switch config.Type {
-	case ProviderTypeGCS:
-		return googleGCSHost
-	default:
-		return config.Endpoint
-	}
-}
-
-func awsS3Endpoint(region string) string {
-	return fmt.Sprintf(awsS3HostFmt, region)
 }

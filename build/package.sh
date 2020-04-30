@@ -41,9 +41,6 @@ if [ -z "${ARCH:-""}" ]; then
     echo "ARCH must be set"
     exit 1
 fi
-if [ -n "${BASEIMAGE:-""}" ]; then
-    baseimagearg="--build-arg base_image=${BASEIMAGE}"
-fi
 if [ -z "${IMAGE:-""}" ]; then
     echo "IMAGE must be set"
     exit 1

@@ -22,6 +22,8 @@ type ProviderConfig struct {
 	// stores from certain cloud providers such as AWS. In that case it can
 	// be empty
 	Endpoint string
+	// Region specifies the region of the object store.
+	Region string
 	// If true, disable SSL verification. If false (the default), SSL
 	// verification is enabled.
 	SkipSSLVerify bool

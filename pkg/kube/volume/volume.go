@@ -22,29 +22,23 @@ import (
 	"strings"
 	"time"
 
-	snapshotclient "github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
 	pvMatchLabelName = "kanisterpvmatchid"
 	pvcGenerateName  = "kanister-pvc-"
-	// PVZoneLabelName is a known k8s label. used to specify volume zone
-	PVZoneLabelName = "failure-domain.beta.kubernetes.io/zone"
-	// PVTopologyZoneLabelName is a known k8s label. used to specify volume zone for kubernetes 1.17 onwards
-	PVTopologyZoneLabelName = "topology.kubernetes.io/zone"
-	// PVRegionLabelName is a known k8s label
-	PVRegionLabelName = "failure-domain.beta.kubernetes.io/region"
-	// PVTopologyRegionLabelName is a known k8s label. used to specify volume region for kubernetes 1.17 onwards
-	PVTopologyRegionLabelName = "topology.kubernetes.io/region"
 	// NoPVCNameSpecified is used by the caller to indicate that the PVC name
 	// should be auto-generated
 	NoPVCNameSpecified = ""
@@ -98,37 +92,60 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 	return createdPVC.Name, nil
 }
 
+// CreatePVCFromSnapshotArgs describes the arguments for CreatePVCFromSnapshot
+// 'VolumeName' is the name of the PVC that will be restored from the snapshot.
+// 'StorageClassName' is the name of the storage class used to create the PVC.
+// 'SnapshotName' is the name of the VolumeSnapshot that will be used for restoring.
+// 'Namespace' is the namespace of the VolumeSnapshot. The PVC will be restored to the same namepsace.
+// 'RestoreSize' will override existing restore size from snapshot content if provided.
+// 'Labels' will be added to the PVC.
+type CreatePVCFromSnapshotArgs struct {
+	KubeCli          kubernetes.Interface
+	DynCli           dynamic.Interface
+	Namespace        string
+	VolumeName       string
+	StorageClassName string
+	SnapshotName     string
+	RestoreSize      *int
+	Labels           map[string]string
+}
+
 // CreatePVCFromSnapshot will restore a volume and returns the resulting
 // PersistentVolumeClaim and any error that happened in the process.
-//
-// 'volumeName' is the name of the PVC that will be restored from the snapshot.
-// 'storageClassName' is the name of the storage class used to create the PVC.
-// 'snapshotName' is the name of the VolumeSnapshot that will be used for restoring.
-// 'namespace' is the namespace of the VolumeSnapshot. The PVC will be restored to the same namepsace.
-// 'restoreSize' will override existing restore size from snapshot content if provided.
-func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, snapCli snapshotclient.Interface, namespace, volumeName, storageClassName, snapshotName string, restoreSize *int) (string, error) {
-	snap, err := snapCli.VolumesnapshotV1alpha1().VolumeSnapshots(namespace).Get(snapshotName, metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-	size := snap.Status.RestoreSize
-	if restoreSize != nil {
-		s := resource.MustParse(fmt.Sprintf("%dGi", *restoreSize))
+func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs) (string, error) {
+	var size *resource.Quantity
+	if args.RestoreSize == nil {
+		sns, err := snapshot.NewSnapshotter(args.KubeCli, args.DynCli)
+		if err != nil {
+			return "", err
+		}
+		snap, err := sns.Get(ctx, args.SnapshotName, args.Namespace)
+		if err != nil {
+			return "", err
+		}
+
+		size = snap.Status.RestoreSize
+	} else {
+		s := resource.MustParse(fmt.Sprintf("%dGi", *args.RestoreSize))
 		size = &s
 	}
+
 	if size == nil {
-		return "", fmt.Errorf("Restore size is empty and no restore size argument given, Volumesnapshot: %s", snap.Name)
+		return "", fmt.Errorf("Restore size is empty and no restore size argument given, Volumesnapshot: %s", args.SnapshotName)
 	}
 
 	snapshotKind := "VolumeSnapshot"
 	snapshotAPIGroup := "snapshot.storage.k8s.io"
 	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: args.Labels,
+		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 			DataSource: &v1.TypedLocalObjectReference{
 				APIGroup: &snapshotAPIGroup,
 				Kind:     snapshotKind,
-				Name:     snapshotName,
+				Name:     args.SnapshotName,
 			},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
@@ -137,19 +154,19 @@ func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, sn
 			},
 		},
 	}
-	if volumeName != "" {
-		pvc.ObjectMeta.Name = volumeName
+	if args.VolumeName != "" {
+		pvc.ObjectMeta.Name = args.VolumeName
 	} else {
 		pvc.ObjectMeta.GenerateName = pvcGenerateName
 	}
-	if storageClassName != "" {
-		pvc.Spec.StorageClassName = &storageClassName
+	if args.StorageClassName != "" {
+		pvc.Spec.StorageClassName = &args.StorageClassName
 	}
 
-	pvc, err = kubeCli.CoreV1().PersistentVolumeClaims(namespace).Create(pvc)
+	pvc, err := args.KubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(pvc)
 	if err != nil {
-		if volumeName != "" && apierrors.IsAlreadyExists(err) {
-			return volumeName, nil
+		if args.VolumeName != "" && apierrors.IsAlreadyExists(err) {
+			return args.VolumeName, nil
 		}
 		return "", errors.Wrapf(err, "Unable to create PVC, PVC: %v", pvc)
 	}
@@ -193,14 +210,15 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 		pv.Spec.PersistentVolumeSource.AWSElasticBlockStore = &v1.AWSElasticBlockStoreVolumeSource{
 			VolumeID: vol.ID,
 		}
-		pv.ObjectMeta.Labels[PVZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[PVRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
 	case blockstorage.TypeGPD:
 		pv.Spec.PersistentVolumeSource.GCEPersistentDisk = &v1.GCEPersistentDiskVolumeSource{
 			PDName: vol.ID,
 		}
-		pv.ObjectMeta.Labels[PVZoneLabelName] = vol.Az
-		pv.ObjectMeta.Labels[PVRegionLabelName] = zoneToRegion(vol.Az)
+		pv.ObjectMeta.Labels[kube.FDZoneLabelName] = vol.Az
+		pv.ObjectMeta.Labels[kube.FDRegionLabelName] = zoneToRegion(vol.Az)
+
 	default:
 		return "", errors.Errorf("Volume type %v(%T) not supported ", volType, volType)
 	}
@@ -236,8 +254,8 @@ func DeletePVC(cli kubernetes.Interface, namespace, pvcName string) error {
 }
 
 var labelBlackList = map[string]struct{}{
-	"chart":    struct{}{},
-	"heritage": struct{}{},
+	"chart":    {},
+	"heritage": {},
 }
 
 func labelSelector(labels map[string]string) string {
@@ -255,24 +273,4 @@ func labelSelector(labels map[string]string) string {
 func zoneToRegion(zone string) string {
 	r, _ := regexp.Compile("-?[a-z]$")
 	return r.ReplaceAllString(zone, "")
-}
-
-func GetZoneFromNode(node v1.Node) string {
-	var zone string
-	if v, ok := node.Labels[PVZoneLabelName]; ok {
-		zone = v
-	} else if v, ok := node.Labels[PVTopologyZoneLabelName]; ok {
-		zone = v
-	}
-	return zone
-}
-
-func GetRegionFromNode(node v1.Node) string {
-	var region string
-	if v, ok := node.Labels[PVRegionLabelName]; ok {
-		region = v
-	} else if v, ok := node.Labels[PVTopologyRegionLabelName]; ok {
-		region = v
-	}
-	return region
 }

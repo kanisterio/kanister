@@ -16,8 +16,9 @@ package kube
 
 import (
 	"io/ioutil"
-	"k8s.io/client-go/kubernetes"
 	"os"
+
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -25,6 +25,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 )
@@ -174,6 +175,17 @@ func (mdb *MysqlDB) Count(ctx context.Context) (int, error) {
 }
 
 func (mdb *MysqlDB) Reset(ctx context.Context) error {
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, mysqlWaitTimeout)
+	defer waitCancel()
+	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		err := mdb.Ping(ctx)
+		return err == nil, nil
+	})
+
+	if err != nil {
+		return errors.Wrapf(err, "Error waiting for application %s to be ready to reset it", mdb.name)
+	}
+
 	log.Print("Resetting the mysql instance.", field.M{"app": "mysql"})
 
 	// delete all the data from the table
