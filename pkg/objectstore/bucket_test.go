@@ -111,6 +111,7 @@ func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *C) {
 	// Specifying an the wrong endpoint causes bucket ops to fail.
 	err = checkProviderWithBucket(c, ctx, p3, bn, r1)
 	c.Assert(err, NotNil)
+	c.Assert(err, ErrorMatches, ahmRe)
 }
 
 func checkProviderWithBucket(c *C, ctx context.Context, p Provider, bucketName, region string) error {
@@ -118,7 +119,11 @@ func checkProviderWithBucket(c *C, ctx context.Context, p Provider, bucketName, 
 	c.Assert(err, IsNil)
 	_, ok := bs[bucketName]
 	c.Assert(ok, Equals, true)
+	// We should fail here if the endpoint is set and does not match bucket region.
 	b, err := p.GetBucket(ctx, bucketName)
+	if err != nil {
+		return err
+	}
 	c.Assert(err, IsNil)
 	c.Assert(b, NotNil)
 
@@ -130,7 +135,8 @@ func checkProviderWithBucket(c *C, ctx context.Context, p Provider, bucketName, 
 	c.Assert(r, Equals, region)
 
 	_, err = b.ListObjects(ctx)
-	return err
+	c.Assert(err, IsNil)
+	return nil
 }
 
 func (s *BucketSuite) TestGetRegionForBucket(c *C) {
@@ -228,7 +234,7 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 			valid:        false,
 		},
 		{
-			bucketName:   "tom-test-govcloud",
+			bucketName:   "kanister-test-govcloud",
 			endpoint:     "",
 			clientRegion: "us-gov-east-1",
 			bucketRegion: "us-gov-west-1",

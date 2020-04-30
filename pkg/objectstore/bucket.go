@@ -21,9 +21,8 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
 
@@ -191,21 +190,7 @@ func s3BucketRegion(ctx context.Context, cfg ProviderConfig, sec Secret, bucketN
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create session, region = %s", r)
 	}
-	cli := s3.New(s)
-	if cli == nil {
-		return "", errors.New("failed to create s3 client")
-	}
-	gbli := &s3.GetBucketLocationInput{
-		Bucket: aws.String(bucketName),
-	}
-	gblo, err := cli.GetBucketLocation(gbli)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get bucket location")
-	}
-	if gblo.LocationConstraint != nil {
-		return *gblo.LocationConstraint, nil
-	}
-	return "", nil
+	return s3manager.GetBucketRegion(ctx, s, bucketName, cfg.Region)
 }
 
 func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName string) (Bucket, error) {
