@@ -20,6 +20,19 @@ set -o errexit
 set -o nounset
 set -o xtrace
 
+build_licenses_info_image() {
+    local src_dir="$(pwd)/.go/pkg/mod"
+    local target_file="$(pwd)/licenses"
+    local mount_cmd="-v $(pwd):$(pwd)"
+    if grep docker /proc/1/cgroup -qa; then
+        mount_cmd="--volumes-from $(grep docker -m 1 /proc/self/cgroup|cut -d/ -f3)"
+    fi
+    docker run --rm ${mount_cmd} depohmel/license-extractor:latest --mode merge \
+                                                   --source  ${src_dir} \
+                                                   --target  ${target_file}\
+                                                   --overwrite > /dev/null
+}
+
 if [ -z "${BIN:-""}" ]; then
     echo "BIN must be set"
     exit 1
@@ -41,10 +54,12 @@ if [ -z "${SOURCE_BIN:-""}" ]; then
     exit 1
 fi
 
+build_licenses_info_image
+
 sed                                \
     -e "s|ARG_BIN|${BIN}|g"        \
     -e "s|ARG_ARCH|${ARCH}|g"      \
     -e "s|ARG_SOURCE_BIN|${SOURCE_BIN}|g" \
     Dockerfile.in > .dockerfile-${ARCH}
-docker build --pull ${baseimagearg:-} -t ${IMAGE}:${VERSION} -f .dockerfile-${ARCH} .
+docker build --pull ${baseimagearg:-} --build-arg kanister_version=${VERSION} -t ${IMAGE}:${VERSION} -f .dockerfile-${ARCH} .
 docker images -q ${IMAGE}:${VERSION}

@@ -46,6 +46,8 @@ dockers:
   image_templates:
   - 'kanisterio/kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/tools/Dockerfile'
+  build_flag_templates:
+  - "--build-arg=kan_tools_version={{ .Tag }}"
 - binaries:
   - kando
   image_templates:
