@@ -62,7 +62,6 @@ actions:
               cd ${snapshot_prefix}/${HOSTNAME}/
               cqlsh -e "DESCRIBE SCHEMA" > schema.cql
             fi
-            sleep 300
             nodetool clearsnapshot
     - func: BackupDataAll
       name: backupToObjectStore
