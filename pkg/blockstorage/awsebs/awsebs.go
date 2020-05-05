@@ -26,7 +26,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jpillora/backoff"
-	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
 
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
@@ -34,7 +33,9 @@ import (
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 var _ blockstorage.Provider = (*ebsStorage)(nil)
@@ -293,6 +294,10 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	return rs, nil
 }
 
+func (s *ebsStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+	return nil, errors.New("Copy Snapshot with Args not implemented")
+}
+
 func (s *ebsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	// Snapshot the EBS volume
 	csi := (&ec2.CreateSnapshotInput{}).SetVolumeId(volume.ID)
@@ -407,8 +412,11 @@ func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	if snapshot.Volume.VolumeType == "" || snapshot.Volume.Az == "" || snapshot.Volume.Tags == nil {
 		return nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s, VolumeTags: %v", snapshot.Volume.VolumeType, snapshot.Volume.Az, snapshot.Volume.Tags)
 	}
-
-	zones, err := zone.FromSourceRegionZone(ctx, s, snapshot.Region, snapshot.Volume.Az)
+	kubeCli, err := kube.NewClient()
+	if err != nil {
+		log.WithError(err).Print("Failed to initialize kubernetes client")
+	}
+	zones, err := zone.FromSourceRegionZone(ctx, s, kubeCli, snapshot.Region, snapshot.Volume.Az)
 	if err != nil {
 		return nil, err
 	}
@@ -718,6 +726,7 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-west-2a",
 			"us-west-2b",
 			"us-west-2c",
+			"us-west-2d",
 		}, nil
 	}
 	return nil, errors.New("cannot get availability zones for region")

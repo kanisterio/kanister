@@ -182,17 +182,7 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 
 	switch p.Location.Type {
 	case crv1alpha1.LocationTypeS3Compliant:
-		givenRegion := p.Location.Region
-		if givenRegion != "" {
-			actualRegion, err := objectstore.GetS3BucketRegion(ctx, bucketName, givenRegion)
-			if err != nil {
-				return err
-			}
-			if actualRegion != givenRegion {
-				return errorf("Incorrect region for bucket. Expected '%s', Got '%s'", actualRegion, givenRegion)
-			}
-		}
-		return nil
+		pType = objectstore.ProviderTypeS3
 	case crv1alpha1.LocationTypeGCS:
 		pType = objectstore.ProviderTypeGCS
 	case crv1alpha1.LocationTypeAzure:
@@ -200,7 +190,10 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 	default:
 		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
 	}
-	pc := objectstore.ProviderConfig{Type: pType}
+	pc := objectstore.ProviderConfig{
+		Type:   pType,
+		Region: p.Location.Region,
+	}
 	secret, err := osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
@@ -210,10 +203,7 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 		return err
 	}
 	_, err = provider.GetBucket(ctx, bucketName)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Interface) error {
@@ -237,6 +227,7 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 	pc := objectstore.ProviderConfig{
 		Type:          pType,
 		Endpoint:      p.Location.Endpoint,
+		Region:        p.Location.Region,
 		SkipSSLVerify: p.SkipSSLVerify,
 	}
 	provider, err := objectstore.NewProvider(ctx, pc, secret)

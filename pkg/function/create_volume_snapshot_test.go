@@ -25,7 +25,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
-	kubevolume "github.com/kanisterio/kanister/pkg/kube/volume"
+	kube "github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/testutil/mockblockstorage"
 )
@@ -67,8 +67,8 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "pv-test-1",
 				Labels: map[string]string{
-					kubevolume.PVZoneLabelName:   "us-west-2a",
-					kubevolume.PVRegionLabelName: "us-west-2",
+					kube.FDZoneLabelName:   "us-west-2a",
+					kube.FDRegionLabelName: "us-west-2",
 				},
 			},
 			Spec: v1.PersistentVolumeSpec{
@@ -119,7 +119,7 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "pv-test-3",
 				Labels: map[string]string{
-					kubevolume.PVZoneLabelName: "us-west-2a",
+					kube.FDZoneLabelName: "us-west-2a",
 				},
 			},
 			Spec: v1.PersistentVolumeSpec{

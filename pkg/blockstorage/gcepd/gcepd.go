@@ -33,6 +33,7 @@ import (
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -162,6 +163,10 @@ func (s *gpdStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volu
 
 func (s *gpdStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
 	return nil, errors.Errorf("Not implemented")
+}
+
+func (s *gpdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+	return nil, errors.New("Copy Snapshot with Args not implemented")
 }
 
 func (s *gpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
@@ -358,11 +363,16 @@ func (s *gpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	var zones []string
 	var region string
 	// Validate Zones
-	if _, err = getRegionFromZones(snapshot.Volume.Az); err != nil {
+	if region, err = getRegionFromZones(snapshot.Volume.Az); err != nil {
 		return nil, errors.Wrapf(err, "Could not validate zones: %s", snapshot.Volume.Az)
 	}
+	kubeCli, err := kube.NewClient()
+	if err != nil {
+		// TODO: Pull KubeCli creation out of kanister
+		log.WithError(err).Print("Failed to initialize kubernetes client")
+	}
 	zones = splitZones(snapshot.Volume.Az)
-	zones, err = zone.FromSourceRegionZone(ctx, s, snapshot.Region, zones...)
+	zones, err = zone.FromSourceRegionZone(ctx, s, kubeCli, region, zones...)
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,7 @@
 ## Prerequisites Details
 * Kubernetes 1.8+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.26.0 with `profiles.cr.kanister.io` CRD installed
+* Kanister version 0.29.0 with `profiles.cr.kanister.io` CRD installed
 
 ## StatefulSet Details
 * https://kubernetes.io/docs/concepts/abstractions/controllers/statefulsets/
