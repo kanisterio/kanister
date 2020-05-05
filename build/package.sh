@@ -21,7 +21,7 @@ set -o nounset
 set -o xtrace
 
 build_licenses_info_image() {
-    local src_dir="$(pwd)/pkg/mod"
+    local src_dir="$(pwd)"
     local target_file="$(pwd)/licenses"
     local mount_cmd="-v $(pwd):$(pwd)"
     if grep docker /proc/1/cgroup -qa; then
