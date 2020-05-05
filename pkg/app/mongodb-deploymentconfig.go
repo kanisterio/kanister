@@ -159,7 +159,7 @@ func (mongo *MongoDBDepConfig) Reset(ctx context.Context) error {
 	// delete all the entries from the restaurants dummy collection
 	// we are not deleting the database because we are dealing with admin database here
 	// and deletion admin database is prohibited
-	deleteDBCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.drop()\"", mongo.user)}
+	deleteDBCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"db.restaurants.drop()\"", mongo.user)}
 	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
 	return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
 }

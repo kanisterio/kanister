@@ -62,7 +62,6 @@ actions:
               cd ${snapshot_prefix}/${HOSTNAME}/
               cqlsh -e "DESCRIBE SCHEMA" > schema.cql
             fi
-            sleep 300
             nodetool clearsnapshot
     - func: BackupDataAll
       name: backupToObjectStore
@@ -172,7 +171,7 @@ actions:
                 cd ..
               done
             fi
-            rm -rf {{ .ArtifactsIn.params.KeyValue.snapshotPrefix }}
+            rm -rf {{ .ArtifactsIn.params.KeyValue.snapshotPrefix }} 
   delete:
     type: StatefulSet
     inputArtifactNames:
