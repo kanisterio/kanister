@@ -21,16 +21,18 @@ set -o nounset
 set -o xtrace
 
 build_licenses_info_image() {
-    local src_dir="$(pwd)/.go/pkg/mod"
+    local src_dir="$(pwd)/pkg/mod"
     local target_file="$(pwd)/licenses"
     local mount_cmd="-v $(pwd):$(pwd)"
     if grep docker /proc/1/cgroup -qa; then
         mount_cmd="--volumes-from $(grep docker -m 1 /proc/self/cgroup|cut -d/ -f3)"
     fi
-    docker run --rm ${mount_cmd} depohmel/license-extractor:latest --mode merge \
-                                                   --source  ${src_dir} \
-                                                   --target  ${target_file}\
-                                                   --overwrite > /dev/null
+    docker run --rm ${mount_cmd} \
+        "kanisterio/license-extractor:4e0a91a" \
+        --mode merge \
+        --source ${src_dir} \
+        --target ${target_file}\
+        --overwrite > /dev/null
 }
 
 if [ -z "${BIN:-""}" ]; then

@@ -10,7 +10,6 @@ LABEL name="kanister-tools" \
 
 COPY --from=restic/restic:0.9.5 /usr/bin/restic /usr/local/bin/restic
 COPY --from=kanisterio/kopia:alpine-b46ca3a /kopia/kopia /usr/local/bin/kopia
-COPY LICENSE /licenses/LICENSE
 ADD kando /usr/local/bin/
 
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]
