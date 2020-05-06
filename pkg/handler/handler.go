@@ -26,7 +26,7 @@ import (
 
 const (
 	healthCheckPath = "/v0/healthz"
-	metricsPath     = "/v0/metrics"
+	metricsPath     = "/metrics"
 	healthCheckAddr = ":8000"
 )
 
