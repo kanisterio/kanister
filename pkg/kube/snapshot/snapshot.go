@@ -31,6 +31,7 @@ type Snapshotter interface {
 	//
 	// 'annotationKey' is the annotation key which has to be present on VolumeSnapshotClass.
 	// 'annotationValue' is the value for annotationKey in VolumeSnapshotClass spec.
+	// 'storageClassName' is the name of the storageClass that shares the same driver as the VolumeSnapshotClass.
 	// This returns error if no VolumeSnapshotClass found.
 	GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error)
 	// Create creates a VolumeSnapshot and returns it or any error happened meanwhile.

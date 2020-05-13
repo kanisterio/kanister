@@ -37,9 +37,11 @@ const (
 	PVCKind = "PersistentVolumeClaim"
 
 	// Snapshot resource Kinds
-	VolSnapClassKind   = "VolumeSnapshotClass"
-	VolSnapKind        = "VolumeSnapshot"
-	VolSnapContentKind = "VolumeSnapshotContent"
+	VolSnapClassKind           = "VolumeSnapshotClass"
+	VolSnapKind                = "VolumeSnapshot"
+	VolSnapContentKind         = "VolumeSnapshotContent"
+	VolSnapClassAlphaDriverKey = "snapshotter"
+	VolSnapClassBetaDriverKey  = "driver"
 )
 
 type SnapshotAlpha struct {
@@ -278,8 +280,8 @@ func UnstructuredVolumeSnapshotClassAlpha(name, driver, deletionPolicy string) *
 			"metadata": map[string]interface{}{
 				"name": name,
 			},
-			"snapshotter":    driver,
-			"deletionPolicy": deletionPolicy,
+			VolSnapClassAlphaDriverKey: driver,
+			"deletionPolicy":           deletionPolicy,
 		},
 	}
 }
@@ -324,9 +326,9 @@ func getDriverFromUnstruturedVSC(uVSC unstructured.Unstructured) (string, error)
 	if uVSC.GetKind() != VolSnapClassKind {
 		return "", errors.Errorf("Cannot get diver for %s kind", uVSC.GetKind())
 	}
-	driver, ok := uVSC.Object["snapshotter"]
+	driver, ok := uVSC.Object[VolSnapClassAlphaDriverKey]
 	if !ok {
-		driver, ok = uVSC.Object["driver"]
+		driver, ok = uVSC.Object[VolSnapClassBetaDriverKey]
 	}
 	if !ok {
 		return "", errors.Errorf("VolumeSnapshotClass (%s) missing driver/snapshotter field", uVSC.GetName())
