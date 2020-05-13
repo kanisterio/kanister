@@ -52,8 +52,8 @@ func NewSnapshotAlpha(kubeCli kubernetes.Interface, dynCli dynamic.Interface) Sn
 }
 
 // GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
-func (sna *SnapshotAlpha) GetVolumeSnapshotClass(annotationKey, annotationValue string) (string, error) {
-	return getSnapshotClassbyAnnotation(sna.dynCli, v1alpha1.VolSnapClassGVR, annotationKey, annotationValue)
+func (sna *SnapshotAlpha) GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error) {
+	return getSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, v1alpha1.VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
 }
 
 // Create creates a VolumeSnapshot and returns it or any error that happened meanwhile.
@@ -294,7 +294,7 @@ func TransformUnstructured(u *unstructured.Unstructured, value interface{}) erro
 	return errors.Wrapf(err, "Failed to Unmarshal unstructured object")
 }
 
-func getSnapshotClassbyAnnotation(dynCli dynamic.Interface, gvr schema.GroupVersionResource, annotationKey, annotationValue string) (string, error) {
+func getSnapshotClassbyAnnotation(dynCli dynamic.Interface, kubeCli kubernetes.Interface, gvr schema.GroupVersionResource, annotationKey, annotationValue, storageClass string) (string, error) {
 	us, err := dynCli.Resource(gvr).List(metav1.ListOptions{})
 	if err != nil {
 		return "", errors.Errorf("Failed to get VolumeSnapshotClasses in the cluster: %v", err)
@@ -302,11 +302,37 @@ func getSnapshotClassbyAnnotation(dynCli dynamic.Interface, gvr schema.GroupVers
 	if us == nil || len(us.Items) == 0 {
 		return "", errors.Errorf("Failed to find any VolumeSnapshotClass in the cluster: %v", err)
 	}
+	// fetch storageClass
+	sc, err := kubeCli.StorageV1().StorageClasses().Get(storageClass, metav1.GetOptions{})
+	if err != nil {
+		return "", errors.Errorf("Failed to find StorageClass (%s) in the cluster: %v", storageClass, err)
+	}
 	for _, vsc := range us.Items {
 		ans := vsc.GetAnnotations()
-		if val, ok := ans[annotationKey]; ok && val == annotationValue {
+		driver, err := getDriverFromUnstruturedVSC(vsc)
+		if err != nil {
+			return "", errors.Errorf("Failed to get driver for VolumeSnapshotClass (%s): %v", vsc.GetName(), err)
+		}
+		if val, ok := ans[annotationKey]; ok && val == annotationValue && driver == sc.Provisioner {
 			return vsc.GetName(), nil
 		}
 	}
-	return "", errors.Errorf("Failed to find VolumesnapshotClass with %s=%s annotation in the cluster", annotationKey, annotationValue)
+	return "", errors.Errorf("Failed to find VolumeSnapshotClass with %s=%s annotation in the cluster", annotationKey, annotationValue)
+}
+
+func getDriverFromUnstruturedVSC(uVSC unstructured.Unstructured) (string, error) {
+	if uVSC.GetKind() != VolSnapClassKind {
+		return "", errors.Errorf("Cannot get diver for %s kind", uVSC.GetKind())
+	}
+	driver, ok := uVSC.Object["snapshotter"]
+	if !ok {
+		driver, ok = uVSC.Object["driver"]
+	}
+	if !ok {
+		return "", errors.Errorf("VolumeSnapshotClass (%s) missing driver/snapshotter field", uVSC.GetName())
+	}
+	if driverString, ok := driver.(string); ok {
+		return driverString, nil
+	}
+	return "", errors.Errorf("Failed to convert driver to string")
 }
