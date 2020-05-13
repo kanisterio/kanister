@@ -317,8 +317,8 @@ func UnstructuredVolumeSnapshotClassBeta(name, driver, deletionPolicy string) *u
 			"metadata": map[string]interface{}{
 				"name": name,
 			},
-			"driver":         driver,
-			"deletionPolicy": deletionPolicy,
+			VolSnapClassBetaDriverKey: driver,
+			"deletionPolicy":          deletionPolicy,
 		},
 	}
 }
