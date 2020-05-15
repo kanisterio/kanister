@@ -51,7 +51,6 @@ actions:
         kind: Deployment
         replicas: 1
   delete:
-    type: Deployment
     inputArtifactNames:
     - timeLog
     phases:

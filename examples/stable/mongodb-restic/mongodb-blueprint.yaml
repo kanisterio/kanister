@@ -91,12 +91,12 @@ actions:
         replicas: 1
 
   delete:
-    type: StatefulSet
+    type: Namespace
     phases:
     - func: DeleteDataAll
       name: deleteSnapshots
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
+        namespace: "{{ .Namespace.Name }}"
         backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-backups/{{ .StatefulSet.Name }}/rs_backup"
         backupInfo: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
         reclaimSpace: true

@@ -63,7 +63,7 @@ actions:
           BACKUP_LOCATION={{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}
           kando location pull --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" - | gunzip -c -f | psql -q -U "${PGUSER}"
   delete:
-    kind: StatefulSet
+    type: Namespace
     inputArtifactNames:
       - cloudObject
     phases:
@@ -71,7 +71,7 @@ actions:
       name: deleteDump
       args:
         image: kanisterio/postgres-kanister-tools:0.29.0
-        namespace: "{{ .StatefulSet.Namespace }}"
+        namespace: "{{ .Namespace.Name }}"
         command:
           - bash
           - -o
