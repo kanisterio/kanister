@@ -22,7 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -313,13 +313,13 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 		if action == "delete" {
 			// object of delete is always namespace of actionset
 			as.Spec.Actions[0].Object = crv1alpha1.ObjectReference{
-				APIVersion: "v1" ,
-				Group: "",
-				Resource: "namespaces"
-				Kind: "namespace"
-				Name: s.namespace,
-				Namespace: "",
-				}
+				APIVersion: "v1",
+				Group:      "",
+				Resource:   "namespaces",
+				Kind:       "namespace",
+				Name:       s.namespace,
+				Namespace:  "",
+			}
 		}
 		as, err = s.crCli.ActionSets(s.namespace).Create(as)
 		c.Assert(err, IsNil)
