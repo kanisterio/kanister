@@ -50,14 +50,14 @@ actions:
           host_name="{{ .Object.spec.serviceName }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
           kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}' - | gunzip | elasticdump --bulk=true --input=$ --output=http://${host_name}:9200
   delete:
-    type: StatefulSet
+    type: Namespace
     inputArtifactNames:
     - cloudObject
     phases:
     - func: KubeTask
       name: deleteFromObjectStore
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
+        namespace: "{{ .Namespace.Name }}"
         image: "kanisterio/es-sidecar:0.29.0"
         command:
         - bash
