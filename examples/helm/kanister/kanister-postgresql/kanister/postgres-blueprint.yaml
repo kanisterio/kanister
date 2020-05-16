@@ -251,14 +251,14 @@ actions:
         kind: deployment
         replicas: 1
   delete:
-    type: Deployment
+    type: Namespace
     inputArtifactNames:
       - manifest
     phases:
     - func: KubeTask
       name: deleteArtifact
       args:
-        namespace: "{{ .Deployment.Namespace }}"
+        namespace: "{{ .Namespace.Name }}"
         image: "kanisterio/postgres:v0.3.0"
         command:
           - bash
