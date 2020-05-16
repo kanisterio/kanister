@@ -310,6 +310,17 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 		as, err = restoreActionSetSpecs(as, action)
 		c.Assert(err, IsNil)
 		as.Spec.Actions[0].Options = options
+		if action == "delete" {
+			// object of delete is always namespace of actionset
+			as.Spec.Actions[0].Object = crv1alpha1.ObjectReference{
+				APIVersion: "v1" ,
+				Group: "",
+				Resource: "namespaces"
+				Kind: "namespace"
+				Name: s.namespace,
+				Namespace: "",
+				}
+		}
 		as, err = s.crCli.ActionSets(s.namespace).Create(as)
 		c.Assert(err, IsNil)
 	default:
