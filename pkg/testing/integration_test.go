@@ -18,13 +18,16 @@ package testing
 import (
 	"context"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/app"
@@ -75,6 +78,13 @@ func newSecretProfile() *secretProfile {
 	}
 }
 
+var (
+	setUpOnce = sync.Once{}
+	setUpDone = make(chan struct{})
+)
+
+const controllerNamespace = "integration-test-controller"
+
 func (s *IntegrationSuite) SetUpSuite(c *C) {
 	ctx := context.Background()
 	ctx, s.cancel = context.WithCancel(ctx)
@@ -88,10 +98,42 @@ func (s *IntegrationSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	// Start the controller
-	err = resource.CreateCustomResources(ctx, cfg)
+	setUpOnce.Do(func() {
+		defer close(setUpDone)
+		resetNamespace(ctx, c, s.cli)
+		runController(ctx, c, cfg)
+	})
+	<-setUpDone
+}
+
+func resetNamespace(ctx context.Context, c *C, cli kubernetes.Interface) {
+	// Try to delete namespace and wait til it doesn't exist.
+	err := cli.CoreV1().Namespaces().Delete(controllerNamespace, nil)
+	if !apierrors.IsNotFound(err) {
+		c.Assert(err, IsNil)
+	}
+	err = poll.Wait(ctx, func(context.Context) (bool, error) {
+		_, err = cli.CoreV1().Namespaces().Get(controllerNamespace, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			return true, nil
+		}
+		return false, err
+	})
+	c.Assert(err, IsNil)
+	err = createNamespace(cli, controllerNamespace)
+	c.Assert(err, IsNil)
+
+	// Set Controller namespace and service account
+	os.Setenv(kube.PodNSEnvVar, controllerNamespace)
+	os.Setenv(kube.PodSAEnvVar, controllerSA)
+
+}
+
+func runController(ctx context.Context, c *C, cfg *rest.Config) {
+	err := resource.CreateCustomResources(ctx, cfg)
 	c.Assert(err, IsNil)
 	ctlr := controller.New(cfg)
-	err = ctlr.StartWatch(ctx, s.namespace)
+	err = ctlr.StartWatch(ctx, controllerNamespace)
 	c.Assert(err, IsNil)
 }
 
@@ -122,10 +164,6 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	err = createNamespace(s.cli, s.namespace)
 	c.Assert(err, IsNil)
 
-	// Set Controller namespace and service account
-	os.Setenv(kube.PodNSEnvVar, s.namespace)
-	os.Setenv(kube.PodSAEnvVar, controllerSA)
-
 	// Create profile
 	if s.profile == nil {
 		log.Info().Print("Skipping integration test. Could not create profile. Please check if required credentials are set.", field.M{"app": s.name})
@@ -146,7 +184,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Create blueprint
 	bp := s.bp.Blueprint()
 	c.Assert(bp, NotNil)
-	_, err = s.crCli.Blueprints(s.namespace).Create(bp)
+	_, err = s.crCli.Blueprints(controllerNamespace).Create(bp)
 	c.Assert(err, IsNil)
 
 	var configMaps, secrets map[string]crv1alpha1.ObjectReference
@@ -180,7 +218,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	validateBlueprint(c, *bp, configMaps, secrets)
 
 	// Create ActionSet specs
-	as := newActionSet(bp.GetName(), profileName, s.namespace, s.app.Object(), configMaps, secrets)
+	as := newActionSet(bp.GetName(), profileName, controllerNamespace, s.app.Object(), configMaps, secrets)
 	// Take backup
 	backup := s.createActionset(ctx, c, as, "backup", nil)
 	c.Assert(len(backup), Not(Equals), 0)
@@ -259,7 +297,7 @@ func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectRef
 }
 
 func (s *IntegrationSuite) createProfile(c *C) string {
-	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(s.profile.secret)
+	secret, err := s.cli.CoreV1().Secrets(controllerNamespace).Create(s.profile.secret)
 	c.Assert(err, IsNil)
 
 	// set secret ref in profile
@@ -267,7 +305,7 @@ func (s *IntegrationSuite) createProfile(c *C) string {
 		Name:      secret.GetName(),
 		Namespace: secret.GetNamespace(),
 	}
-	profile, err := s.crCli.Profiles(s.namespace).Create(s.profile.profile)
+	profile, err := s.crCli.Profiles(controllerNamespace).Create(s.profile.profile)
 	c.Assert(err, IsNil)
 
 	return profile.GetName()
@@ -304,7 +342,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 	switch action {
 	case "backup":
 		as.Spec.Actions[0].Options = options
-		as, err = s.crCli.ActionSets(s.namespace).Create(as)
+		as, err = s.crCli.ActionSets(controllerNamespace).Create(as)
 		c.Assert(err, IsNil)
 	case "restore", "delete":
 		as, err = restoreActionSetSpecs(as, action)
@@ -317,11 +355,11 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 				Group:      "",
 				Resource:   "namespaces",
 				Kind:       "namespace",
-				Name:       s.namespace,
+				Name:       controllerNamespace,
 				Namespace:  "",
 			}
 		}
-		as, err = s.crCli.ActionSets(s.namespace).Create(as)
+		as, err = s.crCli.ActionSets(controllerNamespace).Create(as)
 		c.Assert(err, IsNil)
 	default:
 		c.Errorf("Invalid action %s while creating ActionSet", action)
@@ -329,7 +367,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 
 	// Wait for the ActionSet to complete.
 	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		as, err = s.crCli.ActionSets(s.namespace).Get(as.GetName(), metav1.GetOptions{})
+		as, err = s.crCli.ActionSets(controllerNamespace).Get(as.GetName(), metav1.GetOptions{})
 		switch {
 		case err != nil, as.Status == nil:
 			return false, err
