@@ -59,7 +59,7 @@ actions:
           root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mysqlsecret.Data "database-root-password" | toString }}"
           kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -u root --password=${root_password} -h {{ .DeploymentConfig.Name }}
   delete:
-    type: DeploymentConfig
+    type: Namespace
     inputArtifactNames:
     - mysqlCloudDump
     phases:
@@ -67,7 +67,7 @@ actions:
       name: deleteFromBlobStore
       args:
         image: kanisterio/mysql-sidecar:0.29.0
-        namespace: "{{ .DeploymentConfig.Namespace }}"
+        namespace: "{{ .Namespace.Name }}"
         command:
         - bash
         - -o

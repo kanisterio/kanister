@@ -173,14 +173,14 @@ actions:
             fi
             rm -rf {{ .ArtifactsIn.params.KeyValue.snapshotPrefix }} 
   delete:
-    type: StatefulSet
+    type: Namespace
     inputArtifactNames:
       - params
     phases:
     - func: DeleteDataAll
       name: deleteFromObjectStore
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
+        namespace: "{{ .Namespace.Name }}"
         backupArtifactPrefix: "{{ .ArtifactsIn.params.KeyValue.backupPrefixLocation }}"
         backupInfo: "{{ .ArtifactsIn.params.KeyValue.backupInfo }}"
         reclaimSpace: true

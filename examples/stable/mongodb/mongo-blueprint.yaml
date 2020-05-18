@@ -60,14 +60,14 @@ actions:
             restore_cmd="mongorestore --gzip --archive --oplogReplay --drop --host ${host} -u root -p ${dbPassword}"
             kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.path }}' - | ${restore_cmd}
   delete:
-    type: StatefulSet
+    type: Namespace
     inputArtifactNames:
       - cloudObject
     phases:
     - func: KubeTask
       name: deleteFromBlobStore
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
+        namespace: "{{ .Namespace.Name }}"
         image: kanisterio/mongodb:0.29.0
         command:
           - bash
