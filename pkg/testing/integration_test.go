@@ -18,16 +18,14 @@ package testing
 import (
 	"context"
 	"os"
-	"sync"
+	"testing"
 	"time"
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/app"
@@ -42,6 +40,57 @@ import (
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
+
+// Global variables shared across Suite instances
+type kanisterKontroller struct {
+	namespace string
+	context   context.Context
+	cancel    context.CancelFunc
+	kubeCli   *kubernetes.Clientset
+}
+
+var kontroller kanisterKontroller
+
+func integrationSetup(t *testing.T) {
+	ns := "integration-test-controller-" + rand.String(5)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	cfg, err := kube.LoadConfig()
+	if err != nil {
+		t.Fatalf("Integration test setup failure: Error loading kube.Config; err=%v", err)
+	}
+	cli, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		t.Fatalf("Integration test setup failure: Error createing kubeCli; err=%v", err)
+	}
+	if err = createNamespace(cli, controllerNamespace); err != nil {
+		t.Fatalf("Integration test setup failure: Error createing namespace; err=%v", err)
+	}
+	// Set Controller namespace and service account
+	os.Setenv(kube.PodNSEnvVar, ns)
+	os.Setenv(kube.PodSAEnvVar, controllerSA)
+
+	if err = resource.CreateCustomResources(ctx, cfg); err != nil {
+		t.Fatalf("Integration test setup failure: Error createing custom resources; err=%v", err)
+	}
+	ctlr := controller.New(cfg)
+	if err = ctlr.StartWatch(ctx, controllerNamespace); err != nil {
+		t.Fatalf("Integration test setup failure: Error starting controller; err=%v", err)
+	}
+	kontroller.namespace = ns
+	kontroller.context = ctx
+	kontroller.cancel = cancel
+	kontroller.kubeCli = cli
+}
+
+func integrationCleanup(t *testing.T) {
+	if kontroller.cancel != nil {
+		kontroller.cancel()
+	}
+	if kontroller.namespace != "" {
+		kanister.kubeCli.CoreV1().Namespaces().Delete(kanister.namespace, nil)
+	}
+}
 
 const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
@@ -78,13 +127,6 @@ func newSecretProfile() *secretProfile {
 	}
 }
 
-var (
-	setUpOnce = sync.Once{}
-	setUpDone = make(chan struct{})
-)
-
-const controllerNamespace = "integration-test-controller"
-
 func (s *IntegrationSuite) SetUpSuite(c *C) {
 	ctx := context.Background()
 	ctx, s.cancel = context.WithCancel(ctx)
@@ -95,45 +137,6 @@ func (s *IntegrationSuite) SetUpSuite(c *C) {
 	s.cli, err = kubernetes.NewForConfig(cfg)
 	c.Assert(err, IsNil)
 	s.crCli, err = crclient.NewForConfig(cfg)
-	c.Assert(err, IsNil)
-
-	// Start the controller
-	setUpOnce.Do(func() {
-		defer close(setUpDone)
-		resetNamespace(ctx, c, s.cli)
-		runController(ctx, c, cfg)
-	})
-	<-setUpDone
-}
-
-func resetNamespace(ctx context.Context, c *C, cli kubernetes.Interface) {
-	// Try to delete namespace and wait until it doesn't exist.
-	err := cli.CoreV1().Namespaces().Delete(controllerNamespace, nil)
-	if !apierrors.IsNotFound(err) {
-		c.Assert(err, IsNil)
-	}
-	err = poll.Wait(ctx, func(context.Context) (bool, error) {
-		_, err = cli.CoreV1().Namespaces().Get(controllerNamespace, metav1.GetOptions{})
-		if apierrors.IsNotFound(err) {
-			return true, nil
-		}
-		return false, err
-	})
-	c.Assert(err, IsNil)
-	err = createNamespace(cli, controllerNamespace)
-	c.Assert(err, IsNil)
-
-	// Set Controller namespace and service account
-	os.Setenv(kube.PodNSEnvVar, controllerNamespace)
-	os.Setenv(kube.PodSAEnvVar, controllerSA)
-
-}
-
-func runController(ctx context.Context, c *C, cfg *rest.Config) {
-	err := resource.CreateCustomResources(ctx, cfg)
-	c.Assert(err, IsNil)
-	ctlr := controller.New(cfg)
-	err = ctlr.StartWatch(ctx, controllerNamespace)
 	c.Assert(err, IsNil)
 }
 
@@ -413,12 +416,6 @@ func (s *IntegrationSuite) TearDownSuite(c *C) {
 	if !s.skip {
 		err := s.app.Uninstall(ctx)
 		c.Assert(err, IsNil)
-	}
-
-	// Delete namespace
-	s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
-	if s.cancel != nil {
-		s.cancel()
 	}
 }
 

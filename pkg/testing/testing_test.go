@@ -21,4 +21,8 @@ import (
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) {
+	integrationSetup(t)
+	TestingT(t)
+	integrationCleanup(t)
+}
