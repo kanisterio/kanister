@@ -6,4 +6,5 @@ const (
 	ContainerNameKey         = "Container"
 	PhaseNameKey             = "Phase"
 	GoogleCloudCredsFilePath = "/tmp/creds.txt"
+	ControllerNS             = "controller-ns"
 )
