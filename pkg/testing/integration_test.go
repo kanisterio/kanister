@@ -18,11 +18,11 @@ package testing
 import (
 	"context"
 	"os"
-	"testing"
+	test "testing"
 	"time"
 
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
+	check "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -51,7 +51,7 @@ type kanisterKontroller struct {
 
 var kontroller kanisterKontroller
 
-func integrationSetup(t *testing.T) {
+func integrationSetup(t *test.T) {
 	ns := "integration-test-controller-" + rand.String(5)
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -83,7 +83,7 @@ func integrationSetup(t *testing.T) {
 	kontroller.kubeCli = cli
 }
 
-func integrationCleanup(t *testing.T) {
+func integrationCleanup(t *test.T) {
 	if kontroller.cancel != nil {
 		kontroller.cancel()
 	}
@@ -127,7 +127,7 @@ func newSecretProfile() *secretProfile {
 	}
 }
 
-func (s *IntegrationSuite) SetUpSuite(c *C) {
+func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 	ctx := context.Background()
 	ctx, s.cancel = context.WithCancel(ctx)
 
@@ -148,7 +148,7 @@ func (s *IntegrationSuite) SetUpSuite(c *C) {
 // 5. Delete DB data
 // 6. Restore data from backup
 // 7. Uninstall DB app
-func (s *IntegrationSuite) TestRun(c *C) {
+func (s *IntegrationSuite) TestRun(c *check.C) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -299,7 +299,7 @@ func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectRef
 	}
 }
 
-func (s *IntegrationSuite) createProfile(c *C) string {
+func (s *IntegrationSuite) createProfile(c *check.C) string {
 	secret, err := s.cli.CoreV1().Secrets(controllerNamespace).Create(s.profile.secret)
 	c.Assert(err, IsNil)
 
@@ -314,7 +314,7 @@ func (s *IntegrationSuite) createProfile(c *C) string {
 	return profile.GetName()
 }
 
-func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[string]crv1alpha1.ObjectReference) {
+func validateBlueprint(c *check.C, bp crv1alpha1.Blueprint, configMaps, secrets map[string]crv1alpha1.ObjectReference) {
 	for _, action := range bp.Actions {
 		// Validate BP action ConfigMapNames with the app.ConfigMaps references
 		for _, bpc := range action.ConfigMapNames {
@@ -340,7 +340,7 @@ func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[st
 }
 
 // createActionset creates and wait for actionset to complete
-func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1alpha1.ActionSet, action string, options map[string]string) string {
+func (s *IntegrationSuite) createActionset(ctx context.Context, c *check.C, as *crv1alpha1.ActionSet, action string, options map[string]string) string {
 	var err error
 	switch action {
 	case "backup":
@@ -408,7 +408,7 @@ func createNamespace(cli kubernetes.Interface, name string) error {
 	return nil
 }
 
-func (s *IntegrationSuite) TearDownSuite(c *C) {
+func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

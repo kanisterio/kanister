@@ -15,14 +15,14 @@
 package testing
 
 import (
-	"testing"
+	test "testing"
 
-	. "gopkg.in/check.v1"
+	check "gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) {
+func Test(t *test.T) {
 	integrationSetup(t)
-	TestingT(t)
+	check.TestingT(t)
 	integrationCleanup(t)
 }
