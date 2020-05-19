@@ -70,7 +70,7 @@ func integrationSetup(t *test.T) {
 	if err != nil {
 		t.Fatalf("Integration test setup failure: Error createing kubeCli; err=%v", err)
 	}
-	if err = createNamespace(cli, controllerNamespace); err != nil {
+	if err = createNamespace(cli, ns); err != nil {
 		t.Fatalf("Integration test setup failure: Error createing namespace; err=%v", err)
 	}
 	// Set Controller namespace and service account
@@ -81,7 +81,7 @@ func integrationSetup(t *test.T) {
 		t.Fatalf("Integration test setup failure: Error createing custom resources; err=%v", err)
 	}
 	ctlr := controller.New(cfg)
-	if err = ctlr.StartWatch(ctx, controllerNamespace); err != nil {
+	if err = ctlr.StartWatch(ctx, ns); err != nil {
 		t.Fatalf("Integration test setup failure: Error starting controller; err=%v", err)
 	}
 	kontroller.namespace = ns
@@ -194,7 +194,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Create blueprint
 	bp := s.bp.Blueprint()
 	c.Assert(bp, NotNil)
-	_, err = s.crCli.Blueprints(controllerNamespace).Create(bp)
+	_, err = s.crCli.Blueprints(kontroller.namespace).Create(bp)
 	c.Assert(err, IsNil)
 
 	var configMaps, secrets map[string]crv1alpha1.ObjectReference
@@ -228,7 +228,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	validateBlueprint(c, *bp, configMaps, secrets)
 
 	// Create ActionSet specs
-	as := newActionSet(bp.GetName(), profileName, controllerNamespace, s.app.Object(), configMaps, secrets)
+	as := newActionSet(bp.GetName(), profileName, kontroller.namespace, s.app.Object(), configMaps, secrets)
 	// Take backup
 	backup := s.createActionset(ctx, c, as, "backup", nil)
 	c.Assert(len(backup), Not(Equals), 0)
@@ -264,7 +264,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	}
 
 	// Restore backup
-	pas, err := s.crCli.ActionSets(controllerNamespace).Get(backup, metav1.GetOptions{})
+	pas, err := s.crCli.ActionSets(kontroller.namespace).Get(backup, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	s.createActionset(ctx, c, pas, "restore", restoreOptions)
 
@@ -307,7 +307,7 @@ func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectRef
 }
 
 func (s *IntegrationSuite) createProfile(c *C) string {
-	secret, err := s.cli.CoreV1().Secrets(controllerNamespace).Create(s.profile.secret)
+	secret, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(s.profile.secret)
 	c.Assert(err, IsNil)
 
 	// set secret ref in profile
@@ -315,7 +315,7 @@ func (s *IntegrationSuite) createProfile(c *C) string {
 		Name:      secret.GetName(),
 		Namespace: secret.GetNamespace(),
 	}
-	profile, err := s.crCli.Profiles(controllerNamespace).Create(s.profile.profile)
+	profile, err := s.crCli.Profiles(kontroller.namespace).Create(s.profile.profile)
 	c.Assert(err, IsNil)
 
 	return profile.GetName()
@@ -352,7 +352,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 	switch action {
 	case "backup":
 		as.Spec.Actions[0].Options = options
-		as, err = s.crCli.ActionSets(controllerNamespace).Create(as)
+		as, err = s.crCli.ActionSets(kontroller.namespace).Create(as)
 		c.Assert(err, IsNil)
 	case "restore", "delete":
 		as, err = restoreActionSetSpecs(as, action)
@@ -365,11 +365,11 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 				Group:      "",
 				Resource:   "namespaces",
 				Kind:       "namespace",
-				Name:       controllerNamespace,
+				Name:       kontroller.namespace,
 				Namespace:  "",
 			}
 		}
-		as, err = s.crCli.ActionSets(controllerNamespace).Create(as)
+		as, err = s.crCli.ActionSets(kontroller.namespace).Create(as)
 		c.Assert(err, IsNil)
 	default:
 		c.Errorf("Invalid action %s while creating ActionSet", action)
@@ -377,7 +377,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 
 	// Wait for the ActionSet to complete.
 	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		as, err = s.crCli.ActionSets(controllerNamespace).Get(as.GetName(), metav1.GetOptions{})
+		as, err = s.crCli.ActionSets(kontroller.namespace).Get(as.GetName(), metav1.GetOptions{})
 		switch {
 		case err != nil, as.Status == nil:
 			return false, err
