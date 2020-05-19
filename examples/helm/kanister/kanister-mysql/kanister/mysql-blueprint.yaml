@@ -44,16 +44,15 @@ actions:
             s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.path }}"
             kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -h 127.0.0.1 -u root --password="${MYSQL_ROOT_PASSWORD}"
   delete:
-    type: Deployment
+    type: Namespace
     inputArtifactNames:
       - mysqlCloudDump
     phases:
-    - func: KubeExec
+    - func: KubeTask
       name: deleteFromBlobStore
       args:
-        namespace: "{{ .Deployment.Namespace }}"
-        pod: "{{ index .Deployment.Pods 0 }}"
-        container: kanister-sidecar
+        namespace: "{{ .Namespace.Name }}"
+        image: kanisterio/kanister-tools:0.29.0
         command:
           - bash
           - -o
