@@ -18,10 +18,10 @@ package testing
 import (
 	test "testing"
 
-	check "gopkg.in/check.v1"
+	. "gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner (non-integration builds)
 func Test(t *test.T) {
-	check.TestingT(t)
+	TestingT(t)
 }
