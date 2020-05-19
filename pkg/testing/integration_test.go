@@ -25,6 +25,7 @@ import (
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
