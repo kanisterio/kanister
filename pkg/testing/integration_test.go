@@ -107,7 +107,7 @@ func (s *IntegrationSuite) SetUpSuite(c *C) {
 }
 
 func resetNamespace(ctx context.Context, c *C, cli kubernetes.Interface) {
-	// Try to delete namespace and wait til it doesn't exist.
+	// Try to delete namespace and wait until it doesn't exist.
 	err := cli.CoreV1().Namespaces().Delete(controllerNamespace, nil)
 	if !apierrors.IsNotFound(err) {
 		c.Assert(err, IsNil)
