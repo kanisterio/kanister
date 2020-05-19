@@ -95,7 +95,7 @@ func integrationCleanup(t *test.T) {
 		kontroller.cancel()
 	}
 	if kontroller.namespace != "" {
-		kanister.kubeCli.CoreV1().Namespaces().Delete(kanister.namespace, nil)
+		kontroller.kubeCli.CoreV1().Namespaces().Delete(kontroller.namespace, nil)
 	}
 }
 
