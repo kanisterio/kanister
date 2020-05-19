@@ -19,11 +19,14 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/kanisterio/kanister/pkg/version"
 )
 
 const (
 	healthCheckPath = "/v0/healthz"
+	metricsPath     = "/metrics"
 	healthCheckAddr = ":8000"
 )
 
@@ -59,5 +62,6 @@ func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func NewServer() *http.Server {
 	m := &http.ServeMux{}
 	m.Handle(healthCheckPath, &healthCheckHandler{})
+	m.Handle(metricsPath, promhttp.Handler())
 	return &http.Server{Addr: healthCheckAddr, Handler: m}
 }

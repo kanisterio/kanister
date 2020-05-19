@@ -274,14 +274,14 @@ actions:
         namespace: '{{ .StatefulSet.Namespace }}'
         replicas: 1
   delete:
-    type: StatefulSet
+    type: Namespace
     inputArtifactNames:
       - manifest
     phases:
     - func: KubeTask
       name: deleteArtifact
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
+        namespace: "{{ .Namespace.Name }}"
         image: "kanisterio/postgresql:0.29.0"
         command:
           - bash

@@ -94,15 +94,22 @@ type Directory interface {
 
 // NewProvider creates a new Provider
 func NewProvider(ctx context.Context, config ProviderConfig, secret *Secret) (Provider, error) {
+	config.Endpoint = providerEndpoint(config)
 	p := &provider{
-		hostEndPoint: getHostURI(config),
-		config:       config,
-		secret:       secret,
+		config: config,
+		secret: secret,
 	}
 	if p.config.Type == ProviderTypeS3 {
 		return &s3Provider{provider: p}, nil
 	}
 	return p, nil
+}
+
+func providerEndpoint(c ProviderConfig) string {
+	if c.Type == ProviderTypeGCS {
+		return googleGCSHost
+	}
+	return c.Endpoint
 }
 
 // Supported returns true if the object store type is supported
@@ -211,13 +218,4 @@ func getStowLocation(ctx context.Context, config ProviderConfig, secret *Secret)
 		return nil, errors.Wrapf(err, "could not create store provider %+v", config)
 	}
 	return location, nil
-}
-
-func getHostURI(config ProviderConfig) string {
-	switch config.Type {
-	case ProviderTypeGCS:
-		return googleGCSHost
-	default:
-		return config.Endpoint
-	}
 }

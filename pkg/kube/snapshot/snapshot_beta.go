@@ -44,8 +44,8 @@ func NewSnapshotBeta(kubeCli kubernetes.Interface, dynCli dynamic.Interface) Sna
 }
 
 // GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
-func (sna *SnapshotBeta) GetVolumeSnapshotClass(annotationKey, annotationValue string) (string, error) {
-	return getSnapshotClassbyAnnotation(sna.dynCli, v1beta1.VolSnapClassGVR, annotationKey, annotationValue)
+func (sna *SnapshotBeta) GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error) {
+	return getSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, v1beta1.VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
 }
 
 // Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
@@ -317,8 +317,8 @@ func UnstructuredVolumeSnapshotClassBeta(name, driver, deletionPolicy string) *u
 			"metadata": map[string]interface{}{
 				"name": name,
 			},
-			"driver":         driver,
-			"deletionPolicy": deletionPolicy,
+			VolSnapClassBetaDriverKey: driver,
+			"deletionPolicy":          deletionPolicy,
 		},
 	}
 }
