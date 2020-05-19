@@ -254,7 +254,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	}
 
 	// Restore backup
-	pas, err := s.crCli.ActionSets(s.namespace).Get(backup, metav1.GetOptions{})
+	pas, err := s.crCli.ActionSets(controllerNamespace).Get(backup, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	s.createActionset(ctx, c, pas, "restore", restoreOptions)
 
