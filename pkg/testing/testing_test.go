@@ -15,6 +15,7 @@
 package testing
 
 import (
+	"os"
 	"testing"
 
 	. "gopkg.in/check.v1"
@@ -32,6 +33,10 @@ func Test(t *testing.T) {
 	TestingT(t)
 	integrationCleanup(t)
 }
+
+const (
+	controllerSA = "default"
+)
 
 // SetupIntegration just creates the controller namespace
 func integrationSetup(t *testing.T) {
@@ -52,6 +57,9 @@ func integrationSetup(t *testing.T) {
 		t.Fatalf("Integration test setup failure: Error createing namespace; err=%v", err)
 	}
 
+	//  Set Controller namespace and service account
+	os.Setenv(kube.PodNSEnvVar, consts.ControllerNS)
+	os.Setenv(kube.PodSAEnvVar, controllerSA)
 }
 
 func integrationCleanup(t *testing.T) {

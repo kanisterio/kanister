@@ -17,7 +17,6 @@ package testing
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -44,7 +43,6 @@ import (
 const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
 	appWaitTimeout = 3 * time.Minute
-	controllerSA   = "default"
 )
 
 type secretProfile struct {
@@ -122,10 +120,6 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Create namespace
 	err = createNamespace(s.cli, s.namespace)
 	c.Assert(err, IsNil)
-
-	// Set Controller namespace and service account
-	os.Setenv(kube.PodNSEnvVar, consts.ControllerNS)
-	os.Setenv(kube.PodSAEnvVar, controllerSA)
 
 	// Create profile
 	if s.profile == nil {
