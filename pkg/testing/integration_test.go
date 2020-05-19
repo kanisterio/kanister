@@ -18,12 +18,14 @@ package testing
 import (
 	"context"
 	"os"
+	test "testing"
 	"time"
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -39,6 +41,64 @@ import (
 	"github.com/kanisterio/kanister/pkg/resource"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
+
+// Hook up gocheck into the "go test" runner for integration builds
+func Test(t *test.T) {
+	integrationSetup(t)
+	TestingT(t)
+	integrationCleanup(t)
+}
+
+// Global variables shared across Suite instances
+type kanisterKontroller struct {
+	namespace string
+	context   context.Context
+	cancel    context.CancelFunc
+	kubeCli   *kubernetes.Clientset
+}
+
+var kontroller kanisterKontroller
+
+func integrationSetup(t *test.T) {
+	ns := "integration-test-controller-" + rand.String(5)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	cfg, err := kube.LoadConfig()
+	if err != nil {
+		t.Fatalf("Integration test setup failure: Error loading kube.Config; err=%v", err)
+	}
+	cli, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		t.Fatalf("Integration test setup failure: Error createing kubeCli; err=%v", err)
+	}
+	if err = createNamespace(cli, ns); err != nil {
+		t.Fatalf("Integration test setup failure: Error createing namespace; err=%v", err)
+	}
+	// Set Controller namespace and service account
+	os.Setenv(kube.PodNSEnvVar, ns)
+	os.Setenv(kube.PodSAEnvVar, controllerSA)
+
+	if err = resource.CreateCustomResources(ctx, cfg); err != nil {
+		t.Fatalf("Integration test setup failure: Error createing custom resources; err=%v", err)
+	}
+	ctlr := controller.New(cfg)
+	if err = ctlr.StartWatch(ctx, ns); err != nil {
+		t.Fatalf("Integration test setup failure: Error starting controller; err=%v", err)
+	}
+	kontroller.namespace = ns
+	kontroller.context = ctx
+	kontroller.cancel = cancel
+	kontroller.kubeCli = cli
+}
+
+func integrationCleanup(t *test.T) {
+	if kontroller.cancel != nil {
+		kontroller.cancel()
+	}
+	if kontroller.namespace != "" {
+		kontroller.kubeCli.CoreV1().Namespaces().Delete(kontroller.namespace, nil)
+	}
+}
 
 const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
@@ -86,13 +146,6 @@ func (s *IntegrationSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	s.crCli, err = crclient.NewForConfig(cfg)
 	c.Assert(err, IsNil)
-
-	// Start the controller
-	err = resource.CreateCustomResources(ctx, cfg)
-	c.Assert(err, IsNil)
-	ctlr := controller.New(cfg)
-	err = ctlr.StartWatch(ctx, s.namespace)
-	c.Assert(err, IsNil)
 }
 
 // TestRun executes e2e workflow on the app
@@ -122,10 +175,6 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	err = createNamespace(s.cli, s.namespace)
 	c.Assert(err, IsNil)
 
-	// Set Controller namespace and service account
-	os.Setenv(kube.PodNSEnvVar, s.namespace)
-	os.Setenv(kube.PodSAEnvVar, controllerSA)
-
 	// Create profile
 	if s.profile == nil {
 		log.Info().Print("Skipping integration test. Could not create profile. Please check if required credentials are set.", field.M{"app": s.name})
@@ -146,7 +195,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Create blueprint
 	bp := s.bp.Blueprint()
 	c.Assert(bp, NotNil)
-	_, err = s.crCli.Blueprints(s.namespace).Create(bp)
+	_, err = s.crCli.Blueprints(kontroller.namespace).Create(bp)
 	c.Assert(err, IsNil)
 
 	var configMaps, secrets map[string]crv1alpha1.ObjectReference
@@ -180,7 +229,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	validateBlueprint(c, *bp, configMaps, secrets)
 
 	// Create ActionSet specs
-	as := newActionSet(bp.GetName(), profileName, s.namespace, s.app.Object(), configMaps, secrets)
+	as := newActionSet(bp.GetName(), profileName, kontroller.namespace, s.app.Object(), configMaps, secrets)
 	// Take backup
 	backup := s.createActionset(ctx, c, as, "backup", nil)
 	c.Assert(len(backup), Not(Equals), 0)
@@ -216,7 +265,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	}
 
 	// Restore backup
-	pas, err := s.crCli.ActionSets(s.namespace).Get(backup, metav1.GetOptions{})
+	pas, err := s.crCli.ActionSets(kontroller.namespace).Get(backup, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	s.createActionset(ctx, c, pas, "restore", restoreOptions)
 
@@ -259,7 +308,7 @@ func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectRef
 }
 
 func (s *IntegrationSuite) createProfile(c *C) string {
-	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(s.profile.secret)
+	secret, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(s.profile.secret)
 	c.Assert(err, IsNil)
 
 	// set secret ref in profile
@@ -267,7 +316,7 @@ func (s *IntegrationSuite) createProfile(c *C) string {
 		Name:      secret.GetName(),
 		Namespace: secret.GetNamespace(),
 	}
-	profile, err := s.crCli.Profiles(s.namespace).Create(s.profile.profile)
+	profile, err := s.crCli.Profiles(kontroller.namespace).Create(s.profile.profile)
 	c.Assert(err, IsNil)
 
 	return profile.GetName()
@@ -304,7 +353,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 	switch action {
 	case "backup":
 		as.Spec.Actions[0].Options = options
-		as, err = s.crCli.ActionSets(s.namespace).Create(as)
+		as, err = s.crCli.ActionSets(kontroller.namespace).Create(as)
 		c.Assert(err, IsNil)
 	case "restore", "delete":
 		as, err = restoreActionSetSpecs(as, action)
@@ -317,11 +366,11 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 				Group:      "",
 				Resource:   "namespaces",
 				Kind:       "namespace",
-				Name:       s.namespace,
+				Name:       kontroller.namespace,
 				Namespace:  "",
 			}
 		}
-		as, err = s.crCli.ActionSets(s.namespace).Create(as)
+		as, err = s.crCli.ActionSets(kontroller.namespace).Create(as)
 		c.Assert(err, IsNil)
 	default:
 		c.Errorf("Invalid action %s while creating ActionSet", action)
@@ -329,7 +378,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 
 	// Wait for the ActionSet to complete.
 	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		as, err = s.crCli.ActionSets(s.namespace).Get(as.GetName(), metav1.GetOptions{})
+		as, err = s.crCli.ActionSets(kontroller.namespace).Get(as.GetName(), metav1.GetOptions{})
 		switch {
 		case err != nil, as.Status == nil:
 			return false, err
@@ -375,12 +424,6 @@ func (s *IntegrationSuite) TearDownSuite(c *C) {
 	if !s.skip {
 		err := s.app.Uninstall(ctx)
 		c.Assert(err, IsNil)
-	}
-
-	// Delete namespace
-	s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
-	if s.cancel != nil {
-		s.cancel()
 	}
 }
 
