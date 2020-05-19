@@ -18,7 +18,52 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/kube"
 )
 
 // Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) {
+	integrationSetup(t)
+	TestingT(t)
+	integrationCleanup(t)
+}
+
+// SetupIntegration just creates the controller namespace
+func integrationSetup(t *testing.T) {
+	cfg, err := kube.LoadConfig()
+	if err != nil {
+		t.Fatalf("Integration test setup failure: Error loading kube.Config; err=%v", err)
+	}
+	cli, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		t.Fatalf("Integration test setup failure: Error createing kubeCli; err=%v", err)
+	}
+	ns := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: consts.ControllerNS,
+		},
+	}
+	if _, err = cli.CoreV1().Namespaces().Create(ns); err != nil {
+		t.Fatalf("Integration test setup failure: Error createing namespace; err=%v", err)
+	}
+
+}
+
+func integrationCleanup(t *testing.T) {
+	cfg, err := kube.LoadConfig()
+	if err != nil {
+		t.Fatalf("Integration test cleanup failure: Error loading kube.Config; err=%v", err)
+	}
+	cli, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		t.Fatalf("Integration test cleanup failure: Error createing kubeCli; err=%v", err)
+	}
+	if err := cli.CoreV1().Namespaces().Delete(consts.ControllerNS, &metav1.DeleteOptions{}); err != nil {
+		t.Fatalf("Integration test cleanup failure: Error deleting namespace; err=%v", err)
+	}
+}

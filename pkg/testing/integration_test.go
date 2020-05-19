@@ -29,6 +29,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/app"
 	crclient "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/controller"
 	"github.com/kanisterio/kanister/pkg/field"
 	_ "github.com/kanisterio/kanister/pkg/function"
@@ -123,7 +124,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	c.Assert(err, IsNil)
 
 	// Set Controller namespace and service account
-	os.Setenv(kube.PodNSEnvVar, s.namespace)
+	os.Setenv(kube.PodNSEnvVar, consts.ControllerNS)
 	os.Setenv(kube.PodSAEnvVar, controllerSA)
 
 	// Create profile
@@ -317,7 +318,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 				Group:      "",
 				Resource:   "namespaces",
 				Kind:       "namespace",
-				Name:       s.namespace,
+				Name:       consts.ControllerNS,
 				Namespace:  "",
 			}
 		}
