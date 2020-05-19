@@ -41,6 +41,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
+// Hook up gocheck into the "go test" runner for integration builds
+func Test(t *test.T) {
+	integrationSetup(t)
+	check.TestingT(t)
+	integrationCleanup(t)
+}
+
 // Global variables shared across Suite instances
 type kanisterKontroller struct {
 	namespace string

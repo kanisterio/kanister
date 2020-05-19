@@ -1,3 +1,4 @@
+// +build !integration
 // Copyright 2019 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,9 +21,7 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-// Hook up gocheck into the "go test" runner.
+// Hook up gocheck into the "go test" runner (non-integration builds)
 func Test(t *test.T) {
-	integrationSetup(t)
 	check.TestingT(t)
-	integrationCleanup(t)
 }
