@@ -335,6 +335,11 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				name:      "VersionMismatchFunc",
 				version:   "v1.2.3",
 			},
+			{
+				funcNames: []string{testutil.ArgFuncName, testutil.OutputFuncName},
+				name:      "ArgOutputFallbackOnlyOutput",
+				version:   testutil.TestVersion,
+			},
 		} {
 			var err error
 			// Add a blueprint with a mocked kanister function.
