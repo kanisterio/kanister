@@ -1,3 +1,4 @@
+// +build !integration
 // Copyright 2019 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +16,12 @@
 package testing
 
 import (
-	"testing"
+	test "testing"
 
 	. "gopkg.in/check.v1"
 )
 
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
+// Hook up gocheck into the "go test" runner (non-integration builds)
+func Test(t *test.T) {
+	TestingT(t)
+}
