@@ -58,16 +58,15 @@ actions:
             fi
             kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.path }}' - | ${restore_cmd[@]}
   delete:
-    type: StatefulSet
+    type: Namespace
     inputArtifactNames:
       - cloudObject
     phases:
-    - func: KubeExec
+    - func: KubeTask
       name: deleteFromBlobStore
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
-        pod: "{{ index .StatefulSet.Pods 0 }}"
-        container: kanister-sidecar
+        namespace: "{{ .Namespace.Name }}"
+        image: kanisterio/kanister-tools:0.29.0
         command:
           - bash
           - -o
