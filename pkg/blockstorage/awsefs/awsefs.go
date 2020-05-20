@@ -372,12 +372,20 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 	if err = e.setBackupTags(ctx, *resp.RecoveryPointArn, infraTags); err != nil {
 		return nil, errors.Wrap(err, "Failed to set backup tags")
 	}
+
+	req2 := &backup.DescribeRecoveryPointInput{}
+	req2.SetBackupVaultName(k10BackupVaultName)
+	req2.SetRecoveryPointArn(*resp.RecoveryPointArn)
+	describeRP, err := e.DescribeRecoveryPointWithContext(ctx, req2)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get recovery point information")
+	}
 	return &blockstorage.Snapshot{
 		CreationTime: blockstorage.TimeStamp(*resp.CreationDate),
 		Encrypted:    volume.Encrypted,
 		ID:           *resp.RecoveryPointArn,
 		Region:       e.region,
-		Size:         volume.Size,
+		Size:         bytesInGiB(*describeRP.BackupSizeInBytes),
 		Tags:         blockstorage.MapToKeyValue(allTags),
 		Volume:       &volume,
 		Type:         blockstorage.TypeEFS,
