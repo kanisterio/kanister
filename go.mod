@@ -21,6 +21,7 @@ require (
 	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
 	github.com/Masterminds/semver v1.4.2
 	github.com/Masterminds/sprig v2.15.0+incompatible
+	github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46 // indirect
 	github.com/aokoli/goutils v1.1.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a // indirect
 	github.com/aws/aws-sdk-go v1.29.0
@@ -51,6 +52,8 @@ require (
 	github.com/lib/pq v1.2.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d // indirect
 	github.com/openshift/api v0.0.0-20190402135445-d2f01e7b77a6
 	github.com/openshift/client-go v0.0.0-20190402163854-7cc0953bbbb7
 	github.com/pborman/uuid v1.2.0 // indirect
@@ -60,6 +63,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
+	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45
@@ -82,6 +86,9 @@ require (
 	k8s.io/client-go v11.0.1-0.20190708175433-62e1c231c5dc+incompatible
 	k8s.io/code-generator v0.0.0-20190311093542-50b561225d70 // indirect
 	k8s.io/gengo v0.0.0-20191120174120-e74f70b9b27e // indirect
-	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
-	k8s.io/utils v0.0.0-20190712204705-3dccf664f023 // indirect
+	k8s.io/klog v0.3.0 // indirect
+	k8s.io/kube-openapi v0.0.0-20190208205540-d7c86cdc46e3 // indirect
+	k8s.io/utils v0.0.0-20190221042446-c2654d5206da // indirect
+	sigs.k8s.io/structured-merge-diff v0.0.0-20190302045857-e85c7b244fd2 // indirect
+	sigs.k8s.io/yaml v1.1.0 // indirect
 )
