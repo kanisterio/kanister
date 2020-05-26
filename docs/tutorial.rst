@@ -317,6 +317,8 @@ section. We can then consume it through templates and assign it to bash
 variables. Because we now have access to the bucket in the ConfigMap, we can
 also push the log to S3. In this Secret, we store the credentials as binary
 data. We can use the templating engine ``toString`` and ``quote`` functions, courtesy of sprig.
+Since not everyone uses AWS S3, we need to add ``--endpoint {{ .Profile.Location.Endpoint }}``
+to the end of the aws command so it can connect to the propper S3 object storage.
 
 For more on this templating, see :ref:`templates`
 
@@ -348,7 +350,8 @@ For more on this templating, see :ref:`templates`
             - |
               AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
               AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-              aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path | quote }}
+              aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path | quote }} \
+              --endpoint {{ .Profile.Location.Endpoint }}
   EOF
 
 Create a new ActionSet that has the name-to-Secret reference in its action's
@@ -435,7 +438,8 @@ ConfigMap.
               - |
                 AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
                 AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-                aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path }}/time-log/
+                aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path }}/time-log/ \
+                --endpoint {{ .Profile.Location.Endpoint }}
   EOF
 
 If you re-execute this Kanister Action, you'll be able to see the Artifact in the
@@ -516,7 +520,8 @@ ConfigMap because the ``inputArtifact`` contains the fully specified path.
               - |
                 AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
                 AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-                aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path }}/time-log/
+                aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path }}/time-log/ \
+                --endpoint {{ .Profile.Location.Endpoint }}
     restore:
       type: Deployment
       secretNames:
@@ -536,7 +541,8 @@ ConfigMap because the ``inputArtifact`` contains the fully specified path.
             - |
               AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
               AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-              aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log
+              aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log \
+              --endpoint {{ .Profile.Location.Endpoint }}              
   EOF
 
 We can check the controller logs to see that the time log was restored
