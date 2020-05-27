@@ -318,12 +318,12 @@ variables. Because we now have access to the bucket in the ConfigMap, we can
 also push the log to S3. In this Secret, we store the credentials as binary
 data. We can use the templating engine ``toString`` and ``quote`` functions, courtesy of sprig.
 
-___
+```
 **Note**
 
 If you are not using AWS S3 as the Object Storage, you need to add ``--endpoint {{ .Profile.Location.Endpoint }}``
 to the end of the aws command so it can connect to the propper S3 object storage.
-___
+```
 
 For more on this templating, see :ref:`templates`
 
