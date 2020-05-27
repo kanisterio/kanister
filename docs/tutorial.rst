@@ -317,9 +317,13 @@ section. We can then consume it through templates and assign it to bash
 variables. Because we now have access to the bucket in the ConfigMap, we can
 also push the log to S3. In this Secret, we store the credentials as binary
 data. We can use the templating engine ``toString`` and ``quote`` functions, courtesy of sprig.
+
+---
+**Note**
+
 If you are not using AWS S3 as the Object Storage, you need to add ``--endpoint {{ .Profile.Location.Endpoint }}``
 to the end of the aws command so it can connect to the propper S3 object storage.
-
+--
 For more on this templating, see :ref:`templates`
 
 .. code-block:: yaml
@@ -542,7 +546,7 @@ ConfigMap because the ``inputArtifact`` contains the fully specified path.
               AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
               AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
               aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log \
-              --endpoint {{ .Profile.Location.Endpoint }}              
+              --endpoint {{ .Profile.Location.Endpoint }}
   EOF
 
 We can check the controller logs to see that the time log was restored
