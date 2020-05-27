@@ -321,9 +321,7 @@ data. We can use the templating engine ``toString`` and ``quote`` functions, cou
 ::
 
 **Note**
-
 If you are not using AWS S3 as the Object Storage, you need to add ``--endpoint {{ .Profile.Location.Endpoint }}`` to the end of the aws command so it can connect to the propper S3 object storage.
-
 
 For more on this templating, see :ref:`templates`
 
