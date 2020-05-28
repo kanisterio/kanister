@@ -28,13 +28,23 @@ import (
 
 type Snapshotter interface {
 	// GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key
-	// as well as its deletion policy
 	//
 	// 'annotationKey' is the annotation key which has to be present on VolumeSnapshotClass.
 	// 'annotationValue' is the value for annotationKey in VolumeSnapshotClass spec.
 	// 'storageClassName' is the name of the storageClass that shares the same driver as the VolumeSnapshotClass.
 	// This returns error if no VolumeSnapshotClass found.
-	GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, string, error)
+	GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error)
+
+	// CloneVolumeSnapshotClass creates a copy of the source volume snapshot
+	// class with the specified deletion policy and name. If the target
+	// already exists, it returns no error.
+	//
+	// 'sourceClassName' is the name of the source VolumeSnapshotClass.
+	// 'targetClassName' is the name of the target VolumeSnapshotClass
+	// 'newDeletionPolicy' is the deletion policy to set on the target.
+	// 'excludeAnnotations' are the annotations that should not be set on the
+	// target
+	CloneVolumeSnapshotClass(sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error
 	// Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
 	//
 	// 'name' is the name of the VolumeSnapshot.
@@ -52,7 +62,7 @@ type Snapshotter interface {
 	//
 	// 'name' is the name of the VolumeSnapshot that will be deleted.
 	// 'namespace' is the namespace of the VolumeSnapshot that will be deleted.
-	Delete(ctx context.Context, name, namespace string) error
+	Delete(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error)
 	// Delete will delete the VolumeSnapshot and returns any error as a result.
 	//
 	// 'name' is the name of the VolumeSnapshotContent that will be deleted.

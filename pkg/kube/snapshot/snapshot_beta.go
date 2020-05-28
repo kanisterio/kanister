@@ -43,17 +43,38 @@ func NewSnapshotBeta(kubeCli kubernetes.Interface, dynCli dynamic.Interface) Sna
 	return &SnapshotBeta{kubeCli: kubeCli, dynCli: dynCli}
 }
 
+// CloneVolumeSnapshotClass creates a copy of the source volume snapshot class
+func (sna *SnapshotBeta) CloneVolumeSnapshotClass(sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
+	// If the target snapshot class already exists, treat this as a no-op
+	if _, err := sna.dynCli.Resource(v1beta1.VolSnapClassGVR).Get(targetClassName, metav1.GetOptions{}); err == nil {
+		return nil
+	}
+	usSourceSnapClass, err := sna.dynCli.Resource(v1beta1.VolSnapClassGVR).Get(sourceClassName, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to find source VolumeSnapshotClass: %s", sourceClassName)
+	}
+	sourceSnapClass := v1beta1.VolumeSnapshotClass{}
+	if err := TransformUnstructured(usSourceSnapClass, &sourceSnapClass); err != nil {
+		return err
+	}
+	existingAnnotations := sourceSnapClass.GetAnnotations()
+	for _, key := range excludeAnnotations {
+		delete(existingAnnotations, key)
+	}
+	usNew := UnstructuredVolumeSnapshotClassAlpha(targetClassName, sourceSnapClass.Driver, newDeletionPolicy)
+	// Set Annotations/Labels
+	usNew.SetAnnotations(existingAnnotations)
+	usNew.SetLabels(map[string]string{CloneVolumeSnapshotClassLabelName: sourceClassName})
+	_, err = sna.dynCli.Resource(v1beta1.VolSnapClassGVR).Create(usNew, metav1.CreateOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create VolumeSnapshotClass: %s", targetClassName)
+	}
+	return nil
+}
+
 // GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
-func (sna *SnapshotBeta) GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, string, error) {
-	scName, err := getSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, v1beta1.VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
-	if err != nil {
-		return "", "", err
-	}
-	deletionPolicy, err := sna.getDeletionPolicyFromClass(scName)
-	if err != nil {
-		return "", "", err
-	}
-	return scName, deletionPolicy, nil
+func (sna *SnapshotBeta) GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error) {
+	return getSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, v1beta1.VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
 }
 
 // Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
@@ -137,21 +158,19 @@ func (sna *SnapshotBeta) Get(ctx context.Context, name, namespace string) (*v1al
 }
 
 // Delete will delete the VolumeSnapshot and returns any error as a result.
-func (sna *SnapshotBeta) Delete(ctx context.Context, name, namespace string) error {
+func (sna *SnapshotBeta) Delete(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error) {
 	snap, err := sna.Get(ctx, name, namespace)
 	if apierrors.IsNotFound(err) {
-		return nil
+		return nil, nil
 	}
 	if err != nil {
-		return errors.Wrapf(err, "Failed to find VolumeSnapshot: %s/%s", namespace, name)
+		return nil, errors.Wrapf(err, "Failed to find VolumeSnapshot: %s/%s", namespace, name)
 	}
 	if err := sna.dynCli.Resource(v1beta1.VolSnapGVR).Namespace(namespace).Delete(name, &metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Failed to delete VolumeSnapshot: %s/%s", namespace, name)
+		return nil, errors.Wrapf(err, "Failed to delete VolumeSnapshot: %s/%s", namespace, name)
 	}
-
 	// If the Snapshot does not exist, that's an acceptable error and we ignore it
-
-	return sna.DeleteContent(ctx, snap.Spec.SnapshotContentName)
+	return snap, nil
 }
 
 // DeleteContent will delete the specified VolumeSnapshotContent
