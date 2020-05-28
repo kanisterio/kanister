@@ -154,10 +154,65 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *C) {
 
 		err = fakeSs.Create(context.Background(), snapshotName, defaultNamespace, volName, &fakeClass, false)
 		c.Assert(err, NotNil)
-		err = fakeSs.Delete(context.Background(), snap.Name, snap.Namespace)
+		deletedSnap, err := fakeSs.Delete(context.Background(), snap.Name, snap.Namespace)
 		c.Assert(err, IsNil)
-		err = fakeSs.Delete(context.Background(), snap.Name, snap.Namespace)
+		c.Assert(deletedSnap.Name, Equals, snap.Name)
+		_, err = fakeSs.Delete(context.Background(), snap.Name, snap.Namespace)
 		c.Assert(err, IsNil)
+	}
+}
+
+func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
+	scheme := runtime.NewScheme()
+	fakeCli := fake.NewSimpleClientset(
+		&scv1.StorageClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: fakeSC,
+			},
+			Provisioner: fakeDriver,
+		},
+	)
+	dynCli := dynfake.NewSimpleDynamicClient(scheme)
+
+	for _, tc := range []struct {
+		sourceSnapClassSpec *unstructured.Unstructured
+		snapClassGVR        schema.GroupVersionResource
+		snapshotter         snapshot.Snapshotter
+	}{
+		{
+			sourceSnapClassSpec: snapshot.UnstructuredVolumeSnapshotClassAlpha(fakeClass, fakeDriver, snapshot.DeletionPolicyDelete),
+			snapClassGVR:        v1alpha1.VolSnapClassGVR,
+			snapshotter:         snapshot.NewSnapshotAlpha(fakeCli, dynCli),
+		},
+		{
+			sourceSnapClassSpec: snapshot.UnstructuredVolumeSnapshotClassBeta(fakeClass, fakeDriver, snapshot.DeletionPolicyDelete),
+			snapClassGVR:        v1beta1.VolSnapClassGVR,
+			snapshotter:         snapshot.NewSnapshotBeta(fakeCli, dynCli),
+		},
+	} {
+		annotationKeyToKeep := "keepme"
+		annotationKeyToRemove := "removeme"
+		tc.sourceSnapClassSpec.SetAnnotations(map[string]string{
+			annotationKeyToKeep:   "true",
+			annotationKeyToRemove: "true",
+		})
+		_, err := dynCli.Resource(tc.snapClassGVR).Create(tc.sourceSnapClassSpec, metav1.CreateOptions{})
+		c.Assert(err, IsNil)
+		err = tc.snapshotter.CloneVolumeSnapshotClass(tc.sourceSnapClassSpec.GetName(), "targetClass", snapshot.DeletionPolicyRetain, []string{annotationKeyToRemove})
+		c.Assert(err, IsNil)
+
+		// New VSC exists
+		createdVSC, err := dynCli.Resource(tc.snapClassGVR).Get("targetClass", metav1.GetOptions{})
+		c.Assert(err, IsNil)
+
+		// Annotations are set correctly
+		c.Assert(createdVSC.GetAnnotations(), DeepEquals, map[string]string{annotationKeyToKeep: "true"})
+		c.Assert(createdVSC.GetLabels(), DeepEquals, map[string]string{snapshot.CloneVolumeSnapshotClassLabelName: tc.sourceSnapClassSpec.GetName()})
+
+		// Lookup by old annotation correctly returns the source VSC
+		scWithOldAnnotation, err := tc.snapshotter.GetVolumeSnapshotClass(annotationKeyToRemove, "true", fakeSC)
+		c.Assert(err, IsNil)
+		c.Assert(scWithOldAnnotation, Equals, tc.sourceSnapClassSpec.GetName())
 	}
 }
 
@@ -360,10 +415,10 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		return pvc.Status.Phase == corev1.ClaimBound, nil
 	})
 
-	err = snapshotter.Delete(ctx, snap.Name, snap.Namespace)
+	_, err = snapshotter.Delete(ctx, snap.Name, snap.Namespace)
 	c.Assert(err, IsNil)
 
-	err = snapshotter.Delete(ctx, snap.Name, snap.Namespace)
+	_, err = snapshotter.Delete(ctx, snap.Name, snap.Namespace)
 	c.Assert(err, IsNil)
 }
 
@@ -472,9 +527,9 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 	)
 	fakeSsAlpha := snapshot.NewSnapshotAlpha(kubeCli, dynCli)
 	fakeSsBeta := snapshot.NewSnapshotBeta(kubeCli, dynCli)
-	_, _, err := fakeSsAlpha.GetVolumeSnapshotClass("test-annotation", "value", fakeSC)
+	_, err := fakeSsAlpha.GetVolumeSnapshotClass("test-annotation", "value", fakeSC)
 	c.Assert(err, NotNil)
-	_, _, err = fakeSsBeta.GetVolumeSnapshotClass("test-annotation", "value", fakeSC)
+	_, err = fakeSsBeta.GetVolumeSnapshotClass("test-annotation", "value", fakeSC)
 	c.Assert(err, NotNil)
 
 	for _, tc := range []snapshotClassTC{
@@ -657,7 +712,7 @@ func (tc snapshotClassTC) testGetSnapshotClass(c *C, dynCli dynamic.Interface, f
 		err := dynCli.Resource(gvr).Delete(tc.name, nil)
 		c.Assert(err, IsNil)
 	}()
-	name, _, err := fakeSs.GetVolumeSnapshotClass(tc.testKey, tc.testValue, tc.storageClassName)
+	name, err := fakeSs.GetVolumeSnapshotClass(tc.testKey, tc.testValue, tc.storageClassName)
 	c.Assert(err, tc.check, Commentf("%s", tc.testKey))
 	if err == nil {
 		c.Assert(name, Equals, tc.name)
