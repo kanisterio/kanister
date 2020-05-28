@@ -4,6 +4,7 @@ pull_request_rules:
       - base=master
       - "#approved-reviews-by>=1"
       - status-success=continuous-integration/travis-ci/pr
+      - label=kueue
       - label!="hold off merging"
     actions:
       merge:
