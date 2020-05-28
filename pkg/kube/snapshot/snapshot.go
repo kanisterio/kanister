@@ -27,13 +27,14 @@ import (
 )
 
 type Snapshotter interface {
-	// GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
+	// GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key
+	// as well as its deletion policy
 	//
 	// 'annotationKey' is the annotation key which has to be present on VolumeSnapshotClass.
 	// 'annotationValue' is the value for annotationKey in VolumeSnapshotClass spec.
 	// 'storageClassName' is the name of the storageClass that shares the same driver as the VolumeSnapshotClass.
 	// This returns error if no VolumeSnapshotClass found.
-	GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error)
+	GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, string, error)
 	// Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
 	//
 	// 'name' is the name of the VolumeSnapshot.
@@ -52,6 +53,10 @@ type Snapshotter interface {
 	// 'name' is the name of the VolumeSnapshot that will be deleted.
 	// 'namespace' is the namespace of the VolumeSnapshot that will be deleted.
 	Delete(ctx context.Context, name, namespace string) error
+	// Delete will delete the VolumeSnapshot and returns any error as a result.
+	//
+	// 'name' is the name of the VolumeSnapshotContent that will be deleted.
+	DeleteContent(ctx context.Context, name string) error
 	// Clone will clone the VolumeSnapshot to namespace 'cloneNamespace'.
 	// Underlying VolumeSnapshotContent will be cloned with a different name.
 	//
@@ -73,6 +78,14 @@ type Snapshotter interface {
 	// 'namespace' is the namespace of the snapshot.
 	// 'waitForReady' blocks the caller until snapshot is ready to use or context is cancelled.
 	CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool) error
+	// CreateContentFromSource will create a 'VolumesnaphotContent' for the underlying snapshot source.
+	//
+	// 'source' contains information about CSI snapshot.
+	// 'contentName' is the name of the VSC that will be created
+	// 'snapshotName' is the name of the snapshot that will be reference the VSC
+	// 'namespace' is the namespace of the snapshot.
+	// 'deletionPolicy' is the deletion policy to set on the created VSC
+	CreateContentFromSource(ctx context.Context, source *Source, contentName, snapshotName, namespace, deletionPolicy string) error
 	// WaitOnReadyToUse will block until the Volumesnapshot in namespace 'namespace' with name 'snapshotName'
 	// has status 'ReadyToUse' or 'ctx.Done()' is signalled.
 	WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error
