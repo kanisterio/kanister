@@ -311,6 +311,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 
 	snapshotCloneName := snapshotName + "-clone"
 	volumeCloneName := pvc.Name + "-clone"
+	sizeOriginal := 1
 	err = snapshotter.Clone(ctx, snapshotName, s.sourceNamespace, snapshotCloneName, s.targetNamespace, wait)
 	c.Assert(err, IsNil)
 	args := &volume.CreatePVCFromSnapshotArgs{
@@ -320,7 +321,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		VolumeName:       volumeCloneName,
 		StorageClassName: "",
 		SnapshotName:     snapshotCloneName,
-		RestoreSize:      nil,
+		RestoreSize:      &sizeOriginal,
 		Labels:           nil,
 	}
 	_, err = volume.CreatePVCFromSnapshot(ctx, args)
@@ -355,7 +356,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		if err != nil {
 			return false, err
 		}
-		c.Assert(pvc.Labels, Equals, args.Labels)
+		c.Assert(pvc.Labels, DeepEquals, args.Labels)
 		return pvc.Status.Phase == corev1.ClaimBound, nil
 	})
 
@@ -471,9 +472,9 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 	)
 	fakeSsAlpha := snapshot.NewSnapshotAlpha(kubeCli, dynCli)
 	fakeSsBeta := snapshot.NewSnapshotBeta(kubeCli, dynCli)
-	_, err := fakeSsAlpha.GetVolumeSnapshotClass("test-annotation", "value", fakeSC)
+	_, _, err := fakeSsAlpha.GetVolumeSnapshotClass("test-annotation", "value", fakeSC)
 	c.Assert(err, NotNil)
-	_, err = fakeSsBeta.GetVolumeSnapshotClass("test-annotation", "value", fakeSC)
+	_, _, err = fakeSsBeta.GetVolumeSnapshotClass("test-annotation", "value", fakeSC)
 	c.Assert(err, NotNil)
 
 	for _, tc := range []snapshotClassTC{
@@ -656,8 +657,8 @@ func (tc snapshotClassTC) testGetSnapshotClass(c *C, dynCli dynamic.Interface, f
 		err := dynCli.Resource(gvr).Delete(tc.name, nil)
 		c.Assert(err, IsNil)
 	}()
-	name, err := fakeSs.GetVolumeSnapshotClass(tc.testKey, tc.testValue, tc.storageClassName)
-	c.Assert(err, tc.check)
+	name, _, err := fakeSs.GetVolumeSnapshotClass(tc.testKey, tc.testValue, tc.storageClassName)
+	c.Assert(err, tc.check, Commentf("%s", tc.testKey))
 	if err == nil {
 		c.Assert(name, Equals, tc.name)
 	}
