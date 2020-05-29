@@ -177,19 +177,23 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
 	for _, tc := range []struct {
 		sourceSnapClassSpec *unstructured.Unstructured
 		snapClassGVR        schema.GroupVersionResource
+		snapClassAPIVersion string
 		snapshotter         snapshot.Snapshotter
 	}{
 		{
 			sourceSnapClassSpec: snapshot.UnstructuredVolumeSnapshotClassAlpha(fakeClass, fakeDriver, snapshot.DeletionPolicyDelete),
 			snapClassGVR:        v1alpha1.VolSnapClassGVR,
+			snapClassAPIVersion: fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
 			snapshotter:         snapshot.NewSnapshotAlpha(fakeCli, dynCli),
 		},
 		{
 			sourceSnapClassSpec: snapshot.UnstructuredVolumeSnapshotClassBeta(fakeClass, fakeDriver, snapshot.DeletionPolicyDelete),
 			snapClassGVR:        v1beta1.VolSnapClassGVR,
+			snapClassAPIVersion: fmt.Sprintf("%s/%s", v1beta1.GroupName, v1beta1.Version),
 			snapshotter:         snapshot.NewSnapshotBeta(fakeCli, dynCli),
 		},
 	} {
+
 		annotationKeyToKeep := "keepme"
 		annotationKeyToRemove := "removeme"
 		tc.sourceSnapClassSpec.SetAnnotations(map[string]string{
@@ -208,6 +212,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
 		// Annotations are set correctly
 		c.Assert(createdVSC.GetAnnotations(), DeepEquals, map[string]string{annotationKeyToKeep: "true"})
 		c.Assert(createdVSC.GetLabels(), DeepEquals, map[string]string{snapshot.CloneVolumeSnapshotClassLabelName: tc.sourceSnapClassSpec.GetName()})
+		c.Assert(createdVSC.GetAPIVersion(), Equals, tc.snapClassAPIVersion)
 
 		// Lookup by old annotation correctly returns the source VSC
 		scWithOldAnnotation, err := tc.snapshotter.GetVolumeSnapshotClass(annotationKeyToRemove, "true", fakeSC)
