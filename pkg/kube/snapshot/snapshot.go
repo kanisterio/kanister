@@ -58,12 +58,14 @@ type Snapshotter interface {
 	// 'name' is the name of the VolumeSnapshot that will be returned.
 	// 'namespace' is the namespace of the VolumeSnapshot that will be returned.
 	Get(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error)
-	// Delete will delete the VolumeSnapshot and returns any error as a result.
+	// Delete will delete the VolumeSnapshot.
+	// Returns the `VolumeSnapshot` deleted and any error as a result.
 	//
 	// 'name' is the name of the VolumeSnapshot that will be deleted.
 	// 'namespace' is the namespace of the VolumeSnapshot that will be deleted.
 	Delete(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error)
-	// Delete will delete the VolumeSnapshot and returns any error as a result.
+	// DeleteContent will delete the VolumeSnapshot and returns any error as a
+	// result.
 	//
 	// 'name' is the name of the VolumeSnapshotContent that will be deleted.
 	DeleteContent(ctx context.Context, name string) error
