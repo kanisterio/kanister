@@ -57,7 +57,7 @@ func (sna *SnapshotBeta) CloneVolumeSnapshotClass(sourceClassName, targetClassNa
 	for _, key := range excludeAnnotations {
 		delete(existingAnnotations, key)
 	}
-	usNew := UnstructuredVolumeSnapshotClassAlpha(targetClassName, sourceSnapClass.Driver, newDeletionPolicy)
+	usNew := UnstructuredVolumeSnapshotClassBeta(targetClassName, sourceSnapClass.Driver, newDeletionPolicy)
 	// Set Annotations/Labels
 	usNew.SetAnnotations(existingAnnotations)
 	usNew.SetLabels(map[string]string{CloneVolumeSnapshotClassLabelName: sourceClassName})
