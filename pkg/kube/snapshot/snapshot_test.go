@@ -213,6 +213,10 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
 		scWithOldAnnotation, err := tc.snapshotter.GetVolumeSnapshotClass(annotationKeyToRemove, "true", fakeSC)
 		c.Assert(err, IsNil)
 		c.Assert(scWithOldAnnotation, Equals, tc.sourceSnapClassSpec.GetName())
+
+		// Clone again succeeds
+		err = tc.snapshotter.CloneVolumeSnapshotClass(tc.sourceSnapClassSpec.GetName(), "targetClass", snapshot.DeletionPolicyRetain, []string{annotationKeyToRemove})
+		c.Assert(err, IsNil)
 	}
 }
 
