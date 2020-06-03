@@ -46,7 +46,9 @@ func (d *Directory) AddFileWithStreamSource(name, sourceEndpoint string, permiss
 			mode: permissions,
 			// TODO: Add owner information
 		},
-		source: streamReader(sourceEndpoint),
+		source: func() (ReaderSeekerCloser, error) {
+			return streamReader(sourceEndpoint)
+		},
 	}
 
 	d.addChild(file)
