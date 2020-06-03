@@ -77,7 +77,6 @@ func (d *Directory) Subdir(name ...string) *Directory {
 	for _, n := range name {
 		i2 := i.children.FindByName(n)
 		if i2 == nil {
-
 			panic(fmt.Sprintf("'%s' not found in '%s'", n, i.Name()))
 		}
 
