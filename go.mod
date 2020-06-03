@@ -23,6 +23,7 @@ require (
 	github.com/Masterminds/sprig v2.15.0+incompatible
 	github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46 // indirect
 	github.com/aokoli/goutils v1.1.0 // indirect
+	github.com/apache/thrift v0.12.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a // indirect
 	github.com/aws/aws-sdk-go v1.29.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
@@ -48,7 +49,9 @@ require (
 	github.com/jarcoal/httpmock v1.0.4 // indirect
 	github.com/jpillora/backoff v0.0.0-20170918002102-8eab2debe79d
 	github.com/json-iterator/go v1.1.9
+	github.com/kanisterio/kanister/examples/aws-rds/postgresql/pgtest v0.0.0-20200602171029-02890841c65b // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
+	github.com/kopia/kopia v0.4.0
 	github.com/lib/pq v1.2.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238
@@ -56,6 +59,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d // indirect
 	github.com/openshift/api v0.0.0-20190402135445-d2f01e7b77a6
 	github.com/openshift/client-go v0.0.0-20190402163854-7cc0953bbbb7
+	github.com/openzipkin/zipkin-go v0.1.6 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
@@ -70,16 +74,15 @@ require (
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.10.0
-	golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	golang.org/x/tools v0.0.0-20191220234730-f13409bbebaf // indirect
 	gonum.org/v1/gonum v0.6.1 // indirect
-	google.golang.org/api v0.3.1
+	google.golang.org/api v0.10.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
-	gopkg.in/yaml.v2 v2.2.7 // indirect
 	k8s.io/api v0.0.0-20190708174958-539a33f6e817
 	k8s.io/apiextensions-apiserver v0.0.0-20190708181606-527eacf2d4b7
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
