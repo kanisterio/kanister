@@ -194,8 +194,6 @@ github.com/json-iterator/go v1.1.9 h1:9yzud/Ht36ygwatGx56VwCZtlI/2AD15T1X2sjSuGn
 github.com/json-iterator/go v1.1.9/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
-github.com/kanisterio/kanister/examples/aws-rds/postgresql/pgtest v0.0.0-20200602171029-02890841c65b h1:wYI3lkyB/XRQmjP9MrQC5RlWuMvpP/Q/3AdfFYVGeLg=
-github.com/kanisterio/kanister/examples/aws-rds/postgresql/pgtest v0.0.0-20200602171029-02890841c65b/go.mod h1:lsWVcTBtxW9PN4jxO6D4WGFrLsMWj4wdPHfUH7UF/Ss=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ9nd5KChnAgFOWakTHQ9ZADjs6DQ=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
 github.com/kastenhq/stow v0.1.2-kasten h1:3msAbg6woEPWzYaBPmsOY4a0V55QosWD86XMOE+gDbM=
@@ -215,7 +213,6 @@ github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFB
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
-github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/lib/pq v1.2.0 h1:LXpIM/LZ5xGFhOpXAQUIMM1HdyqzVYM13zNdjCEEcA0=
 github.com/lib/pq v1.2.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
