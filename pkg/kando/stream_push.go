@@ -45,7 +45,7 @@ func runStreamPush(cmd *cobra.Command, args []string) error {
 	// TODO: Implement stream push
 	_ = passwordFlag(cmd)
 	_ = fileNameFlag(cmd)
-	_ = pathFlag(cmd)
+	_ = sourcePathFlag(cmd)
 	_ = args[0]
 	return nil
 }
@@ -54,12 +54,12 @@ func fileNameFlag(cmd *cobra.Command) string {
 	return cmd.Flag(fileNameFlagName).Value.String()
 }
 
-func pathFlag(cmd *cobra.Command) string {
+func sourcePathFlag(cmd *cobra.Command) string {
 	return cmd.Flag(sourcePathFlagName).Value.String()
 }
 
 // GenerateStreamPushCommand generates a bash command for
-// kando stream push with given password and source
+// kando stream push with given flags and arguments
 func GenerateStreamPushCommand(fileName, password, path, sourceEndpoint string) []string {
 	kandoCmd := []string{
 		"kando",
