@@ -15,6 +15,8 @@
 package kando
 
 import (
+	"strings"
+
 	"github.com/spf13/cobra"
 )
 
@@ -32,5 +34,29 @@ func newStreamPushCommand() *cobra.Command {
 
 func runStreamPush(cmd *cobra.Command, args []string) error {
 	// TODO: Implement stream push
+	_ = passwordFlag(cmd)
+	_ = args[0]
 	return nil
+}
+
+// GenerateStreamPushCommand generates a bash command for
+// kando stream push with given password and source
+func GenerateStreamPushCommand(password, sourceEndpoint string) []string {
+	kandoCmd := []string{
+		"kando",
+		"stream",
+		"push",
+		"-p",
+		password,
+		sourceEndpoint,
+	}
+	return []string{
+		"bash",
+		"-o",
+		"errexit",
+		"-o",
+		"pipefail",
+		"-c",
+		strings.Join(kandoCmd, " "),
+	}
 }
