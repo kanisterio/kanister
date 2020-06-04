@@ -20,6 +20,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	sourcePathFlagName = "path"
+	fileNameFlagName   = "file"
+)
+
 func newStreamPushCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "push <source>",
@@ -29,25 +34,43 @@ func newStreamPushCommand() *cobra.Command {
 			return runStreamPush(c, args)
 		},
 	}
+	cmd.Flags().StringP(fileNameFlagName, "f", "", "Specify a name for the data stream (required)")
+	cmd.Flags().StringP(sourcePathFlagName, "d", "", "Specify a directory path for the data stream (required)")
+	_ = cmd.MarkFlagRequired(fileNameFlagName)
+	_ = cmd.MarkFlagRequired(sourcePathFlagName)
 	return cmd
 }
 
 func runStreamPush(cmd *cobra.Command, args []string) error {
 	// TODO: Implement stream push
 	_ = passwordFlag(cmd)
+	_ = fileNameFlag(cmd)
+	_ = pathFlag(cmd)
 	_ = args[0]
 	return nil
 }
 
+func fileNameFlag(cmd *cobra.Command) string {
+	return cmd.Flag(fileNameFlagName).Value.String()
+}
+
+func pathFlag(cmd *cobra.Command) string {
+	return cmd.Flag(sourcePathFlagName).Value.String()
+}
+
 // GenerateStreamPushCommand generates a bash command for
 // kando stream push with given password and source
-func GenerateStreamPushCommand(password, sourceEndpoint string) []string {
+func GenerateStreamPushCommand(fileName, password, path, sourceEndpoint string) []string {
 	kandoCmd := []string{
 		"kando",
 		"stream",
 		"push",
 		"-p",
 		password,
+		"-f",
+		fileName,
+		"-d",
+		path,
 		sourceEndpoint,
 	}
 	return []string{
