@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2020 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ func newRootCommand() *cobra.Command {
 	rootCmd.AddCommand(newLocationCommand())
 	rootCmd.AddCommand(newOutputCommand())
 	rootCmd.AddCommand(newChronicleCommand())
+	rootCmd.AddCommand(newStreamCommand())
 	return rootCmd
 }
 
