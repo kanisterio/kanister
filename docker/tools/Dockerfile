@@ -5,7 +5,7 @@ LABEL name="kanister-tools" \
     version="${kan_tools_version}" \
     release="${kan_tools_version}" \
     summary="Microservice for application-specific data management for Kubernetes" \
-    maintainer="Tom Manville<tom@kasten.io>"
+    maintainer="Tom Manville<tom@kasten.io>" \
     description="Kanister tools for application-specific data management"
 
 COPY --from=restic/restic:0.9.5 /usr/bin/restic /usr/local/bin/restic
