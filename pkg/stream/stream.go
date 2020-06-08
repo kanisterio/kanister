@@ -36,15 +36,19 @@ const (
 )
 
 // Push streams data to object store by reading it from the given endpoint into an in-memory filesystem
-func Push(ctx context.Context, fileName, path, password, sourceEndpoint string) error {
+func Push(ctx context.Context, dirPath, file, password, sourceEndpoint string) error {
 	rep, err := OpenKopiaRepository(ctx, password)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
 	// Initialize a directory tree with given file
-	// The following will create /<fileName>
-	root := virtualfs.NewDirectory()
-	root.AddFileWithStreamSource(fileName, sourceEndpoint, 0777)
+	// The following will create /dirPath/<file>
+	// Example: If dirPath is `/mnt/data` and file is `/dir/file`,
+	// the virtualfs creates `/mnt/data/dir/file` objects
+	root := virtualfs.NewDirectory(filepath.Base(dirPath))
+	if _, err = root.AddFileWithStreamSource(file, sourceEndpoint, 0777); err != nil {
+		return err
+	}
 
 	// Setup kopia uploader
 	u := snapshotfs.NewUploader(rep)
@@ -53,7 +57,7 @@ func Push(ctx context.Context, fileName, path, password, sourceEndpoint string) 
 	sourceInfo := snapshot.SourceInfo{
 		UserName: rep.Username(),
 		Host:     rep.Hostname(),
-		Path:     filepath.Join(path, fileName),
+		Path:     dirPath,
 	}
 
 	// Create a kopia snapshot

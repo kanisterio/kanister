@@ -15,14 +15,17 @@
 package kando
 
 import (
+	"context"
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/kanisterio/kanister/pkg/stream"
 )
 
 const (
-	sourcePathFlagName = "path"
-	fileNameFlagName   = "file"
+	dirPathFlagName  = "dirPath"
+	filePathFlagName = "filePath"
 )
 
 func newStreamPushCommand() *cobra.Command {
@@ -34,43 +37,42 @@ func newStreamPushCommand() *cobra.Command {
 			return runStreamPush(c, args)
 		},
 	}
-	cmd.Flags().StringP(fileNameFlagName, "f", "", "Specify a name for the data stream (required)")
-	cmd.Flags().StringP(sourcePathFlagName, "d", "", "Specify a directory path for the data stream (required)")
-	_ = cmd.MarkFlagRequired(fileNameFlagName)
-	_ = cmd.MarkFlagRequired(sourcePathFlagName)
+	cmd.Flags().StringP(dirPathFlagName, "d", "", "Specify a root directory path for the data stream (required)")
+	cmd.Flags().StringP(filePathFlagName, "f", "", "Specify a file name or path for the data stream (required)")
+	_ = cmd.MarkFlagRequired(dirPathFlagName)
+	_ = cmd.MarkFlagRequired(filePathFlagName)
 	return cmd
 }
 
 func runStreamPush(cmd *cobra.Command, args []string) error {
-	// TODO: Implement stream push
-	_ = passwordFlag(cmd)
-	_ = fileNameFlag(cmd)
-	_ = sourcePathFlag(cmd)
-	_ = args[0]
-	return nil
+	dirPath = dirPathFlag(cmd)
+	filePath := filePathFlag(cmd)
+	pwd := passwordFlag(cmd)
+	sourceEndpoint = args[0]
+	return stream.Push(context.Background(), dirPath, filePath, pwd, sourceEndpoint)
+}
+
+func dirPathFlag(cmd *cobra.Command) string {
+	return cmd.Flag(dirPathFlagName).Value.String()
 }
 
 func fileNameFlag(cmd *cobra.Command) string {
-	return cmd.Flag(fileNameFlagName).Value.String()
-}
-
-func sourcePathFlag(cmd *cobra.Command) string {
-	return cmd.Flag(sourcePathFlagName).Value.String()
+	return cmd.Flag(filePathFlagName).Value.String()
 }
 
 // GenerateStreamPushCommand generates a bash command for
 // kando stream push with given flags and arguments
-func GenerateStreamPushCommand(fileName, password, path, sourceEndpoint string) []string {
+func GenerateStreamPushCommand(dirPath, filePath, password, sourceEndpoint string) []string {
 	kandoCmd := []string{
 		"kando",
 		"stream",
 		"push",
 		"-p",
 		password,
-		"-f",
-		fileName,
 		"-d",
-		path,
+		dirPath,
+		"-f",
+		filePath,
 		sourceEndpoint,
 	}
 	return []string{
