@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/kopia/kopia/fs"
+	"github.com/pkg/errors"
 )
 
 // Directory is a mock in-memory implementation of kopia's fs.Directory
@@ -38,9 +39,13 @@ func (d *Directory) Summary() *fs.DirectorySummary {
 }
 
 // AddFileWithStreamSource adds a mock file with the specified name, permissions and source.
-func (d *Directory) AddFileWithStreamSource(name, sourceEndpoint string, permissions os.FileMode) *File {
-	d, name = d.resolveSubdir(name)
-	file := &File{
+func (d *Directory) AddFileWithStreamSource(name, sourceEndpoint string, permissions os.FileMode) (file *File, err error) {
+	d, name, err = d.resolveAndAddSubdir(name)
+	if err != nil {
+		return nil, err
+	}
+
+	file = &File{
 		dirEntry: dirEntry{
 			name: name,
 			mode: permissions,
@@ -51,45 +56,48 @@ func (d *Directory) AddFileWithStreamSource(name, sourceEndpoint string, permiss
 		},
 	}
 
-	d.addChild(file)
+	err = d.addChild(file)
 
-	return file
+	return file, errors.Wrap(err, "Failed to add file")
 }
 
 // AddDir adds a fake directory with a given name and permissions.
-func (d *Directory) AddDir(name string, permissions os.FileMode) *Directory {
-	d, name = d.resolveSubdir(name)
+func (d *Directory) AddDir(name string, permissions os.FileMode) (subdir *Directory, err error) {
+	d, name, err = d.resolveSubdir(name)
+	if err != nil {
+		return nil, err
+	}
 
-	subdir := &Directory{
+	subdir = &Directory{
 		dirEntry: dirEntry{
 			name: name,
 			mode: permissions | os.ModeDir,
 		},
 	}
 
-	d.addChild(subdir)
+	err = d.addChild(subdir)
 
-	return subdir
+	return subdir, err
 }
 
 // Subdir finds a subdirectory with the given name.
-func (d *Directory) Subdir(name ...string) *Directory {
+func (d *Directory) Subdir(name ...string) (*Directory, error) {
 	i := d
 
 	for _, n := range name {
 		i2 := i.children.FindByName(n)
 		if i2 == nil {
-			panic(fmt.Sprintf("'%s' not found in '%s'", n, i.Name()))
+			return nil, errors.New(fmt.Sprintf("'%s' not found in '%s'", n, i.Name()))
 		}
 
 		if !i2.IsDir() {
-			panic(fmt.Sprintf("'%s' is not a directory in '%s'", n, i.Name()))
+			return nil, errors.New(fmt.Sprintf("'%s' is not a directory in '%s'", n, i.Name()))
 		}
 
 		i = i2.(*Directory)
 	}
 
-	return i
+	return i, nil
 }
 
 // Remove removes directory dirEntry with the given name.
@@ -128,20 +136,34 @@ func (d *Directory) Readdir(ctx context.Context) (fs.Entries, error) {
 	return append(fs.Entries(nil), d.children...), nil
 }
 
-func (d *Directory) addChild(e fs.Entry) {
+func (d *Directory) addChild(e fs.Entry) error {
 	if strings.Contains(e.Name(), "/") {
-		panic("child name cannot contain '/'")
+		return errors.New("Failed to add child entry: name cannot contain '/'")
 	}
 
 	d.children = append(d.children, e)
 	d.children.Sort()
+	return nil
 }
 
-func (d *Directory) resolveSubdir(name string) (parent *Directory, leaf string) {
+func (d *Directory) resolveSubdir(name string) (parent *Directory, leaf string, err error) {
 	parts := strings.Split(name, "/")
 	for _, n := range parts[0 : len(parts)-1] {
-		d = d.Subdir(n)
+		if d, err = d.Subdir(n); err != nil {
+			return nil, "", errors.Wrap(err, fmt.Sprintf("Failed to resolve sub directory '%s'", n))
+		}
 	}
 
-	return d, parts[len(parts)-1]
+	return d, parts[len(parts)-1], nil
+}
+
+func (d *Directory) resolveAndAddSubdir(name string) (parent *Directory, leaf string, err error) {
+	parts := strings.Split(name, "/")
+	for _, n := range parts[0 : len(parts)-1] {
+		if d, err = d.AddDir(n, 0777); err != nil {
+			return nil, "", errors.Wrap(err, fmt.Sprintf("Failed to add sub directory '%s'", n))
+		}
+	}
+
+	return d, parts[len(parts)-1], nil
 }

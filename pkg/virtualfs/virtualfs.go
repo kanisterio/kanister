@@ -21,10 +21,10 @@ import (
 )
 
 // NewDirectory returns new mock directory.
-func NewDirectory() *Directory {
+func NewDirectory(rootName string) *Directory {
 	return &Directory{
 		dirEntry: dirEntry{
-			name: "/",
+			name: rootName,
 			mode: 0777 | os.ModeDir, // nolint:gomnd
 		},
 	}
