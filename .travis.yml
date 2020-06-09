@@ -28,7 +28,8 @@ jobs:
       - make start-kind
       script:
       - make build
-      - make codegen
+      # Enable codegen test once we upgrade k8s.io/client-go to work with go1.1.4
+      # - make codegen
       - make test
       before_cache:
       - sudo chown -R travis:travis ./.go
