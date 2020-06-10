@@ -42,9 +42,10 @@ func Push(ctx context.Context, dirPath, file, password, sourceEndpoint string) e
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
 	// Initialize a directory tree with given file
-	// The following will create /dirPath/<file>
-	// Example: If dirPath is `/mnt/data` and file is `/dir/file`,
-	// the virtualfs creates `/mnt/data/dir/file` objects
+	// The following will create <dirPath>/<file> objects
+	// Example: If dirPath is `/mnt/data` and file is `dir/file`,
+	// `data` will be the root directory and 
+	// `dir/file` objects will be created under it
 	root := virtualfs.NewDirectory(filepath.Base(dirPath))
 	if _, err = root.AddFileWithStreamSource(file, sourceEndpoint, 0777); err != nil {
 		return err
