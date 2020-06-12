@@ -48,7 +48,7 @@ func (d *Directory) AddDir(name string, permissions os.FileMode) (*Directory, er
 }
 
 // AddAllDirs creates under d, all the necessary directories in pathname, similar to os.MkdirAll
-func (d *Directory) AddAllDirs(pathname string, permissions os.FileMode) (parent *Directory, err error) {
+func (d *Directory) AddAllDirs(pathname string, permissions os.FileMode) (subdir *Directory, err error) {
 	p, missing, err := d.resolveDirs(pathname)
 	if err != nil {
 		return nil, err
