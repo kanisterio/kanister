@@ -21,7 +21,7 @@ import (
 	"github.com/kopia/kopia/fs"
 )
 
-// dirEntry is mock in-memory implementation of a directory dirEntry
+// dirEntry is an in-memory implementation of a directory entry
 type dirEntry struct {
 	name    string
 	mode    os.FileMode

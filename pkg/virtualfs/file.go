@@ -18,27 +18,21 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"os"
 
 	"github.com/kopia/kopia/fs"
 	"github.com/pkg/errors"
 )
 
-// File is an in-memory implementation of kopia's fs.File
-type File struct {
+// file is an in-memory implementation of kopia's fs.File
+type file struct {
 	dirEntry
 
 	source func() (ReaderSeekerCloser, error)
 }
 
-// SetContents changes the contents of a given file.
-func (f *File) SetContents(b []byte) {
-	f.source = func() (ReaderSeekerCloser, error) {
-		return readerSeekerCloser{bytes.NewReader(b)}, nil
-	}
-}
-
-// Open opens the file for reading.
-func (f *File) Open(ctx context.Context) (fs.Reader, error) {
+// Open opens the file for reading
+func (f *file) Open(ctx context.Context) (fs.Reader, error) {
 	r, err := f.source()
 	if err != nil {
 		return nil, err
@@ -50,17 +44,48 @@ func (f *File) Open(ctx context.Context) (fs.Reader, error) {
 	}, nil
 }
 
-func streamReader(sourceEndpoint string) (ReaderSeekerCloser, error) {
+// FileWithSource returns a file with given name, permissions and source
+func FileWithSource(name string, permissions os.FileMode, source func() (ReaderSeekerCloser, error)) *file {
+	return &file{
+		dirEntry: dirEntry{
+			name: name,
+			mode: permissions,
+			// TODO: add owner and other information
+		},
+		source: source,
+	}
+}
+
+// FileWithContent returns a file with given content
+func FileWithContent(name string, permissions os.FileMode, content []byte) *file {
+	s := func() (ReaderSeekerCloser, error) {
+		return readSeekerWrapper{bytes.NewReader(content)}, nil
+	}
+
+	return FileWithSource(name, permissions, s)
+}
+
+// FileFromEndpoint returns a file with contents from given source endpoint
+func FileFromEndpoint(name, sourceEndpoint string, permissions os.FileMode) *file {
+	s := func() (ReaderSeekerCloser, error) {
+		return httpStreamReader(sourceEndpoint)
+	}
+
+	return FileWithSource(name, permissions, s)
+}
+
+// httpStreamReader reads the data stream from the given source endpoint
+func httpStreamReader(sourceEndpoint string) (ReaderSeekerCloser, error) {
 	req, err := http.NewRequest("GET", sourceEndpoint, nil)
 	if err != nil {
-		return readerCloser{nil}, errors.Wrap(err, "Failed to generate HTTP request")
+		return readCloserWrapper{nil}, errors.Wrap(err, "Failed to generate HTTP request")
 	}
 
 	client := http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return readerCloser{nil}, errors.Wrap(err, "Failed to make HTTP request")
+		return readCloserWrapper{nil}, errors.Wrap(err, "Failed to make HTTP request")
 	}
 
-	return readerCloser{resp.Body}, nil
+	return readCloserWrapper{resp.Body}, nil
 }

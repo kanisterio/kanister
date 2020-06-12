@@ -30,19 +30,21 @@ type ReaderSeekerCloser interface {
 	io.Closer
 }
 
-type readerSeekerCloser struct {
+// readSeekerWrapper adds a dummy Close method to a ReadSeeker
+type readSeekerWrapper struct {
 	io.ReadSeeker
 }
 
-func (c readerSeekerCloser) Close() error {
+func (rs readSeekerWrapper) Close() error {
 	return nil
 }
 
-type readerCloser struct {
+// readCloserWrapper adds a dummy Seek method to a ReadCloser
+type readCloserWrapper struct {
 	io.ReadCloser
 }
 
-func (c readerCloser) Seek(start int64, offset int) (int64, error) {
+func (rc readCloserWrapper) Seek(start int64, offset int) (int64, error) {
 	log.Debug().Print("Seek not supported", field.M{"start": start, "offset": offset})
 	return 0, nil
 }

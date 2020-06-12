@@ -16,12 +16,17 @@ package virtualfs
 
 import (
 	"os"
+	"strings"
 
 	"github.com/kopia/kopia/fs"
+	"github.com/pkg/errors"
 )
 
-// NewDirectory returns new mock directory.
+// NewDirectory returns a virtual FS root directory
 func NewDirectory(rootName string) *Directory {
+	if strings.Contains(rootName, "/") {
+		return errors.New("Root name cannot contain '/'")
+	}
 	return &Directory{
 		dirEntry: dirEntry{
 			name: rootName,
@@ -32,6 +37,7 @@ func NewDirectory(rootName string) *Directory {
 
 var (
 	_ fs.Directory = &Directory{}
-	_ fs.File      = &File{}
+	_ fs.Entry     = &dirEntry{}
+	_ fs.File      = &file{}
 	_ fs.Symlink   = &inmemorySymlink{}
 )

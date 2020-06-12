@@ -452,6 +452,7 @@ github.com/kopia/kopia v0.4.0 h1:pFgh9EYXUyc3XVL4n0gRfgAJrcEXTiOuV9qaJhpcIe4=
 github.com/kopia/kopia v0.4.0/go.mod h1:nLhYJ1Fvnrxlr4MFgX6DNTAPXCO5j/1zzHrRXzAuDB0=
 github.com/kopia/kopia v0.4.1-0.20200602063818-293cb10471c3 h1:vOvePFeUjWunrCKVENT5Q4LXCXhjjKtJfmjKoXpJ5yg=
 github.com/kopia/kopia v0.4.1-0.20200602063818-293cb10471c3/go.mod h1:vYkRDf/i7NZQLTkaFsP5OqgriGP7Ki3vaznZ3ZGa65A=
+github.com/kopia/kopia v0.4.1-0.20200608151401-25934a544df4 h1:TWBTO0tV7zxUrZgETfv4kk4j9rOBBcfLV9SbSukqTz4=
 github.com/kopia/kopia v0.4.1-0.20200608151401-25934a544df4/go.mod h1:vYkRDf/i7NZQLTkaFsP5OqgriGP7Ki3vaznZ3ZGa65A=
 github.com/kr/fs v0.1.0 h1:Jskdu9ieNAYnjxsi0LbQp1ulIKZV1LAFgK1tWhpZgl8=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
