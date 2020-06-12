@@ -41,7 +41,7 @@ func (d *Directory) AddDir(name string, permissions os.FileMode) (*Directory, er
 		},
 	}
 
-	if err := parent.addChild(subdir); err != nil {
+	if err := d.addChild(subdir); err != nil {
 		return nil, err
 	}
 	return subdir, nil

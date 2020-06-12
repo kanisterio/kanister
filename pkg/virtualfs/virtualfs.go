@@ -23,16 +23,16 @@ import (
 )
 
 // NewDirectory returns a virtual FS root directory
-func NewDirectory(rootName string) *Directory {
+func NewDirectory(rootName string) (*Directory, error) {
 	if strings.Contains(rootName, "/") {
-		return errors.New("Root name cannot contain '/'")
+		return nil, errors.New("Root name cannot contain '/'")
 	}
 	return &Directory{
 		dirEntry: dirEntry{
 			name: rootName,
 			mode: 0777 | os.ModeDir, // nolint:gomnd
 		},
-	}
+	}, nil
 }
 
 var (
