@@ -38,11 +38,11 @@ func (s *DirectorySuite) TestAddDir(c *C) {
 	c.Assert(dir.Name(), Equals, "d1")
 
 	// Duplicate directory
-	dir, err = sourceDir.AddDir("d1", defaultPermissions)
+	_, err = sourceDir.AddDir("d1", defaultPermissions)
 	c.Assert(err, NotNil)
 
 	// Invalid name
-	dir, err = sourceDir.AddDir("/d2", defaultPermissions)
+	_, err = sourceDir.AddDir("/d2", defaultPermissions)
 	c.Assert(err, NotNil)
 }
 
@@ -81,7 +81,7 @@ func (s *DirectorySuite) TestAddAllDirs(c *C) {
 	f, err := AddFileWithContent(sourceDir, "f1", []byte("test"), defaultPermissions, defaultPermissions)
 	c.Assert(err, IsNil)
 	c.Assert(f.Name(), Equals, "f1")
-	subdir, err = sourceDir.AddAllDirs("f1/d6", defaultPermissions)
+	_, err = sourceDir.AddAllDirs("f1/d6", defaultPermissions)
 	c.Assert(err, NotNil)
 }
 
