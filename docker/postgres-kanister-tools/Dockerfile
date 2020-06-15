@@ -5,10 +5,9 @@ ENV DEBIAN_FRONTEND noninteractive
 
 USER root
 
-RUN apk -v --update add --no-cache curl python py-pip groff less jq && \
-    pip install --upgrade pip && \
-    pip install --upgrade awscli && \
-    apk -v --purge del py-pip && \
+RUN apk -v --update add --no-cache curl python3 groff less jq && \
+    pip3 install --upgrade pip && \
+    pip3 install --upgrade awscli && \
     rm -f /var/cache/apk/*
 
 COPY --from=restic/restic:0.9.5 /usr/bin/restic /usr/local/bin/restic
