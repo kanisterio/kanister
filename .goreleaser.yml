@@ -48,6 +48,8 @@ dockers:
   dockerfile: 'docker/tools/Dockerfile'
   build_flag_templates:
   - "--build-arg=kan_tools_version={{ .Tag }}"
+  extra_files:
+  - 'LICENSE'
 - binaries:
   - kando
   image_templates:
