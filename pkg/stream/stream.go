@@ -32,23 +32,27 @@ import (
 )
 
 const (
-	snapshotDescription = "Snapshot created by kando stream push"
+	snapshotDescription             = "Snapshot created by kando stream push"
+	defaultPermissions  os.FileMode = 0777
 )
 
 // Push streams data to object store by reading it from the given endpoint into an in-memory filesystem
-func Push(ctx context.Context, dirPath, file, password, sourceEndpoint string) error {
+func Push(ctx context.Context, dirPath, filePath, password, sourceEndpoint string) error {
 	rep, err := OpenKopiaRepository(ctx, password)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
 	// Initialize a directory tree with given file
-	// The following will create <dirPath>/<file> objects
-	// Example: If dirPath is `/mnt/data` and file is `dir/file`,
-	// `data` will be the root directory and 
+	// The following will create <dirPath>/<filePath> objects
+	// Example: If dirPath is `/mnt/data` and filePath is `dir/file`,
+	// `data` will be the root directory and
 	// `dir/file` objects will be created under it
-	root := virtualfs.NewDirectory(filepath.Base(dirPath))
-	if _, err = root.AddFileWithStreamSource(file, sourceEndpoint, 0777); err != nil {
-		return err
+	root, err := virtualfs.NewDirectory(filepath.Base(dirPath))
+	if err != nil {
+		return errors.Wrap(err, "Failed to create root directory")
+	}
+	if _, err = virtualfs.AddFileWithStreamSource(root, filePath, sourceEndpoint, defaultPermissions, defaultPermissions); err != nil {
+		return errors.Wrap(err, "Failed to add file with the given stream source to the root directory")
 	}
 
 	// Setup kopia uploader
@@ -121,27 +125,21 @@ func SnapshotSource(ctx context.Context, rep repo.Repository, u *snapshotfs.Uplo
 		return errors.Wrap(ferr, "Failed to flush kopia repository")
 	}
 
-	var maybePartial string
-	if manifest.IncompleteReason != "" {
-		maybePartial = " partial"
-	}
-
-	fmt.Printf("\nCreated%v snapshot with root %v and ID %v in %v\n", maybePartial, manifest.RootObjectID(), snapID, time.Since(t0).Truncate(time.Second))
+	fmt.Printf("\nCreated snapshot with root %v and ID %v in %v\n", manifest.RootObjectID(), snapID, time.Since(t0).Truncate(time.Second))
 
 	return err
 }
 
-// findPreviousSnapshotManifest returns the list of previous snapshots for a given source, including
-// last complete snapshot and possibly some number of incomplete snapshots following it.
+// findPreviousSnapshotManifest returns the list of previous snapshots for a given source,
+// including last complete snapshot
 func findPreviousSnapshotManifest(ctx context.Context, rep repo.Repository, sourceInfo snapshot.SourceInfo, noLaterThan *time.Time) ([]*snapshot.Manifest, error) {
 	man, err := snapshot.ListSnapshots(ctx, rep, sourceInfo)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to list previous kopia snapshots")
 	}
 
-	// Phase 1 - find latest complete snapshot.
+	// find latest complete snapshot
 	var previousComplete *snapshot.Manifest
-	var previousCompleteStartTime time.Time
 	var result []*snapshot.Manifest
 
 	for _, p := range man {
@@ -151,23 +149,11 @@ func findPreviousSnapshotManifest(ctx context.Context, rep repo.Repository, sour
 
 		if p.IncompleteReason == "" && (previousComplete == nil || p.StartTime.After(previousComplete.StartTime)) {
 			previousComplete = p
-			previousCompleteStartTime = p.StartTime
 		}
 	}
 
 	if previousComplete != nil {
 		result = append(result, previousComplete)
-	}
-
-	// Add all incomplete snapshots after that
-	for _, p := range man {
-		if noLaterThan != nil && p.StartTime.After(*noLaterThan) {
-			continue
-		}
-
-		if p.IncompleteReason != "" && p.StartTime.After(previousCompleteStartTime) {
-			result = append(result, p)
-		}
 	}
 
 	return result, nil

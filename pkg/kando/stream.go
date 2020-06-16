@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	passwordFlagName = "password"
+	streamPasswordFlagName = "password"
 )
 
 func newStreamCommand() *cobra.Command {
@@ -28,11 +28,11 @@ func newStreamCommand() *cobra.Command {
 		Short: "Manage data streams in object storage",
 	}
 	cmd.AddCommand(newStreamPushCommand())
-	cmd.PersistentFlags().StringP(passwordFlagName, "p", "", "Specify the password for object storage repository (required)")
-	_ = cmd.MarkPersistentFlagRequired(passwordFlagName)
+	cmd.PersistentFlags().StringP(streamPasswordFlagName, "p", "", "Specify the password for object storage repository (required)")
+	_ = cmd.MarkPersistentFlagRequired(streamPasswordFlagName)
 	return cmd
 }
 
-func passwordFlag(cmd *cobra.Command) string {
-	return cmd.Flag(passwordFlagName).Value.String()
+func streamPasswordFlag(cmd *cobra.Command) string {
+	return cmd.Flag(streamPasswordFlagName).Value.String()
 }

@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	dirPathFlagName  = "dirPath"
-	filePathFlagName = "filePath"
+	streamPushDirPathFlagName  = "dirPath"
+	streamPushFilePathFlagName = "filePath"
 )
 
 func newStreamPushCommand() *cobra.Command {
@@ -37,27 +37,27 @@ func newStreamPushCommand() *cobra.Command {
 			return runStreamPush(c, args)
 		},
 	}
-	cmd.Flags().StringP(dirPathFlagName, "d", "", "Specify a root directory path for the data stream (required)")
-	cmd.Flags().StringP(filePathFlagName, "f", "", "Specify a file name or path for the data stream (required)")
-	_ = cmd.MarkFlagRequired(dirPathFlagName)
-	_ = cmd.MarkFlagRequired(filePathFlagName)
+	cmd.Flags().StringP(streamPushDirPathFlagName, "d", "", "Specify a root directory path for the data stream (required)")
+	cmd.Flags().StringP(streamPushFilePathFlagName, "f", "", "Specify a file name or path for the data stream (required)")
+	_ = cmd.MarkFlagRequired(streamPushDirPathFlagName)
+	_ = cmd.MarkFlagRequired(streamPushFilePathFlagName)
 	return cmd
 }
 
 func runStreamPush(cmd *cobra.Command, args []string) error {
-	dirPath = dirPathFlag(cmd)
-	filePath := filePathFlag(cmd)
-	pwd := passwordFlag(cmd)
-	sourceEndpoint = args[0]
+	dirPath := streamPushDirPathFlag(cmd)
+	filePath := streamPushFilePathFlag(cmd)
+	pwd := streamPasswordFlag(cmd)
+	sourceEndpoint := args[0]
 	return stream.Push(context.Background(), dirPath, filePath, pwd, sourceEndpoint)
 }
 
-func dirPathFlag(cmd *cobra.Command) string {
-	return cmd.Flag(dirPathFlagName).Value.String()
+func streamPushDirPathFlag(cmd *cobra.Command) string {
+	return cmd.Flag(streamPushDirPathFlagName).Value.String()
 }
 
-func fileNameFlag(cmd *cobra.Command) string {
-	return cmd.Flag(filePathFlagName).Value.String()
+func streamPushFilePathFlag(cmd *cobra.Command) string {
+	return cmd.Flag(streamPushFilePathFlagName).Value.String()
 }
 
 // GenerateStreamPushCommand generates a bash command for
