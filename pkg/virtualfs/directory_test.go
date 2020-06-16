@@ -16,12 +16,14 @@ package virtualfs
 
 import (
 	"context"
+	"os"
 
 	. "gopkg.in/check.v1"
 )
 
 const (
-	defaultPermissions = 0777
+	defaultPermissions os.FileMode = 0777
+	dirPermissions     os.FileMode = defaultPermissions | os.ModeDir
 )
 
 type DirectorySuite struct{}
@@ -51,20 +53,24 @@ func (s *DirectorySuite) TestAddAllDirs(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Log("Add a directory - root/d1")
-	subdir, err := sourceDir.AddAllDirs("d1/d2", defaultPermissions)
+	subdir, err := sourceDir.AddAllDirs("d1", defaultPermissions)
 	c.Assert(err, IsNil)
-	c.Assert(subdir.Name(), Equals, "d2")
+	c.Assert(subdir.Name(), Equals, "d1")
 	d1, err := sourceDir.Subdir("d1")
 	c.Assert(err, IsNil)
 	c.Assert(d1, NotNil)
+	c.Assert(d1.Name(), Equals, "d1")
+	c.Assert(d1.Mode(), Equals, dirPermissions)
 
-	c.Log("Add third level directory - root/d1/d2")
+	c.Log("Add a sub-dir under an existing directory - root/d1/d2")
 	subdir, err = sourceDir.AddAllDirs("d1/d2", defaultPermissions)
 	c.Assert(err, IsNil)
 	c.Assert(subdir.Name(), Equals, "d2")
 	d2, err := d1.Subdir("d2")
 	c.Assert(err, IsNil)
 	c.Assert(d2, NotNil)
+	c.Assert(d2.Name(), Equals, "d2")
+	c.Assert(d2.Mode(), Equals, dirPermissions)
 
 	c.Log("Add third/fourth level dirs - root/d1/d3/d4")
 	subdir, err = sourceDir.AddAllDirs("d1/d3/d4", defaultPermissions)
@@ -73,9 +79,13 @@ func (s *DirectorySuite) TestAddAllDirs(c *C) {
 	d3, err := d1.Subdir("d3")
 	c.Assert(err, IsNil)
 	c.Assert(d3, NotNil)
+	c.Assert(d3.Name(), Equals, "d3")
+	c.Assert(d3.Mode(), Equals, dirPermissions)
 	d4, err := d3.Subdir("d4")
 	c.Assert(err, IsNil)
 	c.Assert(d4, NotNil)
+	c.Assert(d4.Name(), Equals, "d4")
+	c.Assert(d4.Mode(), Equals, dirPermissions)
 
 	c.Log("Fail adding directory under a file - root/f1/d6")
 	f, err := AddFileWithContent(sourceDir, "f1", []byte("test"), defaultPermissions, defaultPermissions)
@@ -103,6 +113,8 @@ func (s *DirectorySuite) TestAddFile(c *C) {
 	d1, err := sourceDir.Subdir("d1")
 	c.Assert(err, IsNil)
 	c.Assert(d1, NotNil)
+	c.Assert(d1.Name(), Equals, "d1")
+	c.Assert(d1.Mode(), Equals, dirPermissions)
 	e, err := d1.Child(context.Background(), "f2")
 	c.Assert(err, IsNil)
 	c.Assert(e, NotNil)
@@ -115,6 +127,8 @@ func (s *DirectorySuite) TestAddFile(c *C) {
 	d2, err := sourceDir.Subdir("d2")
 	c.Assert(err, IsNil)
 	c.Assert(d2, NotNil)
+	c.Assert(d2.Name(), Equals, "d2")
+	c.Assert(d2.Mode(), Equals, dirPermissions)
 	e, err = d2.Child(context.Background(), "f3")
 	c.Assert(err, IsNil)
 	c.Assert(e, NotNil)
