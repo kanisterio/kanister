@@ -56,7 +56,6 @@ require (
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/minio/minio-go v6.0.14+incompatible // indirect
 	github.com/mitchellh/mapstructure v1.1.2
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d // indirect
 	github.com/openshift/api v0.0.0-20190402135445-d2f01e7b77a6
 	github.com/openshift/client-go v0.0.0-20190402163854-7cc0953bbbb7
