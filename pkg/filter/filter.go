@@ -165,7 +165,7 @@ func (rm ResourceMatcher) Empty() bool {
 // TypeMatcher constructs a resource type matcher
 // based on a `ResourceMatcher`
 //
-// The `usageExclusion` flag should be set to true
+// The `usageInclusion` flag should be set to false
 // if the type matcher will be used as an exclude filter
 func (rm ResourceMatcher) TypeMatcher(usageInclusion bool) ResourceTypeMatcher {
 	rtm := make(ResourceTypeMatcher, 0, len(rm))
@@ -176,7 +176,9 @@ func (rm ResourceMatcher) TypeMatcher(usageInclusion bool) ResourceTypeMatcher {
 		//		i.e. it is OK to include *all* resources that have this type
 		//			 but is not OK to exclude *all* resources that have this
 		//			 type
-		if rr.Name == "" || usageInclusion {
+		if (rr.Name == "" &&
+			len(rr.LabelSelector.MatchLabels) == 0 &&
+			len(rr.LabelSelector.MatchExpressions) == 0) || usageInclusion {
 			rtm = append(rtm, rr.ResourceTypeRequirement)
 		}
 	}
