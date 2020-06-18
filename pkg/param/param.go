@@ -358,7 +358,14 @@ func fetchDeploymentConfigParams(ctx context.Context, cli kubernetes.Interface, 
 		PersistentVolumeClaims: make(map[string]map[string]string),
 	}
 
-	pods, _, err := kube.FetchPods(cli, namespace, dc.UID)
+	// deployment configs are managed by replicationcontrollers not replicaset
+	// get the replication controller
+	rc, err := kube.FetchReplicationController(cli, namespace, dc.UID, dc.Annotations[kube.RevisionAnnotation])
+	if err != nil {
+		return nil, err
+	}
+
+	pods, _, err := kube.FetchPods(cli, namespace, rc.UID)
 	if err != nil {
 		return nil, err
 	}
