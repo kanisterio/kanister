@@ -359,7 +359,7 @@ func fetchDeploymentConfigParams(ctx context.Context, cli kubernetes.Interface, 
 	}
 
 	// deployment configs are managed by replicationcontrollers not replicaset
-	// get the replication controller
+	// get the replication controller of the deploymentconfig
 	rc, err := kube.FetchReplicationController(cli, namespace, dc.UID, dc.Annotations[kube.RevisionAnnotation])
 	if err != nil {
 		return nil, err
