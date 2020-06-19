@@ -18,7 +18,7 @@ import (
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
 )
 
-var _ blockstorage.Provider = (*fcdProvider)(nil)
+var _ blockstorage.Provider = (*FcdProvider)(nil)
 
 const (
 	// VSphereLoginURLKey represents key in config to establish connection.
@@ -36,9 +36,10 @@ const (
 	defaultWaitTime = 10 * time.Minute
 )
 
-type fcdProvider struct {
-	gom *vslm.GlobalObjectManager
-	cns *cns.Client
+// FcdProvider provides blockstorage.Provider
+type FcdProvider struct {
+	Gom *vslm.GlobalObjectManager
+	Cns *cns.Client
 }
 
 // NewProvider creates new VMWare FCD provider with the config.
@@ -84,9 +85,9 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 		return nil, errors.Wrap(err, "Failed to create VSLM client")
 	}
 	gom := vslm.NewGlobalObjectManager(vslmCli)
-	return &fcdProvider{
-		cns: cnsCli,
-		gom: gom,
+	return &FcdProvider{
+		Cns: cnsCli,
+		Gom: gom,
 	}, nil
 }
 
@@ -94,20 +95,23 @@ func constructLoginURL(endpoint, username, password string) string {
 	return fmt.Sprintf("https://%s:%s@%s/sdk", username, password, endpoint)
 }
 
-func (p *fcdProvider) Type() blockstorage.Type {
+// Type is part of blockstorage.Provider
+func (p *FcdProvider) Type() blockstorage.Type {
 	return blockstorage.TypeFCD
 }
 
-func (p *fcdProvider) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
+// VolumeCreate is part of blockstorage.Provider
+func (p *FcdProvider) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
 	return nil, errors.New("Not implemented")
 }
 
-func (p *fcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
+// VolumeCreateFromSnapshot is part of blockstorage.Provider
+func (p *FcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
 	volID, snapshotID, err := splitSnapshotFullID(snapshot.ID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to split snapshot full ID")
 	}
-	task, err := p.gom.CreateDiskFromSnapshot(ctx, vimID(volID), vimID(snapshotID), uuid.NewV1().String(), nil, nil, "")
+	task, err := p.Gom.CreateDiskFromSnapshot(ctx, vimID(volID), vimID(snapshotID), uuid.NewV1().String(), nil, nil, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create disk from snapshot")
 	}
@@ -132,8 +136,9 @@ func (p *fcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blo
 	return p.VolumeGet(ctx, vol.ID, "")
 }
 
-func (p *fcdProvider) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
-	task, err := p.gom.Delete(ctx, vimID(volume.ID))
+// VolumeDelete is part of blockstorage.Provider
+func (p *FcdProvider) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
+	task, err := p.Gom.Delete(ctx, vimID(volume.ID))
 	if err != nil {
 		return errors.Wrap(err, "Failed to delete the disk")
 	}
@@ -141,12 +146,13 @@ func (p *fcdProvider) VolumeDelete(ctx context.Context, volume *blockstorage.Vol
 	return err
 }
 
-func (p *fcdProvider) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
-	obj, err := p.gom.Retrieve(ctx, vimID(id))
+// VolumeGet is part of blockstorage.Provider
+func (p *FcdProvider) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
+	obj, err := p.Gom.Retrieve(ctx, vimID(id))
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to query the disk")
 	}
-	kvs, err := p.gom.RetrieveMetadata(ctx, vimID(id), nil, "")
+	kvs, err := p.Gom.RetrieveMetadata(ctx, vimID(id), nil, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get volume metadata")
 	}
@@ -158,16 +164,19 @@ func (p *fcdProvider) VolumeGet(ctx context.Context, id string, zone string) (*b
 	return vol, nil
 }
 
-func (p *fcdProvider) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
+// SnapshotCopy is part of blockstorage.Provider
+func (p *FcdProvider) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
 	return nil, errors.New("Not implemented")
 }
 
-func (p *fcdProvider) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+// SnapshotCopyWithArgs is part of blockstorage.Provider
+func (p *FcdProvider) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
 	return nil, errors.New("Copy Snapshot with Args not implemented")
 }
 
-func (p *fcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	task, err := p.gom.CreateSnapshot(ctx, vimID(volume.ID), noDescription)
+// SnapshotCreate is part of blockstorage.Provider
+func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
+	task, err := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), noDescription)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create snapshot")
 	}
@@ -190,16 +199,18 @@ func (p *fcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	return snap, nil
 }
 
-func (p *fcdProvider) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blockstorage.Snapshot) error {
+// SnapshotCreateWaitForCompletion is part of blockstorage.Provider
+func (p *FcdProvider) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blockstorage.Snapshot) error {
 	return nil
 }
 
-func (p *fcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
+// SnapshotDelete is part of blockstorage.Provider
+func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
 	volID, snapshotID, err := splitSnapshotFullID(snapshot.ID)
 	if err != nil {
 		return errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
 	}
-	task, err := p.gom.DeleteSnapshot(ctx, vimID(volID), vimID(snapshotID))
+	task, err := p.Gom.DeleteSnapshot(ctx, vimID(volID), vimID(snapshotID))
 	if err != nil {
 		return errors.Wrap(err, "Failed to delete snapshot")
 	}
@@ -207,12 +218,13 @@ func (p *fcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 	return err
 }
 
-func (p *fcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
+// SnapshotGet is part of blockstorage.Provider
+func (p *FcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
 	volID, snapshotID, err := splitSnapshotFullID(id)
 	if err != nil {
 		return nil, errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
 	}
-	results, err := p.gom.RetrieveSnapshotInfo(ctx, vimID(volID))
+	results, err := p.Gom.RetrieveSnapshotInfo(ctx, vimID(volID))
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get snapshot info")
 	}
@@ -223,7 +235,7 @@ func (p *fcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage
 				return nil, errors.Wrap(err, "Failed to convert object to snapshot")
 			}
 			snapID := vimID(snapshotID)
-			kvs, err := p.gom.RetrieveMetadata(ctx, vimID(volID), &snapID, "")
+			kvs, err := p.Gom.RetrieveMetadata(ctx, vimID(volID), &snapID, "")
 			if err != nil {
 				return nil, errors.Wrap(err, "Failed to get snapshot metadata")
 			}
@@ -234,7 +246,8 @@ func (p *fcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage
 	return nil, errors.New("Failed to find snapshot")
 }
 
-func (p *fcdProvider) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
+// SetTags is part of blockstorage.Provider
+func (p *FcdProvider) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
 	switch r := resource.(type) {
 	case *blockstorage.Volume:
 		return p.setTagsVolume(ctx, r, tags)
@@ -245,11 +258,11 @@ func (p *fcdProvider) SetTags(ctx context.Context, resource interface{}, tags ma
 	}
 }
 
-func (p *fcdProvider) setTagsVolume(ctx context.Context, volume *blockstorage.Volume, tags map[string]string) error {
+func (p *FcdProvider) setTagsVolume(ctx context.Context, volume *blockstorage.Volume, tags map[string]string) error {
 	if volume == nil {
 		return errors.New("Empty volume")
 	}
-	task, err := p.gom.UpdateMetadata(ctx, vimID(volume.ID), convertTagsToKeyValue(tags), nil)
+	task, err := p.Gom.UpdateMetadata(ctx, vimID(volume.ID), convertTagsToKeyValue(tags), nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to update metadata")
 	}
@@ -260,10 +273,12 @@ func (p *fcdProvider) setTagsVolume(ctx context.Context, volume *blockstorage.Vo
 	return nil
 }
 
-func (p *fcdProvider) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
+// VolumesList is part of blockstorage.Provider
+func (p *FcdProvider) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	return nil, errors.New("Not implemented")
 }
 
-func (p *fcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
+// SnapshotsList is part of blockstorage.Provider
+func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	return nil, errors.New("Not implemented")
 }
