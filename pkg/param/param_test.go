@@ -209,7 +209,6 @@ func (s *ParamsSuite) TestFetchDeploymentParams(c *C) {
 }
 
 func (s *ParamsSuite) TestFetchDeploymentConfigParams(c *C) {
-
 	ok, err := kube.IsOSAppsGroupAvailable(context.Background(), s.cli.Discovery())
 	c.Assert(err, IsNil)
 	if !ok {
@@ -237,7 +236,6 @@ func (s *ParamsSuite) TestFetchDeploymentConfigParams(c *C) {
 	c.Assert(dconf.Namespace, Equals, s.namespace)
 	c.Assert(dconf.Pods, HasLen, 1)
 	c.Assert(dconf.Containers, DeepEquals, [][]string{{"container"}})
-
 }
 
 func (s *ParamsSuite) TestFetchPVCParams(c *C) {
