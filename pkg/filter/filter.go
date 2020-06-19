@@ -176,9 +176,9 @@ func (rm ResourceMatcher) TypeMatcher(usageInclusion bool) ResourceTypeMatcher {
 		//		i.e. it is OK to include *all* resources that have this type
 		//			 but it is not OK to exclude *all* resources that have this
 		//			 type when name or labels are specified.
-		if (rr.Name == "" &&
+		if usageInclusion || (rr.Name == "" &&
 			len(rr.LabelSelector.MatchLabels) == 0 &&
-			len(rr.LabelSelector.MatchExpressions) == 0) || usageInclusion {
+			len(rr.LabelSelector.MatchExpressions) == 0) {
 			rtm = append(rtm, rr.ResourceTypeRequirement)
 		}
 	}
