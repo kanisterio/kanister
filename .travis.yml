@@ -22,9 +22,12 @@ jobs:
       script:
       - make docs
     - stage: test
+      services:
+        - docker
       install:
       - make go-mod-download
       before_script:
+      - docker pull kindest/node:v1.17.2
       - make start-kind
       script:
       - make build
