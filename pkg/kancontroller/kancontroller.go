@@ -79,6 +79,7 @@ func Execute() {
 	err = c.StartWatch(ctx, ns)
 	if err != nil {
 		log.WithError(err).Print("Failed to start controller.")
+		cancel()
 		return
 	}
 
