@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kanister Authors.
+Copyright 2020 The Kanister Authors.
 
 Copyright 2016 The Rook Authors. All rights reserved.
 
