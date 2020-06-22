@@ -39,9 +39,12 @@ jobs:
       after_script:
       - make stop-kind
     - stage: test
+      services:
+        - docker
       install:
       - make go-mod-download
       before_script:
+      - docker pull kindest/node:v1.17.2
       - make start-kind
       - make install-minio
       script:
