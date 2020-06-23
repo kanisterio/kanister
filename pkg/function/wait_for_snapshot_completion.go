@@ -75,7 +75,7 @@ func waitForSnapshotsCompletion(ctx context.Context, snapshotinfo string, profil
 			config[awsconfig.ConfigRegion] = pvcInfo.Region
 		}
 
-		provider, err := getter.Get(pvcInfo.Type, config)
+		provider, err := getter.Get(pvcInfo.Type, nil, config)
 		if err != nil {
 			return errors.Wrapf(err, "Could not get storage provider %v", pvcInfo.Type)
 		}

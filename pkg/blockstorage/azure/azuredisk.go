@@ -12,6 +12,7 @@ import (
 	azto "github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
@@ -34,7 +35,8 @@ const (
 )
 
 type adStorage struct {
-	azCli *Client
+	azCli   *Client
+	kubeCli kubernetes.Interface
 }
 
 func (s *adStorage) Type() blockstorage.Type {
@@ -42,12 +44,12 @@ func (s *adStorage) Type() blockstorage.Type {
 }
 
 // NewProvider returns a provider for the Azure blockstorage type
-func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
+func NewProvider(ctx context.Context, config map[string]string, kubeCli kubernetes.Interface) (blockstorage.Provider, error) {
 	azCli, err := NewClient(ctx, config)
 	if err != nil {
 		return nil, err
 	}
-	return &adStorage{azCli: azCli}, nil
+	return &adStorage{azCli: azCli, kubeCli: kubeCli}, nil
 }
 
 func (s *adStorage) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {

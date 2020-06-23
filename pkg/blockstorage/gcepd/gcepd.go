@@ -28,6 +28,7 @@ import (
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
@@ -44,6 +45,7 @@ var _ zone.Mapper = (*gpdStorage)(nil)
 type gpdStorage struct {
 	service *compute.Service
 	project string
+	kubeCli kubernetes.Interface
 }
 
 const (
@@ -60,7 +62,7 @@ func (s *gpdStorage) Type() blockstorage.Type {
 }
 
 // NewProvider returns a provider for the GCP storage type
-func NewProvider(config map[string]string) (blockstorage.Provider, error) {
+func NewProvider(config map[string]string, kubeCli kubernetes.Interface) (blockstorage.Provider, error) {
 	serviceKey := config[blockstorage.GoogleServiceKey]
 	gCli, err := NewClient(context.Background(), serviceKey)
 	if err != nil {
@@ -68,7 +70,8 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	}
 	return &gpdStorage{
 		service: gCli.Service,
-		project: gCli.ProjectID}, nil
+		project: gCli.ProjectID,
+		kubeCli: kubeCli}, nil
 }
 
 func (s *gpdStorage) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
