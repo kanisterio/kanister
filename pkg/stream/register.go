@@ -12,27 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kando
+package stream
 
 import (
-	"github.com/spf13/cobra"
+	// Register supported blob storage providers
+	_ "github.com/kopia/kopia/repo/blob/azure"
+	_ "github.com/kopia/kopia/repo/blob/filesystem"
+	_ "github.com/kopia/kopia/repo/blob/gcs"
+	_ "github.com/kopia/kopia/repo/blob/s3"
 )
-
-const (
-	streamPasswordFlagName = "password"
-)
-
-func newStreamCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "stream <command>",
-		Short: "Manage data streams in object storage",
-	}
-	cmd.AddCommand(newStreamPushCommand())
-	cmd.PersistentFlags().StringP(streamPasswordFlagName, "p", "", "Specify the password for object storage repository (required)")
-	_ = cmd.MarkPersistentFlagRequired(streamPasswordFlagName)
-	return cmd
-}
-
-func streamPasswordFlag(cmd *cobra.Command) string {
-	return cmd.Flag(streamPasswordFlagName).Value.String()
-}
