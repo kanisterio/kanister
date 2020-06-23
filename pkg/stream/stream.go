@@ -78,7 +78,7 @@ func OpenKopiaRepository(ctx context.Context, password string) (repo.Repository,
 
 	r, err := repo.Open(ctx, defaultConfigFileName(), password, &repo.Options{})
 	if os.IsNotExist(err) {
-		return nil, errors.New("Failed to find kopia repository, use `kopia repository connect`")
+		return nil, errors.New("Failed to find kopia repository, use `kopia repository create` or kopia repository connect` if already created")
 	}
 
 	return r, errors.Wrap(err, "Failed to open kopia repository")
