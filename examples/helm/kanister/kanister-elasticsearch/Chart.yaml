@@ -1,7 +1,7 @@
 apiVersion: v1
 name: kanister-elasticsearch
 home: https://www.elastic.co/products/elasticsearch
-version: 0.29.0
+version: 0.30.0
 appVersion: 6.3.1
 description: Elasticsearch w/ Kanister support based on incubator/elasticsearch
 icon: https://static-www.elastic.co/assets/blteb1c97719574938d/logo-elastic-elasticsearch-lt.svg

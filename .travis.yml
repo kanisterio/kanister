@@ -22,22 +22,29 @@ jobs:
       script:
       - make docs
     - stage: test
+      services:
+        - docker
       install:
       - make go-mod-download
       before_script:
+      - docker pull kindest/node:v1.17.2
       - make start-kind
       script:
       - make build
-      - make codegen
+      # Enable codegen test once we upgrade k8s.io/client-go to work with go1.14
+      # - make codegen
       - make test
       before_cache:
       - sudo chown -R travis:travis ./.go
       after_script:
       - make stop-kind
     - stage: test
+      services:
+        - docker
       install:
       - make go-mod-download
       before_script:
+      - docker pull kindest/node:v1.17.2
       - make start-kind
       - make install-minio
       script:
