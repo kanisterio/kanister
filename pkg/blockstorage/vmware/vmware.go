@@ -107,7 +107,7 @@ func (p *FcdProvider) VolumeCreate(ctx context.Context, volume blockstorage.Volu
 
 // VolumeCreateFromSnapshot is part of blockstorage.Provider
 func (p *FcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
-	volID, snapshotID, err := splitSnapshotFullID(snapshot.ID)
+	volID, snapshotID, err := SplitSnapshotFullID(snapshot.ID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to split snapshot full ID")
 	}
@@ -188,7 +188,7 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	if !ok {
 		return nil, errors.New("Unexpected type")
 	}
-	snap, err := p.SnapshotGet(ctx, snapshotFullID(volume.ID, id.Id))
+	snap, err := p.SnapshotGet(ctx, SnapshotFullID(volume.ID, id.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +206,7 @@ func (p *FcdProvider) SnapshotCreateWaitForCompletion(ctx context.Context, snaps
 
 // SnapshotDelete is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
-	volID, snapshotID, err := splitSnapshotFullID(snapshot.ID)
+	volID, snapshotID, err := SplitSnapshotFullID(snapshot.ID)
 	if err != nil {
 		return errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
 	}
@@ -220,7 +220,7 @@ func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 
 // SnapshotGet is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
-	volID, snapshotID, err := splitSnapshotFullID(id)
+	volID, snapshotID, err := SplitSnapshotFullID(id)
 	if err != nil {
 		return nil, errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
 	}
