@@ -38,6 +38,9 @@ import (
 const (
 	// RevisionAnnotation is the revision annotation of a deployment's replica sets which records its rollout sequence
 	RevisionAnnotation = "deployment.kubernetes.io/revision"
+
+	// ReplicationControllerRevisionAnnotation is annotation of deploymentconfig's repliationcontroller
+	ReplicationControllerRevisionAnnotation = "openshift.io/deployment-config.latest-version"
 )
 
 // CreateConfigMap creates a configmap set from a yaml spec.
@@ -121,7 +124,7 @@ func DeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, cli
 		return false, nil
 	}
 
-	rc, err := FetchReplicationController(cli, namespace, depConfig.GetUID(), depConfig.Annotations[RevisionAnnotation])
+	rc, err := FetchReplicationController(cli, namespace, depConfig.GetUID(), strconv.FormatInt(depConfig.Status.LatestVersion, 10))
 	if err != nil {
 		return false, err
 	}
@@ -188,7 +191,7 @@ func DeploymentConfigPods(ctx context.Context, osCli osversioned.Interface, kube
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "could not get DeploymentConfig{Namespace: %s, Name: %s}", namespace, name)
 	}
-	rc, err := FetchReplicationController(kubeCli, namespace, depConf.GetUID(), depConf.Annotations[RevisionAnnotation])
+	rc, err := FetchReplicationController(kubeCli, namespace, depConf.GetUID(), strconv.FormatInt(depConf.Status.LatestVersion, 10))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -237,6 +240,7 @@ func FetchReplicationController(cli kubernetes.Interface, namespace string, uid 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not list ReplicationControllers")
 	}
+
 	for _, rc := range repCtrls.Items {
 		if len(rc.OwnerReferences) != 1 {
 			continue
@@ -246,7 +250,7 @@ func FetchReplicationController(cli kubernetes.Interface, namespace string, uid 
 			continue
 		}
 
-		if rc.Annotations[RevisionAnnotation] != revision {
+		if rc.Annotations[ReplicationControllerRevisionAnnotation] != revision {
 			continue
 		}
 		return &rc, nil

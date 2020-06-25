@@ -224,18 +224,37 @@ func (s *ParamsSuite) TestFetchDeploymentConfigParams(c *C) {
 	depConf := newDeploymentConfig()
 	c.Assert(err, IsNil)
 
+	// create a deploymentconfig
 	ctx := context.Background()
 	dc, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Create(depConf)
 	c.Assert(err, IsNil)
 
+	// wait for deploymentconfig to be ready
 	err = kube.WaitOnDeploymentConfigReady(ctx, s.osCli, s.cli, dc.Namespace, dc.Name)
 	c.Assert(err, IsNil)
 
-	dconf, err := fetchDeploymentConfigParams(ctx, s.cli, s.osCli, s.namespace, dc.Name)
+	// get again achieve optimistic concurrency
+	newDep, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Get(dc.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	// edit the deploymentconfig
+	newDep.Spec.Template.Spec.Containers[0].Name = "newname"
+	// update the deploymentconfig
+	updatedDC, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Update(newDep)
+	c.Assert(err, IsNil)
+
+	// once updated, it will take some time to new replicationcontroller and pods to be up and running
+	// wait for deploymentconfig to be reay again
+	err = kube.WaitOnDeploymentConfigReady(ctx, s.osCli, s.cli, dc.Namespace, updatedDC.Name)
+	c.Assert(err, IsNil)
+
+	// fetch the deploymentconfig params
+	dconf, err := fetchDeploymentConfigParams(ctx, s.cli, s.osCli, s.namespace, updatedDC.Name)
+
 	c.Assert(err, IsNil)
 	c.Assert(dconf.Namespace, Equals, s.namespace)
 	c.Assert(dconf.Pods, HasLen, 1)
-	c.Assert(dconf.Containers, DeepEquals, [][]string{{"container"}})
+	c.Assert(dconf.Containers, DeepEquals, [][]string{{"newname"}})
 }
 
 func (s *ParamsSuite) TestFetchPVCParams(c *C) {
