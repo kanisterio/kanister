@@ -255,6 +255,24 @@ func (s *ParamsSuite) TestFetchDeploymentConfigParams(c *C) {
 	c.Assert(dconf.Namespace, Equals, s.namespace)
 	c.Assert(dconf.Pods, HasLen, 1)
 	c.Assert(dconf.Containers, DeepEquals, [][]string{{"newname"}})
+
+	// let's scale the deployment config and try things
+	dConfig, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Get(dc.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	// scale the replicas to 3
+	dConfig.Spec.Replicas = 3
+	updated, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Update(dConfig)
+	c.Assert(err, IsNil)
+	// wait for deploymentconfig to be ready
+	err = kube.WaitOnDeploymentConfigReady(ctx, s.osCli, s.cli, s.namespace, updated.Name)
+	c.Assert(err, IsNil)
+
+	// fetch the deploymentconfig params
+	dconfParams, err := fetchDeploymentConfigParams(ctx, s.cli, s.osCli, s.namespace, updated.Name)
+	c.Assert(err, IsNil)
+	c.Assert(dconfParams.Namespace, Equals, s.namespace)
+	// number of pods should be chnanged to 3
+	c.Assert(dconfParams.Pods, HasLen, 3)
 }
 
 func (s *ParamsSuite) TestFetchPVCParams(c *C) {
