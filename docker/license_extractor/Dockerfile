@@ -6,7 +6,7 @@ RUN mkdir /repo
 
 WORKDIR /repo
 
+ENV PATH /usr/local/go/bin:${PATH}
 COPY --from=go /usr/local/go/ /usr/local/go/
-RUN export PATH="/usr/local/go/bin:$PATH"
 
 ENTRYPOINT ["licext"]
