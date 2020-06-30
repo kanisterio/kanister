@@ -70,7 +70,7 @@ require (
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45
+	github.com/vmware/govmomi v0.22.2
 	go.uber.org/zap v1.15.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	gonum.org/v1/gonum v0.6.1 // indirect
