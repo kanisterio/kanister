@@ -1,6 +1,7 @@
 package caller
 
 import (
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -12,6 +13,8 @@ type Frame struct {
 	File     string
 	Line     int
 }
+
+var kanisterPathRe = regexp.MustCompile(`/kanister(@v[^/]+)?/`)
 
 // GetFrame returns information about a caller function at the specified depth
 // above this function in the the call stack.
@@ -30,7 +33,7 @@ func GetFrame(depth int) Frame {
 	var frame runtime.Frame
 	frame, _ = frames.Next()
 	filename := frame.File
-	paths := strings.SplitAfterN(frame.File, "/kanister/", 2)
+	paths := kanisterPathRe.Split(frame.File, 2)
 	if len(paths) > 1 {
 		filename = paths[1]
 	} else {
