@@ -16,7 +16,6 @@ package helm
 
 import (
 	"context"
-	"testing"
 
 	. "gopkg.in/check.v1"
 )
@@ -47,9 +46,6 @@ var _ = Suite(&ExecSuite{
 	args:    []string{"11m"},
 	err:     true,
 })
-
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { TestingT(t) }
 
 func (s *ExecSuite) TestRunCmdWithTimeout(c *C) {
 	ctx := context.Background()
