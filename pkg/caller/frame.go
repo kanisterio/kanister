@@ -14,6 +14,11 @@ type Frame struct {
 	Line     int
 }
 
+// kanisterPathRe matches the kanister component of the filesystem path
+//
+// For example:
+// /home/mark/src/kanister/pkg/kanister.go
+// /home/mark/go/pkg/mod/github.com/kanisterio/kanister@v0.0.0-20200629181100-0dabf5150ea3/pkg/kanister.go
 var kanisterPathRe = regexp.MustCompile(`/kanister(@v[^/]+)?/`)
 
 // GetFrame returns information about a caller function at the specified depth
