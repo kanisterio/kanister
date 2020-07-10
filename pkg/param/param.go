@@ -16,6 +16,7 @@ package param
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"time"
 
@@ -360,7 +361,7 @@ func fetchDeploymentConfigParams(ctx context.Context, cli kubernetes.Interface, 
 
 	// deployment configs are managed by replicationcontrollers not replicaset
 	// get the replication controller of the deploymentconfig
-	rc, err := kube.FetchReplicationController(cli, namespace, dc.UID, dc.Annotations[kube.RevisionAnnotation])
+	rc, err := kube.FetchReplicationController(cli, namespace, dc.UID, strconv.FormatInt(dc.Status.LatestVersion, 10))
 	if err != nil {
 		return nil, err
 	}

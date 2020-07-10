@@ -39,6 +39,8 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crfake "github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"
 	"github.com/kanisterio/kanister/pkg/kube"
+	osapps "github.com/openshift/api/apps/v1"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	osfake "github.com/openshift/client-go/apps/clientset/versioned/fake"
 )
 
@@ -50,6 +52,7 @@ type ParamsSuite struct {
 	dynCli    dynamic.Interface
 	namespace string
 	pvc       string
+	osCli     osversioned.Interface
 }
 
 var _ = Suite(&ParamsSuite{})
@@ -203,6 +206,73 @@ func (s *ParamsSuite) TestFetchDeploymentParams(c *C) {
 			s.pvc: "/mnt/data/" + name,
 		},
 	})
+}
+
+func (s *ParamsSuite) TestFetchDeploymentConfigParams(c *C) {
+	ok, err := kube.IsOSAppsGroupAvailable(context.Background(), s.cli.Discovery())
+	c.Assert(err, IsNil)
+	if !ok {
+		c.Skip("Skipping test since this only runs on OpenShift")
+	}
+
+	cfg, err := kube.LoadConfig()
+	c.Assert(err, IsNil)
+
+	s.osCli, err = osversioned.NewForConfig(cfg)
+	c.Assert(err, IsNil)
+
+	depConf := newDeploymentConfig()
+	c.Assert(err, IsNil)
+
+	// create a deploymentconfig
+	ctx := context.Background()
+	dc, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Create(depConf)
+	c.Assert(err, IsNil)
+
+	// wait for deploymentconfig to be ready
+	err = kube.WaitOnDeploymentConfigReady(ctx, s.osCli, s.cli, dc.Namespace, dc.Name)
+	c.Assert(err, IsNil)
+
+	// get again achieve optimistic concurrency
+	newDep, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Get(dc.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	// edit the deploymentconfig
+	newDep.Spec.Template.Spec.Containers[0].Name = "newname"
+	// update the deploymentconfig
+	updatedDC, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Update(newDep)
+	c.Assert(err, IsNil)
+
+	// once updated, it will take some time to new replicationcontroller and pods to be up and running
+	// wait for deploymentconfig to be reay again
+	err = kube.WaitOnDeploymentConfigReady(ctx, s.osCli, s.cli, dc.Namespace, updatedDC.Name)
+	c.Assert(err, IsNil)
+
+	// fetch the deploymentconfig params
+	dconf, err := fetchDeploymentConfigParams(ctx, s.cli, s.osCli, s.namespace, updatedDC.Name)
+
+	c.Assert(err, IsNil)
+	c.Assert(dconf.Namespace, Equals, s.namespace)
+	c.Assert(dconf.Pods, HasLen, 1)
+	c.Assert(dconf.Containers, DeepEquals, [][]string{{"newname"}})
+
+	// let's scale the deployment config and try things
+	dConfig, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Get(dc.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	// scale the replicas to 3
+	dConfig.Spec.Replicas = 3
+	updated, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Update(dConfig)
+	c.Assert(err, IsNil)
+	// wait for deploymentconfig to be ready
+	err = kube.WaitOnDeploymentConfigReady(ctx, s.osCli, s.cli, s.namespace, updated.Name)
+	c.Assert(err, IsNil)
+
+	// fetch the deploymentconfig params
+	dconfParams, err := fetchDeploymentConfigParams(ctx, s.cli, s.osCli, s.namespace, updated.Name)
+	c.Assert(err, IsNil)
+	c.Assert(dconfParams.Namespace, Equals, s.namespace)
+	// number of pods should be chnanged to 3
+	c.Assert(dconfParams.Pods, HasLen, 3)
 }
 
 func (s *ParamsSuite) TestFetchPVCParams(c *C) {
@@ -598,7 +668,7 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 	c.Assert(tp.Phases, IsNil)
 	err = InitPhaseParams(ctx, s.cli, tp, "backup", nil)
 	c.Assert(err, IsNil)
-	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.30.0"})
+	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.31.0"})
 	c.Assert(tp.Phases, HasLen, 1)
 	c.Assert(tp.Phases["backup"], NotNil)
 	c.Assert(tp.Secrets, HasLen, 1)
@@ -652,5 +722,35 @@ func (s *ParamsSuite) TestRenderingPhaseParams(c *C) {
 		err = t.Execute(buf, tp)
 		c.Assert(err, IsNil)
 		c.Assert(buf.String(), Equals, tc.expected)
+	}
+}
+
+func newDeploymentConfig() *osapps.DeploymentConfig {
+	return &osapps.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "tmp",
+		},
+		Spec: osapps.DeploymentConfigSpec{
+			Replicas: 1,
+			Selector: map[string]string{
+				"app": "test",
+			},
+			Template: &v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "test",
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						v1.Container{
+							Image:   "alpine",
+							Name:    "container",
+							Command: []string{"tail", "-f", "/dev/null"},
+						},
+					},
+				},
+			},
+		},
 	}
 }

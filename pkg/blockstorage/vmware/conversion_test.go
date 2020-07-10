@@ -30,10 +30,10 @@ func (s *VMWareConversionSuite) TestSnapshotIDConversion(c *C) {
 			errCheck: NotNil,
 		},
 	} {
-		volID, snapID, err := splitSnapshotFullID(tc.fullID)
+		volID, snapID, err := SplitSnapshotFullID(tc.fullID)
 		c.Check(err, tc.errCheck)
 		if tc.errCheck == IsNil {
-			fullID := snapshotFullID(volID, snapID)
+			fullID := SnapshotFullID(volID, snapID)
 			c.Check(tc.fullID, Equals, fullID)
 		}
 	}
