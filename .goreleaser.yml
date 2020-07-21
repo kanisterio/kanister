@@ -39,12 +39,12 @@ dockers:
 - binaries:
   - controller
   image_templates:
-  - 'rahulchheda1997/controller:{{ .Tag }}'
+  - 'kanisterio/controller:{{ .Tag }}'
   dockerfile: 'docker/controller/Dockerfile'
 - binaries:
   - kando
   image_templates:
-  - 'rahulchheda1997/kanister-tools:{{ .Tag }}'
+  - 'kanisterio/kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/tools/Dockerfile'
   build_flag_templates:
   - "--build-arg=kan_tools_version={{ .Tag }}"
@@ -53,15 +53,15 @@ dockers:
 - binaries:
   - kando
   image_templates:
-  - 'rahulchheda1997/postgres-kanister-tools:{{ .Tag }}'
+  - 'kanisterio/postgres-kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
 - binaries:
   - kando
   image_templates:
-  - 'rahulchheda1997/postgres-tools-9.6:{{ .Tag }}'
+  - 'kanisterio/postgres-tools-9.6:{{ .Tag }}'
   dockerfile: 'docker/postgres-tools-9.6/Dockerfile'
 - image_templates:
-  - 'rahulchheda1997/postgresql:{{ .Tag }}'
+  - 'kanisterio/postgresql:{{ .Tag }}'
   dockerfile: 'docker/postgresql/Dockerfile'
 - binaries:
   - kando
@@ -76,7 +76,7 @@ dockers:
   - 'kanisterio/mysql-sidecar:{{ .Tag }}'
   dockerfile: 'docker/kanister-mysql/image/Dockerfile'
   build_flag_templates:
-  - "--build-arg=TOOLS_IMAGE=rahulchheda1997/kanister-tools:{{ .Tag }}"
+  - "--build-arg=TOOLS_IMAGE=kanisterio/kanister-tools:{{ .Tag }}"
 - binaries:
   - kando
   image_templates:
@@ -90,22 +90,22 @@ dockers:
 - binaries:
   - kando
   image_templates:
-  - 'rahulchheda1997/mongodb:{{ .Tag }}'
+  - 'kanisterio/mongodb:{{ .Tag }}'
   dockerfile: 'docker/mongodb/Dockerfile'
 - binaries:
   - kando
   image_templates:
-  - 'rahulchheda1997/cassandra:{{ .Tag }}'
+  - 'kanisterio/cassandra:{{ .Tag }}'
   dockerfile: 'docker/cassandra/Dockerfile'
 - binaries:
   - kando
   image_templates:
-  - 'rahulchheda1997/couchbase-tools:{{ .Tag }}'
+  - 'kanisterio/couchbase-tools:{{ .Tag }}'
   dockerfile: 'docker/couchbase-tools/Dockerfile'
 - binaries:
   - kando
   image_templates:
-  - 'rahulchheda1997/foundationdb:6.2.11'
+  - 'kanisterio/foundationdb:6.2.11'
   dockerfile: 'docker/foundationdb/Dockerfile'
 
 snapshot:
