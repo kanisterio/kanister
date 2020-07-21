@@ -60,17 +60,8 @@ main() {
 
     helm repo add kanister ${HELM_RELEASE_REPO_URL}
     release_helm_charts helm/profile "${version}"
-    # Release example application charts
-    local -a example_charts=( "kanister-mongodb-replicaset" "kanister-mysql" "kanister-postgresql" "kanister-elasticsearch")
-    for chart_name in "${example_charts[@]}"
-    do
-        #profile chart is a dependency which will not be avalible due slow cloud caching
-        [ -d examples/helm/kanister/${chart_name}/charts/ ] || mkdir -p examples/helm/kanister/${chart_name}/charts/
-        cp ${HELM_HOME:-${HOME}/.helm}/cache/archive/profile-${version}.tgz examples/helm/kanister/${chart_name}/charts/
-        release_helm_charts "examples/helm/kanister/${chart_name}" "${version}"
-    done
 
-    # Release kanister charts
+    # Release kanister-operator chart
     release_helm_charts helm/kanister-operator "${version}"
 
 }

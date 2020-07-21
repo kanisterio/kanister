@@ -40,7 +40,7 @@ check_or_get_dependencies() {
             echo "Missing ${dep}. Trying to install"
             if ! err=$(${lin_repo_pre_cmd} ${dep} 2>&1)
             then
-                echo "Insatlletion failed with $err"
+                echo "Installation failed with $err"
                 exit 1
             fi
         fi
