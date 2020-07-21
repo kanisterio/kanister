@@ -61,7 +61,7 @@ func NewMongoDB(name string) App {
 			Version:  "7.4.6",
 			Values: map[string]string{
 				"replicaSet.enabled": "true",
-				"image.repository":   "kanisterio/mongodb",
+				"image.repository":   "rahulchheda1997/mongodb",
 				"image.tag":          "0.31.0",
 			},
 		},
