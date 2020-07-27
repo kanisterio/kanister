@@ -96,7 +96,7 @@ func integrationCleanup(t *test.T) {
 		kontroller.cancel()
 	}
 	if kontroller.namespace != "" {
-		kontroller.kubeCli.CoreV1().Namespaces().Delete(kontroller.namespace, nil)
+		kontroller.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), kontroller.namespace, metav1.DeleteOptions{})
 	}
 }
 
@@ -195,7 +195,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Create blueprint
 	bp := s.bp.Blueprint()
 	c.Assert(bp, NotNil)
-	_, err = s.crCli.Blueprints(kontroller.namespace).Create(bp)
+	_, err = s.crCli.Blueprints(kontroller.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	var configMaps, secrets map[string]crv1alpha1.ObjectReference
@@ -265,7 +265,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	}
 
 	// Restore backup
-	pas, err := s.crCli.ActionSets(kontroller.namespace).Get(backup, metav1.GetOptions{})
+	pas, err := s.crCli.ActionSets(kontroller.namespace).Get(ctx, backup, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	s.createActionset(ctx, c, pas, "restore", restoreOptions)
 
@@ -308,7 +308,7 @@ func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectRef
 }
 
 func (s *IntegrationSuite) createProfile(c *C) string {
-	secret, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(s.profile.secret)
+	secret, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(context.TODO(), s.profile.secret, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// set secret ref in profile
@@ -316,7 +316,7 @@ func (s *IntegrationSuite) createProfile(c *C) string {
 		Name:      secret.GetName(),
 		Namespace: secret.GetNamespace(),
 	}
-	profile, err := s.crCli.Profiles(kontroller.namespace).Create(s.profile.profile)
+	profile, err := s.crCli.Profiles(kontroller.namespace).Create(context.TODO(), s.profile.profile, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	return profile.GetName()
@@ -353,7 +353,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 	switch action {
 	case "backup":
 		as.Spec.Actions[0].Options = options
-		as, err = s.crCli.ActionSets(kontroller.namespace).Create(as)
+		as, err = s.crCli.ActionSets(kontroller.namespace).Create(ctx, as, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 	case "restore", "delete":
 		as, err = restoreActionSetSpecs(as, action)
@@ -370,7 +370,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 				Namespace:  "",
 			}
 		}
-		as, err = s.crCli.ActionSets(kontroller.namespace).Create(as)
+		as, err = s.crCli.ActionSets(kontroller.namespace).Create(ctx, as, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 	default:
 		c.Errorf("Invalid action %s while creating ActionSet", action)
@@ -378,7 +378,7 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 
 	// Wait for the ActionSet to complete.
 	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		as, err = s.crCli.ActionSets(kontroller.namespace).Get(as.GetName(), metav1.GetOptions{})
+		as, err = s.crCli.ActionSets(kontroller.namespace).Get(ctx, as.GetName(), metav1.GetOptions{})
 		switch {
 		case err != nil, as.Status == nil:
 			return false, err
@@ -409,7 +409,7 @@ func createNamespace(cli kubernetes.Interface, name string) error {
 			Name: name,
 		},
 	}
-	_, err := cli.CoreV1().Namespaces().Create(ns)
+	_, err := cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}

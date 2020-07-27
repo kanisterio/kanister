@@ -83,7 +83,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		if err != nil {
 			return nil, errors.Wrapf(err, "Could not get storage provider %v", pvcInfo.Type)
 		}
-		_, err = cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
+		_, err = cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if err == nil {
 			if err = kubevolume.DeletePVC(cli, namespace, pvcName); err != nil {
 				return nil, err

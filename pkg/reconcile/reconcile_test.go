@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -60,7 +60,7 @@ func (s *ReconcileSuite) SetUpSuite(c *C) {
 			GenerateName: "reconciletest-",
 		},
 	}
-	cns, err := cli.CoreV1().Namespaces().Create(ns)
+	cns, err := cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 
@@ -95,14 +95,14 @@ func (s *ReconcileSuite) SetUpSuite(c *C) {
 			State: crv1alpha1.StatePending,
 		},
 	}
-	as, err = s.crCli.ActionSets(s.namespace).Create(as)
+	as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.as = as
 }
 
 func (s *ReconcileSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
@@ -115,7 +115,7 @@ func (s *ReconcileSuite) TestSetFailed(c *C) {
 	})
 	c.Assert(err, IsNil)
 
-	as, err := s.crCli.ActionSets(s.namespace).Get(s.as.GetName(), metav1.GetOptions{})
+	as, err := s.crCli.ActionSets(s.namespace).Get(ctx, s.as.GetName(), metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(as.Status.State, Equals, crv1alpha1.StateFailed)
 }

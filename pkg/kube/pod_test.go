@@ -57,7 +57,7 @@ func (s *PodSuite) SetUpSuite(c *C) {
 			GenerateName: "podtest-",
 		},
 	}
-	ns, err = s.cli.CoreV1().Namespaces().Create(ns)
+	ns, err = s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
 
@@ -73,7 +73,7 @@ func (s *PodSuite) SetUpSuite(c *C) {
 
 func (s *PodSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		err := s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
 }
@@ -175,7 +175,7 @@ func (s *PodSuite) createServiceAccount(name, ns string) error {
 			Namespace: ns,
 		},
 	}
-	if _, err := s.cli.CoreV1().ServiceAccounts(ns).Create(&sa); err != nil {
+	if _, err := s.cli.CoreV1().ServiceAccounts(ns).Create(context.TODO(), &sa, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 	return nil
@@ -196,7 +196,7 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 			},
 		},
 	}
-	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	vols := map[string]string{pvc.Name: "/mnt/data1"}
 	ctx := context.Background()

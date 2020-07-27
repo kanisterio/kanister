@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var profilesResource = schema.GroupVersionResource{Group: "cr.kanister.io", Vers
 var profilesKind = schema.GroupVersionKind{Group: "cr.kanister.io", Version: "v1alpha1", Kind: "Profile"}
 
 // Get takes name of the profile, and returns the corresponding profile object, and an error if there is any.
-func (c *FakeProfiles) Get(name string, options v1.GetOptions) (result *v1alpha1.Profile, err error) {
+func (c *FakeProfiles) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Profile, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(profilesResource, c.ns, name), &v1alpha1.Profile{})
 
@@ -50,7 +52,7 @@ func (c *FakeProfiles) Get(name string, options v1.GetOptions) (result *v1alpha1
 }
 
 // List takes label and field selectors, and returns the list of Profiles that match those selectors.
-func (c *FakeProfiles) List(opts v1.ListOptions) (result *v1alpha1.ProfileList, err error) {
+func (c *FakeProfiles) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ProfileList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(profilesResource, profilesKind, c.ns, opts), &v1alpha1.ProfileList{})
 
@@ -72,14 +74,14 @@ func (c *FakeProfiles) List(opts v1.ListOptions) (result *v1alpha1.ProfileList, 
 }
 
 // Watch returns a watch.Interface that watches the requested profiles.
-func (c *FakeProfiles) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeProfiles) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(profilesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a profile and creates it.  Returns the server's representation of the profile, and an error, if there is any.
-func (c *FakeProfiles) Create(profile *v1alpha1.Profile) (result *v1alpha1.Profile, err error) {
+func (c *FakeProfiles) Create(ctx context.Context, profile *v1alpha1.Profile, opts v1.CreateOptions) (result *v1alpha1.Profile, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(profilesResource, c.ns, profile), &v1alpha1.Profile{})
 
@@ -90,7 +92,7 @@ func (c *FakeProfiles) Create(profile *v1alpha1.Profile) (result *v1alpha1.Profi
 }
 
 // Update takes the representation of a profile and updates it. Returns the server's representation of the profile, and an error, if there is any.
-func (c *FakeProfiles) Update(profile *v1alpha1.Profile) (result *v1alpha1.Profile, err error) {
+func (c *FakeProfiles) Update(ctx context.Context, profile *v1alpha1.Profile, opts v1.UpdateOptions) (result *v1alpha1.Profile, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(profilesResource, c.ns, profile), &v1alpha1.Profile{})
 
@@ -101,7 +103,7 @@ func (c *FakeProfiles) Update(profile *v1alpha1.Profile) (result *v1alpha1.Profi
 }
 
 // Delete takes name of the profile and deletes it. Returns an error if one occurs.
-func (c *FakeProfiles) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeProfiles) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(profilesResource, c.ns, name), &v1alpha1.Profile{})
 
@@ -109,15 +111,15 @@ func (c *FakeProfiles) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeProfiles) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(profilesResource, c.ns, listOptions)
+func (c *FakeProfiles) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(profilesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.ProfileList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched profile.
-func (c *FakeProfiles) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Profile, err error) {
+func (c *FakeProfiles) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Profile, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(profilesResource, c.ns, name, pt, data, subresources...), &v1alpha1.Profile{})
 

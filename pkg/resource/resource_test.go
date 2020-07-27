@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -47,14 +47,14 @@ func (s *ResourceSuite) SetUpSuite(c *C) {
 			GenerateName: "kanistercontrollertest-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 }
 
 func (s *ResourceSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
@@ -76,28 +76,28 @@ func (s *ResourceSuite) TestActionSetClient(c *C) {
 			Name: name,
 		},
 	}
-	as1, err := cli.ActionSets(s.namespace).Create(as)
+	as1, err := cli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(as, NotNil)
 
-	as2, err := cli.ActionSets(s.namespace).Get(name, emptyGetOptions)
+	as2, err := cli.ActionSets(s.namespace).Get(ctx, name, emptyGetOptions)
 	c.Assert(err, IsNil)
 	c.Assert(as1, DeepEquals, as2)
 
 	as2.Spec = &crv1alpha1.ActionSetSpec{}
-	as3, err := cli.ActionSets(s.namespace).Update(as2)
+	as3, err := cli.ActionSets(s.namespace).Update(context.TODO(), as2, metav1.UpdateOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(as1.Spec, IsNil)
 	c.Assert(as3.Spec, NotNil)
 
-	as4, err := cli.ActionSets(s.namespace).Get(name, emptyGetOptions)
+	as4, err := cli.ActionSets(s.namespace).Get(context.TODO(), name, emptyGetOptions)
 	c.Assert(err, IsNil)
 	c.Assert(as4, DeepEquals, as3)
 
-	err = cli.ActionSets(s.namespace).Delete(name, nil)
+	err = cli.ActionSets(s.namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 
-	_, err = cli.ActionSets(s.namespace).Get(name, emptyGetOptions)
+	_, err = cli.ActionSets(s.namespace).Get(context.TODO(), name, emptyGetOptions)
 	c.Assert(err, NotNil)
 }
 
@@ -117,27 +117,27 @@ func (s *ResourceSuite) TestBlueprintClient(c *C) {
 			Name: name,
 		},
 	}
-	bp1, err := cli.Blueprints(s.namespace).Create(bp)
+	bp1, err := cli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(bp, NotNil)
 
-	bp2, err := cli.Blueprints(s.namespace).Get(name, emptyGetOptions)
+	bp2, err := cli.Blueprints(s.namespace).Get(ctx, name, emptyGetOptions)
 	c.Assert(err, IsNil)
 	c.Assert(bp1, DeepEquals, bp2)
 
 	bp2.Actions = map[string]*crv1alpha1.BlueprintAction{}
-	bp3, err := cli.Blueprints(s.namespace).Update(bp2)
+	bp3, err := cli.Blueprints(s.namespace).Update(context.TODO(), bp2, metav1.UpdateOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(bp1.Actions, IsNil)
 	c.Assert(bp3.Actions, NotNil)
 
-	bp4, err := cli.Blueprints(s.namespace).Get(name, emptyGetOptions)
+	bp4, err := cli.Blueprints(s.namespace).Get(context.TODO(), name, emptyGetOptions)
 	c.Assert(err, IsNil)
 	c.Assert(bp4, DeepEquals, bp3)
 
-	err = cli.Blueprints(s.namespace).Delete(name, nil)
+	err = cli.Blueprints(s.namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 
-	_, err = cli.Blueprints(s.namespace).Get(name, emptyGetOptions)
+	_, err = cli.Blueprints(s.namespace).Get(context.TODO(), name, emptyGetOptions)
 	c.Assert(err, NotNil)
 }

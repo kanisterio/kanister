@@ -21,7 +21,7 @@ import (
 
 	ibmprov "github.com/IBM/ibmcloud-storage-volume-lib/lib/provider"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -34,7 +34,7 @@ func AuthorizeSoftLayerFileHosts(ctx context.Context, vol *ibmprov.Volume, slCli
 		return errors.Wrap(err, "Failed to created k8s client.")
 	}
 
-	nodes, err := k8scli.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodes, err := k8scli.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "Failed to list nodes")
 	}

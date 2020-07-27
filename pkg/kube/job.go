@@ -111,7 +111,7 @@ func (job *Job) Create() error {
 	batchClient := job.clientset.BatchV1()
 	jobsClient := batchClient.Jobs(job.namespace)
 
-	newJob, err := jobsClient.Create(k8sJob)
+	newJob, err := jobsClient.Create(context.TODO(), k8sJob, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create job %s", job.name)
 	}
@@ -144,14 +144,14 @@ func createVolumeSpecs(vols map[string]string) (volumeMounts []v1.VolumeMount, p
 func (job *Job) WaitForCompletion(ctx context.Context) error {
 	batchClient := job.clientset.BatchV1()
 	jobsClient := batchClient.Jobs(job.namespace)
-	watch, err := jobsClient.Watch(metav1.ListOptions{LabelSelector: "job-name=" + job.name})
+	watch, err := jobsClient.Watch(ctx, metav1.ListOptions{LabelSelector: "job-name=" + job.name})
 	if err != nil {
 		return errors.Wrap(err, "Failed to create watch object")
 	}
 
 	// Before getting into the loop of watching events, confirm that the job is actually present
 	// in Kubernetes.
-	k8sjob, err := jobsClient.Get(job.name, metav1.GetOptions{})
+	k8sjob, err := jobsClient.Get(ctx, job.name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get job %s", job.name)
 	}
@@ -191,7 +191,7 @@ func (job *Job) Delete() error {
 	batchClient := job.clientset.BatchV1()
 	jobsClient := batchClient.Jobs(job.namespace)
 	deletePropagation := metav1.DeletePropagationForeground
-	err := jobsClient.Delete(job.name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+	err := jobsClient.Delete(context.TODO(), job.name, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete job %s", job.name)
 	}

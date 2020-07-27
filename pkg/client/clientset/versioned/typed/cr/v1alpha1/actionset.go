@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -37,14 +38,14 @@ type ActionSetsGetter interface {
 
 // ActionSetInterface has methods to work with ActionSet resources.
 type ActionSetInterface interface {
-	Create(*v1alpha1.ActionSet) (*v1alpha1.ActionSet, error)
-	Update(*v1alpha1.ActionSet) (*v1alpha1.ActionSet, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.ActionSet, error)
-	List(opts v1.ListOptions) (*v1alpha1.ActionSetList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ActionSet, err error)
+	Create(ctx context.Context, actionSet *v1alpha1.ActionSet, opts v1.CreateOptions) (*v1alpha1.ActionSet, error)
+	Update(ctx context.Context, actionSet *v1alpha1.ActionSet, opts v1.UpdateOptions) (*v1alpha1.ActionSet, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.ActionSet, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.ActionSetList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ActionSet, err error)
 	ActionSetExpansion
 }
 
@@ -63,20 +64,20 @@ func newActionSets(c *CrV1alpha1Client, namespace string) *actionSets {
 }
 
 // Get takes name of the actionSet, and returns the corresponding actionSet object, and an error if there is any.
-func (c *actionSets) Get(name string, options v1.GetOptions) (result *v1alpha1.ActionSet, err error) {
+func (c *actionSets) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ActionSet, err error) {
 	result = &v1alpha1.ActionSet{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("actionsets").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of ActionSets that match those selectors.
-func (c *actionSets) List(opts v1.ListOptions) (result *v1alpha1.ActionSetList, err error) {
+func (c *actionSets) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ActionSetList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -87,13 +88,13 @@ func (c *actionSets) List(opts v1.ListOptions) (result *v1alpha1.ActionSetList, 
 		Resource("actionsets").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested actionSets.
-func (c *actionSets) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *actionSets) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -104,71 +105,74 @@ func (c *actionSets) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("actionsets").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a actionSet and creates it.  Returns the server's representation of the actionSet, and an error, if there is any.
-func (c *actionSets) Create(actionSet *v1alpha1.ActionSet) (result *v1alpha1.ActionSet, err error) {
+func (c *actionSets) Create(ctx context.Context, actionSet *v1alpha1.ActionSet, opts v1.CreateOptions) (result *v1alpha1.ActionSet, err error) {
 	result = &v1alpha1.ActionSet{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("actionsets").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(actionSet).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a actionSet and updates it. Returns the server's representation of the actionSet, and an error, if there is any.
-func (c *actionSets) Update(actionSet *v1alpha1.ActionSet) (result *v1alpha1.ActionSet, err error) {
+func (c *actionSets) Update(ctx context.Context, actionSet *v1alpha1.ActionSet, opts v1.UpdateOptions) (result *v1alpha1.ActionSet, err error) {
 	result = &v1alpha1.ActionSet{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("actionsets").
 		Name(actionSet.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(actionSet).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the actionSet and deletes it. Returns an error if one occurs.
-func (c *actionSets) Delete(name string, options *v1.DeleteOptions) error {
+func (c *actionSets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("actionsets").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *actionSets) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *actionSets) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("actionsets").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched actionSet.
-func (c *actionSets) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ActionSet, err error) {
+func (c *actionSets) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ActionSet, err error) {
 	result = &v1alpha1.ActionSet{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("actionsets").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

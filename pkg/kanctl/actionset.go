@@ -124,7 +124,7 @@ func perform(ctx context.Context, crCli versioned.Interface, params *PerformPara
 
 	switch {
 	case params.ParentName != "":
-		pas, err = crCli.CrV1alpha1().ActionSets(params.Namespace).Get(params.ParentName, metav1.GetOptions{})
+		pas, err = crCli.CrV1alpha1().ActionSets(params.Namespace).Get(ctx, params.ParentName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -233,7 +233,7 @@ func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1a
 }
 
 func createActionSet(ctx context.Context, crCli versioned.Interface, namespace string, as *crv1alpha1.ActionSet) error {
-	as, err := crCli.CrV1alpha1().ActionSets(namespace).Create(as)
+	as, err := crCli.CrV1alpha1().ActionSets(namespace).Create(ctx, as, metav1.CreateOptions{})
 	if err == nil {
 		fmt.Printf("actionset %s created\n", as.Name)
 	}
@@ -457,7 +457,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 	case "all":
 		fallthrough
 	case param.DeploymentKind:
-		dpts, err := cli.AppsV1().Deployments(sns).List(metav1.ListOptions{LabelSelector: selector})
+		dpts, err := cli.AppsV1().Deployments(sns).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return nil, errors.Errorf("failed to get deployments using selector '%s' in namespace '%s'", selector, sns)
 		}
@@ -470,7 +470,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 		fallthrough
 	case param.DeploymentConfigKind:
 		// use open shift SDK to get the deployment config resource
-		dcs, err := osCli.AppsV1().DeploymentConfigs(sns).List(metav1.ListOptions{LabelSelector: selector})
+		dcs, err := osCli.AppsV1().DeploymentConfigs(sns).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get deploymentconfig using select '%s' in namespaces '%s'", selector, sns)
 		}
@@ -482,7 +482,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 		}
 		fallthrough
 	case param.StatefulSetKind:
-		ss, err := cli.AppsV1().StatefulSets(sns).List(metav1.ListOptions{LabelSelector: selector})
+		ss, err := cli.AppsV1().StatefulSets(sns).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return nil, errors.Errorf("failed to get statefulsets using selector '%s' in namespace '%s'", selector, sns)
 		}
@@ -494,7 +494,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 		}
 		fallthrough
 	case param.PVCKind:
-		pvcs, err := cli.CoreV1().PersistentVolumeClaims(sns).List(metav1.ListOptions{LabelSelector: selector})
+		pvcs, err := cli.CoreV1().PersistentVolumeClaims(sns).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return nil, errors.Errorf("failed to get pvcs using selector '%s' in namespace '%s'", selector, sns)
 		}
@@ -502,7 +502,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 			appendObj(param.PVCKind, pvc.Namespace, pvc.Name)
 		}
 	case param.NamespaceKind:
-		namespaces, err := cli.CoreV1().Namespaces().List(metav1.ListOptions{LabelSelector: selector})
+		namespaces, err := cli.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return nil, errors.Errorf("failed to get namespaces using selector '%s' '", selector)
 		}
@@ -597,7 +597,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		if p.Blueprint != "" {
-			_, err := crCli.CrV1alpha1().Blueprints(p.Namespace).Get(p.Blueprint, metav1.GetOptions{})
+			_, err := crCli.CrV1alpha1().Blueprints(p.Namespace).Get(ctx, p.Blueprint, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "blueprint", p.Blueprint, p.Namespace)
 			}
@@ -608,7 +608,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		if p.Profile != nil {
-			_, err := crCli.CrV1alpha1().Profiles(p.Profile.Namespace).Get(p.Profile.Name, metav1.GetOptions{})
+			_, err := crCli.CrV1alpha1().Profiles(p.Profile.Namespace).Get(ctx, p.Profile.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "profile", p.Profile.Name, p.Profile.Namespace)
 			}
@@ -622,16 +622,16 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 		for _, obj := range p.Objects {
 			switch obj.Kind {
 			case param.DeploymentKind:
-				_, err = cli.AppsV1().Deployments(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+				_, err = cli.AppsV1().Deployments(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.StatefulSetKind:
-				_, err = cli.AppsV1().StatefulSets(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+				_, err = cli.AppsV1().StatefulSets(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.DeploymentConfigKind:
 				// use open shift client to get the deployment config resource
-				_, err = osCli.AppsV1().DeploymentConfigs(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+				_, err = osCli.AppsV1().DeploymentConfigs(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.PVCKind:
-				_, err = cli.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+				_, err = cli.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.NamespaceKind:
-				_, err = cli.CoreV1().Namespaces().Get(obj.Name, metav1.GetOptions{})
+				_, err = cli.CoreV1().Namespaces().Get(ctx, obj.Name, metav1.GetOptions{})
 			default:
 				gvr := schema.GroupVersionResource{
 					Group:    obj.Group,
@@ -650,7 +650,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		for _, cm := range p.ConfigMaps {
-			_, err := cli.CoreV1().ConfigMaps(cm.Namespace).Get(cm.Name, metav1.GetOptions{})
+			_, err := cli.CoreV1().ConfigMaps(cm.Namespace).Get(ctx, cm.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "config map", cm.Name, cm.Namespace)
 			}
@@ -661,7 +661,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		for _, secret := range p.Secrets {
-			_, err := cli.CoreV1().Secrets(secret.Namespace).Get(secret.Name, metav1.GetOptions{})
+			_, err := cli.CoreV1().Secrets(secret.Namespace).Get(ctx, secret.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "secret", secret.Name, secret.Namespace)
 			}

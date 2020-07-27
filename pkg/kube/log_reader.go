@@ -1,6 +1,7 @@
 package kube
 
 import (
+	"context"
 	"io"
 
 	"k8s.io/client-go/rest"
@@ -25,7 +26,7 @@ type logReader struct {
 
 func (lr *logReader) Read(p []byte) (n int, err error) {
 	if lr.rc == nil {
-		lr.rc, lr.err = lr.rw.Stream()
+		lr.rc, lr.err = lr.rw.Stream(context.TODO())
 	}
 	if lr.err != nil {
 		return 0, lr.err

@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var actionsetsResource = schema.GroupVersionResource{Group: "cr.kanister.io", Ve
 var actionsetsKind = schema.GroupVersionKind{Group: "cr.kanister.io", Version: "v1alpha1", Kind: "ActionSet"}
 
 // Get takes name of the actionSet, and returns the corresponding actionSet object, and an error if there is any.
-func (c *FakeActionSets) Get(name string, options v1.GetOptions) (result *v1alpha1.ActionSet, err error) {
+func (c *FakeActionSets) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ActionSet, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(actionsetsResource, c.ns, name), &v1alpha1.ActionSet{})
 
@@ -50,7 +52,7 @@ func (c *FakeActionSets) Get(name string, options v1.GetOptions) (result *v1alph
 }
 
 // List takes label and field selectors, and returns the list of ActionSets that match those selectors.
-func (c *FakeActionSets) List(opts v1.ListOptions) (result *v1alpha1.ActionSetList, err error) {
+func (c *FakeActionSets) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ActionSetList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(actionsetsResource, actionsetsKind, c.ns, opts), &v1alpha1.ActionSetList{})
 
@@ -72,14 +74,14 @@ func (c *FakeActionSets) List(opts v1.ListOptions) (result *v1alpha1.ActionSetLi
 }
 
 // Watch returns a watch.Interface that watches the requested actionSets.
-func (c *FakeActionSets) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeActionSets) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(actionsetsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a actionSet and creates it.  Returns the server's representation of the actionSet, and an error, if there is any.
-func (c *FakeActionSets) Create(actionSet *v1alpha1.ActionSet) (result *v1alpha1.ActionSet, err error) {
+func (c *FakeActionSets) Create(ctx context.Context, actionSet *v1alpha1.ActionSet, opts v1.CreateOptions) (result *v1alpha1.ActionSet, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(actionsetsResource, c.ns, actionSet), &v1alpha1.ActionSet{})
 
@@ -90,7 +92,7 @@ func (c *FakeActionSets) Create(actionSet *v1alpha1.ActionSet) (result *v1alpha1
 }
 
 // Update takes the representation of a actionSet and updates it. Returns the server's representation of the actionSet, and an error, if there is any.
-func (c *FakeActionSets) Update(actionSet *v1alpha1.ActionSet) (result *v1alpha1.ActionSet, err error) {
+func (c *FakeActionSets) Update(ctx context.Context, actionSet *v1alpha1.ActionSet, opts v1.UpdateOptions) (result *v1alpha1.ActionSet, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(actionsetsResource, c.ns, actionSet), &v1alpha1.ActionSet{})
 
@@ -101,7 +103,7 @@ func (c *FakeActionSets) Update(actionSet *v1alpha1.ActionSet) (result *v1alpha1
 }
 
 // Delete takes name of the actionSet and deletes it. Returns an error if one occurs.
-func (c *FakeActionSets) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeActionSets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(actionsetsResource, c.ns, name), &v1alpha1.ActionSet{})
 
@@ -109,15 +111,15 @@ func (c *FakeActionSets) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeActionSets) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(actionsetsResource, c.ns, listOptions)
+func (c *FakeActionSets) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(actionsetsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.ActionSetList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched actionSet.
-func (c *FakeActionSets) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.ActionSet, err error) {
+func (c *FakeActionSets) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ActionSet, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(actionsetsResource, c.ns, name, pt, data, subresources...), &v1alpha1.ActionSet{})
 

@@ -18,7 +18,7 @@ import (
 	"context"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -129,9 +129,9 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			},
 		},
 	)
-	_, err := cli.CoreV1().PersistentVolumeClaims(ns).Get("pvc-test-1", metav1.GetOptions{})
+	_, err := cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "pvc-test-1", metav1.GetOptions{})
 	c.Assert(err, IsNil)
-	_, err = cli.CoreV1().PersistentVolumes().Get("pv-test-1", metav1.GetOptions{})
+	_, err = cli.CoreV1().PersistentVolumes().Get(ctx, "pv-test-1", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	for _, tc := range []struct {
