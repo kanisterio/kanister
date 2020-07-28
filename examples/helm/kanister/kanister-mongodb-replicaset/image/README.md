@@ -1,1 +1,0 @@
-# mongodb-sidecar-dockerfile
