@@ -64,7 +64,7 @@ actions:
       name: deleteBackup
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: kanisterio/kanister-tools:0.31.0
+        image: kanisterio/kanister-tools:0.32.0
         command:
           - bash
           - -o
