@@ -67,26 +67,26 @@ dockers:
   - kando
   image_templates:
   - 'kanisterio/es-sidecar:{{ .Tag }}'
-  dockerfile: 'examples/helm/kanister/kanister-elasticsearch/image/Dockerfile'
+  dockerfile: 'docker/kanister-elasticsearch/image/Dockerfile'
   extra_files:
-  - 'examples/helm/kanister/kanister-elasticsearch/image/esdump-setup.sh'
+  - 'docker/kanister-elasticsearch/image/esdump-setup.sh'
 - binaries:
   - kando
   image_templates:
   - 'kanisterio/mysql-sidecar:{{ .Tag }}'
-  dockerfile: 'examples/helm/kanister/kanister-mysql/image/Dockerfile'
+  dockerfile: 'docker/kanister-mysql/image/Dockerfile'
   build_flag_templates:
   - "--build-arg=TOOLS_IMAGE=kanisterio/kanister-tools:{{ .Tag }}"
 - binaries:
   - kando
   image_templates:
   - 'kanisterio/mongo-sidecar:{{ .Tag }}'
-  dockerfile: 'examples/helm/kanister/kanister-mongodb-replicaset/image/Dockerfile'
+  dockerfile: 'docker/kanister-mongodb-replicaset/image/Dockerfile'
   extra_files:
-  - 'examples/helm/kanister/kanister-mongodb-replicaset/image/install.sh'
-  - 'examples/helm/kanister/kanister-mongodb-replicaset/image/90forceyes'
-  - 'examples/helm/kanister/kanister-mongodb-replicaset/image/config'
-  - 'examples/helm/kanister/kanister-mongodb-replicaset/image/gbl_env.sh'
+  - 'docker/kanister-mongodb-replicaset/image/install.sh'
+  - 'docker/kanister-mongodb-replicaset/image/90forceyes'
+  - 'docker/kanister-mongodb-replicaset/image/config'
+  - 'docker/kanister-mongodb-replicaset/image/gbl_env.sh'
 - binaries:
   - kando
   image_templates:
