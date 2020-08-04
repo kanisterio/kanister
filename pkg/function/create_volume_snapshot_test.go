@@ -73,7 +73,7 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			},
 			Spec: v1.PersistentVolumeSpec{
 				Capacity: v1.ResourceList{
-					v1.ResourceStorage: *k8sresource.NewQuantity(1, k8sresource.BinarySI),
+					v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
 				},
 				PersistentVolumeSource: v1.PersistentVolumeSource{
 					AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
@@ -97,7 +97,7 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			},
 			Spec: v1.PersistentVolumeSpec{
 				Capacity: v1.ResourceList{
-					v1.ResourceStorage: *k8sresource.NewQuantity(1, k8sresource.BinarySI),
+					v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
 				},
 				PersistentVolumeSource: v1.PersistentVolumeSource{
 					AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
@@ -124,7 +124,7 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			},
 			Spec: v1.PersistentVolumeSpec{
 				Capacity: v1.ResourceList{
-					v1.ResourceStorage: *k8sresource.NewQuantity(1, k8sresource.BinarySI),
+					v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
 				},
 			},
 		},
@@ -150,7 +150,7 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			wantType:     blockstorage.TypeEBS,
 			wantVolZone:  "us-west-2a",
 			wantPVC:      "pvc-test-1",
-			wantSize:     int64(1),
+			wantSize:     int64(1073741824),
 			wantRegion:   "us-west-2",
 			check:        IsNil,
 		},

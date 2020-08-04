@@ -297,7 +297,7 @@ func newStatefulSet(namespace string) *appsv1.StatefulSet {
 						AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 						Resources: v1.ResourceRequirements{
 							Requests: v1.ResourceList{
-								v1.ResourceStorage: *k8sresource.NewQuantity(1, k8sresource.BinarySI),
+								v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
 							},
 						},
 					},
