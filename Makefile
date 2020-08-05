@@ -35,7 +35,7 @@ VERSION := $(shell git describe --tags --always --dirty)
 PWD := $$(pwd)
 
 # Whether to build inside a containerized build environment
-DOCKER_BUILD ?= "true"
+DOCKER_BUILD ?= "false"
 
 DOCKER_CONFIG ?= "$(HOME)/.docker"
 
