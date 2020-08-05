@@ -82,7 +82,7 @@ actions:
     - func: KubeTask
       name: deleteFromObjectStore
       args:
-        namespace: "kanister"
+        namespace: "{{ .Namespace.Name }}"
         image: "kanisterio/kanister-tools:0.32.0"
         command:
         - bash

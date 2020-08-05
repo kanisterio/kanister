@@ -92,7 +92,7 @@ Once the backup actionset is complete, we can check the object storage to make t
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action delete --from "backup-vqmdw"
+$ kanctl --namespace kanister create actionset --action delete --from "backup-vqmdw" --namespacetargets kanister
 actionset "delete-backup-vqmdw-5n8nz" created
 
 # View the status of the ActionSet
