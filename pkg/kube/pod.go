@@ -23,7 +23,7 @@ import (
 
 	json "github.com/json-iterator/go"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -42,12 +42,14 @@ const (
 
 // PodOptions specifies options for `CreatePod`
 type PodOptions struct {
-	Namespace          string
+	Annotations        map[string]string
+	Command            []string
 	GenerateName       string
 	Image              string
-	Command            []string
-	Volumes            map[string]string
+	Labels             map[string]string
+	Namespace          string
 	ServiceAccountName string
+	Volumes            map[string]string
 	PodOverride        crv1alpha1.JSONMap
 }
 
@@ -105,6 +107,15 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		},
 		Spec: patchedSpecs,
 	}
+
+	// Add Annotations and Labels, if specified
+	if opts.Annotations != nil {
+		pod.ObjectMeta.Annotations = opts.Annotations
+	}
+	if opts.Labels != nil {
+		pod.ObjectMeta.Labels = opts.Labels
+	}
+
 	pod, err = cli.CoreV1().Pods(ns).Create(pod)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", ns, opts.GenerateName)
