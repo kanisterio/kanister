@@ -3,8 +3,8 @@ commands are run into a cluster that is setup using [Kind](https://kind.sigs.k8s
 
 ## Prerequisites Details
 
-* Kubernetes 1.9+ with Beta APIs enabled, and you are not on managed Kubernets
-* PV support on the underlying infrastructure.
+* Kubernetes 1.9+ with Beta APIs enabled, and you are not on managed Kubernetes
+* PV support on the underlying infrastructure
 * Kanister version 0.32.0 with `profiles.cr.kanister.io` CRD installed
 
 # Integrating with Kanister
