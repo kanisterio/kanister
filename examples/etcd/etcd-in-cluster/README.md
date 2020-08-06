@@ -17,7 +17,7 @@ that would help perform the actions on the the ETCD instance that we are running
 ```bash
 » kanctl create profile s3compliant --access-key <aws-access-key> \
         --secret-key <aws-secret-key> \
-        --bucket <bucket-name> --region ap-south-1 \
+        --bucket <bucket-name> --region <region-name> \
         --namespace kanister
 secret 's3-secret-7umv91' created
 profile 's3-profile-nnvmm' created
@@ -33,18 +33,18 @@ can be shared between Kanister-enabled application instances.
 ## Create Blueprint
 
 If you are running ETCD on production, there would be some authentication mechanism that your cluster is using. Since we are taking an example
-of the cluster that is setup through Kind ([kubeadm](https://github.com/kubernetes/kubeadm)), I am assuming TLS based authentication is being used.
+of the cluster that is setup through [kubeadm](https://github.com/kubernetes/kubeadm), I am assuming TLS based authentication is being used.
 
 To specify the location of the CA, certificate and key we will have to create a secret in the same namespace where your ETCD pod is running. This
 secret is going to have the name of the format `etcd-<etcd-pod-namespace>` with these fields
 
-- **cacert** : CA (certificate authority) cert, would usually be `/etc/kubernetes/pki/etcd/ca.crt` on Kind clusters
+- **cacert** : CA (certificate authority) cert, would usually be `/etc/kubernetes/pki/etcd/ca.crt` on Kubeadm clusters
 
-- **cert** : Certificate that is used to secure the ETCD cluster, would usually be `/etc/kubernetes/pki/etcd/server.crt` on Kind clusters
+- **cert** : Certificate that is used to secure the ETCD cluster, would usually be `/etc/kubernetes/pki/etcd/server.crt` on Kubeadm clusters
 
 - **endpoints** : ETCD server client listen URL, https://[127.0.0.1]:2379
 
-- **key** : TLS key file, would be `/etc/kubernetes/pki/etcd/server.key` in case of Kind cluster
+- **key** : TLS key file, would be `/etc/kubernetes/pki/etcd/server.key` in case of Kubeadm cluster
 
 
 ```
@@ -54,6 +54,8 @@ secret/etcd-kube-system created
 
 **Note**
 Please make sure that you have correct path of these certificate files. If any of the path is incorrect the etcd snapshot will fail.
+These paths can be found either by describing the running ETCD pod or looking at the static pod's manifest files. The static pod's manifest
+files would most probably be in `/etc/kubernetes/manifests`.
 
 Once secret is created, let's go ahead and create Blueprint in the same namespace as the Kanister controller
 
