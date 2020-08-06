@@ -194,7 +194,7 @@ func (mongo *MongoDB) Count(ctx context.Context) (int, error) {
 }
 func (mongo *MongoDB) Reset(ctx context.Context) error {
 	log.Print("Resetting the application.", field.M{"app": mongo.name})
-	// delete all the entries from the restaurants dummy collection
+	// delete all the entries from the restaurants collection
 	// we are not deleting the database because we are dealing with admin database here
 	// and deletion admin database is prohibited
 	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.drop()\"", mongo.username)}

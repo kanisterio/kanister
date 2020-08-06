@@ -92,7 +92,7 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, s.namespace, d.GetName())
 	c.Assert(err, IsNil)
 
-	// Create a dummy Profile and secret
+	// Create test Profile and secret
 	sec := testutil.NewTestProfileSecret()
 	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(sec)
 	c.Assert(err, IsNil)
@@ -179,7 +179,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, s.namespace, d.GetName())
 	c.Assert(err, IsNil)
 
-	// Create a dummy Profile and secret
+	// Create test Profile and secret
 	sec := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-secret-",

@@ -195,7 +195,7 @@ func (mdb *MysqlDB) Reset(ctx context.Context) error {
 		return errors.Wrapf(err, "Error while dropping the mysql table: %s", stderr)
 	}
 
-	// create the database and a pets dummy table
+	// create the database and a pets table
 	createTableCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
 	_, stderr, err = mdb.execCommand(ctx, createTableCMD)
 	if err != nil {

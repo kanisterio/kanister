@@ -103,7 +103,7 @@ Create Blueprint in the same namespace as the controller
 blueprint.cr.kanister.io/mysql-dep-config-blueprint created
 ```
 
-Now that we have created the Profile and Blueprint Kanister resources we will insert some dummy data into
+Now that we have created the Profile and Blueprint Kanister resources we will insert some data into
 MySQL database that we will take backup of.
 To insert the data into the MySQL database we will `exec` into the MySQL pod, please follow below commands
 to do so

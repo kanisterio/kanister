@@ -83,7 +83,7 @@ func computeDistance(a, b string) int {
 		x[i] = uint16(i)
 	}
 
-	// make a dummy bounds check to prevent the 2 bounds check down below.
+	// make a bounds check to prevent the 2 bounds check down below.
 	// The one inside the loop is particularly costly.
 	_ = x[lenS1]
 	// fill in the rest
