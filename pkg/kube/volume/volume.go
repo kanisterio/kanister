@@ -253,7 +253,7 @@ func DeletePVC(cli kubernetes.Interface, namespace, pvcName string) error {
 	})
 }
 
-var labelBlackList = map[string]struct{}{
+var labelDenyList = map[string]struct{}{
 	"chart":    {},
 	"heritage": {},
 }
@@ -261,7 +261,7 @@ var labelBlackList = map[string]struct{}{
 func labelSelector(labels map[string]string) string {
 	ls := make([]string, 0, len(labels))
 	for k, v := range labels {
-		if _, ok := labelBlackList[k]; ok {
+		if _, ok := labelDenyList[k]; ok {
 			continue
 		}
 		ls = append(ls, fmt.Sprintf("%s=%s", k, v))
