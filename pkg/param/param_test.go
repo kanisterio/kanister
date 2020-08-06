@@ -578,11 +578,6 @@ func (s *ParamsSuite) TestProfile(c *C) {
 			},
 		},
 	}
-	// asList := &crv1alpha1.ActionSetList{
-	// 	Items: []*crv1alpha1.ActionSet{
-	// 		as,
-	// 	},
-	// }
 	crCli := crfake.NewSimpleClientset()
 	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)

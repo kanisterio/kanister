@@ -85,19 +85,19 @@ func (s *ResourceSuite) TestActionSetClient(c *C) {
 	c.Assert(as1, DeepEquals, as2)
 
 	as2.Spec = &crv1alpha1.ActionSetSpec{}
-	as3, err := cli.ActionSets(s.namespace).Update(context.TODO(), as2, metav1.UpdateOptions{})
+	as3, err := cli.ActionSets(s.namespace).Update(ctx, as2, metav1.UpdateOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(as1.Spec, IsNil)
 	c.Assert(as3.Spec, NotNil)
 
-	as4, err := cli.ActionSets(s.namespace).Get(context.TODO(), name, emptyGetOptions)
+	as4, err := cli.ActionSets(s.namespace).Get(ctx, name, emptyGetOptions)
 	c.Assert(err, IsNil)
 	c.Assert(as4, DeepEquals, as3)
 
-	err = cli.ActionSets(s.namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
+	err = cli.ActionSets(s.namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 
-	_, err = cli.ActionSets(s.namespace).Get(context.TODO(), name, emptyGetOptions)
+	_, err = cli.ActionSets(s.namespace).Get(ctx, name, emptyGetOptions)
 	c.Assert(err, NotNil)
 }
 
@@ -126,18 +126,18 @@ func (s *ResourceSuite) TestBlueprintClient(c *C) {
 	c.Assert(bp1, DeepEquals, bp2)
 
 	bp2.Actions = map[string]*crv1alpha1.BlueprintAction{}
-	bp3, err := cli.Blueprints(s.namespace).Update(context.TODO(), bp2, metav1.UpdateOptions{})
+	bp3, err := cli.Blueprints(s.namespace).Update(ctx, bp2, metav1.UpdateOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(bp1.Actions, IsNil)
 	c.Assert(bp3.Actions, NotNil)
 
-	bp4, err := cli.Blueprints(s.namespace).Get(context.TODO(), name, emptyGetOptions)
+	bp4, err := cli.Blueprints(s.namespace).Get(ctx, name, emptyGetOptions)
 	c.Assert(err, IsNil)
 	c.Assert(bp4, DeepEquals, bp3)
 
-	err = cli.Blueprints(s.namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
+	err = cli.Blueprints(s.namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 
-	_, err = cli.Blueprints(s.namespace).Get(context.TODO(), name, emptyGetOptions)
+	_, err = cli.Blueprints(s.namespace).Get(ctx, name, emptyGetOptions)
 	c.Assert(err, NotNil)
 }
