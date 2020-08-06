@@ -22,7 +22,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -44,7 +44,7 @@ func (s *ExecSuite) SetUpSuite(c *C) {
 			GenerateName: "exectest-",
 		},
 	}
-	ns, err = s.cli.CoreV1().Namespaces().Create(ns)
+	ns, err = s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
 	pod := &v1.Pod{
@@ -59,18 +59,18 @@ func (s *ExecSuite) SetUpSuite(c *C) {
 			},
 		},
 	}
-	s.pod, err = s.cli.CoreV1().Pods(s.namespace).Create(pod)
+	s.pod, err = s.cli.CoreV1().Pods(s.namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	c.Assert(WaitForPodReady(ctx, s.cli, s.namespace, s.pod.Name), IsNil)
-	s.pod, err = s.cli.CoreV1().Pods(s.namespace).Get(s.pod.Name, metav1.GetOptions{})
+	s.pod, err = s.cli.CoreV1().Pods(s.namespace).Get(ctx, s.pod.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 }
 
 func (s *ExecSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		err := s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
 }

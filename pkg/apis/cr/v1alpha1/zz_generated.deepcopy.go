@@ -64,7 +64,7 @@ func (in *ActionSet) DeepCopyObject() runtime.Object {
 func (in *ActionSetList) DeepCopyInto(out *ActionSetList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]*ActionSet, len(*in))
@@ -339,7 +339,7 @@ func (in *BlueprintAction) DeepCopy() *BlueprintAction {
 func (in *BlueprintList) DeepCopyInto(out *BlueprintList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]*Blueprint, len(*in))
@@ -525,7 +525,7 @@ func (in *Profile) DeepCopyObject() runtime.Object {
 func (in *ProfileList) DeepCopyInto(out *ProfileList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]*Profile, len(*in))

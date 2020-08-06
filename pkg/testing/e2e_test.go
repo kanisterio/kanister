@@ -59,7 +59,7 @@ func (s *E2ESuite) SetUpSuite(c *C) {
 			GenerateName: "e2e-test-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.GetName()
 
@@ -75,7 +75,7 @@ func (s *E2ESuite) SetUpSuite(c *C) {
 
 func (s *E2ESuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 	if s.cancel != nil {
 		s.cancel()
@@ -87,18 +87,18 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 	defer can()
 
 	// Create a test Deployment
-	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(testutil.NewTestDeployment(1))
+	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(ctx, testutil.NewTestDeployment(1), metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, s.namespace, d.GetName())
 	c.Assert(err, IsNil)
 
 	// Create test Profile and secret
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(sec)
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	p, err = s.crCli.Profiles(s.namespace).Create(p)
+	p, err = s.crCli.Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Create a simple Blueprint
@@ -124,7 +124,7 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 			},
 		},
 	}
-	bp, err = s.crCli.Blueprints(s.namespace).Create(bp)
+	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Create an ActionSet
@@ -150,12 +150,12 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 			},
 		},
 	}
-	as, err = s.crCli.ActionSets(s.namespace).Create(as)
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Wait for the ActionSet to complete.
 	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		as, err = s.crCli.ActionSets(s.namespace).Get(as.GetName(), metav1.GetOptions{})
+		as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.GetName(), metav1.GetOptions{})
 		switch {
 		case err != nil, as.Status == nil:
 			return false, err
@@ -174,7 +174,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 	defer can()
 
 	// Create a test Deployment
-	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(testutil.NewTestDeployment(1))
+	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(ctx, testutil.NewTestDeployment(1), metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, s.namespace, d.GetName())
 	c.Assert(err, IsNil)
@@ -189,7 +189,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 			"key": "bar",
 		},
 	}
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(sec)
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	p := &crv1alpha1.Profile{
 		ObjectMeta: metav1.ObjectMeta{
@@ -210,7 +210,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 			},
 		},
 	}
-	p, err = s.crCli.Profiles(s.namespace).Create(p)
+	p, err = s.crCli.Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Create a simple Blueprint
@@ -244,7 +244,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 			},
 		},
 	}
-	bp, err = s.crCli.Blueprints(s.namespace).Create(bp)
+	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Create an ActionSet
@@ -273,12 +273,12 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 			},
 		},
 	}
-	as, err = s.crCli.ActionSets(s.namespace).Create(as)
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Wait for the ActionSet to complete.
 	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		as, err = s.crCli.ActionSets(s.namespace).Get(as.GetName(), metav1.GetOptions{})
+		as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.GetName(), metav1.GetOptions{})
 		switch {
 		case err != nil, as.Status == nil:
 			return false, err

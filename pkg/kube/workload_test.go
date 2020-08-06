@@ -6,7 +6,7 @@ import (
 	osapps "github.com/openshift/api/apps/v1"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -36,10 +36,10 @@ func (s *WorkloadSuite) TestScaleDeploymentConfig(c *C) {
 			GenerateName: "dc-scale-test-",
 		},
 	}
-	ns, err = cli.CoreV1().Namespaces().Create(ns)
+	ns, err = cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
-		err = cli.CoreV1().Namespaces().Delete(ns.GetName(), nil)
+		err = cli.CoreV1().Namespaces().Delete(context.TODO(), ns.GetName(), metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}()
 
@@ -47,7 +47,7 @@ func (s *WorkloadSuite) TestScaleDeploymentConfig(c *C) {
 	dc := newDeploymentConfig()
 	osCli, err := osversioned.NewForConfig(cfg)
 	c.Assert(err, IsNil)
-	dc, err = osCli.AppsV1().DeploymentConfigs(ns.GetName()).Create(dc)
+	dc, err = osCli.AppsV1().DeploymentConfigs(ns.GetName()).Create(context.TODO(), dc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = ScaleDeploymentConfig(ctx, cli, osCli, dc.GetNamespace(), dc.GetName(), 0)

@@ -122,13 +122,13 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 }
 
 func checkCRAccess(cli versioned.Interface, ns string) error {
-	if _, err := cli.CrV1alpha1().ActionSets(ns).List(v1.ListOptions{}); err != nil {
+	if _, err := cli.CrV1alpha1().ActionSets(ns).List(context.TODO(), v1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list ActionSets")
 	}
-	if _, err := cli.CrV1alpha1().Blueprints(ns).List(v1.ListOptions{}); err != nil {
+	if _, err := cli.CrV1alpha1().Blueprints(ns).List(context.TODO(), v1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list Blueprints")
 	}
-	if _, err := cli.CrV1alpha1().Profiles(ns).List(v1.ListOptions{}); err != nil {
+	if _, err := cli.CrV1alpha1().Profiles(ns).List(context.TODO(), v1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list Profiles")
 	}
 	return nil
@@ -161,7 +161,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		new := newObj.(*crv1alpha1.ActionSet)
 		if err := c.onUpdateActionSet(old, new); err != nil {
 			bpName := new.Spec.Actions[0].Blueprint
-			bp, _ := c.crClient.CrV1alpha1().Blueprints(new.GetNamespace()).Get(bpName, v1.GetOptions{})
+			bp, _ := c.crClient.CrV1alpha1().Blueprints(new.GetNamespace()).Get(context.TODO(), bpName, v1.GetOptions{})
 			c.logAndErrorEvent(context.TODO(), "Callback onUpdateActionSet() failed:", "Error", err, new, bp)
 		}
 	case *crv1alpha1.Blueprint:
@@ -178,7 +178,7 @@ func (c *Controller) onDelete(obj interface{}) {
 	case *crv1alpha1.ActionSet:
 		if err := c.onDeleteActionSet(v); err != nil {
 			bpName := v.Spec.Actions[0].Blueprint
-			bp, _ := c.crClient.CrV1alpha1().Blueprints(v.GetNamespace()).Get(bpName, v1.GetOptions{})
+			bp, _ := c.crClient.CrV1alpha1().Blueprints(v.GetNamespace()).Get(context.TODO(), bpName, v1.GetOptions{})
 			c.logAndErrorEvent(context.TODO(), "Callback onDeleteActionSet() failed:", "Error", err, v, bp)
 		}
 	case *crv1alpha1.Blueprint:
@@ -190,7 +190,7 @@ func (c *Controller) onDelete(obj interface{}) {
 }
 
 func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
-	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(as.GetName(), v1.GetOptions{})
+	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), v1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -198,7 +198,7 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 		return err
 	}
 	c.initActionSetStatus(as)
-	as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(as.GetName(), v1.GetOptions{})
+	as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), v1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -289,7 +289,7 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 		var actionStatus *crv1alpha1.ActionStatus
 		actionStatus, err = c.initialActionStatus(as.GetNamespace(), a)
 		if err != nil {
-			bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(a.Blueprint, v1.GetOptions{})
+			bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, v1.GetOptions{})
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", a.Name)
 			c.logAndErrorEvent(ctx, "Could not get initial action:", reason, err, as, bp)
 			break
@@ -305,7 +305,7 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 		as.Status.State = crv1alpha1.StatePending
 		as.Status.Actions = actions
 	}
-	if _, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(as); err != nil {
+	if _, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{}); err != nil {
 		c.logAndErrorEvent(ctx, "Could not update ActionSet:", "Update Failed", err, as)
 	}
 }
@@ -315,7 +315,7 @@ func (c *Controller) initialActionStatus(namespace string, a crv1alpha1.ActionSp
 		// TODO: If no blueprint is specified, we should consider a default.
 		return nil, errors.New("Blueprint not specified")
 	}
-	bp, err := c.crClient.CrV1alpha1().Blueprints(namespace).Get(a.Blueprint, v1.GetOptions{})
+	bp, err := c.crClient.CrV1alpha1().Blueprints(namespace).Get(context.TODO(), a.Blueprint, v1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to query blueprint")
 	}
@@ -347,7 +347,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 		return nil
 	}
 	as.Status.State = crv1alpha1.StateRunning
-	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(as); err != nil {
+	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.TODO(), as, v1.UpdateOptions{}); err != nil {
 		return errors.WithStack(err)
 	}
 	ctx := context.Background()
@@ -357,7 +357,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
 			bpName := as.Spec.Actions[i].Blueprint
-			bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(bpName, v1.GetOptions{})
+			bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, bpName, v1.GetOptions{})
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[i].Name)
 			c.logAndErrorEvent(ctx, fmt.Sprintf("Failed to launch Action %s:", as.GetName()), reason, err, as, bp)
 			as.Status.State = crv1alpha1.StateFailed
@@ -365,7 +365,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 				Message: err.Error(),
 			}
 			as.Status.Actions[i].Phases[0].State = crv1alpha1.StateFailed
-			_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(as)
+			_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{})
 			return errors.WithStack(err)
 		}
 	}
@@ -378,7 +378,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	action := as.Spec.Actions[aIDX]
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing action %s", action.Name), "Started Action", as)
 	bpName := as.Spec.Actions[aIDX].Blueprint
-	bp, err := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(bpName, v1.GetOptions{})
+	bp, err := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, bpName, v1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)
 	}

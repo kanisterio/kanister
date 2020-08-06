@@ -22,7 +22,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -44,7 +44,7 @@ func (p *PodWriteSuite) SetUpSuite(c *C) {
 			GenerateName: "podwritertest-",
 		},
 	}
-	ns, err = p.cli.CoreV1().Namespaces().Create(ns)
+	ns, err = p.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	p.namespace = ns.Name
 	pod := &v1.Pod{
@@ -59,18 +59,18 @@ func (p *PodWriteSuite) SetUpSuite(c *C) {
 			},
 		},
 	}
-	p.pod, err = p.cli.CoreV1().Pods(p.namespace).Create(pod)
+	p.pod, err = p.cli.CoreV1().Pods(p.namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	c.Assert(WaitForPodReady(ctx, p.cli, p.namespace, p.pod.Name), IsNil)
-	p.pod, err = p.cli.CoreV1().Pods(p.namespace).Get(p.pod.Name, metav1.GetOptions{})
+	p.pod, err = p.cli.CoreV1().Pods(p.namespace).Get(ctx, p.pod.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 }
 
 func (p *PodWriteSuite) TearDownSuite(c *C) {
 	if p.namespace != "" {
-		err := p.cli.CoreV1().Namespaces().Delete(p.namespace, nil)
+		err := p.cli.CoreV1().Namespaces().Delete(context.TODO(), p.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
 }

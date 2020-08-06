@@ -57,7 +57,7 @@ func (s *PodSuite) SetUpSuite(c *C) {
 			GenerateName: "podtest-",
 		},
 	}
-	ns, err = s.cli.CoreV1().Namespaces().Create(ns)
+	ns, err = s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
 
@@ -73,7 +73,7 @@ func (s *PodSuite) SetUpSuite(c *C) {
 
 func (s *PodSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		err := s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
 }
@@ -175,7 +175,7 @@ func (s *PodSuite) createServiceAccount(name, ns string) error {
 			Namespace: ns,
 		},
 	}
-	if _, err := s.cli.CoreV1().ServiceAccounts(ns).Create(&sa); err != nil {
+	if _, err := s.cli.CoreV1().ServiceAccounts(ns).Create(context.TODO(), &sa, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 	return nil
@@ -191,12 +191,12 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					v1.ResourceStorage: *resource.NewQuantity(1, resource.BinarySI),
+					v1.ResourceName(v1.ResourceStorage): resource.MustParse("1Gi"),
 				},
 			},
 		},
 	}
-	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	vols := map[string]string{pvc.Name: "/mnt/data1"}
 	ctx := context.Background()

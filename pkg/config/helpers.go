@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -30,7 +31,7 @@ func GetClusterName(cli kubernetes.Interface) (string, error) {
 		cli = tmpcli
 	}
 
-	ns, err := cli.CoreV1().Namespaces().Get(defaultNamespaceName, metav1.GetOptions{})
+	ns, err := cli.CoreV1().Namespaces().Get(context.TODO(), defaultNamespaceName, metav1.GetOptions{})
 	return string(ns.GetUID()), err
 }
 

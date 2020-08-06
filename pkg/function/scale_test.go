@@ -66,22 +66,22 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 			GenerateName: "kanister-scale-test-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(sec)
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), sec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(p)
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 }
 
 func (s *ScaleSuite) TearDownTest(c *C) {
 	if s.namespace != "" {
-		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
@@ -142,7 +142,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 		},
 	}
 
-	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(d)
+	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(ctx, d, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
@@ -175,7 +175,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 		c.Assert(ok, Equals, true)
 	}
 
-	pods, err := s.cli.CoreV1().Pods(s.namespace).List(metav1.ListOptions{})
+	pods, err := s.cli.CoreV1().Pods(s.namespace).List(context.TODO(), metav1.ListOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(pods.Items, HasLen, 0)
 }
@@ -190,7 +190,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 			},
 		},
 	}
-	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(ss)
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(ctx, ss, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
@@ -224,7 +224,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		c.Assert(ok, Equals, true)
 	}
 
-	pods, err := s.cli.CoreV1().Pods(s.namespace).List(metav1.ListOptions{})
+	pods, err := s.cli.CoreV1().Pods(s.namespace).List(context.TODO(), metav1.ListOptions{})
 	c.Assert(err, IsNil)
 
 	// This check can flake on underprovisioned clusters so we exit early.

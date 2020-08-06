@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -121,14 +121,14 @@ func (s *CreateVolumeFromSnapshotTestSuite) TestCreateVolumeFromSnapshot(c *C) {
 		c.Assert(len(provider.(*mockblockstorage.Provider).VolIDList) == 1, Equals, true)
 
 		if tc.newPVCs != nil {
-			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get("newpvc-1", metav1.GetOptions{})
+			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "newpvc-1", metav1.GetOptions{})
 			c.Assert(err, IsNil)
-			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get("newpvc-2", metav1.GetOptions{})
+			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "newpvc-2", metav1.GetOptions{})
 			c.Assert(err, IsNil)
 		} else {
-			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get("pvc-1", metav1.GetOptions{})
+			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "pvc-1", metav1.GetOptions{})
 			c.Assert(err, IsNil)
-			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get("pvc-2", metav1.GetOptions{})
+			_, err = cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "pvc-2", metav1.GetOptions{})
 			c.Assert(err, IsNil)
 		}
 	}

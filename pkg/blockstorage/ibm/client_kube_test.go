@@ -64,7 +64,7 @@ func (s *KubeTestIBMClient) SetUpSuite(c *C) {
 		Type: v1.SecretTypeOpaque,
 		Data: secretData,
 	}
-	s.k8sSec, err = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Create(&k8sSec)
+	s.k8sSec, err = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Create(context.TODO(), &k8sSec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 }
 
@@ -72,7 +72,7 @@ func (s KubeTestIBMClient) TearDownSuite(c *C) {
 	if _, ok := os.LookupEnv(workAroundEnv); !ok {
 		c.Skip(workAroundEnv + "TOML path is not present")
 	}
-	err := s.k8scli.CoreV1().Secrets(s.k8sSec.Namespace).Delete(s.k8sSec.Name, &metav1.DeleteOptions{})
+	err := s.k8scli.CoreV1().Secrets(s.k8sSec.Namespace).Delete(context.TODO(), s.k8sSec.Name, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }
 
@@ -110,9 +110,9 @@ func (s KubeTestIBMClient) TestIBMOldSecret(c *C) {
 		Type: v1.SecretTypeOpaque,
 		Data: secretData,
 	}
-	s.k8sSec, err = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Create(&k8sSec)
+	s.k8sSec, err = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Create(context.TODO(), &k8sSec, metav1.CreateOptions{})
 	defer func() {
-		_ = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Delete(testOldSecretName, &metav1.DeleteOptions{})
+		_ = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Delete(context.TODO(), testOldSecretName, metav1.DeleteOptions{})
 	}()
 	c.Assert(err, IsNil)
 	slAPIKey, ok := os.LookupEnv(IBMSLApiKeyEnv)
@@ -127,7 +127,7 @@ func (s KubeTestIBMClient) TestIBMOldSecret(c *C) {
 	c.Assert(ibmCli.Service, NotNil)
 	defer ibmCli.Service.Close()
 	defer func() {
-		_ = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Delete(testOldSecretName, &metav1.DeleteOptions{})
+		_ = s.k8scli.CoreV1().Secrets(IBMK8sSecretNS).Delete(context.TODO(), testOldSecretName, metav1.DeleteOptions{})
 	}()
 	c.Assert(*ibmCli, FitsTypeOf, client{})
 	_, err = ibmCli.Service.ListSnapshots()

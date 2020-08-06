@@ -16,6 +16,7 @@
 package customresource
 
 import (
+	contextpkg "context"
 	"fmt"
 	"time"
 
@@ -110,7 +111,7 @@ func createCRD(context Context, resource CustomResource) error {
 		},
 	}
 
-	_, err := context.APIExtensionClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	_, err := context.APIExtensionClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(contextpkg.TODO(), crd, metav1.CreateOptions{})
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create %s CRD. %+v", resource.Name, err)
@@ -122,7 +123,7 @@ func createCRD(context Context, resource CustomResource) error {
 func waitForCRDInit(context Context, resource CustomResource) error {
 	crdName := fmt.Sprintf("%s.%s", resource.Plural, resource.Group)
 	return wait.Poll(context.Interval, context.Timeout, func() (bool, error) {
-		crd, err := context.APIExtensionClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(crdName, metav1.GetOptions{})
+		crd, err := context.APIExtensionClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(contextpkg.TODO(), crdName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}

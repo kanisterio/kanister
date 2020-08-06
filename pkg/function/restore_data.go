@@ -112,7 +112,7 @@ func restoreData(ctx context.Context, cli kubernetes.Interface, tp param.Templat
 	vols map[string]string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
 	// Validate volumes
 	for pvc := range vols {
-		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvc, metav1.GetOptions{}); err != nil {
+		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
 		}
 	}
