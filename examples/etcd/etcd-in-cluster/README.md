@@ -15,7 +15,12 @@ that would help perform the actions on the the ETCD instance that we are running
 ## Create Profile resource
 
 ```bash
-kanctl --namespace kube-system create profile --bucket <bucket-name> --region ap-south-1 s3compliant --access-key <aws-access-key> --secret-key <aws-secret-key>
+» kanctl create profile s3compliant --access-key <aws-access-key> \
+        --secret-key <aws-secret-key> \
+        --bucket <bucket-name> --region ap-south-1 \
+        --namespace kanister
+secret 's3-secret-7umv91' created
+profile 's3-profile-nnvmm' created
 ```
 This command creates a profile which we will use later.
 
@@ -43,7 +48,7 @@ secret is going to have the name of the format `etcd-<etcd-pod-namespace>` with 
 
 
 ```
-kubectl create secret generic etcd-kube-system --from-literal=cacert=/etc/kubernetes/pki/etcd/ca.crt --from-literal=cert=/etc/kubernetes/pki/etcd/server.crt --from-literal=endpoints=https://\[127.0.0.1\]:2379 --from-literal=key=/etc/kubernetes/pki/etcd/server.key -n kube-system
+» kubectl create secret generic etcd-kube-system --from-literal=cacert=/etc/kubernetes/pki/etcd/ca.crt --from-literal=cert=/etc/kubernetes/pki/etcd/server.crt --from-literal=endpoints=https://\[127.0.0.1\]:2379 --from-literal=key=/etc/kubernetes/pki/etcd/server.key -n kube-system
 secret/etcd-kube-system created
 ```
 
@@ -53,9 +58,8 @@ Please make sure that you have correct path of these certificate files. If any o
 Once secret is created, let's go ahead and create Blueprint in the same namespace as the Kanister controller
 
 ```
-kubectl create -f etcd-incluster-blueprint.yaml -n kanister
+» kubectl create -f etcd-incluster-blueprint.yaml -n kanister
 blueprint.cr.kanister.io/etcd-blueprint created
-
 ```
 
 ## Protect the Application
@@ -68,21 +72,36 @@ Pleae make sure to change the **profile name**, the **ETCD pod name** and **blue
 
 ```
 # find the profile name
-kubectl get profile -n kube-system
+» kubectl get profile -n kanister
 NAME               AGE
-s3-profile-m2lkq   24m
+s3-profile-nnvmm   54s
 
 # fine blueprint name
-kubectl get blueprint -n kanister
+» kubectl get blueprint -n kanister
 NAME             AGE
-etcd-blueprint   2m19s
+etcd-blueprint   41s
 
 # create actionset
-kubectl create -f backup-actionset.yaml -n kanister
-actionset.cr.kanister.io/backup-vqmdw  created
+» kubectl create -f backup-actionset.yaml -n kanister
+actionset.cr.kanister.io/backup-hnp95 created
 
 # you can check the status of the actionset by describing it and making sure that it is succeeded
-k describe actionsets.cr.kanister.io -n kanister backup-vqmdw
+» kubectl describe actionsets.cr.kanister.io -n kanister backup-hnp95
+
+# You should see events like this
+...
+...
+Events:
+  Type    Reason           Age   From                 Message
+  ----    ------           ----  ----                 -------
+  Normal  Started Action   34s   Kanister Controller  Executing action backup
+  Normal  Started Phase    34s   Kanister Controller  Executing phase takeSnapshot
+  Normal  Ended Phase      34s   Kanister Controller  Completed phase takeSnapshot
+  Normal  Started Phase    34s   Kanister Controller  Executing phase uploadSnapshot
+  Normal  Ended Phase      0s    Kanister Controller  Completed phase uploadSnapshot
+  Normal  Started Phase    0s    Kanister Controller  Executing phase removeSnapshot
+  Normal  Ended Phase      0s    Kanister Controller  Completed phase removeSnapshot
+  Normal  Update Complete  0s    Kanister Controller  Updated ActionSet 'backup-hnp95' Status->complete
 ```
 
 Once the backup actionset is complete, we can check the object storage to make the backup is uploaded successfully.
@@ -92,11 +111,11 @@ Once the backup actionset is complete, we can check the object storage to make t
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kanister create actionset --action delete --from "backup-vqmdw" --namespacetargets kanister
+$ kanctl --namespace kanister create actionset --action delete --from "backup-hnp95" --namespacetargets kanister
 actionset "delete-backup-vqmdw-5n8nz" created
 
 # View the status of the ActionSet
-$ kubectl --namespace kasten-io describe actionset delete-backup-vqmdw-5n8nz
+$ kubectl --namespace kanister describe actionset delete-backup-vqmdw-5n8nz
 ```
 
 ### Troubleshooting
@@ -104,5 +123,5 @@ $ kubectl --namespace kasten-io describe actionset delete-backup-vqmdw-5n8nz
 If you run into any issues with the above commands, you can check the logs of the controller using:
 
 ```bash
-$ kubectl --namespace kasten-io logs -l app=kanister-operator
+$ kubectl --namespace kanister logs -l app=kanister-operator
 ```

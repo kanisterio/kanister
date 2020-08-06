@@ -1,5 +1,6 @@
-FROM kanisterio/kanister-tools:0.32.0
+ARG TOOLS_IMAGE
 
+FROM $TOOLS_IMAGE
 ENV kubectl_version="v1.18.0"
 
 LABEL name="kanister-kubectl" \
