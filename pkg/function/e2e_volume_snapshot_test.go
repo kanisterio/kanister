@@ -276,7 +276,7 @@ func newStatefulSet(namespace string) *appsv1.StatefulSet {
 					Containers: []v1.Container{
 						{
 							Name:  "nginx",
-							Image: "nginx:1.7.9",
+							Image: "nginx:1.18.0",
 							VolumeMounts: []v1.VolumeMount{
 								{
 									Name:      "kanister-test-pvc-snap-vol1",
