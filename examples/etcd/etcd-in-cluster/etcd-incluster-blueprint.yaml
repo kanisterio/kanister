@@ -74,7 +74,7 @@ actions:
           - sh
           - -c
           - |
-            echo "Automated restore for ETCD is not supported please follow the K10 docs (https://docs.kasten.io/latest/kanister/testing.html) to restore the backup manually. Backup path : "{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}
+            echo "Automated restore for ETCD is not supported please follow the examples docs to restore the backup manually. Backup path : "{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}
 
   delete:
     type: Namespace

@@ -1,11 +1,13 @@
 This document is going to show you how you can backup the ETCD cluster that is running as part of your Kubernetes control plane. The
-commands are run into a cluster that is setup using [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) but it should work on any other single or multi node ETCD cluster.
+commands are run into a cluster that is setup using [Kubeadm](https://github.com/kubernetes/kubeadm) but it should work on any other single or multi node ETCD cluster.
+
+The cluster this example is perfomed on is two node kubeadm cluster.
 
 ## Prerequisites Details
 
 * Kubernetes 1.9+ with Beta APIs enabled, and you are not on managed Kubernetes
 * PV support on the underlying infrastructure
-* Kanister version 0.32.0 with `profiles.cr.kanister.io` CRD installed
+* Kanister version 0.32.0 with `profiles.cr.kanister.io` CRD, [`kanctl`](https://docs.kanister.io/tooling.html#install-the-tools) Kanister tool installed
 
 # Integrating with Kanister
 
@@ -48,7 +50,7 @@ secret is going to have the name of the format `etcd-<etcd-pod-namespace>` with 
 
 
 ```
-» kubectl create secret generic etcd-kube-system --from-literal=cacert=/etc/kubernetes/pki/etcd/ca.crt --from-literal=cert=/etc/kubernetes/pki/etcd/server.crt --from-literal=endpoints=https://\[127.0.0.1\]:2379 --from-literal=key=/etc/kubernetes/pki/etcd/server.key -n kube-system
+» kubectl create secret generic etcd-kube-system --from-literal=cacert=/etc/kubernetes/pki/etcd/ca.crt --from-literal=cert=/etc/kubernetes/pki/etcd/server.crt --from-literal=endpoints=https://[127.0.0.1]:2379 --from-literal=key=/etc/kubernetes/pki/etcd/server.key -n kube-system
 secret/etcd-kube-system created
 ```
 
@@ -62,6 +64,29 @@ Once secret is created, let's go ahead and create Blueprint in the same namespac
 ```
 » kubectl create -f etcd-incluster-blueprint.yaml -n kanister
 blueprint.cr.kanister.io/etcd-blueprint created
+```
+
+## Create test namespace
+
+Now we can create a test namespace, and delete it after taking the ETCD backup so that we can make sure that the namespace is restored
+after we restore the ETCD.
+
+```
+» kubectl create namespace nginx
+namespace/nginx created
+
+» kubectl create deployment nginx -n nginx --image nginx
+deployment.apps/nginx created
+
+» kubectl get all -n nginx
+NAME                         READY   STATUS    RESTARTS   AGE
+pod/nginx-86c57db685-ztb7l   1/1     Running   0          37s
+
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/nginx   1/1     1            1           40s
+
+NAME                               DESIRED   CURRENT   READY   AGE
+replicaset.apps/nginx-86c57db685   1         1         1       40s
 ```
 
 ## Protect the Application
@@ -107,6 +132,124 @@ Events:
 ```
 
 Once the backup actionset is complete, we can check the object storage to make the backup is uploaded successfully.
+
+## Imitate Disaster
+
+Now let's assume something went wrong and we lost the test namespace that we created eariler. Please delete the namespace manually
+
+```
+» kubectl delete ns nginx
+namespace "nginx" deleted
+
+» kubectl get all -n nginx
+No resources found in nginx namespace.
+```
+
+## Restore the ETCD cluster
+
+Create restore action using below command
+```
+kanctl --namespace kanister create actionset --action restore --from backup-hnp95
+actionset restore-backup-hnp95-dcwh9 created
+```
+
+And you will be able to see below message in the kanister operator's log pod
+
+```
+Automated restore for ETCD is not supported please follow the examples docs to restore the backup manually. Backup path : etcd_backups/kube-system/etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1/2020-08-07T11:21:23Z/etcd-backup.db.gz
+```
+
+Once we have this message we can go ahead with manually restoring the ETCD. SSH into the node where ETCD is running, most usually it would be Kubernetes master node.
+
+These tools should be installed on the master node
+- Based on the object storage that you used, you should have CLI installed, in our case since we are using AWS S3 as oject storage make sure aws CLI is installed
+- ETCD command line tool `etcdctl`
+
+Download the backup using the restore path that was provided when we ran restore action and download the ETCD snapshot using below command
+
+```
+aws s3 cp  s3://<bucket-name>/etcd_backups/kube-system/etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1/2020-08-07T11:21:23Z/etcd-backup.db.gz ./
+download: s3://<bucket-name>/etcd_backups/kube-system/etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1/2020-08-07T11:21:23Z/etcd-backup.db.gz to ./etcd-backup.db.gz
+```
+Once we have the snapshot we can restore the snapshot using the below command to a new dir lets say `/var/lib/etcd-from-backup`
+
+```
+ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  --data-dir="/var/lib/etcd-from-backup" \
+  --initial-cluster="ubuntu-s-4vcpu-8gb-blr1-01-master-1=https://127.0.0.1:2380" \
+  --name="ubuntu-s-4vcpu-8gb-blr1-01-master-1" \
+  --initial-advertise-peer-urls="https://127.0.0.1:2380"
+  --initial-cluster-token="etcd-cluster-1" \
+  snapshot restore /tmp/etcd-backup.db
+2020-08-07 12:09:05.626175 I | mvcc: restore compact to 153873
+2020-08-07 12:09:05.641147 I | etcdserver/membership: added member e92d66acd89ecf29 [https://127.0.0.1:2380] to cluster 7581d6eb2d25405b
+```
+
+and after that the etcd snapshot should have been restored into the new dir that we provided i.e. `/var/lib/etcd-from-backup`. And we will just have
+to instruct the ETCD that is running to use this new dir instead of the dir that it uses by default.
+To do that open the static pod manifest for ETCD, that would be `etcd.yaml` in the dir `/etc/kubernetes/manifests` and
+- change the `data-dir` for the etcd container's command to have `/var/lib/etcd-from-backup`
+- add another argument in the command `--initial-cluster-token=etcd-cluster-1 ` as we have seen in the restore command
+- change the volume (named `etcd-data`) to have new dir `/var/lib/etcd-from-backup`
+- change volume mount (named `etcd-data`) to new dir `/var/lib/etcd-from-backup`
+
+once you save this manifest, new ETCD pod will be created with new data dir. Please wait for the ETCD pod to be up and running.
+
+Once you see the etcd pod in `kube-system` namespace is running fine you can list all the resource from the our test namespace once again
+to make sure it has been restored successfully.
+
+```
+kubectl get all -n kanister
+NAME                                              READY   STATUS    RESTARTS   AGE
+pod/kanister-kanister-operator-5bdf59b9bc-xhmkm   1/1     Running   0          82m
+
+NAME                                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/kanister-kanister-operator   1/1     1            1           82m
+
+NAME                                                    DESIRED   CURRENT   READY   AGE
+replicaset.apps/kanister-kanister-operator-5bdf59b9bc   1         1         1       82m
+```
+
+and as you can see the workload of the namespace is back to its previos state.
+If you go ahead and describe the etcd pod from kube-system namespace, you would be able to see that the new dir that we provided (i.e. `/var/lib/etcd-from-backup`) is being used
+as the etcd data dir.
+
+```
+# kubectl describe pod -n kube-system etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1
+Name:                 etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1
+Namespace:            kube-system
+....
+....
+Containers:
+  etcd:
+    Image:      k8s.gcr.io/etcd:3.4.3-0
+    Port:       <none>
+    Host Port:  <none>
+    Command:
+      etcd
+      ...
+      --data-dir=/var/lib/etcd-from-backup
+      ...
+      --initial-cluster-token=etcd-cluster-1
+    Liveness:     http-get http://127.0.0.1:2381/health delay=15s timeout=15s period=10s #success=1 #failure=8
+    Environment:  <none>
+    Mounts:
+      /etc/kubernetes/pki/etcd from etcd-certs (rw)
+      /var/lib/etcd-from-backup from etcd-data (rw)
+Volumes:
+  etcd-certs:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/kubernetes/pki/etcd
+    HostPathType:  DirectoryOrCreate
+  etcd-data:
+    Type:          HostPath (bare host directory volume)
+    Path:          /var/lib/etcd-from-backup
+    HostPathType:  DirectoryOrCreate
+...
+```
 
 ## Delete the Artifacts
 
