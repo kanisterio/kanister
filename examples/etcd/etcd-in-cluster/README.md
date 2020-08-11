@@ -202,15 +202,15 @@ Once you see the etcd pod in `kube-system` namespace is running fine you can lis
 to make sure it has been restored successfully.
 
 ```
-kubectl get all -n kanister
-NAME                                              READY   STATUS    RESTARTS   AGE
-pod/kanister-kanister-operator-5bdf59b9bc-xhmkm   1/1     Running   0          82m
+» kubectl get all -n nginx
+NAME                         READY   STATUS    RESTARTS   AGE
+pod/nginx-86c57db685-ztb7l   1/1     Running   0          9m
 
-NAME                                         READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/kanister-kanister-operator   1/1     1            1           82m
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/nginx   1/1     1            1           10m
 
-NAME                                                    DESIRED   CURRENT   READY   AGE
-replicaset.apps/kanister-kanister-operator-5bdf59b9bc   1         1         1       82m
+NAME                               DESIRED   CURRENT   READY   AGE
+replicaset.apps/nginx-86c57db685   1         1         1       10m
 ```
 
 and as you can see the workload of the namespace is back to its previos state.
