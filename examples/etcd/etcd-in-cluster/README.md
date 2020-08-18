@@ -259,6 +259,7 @@ Make sure to change the of node name for the flag `--initial-cluster` and `--nam
 We want be changing the value of `--initial-cluster-token` because `etcdctl restore` command creates a new member and we want all these new members to have same token, so
 that would belong to one cluster and accidently wouldnt join any other one.
 
+To explore more about this we can look into the [Kubernetes documentation](https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#backing-up-an-etcd-cluster).
 
 ### Restoring the ETCD snapshot on OpenShift clusters
 
