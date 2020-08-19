@@ -548,7 +548,25 @@ func isNotFoundError(err error) bool {
 }
 
 func (s *gpdStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
-	return staticRegionToZones(region)
+	zones, err := s.dynamicRegionToZones(ctx, region)
+	if err != nil || len(zones) == 0 {
+		return staticRegionToZones(region)
+	}
+	return zones, err
+}
+
+func (s *gpdStorage) dynamicRegionToZones(ctx context.Context, region string) ([]string, error) {
+	regionMap := make(map[string][]string)
+	req := s.service.Zones.List(s.project)
+	if err := req.Pages(ctx, func(page *compute.ZoneList) error {
+		for _, zone := range page.Items {
+			regionMap[zone.Region] = append(regionMap[zone.Region], zone.Name)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return regionMap[region], nil
 }
 
 func staticRegionToZones(region string) ([]string, error) {
