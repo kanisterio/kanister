@@ -571,6 +571,18 @@ func staticRegionToZones(region string) ([]string, error) {
 			"asia-northeast1-b",
 			"asia-northeast1-c",
 		}, nil
+	case "asia-northeast2":
+		return []string{
+			"asia-northeast2-a",
+			"asia-northeast2-b",
+			"asia-northeast2-c",
+		}, nil
+	case "asia-northeast3":
+		return []string{
+			"asia-northeast3-a",
+			"asia-northeast3-b",
+			"asia-northeast3-c",
+		}, nil
 	case "asia-south1":
 		return []string{
 			"asia-south1-a",
@@ -582,6 +594,12 @@ func staticRegionToZones(region string) ([]string, error) {
 			"asia-southeast1-a",
 			"asia-southeast1-b",
 			"asia-southeast1-c",
+		}, nil
+	case "asia-southeast2":
+		return []string{
+			"asia-southeast2-a",
+			"asia-southeast2-b",
+			"asia-southeast2-c",
 		}, nil
 	case "australia-southeast1":
 		return []string{
@@ -667,6 +685,18 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-west2-a",
 			"us-west2-b",
 			"us-west2-c",
+		}, nil
+	case "us-west3":
+		return []string{
+			"us-west3-a",
+			"us-west3-b",
+			"us-west3-c",
+		}, nil
+	case "us-west4":
+		return []string{
+			"us-west4-a",
+			"us-west4-b",
+			"us-west4-c",
 		}, nil
 	}
 	return nil, errors.New("cannot get availability zones for region")
