@@ -24,7 +24,7 @@ cluster.
 on you cluster.
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.32.0 with `profiles.cr.kanister.io` CRD installed.
+* Kanister version 0.33.0 with `profiles.cr.kanister.io` CRD installed.
 
 # Installation
 
