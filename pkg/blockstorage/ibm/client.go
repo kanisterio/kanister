@@ -169,7 +169,7 @@ func getDefIBMStoreSecret(ctx context.Context, args map[string]string) (*ibmcfg.
 		secretNS = sns
 	}
 
-	storeSecret, err := k8scli.CoreV1().Secrets(secretNS).Get(secretNam, metav1.GetOptions{})
+	storeSecret, err := k8scli.CoreV1().Secrets(secretNS).Get(ctx, secretNam, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to read Default IBM storage secret.")
 	}

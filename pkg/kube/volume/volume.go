@@ -82,7 +82,7 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 		// Disable dynamic provisioning by setting an empty storage
 		pvc.Spec.StorageClassName = &emptyStorageClass
 	}
-	createdPVC, err := kubeCli.CoreV1().PersistentVolumeClaims(ns).Create(&pvc)
+	createdPVC, err := kubeCli.CoreV1().PersistentVolumeClaims(ns).Create(ctx, &pvc, metav1.CreateOptions{})
 	if err != nil {
 		if name != "" && apierrors.IsAlreadyExists(err) {
 			return name, nil
@@ -163,7 +163,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 		pvc.Spec.StorageClassName = &args.StorageClassName
 	}
 
-	pvc, err := args.KubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(pvc)
+	pvc, err := args.KubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(ctx, pvc, metav1.CreateOptions{})
 	if err != nil {
 		if args.VolumeName != "" && apierrors.IsAlreadyExists(err) {
 			return args.VolumeName, nil
@@ -186,7 +186,7 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 	// Since behavior and error returned from repeated create might vary, check first
 	sel := labelSelector(matchLabels)
 	options := metav1.ListOptions{LabelSelector: sel}
-	pvl, err := kubeCli.CoreV1().PersistentVolumes().List(options)
+	pvl, err := kubeCli.CoreV1().PersistentVolumes().List(ctx, options)
 	if err == nil && len(pvl.Items) == 1 {
 		return pvl.Items[0].Name, nil
 	}
@@ -223,7 +223,7 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 		return "", errors.Errorf("Volume type %v(%T) not supported ", volType, volType)
 	}
 
-	createdPV, err := kubeCli.CoreV1().PersistentVolumes().Create(&pv)
+	createdPV, err := kubeCli.CoreV1().PersistentVolumes().Create(ctx, &pv, metav1.CreateOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to create PV for volume %v", pv)
 	}
@@ -233,7 +233,7 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 // DeletePVC deletes the given PVC immediately and waits with timeout until it is returned as deleted
 func DeletePVC(cli kubernetes.Interface, namespace, pvcName string) error {
 	var now int64
-	if err := cli.CoreV1().PersistentVolumeClaims(namespace).Delete(pvcName, &metav1.DeleteOptions{GracePeriodSeconds: &now}); err != nil {
+	if err := cli.CoreV1().PersistentVolumeClaims(namespace).Delete(context.TODO(), pvcName, metav1.DeleteOptions{GracePeriodSeconds: &now}); err != nil {
 		// If the PVC does not exist, that's an acceptable error
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -245,7 +245,7 @@ func DeletePVC(cli kubernetes.Interface, namespace, pvcName string) error {
 	ctx, c := context.WithTimeout(context.TODO(), time.Minute)
 	defer c()
 	return poll.Wait(ctx, func(context.Context) (bool, error) {
-		_, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
+		_, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
 			return true, nil
 		}
@@ -253,7 +253,7 @@ func DeletePVC(cli kubernetes.Interface, namespace, pvcName string) error {
 	})
 }
 
-var labelBlackList = map[string]struct{}{
+var labelDenyList = map[string]struct{}{
 	"chart":    {},
 	"heritage": {},
 }
@@ -261,7 +261,7 @@ var labelBlackList = map[string]struct{}{
 func labelSelector(labels map[string]string) string {
 	ls := make([]string, 0, len(labels))
 	for k, v := range labels {
-		if _, ok := labelBlackList[k]; ok {
+		if _, ok := labelDenyList[k]; ok {
 			continue
 		}
 		ls = append(ls, fmt.Sprintf("%s=%s", k, v))

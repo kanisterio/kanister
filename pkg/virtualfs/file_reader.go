@@ -30,7 +30,7 @@ type ReaderSeekerCloser interface {
 	io.Closer
 }
 
-// readSeekerWrapper adds a dummy Close method to a ReadSeeker
+// readSeekerWrapper adds a no-op Close method to a ReadSeeker
 type readSeekerWrapper struct {
 	io.ReadSeeker
 }
@@ -39,7 +39,7 @@ func (rs readSeekerWrapper) Close() error {
 	return nil
 }
 
-// readCloserWrapper adds a dummy Seek method to a ReadCloser
+// readCloserWrapper adds a no-op Seek method to a ReadCloser
 type readCloserWrapper struct {
 	io.ReadCloser
 }

@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -44,14 +44,14 @@ func (s *StatefulSetSuite) SetUpSuite(c *C) {
 			GenerateName: "statefulsettest-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 }
 
 func (s *StatefulSetSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		err := s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
 }
@@ -88,9 +88,9 @@ func (s *StatefulSetSuite) TestCreateStatefulSet(c *C) {
 	_, err := CreateStatefulSet(ctx, s.cli, s.namespace, spec)
 	c.Assert(err, IsNil)
 	defer func() {
-		err = s.cli.AppsV1().StatefulSets(s.namespace).Delete(name, nil)
+		err = s.cli.AppsV1().StatefulSets(s.namespace).Delete(ctx, name, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}()
-	_, err = s.cli.CoreV1().Pods(s.namespace).Get(name+"-0", metav1.GetOptions{})
+	_, err = s.cli.CoreV1().Pods(s.namespace).Get(ctx, name+"-0", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 }

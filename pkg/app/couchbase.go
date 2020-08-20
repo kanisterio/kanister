@@ -124,7 +124,7 @@ func (cb *CouchbaseDB) IsReady(ctx context.Context) (bool, error) {
 	}
 
 	// Read cluster creds from Secret
-	secret, err := cb.cli.CoreV1().Secrets(cb.namespace).Get(fmt.Sprintf("%s-couchbase-cluster", cb.clusterChart.Release), metav1.GetOptions{})
+	secret, err := cb.cli.CoreV1().Secrets(cb.namespace).Get(ctx, fmt.Sprintf("%s-couchbase-cluster", cb.clusterChart.Release), metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -275,7 +275,7 @@ func (cb CouchbaseDB) execCommand(ctx context.Context, command []string) (string
 // getRunningCBPod name of running couchbase cluster pod if its in ready state
 func (cb CouchbaseDB) getRunningCBPod() (string, error) {
 	podName := fmt.Sprintf("%s-couchbase-cluster-0000", cb.clusterChart.Release)
-	pod, err := cb.cli.CoreV1().Pods(cb.namespace).Get(podName, metav1.GetOptions{})
+	pod, err := cb.cli.CoreV1().Pods(cb.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

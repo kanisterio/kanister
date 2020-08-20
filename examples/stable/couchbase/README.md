@@ -72,7 +72,7 @@ $ kubectl create -f couchbase-blueprint.yaml -n kasten-io
 blueprint.cr.kanister.io/couchbase-blueprint created
 ```
 
-Once Couchbase is running, you can populate it with some data. Let's add some dummy documents to the default bucket:
+Once Couchbase is running, you can populate it with some data. Let's add some documents to the default bucket:
 
 ```bash
 # Connect to couchbase cluster pod

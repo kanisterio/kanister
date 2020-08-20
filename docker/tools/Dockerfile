@@ -9,12 +9,12 @@ LABEL name="kanister-tools" \
     description="Kanister tools for application-specific data management"
 
 COPY --from=restic/restic:0.9.5 /usr/bin/restic /usr/local/bin/restic
-# kopia alpine-42da8a1 image
-COPY --from=kanisterio/kopia@sha256:539dd35ef065b1a882913d098ab3a482b227b05cd3840df99c3ff7bdc0bbe834 /kopia/kopia /usr/local/bin/kopia
+# kopia alpine-bba1dcc image
+COPY --from=kanisterio/kopia@sha256:9ce566a18b084b8cfa1ee63cfde8a37ebda8cd29bbf72f4489530ec2200aa2e2 /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
 
 ADD kando /usr/local/bin/
-RUN microdnf update && microdnf install shadow-utils && \
+RUN microdnf update && microdnf install shadow-utils httpd-tools && \
   adduser -U kanister -u 1000 && \
   microdnf remove shadow-utils && \
   microdnf clean all

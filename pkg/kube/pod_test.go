@@ -24,7 +24,7 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,7 +41,7 @@ type PodSuite struct {
 }
 
 const (
-	dummySAName        = "dummy-sa"
+	testSAName         = "test-sa"
 	controllerSA       = "controller-sa"
 	kanisterToolsImage = "kanisterio/kanister-tools:0.32.0"
 )
@@ -57,14 +57,14 @@ func (s *PodSuite) SetUpSuite(c *C) {
 			GenerateName: "podtest-",
 		},
 	}
-	ns, err = s.cli.CoreV1().Namespaces().Create(ns)
+	ns, err = s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
 
 	os.Setenv("POD_NAMESPACE", ns.Name)
 	os.Setenv("POD_SERVICE_ACCOUNT", controllerSA)
 
-	err = s.createServiceAccount(dummySAName, s.namespace)
+	err = s.createServiceAccount(testSAName, s.namespace)
 	c.Assert(err, IsNil)
 
 	err = s.createServiceAccount(controllerSA, s.namespace)
@@ -73,7 +73,7 @@ func (s *PodSuite) SetUpSuite(c *C) {
 
 func (s *PodSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		err := s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
 }
@@ -100,7 +100,7 @@ func (s *PodSuite) TestPod(c *C) {
 			GenerateName:       "test-",
 			Image:              kanisterToolsImage,
 			Command:            []string{"sh", "-c", "tail -f /dev/null"},
-			ServiceAccountName: dummySAName,
+			ServiceAccountName: testSAName,
 		},
 		{
 			Namespace:    cns,
@@ -113,7 +113,25 @@ func (s *PodSuite) TestPod(c *C) {
 			GenerateName:       "test-",
 			Image:              kanisterToolsImage,
 			Command:            []string{"sh", "-c", "tail -f /dev/null"},
-			ServiceAccountName: dummySAName,
+			ServiceAccountName: testSAName,
+		},
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        kanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+			Annotations: map[string]string{
+				"test-annotation": "true",
+			},
+		},
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        kanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+			Labels: map[string]string{
+				"run": "pod",
+			},
 		},
 	}
 
@@ -134,6 +152,16 @@ func (s *PodSuite) TestPod(c *C) {
 			c.Assert(pod.Spec.ServiceAccountName, Equals, expectedSA)
 		}
 
+		if po.Annotations != nil {
+			c.Check(pod.ObjectMeta.Annotations, NotNil)
+			c.Check(pod.ObjectMeta.Annotations, DeepEquals, po.Annotations)
+		}
+
+		if po.Labels != nil {
+			c.Check(pod.ObjectMeta.Labels, NotNil)
+			c.Check(pod.ObjectMeta.Labels, DeepEquals, po.Labels)
+		}
+
 		c.Assert(err, IsNil)
 		c.Assert(WaitForPodReady(ctx, s.cli, po.Namespace, pod.Name), IsNil)
 		c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
@@ -147,7 +175,7 @@ func (s *PodSuite) createServiceAccount(name, ns string) error {
 			Namespace: ns,
 		},
 	}
-	if _, err := s.cli.CoreV1().ServiceAccounts(ns).Create(&sa); err != nil {
+	if _, err := s.cli.CoreV1().ServiceAccounts(ns).Create(context.TODO(), &sa, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 	return nil
@@ -163,12 +191,12 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					v1.ResourceStorage: *resource.NewQuantity(1, resource.BinarySI),
+					v1.ResourceName(v1.ResourceStorage): resource.MustParse("1Gi"),
 				},
 			},
 		},
 	}
-	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	vols := map[string]string{pvc.Name: "/mnt/data1"}
 	ctx := context.Background()

@@ -26,7 +26,7 @@ import (
 
 // CRDMatcher returns a ResourceTypeMatcher that matches all CRs in this cluster.
 func CRDMatcher(ctx context.Context, cli crdclient.Interface) (filter.ResourceTypeMatcher, error) {
-	crds, err := cli.ApiextensionsV1beta1().CustomResourceDefinitions().List(metav1.ListOptions{})
+	crds, err := cli.ApiextensionsV1beta1().CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to query CRDs in cluster")
 	}

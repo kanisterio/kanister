@@ -153,7 +153,7 @@ func (fdb *FoundationDB) getRunningFDBPod() (string, error) {
 	// Format of the name of the pods that get generated is
 	// helmReleaseName-sample-index
 	podName := fmt.Sprintf("%s-%s", fdb.fdbReleaseName, podNameSuffix)
-	pod, err := fdb.cli.CoreV1().Pods(fdb.namespace).Get(podName, metav1.GetOptions{})
+	pod, err := fdb.cli.CoreV1().Pods(fdb.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

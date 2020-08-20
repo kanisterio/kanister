@@ -15,9 +15,11 @@
 package testutil
 
 import (
+	"context"
 	"testing"
 
 	. "gopkg.in/check.v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -42,26 +44,26 @@ func (s *TestUtilSuite) TestDeployment(c *C) {
 	c.Assert(err, IsNil)
 
 	ns := NewTestNamespace()
-	ns, err = cli.CoreV1().Namespaces().Create(ns)
+	ns, err = cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
-		err := cli.CoreV1().Namespaces().Delete(ns.GetName(), nil)
+		err := cli.CoreV1().Namespaces().Delete(context.TODO(), ns.GetName(), metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}()
 
 	d := NewTestDeployment(1)
-	d, err = cli.AppsV1().Deployments(ns.GetName()).Create(d)
+	d, err = cli.AppsV1().Deployments(ns.GetName()).Create(context.TODO(), d, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
-		err = cli.AppsV1().Deployments(ns.GetName()).Delete(d.GetName(), nil)
+		err = cli.AppsV1().Deployments(ns.GetName()).Delete(context.TODO(), d.GetName(), metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}()
 
 	ss := NewTestStatefulSet(1)
-	ss, err = cli.AppsV1().StatefulSets(ns.GetName()).Create(ss)
+	ss, err = cli.AppsV1().StatefulSets(ns.GetName()).Create(context.TODO(), ss, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
-		err := cli.AppsV1().StatefulSets(ns.GetName()).Delete(ss.GetName(), nil)
+		err := cli.AppsV1().StatefulSets(ns.GetName()).Delete(context.TODO(), ss.GetName(), metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}()
 
@@ -82,9 +84,9 @@ func (s *TestUtilSuite) TestDeployment(c *C) {
 	}
 
 	cm := NewTestConfigMap()
-	cm, err = cli.CoreV1().ConfigMaps(ns.GetName()).Create(cm)
+	cm, err = cli.CoreV1().ConfigMaps(ns.GetName()).Create(context.TODO(), cm, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	err = cli.CoreV1().ConfigMaps(ns.GetName()).Delete(cm.GetName(), nil)
+	err = cli.CoreV1().ConfigMaps(ns.GetName()).Delete(context.TODO(), cm.GetName(), metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }
 
@@ -92,17 +94,17 @@ func testCRs(c *C, cli crclientv1alpha1.CrV1alpha1Interface, namespace, poKind, 
 	var err error
 	bp := NewTestBlueprint(poKind, FailFuncName)
 	bp = BlueprintWithConfigMap(bp)
-	bp, err = cli.Blueprints(namespace).Create(bp)
+	bp, err = cli.Blueprints(namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
-		err := cli.Blueprints(namespace).Delete(bp.GetName(), nil)
+		err := cli.Blueprints(namespace).Delete(context.TODO(), bp.GetName(), metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}()
 
 	as := NewTestActionSet(namespace, bp.GetName(), poKind, poName, namespace, kanister.DefaultVersion)
 	as = ActionSetWithConfigMap(as, "")
-	as, err = cli.ActionSets(namespace).Create(as)
+	as, err = cli.ActionSets(namespace).Create(context.TODO(), as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	err = cli.ActionSets(namespace).Delete(as.GetName(), nil)
+	err = cli.ActionSets(namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }

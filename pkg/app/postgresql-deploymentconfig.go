@@ -105,7 +105,7 @@ func (pgres *PostgreSQLDepConfig) createPostgreSQLSecret(ctx context.Context) er
 		},
 	}
 
-	_, err := pgres.cli.CoreV1().Secrets(pgres.namespace).Create(postgreSQLSecret)
+	_, err := pgres.cli.CoreV1().Secrets(pgres.namespace).Create(ctx, postgreSQLSecret, metav1.CreateOptions{})
 
 	return errors.Wrapf(err, "Error creating secret for mysqldepconf app.")
 }

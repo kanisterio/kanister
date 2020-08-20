@@ -65,7 +65,7 @@ func (*copyVolumeDataFunc) Name() string {
 
 func copyVolumeData(ctx context.Context, cli kubernetes.Interface, tp param.TemplateParams, namespace, pvc, targetPath, encryptionKey string, podOverride map[string]interface{}) (map[string]interface{}, error) {
 	// Validate PVC exists
-	if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvc, metav1.GetOptions{}); err != nil {
+	if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
 		return nil, errors.Wrapf(err, "Failed to retrieve PVC. Namespace %s, Name %s", namespace, pvc)
 	}
 	// Create a pod with PVCs attached

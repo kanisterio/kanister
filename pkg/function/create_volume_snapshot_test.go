@@ -18,7 +18,7 @@ import (
 	"context"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -73,7 +73,7 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			},
 			Spec: v1.PersistentVolumeSpec{
 				Capacity: v1.ResourceList{
-					v1.ResourceStorage: *k8sresource.NewQuantity(1, k8sresource.BinarySI),
+					v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
 				},
 				PersistentVolumeSource: v1.PersistentVolumeSource{
 					AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
@@ -97,7 +97,7 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			},
 			Spec: v1.PersistentVolumeSpec{
 				Capacity: v1.ResourceList{
-					v1.ResourceStorage: *k8sresource.NewQuantity(1, k8sresource.BinarySI),
+					v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
 				},
 				PersistentVolumeSource: v1.PersistentVolumeSource{
 					AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
@@ -124,14 +124,14 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			},
 			Spec: v1.PersistentVolumeSpec{
 				Capacity: v1.ResourceList{
-					v1.ResourceStorage: *k8sresource.NewQuantity(1, k8sresource.BinarySI),
+					v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
 				},
 			},
 		},
 	)
-	_, err := cli.CoreV1().PersistentVolumeClaims(ns).Get("pvc-test-1", metav1.GetOptions{})
+	_, err := cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "pvc-test-1", metav1.GetOptions{})
 	c.Assert(err, IsNil)
-	_, err = cli.CoreV1().PersistentVolumes().Get("pv-test-1", metav1.GetOptions{})
+	_, err = cli.CoreV1().PersistentVolumes().Get(ctx, "pv-test-1", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	for _, tc := range []struct {
@@ -150,7 +150,7 @@ func (s *CreateVolumeSnapshotTestSuite) TestGetPVCInfo(c *C) {
 			wantType:     blockstorage.TypeEBS,
 			wantVolZone:  "us-west-2a",
 			wantPVC:      "pvc-test-1",
-			wantSize:     int64(1),
+			wantSize:     int64(1073741824),
 			wantRegion:   "us-west-2",
 			check:        IsNil,
 		},

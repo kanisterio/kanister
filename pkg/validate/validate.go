@@ -297,7 +297,7 @@ func osSecretFromProfile(ctx context.Context, pType objectstore.ProviderType, p 
 		if kp == nil {
 			return nil, errorf("Invalid credentials kv cannot be nil")
 		}
-		s, err := cli.CoreV1().Secrets(kp.Secret.Namespace).Get(kp.Secret.Name, metav1.GetOptions{})
+		s, err := cli.CoreV1().Secrets(kp.Secret.Namespace).Get(ctx, kp.Secret.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, errorf("Could not fetch the secret specified in credential")
 		}
@@ -308,7 +308,7 @@ func osSecretFromProfile(ctx context.Context, pType objectstore.ProviderType, p 
 			return nil, errorf("Value '%s' not found in secret '%s:%s'", kp.SecretField, s.GetNamespace(), s.GetName())
 		}
 	case crv1alpha1.CredentialTypeSecret:
-		s, err := cli.CoreV1().Secrets(p.Credential.Secret.Namespace).Get(p.Credential.Secret.Name, metav1.GetOptions{})
+		s, err := cli.CoreV1().Secrets(p.Credential.Secret.Namespace).Get(ctx, p.Credential.Secret.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, errorf("Could not fetch the secret specified in credential")
 		}
