@@ -39,6 +39,7 @@ Stable Helm charts that have been updated with Kanister support.
 - **[MySQL](./examples/stable/mysql)**
 - **[PostgreSQL with Point In Time Recovery (PITR)](./examples/stable/postgresql-wale)**
 - **[PostgreSQL](./examples/stable/postgresql)**
+- **[ETCD](./examples/etcd/etcd-in-cluster)**
 
 
 ## Kanister in action for MySQL Database
