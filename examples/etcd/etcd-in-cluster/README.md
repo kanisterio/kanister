@@ -165,23 +165,10 @@ No resources found in nginx namespace.
 
 ## Restore the ETCD cluster
 
-To restore the ETCD cluster you will have to have the backup location where the backup action uploaded the snapshot so that you can download the snapshot. To figure out
-the backup location there are two ways.
+To restore the ETCD cluster you will have to have the backup location, where the backup action uploaded the snapshot so that you can download the snapshot. To figure out
+the backup location describe the actionset to check the output of the `uploadSnapshot` phase.
 
-1. Either create restore action using below command
-
-```
-kanctl --namespace kanister create actionset --action restore --from backup-hnp95
-actionset restore-backup-hnp95-dcwh9 created
-```
-
-And you will be able to see below message in the kanister operator's log pod
-
-```
-Automated restore for ETCD is not supported please follow the examples docs to restore the backup manually. Backup path : etcd_backups/kube-system/etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1/2020-08-07T11:21:23Z/etcd-backup.db.gz
-```
-
-2. Or describe the actionset to check the output of the `uploadSnapshot` phase. If you describe the backup actionset this is how the output would look like
+If you describe the backup actionset this is how the output should look like
 
 ```
 ...

@@ -60,22 +60,6 @@ actions:
           - |
             rm -rf  /tmp/etcd-backup.db
 
-  restore:
-    inputArtifactNames:
-    - cloudObject
-    phases:
-    - func: KubeExec
-      name: showRestoreHelp
-      args:
-        namespace: "{{ .Object.metadata.namespace }}"
-        pod: "{{ .Object.metadata.name }}"
-        container: etcd
-        command:
-          - sh
-          - -c
-          - |
-            echo "Automated restore for ETCD is not supported please follow the examples docs to restore the backup manually. Backup path : "{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}
-
   delete:
     type: Namespace
     inputArtifactNames:
