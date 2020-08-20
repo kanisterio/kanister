@@ -168,37 +168,12 @@ No resources found in nginx namespace.
 To restore the ETCD cluster you will have to have the backup location, where the backup action uploaded the snapshot so that you can download the snapshot. To figure out
 the backup location describe the actionset to check the output of the `uploadSnapshot` phase.
 
-If you describe the backup actionset this is how the output should look like
+Below command can be used to get the backup path from the backup actionset, using the way that is described above
 
 ```
-...
-Status:
-  Actions:
-    Artifacts:
-      Cloud Object:
-        Key Value:
-          Backup Location:  etcd_backups/kube-system/etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1/2020-08-07T11:21:23Z/etcd-backup.db.gz
-    Blueprint:              etcd-blueprint
-    Name:                   backup
-    Object:
-      API Version:  v1
-      Group:
-      Kind:
-      Name:         etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-0
-      Namespace:    kube-system
-      Resource:     pods
-    Phases:
-      Name:    takeSnapshot
-      Output:  <nil>
-      State:   complete
-      Name:    uploadSnapshot
-      Output:
-        Backup Location:  etcd_backups/kube-system/etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1/2020-08-07T11:21:23Z/etcd-backup.db.gz
-      State:              complete
-      Name:               removeSnapshot
-      Output:             <nil>
-      State:              complete
-...
+kubectl get actionsets.cr.kanister.io -n kanister backup-nfw5g -ojsonpath='{.status.actions[?(@.name=="backup")].phases[?(@.name=="uploadSnapshot")].output.backupLocation}'
+# which gives us
+etcd_backups/kube-system/etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1/2020-08-07T11:21:23Z/etcd-backup.db.gz
 ```
 
 Once we have the backup location, we can go ahead with manually restoring the ETCD. SSH into the node where ETCD is running, most usually it would be Kubernetes leader node.
@@ -207,7 +182,7 @@ These tools should be installed on the leader node
 - Based on the object storage that you used, you should have CLI installed, in our case since we are using AWS S3 as oject storage make sure aws CLI is installed
 - ETCD command line tool `etcdctl`
 
-Download the backup using the restore path that was provided when we ran restore action and download the ETCD snapshot using below command
+Download the backup using the backup location that we figured out in previous step and download the ETCD snapshot using below command
 
 ```
 aws s3 cp  s3://<bucket-name>/etcd_backups/kube-system/etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1/2020-08-07T11:21:23Z/etcd-backup.db.gz ./
