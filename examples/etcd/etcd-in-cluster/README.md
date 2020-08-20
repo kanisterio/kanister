@@ -56,7 +56,7 @@ secret/etcd-kube-system created
 ```
 
 If you are on OpenShift distribution you dont have to mention all these details you just have mention the etcd endpoint in the secret. Or in other
-words if you are on OpenShift the create secret command is going to look like this
+words if you are on OpenShift, the create secret command is going to look like this
 
 ```
 » oc create secret generic etcd-openshift-etcd --from-literal=endpoints=https://10.0.133.5:2379 --from-literal=key=/etc/kubernetes/pki/etcd/server.key -n openshift-etcd
@@ -64,6 +64,7 @@ secret/etcd-openshift-etcd created
 ```
 
 **Note**
+
 Please make sure that you have correct path of these certificate files. If any of the path is incorrect the etcd snapshot will fail.
 These paths can be found either by describing the running ETCD pod or looking at the static pod's manifest files. The static pod's manifest
 files would most probably be in `/etc/kubernetes/manifests`.
@@ -111,6 +112,7 @@ We can now take snapshot of the ETCD server that is running by creating backup a
 created above
 
 **Note**
+
 Pleae make sure to change the **profile name**, the **ETCD pod name**, **pod namespace** and **blueprint name** in the `backup-actionset.yaml` manifest file.
 
 ```
@@ -119,7 +121,7 @@ Pleae make sure to change the **profile name**, the **ETCD pod name**, **pod nam
 NAME               AGE
 s3-profile-nnvmm   54s
 
-# fine blueprint name
+# find blueprint name
 » kubectl get blueprint -n kanister
 NAME             AGE
 etcd-blueprint   41s
@@ -163,7 +165,11 @@ No resources found in nginx namespace.
 
 ## Restore the ETCD cluster
 
-Create restore action using below command
+To restore the ETCD cluster you will have to have the backup location where the backup action uploaded the snapshot so that you can download the snapshot. To figure out
+the backup location there are two ways.
+
+1. Either create restore action using below command
+
 ```
 kanctl --namespace kanister create actionset --action restore --from backup-hnp95
 actionset restore-backup-hnp95-dcwh9 created
@@ -175,7 +181,40 @@ And you will be able to see below message in the kanister operator's log pod
 Automated restore for ETCD is not supported please follow the examples docs to restore the backup manually. Backup path : etcd_backups/kube-system/etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1/2020-08-07T11:21:23Z/etcd-backup.db.gz
 ```
 
-Once we have this message we can go ahead with manually restoring the ETCD. SSH into the node where ETCD is running, most usually it would be Kubernetes leader node.
+2. Or describe the actionset to check the output of the `uploadSnapshot` phase. If you describe the backup actionset this is how the output would look like
+
+```
+...
+Status:
+  Actions:
+    Artifacts:
+      Cloud Object:
+        Key Value:
+          Backup Location:  etcd_backups/kube-system/etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1/2020-08-07T11:21:23Z/etcd-backup.db.gz
+    Blueprint:              etcd-blueprint
+    Name:                   backup
+    Object:
+      API Version:  v1
+      Group:
+      Kind:
+      Name:         etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-0
+      Namespace:    kube-system
+      Resource:     pods
+    Phases:
+      Name:    takeSnapshot
+      Output:  <nil>
+      State:   complete
+      Name:    uploadSnapshot
+      Output:
+        Backup Location:  etcd_backups/kube-system/etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1/2020-08-07T11:21:23Z/etcd-backup.db.gz
+      State:              complete
+      Name:               removeSnapshot
+      Output:             <nil>
+      State:              complete
+...
+```
+
+Once we have the backup location, we can go ahead with manually restoring the ETCD. SSH into the node where ETCD is running, most usually it would be Kubernetes leader node.
 
 These tools should be installed on the leader node
 - Based on the object storage that you used, you should have CLI installed, in our case since we are using AWS S3 as oject storage make sure aws CLI is installed
@@ -238,6 +277,7 @@ as the etcd data dir.
 If your Kubernetes cluster is setup in such a way that you have more than one memeber of ETCD up and running, you will have to follow almost the same steps that we have
 already seen with some minor changes.
 So you have one snapshot file from backup and as the [ETCD documentation](https://etcd.io/docs/v3.4.0/op-guide/recovery/) says all the members should restore from the same snapshot. What we would do is choose one leader node that we will be using to restore the backup that we have taken and stop the static pods from all other leader nodes.
+To stop the static pods from other leader nodes you will have to move the static pod manifests from the static pod path, which in case of kubeadm is `/etcd/kubernetes/manifests`.
 Once you are sure that the containers on the other follower nodes have been stopped, please follow the step that is mentioned previously (`Restore the ETCD cluster`) on all the leader nodes sequentially.
 
 If we take a look into the bellow command that we are actually going to run to restore the snapshot
