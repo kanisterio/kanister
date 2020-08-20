@@ -28,3 +28,10 @@ const versionStringFmt = `{"version": "%s", "gitCommit": "%s", "buildDate": "%s"
 func VersionString() string {
 	return fmt.Sprintf(versionStringFmt, VERSION, GIT_COMMIT, BUILD_DATE)
 }
+
+func DockerTag() (string, bool) {
+	if VERSION == "dev" {
+		return "", false
+	}
+	return VERSION, true
+}

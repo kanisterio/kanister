@@ -3,6 +3,7 @@ package function
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -25,16 +26,21 @@ import (
 
 const (
 	// FunctionOutputVersion returns version
-	FunctionOutputVersion     = "version"
-	kanisterToolsImage        = "kanisterio/kanister-tools:0.32.0"
-	kanisterToolsImageEnvName = "KANISTER_TOOLS"
+	FunctionOutputVersion        = "version"
+	kanisterToolsImageRepo       = "kanisterio/kanister-tools"
+	kanisterToolsImageDefaultTag = "0.32.0"
+	kanisterToolsImageEnvName    = "KANISTER_TOOLS"
 )
 
 func getKanisterToolsImage() string {
 	if val, ok := os.LookupEnv(kanisterToolsImageEnvName); ok {
 		return val
 	}
-	return kanisterToolsImage
+	tag := kanisterToolsImageDefaultTag
+	if t, ok := version.DockerTag(); ok {
+		tag = t
+	}
+	return fmt.Sprintf("%s:%s", kanisterToolsImageRepo, tag)
 }
 
 // ValidateCredentials verifies if the given credentials have appropriate values set
