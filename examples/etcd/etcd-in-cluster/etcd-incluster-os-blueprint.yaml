@@ -1,0 +1,78 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: etcd-blueprint
+  namespace: kanister
+actions:
+  backup:
+    outputArtifacts:
+      cloudObject:
+        keyValue:
+          backupLocation: "{{ .Phases.uploadSnapshot.Output.backupLocation }}"
+    phases:
+    - func: KubeExec
+      name: takeSnapshot
+      objects:
+        etcdConfig:
+          kind: Secret
+          name: "etcd-{{ .Object.metadata.namespace }}"
+          namespace: "{{ .Object.metadata.namespace }}"
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        pod: "{{ .Object.metadata.name }}"
+        container: etcd
+        command:
+          - sh
+          - -c
+          - |
+            export endpoints="{{ index .Phases.takeSnapshot.Secrets.etcdConfig.Data "endpoints" | toString }}"
+
+            ETCDCTL_ENDPOINTS=$endpoints etcdctl snapshot save /tmp/etcd-backup.db
+            ETCDCTL_ENDPOINTS=$endpoints etcdctl snapshot status /tmp/etcd-backup.db
+
+    - func: KubeTask
+      name: uploadSnapshot
+      args:
+        namespace: "kanister"
+        image: kanisterio/kanister-kubectl:1.18
+        command:
+          - sh
+          - -c
+          - |
+            BACKUP_LOCATION=etcd_backups/{{ .Object.metadata.namespace }}/{{ .Object.metadata.name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/etcd-backup.db.gz
+            kubectl cp -c etcd {{ .Object.metadata.namespace }}/{{ .Object.metadata.name }}:/tmp/etcd-backup.db /tmp/etcd-backup.db
+            gzip /tmp/etcd-backup.db
+            kando location push --profile '{{ toJson .Profile }}'  /tmp/etcd-backup.db.gz --path $BACKUP_LOCATION
+            kando output backupLocation $BACKUP_LOCATION
+
+    - func: KubeExec
+      name: removeSnapshot
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        pod: "{{ .Object.metadata.name }}"
+        container: etcd
+        command:
+          - sh
+          - -c
+          - |
+            rm -rf  /tmp/etcd-backup.db
+
+  delete:
+    type: Namespace
+    inputArtifactNames:
+    - cloudObject
+    phases:
+    - func: KubeTask
+      name: deleteFromObjectStore
+      args:
+        namespace: "{{ .Namespace.Name }}"
+        image: "kanisterio/kanister-tools:0.32.0"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}'
