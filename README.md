@@ -38,8 +38,8 @@ Stable Helm charts that have been updated with Kanister support.
 - **[MySQL on OpenShift using DeploymentConfig](./examples/stable/mysql-deploymentconfig)**
 - **[MySQL](./examples/stable/mysql)**
 - **[PostgreSQL with Point In Time Recovery (PITR)](./examples/stable/postgresql-wale)**
-- **[PostgreSQL](./examples/stable/postgresql)**
 - **[ETCD](./examples/etcd/etcd-in-cluster)**
+- **[PostgreSQL](./examples/stable/postgresql)**
 
 
 ## Kanister in action for MySQL Database
