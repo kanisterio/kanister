@@ -60,6 +60,26 @@ blueprint.cr.kanister.io/etcd-blueprint configured
 
 ## Protect the Application
 
+Before actually taking backup of ETCD let's first create a dummy namespace and some resources in that namespace, and after taking the ETCD backup we will delete
+this namespace; so that we can check if this namespace has actually been restored after restoring the ETCD.
+
+```
+root@workmachine:/repo# oc create ns nginx
+namespace/nginx created
+root@workmachine:/repo# oc create deployment -n nginx nginx --image nginx
+deployment.apps/nginx created
+root@workmachine:/repo# oc get all -n nginx
+NAME                        READY     STATUS             RESTARTS   AGE
+pod/nginx-f89759699-k6f5n   0/1       CrashLoopBackOff   2          45s
+
+NAME                    READY     UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/nginx   0/1       1            0           46s
+
+NAME                              DESIRED   CURRENT   READY     AGE
+replicaset.apps/nginx-f89759699   1         1         0         47s
+
+```
+
 We can now take snapshot of the ETCD server that is running by creating backup actionset that is going to execute backup phase from the blueprint that we have
 created above
 
@@ -102,63 +122,153 @@ Events:
   Normal  Update Complete  2m    Kanister Controller  Updated ActionSet 'backup-4f6jn' Status->complete
 ```
 
+## Imitate Disaster
+
+After the bakcup has successfully been taken, let's go ahead and delete the dummy namespace that we created to imitate the disaster
+
+```
+root@workmachine:/repo# oc delete ns nginx
+namespace "nginx" deleted
+
+root@workmachine:/repo# oc get all -n nginx
+No resources found.
+```
+
+
 ## Restore ETCD cluster
 
 To restore the ETCD cluster we can follow the [documentation](https://docs.openshift.com/container-platform/4.5/backup_and_restore/disaster_recovery/scenario-2-restoring-cluster-state.html) that is provided the OpenShift team.
-But we will have to make some modification into the restore script (`cluster-restore.sh`) because default
-restore script expects the static pods manifest as well and in our case we didnt backup the satic pod manifests.
+But we will have to make some modification in the restore script (`cluster-restore.sh`) because default
+restore script expects the static pods manifest as well and in our case we didn't backup the satic pod manifests.
 
-Or in other words you have to follow all the steps that are mentioned in the above documentation but instead of `cluster-restore.sh` script below steps should be followed
+You can follow the steps that are mentioned below along with the documentation that is mentioned above, most of the steps that are mentioned here are either directly taken from the documentation or are modified version of it. Among all the running leader nodes choose one node to be the restore node, make sure you have SSH connectivity to all of the leader nodes including the one that you have chosen to be restore node.
 
-```
+You will have to have a command line utiltiy that can be used to download the ETCD snapshot that we have taken in the eariler step, that will depend on the object
+storage that you used. For example if you used the object storage to be AWS S3, you will need `awc` cli to download the etcd snapshot. Once you have the CLI installed
+on the restore host, below steps can be followed to restore ETCD:
 
-source /etc/kubernetes/static-pod-resources/etcd-certs/configmaps/etcd-scripts/etcd.env
-source /etc/kubernetes/static-pod-resources/etcd-certs/configmaps/etcd-scripts/etcd-common-tools
+- Download the ETCD snapshot on the restore host using the aws cli on a specific path let's say `/var/home/core/etcd-backup`
+- Stop the static pods from all other leader hosts (not the recovery host) by copying the manifests out of the static pod path dir, i.e. `/etc/kubernetes/manifests`
 
-SNAPSHOT_FILE=$(ls -vd "${BACKUP_DIR}"/snapshot*.db | tail -1) || true
+  ```
+  # move etcd pod manifest
+  sudo mv /etc/kubernetes/manifests/etcd-pod.yaml /tmp
 
+  # make sure etcd pod has been stopped
+  sudo crictl ps | grep etcd
 
-if [ ! -f "${SNAPSHOT_FILE}" ]; then
-  echo "etcd snapshot ${SNAPSHOT_FILE} does not exist"
-  exit 1
-fi
+  # move api server pod
+  sudo mv /etc/kubernetes/manifests/kube-apiserver-pod.yaml /tmp
+  ```
 
-# Move manifests and stop static pods
-#ASSET_DIR="/home/core/assets"
-#MANIFEST_STOPPED_DIR="${ASSET_DIR}/manifests-stopped"
-if [ ! -d "$MANIFEST_STOPPED_DIR" ]; then
-  mkdir -p $MANIFEST_STOPPED_DIR
-fi
+- move the etcd data dir to a different location
+  ```
+  sudo mv /var/lib/etcd/ /tmp
+  ```
 
+  Repeast these steps on all other leader hosts that is not the restore host.
 
+- Run the `cluster-ocp-restore.sh` script with the location where you have downloaded the etcd snapshot that in our case is `/var/home/core/etcd-backup`
 
-#ETCD_DATA_DIR_BACKUP="/var/lib/etcd-backup"
-if [ ! -d ${ETCD_DATA_DIR_BACKUP} ]; then
-  mkdir -p ${ETCD_DATA_DIR_BACKUP}
-fi
+  ```
+  sudo ./cluster-ocp-restore.sh /var/home/core/etcd-backup
+  ```
 
-# backup old data-dir
-#ETCD_DATA_DIR="/var/lib/etcd"
-if [ -d "${ETCD_DATA_DIR}/member" ]; then
-  if [ -d "${ETCD_DATA_DIR_BACKUP}/member" ]; then
-    echo "removing previous backup ${ETCD_DATA_DIR_BACKUP}/member"
-    rm -rf ${ETCD_DATA_DIR_BACKUP}/member
-  fi
-  echo "Moving etcd data-dir ${ETCD_DATA_DIR}/member to ${ETCD_DATA_DIR_BACKUP}"
-  mv ${ETCD_DATA_DIR}/member ${ETCD_DATA_DIR_BACKUP}/
-fi
+- Restart `kubelet` service on all the leader nodes
 
-# Restore static pod resources
-#CONFIG_FILE_DIR="/etc/kubernetes"
+  ```
+  sudo systemctl restart kubelet.service
+  ```
 
+- Verify single ETCD node has been started, run below from recovery host to check if ETCD container is up
 
-# Copy snapshot to backupdir
-cp -p ${SNAPSHOT_FILE} ${ETCD_DATA_DIR_BACKUP}/snapshot.db
+  ```
+  sudo crictl ps | grep etcd
 
-echo "starting restore-1etcd static pod"
-#RESTORE_ETCD_POD_YAML="${CONFIG_FILE_DIR}/static-pod-resources/etcd-certs/configmaps/restore-etcd-pod/pod.yaml"
-cp -p ${RESTORE_ETCD_POD_YAML} ${MANIFEST_DIR}/etcd-pod.yaml
+  # you can also verify that the ETCD pod is running now.
+  root@workmachine:/repo# oc get pods -n openshift-etcd
+  NAME                                                           READY     STATUS      RESTARTS   AGE
+  etcd-ip-10-0-149-197.us-west-1.compute.internal                1/1       Running     0          3m57s
+  installer-2-ip-10-0-149-197.us-west-1.compute.internal         0/1       Completed   0          7h54m
+  installer-2-ip-10-0-166-99.us-west-1.compute.internal          0/1       Completed   0          7h53m
+  installer-2-ip-10-0-212-253.us-west-1.compute.internal         0/1       Completed   0          7h52m
+  revision-pruner-2-ip-10-0-149-197.us-west-1.compute.internal   0/1       Completed   0          7h51m
+  revision-pruner-2-ip-10-0-166-99.us-west-1.compute.internal    0/1       Completed   0          7h51m
+  revision-pruner-2-ip-10-0-212-253.us-west-1.compute.internal   0/1       Completed   0          7h51m
 
+  ```
 
+- Force ETCD deployment, you can run below command from the terminal you have cluster access
+  ```
+  oc patch etcd cluster -p='{"spec": {"forceRedeploymentReason": "recovery-'"$( date --rfc-3339=ns )"'"}}' --type=merge
 
-```
+  # Verify all nodes are updated to latest version
+  oc get etcd -o=jsonpath='{range .items[0].status.conditions[?(@.type=="NodeInstallerProgressing")]}{.reason}{"\n"}{.message}{"\n"}'
+  ```
+
+  And you will get message like
+
+  ```
+  3 nodes are at revision 2; 0 nodes have achieved new revision 3
+  ```
+  Please wait for some time make sure the component has been updated to the latest version, and then the message would look somewhat like this
+
+  ```
+  oc get etcd -o=jsonpath='{range .items[0].status.conditions[?(@.type=="NodeInstallerProgressing")]}{.reason}{"\n"}{.message}{"\n"}'
+  AllNodesAtLatestRevision
+  3 nodes are at revision 3
+
+  ```
+
+  that depicts that all the three nodes have been updated to the latest version.
+
+- Force rollout for the control plance components
+
+  ```
+  # API Server
+  oc patch kubeapiserver cluster -p='{"spec": {"forceRedeploymentReason": "recovery-'"$( date --rfc-3339=ns )"'"}}' --type=merge
+  # Wait for version update
+  oc get kubeapiserver -o=jsonpath='{range .items[0].status.conditions[?(@.type=="NodeInstallerProgressing")]}{.reason}{"\n"}{.message}{"\n"}'
+  # again you will have to wait until you get message like
+  # 3 nodes are at revision 6
+
+  # kubecontrollermanager
+  oc patch kubecontrollermanager cluster -p='{"spec": {"forceRedeploymentReason": "recovery-'"$( date --rfc-3339=ns )"'"}}' --type=merge
+  # wait for the revision
+  oc get kubecontrollermanager -o=jsonpath='{range .items[0].status.conditions[?(@.type=="NodeInstallerProgressing")]}{.reason}{"\n"}{.message}{"\n"}'
+  # 3 nodes are at revision 9
+
+  #kubescheduler
+  oc patch kubescheduler cluster -p='{"spec": {"forceRedeploymentReason": "recovery-'"$( date --rfc-3339=ns )"'"}}' --type=merge
+  # wait for reviosn to update
+  oc get kubescheduler -o=jsonpath='{range .items[0].status.conditions[?(@.type=="NodeInstallerProgressing")]}{.reason}{"\n"}{.message}{"\n"}'
+  # 3 nodes are at revision 7; 0 nodes have achieved new revision 8
+  # 3 nodes are at revision 8
+
+  ```
+
+- Verify that all etcd pods are running fine
+
+  ```
+  root@workmachine:/repo# oc get pods -n openshift-etcd | grep etcd
+  etcd-ip-10-0-149-197.us-west-1.compute.internal                4/4       Running     0          19m
+  etcd-ip-10-0-166-99.us-west-1.compute.internal                 4/4       Running     0          20m
+  etcd-ip-10-0-212-253.us-west-1.compute.internal                4/4       Running     0          20m
+  ```
+
+- Now that, we can see all the ETCD pods have been restored we can make sure the dummy namespace that we created and then deleted, has been restored or not
+
+  ```
+  root@workmachine:/repo# oc get all -n nginx
+  NAME                        READY     STATUS             RESTARTS   AGE
+  pod/nginx-f89759699-k6f5n   0/1       CrashLoopBackOff   9          46m
+
+  NAME                    READY     UP-TO-DATE   AVAILABLE   AGE
+  deployment.apps/nginx   0/1       1            0           46m
+
+  NAME                              DESIRED   CURRENT   READY     AGE
+  replicaset.apps/nginx-f89759699   1         1         0         46m
+
+  ```
+
+  and as you can see we have successfully restored the namespace that we deleted.
