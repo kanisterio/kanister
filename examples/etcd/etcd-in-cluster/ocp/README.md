@@ -11,7 +11,7 @@ commands are run into an [OCP](https://www.openshift.com/products/container-plat
 
 # Integrating with Kanister
 
-When we say integrating with Kanister we mean creating some CRs, for example Blurprint and Actionset
+When we say integrating with Kanister we mean creating some CRs, for example Blueprint and ActionSet
 that would help perform the actions on the the ETCD instance that we are running.
 
 ## Create Profile resource
@@ -35,13 +35,13 @@ can be shared between Kanister-enabled application instances.
 
 ## Create Blueprint
 
-Before actually creating the BluePrint, we will have to create a secret in the same namespace where your ETCD pod is running. This
+Before actually creating the Blueprint, we will have to create a secret in the same namespace where your ETCD pod is running. This
 secret is going to have the name of the format `etcd-<etcd-pod-namespace>` with these fields
 
 - **endpoints** : ETCD server client listen URL, https://[127.0.0.1]:2379
-- **labels** : These labels will be used to identify the etcd pods that are running, for ex `app=etcd,etcd=true`
+- **labels** : These labels will be used to identify the ETCD pods that are running, for ex `app=etcd,etcd=true`
 
-Below command can be used to create the secret, assuming the etcd pods are running in the `openshift-etcd` namespace
+Below command can be used to create the secret, assuming the ETCD pods are running in the `openshift-etcd` namespace
 
 ```
 » oc create secret generic etcd-openshift-etcd \
@@ -51,7 +51,7 @@ Below command can be used to create the secret, assuming the etcd pods are runni
 secret/etcd-openshift-etcd created
 ```
 
-Once the secret is created below command can be used to create the BluePrint
+Once the secret is created below command can be used to create the Blueprint
 
 ```
 » oc apply -f etcd-incluster-ocp-blueprint.yaml -n kanister
@@ -60,8 +60,8 @@ blueprint.cr.kanister.io/etcd-blueprint configured
 
 ## Protect the Application
 
-Before actually taking backup of ETCD let's first create a dummy namespace and some resources in that namespace, and after taking the ETCD backup we will delete
-this namespace; so that we can check if this namespace has actually been restored after restoring the ETCD.
+Before actually taking the backup of ETCD let's first create a dummy namespace and some resources in that namespace, and after taking the ETCD backup we will delete
+this namespace, so that we can check if this namespace has actually been restored after restoring the ETCD.
 
 ```
 root@workmachine:/repo# oc create ns nginx
@@ -80,12 +80,12 @@ replicaset.apps/nginx-f89759699   1         1         0         47s
 
 ```
 
-We can now take snapshot of the ETCD server that is running by creating backup actionset that is going to execute backup phase from the blueprint that we have
+We can now take snapshot of the ETCD server that is running by creating backup ActionSet that is going to execute backup phase from the Blueprint that we have
 created above
 
 **Note**
 
-Pleae make sure to change the **profile-name**,  **namespace-name** and **blueprint name** in the `backup-actionset.yaml` manifest file. Where `namespace-name` is the namespace where the ETCD pods are running.
+Please make sure to change the **profile-name**,  **namespace-name** and **blueprint name** in the `backup-actionset.yaml` manifest file. Where `namespace-name` is the namespace where the ETCD pods are running.
 
 ```
 # find the profile name
@@ -93,7 +93,7 @@ Pleae make sure to change the **profile-name**,  **namespace-name** and **bluepr
 NAME               AGE
 s3-profile-2lhk8   52s
 
-# fine the BluePrint name
+# find the Blueprint name
 » oc get blueprint -n kanister
 NAME             AGE
 etcd-blueprint   85m
@@ -124,7 +124,7 @@ Events:
 
 ## Imitate Disaster
 
-After the bakcup has successfully been taken, let's go ahead and delete the dummy namespace that we created to imitate the disaster
+After the backup has successfully been taken, let's go ahead and delete the dummy namespace that we created to imitate the disaster
 
 ```
 root@workmachine:/repo# oc delete ns nginx
@@ -137,14 +137,14 @@ No resources found.
 
 ## Restore ETCD cluster
 
-To restore the ETCD cluster we can follow the [documentation](https://docs.openshift.com/container-platform/4.5/backup_and_restore/disaster_recovery/scenario-2-restoring-cluster-state.html) that is provided the OpenShift team.
+To restore the ETCD cluster we can follow the [documentation](https://docs.openshift.com/container-platform/4.5/backup_and_restore/disaster_recovery/scenario-2-restoring-cluster-state.html) that is provided by the OpenShift team.
 But we will have to make some modification in the restore script (`cluster-restore.sh`) because default
-restore script expects the static pods manifest as well and in our case we didn't backup the satic pod manifests.
+restore script expects the static pods manifest as well, and in our case we didn't backup the static pod manifests.
 
 You can follow the steps that are mentioned below along with the documentation that is mentioned above, most of the steps that are mentioned here are either directly taken from the documentation or are modified version of it. Among all the running leader nodes choose one node to be the restore node, make sure you have SSH connectivity to all of the leader nodes including the one that you have chosen to be restore node.
 
-You will have to have a command line utiltiy that can be used to download the ETCD snapshot that we have taken in the eariler step, that will depend on the object
-storage that you used. For example if you used the object storage to be AWS S3, you will need `awc` cli to download the etcd snapshot. Once you have the CLI installed
+You will have to have a command line utility that can be used to download the ETCD snapshot that we have taken in the eariler step, that will depend on the object
+storage that you used. For example if you used the object storage to be AWS S3, you will need `aws` cli to download the ETCD snapshot. Once you have the CLI installed
 on the restore host, below steps can be followed to restore ETCD:
 
 - Download the ETCD snapshot on the restore host using the aws cli on a specific path let's say `/var/home/core/etcd-backup`
@@ -161,12 +161,12 @@ on the restore host, below steps can be followed to restore ETCD:
   sudo mv /etc/kubernetes/manifests/kube-apiserver-pod.yaml /tmp
   ```
 
-- move the etcd data dir to a different location
+- Move the etcd data dir to a different location
   ```
   sudo mv /var/lib/etcd/ /tmp
   ```
 
-  Repeast these steps on all other leader hosts that is not the restore host.
+  Repeat these steps on all other leader hosts that are not the restore host
 
 - Run the `cluster-ocp-restore.sh` script with the location where you have downloaded the etcd snapshot that in our case is `/var/home/core/etcd-backup`
 
