@@ -8,7 +8,6 @@ The cluster this example is perfomed on is two node kubeadm cluster.
 * Kubernetes 1.9+ with Beta APIs enabled, and you are not on managed Kubernetes
 * PV support on the underlying infrastructure
 * Kanister version 0.32.0 with `profiles.cr.kanister.io` CRD, [`kanctl`](https://docs.kanister.io/tooling.html#install-the-tools) Kanister tool installed
-* If you are OpenShift cluster, you can use OpenShift client (`oc`) instead of `kubectl`, but `kubectl` would also work
 
 # Integrating with Kanister
 
@@ -55,14 +54,6 @@ secret is going to have the name of the format `etcd-<etcd-pod-namespace>` with 
 secret/etcd-kube-system created
 ```
 
-If you are on OpenShift distribution you dont have to mention all these details you just have mention the etcd endpoint in the secret. Or in other
-words if you are on OpenShift, the create secret command is going to look like this
-
-```
-» oc create secret generic etcd-openshift-etcd --from-literal=endpoints=https://10.0.133.5:2379 --from-literal=key=/etc/kubernetes/pki/etcd/server.key -n openshift-etcd
-secret/etcd-openshift-etcd created
-```
-
 **Note**
 
 Please make sure that you have correct path of these certificate files. If any of the path is incorrect the etcd snapshot will fail.
@@ -73,13 +64,6 @@ Once secret is created, let's go ahead and create Blueprint in the same namespac
 
 ```
 » kubectl create -f etcd-incluster-blueprint.yaml -n kanister
-blueprint.cr.kanister.io/etcd-blueprint created
-```
-
-For OpenShift clusters please run below command to create the blueprint
-
-```
-» oc create -f etcd-incluster-os-blueprint.yaml -n kanister
 blueprint.cr.kanister.io/etcd-blueprint created
 ```
 
@@ -263,46 +247,6 @@ that would belong to one cluster and accidently wouldnt join any other one.
 
 To explore more about this we can look into the [Kubernetes documentation](https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#backing-up-an-etcd-cluster).
 
-### Restoring the ETCD snapshot on OpenShift clusters
-
-The steps that are mentioned above can be followed restore the backup on Kubernetes cluster but to restore the snapshot on OpenShift cluster
-the OpenShift community provides `cluster-restore` script that can be used.
-
-[This documentation](https://docs.openshift.com/container-platform/4.5/backup_and_restore/disaster_recovery/scenario-2-restoring-cluster-state.html#dr-restoring-cluster-state) has details steps on how to restore the snapshot using `cluster-restore` script.
-
-```
-# kubectl describe pod -n kube-system etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1
-Name:                 etcd-ubuntu-s-4vcpu-8gb-blr1-01-master-1
-Namespace:            kube-system
-....
-....
-Containers:
-  etcd:
-    Image:      k8s.gcr.io/etcd:3.4.3-0
-    Port:       <none>
-    Host Port:  <none>
-    Command:
-      etcd
-      ...
-      --data-dir=/var/lib/etcd-from-backup
-      ...
-      --initial-cluster-token=etcd-cluster-1
-    Liveness:     http-get http://127.0.0.1:2381/health delay=15s timeout=15s period=10s #success=1 #failure=8
-    Environment:  <none>
-    Mounts:
-      /etc/kubernetes/pki/etcd from etcd-certs (rw)
-      /var/lib/etcd-from-backup from etcd-data (rw)
-Volumes:
-  etcd-certs:
-    Type:          HostPath (bare host directory volume)
-    Path:          /etc/kubernetes/pki/etcd
-    HostPathType:  DirectoryOrCreate
-  etcd-data:
-    Type:          HostPath (bare host directory volume)
-    Path:          /var/lib/etcd-from-backup
-    HostPathType:  DirectoryOrCreate
-...
-```
 
 ## Delete the Artifacts
 
