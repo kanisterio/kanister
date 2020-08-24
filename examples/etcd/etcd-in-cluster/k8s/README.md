@@ -48,9 +48,17 @@ secret is going to have the name of the format `etcd-<etcd-pod-namespace>` with 
 
 - **key** : TLS key file, would be `/etc/kubernetes/pki/etcd/server.key` in case of Kubeadm cluster
 
+- **labels** : Labels using which kaniter will identify one etcd member in case of multi member etcd cluster
+
 
 ```
-» kubectl create secret generic etcd-kube-system --from-literal=cacert=/etc/kubernetes/pki/etcd/ca.crt --from-literal=cert=/etc/kubernetes/pki/etcd/server.crt --from-literal=endpoints=https://[127.0.0.1]:2379 --from-literal=key=/etc/kubernetes/pki/etcd/server.key -n kube-system
+» kubectl create secret generic etcd-kube-system \
+    --from-literal=cacert=/etc/kubernetes/pki/etcd/ca.crt \
+    --from-literal=cert=/etc/kubernetes/pki/etcd/server.crt \
+    --from-literal=endpoints=https://127.0.0.1:2379 \
+    --from-literal=key=/etc/kubernetes/pki/etcd/server.key \
+    --from-literal=labels=component=etcd,tier=control-plane \
+    --namespace kube-system
 secret/etcd-kube-system created
 ```
 
@@ -97,7 +105,8 @@ created above
 
 **Note**
 
-Pleae make sure to change the **profile name**, the **ETCD pod name**, **pod namespace** and **blueprint name** in the `backup-actionset.yaml` manifest file.
+Pleae make sure to change the **profile name**, **pod namespace** and **blueprint name** in the `backup-actionset.yaml` manifest file. Where pod-namespace is the namespace
+where etcd pods are running.
 
 ```
 # find the profile name
