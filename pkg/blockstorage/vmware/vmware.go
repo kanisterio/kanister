@@ -2,7 +2,6 @@ package vmware
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -94,10 +93,6 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 		Cns: cnsCli,
 		Gom: gom,
 	}, nil
-}
-
-func constructLoginURL(endpoint, username, password string) string {
-	return fmt.Sprintf("https://%s:%s@%s/sdk", username, password, endpoint)
 }
 
 // Type is part of blockstorage.Provider
