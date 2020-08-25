@@ -64,7 +64,7 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 		return nil, errors.New("Failed to find VSphere password value")
 	}
 
-	u := &url.URL{Scheme: "https", Host: ep, Path: "/sdk", User: url.UserPassword("", "")}
+	u := &url.URL{Scheme: "https", Host: ep, Path: "/sdk"}
 	soapCli := soap.NewClient(u, true)
 	ctx := context.Background()
 	cli, err := vim25.NewClient(ctx, soapCli)
