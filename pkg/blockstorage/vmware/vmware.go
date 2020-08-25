@@ -65,7 +65,7 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	}
 	u, err := soap.ParseURL(constructLoginURL(ep, username, password))
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get config")
+		return nil, errors.New(fmt.Sprintf("Failed to parse URL (%s)", constructLoginURL(ep, username, "<password>")))
 	}
 	soapCli := soap.NewClient(u, true)
 	ctx := context.Background()

@@ -7,3 +7,51 @@ import (
 )
 
 func Test(t *testing.T) { TestingT(t) }
+
+type VMWareSuite struct{}
+
+var _ = Suite(&VMWareSuite{})
+
+func (s *VMWareSuite) TestURLParse(c *C) {
+	for _, tc := range []struct {
+		config       map[string]string
+		errCheck     Checker
+		expErrString string
+	}{
+		{
+			config:       map[string]string{},
+			errCheck:     NotNil,
+			expErrString: "Failed to find VSphere endpoint value",
+		},
+		{
+			config: map[string]string{
+				VSphereEndpointKey: "ep",
+			},
+			errCheck:     NotNil,
+			expErrString: "Failed to find VSphere username value",
+		},
+		{
+			config: map[string]string{
+				VSphereEndpointKey: "ep",
+				VSphereUsernameKey: "user",
+			},
+			errCheck:     NotNil,
+			expErrString: "Failed to find VSphere password value",
+		},
+		{ // bad password
+			config: map[string]string{
+				VSphereEndpointKey: "https://ep.com/",
+				VSphereUsernameKey: "user",
+				VSpherePasswordKey: "pa<>ss",
+			},
+			errCheck:     NotNil,
+			expErrString: "Failed to parse URL .*<password>.*",
+		},
+	} {
+		_, err := NewProvider(tc.config)
+		c.Check(err, tc.errCheck)
+		if err != nil {
+			c.Assert(err, ErrorMatches, ".*"+tc.expErrString+".*")
+		}
+	}
+}
