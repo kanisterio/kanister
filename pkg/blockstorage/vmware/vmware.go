@@ -3,6 +3,7 @@ package vmware
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -63,10 +64,8 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	if !ok {
 		return nil, errors.New("Failed to find VSphere password value")
 	}
-	u, err := soap.ParseURL(constructLoginURL(ep, username, password))
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Failed to parse URL (%s)", constructLoginURL(ep, username, "<password>")))
-	}
+
+	u := &url.URL{Scheme: "https", Host: ep, Path: "/sdk"}
 	soapCli := soap.NewClient(u, true)
 	ctx := context.Background()
 	cli, err := vim25.NewClient(ctx, soapCli)
@@ -76,8 +75,8 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	req := types.Login{
 		This: *cli.ServiceContent.SessionManager,
 	}
-	req.UserName = u.User.Username()
-	req.Password, _ = u.User.Password()
+	req.UserName = username
+	req.Password = password
 	_, err = methods.Login(ctx, cli, &req)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to login")

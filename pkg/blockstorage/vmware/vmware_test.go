@@ -38,15 +38,6 @@ func (s *VMWareSuite) TestURLParse(c *C) {
 			errCheck:     NotNil,
 			expErrString: "Failed to find VSphere password value",
 		},
-		{ // bad password
-			config: map[string]string{
-				VSphereEndpointKey: "https://ep.com/",
-				VSphereUsernameKey: "user",
-				VSpherePasswordKey: "pa<>ss",
-			},
-			errCheck:     NotNil,
-			expErrString: "Failed to parse URL .*<password>.*",
-		},
 	} {
 		_, err := NewProvider(tc.config)
 		c.Check(err, tc.errCheck)
