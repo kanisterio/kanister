@@ -38,6 +38,15 @@ func (s *VMWareSuite) TestURLParse(c *C) {
 			errCheck:     NotNil,
 			expErrString: "Failed to find VSphere password value",
 		},
+		{
+			config: map[string]string{
+				VSphereEndpointKey: "ep",
+				VSphereUsernameKey: "user",
+				VSpherePasswordKey: "pass",
+			},
+			errCheck:     NotNil,
+			expErrString: "Failed to create VIM client",
+		},
 	} {
 		_, err := NewProvider(tc.config)
 		c.Check(err, tc.errCheck)
