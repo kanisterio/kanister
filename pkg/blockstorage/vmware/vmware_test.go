@@ -38,7 +38,7 @@ func (s *VMWareSuite) TestURLParse(c *C) {
 			errCheck:     NotNil,
 			expErrString: "Failed to find VSphere password value",
 		},
-		{
+		{ // until we can run against a VIM setup this will always fail.
 			config: map[string]string{
 				VSphereEndpointKey: "ep",
 				VSphereUsernameKey: "user",
