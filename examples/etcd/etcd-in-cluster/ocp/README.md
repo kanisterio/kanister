@@ -138,9 +138,7 @@ No resources found.
 ## Restore ETCD cluster
 
 To restore the ETCD cluster we can follow the [documentation](https://docs.openshift.com/container-platform/4.5/backup_and_restore/disaster_recovery/scenario-2-restoring-cluster-state.html) that is provided by the OpenShift team.
-But we will have to make some modification in the restore script (`cluster-restore.sh`) because default
-restore script expects the static pods manifest as well, and in our case we didn't backup the static pod manifests. We have made respective changes
-in the script that is provided by OpenShift, that can be found in this repo.
+The restore script (`cluster-restore.sh`) mentioned above requires modification as it expects the static pods manifests which are not backed up in our case. The modified restore script can be found in this repo.
 
 You can follow the steps that are mentioned below along with the documentation that is mentioned above, most of the steps that are mentioned here are either directly taken from the documentation or are modified version of it. Among all the running leader nodes choose one node to be the restore node, make sure you have SSH connectivity to all of the leader nodes including the one that you have chosen to be restore node.
 
