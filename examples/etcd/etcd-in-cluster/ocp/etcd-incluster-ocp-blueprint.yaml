@@ -17,7 +17,6 @@ actions:
           name: "etcd-{{ .Object.metadata.name }}"
           namespace: "{{ .Object.metadata.name }}"
       args:
-        namespace: "{{ .Object.metadata.name }}"
         image: kanisterio/kanister-kubectl:1.18
         command:
           - sh
@@ -35,7 +34,6 @@ actions:
     - func: KubeTask
       name: uploadSnapshot
       args:
-        namespace: "{{ .Object.metadata.name }}"
         image: kanisterio/kanister-kubectl:1.18
         command:
           - sh
@@ -50,7 +48,6 @@ actions:
     - func: KubeTask
       name: removeSnapshot
       args:
-        namespace: "{{ .Object.metadata.name }}"
         image: kanisterio/kanister-kubectl:1.18
         command:
           - sh
