@@ -30,6 +30,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/secrets"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
@@ -214,7 +215,8 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 
 func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*Profile, error) {
 	if ref == nil {
-		return nil, errors.New("Cannot execute action without a profile. Specify a profile in the action set")
+		log.Debug().Print("Executing the action without a profile")
+		return nil, nil
 	}
 	p, err := crCli.CrV1alpha1().Profiles(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 	if err != nil {

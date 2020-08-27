@@ -503,6 +503,56 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	c.Assert(keyVal, DeepEquals, map[string]string{"key": "myValue"})
 }
 
+func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
+	// Create a blueprint that uses func output as artifact
+	bp := newBPWithOutputArtifact()
+	bp = testutil.BlueprintWithConfigMap(bp)
+	bp, err := s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// Add an actionset that references that blueprint.
+	as := &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-actionset-",
+			Namespace:    s.namespace,
+		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				crv1alpha1.ActionSpec{
+					Blueprint: bp.GetName(),
+					Name:      "myAction",
+					Object: crv1alpha1.ObjectReference{
+						Kind:      "Deployment",
+						Name:      s.deployment.GetName(),
+						Namespace: s.namespace,
+					},
+					PreferredVersion: kanister.DefaultVersion,
+				},
+			},
+		},
+	}
+	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
+	as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+
+	// Check if the func returned expected output
+	c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	// Check if the artifacts got updated correctly
+	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), metav1.GetOptions{})
+	arts := as.Status.Actions[0].Artifacts
+	c.Assert(arts, NotNil)
+	c.Assert(arts, HasLen, 1)
+	keyVal := arts["myArt"].KeyValue
+	c.Assert(keyVal, DeepEquals, map[string]string{"key": "myValue"})
+}
+
 func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
 	bp := newBPWithFakeOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
