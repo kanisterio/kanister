@@ -105,7 +105,7 @@ created above
 
 **Note**
 
-Please make sure to change the **profile name**, **pod namespace** and **blueprint name** in the `backup-actionset.yaml` manifest file. Where pod-namespace is the namespace
+Please make sure to change the **profile name**, **pod namespace** and **blueprint name** in the `backup-actionset.yaml` manifest file, where pod-namespace is the namespace
 where etcd pods are running.
 
 ```
