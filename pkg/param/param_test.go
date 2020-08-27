@@ -606,6 +606,51 @@ func (s *ParamsSuite) TestProfile(c *C) {
 	})
 }
 
+func (s *ParamsSuite) TestParamsWithoutProfile(c *C) {
+	ctx := context.Background()
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secret-name",
+			Namespace: s.namespace,
+			Labels:    map[string]string{"app": "fake-app"},
+		},
+		Data: map[string][]byte{
+			"key":   []byte("myKey"),
+			"value": []byte("myValue"),
+		},
+	}
+	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	defer func() {
+		_ = s.cli.CoreV1().Secrets(s.namespace).Delete(context.TODO(), "secret-name", metav1.DeleteOptions{})
+	}()
+
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(context.TODO(), "secret-name", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(context.TODO(), s.pvc, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	dynCli := s.getDynamicClient(c, pvc)
+	crCli := crfake.NewSimpleClientset()
+	osCli := osfake.NewSimpleClientset()
+	as := crv1alpha1.ActionSpec{
+		Object: crv1alpha1.ObjectReference{
+			Name:      s.pvc,
+			Namespace: s.namespace,
+			Kind:      PVCKind,
+		},
+		Secrets: map[string]crv1alpha1.ObjectReference{
+			"actionSetSecret": crv1alpha1.ObjectReference{
+				Name:      secret.Name,
+				Namespace: secret.Namespace,
+			},
+		},
+	}
+	tp, err := New(ctx, s.cli, dynCli, crCli, osCli, as)
+	c.Assert(err, IsNil)
+	c.Assert(tp, NotNil)
+}
+
 func (s *ParamsSuite) TestPhaseParams(c *C) {
 	ctx := context.Background()
 	secret := &v1.Secret{
