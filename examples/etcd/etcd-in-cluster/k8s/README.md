@@ -48,7 +48,7 @@ secret is going to have the name of the format `etcd-<etcd-pod-namespace>` with 
 
 - **key** : TLS key file, would be `/etc/kubernetes/pki/etcd/server.key` in case of Kubeadm cluster
 
-- **labels** : Labels using which kaniter will identify one etcd member in case of multi member etcd cluster
+- **labels** : Labels using which Kanister will identify the etcd members in a namespace, in case of multi member etcd cluster
 
 
 ```
@@ -105,7 +105,7 @@ created above
 
 **Note**
 
-Pleae make sure to change the **profile name**, **pod namespace** and **blueprint name** in the `backup-actionset.yaml` manifest file. Where pod-namespace is the namespace
+Please make sure to change the **profile name**, **pod namespace** and **blueprint name** in the `backup-actionset.yaml` manifest file. Where pod-namespace is the namespace
 where etcd pods are running.
 
 ```
