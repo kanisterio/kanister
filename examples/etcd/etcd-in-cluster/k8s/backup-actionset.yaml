@@ -13,9 +13,9 @@ spec:
       apiVersion: v1
       group: ""
       kind: ""
-      name: <etcd-podname>
-      namespace: kube-system
-      resource: pods
+      name: <namespace-name>
+      namespace: ""
+      resource: namespaces
     options: {}
     preferredVersion: ""
     profile:
