@@ -35,19 +35,25 @@ can be shared between Kanister-enabled application instances.
 
 ## Create Blueprint
 
-Before actually creating the Blueprint, we will have to create a secret in the same namespace where your ETCD pod is running. This
-secret is going to have the name of the format `etcd-<etcd-pod-namespace>` with these fields
+Before actually creating the Blueprint, we will have to create a secret in a new or an existing namespace. This
+secret is going to have the details about the ETCD members that are running on your cluster
 
 - **endpoints** : ETCD server client listen URL, https://[127.0.0.1]:2379
 - **labels** : These labels will be used to identify the ETCD pods that are running, for ex `app=etcd,etcd=true`
+- **etcdns** : Namespace where the etcd pods are running
 
 Below command can be used to create the secret, assuming the ETCD pods are running in the `openshift-etcd` namespace
 
 ```
+# Create a new namespace
+» oc create ns etcd-backup
+namespace/etcd-backup created
+
 » oc create secret generic etcd-openshift-etcd \
     --from-literal=endpoints=https://10.0.133.5:2379 \
     --from-literal=labels=app=etcd,etcd=true \
-    --namespace openshift-etcd
+    --from-literal=etcdns=openshift-etcd \
+    --namespace etcd-backup
 secret/etcd-openshift-etcd created
 ```
 
@@ -85,7 +91,7 @@ created above
 
 **Note**
 
-Please make sure to change the **profile-name**,  **namespace-name** and **blueprint name** in the `backup-actionset.yaml` manifest file. Where `namespace-name` is the namespace where the ETCD pods are running.
+Please make sure to change the **profile-name**, **blueprint name**, **secret-name** and **secret-namespace** in the `backup-actionset.yaml` manifest file. Where `secret-name` is the name of secret that has all the details and we crreated earlier.
 
 ```
 # find the profile name
