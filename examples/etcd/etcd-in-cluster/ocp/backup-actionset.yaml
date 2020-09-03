@@ -13,9 +13,9 @@ spec:
       apiVersion: v1
       group: ""
       kind: ""
-      name: <namespace-name>
-      namespace: ""
-      resource: namespaces
+      name: <secret-name>
+      namespace: <secret-namespace>
+      resource: secrets
     options: {}
     preferredVersion: ""
     profile:
