@@ -15,6 +15,10 @@ actions:
         image: kanisterio/kanister-kubectl:1.18
         command:
           - sh
+          - -o
+          - errexit
+          - -o
+          - pipefail
           - -c
           - |
             export endpoints="{{ index .Object.data "endpoints" | toString | b64dec }}"
@@ -34,6 +38,10 @@ actions:
         image: kanisterio/kanister-kubectl:1.18
         command:
           - sh
+          - -o
+          - errexit
+          - -o
+          - pipefail
           - -c
           - |
             BACKUP_LOCATION=etcd_backups/{{ .Phases.takeSnapshot.Output.etcdPod }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/etcd-backup.db.gz
@@ -48,6 +56,10 @@ actions:
         image: kanisterio/kanister-kubectl:1.18
         command:
           - sh
+          - -o
+          - errexit
+          - -o
+          - pipefail
           - -c
           - |
             kubectl exec -it -n {{ .Phases.takeSnapshot.Output.etcdNS }} "{{ .Phases.takeSnapshot.Output.etcdPod }}" -c etcd -- sh -c "rm -rf  /tmp/etcd-backup.db"
