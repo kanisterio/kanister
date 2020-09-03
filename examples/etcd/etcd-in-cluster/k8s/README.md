@@ -54,7 +54,7 @@ to choose the name and namespace of the secret and it should have below fields
 
 
 ```
-# Create a namespace were we are going to have the secret created
+# Create a namespace where we are going to have the secret created
 » kubectl create ns etcd-backup
 
 # Create secret with all the details
