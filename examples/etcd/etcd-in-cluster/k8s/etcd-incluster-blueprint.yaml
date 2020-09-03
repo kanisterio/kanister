@@ -11,27 +11,24 @@ actions:
     phases:
     - func: KubeTask
       name: takeSnapshot
-      objects:
-        etcdConfig:
-          kind: Secret
-          name: "etcd-{{ .Object.metadata.name }}"
-          namespace: "{{ .Object.metadata.name }}"
       args:
         image: kanisterio/kanister-kubectl:1.18
         command:
           - sh
           - -c
           - |
-            export cacert="{{ index .Phases.takeSnapshot.Secrets.etcdConfig.Data "cacert" | toString }}"
-            export cert="{{ index .Phases.takeSnapshot.Secrets.etcdConfig.Data "cert" | toString }}"
-            export endpoints="{{ index .Phases.takeSnapshot.Secrets.etcdConfig.Data "endpoints" | toString }}"
-            export key="{{ index .Phases.takeSnapshot.Secrets.etcdConfig.Data "key" | toString }}"
-            export labels="{{ index .Phases.takeSnapshot.Secrets.etcdConfig.Data "labels" | toString }}"
+            export CACERT="{{ index .Object.data "cacert" | toString | b64dec }}"
+            export CERT="{{ index .Object.data "cert" | toString | b64dec }}"
+            export ENDPOINTS="{{ index .Object.data "endpoints" | toString | b64dec }}"
+            export KEY="{{ index .Object.data "key" | toString | b64dec }}"
+            export LABELS="{{ index .Object.data "labels" | toString | b64dec }}"
+            export ETCDNS="{{ index .Object.data "etcdns" | toString | b64dec }}"
 
-            ETCD_POD=$(kubectl get pods -n {{ .Object.metadata.name }} -l $labels -ojsonpath='{.items[0].metadata.name}')
+            ETCD_POD=$(kubectl get pods -n $ETCDNS -l $LABELS -ojsonpath='{.items[0].metadata.name}')
 
-            kubectl exec -it -n {{ .Object.metadata.name }} $ETCD_POD -c etcd -- sh -c "ETCDCTL_API=3 etcdctl --endpoints=$endpoints --cacert=$cacert  --cert=$cert  --key=$key snapshot save /tmp/etcd-backup.db"
+            kubectl exec -it -n $ETCDNS $ETCD_POD -c etcd -- sh -c "ETCDCTL_API=3 etcdctl --endpoints=$ENDPOINTS --cacert=$CACERT --cert=$CERT --key=$KEY snapshot save /tmp/etcd-backup.db"
             kando output etcdPod $ETCD_POD
+            kando output etcdNS $ETCDNS
 
     - func: KubeTask
       name: uploadSnapshot
@@ -41,8 +38,8 @@ actions:
           - sh
           - -c
           - |
-            BACKUP_LOCATION=etcd_backups/{{ .Object.metadata.name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/etcd-backup.db.gz
-            kubectl cp {{ .Object.metadata.name }}/{{ .Phases.takeSnapshot.Output.etcdPod }}:/tmp/etcd-backup.db /tmp/etcd-backup.db
+            BACKUP_LOCATION=etcd_backups/{{ .Object.metadata.namespace }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/etcd-backup.db.gz
+            kubectl cp {{ .Phases.takeSnapshot.Output.etcdNS }}/{{ .Phases.takeSnapshot.Output.etcdPod }}:/tmp/etcd-backup.db /tmp/etcd-backup.db
             gzip /tmp/etcd-backup.db
             kando location push --profile '{{ toJson .Profile }}'  /tmp/etcd-backup.db.gz --path $BACKUP_LOCATION
             kando output backupLocation $BACKUP_LOCATION
@@ -55,7 +52,7 @@ actions:
           - sh
           - -c
           - |
-            kubectl exec -it -n {{ .Object.metadata.name }} {{ .Phases.takeSnapshot.Output.etcdPod }} -c etcd -- sh -c "rm -rf  /tmp/etcd-backup.db"
+            kubectl exec -it -n {{ .Phases.takeSnapshot.Output.etcdNS }} {{ .Phases.takeSnapshot.Output.etcdPod }} -c etcd -- sh -c "rm -rf  /tmp/etcd-backup.db"
 
   delete:
     type: Namespace
