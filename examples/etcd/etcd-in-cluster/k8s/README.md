@@ -37,8 +37,8 @@ can be shared between Kanister-enabled application instances.
 If you are running ETCD on production, there would be some authentication mechanism that your cluster is using. Since we are taking an example
 of the cluster that is setup through [kubeadm](https://github.com/kubernetes/kubeadm), I am assuming TLS based authentication is being used.
 
-To specify the location of the CA, certificate and key we will have to create a secret in the same namespace where your ETCD pod is running. This
-secret is going to have the name of the format `etcd-<etcd-pod-namespace>` with these fields
+To specify the location of the CA, certificate, key and other details, we will have to create a secret in a new or an existing namespace. We are free
+to choose the name and namespace of the secret and it should have below fields
 
 - **cacert** : CA (certificate authority) cert, would usually be `/etc/kubernetes/pki/etcd/ca.crt` on Kubeadm clusters
 
@@ -50,15 +50,22 @@ secret is going to have the name of the format `etcd-<etcd-pod-namespace>` with 
 
 - **labels** : Labels using which Kanister will identify the etcd members in a namespace, in case of multi member etcd cluster
 
+- **etcdns** : Namespace in which the etcd pods are running
+
 
 ```
+# Create a namespace where we are going to have the secret created
+» kubectl create ns etcd-backup
+
+# Create secret with all the details
 » kubectl create secret generic etcd-kube-system \
     --from-literal=cacert=/etc/kubernetes/pki/etcd/ca.crt \
     --from-literal=cert=/etc/kubernetes/pki/etcd/server.crt \
     --from-literal=endpoints=https://127.0.0.1:2379 \
     --from-literal=key=/etc/kubernetes/pki/etcd/server.key \
     --from-literal=labels=component=etcd,tier=control-plane \
-    --namespace kube-system
+    --from-literal=etcdns=kube-system \
+    --namespace etcd-backup
 secret/etcd-kube-system created
 ```
 
@@ -105,8 +112,7 @@ created above
 
 **Note**
 
-Please make sure to change the **profile name**, **pod namespace** and **blueprint name** in the `backup-actionset.yaml` manifest file, where pod-namespace is the namespace
-where etcd pods are running.
+Please make sure to change the **profile name**, **blueprint name**, **secret name** and **secret-namespace** in the `backup-actionset.yaml` manifest file, where secret-name is the name of secret that has all the details.
 
 ```
 # find the profile name
