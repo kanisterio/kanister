@@ -37,7 +37,7 @@ can be shared between Kanister-enabled application instances.
 If you are running ETCD on production, there would be some authentication mechanism that your cluster is using. Since we are taking an example
 of the cluster that is setup through [kubeadm](https://github.com/kubernetes/kubeadm), I am assuming TLS based authentication is being used.
 
-To specify the location of the CA, certificate, key and other details we will have to create a secret in a new or an existing namespace. We are free
+To specify the location of the CA, certificate, key and other details, we will have to create a secret in a new or an existing namespace. We are free
 to choose the name and namespace of the secret and it should have below fields
 
 - **cacert** : CA (certificate authority) cert, would usually be `/etc/kubernetes/pki/etcd/ca.crt` on Kubeadm clusters
