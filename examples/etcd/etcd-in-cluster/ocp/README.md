@@ -91,7 +91,7 @@ created above
 
 **Note**
 
-Please make sure to change the **profile-name**, **blueprint name**, **secret-name** and **secret-namespace** in the `backup-actionset.yaml` manifest file. Where `secret-name` is the name of secret that has all the details and we crreated earlier.
+Please make sure to change the **profile-name**, **blueprint name**, **secret-name** and **secret-namespace** in the `backup-actionset.yaml` manifest file. Where `secret-name` is the name of secret that has all the details and we created earlier.
 
 ```
 # find the profile name
