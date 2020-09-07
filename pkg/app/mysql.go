@@ -49,7 +49,7 @@ func NewMysqlDB(name string) App {
 			RepoURL:  helm.StableRepoURL,
 			Chart:    "mysql",
 			RepoName: helm.StableRepoName,
-			Version:  "1.4.0",
+			Version:  "1.6.7",
 			Values: map[string]string{
 				"mysqlRootPassword":   "mysecretpassword",
 				"persistence.enabled": "false",
