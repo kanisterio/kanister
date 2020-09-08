@@ -41,6 +41,7 @@ type MysqlDB struct {
 	chart     helm.ChartInfo
 }
 
+// Last tested working version "1.6.7"
 func NewMysqlDB(name string) App {
 	return &MysqlDB{
 		name: name,
@@ -49,7 +50,6 @@ func NewMysqlDB(name string) App {
 			RepoURL:  helm.StableRepoURL,
 			Chart:    "mysql",
 			RepoName: helm.StableRepoName,
-			Version:  "1.6.7",
 			Values: map[string]string{
 				"mysqlRootPassword":   "mysecretpassword",
 				"persistence.enabled": "false",
