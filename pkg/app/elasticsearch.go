@@ -64,7 +64,6 @@ func NewElasticsearchInstance(name string) App {
 			RepoURL:  helm.ElasticRepoURL,
 			Chart:    "elasticsearch",
 			RepoName: helm.ElasticRepoName,
-			Version:  "7.4.1",
 			Values: map[string]string{
 				"antiAffinity": "soft",
 				"replicas":     "1",
