@@ -239,7 +239,20 @@ func (sna *SnapshotBeta) CreateFromSource(ctx context.Context, source *Source, s
 	if !waitForReady {
 		return nil
 	}
-
+	if source.Driver == "dobs.csi.digitalocean.com" { //"csi-vxflexos.dellemc.com" {
+		fmt.Println("SIRISH - setting status")
+		us, err := sna.dynCli.Resource(v1beta1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		fmt.Println("SIRISH - fetched status - ", us.Object["status"])
+		us.Object["status"] = map[string]interface{}{
+			"readyToUse": false,
+		}
+		if _, err := sna.dynCli.Resource(v1beta1.VolSnapGVR).Namespace(namespace).UpdateStatus(ctx, snap, metav1.UpdateOptions{}); err != nil {
+			return errors.Errorf("Failed to update status, Volumesnapshot: %s, Error: %v", snap.GetName(), err)
+		}
+	}
 	err = sna.WaitOnReadyToUse(ctx, snapshotName, namespace)
 	return err
 }
