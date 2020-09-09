@@ -208,17 +208,18 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 	if !waitForReady {
 		return nil
 	}
-	if source.Driver == "dobs.csi.digitalocean.com" { //"csi-vxflexos.dellemc.com" {
-		fmt.Println("SIRISH - setting status")
-		us, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+	if source.Driver == "csi-vxflexos.dellemc.com" {
+		us, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(ctx, snap.GetName(), metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
-		fmt.Println("SIRISH - fetched status - ", us.Object["status"])
-		us.Object["status"] = map[string]interface{}{
-			"readyToUse": false,
+		status, ok := us.Object["status"].(map[string]interface{})
+		if !ok {
+			errors.Errorf("Failed to convert status to map, Volumesnapshot: %s, Status: %v", snap.GetName(), status)
 		}
-		if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).UpdateStatus(ctx, snap, metav1.UpdateOptions{}); err != nil {
+		status["readyToUse"] = true
+		us.Object["status"] = status
+		if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).UpdateStatus(ctx, us, metav1.UpdateOptions{}); err != nil {
 			return errors.Errorf("Failed to update status, Volumesnapshot: %s, Error: %v", snap.GetName(), err)
 		}
 	}
