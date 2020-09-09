@@ -215,7 +215,7 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 		}
 		status, ok := us.Object["status"].(map[string]interface{})
 		if !ok {
-			errors.Errorf("Failed to convert status to map, Volumesnapshot: %s, Status: %v", snap.GetName(), status)
+			return errors.Errorf("Failed to convert status to map, Volumesnapshot: %s, Status: %v", snap.GetName(), status)
 		}
 		status["readyToUse"] = true
 		us.Object["status"] = status
