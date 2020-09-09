@@ -21,12 +21,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/app"
 )
 
-const (
-	TemplateVersionOCP3_11 = "release-3.11"
-	TemplateVersionOCP4_4  = "release-4.4"
-	TemplateVersionOCP4_5  = "release-4.5"
-)
-
 // Register Applications to Integration Suite
 
 // pitr-postgresql app
@@ -204,7 +198,7 @@ var _ = Suite(&MysqlDBDepConfig{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", TemplateVersionOCP3_11, app.EphemeralStorage),
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP3_11, app.EphemeralStorage),
 		bp:        app.NewBlueprint("mysql-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -219,7 +213,7 @@ var _ = Suite(&MongoDBDepConfig{
 	IntegrationSuite{
 		name:      "mongodb",
 		namespace: "mongodb-test",
-		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", TemplateVersionOCP3_11, app.EphemeralStorage),
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP3_11, app.EphemeralStorage),
 		bp:        app.NewBlueprint("mongo-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -234,7 +228,7 @@ var _ = Suite(&PostgreSQLDepConfig{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf", TemplateVersionOCP3_11, app.EphemeralStorage),
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP3_11, app.EphemeralStorage),
 		bp:        app.NewBlueprint("postgres-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -250,7 +244,7 @@ var _ = Suite(&MysqlDBDepConfig4_4{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc4-4-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", TemplateVersionOCP4_4, app.EphemeralStorage),
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_4, app.EphemeralStorage),
 		bp:        app.NewBlueprint("mysql-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -265,7 +259,7 @@ var _ = Suite(&MongoDBDepConfig4_4{
 	IntegrationSuite{
 		name:      "mongodb",
 		namespace: "mongodb4-4-test",
-		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", TemplateVersionOCP4_4, app.EphemeralStorage),
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_4, app.EphemeralStorage),
 		bp:        app.NewBlueprint("mongo-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -280,7 +274,7 @@ var _ = Suite(&PostgreSQLDepConfig4_4{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-4-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf", TemplateVersionOCP4_4, app.EphemeralStorage),
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_4, app.EphemeralStorage),
 		bp:        app.NewBlueprint("postgres-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -296,7 +290,7 @@ var _ = Suite(&MysqlDBDepConfig4_5{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc4-5-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", TemplateVersionOCP4_5, app.EphemeralStorage),
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_5, app.EphemeralStorage),
 		bp:        app.NewBlueprint("mysql-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -311,7 +305,7 @@ var _ = Suite(&MongoDBDepConfig4_5{
 	IntegrationSuite{
 		name:      "mongodb",
 		namespace: "mongodb4-5-test",
-		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", TemplateVersionOCP4_5, app.EphemeralStorage),
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_5, app.EphemeralStorage),
 		bp:        app.NewBlueprint("mongo-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -326,7 +320,7 @@ var _ = Suite(&PostgreSQLDepConfig4_5{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-5-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf", TemplateVersionOCP4_5, app.EphemeralStorage),
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_5, app.EphemeralStorage),
 		bp:        app.NewBlueprint("postgres-dep-config", ""),
 		profile:   newSecretProfile(),
 	},

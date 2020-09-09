@@ -47,10 +47,10 @@ type MongoDBDepConfig struct {
 	params      map[string]string
 	storageType storage
 	// dbTemplateVersion will most probably match with the OCP version
-	dbTemplateVersion string
+	dbTemplateVersion dbTemplate
 }
 
-func NewMongoDBDepConfig(name, templateVersion string, storageType storage) App {
+func NewMongoDBDepConfig(name string, templateVersion dbTemplate, storageType storage) App {
 	return &MongoDBDepConfig{
 		name: name,
 		user: "admin",

@@ -27,9 +27,18 @@ const (
 
 	// EphemeralStorage can be used if we don't want to deploy database with Persistent
 	EphemeralStorage storage = "ephemeral"
+	// TemplateVersionOCP3_11 stores version of db template 3.11
+	TemplateVersionOCP3_11 dbTemplate = "release-3.11"
+	// TemplateVersionOCP4_4 stores version of db template 4.4
+	TemplateVersionOCP4_4 dbTemplate = "release-4.4"
+	// TemplateVersionOCP4_5 stored version of db template 4.5
+	TemplateVersionOCP4_5 dbTemplate = "release-4.5"
 )
 
 type storage string
+
+// version of openshift db template
+type dbTemplate string
 
 // appendRandString, appends a random string to the passed string value
 func appendRandString(name string) string {
@@ -39,7 +48,7 @@ func appendRandString(name string) string {
 // getOpenShiftDBTemplate accepts the application name and returns the
 // db template for that application
 // https://github.com/openshift/origin/tree/master/examples/db-templates
-func getOpenShiftDBTemplate(appName, templateVersion string, storageType storage) string {
+func getOpenShiftDBTemplate(appName string, templateVersion dbTemplate, storageType storage) string {
 	return fmt.Sprintf(dbTemplateURI, templateVersion, appName, storageType)
 }
 
