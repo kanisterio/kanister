@@ -568,7 +568,7 @@ func (s *GpdStorage) FromRegion(ctx context.Context, region string) ([]string, e
 }
 
 // RegionToZoneMap returns the region to zone map fetched from the provider
-func (s *GpdStorage) RegionToZoneMap(ctx context.Context, region string) (map[string][]string, error) {
+func (s *GpdStorage) RegionToZoneMap(ctx context.Context) (map[string][]string, error) {
 	regionMap := make(map[string][]string)
 	req := s.service.Zones.List(s.project)
 	if err := req.Pages(ctx, func(page *compute.ZoneList) error {
