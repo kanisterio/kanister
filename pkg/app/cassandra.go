@@ -47,6 +47,7 @@ type CassandraInstance struct {
 }
 
 // NewCassandraInstance returns new cassandra application
+// Last tested working version "0.13.3"
 func NewCassandraInstance(name string) App {
 	return &CassandraInstance{
 		name: name,
@@ -55,7 +56,6 @@ func NewCassandraInstance(name string) App {
 			RepoURL:  helm.IncubatorRepoURL,
 			Chart:    "cassandra",
 			RepoName: helm.IncubatorRepoName,
-			Version:  "0.13.3",
 			Values: map[string]string{
 				"image.repo":          "kanisterio/cassandra",
 				"image.tag":           "0.34.0",
