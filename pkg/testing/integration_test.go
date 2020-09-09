@@ -427,7 +427,7 @@ func (s *IntegrationSuite) TearDownSuite(c *C) {
 	}
 
 	// Uninstall implementation of the apps doesn't delete namespace
-	// delete the namespace separately
+	// Delete the namespace separately
 	err := s.cli.CoreV1().Namespaces().Delete(ctx, s.namespace, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }
