@@ -425,6 +425,11 @@ func (s *IntegrationSuite) TearDownSuite(c *C) {
 		err := s.app.Uninstall(ctx)
 		c.Assert(err, IsNil)
 	}
+
+	// Uninstall implementation of the apps doesn't delete namespace
+	// delete the namespace separately
+	err := s.cli.CoreV1().Namespaces().Delete(ctx, s.namespace, metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
 }
 
 func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {

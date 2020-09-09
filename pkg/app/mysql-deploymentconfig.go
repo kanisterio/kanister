@@ -46,9 +46,11 @@ type MysqlDepConfig struct {
 	storageType storage
 	osClient    openshift.OSClient
 	envVar      map[string]string
+	// dbTemplateVersion will most probably match with the OCP version
+	dbTemplateVersion string
 }
 
-func NewMysqlDepConfig(name string, storageType storage) App {
+func NewMysqlDepConfig(name, templateVersion string, storageType storage) App {
 	return &MysqlDepConfig{
 		name: name,
 		params: map[string]string{
@@ -57,8 +59,9 @@ func NewMysqlDepConfig(name string, storageType storage) App {
 		envVar: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "secretpassword",
 		},
-		storageType: storageType,
-		osClient:    openshift.NewOpenShiftClient(),
+		storageType:       storageType,
+		osClient:          openshift.NewOpenShiftClient(),
+		dbTemplateVersion: templateVersion,
 	}
 }
 
@@ -81,7 +84,7 @@ func (mdep *MysqlDepConfig) Init(context.Context) error {
 func (mdep *MysqlDepConfig) Install(ctx context.Context, namespace string) error {
 	mdep.namespace = namespace
 
-	dbTemplate := getOpenShiftDBTemplate(mysqlDepConfigName, mdep.storageType)
+	dbTemplate := getOpenShiftDBTemplate(mysqlDepConfigName, mdep.dbTemplateVersion, mdep.storageType)
 
 	oc := openshift.NewOpenShiftClient()
 	_, err := oc.NewApp(ctx, mdep.namespace, dbTemplate, nil, mdep.params)
