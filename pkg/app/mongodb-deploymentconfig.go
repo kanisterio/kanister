@@ -46,17 +46,20 @@ type MongoDBDepConfig struct {
 	osClient    openshift.OSClient
 	params      map[string]string
 	storageType storage
+	// dbTemplateVersion will most probably match with the OCP version
+	dbTemplateVersion string
 }
 
-func NewMongoDBDepConfig(name string, storageType storage) App {
+func NewMongoDBDepConfig(name, templateVersion string, storageType storage) App {
 	return &MongoDBDepConfig{
 		name: name,
 		user: "admin",
 		params: map[string]string{
 			"MONGODB_ADMIN_PASSWORD": "secretpassword",
 		},
-		osClient:    openshift.NewOpenShiftClient(),
-		storageType: storageType,
+		osClient:          openshift.NewOpenShiftClient(),
+		storageType:       storageType,
+		dbTemplateVersion: templateVersion,
 	}
 }
 
@@ -79,7 +82,7 @@ func (mongo *MongoDBDepConfig) Init(context.Context) error {
 func (mongo *MongoDBDepConfig) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
 
-	dbTemplate := getOpenShiftDBTemplate(mongoDepConfigName, mongo.storageType)
+	dbTemplate := getOpenShiftDBTemplate(mongoDepConfigName, mongo.dbTemplateVersion, mongo.storageType)
 
 	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, dbTemplate, nil, mongo.params)
 
