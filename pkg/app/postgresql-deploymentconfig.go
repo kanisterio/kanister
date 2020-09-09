@@ -48,10 +48,10 @@ type PostgreSQLDepConfig struct {
 	envVar         map[string]string
 	storageType    storage
 	// dbTemplateVersion will most probably match with the OCP version
-	dbTemplateVersion string
+	dbTemplateVersion dbTemplate
 }
 
-func NewPostgreSQLDepConfig(name, templateVersion string, storageType storage) App {
+func NewPostgreSQLDepConfig(name string, templateVersion dbTemplate, storageType storage) App {
 	return &PostgreSQLDepConfig{
 		name:           name,
 		opeshiftClient: openshift.NewOpenShiftClient(),

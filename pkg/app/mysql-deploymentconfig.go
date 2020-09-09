@@ -47,10 +47,10 @@ type MysqlDepConfig struct {
 	osClient    openshift.OSClient
 	envVar      map[string]string
 	// dbTemplateVersion will most probably match with the OCP version
-	dbTemplateVersion string
+	dbTemplateVersion dbTemplate
 }
 
-func NewMysqlDepConfig(name, templateVersion string, storageType storage) App {
+func NewMysqlDepConfig(name string, templateVersion dbTemplate, storageType storage) App {
 	return &MysqlDepConfig{
 		name: name,
 		params: map[string]string{
