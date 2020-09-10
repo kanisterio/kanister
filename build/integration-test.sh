@@ -27,7 +27,9 @@ TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # Regex to match apps to run in short mode
 SHORT_APPS="^PostgreSQL$|^PITRPostgreSQL|MySQL|Elasticsearch|^MongoDB$"
 # OCAPPS has all the apps that are to be tested against openshift cluster
-OC_APPS="MysqlDBDepConfig|MongoDBDepConfig|PostgreSQLDepConfig"
+OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
+OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"
+OC_APPS4_5="MysqlDBDepConfig4_5|MongoDBDepConfig4_5|PostgreSQLDepConfig4_5"
 
 check_dependencies() {
     # Check if minio is already deployed
@@ -49,7 +51,7 @@ Usage: ${0} <app-type>
 Where app-type is one of [short|all]:
   short: Runs e2e integration tests for part of apps
   all: Runs e2e integration tests for all apps
-  oc: Runs e2e integration tests for apps that are to be tetsed against openshift cluster
+  openshift ocp_version=<ocp_version>: Runs e2e integration tests for apps that are to be tetsed against openshift cluster, OCP version can be provided using ocp_version argument
 OR
   You can also provide regex to match apps you want to run.
 EOM
@@ -66,8 +68,26 @@ case "${1}" in
         TEST_APPS=${SHORT_APPS}
         ;;
     openshift)
-        # Run only openshift apps
-        TEST_APPS=${OC_APPS}
+        # TODO:// make sure the argument is named ocp_version
+        if [[ ${#@} == 1 ]]; then
+            usage
+        fi
+
+        case "${2}" in
+            "3.11")
+                TEST_APPS=${OC_APPS3_11}
+                ;;
+            "4.4")
+                TEST_APPS=${OC_APPS4_4}
+                ;;
+            "4.5")
+                TEST_APPS=${OC_APPS4_5}
+                ;;
+            *)
+                echo "Only 3.11, 4.4 and 4.5 OCP versions are supported"
+                usage
+                ;;
+        esac
         ;;
     *)
         TEST_APPS=${1}
