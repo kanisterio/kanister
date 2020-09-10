@@ -49,6 +49,7 @@ type CouchbaseDB struct {
 	clusterChart  helm.ChartInfo
 }
 
+// Last tested woking version "0.1.2"
 func NewCouchbaseDB(name string) App {
 	return &CouchbaseDB{
 		name: name,
@@ -57,7 +58,6 @@ func NewCouchbaseDB(name string) App {
 			RepoName: helm.CouchbaseRepoName,
 			RepoURL:  helm.CouchbaseRepoURL,
 			Chart:    "couchbase-operator",
-			Version:  "0.1.2",
 		},
 		clusterChart: helm.ChartInfo{
 			Release: appendRandString(name),
