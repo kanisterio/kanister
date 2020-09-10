@@ -56,9 +56,6 @@ func NewMysqlDepConfig(name string, templateVersion DBTemplate, storageType stor
 		params: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "secretpassword",
 		},
-		envVar: map[string]string{
-			"MYSQL_ROOT_PASSWORD": "secretpassword",
-		},
 		storageType:       storageType,
 		osClient:          openshift.NewOpenShiftClient(),
 		dbTemplateVersion: templateVersion,
