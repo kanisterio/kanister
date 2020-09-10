@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -573,7 +575,12 @@ func (s *GpdStorage) RegionToZoneMap(ctx context.Context) (map[string][]string, 
 	req := s.service.Zones.List(s.project)
 	if err := req.Pages(ctx, func(page *compute.ZoneList) error {
 		for _, zone := range page.Items {
-			regionMap[zone.Region] = append(regionMap[zone.Region], zone.Name)
+			regionURL, err := url.Parse(zone.Region)
+			if err != nil {
+				return err
+			}
+			region := path.Base(regionURL.Path)
+			regionMap[region] = append(regionMap[region], zone.Name)
 		}
 		return nil
 	}); err != nil {
