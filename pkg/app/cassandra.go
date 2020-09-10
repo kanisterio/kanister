@@ -53,9 +53,9 @@ func NewCassandraInstance(name string) App {
 		name: name,
 		chart: helm.ChartInfo{
 			Release:  appendRandString(name),
-			RepoURL:  helm.IncubatorRepoURL,
+			RepoURL:  helm.BitnamiRepoURL,
+			RepoName: helm.BitnamiRepoName,
 			Chart:    "cassandra",
-			RepoName: helm.IncubatorRepoName,
 			Values: map[string]string{
 				"image.repo":          "kanisterio/cassandra",
 				"image.tag":           "0.34.0",
