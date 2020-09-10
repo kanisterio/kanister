@@ -45,10 +45,9 @@ func NewPostgresDB(name string) App {
 		name: name,
 		chart: helm.ChartInfo{
 			Release:  appendRandString(name),
-			RepoName: helm.StableRepoName,
-			RepoURL:  helm.StableRepoURL,
+			RepoName: helm.BitnamiRepoName,
+			RepoURL:  helm.BitnamiRepoURL,
 			Chart:    "postgresql",
-			Version:  "7.6.0",
 			Values: map[string]string{
 				"image.repository":                      "kanisterio/postgresql",
 				"image.tag":                             "0.34.0",
