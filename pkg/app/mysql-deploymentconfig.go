@@ -54,9 +54,6 @@ func NewMysqlDepConfig(name string, storageType storage) App {
 		params: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "secretpassword",
 		},
-		envVar: map[string]string{
-			"MYSQL_ROOT_PASSWORD": "secretpassword",
-		},
 		storageType: storageType,
 		osClient:    openshift.NewOpenShiftClient(),
 	}
