@@ -49,16 +49,16 @@ type MongoDB struct {
 	chart     helm.ChartInfo
 }
 
+// Last tested working version "7.4.6"
 func NewMongoDB(name string) App {
 	return &MongoDB{
 		username: "root",
 		name:     name,
 		chart: helm.ChartInfo{
 			Release:  appendRandString(name),
-			RepoURL:  helm.StableRepoURL,
+			RepoURL:  helm.BitnamiRepoURL,
+			RepoName: helm.BitnamiRepoName,
 			Chart:    "mongodb",
-			RepoName: helm.StableRepoName,
-			Version:  "7.4.6",
 			Values: map[string]string{
 				"replicaSet.enabled": "true",
 				"image.repository":   "kanisterio/mongodb",
