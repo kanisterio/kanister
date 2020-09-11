@@ -240,7 +240,7 @@ func (sna *SnapshotBeta) CreateFromSource(ctx context.Context, source *Source, s
 		return nil
 	}
 	if source.Driver == DellFlexOSDriver {
-		// Temporary workaround till upstream issue is resolved-
+		// Temporary work around till upstream issue is resolved-
 		// github- https://github.com/dell/csi-vxflexos/pull/11
 		// forum- https://www.dell.com/community/Containers/Issue-where-volumeSnapshots-have-ReadyToUse-field-set-to-false/m-p/7685881#M249
 		err := sna.UpdateVolumeSnapshotStatusBeta(ctx, namespace, snap.GetName(), true)
