@@ -45,6 +45,7 @@ const (
 	DeletionPolicyDelete              = "Delete"
 	DeletionPolicyRetain              = "Retain"
 	CloneVolumeSnapshotClassLabelName = "kanister-cloned-from"
+	DellFlexOSDriver                  = "csi-vxflexos.dellemc.com"
 )
 
 type SnapshotAlpha struct {
@@ -208,23 +209,35 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 	if !waitForReady {
 		return nil
 	}
-	if source.Driver == "csi-vxflexos.dellemc.com" {
-		us, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(ctx, snap.GetName(), metav1.GetOptions{})
+	if source.Driver == DellFlexOSDriver {
+		// Temporary workaround till upstream issue is resolved-
+		// github- https://github.com/dell/csi-vxflexos/pull/11
+		// forum- https://www.dell.com/community/Containers/Issue-where-volumeSnapshots-have-ReadyToUse-field-set-to-false/m-p/7685881#M249
+		err := sna.UpdateVolumeSnapshotStatusAlpha(ctx, namespace, snap.GetName(), true)
 		if err != nil {
 			return err
-		}
-		status, ok := us.Object["status"].(map[string]interface{})
-		if !ok {
-			return errors.Errorf("Failed to convert status to map, Volumesnapshot: %s, Status: %v", snap.GetName(), status)
-		}
-		status["readyToUse"] = true
-		us.Object["status"] = status
-		if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).UpdateStatus(ctx, us, metav1.UpdateOptions{}); err != nil {
-			return errors.Errorf("Failed to update status, Volumesnapshot: %s, Error: %v", snap.GetName(), err)
 		}
 	}
 
 	return sna.WaitOnReadyToUse(ctx, snapshotName, namespace)
+}
+
+// UpdateVolumeSnapshotStatusAlpha sets the readyToUse valuse of a VolumeSnapshot.
+func (sna *SnapshotAlpha) UpdateVolumeSnapshotStatusAlpha(ctx context.Context, namespace string, snapshotName string, readyToUse bool) error {
+	us, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	status, ok := us.Object["status"].(map[string]interface{})
+	if !ok {
+		return errors.Errorf("Failed to convert status to map, Volumesnapshot: %s, Status: %v", snapshotName, status)
+	}
+	status["readyToUse"] = readyToUse
+	us.Object["status"] = status
+	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).UpdateStatus(ctx, us, metav1.UpdateOptions{}); err != nil {
+		return errors.Errorf("Failed to update status, Volumesnapshot: %s, Error: %v", snapshotName, err)
+	}
+	return nil
 }
 
 // CreateContentFromSource will create a 'VolumesnaphotContent' for the underlying snapshot source.
