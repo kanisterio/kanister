@@ -26,7 +26,7 @@ func IsOSAppsGroupAvailable(ctx context.Context, cli discovery.DiscoveryInterfac
 	return false, nil
 }
 
-// IsOSRouteGroupAvailable returns true is the opneshift route group is registered in service discovery
+// IsOSRouteGroupAvailable returns true is the openshift route group is registered in service discovery
 func IsOSRouteGroupAvailable(ctx context.Context, cli discovery.DiscoveryInterface) (bool, error) {
 	sgs, err := cli.ServerGroups()
 	if err != nil {
