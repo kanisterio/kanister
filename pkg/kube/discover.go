@@ -7,7 +7,10 @@ import (
 	"k8s.io/client-go/discovery"
 )
 
-const osAppsGroupName = `apps.openshift.io`
+const (
+	osAppsGroupName  = `apps.openshift.io`
+	osRouteGroupName = `route.openshift.io/v1`
+)
 
 // IsOSAppsGroupAvailable returns true if the openshift apps group is registered in service discovery.
 func IsOSAppsGroupAvailable(ctx context.Context, cli discovery.DiscoveryInterface) (bool, error) {
@@ -17,6 +20,20 @@ func IsOSAppsGroupAvailable(ctx context.Context, cli discovery.DiscoveryInterfac
 	}
 	for _, g := range sgs.Groups {
 		if g.Name == osAppsGroupName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// IsOSRouteGroupAvailable returns true is the opneshift route group is registered in service discovery
+func IsOSRouteGroupAvailable(ctx context.Context, cli discovery.DiscoveryInterface) (bool, error) {
+	sgs, err := cli.ServerGroups()
+	if err != nil {
+		return false, err
+	}
+	for _, g := range sgs.Groups {
+		if g.Name == osRouteGroupName {
 			return true, nil
 		}
 	}
