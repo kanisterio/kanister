@@ -9,7 +9,7 @@ import (
 
 const (
 	osAppsGroupName  = `apps.openshift.io`
-	osRouteGroupName = `route.openshift.io/v1`
+	osRouteGroupName = `route.openshift.io`
 )
 
 // IsOSAppsGroupAvailable returns true if the openshift apps group is registered in service discovery.
