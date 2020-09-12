@@ -31,10 +31,6 @@ type HelmVersion string
 const (
 	DefaultCommandTimeout = 5 * time.Minute
 
-	// Add Bitnami charts url
-	BitnamiRepoName = "bitnami"
-	BitnamiRepoURL  = "https://charts.bitnami.com/bitnami"
-
 	// Add elastic charts url
 	ElasticRepoName = "elastic"
 	ElasticRepoURL  = "https://helm.elastic.co"
