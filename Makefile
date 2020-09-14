@@ -41,7 +41,7 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 
 # Mention the vm-driver that should be used to install OpenShift
 vm-driver ?= "kvm"
-# The OCP version in which the OpenShift apps are going to run by default
+# OCP version in which the OpenShift apps are going to run, by default
 ocp_version ?= "4.5"
 ###
 ### These variables should not need tweaking.
