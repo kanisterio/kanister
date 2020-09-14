@@ -239,9 +239,35 @@ func (sna *SnapshotBeta) CreateFromSource(ctx context.Context, source *Source, s
 	if !waitForReady {
 		return nil
 	}
-
+	if source.Driver == DellFlexOSDriver {
+		// Temporary work around till upstream issue is resolved-
+		// github- https://github.com/dell/csi-vxflexos/pull/11
+		// forum- https://www.dell.com/community/Containers/Issue-where-volumeSnapshots-have-ReadyToUse-field-set-to-false/m-p/7685881#M249
+		err := sna.UpdateVolumeSnapshotStatusBeta(ctx, namespace, snap.GetName(), true)
+		if err != nil {
+			return err
+		}
+	}
 	err = sna.WaitOnReadyToUse(ctx, snapshotName, namespace)
 	return err
+}
+
+// UpdateVolumeSnapshotStatusBeta sets the readyToUse valuse of a VolumeSnapshot.
+func (sna *SnapshotBeta) UpdateVolumeSnapshotStatusBeta(ctx context.Context, namespace string, snapshotName string, readyToUse bool) error {
+	us, err := sna.dynCli.Resource(v1beta1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	status, ok := us.Object["status"].(map[string]interface{})
+	if !ok {
+		return errors.Errorf("Failed to convert status to map, Volumesnapshot: %s, Status: %v", snapshotName, status)
+	}
+	status["readyToUse"] = readyToUse
+	us.Object["status"] = status
+	if _, err := sna.dynCli.Resource(v1beta1.VolSnapGVR).Namespace(namespace).UpdateStatus(ctx, us, metav1.UpdateOptions{}); err != nil {
+		return errors.Errorf("Failed to update status, Volumesnapshot: %s, Error: %v", snapshotName, err)
+	}
+	return nil
 }
 
 // CreateContentFromSource will create a 'VolumesnaphotContent' for the underlying snapshot source.
