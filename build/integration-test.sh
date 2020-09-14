@@ -51,9 +51,10 @@ Usage: ${0} <app-type>
 Where app-type is one of [short|all]:
   short: Runs e2e integration tests for part of apps
   all: Runs e2e integration tests for all apps
-  openshift ocp_version=<ocp_version>: Runs e2e integration tests for apps that are to be tetsed against openshift cluster, OCP version can be provided using ocp_version argument
-OR
+  OR
   You can also provide regex to match apps you want to run.
+  openshift ocp_version=<ocp_version>: Runs e2e integration tests for specific version of OpenShift apps, OCP version can be provided using ocp_version argument. Currently supported versions are 3.11, 4.4 and 4.5.
+
 EOM
     exit 1
 }
@@ -84,7 +85,6 @@ case "${1}" in
                 TEST_APPS=${OC_APPS4_5}
                 ;;
             *)
-                echo "Only 3.11, 4.4 and 4.5 OCP versions are supported"
                 usage
                 ;;
         esac
