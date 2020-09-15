@@ -19,7 +19,7 @@ actions:
           namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: kanisterio/mongodb:0.34.0
+        image: kanisterio/mongodb:0.35.0
         command:
           - bash
           - -o
@@ -46,7 +46,7 @@ actions:
           namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: kanisterio/mongodb:0.34.0
+        image: kanisterio/mongodb:0.35.0
         command:
           - bash
           - -o
@@ -68,7 +68,7 @@ actions:
       name: deleteFromBlobStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: kanisterio/mongodb:0.34.0
+        image: kanisterio/mongodb:0.35.0
         command:
           - bash
           - -o
