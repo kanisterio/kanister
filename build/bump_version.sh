@@ -32,7 +32,7 @@ main() {
         else
             pkgs=( "$@" )
     fi
-    # -F matches for exact words, not regular expression, that is what required here
+    # -F matches for exact words, not regular expression (-E), that is what required here
     grep -F "${prev}" -r  "${pkgs[@]}" | cut -d ':' -f 1 | uniq | xargs sed -ri "s/${prev}/${next//./\\.}/g"
 }
 
