@@ -1,7 +1,9 @@
-FROM alpine:3.11.3
+ARG TOOLS_IMAGE
+FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 
-COPY --from=kanisterio/kanister-tools:0.35.0 /usr/local/bin/restic /usr/local/bin/restic
-COPY --from=kanisterio/kanister-tools:0.35.0 /usr/local/bin/kopia /usr/local/bin/kopia
+FROM alpine:3.11.3
+COPY --from=TOOLS_IMAGE /usr/local/bin/restic /usr/local/bin/restic
+COPY --from=TOOLS_IMAGE /usr/local/bin/kopia /usr/local/bin/kopia
 ADD kando /usr/local/bin/
 
 ADD docker/kanister-elasticsearch/image/esdump-setup.sh /esdump-setup.sh
