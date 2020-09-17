@@ -68,6 +68,8 @@ dockers:
   image_templates:
   - 'kanisterio/es-sidecar:{{ .Tag }}'
   dockerfile: 'docker/kanister-elasticsearch/image/Dockerfile'
+  build_flag_templates:
+  - "--build-arg=TOOLS_IMAGE=kanisterio/kanister-tools:{{ .Tag }}"
   extra_files:
   - 'docker/kanister-elasticsearch/image/esdump-setup.sh'
 - binaries:
