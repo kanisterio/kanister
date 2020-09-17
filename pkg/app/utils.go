@@ -21,15 +21,24 @@ import (
 )
 
 const (
-	dbTemplateURI = "https://raw.githubusercontent.com/openshift/origin/v3.11.0/examples/db-templates/%s-%s-template.json"
+	dbTemplateURI = "https://raw.githubusercontent.com/openshift/origin/%s/examples/db-templates/%s-%s-template.json"
 	// PersistentStorage can be used if we want to deploy database with Persistent
 	PersistentStorage storage = "persistent" // nolint:varcheck
 
 	// EphemeralStorage can be used if we don't want to deploy database with Persistent
 	EphemeralStorage storage = "ephemeral"
+	// TemplateVersionOCP3_11 stores version of db template 3.11
+	TemplateVersionOCP3_11 DBTemplate = "release-3.11"
+	// TemplateVersionOCP4_4 stores version of db template 4.4
+	TemplateVersionOCP4_4 DBTemplate = "release-4.4"
+	// TemplateVersionOCP4_5 stored version of db template 4.5
+	TemplateVersionOCP4_5 DBTemplate = "release-4.5"
 )
 
 type storage string
+
+// DBTemplate is type of openshift db template version
+type DBTemplate string
 
 // appendRandString, appends a random string to the passed string value
 func appendRandString(name string) string {
@@ -39,8 +48,8 @@ func appendRandString(name string) string {
 // getOpenShiftDBTemplate accepts the application name and returns the
 // db template for that application
 // https://github.com/openshift/origin/tree/master/examples/db-templates
-func getOpenShiftDBTemplate(appName string, storageType storage) string {
-	return fmt.Sprintf(dbTemplateURI, appName, storageType)
+func getOpenShiftDBTemplate(appName string, templateVersion DBTemplate, storageType storage) string {
+	return fmt.Sprintf(dbTemplateURI, templateVersion, appName, storageType)
 }
 
 // getLabelOfApp returns label of the passed application this label can be
