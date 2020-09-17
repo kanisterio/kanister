@@ -10,3 +10,4 @@ ADD docker/kanister-elasticsearch/image/esdump-setup.sh /esdump-setup.sh
 RUN chmod +x /esdump-setup.sh && sync && /esdump-setup.sh
 
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]
+
