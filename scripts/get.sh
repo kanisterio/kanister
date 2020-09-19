@@ -140,7 +140,7 @@ cleanup() {
 }
 
 main() {
-    version="${1:-"0.35.0"}"
+    version="${1:-"0.36.0"}"
     initArch
     initOS
     verifySupported
