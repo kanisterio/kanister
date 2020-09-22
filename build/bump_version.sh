@@ -33,7 +33,7 @@ main() {
             pkgs=( "$@" )
     fi
     # -F matches for exact words, not regular expression (-E), that is what required here
-    grep -F "${prev}" -r  "${pkgs[@]}" | cut -d ':' -f 1 | uniq | xargs sed -ri "s/${prev}/${next//./\\.}/g"
+    grep -F "${prev}" -Ir  "${pkgs[@]}" --exclude-dir={mod,bin} | cut -d ':' -f 1 | uniq | xargs sed -ri "s/${prev}/${next//./\\.}/g"
 }
 
 main $@
