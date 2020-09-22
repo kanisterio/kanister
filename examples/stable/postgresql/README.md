@@ -68,7 +68,7 @@ can be shared between Kanister-enabled application instances.
 Create Blueprint in the same namespace as the controller
 
 ```bash
-$ kubectl create -f ./latest/postgres-blueprint.yaml -n kasten-io
+$ kubectl create -f ./postgres-blueprint.yaml -n kasten-io
 ```
 
 Once Postgres is running, you can populate it with some data. Let's add a table called "company" to a "test" database:
