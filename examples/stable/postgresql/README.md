@@ -19,15 +19,15 @@ Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment
 To install the chart with the release name `my-release`:
 
 ```bash
-$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+$ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 
 # If you are using helm v3
 $ kubectl create ns postgres-test
-$ helm install my-release --namespace postgres-test stable/postgresql
+$ helm install my-release --namespace postgres-test bitnami/postgresql
 
 # If you are using helm v2
-$ helm install --name my-release --namespace postgres-test stable/postgresql
+$ helm install --name my-release --namespace postgres-test bitnami/postgresql
 ```
 
 The command deploys PostgreSQL on the Kubernetes cluster in the default configuration.
