@@ -24,7 +24,9 @@ import (
 )
 
 const (
+	streamPushDirPathFlag      = "--dirPath"
 	streamPushDirPathFlagName  = "dirPath"
+	streamPushFilePathFlag     = "--filePath"
 	streamPushFilePathFlagName = "filePath"
 )
 
@@ -45,36 +47,44 @@ func newStreamPushCommand() *cobra.Command {
 }
 
 func runStreamPush(cmd *cobra.Command, args []string) error {
-	dirPath := streamPushDirPathFlag(cmd)
-	filePath := streamPushFilePathFlag(cmd)
-	pwd := streamPasswordFlag(cmd)
+	configFile := streamRepoConfigFileFlagValue(cmd)
+	dirPath := streamPushDirPathFlagValue(cmd)
+	filePath := streamPushFilePathFlagValue(cmd)
+	pwd := streamPasswordFlagValue(cmd)
 	sourceEndpoint := args[0]
-	return stream.Push(context.Background(), dirPath, filePath, pwd, sourceEndpoint)
+	return stream.Push(context.Background(), configFile, dirPath, filePath, pwd, sourceEndpoint)
 }
 
-func streamPushDirPathFlag(cmd *cobra.Command) string {
+func streamPushDirPathFlagValue(cmd *cobra.Command) string {
 	return cmd.Flag(streamPushDirPathFlagName).Value.String()
 }
 
-func streamPushFilePathFlag(cmd *cobra.Command) string {
+func streamPushFilePathFlagValue(cmd *cobra.Command) string {
 	return cmd.Flag(streamPushFilePathFlagName).Value.String()
 }
 
 // GenerateStreamPushCommand generates a bash command for
 // kando stream push with given flags and arguments
-func GenerateStreamPushCommand(dirPath, filePath, password, sourceEndpoint string) []string {
+func GenerateStreamPushCommand(configFile, dirPath, filePath, password, sourceEndpoint string) []string {
 	kandoCmd := []string{
 		"kando",
 		"stream",
 		"push",
-		"--password",
+		streamPasswordFlag,
 		password,
-		"--dirPath",
-		dirPath,
-		"--filePath",
-		filePath,
-		sourceEndpoint,
 	}
+
+	if configFile != "" {
+		kandoCmd = append(kandoCmd, streamRepoConfigFileFlag, configFile)
+	}
+
+	kandoCmd = append(
+		kandoCmd,
+		streamPushDirPathFlag, dirPath,
+		streamPushFilePathFlag, filePath,
+		sourceEndpoint,
+	)
+
 	return []string{
 		"bash",
 		"-o",
