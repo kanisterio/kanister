@@ -22,7 +22,7 @@ To install the chart with the release name `my-release`:
 $ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 $ helm repo update
 
-$ helm install stable/postgresql --name my-release \
+$ helm install my-release bitnami/postgresql  \
 	--namespace postgres-test \
 	--set image.repository=kanisterio/postgresql \
 	--set image.tag=0.36.0 \
