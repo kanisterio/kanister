@@ -263,6 +263,7 @@ func (s *BlockStorageProviderSuite) createSnapshot(c *C) *blockstorage.Snapshot 
 	s.snapshots = append(s.snapshots, ret)
 	s.checkTagsExist(c, blockstorage.KeyValueToMap(ret.Tags), tags)
 	c.Assert(s.provider.SnapshotCreateWaitForCompletion(context.Background(), ret), IsNil)
+	c.Assert(ret.Volume, NotNil)
 	return ret
 }
 

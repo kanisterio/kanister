@@ -37,8 +37,8 @@ const (
 )
 
 // Push streams data to object store by reading it from the given endpoint into an in-memory filesystem
-func Push(ctx context.Context, dirPath, filePath, password, sourceEndpoint string) error {
-	rep, err := OpenKopiaRepository(ctx, password)
+func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEndpoint string) error {
+	rep, err := OpenKopiaRepository(ctx, configFile, password)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
@@ -71,12 +71,13 @@ func Push(ctx context.Context, dirPath, filePath, password, sourceEndpoint strin
 
 // OpenKopiaRepository connects to the kopia repository based on the config
 // NOTE: This assumes that `kopia repository connect` has been already run on the machine
-func OpenKopiaRepository(ctx context.Context, password string) (repo.Repository, error) {
-	if _, err := os.Stat(defaultConfigFileName()); os.IsNotExist(err) {
+func OpenKopiaRepository(ctx context.Context, configFile, password string) (repo.Repository, error) {
+	repoConfig := repositoryConfigFileName(configFile)
+	if _, err := os.Stat(repoConfig); os.IsNotExist(err) {
 		return nil, errors.New("Failed find kopia configuration file")
 	}
 
-	r, err := repo.Open(ctx, defaultConfigFileName(), password, &repo.Options{})
+	r, err := repo.Open(ctx, repoConfig, password, &repo.Options{})
 	if os.IsNotExist(err) {
 		return nil, errors.New("Failed to find kopia repository, use `kopia repository create` or kopia repository connect` if already created")
 	}
@@ -84,7 +85,10 @@ func OpenKopiaRepository(ctx context.Context, password string) (repo.Repository,
 	return r, errors.Wrap(err, "Failed to open kopia repository")
 }
 
-func defaultConfigFileName() string {
+func repositoryConfigFileName(configFile string) string {
+	if configFile != "" {
+		return configFile
+	}
 	return filepath.Join(os.Getenv("HOME"), ".config", "kopia", "repository.config")
 }
 

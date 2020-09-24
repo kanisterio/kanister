@@ -188,6 +188,7 @@ var _ = Suite(&RDSPostgreSQLSnap{
 	},
 })
 
+// OpenShift apps for version 3.11
 // Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
 type MysqlDBDepConfig struct {
 	IntegrationSuite
@@ -197,7 +198,7 @@ var _ = Suite(&MysqlDBDepConfig{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.EphemeralStorage),
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP3_11, app.EphemeralStorage),
 		bp:        app.NewBlueprint("mysql-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -212,7 +213,7 @@ var _ = Suite(&MongoDBDepConfig{
 	IntegrationSuite{
 		name:      "mongodb",
 		namespace: "mongodb-test",
-		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.EphemeralStorage),
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP3_11, app.EphemeralStorage),
 		bp:        app.NewBlueprint("mongo-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -227,7 +228,99 @@ var _ = Suite(&PostgreSQLDepConfig{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.EphemeralStorage),
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP3_11, app.EphemeralStorage),
+		bp:        app.NewBlueprint("postgres-dep-config", ""),
+		profile:   newSecretProfile(),
+	},
+})
+
+// OpenShift apps for version 4.4
+// Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
+type MysqlDBDepConfig4_4 struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MysqlDBDepConfig4_4{
+	IntegrationSuite{
+		name:      "mysqldc",
+		namespace: "mysqldc4-4-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_4, app.EphemeralStorage),
+		bp:        app.NewBlueprint("mysql-dep-config", ""),
+		profile:   newSecretProfile(),
+	},
+})
+
+// MongoDB deployed on openshift cluster
+type MongoDBDepConfig4_4 struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MongoDBDepConfig4_4{
+	IntegrationSuite{
+		name:      "mongodb",
+		namespace: "mongodb4-4-test",
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_4, app.EphemeralStorage),
+		bp:        app.NewBlueprint("mongo-dep-config", ""),
+		profile:   newSecretProfile(),
+	},
+})
+
+// PostgreSQL deployed on openshift cluster
+type PostgreSQLDepConfig4_4 struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&PostgreSQLDepConfig4_4{
+	IntegrationSuite{
+		name:      "postgresdepconf",
+		namespace: "postgresdepconf4-4-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_4, app.EphemeralStorage),
+		bp:        app.NewBlueprint("postgres-dep-config", ""),
+		profile:   newSecretProfile(),
+	},
+})
+
+// OpenShift apps for version 4.5
+// Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
+type MysqlDBDepConfig4_5 struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MysqlDBDepConfig4_5{
+	IntegrationSuite{
+		name:      "mysqldc",
+		namespace: "mysqldc4-5-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_5, app.EphemeralStorage),
+		bp:        app.NewBlueprint("mysql-dep-config", ""),
+		profile:   newSecretProfile(),
+	},
+})
+
+// MongoDB deployed on openshift cluster
+type MongoDBDepConfig4_5 struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MongoDBDepConfig4_5{
+	IntegrationSuite{
+		name:      "mongodb",
+		namespace: "mongodb4-5-test",
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_5, app.EphemeralStorage),
+		bp:        app.NewBlueprint("mongo-dep-config", ""),
+		profile:   newSecretProfile(),
+	},
+})
+
+// PostgreSQL deployed on openshift cluster
+type PostgreSQLDepConfig4_5 struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&PostgreSQLDepConfig4_5{
+	IntegrationSuite{
+		name:      "postgresdepconf",
+		namespace: "postgresdepconf4-5-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_5, app.EphemeralStorage),
 		bp:        app.NewBlueprint("postgres-dep-config", ""),
 		profile:   newSecretProfile(),
 	},

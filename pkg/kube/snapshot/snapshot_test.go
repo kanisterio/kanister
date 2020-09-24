@@ -757,3 +757,90 @@ func findSnapshotClassName(c *C, dynCli dynamic.Interface, gvr schema.GroupVersi
 	}
 	return snapshotClass, snapshotterName
 }
+
+func (s *SnapshotTestSuite) TestCreateFromSourceAlpha(c *C) {
+	ctx := context.Background()
+	namespace := "namespace"
+	snapshotName := "snapname"
+	snapshotClass := "volSnapClass"
+
+	volSnap := snapshot.UnstructuredVolumeSnapshotAlpha(snapshotName, namespace, "pvcName", "content", snapshotClass)
+	volSnap.Object["status"] = map[string]interface{}{
+		"readyToUse": false,
+	}
+	scheme := runtime.NewScheme()
+	dynCli := dynfake.NewSimpleDynamicClient(scheme, volSnap)
+	kubeCli := fake.NewSimpleClientset()
+
+	snapshotterAlpha, ok := snapshot.NewSnapshotAlpha(kubeCli, dynCli).(*snapshot.SnapshotAlpha)
+	c.Assert(ok, Equals, true)
+
+	// set true
+	err := snapshotterAlpha.UpdateVolumeSnapshotStatusAlpha(ctx, namespace, snapshotName, true)
+	c.Assert(err, IsNil)
+	us, err := dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	status, ok := us.Object["status"].(map[string]interface{})
+	c.Assert(ok, Equals, true)
+	c.Assert(status["readyToUse"], Equals, true)
+
+	// set false
+	err = snapshotterAlpha.UpdateVolumeSnapshotStatusAlpha(ctx, namespace, snapshotName, false)
+	c.Assert(err, IsNil)
+	us, err = dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	status, ok = us.Object["status"].(map[string]interface{})
+	c.Assert(ok, Equals, true)
+	c.Assert(status["readyToUse"], Equals, false)
+
+	// status not set
+	volSnap = snapshot.UnstructuredVolumeSnapshotAlpha(snapshotName, namespace, "pvcName", "content", snapshotClass)
+	dynCli = dynfake.NewSimpleDynamicClient(scheme, volSnap)
+	snapshotterAlpha, ok = snapshot.NewSnapshotAlpha(kubeCli, dynCli).(*snapshot.SnapshotAlpha)
+	c.Assert(ok, Equals, true)
+	err = snapshotterAlpha.UpdateVolumeSnapshotStatusAlpha(ctx, namespace, snapshotName, false)
+	c.Assert(err, NotNil)
+}
+func (s *SnapshotTestSuite) TestCreateFromSourceBeta(c *C) {
+	ctx := context.Background()
+	namespace := "namespace"
+	snapshotName := "snapname"
+	snapshotClass := "volSnapClass"
+
+	volSnap := snapshot.UnstructuredVolumeSnapshotBeta(snapshotName, namespace, "pvcName", "content", snapshotClass)
+	volSnap.Object["status"] = map[string]interface{}{
+		"readyToUse": false,
+	}
+	scheme := runtime.NewScheme()
+	dynCli := dynfake.NewSimpleDynamicClient(scheme, volSnap)
+	kubeCli := fake.NewSimpleClientset()
+
+	snapshotterBeta, ok := snapshot.NewSnapshotBeta(kubeCli, dynCli).(*snapshot.SnapshotBeta)
+	c.Assert(ok, Equals, true)
+
+	// set true
+	err := snapshotterBeta.UpdateVolumeSnapshotStatusBeta(ctx, namespace, snapshotName, true)
+	c.Assert(err, IsNil)
+	us, err := dynCli.Resource(v1beta1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	status, ok := us.Object["status"].(map[string]interface{})
+	c.Assert(ok, Equals, true)
+	c.Assert(status["readyToUse"], Equals, true)
+
+	// set false
+	err = snapshotterBeta.UpdateVolumeSnapshotStatusBeta(ctx, namespace, snapshotName, false)
+	c.Assert(err, IsNil)
+	us, err = dynCli.Resource(v1beta1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	status, ok = us.Object["status"].(map[string]interface{})
+	c.Assert(ok, Equals, true)
+	c.Assert(status["readyToUse"], Equals, false)
+
+	// status not set
+	volSnap = snapshot.UnstructuredVolumeSnapshotBeta(snapshotName, namespace, "pvcName", "content", snapshotClass)
+	dynCli = dynfake.NewSimpleDynamicClient(scheme, volSnap)
+	snapshotterBeta, ok = snapshot.NewSnapshotBeta(kubeCli, dynCli).(*snapshot.SnapshotBeta)
+	c.Assert(ok, Equals, true)
+	err = snapshotterBeta.UpdateVolumeSnapshotStatusBeta(ctx, namespace, snapshotName, false)
+	c.Assert(err, NotNil)
+}
