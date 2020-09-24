@@ -41,7 +41,8 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 
 # Mention the vm-driver that should be used to install OpenShift
 vm-driver ?= "kvm"
-
+# Default OCP version in which the OpenShift apps are going to run
+ocp_version ?= "4.5"
 ###
 ### These variables should not need tweaking.
 ###
@@ -160,7 +161,7 @@ integration-test: build-dirs
 	@$(MAKE) run CMD='-c "./build/integration-test.sh short"'
 
 openshift-test:
-	@/bin/bash ./build/integration-test.sh openshift
+	@/bin/bash ./build/integration-test.sh openshift $(ocp_version)
 
 golint:
 	@$(MAKE) run CMD='-c "./build/golint.sh"'
