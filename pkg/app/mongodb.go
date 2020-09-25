@@ -49,7 +49,7 @@ type MongoDB struct {
 	chart     helm.ChartInfo
 }
 
-// Last tested working version "7.4.6"
+// Last tested working version "9.0.0"
 func NewMongoDB(name string) App {
 	return &MongoDB{
 		username: "root",
@@ -61,8 +61,8 @@ func NewMongoDB(name string) App {
 			Chart:    "mongodb",
 			Values: map[string]string{
 				"architecture":     "replicaset",
-				"image.repository": "ankitjain235/mongodb",
-				"image.tag":        "test",
+				"image.repository": "kanisterio/mongodb",
+				"image.tag":        "0.36.0",
 			},
 		},
 	}
