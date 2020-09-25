@@ -61,8 +61,8 @@ func NewMongoDB(name string) App {
 			Chart:    "mongodb",
 			Values: map[string]string{
 				"architecture":     "replicaset",
-				"image.repository": "kanisterio/mongodb",
-				"image.tag":        "0.36.0",
+				"image.repository": "ankitjain235/mongodb",
+				"image.tag":        "test",
 			},
 		},
 	}
