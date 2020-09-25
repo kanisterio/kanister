@@ -59,7 +59,6 @@ func NewMongoDB(name string) App {
 			RepoURL:  helm.BitnamiRepoURL,
 			RepoName: helm.BitnamiRepoName,
 			Chart:    "mongodb",
-			Version:  "9.0.0",
 			Values: map[string]string{
 				"architecture":     "replicaset",
 				"image.repository": "kanisterio/mongodb",
