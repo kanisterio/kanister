@@ -19,7 +19,10 @@ import (
 )
 
 const (
-	streamPasswordFlagName = "password"
+	streamPasswordFlag           = "--password"
+	streamPasswordFlagName       = "password"
+	streamRepoConfigFileFlag     = "--config-file"
+	streamRepoConfigFileFlagName = "config-file"
 )
 
 func newStreamCommand() *cobra.Command {
@@ -29,10 +32,15 @@ func newStreamCommand() *cobra.Command {
 	}
 	cmd.AddCommand(newStreamPushCommand())
 	cmd.PersistentFlags().StringP(streamPasswordFlagName, "p", "", "Specify the password for object storage repository (required)")
+	cmd.PersistentFlags().StringP(streamRepoConfigFileFlagName, "c", "", "Custom config file for object storage repository configuration")
 	_ = cmd.MarkPersistentFlagRequired(streamPasswordFlagName)
 	return cmd
 }
 
-func streamPasswordFlag(cmd *cobra.Command) string {
+func streamPasswordFlagValue(cmd *cobra.Command) string {
 	return cmd.Flag(streamPasswordFlagName).Value.String()
+}
+
+func streamRepoConfigFileFlagValue(cmd *cobra.Command) string {
+	return cmd.Flag(streamRepoConfigFileFlagName).Value.String()
 }
