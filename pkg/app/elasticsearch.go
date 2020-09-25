@@ -54,6 +54,7 @@ type ElasticsearchInstance struct {
 	elasticsearchURL string
 }
 
+// Last tested on 7.9.1
 func NewElasticsearchInstance(name string) App {
 	return &ElasticsearchInstance{
 		name:      name,
@@ -64,7 +65,6 @@ func NewElasticsearchInstance(name string) App {
 			RepoURL:  helm.ElasticRepoURL,
 			Chart:    "elasticsearch",
 			RepoName: helm.ElasticRepoName,
-			Version:  "7.9.1",
 			Values: map[string]string{
 				"antiAffinity": "soft",
 				"replicas":     "1",
