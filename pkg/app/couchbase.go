@@ -57,6 +57,7 @@ func NewCouchbaseDB(name string) App {
 			Release:  appendRandString(fmt.Sprintf("%s-operator", name)),
 			RepoName: helm.CouchbaseRepoName,
 			RepoURL:  helm.CouchbaseRepoURL,
+			Version:  "0.1.2",
 			Chart:    "couchbase-operator",
 		},
 		clusterChart: helm.ChartInfo{
@@ -106,7 +107,10 @@ func (cb *CouchbaseDB) Install(ctx context.Context, ns string) error {
 
 	// Install cb cluster
 	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cb.operatorChart.RepoName, cb.clusterChart.Chart), cb.clusterChart.Version, cb.clusterChart.Release, cb.namespace, cb.clusterChart.Values)
-	return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", cb.name, cb.clusterChart.Chart, cb.clusterChart.Release)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", cb.name, cb.clusterChart.Chart, cb.clusterChart.Release)
+	}
+	return nil
 }
 
 func (cb *CouchbaseDB) IsReady(ctx context.Context) (bool, error) {
