@@ -14,7 +14,7 @@ actions:
       name: backupSnapshots
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        container: "mongodb-primary"
+        container: "mongodb"
         includePath: /bitnami/mongodb
         backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-backups/{{ .StatefulSet.Name }}/rs_backup"
   restore:
@@ -22,24 +22,17 @@ actions:
     phases:
     # Scale down mongodb replicas
     - func: ScaleWorkload
-      name: shutdownSecondary
-      args:
-        namespace: "{{ .StatefulSet.Namespace }}"
-        name: "{{ .Object.metadata.labels.release }}-mongodb-secondary"
-        kind: StatefulSet
-        replicas: 0
-    - func: ScaleWorkload
       name: shutdownPrimary
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        name: "{{ .Object.metadata.labels.release }}-mongodb-primary"
+        name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb'
         kind: StatefulSet
         replicas: 0
     - func: ScaleWorkload
       name: shutdownArbiter
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        name: "{{ .Object.metadata.labels.release }}-mongodb-arbiter"
+        name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-arbiter'
         kind: StatefulSet
         replicas: 0
 
@@ -48,7 +41,7 @@ actions:
       name: restorePrimary
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: kanisterio/kanister-tools:0.36.0
+        image: kanisterio/kanister-tools:0.37.0
         backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-backups/{{ .StatefulSet.Name }}/rs_backup"
         backupInfo: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
 
@@ -60,7 +53,7 @@ actions:
         namespace: "{{ .StatefulSet.Namespace }}"
         image: busybox
         volumes:
-          datadir-my-release-mongodb-secondary-0: "/mongo/secondary"
+          datadir-my-release-mongodb-1: "/mongo/secondary"
         command:
           - sh
           - -c
@@ -76,17 +69,10 @@ actions:
         kind: StatefulSet
         replicas: 1
     - func: ScaleWorkload
-      name: startSecondary
-      args:
-        namespace: "{{ .StatefulSet.Namespace }}"
-        name: "{{ .Object.metadata.labels.release }}-mongodb-secondary"
-        kind: StatefulSet
-        replicas: 1
-    - func: ScaleWorkload
       name: startArbiter
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        name: "{{ .Object.metadata.labels.release }}-mongodb-arbiter"
+        name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-arbiter'
         kind: StatefulSet
         replicas: 1
 
@@ -96,7 +82,7 @@ actions:
     - func: DeleteDataAll
       name: deleteSnapshots
       args:
-        namespace: "{{ .Namespace.Name }}"
+        namespace: "{{ .StatefulSet.Namespace }}"
         backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-backups/{{ .StatefulSet.Name }}/rs_backup"
         backupInfo: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
         reclaimSpace: true
