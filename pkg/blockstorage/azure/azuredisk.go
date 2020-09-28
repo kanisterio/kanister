@@ -624,7 +624,7 @@ func (s *adStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 
 func staticRegionToZones(region string) ([]string, error) {
 	switch region {
-	case "australiaeast", "australiasoutheast", "brazilsouth", "canadacentral", "canadaeast", "centralindia", "eastasia", "japanwest", "northcentralus", "southcentralus", "southindia", "ukwest", "westcentralus", "westindia", "westus":
+	case "australiasoutheast", "brazilsouth", "canadaeast", "centralindia", "eastasia", "japanwest", "northcentralus", "southcentralus", "southindia", "ukwest", "westcentralus", "westindia", "westus":
 		return nil, nil
 	case "centralus":
 		return []string{
@@ -679,6 +679,24 @@ func staticRegionToZones(region string) ([]string, error) {
 			"westus2-1",
 			"westus2-2",
 			"westus2-3",
+		}, nil
+	case "canadacentral":
+		return []string{
+			"canadacentral-1",
+			"canadacentral-2",
+			"canadacentral-3",
+		}, nil
+	case "francecentral":
+		return []string{
+			"francecentral-1",
+			"francecentral-2",
+			"francecentral-3",
+		}, nil
+	case "australiaeast":
+		return []string{
+			"australiaeast-1",
+			"australiaeast-2",
+			"australiaeast-3",
 		}, nil
 	}
 	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))
