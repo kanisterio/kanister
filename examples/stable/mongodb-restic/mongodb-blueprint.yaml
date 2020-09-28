@@ -82,7 +82,7 @@ actions:
     - func: DeleteDataAll
       name: deleteSnapshots
       args:
-        namespace: "{{ .Namespace.Name }}"
+        namespace: "{{ .StatefulSet.Namespace }}"
         backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-backups/{{ .StatefulSet.Name }}/rs_backup"
         backupInfo: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
         reclaimSpace: true
