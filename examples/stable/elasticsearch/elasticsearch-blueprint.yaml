@@ -14,7 +14,7 @@ actions:
       name: backupToObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/es-sidecar:0.36.0"
+        image: "kanisterio/es-sidecar:0.37.0"
         command:
         - bash
         - -o
@@ -38,7 +38,7 @@ actions:
       name: restoreFromObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/es-sidecar:0.36.0"
+        image: "kanisterio/es-sidecar:0.37.0"
         command:
         - bash
         - -o
@@ -58,7 +58,7 @@ actions:
       name: deleteFromObjectStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: "kanisterio/es-sidecar:0.36.0"
+        image: "kanisterio/es-sidecar:0.37.0"
         command:
         - bash
         - -o
