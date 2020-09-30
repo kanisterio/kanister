@@ -1,4 +1,4 @@
-FROM cassandra:3.11.3
+FROM bitnami/cassandra:3.11.8-debian-10-r20
 
 MAINTAINER "Tom Manville <tom@kasten.io>"
 
@@ -7,3 +7,4 @@ COPY --from=restic/restic:0.9.5 /usr/bin/restic /usr/local/bin/restic
 
 # Install kando 
 ADD kando /usr/local/bin/
+USER root
