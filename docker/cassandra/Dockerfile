@@ -7,4 +7,3 @@ COPY --from=restic/restic:0.9.5 /usr/bin/restic /usr/local/bin/restic
 
 # Install kando 
 ADD kando /usr/local/bin/
-USER root

@@ -181,7 +181,7 @@ actions:
     - func: DeleteDataAll
       name: deleteFromObjectStore
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
+        namespace: "{{ .Object.metadata.name }}"
         backupArtifactPrefix: "{{ .ArtifactsIn.params.KeyValue.backupPrefixLocation }}"
         backupInfo: "{{ .ArtifactsIn.params.KeyValue.backupInfo }}"
         reclaimSpace: true
