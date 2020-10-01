@@ -28,9 +28,12 @@ To install the cassandra in your Kubernetes cluster you can run below command
 $ helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com
 $ helm repo update
 # remove app-namespace with the namespace you want to deploy the cassandra app in
-$ helm install --namespace "<app-namespace>" "cassandra" incubator/cassandra --set image.repo=kanisterio/cassandra --set image.tag=0.36.0 --set config.cluster_size=2
+$ kubectl create ns <app-namespace>
+$ helm install cassandra bitnami/cassandra --namespace <app-namespace> --set image.repository=kanisterio/cassandra --set image.tag=0.36.0 --set cluster.replicaCount=2 
+
+
 ```
-This command will install cassandra on your Kubernetes cluster with 2 nodes. You can notice that we are using custom image of cassandra in the helm to install the cassandra cluster. The reason is we have to use some Kanister tools to take backup, so only change that we have done is including that tooling on top of statndard `cassandra:3.11.3` image.
+This command will install cassandra on your Kubernetes cluster with 2 nodes. You can notice that we are using custom image of cassandra in the helm to install the cassandra cluster. The reason is we have to use some Kanister tools to take backup, so only change that we have done is including that tooling on top of statndard `cassandra:3.11.8-debian-10-r20` image.
 
 ## Integrating with Kanister
 
@@ -65,7 +68,7 @@ Let's add a [keyspace](https://docs.datastax.com/en/dse/5.1/cql/cql/cql_using/cq
 ```bash
 # EXEC to the cassandra pod
 $ kubectl exec -it -n <app-namespace> cassandra-0 bash
-# once you are inside the pod use `cqlsh` to get into the cassandra CLI and run below commands to create the keyspace
+# once you are inside the pod use `cqlsh -u cassandra -p $CASSANDRA_PASSWORD` to get into the cassandra CLI and run below commands to create the keyspace
 cqlsh> create keyspace restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 3};
 # once the keyspace is created let's create a table named guests and some data into that table
 cqlsh> create table restaurants.guests (id UUID primary key, firstname text, lastname text, birthday timestamp);
@@ -83,7 +86,7 @@ Create an Actionset in the same name space as the kanister controller
 # kanister-operator-namespace will be the namespace where you kanister operator is installed
 # blueprint-name will be the name of the blueprint that you will get after creating the blueprint from the Create Blueprint step
 # profile-name will be the profile name you get when you create the profile from Create Profile step
-$ kanctl create actionset --action backup --namespace <kanister-operator-namespace> --blueprint <blueprint-name> --statefulset cassandra/cassandra  --profile cassandra/<profile-name>
+$ kanctl create actionset --action backup --namespace <kanister-operator-namespace> --blueprint <blueprint-name> --statefulset <app-namespace>/cassandra  --profile <app-namespace>/<profile-name>
 actionset <backup-actionset-name> created
 # you can check the status of the actionset either by describing the actionset resource or by checking the kanister operator's pod log
 $ kubectl describe actionset -n <kanister-operator-namespace> <backup-actionset-name>
@@ -109,7 +112,7 @@ $ select * from restaurants.guests;
 
 Now that we have removed the data from the cassandra database's table, let's restore the data using the backup that we have already created in earlier step. To do that we will again create an Actionset resource but for restore instead of backup. You can create the Actionset using below command
 ```bash
-$ kanctl --namespace <kanister-operator-namespace> create actionset --action restore --from "<backup-actionset-name>"
+$ kanctl create actionset --action restore --namespace <kanister-operator-namespace> --from "<backup-actionset-name>"
 actionset <restore-actionset-name> created
 # you can see the status of the actionset by describing the restore actionset
 $ kubectl describe actionset -n <kanister-operator-namespace> <restore-actionset-name>
@@ -128,7 +131,7 @@ and you should be able to see all the records that you have inserted earlier. An
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace <kanister-operator-namespace> create actionset --action delete --from "<backup-actionset-name>"
+$ kanctl create actionset --action delete --namespace <kanister-operator-namespace> --from "<backup-actionset-name>" --namespacetargets <kanister-operator-namespace>
 actionset "<delete-actionset-name>" created
 
 # View the status of the ActionSet
@@ -145,7 +148,7 @@ $ kubectl --namespace <kanister-operator-namespace> logs -l app=kanister-operato
 you can also check events of the actionset
 
 ```bash
-$ kubectl describe actionset <actionset-name> -n <kanister-operator-name>
+$ kubectl describe actionset <actionset-name> -n <kanister-operator-namespace>
 ```
 
 ## Uninstalling the Chart
@@ -161,7 +164,7 @@ The command removes all the Kubernetes components associated with the chart and 
 ## Delete Blueprint and Profile CR
 
 ```bash
-$ kubectl delete blueprints.cr.kanister.io <blueprint-name> -n <kanister-operator-name>
+$ kubectl delete blueprints.cr.kanister.io <blueprint-name> -n <kanister-operator-namespace>
 
 $ kubectl get profiles.cr.kanister.io -n <app-namespace>
 NAME               AGE
