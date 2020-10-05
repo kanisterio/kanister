@@ -33,6 +33,7 @@ const (
 	copyBlobName      = "copy-blob-%s.vhd"
 )
 
+// AdStorage describes the azure storage client
 type AdStorage struct {
 	azCli *Client
 }
