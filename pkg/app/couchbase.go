@@ -40,35 +40,29 @@ const cbReadyTimeout = 5 * time.Minute
 var countResp = regexp.MustCompile(`(?m){"\$1":([\d]+)},`)
 
 type CouchbaseDB struct {
-	name          string
-	namespace     string
-	username      string
-	password      string
-	cli           kubernetes.Interface
-	operatorChart helm.ChartInfo
-	clusterChart  helm.ChartInfo
+	name      string
+	namespace string
+	username  string
+	password  string
+	cli       kubernetes.Interface
+	chart     helm.ChartInfo
+	// clusterChart  helm.ChartInfo
 }
 
-// Last tested woking version "0.1.2"
+// Last tested woking version "2.0.2"
 func NewCouchbaseDB(name string) App {
 	return &CouchbaseDB{
 		name: name,
-		operatorChart: helm.ChartInfo{
-			Release:  appendRandString(fmt.Sprintf("%s-operator", name)),
+		chart: helm.ChartInfo{
+			Release:  appendRandString(name),
 			RepoName: helm.CouchbaseRepoName,
 			RepoURL:  helm.CouchbaseRepoURL,
-			Version:  "0.1.2",
 			Chart:    "couchbase-operator",
-		},
-		clusterChart: helm.ChartInfo{
-			Release: appendRandString(name),
-			Chart:   "couchbase-cluster",
-			Version: "0.1.2",
 			Values: map[string]string{
-				"couchbaseCluster.servers.all_services.size":        "1",
-				"couchbaseCluster.servers.all_services.services[0]": "data",
-				"couchbaseCluster.servers.all_services.services[1]": "query",
-				"couchbaseCluster.servers.all_services.services[2]": "index",
+				"cluster.servers.default.size":        "1",
+				"cluster.servers.default.services[0]": "data",
+				"cluster.servers.default.services[1]": "query",
+				"cluster.servers.default.services[2]": "index",
 			},
 		},
 	}
@@ -95,22 +89,13 @@ func (cb *CouchbaseDB) Install(ctx context.Context, ns string) error {
 	}
 
 	// Add helm repo and fetch charts
-	if err = cli.AddRepo(ctx, cb.operatorChart.RepoName, cb.operatorChart.RepoURL); err != nil {
-		return errors.Wrapf(err, "Failed to install helm repo. app=%s repo=%s", cb.name, cb.operatorChart.RepoName)
+	if err = cli.AddRepo(ctx, cb.chart.RepoName, cb.chart.RepoURL); err != nil {
+		return errors.Wrapf(err, "Failed to install helm repo. app=%s repo=%s", cb.name, cb.chart.RepoName)
 	}
 
-	// Install cb operator
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cb.operatorChart.RepoName, cb.operatorChart.Chart), cb.operatorChart.Version, cb.operatorChart.Release, cb.namespace, cb.operatorChart.Values)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", cb.name, cb.operatorChart.Chart, cb.operatorChart.Release)
-	}
-
-	// Install cb cluster
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cb.operatorChart.RepoName, cb.clusterChart.Chart), cb.clusterChart.Version, cb.clusterChart.Release, cb.namespace, cb.clusterChart.Values)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", cb.name, cb.clusterChart.Chart, cb.clusterChart.Release)
-	}
-	return nil
+	// Install cb operator, admission controller and cluster
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cb.chart.RepoName, cb.chart.Chart), cb.chart.Version, cb.chart.Release, cb.namespace, cb.chart.Values)
+	return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", cb.name, cb.chart.Chart, cb.chart.Release)
 }
 
 func (cb *CouchbaseDB) IsReady(ctx context.Context) (bool, error) {
@@ -128,7 +113,7 @@ func (cb *CouchbaseDB) IsReady(ctx context.Context) (bool, error) {
 	}
 
 	// Read cluster creds from Secret
-	secret, err := cb.cli.CoreV1().Secrets(cb.namespace).Get(ctx, fmt.Sprintf("%s-couchbase-cluster", cb.clusterChart.Release), metav1.GetOptions{})
+	secret, err := cb.cli.CoreV1().Secrets(cb.namespace).Get(ctx, fmt.Sprintf("%s-couchbase-cluster", cb.chart.Release), metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -143,9 +128,9 @@ func (cb *CouchbaseDB) IsReady(ctx context.Context) (bool, error) {
 
 func (cb *CouchbaseDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
-		APIVersion: "v1",
+		APIVersion: "v2",
 		Group:      "couchbase.com",
-		Name:       fmt.Sprintf("%s-couchbase-cluster", cb.clusterChart.Release),
+		Name:       fmt.Sprintf("%s-couchbase-cluster", cb.chart.Release),
 		Namespace:  cb.namespace,
 		Resource:   "couchbaseclusters",
 	}
@@ -249,17 +234,10 @@ func (cb CouchbaseDB) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create helm client")
 	}
 
-	// Uninstall couchbase-cluster helm chart
-	log.Info().Print("Uninstalling helm charts.", field.M{"app": cb.name, "release": cb.operatorChart.Release, "namespace": cb.namespace})
-	err = cli.Uninstall(ctx, cb.clusterChart.Release, cb.namespace)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to uninstall %s helm release", cb.clusterChart.Release)
-	}
-
 	// Uninstall couchbase-operator helm chart
-	log.Info().Print("Uninstalling helm charts.", field.M{"app": cb.name, "release": cb.clusterChart.Release, "namespace": cb.namespace})
-	err = cli.Uninstall(ctx, cb.operatorChart.Release, cb.namespace)
-	return errors.Wrapf(err, "Failed to uninstall %s helm release", cb.operatorChart.Release)
+	log.Info().Print("Uninstalling helm charts.", field.M{"app": cb.name, "release": cb.chart.Release, "namespace": cb.namespace})
+	err = cli.Uninstall(ctx, cb.chart.Release, cb.namespace)
+	return errors.Wrapf(err, "Failed to uninstall %s helm release", cb.chart.Release)
 }
 
 func (cb CouchbaseDB) execCommand(ctx context.Context, command []string) (string, string, error) {
@@ -278,7 +256,7 @@ func (cb CouchbaseDB) execCommand(ctx context.Context, command []string) (string
 
 // getRunningCBPod name of running couchbase cluster pod if its in ready state
 func (cb CouchbaseDB) getRunningCBPod() (string, error) {
-	podName := fmt.Sprintf("%s-couchbase-cluster-0000", cb.clusterChart.Release)
+	podName := fmt.Sprintf("%s-couchbase-cluster-0000", cb.chart.Release)
 	pod, err := cb.cli.CoreV1().Pods(cb.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
