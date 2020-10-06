@@ -7,25 +7,29 @@
 * Kubernetes 1.9+
 * Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
 * PV support on the underlying infrastructure
-* Kanister controller version 0.36.0 installed in your cluster
+* Kanister controller version 0.38.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Chart Details
 
-We will be using stable [mongodb](https://github.com/helm/charts/tree/master/stable/mongodb) chart from official helm repo which bootstraps a [MongoDB](https://github.com/bitnami/bitnami-docker-mongodb) deployment on a [Kubernetes](http://kubernetes.io) cluster in replication mode using the [Helm](https://helm.sh) package manager.
+We will be using bitnami [mongodb](https://github.com/bitnami/charts/tree/master/bitnami/mongodb) chart from official helm repo which bootstraps a [MongoDB](https://github.com/bitnami/bitnami-docker-mongodb) deployment on a [Kubernetes](http://kubernetes.io) cluster in replication mode using the [Helm](https://helm.sh) package manager.
 
 ## Installing the Chart
 
 To install the chart with the release name `my-release`:
 
 ```bash
-$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+$ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 
-$ helm install stable/mongodb --name my-release --namespace mongo-test \
-	--set replicaSet.enabled=true \
+# Create namespace for test
+$ kubectl create namespace mongo-test
+
+# Using helm v3
+$ helm install my-release bitnami/mongodb --namespace mongo-test \
+	--set architecture="replicaset" \
 	--set image.repository=kanisterio/mongodb \
-	--set image.tag=0.36.0
+	--set image.tag=0.38.0
 ```
 
 The command deploys MongoDB on the Kubernetes cluster in the mongo-test namespace
@@ -61,7 +65,7 @@ Once MongoDB is running, you can populate it with some data. Let's add a collect
 
 ```bash
 # Connect to MongoDB primary pod
-$ kubectl exec -ti my-release-mongodb-primary-0 -n mongo-test -- bash
+$ kubectl exec -ti my-release-mongodb-0 -n mongo-test -- bash
 
 # From inside the shell, use the mongo CLI to insert some data into the test database
 $ mongo admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.insert({'name' : 'Roys', 'cuisine' : 'Hawaiian', 'id' : '8675309'})"
@@ -82,7 +86,7 @@ $ kubectl get profile -n mongo-test
 NAME               AGE
 s3-profile-sph7s   2h
 
-$ kanctl create actionset --action backup --namespace kasten-io --blueprint mongodb-blueprint --statefulset mongo-test/my-release-mongodb-primary --profile mongo-test/s3-profile-sph7s
+$ kanctl create actionset --action backup --namespace kasten-io --blueprint mongodb-blueprint --statefulset mongo-test/my-release-mongodb --profile mongo-test/s3-profile-sph7s
 actionset backup-llfb8 created
 
 $ kubectl --namespace kasten-io get actionsets.cr.kanister.io
