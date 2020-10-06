@@ -5,7 +5,7 @@ metadata:
     controller-tools.k8s.io: "1.0"
   name: "{{ .Release.Name }}-sample"
 spec:
-  version: 6.2.11
+  version: 6.2.20
   databaseConfiguration:
     redundancy_mode: {{ .Values.foundationdb.redundancyMode }}
   volumeSize: "16G"

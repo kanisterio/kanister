@@ -9,7 +9,7 @@ foundationdb:
   installFdbInstance: true
   # image to be used in the foundationDB instance
   image: kanisterio/foundationdb
-  tag: 6.2.11
+  tag: 6.2.20
   # redundancy mode for the foundationdb instance 
   # https://apple.github.io/foundationdb/configuration.html#choosing-a-redundancy-mode
   redundancyMode: double
