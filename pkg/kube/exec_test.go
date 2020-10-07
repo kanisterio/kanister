@@ -19,6 +19,7 @@ package kube
 import (
 	"bytes"
 	"context"
+	"strings"
 	"time"
 
 	. "gopkg.in/check.v1"
@@ -106,4 +107,35 @@ func (s *ExecSuite) TestLSWithoutStdIn(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(stdout, Equals, "total 0")
 	c.Assert(stderr, Equals, "")
+}
+
+func (s *ExecSuite) TestKopiaCommand(c *C) {
+	ctx := context.Background()
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kopia-pod",
+			Namespace: s.namespace,
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{
+					Name:  "kanister-sidecar",
+					Image: "kanisterio/kanister-tools:0.37.0",
+				},
+			},
+		},
+	}
+	p, err := s.cli.CoreV1().Pods(s.namespace).Create(ctx, pod, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	ctxT, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	c.Assert(WaitForPodReady(ctxT, s.cli, s.namespace, p.Name), IsNil)
+	// up until now below is how we were used to run kopia commands
+	// "bash" "-c" "kopia repository create filesystem --path=$HOME/kopia_repo--password=newpass"
+	// but now we don't want `bash -c`
+	cmd := []string{"kopia", "repository", "create", "filesystem", "--path=$HOME/kopia_repo", "--password=newpass"}
+	stdout, stderr, err := Exec(s.cli, pod.Namespace, pod.Name, "", cmd, nil)
+	c.Assert(err, IsNil)
+	c.Assert(strings.Contains(stdout, "Policy for (global):"), Equals, true)
+	c.Assert(strings.Contains(stderr, "Initializing repository with:"), Equals, true)
 }
