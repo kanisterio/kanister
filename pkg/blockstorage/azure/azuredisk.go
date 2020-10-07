@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/services/classic/management"
+	"github.com/Azure/azure-sdk-for-go/services/classic/management/location"
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	azto "github.com/Azure/go-autorest/autorest/to"
@@ -701,4 +703,21 @@ func staticRegionToZones(region string) ([]string, error) {
 		}, nil
 	}
 	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))
+}
+
+func DynamicRegionMap(subID string, cert string) (map[string][]string, error) {
+	managementClient, err := management.NewClient(subID, []byte(cert))
+	if err != nil {
+		return nil, err
+	}
+	locationClient := location.NewClient(managementClient)
+	llResp, err := locationClient.ListLocations()
+	if err != nil {
+		return nil, err
+	}
+	regionMap := make(map[string][]string)
+	for _, location := range llResp.Locations {
+		regionMap[location.Name] = location.AvailableServices
+	}
+	return regionMap, nil
 }
