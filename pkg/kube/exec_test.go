@@ -36,6 +36,7 @@ type ExecSuite struct {
 var _ = Suite(&ExecSuite{})
 
 func (s *ExecSuite) SetUpSuite(c *C) {
+	ctx := context.Background()
 	var err error
 	s.cli, err = NewClient()
 	c.Assert(err, IsNil)
@@ -44,7 +45,7 @@ func (s *ExecSuite) SetUpSuite(c *C) {
 			GenerateName: "exectest-",
 		},
 	}
-	ns, err = s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	ns, err = s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
 	pod := &v1.Pod{
@@ -59,11 +60,11 @@ func (s *ExecSuite) SetUpSuite(c *C) {
 			},
 		},
 	}
-	s.pod, err = s.cli.CoreV1().Pods(s.namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
+	s.pod, err = s.cli.CoreV1().Pods(s.namespace).Create(ctx, pod, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
-	c.Assert(WaitForPodReady(ctx, s.cli, s.namespace, s.pod.Name), IsNil)
+	c.Assert(WaitForPodReady(ctxTimeout, s.cli, s.namespace, s.pod.Name), IsNil)
 	s.pod, err = s.cli.CoreV1().Pods(s.namespace).Get(ctx, s.pod.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 }
@@ -94,5 +95,15 @@ func (s *ExecSuite) TestExecEchoDefaultContainer(c *C) {
 	stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, "", cmd, bytes.NewBufferString("badabing"))
 	c.Assert(err, IsNil)
 	c.Assert(stdout, Equals, "badabing")
+	c.Assert(stderr, Equals, "")
+}
+
+func (s *ExecSuite) TestLSWithoutStdIn(c *C) {
+	cmd := []string{"ls", "-l", "/home"}
+	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
+	stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, "", cmd, nil)
+	c.Assert(err, IsNil)
+	c.Assert(stdout, Equals, "total 0")
 	c.Assert(stderr, Equals, "")
 }
