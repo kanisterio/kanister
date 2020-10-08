@@ -46,7 +46,6 @@ type CouchbaseDB struct {
 	password  string
 	cli       kubernetes.Interface
 	chart     helm.ChartInfo
-	// clusterChart  helm.ChartInfo
 }
 
 // Last tested woking version "2.0.2"
