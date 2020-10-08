@@ -142,8 +142,10 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 	} else {
 		cmd = []string{"install", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
 	}
+	log.Info().Print("Command formed ", field.M{"Command": cmd})
 
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
+	log.Info().Print("Command output ", field.M{"chart": chart, "output": out})
 	if err != nil {
 		return err
 	}
@@ -183,7 +185,7 @@ func (h CliClient) RemoveRepo(ctx context.Context, name string) error {
 
 // RunCmdWithTimeout executes command on host with DefaultCommandTimeout timeout
 func RunCmdWithTimeout(ctx context.Context, command string, args []string) (string, error) {
-	log.Debug().Print("Executing command", field.M{"command": command, "args": args})
+	log.Info().Print("Executing command", field.M{"command": command, "args": args})
 	ctx, cancel := context.WithTimeout(ctx, DefaultCommandTimeout)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, command, args...).CombinedOutput()
