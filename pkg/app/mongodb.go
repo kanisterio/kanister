@@ -49,20 +49,20 @@ type MongoDB struct {
 	chart     helm.ChartInfo
 }
 
+// Last tested working version "9.0.0"
 func NewMongoDB(name string) App {
 	return &MongoDB{
 		username: "root",
 		name:     name,
 		chart: helm.ChartInfo{
 			Release:  appendRandString(name),
-			RepoURL:  helm.StableRepoURL,
+			RepoURL:  helm.BitnamiRepoURL,
+			RepoName: helm.BitnamiRepoName,
 			Chart:    "mongodb",
-			RepoName: helm.StableRepoName,
-			Version:  "7.4.6",
 			Values: map[string]string{
-				"replicaSet.enabled": "true",
-				"image.repository":   "kanisterio/mongodb",
-				"image.tag":          "0.36.0",
+				"architecture":     "replicaset",
+				"image.repository": "kanisterio/mongodb",
+				"image.tag":        "0.38.0",
 			},
 		},
 	}
@@ -105,7 +105,7 @@ func (mongo *MongoDB) IsReady(ctx context.Context) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, mongoWaitTimeout)
 	defer cancel()
 
-	statefSets := []string{fmt.Sprintf("%s-mongodb-primary", mongo.chart.Release), fmt.Sprintf("%s-mongodb-secondary", mongo.chart.Release), fmt.Sprintf("%s-mongodb-arbiter", mongo.chart.Release)}
+	statefSets := []string{fmt.Sprintf("%s-mongodb", mongo.chart.Release), fmt.Sprintf("%s-mongodb-arbiter", mongo.chart.Release)}
 	for _, resource := range statefSets {
 		err := kube.WaitOnStatefulSetReady(ctx, mongo.cli, mongo.namespace, resource)
 		if err != nil {
@@ -120,7 +120,7 @@ func (mongo *MongoDB) IsReady(ctx context.Context) (bool, error) {
 func (mongo *MongoDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		Kind:      "StatefulSet",
-		Name:      fmt.Sprintf("%s-mongodb-primary", mongo.chart.Release),
+		Name:      fmt.Sprintf("%s-mongodb", mongo.chart.Release),
 		Namespace: mongo.namespace,
 	}
 }
@@ -137,7 +137,7 @@ func (mongo *MongoDB) Uninstall(ctx context.Context) error {
 
 func (mongo *MongoDB) Ping(ctx context.Context) error {
 	log.Print("Pinging the application.", field.M{"app": mongo.name})
-	pingCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.slaveOk(); db\"", mongo.username)}
+	pingCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.secondaryOk(); db\"", mongo.username)}
 	_, stderr, err := mongo.execCommand(ctx, pingCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while pinging the mongodb application %s", stderr)
@@ -178,7 +178,7 @@ func (mongo *MongoDB) Insert(ctx context.Context) error {
 }
 func (mongo *MongoDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting documents of collection.", field.M{"app": mongo.name})
-	countCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.count()\"", mongo.username)}
+	countCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.secondaryOk(); db.restaurants.count()\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, countCMD)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error %s while counting the data in mongodb collection.", stderr)
@@ -203,7 +203,7 @@ func (mongo *MongoDB) Reset(ctx context.Context) error {
 }
 
 func (mongo *MongoDB) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podName, containerName, err := kube.GetPodContainerFromStatefulSet(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb-primary", mongo.chart.Release))
+	podName, containerName, err := kube.GetPodContainerFromStatefulSet(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb", mongo.chart.Release))
 	if err != nil || podName == "" {
 		return "", "", err
 	}
