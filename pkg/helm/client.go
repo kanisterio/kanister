@@ -29,7 +29,7 @@ import (
 type HelmVersion string
 
 const (
-	DefaultCommandTimeout = 10 * time.Minute
+	DefaultCommandTimeout = 15 * time.Minute
 
 	// Add Bitnami charts url
 	BitnamiRepoName = "bitnami"
@@ -138,7 +138,7 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 
 	var cmd []string
 	if h.version == V3 {
-		cmd = []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
+		cmd = []string{"install", release, "--version", version, "--timeout", "15m", "--namespace", namespace, chart, "--set", setVals, "--wait"}
 	} else {
 		cmd = []string{"install", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
 	}
