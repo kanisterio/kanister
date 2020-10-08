@@ -19,7 +19,7 @@ We will be using [couchbase](https://github.com/couchbase-partners/helm-charts) 
 To install the chart with the release name `cb-example`:
 
 ```bash
-#NOTE:
+#NOTE: The latest couchbase helm charts require Helm 3.1+
 $ helm repo add couchbase https://couchbase-partners.github.io/helm-charts
 $ helm repo update
 # Create couchbase-test namespace
