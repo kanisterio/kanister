@@ -1,4 +1,4 @@
-FROM foundationdb/foundationdb:6.2.11
+FROM foundationdb/foundationdb:6.2.20
 
 MAINTAINER "Tom Manville <tom@kasten.io>"
 

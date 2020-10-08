@@ -112,7 +112,7 @@ dockers:
 - binaries:
   - kando
   image_templates:
-  - 'kanisterio/foundationdb:6.2.11'
+  - 'kanisterio/foundationdb:6.2.20'
   dockerfile: 'docker/foundationdb/Dockerfile'
 
 snapshot:
