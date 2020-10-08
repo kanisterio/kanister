@@ -105,32 +105,32 @@ func NewCliClient() (Client, error) {
 
 // AddRepo adds new helm repo and fetches latest charts
 func (h CliClient) AddRepo(ctx context.Context, name, url string) error {
-	log.Debug().Print("Adding helm repo", field.M{"name": name, "url": url})
+	log.Info().Print("Adding helm repo", field.M{"name": name, "url": url})
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, []string{"repo", "add", name, url})
 	if err != nil {
 		return err
 	}
-	log.Debug().Print("Result", field.M{"output": out})
+	log.Info().Print("Result", field.M{"output": out})
 
 	// Update all repos to fetch the latest charts
-	_ = h.UpdateRepo(ctx)
-	return nil
+	err = h.UpdateRepo(ctx)
+	return err
 }
 
 // UpdateRepo fetches latest helm charts from the repo
 func (h CliClient) UpdateRepo(ctx context.Context) error {
-	log.Debug().Print("Fetching latest helm charts from the helm repos")
+	log.Info().Print("Fetching latest helm charts from the helm repos")
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, []string{"repo", "update"})
 	if err != nil {
 		return err
 	}
-	log.Debug().Print("Result", field.M{"output": out})
+	log.Info().Print("Result", field.M{"output": out})
 	return nil
 }
 
 // Install installs helm chart with given release name
 func (h CliClient) Install(ctx context.Context, chart, version, release, namespace string, values map[string]string) error {
-	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
+	log.Info().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
 	var setVals string
 	for k, v := range values {
 		setVals += fmt.Sprintf("%s=%s,", k, v)
@@ -147,7 +147,7 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 	if err != nil {
 		return err
 	}
-	log.Debug().Print("Result", field.M{"output": out})
+	log.Info().Print("Result", field.M{"output": out})
 	return nil
 }
 

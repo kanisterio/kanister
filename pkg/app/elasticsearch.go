@@ -97,7 +97,7 @@ func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string)
 	if err != nil {
 		return err
 	}
-
+	log.Print("repo has been added.", field.M{"app": esi.name})
 	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.chart.Release, esi.namespace, esi.chart.Values)
 	if err != nil {
 		return err
