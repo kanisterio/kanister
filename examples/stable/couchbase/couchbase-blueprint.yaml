@@ -15,7 +15,7 @@ actions:
       objects:
         authSecret:
           kind: Secret
-          name: "{{ .Object.spec.authSecret }}"
+          name: "{{ .Object.spec.security.adminSecret }}"
           namespace: "{{ .Object.metadata.namespace }}"
       args:
         namespace: "{{ .Object.metadata.namespace }}"
@@ -49,7 +49,7 @@ actions:
       objects:
         authSecret:
           kind: Secret
-          name: "{{ .Object.spec.authSecret }}"
+          name: "{{ .Object.spec.security.adminSecret }}"
           namespace: "{{ .Object.metadata.namespace }}"
       args:
         namespace: "{{ .Object.metadata.namespace }}"
