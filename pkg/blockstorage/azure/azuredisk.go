@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/classic/management"
-	"github.com/Azure/azure-sdk-for-go/services/classic/management/location"
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	azto "github.com/Azure/go-autorest/autorest/to"
@@ -627,7 +625,35 @@ func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 
 func staticRegionToZones(region string) ([]string, error) {
 	switch region {
-	case "australiasoutheast", "brazilsouth", "canadaeast", "centralindia", "eastasia", "japanwest", "northcentralus", "southcentralus", "southindia", "ukwest", "westcentralus", "westindia", "westus":
+	case "australiasoutheast",
+		"brazilsouth",
+		"canadaeast",
+		"centralindia",
+		"eastasia",
+		"japanwest",
+		"northcentralus",
+		"southcentralus",
+		"southindia",
+		"ukwest",
+		"westcentralus",
+		"westindia",
+		"westus",
+		"uaecentral",
+		"koreacentral",
+		"southafricanorth",
+		"germanynorth",
+		"germanywestcentral",
+		"switzerlandnorth",
+		"norwayeast",
+		"norwaywest",
+		"koreasouth",
+		"australiacentral2",
+		"francesouth",
+		"uaenorth",
+		"switzerlandwest",
+		"australiacentral",
+		"southafricawest",
+		"brazilsoutheast":
 		return nil, nil
 	case "centralus":
 		return []string{
@@ -703,21 +729,4 @@ func staticRegionToZones(region string) ([]string, error) {
 		}, nil
 	}
 	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))
-}
-
-func DynamicRegionMap(subID string, cert string) (map[string][]string, error) {
-	managementClient, err := management.NewClient(subID, []byte(cert))
-	if err != nil {
-		return nil, err
-	}
-	locationClient := location.NewClient(managementClient)
-	llResp, err := locationClient.ListLocations()
-	if err != nil {
-		return nil, err
-	}
-	regionMap := make(map[string][]string)
-	for _, location := range llResp.Locations {
-		regionMap[location.Name] = location.AvailableServices
-	}
-	return regionMap, nil
 }
