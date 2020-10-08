@@ -57,6 +57,7 @@ func NewPostgresDB(name string) App {
 				"postgresqlExtendedConf.archiveMode":    "true",
 				"postgresqlExtendedConf.archiveTimeout": "60",
 				"postgresqlExtendedConf.walLevel":       "archive",
+				"volumePermissions.enabled":             "true",
 			},
 		},
 	}
