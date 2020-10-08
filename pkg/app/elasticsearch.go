@@ -64,6 +64,7 @@ func NewElasticsearchInstance(name string) App {
 			Release:  appendRandString(name),
 			RepoURL:  helm.ElasticRepoURL,
 			Chart:    "elasticsearch",
+			Version:  "7.9.1",
 			RepoName: helm.ElasticRepoName,
 			Values: map[string]string{
 				"antiAffinity": "soft",
