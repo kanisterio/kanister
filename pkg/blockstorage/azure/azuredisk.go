@@ -299,7 +299,6 @@ func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volu
 }
 
 func (s *AdStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
-	//return errors.New("SnapshotCreateWaitForCompletion not implemented")
 	return nil
 }
 
