@@ -29,7 +29,7 @@ import (
 type HelmVersion string
 
 const (
-	DefaultCommandTimeout = 5 * time.Minute
+	DefaultCommandTimeout = 10 * time.Minute
 
 	// Add Bitnami charts url
 	BitnamiRepoName = "bitnami"
