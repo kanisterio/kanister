@@ -299,7 +299,6 @@ func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volu
 }
 
 func (s *AdStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
-	//return errors.New("SnapshotCreateWaitForCompletion not implemented")
 	return nil
 }
 
@@ -625,7 +624,35 @@ func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 
 func staticRegionToZones(region string) ([]string, error) {
 	switch region {
-	case "australiasoutheast", "brazilsouth", "canadaeast", "centralindia", "eastasia", "japanwest", "northcentralus", "southcentralus", "southindia", "ukwest", "westcentralus", "westindia", "westus":
+	case "australiasoutheast",
+		"brazilsouth",
+		"canadaeast",
+		"centralindia",
+		"eastasia",
+		"japanwest",
+		"northcentralus",
+		"southcentralus",
+		"southindia",
+		"ukwest",
+		"westcentralus",
+		"westindia",
+		"westus",
+		"uaecentral",
+		"koreacentral",
+		"southafricanorth",
+		"germanynorth",
+		"germanywestcentral",
+		"switzerlandnorth",
+		"norwayeast",
+		"norwaywest",
+		"koreasouth",
+		"australiacentral2",
+		"francesouth",
+		"uaenorth",
+		"switzerlandwest",
+		"australiacentral",
+		"southafricawest",
+		"brazilsoutheast":
 		return nil, nil
 	case "centralus":
 		return []string{
