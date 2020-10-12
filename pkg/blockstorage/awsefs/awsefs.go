@@ -57,6 +57,15 @@ const (
 	maxRetries = 10
 )
 
+var allowedMetadataKeys = map[string]bool{
+	"file-system-id":  true,
+	"Encrypted":       true,
+	"KmsKeyId":        true,
+	"PerformanceMode": true,
+	"CreationToken":   true,
+	"newFileSystem":   true,
+}
+
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
 func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
 	awsConfig, region, err := awsconfig.GetConfig(ctx, config)
@@ -144,6 +153,14 @@ func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorag
 
 	req := &backup.StartRestoreJobInput{}
 	req.SetIamRoleArn(awsDefaultServiceBackupRole(e.accountID))
+
+	// Start job only allows specific keys in metadata
+	// https://docs.aws.amazon.com/aws-backup/latest/devguide/API_StartRestoreJob.html
+	for k := range filteredTags {
+		if !allowedMetadataKeys[k] {
+			delete(filteredTags, k)
+		}
+	}
 	req.SetMetadata(convertToBackupTags(filteredTags))
 	req.SetRecoveryPointArn(snapshot.ID)
 	req.SetResourceType(efsType)
