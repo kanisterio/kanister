@@ -127,11 +127,12 @@ func (s *ExecSuite) TestKopiaCommand(c *C) {
 	}
 	p, err := s.cli.CoreV1().Pods(s.namespace).Create(ctx, pod, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
+	defer s.cli.CoreV1().Pods(s.namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 	ctxT, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 	c.Assert(WaitForPodReady(ctxT, s.cli, s.namespace, p.Name), IsNil)
 	// up until now below is how we were used to run kopia commands
-	// "bash" "-c" "kopia repository create filesystem --path=$HOME/kopia_repo--password=newpass"
+	// "bash" "-c" "kopia repository create filesystem --path=$HOME/kopia_repo --password=newpass"
 	// but now we don't want `bash -c`
 	cmd := []string{"kopia", "repository", "create", "filesystem", "--path=$HOME/kopia_repo", "--password=newpass"}
 	stdout, stderr, err := Exec(s.cli, pod.Namespace, pod.Name, "", cmd, nil)
