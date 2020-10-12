@@ -51,12 +51,13 @@ func NewPostgresDB(name string) App {
 			Chart:    "postgresql",
 			Values: map[string]string{
 				"image.repository":                      "kanisterio/postgresql",
-				"image.tag":                             "0.37.0",
+				"image.tag":                             "0.38.0",
 				"postgresqlPassword":                    "test@54321",
 				"postgresqlExtendedConf.archiveCommand": "'envdir /bitnami/postgresql/data/env wal-e wal-push %p'",
 				"postgresqlExtendedConf.archiveMode":    "true",
 				"postgresqlExtendedConf.archiveTimeout": "60",
 				"postgresqlExtendedConf.walLevel":       "archive",
+				"volumePermissions.enabled":             "true",
 			},
 		},
 	}

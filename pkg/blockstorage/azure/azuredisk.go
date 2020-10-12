@@ -22,9 +22,9 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
-var _ blockstorage.Provider = (*adStorage)(nil)
+var _ blockstorage.Provider = (*AdStorage)(nil)
 
-var _ zone.Mapper = (*adStorage)(nil)
+var _ zone.Mapper = (*AdStorage)(nil)
 
 const (
 	volumeNameFmt     = "vol-%s"
@@ -33,11 +33,12 @@ const (
 	copyBlobName      = "copy-blob-%s.vhd"
 )
 
-type adStorage struct {
+// AdStorage describes the azure storage client
+type AdStorage struct {
 	azCli *Client
 }
 
-func (s *adStorage) Type() blockstorage.Type {
+func (s *AdStorage) Type() blockstorage.Type {
 	return blockstorage.TypeAD
 }
 
@@ -47,10 +48,10 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 	if err != nil {
 		return nil, err
 	}
-	return &adStorage{azCli: azCli}, nil
+	return &AdStorage{azCli: azCli}, nil
 }
 
-func (s *adStorage) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
+func (s *AdStorage) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
 	_, rg, name, err := parseDiskID(id)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get info for volume with ID %s", id)
@@ -62,7 +63,7 @@ func (s *adStorage) VolumeGet(ctx context.Context, id string, zone string) (*blo
 	return s.VolumeParse(ctx, disk)
 }
 
-func (s *adStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
+func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
 	tags := blockstorage.SanitizeTags(blockstorage.KeyValueToMap(volume.Tags))
 	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
 	diskProperties := &azcompute.DiskProperties{
@@ -104,7 +105,7 @@ func (s *adStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 	return s.VolumeGet(ctx, azto.String(disk.ID), volume.Az)
 }
 
-func (s *adStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
+func (s *AdStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
 	_, rg, name, err := parseDiskID(volume.ID)
 	if err != nil {
 		return errors.Wrapf(err, "Error in deleting Volume with ID %s", volume.ID)
@@ -117,13 +118,13 @@ func (s *adStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volum
 	return errors.Wrapf(err, "Error in deleting Volume with ID %s", volume.ID)
 }
 
-func (s *adStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
+func (s *AdStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
 	return nil, errors.New("Copy Snapshot not implemented")
 }
 
 // SnapshotCopyWithArgs func: args map should contain non-empty StorageAccountName(AZURE_MIGRATE_STORAGE_ACCOUNT_NAME)
 // and StorageKey(AZURE_MIGRATE_STORAGE_ACCOUNT_KEY)
-func (s *adStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
 	migrateStorageAccount := args[blockstorage.AzureMigrateStorageAccount]
 	migrateStorageKey := args[blockstorage.AzureMigrateStorageKey]
 	if migrateStorageAccount == "" || migrateStorageKey == "" {
@@ -244,7 +245,7 @@ func (s *adStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	return snap, nil
 }
 
-func (s *adStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
+func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
 	_, err := s.azCli.SnapshotsClient.RevokeAccess(ctx, rg, name)
 	if err != nil {
 		log.Print("Failed to revoke access from snapshot", field.M{"snapshot": ID})
@@ -258,7 +259,7 @@ func deleteBlob(blob *storage.Blob, blobName string) {
 	}
 }
 
-func (s *adStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
+func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	snapName := fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String())
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
 	region, _, err := getLocationInfo(volume.Az)
@@ -297,8 +298,7 @@ func (s *adStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volu
 	return snap, nil
 }
 
-func (s *adStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
-	//return errors.New("SnapshotCreateWaitForCompletion not implemented")
+func (s *AdStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
 	return nil
 }
 
@@ -328,7 +328,7 @@ func parseSnapshotID(id string) (subscription string, resourceGroup string, name
 	return comps[1], comps[2], comps[3], nil
 }
 
-func (s *adStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
+func (s *AdStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
 	_, rg, name, err := parseSnapshotID(snapshot.ID)
 	if err != nil {
 		return errors.Wrapf(err, "SnapshotClient.Delete: Failure in parsing snapshot ID %s", snapshot.ID)
@@ -342,7 +342,7 @@ func (s *adStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.S
 	return errors.Wrapf(err, "SnapshotClient.Delete: Error while waiting for snapshot with ID %s to get deleted", snapshot.ID)
 }
 
-func (s *adStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
+func (s *AdStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
 	_, rg, name, err := parseSnapshotID(id)
 	if err != nil {
 		return nil, errors.Wrapf(err, "SnapshotsClient.Get: Failure in parsing snapshot ID %s", id)
@@ -355,7 +355,7 @@ func (s *adStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.S
 	return s.snapshotParse(ctx, snap), nil
 }
 
-func (s *adStorage) VolumeParse(ctx context.Context, volume interface{}) (*blockstorage.Volume, error) {
+func (s *AdStorage) VolumeParse(ctx context.Context, volume interface{}) (*blockstorage.Volume, error) {
 	vol, ok := volume.(azcompute.Disk)
 	if !ok {
 		return nil, errors.New(fmt.Sprintf("Volume is not of type *azcompute.Disk, volume: %v", volume))
@@ -387,14 +387,14 @@ func (s *adStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 	}, nil
 }
 
-func (s *adStorage) SnapshotParse(ctx context.Context, snapshot interface{}) (*blockstorage.Snapshot, error) {
+func (s *AdStorage) SnapshotParse(ctx context.Context, snapshot interface{}) (*blockstorage.Snapshot, error) {
 	if snap, ok := snapshot.(azcompute.Snapshot); ok {
 		return s.snapshotParse(ctx, snap), nil
 	}
 	return nil, errors.New(fmt.Sprintf("Snapshot is not of type *azcompute.Snapshot, snapshot: %v", snapshot))
 }
 
-func (s *adStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) *blockstorage.Snapshot {
+func (s *AdStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) *blockstorage.Snapshot {
 	vol := &blockstorage.Volume{
 		Type: s.Type(),
 		ID:   azto.String(snap.SnapshotProperties.CreationData.SourceResourceID),
@@ -422,7 +422,7 @@ func (s *adStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) 
 	}
 }
 
-func (s *adStorage) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
+func (s *AdStorage) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	var vols []*blockstorage.Volume
 	// (ilya): It looks like azure doesn't support search by tags
 	// List does listing per Subscription
@@ -440,7 +440,7 @@ func (s *adStorage) VolumesList(ctx context.Context, tags map[string]string, zon
 	return vols, nil
 }
 
-func (s *adStorage) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
+func (s *AdStorage) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	var snaps []*blockstorage.Snapshot
 	// (ilya): It looks like azure doesn't support search by tags
 	// List does listing per Subscription
@@ -459,7 +459,7 @@ func (s *adStorage) SnapshotsList(ctx context.Context, tags map[string]string) (
 	return snaps, nil
 }
 
-func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
+func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
 	// Incorporate pre-existing tags if overrides don't already exist
 	// in provided tags
 	for _, tag := range snapshot.Volume.Tags {
@@ -510,7 +510,7 @@ func (s *adStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 	return s.VolumeGet(ctx, azto.String(disk.ID), snapshot.Volume.Az)
 }
 
-func (s *adStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz string) (string, string, error) {
+func (s *AdStorage) getRegionAndZoneID(ctx context.Context, sourceRegion, volAz string) (string, string, error) {
 	//check if current node region is zoned or not
 	kubeCli, err := kube.NewClient()
 	if err != nil {
@@ -552,7 +552,7 @@ func getLocationInfo(az string) (string, string, error) {
 	return region, zoneID, nil
 }
 
-func (s *adStorage) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
+func (s *AdStorage) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
 	switch res := resource.(type) {
 	case *blockstorage.Snapshot:
 		{
@@ -602,11 +602,11 @@ func (s *adStorage) SetTags(ctx context.Context, resource interface{}, tags map[
 	}
 }
 
-func (s *adStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
+func (s *AdStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
 	return staticRegionToZones(region)
 }
 
-func (s *adStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blockstorage.Snapshot) (global bool, regionsAndZones map[string][]string, err error) {
+func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blockstorage.Snapshot) (global bool, regionsAndZones map[string][]string, err error) {
 	// A few checks from VolumeCreateFromSnapshot
 	if snapshot.Volume == nil {
 		return false, nil, errors.New("Snapshot volume information not available")
@@ -624,7 +624,35 @@ func (s *adStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 
 func staticRegionToZones(region string) ([]string, error) {
 	switch region {
-	case "australiaeast", "australiasoutheast", "brazilsouth", "canadacentral", "canadaeast", "centralindia", "eastasia", "japanwest", "northcentralus", "southcentralus", "southindia", "ukwest", "westcentralus", "westindia", "westus":
+	case "australiasoutheast",
+		"brazilsouth",
+		"canadaeast",
+		"centralindia",
+		"eastasia",
+		"japanwest",
+		"northcentralus",
+		"southcentralus",
+		"southindia",
+		"ukwest",
+		"westcentralus",
+		"westindia",
+		"westus",
+		"uaecentral",
+		"koreacentral",
+		"southafricanorth",
+		"germanynorth",
+		"germanywestcentral",
+		"switzerlandnorth",
+		"norwayeast",
+		"norwaywest",
+		"koreasouth",
+		"australiacentral2",
+		"francesouth",
+		"uaenorth",
+		"switzerlandwest",
+		"australiacentral",
+		"southafricawest",
+		"brazilsoutheast":
 		return nil, nil
 	case "centralus":
 		return []string{
@@ -679,6 +707,24 @@ func staticRegionToZones(region string) ([]string, error) {
 			"westus2-1",
 			"westus2-2",
 			"westus2-3",
+		}, nil
+	case "canadacentral":
+		return []string{
+			"canadacentral-1",
+			"canadacentral-2",
+			"canadacentral-3",
+		}, nil
+	case "francecentral":
+		return []string{
+			"francecentral-1",
+			"francecentral-2",
+			"francecentral-3",
+		}, nil
+	case "australiaeast":
+		return []string{
+			"australiaeast-1",
+			"australiaeast-2",
+			"australiaeast-3",
 		}, nil
 	}
 	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))
