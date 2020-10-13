@@ -31,7 +31,7 @@ Now create a RDS instance with postgresql engine
 ```bash
 aws rds create-db-instance \
     --publicly-accessible \
-    --allocated-storage 20 --db-instance-class db.t2.micro	 \
+    --allocated-storage 20 --db-instance-class db.t2.micro \
     --db-instance-identifier test-postgresql-instance \
     --engine postgres \
     --master-username master \
