@@ -70,9 +70,7 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 	if len(options.ContainerName) != 0 {
 		req.Param("container", options.ContainerName)
 	}
-	for _, c := range options.Command {
-		req.Param("command", c)
-	}
+
 	req.VersionedParams(&v1.PodExecOptions{
 		Container: options.ContainerName,
 		Command:   options.Command,
