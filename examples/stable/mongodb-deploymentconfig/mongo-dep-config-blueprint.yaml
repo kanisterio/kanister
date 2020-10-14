@@ -19,7 +19,7 @@ actions:
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
         namespace: "{{ .DeploymentConfig.Namespace }}"
-        image: kanisterio/mongodb:0.28.0
+        image: kanisterio/mongodb:0.39.0
         command:
           - bash
           - -o
@@ -47,7 +47,7 @@ actions:
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
         namespace: "{{ .DeploymentConfig.Namespace }}"
-        image: kanisterio/mongodb:0.28.0
+        image: kanisterio/mongodb:0.39.0
         command:
           - bash
           - -o
@@ -61,15 +61,15 @@ actions:
             restore_cmd="mongorestore --gzip --archive --drop --host ${host} -u admin -p ${dbPassword}"
             kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.path }}' - | ${restore_cmd}
   delete:
-    type: DeploymentConfig
+    type: Namespace
     inputArtifactNames:
       - cloudObject
     phases:
     - func: KubeTask
       name: deleteFromBlobStore
       args:
-        namespace: "{{ .DeploymentConfig.Namespace }}"
-        image: kanisterio/mongodb:0.28.0
+        namespace: "{{ .Namespace.Name }}"
+        image: kanisterio/mongodb:0.39.0
         command:
           - bash
           - -o

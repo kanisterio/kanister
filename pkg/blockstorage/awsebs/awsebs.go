@@ -38,12 +38,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
-var _ blockstorage.Provider = (*ebsStorage)(nil)
-var _ zone.Mapper = (*ebsStorage)(nil)
+var _ blockstorage.Provider = (*EbsStorage)(nil)
+var _ zone.Mapper = (*EbsStorage)(nil)
 
-type ebsStorage struct {
-	ec2Cli *EC2
-	role   string
+// EbsStorage implements blockstorage.Provider
+type EbsStorage struct {
+	Ec2Cli *EC2
+	Role   string
 }
 
 // EC2 is kasten's wrapper around ec2.EC2 structs
@@ -56,7 +57,8 @@ const (
 	maxRetries = 10
 )
 
-func (s *ebsStorage) Type() blockstorage.Type {
+// Type is part of blockstorage.Provider
+func (s *EbsStorage) Type() blockstorage.Type {
 	return blockstorage.TypeEBS
 }
 
@@ -70,7 +72,7 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
-	return &ebsStorage{ec2Cli: ec2Cli, role: config[awsconfig.ConfigRole]}, nil
+	return &EbsStorage{Ec2Cli: ec2Cli, Role: config[awsconfig.ConfigRole]}, nil
 }
 
 // newEC2Client returns ec2 client struct.
@@ -86,7 +88,8 @@ func newEC2Client(awsRegion string, config *aws.Config) (*EC2, error) {
 	return &EC2{EC2: ec2.New(s, conf)}, nil
 }
 
-func (s *ebsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
+// VolumeCreate is part of blockstorage.Provider
+func (s *EbsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
 	cvi := &ec2.CreateVolumeInput{
 		AvailabilityZone: aws.String(volume.Az),
 		VolumeType:       aws.String(string(volume.VolumeType)),
@@ -103,7 +106,7 @@ func (s *ebsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 		tags[tag.Key] = tag.Value
 	}
 
-	volID, err := createVolume(ctx, s.ec2Cli, cvi, ktags.GetTags(tags))
+	volID, err := createVolume(ctx, s.Ec2Cli, cvi, ktags.GetTags(tags))
 	if err != nil {
 		return nil, err
 	}
@@ -111,10 +114,11 @@ func (s *ebsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 	return s.VolumeGet(ctx, volID, volume.Az)
 }
 
-func (s *ebsStorage) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
+// VolumeGet is part of blockstorage.Provider
+func (s *EbsStorage) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
 	volIDs := []*string{aws.String(id)}
 	dvi := &ec2.DescribeVolumesInput{VolumeIds: volIDs}
-	dvo, err := s.ec2Cli.DescribeVolumesWithContext(ctx, dvi)
+	dvo, err := s.Ec2Cli.DescribeVolumesWithContext(ctx, dvi)
 	if err != nil {
 		log.WithError(err).Print("Failed to get volumes", field.M{"VolumeIds": volIDs})
 		return nil, err
@@ -134,7 +138,7 @@ func (s *ebsStorage) VolumeGet(ctx context.Context, id string, zone string) (*bl
 	return mv, nil
 }
 
-func (s *ebsStorage) volumeParse(ctx context.Context, volume interface{}) *blockstorage.Volume {
+func (s *EbsStorage) volumeParse(ctx context.Context, volume interface{}) *blockstorage.Volume {
 	vol := volume.(*ec2.Volume)
 	tags := []*blockstorage.KeyValue(nil)
 	for _, tag := range vol.Tags {
@@ -153,7 +157,8 @@ func (s *ebsStorage) volumeParse(ctx context.Context, volume interface{}) *block
 	}
 }
 
-func (s *ebsStorage) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
+// VolumesList is part of blockstorage.Provider
+func (s *EbsStorage) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	var vols []*blockstorage.Volume
 	var fltrs []*ec2.Filter
 	dvi := &ec2.DescribeVolumesInput{}
@@ -163,7 +168,7 @@ func (s *ebsStorage) VolumesList(ctx context.Context, tags map[string]string, zo
 	}
 
 	dvi.SetFilters(fltrs)
-	dvo, err := s.ec2Cli.DescribeVolumesWithContext(ctx, dvi)
+	dvo, err := s.Ec2Cli.DescribeVolumesWithContext(ctx, dvi)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +178,7 @@ func (s *ebsStorage) VolumesList(ctx context.Context, tags map[string]string, zo
 	return vols, nil
 }
 
-func (s *ebsStorage) snapshotParse(ctx context.Context, snap *ec2.Snapshot) *blockstorage.Snapshot {
+func (s *EbsStorage) snapshotParse(ctx context.Context, snap *ec2.Snapshot) *blockstorage.Snapshot {
 	tags := []*blockstorage.KeyValue(nil)
 	for _, tag := range snap.Tags {
 		tags = append(tags, &blockstorage.KeyValue{Key: *tag.Key, Value: *tag.Value})
@@ -189,13 +194,14 @@ func (s *ebsStorage) snapshotParse(ctx context.Context, snap *ec2.Snapshot) *blo
 		Type:         s.Type(),
 		Encrypted:    aws.BoolValue(snap.Encrypted),
 		Size:         aws.Int64Value(snap.VolumeSize),
-		Region:       aws.StringValue(s.ec2Cli.Config.Region),
+		Region:       aws.StringValue(s.Ec2Cli.Config.Region),
 		Volume:       vol,
 		CreationTime: blockstorage.TimeStamp(aws.TimeValue(snap.StartTime)),
 	}
 }
 
-func (s *ebsStorage) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
+// SnapshotsList is part of blockstorage.Provider
+func (s *EbsStorage) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	var snaps []*blockstorage.Snapshot
 	var fltrs []*ec2.Filter
 	dsi := &ec2.DescribeSnapshotsInput{}
@@ -205,7 +211,7 @@ func (s *ebsStorage) SnapshotsList(ctx context.Context, tags map[string]string) 
 	}
 
 	dsi.SetFilters(fltrs)
-	dso, err := s.ec2Cli.DescribeSnapshotsWithContext(ctx, dsi)
+	dso, err := s.Ec2Cli.DescribeSnapshotsWithContext(ctx, dsi)
 	if err != nil {
 		return nil, err
 	}
@@ -215,9 +221,10 @@ func (s *ebsStorage) SnapshotsList(ctx context.Context, tags map[string]string) 
 	return snaps, nil
 }
 
+// SnapshotCopy is part of blockstorage.Provider
 // SnapshotCopy copies snapshot 'from' to 'to'. Follows aws restrictions regarding encryption;
 // i.e., copying unencrypted to encrypted snapshot is allowed but not vice versa.
-func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
+func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
 	if to.Region == "" {
 		return nil, errors.New("Destination snapshot AvailabilityZone must be specified")
 	}
@@ -225,7 +232,7 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 		return nil, errors.Errorf("Snapshot %v destination ID must be empty", to)
 	}
 	// Copy operation must be initiated from the destination region.
-	ec2Cli, err := newEC2Client(to.Region, s.ec2Cli.Config.Copy())
+	ec2Cli, err := newEC2Client(to.Region, s.Ec2Cli.Config.Copy())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
@@ -233,7 +240,7 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	// independent of whether or not the snapshot is encrypted.
 	var presignedURL *string
 	if to.Region != from.Region {
-		fromCli, err2 := newEC2Client(from.Region, s.ec2Cli.Config.Copy())
+		fromCli, err2 := newEC2Client(from.Region, s.Ec2Cli.Config.Copy())
 		if err2 != nil {
 			return nil, errors.Wrap(err2, "Could not create client to presign URL for snapshot copy request")
 		}
@@ -294,11 +301,13 @@ func (s *ebsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	return rs, nil
 }
 
-func (s *ebsStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+// SnapshotCopyWithArgs is part of blockstorage.Provider
+func (s *EbsStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
 	return nil, errors.New("Copy Snapshot with Args not implemented")
 }
 
-func (s *ebsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
+// SnapshotCreate is part of blockstorage.Provider
+func (s *EbsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	// Snapshot the EBS volume
 	csi := (&ec2.CreateSnapshotInput{}).SetVolumeId(volume.ID)
 	csi.SetTagSpecifications([]*ec2.TagSpecification{
@@ -308,13 +317,13 @@ func (s *ebsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 		},
 	})
 	log.Print("Snapshotting EBS volume", field.M{"volume_id": *csi.VolumeId})
-	csi.SetDryRun(s.ec2Cli.DryRun)
-	snap, err := s.ec2Cli.CreateSnapshotWithContext(ctx, csi)
+	csi.SetDryRun(s.Ec2Cli.DryRun)
+	snap, err := s.Ec2Cli.CreateSnapshotWithContext(ctx, csi)
 	if err != nil && !isDryRunErr(err) {
 		return nil, errors.Wrapf(err, "Failed to create snapshot, volume_id: %s", *csi.VolumeId)
 	}
 
-	region, err := availabilityZoneToRegion(ctx, s.ec2Cli, volume.Az)
+	region, err := availabilityZoneToRegion(ctx, s.Ec2Cli, volume.Az)
 	if err != nil {
 		return nil, err
 	}
@@ -328,22 +337,24 @@ func (s *ebsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 	return ms, nil
 }
 
-func (s *ebsStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
-	if s.ec2Cli.DryRun {
+// SnapshotCreateWaitForCompletion is part of blockstorage.Provider
+func (s *EbsStorage) SnapshotCreateWaitForCompletion(ctx context.Context, snap *blockstorage.Snapshot) error {
+	if s.Ec2Cli.DryRun {
 		return nil
 	}
-	if err := waitOnSnapshotID(ctx, s.ec2Cli, snap.ID); err != nil {
+	if err := waitOnSnapshotID(ctx, s.Ec2Cli, snap.ID); err != nil {
 		return errors.Wrapf(err, "Waiting on snapshot %v", snap)
 	}
 	return nil
 }
 
-func (s *ebsStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
+// SnapshotDelete is part of blockstorage.Provider
+func (s *EbsStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
 	log.Print("Deleting EBS Snapshot", field.M{"SnapshotID": snapshot.ID})
 	rmsi := &ec2.DeleteSnapshotInput{}
 	rmsi.SetSnapshotId(snapshot.ID)
-	rmsi.SetDryRun(s.ec2Cli.DryRun)
-	_, err := s.ec2Cli.DeleteSnapshotWithContext(ctx, rmsi)
+	rmsi.SetDryRun(s.Ec2Cli.DryRun)
+	_, err := s.Ec2Cli.DeleteSnapshotWithContext(ctx, rmsi)
 	if isSnapNotFoundErr(err) {
 		// If the snapshot is already deleted, we log, but don't return an error.
 		log.Debug().Print("Snapshot already deleted")
@@ -355,8 +366,9 @@ func (s *ebsStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.
 	return nil
 }
 
-func (s *ebsStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
-	snaps, err := getSnapshots(ctx, s.ec2Cli, []*string{&id})
+// SnapshotGet is part of blockstorage.Provider
+func (s *EbsStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
+	snaps, err := getSnapshots(ctx, s.Ec2Cli, []*string{&id})
 	if err != nil {
 		return nil, err
 	}
@@ -369,11 +381,12 @@ func (s *ebsStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.
 	return ms, nil
 }
 
-func (s *ebsStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
+// VolumeDelete is part of blockstorage.Provider
+func (s *EbsStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
 	rmvi := &ec2.DeleteVolumeInput{}
 	rmvi.SetVolumeId(volume.ID)
-	rmvi.SetDryRun(s.ec2Cli.DryRun)
-	_, err := s.ec2Cli.DeleteVolumeWithContext(ctx, rmvi)
+	rmvi.SetDryRun(s.Ec2Cli.DryRun)
+	_, err := s.Ec2Cli.DeleteVolumeWithContext(ctx, rmvi)
 	if isVolNotFoundErr(err) {
 		// If the volume is already deleted, we log, but don't return an error.
 		log.Debug().Print("Volume already deleted")
@@ -385,12 +398,13 @@ func (s *ebsStorage) VolumeDelete(ctx context.Context, volume *blockstorage.Volu
 	return nil
 }
 
-func (s *ebsStorage) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
+// SetTags is part of blockstorage.Provider
+func (s *EbsStorage) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
 	switch res := resource.(type) {
 	case *blockstorage.Volume:
-		return setResourceTags(ctx, s.ec2Cli, res.ID, tags)
+		return setResourceTags(ctx, s.Ec2Cli, res.ID, tags)
 	case *blockstorage.Snapshot:
-		return setResourceTags(ctx, s.ec2Cli, res.ID, tags)
+		return setResourceTags(ctx, s.Ec2Cli, res.ID, tags)
 	default:
 		return errors.Wrapf(nil, "Unknown resource type: %v", res)
 	}
@@ -405,7 +419,8 @@ func setResourceTags(ctx context.Context, ec2Cli *EC2, resourceID string, tags m
 	return nil
 }
 
-func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
+// VolumeCreateFromSnapshot is part of blockstorage.Provider
+func (s *EbsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
 	if snapshot.Volume == nil {
 		return nil, errors.New("Snapshot volume information not available")
 	}
@@ -439,7 +454,7 @@ func (s *ebsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 		}
 	}
 
-	volID, err := createVolume(ctx, s.ec2Cli, cvi, ktags.GetTags(tags))
+	volID, err := createVolume(ctx, s.Ec2Cli, cvi, ktags.GetTags(tags))
 	if err != nil {
 		return nil, err
 	}
@@ -591,13 +606,14 @@ func GetRegionFromEC2Metadata() (string, error) {
 	return awsRegion, errors.Wrap(err, "Failed to get AWS Region")
 }
 
-func (s *ebsStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
+// FromRegion is part of zone.Mapper
+func (s *EbsStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
 	// Fall back to using a static map.
 	return staticRegionToZones(region)
 }
 
-func (s *ebsStorage) queryRegionToZones(ctx context.Context, region string) ([]string, error) {
-	ec2Cli, err := newEC2Client(region, s.ec2Cli.Config.Copy())
+func (s *EbsStorage) queryRegionToZones(ctx context.Context, region string) ([]string, error) {
+	ec2Cli, err := newEC2Client(region, s.Ec2Cli.Config.Copy())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
@@ -615,7 +631,8 @@ func (s *ebsStorage) queryRegionToZones(ctx context.Context, region string) ([]s
 	return azs, nil
 }
 
-func (s *ebsStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blockstorage.Snapshot) (global bool, regionsAndZones map[string][]string, err error) {
+// SnapshotRestoreTargets is part of blockstorage.RestoreTargeter
+func (s *EbsStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blockstorage.Snapshot) (global bool, regionsAndZones map[string][]string, err error) {
 	// A few checks from VolumeCreateFromSnapshot
 	if snapshot.Volume == nil {
 		return false, nil, errors.New("Snapshot volume information not available")
@@ -637,6 +654,7 @@ func staticRegionToZones(region string) ([]string, error) {
 		return []string{
 			"ap-south-1a",
 			"ap-south-1b",
+			"ap-south-1c",
 		}, nil
 	case "eu-west-3":
 		return []string{
@@ -665,7 +683,9 @@ func staticRegionToZones(region string) ([]string, error) {
 	case "ap-northeast-2":
 		return []string{
 			"ap-northeast-2a",
+			"ap-northeast-2b",
 			"ap-northeast-2c",
+			"ap-northeast-2d",
 		}, nil
 	case "ap-northeast-1":
 		return []string{
@@ -676,12 +696,14 @@ func staticRegionToZones(region string) ([]string, error) {
 	case "sa-east-1":
 		return []string{
 			"sa-east-1a",
+			"sa-east-1b",
 			"sa-east-1c",
 		}, nil
 	case "ca-central-1":
 		return []string{
 			"ca-central-1a",
 			"ca-central-1b",
+			"ca-central-1d",
 		}, nil
 	case "ap-southeast-1":
 		return []string{
@@ -709,6 +731,10 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-east-1d",
 			"us-east-1e",
 			"us-east-1f",
+			"us-east-1-wl1-atl-wlz-1",
+			"us-east-1-wl1-bos-wlz-1",
+			"us-east-1-wl1-nyc-wlz-1",
+			"us-east-1-wl1-was-wlz-1",
 		}, nil
 	case "us-east-2":
 		return []string{
@@ -727,6 +753,33 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-west-2b",
 			"us-west-2c",
 			"us-west-2d",
+			"us-west-2-lax-1a",
+			"us-west-2-lax-1b",
+			"us-west-2-wl1-sfo-wlz-1",
+		}, nil
+	case "ap-east-1":
+		return []string{
+			"ap-east-1a",
+			"ap-east-1b",
+			"ap-east-1c",
+		}, nil
+	case "me-south-1":
+		return []string{
+			"me-south-1a",
+			"me-south-1b",
+			"me-south-1c",
+		}, nil
+	case "eu-south-1":
+		return []string{
+			"eu-south-1a",
+			"eu-south-1b",
+			"eu-south-1c",
+		}, nil
+	case "af-south-1":
+		return []string{
+			"af-south-1a",
+			"af-south-1b",
+			"af-south-1c",
 		}, nil
 	}
 	return nil, errors.New("cannot get availability zones for region")

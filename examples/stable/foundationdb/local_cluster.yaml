@@ -5,7 +5,7 @@ metadata:
     controller-tools.k8s.io: "1.0"
   name: foundationdbcluster-sample
 spec:
-  version: 6.2.11
+  version: 6.2.20
   databaseConfiguration:
     redundancy_mode: double
   volumeSize: "16G"

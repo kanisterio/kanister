@@ -1,0 +1,87 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: etcd-blueprint
+actions:
+  backup:
+    outputArtifacts:
+      cloudObject:
+        keyValue:
+          backupLocation: "{{ .Phases.uploadSnapshot.Output.backupLocation }}"
+    phases:
+    - func: KubeTask
+      name: takeSnapshot
+      args:
+        image: kanisterio/kanister-kubectl:1.18
+        command:
+          - sh
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            export CACERT="{{ index .Object.data "cacert" | toString | b64dec }}"
+            export CERT="{{ index .Object.data "cert" | toString | b64dec }}"
+            export ENDPOINTS="{{ index .Object.data "endpoints" | toString | b64dec }}"
+            export KEY="{{ index .Object.data "key" | toString | b64dec }}"
+            export LABELS="{{ index .Object.data "labels" | toString | b64dec }}"
+            export ETCDNS="{{ index .Object.data "etcdns" | toString | b64dec }}"
+
+            ETCD_POD=$(kubectl get pods -n $ETCDNS -l $LABELS -ojsonpath='{.items[0].metadata.name}')
+
+            kubectl exec -it -n $ETCDNS $ETCD_POD -c etcd -- sh -c "ETCDCTL_API=3 etcdctl --endpoints=$ENDPOINTS --cacert=$CACERT --cert=$CERT --key=$KEY snapshot save /tmp/etcd-backup.db"
+            kando output etcdPod $ETCD_POD
+            kando output etcdNS $ETCDNS
+
+    - func: KubeTask
+      name: uploadSnapshot
+      args:
+        image: kanisterio/kanister-kubectl:1.18
+        command:
+          - sh
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            BACKUP_LOCATION=etcd_backups/{{ .Object.metadata.namespace }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/etcd-backup.db.gz
+            kubectl cp {{ .Phases.takeSnapshot.Output.etcdNS }}/{{ .Phases.takeSnapshot.Output.etcdPod }}:/tmp/etcd-backup.db /tmp/etcd-backup.db
+            gzip /tmp/etcd-backup.db
+            kando location push --profile '{{ toJson .Profile }}'  /tmp/etcd-backup.db.gz --path $BACKUP_LOCATION
+            kando output backupLocation $BACKUP_LOCATION
+
+    - func: KubeTask
+      name: removeSnapshot
+      args:
+        image: kanisterio/kanister-kubectl:1.18
+        command:
+          - sh
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            kubectl exec -it -n {{ .Phases.takeSnapshot.Output.etcdNS }} {{ .Phases.takeSnapshot.Output.etcdPod }} -c etcd -- sh -c "rm -rf  /tmp/etcd-backup.db"
+
+  delete:
+    type: Namespace
+    inputArtifactNames:
+    - cloudObject
+    phases:
+    - func: KubeTask
+      name: deleteFromObjectStore
+      args:
+        namespace: "{{ .Namespace.Name }}"
+        image: "kanisterio/kanister-tools:0.32.0"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}'

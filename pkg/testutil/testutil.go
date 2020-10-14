@@ -41,7 +41,7 @@ func NewTestPVC() *v1.PersistentVolumeClaim {
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					v1.ResourceStorage: *resource.NewQuantity(1, resource.BinarySI),
+					v1.ResourceName(v1.ResourceStorage): resource.MustParse("1Gi"),
 				},
 			},
 		},
@@ -97,7 +97,7 @@ func newTestPodTemplateSpec() v1.PodTemplateSpec {
 			Containers: []v1.Container{
 				v1.Container{
 					Name:    "test-container",
-					Image:   "kanisterio/kanister-tools:0.28.0",
+					Image:   "kanisterio/kanister-tools:0.39.0",
 					Command: []string{"tail"},
 					Args:    []string{"-f", "/dev/null"},
 				},

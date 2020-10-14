@@ -1,12 +1,41 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"gopkg.in/check.v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
+const (
+	// ClusterNameEnvName is a env var name to get cluster name
+	ClusterNameEnvName   = "SERVICE_NAME"
+	defaultNamespaceName = "default"
+)
+
+// GetClusterName checks CLUSTER_NAME
+// if empty gets "default" namespace UUID
+func GetClusterName(cli kubernetes.Interface) (string, error) {
+	if clusterName, ok := os.LookupEnv(ClusterNameEnvName); ok {
+		return clusterName, nil
+	}
+	if cli == nil {
+		tmpcli, err := newKubeClient()
+		if err != nil {
+			return "", err
+		}
+		cli = tmpcli
+	}
+
+	ns, err := cli.CoreV1().Namespaces().Get(context.TODO(), defaultNamespaceName, metav1.GetOptions{})
+	return string(ns.GetUID()), err
+}
+
+// GetEnvOrSkip test helper to skip test if env var not presented
 func GetEnvOrSkip(c *check.C, varName string) string {
 	v := os.Getenv(varName)
 	if v == "" {
@@ -14,4 +43,19 @@ func GetEnvOrSkip(c *check.C, varName string) string {
 		c.Skip(reason)
 	}
 	return v
+}
+
+// due to cycle imports issues pks/kube can not be used
+func newKubeClient() (kubernetes.Interface, error) {
+	c, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
 }

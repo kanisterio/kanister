@@ -134,3 +134,23 @@ func GetRegionFromLabels(labels map[string]string) string {
 	}
 	return ""
 }
+
+// IsNodeSchedulable returns true if it doesn't have "unschedulable" field set
+// Derived from "k8s.io/kubernetes/test/e2e/framework/node"
+func IsNodeSchedulable(node *v1.Node) bool {
+	if node == nil {
+		return false
+	}
+	return !node.Spec.Unschedulable
+}
+
+// IsNodeReady returns true if it's Ready condition is set to true
+// Derived from "k8s.io/kubernetes/test/e2e/framework/node"
+func IsNodeReady(node *v1.Node) bool {
+	for _, cond := range node.Status.Conditions {
+		if cond.Type == v1.NodeReady && cond.Status == v1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}

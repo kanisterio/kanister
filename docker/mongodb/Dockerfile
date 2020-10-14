@@ -1,4 +1,4 @@
-FROM bitnami/mongodb:4.0.12-debian-9-r22
+FROM bitnami/mongodb:4.4
 
 MAINTAINER "Tom Manville <tom@kasten.io>"
 

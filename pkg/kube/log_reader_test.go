@@ -2,6 +2,7 @@ package kube
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,10 +32,10 @@ type fakeResponseWrapper struct {
 	buf *bytes.Buffer
 }
 
-func (frw *fakeResponseWrapper) DoRaw() ([]byte, error) {
+func (frw *fakeResponseWrapper) DoRaw(context.Context) ([]byte, error) {
 	return nil, nil
 }
-func (frw *fakeResponseWrapper) Stream() (io.ReadCloser, error) {
+func (frw *fakeResponseWrapper) Stream(context.Context) (io.ReadCloser, error) {
 	return buffer{frw.buf}, frw.err
 }
 

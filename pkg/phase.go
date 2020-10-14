@@ -84,24 +84,23 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 	}
 	funcMu.RLock()
 	defer funcMu.RUnlock()
-	// We first check that all requested phases are registered.
+	phases := make([]*Phase, 0, len(a.Phases))
+	// Check that all requested phases are registered and render object refs
 	for _, p := range a.Phases {
+		regVersion := *funcVersion
 		if _, ok := funcs[p.Func]; !ok {
 			return nil, errors.Errorf("Requested function {%s} has not been registered", p.Func)
 		}
-		if _, ok := funcs[p.Func][*funcVersion]; !ok {
+		if _, ok := funcs[p.Func][regVersion]; !ok {
 			if funcVersion.Equal(defaultVersion) {
 				return nil, errors.Errorf("Requested function {%s} has not been registered with version {%s}", p.Func, version)
 			}
 			if _, ok := funcs[p.Func][*defaultVersion]; !ok {
 				return nil, errors.Errorf("Requested function {%s} has not been registered with versions {%s} or {%s}", p.Func, version, DefaultVersion)
 			}
-			log.Info().Print("Falling back to default version of the function", field.M{"Function": p.Func, "CurrentVersion": version, "DefaultVersion": DefaultVersion})
-			*funcVersion = *defaultVersion
+			log.Info().Print("Falling back to default version of the function", field.M{"Function": p.Func, "PreferredVersion": version, "FallbackVersion": DefaultVersion})
+			regVersion = *defaultVersion
 		}
-	}
-	phases := make([]*Phase, 0, len(a.Phases))
-	for _, p := range a.Phases {
 		objs, err := param.RenderObjectRefs(p.ObjectRefs, tp)
 		if err != nil {
 			return nil, err
@@ -109,7 +108,7 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 		phases = append(phases, &Phase{
 			name:    p.Name,
 			objects: objs,
-			f:       funcs[p.Func][*funcVersion],
+			f:       funcs[p.Func][regVersion],
 		})
 	}
 	return phases, nil

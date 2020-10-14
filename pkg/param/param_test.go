@@ -39,6 +39,8 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crfake "github.com/kanisterio/kanister/pkg/client/clientset/versioned/fake"
 	"github.com/kanisterio/kanister/pkg/kube"
+	osapps "github.com/openshift/api/apps/v1"
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	osfake "github.com/openshift/client-go/apps/clientset/versioned/fake"
 )
 
@@ -50,6 +52,7 @@ type ParamsSuite struct {
 	dynCli    dynamic.Interface
 	namespace string
 	pvc       string
+	osCli     osversioned.Interface
 }
 
 var _ = Suite(&ParamsSuite{})
@@ -63,7 +66,7 @@ func (s *ParamsSuite) SetUpSuite(c *C) {
 			GenerateName: "kanisterparamstest-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 	s.dynCli = fakedyncli.NewSimpleDynamicClient(scheme.Scheme, cns)
@@ -78,24 +81,24 @@ func (s *ParamsSuite) SetUpTest(c *C) {
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					v1.ResourceStorage: *resource.NewQuantity(1, resource.BinarySI),
+					v1.ResourceName(v1.ResourceStorage): resource.MustParse("1Gi"),
 				},
 			},
 		},
 	}
-	cPVC, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+	cPVC, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.pvc = cPVC.Name
 }
 
 func (s *ParamsSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
 func (s *ParamsSuite) TearDownTest(c *C) {
-	err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Delete(s.pvc, &metav1.DeleteOptions{})
+	err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Delete(context.TODO(), s.pvc, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }
 
@@ -205,6 +208,73 @@ func (s *ParamsSuite) TestFetchDeploymentParams(c *C) {
 	})
 }
 
+func (s *ParamsSuite) TestFetchDeploymentConfigParams(c *C) {
+	ok, err := kube.IsOSAppsGroupAvailable(context.Background(), s.cli.Discovery())
+	c.Assert(err, IsNil)
+	if !ok {
+		c.Skip("Skipping test since this only runs on OpenShift")
+	}
+
+	cfg, err := kube.LoadConfig()
+	c.Assert(err, IsNil)
+
+	s.osCli, err = osversioned.NewForConfig(cfg)
+	c.Assert(err, IsNil)
+
+	depConf := newDeploymentConfig()
+	c.Assert(err, IsNil)
+
+	// create a deploymentconfig
+	ctx := context.Background()
+	dc, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Create(ctx, depConf, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// wait for deploymentconfig to be ready
+	err = kube.WaitOnDeploymentConfigReady(ctx, s.osCli, s.cli, dc.Namespace, dc.Name)
+	c.Assert(err, IsNil)
+
+	// get again achieve optimistic concurrency
+	newDep, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Get(context.TODO(), dc.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	// edit the deploymentconfig
+	newDep.Spec.Template.Spec.Containers[0].Name = "newname"
+	// update the deploymentconfig
+	updatedDC, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Update(context.TODO(), newDep, metav1.UpdateOptions{})
+	c.Assert(err, IsNil)
+
+	// once updated, it will take some time to new replicationcontroller and pods to be up and running
+	// wait for deploymentconfig to be reay again
+	err = kube.WaitOnDeploymentConfigReady(ctx, s.osCli, s.cli, dc.Namespace, updatedDC.Name)
+	c.Assert(err, IsNil)
+
+	// fetch the deploymentconfig params
+	dconf, err := fetchDeploymentConfigParams(ctx, s.cli, s.osCli, s.namespace, updatedDC.Name)
+
+	c.Assert(err, IsNil)
+	c.Assert(dconf.Namespace, Equals, s.namespace)
+	c.Assert(dconf.Pods, HasLen, 1)
+	c.Assert(dconf.Containers, DeepEquals, [][]string{{"newname"}})
+
+	// let's scale the deployment config and try things
+	dConfig, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Get(context.TODO(), dc.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	// scale the replicas to 3
+	dConfig.Spec.Replicas = 3
+	updated, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Update(context.TODO(), dConfig, metav1.UpdateOptions{})
+	c.Assert(err, IsNil)
+	// wait for deploymentconfig to be ready
+	err = kube.WaitOnDeploymentConfigReady(ctx, s.osCli, s.cli, s.namespace, updated.Name)
+	c.Assert(err, IsNil)
+
+	// fetch the deploymentconfig params
+	dconfParams, err := fetchDeploymentConfigParams(ctx, s.cli, s.osCli, s.namespace, updated.Name)
+	c.Assert(err, IsNil)
+	c.Assert(dconfParams.Namespace, Equals, s.namespace)
+	// number of pods should be chnanged to 3
+	c.Assert(dconfParams.Pods, HasLen, 3)
+}
+
 func (s *ParamsSuite) TestFetchPVCParams(c *C) {
 	ctx := context.Background()
 	testCases := []struct {
@@ -258,7 +328,7 @@ func (s *ParamsSuite) TestNewTemplateParamsStatefulSet(c *C) {
 
 func (s *ParamsSuite) TestNewTemplateParamsPVC(c *C) {
 	ctx := context.Background()
-	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(s.pvc, metav1.GetOptions{})
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(context.TODO(), s.pvc, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	s.testNewTemplateParams(ctx, c, s.getDynamicClient(c, pvc), crv1alpha1.ObjectReference{Name: s.pvc, Namespace: s.namespace, Kind: PVCKind})
 }
@@ -271,13 +341,13 @@ func (s *ParamsSuite) TestNewTemplateParamsNamespace(c *C) {
 func (s *ParamsSuite) TestNewTemplateParamsUnstructured(c *C) {
 	ctx := context.Background()
 	// Lookup the "default" serviceaccount in the test namespace
-	sa, err := s.cli.CoreV1().ServiceAccounts(s.namespace).Get("default", metav1.GetOptions{})
+	sa, err := s.cli.CoreV1().ServiceAccounts(s.namespace).Get(context.TODO(), "default", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	s.testNewTemplateParams(ctx, c, s.getDynamicClient(c, sa), crv1alpha1.ObjectReference{Name: "default", Namespace: s.namespace, Group: "", APIVersion: "v1", Resource: "serviceaccounts"})
 }
 
 func (s *ParamsSuite) getDynamicClient(c *C, objects ...runtime.Object) dynamic.Interface {
-	ns, err := s.cli.CoreV1().Namespaces().Get(s.namespace, metav1.GetOptions{})
+	ns, err := s.cli.CoreV1().Namespaces().Get(context.TODO(), s.namespace, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	objects = append(objects, ns)
 	return fakedyncli.NewSimpleDynamicClient(scheme.Scheme, objects...)
@@ -317,19 +387,21 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 			},
 		},
 	}
-	_, err = s.cli.CoreV1().Secrets(s.namespace).Create(secret)
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	defer func() { _ = s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{}) }()
+	defer func() {
+		_ = s.cli.CoreV1().Secrets(s.namespace).Delete(context.TODO(), "secret-name", metav1.DeleteOptions{})
+	}()
 
-	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(context.TODO(), "secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	osCli := osfake.NewSimpleClientset()
 
 	crCli := crfake.NewSimpleClientset()
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), prof, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("profName", metav1.GetOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get(context.TODO(), "profName", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	as := crv1alpha1.ActionSpec{
@@ -460,11 +532,11 @@ func (s *ParamsSuite) TestProfile(c *C) {
 	}
 	cli := fake.NewSimpleClientset(ss, pod, secret)
 	dynCli := fakedyncli.NewSimpleDynamicClient(scheme.Scheme, ss)
-	_, err := cli.AppsV1().StatefulSets("").Get("", metav1.GetOptions{})
+	_, err := cli.AppsV1().StatefulSets("").List(context.TODO(), metav1.ListOptions{})
 	c.Assert(err, IsNil)
-	_, err = cli.CoreV1().Pods("").Get("", metav1.GetOptions{})
+	_, err = cli.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	c.Assert(err, IsNil)
-	_, err = cli.CoreV1().Secrets("").Get("", metav1.GetOptions{})
+	_, err = cli.CoreV1().Secrets("").List(context.TODO(), metav1.ListOptions{})
 	c.Assert(err, IsNil)
 
 	prof := &crv1alpha1.Profile{
@@ -484,6 +556,7 @@ func (s *ParamsSuite) TestProfile(c *C) {
 			},
 		},
 	}
+
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "asName",
@@ -497,19 +570,22 @@ func (s *ParamsSuite) TestProfile(c *C) {
 						Name:      "ssName",
 						Namespace: s.namespace,
 					},
-					Profile: &crv1alpha1.ObjectReference{},
+					Profile: &crv1alpha1.ObjectReference{
+						Name:      "profName",
+						Namespace: s.namespace,
+					},
 				},
 			},
 		},
 	}
 	crCli := crfake.NewSimpleClientset()
-	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).Create(as)
+	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).Get("", metav1.GetOptions{})
+	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).List(context.TODO(), metav1.ListOptions{})
 	c.Assert(err, IsNil)
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), prof, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("", metav1.GetOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).List(context.TODO(), metav1.ListOptions{})
 	c.Assert(err, IsNil)
 
 	osCli := osfake.NewSimpleClientset()
@@ -528,6 +604,51 @@ func (s *ParamsSuite) TestProfile(c *C) {
 			},
 		},
 	})
+}
+
+func (s *ParamsSuite) TestParamsWithoutProfile(c *C) {
+	ctx := context.Background()
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "secret-name",
+			Namespace: s.namespace,
+			Labels:    map[string]string{"app": "fake-app"},
+		},
+		Data: map[string][]byte{
+			"key":   []byte("myKey"),
+			"value": []byte("myValue"),
+		},
+	}
+	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	defer func() {
+		_ = s.cli.CoreV1().Secrets(s.namespace).Delete(context.TODO(), "secret-name", metav1.DeleteOptions{})
+	}()
+
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(context.TODO(), "secret-name", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(context.TODO(), s.pvc, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	dynCli := s.getDynamicClient(c, pvc)
+	crCli := crfake.NewSimpleClientset()
+	osCli := osfake.NewSimpleClientset()
+	as := crv1alpha1.ActionSpec{
+		Object: crv1alpha1.ObjectReference{
+			Name:      s.pvc,
+			Namespace: s.namespace,
+			Kind:      PVCKind,
+		},
+		Secrets: map[string]crv1alpha1.ObjectReference{
+			"actionSetSecret": crv1alpha1.ObjectReference{
+				Name:      secret.Name,
+				Namespace: secret.Namespace,
+			},
+		},
+	}
+	tp, err := New(ctx, s.cli, dynCli, crCli, osCli, as)
+	c.Assert(err, IsNil)
+	c.Assert(tp, NotNil)
 }
 
 func (s *ParamsSuite) TestPhaseParams(c *C) {
@@ -560,21 +681,23 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 			},
 		},
 	}
-	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(secret)
+	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	defer func() { _ = s.cli.CoreV1().Secrets(s.namespace).Delete("secret-name", &metav1.DeleteOptions{}) }()
+	defer func() {
+		_ = s.cli.CoreV1().Secrets(s.namespace).Delete(context.TODO(), "secret-name", metav1.DeleteOptions{})
+	}()
 
-	_, err = s.cli.CoreV1().Secrets(s.namespace).Get("secret-name", metav1.GetOptions{})
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(context.TODO(), "secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
-	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(s.pvc, metav1.GetOptions{})
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(context.TODO(), s.pvc, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	dynCli := s.getDynamicClient(c, pvc)
 	crCli := crfake.NewSimpleClientset()
 	osCli := osfake.NewSimpleClientset()
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(prof)
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), prof, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get("profName", metav1.GetOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get(context.TODO(), "profName", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	as := crv1alpha1.ActionSpec{
 		Object: crv1alpha1.ObjectReference{
@@ -598,7 +721,7 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 	c.Assert(tp.Phases, IsNil)
 	err = InitPhaseParams(ctx, s.cli, tp, "backup", nil)
 	c.Assert(err, IsNil)
-	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.28.0"})
+	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.39.0"})
 	c.Assert(tp.Phases, HasLen, 1)
 	c.Assert(tp.Phases["backup"], NotNil)
 	c.Assert(tp.Secrets, HasLen, 1)
@@ -652,5 +775,35 @@ func (s *ParamsSuite) TestRenderingPhaseParams(c *C) {
 		err = t.Execute(buf, tp)
 		c.Assert(err, IsNil)
 		c.Assert(buf.String(), Equals, tc.expected)
+	}
+}
+
+func newDeploymentConfig() *osapps.DeploymentConfig {
+	return &osapps.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "tmp",
+		},
+		Spec: osapps.DeploymentConfigSpec{
+			Replicas: 1,
+			Selector: map[string]string{
+				"app": "test",
+			},
+			Template: &v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "test",
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						v1.Container{
+							Image:   "alpine",
+							Name:    "container",
+							Command: []string{"tail", "-f", "/dev/null"},
+						},
+					},
+				},
+			},
+		},
 	}
 }

@@ -52,10 +52,19 @@ const (
 
 	efsType            = "EFS"
 	k10BackupVaultName = "k10vault"
-	dummyMarker        = ""
+	testMarker         = ""
 
 	maxRetries = 10
 )
+
+var allowedMetadataKeys = map[string]bool{
+	"file-system-id":  true,
+	"Encrypted":       true,
+	"KmsKeyId":        true,
+	"PerformanceMode": true,
+	"CreationToken":   true,
+	"newFileSystem":   true,
+}
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
 func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
@@ -144,6 +153,14 @@ func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorag
 
 	req := &backup.StartRestoreJobInput{}
 	req.SetIamRoleArn(awsDefaultServiceBackupRole(e.accountID))
+
+	// Start job only allows specific keys in metadata
+	// https://docs.aws.amazon.com/aws-backup/latest/devguide/API_StartRestoreJob.html
+	for k := range filteredTags {
+		if !allowedMetadataKeys[k] {
+			delete(filteredTags, k)
+		}
+	}
 	req.SetMetadata(convertToBackupTags(filteredTags))
 	req.SetRecoveryPointArn(snapshot.ID)
 	req.SetResourceType(efsType)
@@ -372,12 +389,20 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 	if err = e.setBackupTags(ctx, *resp.RecoveryPointArn, infraTags); err != nil {
 		return nil, errors.Wrap(err, "Failed to set backup tags")
 	}
+
+	req2 := &backup.DescribeRecoveryPointInput{}
+	req2.SetBackupVaultName(k10BackupVaultName)
+	req2.SetRecoveryPointArn(*resp.RecoveryPointArn)
+	describeRP, err := e.DescribeRecoveryPointWithContext(ctx, req2)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get recovery point information")
+	}
 	return &blockstorage.Snapshot{
 		CreationTime: blockstorage.TimeStamp(*resp.CreationDate),
 		Encrypted:    volume.Encrypted,
 		ID:           *resp.RecoveryPointArn,
 		Region:       e.region,
-		Size:         volume.Size,
+		Size:         bytesInGiB(*describeRP.BackupSizeInBytes),
 		Tags:         blockstorage.MapToKeyValue(allTags),
 		Volume:       &volume,
 		Type:         blockstorage.TypeEFS,
@@ -528,25 +553,25 @@ func (e *efs) snapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.Rec
 }
 
 func emptyResponseRequestForBackups() (*backup.ListRecoveryPointsByBackupVaultOutput, *backup.ListRecoveryPointsByBackupVaultInput) {
-	resp := (&backup.ListRecoveryPointsByBackupVaultOutput{}).SetNextToken(dummyMarker)
+	resp := (&backup.ListRecoveryPointsByBackupVaultOutput{}).SetNextToken(testMarker)
 	req := &backup.ListRecoveryPointsByBackupVaultInput{}
 	return resp, req
 }
 
 func emptyResponseRequestForFilesystems() (*awsefs.DescribeFileSystemsOutput, *awsefs.DescribeFileSystemsInput) {
-	resp := (&awsefs.DescribeFileSystemsOutput{}).SetNextMarker(dummyMarker)
+	resp := (&awsefs.DescribeFileSystemsOutput{}).SetNextMarker(testMarker)
 	req := &awsefs.DescribeFileSystemsInput{}
 	return resp, req
 }
 
 func emptyResponseRequestForListTags() (*backup.ListTagsOutput, *backup.ListTagsInput) {
-	resp := (&backup.ListTagsOutput{}).SetNextToken(dummyMarker)
+	resp := (&backup.ListTagsOutput{}).SetNextToken(testMarker)
 	req := &backup.ListTagsInput{}
 	return resp, req
 }
 
 func emptyResponseRequestForMountTargets() (*awsefs.DescribeMountTargetsOutput, *awsefs.DescribeMountTargetsInput) {
-	resp := (&awsefs.DescribeMountTargetsOutput{}).SetNextMarker(dummyMarker)
+	resp := (&awsefs.DescribeMountTargetsOutput{}).SetNextMarker(testMarker)
 	req := &awsefs.DescribeMountTargetsInput{}
 	return resp, req
 }

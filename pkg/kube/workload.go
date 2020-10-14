@@ -38,6 +38,9 @@ import (
 const (
 	// RevisionAnnotation is the revision annotation of a deployment's replica sets which records its rollout sequence
 	RevisionAnnotation = "deployment.kubernetes.io/revision"
+
+	// ReplicationControllerRevisionAnnotation is annotation of deploymentconfig's repliationcontroller
+	ReplicationControllerRevisionAnnotation = "openshift.io/deployment-config.latest-version"
 )
 
 // CreateConfigMap creates a configmap set from a yaml spec.
@@ -47,7 +50,7 @@ func CreateConfigMap(ctx context.Context, cli kubernetes.Interface, namespace st
 	if _, _, err := d.Decode([]byte(spec), nil, cm); err != nil {
 		return nil, err
 	}
-	return cli.CoreV1().ConfigMaps(namespace).Create(cm)
+	return cli.CoreV1().ConfigMaps(namespace).Create(ctx, cm, metav1.CreateOptions{})
 }
 
 // CreateDeployment creates a deployment set from a yaml spec.
@@ -57,7 +60,7 @@ func CreateDeployment(ctx context.Context, cli kubernetes.Interface, namespace s
 	if _, _, err := d.Decode([]byte(spec), nil, dep); err != nil {
 		return nil, err
 	}
-	return cli.AppsV1().Deployments(namespace).Create(dep)
+	return cli.AppsV1().Deployments(namespace).Create(ctx, dep, metav1.CreateOptions{})
 }
 
 // CreateStatefulSet creates a stateful set from a yaml spec.
@@ -67,13 +70,13 @@ func CreateStatefulSet(ctx context.Context, cli kubernetes.Interface, namespace 
 	if _, _, err := d.Decode([]byte(spec), nil, ss); err != nil {
 		return nil, err
 	}
-	return cli.AppsV1().StatefulSets(namespace).Create(ss)
+	return cli.AppsV1().StatefulSets(namespace).Create(ctx, ss, metav1.CreateOptions{})
 }
 
 // StatefulSetReady checks if a statefulset has the desired number of ready
 // replicas.
 func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, error) {
-	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
+	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return false, errors.Wrapf(err, "could not get StatefulSet{Namespace: %s, Name: %s}", namespace, name)
 	}
@@ -89,7 +92,7 @@ func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespa
 
 // StatefulSetPods returns list of running and notrunning pods created by the deployment.
 func StatefulSetPods(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Pod, []v1.Pod, error) {
-	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
+	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "could not get StatefulSet{Namespace: %s, Name: %s}", namespace, name)
 	}
@@ -109,7 +112,7 @@ func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, n
 
 // DeploymentConfigReady checks to see the deploymentconfig has desired number of available replicas.
 func DeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, cli kubernetes.Interface, namespace, name string) (bool, error) {
-	depConfig, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(name, metav1.GetOptions{})
+	depConfig, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return false, errors.Wrapf(err, "could not get DeploymentConfig{Namespace: %s, Name: %s}", namespace, name)
 	}
@@ -121,7 +124,7 @@ func DeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, cli
 		return false, nil
 	}
 
-	rc, err := FetchReplicationController(cli, namespace, depConfig.GetUID(), depConfig.Annotations[RevisionAnnotation])
+	rc, err := FetchReplicationController(cli, namespace, depConfig.GetUID(), strconv.FormatInt(depConfig.Status.LatestVersion, 10))
 	if err != nil {
 		return false, err
 	}
@@ -152,7 +155,7 @@ func DeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, cli
 // DeploymentReady checks to see if the deployment has the desired number of
 // available replicas.
 func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, error) {
-	d, err := kubeCli.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	d, err := kubeCli.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return false, errors.Wrapf(err, "could not get Deployment{Namespace: %s, Name: %s}", namespace, name)
 	}
@@ -184,11 +187,11 @@ func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespac
 
 // DeploymentConfigPods return list of running and not running pod created by this/name deployment config
 func DeploymentConfigPods(ctx context.Context, osCli osversioned.Interface, kubeCli kubernetes.Interface, namespace, name string) ([]v1.Pod, []v1.Pod, error) {
-	depConf, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(name, metav1.GetOptions{})
+	depConf, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "could not get DeploymentConfig{Namespace: %s, Name: %s}", namespace, name)
 	}
-	rc, err := FetchReplicationController(kubeCli, namespace, depConf.GetUID(), depConf.Annotations[RevisionAnnotation])
+	rc, err := FetchReplicationController(kubeCli, namespace, depConf.GetUID(), strconv.FormatInt(depConf.Status.LatestVersion, 10))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -198,7 +201,7 @@ func DeploymentConfigPods(ctx context.Context, osCli osversioned.Interface, kube
 
 // DeploymentPods returns list of running and notrunning pods created by the deployment.
 func DeploymentPods(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Pod, []v1.Pod, error) {
-	d, err := kubeCli.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	d, err := kubeCli.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "could not get Deployment{Namespace: %s, Name: %s}", namespace, name)
 	}
@@ -233,10 +236,11 @@ func WaitOnDeploymentConfigReady(ctx context.Context, osCli osversioned.Interfac
 
 // FetchReplicationController fetches the replication controller that has owner with UID provided uid
 func FetchReplicationController(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*v1.ReplicationController, error) {
-	repCtrls, err := cli.CoreV1().ReplicationControllers(namespace).List(metav1.ListOptions{})
+	repCtrls, err := cli.CoreV1().ReplicationControllers(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not list ReplicationControllers")
 	}
+
 	for _, rc := range repCtrls.Items {
 		if len(rc.OwnerReferences) != 1 {
 			continue
@@ -246,7 +250,7 @@ func FetchReplicationController(cli kubernetes.Interface, namespace string, uid 
 			continue
 		}
 
-		if rc.Annotations[RevisionAnnotation] != revision {
+		if rc.Annotations[ReplicationControllerRevisionAnnotation] != revision {
 			continue
 		}
 		return &rc, nil
@@ -259,8 +263,7 @@ var errNotFound = fmt.Errorf("not found")
 
 // FetchReplicaSet fetches the replicaset matching the specified owner UID
 func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, revision string) (*appsv1.ReplicaSet, error) {
-	opts := metav1.ListOptions{}
-	rss, err := cli.AppsV1().ReplicaSets(namespace).List(opts)
+	rss, err := cli.AppsV1().ReplicaSets(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not list ReplicaSets")
 	}
@@ -285,8 +288,7 @@ func FetchReplicaSet(cli kubernetes.Interface, namespace string, uid types.UID, 
 // FetchPods fetches the pods matching the specified owner UID and splits them
 // into 2 groups (running/not-running)
 func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID) (runningPods []v1.Pod, notRunningPods []v1.Pod, err error) {
-	opts := metav1.ListOptions{}
-	pods, err := cli.CoreV1().Pods(namespace).List(opts)
+	pods, err := cli.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Could not list Pods")
 	}
@@ -305,12 +307,12 @@ func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID) (runni
 }
 
 func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
-	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
+	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not get Statefulset{Namespace %s, Name: %s}", namespace, name)
 	}
 	ss.Spec.Replicas = &replicas
-	_, err = kubeCli.AppsV1().StatefulSets(namespace).Update(ss)
+	_, err = kubeCli.AppsV1().StatefulSets(namespace).Update(ctx, ss, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not update Statefulset{Namespace %s, Name: %s}", namespace, name)
 	}
@@ -318,12 +320,12 @@ func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespa
 }
 
 func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
-	d, err := kubeCli.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	d, err := kubeCli.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not get Deployment{Namespace %s, Name: %s}", namespace, name)
 	}
 	d.Spec.Replicas = &replicas
-	_, err = kubeCli.AppsV1().Deployments(namespace).Update(d)
+	_, err = kubeCli.AppsV1().Deployments(namespace).Update(ctx, d, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not update Deployment{Namespace %s, Name: %s}", namespace, name)
 	}
@@ -331,12 +333,12 @@ func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespac
 }
 
 func ScaleDeploymentConfig(ctx context.Context, kubeCli kubernetes.Interface, osCli osversioned.Interface, namespace string, name string, replicas int32) error {
-	dc, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(name, metav1.GetOptions{})
+	dc, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not get DeploymentConfig{Namespace %s, Name: %s}", namespace, name)
 	}
 	dc.Spec.Replicas = replicas
-	_, err = osCli.AppsV1().DeploymentConfigs(namespace).Update(dc)
+	_, err = osCli.AppsV1().DeploymentConfigs(namespace).Update(ctx, dc, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not update DeploymentConfig{Namespace %s, Name: %s}", namespace, name)
 	}
@@ -358,7 +360,7 @@ func DeploymentVolumes(cli kubernetes.Interface, d *appsv1.Deployment) (volNameT
 
 // PodContainers returns list of containers specified by the pod
 func PodContainers(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) ([]v1.Container, error) {
-	p, err := kubeCli.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
+	p, err := kubeCli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get Pod{Namespace: %s, Name: %s}", namespace, name)
 	}
@@ -433,7 +435,7 @@ func DeploymentConfigVolumes(osCli osversioned.Interface, depConfig *osAppsv1.De
 
 // IsPodRunning checks if the provided pod is ready or not
 func IsPodRunning(cli kubernetes.Interface, podName, podNamespace string) (bool, error) {
-	pod, err := cli.CoreV1().Pods(podNamespace).Get(podName, metav1.GetOptions{})
+	pod, err := cli.CoreV1().Pods(podNamespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}

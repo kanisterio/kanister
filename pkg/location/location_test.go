@@ -83,14 +83,17 @@ func (s *LocationSuite) SetUpSuite(c *C) {
 	ctx := context.Background()
 
 	s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	pc := objectstore.ProviderConfig{Type: s.osType}
+	pc := objectstore.ProviderConfig{
+		Type:   s.osType,
+		Region: s.region,
+	}
 	secret, err := getOSSecret(ctx, s.osType, s.profile.Credential)
 	c.Check(err, IsNil)
 	s.provider, err = objectstore.NewProvider(ctx, pc, secret)
 	c.Check(err, IsNil)
 	c.Assert(s.provider, NotNil)
 
-	s.root, err = objectstore.GetOrCreateBucket(ctx, s.provider, testBucketName, s.region)
+	s.root, err = objectstore.GetOrCreateBucket(ctx, s.provider, testBucketName)
 	c.Check(err, IsNil)
 	c.Assert(s.root, NotNil)
 	s.suiteDirPrefix = time.Now().UTC().Format(time.RFC3339Nano)

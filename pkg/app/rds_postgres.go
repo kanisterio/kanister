@@ -26,7 +26,7 @@ import (
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -179,7 +179,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 			"postgres.secret":     "dbsecret",
 		},
 	}
-	_, err = pdb.cli.CoreV1().ConfigMaps(ns).Create(dbconfig)
+	_, err = pdb.cli.CoreV1().ConfigMaps(ns).Create(ctx, dbconfig, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -201,7 +201,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 			"aws_region":        pdb.region,
 		},
 	}
-	_, err = pdb.cli.CoreV1().Secrets(ns).Create(dbsecret)
+	_, err = pdb.cli.CoreV1().Secrets(ns).Create(ctx, dbsecret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -224,13 +224,13 @@ func (pdb *RDSPostgresDB) Object() crv1alpha1.ObjectReference {
 // Ping makes and tests DB connection
 func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 	// Get connection info from configmap
-	dbconfig, err := pdb.cli.CoreV1().ConfigMaps(pdb.namespace).Get("dbconfig", metav1.GetOptions{})
+	dbconfig, err := pdb.cli.CoreV1().ConfigMaps(pdb.namespace).Get(ctx, "dbconfig", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	// Get secret creds
-	dbsecret, err := pdb.cli.CoreV1().Secrets(pdb.namespace).Get("dbsecret", metav1.GetOptions{})
+	dbsecret, err := pdb.cli.CoreV1().Secrets(pdb.namespace).Get(ctx, "dbsecret", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}

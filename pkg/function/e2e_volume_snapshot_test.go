@@ -76,12 +76,12 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 
 	ns := testutil.NewTestNamespace()
 
-	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.GetName()
 
 	ctx := context.Background()
-	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(newStatefulSet(s.namespace))
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(ctx, newStatefulSet(s.namespace), metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 	c.Assert(err, IsNil)
@@ -98,11 +98,11 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	}
 
 	sec := NewTestProfileSecret(id, secret)
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(sec)
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	p := NewTestProfile(s.namespace, sec.GetName(), locationType)
-	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(p)
+	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	as := crv1alpha1.ActionSpec{
@@ -167,7 +167,7 @@ func NewTestProfile(namespace string, secretName string, locationType crv1alpha1
 
 func (s *VolumeSnapshotTestSuite) TearDownTest(c *C) {
 	if s.namespace != "" {
-		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
@@ -276,7 +276,7 @@ func newStatefulSet(namespace string) *appsv1.StatefulSet {
 					Containers: []v1.Container{
 						{
 							Name:  "nginx",
-							Image: "nginx:1.7.9",
+							Image: "nginx:1.18.0",
 							VolumeMounts: []v1.VolumeMount{
 								{
 									Name:      "kanister-test-pvc-snap-vol1",
@@ -297,7 +297,7 @@ func newStatefulSet(namespace string) *appsv1.StatefulSet {
 						AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 						Resources: v1.ResourceRequirements{
 							Requests: v1.ResourceList{
-								v1.ResourceStorage: *k8sresource.NewQuantity(1, k8sresource.BinarySI),
+								v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("1Gi"),
 							},
 						},
 					},
@@ -332,12 +332,12 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 }
 
 func (s *VolumeSnapshotTestSuite) getCreds(c *C, cli kubernetes.Interface, namespace string, pvcname string) (string, string, crv1alpha1.LocationType, error) {
-	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcname, metav1.GetOptions{})
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(context.TODO(), pvcname, metav1.GetOptions{})
 	if err != nil {
 		return "", "", "", err
 	}
 	pvName := pvc.Spec.VolumeName
-	pv, err := cli.CoreV1().PersistentVolumes().Get(pvName, metav1.GetOptions{})
+	pv, err := cli.CoreV1().PersistentVolumes().Get(context.TODO(), pvName, metav1.GetOptions{})
 	if err != nil {
 		return "", "", "", err
 	}

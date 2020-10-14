@@ -18,10 +18,13 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"strings"
+	"time"
 
 	json "github.com/json-iterator/go"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
@@ -31,19 +34,47 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
+const (
+	// podReadyWaitTimeout is the time to wait for pod to be ready
+	podReadyWaitTimeout = 15 * time.Minute
+	errAccessingNode    = "Failed to get node"
+)
+
 // PodOptions specifies options for `CreatePod`
 type PodOptions struct {
-	Namespace          string
+	Annotations        map[string]string
+	Command            []string
 	GenerateName       string
 	Image              string
-	Command            []string
-	Volumes            map[string]string
+	Labels             map[string]string
+	Namespace          string
 	ServiceAccountName string
+	Volumes            map[string]string
 	PodOverride        crv1alpha1.JSONMap
 }
 
 // CreatePod creates a pod with a single container based on the specified image
 func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+	// If Namespace is not specified, use the controller Namespace.
+	cns, err := GetControllerNamespace()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get controller namespace")
+	}
+	ns := opts.Namespace
+	if ns == "" {
+		ns = cns
+	}
+
+	// If a ServiceAccount is not specified and we are in the controller's
+	// namespace, use the same service account as the controller.
+	sa := opts.ServiceAccountName
+	if sa == "" && ns == cns {
+		sa, err = GetControllerServiceAccount(cli)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get Controller Service Account")
+		}
+	}
+
 	volumeMounts, podVolumes := createVolumeSpecs(opts.Volumes)
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
@@ -55,12 +86,13 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 				VolumeMounts:    volumeMounts,
 			},
 		},
-		// RestartPolicy dictates when the containers of the pod should be restarted.
-		// The possible values include Always, OnFailure and Never with Always being the default.
-		// OnFailure policy will result in failed containers being restarted with an exponential back-off delay.
+		// RestartPolicy dictates when the containers of the pod should be
+		// restarted.  The possible values include Always, OnFailure and Never
+		// with Always being the default.  OnFailure policy will result in
+		// failed containers being restarted with an exponential back-off delay.
 		RestartPolicy:      v1.RestartPolicyOnFailure,
 		Volumes:            podVolumes,
-		ServiceAccountName: opts.ServiceAccountName,
+		ServiceAccountName: sa,
 	}
 
 	// Patch default Pod Specs if needed
@@ -72,20 +104,28 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
-			Namespace:    opts.Namespace,
 		},
 		Spec: patchedSpecs,
 	}
-	pod, err = cli.CoreV1().Pods(opts.Namespace).Create(pod)
+
+	// Add Annotations and Labels, if specified
+	if opts.Annotations != nil {
+		pod.ObjectMeta.Annotations = opts.Annotations
+	}
+	if opts.Labels != nil {
+		pod.ObjectMeta.Labels = opts.Labels
+	}
+
+	pod, err = cli.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", ns, opts.GenerateName)
 	}
 	return pod, nil
 }
 
 // DeletePod deletes the specified pod
 func DeletePod(ctx context.Context, cli kubernetes.Interface, pod *v1.Pod) error {
-	if err := cli.CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil); err != nil {
+	if err := cli.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}); err != nil {
 		log.WithError(err).Print("DeletePod failed")
 	}
 	return nil
@@ -95,12 +135,12 @@ func StreamPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, nam
 	plo := &v1.PodLogOptions{
 		Follow: true,
 	}
-	return cli.CoreV1().Pods(namespace).GetLogs(name, plo).Stream()
+	return cli.CoreV1().Pods(namespace).GetLogs(name, plo).Stream(ctx)
 }
 
 // GetPodLogs fetches the logs from the given pod
 func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name string) (string, error) {
-	reader, err := cli.CoreV1().Pods(namespace).GetLogs(name, &v1.PodLogOptions{}).Stream()
+	reader, err := cli.CoreV1().Pods(namespace).GetLogs(name, &v1.PodLogOptions{}).Stream(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -114,20 +154,114 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 
 // WaitForPodReady waits for a pod to exit the pending state
 func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
-	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		p, err := cli.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, podReadyWaitTimeout)
+	defer waitCancel()
+	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		p, err := cli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
+
+		// check if nodes are up and available
+		err = checkNodesStatus(p, cli)
+		if err != nil && !strings.Contains(err.Error(), errAccessingNode) {
+			return false, err
+		}
+
+		// check for memory or resource issues
+		if p.Status.Phase == v1.PodPending {
+			if p.Status.Reason == "OutOfmemory" || p.Status.Reason == "OutOfcpu" {
+				return false, errors.Errorf("Pod stuck in pending state, reason: %s", p.Status.Reason)
+			}
+		}
+
+		// check if pvc and pv are up and ready to mount
+		if err := getVolStatus(p, cli, namespace); err != nil {
+			return false, err
+		}
+
 		return p.Status.Phase != v1.PodPending && p.Status.Phase != "", nil
 	})
-	return errors.Wrapf(err, "Pod did not transition into running state. Namespace:%s, Name:%s", namespace, name)
+	return errors.Wrapf(err, "Pod did not transition into running state. Timeout:%v  Namespace:%s, Name:%s", podReadyWaitTimeout, namespace, name)
+}
+
+func checkNodesStatus(p *v1.Pod, cli kubernetes.Interface) error {
+	n := strings.Split(p.Spec.NodeName, "/")
+	if n[0] != "" {
+		node, err := cli.CoreV1().Nodes().Get(context.TODO(), n[0], metav1.GetOptions{})
+		if err != nil {
+			return errors.Wrapf(err, "%s %s", errAccessingNode, n[0])
+		}
+		if !IsNodeReady(node) || !IsNodeSchedulable(node) {
+			return errors.Errorf("Node %s is currently not ready/schedulable", n[0])
+		}
+	}
+	return nil
+}
+
+// checkPVCAndPVStatus does the following:
+// 1. if PVC is present then check the status of PVC
+// 	1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
+// 2. if PVC not present then wait for timeout
+func getVolStatus(p *v1.Pod, cli kubernetes.Interface, namespace string) error {
+	for _, vol := range p.Spec.Volumes {
+		if err := checkPVCAndPVStatus(vol, p, cli, namespace); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// checkPVCAndPVStatus does the following:
+// 1. if PVC is present then check the status of PVC
+// 	1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
+// 2. if PVC not present then wait for timeout
+func checkPVCAndPVStatus(vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
+	if vol.VolumeSource.PersistentVolumeClaim == nil {
+		// wait for timeout
+		return nil
+	}
+	pvcName := vol.VolumeSource.PersistentVolumeClaim.ClaimName
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(context.TODO(), pvcName, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(errors.Cause(err)) {
+			// Do not return err, wait for timeout, since sometimes in case of statefulsets, they trigger creation of a volume
+			return nil
+		} else {
+			return errors.Wrapf(err, "Failed to get PVC %s", pvcName)
+		}
+	}
+
+	switch pvc.Status.Phase {
+	case v1.ClaimLost:
+		return errors.Errorf("PVC %s assoicated with pod %s has status: %s", pvcName, p.Name, v1.ClaimLost)
+	case v1.ClaimPending:
+		pvName := pvc.Spec.VolumeName
+		if pvName == "" {
+			// wait for timeout
+			return nil
+		}
+		pv, err := cli.CoreV1().PersistentVolumes().Get(context.TODO(), pvName, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(errors.Cause(err)) {
+				// wait for timeout
+				return nil
+			} else {
+				return errors.Wrapf(err, "Failed to get PV %s", pvName)
+			}
+		}
+		if pv.Status.Phase == v1.VolumeFailed {
+			return errors.Errorf("PV %s associated with PVC %s has status: %s message: %s reason: %s namespace: %s", pvName, pvcName, v1.VolumeFailed, pv.Status.Message, pv.Status.Reason, namespace)
+		}
+	}
+
+	return nil
 }
 
 // WaitForPodCompletion waits for a pod to reach a terminal state
 func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		p, err := cli.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
+		p, err := cli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return true, err
 		}

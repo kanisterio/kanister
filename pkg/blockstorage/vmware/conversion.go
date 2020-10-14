@@ -29,12 +29,12 @@ func convertFromObjectToVolume(vso *types.VStorageObject) (*blockstorage.Volume,
 
 func convertFromObjectToSnapshot(vso *types.VStorageObjectSnapshotInfoVStorageObjectSnapshot, volID string) (*blockstorage.Snapshot, error) {
 	if vso == nil {
-		return nil, errors.New("Empty opbject")
+		return nil, errors.New("Empty object")
 	}
 	return &blockstorage.Snapshot{
 		Type:         blockstorage.TypeFCD,
 		CreationTime: blockstorage.TimeStamp(vso.CreateTime),
-		ID:           snapshotFullID(volID, vso.Id.Id),
+		ID:           SnapshotFullID(volID, vso.Id.Id),
 		Size:         0,
 		Region:       "",
 		Encrypted:    false,
@@ -48,11 +48,13 @@ func vimID(id string) types.ID {
 	}
 }
 
-func snapshotFullID(volID, snapshotID string) string {
+// SnapshotFullID create a composite identifier for a volume snapshot.
+func SnapshotFullID(volID, snapshotID string) string {
 	return volID + ":" + snapshotID
 }
 
-func splitSnapshotFullID(fullID string) (volID string, snapshotID string, err error) {
+// SplitSnapshotFullID splits a volume snapshot composite identifier into its components.
+func SplitSnapshotFullID(fullID string) (volID string, snapshotID string, err error) {
 	split := strings.Split(fullID, ":")
 	if len(split) != 2 {
 		return "", "", errors.New("Malformed full ID for snapshot")

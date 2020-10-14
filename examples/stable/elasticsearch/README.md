@@ -1,6 +1,6 @@
 # Elasticsearch Helm Chart
 
-This chart uses a standard Docker image of Elasticsearch (docker.elastic.co/elasticsearch/elasticsearch-oss) verison 6.3.1 and uses a service pointing to the master's transport port for service discovery.
+This chart uses a standard Docker image of Elasticsearch (docker.elastic.co/elasticsearch/elasticsearch-oss) version 6.3.1 and uses a service pointing to the master's transport port for service discovery.
 Elasticsearch does not communicate with the Kubernetes API, hence no need for RBAC permissions.
 
 ## Warning for previous users
@@ -13,7 +13,7 @@ If you want to avoid doing that upgrade to Elasticsearch 5.6 first before moving
 
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.28.0 with `profiles.cr.kanister.io` CRD installed
+* Kanister version 0.39.0 with `profiles.cr.kanister.io` CRD installed
 
 ## StatefulSets Details
 * https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/

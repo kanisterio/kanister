@@ -18,18 +18,22 @@ package objectstore
 
 import (
 	"context"
+	"fmt"
 	"path"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
+
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 var _ Provider = (*provider)(nil)
 
 // provider implements the Provider functionality
 type provider struct {
-	// e.g., s3-us-west-2.amazonaws.com
-	hostEndPoint string
 	// Object store information
 	config ProviderConfig
 	// Secret
@@ -44,81 +48,73 @@ type bucket struct {
 	container    stow.Container // stow bucket
 	location     stow.Location  // Authenticated stow handle
 	hostEndPoint string         // E.g., https://s3-us-west-2.amazonaws.com/bucket1
+	region       string         // E.g., us-west-2
 }
 
-// CreateBucket creates the bucket. Bucket naming rules are provider dependent.
-func (p *provider) CreateBucket(ctx context.Context, bucketName, region string) (Bucket, error) {
-	location, err := getStowLocation(ctx, p.config, p.secret, region)
-	if err != nil {
-		return nil, err
-	}
-	c, err := location.CreateContainer(bucketName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create bucket %s", bucketName)
-	}
+func newBucket(cfg ProviderConfig, c stow.Container, l stow.Location) *bucket {
 	dir := &directory{
 		path: "/",
 	}
 	bucket := &bucket{
 		directory:    dir,
 		container:    c,
-		location:     location,
-		hostEndPoint: path.Join(p.hostEndPoint, c.ID()),
+		location:     l,
+		hostEndPoint: bucketEndpoint(cfg, c.ID()),
+		region:       cfg.Region,
 	}
 	dir.bucket = bucket
-	return bucket, nil
+	return bucket
+}
+
+// CreateBucket creates the bucket. Bucket naming rules are provider dependent.
+func (p *provider) CreateBucket(ctx context.Context, bucketName string) (Bucket, error) {
+	cfg, err := p.bucketConfig(ctx, bucketName)
+	if err != nil {
+		return nil, err
+	}
+	l, err := getStowLocation(ctx, cfg, p.secret)
+	if err != nil {
+		return nil, err
+	}
+	c, err := l.CreateContainer(bucketName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create bucket %s", bucketName)
+	}
+	return newBucket(cfg, c, l), nil
 }
 
 // GetBucket gets the handle for the specified bucket. Buckets are searched using prefix search;
 // if multiple buckets matched the name, then returns an error
 func (p *provider) GetBucket(ctx context.Context, bucketName string) (Bucket, error) {
-	location, err := getStowLocation(ctx, p.config, p.secret, "")
+	cfg, err := p.bucketConfig(ctx, bucketName)
 	if err != nil {
 		return nil, err
 	}
-	c, err := location.Container(bucketName)
+	l, err := getStowLocation(ctx, cfg, p.secret)
+	if err != nil {
+		return nil, err
+	}
+	c, err := l.Container(bucketName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get bucket %s", bucketName)
 	}
-	dir := &directory{
-		path: "/",
-	}
-	bucket := &bucket{
-		directory:    dir,
-		container:    c,
-		location:     location,
-		hostEndPoint: path.Join(p.hostEndPoint, c.ID()),
-	}
-	dir.bucket = bucket
-	return bucket, nil
+	return newBucket(cfg, c, l), nil
 }
 
 // ListBuckets gets the handles of all the buckets.
 func (p *provider) ListBuckets(ctx context.Context) (map[string]Bucket, error) {
 	// Walk all the buckets
 	buckets := make(map[string]Bucket)
-
-	location, err := getStowLocation(ctx, p.config, p.secret, "")
+	l, err := getStowLocation(ctx, p.config, p.secret)
 	if err != nil {
 		return nil, err
 	}
-	err = stow.WalkContainers(location, stow.NoPrefix, 10000,
+	err = stow.WalkContainers(l, stow.NoPrefix, 10000,
 		func(c stow.Container, err error) error {
 			if err != nil {
 				return err
 			}
-
-			dir := &directory{
-				path: "/",
-			}
-			bucket := &bucket{
-				directory:    dir,
-				container:    c,
-				location:     location,
-				hostEndPoint: path.Join(p.hostEndPoint, c.ID()),
-			}
-			dir.bucket = bucket
-			buckets[c.ID()] = bucket
+			buckets[c.ID()] = newBucket(p.config, c, l)
 			return nil
 		})
 	if err != nil {
@@ -131,77 +127,108 @@ func (p *provider) ListBuckets(ctx context.Context) (map[string]Bucket, error) {
 // For safety, does not delete buckets with contents. Caller should ensure
 // that bucket is empty.
 func (p *provider) DeleteBucket(ctx context.Context, bucketName string) error {
-	location, err := getStowLocation(ctx, p.config, p.secret, "")
+	location, err := getStowLocation(ctx, p.config, p.secret)
 	if err != nil {
 		return err
 	}
 	return location.RemoveContainer(bucketName)
 }
 
-func (p *provider) getOrCreateBucket(ctx context.Context, bucketName, region string) (Bucket, error) {
+func (p *provider) getOrCreateBucket(ctx context.Context, bucketName string) (Bucket, error) {
 	d, err := p.GetBucket(ctx, bucketName)
 	if err == nil {
 		return d, nil
 	}
-	// Attempt creating it
-	return p.CreateBucket(ctx, bucketName, region)
+	// Attempt to create it.
+	return p.CreateBucket(ctx, bucketName)
+}
+
+func (p *provider) bucketConfig(ctx context.Context, bucketName string) (ProviderConfig, error) {
+	if p.config.Type == ProviderTypeS3 {
+		return s3BucketConfig(ctx, p.config, p.secret, bucketName)
+	}
+	return p.config, nil
+}
+
+func s3BucketConfig(ctx context.Context, c ProviderConfig, s *Secret, bucketName string) (ProviderConfig, error) {
+	if s == nil || s.Aws == nil {
+		return c, errors.New("AWS Secret required to get region")
+	}
+	r, err := s3BucketRegion(ctx, c, *s, bucketName)
+	if err != nil {
+		log.Debug().
+			WithContext(ctx).
+			WithError(err).
+			Print("Couldn't get config for bucket", field.M{"config": c})
+		return c, nil
+	}
+	c.Region = r
+	return c, nil
 }
 
 type s3Provider struct {
 	*provider
 }
 
-func (p *s3Provider) GetBucket(ctx context.Context, bucketName string) (Bucket, error) {
-	hostEndPoint := p.hostEndPoint
-	var region string
-	if hostEndPoint == "" {
-		var err error
-		region, err = p.getRegionForBucket(ctx, bucketName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not get region for bucket %s", bucketName)
-		}
-		hostEndPoint = awsS3Endpoint(region)
+// GetRegionForBucket returns the region for a particular bucket. It does not
+// use the region set in the provider config is used as a hint, but may differ
+// from the actual region of the bucket. If the bucket does not have a region,
+// then the return value will be "".
+func (p *s3Provider) GetRegionForBucket(ctx context.Context, bucketName string) (string, error) {
+	if p.secret == nil || p.secret.Aws == nil {
+		return "", errors.New("AWS Secret required to get region")
 	}
-	location, err := getStowLocation(ctx, p.config, p.secret, region)
-	if err != nil {
-		return nil, err
-	}
-	c, err := location.Container(bucketName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get bucket %s", bucketName)
-	}
-	dir := &directory{
-		path: "/",
-	}
-	bucket := &bucket{
-		directory:    dir,
-		container:    c,
-		location:     location,
-		hostEndPoint: path.Join(hostEndPoint, c.ID()),
-	}
-	dir.bucket = bucket
-	return bucket, nil
+	return s3BucketRegion(ctx, p.config, *p.secret, bucketName)
 }
 
-func (p *s3Provider) DeleteBucket(ctx context.Context, bucketName string) error {
-	region, _ := p.getRegionForBucket(ctx, bucketName)
-	location, err := getStowLocation(ctx, p.config, p.secret, region)
+func s3BucketRegion(ctx context.Context, cfg ProviderConfig, sec Secret, bucketName string) (string, error) {
+	c, r, err := awsConfig(ctx, cfg, *sec.Aws)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to get location for bucket deletion. bucket: %s", bucketName)
+		return "", err
 	}
-	return location.RemoveContainer(bucketName)
+	s, err := session.NewSession(c)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create session, region = %s", r)
+	}
+	return s3manager.GetBucketRegion(ctx, s, bucketName, cfg.Region)
 }
 
-// returns the region for a particular bucket
-func (p *s3Provider) getRegionForBucket(ctx context.Context, bucketName string) (string, error) {
-	return GetS3BucketRegion(ctx, bucketName, "")
-}
-
-func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName, region string) (Bucket, error) {
+func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName string) (Bucket, error) {
 	d, err := p.GetBucket(ctx, bucketName)
 	if IsBucketNotFoundError(err) {
 		// Create bucket when it does not exist
-		return p.CreateBucket(ctx, bucketName, region)
+		return p.CreateBucket(ctx, bucketName)
 	}
 	return d, err
+}
+
+func bucketEndpoint(c ProviderConfig, id string) string {
+	e := c.Endpoint
+	if c.Type == ProviderTypeS3 {
+		e = s3Endpoint(c)
+	}
+	return path.Join(e, id)
+}
+
+const defaultS3region = "us-east-1"
+
+func s3Endpoint(c ProviderConfig) string {
+	if c.Endpoint != "" {
+		return c.Endpoint
+	}
+	r := defaultS3region
+	if c.Region != "" {
+		r = c.Region
+	}
+	return awsS3Endpoint(r)
+}
+
+// Stow uses path-style requests when specifying an endpoint.
+// https://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html#path-style-access
+// https://github.com/graymeta/stow/blob/master/s3/config.go#L159
+
+const awsS3EndpointFmt = "https://s3.%s.amazonaws.com"
+
+func awsS3Endpoint(region string) string {
+	return fmt.Sprintf(awsS3EndpointFmt, region)
 }

@@ -14,7 +14,7 @@ actions:
       name: backupToObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/es-sidecar:0.28.0"
+        image: "kanisterio/es-sidecar:0.39.0"
         command:
         - bash
         - -o
@@ -23,14 +23,12 @@ actions:
         - pipefail
         - -c
         - |
-          echo "{{ .Object.spec.serviceName }}"
           host_name="{{ .Object.spec.serviceName }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
-          echo $host_name
           BACKUP_LOCATION=es_backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/backup.gz
-          echo $BACKUP_LOCATION
-          elasticdump --bulk=true --input=http://${host_name}:9200 --output=$ | gzip | kando location push --profile '{{ toJson .Profile }}' --path $BACKUP_LOCATION -
+          elasticdump --bulk=true --input=http://${host_name}:9200 --output=/backup
+          gzip /backup
+          kando location push --profile '{{ toJson .Profile }}'  /backup.gz --path $BACKUP_LOCATION
           kando output backupLocation $BACKUP_LOCATION
-          echo "exiting from backup"
   restore:
     type: StatefulSet
     inputArtifactNames:
@@ -40,7 +38,7 @@ actions:
       name: restoreFromObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/es-sidecar:0.28.0"
+        image: "kanisterio/es-sidecar:0.39.0"
         command:
         - bash
         - -o
@@ -52,15 +50,15 @@ actions:
           host_name="{{ .Object.spec.serviceName }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
           kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}' - | gunzip | elasticdump --bulk=true --input=$ --output=http://${host_name}:9200
   delete:
-    type: StatefulSet
+    type: Namespace
     inputArtifactNames:
     - cloudObject
     phases:
     - func: KubeTask
       name: deleteFromObjectStore
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/es-sidecar:0.28.0"
+        namespace: "{{ .Namespace.Name }}"
+        image: "kanisterio/es-sidecar:0.39.0"
         command:
         - bash
         - -o

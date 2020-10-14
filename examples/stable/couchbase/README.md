@@ -19,21 +19,17 @@ We will be using [couchbase](https://github.com/couchbase-partners/helm-charts) 
 To install the chart with the release name `cb-example`:
 
 ```bash
-#NOTE:
-#  If you are using helm V2, you need to add --name flag in the installation command
+#NOTE: The latest couchbase helm charts require Helm 3.1+
 $ helm repo add couchbase https://couchbase-partners.github.io/helm-charts
 $ helm repo update
 # Create couchbase-test namespace
 $ kubectl create ns couchbase-test
-# Install couchbase operator
-$ helm install couchbase --namespace couchbase-test couchbase/couchbase-operator
-# Install couchbase cluster with test bucket
-$ helm install cb-example --namespace couchbase-test \
-    --set couchbaseCluster.servers.all_services.size=2 \
-    --set couchbaseCluster.servers.all_services.services[0]=data \
-    --set couchbaseCluster.servers.all_services.services[1]=query \
-    --set couchbaseCluster.servers.all_services.services[2]=index \
-    couchbase/couchbase-cluster
+# The below chart installs couchbase cluster, admission controller and operator
+$ helm install cb-example couchbase/couchbase-operator --namespace couchbase-test \
+    --set cluster.servers.default.size=2 \
+    --set cluster.servers.default.services[0]=data \
+    --set cluster.servers.default.services[1]=query \
+    --set cluster.servers.default.services[2]=index
 ```
 
 **NOTE:**
@@ -45,7 +41,7 @@ For testing purpose, we can give cluster-admin role to kanister-operator service
 
 ## Integrating with Kanister
 
-If you have deployed couchbase cluster with other name than `cb-example` and namespace other than `couchbase-test`, you need to modify the commands used below to use the correct name and namespace
+If you have deployed couchbase operator with other name than `cb-example` and namespace other than `couchbase-test`, you need to modify the commands used below to use the correct name and namespace
 
 ### Create Profile
 
@@ -72,19 +68,20 @@ $ kubectl create -f couchbase-blueprint.yaml -n kasten-io
 blueprint.cr.kanister.io/couchbase-blueprint created
 ```
 
-Once Couchbase is running, you can populate it with some data. Let's add some dummy documents to the default bucket:
+Once Couchbase is running, you can populate it with some data. Let's add some documents to the default bucket:
 
 ```bash
 # Connect to couchbase cluster pod
 $ kubectl exec -ti cb-example-couchbase-cluster-0000 -n couchbase-test -- bash
 
 # From inside the shell, use the cbc command to insert some data into the default bucket
-$ cbc-create -u Administrator -P password  doc1 -V '{"name":"vivek", "age": 25}'
-$ cbc-create -u Administrator -P password  doc2 -V '{"name":"prasad", "age": 25}'
+# Replace <password> with the correct password.
+$ cbc-create -u Administrator -P <password>  doc1 -V '{"name":"vivek", "age": 25}'
+$ cbc-create -u Administrator -P <password>  doc2 -V '{"name":"prasad", "age": 25}'
 
 # verify data
-$ cbc-n1ql -u Administrator -P password 'create primary index on default'
-$ cbc-n1ql -u Administrator -P password 'select * from default'
+$ cbc-n1ql -u Administrator -P <password> 'create primary index on default'
+$ cbc-n1ql -u Administrator -P <password> 'select * from default'
 ---> Encoded query: {"statement":"select * from default"}
 
 {"default":{"name":"prasad", "age": 25}},
@@ -109,7 +106,7 @@ $ kubectl get profile -n couchbase-test
 NAME               AGE
 s3-profile-bghqw   2m42s
 
-$ kanctl create actionset --action backup --namespace kasten-io --blueprint couchbase-blueprint --profile couchbase-test/s3-profile-bghqw --objects couchbase.com/v1/couchbaseclusters/couchbase-test/cb-example-couchbase-cluster
+$ kanctl create actionset --action backup --namespace kasten-io --blueprint couchbase-blueprint --profile couchbase-test/s3-profile-bghqw --objects couchbase.com/v2/couchbaseclusters/couchbase-test/cb-example-couchbase-cluster
 actionset backup-g648n created
 
 $ kubectl --namespace kasten-io get actionsets.cr.kanister.io
@@ -126,7 +123,8 @@ Let's say someone with accidentally deleted the bucket using the following comma
 
 ```bash
 # Drop default bucket
-$ cbc-bucket-delete -u Administrator -P password default
+# Replace <password> with the correct password.
+$ cbc-bucket-delete -u Administrator -P <password> default
 Requesting /pools/default/buckets/default
 200
   Cache-Control: no-cache,no-store,must-revalidate
@@ -157,9 +155,10 @@ You should now see that the data has been successfully restored to Couchbase clu
 
 ```bash
 # Recreate index
-$ cbc-n1ql -u Administrator -P password 'drop primary index on default'
-$ cbc-n1ql -u Administrator -P password 'create primary index on default'
-$ cbc-n1ql -u Administrator -P password 'select * from default'
+# Replace <password> with the correct password.
+$ cbc-n1ql -u Administrator -P <password> 'drop primary index on default'
+$ cbc-n1ql -u Administrator -P <password> 'create primary index on default'
+$ cbc-n1ql -u Administrator -P <password> 'select * from default'
 ---> Encoded query: {"statement":"select * from default"}
 
 {"default":{"name":"vivek", "age": 25}},
@@ -180,7 +179,7 @@ $ cbc-n1ql -u Administrator -P password 'select * from default'
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action delete --from "backup-g648n"
+$ kanctl --namespace kasten-io create actionset --action delete --from "backup-g648n" --namespacetargets kasten-io
 actionset "delete-backup-g648n-k9ncm" created
 
 # View the status of the ActionSet

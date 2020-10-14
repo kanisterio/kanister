@@ -47,7 +47,7 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 			GenerateName: "kanisterkubetasktest-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 	os.Setenv("POD_NAMESPACE", cns.Name)
@@ -56,7 +56,7 @@ func (s *KubeTaskSuite) SetUpSuite(c *C) {
 
 func (s *KubeTaskSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
@@ -70,7 +70,7 @@ func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 			KubeTaskCommandArg: []string{
 				"sh",
 				"-c",
-				"kando output version 0.28.0",
+				"kando output version 0.39.0",
 			},
 		},
 	}
@@ -143,7 +143,7 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 			bp: newTaskBlueprint(outputPhase(s.namespace), sleepPhase(s.namespace), tickPhase(s.namespace)),
 			outs: []map[string]interface{}{
 				map[string]interface{}{
-					"version": "0.28.0",
+					"version": "0.39.0",
 				},
 				map[string]interface{}{},
 				map[string]interface{}{},

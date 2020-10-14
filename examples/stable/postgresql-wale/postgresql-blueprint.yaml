@@ -134,7 +134,7 @@ actions:
     - func: PrepareData
       name: performRestore
       args:
-        image: "kanisterio/postgresql:0.28.0"
+        image: "kanisterio/postgresql:0.39.0"
         namespace: "{{ .StatefulSet.Namespace }}"
         volumes:
           "data-{{ .StatefulSet.Name }}-0": "/bitnami/postgresql"
@@ -274,15 +274,15 @@ actions:
         namespace: '{{ .StatefulSet.Namespace }}'
         replicas: 1
   delete:
-    type: StatefulSet
+    type: Namespace
     inputArtifactNames:
       - manifest
     phases:
     - func: KubeTask
       name: deleteArtifact
       args:
-        namespace: "{{ .StatefulSet.Namespace }}"
-        image: "kanisterio/postgresql:0.28.0"
+        namespace: "{{ .Namespace.Name }}"
+        image: "kanisterio/postgresql:0.39.0"
         command:
           - bash
           - -o

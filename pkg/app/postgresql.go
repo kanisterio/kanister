@@ -40,23 +40,24 @@ type PostgresDB struct {
 	namespace string
 }
 
+// Last tested chart version "9.0.0"
 func NewPostgresDB(name string) App {
 	return &PostgresDB{
 		name: name,
 		chart: helm.ChartInfo{
 			Release:  appendRandString(name),
-			RepoName: helm.StableRepoName,
-			RepoURL:  helm.StableRepoURL,
+			RepoName: helm.BitnamiRepoName,
+			RepoURL:  helm.BitnamiRepoURL,
 			Chart:    "postgresql",
-			Version:  "7.6.0",
 			Values: map[string]string{
 				"image.repository":                      "kanisterio/postgresql",
-				"image.tag":                             "0.28.0",
+				"image.tag":                             "0.39.0",
 				"postgresqlPassword":                    "test@54321",
 				"postgresqlExtendedConf.archiveCommand": "'envdir /bitnami/postgresql/data/env wal-e wal-push %p'",
 				"postgresqlExtendedConf.archiveMode":    "true",
 				"postgresqlExtendedConf.archiveTimeout": "60",
 				"postgresqlExtendedConf.walLevel":       "archive",
+				"volumePermissions.enabled":             "true",
 			},
 		},
 	}

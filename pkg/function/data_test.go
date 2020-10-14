@@ -76,16 +76,16 @@ func (s *DataSuite) SetUpSuite(c *C) {
 	ns := testutil.NewTestNamespace()
 	ns.GenerateName = "kanister-datatest-"
 
-	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.GetName()
 
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(sec)
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), sec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(p)
+	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	var location crv1alpha1.Location
@@ -116,7 +116,7 @@ func (s *DataSuite) TearDownSuite(c *C) {
 		c.Assert(err, IsNil)
 	}
 	if s.namespace != "" {
-		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(ctx, s.namespace, metav1.DeleteOptions{})
 	}
 }
 
@@ -134,7 +134,7 @@ func newRestoreDataBlueprint(pvc, identifierArg, identifierVal string) *crv1alph
 						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataImageArg:                "kanisterio/kanister-tools:0.28.0",
+							RestoreDataImageArg:                "kanisterio/kanister-tools:0.39.0",
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataRestorePathArg:          "/mnt/data",
 							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
@@ -266,7 +266,7 @@ func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
 						Func: RestoreDataAllFuncName,
 						Args: map[string]interface{}{
 							RestoreDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataAllImageArg:                "kanisterio/kanister-tools:0.28.0",
+							RestoreDataAllImageArg:                "kanisterio/kanister-tools:0.39.0",
 							RestoreDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataAllBackupInfo:              fmt.Sprintf("{{ .Options.%s }}", BackupDataAllOutput),
 							RestoreDataAllRestorePathArg:          "/mnt/data",
@@ -302,7 +302,7 @@ func newDeleteDataAllBlueprint() *crv1alpha1.Blueprint {
 
 func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.TemplateParams, []string) {
 	ctx := context.Background()
-	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(testutil.NewTestStatefulSet(replicas))
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(context.TODO(), testutil.NewTestStatefulSet(replicas), metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 	c.Assert(err, IsNil)
@@ -310,7 +310,7 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.Te
 	var i int32
 	for i = 0; i < replicas; i++ {
 		pvc := testutil.NewTestPVC()
-		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 		pvcs = append(pvcs, pvc.GetName())
 	}
@@ -325,7 +325,7 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.Te
 			"password": "myPassword",
 		},
 	}
-	secret, err = s.cli.CoreV1().Secrets(s.namespace).Create(secret)
+	secret, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	as := crv1alpha1.ActionSpec{
@@ -477,7 +477,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
-							RestoreDataImageArg:                "kanisterio/kanister-tools:0.28.0",
+							RestoreDataImageArg:                "kanisterio/kanister-tools:0.39.0",
 							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
 							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupTag),
 							RestoreDataVolsArg: map[string]string{
@@ -522,7 +522,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 }
 func (s *DataSuite) TestCopyData(c *C) {
 	pvcSpec := testutil.NewTestPVC()
-	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvcSpec)
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvcSpec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	tp := s.initPVCTemplateParams(c, pvc, nil)
 	bp := newCopyDataTestBlueprint()
@@ -546,7 +546,7 @@ func (s *DataSuite) TestCopyData(c *C) {
 	}
 
 	// Create a new PVC
-	pvc2, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvcSpec)
+	pvc2, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvcSpec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	tp = s.initPVCTemplateParams(c, pvc2, options)
 	// Restore data from copy

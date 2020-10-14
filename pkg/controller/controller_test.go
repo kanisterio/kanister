@@ -79,37 +79,37 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 			GenerateName: "kanistercontrollertest-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(sec)
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), sec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	_, err = s.crCli.Profiles(s.namespace).Create(p)
+	_, err = s.crCli.Profiles(s.namespace).Create(context.TODO(), p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	ss := testutil.NewTestStatefulSet(1)
-	ss, err = s.cli.AppsV1().StatefulSets(s.namespace).Create(ss)
+	ss, err = s.cli.AppsV1().StatefulSets(s.namespace).Create(context.TODO(), ss, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.ss = ss
 
 	d := testutil.NewTestDeployment(1)
-	d, err = s.cli.AppsV1().Deployments(s.namespace).Create(d)
+	d, err = s.cli.AppsV1().Deployments(s.namespace).Create(context.TODO(), d, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.deployment = d
 
 	cm := testutil.NewTestConfigMap()
-	cm, err = s.cli.CoreV1().ConfigMaps(s.namespace).Create(cm)
+	cm, err = s.cli.CoreV1().ConfigMaps(s.namespace).Create(context.TODO(), cm, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.confimap = cm
 }
 
 func (s *ControllerSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
@@ -140,7 +140,7 @@ func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, s
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err := poll.Wait(ctx, func(context.Context) (bool, error) {
-		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(as.GetName(), metav1.GetOptions{})
+		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -223,10 +223,10 @@ func (s *ControllerSuite) TestEmptyActionSetStatus(c *C) {
 			Actions: []crv1alpha1.ActionSpec{},
 		},
 	}
-	as, err := s.crCli.ActionSets(s.namespace).Create(as)
+	as, err := s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
-		err := s.crCli.ActionSets(s.namespace).Delete(as.GetName(), nil)
+		err := s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}()
 
@@ -251,10 +251,10 @@ func (s *ControllerSuite) TestSynchronousFailure(c *C) {
 			},
 		},
 	}
-	as, err := s.crCli.ActionSets(s.namespace).Create(as)
+	as, err := s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
-		err := s.crCli.ActionSets(s.namespace).Delete(as.GetName(), nil)
+		err := s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}()
 
@@ -335,12 +335,17 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				name:      "VersionMismatchFunc",
 				version:   "v1.2.3",
 			},
+			{
+				funcNames: []string{testutil.ArgFuncName, testutil.OutputFuncName},
+				name:      "ArgOutputFallbackOnlyOutput",
+				version:   testutil.TestVersion,
+			},
 		} {
 			var err error
 			// Add a blueprint with a mocked kanister function.
 			bp := testutil.NewTestBlueprint(pok, tc.funcNames...)
 			bp = testutil.BlueprintWithConfigMap(bp)
-			bp, err = s.crCli.Blueprints(s.namespace).Create(bp)
+			bp, err = s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
 			c.Assert(err, IsNil)
 
 			var n string
@@ -356,7 +361,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			// Add an actionset that references that blueprint.
 			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace, tc.version)
 			as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
-			as, err = s.crCli.ActionSets(s.namespace).Create(as)
+			as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
 			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
 
 			err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
@@ -378,7 +383,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				case testutil.OutputFuncName:
 					c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
 				case testutil.CancelFuncName:
-					err = s.crCli.ActionSets(s.namespace).Delete(as.GetName(), nil)
+					err = s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
 					c.Assert(err, IsNil)
 					c.Assert(testutil.CancelFuncOut().Error(), DeepEquals, "context canceled")
 					cancel = true
@@ -392,9 +397,9 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				err = s.waitOnActionSetState(c, as, final)
 				c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
 			}
-			err = s.crCli.Blueprints(s.namespace).Delete(bp.GetName(), nil)
+			err = s.crCli.Blueprints(s.namespace).Delete(context.TODO(), bp.GetName(), metav1.DeleteOptions{})
 			c.Assert(err, IsNil)
-			err = s.crCli.ActionSets(s.namespace).Delete(as.GetName(), nil)
+			err = s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
 			if !cancel {
 				c.Assert(err, IsNil)
 			} else {
@@ -419,7 +424,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 			},
 		},
 	}
-	as, err := s.crCli.ActionSets(s.namespace).Create(as)
+	as, err := s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	msg := "Unit testing event logs"
 	reason := "Test Logs"
@@ -429,7 +434,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 
 	// Create Blueprint
 	bp := testutil.NewTestBlueprint("StatefulSet", testutil.WaitFuncName)
-	bp, err = s.crCli.Blueprints(s.namespace).Create(bp)
+	bp, err = s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	//Test the logAndErrorEvent function
@@ -471,13 +476,13 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	// Create a blueprint that uses func output as artifact
 	bp := newBPWithOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
-	bp, err := s.crCli.Blueprints(s.namespace).Create(bp)
+	bp, err := s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
-	as, err = s.crCli.ActionSets(s.namespace).Create(as)
+	as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
@@ -490,7 +495,57 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	c.Assert(err, IsNil)
 
 	// Check if the artifacts got updated correctly
-	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(as.GetName(), metav1.GetOptions{})
+	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), metav1.GetOptions{})
+	arts := as.Status.Actions[0].Artifacts
+	c.Assert(arts, NotNil)
+	c.Assert(arts, HasLen, 1)
+	keyVal := arts["myArt"].KeyValue
+	c.Assert(keyVal, DeepEquals, map[string]string{"key": "myValue"})
+}
+
+func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
+	// Create a blueprint that uses func output as artifact
+	bp := newBPWithOutputArtifact()
+	bp = testutil.BlueprintWithConfigMap(bp)
+	bp, err := s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// Add an actionset that references that blueprint.
+	as := &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-actionset-",
+			Namespace:    s.namespace,
+		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				crv1alpha1.ActionSpec{
+					Blueprint: bp.GetName(),
+					Name:      "myAction",
+					Object: crv1alpha1.ObjectReference{
+						Kind:      "Deployment",
+						Name:      s.deployment.GetName(),
+						Namespace: s.namespace,
+					},
+					PreferredVersion: kanister.DefaultVersion,
+				},
+			},
+		},
+	}
+	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
+	as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+
+	// Check if the func returned expected output
+	c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	// Check if the artifacts got updated correctly
+	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), metav1.GetOptions{})
 	arts := as.Status.Actions[0].Artifacts
 	c.Assert(arts, NotNil)
 	c.Assert(arts, HasLen, 1)
@@ -501,13 +556,13 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
 	bp := newBPWithFakeOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
-	bp, err := s.crCli.Blueprints(s.namespace).Create(bp)
+	bp, err := s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
-	as, err = s.crCli.ActionSets(s.namespace).Create(as)
+	as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)

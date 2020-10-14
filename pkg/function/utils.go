@@ -26,7 +26,7 @@ import (
 const (
 	// FunctionOutputVersion returns version
 	FunctionOutputVersion     = "version"
-	kanisterToolsImage        = "kanisterio/kanister-tools:0.28.0"
+	kanisterToolsImage        = "kanisterio/kanister-tools:0.39.0"
 	kanisterToolsImageEnvName = "KANISTER_TOOLS"
 )
 
@@ -180,10 +180,10 @@ func createPostgresSecret(cli kubernetes.Interface, name, namespace, username, p
 			"password": []byte(password),
 		},
 	}
-	_, err := cli.CoreV1().Secrets(namespace).Create(secret)
+	_, err := cli.CoreV1().Secrets(namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
 	return err
 }
 
 func deletePostgresSecret(cli kubernetes.Interface, name, namespace string) error {
-	return cli.CoreV1().Secrets(namespace).Delete(name, &metav1.DeleteOptions{})
+	return cli.CoreV1().Secrets(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
 }

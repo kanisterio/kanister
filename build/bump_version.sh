@@ -25,10 +25,15 @@ usage() {
 }
 
 main() {
-    local prev=${1:?"$(usage)"}
-    local next=${2:?"$(usage)"}
-    local -a pkgs=(docker/ scripts/ examples/ pkg/ helm/)
-    grep -E "${prev}" -r  "${pkgs[@]}" | cut -d ':' -f 1 | uniq | xargs sed -ri "s/${prev}/${next//./\\.}/g"
+    local prev=${1:?"$(usage)"}; shift
+    local next=${1:?"$(usage)"}; shift
+    if [ "$#" -eq 0 ]; then
+            pkgs=( docker/ scripts/ examples/ pkg/ helm/ )
+        else
+            pkgs=( "$@" )
+    fi
+    # -F matches for exact words, not regular expression (-E), that is what required here
+    grep -F "${prev}" -Ir  "${pkgs[@]}" --exclude-dir={mod,bin,html} | cut -d ':' -f 1 | uniq | xargs sed -ri "s/${prev}/${next//./\\.}/g"
 }
 
 main $@

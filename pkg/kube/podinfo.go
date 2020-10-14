@@ -15,9 +15,11 @@
 package kube
 
 import (
+	"context"
 	"io/ioutil"
-	"k8s.io/client-go/kubernetes"
 	"os"
+
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,7 +61,7 @@ func GetControllerServiceAccount(k8sclient kubernetes.Interface) (string, error)
 		return "", errors.Wrapf(err, "Failed to get Controller pod name")
 	}
 
-	pod, err := k8sclient.CoreV1().Pods(ns).Get(podName, metav1.GetOptions{})
+	pod, err := k8sclient.CoreV1().Pods(ns).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to get Controller pod object from k8s")
 	}

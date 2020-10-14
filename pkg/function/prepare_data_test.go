@@ -52,14 +52,14 @@ func (s *PrepareDataSuite) SetUpSuite(c *C) {
 			GenerateName: "preparedatatest-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 }
 
 func (s *PrepareDataSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
@@ -116,7 +116,7 @@ func newPrepareDataBlueprint(kind, pvc string) *crv1alpha1.Blueprint {
 
 func (s *PrepareDataSuite) TestPrepareData(c *C) {
 	pvc := testutil.NewTestPVC()
-	createdPVC, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(pvc)
+	createdPVC, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	ctx := context.Background()

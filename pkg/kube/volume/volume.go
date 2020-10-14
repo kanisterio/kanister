@@ -82,7 +82,7 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 		// Disable dynamic provisioning by setting an empty storage
 		pvc.Spec.StorageClassName = &emptyStorageClass
 	}
-	createdPVC, err := kubeCli.CoreV1().PersistentVolumeClaims(ns).Create(&pvc)
+	createdPVC, err := kubeCli.CoreV1().PersistentVolumeClaims(ns).Create(ctx, &pvc, metav1.CreateOptions{})
 	if err != nil {
 		if name != "" && apierrors.IsAlreadyExists(err) {
 			return name, nil
@@ -92,41 +92,60 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 	return createdPVC.Name, nil
 }
 
+// CreatePVCFromSnapshotArgs describes the arguments for CreatePVCFromSnapshot
+// 'VolumeName' is the name of the PVC that will be restored from the snapshot.
+// 'StorageClassName' is the name of the storage class used to create the PVC.
+// 'SnapshotName' is the name of the VolumeSnapshot that will be used for restoring.
+// 'Namespace' is the namespace of the VolumeSnapshot. The PVC will be restored to the same namepsace.
+// 'RestoreSize' will override existing restore size from snapshot content if provided.
+// 'Labels' will be added to the PVC.
+type CreatePVCFromSnapshotArgs struct {
+	KubeCli          kubernetes.Interface
+	DynCli           dynamic.Interface
+	Namespace        string
+	VolumeName       string
+	StorageClassName string
+	SnapshotName     string
+	RestoreSize      *int
+	Labels           map[string]string
+}
+
 // CreatePVCFromSnapshot will restore a volume and returns the resulting
 // PersistentVolumeClaim and any error that happened in the process.
-//
-// 'volumeName' is the name of the PVC that will be restored from the snapshot.
-// 'storageClassName' is the name of the storage class used to create the PVC.
-// 'snapshotName' is the name of the VolumeSnapshot that will be used for restoring.
-// 'namespace' is the namespace of the VolumeSnapshot. The PVC will be restored to the same namepsace.
-// 'restoreSize' will override existing restore size from snapshot content if provided.
-func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, dynCli dynamic.Interface, namespace, volumeName, storageClassName, snapshotName string, restoreSize *int) (string, error) {
-	sns, err := snapshot.NewSnapshotter(kubeCli, dynCli)
-	if err != nil {
-		return "", err
-	}
-	snap, err := sns.Get(ctx, snapshotName, namespace)
-	if err != nil {
-		return "", err
-	}
-	size := snap.Status.RestoreSize
-	if restoreSize != nil {
-		s := resource.MustParse(fmt.Sprintf("%dGi", *restoreSize))
+func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs) (string, error) {
+	var size *resource.Quantity
+	if args.RestoreSize == nil {
+		sns, err := snapshot.NewSnapshotter(args.KubeCli, args.DynCli)
+		if err != nil {
+			return "", err
+		}
+		snap, err := sns.Get(ctx, args.SnapshotName, args.Namespace)
+		if err != nil {
+			return "", err
+		}
+
+		size = snap.Status.RestoreSize
+	} else {
+		s := resource.MustParse(fmt.Sprintf("%dGi", *args.RestoreSize))
 		size = &s
 	}
+
 	if size == nil {
-		return "", fmt.Errorf("Restore size is empty and no restore size argument given, Volumesnapshot: %s", snap.Name)
+		return "", fmt.Errorf("Restore size is empty and no restore size argument given, Volumesnapshot: %s", args.SnapshotName)
 	}
 
 	snapshotKind := "VolumeSnapshot"
 	snapshotAPIGroup := "snapshot.storage.k8s.io"
 	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: args.Labels,
+		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 			DataSource: &v1.TypedLocalObjectReference{
 				APIGroup: &snapshotAPIGroup,
 				Kind:     snapshotKind,
-				Name:     snapshotName,
+				Name:     args.SnapshotName,
 			},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
@@ -135,19 +154,19 @@ func CreatePVCFromSnapshot(ctx context.Context, kubeCli kubernetes.Interface, dy
 			},
 		},
 	}
-	if volumeName != "" {
-		pvc.ObjectMeta.Name = volumeName
+	if args.VolumeName != "" {
+		pvc.ObjectMeta.Name = args.VolumeName
 	} else {
 		pvc.ObjectMeta.GenerateName = pvcGenerateName
 	}
-	if storageClassName != "" {
-		pvc.Spec.StorageClassName = &storageClassName
+	if args.StorageClassName != "" {
+		pvc.Spec.StorageClassName = &args.StorageClassName
 	}
 
-	pvc, err = kubeCli.CoreV1().PersistentVolumeClaims(namespace).Create(pvc)
+	pvc, err := args.KubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(ctx, pvc, metav1.CreateOptions{})
 	if err != nil {
-		if volumeName != "" && apierrors.IsAlreadyExists(err) {
-			return volumeName, nil
+		if args.VolumeName != "" && apierrors.IsAlreadyExists(err) {
+			return args.VolumeName, nil
 		}
 		return "", errors.Wrapf(err, "Unable to create PVC, PVC: %v", pvc)
 	}
@@ -167,7 +186,7 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 	// Since behavior and error returned from repeated create might vary, check first
 	sel := labelSelector(matchLabels)
 	options := metav1.ListOptions{LabelSelector: sel}
-	pvl, err := kubeCli.CoreV1().PersistentVolumes().List(options)
+	pvl, err := kubeCli.CoreV1().PersistentVolumes().List(ctx, options)
 	if err == nil && len(pvl.Items) == 1 {
 		return pvl.Items[0].Name, nil
 	}
@@ -204,7 +223,7 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 		return "", errors.Errorf("Volume type %v(%T) not supported ", volType, volType)
 	}
 
-	createdPV, err := kubeCli.CoreV1().PersistentVolumes().Create(&pv)
+	createdPV, err := kubeCli.CoreV1().PersistentVolumes().Create(ctx, &pv, metav1.CreateOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to create PV for volume %v", pv)
 	}
@@ -214,7 +233,7 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 // DeletePVC deletes the given PVC immediately and waits with timeout until it is returned as deleted
 func DeletePVC(cli kubernetes.Interface, namespace, pvcName string) error {
 	var now int64
-	if err := cli.CoreV1().PersistentVolumeClaims(namespace).Delete(pvcName, &metav1.DeleteOptions{GracePeriodSeconds: &now}); err != nil {
+	if err := cli.CoreV1().PersistentVolumeClaims(namespace).Delete(context.TODO(), pvcName, metav1.DeleteOptions{GracePeriodSeconds: &now}); err != nil {
 		// If the PVC does not exist, that's an acceptable error
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -226,7 +245,7 @@ func DeletePVC(cli kubernetes.Interface, namespace, pvcName string) error {
 	ctx, c := context.WithTimeout(context.TODO(), time.Minute)
 	defer c()
 	return poll.Wait(ctx, func(context.Context) (bool, error) {
-		_, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(pvcName, metav1.GetOptions{})
+		_, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
 			return true, nil
 		}
@@ -234,15 +253,15 @@ func DeletePVC(cli kubernetes.Interface, namespace, pvcName string) error {
 	})
 }
 
-var labelBlackList = map[string]struct{}{
-	"chart":    struct{}{},
-	"heritage": struct{}{},
+var labelDenyList = map[string]struct{}{
+	"chart":    {},
+	"heritage": {},
 }
 
 func labelSelector(labels map[string]string) string {
 	ls := make([]string, 0, len(labels))
 	for k, v := range labels {
-		if _, ok := labelBlackList[k]; ok {
+		if _, ok := labelDenyList[k]; ok {
 			continue
 		}
 		ls = append(ls, fmt.Sprintf("%s=%s", k, v))

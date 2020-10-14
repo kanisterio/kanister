@@ -58,8 +58,8 @@ func NewCassandraInstance(name string) App {
 			Version:  "0.13.3",
 			Values: map[string]string{
 				"image.repo":          "kanisterio/cassandra",
-				"image.tag":           "0.28.0",
-				"config.cluster_size": "2",
+				"image.tag":           "0.39.0",
+				"config.cluster_size": "1",
 			},
 		},
 	}

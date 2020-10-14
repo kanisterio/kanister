@@ -317,7 +317,7 @@ func constructSecret(ctx context.Context, lP *locationParams, cmd *cobra.Command
 }
 
 func createSecret(ctx context.Context, s *v1.Secret, cli kubernetes.Interface) (*v1.Secret, error) {
-	secret, err := cli.CoreV1().Secrets(s.GetNamespace()).Create(s)
+	secret, err := cli.CoreV1().Secrets(s.GetNamespace()).Create(ctx, s, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +326,7 @@ func createSecret(ctx context.Context, s *v1.Secret, cli kubernetes.Interface) (
 }
 
 func deleteSecret(ctx context.Context, secret *v1.Secret, cli kubernetes.Interface) error {
-	err := cli.CoreV1().Secrets(secret.GetNamespace()).Delete(secret.GetName(), &metav1.DeleteOptions{})
+	err := cli.CoreV1().Secrets(secret.GetNamespace()).Delete(ctx, secret.GetName(), metav1.DeleteOptions{})
 	if err == nil {
 		fmt.Printf("secret '%s' deleted\n", secret.GetName())
 	}
@@ -360,7 +360,7 @@ func printProfile(profile *v1alpha1.Profile) error {
 }
 
 func createProfile(ctx context.Context, profile *v1alpha1.Profile, crCli versioned.Interface) error {
-	profile, err := crCli.CrV1alpha1().Profiles(profile.GetNamespace()).Create(profile)
+	profile, err := crCli.CrV1alpha1().Profiles(profile.GetNamespace()).Create(ctx, profile, metav1.CreateOptions{})
 	if err == nil {
 		fmt.Printf("profile '%s' created\n", profile.GetName())
 	}
@@ -424,7 +424,7 @@ func validateProfile(ctx context.Context, profile *v1alpha1.Profile, cli kuberne
 
 func getProfileFromCmd(ctx context.Context, crCli versioned.Interface, p *validateParams) (*v1alpha1.Profile, error) {
 	if p.name != "" {
-		return crCli.CrV1alpha1().Profiles(p.namespace).Get(p.name, metav1.GetOptions{})
+		return crCli.CrV1alpha1().Profiles(p.namespace).Get(ctx, p.name, metav1.GetOptions{})
 	}
 	return getProfileFromFile(ctx, p.filename)
 }

@@ -67,22 +67,22 @@ func (s *KubeExecAllTest) SetUpSuite(c *C) {
 			GenerateName: "kubeexecall-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(ns)
+	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(sec)
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), sec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(p)
+	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 }
 
 func (s *KubeExecAllTest) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		_ = s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
@@ -111,7 +111,7 @@ func newExecAllBlueprint(kind string) *crv1alpha1.Blueprint {
 func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 	ctx := context.Background()
 	d := testutil.NewTestDeployment(1)
-	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(d)
+	d, err := s.cli.AppsV1().Deployments(s.namespace).Create(context.TODO(), d, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = kube.WaitOnDeploymentReady(ctx, s.cli, d.Namespace, d.Name)
@@ -145,7 +145,7 @@ func (s *KubeExecAllTest) TestKubeExecAllDeployment(c *C) {
 func (s *KubeExecAllTest) TestKubeExecAllStatefulSet(c *C) {
 	ctx := context.Background()
 	ss := testutil.NewTestStatefulSet(1)
-	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(ss)
+	ss, err := s.cli.AppsV1().StatefulSets(s.namespace).Create(context.TODO(), ss, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = kube.WaitOnStatefulSetReady(ctx, s.cli, ss.Namespace, ss.Name)

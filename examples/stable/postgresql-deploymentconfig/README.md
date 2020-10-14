@@ -14,7 +14,7 @@ cluster's DeploymentConfig resources.
 
 - Setup OpenShift, you can follow steps mentioned below
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.28.0 installed in your cluster in namespace `kanister`
+- Kanister controller version 0.39.0 installed in your cluster in namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 
@@ -104,7 +104,7 @@ Create Blueprint in the same namespace as the controller (`kanister`)
 blueprint.cr.kanister.io/postgres-bp created
 ```
 
-Now that we have created the Profile and Blueprint Kanister resources we will insert some dummy data into
+Now that we have created the Profile and Blueprint Kanister resources we will insert some data into
 PostgreSQL database that we will take backup of.
 To insert the data into the PostgreSQL database we will `exec` into the PostgreSQL pod, please follow below commands
 to do so

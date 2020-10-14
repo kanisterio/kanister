@@ -33,7 +33,10 @@ actions:
         databases: '{{ index .Object.data "postgres.databases" }}'
         snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
         backupArtifactPrefix: test-postgresql-instance/postgres
-
+    - func: DeleteRDSSnapshot
+      name: deleteSnapshot
+      args:
+        snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
   restore:
     inputArtifactNames:
     - backupInfo
@@ -56,10 +59,19 @@ actions:
         dbEngine: "PostgreSQL"
 
   delete:
-    inputArtifactNames:
-    - backupInfo
     phases:
-    - func: DeleteRDSSnapshot
-      name: deleteSnapshot
+    - func: KubeTask
+      name: deleteBackup
       args:
-        snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
+        namespace: "{{ .Object.metadata.namespace }}"
+        image: kanisterio/kanister-tools:0.39.0
+        command:
+          - bash
+          - -o
+          - pipefail
+          - -o
+          - errexit
+          - -c
+          - |
+            s3path='test-postgresql-instance/postgres/{{ .ArtifactsIn.backupInfo.KeyValue.backupID }}'
+            kando location delete --profile '{{ toJson .Profile }}' --path ${s3path}

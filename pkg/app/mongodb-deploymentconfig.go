@@ -46,17 +46,20 @@ type MongoDBDepConfig struct {
 	osClient    openshift.OSClient
 	params      map[string]string
 	storageType storage
+	// dbTemplateVersion will most probably match with the OCP version
+	dbTemplateVersion DBTemplate
 }
 
-func NewMongoDBDepConfig(name string, storageType storage) App {
+func NewMongoDBDepConfig(name string, templateVersion DBTemplate, storageType storage) App {
 	return &MongoDBDepConfig{
 		name: name,
 		user: "admin",
 		params: map[string]string{
 			"MONGODB_ADMIN_PASSWORD": "secretpassword",
 		},
-		osClient:    openshift.NewOpenShiftClient(),
-		storageType: storageType,
+		osClient:          openshift.NewOpenShiftClient(),
+		storageType:       storageType,
+		dbTemplateVersion: templateVersion,
 	}
 }
 
@@ -79,7 +82,7 @@ func (mongo *MongoDBDepConfig) Init(context.Context) error {
 func (mongo *MongoDBDepConfig) Install(ctx context.Context, namespace string) error {
 	mongo.namespace = namespace
 
-	dbTemplate := getOpenShiftDBTemplate(mongoDepConfigName, mongo.storageType)
+	dbTemplate := getOpenShiftDBTemplate(mongoDepConfigName, mongo.dbTemplateVersion, mongo.storageType)
 
 	_, err := mongo.osClient.NewApp(ctx, mongo.namespace, dbTemplate, nil, mongo.params)
 
@@ -156,10 +159,10 @@ func (mongo *MongoDBDepConfig) Count(ctx context.Context) (int, error) {
 
 func (mongo *MongoDBDepConfig) Reset(ctx context.Context) error {
 	log.Print("Resetting the application.", field.M{"app": mongo.name})
-	// delete all the entries from the restaurants dummy collection
+	// delete all the entries from the restaurants collection
 	// we are not deleting the database because we are dealing with admin database here
 	// and deletion admin database is prohibited
-	deleteDBCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"rs.slaveOk(); db.restaurants.drop()\"", mongo.user)}
+	deleteDBCMD := []string{"bash", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ADMIN_PASSWORD --quiet --eval \"db.restaurants.drop()\"", mongo.user)}
 	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
 	return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
 }

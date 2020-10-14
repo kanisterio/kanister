@@ -102,7 +102,7 @@ func (s *JobSuite) TestJobsNoCommand(c *C) {
 
 func getK8sJobCount(clientset kubernetes.Interface, namespace string, c *C) int {
 	jobsCli := clientset.BatchV1().Jobs(namespace)
-	list, err := jobsCli.List(metav1.ListOptions{LabelSelector: "job-name=" + testJobName})
+	list, err := jobsCli.List(context.TODO(), metav1.ListOptions{LabelSelector: "job-name=" + testJobName})
 	c.Assert(err, IsNil)
 
 	return len(list.Items)
@@ -204,7 +204,7 @@ func (s *JobSuite) TestJobsWaitAfterDelete(c *C) {
 	_ = job.Delete()
 
 	lo := metav1.ListOptions{LabelSelector: "job-name=" + testJobName}
-	jl, err := clientset.BatchV1().Jobs(testJobNamespace).List(lo)
+	jl, err := clientset.BatchV1().Jobs(testJobNamespace).List(context.TODO(), lo)
 	c.Assert(err, IsNil)
 	for _, j := range jl.Items {
 		c.Assert(j.GetDeletionTimestamp(), NotNil)

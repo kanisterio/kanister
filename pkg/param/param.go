@@ -16,6 +16,7 @@ package param
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/secrets"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
@@ -213,9 +215,10 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 
 func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*Profile, error) {
 	if ref == nil {
-		return nil, errors.New("Cannot execute action without a profile. Specify a profile in the action set")
+		log.Debug().Print("Executing the action without a profile")
+		return nil, nil
 	}
-	p, err := crCli.CrV1alpha1().Profiles(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+	p, err := crCli.CrV1alpha1().Profiles(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -245,7 +248,7 @@ func fetchKeyPairCredential(ctx context.Context, cli kubernetes.Interface, c *cr
 	if c == nil {
 		return nil, errors.New("KVSecret cannot be nil")
 	}
-	s, err := cli.CoreV1().Secrets(c.Secret.Namespace).Get(c.Secret.Name, metav1.GetOptions{})
+	s, err := cli.CoreV1().Secrets(c.Secret.Namespace).Get(ctx, c.Secret.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -268,7 +271,7 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 	if sr == nil {
 		return nil, errors.New("Secret reference cannot be nil")
 	}
-	s, err := cli.CoreV1().Secrets(sr.Namespace).Get(sr.Name, metav1.GetOptions{})
+	s, err := cli.CoreV1().Secrets(sr.Namespace).Get(ctx, sr.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch the secret")
 	}
@@ -295,7 +298,7 @@ func filterByKind(refs map[string]crv1alpha1.ObjectReference, kind string) map[s
 func fetchSecrets(ctx context.Context, cli kubernetes.Interface, refs map[string]crv1alpha1.ObjectReference) (map[string]v1.Secret, error) {
 	secrets := make(map[string]v1.Secret, len(refs))
 	for name, ref := range refs {
-		s, err := cli.CoreV1().Secrets(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+		s, err := cli.CoreV1().Secrets(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -307,7 +310,7 @@ func fetchSecrets(ctx context.Context, cli kubernetes.Interface, refs map[string
 func fetchConfigMaps(ctx context.Context, cli kubernetes.Interface, refs map[string]crv1alpha1.ObjectReference) (map[string]v1.ConfigMap, error) {
 	configs := make(map[string]v1.ConfigMap, len(refs))
 	for name, ref := range refs {
-		c, err := cli.CoreV1().ConfigMaps(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+		c, err := cli.CoreV1().ConfigMaps(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -317,7 +320,7 @@ func fetchConfigMaps(ctx context.Context, cli kubernetes.Interface, refs map[str
 }
 
 func fetchStatefulSetParams(ctx context.Context, cli kubernetes.Interface, namespace, name string) (*StatefulSetParams, error) {
-	ss, err := cli.AppsV1().StatefulSets(namespace).Get(name, metav1.GetOptions{})
+	ss, err := cli.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -345,7 +348,7 @@ func fetchStatefulSetParams(ctx context.Context, cli kubernetes.Interface, names
 func fetchDeploymentConfigParams(ctx context.Context, cli kubernetes.Interface, osCli osversioned.Interface, namespace, name string) (*DeploymentConfigParams, error) {
 	// we will have to have another OpenShift cli to get the deployment config resource
 	// because deploymentconfig is not standard kubernetes resource.
-	dc, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(name, metav1.GetOptions{})
+	dc, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -358,7 +361,14 @@ func fetchDeploymentConfigParams(ctx context.Context, cli kubernetes.Interface, 
 		PersistentVolumeClaims: make(map[string]map[string]string),
 	}
 
-	pods, _, err := kube.FetchPods(cli, namespace, dc.UID)
+	// deployment configs are managed by replicationcontrollers not replicaset
+	// get the replication controller of the deploymentconfig
+	rc, err := kube.FetchReplicationController(cli, namespace, dc.UID, strconv.FormatInt(dc.Status.LatestVersion, 10))
+	if err != nil {
+		return nil, err
+	}
+
+	pods, _, err := kube.FetchPods(cli, namespace, rc.UID)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +385,7 @@ func fetchDeploymentConfigParams(ctx context.Context, cli kubernetes.Interface, 
 }
 
 func fetchDeploymentParams(ctx context.Context, cli kubernetes.Interface, namespace, name string) (*DeploymentParams, error) {
-	d, err := cli.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{})
+	d, err := cli.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -430,7 +440,7 @@ func volumes(pod v1.Pod, volToPvc map[string]string) map[string]string {
 }
 
 func fetchPVCParams(ctx context.Context, cli kubernetes.Interface, namespace, name string) (*PVCParams, error) {
-	_, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
+	_, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

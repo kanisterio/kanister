@@ -87,8 +87,8 @@ func (fdb *FoundationDB) Install(ctx context.Context, namespace string) error {
 		oprARG = []string{"install", "../../helm/fdb-operator/", "--name=" + fdb.oprReleaseName, "-n", fdb.namespace}
 		instARG = []string{"install", "../../helm/fdb-instance", "--name=" + fdb.fdbReleaseName, "-n", fdb.namespace}
 	case helm.V3:
-		oprARG = []string{"install", fdb.oprReleaseName, "../../helm/fdb-operator/", "-n", fdb.namespace}
-		instARG = []string{"install", fdb.fdbReleaseName, "../../helm/fdb-instance", "-n", fdb.namespace}
+		oprARG = []string{"install", fdb.oprReleaseName, "../../helm/fdb-operator/", "-n", fdb.namespace, "--wait"}
+		instARG = []string{"install", fdb.fdbReleaseName, "../../helm/fdb-instance", "-n", fdb.namespace, "--wait"}
 	}
 
 	out, err := helm.RunCmdWithTimeout(ctx, helm.GetHelmBinName(), oprARG)
@@ -153,7 +153,7 @@ func (fdb *FoundationDB) getRunningFDBPod() (string, error) {
 	// Format of the name of the pods that get generated is
 	// helmReleaseName-sample-index
 	podName := fmt.Sprintf("%s-%s", fdb.fdbReleaseName, podNameSuffix)
-	pod, err := fdb.cli.CoreV1().Pods(fdb.namespace).Get(podName, metav1.GetOptions{})
+	pod, err := fdb.cli.CoreV1().Pods(fdb.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

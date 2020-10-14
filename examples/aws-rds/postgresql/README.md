@@ -9,7 +9,7 @@ This example is to demonstrate how Kanister can be integrated with AWS RDS insta
 ## Prerequisites
 
 - Kubernetes 1.10+
-- Kanister controller version 0.28.0 installed in your cluster
+- Kanister controller version 0.39.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Create RDS instance on AWS
@@ -31,7 +31,7 @@ Now create a RDS instance with postgresql engine
 ```bash
 aws rds create-db-instance \
     --publicly-accessible \
-    --allocated-storage 20 --db-instance-class db.t2.micro	 \
+    --allocated-storage 20 --db-instance-class db.t2.micro \
     --db-instance-identifier test-postgresql-instance \
     --engine postgres \
     --master-username master \
@@ -113,20 +113,34 @@ s3-profile-sph7s   2h
 
 
 # Use correct blueprint name (one of `rds-postgres-dump-bp` or `rds-postgres-snapshot-bp`) you have created earlier
-#
-$ kanctl create actionset --action backup --namespacetargets pgtestrds --config-maps dbconfig=pgtestrds/dbconfig --profile pgtestrds/s3-profile-6hmhn -b <blueprint-name> -n kasten-io
-actionset backup-llfb8 created
+
+cat <<EOF | kubectl apply -f -
+> apiVersion: cr.kanister.io/v1alpha1
+> kind: ActionSet
+> metadata:
+>   name: rds-backup
+>   namespace: kasten-io
+> spec:
+>   actions:
+>   - name: backup
+>     blueprint: <blueprint-name>
+>     object:
+>       apiVersion: v1
+>       name: dbconfig
+>       namespace: pgtestrds
+>       resource: configmaps
+>     profile:
+>       name: s3-profile-sph7s
+>       namespace: pgtestrds
+> EOF
+actionset.cr.kanister.io/rds-backup created
 
 # Where,
 # dbconfig is a configmap holding RDS infromation
 # Please see pgtest/deploy/config.yaml for configmap format
 
-$ kubectl --namespace kasten-io get actionsets.cr.kanister.io
-NAME                 AGE
-backup-llfb8         2h
-
 # View the status of the actionset
-$ kubectl --namespace kasten-io describe actionset backup-llfb8
+$ kubectl --namespace kasten-io describe actionset rds-backup
 ```
 
 ### Restore the Application
@@ -135,11 +149,11 @@ To restore the missing data from RDS snapshot, you should use the backup that yo
 
 
 ```bash
-$ kanctl create actionset --namespace kasten-io --action restore --config-maps dbconfig=pgtestrds/dbconfig --from backup-llfb8
-actionset restore-backup-llfb8-64gqm created
+$ kanctl create actionset --namespace kasten-io --action restore --from rds-backup
+actionset restore-rds-backup-mrhmc created
 
 ## Check status
-$ kubectl --namespace kasten-io describe actionset restore-backup-llfb8-64gqm
+$ kubectl --namespace kasten-io describe actionset restore-rds-backup-mrhmc
 ```
 
 
@@ -148,11 +162,11 @@ $ kubectl --namespace kasten-io describe actionset restore-backup-llfb8-64gqm
 The snapshot created by Actionset can be deleted by the following command
 
 ```bash
-$ kanctl create actionset --namespace kasten-io --action delete -c dbconfig=pgtestrds/dbconfig --from backup-llfb8
-actionset "delete-backup-llfb8-k9ncm" created
+$ kanctl create actionset --namespace kasten-io --action delete --from rds-backup
+actionset "delete-rds-backup-677tb" created
 
 ## Check status
-$ kubectl --namespace kasten-io describe actionset delete-backup-llfb8-k9ncm
+$ kubectl --namespace kasten-io describe actionset delete-rds-backup-677tb
 
 ```
 
@@ -167,7 +181,7 @@ $ kubectl --namespace kasten-io logs -l app=kanister-operator
 you can also check events of the actionset
 
 ```bash
-$ kubectl describe actionset restore-backup-md6gb-d7g7w -n kasten-io
+$ kubectl describe actionset restore-rds-backup-d7g7w -n kasten-io
 ```
 
 ## Cleanup

@@ -18,7 +18,7 @@ actions:
           name: "{{ .DeploymentConfig.Name }}"
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
-        image: kanisterio/mysql-sidecar:0.28.0
+        image: kanisterio/mysql-sidecar:0.39.0
         namespace: "{{ .DeploymentConfig.Namespace }}"
         command:
         - bash
@@ -45,7 +45,7 @@ actions:
           name: "{{ .DeploymentConfig.Name }}"
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
-        image: kanisterio/mysql-sidecar:0.28.0
+        image: kanisterio/mysql-sidecar:0.39.0
         namespace: "{{ .DeploymentConfig.Namespace }}"
         command:
         - bash
@@ -59,15 +59,15 @@ actions:
           root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mysqlsecret.Data "database-root-password" | toString }}"
           kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -u root --password=${root_password} -h {{ .DeploymentConfig.Name }}
   delete:
-    type: DeploymentConfig
+    type: Namespace
     inputArtifactNames:
     - mysqlCloudDump
     phases:
     - func: KubeTask
       name: deleteFromBlobStore
       args:
-        image: kanisterio/mysql-sidecar:0.28.0
-        namespace: "{{ .DeploymentConfig.Namespace }}"
+        image: kanisterio/mysql-sidecar:0.39.0
+        namespace: "{{ .Namespace.Name }}"
         command:
         - bash
         - -o

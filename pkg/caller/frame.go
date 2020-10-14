@@ -1,6 +1,7 @@
 package caller
 
 import (
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -12,6 +13,13 @@ type Frame struct {
 	File     string
 	Line     int
 }
+
+// kanisterPathRe matches the kanister component of the filesystem path
+//
+// For example:
+// /home/mark/src/kanister/pkg/kanister.go
+// /home/mark/go/pkg/mod/github.com/kanisterio/kanister@v0.0.0-20200629181100-0dabf5150ea3/pkg/kanister.go
+var kanisterPathRe = regexp.MustCompile(`/kanister(@v[^/]+)?/`)
 
 // GetFrame returns information about a caller function at the specified depth
 // above this function in the the call stack.
@@ -30,7 +38,7 @@ func GetFrame(depth int) Frame {
 	var frame runtime.Frame
 	frame, _ = frames.Next()
 	filename := frame.File
-	paths := strings.SplitAfterN(frame.File, "/kanister/", 2)
+	paths := kanisterPathRe.Split(frame.File, 2)
 	if len(paths) > 1 {
 		filename = paths[1]
 	} else {

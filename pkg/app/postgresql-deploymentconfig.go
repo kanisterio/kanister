@@ -47,16 +47,19 @@ type PostgreSQLDepConfig struct {
 	opeshiftClient openshift.OSClient
 	envVar         map[string]string
 	storageType    storage
+	// dbTemplateVersion will most probably match with the OCP version
+	dbTemplateVersion DBTemplate
 }
 
-func NewPostgreSQLDepConfig(name string, storageType storage) App {
+func NewPostgreSQLDepConfig(name string, templateVersion DBTemplate, storageType storage) App {
 	return &PostgreSQLDepConfig{
 		name:           name,
 		opeshiftClient: openshift.NewOpenShiftClient(),
 		envVar: map[string]string{
 			"POSTGRESQL_ADMIN_PASSWORD": "secretpassword",
 		},
-		storageType: storageType,
+		storageType:       storageType,
+		dbTemplateVersion: templateVersion,
 	}
 }
 
@@ -78,7 +81,7 @@ func (pgres *PostgreSQLDepConfig) Init(ctx context.Context) error {
 func (pgres *PostgreSQLDepConfig) Install(ctx context.Context, namespace string) error {
 	pgres.namespace = namespace
 
-	dbTemplate := getOpenShiftDBTemplate(postgresDepConfigName, pgres.storageType)
+	dbTemplate := getOpenShiftDBTemplate(postgresDepConfigName, pgres.dbTemplateVersion, pgres.storageType)
 
 	_, err := pgres.opeshiftClient.NewApp(ctx, pgres.namespace, dbTemplate, pgres.envVar, nil)
 	if err != nil {
@@ -105,7 +108,7 @@ func (pgres *PostgreSQLDepConfig) createPostgreSQLSecret(ctx context.Context) er
 		},
 	}
 
-	_, err := pgres.cli.CoreV1().Secrets(pgres.namespace).Create(postgreSQLSecret)
+	_, err := pgres.cli.CoreV1().Secrets(pgres.namespace).Create(ctx, postgreSQLSecret, metav1.CreateOptions{})
 
 	return errors.Wrapf(err, "Error creating secret for mysqldepconf app.")
 }

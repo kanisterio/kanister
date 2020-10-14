@@ -19,11 +19,13 @@ package kube
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -38,6 +40,12 @@ type PodSuite struct {
 	namespace string
 }
 
+const (
+	testSAName         = "test-sa"
+	controllerSA       = "controller-sa"
+	kanisterToolsImage = "kanisterio/kanister-tools:0.39.0"
+)
+
 var _ = Suite(&PodSuite{})
 
 func (s *PodSuite) SetUpSuite(c *C) {
@@ -49,37 +57,149 @@ func (s *PodSuite) SetUpSuite(c *C) {
 			GenerateName: "podtest-",
 		},
 	}
-	ns, err = s.cli.CoreV1().Namespaces().Create(ns)
+	ns, err = s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = ns.Name
+
+	os.Setenv("POD_NAMESPACE", ns.Name)
+	os.Setenv("POD_SERVICE_ACCOUNT", controllerSA)
+
+	err = s.createServiceAccount(testSAName, s.namespace)
+	c.Assert(err, IsNil)
+
+	err = s.createServiceAccount(controllerSA, s.namespace)
+	c.Assert(err, IsNil)
 }
 
 func (s *PodSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		err := s.cli.CoreV1().Namespaces().Delete(s.namespace, nil)
+		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
 }
 
 func (s *PodSuite) TestPod(c *C) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	pod, err := CreatePod(context.Background(), s.cli, &PodOptions{
-		Namespace:    s.namespace,
-		GenerateName: "test-",
-		Image:        "kanisterio/kanister-tools:0.28.0",
-		Command:      []string{"sh", "-c", "tail -f /dev/null"},
-	})
+	// get controllers's namespace
+	cns, err := GetControllerNamespace()
 	c.Assert(err, IsNil)
-	c.Assert(WaitForPodReady(ctx, s.cli, s.namespace, pod.Name), IsNil)
-	c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
+
+	// get controller's SA
+	sa, err := GetControllerServiceAccount(fake.NewSimpleClientset())
+	c.Assert(err, IsNil)
+
+	ctx := context.Background()
+	podOptions := []*PodOptions{
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        kanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		},
+		{
+			Namespace:          s.namespace,
+			GenerateName:       "test-",
+			Image:              kanisterToolsImage,
+			Command:            []string{"sh", "-c", "tail -f /dev/null"},
+			ServiceAccountName: testSAName,
+		},
+		{
+			Namespace:    cns,
+			GenerateName: "test-",
+			Image:        kanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		},
+		{
+			Namespace:          cns,
+			GenerateName:       "test-",
+			Image:              kanisterToolsImage,
+			Command:            []string{"sh", "-c", "tail -f /dev/null"},
+			ServiceAccountName: testSAName,
+		},
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        kanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+			Annotations: map[string]string{
+				"test-annotation": "true",
+			},
+		},
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        kanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+			Labels: map[string]string{
+				"run": "pod",
+			},
+		},
+	}
+
+	for _, po := range podOptions {
+		pod, err := CreatePod(context.Background(), s.cli, po)
+
+		// we have not specified the SA, if the pod is being created in the
+		// same ns as controller's, controller's SA should have been set.
+		if po.ServiceAccountName == "" && po.Namespace == cns {
+			c.Assert(pod.Spec.ServiceAccountName, Equals, sa)
+		} else {
+			var expectedSA string
+			if po.ServiceAccountName == "" {
+				expectedSA = "default"
+			} else {
+				expectedSA = po.ServiceAccountName
+			}
+			c.Assert(pod.Spec.ServiceAccountName, Equals, expectedSA)
+		}
+
+		if po.Annotations != nil {
+			c.Check(pod.ObjectMeta.Annotations, NotNil)
+			c.Check(pod.ObjectMeta.Annotations, DeepEquals, po.Annotations)
+		}
+
+		if po.Labels != nil {
+			c.Check(pod.ObjectMeta.Labels, NotNil)
+			c.Check(pod.ObjectMeta.Labels, DeepEquals, po.Labels)
+		}
+
+		c.Assert(err, IsNil)
+		c.Assert(WaitForPodReady(ctx, s.cli, po.Namespace, pod.Name), IsNil)
+		c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
+	}
+}
+
+func (s *PodSuite) createServiceAccount(name, ns string) error {
+	sa := v1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+	}
+	if _, err := s.cli.CoreV1().ServiceAccounts(ns).Create(context.TODO(), &sa, metav1.CreateOptions{}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *PodSuite) TestPodWithVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
-	vols := map[string]string{"pvc-test": "/mnt/data1"}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pvc-test",
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceName(v1.ResourceStorage): resource.MustParse("1Gi"),
+				},
+			},
+		},
+	}
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	vols := map[string]string{pvc.Name: "/mnt/data1"}
+	ctx := context.Background()
 	var p *v1.Pod
 	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 		fmt.Println("found pod")
@@ -94,11 +214,12 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 	pod, err := CreatePod(ctx, cli, &PodOptions{
 		Namespace:    s.namespace,
 		GenerateName: "test-",
-		Image:        "kanisterio/kanister-tools:0.28.0",
+		Image:        "kanisterio/kanister-tools:0.39.0",
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      vols,
 	})
 	c.Assert(err, IsNil)
+	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), IsNil)
 	c.Assert(pod.Spec.Volumes, HasLen, 1)
 	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, "pvc-test")
 	c.Assert(pod.Spec.Containers[0].VolumeMounts[0].MountPath, Equals, "/mnt/data1")
@@ -110,7 +231,7 @@ func (s *PodSuite) TestGetPodLogs(c *C) {
 	pod, err := CreatePod(context.Background(), s.cli, &PodOptions{
 		Namespace:    s.namespace,
 		GenerateName: "test-",
-		Image:        "kanisterio/kanister-tools:0.28.0",
+		Image:        "kanisterio/kanister-tools:0.39.0",
 		Command:      []string{"sh", "-c", "echo hello"},
 	})
 	c.Assert(err, IsNil)
@@ -126,7 +247,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 		Containers: []v1.Container{
 			{
 				Name:            "container",
-				Image:           "kanisterio/kanister-tools:0.28.0",
+				Image:           "kanisterio/kanister-tools:0.39.0",
 				Command:         []string{"sh", "-c", "echo in default specs"},
 				ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
 				VolumeMounts: []v1.VolumeMount{
@@ -172,7 +293,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "kanisterio/kanister-tools:0.28.0",
+						Image:           "kanisterio/kanister-tools:0.39.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
 						VolumeMounts: []v1.VolumeMount{
@@ -212,7 +333,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "kanisterio/kanister-tools:0.28.0",
+						Image:           "kanisterio/kanister-tools:0.39.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 						VolumeMounts: []v1.VolumeMount{
@@ -266,7 +387,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "kanisterio/kanister-tools:0.28.0",
+						Image:           "kanisterio/kanister-tools:0.39.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
 						VolumeMounts: []v1.VolumeMount{
@@ -327,7 +448,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "kanisterio/kanister-tools:0.28.0",
+						Image:           "kanisterio/kanister-tools:0.39.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
 						VolumeMounts: []v1.VolumeMount{
@@ -390,7 +511,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "kanisterio/kanister-tools:0.28.0",
+						Image:           "kanisterio/kanister-tools:0.39.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
 						VolumeMounts: []v1.VolumeMount{
@@ -430,7 +551,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "kanisterio/kanister-tools:0.28.0",
+						Image:           "kanisterio/kanister-tools:0.39.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
 						VolumeMounts: []v1.VolumeMount{
@@ -473,7 +594,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "kanisterio/kanister-tools:0.28.0",
+						Image:           "kanisterio/kanister-tools:0.39.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 						VolumeMounts: []v1.VolumeMount{

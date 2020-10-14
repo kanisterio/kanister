@@ -12,22 +12,22 @@ Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment
 
 - Kubernetes 1.10+
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.28.0 installed in your cluster
+- Kanister controller version 0.39.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Installing the Chart
 To install the chart with the release name `my-release`:
 
 ```bash
-$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+$ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 
 # If you are using helm v3
 $ kubectl create ns postgres-test
-$ helm install my-release --namespace postgres-test stable/postgresql
+$ helm install my-release --namespace postgres-test bitnami/postgresql
 
 # If you are using helm v2
-$ helm install --name my-release --namespace postgres-test stable/postgresql
+$ helm install --name my-release --namespace postgres-test bitnami/postgresql
 ```
 
 The command deploys PostgreSQL on the Kubernetes cluster in the default configuration.
@@ -38,7 +38,7 @@ In case, if you don't have `Kanister` installed already, you can use following c
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
-$ helm install --name kanister --namespace kasten-io kanister/kanister-operator --set image.tag=0.28.0
+$ helm install --name kanister --namespace kasten-io kanister/kanister-operator --set image.tag=0.39.0
 ```
 
 ## Integrating with Kanister
