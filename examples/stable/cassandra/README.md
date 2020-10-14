@@ -7,7 +7,7 @@ As the official documentation of [Cassandra](http://cassandra.apache.org/) says,
 * Kubernetes 1.9+
 * Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
 * PV support on the underlying infrastructure
-* Kanister controller version 0.39.0 installed in your cluster, let's say in namespace `<kanister-operator-namespace>`
+* Kanister controller version 0.40.0 installed in your cluster, let's say in namespace `<kanister-operator-namespace>`
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 To install kanister and related tools you can follow [this](https://docs.kanister.io/install.html#install) link.
@@ -28,7 +28,7 @@ To install the cassandra in your Kubernetes cluster you can run below command
 $ helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com
 $ helm repo update
 # remove app-namespace with the namespace you want to deploy the cassandra app in
-$ helm install --namespace "<app-namespace>" "cassandra" incubator/cassandra --set image.repo=kanisterio/cassandra --set image.tag=0.39.0 --set config.cluster_size=2
+$ helm install --namespace "<app-namespace>" "cassandra" incubator/cassandra --set image.repo=kanisterio/cassandra --set image.tag=0.40.0 --set config.cluster_size=2
 ```
 This command will install cassandra on your Kubernetes cluster with 2 nodes. You can notice that we are using custom image of cassandra in the helm to install the cassandra cluster. The reason is we have to use some Kanister tools to take backup, so only change that we have done is including that tooling on top of statndard `cassandra:3.11.3` image.
 
