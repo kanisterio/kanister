@@ -75,5 +75,4 @@ func (k *KanctlTestSuite) TestParseGenericObjectReference(c *C) {
 		c.Check(err, tc.err)
 		c.Assert(a, DeepEquals, tc.expected)
 	}
-
 }
