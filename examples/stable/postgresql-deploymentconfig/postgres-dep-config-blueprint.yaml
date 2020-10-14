@@ -18,7 +18,7 @@ actions:
           name: '{{ .DeploymentConfig.Name }}-{{ .DeploymentConfig.Namespace }}'
           namespace: '{{ .DeploymentConfig.Namespace }}'
       args:
-        image: kanisterio/postgres-kanister-tools:0.39.0
+        image: kanisterio/postgres-kanister-tools:0.40.0
         namespace: '{{ .DeploymentConfig.Namespace }}'
         command:
         - bash
@@ -47,7 +47,7 @@ actions:
           name: '{{ .DeploymentConfig.Name }}-{{ .DeploymentConfig.Namespace }}'
           namespace: '{{ .DeploymentConfig.Namespace }}'
       args:
-        image: kanisterio/postgres-kanister-tools:0.39.0
+        image: kanisterio/postgres-kanister-tools:0.40.0
         namespace: '{{ .DeploymentConfig.Namespace }}'
         command:
         - bash
@@ -70,7 +70,7 @@ actions:
     - func: KubeTask
       name: deleteDump
       args:
-        image: kanisterio/postgres-kanister-tools:0.39.0
+        image: kanisterio/postgres-kanister-tools:0.40.0
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash
