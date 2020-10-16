@@ -52,14 +52,13 @@ func NewCassandraInstance(name string) App {
 		name: name,
 		chart: helm.ChartInfo{
 			Release:  appendRandString(name),
-			RepoURL:  helm.IncubatorRepoURL,
+			RepoURL:  helm.BitnamiRepoURL,
 			Chart:    "cassandra",
-			RepoName: helm.IncubatorRepoName,
-			Version:  "0.13.3",
+			RepoName: helm.BitnamiRepoName,
 			Values: map[string]string{
-				"image.repo":          "kanisterio/cassandra",
-				"image.tag":           "0.40.0",
-				"config.cluster_size": "1",
+				"image.repository":     "kanisterio/cassandra",
+				"image.tag":            "0.40.0",
+				"cluster.replicaCount": "1",
 			},
 		},
 	}
@@ -89,7 +88,6 @@ func (cas *CassandraInstance) Install(ctx context.Context, namespace string) err
 	if err != nil {
 		return err
 	}
-
 	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cas.chart.RepoName, cas.chart.Chart), cas.chart.Version, cas.chart.Release, cas.namespace, cas.chart.Values)
 	if err != nil {
 		return err
@@ -100,7 +98,7 @@ func (cas *CassandraInstance) Install(ctx context.Context, namespace string) err
 
 // IsReady waits for the application to be ready
 func (cas *CassandraInstance) IsReady(ctx context.Context) (bool, error) {
-	log.Print("Wainting for application to be ready.", field.M{"app": cas.name})
+	log.Print("Waiting for application to be ready.", field.M{"app": cas.name})
 	ctx, cancel := context.WithTimeout(ctx, casWaitTimeout)
 	defer cancel()
 
@@ -141,7 +139,7 @@ func (cas *CassandraInstance) Uninstall(ctx context.Context) error {
 func (cas *CassandraInstance) Ping(ctx context.Context) error {
 	log.Print("Pinging the application.", field.M{"app": cas.name})
 
-	pingCMD := []string{"sh", "-c", "cqlsh -e 'describe cluster'"}
+	pingCMD := []string{"sh", "-c", "cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e 'describe cluster'"}
 	_, stderr, err := cas.execCommand(ctx, pingCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s while pinging the database.", stderr)
@@ -153,7 +151,7 @@ func (cas *CassandraInstance) Ping(ctx context.Context) error {
 // Insert is used to insert the  records into the database
 func (cas *CassandraInstance) Insert(ctx context.Context) error {
 	log.Print("Inserting records into the database.", field.M{"app": cas.name})
-	insertCMD := []string{"sh", "-c", fmt.Sprintf("cqlsh -e \"insert into restaurants.guests (id, firstname, lastname, birthday)  values (uuid(), 'Tom', 'Singh', '2015-02-18');\" --request-timeout=%s", cqlTimeout)}
+	insertCMD := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"insert into restaurants.guests (id, firstname, lastname, birthday)  values (uuid(), 'Tom', 'Singh', '2015-02-18');\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, insertCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s inserting records into the database.", stderr)
@@ -163,7 +161,7 @@ func (cas *CassandraInstance) Insert(ctx context.Context) error {
 
 // Count will return the number of records, there are inside the database's table
 func (cas *CassandraInstance) Count(ctx context.Context) (int, error) {
-	countCMD := []string{"sh", "-c", "cqlsh -e \"select count(*) from restaurants.guests;\" "}
+	countCMD := []string{"sh", "-c", "cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"select count(*) from restaurants.guests;\" "}
 	stdout, stderr, err := cas.execCommand(ctx, countCMD)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error %s counting the number of records in the database.", stderr)
@@ -186,21 +184,21 @@ func (cas *CassandraInstance) Count(ctx context.Context) (int, error) {
 // Reset is used to reset or imitate disaster, in the database
 func (cas *CassandraInstance) Reset(ctx context.Context) error {
 	// delete keyspace and table if they already exist
-	delRes := []string{"sh", "-c", fmt.Sprintf("cqlsh -e 'drop table if exists restaurants.guests; drop keyspace if exists restaurants;' --request-timeout=%s", cqlTimeout)}
+	delRes := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e 'drop table if exists restaurants.guests; drop keyspace if exists restaurants;' --request-timeout=%s", cqlTimeout)}
 	_, stderr, err := cas.execCommand(ctx, delRes)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s, deleting resources while reseting application.", stderr)
 	}
 
 	// create the keyspace
-	createKS := []string{"sh", "-c", fmt.Sprintf("cqlsh -e \"create keyspace restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 3};\" --request-timeout=%s", cqlTimeout)}
+	createKS := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"create keyspace restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 3};\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err = cas.execCommand(ctx, createKS)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s while creating the keyspace for application.", stderr)
 	}
 
 	// create the table
-	createTab := []string{"sh", "-c", fmt.Sprintf("cqlsh -e \"create table restaurants.guests (id UUID primary key, firstname text, lastname text, birthday timestamp);\" --request-timeout=%s", cqlTimeout)}
+	createTab := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"create table restaurants.guests (id UUID primary key, firstname text, lastname text, birthday timestamp);\" --request-timeout=%s", cqlTimeout)}
 	_, stderr, err = cas.execCommand(ctx, createTab)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s creating table.", stderr)
