@@ -9,7 +9,7 @@ This example is to demonstrate how Kanister can be integrated with AWS RDS insta
 ## Prerequisites
 
 - Kubernetes 1.10+
-- Kanister controller version 0.38.0 installed in your cluster
+- Kanister controller version 0.40.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Create RDS instance on AWS
@@ -31,7 +31,7 @@ Now create a RDS instance with postgresql engine
 ```bash
 aws rds create-db-instance \
     --publicly-accessible \
-    --allocated-storage 20 --db-instance-class db.t2.micro	 \
+    --allocated-storage 20 --db-instance-class db.t2.micro \
     --db-instance-identifier test-postgresql-instance \
     --engine postgres \
     --master-username master \
