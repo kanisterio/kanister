@@ -17,19 +17,19 @@ The helm commands that are mentioned in this document are run with the helm vers
 
 ## Chart Details
 
-We will be using [Cassandra helm chart](https://github.com/helm/charts/tree/master/incubator/cassandra) from official helm repo wchich bootstraps a [Cassandra](http://cassandra.apache.org/) cluster on Kubernetes.
+We will be using [Cassandra helm chart](https://github.com/bitnami/charts/tree/master/bitnami/cassandra) from official helm repo which bootstraps a [Cassandra](http://cassandra.apache.org/) cluster on Kubernetes.
 
-You can decide the number of nodes that will be there in your configured Cassandra cluster using the flag `--set config.cluster_size=n` where `n` is the number of nodes you want in your Cassandra cluster. For this demo example we will be spinning up our Cassandra cluster with 2 nodes.
+You can decide the number of nodes that will be there in your configured Cassandra cluster using the flag `--set cluster.replicaCount=n` where `n` is the number of nodes you want in your Cassandra cluster. For this demo example we will be spinning up our Cassandra cluster with 2 nodes.
 
 ## Installing the Chart
 
 To install the Cassandra in your Kubernetes cluster you can run below command
 ```bash
-$ helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com
+$ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 # remove app-namespace with the namespace you want to deploy the Cassandra app in
 $ kubectl create ns <app-namespace>
-$ helm install cassandra bitnami/cassandra --namespace <app-namespace> --set image.repository=kanisterio/cassandra --set image.tag=0.40.0 --set cluster.replicaCount=2 
+$ helm install cassandra bitnami/cassandra --namespace <app-namespace> --set image.repository=kanisterio/cassandra --set image.tag=0.40.0 --set cluster.replicaCount=2 --set image.pullPolicy=Always
 
 
 ```
