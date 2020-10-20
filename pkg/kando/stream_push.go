@@ -98,14 +98,22 @@ func GenerateStreamPushCommand(configFile, dirPath, filePath, password, sourceEn
 	}
 }
 
-// enclosePassword adds escape char \ before every single quote ' in the password
-// and then encloses the result between ' (single quote) to handle special chars
-// in the password
+// enclosePassword adds escape char \ before every double quote " or backtick ` in the password
+// and then encloses the result between " (double quote) to handle special chars in the password
 func enclosePassword(password string) string {
-	reg, err := regexp.Compile("'")
-
+	// add escape char for "
+	reg, err := regexp.Compile("\"")
 	if err != nil || len(password) == 0 {
 		return password
 	}
-	return fmt.Sprintf("'%s'", reg.ReplaceAllString(password, "\\'"))
+
+	op := reg.ReplaceAllString(password, "\\\"")
+
+	// add escape char for `
+	reg, err = regexp.Compile("`")
+	if err != nil {
+		return op
+	}
+
+	return fmt.Sprintf("\"%s\"", reg.ReplaceAllString(op, "\\`"))
 }
