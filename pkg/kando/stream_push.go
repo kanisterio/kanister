@@ -16,6 +16,8 @@ package kando
 
 import (
 	"context"
+	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -71,7 +73,7 @@ func GenerateStreamPushCommand(configFile, dirPath, filePath, password, sourceEn
 		"stream",
 		"push",
 		streamPasswordFlag,
-		password,
+		enclosePassword(password),
 	}
 
 	if configFile != "" {
@@ -94,4 +96,16 @@ func GenerateStreamPushCommand(configFile, dirPath, filePath, password, sourceEn
 		"-c",
 		strings.Join(kandoCmd, " "),
 	}
+}
+
+// enclosePassword adds escape char \ before every single quote ' in the password
+// and then encloses the result between ' (single quote) to handle special chars
+// in the password
+func enclosePassword(password string) string {
+	reg, err := regexp.Compile("'")
+
+	if err != nil || len(password) == 0 {
+		return password
+	}
+	return fmt.Sprintf("'%s'", reg.ReplaceAllString(password, "\\'"))
 }
