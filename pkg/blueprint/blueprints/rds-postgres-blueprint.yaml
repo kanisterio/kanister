@@ -70,6 +70,7 @@ actions:
             aws rds restore-db-instance-from-db-snapshot --db-instance-identifier="{{ index .Object.data "postgres.instanceid" }}" --db-snapshot-identifier="{{ .ArtifactsIn.snapshot.KeyValue.id }}" --vpc-security-group-ids "{{ .ArtifactsIn.snapshot.KeyValue.sgid }}" --region "{{ .Profile.Location.Region }}"
             aws rds wait db-instance-available --region "{{ .Profile.Location.Region }}" --db-instance-identifier="{{ index .Object.data "postgres.instanceid" }}"
   delete:
+    type: Namespace
     inputArtifactNames:
     - snapshot
     phases:
@@ -77,7 +78,7 @@ actions:
       name: restoreSnapshots
       args:
         image: "kanisterio/postgres-kanister-tools:0.40.0"
-        namespace: "{{ .Object.metadata.namespace }}"
+        namespace: "{{ .Namespace.Name }}"
         command:
           - bash
           - -o
