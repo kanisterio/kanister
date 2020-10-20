@@ -9,7 +9,6 @@ type StreamPushTestSuite struct{}
 var _ = Suite(&StreamPushTestSuite{})
 
 func (s *StreamPushTestSuite) TestEnclosePassword(c *C) {
-
 	for _, tc := range []struct {
 		input, output string
 	}{
