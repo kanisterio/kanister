@@ -14,16 +14,16 @@ func (s *StreamPushTestSuite) TestEnclosePassword(c *C) {
 	}{
 		// we dont handle back ticks yet
 		{
-			input:  "this-is3543%$%#$#()*&)~~`-dummy-pass4534",
-			output: "\"this-is3543%$%#$#()*&)~~\\`-dummy-pass4534\"",
+			input:  "this-is3543%$%#$#()*&)~~`-test-pass4534",
+			output: "\"this-is3543%$%#$#()*&)~~\\`-test-pass4534\"",
 		},
 		{
 			input:  "12345",
 			output: `"12345"`,
 		},
 		{
-			input:  "this-is-dummy-pass",
-			output: "\"this-is-dummy-pass\"",
+			input:  "this-is-test-pass",
+			output: "\"this-is-test-pass\"",
 		},
 		{
 			input:  "",
