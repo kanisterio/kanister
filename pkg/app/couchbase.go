@@ -245,15 +245,18 @@ func (cb CouchbaseDB) Uninstall(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to uninstall %s helm release", cb.chart.Release)
 	}
-	deleteCouchbaseCRDSIfExist(cb, ctx)
+	deleteCouchbaseCRDSIfExist(ctx, cb)
 	return nil
 }
 
-func deleteCouchbaseCRDSIfExist(cb CouchbaseDB, ctx context.Context) {
+func deleteCouchbaseCRDSIfExist(ctx context.Context, cb CouchbaseDB) {
 	log.Info().Print("Deleting couchbase CRDs")
 	cbCrds := []string{"couchbasebackuprestores.couchbase.com", "couchbasebackups.couchbase.com", "couchbasebuckets.couchbase.com", "couchbaseclusters.couchbase.com", "couchbaseephemeralbuckets.couchbase.com", "couchbasegroups.couchbase.com", "couchbasememcachedbuckets.couchbase.com", "couchbasereplications.couchbase.com", "couchbaserolebindings.couchbase.com", "couchbaseusers.couchbase.com"}
 	for _, cbCrd := range cbCrds {
-		cb.crClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, cbCrd, metav1.DeleteOptions{})
+		err := cb.crClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, cbCrd, metav1.DeleteOptions{})
+		if err != nil {
+			log.Error().Print("Failed to Delete Couchbase CRD ", field.M{"app": cb.name})
+		}
 	}
 }
 
