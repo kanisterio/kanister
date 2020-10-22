@@ -32,6 +32,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
+	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 )
 
 const cbReadyTimeout = 5 * time.Minute
@@ -45,6 +46,7 @@ type CouchbaseDB struct {
 	username  string
 	password  string
 	cli       kubernetes.Interface
+	crClient  crdclient.Interface
 	chart     helm.ChartInfo
 }
 
@@ -74,6 +76,10 @@ func (cb *CouchbaseDB) Init(ctx context.Context) error {
 		return err
 	}
 	cb.cli, err = kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
+	cb.crClient, err = crdclient.NewForConfig(cfg)
 	return err
 }
 
@@ -236,7 +242,19 @@ func (cb CouchbaseDB) Uninstall(ctx context.Context) error {
 	// Uninstall couchbase-operator helm chart
 	log.Info().Print("Uninstalling helm charts.", field.M{"app": cb.name, "release": cb.chart.Release, "namespace": cb.namespace})
 	err = cli.Uninstall(ctx, cb.chart.Release, cb.namespace)
-	return errors.Wrapf(err, "Failed to uninstall %s helm release", cb.chart.Release)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to uninstall %s helm release", cb.chart.Release)
+	}
+	deleteCouchbaseCRDSIfExist(cb, ctx)
+	return nil
+}
+
+func deleteCouchbaseCRDSIfExist(cb CouchbaseDB, ctx context.Context) {
+	log.Info().Print("Deleting couchbase CRDs")
+	cbCrds := []string{"couchbasebackuprestores.couchbase.com", "couchbasebackups.couchbase.com", "couchbasebuckets.couchbase.com", "couchbaseclusters.couchbase.com", "couchbaseephemeralbuckets.couchbase.com", "couchbasegroups.couchbase.com", "couchbasememcachedbuckets.couchbase.com", "couchbasereplications.couchbase.com", "couchbaserolebindings.couchbase.com", "couchbaseusers.couchbase.com"}
+	for _, cbCrd := range cbCrds {
+		cb.crClient.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, cbCrd, metav1.DeleteOptions{})
+	}
 }
 
 func (cb CouchbaseDB) execCommand(ctx context.Context, command []string) (string, string, error) {
