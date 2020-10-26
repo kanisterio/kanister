@@ -60,7 +60,7 @@ type RDSPostgresDB struct {
 	sqlDB             *sql.DB
 }
 
-func NewRDSPostgresDB(name string) App {
+func NewRDSPostgresDB(name string, customRegion string) App {
 	return &RDSPostgresDB{
 		name:              name,
 		id:                fmt.Sprintf("test-%s", name),
@@ -68,6 +68,7 @@ func NewRDSPostgresDB(name string) App {
 		databases:         []string{"postgres", "template1"},
 		username:          "master",
 		password:          "secret99",
+		region:            customRegion,
 	}
 }
 
@@ -83,9 +84,11 @@ func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	pdb.region, ok = os.LookupEnv(aws.Region)
-	if !ok {
-		return fmt.Errorf("Env var %s is not set", aws.Region)
+	if pdb.region == "" {
+		pdb.region, ok = os.LookupEnv(aws.Region)
+		if !ok {
+			return fmt.Errorf("Env var %s is not set", aws.Region)
+		}
 	}
 
 	// If sessionToken is set, accessID and secretKey not required
