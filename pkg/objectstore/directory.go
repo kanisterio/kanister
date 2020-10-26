@@ -61,9 +61,23 @@ func (d *directory) GetDirectory(ctx context.Context, dir string) (Directory, er
 		return d, nil
 	}
 	dir = d.absDirName(dir)
-	_, err := d.bucket.container.Item(cloudName(dir))
-	if err != nil {
+	if _, err := d.bucket.container.Item(cloudName(dir)); err == nil {
+		return &directory{
+			bucket: d.bucket,
+			path:   dir,
+		}, nil
+	}
+
+	// Minio does not support `GET` on "directory" objects. To workaround,
+	// we do a prefix search. If we find an object with this prefix - we
+	// assume it's a directory and succeed the `GetDirectory` call
+	// TODO <address before merge> - Do we need an "isDirectoryObject" check?
+	items, _, err := d.bucket.container.Items(cloudName(dir), stow.CursorStart, 1)
+	switch {
+	case err != nil:
 		return nil, errors.Wrapf(err, "could not get directory marker %s", dir)
+	case len(items) == 0:
+		return nil, errors.Errorf("no items found. could not get directory marker %s", dir)
 	}
 	return &directory{
 		bucket: d.bucket,
@@ -91,6 +105,7 @@ func (d *directory) ListDirectories(ctx context.Context) (map[string]Directory, 
 				// e.g., /<d.path>/
 				return nil
 			}
+
 			// Directories will end with '/' in their names
 			if dirEnt, ok := isDirectoryObject(dir); ok {
 				// Use maps to uniqify
@@ -299,6 +314,7 @@ func isDirectoryObject(path string) (string, bool) {
 		return s[0], true
 	case 3:
 		// dir1/dir2/elem will return false
+		// return s[0], true
 		return "", false
 	}
 
