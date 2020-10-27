@@ -202,6 +202,11 @@ func (mongo *MongoDB) Reset(ctx context.Context) error {
 	return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
 }
 
+// Initialize is used initialize the database or create schema
+func (mongo *MongoDB) Initialize(ctx context.Context) error {
+	return nil
+}
+
 func (mongo *MongoDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podName, containerName, err := kube.GetPodContainerFromStatefulSet(ctx, mongo.cli, mongo.namespace, fmt.Sprintf("%s-mongodb", mongo.chart.Release))
 	if err != nil || podName == "" {

@@ -186,9 +186,15 @@ func (pgres *PostgreSQLDepConfig) Reset(ctx context.Context) error {
 		return errors.Wrapf(err, "Failed to drop db from postgresql deployment config. %s ", stderr)
 	}
 
+	log.Info().Print("Database reset successful!", field.M{"app": pgres.name})
+	return nil
+}
+
+// Initialize is used initialize the database or create schema
+func (pgres *PostgreSQLDepConfig) Initialize(ctx context.Context) error {
 	// Create database
-	cmd = "psql -c 'CREATE DATABASE test;'"
-	_, stderr, err = pgres.execCommand(ctx, []string{"bash", "-c", cmd})
+	cmd := "psql -c 'CREATE DATABASE test;'"
+	_, stderr, err := pgres.execCommand(ctx, []string{"bash", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create db in postgresql deployment config %s ", stderr)
 	}
@@ -199,7 +205,6 @@ func (pgres *PostgreSQLDepConfig) Reset(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create table in postgresql deployment config %s ", stderr)
 	}
-	log.Info().Print("Database reset successful!", field.M{"app": pgres.name})
 	return nil
 }
 
