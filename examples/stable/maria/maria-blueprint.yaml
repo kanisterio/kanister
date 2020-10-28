@@ -1,0 +1,80 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: maria-blueprint
+actions:
+  backup:
+    type: StatefulSet
+    outputArtifacts:
+      mariaCloudDump:
+        keyValue:
+          s3path: "{{ .Phases.dumpToObjectStore.Output.s3path }}"
+    phases:
+    - func: KubeTask
+      name: dumpToObjectStore
+      objects:
+        mariaSecret:
+          kind: Secret
+          name: '{{ .StatefulSet.Name }}'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        image: kanisterio/mysql-sidecar:0.40.0
+        namespace: "{{ .StatefulSet.Namespace }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          s3_path="/maria-backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
+          root_password="{{ index .Phases.dumpToObjectStore.Secrets.mariaSecret.Data "mariadb-root-password" | toString }}"
+          mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ .StatefulSet.Name }} --single-transaction --ignore-table=mysql.slow_log --ignore-table=mysql.general_log  --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
+          kando output s3path ${s3_path}
+  restore:
+    type: StatefulSet
+    inputArtifactNames:
+    - mariaCloudDump
+    phases:
+    - func: KubeTask
+      name: restoreFromBlobStore
+      objects:
+        mariaSecret:
+          kind: Secret
+          name: '{{ .StatefulSet.Name }}'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        image: kanisterio/mysql-sidecar:0.40.0
+        namespace: "{{ .StatefulSet.Namespace }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          s3_path="{{ .ArtifactsIn.mariaCloudDump.KeyValue.s3path }}"
+          root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mariaSecret.Data "mariadb-root-password" | toString }}"
+          kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -u root --password=${root_password} -h {{ .StatefulSet.Name }}
+  delete:
+    type: Namespace
+    inputArtifactNames:
+    - mariaCloudDump
+    phases:
+    - func: KubeTask
+      name: deleteFromBlobStore
+      args:
+        image: kanisterio/mysql-sidecar:0.40.0
+        namespace: "{{ .Namespace.Name }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          s3_path="{{ .ArtifactsIn.mariaCloudDump.KeyValue.s3path }}"
+          kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}
