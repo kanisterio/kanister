@@ -43,10 +43,6 @@ const (
 	IncubatorRepoName = "incubator"
 	IncubatorRepoURL  = "https://kubernetes-charts-incubator.storage.googleapis.com"
 
-	// Add stable charts url
-	StableRepoName = "stable"
-	StableRepoURL  = "https://kubernetes-charts.storage.googleapis.com"
-
 	// Add couchbase chart
 	CouchbaseRepoName = "couchbase"
 	CouchbaseRepoURL  = "https://couchbase-partners.github.io/helm-charts"
