@@ -42,7 +42,7 @@ type MysqlDB struct {
 	chart     helm.ChartInfo
 }
 
-// Last tested working version "1.6.7"
+// Last tested working version "6.14.11"
 func NewMysqlDB(name string) App {
 	return &MysqlDB{
 		name: name,
