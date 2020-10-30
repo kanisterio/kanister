@@ -260,7 +260,6 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		c.Assert(err, IsNil)
 
 		count, _ := a.Count(ctx)
-		// c.Assert(err, IsNil)
 		c.Assert(count, Equals, 0)
 	}
 
