@@ -36,6 +36,7 @@ install_minio ()
     --set defaultBucket.enabled=true,defaultBucket.name=${S3_BUCKET} \
     --set environment.MINIO_SSE_AUTO_ENCRYPTION=on \
     --set environment.MINIO_SSE_MASTER_KEY=my-minio-key:feb5bb6c5cf851e21dbc0376ca81012a9edc4ca0ceeb9df5064ccba2991ae9de \
+    --set accessKey="AKIAIOSFODNN7EXAMPLE",secretKey="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
     minio/minio --wait --timeout 3m
 
     # export default creds for minio
