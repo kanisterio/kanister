@@ -199,7 +199,7 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 	return nil
 }
 
-// Initialize is used initialize the database or create schema
+// Initialize is used to initialize the database or create schema
 func (esi *ElasticsearchInstance) Initialize(ctx context.Context) error {
 	// create the index
 	createIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X PUT %s/%s?pretty", esi.elasticsearchURL, esi.indexname)}

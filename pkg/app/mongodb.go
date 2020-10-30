@@ -202,7 +202,7 @@ func (mongo *MongoDB) Reset(ctx context.Context) error {
 	return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
 }
 
-// Initialize is used initialize the database or create schema
+// Initialize is used to initialize the database or create schema
 func (mongo *MongoDB) Initialize(ctx context.Context) error {
 	return nil
 }

@@ -190,7 +190,7 @@ func (pgres *PostgreSQLDepConfig) Reset(ctx context.Context) error {
 	return nil
 }
 
-// Initialize is used initialize the database or create schema
+// Initialize is used to initialize the database or create schema
 func (pgres *PostgreSQLDepConfig) Initialize(ctx context.Context) error {
 	// Create database
 	cmd := "psql -c 'CREATE DATABASE test;'"

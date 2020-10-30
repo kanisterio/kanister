@@ -226,7 +226,7 @@ func (cb CouchbaseDB) Reset(ctx context.Context) error {
 	return cb.waitForCount(ctx, 0)
 }
 
-// Initialize is used initialize the database or create schema
+// Initialize is used to initialize the database or create schema
 func (cb CouchbaseDB) Initialize(ctx context.Context) error {
 	return nil
 }

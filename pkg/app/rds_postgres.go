@@ -298,7 +298,7 @@ func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
 	return nil
 }
 
-// Initialize is used initialize the database or create schema
+// Initialize is used to initialize the database or create schema
 func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 	// Create table.
 	_, err := pdb.sqlDB.Exec("CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50));")

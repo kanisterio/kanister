@@ -199,7 +199,7 @@ func (mdb *MysqlDB) Reset(ctx context.Context) error {
 	return nil
 }
 
-// Initialize is used initialize the database or create schema
+// Initialize is used to initialize the database or create schema
 func (mdb *MysqlDB) Initialize(ctx context.Context) error {
 	// create the database and a pets table
 	createTableCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}

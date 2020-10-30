@@ -193,7 +193,7 @@ func (cas *CassandraInstance) Reset(ctx context.Context) error {
 	return nil
 }
 
-// Initialize is used initialize the database or create schema
+// Initialize is used to initialize the database or create schema
 func (cas *CassandraInstance) Initialize(ctx context.Context) error {
 	// create the keyspace
 	createKS := []string{"sh", "-c", fmt.Sprintf("cqlsh -u cassandra -p $CASSANDRA_PASSWORD -e \"create keyspace restaurants with replication  = {'class':'SimpleStrategy', 'replication_factor': 3};\" --request-timeout=%s", cqlTimeout)}

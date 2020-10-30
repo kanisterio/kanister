@@ -180,7 +180,7 @@ func (mdep *MysqlDepConfig) Reset(ctx context.Context) error {
 	return nil
 }
 
-// Initialize is used initialize the database or create schema
+// Initialize is used to initialize the database or create schema
 func (mdep *MysqlDepConfig) Initialize(ctx context.Context) error {
 	return nil
 }
