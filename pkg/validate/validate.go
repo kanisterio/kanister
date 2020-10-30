@@ -279,7 +279,7 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	}
 	data := []byte("sample content")
 	if err := bucket.PutBytes(ctx, objName, data, nil); err != nil {
-		return errorf("failed to write contents to bucket '%s'", p.Location.Bucket)
+		return errorf("failed to write contents to bucket '%s', error: %s", p.Location.Bucket, err.Error())
 	}
 	if err := bucket.Delete(ctx, objName); err != nil {
 		return errorf("failed to delete contents in bucket '%s'", p.Location.Bucket)
