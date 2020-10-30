@@ -258,9 +258,6 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	if a, ok := s.app.(app.DatabaseApp); ok {
 		err = a.Reset(ctx)
 		c.Assert(err, IsNil)
-
-		count, _ := a.Count(ctx)
-		c.Assert(count, Equals, 0)
 	}
 
 	// Restore backup
