@@ -45,13 +45,8 @@ actions:
           name: '{{ index .Object.metadata.labels "release" | toString }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-<<<<<<< HEAD
-        image: kanisterio/mysql-sidecar:0.40.0
-        namespace: "{{ .StatefulSet.Namespace }}"
-=======
         image: kanisterio/mysql-sidecar:0.41.0
-        namespace: "{{ .Deployment.Namespace }}"
->>>>>>> master
+        namespace: "{{ .StatefulSet.Namespace }}"
         command:
         - bash
         - -o
