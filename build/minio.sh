@@ -19,13 +19,13 @@ set -o nounset
 
 # Default bucket name
 S3_BUCKET="tests.kanister.io"
-MINIO_CHART_VERSION="3.0.1"
+MINIO_CHART_VERSION="8.0.0"
 
 install_minio ()
 {
     echo "Deploying minio..."
-    # Add stable helm repo
-    helm repo add stable https://kubernetes-charts.storage.googleapis.com
+    # Add minio helm repo
+    helm repo add minio https://helm.min.io/
     helm repo update
 
     # create minio namespace
@@ -36,7 +36,8 @@ install_minio ()
     --set defaultBucket.enabled=true,defaultBucket.name=${S3_BUCKET} \
     --set environment.MINIO_SSE_AUTO_ENCRYPTION=on \
     --set environment.MINIO_SSE_MASTER_KEY=my-minio-key:feb5bb6c5cf851e21dbc0376ca81012a9edc4ca0ceeb9df5064ccba2991ae9de \
-    stable/minio --wait --timeout 3m
+    --set accessKey="AKIAIOSFODNN7EXAMPLE",secretKey="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
+    minio/minio --wait --timeout 3m
 
     # export default creds for minio
     # https://github.com/helm/charts/tree/master/stable/minio
