@@ -62,7 +62,7 @@ func NewMongoDB(name string) App {
 			Values: map[string]string{
 				"architecture":     "replicaset",
 				"image.repository": "kanisterio/mongodb",
-				"image.tag":        "0.40.0",
+				"image.tag":        "0.41.0",
 			},
 		},
 	}
@@ -200,6 +200,11 @@ func (mongo *MongoDB) Reset(ctx context.Context) error {
 	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.drop()\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
 	return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
+}
+
+// Initialize is used to initialize the database or create schema
+func (mongo *MongoDB) Initialize(ctx context.Context) error {
+	return nil
 }
 
 func (mongo *MongoDB) execCommand(ctx context.Context, command []string) (string, string, error) {

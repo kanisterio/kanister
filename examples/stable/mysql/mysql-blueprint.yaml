@@ -18,7 +18,7 @@ actions:
           name: '{{ index .Object.metadata.labels "release" | toString }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: kanisterio/mysql-sidecar:0.40.0
+        image: kanisterio/mysql-sidecar:0.41.0
         namespace: "{{ .StatefulSet.Namespace }}"
         command:
         - bash
@@ -45,8 +45,13 @@ actions:
           name: '{{ index .Object.metadata.labels "release" | toString }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
+<<<<<<< HEAD
         image: kanisterio/mysql-sidecar:0.40.0
         namespace: "{{ .StatefulSet.Namespace }}"
+=======
+        image: kanisterio/mysql-sidecar:0.41.0
+        namespace: "{{ .Deployment.Namespace }}"
+>>>>>>> master
         command:
         - bash
         - -o
@@ -66,7 +71,7 @@ actions:
     - func: KubeTask
       name: deleteFromBlobStore
       args:
-        image: kanisterio/mysql-sidecar:0.40.0
+        image: kanisterio/mysql-sidecar:0.41.0
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash
