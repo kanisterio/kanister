@@ -226,6 +226,11 @@ func (cb CouchbaseDB) Reset(ctx context.Context) error {
 	return cb.waitForCount(ctx, 0)
 }
 
+// Initialize is used to initialize the database or create schema
+func (cb CouchbaseDB) Initialize(ctx context.Context) error {
+	return nil
+}
+
 func (cb CouchbaseDB) Uninstall(ctx context.Context) error {
 	// Create helm client
 	cli, err := helm.NewCliClient()

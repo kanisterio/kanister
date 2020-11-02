@@ -180,6 +180,11 @@ func (mdep *MysqlDepConfig) Reset(ctx context.Context) error {
 	return nil
 }
 
+// Initialize is used to initialize the database or create schema
+func (mdep *MysqlDepConfig) Initialize(ctx context.Context) error {
+	return nil
+}
+
 func (mdep *MysqlDepConfig) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podName, containerName, err := kube.GetPodContainerFromDeploymentConfig(ctx, mdep.osCli, mdep.cli, mdep.namespace, mysqlDepConfigName)
 	if err != nil {
