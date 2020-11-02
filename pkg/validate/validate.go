@@ -34,7 +34,7 @@ func ActionSet(as *crv1alpha1.ActionSet) error {
 	}
 	if as.Status != nil {
 		if len(as.Spec.Actions) != len(as.Status.Actions) {
-			return errorf("Number of actions in status actions and spec must match")
+			return errorf(validateErr, "Number of actions in status actions and spec must match")
 		}
 		if err := actionSetStatus(as.Status); err != nil {
 			return err
@@ -45,7 +45,7 @@ func ActionSet(as *crv1alpha1.ActionSet) error {
 
 func actionSetSpec(as *crv1alpha1.ActionSetSpec) error {
 	if as == nil {
-		return errorf("Spec must be non-nil")
+		return errorf(validateErr, "Spec must be non-nil")
 	}
 	for _, a := range as.Actions {
 		if err := actionSpec(a); err != nil {
@@ -71,7 +71,7 @@ func actionSpec(s crv1alpha1.ActionSpec) error {
 		// Not a known type. ActionSet must specify API group and resource
 		// name in order to populate `Object` TemplateParam
 		if s.Object.APIVersion == "" || s.Object.Resource == "" {
-			return errorf("Not a known object Kind %s. Action %s must specify Resource name and API version", s.Object.Kind, s.Name)
+			return errorf(validateErr, "Not a known object Kind %s. Action %s must specify Resource name and API version", s.Object.Kind, s.Name)
 		}
 	}
 	return nil
@@ -93,7 +93,7 @@ func actionSetStatus(as *crv1alpha1.ActionSetStatus) error {
 	for _, a := range as.Actions {
 		for _, p := range a.Phases {
 			if _, ok := saw[p.State]; !ok {
-				return errorf("Action has unknown state '%s'", p.State)
+				return errorf(validateErr, "Action has unknown state '%s'", p.State)
 			}
 			for s := range saw {
 				saw[s] = saw[s] || (p.State == s)
@@ -101,11 +101,11 @@ func actionSetStatus(as *crv1alpha1.ActionSetStatus) error {
 		}
 	}
 	if _, ok := saw[as.State]; !ok {
-		return errorf("ActionSet has unknown state '%s'", as.State)
+		return errorf(validateErr, "ActionSet has unknown state '%s'", as.State)
 	}
 	if saw[crv1alpha1.StateRunning] || saw[crv1alpha1.StatePending] {
 		if as.State == crv1alpha1.StateComplete {
-			return errorf("ActionSet cannot be complete if any actions are not complete")
+			return errorf(validateErr, "ActionSet cannot be complete if any actions are not complete")
 		}
 	}
 	return nil
@@ -117,7 +117,7 @@ func actionSetStatusActions(as []crv1alpha1.ActionStatus) error {
 		var lastNonComplete crv1alpha1.State
 		for _, p := range a.Phases {
 			if sawNotComplete && p.State != crv1alpha1.StatePending {
-				return errorf("Phases after a %s one must be pending", lastNonComplete)
+				return errorf(validateErr, "Phases after a %s one must be pending", lastNonComplete)
 			}
 			if !sawNotComplete {
 				lastNonComplete = p.State
@@ -136,14 +136,14 @@ func Blueprint(bp *crv1alpha1.Blueprint) error {
 
 func ProfileSchema(p *crv1alpha1.Profile) error {
 	if !supported(p.Location.Type) {
-		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
+		return errorf(validateErr, "unknown or unsupported location type '%s'", p.Location.Type)
 	}
 	if err := validateCredentialType(&p.Credential); err != nil {
 		return err
 	}
 	if p.Location.Type == crv1alpha1.LocationTypeS3Compliant {
 		if p.Location.Bucket != "" && p.Location.Endpoint == "" && p.Location.Region == "" {
-			return errorf("Bucket region not specified")
+			return errorf(validateErr, "Bucket region not specified")
 		}
 	}
 	return nil
@@ -153,22 +153,22 @@ func validateCredentialType(creds *crv1alpha1.Credential) error {
 	switch creds.Type {
 	case crv1alpha1.CredentialTypeKeyPair:
 		if creds.KeyPair.Secret.Name == "" {
-			return errorf("Secret for bucket credentials not specified")
+			return errorf(validateErr, "Secret for bucket credentials not specified")
 		}
 		if creds.KeyPair.SecretField == "" || creds.KeyPair.IDField == "" {
-			return errorf("Secret field or id field empty")
+			return errorf(validateErr, "Secret field or id field empty")
 		}
 		return nil
 	case crv1alpha1.CredentialTypeSecret:
 		if creds.Secret.Name == "" {
-			return errorf("Secret name is empty")
+			return errorf(validateErr, "Secret name is empty")
 		}
 		if creds.Secret.Namespace == "" {
-			return errorf("Secret namespace is empty")
+			return errorf(validateErr, "Secret namespace is empty")
 		}
 		return nil
 	default:
-		return errorf("Unsupported credential type '%s'", creds.Type)
+		return errorf(validateErr, "Unsupported credential type '%s'", creds.Type)
 	}
 }
 
@@ -188,7 +188,7 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 	case crv1alpha1.LocationTypeAzure:
 		pType = objectstore.ProviderTypeAzure
 	default:
-		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
+		return errorf(validateErr, "unknown or unsupported location type '%s'", p.Location.Type)
 	}
 	pc := objectstore.ProviderConfig{
 		Type:   pType,
@@ -218,7 +218,7 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 	case crv1alpha1.LocationTypeAzure:
 		pType = objectstore.ProviderTypeAzure
 	default:
-		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
+		return errorf(validateErr, "unknown or unsupported location type '%s'", p.Location.Type)
 	}
 	secret, err = osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
@@ -239,7 +239,7 @@ func ReadAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inter
 		return err
 	}
 	if _, err := bucket.ListDirectories(ctx); err != nil {
-		return errorf("failed to list directories in bucket '%s'", p.Location.Bucket)
+		return errorf(err, "failed to list directories in bucket '%s'", p.Location.Bucket)
 	}
 	return nil
 }
@@ -256,7 +256,7 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	case crv1alpha1.LocationTypeAzure:
 		pType = objectstore.ProviderTypeAzure
 	default:
-		return errorf("unknown or unsupported location type '%s'", p.Location.Type)
+		return errorf(validateErr, "unknown or unsupported location type '%s'", p.Location.Type)
 	}
 	secret, err = osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
@@ -279,10 +279,10 @@ func WriteAccess(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.Inte
 	}
 	data := []byte("sample content")
 	if err := bucket.PutBytes(ctx, objName, data, nil); err != nil {
-		return errorf("failed to write contents to bucket '%s', error: %s", p.Location.Bucket, err.Error())
+		return errorf(err, "failed to write contents to bucket '%s'", p.Location.Bucket)
 	}
 	if err := bucket.Delete(ctx, objName); err != nil {
-		return errorf("failed to delete contents in bucket '%s'", p.Location.Bucket)
+		return errorf(err, "failed to delete contents in bucket '%s'", p.Location.Bucket)
 	}
 	return nil
 }
@@ -295,22 +295,22 @@ func osSecretFromProfile(ctx context.Context, pType objectstore.ProviderType, p 
 	case crv1alpha1.CredentialTypeKeyPair:
 		kp := p.Credential.KeyPair
 		if kp == nil {
-			return nil, errorf("Invalid credentials kv cannot be nil")
+			return nil, errorf(validateErr, "Invalid credentials kv cannot be nil")
 		}
 		s, err := cli.CoreV1().Secrets(kp.Secret.Namespace).Get(ctx, kp.Secret.Name, metav1.GetOptions{})
 		if err != nil {
-			return nil, errorf("Could not fetch the secret specified in credential")
+			return nil, errorf(err, "Could not fetch the secret specified in credential")
 		}
 		if key, ok = s.Data[kp.IDField]; !ok {
-			return nil, errorf("Key '%s' not found in secret '%s:%s'", kp.IDField, s.GetNamespace(), s.GetName())
+			return nil, errorf(validateErr, "Key '%s' not found in secret '%s:%s'", kp.IDField, s.GetNamespace(), s.GetName())
 		}
 		if value, ok = s.Data[kp.SecretField]; !ok {
-			return nil, errorf("Value '%s' not found in secret '%s:%s'", kp.SecretField, s.GetNamespace(), s.GetName())
+			return nil, errorf(validateErr, "Value '%s' not found in secret '%s:%s'", kp.SecretField, s.GetNamespace(), s.GetName())
 		}
 	case crv1alpha1.CredentialTypeSecret:
 		s, err := cli.CoreV1().Secrets(p.Credential.Secret.Namespace).Get(ctx, p.Credential.Secret.Name, metav1.GetOptions{})
 		if err != nil {
-			return nil, errorf("Could not fetch the secret specified in credential")
+			return nil, errorf(err, "Could not fetch the secret specified in credential")
 		}
 		creds, err := secrets.ExtractAWSCredentials(ctx, s)
 		if err != nil {
@@ -345,7 +345,7 @@ func osSecretFromProfile(ctx context.Context, pType objectstore.ProviderType, p 
 			StorageKey:     string(value),
 		}
 	default:
-		return nil, errorf("unknown or unsupported provider type '%s'", pType)
+		return nil, errorf(validateErr, "unknown or unsupported provider type '%s'", pType)
 	}
 	return secret, nil
 }
