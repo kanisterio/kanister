@@ -172,9 +172,6 @@ func (sna *SnapshotAlpha) GetSource(ctx context.Context, snapshotName, namespace
 	if err != nil {
 		return nil, errors.Errorf("Failed to get snapshot, VolumeSnapshot: %s, Error: %v", snapshotName, err)
 	}
-	if !snap.Status.ReadyToUse {
-		return nil, errors.Errorf("Snapshot is not ready, VolumeSnapshot: %s, Namespace: %s", snapshotName, namespace)
-	}
 	if snap.Spec.SnapshotContentName == "" {
 		return nil, errors.Errorf("Snapshot does not have content, VolumeSnapshot: %s, Namespace: %s", snapshotName, namespace)
 	}
