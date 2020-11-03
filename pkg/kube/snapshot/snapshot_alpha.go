@@ -100,6 +100,10 @@ func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName s
 		return err
 	}
 
+	if err := sna.WaitForContent(ctx, name, namespace); err != nil {
+		return err
+	}
+
 	if !waitForReady {
 		return nil
 	}
@@ -263,6 +267,24 @@ func (sna *SnapshotAlpha) WaitOnReadyToUse(ctx context.Context, snapshotName, na
 			return false, errors.New(vs.Status.Error.Message)
 		}
 		return (vs.Status.ReadyToUse && vs.Status.CreationTime != nil), nil
+	})
+}
+
+func (sna *SnapshotAlpha) WaitForContent(ctx context.Context, snapshotName, namespace string) error {
+	return poll.Wait(ctx, func(context.Context) (bool, error) {
+		us, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		vs := v1alpha1.VolumeSnapshot{}
+		if err := TransformUnstructured(us, &vs); err != nil {
+			return false, err
+		}
+		// Error can be set while waiting for creation
+		if vs.Status.Error != nil {
+			return false, errors.New(vs.Status.Error.Message)
+		}
+		return (vs.Spec.SnapshotContentName != "" && vs.Status.CreationTime != nil), nil
 	})
 }
 
