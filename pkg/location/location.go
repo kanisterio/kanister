@@ -98,7 +98,7 @@ func writeData(ctx context.Context, pType objectstore.ProviderType, profile para
 		return err
 	}
 	if err := bucket.Put(ctx, path, in, 0, nil); err != nil {
-		return errors.Errorf("failed to write contents to bucket '%s'", profile.Location.Bucket)
+		return errors.Wrapf(err, "failed to write contents to bucket '%s'", profile.Location.Bucket)
 	}
 	return nil
 }
