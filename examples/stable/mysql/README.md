@@ -10,43 +10,36 @@ This chart bootstraps a single node MySQL deployment on a [Kubernetes](http://ku
 
 - Kubernetes 1.6+ with Beta APIs enabled
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.40.0 installed in your cluster, let's assume in Namespace `kanister`
+- Kanister controller version 0.41.0 installed in your cluster, let's assume in Namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## Installing the Chart
 
-To install the MySQL database using the `stable` chart with the release name `mysql-release`:
+To install the MySQL database using the `bitnami` chart with the release name `mysql-release`:
 
 ```bash
-# Add stable in your local chart repository
-$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+# Add bitnami in your local chart repository
+$ helm repo add bitnami https://charts.bitnami.com/bitnami
 
 # Update your local chart repository
 $ helm repo update
 
-# Install the MySQL database (Helm Version 2)
-$ helm install stable/mysql -n mysql-release --namespace mysql-test \
-    --set mysqlRootPassword='asd#45@mysqlEXAMPLE' \
-    --set persistence.size=10Gi
-
-
 # Install the MySQL database (Helm Version 3)
 $ kubectl create namespace mysql-test
-$ helm install mysql-release stable/mysql --namespace mysql-test \
-    --set mysqlRootPassword='asd#45@mysqlEXAMPLE' \
-    --set persistence.size=10Gi
+$ helm install mysql-release bitnami/mysql --namespace mysql-test \
+    --set root.password='asd#45@mysqlEXAMPLE' 
 
 ```
 
 The command deploys a MySQL instance in the `mysql-test` namespace.
 
-By default a random password will be generated for the root user. For setting your own password, use the `mysqlRootPassword` param as shown above.
+By default a random password will be generated for the root user. For setting your own password, use the `root.password` param as shown above.
 
 You can retrieve your root password by running the following command. Make sure to replace [YOUR_RELEASE_NAME] and [YOUR_NAMESPACE]:
 
     `kubectl get secret [YOUR_RELEASE_NAME] --namespace [YOUR_NAMESPACE] -o jsonpath="{.data.mysql-root-password}" | base64 --decode`
 
-> **Tip**: List all releases using `helm list` (Helm Version 2) or `helm list --all-namespaces`, in case of Helm Version 3.
+> **Tip**: List all releases using `helm list --all-namespaces`, using Helm Version 3.
 
 ## Integrating with Kanister
 
@@ -84,7 +77,7 @@ Once MySQL is running, you can populate it with some data. Let's add a table cal
 
 ```bash
 # Connect to MySQL by running a shell inside MySQL's pod
-$ kubectl exec -ti $(kubectl get pods -n mysql-test --selector=app=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql-test -- bash
+$ kubectl exec -ti $(kubectl get pods -n mysql-test --selector=release=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql-test -- bash
 
 # From inside the shell, use the mysql CLI to insert some data into the test database
 # Create "test" db
@@ -128,10 +121,10 @@ s3-profile-drnw9   2m
 
 # Create Actionset
 # Please make sure the value of profile and blueprint matches with the names of profile and blueprint that we have created already
-$ kanctl create actionset --action backup --namespace kanister --blueprint mysql-blueprint --deployment mysql-test/mysql-release --profile mysql-test/s3-profile-drnw9 --secrets mysql=mysql-test/mysql-release
+$ kanctl create actionset --action backup --namespace kanister --blueprint mysql-blueprint --statefulset mysql-test/mysql-release-master --profile mysql-test/s3-profile-drnw9 --secrets mysql=mysql-test/mysql-release
 actionset backup-rslmb created
 
-$ kubectl --namespace kasten-io get actionsets.cr.kanister.io
+$ kubectl --namespace kanister get actionsets.cr.kanister.io
 NAME                 AGE
 backup-rslmb         1m
 
@@ -230,6 +223,18 @@ mysql> SELECT * FROM pets;
 
 ```
 
+### Delete the Artifacts
+
+The artifacts created by the backup action can be cleaned up using the following command:
+
+```bash
+$ kanctl --namespace kanister create actionset --action delete --from backup-rslmb --namespacetargets kanister
+actionset delete-backup-glptq-cq6bw created
+
+# View the status of the ActionSet
+$ kubectl --namespace kanister describe actionset delete-backup-glptq-cq6bw
+```
+
 
 ## Troubleshooting
 
@@ -253,9 +258,6 @@ $ kubectl describe actionset restore-backup-62vxm-2hdsz -n kanister
 To uninstall/delete the `mysql-release` deployment:
 
 ```bash
-# Helm Version 2
-$ helm delete mysql-release --purge
-
 # Helm Version 3
 $ helm delete mysql-release -n mysql-test
 ```
