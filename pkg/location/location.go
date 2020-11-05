@@ -17,6 +17,7 @@ package location
 import (
 	"context"
 	"io"
+	"io/ioutil"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -97,7 +98,12 @@ func writeData(ctx context.Context, pType objectstore.ProviderType, profile para
 	if err != nil {
 		return err
 	}
-	if err := bucket.Put(ctx, path, in, 0, nil); err != nil {
+	b, err := ioutil.ReadAll(in)
+	if err != nil {
+		return errors.Wrapf(err, "failed reading input to figure out size")
+	}
+
+	if err := bucket.Put(ctx, path, in, int64(len(b)), nil); err != nil {
 		return errors.Wrapf(err, "failed to write contents to bucket '%s'", profile.Location.Bucket)
 	}
 	return nil

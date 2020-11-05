@@ -3,7 +3,7 @@ module github.com/kanisterio/kanister
 go 1.12
 
 replace (
-	github.com/graymeta/stow => github.com/kastenhq/stow v0.1.2-kasten
+	github.com/graymeta/stow => github.com/kastenhq/stow v0.1.2-kasten.0.20201105101800-c2073f229351
 	github.com/rook/operator-kit => github.com/kastenhq/operator-kit v0.0.0-20180316185208-859e831cc18d
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
@@ -21,7 +21,6 @@ require (
 	github.com/Masterminds/sprig v2.15.0+incompatible
 	github.com/aokoli/goutils v1.1.0 // indirect
 	github.com/aws/aws-sdk-go v1.31.3
-	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
@@ -37,6 +36,7 @@ require (
 	github.com/jarcoal/httpmock v1.0.4 // indirect
 	github.com/jpillora/backoff v0.0.0-20170918002102-8eab2debe79d
 	github.com/json-iterator/go v1.1.9
+	github.com/kastenhq/stow v0.1.0 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/kopia/kopia v0.4.1-0.20200608151401-25934a544df4
 	github.com/lib/pq v1.2.0
