@@ -196,13 +196,17 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 		return errors.Wrapf(err, "Error %s while deleting the index %s to reset the application.", stderr, esi.indexname)
 	}
 
+	return nil
+}
+
+// Initialize is used to initialize the database or create schema
+func (esi *ElasticsearchInstance) Initialize(ctx context.Context) error {
 	// create the index
 	createIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X PUT %s/%s?pretty", esi.elasticsearchURL, esi.indexname)}
-	_, stderr, err = esi.execCommand(ctx, createIndexCMD)
+	_, stderr, err := esi.execCommand(ctx, createIndexCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s: Resetting the application.", stderr)
 	}
-
 	return nil
 }
 

@@ -59,12 +59,13 @@ actions:
         dbEngine: "PostgreSQL"
 
   delete:
+    type: Namespace
     phases:
     - func: KubeTask
       name: deleteBackup
       args:
-        namespace: "{{ .Object.metadata.namespace }}"
-        image: kanisterio/kanister-tools:0.40.0
+        namespace: "{{ .Namespace.Name }}"
+        image: kanisterio/kanister-tools:0.41.0
         command:
           - bash
           - -o

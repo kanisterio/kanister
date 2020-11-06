@@ -54,6 +54,8 @@ type DatabaseApp interface {
 	Count(context.Context) (int, error)
 	// Reset Removes all entries from the database.
 	Reset(context.Context) error
+	// Initialize Initializes the database
+	Initialize(context.Context) error
 }
 
 // ConfigApp describes an App installs additional configuration that can be
