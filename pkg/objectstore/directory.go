@@ -69,8 +69,8 @@ func (d *directory) GetDirectory(ctx context.Context, dir string) (Directory, er
 	}
 
 	// Minio does not support `GET` on "directory" objects. To workaround,
-	// we do a prefix search. If we find an object with this prefix - we
-	// assume it's a directory and succeed the `GetDirectory` call
+	// we do a prefix search i.e. if `dir` is `dir1/` we check if there is
+	// at least 1 object with the prefix `dir1/`.
 	items, _, err := d.bucket.container.Items(cloudName(dir), stow.CursorStart, 1)
 	switch {
 	case err != nil:
@@ -310,11 +310,11 @@ func isDirectoryObject(path string) (string, bool) {
 		// No '/'
 		return "", false
 	case 2:
+		// dir1/dir2
 		return s[0], true
 	case 3:
-		// dir1/dir2/elem will return false
-		// return s[0], true
-		return "", false
+		// dir1/dir2/elem
+		return s[0], true
 	}
 
 	// Not reached
