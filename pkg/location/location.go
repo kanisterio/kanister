@@ -15,9 +15,9 @@
 package location
 
 import (
+	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -36,6 +36,7 @@ const (
 	GoogleProjectId     = "GOOGLE_PROJECT_ID"
 	AzureStorageAccount = "AZURE_ACCOUNT_NAME"
 	AzureStorageKey     = "AZURE_ACCOUNT_KEY"
+	buffSize            = 16 * 1024 * 1024
 )
 
 // Write pipes data from `in` into the location specified by `profile` and `suffix`.
@@ -94,16 +95,29 @@ func readData(ctx context.Context, pType objectstore.ProviderType, profile param
 }
 
 func writeData(ctx context.Context, pType objectstore.ProviderType, profile param.Profile, in io.Reader, path string) error {
+	var out io.Reader
+	var outbyte []byte
+	var size int64
+
 	bucket, err := getBucket(ctx, pType, profile)
 	if err != nil {
 		return err
 	}
-	b, err := ioutil.ReadAll(in)
-	if err != nil {
-		return errors.Wrapf(err, "failed reading input to figure out size")
+
+	// TODO: viveksinghggits, can be improved to only do it if size(in)>256, this would also work because we have to figure out size in either way
+	buf := make([]byte, buffSize)
+	for {
+		n, err := in.Read(buf)
+		if err == io.EOF {
+			break
+		}
+		size += int64(n)
+		outbyte = append(outbyte, buf[:n]...)
 	}
 
-	if err := bucket.Put(ctx, path, in, int64(len(b)), nil); err != nil {
+	out = bytes.NewReader(outbyte)
+
+	if err := bucket.Put(ctx, path, out, size, nil); err != nil {
 		return errors.Wrapf(err, "failed to write contents to bucket '%s'", profile.Location.Bucket)
 	}
 	return nil

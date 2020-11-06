@@ -114,7 +114,7 @@ func (s *LocationSuite) TearDownTest(c *C) {
 
 func (s *LocationSuite) TestWriteAndReadData(c *C) {
 	ctx := context.Background()
-	teststring := "test-content"
+	teststring := "test-content-check"
 	err := writeData(ctx, s.osType, s.profile, bytes.NewBufferString(teststring), s.testpath)
 	c.Check(err, IsNil)
 	buf := bytes.NewBuffer(nil)
