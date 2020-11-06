@@ -36,7 +36,8 @@ const (
 	GoogleProjectId     = "GOOGLE_PROJECT_ID"
 	AzureStorageAccount = "AZURE_ACCOUNT_NAME"
 	AzureStorageKey     = "AZURE_ACCOUNT_KEY"
-	buffSize            = 16 * 1024 * 1024
+	buffSize            = 256 * 1024 * 1024
+	buffSizeLimit       = 1 * 1024 * 1024 * 1024
 )
 
 // Write pipes data from `in` into the location specified by `profile` and `suffix`.
@@ -95,32 +96,55 @@ func readData(ctx context.Context, pType objectstore.ProviderType, profile param
 }
 
 func writeData(ctx context.Context, pType objectstore.ProviderType, profile param.Profile, in io.Reader, path string) error {
-	var out io.Reader
-	var outbyte []byte
+	var input io.Reader
 	var size int64
-
 	bucket, err := getBucket(ctx, pType, profile)
 	if err != nil {
 		return err
 	}
 
-	// TODO: viveksinghggits, can be improved to only do it if size(in)>256, this would also work because we have to figure out size in either way
-	buf := make([]byte, buffSize)
-	for {
-		n, err := in.Read(buf)
-		if err == io.EOF {
-			break
+	var r io.Reader
+	var n int64
+	if pType == objectstore.ProviderTypeAzure {
+		r, n, err = readerSize(in, buffSize)
+		if err != nil {
+			return err
 		}
-		size += int64(n)
-		outbyte = append(outbyte, buf[:n]...)
+
+		input = r
+		size = int64(n)
+	} else {
+		input = in
+		size = 0
 	}
 
-	out = bytes.NewReader(outbyte)
-
-	if err := bucket.Put(ctx, path, out, size, nil); err != nil {
+	if err := bucket.Put(ctx, path, input, size, nil); err != nil {
 		return errors.Wrapf(err, "failed to write contents to bucket '%s'", profile.Location.Bucket)
 	}
+
 	return nil
+}
+
+func readerSize(in io.Reader, buffSize int64) (io.Reader, int64, error) {
+	var n int64
+	var err error
+	var r io.Reader
+
+	buf := make([]byte, buffSize)
+	m, err := in.Read(buf)
+	if err != nil && err != io.EOF {
+		return nil, 0, err
+	}
+
+	if int64(m) == buffSize {
+		r = io.MultiReader(bytes.NewReader(buf), in)
+		n = buffSizeLimit
+	} else {
+		buf = buf[:m]
+		r = bytes.NewReader(buf)
+	}
+
+	return r, n, nil
 }
 
 func deleteData(ctx context.Context, pType objectstore.ProviderType, profile param.Profile, path string) error {

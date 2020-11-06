@@ -122,3 +122,31 @@ func (s *LocationSuite) TestWriteAndReadData(c *C) {
 	c.Check(err, IsNil)
 	c.Check(buf.String(), Equals, teststring)
 }
+
+func (s *LocationSuite) TestReaderSize(c *C) {
+	for _, tc := range []struct {
+		input        string
+		buffSize     int64
+		expectedSize int64
+	}{
+		{
+			input:        "dummy-string-1",
+			buffSize:     4,
+			expectedSize: 1073741824, // buffSizeLimit       = 1 * 1024 * 1024 * 1024
+		},
+		{
+			input:        "dummy-string-1",
+			buffSize:     14,
+			expectedSize: 1073741824,
+		},
+		{
+			input:        "dummy-string-1",
+			buffSize:     44,
+			expectedSize: 0,
+		},
+	} {
+		_, size, err := readerSize(bytes.NewBufferString(tc.input), tc.buffSize)
+		c.Assert(err, IsNil)
+		c.Assert(size, Equals, tc.expectedSize)
+	}
+}
