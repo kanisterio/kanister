@@ -144,6 +144,11 @@ func (s *LocationSuite) TestReaderSize(c *C) {
 			buffSize:     44,
 			expectedSize: 0,
 		},
+		{
+			input:        "",
+			buffSize:     4,
+			expectedSize: 0,
+		},
 	} {
 		_, size, err := readerSize(bytes.NewBufferString(tc.input), tc.buffSize)
 		c.Assert(err, IsNil)
