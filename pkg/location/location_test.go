@@ -112,7 +112,6 @@ func (s *LocationSuite) TearDownTest(c *C) {
 		err := s.root.Delete(ctx, s.testpath)
 		if err != nil {
 			c.Log("Cannot cleanup test directory: ", s.testpath)
-			return
 		}
 	}
 	if s.testMultipartPath != "" {
@@ -121,7 +120,6 @@ func (s *LocationSuite) TearDownTest(c *C) {
 		err := s.root.Delete(ctx, s.testMultipartPath)
 		if err != nil {
 			c.Log("Cannot cleanup test directory: ", s.testMultipartPath)
-			return
 		}
 	}
 }
