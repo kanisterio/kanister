@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"os"
 	"testing"
@@ -156,14 +156,17 @@ func (s *LocationSuite) TestAzMultipartUpload(c *C) {
 		0,                 // empty file
 		100 * 1024 * 1024, // 100M ie < buffSize
 		300 * 1024 * 1024, // 300M ie > buffSize
+		buffSize + 1,
+		buffSize - 1,
+		buffSize,
 	} {
+		_, err := f.Seek(0, io.SeekStart)
+		c.Assert(err, IsNil)
+
 		// Create dump file
-		err := os.Truncate(s.testMultipartPath, fileSize)
+		err = os.Truncate(s.testMultipartPath, fileSize)
 		c.Assert(err, IsNil)
-		testcontent, err := ioutil.ReadFile(s.testMultipartPath)
-		c.Assert(err, IsNil)
-		c.Check(int64(len(testcontent)), Equals, fileSize)
-		err = writeData(ctx, s.osType, s.profile, bytes.NewBuffer(testcontent), s.testMultipartPath)
+		err = writeData(ctx, s.osType, s.profile, f, s.testMultipartPath)
 		c.Check(err, IsNil)
 		buf := bytes.NewBuffer(nil)
 		err = readData(ctx, s.osType, s.profile, buf, s.testMultipartPath)
