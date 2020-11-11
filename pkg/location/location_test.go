@@ -155,10 +155,10 @@ func (s *LocationSuite) TestAzMultipartUpload(c *C) {
 	for _, fileSize := range []int64{
 		0,                 // empty file
 		100 * 1024 * 1024, // 100M ie < buffSize
-		300 * 1024 * 1024, // 300M ie > buffSize
-		buffSize + 1,
 		buffSize - 1,
 		buffSize,
+		buffSize + 1,
+		300 * 1024 * 1024, // 300M ie > buffSize
 	} {
 		_, err := f.Seek(0, io.SeekStart)
 		c.Assert(err, IsNil)
