@@ -36,8 +36,11 @@ const (
 	GoogleProjectId     = "GOOGLE_PROJECT_ID"
 	AzureStorageAccount = "AZURE_ACCOUNT_NAME"
 	AzureStorageKey     = "AZURE_ACCOUNT_KEY"
-	buffSize            = 256 * 1024 * 1024
-	buffSizeLimit       = 1 * 1024 * 1024 * 1024
+
+	// buffSize is the maximum size of an object that can be Put to Azure container in a single request
+	// https://github.com/kastenhq/stow/blob/v0.2.6-kasten/azure/container.go#L14
+	buffSize      = 256 * 1024 * 1024
+	buffSizeLimit = 1 * 1024 * 1024 * 1024
 )
 
 // Write pipes data from `in` into the location specified by `profile` and `suffix`.
@@ -106,6 +109,7 @@ func writeData(ctx context.Context, pType objectstore.ProviderType, profile para
 	var r io.Reader
 	var n int64
 	if pType == objectstore.ProviderTypeAzure {
+		// Switch to multipart upload based on data size
 		r, n, err = readerSize(in, buffSize)
 		if err != nil {
 			return err
@@ -125,17 +129,21 @@ func writeData(ctx context.Context, pType objectstore.ProviderType, profile para
 	return nil
 }
 
+// readerSize checks if data size is greater than buffSize i.e the max size of an object that can be Put to Azure container in a single request
+// If size >= buffSize, return buffer size to enable multipart upload, otherwise return 0 buffersize.
 func readerSize(in io.Reader, buffSize int64) (io.Reader, int64, error) {
 	var n int64
 	var err error
 	var r io.Reader
 
+	// Read first buffSize bytes into buffer
 	buf := make([]byte, buffSize)
 	m, err := in.Read(buf)
 	if err != nil && err != io.EOF {
 		return nil, 0, err
 	}
 
+	// If first buffSize bytes are read successfully, that means the data size >= buffSize
 	if int64(m) == buffSize {
 		r = io.MultiReader(bytes.NewReader(buf), in)
 		n = buffSizeLimit
