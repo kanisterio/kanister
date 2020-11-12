@@ -13,7 +13,7 @@ actions:
     - func: KubeTask
       name: backupSnapshots
       args:
-        image: "kanisterio/postgres-kanister-tools:0.41.0"
+        image: "kanisterio/postgres-kanister-tools:0.42.0"
         namespace: "{{ .Object.metadata.namespace }}"
         command:
           - bash
@@ -49,7 +49,7 @@ actions:
     - func: KubeTask
       name: restoreSnapshots
       args:
-        image: "kanisterio/postgres-kanister-tools:0.41.0"
+        image: "kanisterio/postgres-kanister-tools:0.42.0"
         namespace: "{{ .Object.metadata.namespace }}"
         command:
           - bash
@@ -87,7 +87,7 @@ actions:
     - func: KubeTask
       name: restoreSnapshots
       args:
-        image: "kanisterio/postgres-kanister-tools:0.41.0"
+        image: "kanisterio/postgres-kanister-tools:0.42.0"
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash

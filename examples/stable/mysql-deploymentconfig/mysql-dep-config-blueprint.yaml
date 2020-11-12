@@ -18,7 +18,7 @@ actions:
           name: "{{ .DeploymentConfig.Name }}"
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
-        image: kanisterio/mysql-sidecar:0.41.0
+        image: kanisterio/mysql-sidecar:0.42.0
         namespace: "{{ .DeploymentConfig.Namespace }}"
         command:
         - bash
@@ -45,7 +45,7 @@ actions:
           name: "{{ .DeploymentConfig.Name }}"
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
-        image: kanisterio/mysql-sidecar:0.41.0
+        image: kanisterio/mysql-sidecar:0.42.0
         namespace: "{{ .DeploymentConfig.Namespace }}"
         command:
         - bash
@@ -66,7 +66,7 @@ actions:
     - func: KubeTask
       name: deleteFromBlobStore
       args:
-        image: kanisterio/mysql-sidecar:0.41.0
+        image: kanisterio/mysql-sidecar:0.42.0
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash

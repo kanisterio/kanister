@@ -57,7 +57,7 @@ func NewCassandraInstance(name string) App {
 			RepoName: helm.BitnamiRepoName,
 			Values: map[string]string{
 				"image.repository":     "kanisterio/cassandra",
-				"image.tag":            "0.41.0",
+				"image.tag":            "0.42.0",
 				"image.pullPolicy":     "Always",
 				"cluster.replicaCount": "1",
 			},
