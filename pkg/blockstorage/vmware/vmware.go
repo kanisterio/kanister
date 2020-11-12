@@ -124,6 +124,7 @@ func (p *FcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blo
 	log.Debug().Print("CreateDiskFromSnapshot task complete", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
 	obj, ok := res.(types.VStorageObject)
 	if !ok {
+		log.Error().Print("Wrong type returned for vSphere", field.M{"object": obj})
 		return nil, errors.New("Wrong type returned")
 	}
 	vol, err := p.VolumeGet(ctx, obj.Config.Id.Id, "")
