@@ -62,7 +62,7 @@ func NewMongoDB(name string) App {
 			Values: map[string]string{
 				"architecture":     "replicaset",
 				"image.repository": "kanisterio/mongodb",
-				"image.tag":        "0.41.0",
+				"image.tag":        "0.43.0",
 			},
 		},
 	}

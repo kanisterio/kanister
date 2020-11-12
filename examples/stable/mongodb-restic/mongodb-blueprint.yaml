@@ -41,7 +41,7 @@ actions:
       name: restorePrimary
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: kanisterio/kanister-tools:0.41.0
+        image: kanisterio/kanister-tools:0.43.0
         backupArtifactPrefix: "{{ .Profile.Location.Bucket }}/mongodb-backups/{{ .StatefulSet.Name }}/rs_backup"
         backupInfo: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
 
