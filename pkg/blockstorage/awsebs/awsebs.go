@@ -735,6 +735,8 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-east-1-wl1-bos-wlz-1",
 			"us-east-1-wl1-nyc-wlz-1",
 			"us-east-1-wl1-was-wlz-1",
+			"us-east-1-wl1-dfw-wlz-1",
+			"us-east-1-wl1-mia-wlz-1",
 		}, nil
 	case "us-east-2":
 		return []string{
