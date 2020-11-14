@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -359,58 +360,128 @@ func (s *ObjectStoreProviderSuite) TestObjects(c *C) {
 	c.Check(err, IsNil)
 }
 
+type zeroReader struct {
+	cursor int
+	size   int
+}
+
+func (zr *zeroReader) Read(p []byte) (n int, err error) {
+	if zr.cursor >= zr.size {
+		return 0, io.EOF
+	}
+	if zr.cursor+len(p) > zr.size {
+		n = zr.size - zr.cursor
+	} else {
+		n = len(p)
+	}
+	p[0] = 0xff
+	zr.cursor += n
+	return
+}
+
+//
+func (s *ObjectStoreProviderSuite) testZeroReader(c *C) {
+	for _, size := range []int{0, 1, 511, 512, 513, 100 * 1024 * 1024} {
+		zr := &zeroReader{size: size}
+		buf, err := ioutil.ReadAll(zr)
+		c.Assert(err, IsNil)
+		c.Assert(buf, HasLen, size)
+	}
+}
+
 // TestObjectsStreaming verifies object operations: Get and Put
 func (s *ObjectStoreProviderSuite) TestObjectsStreaming(c *C) {
 	ctx := context.Background()
 	rootDirectory, err := s.root.CreateDirectory(ctx, s.testDir)
 	c.Assert(err, IsNil)
 
-	const (
-		obj1  = "object1"
-		data1 = "Some text"
-
-		obj2  = "/Some/deep/directory/structure/object2"
-		data2 = "Some other text"
-	)
-
+	const content1 = "Some content"
+	const content2 = "Some other content"
 	tags := map[string]string{
 		"key":  "value",
 		"key2": "value2",
 	}
 
-	data1B := []byte(data1)
-	data2B := []byte(data2)
+	for _, tc := range []struct {
+		name    string
+		dir     string
+		r       io.Reader
+		data    string
+		inSize  int64
+		outSize int64
+		tags    map[string]string
+	}{
+		{
+			name:    "object1",
+			dir:     "",
+			r:       bytes.NewReader([]byte(content1)),
+			data:    content1,
+			inSize:  0,
+			outSize: int64(len(content1)),
+			tags:    nil,
+		},
+		{
+			name:    "object2",
+			dir:     "/Some/deep/directory/structure/",
+			r:       bytes.NewReader([]byte(content2)),
+			data:    content2,
+			inSize:  0,
+			outSize: int64(len(content2)),
+			tags:    tags,
+		},
+		{
+			name:    "object1",
+			dir:     "",
+			r:       bytes.NewReader([]byte(content1)),
+			data:    content1,
+			inSize:  int64(len(content1)),
+			outSize: int64(len(content1)),
+			tags:    nil,
+		},
+		{
+			name:    "object2",
+			dir:     "/Some/deep/directory/structure/",
+			r:       bytes.NewReader([]byte(content2)),
+			data:    content2,
+			inSize:  int64(len(content2)),
+			outSize: int64(len(content2)),
+			tags:    tags,
+		},
+		{
+			name:    "stream",
+			dir:     "/Some/deep/directory/structure/",
+			r:       &zeroReader{size: 50 * 1024 * 1024},
+			data:    "",
+			inSize:  0,
+			outSize: 50 * 1024 * 1024,
+			tags:    tags,
+		},
+	} {
+		path := tc.dir + tc.name
+		c.Log(tc.name)
+		err = rootDirectory.Put(ctx, path, tc.r, tc.inSize, nil)
+		c.Check(err, IsNil)
 
-	err = rootDirectory.Put(ctx, obj1, bytes.NewReader(data1B), int64(len(data1B)), nil)
-	c.Check(err, IsNil)
+		r, _, err := rootDirectory.Get(ctx, path)
+		c.Check(err, IsNil)
 
-	objs, err := rootDirectory.ListObjects(ctx)
-	c.Check(err, IsNil)
-	c.Assert(objs, HasLen, 1)
-	c.Check(objs[0], Equals, obj1)
+		data, err := ioutil.ReadAll(r)
+		c.Check(err, IsNil)
+		r.Close()
 
-	r, _, err := rootDirectory.Get(ctx, obj1)
-	c.Check(err, IsNil)
-	data, err := ioutil.ReadAll(r)
-	c.Check(err, IsNil)
-	r.Close()
-	c.Check(data, DeepEquals, data1B)
+		c.Check(len(data), Equals, int(tc.outSize))
 
-	err = rootDirectory.Put(ctx, obj2, bytes.NewReader(data2B), int64(len(data2B)), tags)
-	c.Check(err, IsNil)
-	r, ntags, err := rootDirectory.Get(ctx, obj2)
-	c.Check(err, IsNil)
-	data, err = ioutil.ReadAll(r)
-	c.Check(err, IsNil)
-	r.Close()
-	c.Check(data, DeepEquals, data2B)
-	c.Check(ntags, DeepEquals, tags)
+		if tc.data == "" {
+			err = rootDirectory.Delete(ctx, path)
+			c.Check(err, IsNil)
+			continue
+		}
 
-	err = rootDirectory.Delete(ctx, obj1)
-	c.Check(err, IsNil)
+		c.Check(string(data), DeepEquals, tc.data)
 
-	err = rootDirectory.Delete(ctx, obj2)
-	c.Check(err, IsNil)
+		err = rootDirectory.Delete(ctx, path)
+		c.Check(err, IsNil)
+	}
 }
 
 func (s *ObjectStoreProviderSuite) createBucketName(c *C) string {
