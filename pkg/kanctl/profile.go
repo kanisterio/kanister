@@ -154,7 +154,7 @@ func createNewProfile(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	skipValidation, _ := cmd.Flags().GetBool(skipValidationFlag)
 	dryRun, _ := cmd.Flags().GetBool(dryRunFlag)
-	cli, crCli, _, err := initializeClients()
+	clients, err := initializeClients()
 	if err != nil {
 		return err
 	}
@@ -179,19 +179,19 @@ func createNewProfile(cmd *cobra.Command, args []string) error {
 		fmt.Println("---")
 		return printProfile(profile)
 	}
-	secret, err = createSecret(ctx, secret, cli)
+	secret, err = createSecret(ctx, secret, clients.KubeClient)
 	if err != nil {
 		return errors.Wrap(err, "failed to create secret")
 	}
-	err = validateProfile(ctx, profile, cli, skipValidation, true)
+	err = validateProfile(ctx, profile, clients.KubeClient, skipValidation, true)
 	if err != nil {
 		fmt.Printf("validation failed, deleting secret '%s'\n", secret.GetName())
-		if rmErr := deleteSecret(ctx, secret, cli); rmErr != nil {
+		if rmErr := deleteSecret(ctx, secret, clients.KubeClient); rmErr != nil {
 			return errors.Wrap(rmErr, "failed to delete secret after validation failed")
 		}
 		return errors.Wrap(err, "profile validation failed")
 	}
-	return createProfile(ctx, profile, crCli)
+	return createProfile(ctx, profile, clients.CrdClient)
 }
 
 func getLocationParams(cmd *cobra.Command) (*locationParams, error) {
@@ -369,16 +369,16 @@ func createProfile(ctx context.Context, profile *v1alpha1.Profile, crCli version
 
 func performProfileValidation(p *validateParams) error {
 	ctx := context.Background()
-	cli, crCli, _, err := initializeClients()
+	clients, err := initializeClients()
 	if err != nil {
 		return errors.Wrap(err, "could not initialize clients for validation")
 	}
-	prof, err := getProfileFromCmd(ctx, crCli, p)
+	prof, err := getProfileFromCmd(ctx, clients.CrdClient, p)
 	if err != nil {
 		return err
 	}
 
-	return validateProfile(ctx, prof, cli, p.schemaValidationOnly, false)
+	return validateProfile(ctx, prof, clients.KubeClient, p.schemaValidationOnly, false)
 }
 
 func validateProfile(ctx context.Context, profile *v1alpha1.Profile, cli kubernetes.Interface, schemaValidationOnly bool, printFailStageOnly bool) error {
