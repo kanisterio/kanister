@@ -452,7 +452,7 @@ func (s *ObjectStoreProviderSuite) TestObjectsStreaming(c *C) {
 			dir:     "/Some/deep/directory/structure/",
 			r:       &zeroReader{size: 50 * 1024 * 1024},
 			data:    "",
-			inSize:  0,
+			inSize:  500 * 1024 * 1024,
 			outSize: 50 * 1024 * 1024,
 			tags:    tags,
 		},
