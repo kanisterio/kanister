@@ -41,7 +41,7 @@ type PostgresDB struct {
 }
 
 // Last tested chart version "9.0.0"
-func NewPostgresDB(name string) App {
+func NewPostgresDB(name string, subPath string) App {
 	return &PostgresDB{
 		name: name,
 		chart: helm.ChartInfo{
@@ -58,6 +58,7 @@ func NewPostgresDB(name string) App {
 				"postgresqlExtendedConf.archiveTimeout": "60",
 				"postgresqlExtendedConf.walLevel":       "archive",
 				"volumePermissions.enabled":             "true",
+				"persistence.subPath":                   subPath,
 			},
 		},
 	}
