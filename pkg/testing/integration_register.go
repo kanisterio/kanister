@@ -32,7 +32,7 @@ var _ = Suite(&PITRPostgreSQL{
 	IntegrationSuite{
 		name:      "pitr-postgres",
 		namespace: "pitr-postgres-test",
-		app:       app.NewPostgresDB("pitr-postgres"),
+		app:       app.NewPostgresDB("pitr-postgres", ""),
 		bp:        app.NewPITRBlueprint("pitr-postgres", ""),
 		profile:   newSecretProfile(),
 	},
@@ -47,7 +47,7 @@ var _ = Suite(&PostgreSQL{
 	IntegrationSuite{
 		name:      "postgres",
 		namespace: "postgres-test",
-		app:       app.NewPostgresDB("postgres"),
+		app:       app.NewPostgresDB("postgres", ""),
 		bp:        app.NewBlueprint("postgres", ""),
 		profile:   newSecretProfile(),
 	},
