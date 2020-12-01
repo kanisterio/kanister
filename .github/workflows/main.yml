@@ -1,0 +1,21 @@
+name: kanister
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: 
+      - main
+
+jobs:
+  make-docs:
+    name: Make docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Make Docs
+        run: make docs
+      
+      
+        
