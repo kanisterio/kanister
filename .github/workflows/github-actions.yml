@@ -1,0 +1,31 @@
+name: kanister
+on:
+  push:
+    branches:
+      - main
+    pull_request:
+      branches:
+        - main
+jobs:
+  make-docs:
+    name: Make docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: make docs
+        run: make docs
+  build-docs:
+    name: Build docks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker-practice/actions-setup-docker@master
+          with:
+            docker_channel: nightly
+            docker_nightly_version: snapshot-20201008
+      - name:
+        run: |
+          docker pull kindest/node:v1.18.2
+          make start-kind
+          make build
+          make test
+          make stop-kind
