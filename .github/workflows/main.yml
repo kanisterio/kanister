@@ -49,5 +49,5 @@ jobs:
     name: Lint phase
     runs-on: ubuntu-latest
     steps:
-      - name: Go Lint
-        run: make golint
+      - name: Go-linter
+        uses: Jerome1337/golint-action@v1.0.2
