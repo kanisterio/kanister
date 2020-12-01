@@ -24,6 +24,25 @@ jobs:
       - uses: actions/checkout@v2
       - name: Make Docs
         run: make docs
+  
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker-practice/actions-setup-docker@master
+        with:
+          docker_channel: nightly
+          docker_nightly_version: snapshot-20201008
+      - name: Docker Pull
+        run: docker pull kindest/node:v1.18.2
+      - name: Start Kind
+        run: make start-kind
+      - name: Make Build
+        run: make build
+      - name: Make Test
+        run: make test
+      - name: Stop Kind
+        run: make stop-kind
       
       
         
