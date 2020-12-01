@@ -33,6 +33,8 @@ jobs:
         with:
           docker_channel: nightly
           docker_nightly_version: snapshot-20201008
+      - name: Go Mod Download
+        run: make go-mod-download
       - name: Docker Pull
         run: docker pull kindest/node:v1.18.2
       - name: Start Kind
