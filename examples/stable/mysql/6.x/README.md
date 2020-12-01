@@ -26,14 +26,14 @@ $ helm repo update
 
 # Install the MySQL database (Helm Version 3)
 $ kubectl create namespace mysql-test
-$ helm install mysql-release bitnami/mysql --namespace mysql-test \
-    --set auth.rootPassword='asd#45@mysqlEXAMPLE' 
+$ helm install mysql-release bitnami/mysql --version 6.14.11 --namespace mysql-test \
+    --set root.password='asd#45@mysqlEXAMPLE' 
 
 ```
 
 The command deploys a MySQL instance in the `mysql-test` namespace.
 
-By default a random password will be generated for the root user. For setting your own password, use the `auth.rootPassword` param as shown above.
+By default a random password will be generated for the root user. For setting your own password, use the `root.password` param as shown above.
 
 You can retrieve your root password by running the following command. Make sure to replace [YOUR_RELEASE_NAME] and [YOUR_NAMESPACE]:
 
@@ -77,7 +77,7 @@ Once MySQL is running, you can populate it with some data. Let's add a table cal
 
 ```bash
 # Connect to MySQL by running a shell inside MySQL's pod
-$ kubectl exec -ti $(kubectl get pods -n mysql-test --selector=app.kubernetes.io/instance=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql-test -- bash
+$ kubectl exec -ti $(kubectl get pods -n mysql-test --selector=release=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql-test -- bash
 
 # From inside the shell, use the mysql CLI to insert some data into the test database
 # Create "test" db
@@ -138,7 +138,7 @@ $ kubectl --namespace kanister describe actionset backup-rslmb
 Let's say someone accidentally deleted the test database using the following command:
 ```bash
 # Connect to MySQL by running a shell inside MySQL's pod
-$ kubectl exec -ti $(kubectl get pods -n mysql-test --selector=app.kubernetes.io/instance=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql-test -- bash
+$ kubectl exec -ti $(kubectl get pods -n mysql-test --selector=app=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql-test -- bash
 
 $ mysql --user=root --password=asd#45@mysqlEXAMPLE
 

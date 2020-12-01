@@ -52,10 +52,8 @@ func NewMysqlDB(name string) App {
 			Chart:    "mysql",
 			RepoName: helm.BitnamiRepoName,
 			Values: map[string]string{
-				"root.password":              "mysecretpassword",
-				"master.persistence.enabled": "false",
-				"slave.persistence.enabled":  "false",
-				"image.pullPolicy":           "Always",
+				"auth.rootPassword": "mysecretpassword",
+				"image.pullPolicy":  "Always",
 			},
 		},
 	}
@@ -100,15 +98,10 @@ func (mdb *MysqlDB) IsReady(ctx context.Context) (bool, error) {
 	log.Print("Waiting for the mysql instance to be ready.", field.M{"app": mdb.name})
 	ctx, cancel := context.WithTimeout(ctx, mysqlWaitTimeout)
 	defer cancel()
-	err := kube.WaitOnStatefulSetReady(ctx, mdb.cli, mdb.namespace, fmt.Sprintf("%s-master", mdb.chart.Release))
+	err := kube.WaitOnStatefulSetReady(ctx, mdb.cli, mdb.namespace, fmt.Sprintf("%s", mdb.chart.Release))
 	if err != nil {
 		return false, err
 	}
-	err = kube.WaitOnStatefulSetReady(ctx, mdb.cli, mdb.namespace, fmt.Sprintf("%s-slave", mdb.chart.Release))
-	if err != nil {
-		return false, err
-	}
-
 	log.Print("Application instance is ready.", field.M{"app": mdb.name})
 	return true, nil
 }
@@ -116,7 +109,7 @@ func (mdb *MysqlDB) IsReady(ctx context.Context) (bool, error) {
 func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		Kind:      "statefulset",
-		Name:      fmt.Sprintf("%s-master", mdb.chart.Release),
+		Name:      fmt.Sprintf("%s", mdb.chart.Release),
 		Namespace: mdb.namespace,
 	}
 }
@@ -231,7 +224,7 @@ func (mdb *MysqlDB) Secrets() map[string]crv1alpha1.ObjectReference {
 }
 
 func (mdb *MysqlDB) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, mdb.cli, mdb.namespace, fmt.Sprintf("%s-master", mdb.chart.Release))
+	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, mdb.cli, mdb.namespace, fmt.Sprintf("%s", mdb.chart.Release))
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", mdb.name)
 	}
