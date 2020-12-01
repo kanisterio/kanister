@@ -45,6 +45,9 @@ jobs:
         run: make test
       - name: Stop Kind
         run: make stop-kind
-      
-      
-        
+  lint:
+    name: Lint phase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Go Lint
+        run: make golint
