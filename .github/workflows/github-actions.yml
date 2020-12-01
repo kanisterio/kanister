@@ -19,9 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: docker-practice/actions-setup-docker@master
-          with:
-            docker_channel: nightly
-            docker_nightly_version: snapshot-20201008
+        with:
+          docker_channel: nightly
+          docker_nightly_version: snapshot-20201008
       - name:
         run: |
           docker pull kindest/node:v1.18.2
