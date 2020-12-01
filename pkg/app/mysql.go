@@ -16,7 +16,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -98,7 +97,7 @@ func (mdb *MysqlDB) IsReady(ctx context.Context) (bool, error) {
 	log.Print("Waiting for the mysql instance to be ready.", field.M{"app": mdb.name})
 	ctx, cancel := context.WithTimeout(ctx, mysqlWaitTimeout)
 	defer cancel()
-	err := kube.WaitOnStatefulSetReady(ctx, mdb.cli, mdb.namespace, fmt.Sprintf("%s", mdb.chart.Release))
+	err := kube.WaitOnStatefulSetReady(ctx, mdb.cli, mdb.namespace, mdb.chart.Release)
 	if err != nil {
 		return false, err
 	}
@@ -109,7 +108,7 @@ func (mdb *MysqlDB) IsReady(ctx context.Context) (bool, error) {
 func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		Kind:      "statefulset",
-		Name:      fmt.Sprintf("%s", mdb.chart.Release),
+		Name:      mdb.chart.Release,
 		Namespace: mdb.namespace,
 	}
 }
@@ -224,7 +223,7 @@ func (mdb *MysqlDB) Secrets() map[string]crv1alpha1.ObjectReference {
 }
 
 func (mdb *MysqlDB) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, mdb.cli, mdb.namespace, fmt.Sprintf("%s", mdb.chart.Release))
+	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, mdb.cli, mdb.namespace, mdb.chart.Release)
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", mdb.name)
 	}
