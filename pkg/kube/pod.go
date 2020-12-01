@@ -314,6 +314,23 @@ func CreateAndMergeJsonPatch(original, override crv1alpha1.JSONMap) (crv1alpha1.
 	return merged, err
 }
 
+// CreateAndMergeJsonPatch uses Strategic Merge to merge two Pod spec configuration
+func CreateAndMergePodSpec(original, override v1.PodSpec) (crv1alpha1.JSONMap, error) {
+	// Merge json specs with StrategicMerge
+	mergedPatch, err := strategicMergeJsonPatch(original, override)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert merged json to map[string]interface{}
+	var merged map[string]interface{}
+	err = json.Unmarshal(mergedPatch, &merged)
+	if err != nil {
+		return nil, err
+	}
+	return merged, err
+}
+
 func strategicMergeJsonPatch(original, override interface{}) ([]byte, error) {
 	// Convert override specs to json
 	overrideJson, err := json.Marshal(override)
