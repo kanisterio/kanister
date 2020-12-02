@@ -242,7 +242,7 @@ func (s *PodSuite) TestGetPodLogs(c *C) {
 	c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
 }
 
-func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
+func (s *PodSuite) TestPatchDefaultJSONPodSpecs(c *C) {
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
 			{
@@ -624,6 +624,397 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 	// Run tests
 	for _, test := range tests {
 		override, err := CreateAndMergeJsonPatch(test.BlueprintPodSpecs, test.ActionsetPodSpecs)
+		c.Assert(err, IsNil)
+		podSpec, err := patchDefaultPodSpecs(defaultSpecs, override)
+		c.Assert(err, IsNil)
+		c.Assert(podSpec, DeepEquals, test.Expected)
+	}
+}
+
+func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
+	defaultSpecs := v1.PodSpec{
+		Containers: []v1.Container{
+			{
+				Name:            "container",
+				Image:           "kanisterio/kanister-tools:0.43.0",
+				Command:         []string{"sh", "-c", "echo in default specs"},
+				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+				VolumeMounts: []v1.VolumeMount{
+					{
+						Name:      "data",
+						MountPath: "/var/lib/data",
+					},
+				},
+			},
+		},
+		RestartPolicy: v1.RestartPolicyOnFailure,
+		Volumes: []v1.Volume{
+			{
+				Name: "data",
+				VolumeSource: v1.VolumeSource{
+					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						ClaimName: "default-pvc",
+					},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		BlueprintPodSpecs v1.PodSpec
+		ActionsetPodSpecs v1.PodSpec
+		Expected          v1.PodSpec
+	}{
+		// Blueprint and Actionset PodOverride specs are nil
+		{
+			BlueprintPodSpecs: v1.PodSpec{},
+			ActionsetPodSpecs: v1.PodSpec{},
+			Expected:          defaultSpecs,
+		},
+
+		// Blueprint PodOverride specs are nil
+		{
+			BlueprintPodSpecs: v1.PodSpec{},
+			ActionsetPodSpecs: v1.PodSpec{
+				RestartPolicy: "Always",
+			},
+			Expected: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:            "container",
+						Image:           "kanisterio/kanister-tools:0.43.0",
+						Command:         []string{"sh", "-c", "echo in default specs"},
+						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+						VolumeMounts: []v1.VolumeMount{
+							{
+								Name:      "data",
+								MountPath: "/var/lib/data",
+							},
+						},
+					},
+				},
+				RestartPolicy: v1.RestartPolicyAlways,
+				Volumes: []v1.Volume{
+					{
+						Name: "data",
+						VolumeSource: v1.VolumeSource{
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "default-pvc",
+							},
+						},
+					},
+				},
+			},
+		},
+
+		// Actionset PodOverride specs are nil
+		{
+			BlueprintPodSpecs: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:            "container",
+						ImagePullPolicy: "IfNotPresent",
+					},
+				},
+			},
+			ActionsetPodSpecs: v1.PodSpec{},
+			Expected: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:            "container",
+						Image:           "kanisterio/kanister-tools:0.43.0",
+						Command:         []string{"sh", "-c", "echo in default specs"},
+						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+						VolumeMounts: []v1.VolumeMount{
+							{
+								Name:      "data",
+								MountPath: "/var/lib/data",
+							},
+						},
+					},
+				},
+				RestartPolicy: v1.RestartPolicyOnFailure,
+				Volumes: []v1.Volume{
+					{
+						Name: "data",
+						VolumeSource: v1.VolumeSource{
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "default-pvc",
+							},
+						},
+					},
+				},
+			},
+		},
+
+		// Modify volume mounts
+		{
+			BlueprintPodSpecs: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name: "container",
+						VolumeMounts: []v1.VolumeMount{
+							{
+								MountPath: "/var/lib/other",
+								Name:      "data",
+							},
+						},
+					},
+				},
+			},
+			ActionsetPodSpecs: v1.PodSpec{
+				Volumes: []v1.Volume{
+					{
+						Name: "data",
+						VolumeSource: v1.VolumeSource{
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "other-claim",
+							},
+						},
+					},
+				},
+			},
+			Expected: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:            "container",
+						Image:           "kanisterio/kanister-tools:0.43.0",
+						Command:         []string{"sh", "-c", "echo in default specs"},
+						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+						VolumeMounts: []v1.VolumeMount{
+							{
+								Name:      "data",
+								MountPath: "/var/lib/other",
+							},
+							{
+								Name:      "data",
+								MountPath: "/var/lib/data",
+							},
+						},
+					},
+				},
+				RestartPolicy: v1.RestartPolicyOnFailure,
+				Volumes: []v1.Volume{
+					{
+						Name: "data",
+						VolumeSource: v1.VolumeSource{
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "other-claim",
+							},
+						},
+					},
+				},
+			},
+		},
+
+		// Add NodeSelector and Tolerations
+		{
+			BlueprintPodSpecs: v1.PodSpec{
+				NodeSelector: map[string]string{
+					"selector-key": "selector-value",
+				},
+			},
+			ActionsetPodSpecs: v1.PodSpec{
+				Tolerations: []v1.Toleration{
+					{
+						Key:      "taint-key",
+						Operator: v1.TolerationOpEqual,
+						Value:    "taint-value",
+						Effect:   v1.TaintEffectNoSchedule,
+					},
+				},
+			},
+			Expected: v1.PodSpec{
+				NodeSelector: map[string]string{
+					"selector-key": "selector-value",
+				},
+				Tolerations: []v1.Toleration{
+					{
+						Key:      "taint-key",
+						Operator: v1.TolerationOpEqual,
+						Value:    "taint-value",
+						Effect:   v1.TaintEffectNoSchedule,
+					},
+				},
+				Containers: []v1.Container{
+					{
+						Name:            "container",
+						Image:           "kanisterio/kanister-tools:0.43.0",
+						Command:         []string{"sh", "-c", "echo in default specs"},
+						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+						VolumeMounts: []v1.VolumeMount{
+							{
+								Name:      "data",
+								MountPath: "/var/lib/data",
+							},
+						},
+					},
+				},
+				RestartPolicy: v1.RestartPolicyOnFailure,
+				Volumes: []v1.Volume{
+					{
+						Name: "data",
+						VolumeSource: v1.VolumeSource{
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "default-pvc",
+							},
+						},
+					},
+				},
+			},
+		},
+
+		// Add NodeSelector and Tolerations. Override container command
+		{
+			BlueprintPodSpecs: v1.PodSpec{
+				NodeSelector: map[string]string{
+					"selector-key": "selector-value",
+				},
+				Tolerations: []v1.Toleration{
+					{
+						Key:      "taint-key",
+						Operator: v1.TolerationOpEqual,
+						Value:    "taint-value",
+						Effect:   v1.TaintEffectNoSchedule,
+					},
+				},
+			},
+			ActionsetPodSpecs: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:    "container",
+						Command: []string{"echo", "override command"},
+					},
+				},
+			},
+			Expected: v1.PodSpec{
+				NodeSelector: map[string]string{
+					"selector-key": "selector-value",
+				},
+				Tolerations: []v1.Toleration{
+					{
+						Key:      "taint-key",
+						Operator: v1.TolerationOpEqual,
+						Value:    "taint-value",
+						Effect:   v1.TaintEffectNoSchedule,
+					},
+				},
+				Containers: []v1.Container{
+					{
+						Name:            "container",
+						Image:           "kanisterio/kanister-tools:0.43.0",
+						Command:         []string{"echo", "override command"},
+						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+						VolumeMounts: []v1.VolumeMount{
+							{
+								Name:      "data",
+								MountPath: "/var/lib/data",
+							},
+						},
+					},
+				},
+				RestartPolicy: v1.RestartPolicyOnFailure,
+				Volumes: []v1.Volume{
+					{
+						Name: "data",
+						VolumeSource: v1.VolumeSource{
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "default-pvc",
+							},
+						},
+					},
+				},
+			},
+		},
+
+		// Override container command
+		{
+			BlueprintPodSpecs: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:    "container",
+						Command: []string{"echo", "override command"},
+					},
+				},
+			},
+			ActionsetPodSpecs: v1.PodSpec{},
+			Expected: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:            "container",
+						Image:           "kanisterio/kanister-tools:0.43.0",
+						Command:         []string{"echo", "override command"},
+						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+						VolumeMounts: []v1.VolumeMount{
+							{
+								Name:      "data",
+								MountPath: "/var/lib/data",
+							},
+						},
+					},
+				},
+				RestartPolicy: v1.RestartPolicyOnFailure,
+				Volumes: []v1.Volume{
+					{
+						Name: "data",
+						VolumeSource: v1.VolumeSource{
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "default-pvc",
+							},
+						},
+					},
+				},
+			},
+		},
+
+		// Override blueprint specs with actionset
+		{
+			BlueprintPodSpecs: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:            "container",
+						ImagePullPolicy: "IfNotPresent",
+					},
+				},
+				DNSPolicy: "Default",
+			},
+			ActionsetPodSpecs: v1.PodSpec{
+				DNSPolicy: "ClusterFirst",
+			},
+			Expected: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Name:            "container",
+						Image:           "kanisterio/kanister-tools:0.43.0",
+						Command:         []string{"sh", "-c", "echo in default specs"},
+						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
+						VolumeMounts: []v1.VolumeMount{
+							{
+								Name:      "data",
+								MountPath: "/var/lib/data",
+							},
+						},
+					},
+				},
+				RestartPolicy: v1.RestartPolicyOnFailure,
+				Volumes: []v1.Volume{
+					{
+						Name: "data",
+						VolumeSource: v1.VolumeSource{
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "default-pvc",
+							},
+						},
+					},
+				},
+				DNSPolicy: v1.DNSClusterFirst,
+			},
+		},
+	}
+
+	// Run tests
+	for _, test := range tests {
+		override, err := CreateAndMergePodSpec(test.BlueprintPodSpecs, test.ActionsetPodSpecs)
 		c.Assert(err, IsNil)
 		podSpec, err := patchDefaultPodSpecs(defaultSpecs, override)
 		c.Assert(err, IsNil)
