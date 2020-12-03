@@ -21,7 +21,7 @@ jobs:
     name: Make docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@master
       - name: Make Docs
         run: make docs
   
@@ -29,16 +29,18 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
+      - name: Code Checkout
+        uses: actions/checkout@master
       - uses: docker-practice/actions-setup-docker@master
         with:
           docker_channel: nightly
           docker_nightly_version: snapshot-20201008
       - name: Go Setup
         uses: actions/setup-go@v2.1.3
-      - name: Go Mod Download
-        run: make go-mod-download
       - name: Docker Pull
         run: docker pull kindest/node:v1.18.2
+      - name: Go Mod Download
+        run: make go-mod-download
       - name: Start Kind
         run: make start-kind
       - name: Make Build
