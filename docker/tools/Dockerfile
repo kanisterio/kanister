@@ -8,7 +8,7 @@ LABEL name="kanister-tools" \
     maintainer="Tom Manville<tom@kasten.io>" \
     description="Kanister tools for application-specific data management"
 
-COPY --from=restic/restic:0.9.5 /usr/bin/restic /usr/local/bin/restic
+COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
 # kopia alpine-2610d7d image
 COPY --from=kanisterio/kopia@sha256:c5697a667832e37f46e74962607f96c3efb04cc220e22a3b554d20d8a1c8162a \
   /kopia/kopia /usr/local/bin/kopia
