@@ -28,7 +28,7 @@ $ kubectl create namespace mongo-test
 # Using helm v3
 $ helm install my-release bitnami/mongodb --namespace mongo-test \
 	--set architecture="replicaset" \
-	--set image.repository=kanisterio/mongodb \
+	--set image.repository=ghcr.io/kanisterio/mongodb \
 	--set image.tag=0.44.0
 ```
 

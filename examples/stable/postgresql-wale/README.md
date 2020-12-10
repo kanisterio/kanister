@@ -24,7 +24,7 @@ $ helm repo update
 
 $ helm install my-release bitnami/postgresql  \
 	--namespace postgres-test \
-	--set image.repository=kanisterio/postgresql \
+	--set image.repository=ghcr.io/kanisterio/postgresql \
 	--set image.tag=0.44.0 \
 	--set postgresqlPassword=postgres-12345 \
 	--set postgresqlExtendedConf.archiveCommand="'envdir /bitnami/postgresql/data/env wal-e wal-push %p'" \

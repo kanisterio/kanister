@@ -29,7 +29,7 @@ $ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 # remove app-namespace with the namespace you want to deploy the Cassandra app in
 $ kubectl create ns <app-namespace>
-$ helm install cassandra bitnami/cassandra --namespace <app-namespace> --set image.repository=kanisterio/cassandra --set image.tag=0.44.0 --set cluster.replicaCount=2 --set image.pullPolicy=Always
+$ helm install cassandra bitnami/cassandra --namespace <app-namespace> --set image.repository=ghcr.io/kanisterio/cassandra --set image.tag=0.44.0 --set cluster.replicaCount=2 --set image.pullPolicy=Always
 
 
 ```
