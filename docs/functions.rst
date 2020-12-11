@@ -597,8 +597,8 @@ This function deletes the snapshot data backed up by the BackupData function.
 
    `namespace`, Yes, `string`, namespace in which to execute
    `backupArtifactPrefix`, Yes, `string`, path to the backup on the object store
-   `backupIdentifier`, No, `string`, (required if backupTag not provided) unique snapshot id generated during backup
-   `backupTag`, No, `string`, (required if backupIdentifier not provided) unique tag added during the backup
+   `backupID`, No, `string`, (required if backupTag not provided) unique snapshot id generated during backup
+   `backupTag`, No, `string`, (required if backupID not provided) unique tag added during the backup
    `encryptionKey`, No, `string`, encryption key to be used during backups
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
