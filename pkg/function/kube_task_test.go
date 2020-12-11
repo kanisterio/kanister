@@ -66,7 +66,7 @@ func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 		Func: KubeTaskFuncName,
 		Args: map[string]interface{}{
 			KubeTaskNamespaceArg: namespace,
-			KubeTaskImageArg:     "kanisterio/kanister-tools:0.20.0",
+			KubeTaskImageArg:     "ghcr.io/kanisterio/kanister-tools:0.20.0",
 			KubeTaskCommandArg: []string{
 				"sh",
 				"-c",
