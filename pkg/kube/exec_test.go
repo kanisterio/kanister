@@ -120,7 +120,7 @@ func (s *ExecSuite) TestKopiaCommand(c *C) {
 			Containers: []v1.Container{
 				v1.Container{
 					Name:  "kanister-sidecar",
-					Image: "kanisterio/kanister-tools:0.37.0",
+					Image: "ghcr.io/kanisterio/kanister-tools:0.37.0",
 				},
 			},
 		},
