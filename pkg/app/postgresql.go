@@ -41,7 +41,7 @@ type PostgresDB struct {
 }
 
 // Last tested chart version "9.0.0"
-func NewPostgresDB(name string) App {
+func NewPostgresDB(name string, subPath string) App {
 	return &PostgresDB{
 		name: name,
 		chart: helm.ChartInfo{
@@ -51,13 +51,14 @@ func NewPostgresDB(name string) App {
 			Chart:    "postgresql",
 			Values: map[string]string{
 				"image.repository":                      "kanisterio/postgresql",
-				"image.tag":                             "0.43.0",
+				"image.tag":                             "0.44.0",
 				"postgresqlPassword":                    "test@54321",
 				"postgresqlExtendedConf.archiveCommand": "'envdir /bitnami/postgresql/data/env wal-e wal-push %p'",
 				"postgresqlExtendedConf.archiveMode":    "true",
 				"postgresqlExtendedConf.archiveTimeout": "60",
 				"postgresqlExtendedConf.walLevel":       "archive",
 				"volumePermissions.enabled":             "true",
+				"persistence.subPath":                   subPath,
 			},
 		},
 	}

@@ -69,7 +69,7 @@ spec:
         - bash
         - -c
         env:
-        image: kanisterio/mongodb-sidecar:v0.2.0
+        image: ghcr.io/kanisterio/mongodb-sidecar:v0.2.0
         name: mongo-tools-sidecar
       - command:
         - mongod

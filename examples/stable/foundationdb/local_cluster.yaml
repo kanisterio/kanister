@@ -20,7 +20,7 @@ spec:
       secret:
         secretName: fdb-kubernetes-operator-secrets
   mainContainer:
-    imageName: kanisterio/foundationdb
+    imageName: ghcr.io/kanisterio/foundationdb
     enableTls: true
     env:
       - name: FDB_TLS_CERTIFICATE_FILE
