@@ -416,7 +416,7 @@ and restores data to the specified path.
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
-   The ``image`` argument requires the use of ``kanisterio/kanister-tools``
+   The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
    image since it includes the required tools to restore data from
    the object store.
    Between the ``pod`` and ``volumes`` arguments, exactly one argument
@@ -445,7 +445,7 @@ backup function.
     args:
       namespace: "{{ .Deployment.Namespace }}"
       pod: "{{ index .Deployment.Pods 0 }}"
-      image: kanisterio/kanister-tools:|version|
+      image: ghcr.io/kanisterio/kanister-tools:|version|
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupTag: "{{ .ArtifactsIn.backupInfo.KeyValue.backupIdentifier }}"
   - func: ScaleWorkload
@@ -491,7 +491,7 @@ respective PVCs and restores data to the specified path.
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
-   The `image` argument requires the use of `kanisterio/kanister-tools`
+   The `image` argument requires the use of `ghcr.io/kanisterio/kanister-tools`
    image since it includes the required tools to restore data from
    the object store.
    Between the `pod` and `volumes` arguments, exactly one argument
@@ -520,7 +520,7 @@ BackupDataAll function.
     name: RestoreFromObjectStore
     args:
       namespace: "{{ .Deployment.Namespace }}"
-      image: kanisterio/kanister-tools:|version|
+      image: ghcr.io/kanisterio/kanister-tools:|version|
       backupArtifactPrefix: s3-bucket/path/artifactPrefix
       backupInfo: "{{ .ArtifactsIn.params.KeyValue.backupInfo }}"
   - func: ScaleWorkload
@@ -668,7 +668,7 @@ from an object store.
    `artifact`, Yes, `string`, artifact to be deleted from the object store
 
 .. note::
-   The Kubernetes job uses the ``kanisterio/kanister-tools`` image,
+   The Kubernetes job uses the ``ghcr.io/kanisterio/kanister-tools`` image,
    since it includes all the tools required to delete the artifact
    from an object store.
 
