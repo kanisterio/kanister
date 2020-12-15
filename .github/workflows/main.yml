@@ -82,4 +82,4 @@ jobs:
       - name: Code Checkout
         uses: actions/checkout@master
       - name: Go-linter
-        uses: make golint
+        run: make golint
