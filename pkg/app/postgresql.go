@@ -41,7 +41,7 @@ type PostgresDB struct {
 }
 
 // Last tested chart version "9.0.0"
-func NewPostgresDB(name string) App {
+func NewPostgresDB(name string, subPath string) App {
 	return &PostgresDB{
 		name: name,
 		chart: helm.ChartInfo{
@@ -50,14 +50,16 @@ func NewPostgresDB(name string) App {
 			RepoURL:  helm.BitnamiRepoURL,
 			Chart:    "postgresql",
 			Values: map[string]string{
+				"image.registry":                        "ghcr.io",
 				"image.repository":                      "kanisterio/postgresql",
-				"image.tag":                             "0.37.0",
+				"image.tag":                             "0.45.0",
 				"postgresqlPassword":                    "test@54321",
 				"postgresqlExtendedConf.archiveCommand": "'envdir /bitnami/postgresql/data/env wal-e wal-push %p'",
 				"postgresqlExtendedConf.archiveMode":    "true",
 				"postgresqlExtendedConf.archiveTimeout": "60",
 				"postgresqlExtendedConf.walLevel":       "archive",
 				"volumePermissions.enabled":             "true",
+				"persistence.subPath":                   subPath,
 			},
 		},
 	}
@@ -176,9 +178,15 @@ func (pdb PostgresDB) Reset(ctx context.Context) error {
 		return errors.Wrapf(err, "Failed to drop db from postgresql. %s ", stderr)
 	}
 
+	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
+	return nil
+}
+
+// Initialize is used to initialize the database or create schema
+func (pdb PostgresDB) Initialize(ctx context.Context) error {
 	// Create database
-	cmd = "PGPASSWORD=${POSTGRES_PASSWORD} psql -c 'CREATE DATABASE test;'"
-	_, stderr, err = pdb.execCommand(ctx, []string{"sh", "-c", cmd})
+	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -c 'CREATE DATABASE test;'"
+	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create db in postgresql. %s ", stderr)
 	}
@@ -189,7 +197,6 @@ func (pdb PostgresDB) Reset(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create table in postgresql. %s ", stderr)
 	}
-	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
 	return nil
 }
 

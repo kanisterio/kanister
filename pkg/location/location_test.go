@@ -17,7 +17,10 @@ package location
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"io"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
 
@@ -34,14 +37,15 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type LocationSuite struct {
-	osType         objectstore.ProviderType
-	provider       objectstore.Provider
-	rand           *rand.Rand
-	root           objectstore.Bucket // root of the default test bucket
-	suiteDirPrefix string             // directory name prefix for all tests in this suite
-	testpath       string
-	region         string // bucket region
-	profile        param.Profile
+	osType            objectstore.ProviderType
+	provider          objectstore.Provider
+	rand              *rand.Rand
+	root              objectstore.Bucket // root of the default test bucket
+	suiteDirPrefix    string             // directory name prefix for all tests in this suite
+	testpath          string
+	testMultipartPath string
+	region            string // bucket region
+	profile           param.Profile
 }
 
 const (
@@ -98,6 +102,7 @@ func (s *LocationSuite) SetUpSuite(c *C) {
 	c.Assert(s.root, NotNil)
 	s.suiteDirPrefix = time.Now().UTC().Format(time.RFC3339Nano)
 	s.testpath = s.suiteDirPrefix + "/testlocation.txt"
+	s.testMultipartPath = s.suiteDirPrefix + "/testchunk.txt"
 }
 
 func (s *LocationSuite) TearDownTest(c *C) {
@@ -107,18 +112,98 @@ func (s *LocationSuite) TearDownTest(c *C) {
 		err := s.root.Delete(ctx, s.testpath)
 		if err != nil {
 			c.Log("Cannot cleanup test directory: ", s.testpath)
-			return
+		}
+	}
+	if s.testMultipartPath != "" {
+		c.Assert(s.root, NotNil)
+		ctx := context.Background()
+		err := s.root.Delete(ctx, s.testMultipartPath)
+		if err != nil {
+			c.Log("Cannot cleanup test directory: ", s.testMultipartPath)
 		}
 	}
 }
 
 func (s *LocationSuite) TestWriteAndReadData(c *C) {
 	ctx := context.Background()
-	teststring := "test-content"
+	teststring := "test-content-check"
 	err := writeData(ctx, s.osType, s.profile, bytes.NewBufferString(teststring), s.testpath)
 	c.Check(err, IsNil)
 	buf := bytes.NewBuffer(nil)
 	err = readData(ctx, s.osType, s.profile, buf, s.testpath)
 	c.Check(err, IsNil)
 	c.Check(buf.String(), Equals, teststring)
+}
+
+func (s *LocationSuite) TestAzMultipartUpload(c *C) {
+	if s.osType != objectstore.ProviderTypeAzure {
+		c.Skip(fmt.Sprintf("Not applicable for location type %s", s.osType))
+	}
+
+	// Create dir if not exists
+	_, err := os.Stat(s.suiteDirPrefix)
+	if os.IsNotExist(err) {
+		err := os.MkdirAll(s.suiteDirPrefix, 0755)
+		c.Check(err, IsNil)
+	}
+	// Create test file
+	f, err := os.Create(s.testMultipartPath)
+	c.Check(err, IsNil)
+	defer f.Close()
+
+	ctx := context.Background()
+	for _, fileSize := range []int64{
+		0,                 // empty file
+		100 * 1024 * 1024, // 100M ie < buffSize
+		buffSize - 1,
+		buffSize,
+		buffSize + 1,
+		300 * 1024 * 1024, // 300M ie > buffSize
+	} {
+		_, err := f.Seek(0, io.SeekStart)
+		c.Assert(err, IsNil)
+
+		// Create dump file
+		err = os.Truncate(s.testMultipartPath, fileSize)
+		c.Assert(err, IsNil)
+		err = writeData(ctx, s.osType, s.profile, f, s.testMultipartPath)
+		c.Check(err, IsNil)
+		buf := bytes.NewBuffer(nil)
+		err = readData(ctx, s.osType, s.profile, buf, s.testMultipartPath)
+		c.Check(err, IsNil)
+		c.Check(int64(buf.Len()), Equals, fileSize)
+	}
+}
+
+func (s *LocationSuite) TestReaderSize(c *C) {
+	for _, tc := range []struct {
+		input        string
+		buffSize     int64
+		expectedSize int64
+	}{
+		{
+			input:        "dummy-string-1",
+			buffSize:     4,
+			expectedSize: 1073741824, // buffSizeLimit       = 1 * 1024 * 1024 * 1024
+		},
+		{
+			input:        "dummy-string-1",
+			buffSize:     14,
+			expectedSize: 1073741824,
+		},
+		{
+			input:        "dummy-string-1",
+			buffSize:     44,
+			expectedSize: 0,
+		},
+		{
+			input:        "",
+			buffSize:     4,
+			expectedSize: 0,
+		},
+	} {
+		_, size, err := readerSize(bytes.NewBufferString(tc.input), tc.buffSize)
+		c.Assert(err, IsNil)
+		c.Assert(size, Equals, tc.expectedSize)
+	}
 }

@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: pgtestapp
-        image: kanisterio/pgtest-amd64:0.1.0
+        image: ghcr.io/kanisterio/pgtest-amd64:0.1.0
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

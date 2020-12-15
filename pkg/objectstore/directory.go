@@ -61,9 +61,22 @@ func (d *directory) GetDirectory(ctx context.Context, dir string) (Directory, er
 		return d, nil
 	}
 	dir = d.absDirName(dir)
-	_, err := d.bucket.container.Item(cloudName(dir))
-	if err != nil {
+	if _, err := d.bucket.container.Item(cloudName(dir)); err == nil {
+		return &directory{
+			bucket: d.bucket,
+			path:   dir,
+		}, nil
+	}
+
+	// Minio does not support `GET` on "directory" objects. To workaround,
+	// we do a prefix search i.e. if we're trying to open directory `dir1/`,
+	// we check if there is at least 1 object with the prefix `dir1/`.
+	items, _, err := d.bucket.container.Items(cloudName(dir), stow.CursorStart, 1)
+	switch {
+	case err != nil:
 		return nil, errors.Wrapf(err, "could not get directory marker %s", dir)
+	case len(items) == 0:
+		return nil, errors.Errorf("no items found. could not get directory marker %s", dir)
 	}
 	return &directory{
 		bucket: d.bucket,
@@ -86,13 +99,19 @@ func (d *directory) ListDirectories(ctx context.Context) (map[string]Directory, 
 				return err
 			}
 
+			// Check if the object is nested in a directory hierarchy
+			// and if so - return the first directory entry.
+			// e.g.
+			// If we're doing a prefix search for all objects under
+			// `parent/` and we find `parent/dir1/` - then we want
+			// to track `dir1/`
 			dir := strings.TrimPrefix(item.Name(), cloudName(d.path))
 			if dir == "" {
 				// e.g., /<d.path>/
 				return nil
 			}
-			// Directories will end with '/' in their names
-			if dirEnt, ok := isDirectoryObject(dir); ok {
+
+			if dirEnt, ok := getFirstDirectoryMarker(dir); ok {
 				// Use maps to uniqify
 				// e.g., /dir1/, /dir1/file1, /dir1/dir2/, /dir1/dir2/file2 will leave /dir
 				directories[dirEnt] = &directory{
@@ -286,20 +305,23 @@ func sanitizeTags(tags map[string]string) map[string]interface{} {
 	return cTags
 }
 
-// isDirectoryObject checks if path includes one '/'.
-// If so, returns value until first '/'
+// getFirstDirectoryMarker checks if path includes one '/'.
+// If so, returns value until first '/' which is the first
+// directory marker
 // path is of the form elem1/elem2/, returns elem1
-func isDirectoryObject(path string) (string, bool) {
+func getFirstDirectoryMarker(path string) (string, bool) {
+	// TODO: Change this to strings.SplitN(path, "/", 2)
 	s := strings.SplitN(path, "/", 3)
 	switch len(s) {
 	case 1:
-		// No '/'
+		// No '/' e.g. "elem"
 		return "", false
 	case 2:
+		// e.g. dir1/dir2 -> return dir1
 		return s[0], true
 	case 3:
-		// dir1/dir2/elem will return false
-		return "", false
+		// e.g. dir1/dir2/elem -> return dir1
+		return s[0], true
 	}
 
 	// Not reached

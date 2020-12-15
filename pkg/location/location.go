@@ -15,6 +15,7 @@
 package location
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"path/filepath"
@@ -35,6 +36,11 @@ const (
 	GoogleProjectId     = "GOOGLE_PROJECT_ID"
 	AzureStorageAccount = "AZURE_ACCOUNT_NAME"
 	AzureStorageKey     = "AZURE_ACCOUNT_KEY"
+
+	// buffSize is the maximum size of an object that can be Put to Azure container in a single request
+	// https://github.com/kastenhq/stow/blob/v0.2.6-kasten/azure/container.go#L14
+	buffSize      = 256 * 1024 * 1024
+	buffSizeLimit = 1 * 1024 * 1024 * 1024
 )
 
 // Write pipes data from `in` into the location specified by `profile` and `suffix`.
@@ -93,14 +99,60 @@ func readData(ctx context.Context, pType objectstore.ProviderType, profile param
 }
 
 func writeData(ctx context.Context, pType objectstore.ProviderType, profile param.Profile, in io.Reader, path string) error {
+	var input io.Reader
+	var size int64
 	bucket, err := getBucket(ctx, pType, profile)
 	if err != nil {
 		return err
 	}
-	if err := bucket.Put(ctx, path, in, 0, nil); err != nil {
-		return errors.Errorf("failed to write contents to bucket '%s'", profile.Location.Bucket)
+
+	var r io.Reader
+	var n int64
+	if pType == objectstore.ProviderTypeAzure {
+		// Switch to multipart upload based on data size
+		r, n, err = readerSize(in, buffSize)
+		if err != nil {
+			return err
+		}
+
+		input = r
+		size = int64(n)
+	} else {
+		input = in
+		size = 0
 	}
+
+	if err := bucket.Put(ctx, path, input, size, nil); err != nil {
+		return errors.Wrapf(err, "failed to write contents to bucket '%s'", profile.Location.Bucket)
+	}
+
 	return nil
+}
+
+// readerSize checks if data size is greater than buffSize i.e the max size of an object that can be Put to Azure container in a single request
+// If size >= buffSize, return buffer size to enable multipart upload, otherwise return 0 buffersize.
+func readerSize(in io.Reader, buffSize int64) (io.Reader, int64, error) {
+	var n int64
+	var err error
+	var r io.Reader
+
+	// Read first buffSize bytes into buffer
+	buf := make([]byte, buffSize)
+	m, err := in.Read(buf)
+	if err != nil && err != io.EOF {
+		return nil, 0, err
+	}
+
+	// If first buffSize bytes are read successfully, that means the data size >= buffSize
+	if int64(m) == buffSize {
+		r = io.MultiReader(bytes.NewReader(buf), in)
+		n = buffSizeLimit
+	} else {
+		buf = buf[:m]
+		r = bytes.NewReader(buf)
+	}
+
+	return r, n, nil
 }
 
 func deleteData(ctx context.Context, pType objectstore.ProviderType, profile param.Profile, path string) error {

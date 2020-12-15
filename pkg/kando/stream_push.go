@@ -16,7 +16,6 @@ package kando
 
 import (
 	"context"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -85,13 +84,5 @@ func GenerateStreamPushCommand(configFile, dirPath, filePath, password, sourceEn
 		sourceEndpoint,
 	)
 
-	return []string{
-		"bash",
-		"-o",
-		"errexit",
-		"-o",
-		"pipefail",
-		"-c",
-		strings.Join(kandoCmd, " "),
-	}
+	return kandoCmd
 }

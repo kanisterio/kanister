@@ -9,7 +9,7 @@ This example is to demonstrate how Kanister can be integrated with AWS RDS insta
 ## Prerequisites
 
 - Kubernetes 1.10+
-- Kanister controller version 0.37.0 installed in your cluster
+- Kanister controller version 0.45.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Create RDS instance on AWS
@@ -31,7 +31,7 @@ Now create a RDS instance with postgresql engine
 ```bash
 aws rds create-db-instance \
     --publicly-accessible \
-    --allocated-storage 20 --db-instance-class db.t2.micro	 \
+    --allocated-storage 20 --db-instance-class db.t2.micro \
     --db-instance-identifier test-postgresql-instance \
     --engine postgres \
     --master-username master \
@@ -88,12 +88,14 @@ can be shared between Kanister-enabled application instances.
 There are two ways that you can use to backup and restore RDS instance data:
 
 
-1. Create RDS instance snapshot - Using `rds-postgres-snap-blueprint.yaml` Blueprint
+1. Create RDS instance snapshot. It can be achieved using two ways:
+- By using Kanister functions in blueprint : Using `rds-postgres-snap-blueprint.yaml` Blueprint
+- By using `aws` cli directly in blueprint : Using `rds-postgres-blueprint.yaml` Blueprint
 2. Create RDS snapshot, extract postgres data and push that data to S3 storage - Using `rds-postgres-dump-blueprint.yaml` Blueprint
 
 So as you can see we will have to create a blueprint depending on how are we going to take the backup.
 
-Use `rds-postgres-snap-blueprint.yaml` Blueprint if you want to take backup using RDS snapshots or you can use `rds-postgres-dump-blueprint.yaml` Blueprint if you want to extract postgres dump from snapshot and push to S3 storage
+Use `rds-postgres-snap-blueprint.yaml` or `rds-postgres-blueprint.yaml` Blueprint if you want to take backup using RDS snapshots or you can use `rds-postgres-dump-blueprint.yaml` Blueprint if you want to extract postgres dump from snapshot and push to S3 storage
 
 
 ```bash

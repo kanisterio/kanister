@@ -41,19 +41,18 @@ type MysqlDB struct {
 	chart     helm.ChartInfo
 }
 
-// Last tested working version "1.6.7"
+// Last tested working version "6.14.11"
 func NewMysqlDB(name string) App {
 	return &MysqlDB{
 		name: name,
 		chart: helm.ChartInfo{
 			Release:  appendRandString(name),
-			RepoURL:  helm.StableRepoURL,
+			RepoURL:  helm.BitnamiRepoURL,
 			Chart:    "mysql",
-			RepoName: helm.StableRepoName,
+			RepoName: helm.BitnamiRepoName,
 			Values: map[string]string{
-				"mysqlRootPassword":   "mysecretpassword",
-				"persistence.enabled": "false",
-				"imagePullPolicy":     "Always",
+				"auth.rootPassword": "mysecretpassword",
+				"image.pullPolicy":  "Always",
 			},
 		},
 	}
@@ -98,18 +97,17 @@ func (mdb *MysqlDB) IsReady(ctx context.Context) (bool, error) {
 	log.Print("Waiting for the mysql instance to be ready.", field.M{"app": mdb.name})
 	ctx, cancel := context.WithTimeout(ctx, mysqlWaitTimeout)
 	defer cancel()
-	err := kube.WaitOnDeploymentReady(ctx, mdb.cli, mdb.namespace, mdb.chart.Release)
+	err := kube.WaitOnStatefulSetReady(ctx, mdb.cli, mdb.namespace, mdb.chart.Release)
 	if err != nil {
 		return false, err
 	}
-
 	log.Print("Application instance is ready.", field.M{"app": mdb.name})
 	return true, nil
 }
 
 func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
-		Kind:      "deployment",
+		Kind:      "statefulset",
 		Name:      mdb.chart.Release,
 		Namespace: mdb.namespace,
 	}
@@ -195,14 +193,18 @@ func (mdb *MysqlDB) Reset(ctx context.Context) error {
 		return errors.Wrapf(err, "Error while dropping the mysql table: %s", stderr)
 	}
 
+	log.Print("Reset of the application was successful.", field.M{"app": mdb.name})
+	return nil
+}
+
+// Initialize is used to initialize the database or create schema
+func (mdb *MysqlDB) Initialize(ctx context.Context) error {
 	// create the database and a pets table
 	createTableCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
-	_, stderr, err = mdb.execCommand(ctx, createTableCMD)
+	_, stderr, err := mdb.execCommand(ctx, createTableCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while creating the mysql table: %s", stderr)
 	}
-
-	log.Print("Reset of the application was successful.", field.M{"app": mdb.name})
 	return nil
 }
 
@@ -221,7 +223,7 @@ func (mdb *MysqlDB) Secrets() map[string]crv1alpha1.ObjectReference {
 }
 
 func (mdb *MysqlDB) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podname, containername, err := kube.GetPodContainerFromDeployment(ctx, mdb.cli, mdb.namespace, mdb.chart.Release)
+	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, mdb.cli, mdb.namespace, mdb.chart.Release)
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", mdb.name)
 	}

@@ -22,8 +22,8 @@ import (
 
 var validateErr = fmt.Errorf("Validation Failed")
 
-func errorf(format string, args ...interface{}) error {
-	return errors.Wrapf(validateErr, format, args...)
+func errorf(err error, format string, args ...interface{}) error {
+	return errors.Wrapf(err, format, args...)
 }
 
 // IsError returns true iff the underlying cause was a validation error.

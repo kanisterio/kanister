@@ -39,12 +39,12 @@ dockers:
 - binaries:
   - controller
   image_templates:
-  - 'kanisterio/controller:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/controller:{{ .Tag }}'
   dockerfile: 'docker/controller/Dockerfile'
 - binaries:
   - kando
   image_templates:
-  - 'kanisterio/kanister-tools:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/tools/Dockerfile'
   build_flag_templates:
   - "--build-arg=kan_tools_version={{ .Tag }}"
@@ -53,41 +53,41 @@ dockers:
 - binaries:
   - kando
   image_templates:
-  - 'kanisterio/postgres-kanister-tools:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/postgres-kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
 - binaries:
   - kando
   image_templates:
-  - 'kanisterio/postgres-tools-9.6:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/postgres-tools-9.6:{{ .Tag }}'
   dockerfile: 'docker/postgres-tools-9.6/Dockerfile'
 - image_templates:
-  - 'kanisterio/postgresql:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/postgresql:{{ .Tag }}'
   dockerfile: 'docker/postgresql/Dockerfile'
 - binaries:
   - kando
   image_templates:
-  - 'kanisterio/es-sidecar:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/es-sidecar:{{ .Tag }}'
   dockerfile: 'docker/kanister-elasticsearch/image/Dockerfile'
   build_flag_templates:
-  - "--build-arg=TOOLS_IMAGE=kanisterio/kanister-tools:{{ .Tag }}"
+  - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
   extra_files:
   - 'docker/kanister-elasticsearch/image/esdump-setup.sh'
 - binaries:
   - kando
   image_templates:
-  - 'kanisterio/mysql-sidecar:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/mysql-sidecar:{{ .Tag }}'
   dockerfile: 'docker/kanister-mysql/image/Dockerfile'
   build_flag_templates:
-  - "--build-arg=TOOLS_IMAGE=kanisterio/kanister-tools:{{ .Tag }}"
+  - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - image_templates:
-  - 'kanisterio/kanister-kubectl:1.18'
+  - 'ghcr.io/kanisterio/kanister-kubectl:1.18'
   dockerfile: 'docker/kanister-kubectl/Dockerfile'
   build_flag_templates:
-  - "--build-arg=TOOLS_IMAGE=kanisterio/kanister-tools:{{ .Tag }}"
+  - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - binaries:
   - kando
   image_templates:
-  - 'kanisterio/mongo-sidecar:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/mongo-sidecar:{{ .Tag }}'
   dockerfile: 'docker/kanister-mongodb-replicaset/image/Dockerfile'
   extra_files:
   - 'docker/kanister-mongodb-replicaset/image/install.sh'
@@ -97,22 +97,22 @@ dockers:
 - binaries:
   - kando
   image_templates:
-  - 'kanisterio/mongodb:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/mongodb:{{ .Tag }}'
   dockerfile: 'docker/mongodb/Dockerfile'
 - binaries:
   - kando
   image_templates:
-  - 'kanisterio/cassandra:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/cassandra:{{ .Tag }}'
   dockerfile: 'docker/cassandra/Dockerfile'
 - binaries:
   - kando
   image_templates:
-  - 'kanisterio/couchbase-tools:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/couchbase-tools:{{ .Tag }}'
   dockerfile: 'docker/couchbase-tools/Dockerfile'
 - binaries:
   - kando
   image_templates:
-  - 'kanisterio/foundationdb:6.2.11'
+  - 'ghcr.io/kanisterio/foundationdb:6.2.20'
   dockerfile: 'docker/foundationdb/Dockerfile'
 
 snapshot:

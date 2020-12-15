@@ -15,11 +15,11 @@ actions:
       objects:
         authSecret:
           kind: Secret
-          name: "{{ .Object.spec.authSecret }}"
+          name: "{{ .Object.spec.security.adminSecret }}"
           namespace: "{{ .Object.metadata.namespace }}"
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: kanisterio/couchbase-tools:0.22.0
+        image: ghcr.io/kanisterio/couchbase-tools:0.22.0
         command:
           - bash
           - -o
@@ -49,11 +49,11 @@ actions:
       objects:
         authSecret:
           kind: Secret
-          name: "{{ .Object.spec.authSecret }}"
+          name: "{{ .Object.spec.security.adminSecret }}"
           namespace: "{{ .Object.metadata.namespace }}"
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: kanisterio/couchbase-tools:0.22.0
+        image: ghcr.io/kanisterio/couchbase-tools:0.22.0
         command:
           - bash
           - -o
@@ -80,7 +80,7 @@ actions:
       name: deleteBackup
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: kanisterio/kanister-tools:0.22.0
+        image: ghcr.io/kanisterio/kanister-tools:0.22.0
         command:
           - bash
           - -o

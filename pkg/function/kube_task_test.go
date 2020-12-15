@@ -66,11 +66,11 @@ func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 		Func: KubeTaskFuncName,
 		Args: map[string]interface{}{
 			KubeTaskNamespaceArg: namespace,
-			KubeTaskImageArg:     "kanisterio/kanister-tools:0.20.0",
+			KubeTaskImageArg:     "ghcr.io/kanisterio/kanister-tools:0.20.0",
 			KubeTaskCommandArg: []string{
 				"sh",
 				"-c",
-				"kando output version 0.37.0",
+				"kando output version 0.45.0",
 			},
 		},
 	}
@@ -143,7 +143,7 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 			bp: newTaskBlueprint(outputPhase(s.namespace), sleepPhase(s.namespace), tickPhase(s.namespace)),
 			outs: []map[string]interface{}{
 				map[string]interface{}{
-					"version": "0.37.0",
+					"version": "0.45.0",
 				},
 				map[string]interface{}{},
 				map[string]interface{}{},

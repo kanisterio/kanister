@@ -24,7 +24,7 @@ cluster.
 on you cluster.
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.37.0 with `profiles.cr.kanister.io` CRD installed.
+* Kanister version 0.45.0 with `profiles.cr.kanister.io` CRD installed.
 
 # Installation
 
@@ -45,7 +45,7 @@ Steps that are mentioned below can be followed to install the foundationDB opera
 and run `mkdir foundationdb` to create the directory `foundationdb`.
 * `CD` into newly created directory and clone this github repo inside the created directory that is `foundationdb`
 using below command `git clone https://github.com/FoundationDB/fdb-kubernetes-operator.git`.
-* Run `sed -i '/IMG ?= fdb-kubernetes-operator:latest/c\IMG ?= kanisterio/fdb-kubernetes-operator:latest' Makefile` to correct the name of the operator image.
+* Run `sed -i '/IMG ?= fdb-kubernetes-operator:latest/c\IMG ?= ghcr.io/kanisterio/fdb-kubernetes-operator:latest' Makefile` to correct the name of the operator image.
 * Create Secrets to set up a secret with self-signed test certs using the command `./config/test-certs/generate_secrets.bash`
 * Run `make rebuild-operator` to install the operator. Please make sure this completes successfully.
 
