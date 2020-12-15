@@ -29,7 +29,7 @@ import (
 type HelmVersion string
 
 const (
-	DefaultCommandTimeout = 15 * time.Minute
+	DefaultCommandTimeout = 5 * time.Minute
 
 	// Add Bitnami charts url
 	BitnamiRepoName = "bitnami"
@@ -97,32 +97,32 @@ func NewCliClient() (Client, error) {
 
 // AddRepo adds new helm repo and fetches latest charts
 func (h CliClient) AddRepo(ctx context.Context, name, url string) error {
-	log.Info().Print("Adding helm repo", field.M{"name": name, "url": url})
+	log.Debug().Print("Adding helm repo", field.M{"name": name, "url": url})
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, []string{"repo", "add", name, url})
 	if err != nil {
 		return err
 	}
-	log.Info().Print("Result", field.M{"output": out})
+	log.Debug().Print("Result", field.M{"output": out})
 
 	// Update all repos to fetch the latest charts
-	err = h.UpdateRepo(ctx)
-	return err
+	_ = h.UpdateRepo(ctx)
+	return nil
 }
 
 // UpdateRepo fetches latest helm charts from the repo
 func (h CliClient) UpdateRepo(ctx context.Context) error {
-	log.Info().Print("Fetching latest helm charts from the helm repos")
+	log.Debug().Print("Fetching latest helm charts from the helm repos")
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, []string{"repo", "update"})
 	if err != nil {
 		return err
 	}
-	log.Info().Print("Result", field.M{"output": out})
+	log.Debug().Print("Result", field.M{"output": out})
 	return nil
 }
 
 // Install installs helm chart with given release name
 func (h CliClient) Install(ctx context.Context, chart, version, release, namespace string, values map[string]string) error {
-	log.Info().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
+	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
 	var setVals string
 	for k, v := range values {
 		setVals += fmt.Sprintf("%s=%s,", k, v)
@@ -130,18 +130,16 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 
 	var cmd []string
 	if h.version == V3 {
-		cmd = []string{"install", release, "--version", version, "--timeout", "15m", "--namespace", namespace, chart, "--set", setVals, "--wait"}
+		cmd = []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
 	} else {
 		cmd = []string{"install", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
 	}
-	log.Info().Print("Command formed ", field.M{"Command": cmd})
 
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
-	log.Info().Print("Command output ", field.M{"chart": chart, "output": out})
 	if err != nil {
 		return err
 	}
-	log.Info().Print("Result", field.M{"output": out})
+	log.Debug().Print("Result", field.M{"output": out})
 	return nil
 }
 
@@ -177,7 +175,7 @@ func (h CliClient) RemoveRepo(ctx context.Context, name string) error {
 
 // RunCmdWithTimeout executes command on host with DefaultCommandTimeout timeout
 func RunCmdWithTimeout(ctx context.Context, command string, args []string) (string, error) {
-	log.Info().Print("Executing command", field.M{"command": command, "args": args})
+	log.Debug().Print("Executing command", field.M{"command": command, "args": args})
 	ctx, cancel := context.WithTimeout(ctx, DefaultCommandTimeout)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, command, args...).CombinedOutput()
