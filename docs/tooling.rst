@@ -394,8 +394,8 @@ These tools, especially ``kando`` are meant to be invoked inside containers via
 Blueprints. Although suggest using the released image when possible, we've also
 made it simple to add these tools to your container.
 
-The released image, ``kanisterio/kanister-tools``, is hosted by
-`dockerhub <https://cloud.docker.com/swarm/kanisterio/repository/docker/kanisterio/kanister-tools/general>`_.
+The released image, ``ghcr.io/kanisterio/kanister-tools``, is hosted by
+`github container registry <https://github.com/orgs/kanisterio/packages/container/package/kanister-tools>`_.
 
 The Dockerfile for this image is in the
 `kanister github repo <https://github.com/kanisterio/kanister/blob/master/docker/tools/Dockerfile>`_.
