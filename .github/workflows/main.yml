@@ -7,6 +7,14 @@ on:
   pull_request:
     branches: 
       - main
+  workflow_dispatch:	
+    inputs:	
+      logLevel:	
+        description: 'Log level'     	
+        required: true	
+        default: 'warning'	
+      tags:	
+        description: 'Test scenario tags'  
 
 jobs:
   make-docs:
@@ -71,5 +79,7 @@ jobs:
     name: Lint phase
     runs-on: ubuntu-latest
     steps:
+      - name: Code Checkout
+        uses: actions/checkout@master
       - name: Go-linter
-        uses: Jerome1337/golint-action@v1.0.2
+        uses: make golint
