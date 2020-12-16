@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 image:
-  repository: kanisterio/controller
+  repository: ghcr.io/kanisterio/controller
   tag: 0.45.0
   pullPolicy: IfNotPresent
 rbac:
