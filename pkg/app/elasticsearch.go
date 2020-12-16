@@ -54,7 +54,7 @@ type ElasticsearchInstance struct {
 	elasticsearchURL string
 }
 
-// Last tested on 7.9.1
+// Last tested on 7.10.1
 func NewElasticsearchInstance(name string) App {
 	return &ElasticsearchInstance{
 		name:      name,
