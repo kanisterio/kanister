@@ -456,6 +456,9 @@ func (s *EbsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 
 	volID, err := createVolume(ctx, s.Ec2Cli, cvi, ktags.GetTags(tags))
 	if err != nil {
+		if isVolNotFoundErr(err) {
+			return nil, errors.Wrap(err, "This may indicate insufficient permissions for KMS keys.")
+		}
 		return nil, err
 	}
 	return s.VolumeGet(ctx, volID, snapshot.Volume.Az)
