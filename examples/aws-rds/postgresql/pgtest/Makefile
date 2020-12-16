@@ -54,7 +54,7 @@ endif
 
 IMAGE := $(REGISTRY)/$(BIN)-$(ARCH)
 
-BUILD_IMAGE ?= kanisterio/build:0.13.2-go1.11
+BUILD_IMAGE ?= ghcr.io/kanisterio/build:0.13.2-go1.11
 
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.

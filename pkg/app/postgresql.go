@@ -50,8 +50,9 @@ func NewPostgresDB(name string, subPath string) App {
 			RepoURL:  helm.BitnamiRepoURL,
 			Chart:    "postgresql",
 			Values: map[string]string{
+				"image.registry":                        "ghcr.io",
 				"image.repository":                      "kanisterio/postgresql",
-				"image.tag":                             "0.44.0",
+				"image.tag":                             "0.45.0",
 				"postgresqlPassword":                    "test@54321",
 				"postgresqlExtendedConf.archiveCommand": "'envdir /bitnami/postgresql/data/env wal-e wal-push %p'",
 				"postgresqlExtendedConf.archiveMode":    "true",
