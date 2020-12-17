@@ -41,9 +41,7 @@ actions:
             region="{{ .Profile.Location.Region }}"
             bucket="{{ .Profile.Location.Bucket }}"
             s3config="{{ index .Object.data "s3ConnectorConfiguration.properties" | toString }}"
-            echo "$s3config" > /tmp/config/s3config.properties
-            echo "s3.region= $region" >> /tmp/config/s3config.properties
-            echo "s3.bucket.name= $bucket" >> /tmp/config/s3config.properties
+            echo -e "${region}\ns3.region= ${region}\ns3.bucket.name= ${bucket}\n" > /tmp/config/s3config.properties
             kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
             sh /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties
