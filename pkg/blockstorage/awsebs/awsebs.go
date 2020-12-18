@@ -456,6 +456,9 @@ func (s *EbsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 
 	volID, err := createVolume(ctx, s.Ec2Cli, cvi, ktags.GetTags(tags))
 	if err != nil {
+		if isVolNotFoundErr(err) {
+			return nil, errors.Wrap(err, "This may indicate insufficient permissions for KMS keys.")
+		}
 		return nil, err
 	}
 	return s.VolumeGet(ctx, volID, snapshot.Volume.Az)
@@ -689,6 +692,7 @@ func staticRegionToZones(region string) ([]string, error) {
 		}, nil
 	case "ap-northeast-1":
 		return []string{
+			"ap-northeast-1-wl1-nrt-wlz-1",
 			"ap-northeast-1a",
 			"ap-northeast-1c",
 			"ap-northeast-1d",
@@ -737,6 +741,9 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-east-1-wl1-was-wlz-1",
 			"us-east-1-wl1-dfw-wlz-1",
 			"us-east-1-wl1-mia-wlz-1",
+			"us-east-1-bos-1a",
+			"us-east-1-iah-1a",
+			"us-east-1-mia-1a",
 		}, nil
 	case "us-east-2":
 		return []string{
