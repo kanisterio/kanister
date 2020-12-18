@@ -52,6 +52,7 @@ actions:
           - -c
           - |
             nodetool cleanup
+            nodetool clearsnapshot
             nodetool snapshot -t ${HOSTNAME}
             snapshot_prefix="{{ .Phases.getBackupPrefixLocation.Output.localSnapshotPrefixLocation }}"
             mkdir -p ${snapshot_prefix}/${HOSTNAME}
