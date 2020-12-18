@@ -48,7 +48,7 @@ type CouchbaseDB struct {
 	chart     helm.ChartInfo
 }
 
-// Last tested woking version "2.0.2"
+// Last tested woking version "2.1.0"
 func NewCouchbaseDB(name string) App {
 	return &CouchbaseDB{
 		name: name,
@@ -112,7 +112,7 @@ func (cb *CouchbaseDB) IsReady(ctx context.Context) (bool, error) {
 	}
 
 	// Read cluster creds from Secret
-	secret, err := cb.cli.CoreV1().Secrets(cb.namespace).Get(ctx, fmt.Sprintf("%s-couchbase-cluster", cb.chart.Release), metav1.GetOptions{})
+	secret, err := cb.cli.CoreV1().Secrets(cb.namespace).Get(ctx, fmt.Sprintf("auth-%s-couchbase-cluster", cb.chart.Release), metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
