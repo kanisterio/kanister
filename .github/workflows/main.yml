@@ -10,7 +10,7 @@ on:
 jobs:
   make-docs:
     name: Make docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     steps:
       - uses: actions/checkout@master
       - name: Make Docs
@@ -18,7 +18,7 @@ jobs:
 
   unit-test:
     name: Unit test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     steps:
       - name: Code Checkout
         uses: actions/checkout@master
@@ -43,7 +43,7 @@ jobs:
 
   integration-test:
     name: Integration Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     steps:
       - name: Code Checkout
         uses: actions/checkout@master
@@ -68,7 +68,7 @@ jobs:
 
   lint:
     name: Lint phase
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     steps:
       - name: Code Checkout
         uses: actions/checkout@master
