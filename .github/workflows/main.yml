@@ -28,6 +28,10 @@ jobs:
           docker_nightly_version: snapshot-20201008
       - name: Go Setup
         uses: actions/setup-go@v2.1.3
+        with:
+          go-version: '1.10.3'
+      - name: Go Version
+        run: go version
       - name: Docker Pull
         run: docker pull kindest/node:v1.18.2
       - name: Go Mod Download
@@ -53,6 +57,10 @@ jobs:
           docker_nightly_version: snapshot-20201008
       - name: Go Setup
         uses: actions/setup-go@v2.1.3
+        with:
+          go-version: '1.10.3'
+      - name: Go Version
+        run: go version
       - name: Go Mod Download
         run: make go-mod-download
       - name: Docker Pull
