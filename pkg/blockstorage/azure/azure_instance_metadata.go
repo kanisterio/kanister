@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
 const metadataURL = "http://169.254.169.254/metadata/"
@@ -106,7 +108,9 @@ func (i *InstanceMetadata) queryMetadataBytes(path, format string) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("Failed to get instance metadata with statusCode: %d, Path: %s", resp.StatusCode, path)
+	}
 	defer resp.Body.Close()
-
 	return ioutil.ReadAll(resp.Body)
 }
