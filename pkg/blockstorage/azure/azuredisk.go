@@ -624,7 +624,8 @@ func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 
 func staticRegionToZones(region string) ([]string, error) {
 	switch region {
-	case "australiasoutheast",
+	case "australia",
+		"australiasoutheast",
 		"brazilsouth",
 		"canadaeast",
 		"centralindia",
@@ -632,7 +633,9 @@ func staticRegionToZones(region string) ([]string, error) {
 		"japanwest",
 		"northcentralus",
 		"southcentralus",
+		"southcentralusstage",
 		"southindia",
+		"uk",
 		"ukwest",
 		"westcentralus",
 		"westindia",
