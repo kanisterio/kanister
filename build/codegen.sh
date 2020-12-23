@@ -22,7 +22,7 @@ set -o xtrace
 
 export GO111MODULE=on
 go mod download
-execDir="$GOPATH/pkg/mod/k8s.io/code-generator@$(go list -f '{{.Version}}' -m k8s.io/code-generator)"
+execDir="/root/go/pkg/mod/k8s.io/code-generator@$(go list -f '{{.Version}}' -m k8s.io/code-generator)"
 chmod +x "${execDir}"/generate-groups.sh
 "${execDir}"/generate-groups.sh                         \
   all                                        \
