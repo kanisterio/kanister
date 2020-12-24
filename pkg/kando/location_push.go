@@ -26,6 +26,23 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
+// stdin is a wrapper over os.Stdin to support Seek method
+type stdin struct {
+	r *os.File
+}
+
+func newStdin() *stdin {
+	return &stdin{r: os.Stdin}
+}
+
+func (s *stdin) Seek(offset int64, whence int) (int64, error) {
+	return 0, nil
+}
+
+func (s *stdin) Read(pb []byte) (n int, err error) {
+	return s.r.Read(pb)
+}
+
 func newLocationPushCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "push <source>",
@@ -66,7 +83,7 @@ func sourceReader(source string) (io.Reader, error) {
 	if fi.Mode()&os.ModeNamedPipe == 0 {
 		return nil, errors.New("Stdin must be piped when the source parameter is \"-\"")
 	}
-	return os.Stdin, nil
+	return newStdin(), nil
 }
 
 func locationPush(ctx context.Context, p *param.Profile, path string, source io.Reader) error {
