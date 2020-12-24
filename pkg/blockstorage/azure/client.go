@@ -67,7 +67,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		return nil, err
 	}
 
-	baseURI, ok = config[blockstorage.AzureResurceMgmtEndpoint]
+	baseURI, ok = config[blockstorage.AzureResurceMgrEndpoint]
 	if !ok {
 		baseURI = compute.DefaultBaseURI
 	}

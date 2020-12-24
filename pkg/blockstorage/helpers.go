@@ -33,7 +33,7 @@ const (
 	AzureCientID               = "AZURE_CLIENT_ID"
 	AzureClentSecret           = "AZURE_CLIENT_SECRET"
 	AzureResurceGroup          = "AZURE_RESOURCE_GROUP"
-	AzureResurceMgmtEndpoint   = "AZURE_RESOURCE_MANAGEMENT_ENDPOINT"
+	AzureResurceMgrEndpoint    = "AZURE_RESOURCE_MANAGER_ENDPOINT"
 	AzureMigrateStorageAccount = "AZURE_MIGRATE_STORAGE_ACCOUNT_NAME"
 	AzureMigrateStorageKey     = "AZURE_MIGRATE_STORAGE_ACCOUNT_KEY"
 	AzureActiveDirEndpoint     = "AZURE_AD_ENDPOINT"
