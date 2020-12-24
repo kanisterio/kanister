@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	azto "github.com/Azure/go-autorest/autorest/to"
 	"github.com/pkg/errors"
@@ -56,6 +56,7 @@ func (s *AdStorage) VolumeGet(ctx context.Context, id string, zone string) (*blo
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get info for volume with ID %s", id)
 	}
+
 	disk, err := s.azCli.DisksClient.Get(ctx, rg, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get volume, volumeID: %s", id)
