@@ -75,19 +75,29 @@ func CreateStatefulSet(ctx context.Context, cli kubernetes.Interface, namespace 
 
 // StatefulSetReady checks if a statefulset has the desired number of ready
 // replicas.
-func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, error) {
+func StatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, string, error) {
+	var status string
 	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return false, errors.Wrapf(err, "could not get StatefulSet{Namespace: %s, Name: %s}", namespace, name)
+		return false, status, errors.Wrapf(err, "could not get StatefulSet{Namespace: %s, Name: %s}", namespace, name)
 	}
 	if ss.Status.ReadyReplicas != *ss.Spec.Replicas {
-		return false, nil
+		status = fmt.Sprintf(
+			"Specified replicas: %d, Replicas: %d", *ss.Spec.Replicas, ss.Status.ReadyReplicas,
+		)
+		return false, status, nil
 	}
 	runningPods, _, err := FetchPods(kubeCli, namespace, ss.GetUID())
 	if err != nil {
-		return false, err
+		return false, status, err
 	}
-	return len(runningPods) == int(*ss.Spec.Replicas), nil
+	if len(runningPods) != int(*ss.Spec.Replicas) {
+		status = fmt.Sprintf(
+			"%d out of %d specified pods are running", len(runningPods), *ss.Spec.Replicas,
+		)
+		return false, status, nil
+	}
+	return true, status, nil
 }
 
 // StatefulSetPods returns list of running and notrunning pods created by the deployment.
@@ -100,14 +110,17 @@ func StatefulSetPods(ctx context.Context, kubeCli kubernetes.Interface, namespac
 }
 
 // WaitOnStatefulSetReady waits for the stateful set to be ready
-func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) error {
-	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		ok, err := StatefulSetReady(ctx, kubeCli, namespace, name)
+func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (string, error) {
+	var status string
+	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		ok, s, err := StatefulSetReady(ctx, kubeCli, namespace, name)
+		status = s
 		if apierrors.IsNotFound(errors.Cause(err)) {
 			return false, nil
 		}
 		return ok, err
 	})
+	return status, err
 }
 
 // DeploymentConfigReady checks to see the deploymentconfig has desired number of available replicas.
@@ -154,35 +167,61 @@ func DeploymentConfigReady(ctx context.Context, osCli osversioned.Interface, cli
 
 // DeploymentReady checks to see if the deployment has the desired number of
 // available replicas.
-func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, error) {
+func DeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (bool, string, error) {
+	var status string
 	d, err := kubeCli.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		return false, errors.Wrapf(err, "could not get Deployment{Namespace: %s, Name: %s}", namespace, name)
+		return false, status, errors.Wrapf(err, "could not get Deployment{Namespace: %s, Name: %s}", namespace, name)
 	}
+
 	// Wait for deployment to complete. The deployment controller will check the downstream
 	// RS and Running Pods to update the deployment status
-	if deploymentComplete := d.Status.UpdatedReplicas == *d.Spec.Replicas &&
-		d.Status.Replicas == *d.Spec.Replicas &&
-		d.Status.AvailableReplicas == *d.Spec.Replicas &&
-		d.Status.ObservedGeneration >= d.Generation; !deploymentComplete {
-		return false, nil
+	switch {
+	case d.Status.Replicas != *d.Spec.Replicas:
+		status = fmt.Sprintf(
+			"Specified replicas: %d, Replicas: %d", *d.Spec.Replicas, d.Status.Replicas,
+		)
+	case d.Status.UpdatedReplicas != *d.Spec.Replicas:
+		status = fmt.Sprintf(
+			"Specified replicas: %d, Updated replicas: %d", *d.Spec.Replicas, d.Status.UpdatedReplicas,
+		)
+	case d.Status.AvailableReplicas != *d.Spec.Replicas:
+		status = fmt.Sprintf(
+			"Specified replicas: %d, Available replicas: %d", *d.Spec.Replicas, d.Status.AvailableReplicas,
+		)
+	case d.Status.ObservedGeneration < d.Generation:
+		status = fmt.Sprintf(
+			"Generation: %d, Observed generation: %d", d.Generation, d.Status.ObservedGeneration,
+		)
+	}
+	if status != "" {
+		return false, status, nil
 	}
 	rs, err := FetchReplicaSet(kubeCli, namespace, d.GetUID(), d.Annotations[RevisionAnnotation])
 	if err != nil {
-		return false, err
+		return false, status, err
 	}
 	runningPods, notRunningPods, err := FetchPods(kubeCli, namespace, rs.GetUID())
 	if err != nil {
-		return false, err
+		return false, status, err
 	}
 	// The deploymentComplete check above already validates this but we do it
 	// again anyway given we have this information available
 	if len(runningPods) != int(d.Status.AvailableReplicas) {
-		return false, nil
+		status = fmt.Sprintf(
+			"%d out of %d available pods are running", len(runningPods), d.Status.AvailableReplicas,
+		)
+		return false, status, nil
 	}
 	// Wait for things to settle. This check *is* required since the deployment controller
 	// excludes any pods not running from its replica count(s)
-	return len(notRunningPods) == 0, nil
+	if len(notRunningPods) != 0 {
+		status = fmt.Sprintf(
+			"%d out of %d pods are running", len(runningPods), len(runningPods)+len(notRunningPods),
+		)
+		return false, status, nil
+	}
+	return true, status, nil
 }
 
 // DeploymentConfigPods return list of running and not running pod created by this/name deployment config
@@ -213,14 +252,17 @@ func DeploymentPods(ctx context.Context, kubeCli kubernetes.Interface, namespace
 }
 
 // WaitOnDeploymentReady waits for the deployment to be ready
-func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) error {
-	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		ok, err := DeploymentReady(ctx, kubeCli, namespace, name)
+func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string) (string, error) {
+	var status string
+	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		ok, s, err := DeploymentReady(ctx, kubeCli, namespace, name)
+		status = s
 		if apierrors.IsNotFound(errors.Cause(err)) {
 			return false, nil
 		}
 		return ok, err
 	})
+	return status, err
 }
 
 // WaitOnDeploymentConfigReady waits for deploymentconfig to be ready
@@ -316,7 +358,8 @@ func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespa
 	if err != nil {
 		return errors.Wrapf(err, "Could not update Statefulset{Namespace %s, Name: %s}", namespace, name)
 	}
-	return WaitOnStatefulSetReady(ctx, kubeCli, namespace, name)
+	_, err = WaitOnStatefulSetReady(ctx, kubeCli, namespace, name)
+	return err
 }
 
 func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
@@ -329,7 +372,8 @@ func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespac
 	if err != nil {
 		return errors.Wrapf(err, "Could not update Deployment{Namespace %s, Name: %s}", namespace, name)
 	}
-	return WaitOnDeploymentReady(ctx, kubeCli, namespace, name)
+	_, err = WaitOnDeploymentReady(ctx, kubeCli, namespace, name)
+	return err
 }
 
 func ScaleDeploymentConfig(ctx context.Context, kubeCli kubernetes.Interface, osCli osversioned.Interface, namespace string, name string, replicas int32) error {
