@@ -685,6 +685,7 @@ func staticRegionToZones(region string) ([]string, error) {
 		}, nil
 	case "ap-northeast-2":
 		return []string{
+			"ap-northeast-2-wl1-cjj-wlz-1",
 			"ap-northeast-2a",
 			"ap-northeast-2b",
 			"ap-northeast-2c",
