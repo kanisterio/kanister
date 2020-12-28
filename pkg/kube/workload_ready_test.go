@@ -34,8 +34,7 @@ func (s *WorkloadReadySuite) TestWaitOnStatefulSetReady(c *C) {
 	cp := cliParams{"ss", "default", true, 1, 1, 1, 1, 2, "Running"}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second/4)
 	defer cancel()
-	status, err := WaitOnStatefulSetReady(ctx, getCli(cp), cp.namespace, cp.name)
-	c.Assert(status, DeepEquals, "")
+	err := WaitOnStatefulSetReady(ctx, getCli(cp), cp.namespace, cp.name)
 	c.Assert(err, IsNil)
 }
 
@@ -49,11 +48,10 @@ func (s *WorkloadReadySuite) TestStatefulSetReady(c *C) {
 }
 
 func (s *WorkloadReadySuite) TestWaitOnDeploymentReady(c *C) {
-	cp := cliParams{"dep", "default", false, 1, 1, 1, 1, 2, "Running"}
+	cp := cliParams{"dep", "default", false, 5, 1, 1, 1, 2, "Running"}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second/4)
 	defer cancel()
-	status, err := WaitOnDeploymentReady(ctx, getCli(cp), cp.namespace, cp.name)
-	c.Assert(status, DeepEquals, "")
+	err := WaitOnDeploymentReady(ctx, getCli(cp), cp.namespace, cp.name)
 	c.Assert(err, IsNil)
 }
 
