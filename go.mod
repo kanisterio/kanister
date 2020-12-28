@@ -9,11 +9,12 @@ replace (
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go v38.0.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.0
+	github.com/Azure/azure-sdk-for-go v49.1.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.11.15
+	github.com/Azure/go-autorest/autorest/adal v0.9.10 // indirect
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.0
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
+	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.3.0 // indirect
 	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
@@ -54,6 +55,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45
 	go.uber.org/zap v1.15.0
+	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	google.golang.org/api v0.25.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
