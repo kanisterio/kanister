@@ -659,6 +659,7 @@ func staticRegionToZones(region string) ([]string, error) {
 		"southafricawest",
 		"brazilsoutheast",
 		"eastusstg",
+		"eastus2euap",
 		"westusstage",
 		"westus2stage",
 		"unitedstates",
