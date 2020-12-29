@@ -30,6 +30,7 @@ type cliParams struct {
 	podStatus               v1.PodPhase
 }
 
+// These tests can be used to force the various error states
 func (s *WorkloadReadySuite) TestWaitOnStatefulSetReady(c *C) {
 	cp := cliParams{"ss", "default", true, 1, 1, 1, 1, 2, "Running"}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second/4)
@@ -48,11 +49,27 @@ func (s *WorkloadReadySuite) TestStatefulSetReady(c *C) {
 }
 
 func (s *WorkloadReadySuite) TestWaitOnDeploymentReady(c *C) {
-	cp := cliParams{"dep", "default", false, 5, 1, 1, 1, 2, "Running"}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second/4)
-	defer cancel()
-	err := WaitOnDeploymentReady(ctx, getCli(cp), cp.namespace, cp.name)
-	c.Assert(err, IsNil)
+	testCases := []struct {
+		input cliParams
+		want  string
+	}{
+		{
+			input: cliParams{"dep", "default", false, 5, 2, 5, 5, 2, "Running"},
+			want:  "Specified 5 replicas and only have 2.*",
+		}, {
+			input: cliParams{"dep", "default", false, 5, 5, 2, 5, 2, "Running"},
+			want:  "Specified 5 replicas and only have 2 updated replicas.*",
+		}, {
+			input: cliParams{"dep", "default", false, 5, 5, 5, 2, 2, "Running"},
+			want:  "Specified 5 replicas and only have 2 available replicas.*",
+		},
+	}
+	for _, tc := range testCases {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second/4)
+		defer cancel()
+		err := WaitOnDeploymentReady(ctx, getCli(tc.input), tc.input.namespace, tc.input.name)
+		c.Assert(err, ErrorMatches, tc.want)
+	}
 }
 
 func (s *WorkloadReadySuite) TestDeploymentReady(c *C) {
