@@ -83,7 +83,6 @@ func (s *WorkloadReadySuite) TestDeploymentReady(c *C) {
 
 // Returns a fake k8s cli that contains a Deployment, ReplicaSet or StatefulSet, and Pod
 func getCli(cp cliParams) kubernetes.Interface {
-
 	const dUID types.UID = "1234"
 	const pUID types.UID = "4567"
 
