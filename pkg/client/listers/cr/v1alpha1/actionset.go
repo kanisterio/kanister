@@ -26,8 +26,10 @@ import (
 )
 
 // ActionSetLister helps list ActionSets.
+// All objects returned here must be treated as read-only.
 type ActionSetLister interface {
 	// List lists all ActionSets in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.ActionSet, err error)
 	// ActionSets returns an object that can list and get ActionSets.
 	ActionSets(namespace string) ActionSetNamespaceLister
@@ -58,10 +60,13 @@ func (s *actionSetLister) ActionSets(namespace string) ActionSetNamespaceLister 
 }
 
 // ActionSetNamespaceLister helps list and get ActionSets.
+// All objects returned here must be treated as read-only.
 type ActionSetNamespaceLister interface {
 	// List lists all ActionSets in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.ActionSet, err error)
 	// Get retrieves the ActionSet from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.ActionSet, error)
 	ActionSetNamespaceListerExpansion
 }
