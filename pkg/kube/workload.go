@@ -113,13 +113,15 @@ func WaitOnStatefulSetReady(ctx context.Context, kubeCli kubernetes.Interface, n
 	var status string
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		ok, s, err := StatefulSetReady(ctx, kubeCli, namespace, name)
-		status = s
+		if s != "" {
+			status = s
+		}
 		if apierrors.IsNotFound(errors.Cause(err)) {
 			return false, nil
 		}
 		return ok, err
 	})
-	if status != "" {
+	if err != nil && status != "" {
 		return errors.Wrap(err, status)
 	}
 	return err
@@ -258,13 +260,15 @@ func WaitOnDeploymentReady(ctx context.Context, kubeCli kubernetes.Interface, na
 	var status string
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		ok, s, err := DeploymentReady(ctx, kubeCli, namespace, name)
-		status = s
+		if s != "" {
+			status = s
+		}
 		if apierrors.IsNotFound(errors.Cause(err)) {
 			return false, nil
 		}
 		return ok, err
 	})
-	if status != "" {
+	if err != nil && status != "" {
 		return errors.Wrap(err, status)
 	}
 	return err

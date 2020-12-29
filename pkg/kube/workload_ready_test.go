@@ -26,21 +26,42 @@ type cliParams struct {
 	statusReplicas          int32
 	statusUpdatedReplicas   int32
 	statusAvailableReplicas int32
+	generation              int64
 	observedGeneration      int64
 	podStatus               v1.PodPhase
 }
 
 // These tests can be used to force the various error states
 func (s *WorkloadReadySuite) TestWaitOnStatefulSetReady(c *C) {
-	cp := cliParams{"ss", "default", true, 1, 1, 1, 1, 2, "Running"}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second/4)
-	defer cancel()
-	err := WaitOnStatefulSetReady(ctx, getCli(cp), cp.namespace, cp.name)
-	c.Assert(err, IsNil)
+	testCases := []struct {
+		input cliParams
+		want  string
+	}{
+		{
+			input: cliParams{"ss", "default", true, 1, 1, 1, 1, 1, 1, "Running"},
+			want:  "",
+		}, {
+			input: cliParams{"ss", "default", true, 5, 2, 5, 5, 1, 1, "Running"},
+			want:  "Specified 5 replicas and only 2 are ready.*",
+		}, {
+			input: cliParams{"ss", "default", true, 1, 1, 1, 1, 1, 1, "Failed"},
+			want:  "Specified 1 replicas and only 0 are running.*",
+		},
+	}
+	for _, tc := range testCases {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second/4)
+		defer cancel()
+		err := WaitOnStatefulSetReady(ctx, getCli(tc.input), tc.input.namespace, tc.input.name)
+		if tc.want != "" {
+			c.Assert(err, ErrorMatches, tc.want)
+		} else {
+			c.Assert(err, IsNil)
+		}
+	}
 }
 
 func (s *WorkloadReadySuite) TestStatefulSetReady(c *C) {
-	cp := cliParams{"ss", "default", true, 1, 1, 1, 1, 2, "Running"}
+	cp := cliParams{"ss", "default", true, 1, 1, 1, 1, 1, 1, "Running"}
 	ctx := context.Background()
 	ready, status, err := StatefulSetReady(ctx, getCli(cp), cp.namespace, cp.name)
 	c.Assert(status, DeepEquals, "")
@@ -54,26 +75,39 @@ func (s *WorkloadReadySuite) TestWaitOnDeploymentReady(c *C) {
 		want  string
 	}{
 		{
-			input: cliParams{"dep", "default", false, 5, 2, 5, 5, 2, "Running"},
+			input: cliParams{"dep", "default", false, 1, 1, 1, 1, 1, 1, "Running"},
+			want:  "",
+		}, {
+			input: cliParams{"dep", "default", false, 5, 2, 5, 5, 1, 1, "Running"},
 			want:  "Specified 5 replicas and only have 2.*",
 		}, {
-			input: cliParams{"dep", "default", false, 5, 5, 2, 5, 2, "Running"},
+			input: cliParams{"dep", "default", false, 5, 5, 2, 5, 1, 1, "Running"},
 			want:  "Specified 5 replicas and only have 2 updated replicas.*",
 		}, {
-			input: cliParams{"dep", "default", false, 5, 5, 5, 2, 2, "Running"},
+			input: cliParams{"dep", "default", false, 5, 5, 5, 2, 1, 1, "Running"},
 			want:  "Specified 5 replicas and only have 2 available replicas.*",
+		}, {
+			input: cliParams{"dep", "default", false, 1, 1, 1, 1, 1, 0, "Running"},
+			want:  "Need generation of at least 1 and observed 0.*",
+		}, {
+			input: cliParams{"dep", "default", false, 1, 1, 1, 1, 1, 1, "Failed"},
+			want:  "0 out of 1 available pods are running.*",
 		},
 	}
 	for _, tc := range testCases {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second/4)
 		defer cancel()
 		err := WaitOnDeploymentReady(ctx, getCli(tc.input), tc.input.namespace, tc.input.name)
-		c.Assert(err, ErrorMatches, tc.want)
+		if tc.want != "" {
+			c.Assert(err, ErrorMatches, tc.want)
+		} else {
+			c.Assert(err, IsNil)
+		}
 	}
 }
 
 func (s *WorkloadReadySuite) TestDeploymentReady(c *C) {
-	cp := cliParams{"dep", "default", false, 1, 1, 1, 1, 2, "Running"}
+	cp := cliParams{"dep", "default", false, 1, 1, 1, 1, 1, 1, "Running"}
 	ctx := context.Background()
 	ready, status, err := DeploymentReady(ctx, getCli(cp), cp.namespace, cp.name)
 	c.Assert(ready, DeepEquals, true)
@@ -89,9 +123,10 @@ func getCli(cp cliParams) kubernetes.Interface {
 	kubeObjects := []runtime.Object{
 		&appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      cp.name,
-				Namespace: cp.namespace,
-				UID:       dUID,
+				Name:       cp.name,
+				Namespace:  cp.namespace,
+				UID:        dUID,
+				Generation: cp.generation,
 			},
 			Spec: appsv1.DeploymentSpec{
 				Replicas: &cp.specReplicas,
