@@ -1,0 +1,37 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: kafka-connect-restore-blueprint
+  namespace: kasten-io
+actions:
+  restore:
+    type: Deployment
+    phases:
+    - func: KubeTask
+      name: restorePhase
+      args:
+        namespace: kafka
+        podOverride:
+          containers:
+          - name: container
+            imagePullPolicy: IfNotPresent
+        image: akankshakumari393/confluent-kafka-s3source:latest
+        command:
+          - bash
+          - -c
+          - |
+            mkdir /tmp/config
+            {{- if .Profile.Credential.KeyPair }}
+            export AWS_SECRET_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+            export AWS_ACCESS_KEY="{{ .Profile.Credential.KeyPair.ID }}"
+            {{- else }}
+            export AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
+            export AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
+            {{- end }}
+            region="{{ .Profile.Location.Region }}"
+            bucket="{{ .Profile.Location.Bucket }}"
+            s3config="{{ index .Object.data "s3Source.properties" | toString }}"
+            echo -e "${s3config}\ns3.region= ${region}\ns3.bucket.name= ${bucket}\n" > /tmp/config/s3config.properties
+            kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
+            echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
+            sh /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties
