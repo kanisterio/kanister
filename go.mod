@@ -39,6 +39,7 @@ require (
 	github.com/json-iterator/go v1.1.10
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/kopia/kopia v0.4.1-0.20200608151401-25934a544df4
+	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.0.0
 	github.com/lib/pq v1.2.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v1.1.2
@@ -61,7 +62,6 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
-	//pinned k8s.io to v0.18.3 tag
 	k8s.io/api v0.19.5
 	k8s.io/apiextensions-apiserver v0.19.5
 	k8s.io/apimachinery v0.19.5

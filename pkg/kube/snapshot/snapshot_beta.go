@@ -18,9 +18,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
-	storage "k8s.io/api/storage/v1beta1"
+	//corev1 "k8s.io/api/core/v1"
+	//storage "k8s.io/api/storage/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,7 +30,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1alpha1"
+	//"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1beta1"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -99,61 +100,21 @@ func (sna *SnapshotBeta) Create(ctx context.Context, name, namespace, volumeName
 }
 
 // Get will return the VolumeSnapshot in the 'namespace' with given 'name'.
-func (sna *SnapshotBeta) Get(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error) {
+func (sna *SnapshotBeta) Get(ctx context.Context, name, namespace string) (*v1.VolumeSnapshot, error) {
 	us, err := sna.dynCli.Resource(v1beta1.VolSnapGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	vs := &v1beta1.VolumeSnapshot{}
+	vs := &v1.VolumeSnapshot{}
 	if err := TransformUnstructured(us, vs); err != nil {
 		return nil, err
 	}
-	// Populate v1alpha1.VolumeSnapshot object from v1beta1.VolumeSnapshot
-	vsa := v1alpha1.VolumeSnapshot{}
-	meta := vs.ObjectMeta.DeepCopy()
-	if meta == nil {
-		return nil, fmt.Errorf("Invalid VolumeSnapshotObject: ObjectMeta is nil")
-	}
-	vsa.ObjectMeta = *meta
-
-	if vs.Spec.Source.PersistentVolumeClaimName != nil {
-		vsa.Spec.Source = &corev1.TypedLocalObjectReference{
-			Kind: PVCKind,
-			Name: *vs.Spec.Source.PersistentVolumeClaimName,
-		}
-	}
-	if vs.Spec.VolumeSnapshotClassName != nil {
-		vsa.Spec.VolumeSnapshotClassName = *vs.Spec.VolumeSnapshotClassName
-	}
-	if vs.Spec.Source.VolumeSnapshotContentName != nil {
-		vsa.Spec.SnapshotContentName = *vs.Spec.Source.VolumeSnapshotContentName
-	}
-	if vs.Status == nil {
-		return &vsa, nil
-	}
-	// If Status is not nil, set VolumeSnapshotContentName from status
-	vsa.Status = v1alpha1.VolumeSnapshotStatus{
-		CreationTime: vs.Status.CreationTime,
-		RestoreSize:  vs.Status.RestoreSize,
-	}
-	if vs.Status.BoundVolumeSnapshotContentName != nil {
-		vsa.Spec.SnapshotContentName = *vs.Status.BoundVolumeSnapshotContentName
-	}
-	if vs.Status.ReadyToUse != nil {
-		vsa.Status.ReadyToUse = *vs.Status.ReadyToUse
-	}
-	if vs.Status.Error != nil {
-		vsa.Status.Error = &storage.VolumeError{
-			Time:    *vs.Status.Error.Time,
-			Message: *vs.Status.Error.Message,
-		}
-	}
-	return &vsa, nil
+	return vs, nil
 }
 
 // Delete will delete the VolumeSnapshot and returns any error as a result.
-func (sna *SnapshotBeta) Delete(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error) {
+func (sna *SnapshotBeta) Delete(ctx context.Context, name, namespace string) (*v1.VolumeSnapshot, error) {
 	snap, err := sna.Get(ctx, name, namespace)
 	if apierrors.IsNotFound(err) {
 		return nil, nil
@@ -201,17 +162,18 @@ func (sna *SnapshotBeta) GetSource(ctx context.Context, snapshotName, namespace 
 	if err != nil {
 		return nil, errors.Errorf("Failed to get snapshot, VolumeSnapshot: %s, Error: %v", snapshotName, err)
 	}
-	if !snap.Status.ReadyToUse {
+	if snap.Status.ReadyToUse == nil || *snap.Status.ReadyToUse != true {
 		return nil, errors.Errorf("Snapshot is not ready, VolumeSnapshot: %s, Namespace: %s", snapshotName, namespace)
 	}
-	if snap.Spec.SnapshotContentName == "" {
+	if snap.Status.BoundVolumeSnapshotContentName == nil {
 		return nil, errors.Errorf("Snapshot does not have content, VolumeSnapshot: %s, Namespace: %s", snapshotName, namespace)
 	}
 
-	cont, err := sna.getContent(ctx, snap.Spec.SnapshotContentName)
+	cont, err := sna.getContent(ctx, *snap.Status.BoundVolumeSnapshotContentName)
 	if err != nil {
-		return nil, errors.Errorf("Failed to get snapshot content, VolumeSnapshot: %s, VolumeSnapshotContent: %s, Error: %v", snapshotName, snap.Spec.SnapshotContentName, err)
+		return nil, errors.Errorf("Failed to get snapshot content, VolumeSnapshot: %s, VolumeSnapshotContent: %s, Error: %v", snapshotName, *snap.Status.BoundVolumeSnapshotContentName, err)
 	}
+
 	src := &Source{
 		Handle:                  *cont.Status.SnapshotHandle,
 		Driver:                  cont.Spec.Driver,

@@ -17,6 +17,7 @@ package snapshot
 import (
 	"context"
 
+	"github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -57,13 +58,13 @@ type Snapshotter interface {
 	//
 	// 'name' is the name of the VolumeSnapshot that will be returned.
 	// 'namespace' is the namespace of the VolumeSnapshot that will be returned.
-	Get(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error)
+	Get(ctx context.Context, name, namespace string) (*v1.VolumeSnapshot, error)
 	// Delete will delete the VolumeSnapshot.
 	// Returns the `VolumeSnapshot` deleted and any error as a result.
 	//
 	// 'name' is the name of the VolumeSnapshot that will be deleted.
 	// 'namespace' is the namespace of the VolumeSnapshot that will be deleted.
-	Delete(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error)
+	Delete(ctx context.Context, name, namespace string) (*v1.VolumeSnapshot, error)
 	// DeleteContent will delete the VolumeSnapshot and returns any error as a
 	// result.
 	//
