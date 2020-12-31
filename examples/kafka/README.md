@@ -43,7 +43,7 @@ $ kubectl -n kafka run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6
 * `s3ConnectorConfiguration.properties` file contain properties related `Confluent s3 sink Connector`
 * `kafkaConfiguration.properties` contain properties pointing to kafka server
 
-## Setup Blueprint
+## Setup Blueprint for backup action
 Before Setting up Blueprint, a profile is created which has s3 Details, alongwith that a configMap with the configuration details
 ```bash
 # Create ConfigMap with the Properties file s3ConnectorConfiguration.properties and kafkaConfiguration.properties
