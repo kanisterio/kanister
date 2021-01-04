@@ -34,4 +34,24 @@ actions:
             echo -e "${s3config}\ns3.region= ${region}\ns3.bucket.name= ${bucket}\n" > /tmp/config/s3config.properties
             kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
+            export topic=`cat /tmp/config/s3config.properties | grep "confluent.topic" | cut -d'=' -f2`
+            export bootstrapServer=`cat /tmp/config/s3config.properties | grep "confluent.topic.bootstrap.servers" | cut -d'=' -f2`
+            
+            export retentionPeriod="$(/bin/kafka-configs --describe --bootstrap-server "$bootstrapServer" --entity-type topics --entity-name "$topic" --all | grep -m1 retention.ms | sed 's/[^0-9]*//; s/ .*//')"
+            
+            /bin/kafka-configs --bootstrap-server "$bootstrapServer" --entity-type topics --entity-name "$topic" bin/kafka-configs.sh --alter --add-config retention.ms=1
+            export startOffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -1)"
+            export endoffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -2)"
+            echo env > /tmp/config/env.properties
+            until [ "$startOffset" = "$endoffset" ]
+            do
+              startOffset = bin/kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -1
+              endoffset = bin/kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -2
+
+              sleep 1
+            done
+            /bin/kafka-configs --bootstrap-server "$bootstrapServer" --entity-type topics --entity-name "$topic" bin/kafka-configs.sh --alter --add-config retention.ms="$retentionPeriod"
             sh /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties
+
+            
+            
