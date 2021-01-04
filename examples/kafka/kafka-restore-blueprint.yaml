@@ -42,7 +42,6 @@ actions:
             /bin/kafka-configs --bootstrap-server "$bootstrapServer" --entity-type topics --entity-name "$topic" bin/kafka-configs.sh --alter --add-config retention.ms=1
             export startOffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -1)"
             export endoffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -2)"
-            echo env > /tmp/config/env.properties
             until [ "$startOffset" = "$endoffset" ]
             do
               startOffset = bin/kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -1
