@@ -40,14 +40,14 @@ $ kubectl -n kafka run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6
 
 **NOTE:**
 * Here we have now kafka running with the broker running on service `my-cluster-kafka-bootstrap:9092`
-* `s3ConnectorConfiguration.properties` file contain properties related `Confluent s3 sink Connector`
+* `s3Sink.properties` file contain properties related `Confluent s3 sink Connector`
 * `kafkaConfiguration.properties` contain properties pointing to kafka server
 
 ## Setup Blueprint for backup action
 Before Setting up Blueprint, a profile is created which has s3 Details, alongwith that a configMap with the configuration details
 ```bash
-# Create ConfigMap with the Properties file s3ConnectorConfiguration.properties and kafkaConfiguration.properties
-$ kubectl create configmap s3sinkconnector-config --from-file=./s3ConnectorConfiguration.properties --from-file=./kafkaConfiguration.properties -n kafka
+# Create ConfigMap with the Properties file s3Sink.properties and kafkaConfiguration.properties
+$ kubectl create configmap s3sinkconnector-config --from-file=./s3Sink.properties --from-file=./kafkaConfiguration.properties -n kafka
 
 # Create Profile pointing to s3 bucket
 $ kanctl create profile s3compliant --access-key <aws-access-key> \
@@ -58,7 +58,7 @@ secret 's3-secret-gkvgi4' created
 profile 's3-profile-fn64h' created
 
 # Blueprint Definition
-$ kubectl create -f ./kafka-blueprint.yaml -n <kanister-operator-namespace>
+$ kubectl create -f ./kafka-backup-blueprint.yaml -n <kanister-operator-namespace>
 ```
 ## Perform Backup
 To perform backup to s3, an actionset is created which will run kafka-connect
