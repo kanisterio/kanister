@@ -286,7 +286,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		clone, err := tc.fakeSs.Get(context.Background(), fakeClone, fakeTargetNamespace)
 		c.Assert(err, IsNil)
 
-		us, err := dynCli.Resource(tc.contentGVR).Get(context.TODO(), clone.Spec.SnapshotContentName, metav1.GetOptions{})
+		us, err := dynCli.Resource(tc.contentGVR).Get(context.TODO(), *clone.Spec.Source.VolumeSnapshotContentName, metav1.GetOptions{})
 		c.Assert(err, IsNil)
 		err = snapshot.TransformUnstructured(us, tc.snapContentObject)
 		c.Assert(err, IsNil)
@@ -363,7 +363,8 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	snap, err := snapshotter.Get(ctx, snapshotName, s.sourceNamespace)
 	c.Assert(err, IsNil)
 	c.Assert(snap.Name, Equals, snapshotName)
-	c.Assert(snap.Status.ReadyToUse, Equals, true)
+	c.Assert(snap.Status.ReadyToUse, NotNil)
+	c.Assert(*snap.Status.ReadyToUse, Equals, true)
 
 	err = snapshotter.Create(ctx, snapshotName, s.sourceNamespace, pvc.Name, snapshotClass, wait)
 	c.Assert(err, NotNil)
@@ -378,7 +379,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		DynCli:           s.dynCli,
 		Namespace:        s.targetNamespace,
 		VolumeName:       volumeCloneName,
-		StorageClassName: "",
+		StorageClassName: storageClass,
 		SnapshotName:     snapshotCloneName,
 		RestoreSize:      &sizeOriginal,
 		Labels:           nil,
@@ -401,7 +402,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		DynCli:           s.dynCli,
 		Namespace:        s.targetNamespace,
 		VolumeName:       volumeCloneName,
-		StorageClassName: "",
+		StorageClassName: storageClass,
 		SnapshotName:     snapshotCloneName,
 		RestoreSize:      &sizeNew,
 		Labels: map[string]string{
