@@ -18,6 +18,10 @@ actions:
         image: akankshakumari393/confluent-kafka-s3source:latest
         command:
           - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
           - -c
           - |
             mkdir /tmp/config
