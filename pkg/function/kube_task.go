@@ -69,7 +69,7 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 func kubeTaskPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
 		ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
 		// Fetch logs from the pod
