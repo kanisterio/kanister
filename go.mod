@@ -22,8 +22,6 @@ require (
 	github.com/Masterminds/sprig v2.15.0+incompatible
 	github.com/aokoli/goutils v1.1.0 // indirect
 	github.com/aws/aws-sdk-go v1.31.3
-	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
-	github.com/cpuguy83/go-md2man v1.0.10 // indirect
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
@@ -62,6 +60,7 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
+	//pinned k8s.io to v0.19.5 tag
 	k8s.io/api v0.19.5
 	k8s.io/apiextensions-apiserver v0.19.5
 	k8s.io/apimachinery v0.19.5
