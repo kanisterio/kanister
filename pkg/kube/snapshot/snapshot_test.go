@@ -103,7 +103,6 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 	s.snapshotClassBeta = &snapClassBeta
 	snapClassStable, driverStable := findSnapshotClassName(c, s.dynCli, snapshot.VolSnapClassGVR, snapv1.VolumeSnapshotClass{})
 	s.snapshotClassStable = &snapClassStable
-	fmt.Printf("snClass:: %+v\nDriver:: %+v\n", snapClassStable, driverStable)
 	storageClasses, err := cli.StorageV1().StorageClasses().List(context.TODO(), metav1.ListOptions{})
 	c.Assert(err, IsNil)
 	for _, class := range storageClasses.Items {
@@ -833,7 +832,6 @@ func findSnapshotClassName(c *C, dynCli dynamic.Interface, gvr schema.GroupVersi
 			c.Fail()
 		}
 		snapshotClass = usClass.GetName()
-		fmt.Println("snapshotClass GET", snapshotClass)
 		if vsc, ok := object.(v1alpha1.VolumeSnapshotClass); ok {
 			err := snapshot.TransformUnstructured(usClass, &vsc)
 			if err != nil {

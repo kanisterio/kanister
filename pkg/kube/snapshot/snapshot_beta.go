@@ -181,7 +181,7 @@ func getSnapshotSource(ctx context.Context, dynCli dynamic.Interface, snapGVR, s
 	if err != nil {
 		return nil, errors.Errorf("Failed to get snapshot, VolumeSnapshot: %s, Error: %v", snapshotName, err)
 	}
-	if snap.Status.ReadyToUse == nil || !*snap.Status.ReadyToUse != true {
+	if snap.Status.ReadyToUse == nil || !*snap.Status.ReadyToUse {
 		return nil, errors.Errorf("Snapshot is not ready, VolumeSnapshot: %s, Namespace: %s", snapshotName, namespace)
 	}
 	if snap.Status.BoundVolumeSnapshotContentName == nil {

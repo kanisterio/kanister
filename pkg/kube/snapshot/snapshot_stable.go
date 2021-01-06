@@ -165,15 +165,3 @@ func (sna *SnapshotStable) CreateContentFromSource(ctx context.Context, source *
 func (sna *SnapshotStable) WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error {
 	return waitOnReadyToUse(ctx, sna.dynCli, VolSnapGVR, snapshotName, namespace)
 }
-
-func (sna *SnapshotStable) getDeletionPolicyFromClass(snapClassName string) (string, error) {
-	us, err := sna.dynCli.Resource(VolSnapClassGVR).Get(context.TODO(), snapClassName, metav1.GetOptions{})
-	if err != nil {
-		return "", errors.Wrapf(err, "Failed to find VolumeSnapshotClass: %s", snapClassName)
-	}
-	vsc := v1.VolumeSnapshotClass{}
-	if err := TransformUnstructured(us, &vsc); err != nil {
-		return "", err
-	}
-	return string(vsc.DeletionPolicy), nil
-}
