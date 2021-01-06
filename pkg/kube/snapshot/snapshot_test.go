@@ -599,7 +599,7 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 			storageClassName: fakeSC,
 			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-1", fakeDriver, "Delete"),
 			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-1", fakeDriver, "Delete"),
-			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-1", fakeDriver, "Delete"),
+			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-1", fakeDriver, "Delete"),
 			testKey:          "test-1",
 			testValue:        "true",
 			check:            IsNil,

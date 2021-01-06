@@ -125,7 +125,7 @@ func (sna *SnapshotAlpha) Get(ctx context.Context, name, namespace string) (*v1.
 		return nil, err
 	}
 
-	// Populate v1alpha1.VolumeSnapshot object from v1beta1.VolumeSnapshot
+	// Populate v1.VolumeSnapshot object from v1alpha1.VolumeSnapshot
 	vsRet := v1.VolumeSnapshot{}
 	meta := vs.ObjectMeta.DeepCopy()
 	if meta == nil {
