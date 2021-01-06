@@ -129,5 +129,12 @@ func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Sna
 	if exists {
 		return NewSnapshotBeta(kubeCli, dynCli), nil
 	}
+	exists, err = kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), GroupName, Version)
+	if err != nil {
+		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
+	}
+	if exists {
+		return NewSnapshotStable(kubeCli, dynCli), nil
+	}
 	return nil, errors.New("Snapshot resources not supported")
 }
