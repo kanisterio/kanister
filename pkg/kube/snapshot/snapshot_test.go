@@ -123,6 +123,9 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *C) {
 	snapshotName := "snap-1-fake"
 	volName := "pvc-1-fake"
 	scheme := runtime.NewScheme()
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
+
 	fakeCli := fake.NewSimpleClientset()
 
 	size, err := resource.ParseQuantity("1Gi")
@@ -164,6 +167,9 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *C) {
 
 func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
 	scheme := runtime.NewScheme()
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
+
 	fakeCli := fake.NewSimpleClientset(
 		&scv1.StorageClass{
 			ObjectMeta: metav1.ObjectMeta{
@@ -514,6 +520,9 @@ type snapshotClassTC struct {
 
 func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 	scheme := runtime.NewScheme()
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
+
 	dynCli := dynfake.NewSimpleDynamicClient(scheme)
 	kubeCli := fake.NewSimpleClientset(
 		&scv1.StorageClass{
