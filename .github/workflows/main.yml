@@ -3,23 +3,22 @@ name: kanister
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches: 
-      - main
-
+      - master
 jobs:
   make-docs:
     name: Make docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     steps:
       - uses: actions/checkout@master
       - name: Make Docs
         run: make docs
 
-  kind-test:
-    name: Kind test
-    runs-on: ubuntu-latest
+  unit-test:
+    name: Unit test
+    runs-on: ubuntu-16.04
     steps:
       - name: Code Checkout
         uses: actions/checkout@master
@@ -27,8 +26,6 @@ jobs:
         with:
           docker_channel: nightly
           docker_nightly_version: snapshot-20201008
-      - name: Go Setup
-        uses: actions/setup-go@v2.1.3
       - name: Docker Pull
         run: docker pull kindest/node:v1.18.2
       - name: Go Mod Download
@@ -42,9 +39,9 @@ jobs:
       - name: Stop Kind
         run: make stop-kind
 
-  minio-test:
-    name: Minio Test
-    runs-on: ubuntu-latest
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-16.04
     steps:
       - name: Code Checkout
         uses: actions/checkout@master
@@ -52,8 +49,6 @@ jobs:
         with:
           docker_channel: nightly
           docker_nightly_version: snapshot-20201008
-      - name: Go Setup
-        uses: actions/setup-go@v2.1.3
       - name: Go Mod Download
         run: make go-mod-download
       - name: Docker Pull
@@ -69,7 +64,7 @@ jobs:
 
   lint:
     name: Lint phase
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     steps:
       - name: Code Checkout
         uses: actions/checkout@master
