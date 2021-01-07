@@ -64,7 +64,7 @@ $ kubectl create -f ./kafka-backup-blueprint.yaml -n <kanister-operator-namespac
 To perform backup to s3, an actionset is created which will run kafka-connect
 ```bash
 # Create an actionset
-$ kanctl create actionset --action backup --namespace <kanister-operator-namespace> --blueprint kafka-connect-blueprint --profile kafka/s3-profile-fn64h --objects v1/configmaps/kafka/s3sinkconnector-config
+$ kanctl create actionset --action backup --namespace <kanister-operator-namespace> --blueprint kafka-connect-backup-blueprint --profile kafka/s3-profile-fn64h --objects v1/configmaps/kafka/s3sinkconnector-config
 ```
 ## Verify the backup
 We can verify the backup operation by adding some data to the topic configured earlier

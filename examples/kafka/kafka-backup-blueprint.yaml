@@ -1,7 +1,7 @@
 apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
-  name: kafka-connect-blueprint
+  name: kafka-connect-backup-blueprint
   namespace: kasten-io
 actions:
   backup:
@@ -14,13 +14,7 @@ actions:
         podOverride:
           containers:
           - name: container
-            imagePullPolicy: IfNotPresent
-            livenessProbe:
-              httpGet:
-                path: /connectors
-                port: 8083
-              initialDelaySeconds: 60
-              periodSeconds: 5
+            imagePullPolicy: Always
         image: akankshakumari393/confluent-kafka-s3sink:latest
         command:
           - bash
