@@ -60,8 +60,8 @@ func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEn
 
 	// Populate the source info with source path and file
 	sourceInfo := snapshot.SourceInfo{
-		UserName: rep.Username(),
-		Host:     rep.Hostname(),
+		UserName: rep.ClientOptions().Username,
+		Host:     rep.ClientOptions().Hostname,
 		Path:     dirPath,
 	}
 

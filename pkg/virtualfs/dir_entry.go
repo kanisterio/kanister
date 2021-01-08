@@ -57,3 +57,7 @@ func (e dirEntry) Sys() interface{} {
 func (e dirEntry) Owner() fs.OwnerInfo {
 	return e.owner
 }
+
+func (e dirEntry) Device() fs.DeviceInfo {
+	return fs.DeviceInfo{}
+}
