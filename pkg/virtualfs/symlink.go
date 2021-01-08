@@ -16,12 +16,16 @@ package virtualfs
 
 import (
 	"context"
+
+	"github.com/kopia/kopia/fs"
 )
 
 // inmemorySymlink is a mock in-memory implementation of kopia's fs.Symlink
 type inmemorySymlink struct {
 	dirEntry
 }
+
+var _ fs.Symlink = (*inmemorySymlink)(nil)
 
 func (imsl *inmemorySymlink) Readlink(ctx context.Context) (string, error) {
 	panic("Symlinks not supported")

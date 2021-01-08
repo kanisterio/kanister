@@ -30,6 +30,8 @@ type dirEntry struct {
 	owner   fs.OwnerInfo
 }
 
+var _ fs.Entry = (*dirEntry)(nil)
+
 func (e dirEntry) Name() string {
 	return e.name
 }
