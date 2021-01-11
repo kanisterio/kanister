@@ -753,7 +753,7 @@ func staticRegionToZones(region string) ([]string, error) {
 		return []string{"westus2-1", "westus2-2", "westus2-3"}, nil
 	case "westus2stage":
 		return nil, nil
-	case "westusstag":
+	case "westusstage":
 		return nil, nil
 	}
 	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))
