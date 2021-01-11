@@ -1,9 +1,44 @@
 apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
-  name: kafka-connect-restore-blueprint
+  name: kafka-blueprint
   namespace: kasten-io
 actions:
+  backup:
+    type: Deployment
+    phases:
+    - func: KubeTask
+      name: setupPhase
+      args:
+        namespace: kafka
+        podOverride:
+          containers:
+          - name: container
+            imagePullPolicy: Always
+        image: akankshakumari393/confluent-kafka-s3sink:latest
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            mkdir /tmp/config
+            {{- if .Profile.Credential.KeyPair }}
+            export AWS_SECRET_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+            export AWS_ACCESS_KEY="{{ .Profile.Credential.KeyPair.ID }}"
+            {{- else }}
+            export AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
+            export AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
+            {{- end }}
+            region="{{ .Profile.Location.Region }}"
+            bucket="{{ .Profile.Location.Bucket }}"
+            s3config="{{ index .Object.data "s3Sink.properties" | toString }}"
+            echo -e "${s3config}\ns3.region= ${region}\ns3.bucket.name= ${bucket}\n" > /tmp/config/s3config.properties
+            kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
+            echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
+            sh /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties
   restoreprehook:
     type: Deployment
     phases:
@@ -42,7 +77,7 @@ actions:
           do
               # getting topic name from configuration file
               export topic="$(echo "$topicPath" | cut -d/ -f 2)"
-              echo "$topic"
+              echo "purging topic $topic"
               # getting bootstrapServer value from configuration file
               export bootstrapServer=`cat /tmp/config/s3config.properties | grep "confluent.topic.bootstrap.servers=" | cut -d'=' -f2`
               # getting retention period as set for the topic
@@ -55,11 +90,12 @@ actions:
               export endoffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -2)"
               until [ "$startOffset" = "$endoffset" ]
               do
-              echo "In loop"
+              echo "purging in process"
               startOffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -1)"
               endoffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -2)"
               sleep 1
               done
+              echo "purging complete for topic $topic"
               echo "resetting the retention to previous value"
               # reset the retention period to previous value
               /bin/kafka-configs --bootstrap-server "$bootstrapServer" --entity-type topics --entity-name "$topic" bin/kafka-configs.sh --alter --add-config retention.ms="$retentionPeriod"
