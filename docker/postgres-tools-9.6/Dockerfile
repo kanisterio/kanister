@@ -11,7 +11,7 @@ RUN apk -v --update add --no-cache curl python3 py3-pip groff less jq && \
     pip3 install --upgrade awscli && \
     rm -f /var/cache/apk/*
 
-COPY --from=restic/restic:0.9.5 /usr/bin/restic /usr/local/bin/restic
+COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
 ADD kando /usr/local/bin/
 
 CMD ["tail", "-f", "/dev/null"]
