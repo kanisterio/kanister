@@ -1,0 +1,72 @@
+name: kanister
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches: 
+      - master
+jobs:
+  make-docs:
+    name: Make docs
+    runs-on: ubuntu-16.04
+    steps:
+      - uses: actions/checkout@master
+      - name: Make Docs
+        run: make docs
+
+  unit-test:
+    name: Unit test
+    runs-on: ubuntu-16.04
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@master
+      - uses: docker-practice/actions-setup-docker@master
+        with:
+          docker_channel: nightly
+          docker_nightly_version: snapshot-20201008
+      - name: Docker Pull
+        run: docker pull kindest/node:v1.18.2
+      - name: Go Mod Download
+        run: make go-mod-download
+      - name: Start Kind
+        run: make start-kind
+      - name: Make Build
+        run: make build
+      - name: Make Test
+        run: make test
+      - name: Stop Kind
+        run: make stop-kind
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-16.04
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@master
+      - uses: docker-practice/actions-setup-docker@master
+        with:
+          docker_channel: nightly
+          docker_nightly_version: snapshot-20201008
+      - name: Go Mod Download
+        run: make go-mod-download
+      - name: Docker Pull
+        run: docker pull kindest/node:v1.18.2
+      - name: Start Kind
+        run: make start-kind
+      - name: Install Minio
+        run: make install-minio
+      - name: Run integration test
+        run: make integration-test
+      - name: Stop Kind
+        run: make stop-kind
+
+  lint:
+    name: Lint phase
+    runs-on: ubuntu-16.04
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@master
+      - name: Go-linter
+        run: make golint

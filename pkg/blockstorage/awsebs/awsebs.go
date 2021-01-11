@@ -456,6 +456,9 @@ func (s *EbsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 
 	volID, err := createVolume(ctx, s.Ec2Cli, cvi, ktags.GetTags(tags))
 	if err != nil {
+		if isVolNotFoundErr(err) {
+			return nil, errors.Wrap(err, "This may indicate insufficient permissions for KMS keys.")
+		}
 		return nil, err
 	}
 	return s.VolumeGet(ctx, volID, snapshot.Volume.Az)
@@ -682,6 +685,7 @@ func staticRegionToZones(region string) ([]string, error) {
 		}, nil
 	case "ap-northeast-2":
 		return []string{
+			"ap-northeast-2-wl1-cjj-wlz-1",
 			"ap-northeast-2a",
 			"ap-northeast-2b",
 			"ap-northeast-2c",
@@ -689,6 +693,7 @@ func staticRegionToZones(region string) ([]string, error) {
 		}, nil
 	case "ap-northeast-1":
 		return []string{
+			"ap-northeast-1-wl1-nrt-wlz-1",
 			"ap-northeast-1a",
 			"ap-northeast-1c",
 			"ap-northeast-1d",
@@ -731,12 +736,15 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-east-1d",
 			"us-east-1e",
 			"us-east-1f",
+			"us-east-1-bos-1a",
+			"us-east-1-iah-1a",
+			"us-east-1-mia-1a",
 			"us-east-1-wl1-atl-wlz-1",
 			"us-east-1-wl1-bos-wlz-1",
-			"us-east-1-wl1-nyc-wlz-1",
-			"us-east-1-wl1-was-wlz-1",
 			"us-east-1-wl1-dfw-wlz-1",
 			"us-east-1-wl1-mia-wlz-1",
+			"us-east-1-wl1-nyc-wlz-1",
+			"us-east-1-wl1-was-wlz-1",
 		}, nil
 	case "us-east-2":
 		return []string{
@@ -757,7 +765,9 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-west-2d",
 			"us-west-2-lax-1a",
 			"us-west-2-lax-1b",
+			"us-west-2-wl1-den-wlz-1",
 			"us-west-2-wl1-las-wlz-1",
+			"us-west-2-wl1-sea-wlz-1",
 			"us-west-2-wl1-sfo-wlz-1",
 		}, nil
 	case "ap-east-1":

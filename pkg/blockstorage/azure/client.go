@@ -17,7 +17,7 @@ package azure
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -30,6 +30,7 @@ import (
 type Client struct {
 	SubscriptionID  string
 	ResourceGroup   string
+	BaseURI         string
 	Authorizer      *autorest.BearerAuthorizer
 	DisksClient     *compute.DisksClient
 	SnapshotsClient *compute.SnapshotsClient
@@ -39,6 +40,7 @@ type Client struct {
 func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	var resourceGroup string
 	var subscriptionID string
+	var baseURI string
 	var ok bool
 	var err error
 
@@ -65,13 +67,21 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		return nil, err
 	}
 
+	baseURI, ok = config[blockstorage.AzureResurceMgrEndpoint]
+	if !ok {
+		baseURI = compute.DefaultBaseURI
+	}
+
 	disksClient := compute.NewDisksClient(subscriptionID)
 	disksClient.Authorizer = authorizer
+	disksClient.BaseURI = baseURI
 
 	snapshotsClient := compute.NewSnapshotsClient(subscriptionID)
 	snapshotsClient.Authorizer = authorizer
+	snapshotsClient.BaseURI = baseURI
 
 	return &Client{
+		BaseURI:         baseURI,
 		SubscriptionID:  subscriptionID,
 		Authorizer:      authorizer,
 		DisksClient:     &disksClient,
@@ -98,10 +108,19 @@ func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.B
 	}
 
 	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
+	if aDDEndpoint, ok := config[blockstorage.AzureActiveDirEndpoint]; ok {
+		credConfig.AADEndpoint = aDDEndpoint
+	}
+
+	if aDDResourceID, ok := config[blockstorage.AzureActiveDirResourceID]; ok {
+		credConfig.Resource = aDDResourceID
+	}
+
 	a, err := credConfig.Authorizer()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get Azure authorizer")
 	}
+
 	ba, ok := a.(*autorest.BearerAuthorizer)
 	if !ok {
 		return nil, errors.New("Failed to get Azure authorizer")
