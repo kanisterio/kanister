@@ -101,6 +101,9 @@ type Snapshotter interface {
 	// WaitOnReadyToUse will block until the Volumesnapshot in namespace 'namespace' with name 'snapshotName'
 	// has status 'ReadyToUse' or 'ctx.Done()' is signalled.
 	WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error
+	// WaitForContent will block until the Volumesnapshot in namespace 'namespace' with name 'snapshotName'
+	// has the snapshotContentName field populated.
+	WaitForContent(ctx context.Context, snapshotName, namespace string) error
 }
 
 // Source represents the CSI source of the Volumesnapshot.

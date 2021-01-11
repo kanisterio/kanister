@@ -86,6 +86,10 @@ func (sna *SnapshotBeta) Create(ctx context.Context, name, namespace, volumeName
 		return errors.Wrapf(err, "Failed to create snapshot resource %s, Namespace %s", name, namespace)
 	}
 
+	if err := sna.WaitForContent(ctx, name, namespace); err != nil {
+		return err
+	}
+
 	if !waitForReady {
 		return nil
 	}
@@ -201,9 +205,6 @@ func (sna *SnapshotBeta) GetSource(ctx context.Context, snapshotName, namespace 
 	if err != nil {
 		return nil, errors.Errorf("Failed to get snapshot, VolumeSnapshot: %s, Error: %v", snapshotName, err)
 	}
-	if !snap.Status.ReadyToUse {
-		return nil, errors.Errorf("Snapshot is not ready, VolumeSnapshot: %s, Namespace: %s", snapshotName, namespace)
-	}
 	if snap.Spec.SnapshotContentName == "" {
 		return nil, errors.Errorf("Snapshot does not have content, VolumeSnapshot: %s, Namespace: %s", snapshotName, namespace)
 	}
@@ -300,6 +301,28 @@ func (sna *SnapshotBeta) WaitOnReadyToUse(ctx context.Context, snapshotName, nam
 			return false, errors.New(*vs.Status.Error.Message)
 		}
 		return (vs.Status.ReadyToUse != nil && *vs.Status.ReadyToUse && vs.Status.CreationTime != nil), nil
+	})
+}
+
+func (sna *SnapshotBeta) WaitForContent(ctx context.Context, snapshotName, namespace string) error {
+	return poll.Wait(ctx, func(context.Context) (bool, error) {
+		us, err := sna.dynCli.Resource(v1beta1.VolSnapGVR).Namespace(namespace).Get(ctx, snapshotName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		vs := v1beta1.VolumeSnapshot{}
+		err = TransformUnstructured(us, &vs)
+		if err != nil {
+			return false, err
+		}
+		if vs.Status == nil {
+			return false, nil
+		}
+		// Error can be set while waiting for creation
+		if vs.Status.Error != nil {
+			return false, errors.New(*vs.Status.Error.Message)
+		}
+		return (*vs.Spec.Source.VolumeSnapshotContentName != "" && *vs.Status.ReadyToUse && vs.Status.CreationTime != nil), nil
 	})
 }
 
