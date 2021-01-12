@@ -39,11 +39,11 @@ actions:
             kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
             sh /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties
-  restoreprehook:
+  restore:
     type: Deployment
     phases:
     - func: KubeTask
-      name: restorePhase
+      name: restorePreHookPhase
       args:
         namespace: kafka
         podOverride:
@@ -100,9 +100,6 @@ actions:
               # reset the retention period to previous value
               /bin/kafka-configs --bootstrap-server "$bootstrapServer" --entity-type topics --entity-name "$topic" bin/kafka-configs.sh --alter --add-config retention.ms="$retentionPeriod"
           done < "/tmp/config/topics.txt"
-  restore:
-    type: Deployment
-    phases:
     - func: KubeTask
       name: restorePhase
       args:
