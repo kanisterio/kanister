@@ -736,15 +736,15 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-east-1d",
 			"us-east-1e",
 			"us-east-1f",
-			"us-east-1-wl1-atl-wlz-1",
-			"us-east-1-wl1-bos-wlz-1",
-			"us-east-1-wl1-nyc-wlz-1",
-			"us-east-1-wl1-was-wlz-1",
-			"us-east-1-wl1-dfw-wlz-1",
-			"us-east-1-wl1-mia-wlz-1",
 			"us-east-1-bos-1a",
 			"us-east-1-iah-1a",
 			"us-east-1-mia-1a",
+			"us-east-1-wl1-atl-wlz-1",
+			"us-east-1-wl1-bos-wlz-1",
+			"us-east-1-wl1-dfw-wlz-1",
+			"us-east-1-wl1-mia-wlz-1",
+			"us-east-1-wl1-nyc-wlz-1",
+			"us-east-1-wl1-was-wlz-1",
 		}, nil
 	case "us-east-2":
 		return []string{
@@ -765,7 +765,9 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-west-2d",
 			"us-west-2-lax-1a",
 			"us-west-2-lax-1b",
+			"us-west-2-wl1-den-wlz-1",
 			"us-west-2-wl1-las-wlz-1",
+			"us-west-2-wl1-sea-wlz-1",
 			"us-west-2-wl1-sfo-wlz-1",
 		}, nil
 	case "ap-east-1":
