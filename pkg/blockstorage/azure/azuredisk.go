@@ -684,7 +684,7 @@ func staticRegionToZones(region string) ([]string, error) {
 	case "germanynorth":
 		return nil, nil
 	case "germanywestcentral":
-		return nil, nil
+		return []string{"germanywestcentral-1", "germanywestcentral-2", "germanywestcentral-3"}, nil
 	case "global":
 		return nil, nil
 	case "india":
