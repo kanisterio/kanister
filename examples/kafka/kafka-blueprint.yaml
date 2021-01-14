@@ -15,7 +15,8 @@ actions:
           containers:
           - name: container
             imagePullPolicy: Always
-        image: akankshakumari393/confluent-kafka-s3sink:latest
+          restartPolicy: Never
+        image: akankshakumari393/confluent-kafka-s3:latest
         command:
           - bash
           - -o
@@ -35,10 +36,16 @@ actions:
             region="{{ .Profile.Location.Region }}"
             bucket="{{ .Profile.Location.Bucket }}"
             s3config="{{ index .Object.data "s3Sink.properties" | toString }}"
+            export timeinSeconds="{{ index .Object.data "timeinSeconds" | toString }}"
             echo -e "${s3config}\ns3.region= ${region}\ns3.bucket.name= ${bucket}\n" > /tmp/config/s3config.properties
             kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
-            sh /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties
+            export bootstrapServer=`cat /tmp/config/kafkaConfig.properties | grep "bootstrap.servers=" | sed 's/.* //g'`
+            echo "=====ENV variable set====="
+            /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties &
+            export pid=$!
+            sh monitorconnect.sh
+            exit 0 
   restore:
     type: Deployment
     phases:
