@@ -26,8 +26,10 @@ import (
 )
 
 // BlueprintLister helps list Blueprints.
+// All objects returned here must be treated as read-only.
 type BlueprintLister interface {
 	// List lists all Blueprints in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.Blueprint, err error)
 	// Blueprints returns an object that can list and get Blueprints.
 	Blueprints(namespace string) BlueprintNamespaceLister
@@ -58,10 +60,13 @@ func (s *blueprintLister) Blueprints(namespace string) BlueprintNamespaceLister 
 }
 
 // BlueprintNamespaceLister helps list and get Blueprints.
+// All objects returned here must be treated as read-only.
 type BlueprintNamespaceLister interface {
 	// List lists all Blueprints in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.Blueprint, err error)
 	// Get retrieves the Blueprint from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.Blueprint, error)
 	BlueprintNamespaceListerExpansion
 }

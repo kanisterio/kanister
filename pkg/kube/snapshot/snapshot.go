@@ -17,6 +17,7 @@ package snapshot
 import (
 	"context"
 
+	"github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -57,13 +58,13 @@ type Snapshotter interface {
 	//
 	// 'name' is the name of the VolumeSnapshot that will be returned.
 	// 'namespace' is the namespace of the VolumeSnapshot that will be returned.
-	Get(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error)
+	Get(ctx context.Context, name, namespace string) (*v1.VolumeSnapshot, error)
 	// Delete will delete the VolumeSnapshot.
 	// Returns the `VolumeSnapshot` deleted and any error as a result.
 	//
 	// 'name' is the name of the VolumeSnapshot that will be deleted.
 	// 'namespace' is the namespace of the VolumeSnapshot that will be deleted.
-	Delete(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error)
+	Delete(ctx context.Context, name, namespace string) (*v1.VolumeSnapshot, error)
 	// DeleteContent will delete the VolumeSnapshot and returns any error as a
 	// result.
 	//
@@ -114,6 +115,7 @@ type Source struct {
 // NewSnapshotter creates and return new Snapshotter object
 func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Snapshotter, error) {
 	ctx := context.Background()
+	// Check if v1alpha1 snapshot API exists
 	exists, err := kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), v1alpha1.GroupName, v1alpha1.Version)
 	if err != nil {
 		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
@@ -121,12 +123,21 @@ func NewSnapshotter(kubeCli kubernetes.Interface, dynCli dynamic.Interface) (Sna
 	if exists {
 		return NewSnapshotAlpha(kubeCli, dynCli), nil
 	}
+	// Check if v1beta1 snapshot API exists
 	exists, err = kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), v1beta1.GroupName, v1beta1.Version)
 	if err != nil {
 		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
 	}
 	if exists {
 		return NewSnapshotBeta(kubeCli, dynCli), nil
+	}
+	// Check if v1 (stable) snapshot API exists
+	exists, err = kube.IsGroupVersionAvailable(ctx, kubeCli.Discovery(), GroupName, Version)
+	if err != nil {
+		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
+	}
+	if exists {
+		return NewSnapshotStable(kubeCli, dynCli), nil
 	}
 	return nil, errors.New("Snapshot resources not supported")
 }
