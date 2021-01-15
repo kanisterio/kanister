@@ -6,6 +6,10 @@ metadata:
 actions:
   backup:
     type: Deployment
+    outputArtifacts:
+      s3Dump:
+        keyValue:
+          s3path: 's3://{{ .Profile.Location.Bucket }}/topics_{{ .Time | date "2006-01-02T15-04-05" }}'
     phases:
     - func: KubeTask
       name: setupPhase
@@ -36,10 +40,19 @@ actions:
             region="{{ .Profile.Location.Region }}"
             bucket="{{ .Profile.Location.Bucket }}"
             s3config="{{ index .Object.data "s3Sink.properties" | toString }}"
-            export timeinSeconds="{{ index .Object.data "timeinSeconds" | toString }}"
             echo -e "${s3config}\ns3.region=${region}\ns3.bucket.name=${bucket}\n" > /tmp/config/s3config.properties
+
+            s3folder=`cat /tmp/config/s3config.properties | grep "topics.dir=" | awk -F "=" '{print $2}'`
+            s3_topic_path="${s3folder}_{{ .Time | date "2006-01-02T15-04-05" }}"
+
+            sed -i "/^topics.dir/d" /tmp/config/s3config.properties
+            
+            echo -e "\ntopics.dir=${s3_topic_path}\n" >> /tmp/config/s3config.properties
             kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
+
+            export timeinSeconds="{{ index .Object.data "timeinSeconds" | toString }}"
+
             export bootstrapServer=`cat /tmp/config/kafkaConfig.properties | grep "bootstrap.servers=" | awk -F "=" '{print $2}'`
             echo "============ENV variable set====================="
             /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties &
@@ -48,6 +61,8 @@ actions:
             exit 0 
   restore:
     type: Deployment
+    inputArtifactNames:
+    - s3Dump
     phases:
     - func: KubeTask
       name: restorePreHookPhase
@@ -79,6 +94,11 @@ actions:
           env > /tmp/env.txt
           s3config="{{ index .Object.data "s3Source.properties" | toString }}"
           echo "${s3config}" > /tmp/config/s3config.properties
+
+          s3_path="{{ .ArtifactsIn.Dump.KeyValue.s3path }}"
+          export topicsDir="$(echo $s3path | awk -F "/" '{print $4}')"
+          echo -e "\ntopics.dir=${topicsDir}\n" >> /tmp/config/s3config.properties
+
           python3 getTopicNames.py > /tmp/config/topics.txt
           while IFS= read -r topicPath
           do
@@ -136,8 +156,13 @@ actions:
             bucket="{{ .Profile.Location.Bucket }}"
             s3config="{{ index .Object.data "s3Source.properties" | toString }}"
             echo -e "${s3config}\ns3.region=${region}\ns3.bucket.name=${bucket}\n" > /tmp/config/s3config.properties
+            
             kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
-                        
+            
+            s3_path="{{ .ArtifactsIn.Dump.KeyValue.s3path }}"
+            export topicsDir="$(echo $s3path | awk -F "/" '{print $4}')"
+            echo -e "\ntopics.dir=${topicsDir}\n" >> /tmp/config/s3config.properties
+
             # start kafka source connector
             sh /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties

@@ -12,9 +12,9 @@ then
 fi
 while [[ "$lag" -gt "$flushsize"  && "$elapsedtime" -lt "$timeinSeconds" ]]
 do
-echo "========================== lag = $lag , elapsedtime = $elapsedtime ======================================="
 lag="$(/bin/kafka-consumer-groups --bootstrap-server "$bootstrapServer" --describe --group connect-kanister-kafka-S3SinkConnector| awk 'BEGIN{maxLag=   0}{if ($6>0+maxLag) maxLag=$6} END{print maxLag}')"
 elapsedtime="$(ps -e -o "pid,etimes,command" |awk -v processid=$pid '{if($1==processid) print $2}')"
+echo "========================== lag = $lag , elapsedtime = $elapsedtime ======================================="
 sleep 2
 done
 if [ -z "$elapsedtime" ]
