@@ -1,7 +1,7 @@
 #!/bin/sh
 echo "===========================Monitoring started==================================="
 sleep 60
-export flushsize=`cat /tmp/config/s3config.properties | grep "flush.size=" | sed 's/.* //g'`
+export flushsize=`cat /tmp/config/s3config.properties | grep "flush.size=" | awk -F "=" '{print $2}'`
 #export pid="$(lsof -t -i:8083)"
 export elapsedtime="$(ps -e -o "pid,etimes,command" |awk -v processid=$pid '{if($1==processid) print $2}')"
 export lag="$(/bin/kafka-consumer-groups --bootstrap-server "$bootstrapServer" --describe --group connect-kanister-kafka-S3SinkConnector| awk 'BEGIN{maxLag=   0}{if ($6>0+maxLag) maxLag=$6} END{print maxLag}')"
