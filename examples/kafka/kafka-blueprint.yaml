@@ -95,7 +95,7 @@ actions:
           s3config="{{ index .Object.data "s3Source.properties" | toString }}"
           echo "${s3config}" > /tmp/config/s3config.properties
 
-          s3_path="{{ .ArtifactsIn.Dump.KeyValue.s3path }}"
+          s3_path="{{ .ArtifactsIn.s3Dump.KeyValue.s3path }}"
           export topicsDir="$(echo $s3path | awk -F "/" '{print $4}')"
           echo -e "\ntopics.dir=${topicsDir}\n" >> /tmp/config/s3config.properties
 
@@ -160,7 +160,7 @@ actions:
             kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
             
-            s3_path="{{ .ArtifactsIn.Dump.KeyValue.s3path }}"
+            s3_path="{{ .ArtifactsIn.s3Dump.KeyValue.s3path }}"
             export topicsDir="$(echo $s3path | awk -F "/" '{print $4}')"
             echo -e "\ntopics.dir=${topicsDir}\n" >> /tmp/config/s3config.properties
 
