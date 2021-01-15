@@ -17,6 +17,11 @@ lag="$(/bin/kafka-consumer-groups --bootstrap-server "$bootstrapServer" --descri
 elapsedtime="$(ps -e -o "pid,etimes,command" |awk -v processid=$pid '{if($1==processid) print $2}')"
 sleep 2
 done
-echo "========================== Condition false Killing the process ==================="
+if [ -z "$elapsedtime" ]
+then
+    echo "================Connector failed======================"
+    exit 1
+fi
+echo "========================== Connector Job done successfully Killing the process ==================="
 kill -INT $pid
 exit 0
