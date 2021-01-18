@@ -14,7 +14,7 @@ actions:
     - func: KubeTask
       name: setupPhase
       args:
-        namespace: kafka
+        namespace: "{{ .Object.metadata.namespace }}"
         podOverride:
           containers:
           - name: container
@@ -52,6 +52,7 @@ actions:
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
 
             export timeinSeconds="{{ index .Object.data "timeinSeconds" | toString }}"
+            export connectorName="`cat /tmp/config/s3config.properties | grep "^name=" | awk -F "=" '{print $2}'`"
 
             export bootstrapServer=`cat /tmp/config/kafkaConfig.properties | grep "bootstrap.servers=" | awk -F "=" '{print $2}'`
             echo "============ENV variable set====================="
@@ -67,7 +68,7 @@ actions:
     - func: KubeTask
       name: restorePreHookPhase
       args:
-        namespace: kafka
+        namespace: "{{ .Object.metadata.namespace }}"
         podOverride:
           containers:
           - name: container
@@ -130,7 +131,7 @@ actions:
     - func: KubeTask
       name: restorePhase
       args:
-        namespace: kafka
+        namespace: "{{ .Object.metadata.namespace }}"
         podOverride:
           containers:
           - name: container
