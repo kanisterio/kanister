@@ -409,7 +409,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 
 	snapshotCloneName := snapshotName + "-clone"
 	volumeCloneName := pvc.Name + "-clone"
-	sizeOriginal := 1
+	sizeOriginal := "1Gi"
 	err = snapshotter.Clone(ctx, snapshotName, s.sourceNamespace, snapshotCloneName, s.targetNamespace, wait)
 	c.Assert(err, IsNil)
 	args := &volume.CreatePVCFromSnapshotArgs{
@@ -419,7 +419,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		VolumeName:       volumeCloneName,
 		StorageClassName: storageClass,
 		SnapshotName:     snapshotCloneName,
-		RestoreSize:      &sizeOriginal,
+		RestoreSize:      sizeOriginal,
 		Labels:           nil,
 	}
 	_, err = volume.CreatePVCFromSnapshot(ctx, args)
@@ -433,7 +433,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	})
 
 	// Try with a greater restore size.
-	sizeNew := 2
+	sizeNew := "2Gi"
 	volumeCloneName += "-2"
 	args = &volume.CreatePVCFromSnapshotArgs{
 		KubeCli:          s.cli,
@@ -442,7 +442,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 		VolumeName:       volumeCloneName,
 		StorageClassName: storageClass,
 		SnapshotName:     snapshotCloneName,
-		RestoreSize:      &sizeNew,
+		RestoreSize:      sizeNew,
 		Labels: map[string]string{
 			"label1": "testLabel",
 		},
