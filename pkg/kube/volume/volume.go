@@ -106,7 +106,7 @@ type CreatePVCFromSnapshotArgs struct {
 	VolumeName       string
 	StorageClassName string
 	SnapshotName     string
-	RestoreSize      *int
+	RestoreSize      string
 	Labels           map[string]string
 }
 
@@ -114,7 +114,7 @@ type CreatePVCFromSnapshotArgs struct {
 // PersistentVolumeClaim and any error that happened in the process.
 func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs) (string, error) {
 	var size *resource.Quantity
-	if args.RestoreSize == nil {
+	if args.RestoreSize == "" {
 		sns, err := snapshot.NewSnapshotter(args.KubeCli, args.DynCli)
 		if err != nil {
 			return "", err
@@ -126,7 +126,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 
 		size = snap.Status.RestoreSize
 	} else {
-		s := resource.MustParse(fmt.Sprintf("%dGi", *args.RestoreSize))
+		s := resource.MustParse(args.RestoreSize)
 		size = &s
 	}
 
