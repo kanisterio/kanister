@@ -9,7 +9,7 @@ actions:
     outputArtifacts:
       s3Dump:
         keyValue:
-          s3path: 's3://{{ .Profile.Location.Bucket }}/topics_{{ .Time | date "2006-01-02T15-04-05" }}'
+          s3path: '{{ .Phases.setupPhase.Output.s3path }}'
     phases:
     - func: KubeTask
       name: setupPhase
@@ -46,8 +46,12 @@ actions:
             s3_topic_path="${s3folder}_{{ .Time | date "2006-01-02T15-04-05" }}"
 
             sed -i "/^topics.dir/d" /tmp/config/s3config.properties
-            
+
+                        
             echo -e "\ntopics.dir=${s3_topic_path}\n" >> /tmp/config/s3config.properties
+            
+            export s3_path="s3://{{ .Profile.Location.Bucket }}/${s3_topic_path}"
+
             kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
 
@@ -55,6 +59,7 @@ actions:
             export connectorName="`cat /tmp/config/s3config.properties | grep "^name=" | awk -F "=" '{print $2}'`"
 
             export bootstrapServer=`cat /tmp/config/kafkaConfig.properties | grep "bootstrap.servers=" | awk -F "=" '{print $2}'`
+
             echo "============ENV variable set====================="
             /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties &
             export pid=$!
@@ -97,9 +102,9 @@ actions:
           echo "${s3config}" > /tmp/config/s3config.properties
 
           s3_path="{{ .ArtifactsIn.s3Dump.KeyValue.s3path }}"
-          export topicsDir="$(echo $s3path | awk -F "/" '{print $4}')"
+          export topicsDir="$(echo $s3_path | awk -F "/" '{print $4}')"
           echo -e "\ntopics.dir=${topicsDir}\n" >> /tmp/config/s3config.properties
-
+          sleep 10
           python3 getTopicNames.py > /tmp/config/topics.txt
           while IFS= read -r topicPath
           do
@@ -162,7 +167,7 @@ actions:
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
             
             s3_path="{{ .ArtifactsIn.s3Dump.KeyValue.s3path }}"
-            export topicsDir="$(echo $s3path | awk -F "/" '{print $4}')"
+            export topicsDir="$(echo $s3_path | awk -F "/" '{print $4}')"
             echo -e "\ntopics.dir=${topicsDir}\n" >> /tmp/config/s3config.properties
 
             # start kafka source connector

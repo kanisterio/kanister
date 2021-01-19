@@ -24,5 +24,6 @@ then
     exit 1
 fi
 echo "========================== Connector Job done successfully Killing the process ==================="
+kando output s3path ${s3_path}
 kill -INT $pid
 exit 0

@@ -7,4 +7,10 @@ USER root
 
 RUN yum install -y lsof
 
+RUN wget https://raw.githubusercontent.com/canha/golang-tools-install-script/master/goinstall.sh
+RUN chmod +x goinstall.sh
+RUN source /root/.bashrc
+RUN yum install perl-Digest-SHA -y
+RUN curl https://raw.githubusercontent.com/kanisterio/kanister/master/scripts/get.sh | bash
+
 COPY monitorconnect.sh .
