@@ -94,7 +94,7 @@ func (s *EbsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 		AvailabilityZone: aws.String(volume.Az),
 		VolumeType:       aws.String(string(volume.VolumeType)),
 		Encrypted:        aws.Bool(volume.Encrypted),
-		Size:             aws.Int64(volume.Size),
+		Size:             aws.Int64(blockstorage.SizeInGi(volume.SizeInBytes)),
 	}
 	// io1 type *requires* IOPS. Others *cannot* specify them.
 	if volume.VolumeType == ec2.VolumeTypeIo1 {
@@ -150,7 +150,7 @@ func (s *EbsStorage) volumeParse(ctx context.Context, volume interface{}) *block
 		Az:           aws.StringValue(vol.AvailabilityZone),
 		Encrypted:    aws.BoolValue(vol.Encrypted),
 		VolumeType:   aws.StringValue(vol.VolumeType),
-		Size:         aws.Int64Value(vol.Size),
+		SizeInBytes:  aws.Int64Value(vol.Size) * blockstorage.BytesInGi,
 		Tags:         tags,
 		Iops:         aws.Int64Value(vol.Iops),
 		CreationTime: blockstorage.TimeStamp(aws.TimeValue(vol.CreateTime)),
@@ -193,7 +193,7 @@ func (s *EbsStorage) snapshotParse(ctx context.Context, snap *ec2.Snapshot) *blo
 		Tags:         tags,
 		Type:         s.Type(),
 		Encrypted:    aws.BoolValue(snap.Encrypted),
-		Size:         aws.Int64Value(snap.VolumeSize),
+		SizeInBytes:  aws.Int64Value(snap.VolumeSize) * blockstorage.BytesInGi,
 		Region:       aws.StringValue(s.Ec2Cli.Config.Region),
 		Volume:       vol,
 		CreationTime: blockstorage.TimeStamp(aws.TimeValue(snap.StartTime)),
@@ -297,7 +297,7 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	rs := s.snapshotParse(ctx, snaps[0])
 	*rs.Volume = *from.Volume
 	rs.Region = to.Region
-	rs.Size = from.Size
+	rs.SizeInBytes = from.SizeInBytes
 	return rs, nil
 }
 

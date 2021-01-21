@@ -35,7 +35,7 @@ var _ = Suite(&TestVolSuite{})
 func (s *TestVolSuite) TestCreatePVC(c *C) {
 	// Create PVC
 	ctx := context.Background()
-	pvcSize := int64(1)
+	pvcSize := int64(1024)
 	ns := "kanister-pvc-test"
 	targetVolID := "testVolID"
 	annotations := map[string]string{"a1": "foo"}

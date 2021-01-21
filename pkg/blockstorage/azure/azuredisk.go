@@ -68,7 +68,7 @@ func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 	tags := blockstorage.SanitizeTags(blockstorage.KeyValueToMap(volume.Tags))
 	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
 	diskProperties := &azcompute.DiskProperties{
-		DiskSizeGB: azto.Int32Ptr(int32(volume.Size)),
+		DiskSizeGB: azto.Int32Ptr(int32(blockstorage.SizeInG(volume.SizeInBytes))),
 		CreationData: &azcompute.CreationData{
 			CreateOption: azcompute.DiskCreateOption(azcompute.DiskCreateOptionTypesEmpty),
 		},
@@ -379,7 +379,7 @@ func (s *AdStorage) VolumeParse(ctx context.Context, volume interface{}) (*block
 		Type:         s.Type(),
 		ID:           azto.String(vol.ID),
 		Encrypted:    encrypted,
-		Size:         int64(azto.Int32(vol.DiskSizeGB)),
+		SizeInBytes:  azto.Int64(vol.DiskSizeBytes),
 		Az:           az,
 		Tags:         blockstorage.MapToKeyValue(tags),
 		VolumeType:   string(vol.Sku.Name),
@@ -415,7 +415,7 @@ func (s *AdStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) 
 		Encrypted:    encrypted,
 		ID:           azto.String(snap.ID),
 		Region:       azto.String(snap.Location),
-		Size:         int64(azto.Int32(snap.SnapshotProperties.DiskSizeGB)),
+		SizeInBytes:  azto.Int64(snap.SnapshotProperties.DiskSizeBytes),
 		Tags:         blockstorage.MapToKeyValue(tags),
 		Type:         s.Type(),
 		Volume:       vol,

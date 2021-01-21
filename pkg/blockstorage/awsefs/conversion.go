@@ -86,7 +86,7 @@ func snapshotFromRecoveryPoint(rp *backup.DescribeRecoveryPointOutput, volume *b
 	return &blockstorage.Snapshot{
 		ID:           *rp.RecoveryPointArn,
 		CreationTime: blockstorage.TimeStamp(*rp.CreationDate),
-		Size:         bytesInGiB(*rp.BackupSizeInBytes),
+		SizeInBytes:  *rp.BackupSizeInBytes,
 		Region:       region,
 		Type:         blockstorage.TypeEFS,
 		Volume:       volume,
@@ -115,7 +115,7 @@ func snapshotFromRecoveryPointByVault(rp *backup.RecoveryPointByBackupVault, vol
 	return &blockstorage.Snapshot{
 		ID:           *rp.RecoveryPointArn,
 		CreationTime: blockstorage.TimeStamp(*rp.CreationDate),
-		Size:         bytesInGiB(*rp.BackupSizeInBytes),
+		SizeInBytes:  *rp.BackupSizeInBytes,
 		Region:       region,
 		Type:         blockstorage.TypeEFS,
 		Volume:       volume,
@@ -176,7 +176,7 @@ func volumeFromEFSDescription(description *awsefs.FileSystemDescription, zone st
 		Type:         blockstorage.TypeEFS,
 		Encrypted:    *description.Encrypted,
 		CreationTime: blockstorage.TimeStamp(*description.CreationTime),
-		Size:         bytesInGiB(*description.SizeInBytes.Value),
+		SizeInBytes:  *description.SizeInBytes.Value,
 		Tags:         blockstorage.MapToKeyValue(convertFromEFSTags(description.Tags)),
 		Iops:         0,
 		VolumeType:   "",

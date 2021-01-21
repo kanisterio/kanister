@@ -18,6 +18,11 @@ import (
 	strfmt "github.com/go-openapi/strfmt"
 )
 
+const (
+	BytesInGi = 1024 * 1024 * 1024
+	BytesInG  = 1000 * 1000 * 1000
+)
+
 // Volume A storage provider volume
 type Volume struct {
 
@@ -36,8 +41,8 @@ type Volume struct {
 	// Volume IOPS, if specified for this volume
 	Iops int64
 
-	// The size of the volume, in GiB
-	Size int64
+	// The size of the volume, in Bytes
+	SizeInBytes int64
 
 	// tags
 	Tags VolumeTags
@@ -67,8 +72,8 @@ type Snapshot struct {
 	// Snapshot availability region
 	Region string
 
-	// The size of the snapshot, in GiB
-	Size int64
+	// The size of the snapshot, in Bytes
+	SizeInBytes int64
 
 	// tags
 	Tags SnapshotTags
@@ -97,4 +102,13 @@ type KeyValue struct {
 
 	// Value string
 	Value string
+}
+
+func SizeInGi(sizeInBytes int64) int64 {
+
+	return (sizeInBytes + int64(BytesInGi) - 1) / int64(BytesInGi)
+}
+
+func SizeInG(sizeInBytes int64) int64 {
+	return (sizeInBytes + int64(BytesInG) - 1) / int64(BytesInG)
 }

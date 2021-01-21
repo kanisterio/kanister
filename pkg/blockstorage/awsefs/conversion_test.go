@@ -43,7 +43,7 @@ func (s *AWSEFSConversionTestSuite) TestVolumeConversion(c *C) {
 			input: &awsefs.FileSystemDescription{
 				FileSystemId: aws.String(fsID),
 				CreationTime: aws.Time(date),
-				SizeInBytes:  &awsefs.FileSystemSize{Value: aws.Int64(1000)}, // 1000 bytes
+				SizeInBytes:  &awsefs.FileSystemSize{Value: aws.Int64(1024)},
 				Encrypted:    aws.Bool(true),
 				Tags:         []*awsefs.Tag{},
 			},
@@ -51,7 +51,7 @@ func (s *AWSEFSConversionTestSuite) TestVolumeConversion(c *C) {
 				ID:           fsID,
 				Az:           az,
 				CreationTime: blockstorage.TimeStamp(date),
-				Size:         1, // 1000 bytes should be converted to 1 GiB (round-up)
+				SizeInBytes:  1024,
 				Type:         blockstorage.TypeEFS,
 				Encrypted:    true,
 				Tags:         blockstorage.VolumeTags{},
@@ -61,7 +61,7 @@ func (s *AWSEFSConversionTestSuite) TestVolumeConversion(c *C) {
 			input: &awsefs.FileSystemDescription{
 				FileSystemId: aws.String(fsID),
 				CreationTime: aws.Time(date),
-				SizeInBytes:  &awsefs.FileSystemSize{Value: aws.Int64(2 * (1 << 30))}, // 2 GiB
+				SizeInBytes:  &awsefs.FileSystemSize{Value: aws.Int64(2048)},
 				Encrypted:    aws.Bool(false),
 				Tags: []*awsefs.Tag{
 					&awsefs.Tag{Key: aws.String("key1"), Value: aws.String("value1")},
@@ -72,7 +72,7 @@ func (s *AWSEFSConversionTestSuite) TestVolumeConversion(c *C) {
 				ID:           fsID,
 				Az:           az,
 				CreationTime: blockstorage.TimeStamp(date),
-				Size:         2,
+				SizeInBytes:  2048,
 				Type:         blockstorage.TypeEFS,
 				Encrypted:    false,
 				Tags: blockstorage.VolumeTags(
@@ -90,7 +90,7 @@ func (s *AWSEFSConversionTestSuite) TestVolumeConversion(c *C) {
 		c.Check(vol.Az, Equals, tc.expected.Az)
 		c.Check(vol.ID, Equals, tc.expected.ID)
 		c.Check(vol.CreationTime, Equals, tc.expected.CreationTime)
-		c.Check(vol.Size, Equals, tc.expected.Size)
+		c.Check(vol.SizeInBytes, Equals, tc.expected.SizeInBytes)
 		c.Check(vol.Type, Equals, tc.expected.Type)
 		c.Check(vol.Encrypted, Equals, tc.expected.Encrypted)
 		c.Check(vol.Tags, HasLen, len(tc.expected.Tags))

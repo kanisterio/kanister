@@ -48,8 +48,8 @@ const (
 // An empty 'targetVolID' indicates the caller would like the PV to be dynamically provisioned
 // An empty 'name' indicates the caller would like the name to be auto-generated
 // An error indicating that the PVC already exists is ignored (for idempotency)
-func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, name string, sizeGB int64, targetVolID string, annotations map[string]string) (string, error) {
-	sizeFmt := fmt.Sprintf("%dGi", sizeGB)
+func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, name string, sizeInBytes int64, targetVolID string, annotations map[string]string) (string, error) {
+	sizeFmt := fmt.Sprintf("%d", sizeInBytes)
 	size, err := resource.ParseQuantity(sizeFmt)
 	emptyStorageClass := ""
 	if err != nil {
@@ -176,7 +176,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 // CreatePV creates a PersistentVolume and returns its name
 // For retry idempotency, checks whether PV associated with volume already exists
 func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstorage.Volume, volType blockstorage.Type, annotations map[string]string) (string, error) {
-	sizeFmt := fmt.Sprintf("%dGi", vol.Size)
+	sizeFmt := fmt.Sprintf("%d", vol.SizeInBytes)
 	size, err := resource.ParseQuantity(sizeFmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to parse sizeFmt %s", sizeFmt)
