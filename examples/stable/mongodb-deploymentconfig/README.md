@@ -14,7 +14,7 @@ cluster's DeploymentConfig resources.
 
 - Setup OpenShift, you can follow steps mentioned below
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.48.0 installed in your cluster in namespace `kanister`
+- Kanister controller version 0.49.0 installed in your cluster in namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 **Note**

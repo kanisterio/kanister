@@ -625,131 +625,133 @@ func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 
 func staticRegionToZones(region string) ([]string, error) {
 	switch region {
-	case "centralus":
-		return []string{
-			"centralus-1",
-			"centralus-2",
-			"centralus-3",
-		}, nil
-	case "eastus":
-		return []string{
-			"eastus-1",
-			"eastus-2",
-			"eastus-3",
-		}, nil
-	case "eastus2":
-		return []string{
-			"eastus2-1",
-			"eastus2-2",
-			"eastus2-3",
-		}, nil
-	case "japaneast":
-		return []string{
-			"japaneast-1",
-			"japaneast-2",
-			"japaneast-3",
-		}, nil
-	case "northeurope":
-		return []string{
-			"northeurope-1",
-			"northeurope-2",
-			"northeurope-3",
-		}, nil
-	case "southeastasia":
-		return []string{
-			"southeastasia-1",
-			"southeastasia-2",
-			"southeastasia-3",
-		}, nil
-	case "uksouth":
-		return []string{
-			"uksouth-1",
-			"uksouth-2",
-			"uksouth-3",
-		}, nil
-	case "westeurope":
-		return []string{
-			"westeurope-1",
-			"westeurope-2",
-			"westeurope-3",
-		}, nil
-	case "westus2":
-		return []string{
-			"westus2-1",
-			"westus2-2",
-			"westus2-3",
-		}, nil
-	case "canadacentral":
-		return []string{
-			"canadacentral-1",
-			"canadacentral-2",
-			"canadacentral-3",
-		}, nil
-	case "francecentral":
-		return []string{
-			"francecentral-1",
-			"francecentral-2",
-			"francecentral-3",
-		}, nil
+	case "asia":
+		return nil, nil
+	case "asiapacific":
+		return nil, nil
+	case "australia":
+		return nil, nil
+	case "australiacentral":
+		return nil, nil
+	case "australiacentral2":
+		return nil, nil
 	case "australiaeast":
-		return []string{
-			"australiaeast-1",
-			"australiaeast-2",
-			"australiaeast-3",
-		}, nil
-	case "australiasoutheast",
-		"brazilsouth",
-		"canadaeast",
-		"centralindia",
-		"eastasia",
-		"japanwest",
-		"northcentralus",
-		"southcentralus",
-		"southindia",
-		"ukwest",
-		"westcentralus",
-		"westindia",
-		"westus",
-		"uaecentral",
-		"koreacentral",
-		"southafricanorth",
-		"germanynorth",
-		"germanywestcentral",
-		"switzerlandnorth",
-		"norwayeast",
-		"norwaywest",
-		"koreasouth",
-		"australiacentral2",
-		"francesouth",
-		"uaenorth",
-		"switzerlandwest",
-		"australiacentral",
-		"southafricawest",
-		"brazilsoutheast",
-		"eastus2stage",
-		"asia",
-		"asiapacific",
-		"australia",
-		"eastusstage",
-		"centralusstage",
-		"eastus2euap",
-		"centraluseuap",
-		"brazil",
-		"eastasiastage",
-		"europe",
-		"eastusstg",
-		"canada",
-		"global",
-		"india",
-		"japan",
-		"northcentralusstage",
-		"southcentralusstage",
-		"southcentralusstg",
-		"southeastasiastage",
-		"uk",
-		"unitedstates",
-		"westus2stage",
-		"westusstage":
+		return []string{"australiaeast-1", "australiaeast-2", "australiaeast-3"}, nil
+	case "australiasoutheast":
+		return nil, nil
+	case "brazil":
+		return nil, nil
+	case "brazilsouth":
+		return nil, nil
+	case "brazilsoutheast":
+		return nil, nil
+	case "canada":
+		return nil, nil
+	case "canadacentral":
+		return []string{"canadacentral-1", "canadacentral-2", "canadacentral-3"}, nil
+	case "canadaeast":
+		return nil, nil
+	case "centralindia":
+		return nil, nil
+	case "centralus":
+		return []string{"centralus-1", "centralus-2", "centralus-3"}, nil
+	case "centraluseuap":
+		return []string{"centraluseuap-1"}, nil
+	case "centralusstage":
+		return nil, nil
+	case "eastasia":
+		return nil, nil
+	case "eastasiastage":
+		return nil, nil
+	case "eastus":
+		return []string{"eastus-1", "eastus-2", "eastus-3"}, nil
+	case "eastus2":
+		return []string{"eastus2-1", "eastus2-2", "eastus2-3"}, nil
+	case "eastus2euap":
+		return []string{"eastus2euap-1", "eastus2euap-2", "eastus2euap-3"}, nil
+	case "eastus2stage":
+		return nil, nil
+	case "eastusstage":
+		return nil, nil
+	case "europe":
+		return nil, nil
+	case "francecentral":
+		return []string{"francecentral-1", "francecentral-2", "francecentral-3"}, nil
+	case "francesouth":
+		return nil, nil
+	case "germanynorth":
+		return nil, nil
+	case "germanywestcentral":
+		return []string{"germanywestcentral-1", "germanywestcentral-2", "germanywestcentral-3"}, nil
+	case "global":
+		return nil, nil
+	case "india":
+		return nil, nil
+	case "japan":
+		return nil, nil
+	case "japaneast":
+		return []string{"japaneast-1", "japaneast-2", "japaneast-3"}, nil
+	case "japanwest":
+		return nil, nil
+	case "koreacentral":
+		return nil, nil
+	case "koreasouth":
+		return nil, nil
+	case "northcentralus":
+		return nil, nil
+	case "northcentralusstage":
+		return nil, nil
+	case "northeurope":
+		return []string{"northeurope-1", "northeurope-2", "northeurope-3"}, nil
+	case "norwayeast":
+		return nil, nil
+	case "norwaywest":
+		return nil, nil
+	case "southafricanorth":
+		return nil, nil
+	case "southafricawest":
+		return nil, nil
+	case "southcentralus":
+		return nil, nil
+	case "southcentralusstage":
+		return nil, nil
+	case "southeastasia":
+		return []string{"southeastasia-1", "southeastasia-2", "southeastasia-3"}, nil
+	case "southeastasiastage":
+		return nil, nil
+	case "southindia":
+		return nil, nil
+	case "switzerlandnorth":
+		return nil, nil
+	case "switzerlandwest":
+		return nil, nil
+	case "uaecentral":
+		return nil, nil
+	case "uaenorth":
+		return nil, nil
+	case "uk":
+		return nil, nil
+	case "uksouth":
+		return []string{"uksouth-1", "uksouth-2", "uksouth-3"}, nil
+	case "ukwest":
+		return nil, nil
+	case "unitedstates":
+		return nil, nil
+	case "westcentralus":
+		return nil, nil
+	case "westeurope":
+		return []string{"westeurope-1", "westeurope-2", "westeurope-3"}, nil
+	case "westindia":
+		return nil, nil
+	case "westus":
+		return nil, nil
+	case "westus2":
+		return []string{"westus2-1", "westus2-2", "westus2-3"}, nil
+	case "westus2stage":
+		return nil, nil
+	case "westus3":
+		return nil, nil
+	case "westusstage":
 		return nil, nil
 	}
 	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))

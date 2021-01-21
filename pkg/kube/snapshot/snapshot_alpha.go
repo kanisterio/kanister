@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
@@ -113,18 +114,61 @@ func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName s
 }
 
 // Get will return the VolumeSnapshot in the 'namespace' with given 'name'.
-func (sna *SnapshotAlpha) Get(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error) {
+func (sna *SnapshotAlpha) Get(ctx context.Context, name, namespace string) (*v1.VolumeSnapshot, error) {
 	us, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
 	vs := &v1alpha1.VolumeSnapshot{}
-	return vs, TransformUnstructured(us, vs)
+	if err := TransformUnstructured(us, vs); err != nil {
+		return nil, err
+	}
+
+	// Populate v1.VolumeSnapshot object from v1alpha1.VolumeSnapshot
+	vsRet := v1.VolumeSnapshot{}
+	meta := vs.ObjectMeta.DeepCopy()
+	if meta == nil {
+		return nil, fmt.Errorf("Invalid VolumeSnapshotObject: ObjectMeta is nil")
+	}
+	vsRet.ObjectMeta = *meta
+
+	if vs.Spec.Source != nil && vs.Spec.Source.Kind == "PersistentVolumeClaim" {
+		vsRet.Spec.Source.PersistentVolumeClaimName = &vs.Spec.Source.Name
+	}
+	if vs.Spec.VolumeSnapshotClassName != "" {
+		vsRet.Spec.VolumeSnapshotClassName = &vs.Spec.VolumeSnapshotClassName
+	}
+	if vs.Spec.SnapshotContentName != "" {
+		vsRet.Spec.Source.VolumeSnapshotContentName = &vs.Spec.SnapshotContentName
+	}
+
+	if vs.Status == (v1alpha1.VolumeSnapshotStatus{}) {
+		return &vsRet, nil
+	}
+
+	// If Status is not nil, set VolumeSnapshotContentName from status
+	vsRet.Status = &v1.VolumeSnapshotStatus{
+		CreationTime: vs.Status.CreationTime,
+		RestoreSize:  vs.Status.RestoreSize,
+	}
+	if vs.Spec.SnapshotContentName != "" {
+		vsRet.Status.BoundVolumeSnapshotContentName = &vs.Spec.SnapshotContentName
+	}
+	if vs.Status.ReadyToUse {
+		vsRet.Status.ReadyToUse = &vs.Status.ReadyToUse
+	}
+	if vs.Status.Error != nil {
+		vsRet.Status.Error = &v1.VolumeSnapshotError{
+			Time:    &vs.Status.Error.Time,
+			Message: &vs.Status.Error.Message,
+		}
+	}
+	return &vsRet, nil
 }
 
 // Delete will delete the VolumeSnapshot and returns any error as a result.
-func (sna *SnapshotAlpha) Delete(ctx context.Context, name, namespace string) (*v1alpha1.VolumeSnapshot, error) {
+func (sna *SnapshotAlpha) Delete(ctx context.Context, name, namespace string) (*v1.VolumeSnapshot, error) {
 	snap, err := sna.Get(ctx, name, namespace)
 	if apierrors.IsNotFound(err) {
 		return nil, nil
@@ -172,16 +216,16 @@ func (sna *SnapshotAlpha) GetSource(ctx context.Context, snapshotName, namespace
 	if err != nil {
 		return nil, errors.Errorf("Failed to get snapshot, VolumeSnapshot: %s, Error: %v", snapshotName, err)
 	}
-	if !snap.Status.ReadyToUse {
+	if snap.Status.ReadyToUse == nil || !*snap.Status.ReadyToUse {
 		return nil, errors.Errorf("Snapshot is not ready, VolumeSnapshot: %s, Namespace: %s", snapshotName, namespace)
 	}
-	if snap.Spec.SnapshotContentName == "" {
+	if snap.Status.BoundVolumeSnapshotContentName == nil {
 		return nil, errors.Errorf("Snapshot does not have content, VolumeSnapshot: %s, Namespace: %s", snapshotName, namespace)
 	}
 
-	cont, err := sna.getContent(ctx, snap.Spec.SnapshotContentName)
+	cont, err := sna.getContent(ctx, *snap.Status.BoundVolumeSnapshotContentName)
 	if err != nil {
-		return nil, errors.Errorf("Failed to get snapshot content, VolumeSnapshot: %s, VolumeSnapshotContent: %s, Error: %v", snapshotName, snap.Spec.SnapshotContentName, err)
+		return nil, errors.Errorf("Failed to get snapshot content, VolumeSnapshot: %s, VolumeSnapshotContent: %s, Error: %v", snapshotName, *snap.Status.BoundVolumeSnapshotContentName, err)
 	}
 	src := &Source{
 		Handle:                  cont.Spec.CSI.SnapshotHandle,

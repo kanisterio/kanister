@@ -250,10 +250,11 @@ func (s *ResticDataSuite) TestGetSnapshotStatsModeFromStatsLog(c *C) {
 		log      string
 		expected string
 	}{
-		{log: "Stats for all snapshots in restore-size mode:", expected: "restore-size"},
-		{log: "Stats for 7e17e764 in restore-size mode:", expected: "restore-size"},
-		{log: "Stats for all snapshots in raw-data mode:", expected: "raw-data"},
-		{log: "Stats for all snapshots in blobs-per-file mode:", expected: "blobs-per-file"},
+		// after updating restic to 0.11.0 this format is changed
+		{log: "Stats in restore-size mode:", expected: "restore-size"},
+		{log: "Stats in restore-size mode:", expected: "restore-size"},
+		{log: "Stats in raw-data mode:", expected: "raw-data"},
+		{log: "Stats in blobs-per-file mode:", expected: "blobs-per-file"},
 		{log: "sudhufehfuijbfjbruifhoiwhf", expected: ""},
 	} {
 		mode := SnapshotStatsModeFromStatsLog(tc.log)

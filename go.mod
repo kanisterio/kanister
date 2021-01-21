@@ -44,6 +44,7 @@ require (
 	github.com/json-iterator/go v1.1.10
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/kopia/kopia v0.4.1-0.20200608151401-25934a544df4
+	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.0.0
 	github.com/lib/pq v1.2.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v1.4.0
