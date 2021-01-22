@@ -50,12 +50,11 @@ type GpdStorage struct {
 }
 
 const (
-	operationDone          = "DONE"
-	operationRunning       = "RUNNING"
-	operationPending       = "PENDING"
-	bytesInGiB       int64 = 1024 * 1024 * 1024
-	volumeNameFmt          = "vol-%s"
-	snapshotNameFmt        = "snap-%s"
+	operationDone    = "DONE"
+	operationRunning = "RUNNING"
+	operationPending = "PENDING"
+	volumeNameFmt    = "vol-%s"
+	snapshotNameFmt  = "snap-%s"
 )
 
 // Type is part of blockstorage.Provider
