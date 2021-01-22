@@ -61,7 +61,7 @@ func (s *AWSEFSConversionTestSuite) TestVolumeConversion(c *C) {
 			input: &awsefs.FileSystemDescription{
 				FileSystemId: aws.String(fsID),
 				CreationTime: aws.Time(date),
-				SizeInBytes:  &awsefs.FileSystemSize{Value: aws.Int64(2048)},
+				SizeInBytes:  &awsefs.FileSystemSize{Value: aws.Int64(2 * blockstorage.BytesInGi)},
 				Encrypted:    aws.Bool(false),
 				Tags: []*awsefs.Tag{
 					{Key: aws.String("key1"), Value: aws.String("value1")},
@@ -72,7 +72,7 @@ func (s *AWSEFSConversionTestSuite) TestVolumeConversion(c *C) {
 				ID:           fsID,
 				Az:           az,
 				CreationTime: blockstorage.TimeStamp(date),
-				SizeInBytes:  2048,
+				SizeInBytes:  2 * blockstorage.BytesInGi,
 				Type:         blockstorage.TypeEFS,
 				Encrypted:    false,
 				Tags: blockstorage.VolumeTags(
