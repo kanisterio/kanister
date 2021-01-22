@@ -12,7 +12,7 @@ COPY --from=bitnami/kubectl:1.17 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin
 
 COPY --from=goreleaser/goreleaser:v0.127.0 /bin/goreleaser /usr/local/bin/
 
-COPY --from=alpine/helm:3.0.0 /usr/bin/helm /usr/local/bin/
+COPY --from=alpine/helm:3.1.0 /usr/bin/helm /usr/local/bin/
 
 COPY --from=golangci/golangci-lint:v1.23.7 /usr/bin/golangci-lint /usr/local/bin/
 
