@@ -24,6 +24,16 @@ const (
 	BytesInM  = 1000 * 1000
 )
 
+// SizeInGi converts bytes to GiBs
+func SizeInGi(sizeInBytes int64) int64 {
+	return (sizeInBytes + int64(BytesInGi) - 1) / int64(BytesInGi)
+}
+
+// SizeInG converts bytes to GBs
+func SizeInG(sizeInBytes int64) int64 {
+	return (sizeInBytes + int64(BytesInG) - 1) / int64(BytesInG)
+}
+
 // Volume A storage provider volume
 type Volume struct {
 
@@ -103,13 +113,4 @@ type KeyValue struct {
 
 	// Value string
 	Value string
-}
-
-func SizeInGi(sizeInBytes int64) int64 {
-
-	return (sizeInBytes + int64(BytesInGi) - 1) / int64(BytesInGi)
-}
-
-func SizeInG(sizeInBytes int64) int64 {
-	return (sizeInBytes + int64(BytesInG) - 1) / int64(BytesInG)
 }

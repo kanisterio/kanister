@@ -31,14 +31,6 @@ const (
 	mountTargetKeyPrefix   = "kasten.io/aws-mount-target/"
 )
 
-// bytesInGiB calculates how many GiB is equal to the given bytes by rounding up
-// the intermediate result.
-func bytesInGiB(bytes int64) int64 {
-	const GiBInBytes int64 = int64(1024) * int64(1024) * int64(1024)
-	// Round up
-	return (bytes + GiBInBytes - 1) / GiBInBytes
-}
-
 // convertFromEFSTags converts AWS EFS tag structure to a flattened map.
 func convertFromEFSTags(efsTags []*awsefs.Tag) map[string]string {
 	tags := make(map[string]string)
