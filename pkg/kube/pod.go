@@ -116,6 +116,9 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	if opts.Annotations != nil {
 		pod.ObjectMeta.Annotations = opts.Annotations
 	}
+	if pod.ObjectMeta.Labels == nil {
+		pod.ObjectMeta.Labels = map[string]string{}
+	}
 	for key, value := range opts.Labels {
 		pod.ObjectMeta.Labels[key] = value
 	}
