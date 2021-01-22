@@ -21,6 +21,7 @@ import (
 const (
 	BytesInGi = 1024 * 1024 * 1024
 	BytesInG  = 1000 * 1000 * 1000
+	BytesInM  = 1000 * 1000
 )
 
 // Volume A storage provider volume
