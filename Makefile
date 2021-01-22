@@ -57,7 +57,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= kanisterio/build:v0.0.11
+BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.12
 DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
 
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
