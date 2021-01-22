@@ -50,7 +50,7 @@ func (s *TestVolSuite) TestCreatePVC(c *C) {
 	c.Assert(accessMode, Equals, v1.ReadWriteOnce)
 	capacity, ok := pvc.Spec.Resources.Requests[v1.ResourceStorage]
 	c.Assert(ok, Equals, true)
-	c.Assert(capacity.Value() >= int64(pvcSize*1024*1024*1024), Equals, true)
+	c.Assert(capacity.Value() >= int64(pvcSize), Equals, true)
 	eq := reflect.DeepEqual(annotations, pvc.ObjectMeta.Annotations)
 	c.Assert(eq, Equals, true)
 	c.Assert(len(pvc.Spec.Selector.MatchLabels) >= 1, Equals, true)
