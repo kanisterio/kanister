@@ -36,8 +36,8 @@ func (s *WaitForSnapshotCompletionTestSuite) TestWaitwithRole(c *C) {
 	ctx := context.Background()
 	mockGetter := mockblockstorage.NewGetter()
 	pvcData1 := []VolumeSnapshotInfo{
-		VolumeSnapshotInfo{SnapshotID: "snap-1", Type: blockstorage.TypeEBS, Region: "us-west-2", PVCName: "pvc-1", Az: "us-west-2a", VolumeType: "ssd"},
-		VolumeSnapshotInfo{SnapshotID: "snap-2", Type: blockstorage.TypeEBS, Region: "us-west-2", PVCName: "pvc-2", Az: "us-west-2a", VolumeType: "ssd"},
+		{SnapshotID: "snap-1", Type: blockstorage.TypeEBS, Region: "us-west-2", PVCName: "pvc-1", Az: "us-west-2a", VolumeType: "ssd"},
+		{SnapshotID: "snap-2", Type: blockstorage.TypeEBS, Region: "us-west-2", PVCName: "pvc-2", Az: "us-west-2a", VolumeType: "ssd"},
 	}
 	info, err := json.Marshal(pvcData1)
 	c.Assert(err, IsNil)

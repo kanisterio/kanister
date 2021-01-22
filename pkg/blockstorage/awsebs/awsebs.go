@@ -311,7 +311,7 @@ func (s *EbsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 	// Snapshot the EBS volume
 	csi := (&ec2.CreateSnapshotInput{}).SetVolumeId(volume.ID)
 	csi.SetTagSpecifications([]*ec2.TagSpecification{
-		&ec2.TagSpecification{
+		{
 			ResourceType: aws.String(ec2.ResourceTypeSnapshot),
 			Tags:         mapToEC2Tags(ktags.GetTags(tags)),
 		},
@@ -468,7 +468,7 @@ func (s *EbsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 func createVolume(ctx context.Context, ec2Cli *EC2, cvi *ec2.CreateVolumeInput, tags map[string]string) (string, error) {
 	// Set tags
 	awsTags := mapToEC2Tags(tags)
-	ts := []*ec2.TagSpecification{&ec2.TagSpecification{ResourceType: aws.String(ec2.ResourceTypeVolume), Tags: awsTags}}
+	ts := []*ec2.TagSpecification{{ResourceType: aws.String(ec2.ResourceTypeVolume), Tags: awsTags}}
 	cvi.SetTagSpecifications(ts)
 	cvi.SetDryRun(ec2Cli.DryRun)
 	vol, err := ec2Cli.CreateVolumeWithContext(ctx, cvi)

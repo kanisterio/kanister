@@ -64,8 +64,8 @@ func (s *AWSEFSConversionTestSuite) TestVolumeConversion(c *C) {
 				SizeInBytes:  &awsefs.FileSystemSize{Value: aws.Int64(2048)},
 				Encrypted:    aws.Bool(false),
 				Tags: []*awsefs.Tag{
-					&awsefs.Tag{Key: aws.String("key1"), Value: aws.String("value1")},
-					&awsefs.Tag{Key: aws.String("key2"), Value: aws.String("value2")},
+					{Key: aws.String("key1"), Value: aws.String("value1")},
+					{Key: aws.String("key2"), Value: aws.String("value2")},
 				},
 			},
 			expected: &blockstorage.Volume{
@@ -77,8 +77,8 @@ func (s *AWSEFSConversionTestSuite) TestVolumeConversion(c *C) {
 				Encrypted:    false,
 				Tags: blockstorage.VolumeTags(
 					[]*blockstorage.KeyValue{
-						&blockstorage.KeyValue{Key: "key1", Value: "value1"},
-						&blockstorage.KeyValue{Key: "key2", Value: "value2"},
+						{Key: "key1", Value: "value1"},
+						{Key: "key2", Value: "value2"},
 					},
 				),
 			},

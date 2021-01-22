@@ -90,10 +90,10 @@ func (s *KubeExecTest) TearDownSuite(c *C) {
 func newKubeExecBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"echo": &crv1alpha1.BlueprintAction{
+			"echo": {
 				Kind: "StatefulSet",
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "echoSomething",
 						Func: KubeExecFuncName,
 						Args: map[string]interface{}{
