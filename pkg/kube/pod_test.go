@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/testing"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 )
 
 type PodSuite struct {
@@ -157,9 +158,10 @@ func (s *PodSuite) TestPod(c *C) {
 			c.Check(pod.ObjectMeta.Annotations, DeepEquals, po.Annotations)
 		}
 
-		if po.Labels != nil {
-			c.Check(pod.ObjectMeta.Labels, NotNil)
-			c.Check(pod.ObjectMeta.Labels, DeepEquals, po.Labels)
+		c.Check(len(pod.ObjectMeta.Labels), Equals, len(po.Labels)+1)
+		c.Check(pod.ObjectMeta.Labels[consts.LabelKeyCreatedBy], Equals, consts.LabelValueKanister)
+		for key, value := range po.Labels {
+			c.Check(pod.ObjectMeta.Labels[key], Equals, value)
 		}
 
 		c.Assert(err, IsNil)
