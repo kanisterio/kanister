@@ -68,7 +68,7 @@ func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume
 	tags := blockstorage.SanitizeTags(blockstorage.KeyValueToMap(volume.Tags))
 	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
 	diskProperties := &azcompute.DiskProperties{
-		DiskSizeGB: azto.Int32Ptr(int32(blockstorage.SizeInG(volume.SizeInBytes))),
+		DiskSizeGB: azto.Int32Ptr(int32(blockstorage.SizeInGi(volume.SizeInBytes))),
 		CreationData: &azcompute.CreationData{
 			CreateOption: azcompute.DiskCreateOption(azcompute.DiskCreateOptionTypesEmpty),
 		},

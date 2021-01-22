@@ -20,18 +20,12 @@ import (
 
 const (
 	BytesInGi = 1024 * 1024 * 1024
-	BytesInG  = 1000 * 1000 * 1000
-	BytesInM  = 1000 * 1000
+	BytesInMi = 1024 * 1024
 )
 
 // SizeInGi converts bytes to GiBs
 func SizeInGi(sizeInBytes int64) int64 {
 	return (sizeInBytes + int64(BytesInGi) - 1) / int64(BytesInGi)
-}
-
-// SizeInG converts bytes to GBs
-func SizeInG(sizeInBytes int64) int64 {
-	return (sizeInBytes + int64(BytesInG) - 1) / int64(BytesInG)
 }
 
 // Volume A storage provider volume

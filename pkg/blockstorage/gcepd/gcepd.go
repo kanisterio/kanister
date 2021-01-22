@@ -110,7 +110,7 @@ func (s *GpdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 
 	createDisk := &compute.Disk{
 		Name:   fmt.Sprintf(volumeNameFmt, uuid.NewV1().String()),
-		SizeGb: blockstorage.SizeInG(volume.SizeInBytes),
+		SizeGb: blockstorage.SizeInGi(volume.SizeInBytes),
 		Type:   volume.VolumeType,
 		Labels: tags,
 	}
@@ -260,7 +260,7 @@ func (s *GpdStorage) volumeParse(ctx context.Context, volume interface{}, zone s
 		Type:         s.Type(),
 		ID:           vol.Name,
 		Encrypted:    false,
-		SizeInBytes:  vol.SizeGb * blockstorage.BytesInG,
+		SizeInBytes:  vol.SizeGb * blockstorage.BytesInGi,
 		Az:           filepath.Base(zone),
 		Tags:         blockstorage.MapToKeyValue(vol.Labels),
 		VolumeType:   vol.Type,
@@ -368,7 +368,7 @@ func (s *GpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	}
 	createDisk := &compute.Disk{
 		Name:           fmt.Sprintf(volumeNameFmt, uuid.NewV1().String()),
-		SizeGb:         blockstorage.SizeInG(snapshot.Volume.SizeInBytes),
+		SizeGb:         blockstorage.SizeInGi(snapshot.Volume.SizeInBytes),
 		Type:           snapshot.Volume.VolumeType,
 		Labels:         blockstorage.SanitizeTags(ktags.GetTags(tags)),
 		SourceSnapshot: snap.SelfLink,
