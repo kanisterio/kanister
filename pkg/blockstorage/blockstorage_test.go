@@ -153,19 +153,19 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 	switch s.storageType {
 	case blockstorage.TypeEBS:
 		dstSnapshot = &blockstorage.Snapshot{
-			Type:      srcSnapshot.Type,
-			Encrypted: false,
-			Size:      srcSnapshot.Size,
-			Region:    "us-east-1",
-			Volume:    nil,
+			Type:        srcSnapshot.Type,
+			Encrypted:   false,
+			SizeInBytes: srcSnapshot.SizeInBytes,
+			Region:      "us-east-1",
+			Volume:      nil,
 		}
 	case blockstorage.TypeAD:
 		dstSnapshot = &blockstorage.Snapshot{
-			Type:      srcSnapshot.Type,
-			Encrypted: false,
-			Size:      srcSnapshot.Size,
-			Region:    "westus2",
-			Volume:    nil,
+			Type:        srcSnapshot.Type,
+			Encrypted:   false,
+			SizeInBytes: srcSnapshot.SizeInBytes,
+			Region:      "westus2",
+			Volume:      nil,
 		}
 		snap, err = s.provider.SnapshotCopyWithArgs(context.TODO(), *srcSnapshot, *dstSnapshot, s.args)
 		c.Assert(err, IsNil)
@@ -186,7 +186,7 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Check(snapDetails.Region, Equals, dstSnapshot.Region)
-	c.Check(snapDetails.Size, Equals, srcSnapshot.Size)
+	c.Check(snapDetails.SizeInBytes, Equals, srcSnapshot.SizeInBytes)
 
 	err = provider.SnapshotDelete(context.TODO(), snap)
 	c.Assert(err, IsNil)
@@ -235,21 +235,21 @@ func (s *BlockStorageProviderSuite) createVolume(c *C) *blockstorage.Volume {
 		{Key: "kanister.io/testname", Value: c.TestName()},
 	}
 	vol := blockstorage.Volume{
-		Size: 1,
-		Tags: tags,
+		SizeInBytes: 1 * blockstorage.BytesInGi,
+		Tags:        tags,
 	}
-	size := vol.Size
+	size := vol.SizeInBytes
 
 	vol.Az = s.storageAZ
 	if s.isRegional(vol.Az) {
-		vol.Size = 200
-		size = vol.Size
+		vol.SizeInBytes = 200 * blockstorage.BytesInGi
+		size = vol.SizeInBytes
 	}
 
 	ret, err := s.provider.VolumeCreate(context.Background(), vol)
 	c.Assert(err, IsNil)
 	s.volumes = append(s.volumes, ret)
-	c.Assert(ret.Size, Equals, int64(size))
+	c.Assert(ret.SizeInBytes, Equals, int64(size))
 	s.checkTagsExist(c, blockstorage.KeyValueToMap(ret.Tags), blockstorage.KeyValueToMap(tags))
 	s.checkStdTagsExist(c, blockstorage.KeyValueToMap(ret.Tags))
 	return ret

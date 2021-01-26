@@ -31,14 +31,6 @@ const (
 	mountTargetKeyPrefix   = "kasten.io/aws-mount-target/"
 )
 
-// bytesInGiB calculates how many GiB is equal to the given bytes by rounding up
-// the intermediate result.
-func bytesInGiB(bytes int64) int64 {
-	const GiBInBytes int64 = int64(1024) * int64(1024) * int64(1024)
-	// Round up
-	return (bytes + GiBInBytes - 1) / GiBInBytes
-}
-
 // convertFromEFSTags converts AWS EFS tag structure to a flattened map.
 func convertFromEFSTags(efsTags []*awsefs.Tag) map[string]string {
 	tags := make(map[string]string)
@@ -86,7 +78,7 @@ func snapshotFromRecoveryPoint(rp *backup.DescribeRecoveryPointOutput, volume *b
 	return &blockstorage.Snapshot{
 		ID:           *rp.RecoveryPointArn,
 		CreationTime: blockstorage.TimeStamp(*rp.CreationDate),
-		Size:         bytesInGiB(*rp.BackupSizeInBytes),
+		SizeInBytes:  *rp.BackupSizeInBytes,
 		Region:       region,
 		Type:         blockstorage.TypeEFS,
 		Volume:       volume,
@@ -115,7 +107,7 @@ func snapshotFromRecoveryPointByVault(rp *backup.RecoveryPointByBackupVault, vol
 	return &blockstorage.Snapshot{
 		ID:           *rp.RecoveryPointArn,
 		CreationTime: blockstorage.TimeStamp(*rp.CreationDate),
-		Size:         bytesInGiB(*rp.BackupSizeInBytes),
+		SizeInBytes:  *rp.BackupSizeInBytes,
 		Region:       region,
 		Type:         blockstorage.TypeEFS,
 		Volume:       volume,
@@ -176,7 +168,7 @@ func volumeFromEFSDescription(description *awsefs.FileSystemDescription, zone st
 		Type:         blockstorage.TypeEFS,
 		Encrypted:    *description.Encrypted,
 		CreationTime: blockstorage.TimeStamp(*description.CreationTime),
-		Size:         bytesInGiB(*description.SizeInBytes.Value),
+		SizeInBytes:  *description.SizeInBytes.Value,
 		Tags:         blockstorage.MapToKeyValue(convertFromEFSTags(description.Tags)),
 		Iops:         0,
 		VolumeType:   "",

@@ -35,18 +35,18 @@ func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
 	}{
 		{
 			zones: defaultZones,
-			in:    map[string]struct{}{"us-west-2a": struct{}{}},
-			out:   map[string]struct{}{"us-west-2a": struct{}{}},
+			in:    map[string]struct{}{"us-west-2a": {}},
+			out:   map[string]struct{}{"us-west-2a": {}},
 		},
 		{
 			zones: defaultZones,
-			in:    map[string]struct{}{"us-east-1f": struct{}{}},
-			out:   map[string]struct{}{"us-west-2a": struct{}{}},
+			in:    map[string]struct{}{"us-east-1f": {}},
+			out:   map[string]struct{}{"us-west-2a": {}},
 		},
 		{
 			zones: defaultZones,
-			in:    map[string]struct{}{"us-east-2b": struct{}{}},
-			out:   map[string]struct{}{"us-west-2b": struct{}{}},
+			in:    map[string]struct{}{"us-east-2b": {}},
+			out:   map[string]struct{}{"us-west-2b": {}},
 		},
 	} {
 		z := zone.SanitizeAvailableZones(tc.in, tc.zones)

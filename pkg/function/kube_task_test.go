@@ -142,11 +142,11 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 		{
 			bp: newTaskBlueprint(outputPhase(s.namespace), sleepPhase(s.namespace), tickPhase(s.namespace)),
 			outs: []map[string]interface{}{
-				map[string]interface{}{
+				{
 					"version": "0.49.0",
 				},
-				map[string]interface{}{},
-				map[string]interface{}{},
+				{},
+				{},
 			},
 		},
 	} {

@@ -214,8 +214,8 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	}
 	log.Debug().Print("SnapshotCreate complete", field.M{"VolumeID": volume.ID, "SnapshotID": snap.ID})
 	// We don't get size information from `SnapshotGet` - so set this to the volume size for now
-	if snap.Size == 0 {
-		snap.Size = volume.Size
+	if snap.SizeInBytes == 0 {
+		snap.SizeInBytes = volume.SizeInBytes
 	}
 
 	snap.Volume = &volume

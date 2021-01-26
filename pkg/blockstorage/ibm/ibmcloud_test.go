@@ -77,7 +77,7 @@ func (s *TestIBMCloud) SetUpSuite(c *C) {
 		Attributes: s.volAtts,
 	}
 	tmpVol.VolumeType = string(s.cli.Service.Type())
-	tmpVol.Size = 20
+	tmpVol.SizeInBytes = 20 * blockstorage.BytesInGi
 	tmpVol.Tags = []*blockstorage.KeyValue{
 		{Key: testTagKey, Value: testTagValue},
 		{Key: "kanister.io/testname", Value: c.TestName()},
