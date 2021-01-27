@@ -245,18 +245,7 @@ func (s *GpdStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.
 
 // SnapshotGet is part of blockstorage.Provider
 func (s *GpdStorage) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
-	var snap *compute.Snapshot
-	var err error
-	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		snap, err = s.service.Snapshots.Get(s.project, id).Context(ctx).Do()
-		if err != nil {
-			return false, err
-		}
-		if snap.StorageBytesStatus != "UP_TO_DATE" {
-			return false, nil
-		}
-		return true, nil
-	})
+	snap, err := s.service.Snapshots.Get(s.project, id).Context(ctx).Do()
 	if err != nil {
 		return nil, err
 	}
