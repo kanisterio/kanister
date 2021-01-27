@@ -207,6 +207,9 @@ func (s *GpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 			}
 			return false, err
 		}
+		if snap.StorageBytesStatus != "UP_TO_DATE" {
+			return false, nil
+		}
 		return true, nil
 	})
 
