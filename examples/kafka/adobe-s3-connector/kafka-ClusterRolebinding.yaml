@@ -21,3 +21,4 @@ subjects:
 - kind: ServiceAccount
   name: default
   namespace: kafka
+  

@@ -8,4 +8,3 @@ prefix = os.environ.get('topicsDir')+'/'
 result = s3.list_objects(Bucket=bucket, Prefix=prefix, Delimiter='/')
 for o in result.get('CommonPrefixes'):
     print(o.get('Prefix'))
-    
