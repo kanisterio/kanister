@@ -1,0 +1,220 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: kafka-blueprint
+  namespace: kasten-io
+actions:
+  backup:
+    type: Deployment
+    outputArtifacts:
+      s3Dump:
+        keyValue:
+          s3path: '{{ .Phases.setupPhase.Output.s3path }}'
+          backupDetail: '{{ .Phases.setupPhase.Output.backupDetail }}'
+    phases:
+    - func: KubeTask
+      name: setupPhase
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        podOverride:
+          containers:
+          - name: container
+            imagePullPolicy: Always
+          restartPolicy: Never
+        image: akankshakumari393/adobe-s3-sink-connector:latest
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            mkdir /tmp/config
+            {{- if .Profile.Credential.KeyPair }}
+            export AWS_SECRET_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+            export AWS_ACCESS_KEY="{{ .Profile.Credential.KeyPair.ID }}"
+            {{- else }}
+            export AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
+            export AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
+            {{- end }}
+            region="{{ .Profile.Location.Region }}"
+            bucket="{{ .Profile.Location.Bucket }}"
+            export connectorName=$HOSTNAME
+            s3config="{{ index .Object.data "adobe-s3-sink.properties" | toString }}"
+            echo -e "${s3config}\ns3.bucket=${bucket}\nname=${connectorName}\n" > /tmp/config/s3config.properties
+            s3folder=`cat /tmp/config/s3config.properties | grep "s3.prefix=" | awk -F "=" '{print $2}'`
+            s3_topic_path="${s3folder}_{{ .Time | date "2006-01-02T15:04:05" }}"
+
+            sed -i "/^s3.prefix/d" /tmp/config/s3config.properties
+            echo -e "\ns3.prefix=${s3_topic_path}\n" >> /tmp/config/s3config.properties
+            
+            export s3_path="s3://{{ .Profile.Location.Bucket }}/${s3_topic_path}"
+            kafkaConfig="{{ index .Object.data "adobe-kafkaConfiguration.properties" | toString }}"
+            echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
+
+            export timeinSeconds="{{ index .Object.data "timeinSeconds" | toString }}"
+            
+            
+            export bootstrapServer=`cat /tmp/config/kafkaConfig.properties | grep "bootstrap.servers=" | awk -F "=" '{print $2}'`
+
+            echo "============ENV variable set====================="
+            /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties &
+            export pid=$!
+            sh monitorconnect.sh
+            exit 0
+    - func: KubeTask
+      name: CleanupPhase
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        podOverride:
+          containers:
+          - name: container
+            imagePullPolicy: Always
+          restartPolicy: Never
+        image: akankshakumari393/cleans3:latest
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail          
+          - -c
+          - |
+            {{- if .Profile.Credential.KeyPair }}
+            export AWS_SECRET_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+            export AWS_ACCESS_KEY="{{ .Profile.Credential.KeyPair.ID }}"
+            {{- else }}
+            export AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
+            export AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
+            {{- end }}
+            export region="{{ .Profile.Location.Region }}"
+            export bucket="{{ .Profile.Location.Bucket }}"
+            export TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+            export result="$(curl -v --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $TOKEN" https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/apis/config.kio.kasten.io/v1alpha1/namespaces/kasten-io/policies/kafka-backup)"
+            export monthly=$(echo $result | jq -r '.spec.retention.monthly')
+            export yearly=$(echo $result | jq -r '.spec.retention.yearly')
+            export daily=$(echo $result | jq -r '.spec.retention.daily')
+            export weekly=$(echo $result | jq -r '.spec.retention.weekly')
+            export hourly=$(echo $result | jq -r '.spec.retention.hourly')
+            export frequency=$(echo $result | jq -r '.spec.frequency')
+            sleep 20
+            python3 cleanup.py
+  restore:
+    type: Deployment
+    inputArtifactNames:
+    - s3Dump
+    phases:
+    - func: KubeTask
+      name: restorePreHookPhase
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        podOverride:
+          containers:
+          - name: container
+            imagePullPolicy: Always
+        image: akankshakumari393/adobe-s3-source-connector:latest
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          mkdir /tmp/config
+          {{- if .Profile.Credential.KeyPair }}
+          export AWS_SECRET_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+          export AWS_ACCESS_KEY="{{ .Profile.Credential.KeyPair.ID }}"
+          {{- else }}
+          export AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
+          export AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
+          {{- end }}
+          export region="{{ .Profile.Location.Region }}"
+          export bucket="{{ .Profile.Location.Bucket }}"
+
+          kafkaConfig="{{ index .Object.data "adobe-kafkaConfiguration.properties" | toString }}"
+          echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
+
+          s3config="{{ index .Object.data "adobe-s3-source.properties" | toString }}"
+          echo "${s3config}" > /tmp/config/s3config.properties
+
+          export bootstrapServer=`cat /tmp/config/kafkaConfig.properties | grep "bootstrap.servers=" | awk -F "=" '{print $2}'`
+
+          cat /tmp/config/s3config.properties | grep "topics=" | awk -F "=" '{print $2}' | tr , "\n" > /tmp/config/topics.txt
+          while IFS= read -r topic
+          do
+              # getting topic name from configuration file
+              echo "purging topic $topic"
+              # getting retention period as set for the topic
+              export retentionPeriod="$(/bin/kafka-configs --describe --bootstrap-server "$bootstrapServer" --entity-type topics --entity-name "$topic" --all | grep -m1 retention.ms= | sed 's/[^0-9]*//; s/ .*//')"
+              # purging topic by setting retention to 1ms
+              /bin/kafka-configs --bootstrap-server "$bootstrapServer" --entity-type topics --entity-name "$topic" --alter --add-config retention.ms=1
+              echo "retention set to 1"
+              # Verifying Purging is complete 
+              export startOffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -1)"
+              export endoffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -2)"
+              until [ "$startOffset" = "$endoffset" ]
+              do
+              echo "purging in process"
+              startOffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -1)"
+              endoffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -2)"
+              sleep 1
+              done
+              echo "purging complete for topic $topic"
+              echo "resetting the retention to previous value"
+              # reset the retention period to previous value
+              /bin/kafka-configs --bootstrap-server "$bootstrapServer" --entity-type topics --entity-name "$topic" bin/kafka-configs.sh --alter --add-config retention.ms="$retentionPeriod"
+          done < "/tmp/config/topics.txt"
+    - func: KubeTask
+      name: restorePhase
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        podOverride:
+          containers:
+          - name: container
+            imagePullPolicy: Always
+        image: akankshakumari393/adobe-s3-source-connector:latest
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            mkdir /tmp/config
+            {{- if .Profile.Credential.KeyPair }}
+            export AWS_SECRET_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+            export AWS_ACCESS_KEY="{{ .Profile.Credential.KeyPair.ID }}"
+            {{- else }}
+            export AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
+            export AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
+            {{- end }}
+            region="{{ .Profile.Location.Region }}"
+            bucket="{{ .Profile.Location.Bucket }}"
+            s3config="{{ index .Object.data "adobe-s3-source.properties" | toString }}"
+            echo -e "${s3config}\ns3.bucket=${bucket}\n" > /tmp/config/s3config.properties
+         
+            sed -i "/^s3.prefix/d" /tmp/config/s3config.properties
+
+            s3_path="{{ .ArtifactsIn.s3Dump.KeyValue.s3path }}"
+            echo $s3_path
+
+            export topicsDir="$(echo $s3_path | awk -F "/" '{print $(NF)}')"
+            echo -e "\ns3.prefix=${topicsDir}\n" >> /tmp/config/s3config.properties
+
+            kafkaConfig="{{ index .Object.data "adobe-kafkaConfiguration.properties" | toString }}"
+            echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
+            sleep 60
+            topicDetail="{{ .ArtifactsIn.s3Dump.KeyValue.backupDetail }}"
+            export bootstrapServer=`cat /tmp/config/kafkaConfig.properties | grep "bootstrap.servers=" | awk -F "=" '{print $2}'`
+            export topicList=`cat /tmp/config/s3config.properties | grep "topics=" | awk -F "=" '{print $2}'`
+
+            echo "============ENV variable set====================="
+
+            # start kafka source connector
+            sh /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties &
+            export pid=$!
+            sh monitorconnect.sh
+            exit 0
