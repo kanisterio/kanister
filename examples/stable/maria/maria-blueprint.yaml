@@ -32,7 +32,7 @@ actions:
           root_password="{{ index .Phases.dumpToObjectStore.Secrets.mariaSecret.Data "mariadb-root-password" | toString }}"
           exclude_db="('information_schema', 'mysql', 'performance_schema')"
           dump_databases=""
-          for db in `mysql -u root  -h my-release-mariadb --password=A5y8Vu2xUg -ANe "use information_schema; select schema_name from schemata where schema_name not in ${exclude_db}"`
+          for db in `mysql -u root  -h {{ .StatefulSet.Name }} --password=${root_password} -ANe "use information_schema; select schema_name from schemata where schema_name not in ${exclude_db}"`
           do
                   dump_databases="${dump_databases} ${db}"
           done
