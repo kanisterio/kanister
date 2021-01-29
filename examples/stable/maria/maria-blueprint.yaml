@@ -30,7 +30,13 @@ actions:
         - |
           s3_path="/maria-backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
           root_password="{{ index .Phases.dumpToObjectStore.Secrets.mariaSecret.Data "mariadb-root-password" | toString }}"
-          mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ .StatefulSet.Name }} --single-transaction --ignore-table=mysql.slow_log --ignore-table=mysql.general_log  --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
+          exclude_db="('information_schema', 'mysql', 'performance_schema')"
+          dump_databases=""
+          for db in `mysql -u root  -h my-release-mariadb --password=A5y8Vu2xUg -ANe "use information_schema; select schema_name from schemata where schema_name not in ${exclude_db}"`
+          do
+                  dump_databases="${dump_databases} ${db}"
+          done
+          mysqldump -u root --password=${root_password} -h {{ .StatefulSet.Name }} --column-statistics=0 --single-transaction --databases ${dump_databases} | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
           kando output s3path ${s3_path}
   restore:
     type: StatefulSet
