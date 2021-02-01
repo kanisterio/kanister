@@ -1,7 +1,9 @@
 # kafka topic backup and restore
-To Backup kafka topic data, we have used Amazon S3 sink connector which periodically polls data from Kafka and in turn uploads it to S3. Each chunk of data is represented as an S3 object. The key name encodes the topic, the Kafka partition, and the start offset of this data chunk. If no partitioner is specified in the configuration, the default partitioner which preserves Kafka partitioning is used. The size of each data chunk is determined by the number of records written to S3 and by schema compatibility.
+To Backup kafka topic data, we have used Amazon S3 Sink connector which periodically polls data from Kafka and in turn uploads it to S3. Each chunk of data is represented as an S3 object. The key name encodes the topic, the Kafka partition, and the start offset of this data chunk. If no partitioner is specified in the configuration, the default partitioner which preserves Kafka partitioning is used. The size of each data chunk is determined by the number of records written to S3 and by schema compatibility.
 
 To restore kafka topic data, we have used Amazon S3 Source Connector that reads data exported to S3 by the Connect S3 Sink Connector and publishes it back to an Kafka topic. Depending on the format and partitioner used to write the data to S3, this connector can write to the destination topic using the same partitions as the original messages exported to S3 and maintain the same message order. Configuration is setup to mirror the Kafka Connect S3 Sink Connector and should be possible to make only minor changes to the original sink configuration.
+
+Confluent Amazon S3 Source connector comes with a 30-day trial period without a license key. After 30 days, this connector is available under a Confluent enterprise license. 
 
 Topics messages are first purged and then restore operation is performed
 

@@ -1,6 +1,7 @@
 # kafka topic backup and restore
+To Backup and restore kafka topic data, we have used Adobe S3 Kafka connector which periodically polls data from Kafka and in turn uploads it to S3. Each chunk of data is represented as an S3 object. If no partitioner is specified in the configuration, the default partitioner which preserves Kafka partitioning is used. 
 
-Topics messages are first purged and then restore operation is performed
+While restoration, Topics messages are first purged and then restore operation is performed
 
 ## Prerequisites
 
@@ -25,7 +26,7 @@ $ kubectl create -f ./kafka-cluster.yaml -n kafka
 # wait for the pods to be in ready state
 $ kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
 
-# setup kafdrop for monitoring the kafka cluster
+# setup kafdrop for monitoring the kafka cluster, this is not mandatory for the blueprint as a part of restore and backup.
 $ kubectl create -f kafdrop.yaml -n kafka
 
 # by default kafdrop run on port 9000, we can view it by
@@ -50,6 +51,28 @@ $ kubectl -n kafka run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6
 * `adobe-s3-sink.properties` file contain properties related `s3 sink Connector`
 * `adobe-s3-source.properties` file contain properties related `s3 source Connector`
 * `kafkaConfiguration.properties` contain properties pointing to kafka server
+
+## Configuration
+
+The following configuration applies to source and sink connector. 
+
+| Config Key | Notes |
+| ---------- | ----- |
+| name | name of the connector |
+| s3.bucket | The name of the bucket to write too. |
+| s3.prefix | Prefix added to all object keys stored in bucket to "namespace" them. |
+| s3.path_style | Force path-style access to bucket |
+| topics | Comma seperated list of topics that need to processed |
+| task.max | max task that should be run inside a connector |
+| format | S3 File Format |
+| compressed_block_size | How much _uncompressed_ data to write to the file before we rol to a new block/chunk |
+
+These additional configs apply to the kafka-connect:
+
+| Config Key | Notes |
+| ---------- | ----- |
+| bootstrap.servers | kafka broker address in the cluster |
+| plugin.path | connector jar location |
 
 ## Setup Blueprint, configMap and location profile
 Before Setting up Blueprint, a profile is created which has s3 Details, alongwith that a configMap with the configuration details. `timeinSeconds` denote the time after which sink connector need to stop if running.
