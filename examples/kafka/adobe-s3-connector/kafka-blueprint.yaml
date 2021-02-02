@@ -21,7 +21,7 @@ actions:
           - name: container
             imagePullPolicy: Always
           restartPolicy: Never
-        image: akankshakumari393/adobe-s3-sink-connector:latest
+        image: ghcr.io/kanisterio/kafka-adobe-s3-sink-connector:latest
         command:
           - bash
           - -o
@@ -72,7 +72,7 @@ actions:
           - name: container
             imagePullPolicy: Always
           restartPolicy: Never
-        image: akankshakumari393/cleans3:latest
+        image: ghcr.io/kanisterio/kafka-cleans3:latest
         command:
           - bash
           - -o
@@ -113,7 +113,7 @@ actions:
           containers:
           - name: container
             imagePullPolicy: Always
-        image: akankshakumari393/adobe-s3-source-connector:latest
+        image: ghcr.io/kanisterio/kafka-adobe-s3-source-connector:latest
         command:
         - bash
         - -o
@@ -174,7 +174,7 @@ actions:
           containers:
           - name: container
             imagePullPolicy: Always
-        image: akankshakumari393/adobe-s3-source-connector:latest
+        image: ghcr.io/kanisterio/kafka-adobe-s3-source-connector:latest
         command:
           - bash
           - -o
