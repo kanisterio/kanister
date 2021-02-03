@@ -18,7 +18,7 @@ actions:
           name: '{{ .StatefulSet.Name }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: kanisterio/mysql-sidecar:0.40.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.49.0
         namespace: "{{ .StatefulSet.Namespace }}"
         command:
         - bash
@@ -51,7 +51,7 @@ actions:
           name: '{{ .StatefulSet.Name }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: kanisterio/mysql-sidecar:0.40.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.49.0
         namespace: "{{ .StatefulSet.Namespace }}"
         command:
         - bash
@@ -72,7 +72,7 @@ actions:
     - func: KubeTask
       name: deleteFromBlobStore
       args:
-        image: kanisterio/mysql-sidecar:0.40.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.49.0
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash
