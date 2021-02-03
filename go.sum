@@ -638,6 +638,8 @@ github.com/kopia/kopia v0.7.4-0.20201216204954-3795ffc6f914 h1:TLvaYonpKRON1MvUb
 github.com/kopia/kopia v0.7.4-0.20201216204954-3795ffc6f914/go.mod h1:itaPo+qPMs4oaTnuWPb+QH4BV60SJv/3xDnLFyDSEM4=
 github.com/kopia/kopia v0.7.4-0.20210128171357-1a826d85c55a h1:3uOsRRNplfRRh6Xalxc6azvyq3XKaQQayBXBUsAM1ak=
 github.com/kopia/kopia v0.7.4-0.20210128171357-1a826d85c55a/go.mod h1:QNFHdjr+vDtzrNIo1IwwseY5CtD/94dzYQKW3bKRMIE=
+github.com/kopia/kopia v0.7.4-0.20210203191933-c23d42f84db5 h1:DOiIvv1+PEIoM7Z4cu3NywjrC24ya5/X3OfriCsR3vc=
+github.com/kopia/kopia v0.7.4-0.20210203191933-c23d42f84db5/go.mod h1:QNFHdjr+vDtzrNIo1IwwseY5CtD/94dzYQKW3bKRMIE=
 github.com/kr/fs v0.1.0 h1:Jskdu9ieNAYnjxsi0LbQp1ulIKZV1LAFgK1tWhpZgl8=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
