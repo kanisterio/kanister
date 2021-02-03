@@ -63,3 +63,7 @@ func (e dirEntry) Owner() fs.OwnerInfo {
 func (e dirEntry) Device() fs.DeviceInfo {
 	return fs.DeviceInfo{}
 }
+
+func (e dirEntry) LocalFilesystemPath() string {
+	return ""
+}
