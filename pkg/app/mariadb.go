@@ -36,11 +36,11 @@ const (
 	mariaDBSTSSuffix = "mariadb"
 )
 
-type MariaDB struct{
-	cli kubernetes.Interface
+type MariaDB struct {
+	cli       kubernetes.Interface
 	namespace string
-	name string
-	chart helm.ChartInfo
+	name      string
+	chart     helm.ChartInfo
 }
 
 func NewMariaDB(name string) App {
@@ -59,7 +59,7 @@ func NewMariaDB(name string) App {
 	}
 }
 
-func (m *MariaDB) Init(context.Context) error{
+func (m *MariaDB) Init(context.Context) error {
 	cfg, err := kube.LoadConfig()
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (m *MariaDB) Init(context.Context) error{
 	return nil
 }
 
-func (m *MariaDB) Install(ctx context.Context, namespace string) error{
+func (m *MariaDB) Install(ctx context.Context, namespace string) error {
 	m.namespace = namespace
 	cli, err := helm.NewCliClient()
 	if err != nil {
@@ -94,7 +94,7 @@ func (m *MariaDB) Install(ctx context.Context, namespace string) error{
 	return nil
 }
 
-func (m *MariaDB) IsReady(ctx context.Context) (bool, error){
+func (m *MariaDB) IsReady(ctx context.Context) (bool, error) {
 	log.Print("Waiting for the maria instance to be ready.", field.M{"app": m.name})
 	ctx, cancel := context.WithTimeout(ctx, mariaWaitTimeout)
 	defer cancel()
@@ -106,7 +106,7 @@ func (m *MariaDB) IsReady(ctx context.Context) (bool, error){
 	return true, nil
 }
 
-func (m *MariaDB) Object() crv1alpha1.ObjectReference{
+func (m *MariaDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		Kind:      "statefulset",
 		Name:      mariaDBSTSName(m.chart.Release),
@@ -114,7 +114,7 @@ func (m *MariaDB) Object() crv1alpha1.ObjectReference{
 	}
 }
 
-func (m *MariaDB) Uninstall(ctx context.Context) error{
+func (m *MariaDB) Uninstall(ctx context.Context) error {
 	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
@@ -128,7 +128,7 @@ func (m *MariaDB) Uninstall(ctx context.Context) error{
 	return nil
 }
 
-func (m *MariaDB) Ping(ctx context.Context) error{
+func (m *MariaDB) Ping(ctx context.Context) error {
 	log.Print("Pinging the maria database.", field.M{"app": m.name})
 
 	// exec into the pod and create the test database, read password from secret
@@ -142,7 +142,7 @@ func (m *MariaDB) Ping(ctx context.Context) error{
 	return nil
 }
 
-func (m *MariaDB) Insert(ctx context.Context) error{
+func (m *MariaDB) Insert(ctx context.Context) error {
 	log.Print("Inserting some records in  maria instance.", field.M{"app": m.name})
 
 	insertRecordCMD := []string{"sh", "-c", "mysql -u root --password=$MARIADB_ROOT_PASSWORD -e 'use testdb; INSERT INTO pets VALUES (\"Puffball\",\"Diane\",\"hamster\",\"f\",\"1999-03-30\",NULL); '"}
@@ -155,7 +155,7 @@ func (m *MariaDB) Insert(ctx context.Context) error{
 	return nil
 }
 
-func (m *MariaDB) Count(ctx context.Context) (int, error){
+func (m *MariaDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting the records from the maria instance.", field.M{"app": m.name})
 
 	selectRowsCMD := []string{"sh", "-c", "mysql -u root --password=$MARIADB_ROOT_PASSWORD -e 'use testdb; select count(*) from pets; '"}
@@ -172,7 +172,7 @@ func (m *MariaDB) Count(ctx context.Context) (int, error){
 	return rowsReturned, nil
 }
 
-func (m *MariaDB) Reset(ctx context.Context) error{
+func (m *MariaDB) Reset(ctx context.Context) error {
 	timeoutCtx, waitCancel := context.WithTimeout(ctx, mariaWaitTimeout)
 	defer waitCancel()
 	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
@@ -197,7 +197,7 @@ func (m *MariaDB) Reset(ctx context.Context) error{
 	return nil
 }
 
-func (m *MariaDB) Initialize(ctx context.Context) error{
+func (m *MariaDB) Initialize(ctx context.Context) error {
 	// create the database and a pets table
 	createTableCMD := []string{"sh", "-c", "mysql -u root --password=$MARIADB_ROOT_PASSWORD -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
 	_, stderr, err := m.execCommand(ctx, createTableCMD)
@@ -208,13 +208,13 @@ func (m *MariaDB) Initialize(ctx context.Context) error{
 }
 
 func (m *MariaDB) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, m.cli, m.namespace,  mariaDBSTSName(m.chart.Release))
+	podname, containername, err := kube.GetPodContainerFromStatefulSet(ctx, m.cli, m.namespace, mariaDBSTSName(m.chart.Release))
 	if err != nil || podname == "" {
 		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", m.name)
 	}
 	return kube.Exec(m.cli, m.namespace, podname, containername, command, nil)
 }
 
-func mariaDBSTSName(release string) string{
+func mariaDBSTSName(release string) string {
 	return fmt.Sprintf("%s-%s", release, mariaDBSTSSuffix)
 }

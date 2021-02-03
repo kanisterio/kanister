@@ -68,6 +68,24 @@ var _ = Suite(&MySQL{
 	},
 })
 
+<<<<<<< HEAD
+=======
+// mariaDB app
+type Maria struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&Maria{
+	IntegrationSuite{
+		name:      "mariadb",
+		namespace: "mariadb-test",
+		app:       app.NewMariaDB("maria"),
+		bp:        app.NewBlueprint("maria", ""),
+		profile:   newSecretProfile(),
+	},
+})
+
+>>>>>>> cd47bed... Run gofmt, vscode didn't help :(
 // Elasticsearch app
 type Elasticsearch struct {
 	IntegrationSuite
