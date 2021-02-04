@@ -30,6 +30,8 @@ type dirEntry struct {
 	owner   fs.OwnerInfo
 }
 
+var _ fs.Entry = (*dirEntry)(nil)
+
 func (e dirEntry) Name() string {
 	return e.name
 }
@@ -56,4 +58,12 @@ func (e dirEntry) Sys() interface{} {
 
 func (e dirEntry) Owner() fs.OwnerInfo {
 	return e.owner
+}
+
+func (e dirEntry) Device() fs.DeviceInfo {
+	return fs.DeviceInfo{}
+}
+
+func (e dirEntry) LocalFilesystemPath() string {
+	return ""
 }

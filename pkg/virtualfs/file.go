@@ -31,6 +31,8 @@ type file struct {
 	source func() (ReaderSeekerCloser, error)
 }
 
+var _ fs.File = (*file)(nil)
+
 // Open opens the file for reading
 func (f *file) Open(ctx context.Context) (fs.Reader, error) {
 	r, err := f.source()
