@@ -54,8 +54,7 @@ actions:
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
 
             export timeinSeconds="{{ index .Object.data "timeinSeconds" | toString }}"
-            
-            
+                        
             export bootstrapServer=`cat /tmp/config/kafkaConfig.properties | grep "bootstrap.servers=" | awk -F "=" '{print $2}'`
 
             echo "============ENV variable set====================="
