@@ -68,8 +68,6 @@ var _ = Suite(&MySQL{
 	},
 })
 
-<<<<<<< HEAD
-=======
 // mariaDB app
 type Maria struct {
 	IntegrationSuite
@@ -85,7 +83,6 @@ var _ = Suite(&Maria{
 	},
 })
 
->>>>>>> cd47bed... Run gofmt, vscode didn't help :(
 // Elasticsearch app
 type Elasticsearch struct {
 	IntegrationSuite
