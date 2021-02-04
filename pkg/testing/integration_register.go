@@ -32,7 +32,7 @@ var _ = Suite(&PITRPostgreSQL{
 	IntegrationSuite{
 		name:      "pitr-postgres",
 		namespace: "pitr-postgres-test",
-		app:       app.NewPostgresDB("pitr-postgres"),
+		app:       app.NewPostgresDB("pitr-postgres", ""),
 		bp:        app.NewPITRBlueprint("pitr-postgres", ""),
 		profile:   newSecretProfile(),
 	},
@@ -47,7 +47,7 @@ var _ = Suite(&PostgreSQL{
 	IntegrationSuite{
 		name:      "postgres",
 		namespace: "postgres-test",
-		app:       app.NewPostgresDB("postgres"),
+		app:       app.NewPostgresDB("postgres", ""),
 		bp:        app.NewBlueprint("postgres", ""),
 		profile:   newSecretProfile(),
 	},
@@ -136,7 +136,7 @@ var _ = Suite(&RDSPostgreSQL{
 	IntegrationSuite{
 		name:      "rds-postgres",
 		namespace: "rds-postgres-test",
-		app:       app.NewRDSPostgresDB("rds-postgres"),
+		app:       app.NewRDSPostgresDB("rds-postgres", ""),
 		bp:        app.NewBlueprint("rds-postgres", ""),
 		profile:   newSecretProfile(),
 	},
@@ -166,7 +166,7 @@ var _ = Suite(&RDSPostgreSQLDump{
 	IntegrationSuite{
 		name:      "rds-postgres-dump",
 		namespace: "rds-postgres-dump-test",
-		app:       app.NewRDSPostgresDB("rds-postgres-dump"),
+		app:       app.NewRDSPostgresDB("rds-postgres-dump", ""),
 		bp:        app.NewBlueprint("rds-postgres-dump", ""),
 		profile:   newSecretProfile(),
 	},
@@ -182,7 +182,7 @@ var _ = Suite(&RDSPostgreSQLSnap{
 	IntegrationSuite{
 		name:      "rds-postgres-snap",
 		namespace: "rds-postgres-snap-test",
-		app:       app.NewRDSPostgresDB("rds-postgres-snap"),
+		app:       app.NewRDSPostgresDB("rds-postgres-snap", ""),
 		bp:        app.NewBlueprint("rds-postgres-snap", ""),
 		profile:   newSecretProfile(),
 	},

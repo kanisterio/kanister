@@ -106,7 +106,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		}
 
 		annotations := map[string]string{}
-		pvc, err := kubevolume.CreatePVC(ctx, cli, namespace, pvcName, vol.Size, vol.ID, annotations)
+		pvc, err := kubevolume.CreatePVC(ctx, cli, namespace, pvcName, vol.SizeInBytes, vol.ID, annotations)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to create PVC for volume %v", *vol)
 		}

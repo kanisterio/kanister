@@ -6,4 +6,6 @@ const (
 	ContainerNameKey         = "Container"
 	PhaseNameKey             = "Phase"
 	GoogleCloudCredsFilePath = "/tmp/creds.txt"
+	LabelKeyCreatedBy        = "createdBy"
+	LabelValueKanister       = "kanister"
 )

@@ -37,8 +37,8 @@ func crdsToMatcher(crds []apiextensions.CustomResourceDefinition) filter.Resourc
 	gvrs := make(filter.ResourceTypeMatcher, 0, len(crds))
 	for _, crd := range crds {
 		gvr := filter.ResourceTypeRequirement{
-			Group:    crd.Spec.Group,
-			Version:  crd.Spec.Version,
+			Group: crd.Spec.Group,
+			// Omit Version-- match any version
 			Resource: crd.Spec.Names.Plural,
 		}
 		gvrs = append(gvrs, gvr)

@@ -402,7 +402,7 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 		Encrypted:    volume.Encrypted,
 		ID:           *resp.RecoveryPointArn,
 		Region:       e.region,
-		Size:         bytesInGiB(*describeRP.BackupSizeInBytes),
+		SizeInBytes:  *describeRP.BackupSizeInBytes,
 		Tags:         blockstorage.MapToKeyValue(allTags),
 		Volume:       &volume,
 		Type:         blockstorage.TypeEFS,

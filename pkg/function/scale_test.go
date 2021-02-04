@@ -88,10 +88,10 @@ func (s *ScaleSuite) TearDownTest(c *C) {
 func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"echoHello": &crv1alpha1.BlueprintAction{
+			"echoHello": {
 				Kind: kind,
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testScale",
 						Func: KubeExecFuncName,
 						Args: map[string]interface{}{
@@ -103,10 +103,10 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 					},
 				},
 			},
-			"scaleDown": &crv1alpha1.BlueprintAction{
+			"scaleDown": {
 				Kind: kind,
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testScale",
 						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
@@ -115,10 +115,10 @@ func newScaleBlueprint(kind string) *crv1alpha1.Blueprint {
 					},
 				},
 			},
-			"scaleUp": &crv1alpha1.BlueprintAction{
+			"scaleUp": {
 				Kind: kind,
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testScale",
 						Func: ScaleWorkloadFuncName,
 						Args: map[string]interface{}{
@@ -170,7 +170,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 			_, err = p.Exec(context.Background(), *bp, action, *tp)
 			c.Assert(err, IsNil)
 		}
-		ok, err := kube.DeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
+		ok, _, err := kube.DeploymentReady(ctx, s.cli, d.GetNamespace(), d.GetName())
 		c.Assert(err, IsNil)
 		c.Assert(ok, Equals, true)
 	}
@@ -219,7 +219,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 			_, err = p.Exec(context.Background(), *bp, action, *tp)
 			c.Assert(err, IsNil)
 		}
-		ok, err := kube.StatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
+		ok, _, err := kube.StatefulSetReady(ctx, s.cli, ss.GetNamespace(), ss.GetName())
 		c.Assert(err, IsNil)
 		c.Assert(ok, Equals, true)
 	}

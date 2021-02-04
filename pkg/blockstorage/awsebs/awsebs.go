@@ -94,7 +94,7 @@ func (s *EbsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 		AvailabilityZone: aws.String(volume.Az),
 		VolumeType:       aws.String(string(volume.VolumeType)),
 		Encrypted:        aws.Bool(volume.Encrypted),
-		Size:             aws.Int64(volume.Size),
+		Size:             aws.Int64(blockstorage.SizeInGi(volume.SizeInBytes)),
 	}
 	// io1 type *requires* IOPS. Others *cannot* specify them.
 	if volume.VolumeType == ec2.VolumeTypeIo1 {
@@ -150,7 +150,7 @@ func (s *EbsStorage) volumeParse(ctx context.Context, volume interface{}) *block
 		Az:           aws.StringValue(vol.AvailabilityZone),
 		Encrypted:    aws.BoolValue(vol.Encrypted),
 		VolumeType:   aws.StringValue(vol.VolumeType),
-		Size:         aws.Int64Value(vol.Size),
+		SizeInBytes:  aws.Int64Value(vol.Size) * blockstorage.BytesInGi,
 		Tags:         tags,
 		Iops:         aws.Int64Value(vol.Iops),
 		CreationTime: blockstorage.TimeStamp(aws.TimeValue(vol.CreateTime)),
@@ -193,7 +193,7 @@ func (s *EbsStorage) snapshotParse(ctx context.Context, snap *ec2.Snapshot) *blo
 		Tags:         tags,
 		Type:         s.Type(),
 		Encrypted:    aws.BoolValue(snap.Encrypted),
-		Size:         aws.Int64Value(snap.VolumeSize),
+		SizeInBytes:  aws.Int64Value(snap.VolumeSize) * blockstorage.BytesInGi,
 		Region:       aws.StringValue(s.Ec2Cli.Config.Region),
 		Volume:       vol,
 		CreationTime: blockstorage.TimeStamp(aws.TimeValue(snap.StartTime)),
@@ -297,7 +297,7 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	rs := s.snapshotParse(ctx, snaps[0])
 	*rs.Volume = *from.Volume
 	rs.Region = to.Region
-	rs.Size = from.Size
+	rs.SizeInBytes = from.SizeInBytes
 	return rs, nil
 }
 
@@ -311,7 +311,7 @@ func (s *EbsStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 	// Snapshot the EBS volume
 	csi := (&ec2.CreateSnapshotInput{}).SetVolumeId(volume.ID)
 	csi.SetTagSpecifications([]*ec2.TagSpecification{
-		&ec2.TagSpecification{
+		{
 			ResourceType: aws.String(ec2.ResourceTypeSnapshot),
 			Tags:         mapToEC2Tags(ktags.GetTags(tags)),
 		},
@@ -456,6 +456,9 @@ func (s *EbsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 
 	volID, err := createVolume(ctx, s.Ec2Cli, cvi, ktags.GetTags(tags))
 	if err != nil {
+		if isVolNotFoundErr(err) {
+			return nil, errors.Wrap(err, "This may indicate insufficient permissions for KMS keys.")
+		}
 		return nil, err
 	}
 	return s.VolumeGet(ctx, volID, snapshot.Volume.Az)
@@ -465,7 +468,7 @@ func (s *EbsStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 func createVolume(ctx context.Context, ec2Cli *EC2, cvi *ec2.CreateVolumeInput, tags map[string]string) (string, error) {
 	// Set tags
 	awsTags := mapToEC2Tags(tags)
-	ts := []*ec2.TagSpecification{&ec2.TagSpecification{ResourceType: aws.String(ec2.ResourceTypeVolume), Tags: awsTags}}
+	ts := []*ec2.TagSpecification{{ResourceType: aws.String(ec2.ResourceTypeVolume), Tags: awsTags}}
 	cvi.SetTagSpecifications(ts)
 	cvi.SetDryRun(ec2Cli.DryRun)
 	vol, err := ec2Cli.CreateVolumeWithContext(ctx, cvi)
@@ -682,6 +685,7 @@ func staticRegionToZones(region string) ([]string, error) {
 		}, nil
 	case "ap-northeast-2":
 		return []string{
+			"ap-northeast-2-wl1-cjj-wlz-1",
 			"ap-northeast-2a",
 			"ap-northeast-2b",
 			"ap-northeast-2c",
@@ -689,6 +693,7 @@ func staticRegionToZones(region string) ([]string, error) {
 		}, nil
 	case "ap-northeast-1":
 		return []string{
+			"ap-northeast-1-wl1-nrt-wlz-1",
 			"ap-northeast-1a",
 			"ap-northeast-1c",
 			"ap-northeast-1d",
@@ -731,8 +736,13 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-east-1d",
 			"us-east-1e",
 			"us-east-1f",
+			"us-east-1-bos-1a",
+			"us-east-1-iah-1a",
+			"us-east-1-mia-1a",
 			"us-east-1-wl1-atl-wlz-1",
 			"us-east-1-wl1-bos-wlz-1",
+			"us-east-1-wl1-dfw-wlz-1",
+			"us-east-1-wl1-mia-wlz-1",
 			"us-east-1-wl1-nyc-wlz-1",
 			"us-east-1-wl1-was-wlz-1",
 		}, nil
@@ -755,6 +765,9 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-west-2d",
 			"us-west-2-lax-1a",
 			"us-west-2-lax-1b",
+			"us-west-2-wl1-den-wlz-1",
+			"us-west-2-wl1-las-wlz-1",
+			"us-west-2-wl1-sea-wlz-1",
 			"us-west-2-wl1-sfo-wlz-1",
 		}, nil
 	case "ap-east-1":

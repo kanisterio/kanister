@@ -288,7 +288,7 @@ func newStatefulSet(namespace string) *appsv1.StatefulSet {
 				},
 			},
 			VolumeClaimTemplates: []v1.PersistentVolumeClaim{
-				v1.PersistentVolumeClaim{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "kanister-test-pvc-snap-vol1",
 						Namespace: namespace,

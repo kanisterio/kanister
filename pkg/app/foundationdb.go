@@ -225,6 +225,11 @@ func (fdb *FoundationDB) Reset(ctx context.Context) error {
 	return errors.Wrapf(err, "Error %s resetting the database %s. stdout=%s", stderr, fdb.name, stdout)
 }
 
+// Initialize is used to initialize the database or create schema
+func (fdb *FoundationDB) Initialize(ctx context.Context) error {
+	return nil
+}
+
 func (fdb *FoundationDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podName, err := fdb.getRunningFDBPod()
 	if err != nil {

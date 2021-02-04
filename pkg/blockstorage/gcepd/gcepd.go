@@ -50,12 +50,11 @@ type GpdStorage struct {
 }
 
 const (
-	operationDone          = "DONE"
-	operationRunning       = "RUNNING"
-	operationPending       = "PENDING"
-	bytesInGiB       int64 = 1024 * 1024 * 1024
-	volumeNameFmt          = "vol-%s"
-	snapshotNameFmt        = "snap-%s"
+	operationDone    = "DONE"
+	operationRunning = "RUNNING"
+	operationPending = "PENDING"
+	volumeNameFmt    = "vol-%s"
+	snapshotNameFmt  = "snap-%s"
 )
 
 // Type is part of blockstorage.Provider
@@ -111,7 +110,7 @@ func (s *GpdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 
 	createDisk := &compute.Disk{
 		Name:   fmt.Sprintf(volumeNameFmt, uuid.NewV1().String()),
-		SizeGb: volume.Size,
+		SizeGb: blockstorage.SizeInGi(volume.SizeInBytes),
 		Type:   volume.VolumeType,
 		Labels: tags,
 	}
@@ -208,6 +207,9 @@ func (s *GpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Vol
 			}
 			return false, err
 		}
+		if snap.StorageBytesStatus != "UP_TO_DATE" {
+			return false, nil
+		}
 		return true, nil
 	})
 
@@ -261,7 +263,7 @@ func (s *GpdStorage) volumeParse(ctx context.Context, volume interface{}, zone s
 		Type:         s.Type(),
 		ID:           vol.Name,
 		Encrypted:    false,
-		Size:         vol.SizeGb,
+		SizeInBytes:  vol.SizeGb * blockstorage.BytesInGi,
 		Az:           filepath.Base(zone),
 		Tags:         blockstorage.MapToKeyValue(vol.Labels),
 		VolumeType:   vol.Type,
@@ -290,7 +292,7 @@ func (s *GpdStorage) snapshotParse(ctx context.Context, snap *compute.Snapshot) 
 		Encrypted:    encrypted,
 		ID:           snap.Name,
 		Region:       "",
-		Size:         snap.StorageBytes / bytesInGiB,
+		SizeInBytes:  snap.StorageBytes,
 		Tags:         blockstorage.MapToKeyValue(snap.Labels),
 		Type:         s.Type(),
 		Volume:       vol,
@@ -369,7 +371,7 @@ func (s *GpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 	}
 	createDisk := &compute.Disk{
 		Name:           fmt.Sprintf(volumeNameFmt, uuid.NewV1().String()),
-		SizeGb:         snapshot.Volume.Size,
+		SizeGb:         blockstorage.SizeInGi(snapshot.Volume.SizeInBytes),
 		Type:           snapshot.Volume.VolumeType,
 		Labels:         blockstorage.SanitizeTags(ktags.GetTags(tags)),
 		SourceSnapshot: snap.SelfLink,

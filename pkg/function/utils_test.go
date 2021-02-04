@@ -201,10 +201,10 @@ func newValidDeploymentTP() param.TemplateParams {
 			},
 			Containers: [][]string{{"test-container"}},
 			PersistentVolumeClaims: map[string]map[string]string{
-				"pod1": map[string]string{
+				"pod1": {
 					"pvc1": "path1",
 				},
-				"pod2": map[string]string{
+				"pod2": {
 					"pvc2": "path2",
 				},
 			},
@@ -223,7 +223,7 @@ func newInvalidDeploymentTP() param.TemplateParams {
 			},
 			Containers: [][]string{{"test-container"}},
 			PersistentVolumeClaims: map[string]map[string]string{
-				"pod1": map[string]string{
+				"pod1": {
 					"pvc1": "path1",
 				},
 			},
@@ -242,10 +242,10 @@ func newValidStatefulSetTP() param.TemplateParams {
 			},
 			Containers: [][]string{{"test-container"}},
 			PersistentVolumeClaims: map[string]map[string]string{
-				"pod1": map[string]string{
+				"pod1": {
 					"pvc1": "path1",
 				},
-				"pod2": map[string]string{
+				"pod2": {
 					"pvc2": "path2",
 					"pvc3": "path3",
 				},

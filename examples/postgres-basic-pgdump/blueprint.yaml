@@ -19,7 +19,7 @@ actions:
       name: takeBackup
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: kanisterio/postgres-task:9.6
+        image: ghcr.io/kanisterio/postgres-task:9.6
         command:
           - bash
           - -o
@@ -45,7 +45,7 @@ actions:
       name: restoreBackup
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: kanisterio/postgres-task:262fc0cbc8f0
+        image: ghcr.io/kanisterio/postgres-task:262fc0cbc8f0
         command:
           - bash
           - -o

@@ -90,10 +90,10 @@ func (s *KubeExecTest) TearDownSuite(c *C) {
 func newKubeExecBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"echo": &crv1alpha1.BlueprintAction{
+			"echo": {
 				Kind: "StatefulSet",
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "echoSomething",
 						Func: KubeExecFuncName,
 						Args: map[string]interface{}{
@@ -178,11 +178,11 @@ func (s *KubeExecTest) TestParseLogAndCreateOutput(c *C) {
 		errChecker Checker
 		outChecker Checker
 	}{
-		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.40.0\"}", map[string]interface{}{"version": "0.40.0"}, IsNil, NotNil},
-		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.40.0\"}\n###Phase-output###: {\"key\":\"path\",\"value\":\"/backup/path\"}",
-			map[string]interface{}{"version": "0.40.0", "path": "/backup/path"}, IsNil, NotNil},
-		{"Random message ###Phase-output###: {\"key\":\"version\",\"value\":\"0.40.0\"}", map[string]interface{}{"version": "0.40.0"}, IsNil, NotNil},
-		{"Random message with newline \n###Phase-output###: {\"key\":\"version\",\"value\":\"0.40.0\"}", map[string]interface{}{"version": "0.40.0"}, IsNil, NotNil},
+		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.49.0\"}", map[string]interface{}{"version": "0.49.0"}, IsNil, NotNil},
+		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.49.0\"}\n###Phase-output###: {\"key\":\"path\",\"value\":\"/backup/path\"}",
+			map[string]interface{}{"version": "0.49.0", "path": "/backup/path"}, IsNil, NotNil},
+		{"Random message ###Phase-output###: {\"key\":\"version\",\"value\":\"0.49.0\"}", map[string]interface{}{"version": "0.49.0"}, IsNil, NotNil},
+		{"Random message with newline \n###Phase-output###: {\"key\":\"version\",\"value\":\"0.49.0\"}", map[string]interface{}{"version": "0.49.0"}, IsNil, NotNil},
 		{"###Phase-output###: Invalid message", nil, NotNil, IsNil},
 		{"Random message", nil, IsNil, IsNil},
 	} {

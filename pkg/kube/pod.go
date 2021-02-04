@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -82,7 +83,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 				Name:            "container",
 				Image:           opts.Image,
 				Command:         opts.Command,
-				ImagePullPolicy: v1.PullPolicy(v1.PullAlways),
+				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 				VolumeMounts:    volumeMounts,
 			},
 		},
@@ -104,6 +105,9 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
+			Labels: map[string]string{
+				consts.LabelKeyCreatedBy: consts.LabelValueKanister,
+			},
 		},
 		Spec: patchedSpecs,
 	}
@@ -112,8 +116,11 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	if opts.Annotations != nil {
 		pod.ObjectMeta.Annotations = opts.Annotations
 	}
-	if opts.Labels != nil {
-		pod.ObjectMeta.Labels = opts.Labels
+	if pod.ObjectMeta.Labels == nil {
+		pod.ObjectMeta.Labels = map[string]string{}
+	}
+	for key, value := range opts.Labels {
+		pod.ObjectMeta.Labels[key] = value
 	}
 
 	pod, err = cli.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
@@ -269,7 +276,7 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		case v1.PodRunning:
 			for _, con := range p.Status.ContainerStatuses {
 				if con.State.Terminated != nil {
-					return false, errors.Errorf("Container %v is terminated, while Pod %v is Running", con.Name, name)
+					return false, errors.Errorf("Container %v is terminated, while Pod %v is Running. Container termination status: %v. Pod details (%s)", con.Name, name, con.State.Terminated, p.String())
 				}
 			}
 		case v1.PodFailed:

@@ -123,18 +123,18 @@ func (s *DataSuite) TearDownSuite(c *C) {
 func newRestoreDataBlueprint(pvc, identifierArg, identifierVal string) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"restore": &crv1alpha1.BlueprintAction{
+			"restore": {
 				Kind: param.StatefulSetKind,
 				SecretNames: []string{
 					"backupKey",
 				},
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testRestore",
 						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataImageArg:                "kanisterio/kanister-tools:0.40.0",
+							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.49.0",
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataRestorePathArg:          "/mnt/data",
 							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
@@ -153,10 +153,10 @@ func newRestoreDataBlueprint(pvc, identifierArg, identifierVal string) *crv1alph
 func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"backup": &crv1alpha1.BlueprintAction{
+			"backup": {
 				Kind: param.StatefulSetKind,
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testBackup",
 						Func: BackupDataFuncName,
 						Args: map[string]interface{}{
@@ -177,10 +177,10 @@ func newBackupDataBlueprint() *crv1alpha1.Blueprint {
 func newDescribeBackupsBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"describeBackups": &crv1alpha1.BlueprintAction{
+			"describeBackups": {
 				Kind: param.StatefulSetKind,
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testDescribeBackups",
 						Func: DescribeBackupsFuncName,
 						Args: map[string]interface{}{
@@ -197,10 +197,10 @@ func newDescribeBackupsBlueprint() *crv1alpha1.Blueprint {
 func newCheckRepositoryBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"checkRepository": &crv1alpha1.BlueprintAction{
+			"checkRepository": {
 				Kind: param.StatefulSetKind,
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testCheckRepository",
 						Func: CheckRepositoryFuncName,
 						Args: map[string]interface{}{
@@ -217,10 +217,10 @@ func newCheckRepositoryBlueprint() *crv1alpha1.Blueprint {
 func newLocationDeleteBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"delete": &crv1alpha1.BlueprintAction{
+			"delete": {
 				Kind: param.StatefulSetKind,
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testLocationDelete",
 						Func: LocationDeleteFuncName,
 						Args: map[string]interface{}{
@@ -236,10 +236,10 @@ func newLocationDeleteBlueprint() *crv1alpha1.Blueprint {
 func newBackupDataAllBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"backup": &crv1alpha1.BlueprintAction{
+			"backup": {
 				Kind: param.StatefulSetKind,
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testBackupDataAll",
 						Func: BackupDataAllFuncName,
 						Args: map[string]interface{}{
@@ -258,15 +258,15 @@ func newBackupDataAllBlueprint() *crv1alpha1.Blueprint {
 func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"restore": &crv1alpha1.BlueprintAction{
+			"restore": {
 				Kind: param.StatefulSetKind,
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testRestoreDataAll",
 						Func: RestoreDataAllFuncName,
 						Args: map[string]interface{}{
 							RestoreDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataAllImageArg:                "kanisterio/kanister-tools:0.40.0",
+							RestoreDataAllImageArg:                "ghcr.io/kanisterio/kanister-tools:0.49.0",
 							RestoreDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataAllBackupInfo:              fmt.Sprintf("{{ .Options.%s }}", BackupDataAllOutput),
 							RestoreDataAllRestorePathArg:          "/mnt/data",
@@ -281,10 +281,10 @@ func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
 func newDeleteDataAllBlueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"delete": &crv1alpha1.BlueprintAction{
+			"delete": {
 				Kind: param.StatefulSetKind,
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testDeleteDataAll",
 						Func: DeleteDataAllFuncName,
 						Args: map[string]interface{}{
@@ -339,7 +339,7 @@ func (s *DataSuite) getTemplateParamsAndPVCName(c *C, replicas int32) (*param.Te
 			Namespace: s.namespace,
 		},
 		Secrets: map[string]crv1alpha1.ObjectReference{
-			"backupKey": crv1alpha1.ObjectReference{
+			"backupKey": {
 				Kind:      "Secret",
 				Name:      secret.GetName(),
 				Namespace: s.namespace,
@@ -457,9 +457,9 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 					},
 				},
 			},
-			"copy": &crv1alpha1.BlueprintAction{
+			"copy": {
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testCopy",
 						Func: CopyVolumeDataFuncName,
 						Args: map[string]interface{}{
@@ -470,14 +470,14 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 					},
 				},
 			},
-			"restore": &crv1alpha1.BlueprintAction{
+			"restore": {
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testRestore",
 						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
-							RestoreDataImageArg:                "kanisterio/kanister-tools:0.40.0",
+							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.49.0",
 							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
 							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupTag),
 							RestoreDataVolsArg: map[string]string{
@@ -504,9 +504,9 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 					},
 				},
 			},
-			"delete": &crv1alpha1.BlueprintAction{
+			"delete": {
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Name: "testDelete",
 						Func: DeleteDataFuncName,
 						Args: map[string]interface{}{

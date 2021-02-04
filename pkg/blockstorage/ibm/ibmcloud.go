@@ -69,7 +69,8 @@ func (s *ibmCloud) VolumeCreate(ctx context.Context, volume blockstorage.Volume)
 	if tier, ok := volume.Attributes[TierAttName]; ok {
 		newVol.Tier = &tier
 	}
-	size := int(volume.Size)
+	// size := int(volume.Size)
+	size := int(blockstorage.SizeInGi(volume.SizeInBytes))
 	newVol.Capacity = &size
 	newVol.VolumeNotes = blockstorage.KeyValueToMap(volume.Tags)
 	newVol.Az = s.cli.SLCfg.SoftlayerDataCenter
@@ -140,7 +141,7 @@ func (s *ibmCloud) volumeParse(ctx context.Context, vol *ibmprov.Volume) (*block
 		Az:           s.cli.SLCfg.SoftlayerDataCenter, // Due to the bug in IBM lib vol.Az,
 		Encrypted:    false,
 		VolumeType:   string(vol.VolumeType),
-		Size:         int64(*vol.Capacity),
+		SizeInBytes:  int64(*vol.Capacity) * blockstorage.BytesInGi,
 		Tags:         tags,
 		Iops:         iops,
 		CreationTime: blockstorage.TimeStamp(vol.CreationTime),
@@ -176,9 +177,9 @@ func (s *ibmCloud) snapshotParse(ctx context.Context, snap *ibmprov.Snapshot) *b
 		ID:   snap.VolumeID,
 	}
 
-	snapSize := int64(0)
+	snapSizeInGi := int64(0)
 	if snap.SnapshotSize != nil {
-		snapSize = int64(*snap.SnapshotSize)
+		snapSizeInGi = int64(*snap.SnapshotSize)
 	}
 
 	return &blockstorage.Snapshot{
@@ -186,7 +187,7 @@ func (s *ibmCloud) snapshotParse(ctx context.Context, snap *ibmprov.Snapshot) *b
 		Tags:         tags,
 		Type:         s.Type(),
 		Encrypted:    false,
-		Size:         snapSize,
+		SizeInBytes:  snapSizeInGi * blockstorage.BytesInGi,
 		Region:       snap.Region,
 		Volume:       vol,
 		CreationTime: blockstorage.TimeStamp(snap.SnapshotCreationTime),

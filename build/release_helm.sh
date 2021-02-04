@@ -56,7 +56,7 @@ release_helm_charts() {
 main() {
     version=${1:?"chart version not specified"}
 
-    helm init --client-only
+    helm init --client-only --stable-repo-url https://charts.helm.sh/stable
 
     helm repo add kanister ${HELM_RELEASE_REPO_URL}
     release_helm_charts helm/profile "${version}"

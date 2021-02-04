@@ -54,6 +54,7 @@ type ElasticsearchInstance struct {
 	elasticsearchURL string
 }
 
+// Last tested on 7.10.1
 func NewElasticsearchInstance(name string) App {
 	return &ElasticsearchInstance{
 		name:      name,
@@ -64,7 +65,6 @@ func NewElasticsearchInstance(name string) App {
 			RepoURL:  helm.ElasticRepoURL,
 			Chart:    "elasticsearch",
 			RepoName: helm.ElasticRepoName,
-			Version:  "7.4.1",
 			Values: map[string]string{
 				"antiAffinity": "soft",
 				"replicas":     "1",
@@ -196,13 +196,17 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 		return errors.Wrapf(err, "Error %s while deleting the index %s to reset the application.", stderr, esi.indexname)
 	}
 
+	return nil
+}
+
+// Initialize is used to initialize the database or create schema
+func (esi *ElasticsearchInstance) Initialize(ctx context.Context) error {
 	// create the index
 	createIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X PUT %s/%s?pretty", esi.elasticsearchURL, esi.indexname)}
-	_, stderr, err = esi.execCommand(ctx, createIndexCMD)
+	_, stderr, err := esi.execCommand(ctx, createIndexCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s: Resetting the application.", stderr)
 	}
-
 	return nil
 }
 

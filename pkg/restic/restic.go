@@ -414,7 +414,7 @@ func SnapshotStatsFromStatsLog(output string) (string, string, string) {
 func SnapshotStatsModeFromStatsLog(output string) string {
 	logs := regexp.MustCompile("[\n]").Split(output, -1)
 	// Log should contain "Stats for .... in  xx mode"
-	pattern := regexp.MustCompile(`Stats for.*in\s+(.*?)\s+mode:`)
+	pattern := regexp.MustCompile(`Stats in\s+(.*?)\s+mode:`)
 	for _, l := range logs {
 		match := pattern.FindAllStringSubmatch(l, 1)
 		if len(match) > 0 && len(match[0]) > 1 {

@@ -64,13 +64,13 @@ func (*mockGetter) Get(storageType blockstorage.Type, config map[string]string) 
 // Get returns a mock storage provider
 func Get(storageType blockstorage.Type) *Provider {
 	volume := blockstorage.Volume{
-		Type:       storageType,
-		ID:         fmt.Sprintf("vol-%s", uuid.NewV1().String()),
-		Az:         "AZ",
-		Encrypted:  false,
-		VolumeType: "ssd",
-		Size:       1,
-		Iops:       0,
+		Type:        storageType,
+		ID:          fmt.Sprintf("vol-%s", uuid.NewV1().String()),
+		Az:          "AZ",
+		Encrypted:   false,
+		VolumeType:  "ssd",
+		SizeInBytes: 1024,
+		Iops:        0,
 		Tags: []*blockstorage.KeyValue{
 			{Key: "kanister.io/jobid", Value: "unittest"},
 			{Key: "kanister.io/volid", Value: "vol"},
@@ -79,9 +79,9 @@ func Get(storageType blockstorage.Type) *Provider {
 	}
 	snapVol := volume
 	snapshot := blockstorage.Snapshot{
-		Type: storageType,
-		ID:   fmt.Sprintf("snap-%s", uuid.NewV1().String()),
-		Size: 1,
+		Type:        storageType,
+		ID:          fmt.Sprintf("snap-%s", uuid.NewV1().String()),
+		SizeInBytes: 1024,
 		Tags: []*blockstorage.KeyValue{
 			{Key: "kanister.io/jobid", Value: "unittest"},
 			{Key: "kanister.io/snapid", Value: "snap"},
@@ -113,13 +113,13 @@ func (p *Provider) VolumeCreate(context.Context, blockstorage.Volume) (*blocksto
 // VolumeCreateFromSnapshot mock
 func (p *Provider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
 	vol := blockstorage.Volume{
-		Type:       snapshot.Type,
-		ID:         fmt.Sprintf("vol-%s", uuid.NewV1().String()),
-		Az:         "AZ",
-		Encrypted:  false,
-		VolumeType: "ssd",
-		Size:       1,
-		Iops:       0,
+		Type:        snapshot.Type,
+		ID:          fmt.Sprintf("vol-%s", uuid.NewV1().String()),
+		Az:          "AZ",
+		Encrypted:   false,
+		VolumeType:  "ssd",
+		SizeInBytes: 1024,
+		Iops:        0,
 		Tags: []*blockstorage.KeyValue{
 			{Key: "kanister.io/jobid", Value: "unittest"},
 			{Key: "kanister.io/volid", Value: "vol"},
