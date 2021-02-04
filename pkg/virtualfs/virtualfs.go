@@ -18,7 +18,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kopia/kopia/fs"
 	"github.com/pkg/errors"
 )
 
@@ -34,10 +33,3 @@ func NewDirectory(rootName string) (*Directory, error) {
 		},
 	}, nil
 }
-
-var (
-	_ fs.Directory = &Directory{}
-	_ fs.Entry     = &dirEntry{}
-	_ fs.File      = &file{}
-	_ fs.Symlink   = &inmemorySymlink{}
-)

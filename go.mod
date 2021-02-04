@@ -23,7 +23,7 @@ require (
 	github.com/Masterminds/sprig v2.15.0+incompatible
 	github.com/aokoli/goutils v1.1.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
-	github.com/aws/aws-sdk-go v1.31.3
+	github.com/aws/aws-sdk-go v1.34.29
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
@@ -43,9 +43,9 @@ require (
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.10
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
-	github.com/kopia/kopia v0.4.1-0.20200608151401-25934a544df4
+	github.com/kopia/kopia v0.7.4-0.20210203191933-c23d42f84db5
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.0.0
-	github.com/lib/pq v1.2.0
+	github.com/lib/pq v1.8.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v1.4.0
 
@@ -56,7 +56,7 @@ require (
 	github.com/prometheus/client_golang v1.9.0
 	github.com/renier/xmlrpc v0.0.0-20170708154548-ce4a1a486c03 // indirect
 	github.com/satori/go.uuid v1.2.0
-	github.com/sirupsen/logrus v1.6.0
+	github.com/sirupsen/logrus v1.7.0
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45
@@ -70,7 +70,7 @@ require (
 	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324 // indirect
-	google.golang.org/api v0.30.0
+	google.golang.org/api v0.32.0
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d // indirect
 	google.golang.org/grpc v1.34.0 // indirect
