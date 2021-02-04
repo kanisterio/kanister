@@ -1,6 +1,6 @@
 # MariaDB
 
-[MariaDB]https://mariadb.org/) is open source relation database that that is made by the developers of MySQL.
+[MariaDB](https://mariadb.org/) is open source relation database that that is made by the developers of MySQL.
 
 ## Introduction
 
