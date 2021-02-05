@@ -32,6 +32,8 @@ type Directory struct {
 	children fs.Entries
 }
 
+var _ (fs.Directory) = (*Directory)(nil)
+
 // AddDir adds a directory with a given name and permissions
 func (d *Directory) AddDir(name string, permissions os.FileMode) (*Directory, error) {
 	subdir := &Directory{
