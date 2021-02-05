@@ -68,6 +68,21 @@ var _ = Suite(&MySQL{
 	},
 })
 
+// mariaDB app
+type Maria struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&Maria{
+	IntegrationSuite{
+		name:      "mariadb",
+		namespace: "mariadb-test",
+		app:       app.NewMariaDB("maria"),
+		bp:        app.NewBlueprint("maria", ""),
+		profile:   newSecretProfile(),
+	},
+})
+
 // Elasticsearch app
 type Elasticsearch struct {
 	IntegrationSuite
