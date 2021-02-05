@@ -1,7 +1,14 @@
 #!/bin/sh
 echo "===========================Monitoring started==================================="
 sleep 60
-
+export elapsedtime="$(ps -e -o "pid,etimes,command" |awk -v processid=$pid '{if($1==processid) print $2}')"
+if [ -z "$elapsedtime" ]
+then
+    echo "================Connector failed======================"
+    curl -X DELETE http://localhost:8083/connectors/$connectorName
+    echo "================Connector Deleted======================"
+    exit 1
+fi
 for i in $(echo $topicDetail | sed "s/,/ /g")
 do
     
@@ -33,5 +40,7 @@ do
 done
 
 echo "=========================== All topic restored as per backup details ==================================="
+curl -X DELETE http://localhost:8083/connectors/$connectorName
+echo "================Connector Deleted======================"
 kill -INT $pid
 exit 0

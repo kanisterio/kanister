@@ -192,9 +192,9 @@ actions:
             {{- end }}
             region="{{ .Profile.Location.Region }}"
             bucket="{{ .Profile.Location.Bucket }}"
+            export connectorName=$HOSTNAME
             s3config="{{ index .Object.data "adobe-s3-source.properties" | toString }}"
-            echo -e "${s3config}\ns3.bucket=${bucket}\n" > /tmp/config/s3config.properties
-         
+            echo -e "${s3config}\ns3.bucket=${bucket}\nname=${connectorName}\n" > /tmp/config/s3config.properties
             sed -i "/^s3.prefix/d" /tmp/config/s3config.properties
 
             s3_path="{{ .ArtifactsIn.s3Dump.KeyValue.s3path }}"
