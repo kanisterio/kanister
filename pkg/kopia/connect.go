@@ -69,8 +69,10 @@ func ConnectToAPIServer(
 			MaxMetadataCacheSizeBytes: int64(defaultDataStoreGeneralMetadataCacheSizeMB << 20),
 			MaxListCacheDurationSec:   int(defaultConnectMaxListCacheDuration.Seconds()),
 		},
-		HostnameOverride: hostname,
-		UsernameOverride: username,
+		ClientOptions: repo.ClientOptions{
+			Hostname: hostname,
+			Username: username,
+		},
 	}
 
 	err = poll.WaitWithBackoff(ctx, backoff.Backoff{
