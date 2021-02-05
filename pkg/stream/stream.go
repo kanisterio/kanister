@@ -60,8 +60,8 @@ func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEn
 
 	// Populate the source info with source path and file
 	sourceInfo := snapshot.SourceInfo{
-		UserName: rep.Username(),
-		Host:     rep.Hostname(),
+		UserName: rep.ClientOptions().Username,
+		Host:     rep.ClientOptions().Hostname,
 		Path:     dirPath,
 	}
 
@@ -71,7 +71,7 @@ func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEn
 
 // OpenKopiaRepository connects to the kopia repository based on the config
 // NOTE: This assumes that `kopia repository connect` has been already run on the machine
-func OpenKopiaRepository(ctx context.Context, configFile, password string) (repo.Repository, error) {
+func OpenKopiaRepository(ctx context.Context, configFile, password string) (repo.RepositoryWriter, error) {
 	repoConfig := repositoryConfigFileName(configFile)
 	if _, err := os.Stat(repoConfig); os.IsNotExist(err) {
 		return nil, errors.New("Failed find kopia configuration file")
@@ -82,7 +82,13 @@ func OpenKopiaRepository(ctx context.Context, configFile, password string) (repo
 		return nil, errors.New("Failed to find kopia repository, use `kopia repository create` or kopia repository connect` if already created")
 	}
 
-	return r, errors.Wrap(err, "Failed to open kopia repository")
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to open kopia repository")
+	}
+
+	rw, err := r.NewWriter(ctx, "kanister stream")
+
+	return rw, errors.Wrap(err, "Failed to open kopia repository writer")
 }
 
 func repositoryConfigFileName(configFile string) string {
@@ -93,7 +99,7 @@ func repositoryConfigFileName(configFile string) string {
 }
 
 // SnapshotSource creates and uploads a kopia snapshot to the given repository
-func SnapshotSource(ctx context.Context, rep repo.Repository, u *snapshotfs.Uploader, sourceInfo snapshot.SourceInfo, rootDir fs.Entry) error {
+func SnapshotSource(ctx context.Context, rep repo.RepositoryWriter, u *snapshotfs.Uploader, sourceInfo snapshot.SourceInfo, rootDir fs.Entry) error {
 	fmt.Printf("Snapshotting %v ...\n", sourceInfo)
 
 	t0 := time.Now()

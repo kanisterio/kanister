@@ -34,11 +34,13 @@ Stable Helm charts that have been updated with Kanister support.
 - **[Couchbase](./examples/stable/couchbase)**
 - **[Elasticsearch](./examples/stable/elasticsearch)**
 - **[FoundationDB](./examples/stable/foundationdb)**
+- **[MongoDB on OpenShift using DeploymentConfig](./examples/stable/mongodb-deploymentconfig)**
 - **[MongoDB](./examples/stable/mongodb)**
 - **[MySQL on OpenShift using DeploymentConfig](./examples/stable/mysql-deploymentconfig)**
 - **[MySQL](./examples/stable/mysql)**
 - **[PostgreSQL with Point In Time Recovery (PITR)](./examples/stable/postgresql-wale)**
 - **[ETCD](./examples/etcd/etcd-in-cluster)**
+- **[PostgreSQL on OpenShift using DeploymentConfig](./examples/stable/postgresql-deploymentconfig)**
 - **[PostgreSQL](./examples/stable/postgresql)**
 
 
