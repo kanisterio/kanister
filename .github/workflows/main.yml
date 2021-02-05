@@ -1,12 +1,13 @@
 name: kanister
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches: 
-      - master
+# on:
+#  push:
+#    branches:
+#      - master
+#  pull_request:
+#    branches: 
+#      - master
+
 jobs:
   make-docs:
     name: Make docs
