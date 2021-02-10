@@ -19,14 +19,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/jpillora/backoff"
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/repo/content"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
@@ -59,6 +56,8 @@ func ConnectToAPIServer(
 	serverInfo := &repo.APIServerInfo{
 		BaseURL:                             serverAddress,
 		TrustedServerCertificateFingerprint: fingerprint,
+		// TODO(@pavan): Remove once GRPC support is added
+		DisableGRPC: true,
 	}
 
 	opts := &repo.ConnectOptions{
@@ -75,19 +74,9 @@ func ConnectToAPIServer(
 		},
 	}
 
-	err = poll.WaitWithBackoff(ctx, backoff.Backoff{
-		Factor: 2,
-		Jitter: false,
-		Min:    100 * time.Millisecond,
-		Max:    180 * time.Second,
-	}, func(c context.Context) (bool, error) {
-		if err := repo.ConnectAPIServer(ctx, defaultConfigFilePath, serverInfo, string(passphrase), opts); err != nil {
-			return false, nil
-		}
-		return true, nil
-	})
-	if err != nil {
-		return errors.Wrap(err, "Failed to backup data to Kopia API server")
+	// TODO(@pavan): Modify this to use custom config file path, if required
+	if err = repo.ConnectAPIServer(ctx, defaultConfigFilePath, serverInfo, string(passphrase), opts); err != nil {
+		return errors.Wrap(err, "Failed connecting to the Kopia API server")
 	}
 	return nil
 }
