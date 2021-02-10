@@ -1003,3 +1003,83 @@ func (s *SnapshotTestSuite) TestCreateFromSourceStable(c *C) {
 	err = snapshotterStable.UpdateVolumeSnapshotStatusStable(ctx, namespace, snapshotName, false)
 	c.Assert(err, NotNil)
 }
+
+func (s *SnapshotTestSuite) TestGetSnapshotClassbyAnnotation(c *C) {
+	vsc1 := snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "vsc1", "driver", snapshot.DeletionPolicyDelete)
+	vsc1.SetAnnotations(map[string]string{
+		"key": "value",
+	})
+	vsc2 := snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "vsc2", "driver", snapshot.DeletionPolicyDelete)
+	sc1 := &scv1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "sc1",
+		},
+		Provisioner: "driver",
+	}
+	sc2 := &scv1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "sc2",
+			Annotations: map[string]string{
+				"key": "vsc2",
+			},
+		},
+		Provisioner: "driver",
+	}
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
+	for _, tc := range []struct {
+		dyncli     dynamic.Interface
+		kubecli    kubernetes.Interface
+		gvr        schema.GroupVersionResource
+		key        string
+		value      string
+		sc         string
+		errChecker Checker
+		retVSC     string
+	}{
+		{
+			dyncli:     dynfake.NewSimpleDynamicClient(scheme, vsc1),
+			kubecli:    fake.NewSimpleClientset(sc1),
+			gvr:        v1beta1.VolSnapClassGVR,
+			key:        "key",
+			value:      "value",
+			sc:         "sc1",
+			errChecker: IsNil,
+			retVSC:     "vsc1",
+		},
+		{ // no vsc available
+			dyncli:     dynfake.NewSimpleDynamicClient(scheme),
+			kubecli:    fake.NewSimpleClientset(sc1),
+			gvr:        v1beta1.VolSnapClassGVR,
+			key:        "key",
+			value:      "value",
+			sc:         "sc1",
+			errChecker: NotNil,
+		},
+		{ // annotation on sc
+			dyncli:     dynfake.NewSimpleDynamicClient(scheme, vsc2),
+			kubecli:    fake.NewSimpleClientset(sc2),
+			gvr:        v1beta1.VolSnapClassGVR,
+			key:        "key",
+			value:      "value",
+			sc:         "sc2",
+			errChecker: IsNil,
+			retVSC:     "vsc2",
+		},
+		{ // missing vsc
+			dyncli:     dynfake.NewSimpleDynamicClient(scheme),
+			kubecli:    fake.NewSimpleClientset(sc2),
+			gvr:        v1beta1.VolSnapClassGVR,
+			key:        "key",
+			value:      "value",
+			sc:         "sc2",
+			errChecker: NotNil,
+		},
+	} {
+		vsc, err := snapshot.GetSnapshotClassbyAnnotation(tc.dyncli, tc.kubecli, tc.gvr, tc.key, tc.value, tc.sc)
+		c.Check(err, tc.errChecker)
+		if tc.errChecker == IsNil {
+			c.Assert(vsc, Equals, tc.retVSC)
+		}
+	}
+}

@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
@@ -84,7 +84,7 @@ func (sna *SnapshotAlpha) CloneVolumeSnapshotClass(sourceClassName, targetClassN
 
 // GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
 func (sna *SnapshotAlpha) GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error) {
-	return getSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, v1alpha1.VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
+	return GetSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, v1alpha1.VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
 }
 
 // Create creates a VolumeSnapshot and returns it or any error that happened meanwhile.
@@ -417,18 +417,26 @@ func TransformUnstructured(u *unstructured.Unstructured, value interface{}) erro
 	return errors.Wrapf(err, "Failed to Unmarshal unstructured object")
 }
 
-func getSnapshotClassbyAnnotation(dynCli dynamic.Interface, kubeCli kubernetes.Interface, gvr schema.GroupVersionResource, annotationKey, annotationValue, storageClass string) (string, error) {
+func GetSnapshotClassbyAnnotation(dynCli dynamic.Interface, kubeCli kubernetes.Interface, gvr schema.GroupVersionResource, annotationKey, annotationValue, storageClass string) (string, error) {
+	// fetch storageClass
+	sc, err := kubeCli.StorageV1().StorageClasses().Get(context.TODO(), storageClass, metav1.GetOptions{})
+	if err != nil {
+		return "", errors.Errorf("Failed to find StorageClass (%s) in the cluster: %v", storageClass, err)
+	}
+	// Check if storageclass annotation override is present.
+	if val, ok := sc.Annotations[annotationKey]; ok {
+		vsc, err := dynCli.Resource(gvr).Get(context.TODO(), val, metav1.GetOptions{})
+		if err != nil {
+			return "", errors.Errorf("Failed to get VolumeSnapshotClass (%s) specified in Storageclass (%s) annotations: %v", val, sc.Name, err)
+		}
+		return vsc.GetName(), nil
+	}
 	us, err := dynCli.Resource(gvr).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return "", errors.Errorf("Failed to get VolumeSnapshotClasses in the cluster: %v", err)
 	}
 	if us == nil || len(us.Items) == 0 {
 		return "", errors.Errorf("Failed to find any VolumeSnapshotClass in the cluster: %v", err)
-	}
-	// fetch storageClass
-	sc, err := kubeCli.StorageV1().StorageClasses().Get(context.TODO(), storageClass, metav1.GetOptions{})
-	if err != nil {
-		return "", errors.Errorf("Failed to find StorageClass (%s) in the cluster: %v", storageClass, err)
 	}
 	for _, vsc := range us.Items {
 		ans := vsc.GetAnnotations()
