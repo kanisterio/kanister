@@ -52,6 +52,7 @@ type PodOptions struct {
 	ServiceAccountName string
 	Volumes            map[string]string
 	PodOverride        crv1alpha1.JSONMap
+	Resources          v1.ResourceRequirements
 }
 
 // CreatePod creates a pod with a single container based on the specified image
@@ -85,6 +86,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 				Command:         opts.Command,
 				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 				VolumeMounts:    volumeMounts,
+				Resources:       opts.Resources,
 			},
 		},
 		// RestartPolicy dictates when the containers of the pod should be
