@@ -134,6 +134,22 @@ func (s *PodSuite) TestPod(c *C) {
 				"run": "pod",
 			},
 		},
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        kanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+			Resources: v1.ResourceRequirements{
+				Limits: v1.ResourceList{
+					"memory": resource.MustParse("100Mi"),
+					"cpu":    resource.MustParse("100m"),
+				},
+				Requests: v1.ResourceList{
+					"memory": resource.MustParse("100Mi"),
+					"cpu":    resource.MustParse("100m"),
+				},
+			},
+		},
 	}
 
 	for _, po := range podOptions {
@@ -162,6 +178,15 @@ func (s *PodSuite) TestPod(c *C) {
 		c.Check(pod.ObjectMeta.Labels[consts.LabelKeyCreatedBy], Equals, consts.LabelValueKanister)
 		for key, value := range po.Labels {
 			c.Check(pod.ObjectMeta.Labels[key], Equals, value)
+		}
+
+		if po.Resources.Limits != nil {
+			c.Assert(pod.Spec.Containers[0].Resources.Limits, NotNil)
+			c.Assert(pod.Spec.Containers[0].Resources.Limits, DeepEquals, po.Resources.Limits)
+		}
+		if po.Resources.Requests != nil {
+			c.Assert(pod.Spec.Containers[0].Resources.Requests, NotNil)
+			c.Assert(pod.Spec.Containers[0].Resources.Requests, DeepEquals, po.Resources.Requests)
 		}
 
 		c.Assert(err, IsNil)
