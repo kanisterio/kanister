@@ -417,6 +417,8 @@ func TransformUnstructured(u *unstructured.Unstructured, value interface{}) erro
 	return errors.Wrapf(err, "Failed to Unmarshal unstructured object")
 }
 
+// GetSnapshotClassbyAnnotation checks if the provided annotation is present in either the storageclass
+// or volumesnapshotclass and returns the volumesnapshotclass.
 func GetSnapshotClassbyAnnotation(dynCli dynamic.Interface, kubeCli kubernetes.Interface, gvr schema.GroupVersionResource, annotationKey, annotationValue, storageClass string) (string, error) {
 	// fetch storageClass
 	sc, err := kubeCli.StorageV1().StorageClasses().Get(context.TODO(), storageClass, metav1.GetOptions{})
