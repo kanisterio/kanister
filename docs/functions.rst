@@ -952,6 +952,7 @@ Arguments:
    :widths: 5,5,5,15
 
    `instanceID`, Yes, `string`, ID of RDS instance you want to create snapshot of
+   `dbEngine`, No, `String`, DB Engine that is running in RDS instance, it should be specified in case of Amazon Aurora DB
 
 
 Outputs:

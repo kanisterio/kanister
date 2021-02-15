@@ -25,22 +25,27 @@ import (
 )
 
 const (
-	maxRetries      = 10
-	rdsReadyTimeout = 20 * time.Minute
+	maxRetries                  = 10
+	rdsReadyTimeout             = 20 * time.Minute
+	dbAurora        RDSDBEngine = "Aurora"
 )
 
 // RDS is a wrapper around ec2.RDS structs
 type RDS struct {
 	*rds.RDS
+	dbEngine RDSDBEngine
 }
 
 // NewRDSClient returns ec2 client struct.
-func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS, error) {
+func NewClient(ctx context.Context, awsConfig *aws.Config, region string, dbEngine RDSDBEngine) (*RDS, error) {
 	s, err := session.NewSession(awsConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session")
 	}
-	return &RDS{RDS: rds.New(s, awsConfig.WithMaxRetries(maxRetries).WithRegion(region).WithCredentials(awsConfig.Credentials))}, nil
+	return &RDS{
+		RDS:      rds.New(s, awsConfig.WithMaxRetries(maxRetries).WithRegion(region).WithCredentials(awsConfig.Credentials)),
+		dbEngine: dbEngine,
+	}, nil
 }
 
 // CreateDBInstanceWithContext
@@ -95,6 +100,9 @@ func (r RDS) CreateDBSnapshot(ctx context.Context, instanceID, snapshotID string
 	sni := &rds.CreateDBSnapshotInput{
 		DBInstanceIdentifier: &instanceID,
 		DBSnapshotIdentifier: &snapshotID,
+	}
+	if r.dbEngine == dbAurora {
+		return r.CreateDBClusterSnapshotWithContext(ctx, sni)
 	}
 	return r.CreateDBSnapshotWithContext(ctx, sni)
 }

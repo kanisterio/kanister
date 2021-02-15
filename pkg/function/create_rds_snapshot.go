@@ -42,6 +42,8 @@ const (
 	CreateRDSSnapshotFuncName = "CreateRDSSnapshot"
 	// CreateRDSSnapshotInstanceIDArg provides rds instance ID
 	CreateRDSSnapshotInstanceIDArg = "instanceID"
+	// CreateRDSSnapshotDBEngine specifies the db engine of rds instance
+	CreateRDSSnapshotDBEngine RDSDBEngine = "dbEngine"
 	// CreateRDSSnapshotSnapshotID to set snapshotID in output artifact
 	CreateRDSSnapshotSnapshotID = "snapshotID"
 	// CreateRDSSnapshotSecurityGroupID to set securityGroupIDs in output artifact
@@ -54,7 +56,7 @@ func (*createRDSSnapshotFunc) Name() string {
 	return CreateRDSSnapshotFuncName
 }
 
-func createRDSSnapshot(ctx context.Context, instanceID string, profile *param.Profile) (map[string]interface{}, error) {
+func createRDSSnapshot(ctx context.Context, instanceID, dbEngine string, profile *param.Profile) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Profile Validation failed")
@@ -67,7 +69,7 @@ func createRDSSnapshot(ctx context.Context, instanceID string, profile *param.Pr
 	}
 
 	// Create rds client
-	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
+	rdsCli, err := rds.NewClient(ctx, awsConfig, region, dbEngine)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create RDS client")
 	}
@@ -108,12 +110,21 @@ func createRDSSnapshot(ctx context.Context, instanceID string, profile *param.Pr
 
 func (crs *createRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var instanceID string
+	var dbEngine RDSDBEngine
 	if err := Arg(args, CreateRDSSnapshotInstanceIDArg, &instanceID); err != nil {
 		return nil, err
 	}
-	return createRDSSnapshot(ctx, instanceID, tp.Profile)
+
+	if err := OptArg(args, CreateRDSSnapshotDBEngine, &dbEngine); err != nil {
+		return nil, err
+	}
+
+	return createRDSSnapshot(ctx, instanceID, dbEngine, tp.Profile)
 }
 
 func (*createRDSSnapshotFunc) RequiredArgs() []string {
-	return []string{CreateRDSSnapshotInstanceIDArg}
+	return []string{
+		CreateRDSSnapshotInstanceIDArg,
+		string(CreateRDSSnapshotDBEngine),
+	}
 }
