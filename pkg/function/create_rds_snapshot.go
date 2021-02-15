@@ -43,11 +43,13 @@ const (
 	// CreateRDSSnapshotInstanceIDArg provides rds instance ID
 	CreateRDSSnapshotInstanceIDArg = "instanceID"
 	// CreateRDSSnapshotDBEngine specifies the db engine of rds instance
-	CreateRDSSnapshotDBEngine RDSDBEngine = "dbEngine"
+	CreateRDSSnapshotDBEngine = "dbEngine"
 	// CreateRDSSnapshotSnapshotID to set snapshotID in output artifact
 	CreateRDSSnapshotSnapshotID = "snapshotID"
 	// CreateRDSSnapshotSecurityGroupID to set securityGroupIDs in output artifact
 	CreateRDSSnapshotSecurityGroupID = "securityGroupID"
+	// DBEngineAurora has db engine aurora
+	DBEngineAurora RDSDBEngine = "Aurora"
 )
 
 type createRDSSnapshotFunc struct{}
@@ -56,7 +58,7 @@ func (*createRDSSnapshotFunc) Name() string {
 	return CreateRDSSnapshotFuncName
 }
 
-func createRDSSnapshot(ctx context.Context, instanceID, dbEngine string, profile *param.Profile) (map[string]interface{}, error) {
+func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEngine, profile *param.Profile) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Profile Validation failed")
@@ -69,7 +71,7 @@ func createRDSSnapshot(ctx context.Context, instanceID, dbEngine string, profile
 	}
 
 	// Create rds client
-	rdsCli, err := rds.NewClient(ctx, awsConfig, region, dbEngine)
+	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create RDS client")
 	}
@@ -78,8 +80,14 @@ func createRDSSnapshot(ctx context.Context, instanceID, dbEngine string, profile
 	snapshotID := fmt.Sprintf("%s-%s", instanceID, rand.String(10))
 
 	log.Print("Creating RDS snapshot", field.M{"SnapshotID": snapshotID})
-	if _, err := rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID); err != nil {
-		return nil, errors.Wrap(err, "Failed to create snapshot")
+	if dbEngine != DBEngineAurora {
+		if _, err := rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID); err != nil {
+			return nil, errors.Wrap(err, "Failed to create snapshot")
+		}
+	} else {
+		if _, err := rdsCli.CreateDBClusterSnapshot(ctx, instanceID, snapshotID); err != nil {
+			return nil, errors.Wrap(err, "Failed to create cluster snapshot")
+		}
 	}
 
 	// Wait until snapshot becomes available
@@ -115,7 +123,7 @@ func (crs *createRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePar
 		return nil, err
 	}
 
-	if err := OptArg(args, CreateRDSSnapshotDBEngine, &dbEngine); err != nil {
+	if err := OptArg(args, CreateRDSSnapshotDBEngine, &dbEngine, ""); err != nil {
 		return nil, err
 	}
 
