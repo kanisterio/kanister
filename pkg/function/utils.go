@@ -156,6 +156,19 @@ func findSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string)
 	return sgIDs, err
 }
 
+func findAuroraSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string) ([]string, error) {
+	desc, err := rdsCli.DescribeDBClusters(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	var sgIDs []string
+	for _, vpc := range desc.DBClusters[0].VpcSecurityGroups {
+		sgIDs = append(sgIDs, *vpc.VpcSecurityGroupId)
+	}
+	return nil, nil
+}
+
 // findRDSEndpoint returns endpoint to access RDS instance
 func findRDSEndpoint(ctx context.Context, rdsCli *rds.RDS, instanceID string) (string, error) {
 	// Find host of the instance

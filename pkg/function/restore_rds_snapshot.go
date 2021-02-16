@@ -88,6 +88,9 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		return nil, err
 	}
 
+	if err := OptArg(args, RestoreRDSSnapshotDBEngine, &dbEngine, ""); err != nil {
+		return nil, err
+	}
 	// Find security groups
 	sgIDs, err := GetYamlList(args, RestoreRDSSnapshotSecGrpID)
 	if err != nil {
@@ -107,9 +110,6 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 			return nil, err
 		}
 		if err := Arg(args, RestoreRDSSnapshotPassword, &password); err != nil {
-			return nil, err
-		}
-		if err := Arg(args, RestoreRDSSnapshotDBEngine, &dbEngine); err != nil {
 			return nil, err
 		}
 		if err := Arg(args, RestoreRDSSnapshotNamespace, &namespace); err != nil {
@@ -142,12 +142,19 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 		// If securityGroupID arg is nil, we will try to find the sgIDs by describing the existing instance
 		// Find security group ids
 		if sgIDs == nil {
-			sgIDs, err = findSecurityGroups(ctx, rdsCli, instanceID)
+			if dbEngine != DBEngineAurora {
+				sgIDs, err = findSecurityGroups(ctx, rdsCli, instanceID)
+			} else {
+				sgIDs, err = findAuroraSecurityGroups(ctx, rdsCli, instanceID)
+			}
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
 			}
 		}
-		return nil, restoreFromSnapshot(ctx, rdsCli, instanceID, snapshotID, sgIDs)
+		if dbEngine != DBEngineAurora {
+			return nil, restoreFromSnapshot(ctx, rdsCli, instanceID, snapshotID, sgIDs)
+		}
+		return nil, restoreAuroraFromSnapshot(ctx, rdsCli, instanceID, snapshotID, sgIDs)
 	}
 
 	// Restore from dump
@@ -213,4 +220,70 @@ func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snaps
 	log.Print("Waiting for RDS DB instance database to be ready.", field.M{"instanceID": instanceID})
 	err := rdsCli.WaitUntilDBInstanceAvailable(ctx, instanceID)
 	return errors.Wrap(err, "Error while waiting for new rds instance to be ready.")
+}
+
+func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID string, securityGroupIDs []string) error {
+	// To delete an Aurora RDS instance we will have to delete all the instance that are running through it
+	// Once all those instances are deleted, Aurora cluster will be deleted automatically
+	descOp, err := rdsCli.DescribeDBClusters(ctx, instanceID)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
+				return err
+			}
+			log.Print("Aurora db cluster is not found")
+		}
+	} else {
+		for _, member := range descOp.DBClusters[0].DBClusterMembers {
+			if _, err := rdsCli.DeleteDBInstance(ctx, *member.DBInstanceIdentifier); err != nil {
+				if aerr, ok := err.(awserr.Error); ok {
+					if aerr.Code() != rdserr.ErrCodeDBInstanceNotFoundFault {
+						return err
+					}
+					log.Print("RDS Aurora instance is not present ErrCodeDBInstanceNotFoundFault", field.M{"instanceID": *member.DBInstanceIdentifier})
+				}
+			} else {
+				// deleted the instance, wait for it to be deleted
+				log.Print("Waiting for RDS cluster's instance to be deleted", field.M{"instanceID": *member.DBInstanceIdentifier})
+				if err := rdsCli.WaitUntilDBInstanceDeleted(ctx, *member.DBInstanceIdentifier); err != nil {
+					return errors.Wrapf(err, "Error while waiting for RDS Aurora DB instance to be deleted")
+				}
+			}
+		}
+
+		log.Print("Deleting existing RDS Aurora DB Cluster.", field.M{"instanceID": instanceID})
+		if _, err := rdsCli.DeleteDBCluster(ctx, instanceID); err != nil {
+			if aerr, ok := err.(awserr.Error); ok {
+				if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
+					return err
+				}
+				log.Print("RDS Aurora cluster is not present ErrCodeDBClusterNotFoundFault", field.M{"instanceID": instanceID})
+			}
+		} else {
+			log.Print("Waiting for RDS Aurora cluster to be deleted.", field.M{"instanceID": instanceID})
+			if err := rdsCli.WaitUntilDBInstanceDeleted(ctx, instanceID); err != nil {
+				return errors.Wrapf(err, "Error while waiting RDS Aurora DB cluster to be deleted")
+			}
+		}
+	}
+
+	// From docs: Above action only restores the DB cluster, not the DB instances for that DB cluster
+	log.Print("Restoring RDS Aurora DB Cluster from snapshot.", field.M{"instanceID": instanceID, "snapshotID": snapshotID})
+	op, err := rdsCli.RestoreDBClusterFromDBSnapshot(ctx, instanceID, snapshotID, securityGroupIDs)
+	if err != nil {
+		return errors.Wrapf(err, "Error restorig aurora db cluster from snapshot")
+	}
+
+	log.Print("Waiting for RDS Aurora cluster to be ready.", field.M{"instanceID": instanceID})
+	if err = rdsCli.WaitUntilDBInstanceAvailable(ctx, instanceID); err != nil {
+		return errors.Wrap(err, "Error while waiting for new rds instance to be ready.")
+	}
+
+	// After Aurora cluster is created, we will have to explictly create the DB instance
+	if _, err := rdsCli.CreateDBInstanceInCluster(ctx, *op.DBCluster.DBClusterIdentifier); err != nil {
+		return errors.Wrap(err, "Error while creating aurorage db instance in the cluster.")
+	}
+
+	// wait for instance to be up and running
+	return nil
 }

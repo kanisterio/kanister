@@ -57,6 +57,13 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass,
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
+func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID string) (*rds.CreateDBInstanceOutput, error) {
+	dbi := &rds.CreateDBInstanceInput{
+		DBClusterIdentifier: &restoredClusterID,
+	}
+	return r.CreateDBInstanceWithContext(ctx, dbi)
+}
+
 func (r RDS) WaitUntilDBInstanceAvailable(ctx context.Context, instanceID string) error {
 	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
 	defer cancel()
@@ -82,6 +89,13 @@ func (r RDS) DescribeDBInstances(ctx context.Context, instanceID string) (*rds.D
 	return r.DescribeDBInstancesWithContext(ctx, dbi)
 }
 
+func (r RDS) DescribeDBClusters(ctx context.Context, instanceID string) (*rds.DescribeDBClustersOutput, error) {
+	dci := &rds.DescribeDBClustersInput{
+		DBClusterIdentifier: &instanceID,
+	}
+	return r.DescribeDBClustersWithContext(ctx, dci)
+}
+
 func (r RDS) DeleteDBInstance(ctx context.Context, instanceID string) (*rds.DeleteDBInstanceOutput, error) {
 	skipSnapshot := true
 	dbi := &rds.DeleteDBInstanceInput{
@@ -89,6 +103,15 @@ func (r RDS) DeleteDBInstance(ctx context.Context, instanceID string) (*rds.Dele
 		SkipFinalSnapshot:    &skipSnapshot,
 	}
 	return r.DeleteDBInstanceWithContext(ctx, dbi)
+}
+
+func (r RDS) DeleteDBCluster(ctx context.Context, instanceID string) (*rds.DeleteDBClusterOutput, error) {
+	skipSnapshot := true
+	ddbc := &rds.DeleteDBClusterInput{
+		DBClusterIdentifier: &instanceID,
+		SkipFinalSnapshot:   &skipSnapshot,
+	}
+	return r.DeleteDBClusterWithContext(ctx, ddbc)
 }
 
 func (r RDS) CreateDBSnapshot(ctx context.Context, instanceID, snapshotID string) (*rds.CreateDBSnapshotOutput, error) {
@@ -116,6 +139,15 @@ func (r RDS) WaitUntilDBSnapshotAvailable(ctx context.Context, snapshotID string
 	return r.WaitUntilDBSnapshotAvailableWithContext(ctx, sni)
 }
 
+func (r RDS) WaitUntilDBClusterSnapshotAvailable(ctx context.Context, snapshotID string) error {
+	ctx, cancel := context.WithTimeout(ctx, rdsReadyTimeout)
+	defer cancel()
+	dsni := &rds.DescribeDBClusterSnapshotsInput{
+		DBClusterSnapshotIdentifier: &snapshotID,
+	}
+	return r.WaitUntilDBClusterSnapshotAvailableWithContext(ctx, dsni)
+}
+
 func (r RDS) DeleteDBSnapshot(ctx context.Context, snapshotID string) (*rds.DeleteDBSnapshotOutput, error) {
 	sni := &rds.DeleteDBSnapshotInput{
 		DBSnapshotIdentifier: &snapshotID,
@@ -139,6 +171,17 @@ func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, sn
 		VpcSecurityGroupIds:  convertSGIDs(sgIDs),
 	}
 	return r.RestoreDBInstanceFromDBSnapshotWithContext(ctx, rdbi)
+}
+
+func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, snapshotID string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
+	engine := "aurora"
+	rdi := &rds.RestoreDBClusterFromSnapshotInput{
+		Engine:              &engine,
+		DBClusterIdentifier: &instanceID,
+		SnapshotIdentifier:  &snapshotID,
+		VpcSecurityGroupIds: convertSGIDs(sgIDs),
+	}
+	return r.RestoreDBClusterFromSnapshotWithContext(ctx, rdi)
 }
 
 func convertSGIDs(sgIDs []string) []*string {

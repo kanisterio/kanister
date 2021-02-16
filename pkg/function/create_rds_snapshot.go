@@ -84,22 +84,34 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		if _, err := rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID); err != nil {
 			return nil, errors.Wrap(err, "Failed to create snapshot")
 		}
+
+		// Wait until snapshot becomes available
+		log.Print("Waiting for RDS snapshot to be available", field.M{"SnapshotID": snapshotID})
+		if err := rdsCli.WaitUntilDBSnapshotAvailable(ctx, snapshotID); err != nil {
+			return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
+		}
+
 	} else {
 		if _, err := rdsCli.CreateDBClusterSnapshot(ctx, instanceID, snapshotID); err != nil {
 			return nil, errors.Wrap(err, "Failed to create cluster snapshot")
 		}
-	}
 
-	// Wait until snapshot becomes available
-	log.Print("Waiting for RDS snapshot to be available", field.M{"SnapshotID": snapshotID})
-	if err := rdsCli.WaitUntilDBSnapshotAvailable(ctx, snapshotID); err != nil {
-		return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
+		log.Print("Waiting for RDS Aurora snapshot to be available", field.M{"SnapshotID": snapshotID})
+		if err := rdsCli.WaitUntilDBClusterSnapshotAvailable(ctx, snapshotID); err != nil {
+			return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
+		}
 	}
 
 	// Find security group ids
-	sgIDs, err := findSecurityGroups(ctx, rdsCli, instanceID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch security group ids. InstanceID=%s", instanceID)
+	var sgIDs []string
+	var e error
+	if dbEngine != DBEngineAurora {
+		sgIDs, e = findSecurityGroups(ctx, rdsCli, instanceID)
+	} else {
+		sgIDs, e = findAuroraSecurityGroups(ctx, rdsCli, instanceID)
+	}
+	if e != nil {
+		return nil, errors.Wrapf(e, "Failed to fetch security group ids. InstanceID=%s", instanceID)
 	}
 
 	// Convert to yaml format
