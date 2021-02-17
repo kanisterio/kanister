@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -159,14 +161,19 @@ func findSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string)
 func findAuroraSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string) ([]string, error) {
 	desc, err := rdsCli.DescribeDBClusters(ctx, instanceID)
 	if err != nil {
-		return nil, err
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
+				return nil, err
+			}
+			return nil, nil
+		}
 	}
 
 	var sgIDs []string
 	for _, vpc := range desc.DBClusters[0].VpcSecurityGroups {
 		sgIDs = append(sgIDs, *vpc.VpcSecurityGroupId)
 	}
-	return nil, nil
+	return sgIDs, nil
 }
 
 // findRDSEndpoint returns endpoint to access RDS instance

@@ -96,6 +96,13 @@ func (r RDS) DescribeDBClusters(ctx context.Context, instanceID string) (*rds.De
 	return r.DescribeDBClustersWithContext(ctx, dci)
 }
 
+func (r RDS) DescribeDBClustersSnapshot(ctx context.Context, snapshotID string) (*rds.DescribeDBClusterSnapshotsOutput, error) {
+	i := &rds.DescribeDBClusterSnapshotsInput{
+		DBClusterSnapshotIdentifier: &snapshotID,
+	}
+	return r.DescribeDBClusterSnapshotsWithContext(ctx, i)
+}
+
 func (r RDS) DeleteDBInstance(ctx context.Context, instanceID string) (*rds.DeleteDBInstanceOutput, error) {
 	skipSnapshot := true
 	dbi := &rds.DeleteDBInstanceInput{
@@ -173,13 +180,24 @@ func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, sn
 	return r.RestoreDBInstanceFromDBSnapshotWithContext(ctx, rdbi)
 }
 
-func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, snapshotID string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
+func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, snapshotID string, version *string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
 	engine := "aurora"
-	rdi := &rds.RestoreDBClusterFromSnapshotInput{
-		Engine:              &engine,
-		DBClusterIdentifier: &instanceID,
-		SnapshotIdentifier:  &snapshotID,
-		VpcSecurityGroupIds: convertSGIDs(sgIDs),
+	var rdi *rds.RestoreDBClusterFromSnapshotInput
+	if sgIDs == nil {
+		rdi = &rds.RestoreDBClusterFromSnapshotInput{
+			Engine:              &engine,
+			EngineVersion:       version,
+			DBClusterIdentifier: &instanceID,
+			SnapshotIdentifier:  &snapshotID,
+		}
+	} else {
+		rdi = &rds.RestoreDBClusterFromSnapshotInput{
+			Engine:              &engine,
+			EngineVersion:       version,
+			DBClusterIdentifier: &instanceID,
+			SnapshotIdentifier:  &snapshotID,
+			VpcSecurityGroupIds: convertSGIDs(sgIDs),
+		}
 	}
 	return r.RestoreDBClusterFromSnapshotWithContext(ctx, rdi)
 }

@@ -234,17 +234,17 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 			log.Print("Aurora db cluster is not found")
 		}
 	} else {
-		for _, member := range descOp.DBClusters[0].DBClusterMembers {
+		for k, member := range descOp.DBClusters[0].DBClusterMembers {
 			if _, err := rdsCli.DeleteDBInstance(ctx, *member.DBInstanceIdentifier); err != nil {
 				if aerr, ok := err.(awserr.Error); ok {
 					if aerr.Code() != rdserr.ErrCodeDBInstanceNotFoundFault {
 						return err
 					}
-					log.Print("RDS Aurora instance is not present ErrCodeDBInstanceNotFoundFault", field.M{"instanceID": *member.DBInstanceIdentifier})
+					log.Print("RDS Aurora instance is not present ErrCodeDBInstanceNotFoundFault", field.M{"instance": k})
 				}
 			} else {
 				// deleted the instance, wait for it to be deleted
-				log.Print("Waiting for RDS cluster's instance to be deleted", field.M{"instanceID": *member.DBInstanceIdentifier})
+				log.Print("Waiting for RDS cluster's instance to be deleted", field.M{"instance": k})
 				if err := rdsCli.WaitUntilDBInstanceDeleted(ctx, *member.DBInstanceIdentifier); err != nil {
 					return errors.Wrapf(err, "Error while waiting for RDS Aurora DB instance to be deleted")
 				}
@@ -267,13 +267,18 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 		}
 	}
 
-	// From docs: Above action only restores the DB cluster, not the DB instances for that DB cluster
+	version, err := engineVersion(ctx, rdsCli, snapshotID)
+	if err != nil {
+		return errors.Wrapf(err, "Error getting the engine version before restore")
+	}
+
 	log.Print("Restoring RDS Aurora DB Cluster from snapshot.", field.M{"instanceID": instanceID, "snapshotID": snapshotID})
-	op, err := rdsCli.RestoreDBClusterFromDBSnapshot(ctx, instanceID, snapshotID, securityGroupIDs)
+	op, err := rdsCli.RestoreDBClusterFromDBSnapshot(ctx, instanceID, snapshotID, version, securityGroupIDs)
 	if err != nil {
 		return errors.Wrapf(err, "Error restorig aurora db cluster from snapshot")
 	}
 
+	// From docs: Above action only restores the DB cluster, not the DB instances for that DB cluster
 	log.Print("Waiting for RDS Aurora cluster to be ready.", field.M{"instanceID": instanceID})
 	if err = rdsCli.WaitUntilDBInstanceAvailable(ctx, instanceID); err != nil {
 		return errors.Wrap(err, "Error while waiting for new rds instance to be ready.")
@@ -286,4 +291,13 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 
 	// wait for instance to be up and running
 	return nil
+}
+
+func engineVersion(ctx context.Context, rdsCli *rds.RDS, snapshotID string) (*string, error) {
+	snapshot, err := rdsCli.DescribeDBClustersSnapshot(ctx, snapshotID)
+	if err != nil {
+		return nil, err
+	}
+
+	return snapshot.DBClusterSnapshots[0].EngineVersion, nil
 }
