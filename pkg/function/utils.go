@@ -207,3 +207,12 @@ func createPostgresSecret(cli kubernetes.Interface, name, namespace, username, p
 func deletePostgresSecret(cli kubernetes.Interface, name, namespace string) error {
 	return cli.CoreV1().Secrets(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
 }
+
+func isAuroraCluster(engine string) bool {
+	for _, v := range []string{string(DBEngineAurora), string(DBEngineAuroraMySQL), string(DBEngineAuroraPostgreSQL)} {
+		if engine == v {
+			return true
+		}
+	}
+	return false
+}

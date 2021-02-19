@@ -16,17 +16,22 @@ package rds
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
+	rdserr "github.com/aws/aws-sdk-go/service/rds"
+	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
 )
 
 const (
-	maxRetries      = 10
-	rdsReadyTimeout = 20 * time.Minute
+	maxRetries               = 10
+	rdsReadyTimeout          = 20 * time.Minute
+	statusDBClusterAvailable = "available"
 )
 
 // RDS is a wrapper around ec2.RDS structs
@@ -57,9 +62,12 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass,
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
-func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID string) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine string) (*rds.CreateDBInstanceOutput, error) {
 	dbi := &rds.CreateDBInstanceInput{
-		DBClusterIdentifier: &restoredClusterID,
+		DBClusterIdentifier:  &restoredClusterID,
+		DBInstanceClass:      &instanceClass,
+		DBInstanceIdentifier: &instanceID,
+		Engine:               &dbEngine,
 	}
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
@@ -71,6 +79,53 @@ func (r RDS) WaitUntilDBInstanceAvailable(ctx context.Context, instanceID string
 		DBInstanceIdentifier: &instanceID,
 	}
 	return r.WaitUntilDBInstanceAvailableWithContext(ctx, dba)
+}
+
+func (r RDS) WaitUntilDBClusterAvailable(ctx context.Context, dbClusterID string) error {
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer waitCancel()
+	poll.Wait(timeoutCtx, func(c context.Context) (bool, error) {
+		err := r.WaitOnDBCluster(ctx, dbClusterID, statusDBClusterAvailable)
+		return err == nil, nil
+	})
+	return nil
+}
+
+// WaitDBCluster waits for DB cluster with instanceID
+func (r RDS) WaitOnDBCluster(ctx context.Context, dbClusterID, status string) error {
+	// describe the cluster return err if status is !Available
+	dci := &rds.DescribeDBClustersInput{
+		DBClusterIdentifier: &dbClusterID,
+	}
+	descCluster, err := r.DescribeDBClustersWithContext(ctx, dci)
+	if err != nil {
+		return err
+	}
+
+	if *descCluster.DBClusters[0].Status == status {
+		return nil
+	}
+	return errors.New(fmt.Sprintf("DBCluster is not in %s state", status))
+}
+
+func (r RDS) WaitUntilDBClusterDeleted(ctx context.Context, dbClusterID string) error {
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer waitCancel()
+	return poll.Wait(timeoutCtx, func(c context.Context) (bool, error) {
+		dci := &rds.DescribeDBClustersInput{
+			DBClusterIdentifier: &dbClusterID,
+		}
+		if _, err := r.DescribeDBClustersWithContext(ctx, dci); err != nil {
+			if aerr, ok := err.(awserr.Error); ok {
+				if aerr.Code() == rdserr.ErrCodeDBClusterNotFoundFault {
+					return true, nil
+				}
+				return false, nil
+			}
+		}
+
+		return false, nil
+	})
 }
 
 func (r RDS) WaitUntilDBInstanceDeleted(ctx context.Context, instanceID string) error {
@@ -180,20 +235,19 @@ func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, sn
 	return r.RestoreDBInstanceFromDBSnapshotWithContext(ctx, rdbi)
 }
 
-func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, snapshotID string, version *string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
-	engine := "aurora"
+func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, snapshotID, dbEngine, version string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
 	var rdi *rds.RestoreDBClusterFromSnapshotInput
 	if sgIDs == nil {
 		rdi = &rds.RestoreDBClusterFromSnapshotInput{
-			Engine:              &engine,
-			EngineVersion:       version,
+			Engine:              &dbEngine,
+			EngineVersion:       &version,
 			DBClusterIdentifier: &instanceID,
 			SnapshotIdentifier:  &snapshotID,
 		}
 	} else {
 		rdi = &rds.RestoreDBClusterFromSnapshotInput{
-			Engine:              &engine,
-			EngineVersion:       version,
+			Engine:              &dbEngine,
+			EngineVersion:       &version,
 			DBClusterIdentifier: &instanceID,
 			SnapshotIdentifier:  &snapshotID,
 			VpcSecurityGroupIds: convertSGIDs(sgIDs),

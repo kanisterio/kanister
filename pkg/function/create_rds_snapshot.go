@@ -38,7 +38,7 @@ var (
 )
 
 const (
-	// CreateVolumeFromSnapshotFuncName gives the name of the function
+	// CreateRDSSnapshotFuncName gives the name of the function
 	CreateRDSSnapshotFuncName = "CreateRDSSnapshot"
 	// CreateRDSSnapshotInstanceIDArg provides rds instance ID
 	CreateRDSSnapshotInstanceIDArg = "instanceID"
@@ -48,8 +48,12 @@ const (
 	CreateRDSSnapshotSnapshotID = "snapshotID"
 	// CreateRDSSnapshotSecurityGroupID to set securityGroupIDs in output artifact
 	CreateRDSSnapshotSecurityGroupID = "securityGroupID"
-	// DBEngineAurora has db engine aurora
-	DBEngineAurora RDSDBEngine = "Aurora"
+	// DBEngineAurora has db engine aurora for MySQL 5.6-compatible
+	DBEngineAurora RDSDBEngine = "aurora"
+	// DBEngineAuroraMySQL has db engine for MySQL 5.7-compatible Aurora
+	DBEngineAuroraMySQL RDSDBEngine = "aurora-mysql"
+	// DBEngineAuroraPostgreSQL has db engine aurora postgresql
+	DBEngineAuroraPostgreSQL RDSDBEngine = "aurora-postgresql"
 )
 
 type createRDSSnapshotFunc struct{}
@@ -80,7 +84,7 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 	snapshotID := fmt.Sprintf("%s-%s", instanceID, rand.String(10))
 
 	log.Print("Creating RDS snapshot", field.M{"SnapshotID": snapshotID})
-	if dbEngine != DBEngineAurora {
+	if !isAuroraCluster(string(dbEngine)) {
 		if _, err := rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID); err != nil {
 			return nil, errors.Wrap(err, "Failed to create snapshot")
 		}
@@ -90,7 +94,6 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		if err := rdsCli.WaitUntilDBSnapshotAvailable(ctx, snapshotID); err != nil {
 			return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
 		}
-
 	} else {
 		if _, err := rdsCli.CreateDBClusterSnapshot(ctx, instanceID, snapshotID); err != nil {
 			return nil, errors.Wrap(err, "Failed to create cluster snapshot")
@@ -105,7 +108,7 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 	// Find security group ids
 	var sgIDs []string
 	var e error
-	if dbEngine != DBEngineAurora {
+	if !isAuroraCluster(string(dbEngine)) {
 		sgIDs, e = findSecurityGroups(ctx, rdsCli, instanceID)
 	} else {
 		sgIDs, e = findAuroraSecurityGroups(ctx, rdsCli, instanceID)
