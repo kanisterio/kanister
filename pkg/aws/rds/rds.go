@@ -84,11 +84,10 @@ func (r RDS) WaitUntilDBInstanceAvailable(ctx context.Context, instanceID string
 func (r RDS) WaitUntilDBClusterAvailable(ctx context.Context, dbClusterID string) error {
 	timeoutCtx, waitCancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer waitCancel()
-	poll.Wait(timeoutCtx, func(c context.Context) (bool, error) {
+	return poll.Wait(timeoutCtx, func(c context.Context) (bool, error) {
 		err := r.WaitOnDBCluster(ctx, dbClusterID, statusDBClusterAvailable)
 		return err == nil, nil
 	})
-	return nil
 }
 
 // WaitDBCluster waits for DB cluster with instanceID
