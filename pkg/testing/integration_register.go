@@ -340,3 +340,18 @@ var _ = Suite(&PostgreSQLDepConfig4_5{
 		profile:   newSecretProfile(),
 	},
 })
+
+// Kafka deployed on kubernetes cluster
+type Kafka struct {
+	IntegrationSuite
+}
+
+var _ = Suite(Kafka{
+	IntegrationSuite{
+		name:      "kafka",
+		namespace: "kafka",
+		app:       app.NewKafkaCluster("kafka"),
+		bp:        app.NewBlueprint("kafka", ""),
+		profile:   newSecretProfile(),
+	},
+})
