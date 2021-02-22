@@ -24,8 +24,10 @@ type KubeClient interface {
 	InstallKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error)
 	// DeleteApp delete an app from the kubernetes cluster
 	// similar to oc delete all -n <ns> -l <label>
-	CreateConfigMap(ctx context.Context, namespace, yamlFileRepo, sinkConfigPath, sourceConfigPath, kafkaConfigPath string) (string, error)
+	CreateConfigMap(ctx context.Context, configMapName, namespace, yamlFileRepo, sinkConfigPath, sourceConfigPath, kafkaConfigPath string) (string, error)
 	DeleteConfigMap(ctx context.Context, namespace, configMapName string) (string, error)
 	DeleteKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error)
 	DeleteOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error)
+	Ping(ctx context.Context, namespace string) (string, error)
+	Insert(ctx context.Context, namespace string) (string, error)
 }

@@ -71,15 +71,16 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	kubectl := k8s.NewkubernetesClient()
 	out, err := kubectl.InstallOperator(ctx, namespace, yamlFileRepo, kc.strimziYaml)
 	if err != nil {
-		return errors.Wrapf(err, "Error installing the operator for %s, error is %s.", kc.name, out)
+		return errors.Wrapf(err, "Error installing the operator for %s, %s.", kc.name, out)
 	}
+	time.Sleep(1 * time.Second)
 	out, err = kubectl.InstallKafka(ctx, namespace, yamlFileRepo, kc.kafkaYaml)
 	if err != nil {
-		return errors.Wrapf(err, "Error installing the application %s, error is %s", kc.name, out)
+		return errors.Wrapf(err, "Error installing the application %s, %s", kc.name, out)
 	}
-	out, err = kubectl.CreateConfigMap(ctx, namespace, yamlFileRepo, kc.kafkaConfigPath, kc.sinkConfigPath, kc.sourceConfigPath)
+	out, err = kubectl.CreateConfigMap(ctx, configMapName, namespace, yamlFileRepo, kc.kafkaConfigPath, kc.sinkConfigPath, kc.sourceConfigPath)
 	if err != nil {
-		return errors.Wrapf(err, "Error creating config Map %s, error is %s", kc.name, out)
+		return errors.Wrapf(err, "Error creating config Map %s, %s", kc.name, out)
 	}
 	log.Print("Application was installed successfully.", field.M{"app": kc.name})
 	return nil
@@ -105,25 +106,25 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 	kubectl := k8s.NewkubernetesClient()
 	out, err := kubectl.DeleteConfigMap(ctx, kc.namespace, configMapName)
 	if err != nil {
-		return errors.Wrapf(err, "Error creating config Map %s, error is %s", kc.name, out)
+		return errors.Wrapf(err, "Error deleting config Map %s, %s", kc.name, out)
 	}
 	out, err = kubectl.DeleteKafka(ctx, kc.namespace, yamlFileRepo, kc.kafkaYaml)
 	if err != nil {
-		return errors.Wrapf(err, "Error installing the application %s, error is %s", kc.name, out)
+		return errors.Wrapf(err, "Error deleting the application %s, %s", kc.name, out)
 	}
 	out, err = kubectl.DeleteOperator(ctx, kc.namespace, yamlFileRepo, kc.strimziYaml)
 	if err != nil {
-		return errors.Wrapf(err, "Error installing the operator for %s, error is %s.", kc.name, out)
+		return errors.Wrapf(err, "Error deleting the operator for %s, %s.", kc.name, out)
 	}
 	log.Print("Application Deleted successfully.", field.M{"app": kc.name})
 	return nil
 }
 func (kc *KafkaCluster) Ping(ctx context.Context) error {
 	log.Print("Pinging the application", field.M{"app": kc.name})
-	listTopic := []string{"sh", "-c"}
-	_, stderr, err := kc.execCommand(ctx, listTopic)
+	kubectl := k8s.NewkubernetesClient()
+	out, err := kubectl.Ping(ctx, kc.namespace)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database %s", stderr)
+		return errors.Wrapf(err, "Error Pinging the app for %s, %s.", kc.name, out)
 	}
 	log.Print("Ping to the application was successful.")
 	return nil
@@ -132,6 +133,14 @@ func (kc *KafkaCluster) Ping(ctx context.Context) error {
 // TODO
 func (kc *KafkaCluster) Insert(ctx context.Context) error {
 	log.Print("Inserting some records in kafka topic.", field.M{"app": kc.name})
+	kubectl := k8s.NewkubernetesClient()
+	out, err := kubectl.Insert(ctx, kc.namespace)
+	if err != nil {
+		return errors.Wrapf(err, "Error Insert the record for %s, %s.", kc.name, out)
+	}
+	log.Print("Insert to the application was successful.")
+	return nil
+
 	log.Print("Successfully inserted record in the application.", field.M{"app": kc.name})
 	return nil
 }
@@ -141,7 +150,16 @@ func (kc *KafkaCluster) IsReady(ctx context.Context) (bool, error) {
 	log.Info().Print("Waiting for application to be ready.", field.M{"app": kc.name})
 	ctx, cancel := context.WithTimeout(ctx, kafkaClusterWaitTimeout)
 	defer cancel()
-	log.Print("Application is ready", field.M{"application": kc.name})
+	err := kube.WaitOnStatefulSetReady(ctx, kc.cli, kc.namespace, "my-cluster-kafka")
+	if err != nil {
+		return false, err
+	}
+	err = kube.WaitOnStatefulSetReady(ctx, kc.cli, kc.namespace, "my-cluster-zookeeper")
+	if err != nil {
+		return false, err
+	}
+
+	log.Print("Application instance is ready.", field.M{"app": kc.name})
 	return true, nil
 }
 

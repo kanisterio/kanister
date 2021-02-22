@@ -16,6 +16,8 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"github.com/kanisterio/kanister/pkg/helm"
@@ -41,29 +43,49 @@ func (kubectl kubernetesClient) CreateNamespace(ctx context.Context, namespace s
 // InstallOPerator installs strimzi operator
 func (kubectl kubernetesClient) InstallOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error) {
 	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	createOperator := []string{"create", "-f", fmt.Sprintf("%s/%s", yamlFileRepo, strimziYaml), "-n", namespace}
+	createOperator := []string{"create", "-n", namespace, "-f", fmt.Sprintf("%s", strimziYaml)}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", createOperator)
 }
 func (kubectl kubernetesClient) InstallKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error) {
 	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	createKafka := []string{"create", "-f", fmt.Sprintf("%s/%s", yamlFileRepo, kafkaConfigPath), "-n", namespace}
+	createKafka := []string{"create", "-n", namespace, "-f", fmt.Sprintf("%s/%s", yamlFileRepo, kafkaConfigPath)}
+	file, err := os.Open(fmt.Sprintf("%s/%s", yamlFileRepo, kafkaConfigPath))
+	if err == nil {
+		log.Print(file)
+	}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", createKafka)
 }
-func (kubectl kubernetesClient) CreateConfigMap(ctx context.Context, namespace, yamlFileRepo, sinkConfigPath, sourceConfigPath, kafkaConfigPath string) (string, error) {
-	createConfig := []string{"create configmap", "s3config", "--from-file=", fmt.Sprintf("%s/%s", yamlFileRepo, sinkConfigPath), "--from-file=", fmt.Sprintf("%s/%s", yamlFileRepo, sourceConfigPath), "--from-file=", fmt.Sprintf("%s/%s", yamlFileRepo, sinkConfigPath), "--from-literal=timeinSeconds=1800", "-n", namespace}
+func (kubectl kubernetesClient) CreateConfigMap(ctx context.Context, configMapName, namespace, yamlFileRepo, sinkConfigPath, sourceConfigPath, kafkaConfigPath string) (string, error) {
+	//	createConfig := []string{"create", "configmap", "s3config", fmt.Sprintf("--from-file=%s/%s --from-file=%s/%s --from-file=%s/%s --from-literal=timeinSeconds=1800", yamlFileRepo, sinkConfigPath, yamlFileRepo, sourceConfigPath, yamlFileRepo, sinkConfigPath), "-n", namespace}
+	createConfig := []string{"create", "-n", namespace, "configmap", configMapName, "--", "from-file=", fmt.Sprintf("%s/%s", yamlFileRepo, sinkConfigPath)}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", createConfig)
 }
 func (kubectl kubernetesClient) DeleteConfigMap(ctx context.Context, namespace, configMapName string) (string, error) {
-	deleteConfig := []string{"delete configmap", configMapName, "-n", namespace}
+	deleteConfig := []string{"delete", "-n", namespace, "configmap", configMapName}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", deleteConfig)
 }
 func (kubectl kubernetesClient) DeleteOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error) {
 	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	deleteOperator := []string{"delete", "-f", fmt.Sprintf("%s/%s", yamlFileRepo, strimziYaml), "-n", namespace}
+	deleteOperator := []string{"delete", "-n", namespace, "-f", fmt.Sprintf("%s", strimziYaml)}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", deleteOperator)
 }
 func (kubectl kubernetesClient) DeleteKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error) {
 	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	deleteKafka := []string{"create", "-f", fmt.Sprintf("%s/%s", yamlFileRepo, kafkaConfigPath), "-n", namespace}
+	deleteKafka := []string{"delete", "-n", namespace, "-f", fmt.Sprintf("%s/%s", yamlFileRepo, kafkaConfigPath)}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", deleteKafka)
+}
+
+func (kubectl kubernetesClient) Ping(ctx context.Context, namespace string) (string, error) {
+	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
+	pingKafka := []string{"run", "-n", namespace, "kafka-producer", "-ti", "--rm=true", "--image=strimzi/kafka:0.20.0-kafka-2.6.0", "--restart=Never", "--", "bin/kafka-topics.sh", "--create", "--topic", "integration-test", "--bootstrap-server=my-cluster-kafka-bootstrap:9092"}
+	log.Print(pingKafka)
+	return helm.RunCmdWithTimeout(ctx, "kubectl", pingKafka)
+}
+func (kubectl kubernetesClient) Insert(ctx context.Context, namespace string) (string, error) {
+
+	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
+	insertKafka := []string{"run", "-n", namespace, "kafka-producer", "-ti", "--rm=true", "--image=strimzi/kafka:0.20.0-kafka-2.6.0", "--restart=Never", "--", "bin/kafka-console-producer.sh", "--topic", "integration-test", "--broker-list=my-cluster-kafka-bootstrap:9092"}
+	log.Print(insertKafka)
+	return helm.RunCmdWithInput(ctx, "kubectl", insertKafka, "abcd")
+
 }

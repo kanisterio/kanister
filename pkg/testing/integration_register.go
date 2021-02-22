@@ -346,7 +346,7 @@ type Kafka struct {
 	IntegrationSuite
 }
 
-var _ = Suite(Kafka{
+var _ = Suite(&Kafka{
 	IntegrationSuite{
 		name:      "kafka",
 		namespace: "kafka",
