@@ -952,7 +952,7 @@ Arguments:
    :widths: 5,5,5,15
 
    `instanceID`, Yes, `string`, ID of RDS instance you want to create snapshot of
-   `dbEngine`, No, `String`, DB Engine that is running in RDS Aurora instance. Supported DB Engines: ``aurora`` ``aurora-mysql`` and ``aurora-postgresql``
+   `dbEngine`, No, `String`, Required in case of RDS Aurora instance. Supported DB Engines: ``aurora`` ``aurora-mysql`` and ``aurora-postgresql``
 
 
 Outputs:

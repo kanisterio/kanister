@@ -148,6 +148,5 @@ func (crs *createRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePar
 func (*createRDSSnapshotFunc) RequiredArgs() []string {
 	return []string{
 		CreateRDSSnapshotInstanceIDArg,
-		string(CreateRDSSnapshotDBEngine),
 	}
 }
