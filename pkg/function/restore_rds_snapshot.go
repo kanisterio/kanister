@@ -64,6 +64,9 @@ const (
 
 	// PostgreSQLEngine stores the postgres appname
 	PostgreSQLEngine RDSDBEngine = "PostgreSQL"
+
+	restoredAuroraInstanceSuffix = "instance-1"
+	defaultAuroraInstanceClass   = "db.r5.large"
 )
 
 type restoreRDSSnapshotFunc struct{}
@@ -234,7 +237,7 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 			log.Print("Aurora db cluster is not found")
 		}
 	} else {
-		// DB Cluster is present, delete it
+		// DB Cluster is present, delete and wait for it to be deleted
 		if err := deleteAuroraDBCluster(ctx, rdsCli, descOp, instanceID); err != nil {
 			return nil
 		}
@@ -260,7 +263,7 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 
 	log.Print("Creating DB instance in the cluster")
 	// After Aurora cluster is created, we will have to explictly create the DB instance
-	dbInsOp, err := rdsCli.CreateDBInstanceInCluster(ctx, *op.DBCluster.DBClusterIdentifier, "restored-instance-id", "db.r5.large", dbEngine)
+	dbInsOp, err := rdsCli.CreateDBInstanceInCluster(ctx, *op.DBCluster.DBClusterIdentifier, fmt.Sprintf("%s-%s", *op.DBCluster.DBClusterIdentifier, restoredAuroraInstanceSuffix), defaultAuroraInstanceClass, dbEngine)
 	if err != nil {
 		return errors.Wrap(err, "Error while creating aurorage db instance in the cluster.")
 	}
