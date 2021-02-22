@@ -17,8 +17,12 @@ package kopia
 import (
 	"context"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/jpillora/backoff"
+	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/repo/content"
 	"github.com/pkg/errors"
@@ -29,6 +33,7 @@ import (
 const (
 	defaultConnectMaxListCacheDuration time.Duration = time.Second * 600
 	defaultConnectPersistCredentials                 = true
+	kopiaGetRepoParametersError                      = "unable to get repository parameters"
 )
 
 // ConnectToAPIServer connects to the Kopia API server running at the given address
@@ -74,11 +79,24 @@ func ConnectToAPIServer(
 		},
 	}
 
-	// TODO(@pavan): Modify this to use custom config file path, if required
-	if err = repo.ConnectAPIServer(ctx, defaultConfigFilePath, serverInfo, string(passphrase), opts); err != nil {
-		return errors.Wrap(err, "Failed connecting to the Kopia API server")
-	}
-	return nil
+	err = poll.WaitWithBackoff(ctx, backoff.Backoff{
+		Factor: 2,
+		Jitter: false,
+		Min:    100 * time.Millisecond,
+		Max:    15 * time.Second,
+	}, func(c context.Context) (bool, error) {
+		// TODO(@pavan): Modify this to use custom config file path, if required
+		err := repo.ConnectAPIServer(ctx, defaultConfigFilePath, serverInfo, string(passphrase), opts)
+		switch {
+		case isGetRepoParametersError(err):
+			log.Debug().WithError(err).Print("Connecting to the Kopia API Server")
+			return false, nil
+		case err != nil:
+			return false, err
+		}
+		return true, nil
+	})
+	return errors.Wrap(err, "Failed connecting to the Kopia API Server")
 }
 
 // OpenRepository opens the connected Kopia repository
@@ -101,4 +119,8 @@ func OpenRepository(ctx context.Context) (repo.Repository, error) {
 	}
 
 	return r, nil
+}
+
+func isGetRepoParametersError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), kopiaGetRepoParametersError)
 }
