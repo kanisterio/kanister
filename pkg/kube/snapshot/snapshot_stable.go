@@ -17,7 +17,7 @@ package snapshot
 import (
 	"context"
 
-	"github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
@@ -65,7 +65,7 @@ func (sna *SnapshotStable) CloneVolumeSnapshotClass(sourceClassName, targetClass
 
 // GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
 func (sna *SnapshotStable) GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error) {
-	return getSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
+	return GetSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
 }
 
 // Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
