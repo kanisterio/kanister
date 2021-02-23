@@ -16,6 +16,7 @@ package param
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +30,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/secrets"
@@ -53,6 +55,15 @@ type TemplateParams struct {
 	Object           map[string]interface{}
 	Phases           map[string]*Phase
 	PodOverride      crv1alpha1.JSONMap
+	StoreServerInfo  *StoreServerInfoParams
+}
+
+type StoreServerInfoParams struct {
+	Address  string
+	Username string
+	Password string
+	Cert     string
+	Hostname string
 }
 
 // DeploymentConfigParams are params for deploymentconfig, will be used if working on open shift cluster
@@ -210,8 +221,49 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 		return nil, errors.Wrapf(err, "could not fetch object name: %s, namespace: %s, group: %s, version: %s, resource: %s", as.Object.Name, namespace, gvr.Group, gvr.Version, gvr.Resource)
 	}
 	tp.Object = u.UnstructuredContent()
+	serverInfo, err := fetchKopiaServerInfo(as.Options, secrets)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not fetch store server info")
+	}
+	if serverInfo != nil {
+		tp.StoreServerInfo = serverInfo
+	}
 
 	return &tp, nil
+}
+
+func fetchKopiaServerInfo(options map[string]string, secrets map[string]v1.Secret) (*StoreServerInfoParams, error) {
+	var address, username, password, host string
+	var ok bool
+	if address, ok = options[kopia.ServerAddressArg]; !ok {
+		return nil, nil
+	}
+	if username, ok = options[kopia.UserNameOption]; !ok {
+		return nil, nil
+	}
+	if host, ok = options[kopia.HostNameOption]; !ok {
+		return nil, nil
+	}
+	s, ok := secrets[kopia.UserPassphraseSecretKey]
+	if !ok {
+		return nil, nil
+	}
+	password = string(s.Data[host])
+	s, ok = secrets[kopia.TLSCertSecretKey]
+	if !ok {
+		return nil, nil
+	}
+	certByte, err := json.Marshal(s.Data)
+	if err != nil {
+		return nil, err
+	}
+	return &StoreServerInfoParams{
+		Address:  address,
+		Username: username,
+		Password: password,
+		Hostname: host,
+		Cert:     string(certByte),
+	}, nil
 }
 
 func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*Profile, error) {

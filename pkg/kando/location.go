@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	pathFlagName    = "path"
-	profileFlagName = "profile"
+	pathFlagName        = "path"
+	profileFlagName     = "profile"
+	storeServerFlagName = "store-server"
 )
 
 func newLocationCommand() *cobra.Command {
@@ -38,6 +39,7 @@ func newLocationCommand() *cobra.Command {
 	cmd.AddCommand(newLocationDeleteCommand())
 	cmd.PersistentFlags().StringP(pathFlagName, "s", "", "Specify a path suffix (optional)")
 	cmd.PersistentFlags().StringP(profileFlagName, "p", "", "Pass a Profile as a JSON string (required)")
+	cmd.PersistentFlags().StringP(storeServerFlagName, "", "", "Objectstore server address")
 	_ = cmd.MarkFlagRequired(profileFlagName)
 	return cmd
 }
@@ -51,4 +53,14 @@ func unmarshalProfileFlag(cmd *cobra.Command) (*param.Profile, error) {
 	p := &param.Profile{}
 	err := json.Unmarshal([]byte(profileJSON), p)
 	return p, errors.Wrap(err, "failed to unmarshal profile")
+}
+
+func unmarshalStoreServerFlag(cmd *cobra.Command) (*param.StoreServerInfoParams, error) {
+	storeServerJSON := cmd.Flag(storeServerFlagName).Value.String()
+	if storeServerJSON == "" {
+		return nil, nil
+	}
+	p := &param.StoreServerInfoParams{}
+	err := json.Unmarshal([]byte(storeServerJSON), p)
+	return p, errors.Wrap(err, "failed to unmarshal store server info")
 }
