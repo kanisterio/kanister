@@ -61,7 +61,7 @@ func ConnectToAPIServer(
 	serverInfo := &repo.APIServerInfo{
 		BaseURL:                             serverAddress,
 		TrustedServerCertificateFingerprint: fingerprint,
-		// TODO(@pavan): Remove once GRPC support is added
+		// TODO(@pavan): Remove once GRPC support is added (kopia 0.8 release)
 		DisableGRPC: true,
 	}
 
