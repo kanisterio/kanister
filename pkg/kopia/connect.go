@@ -17,48 +17,45 @@ package kopia
 import (
 	"context"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jpillora/backoff"
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/repo/content"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
 	defaultConnectMaxListCacheDuration time.Duration = time.Second * 600
 	defaultConnectPersistCredentials                 = true
+
+	kopiaGetRepoParametersError = "unable to get repository parameters"
 )
 
 // ConnectToAPIServer connects to the Kopia API server running at the given address
 func ConnectToAPIServer(
 	ctx context.Context,
-	cli kubernetes.Interface,
-	tlsCertSecret,
-	userPassphraseSecret *corev1.Secret,
+	tlsCert,
+	userPassphrase,
 	hostname,
 	serverAddress,
 	username string,
 ) error {
 	// Extra fingerprint from the TLS Certificate secret
-	fingerprint, err := ExtractFingerprintFromCertSecret(ctx, cli, tlsCertSecret.GetName(), tlsCertSecret.GetNamespace())
+	fingerprint, err := ExtractFingerprintFromCertificateJSON(tlsCert)
 	if err != nil {
 		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API Server Certificate Secret")
-	}
-
-	// Extract user passphrase from the secret
-	passphrase, ok := userPassphraseSecret.Data[hostname]
-	if !ok {
-		return errors.Errorf("Failed to extract client passphrase from secret. Secret: %s", userPassphraseSecret.GetName())
 	}
 
 	serverInfo := &repo.APIServerInfo{
 		BaseURL:                             serverAddress,
 		TrustedServerCertificateFingerprint: fingerprint,
+		// TODO(@pavan): Remove once GRPC support is added
+		DisableGRPC: true,
 	}
 
 	opts := &repo.ConnectOptions{
@@ -75,21 +72,25 @@ func ConnectToAPIServer(
 		},
 	}
 
+	//err = repo.ConnectAPIServer(ctx, defaultConfigFilePath, serverInfo, userPassphrase, opts)
 	err = poll.WaitWithBackoff(ctx, backoff.Backoff{
 		Factor: 2,
 		Jitter: false,
 		Min:    100 * time.Millisecond,
-		Max:    180 * time.Second,
+		Max:    15 * time.Second,
 	}, func(c context.Context) (bool, error) {
-		if err := repo.ConnectAPIServer(ctx, defaultConfigFilePath, serverInfo, string(passphrase), opts); err != nil {
+		// TODO(@pavan): Modify this to use custom config file path, if required
+		err := repo.ConnectAPIServer(ctx, defaultConfigFilePath, serverInfo, string(userPassphrase), opts)
+		switch {
+		case isGetRepoParametersError(err):
+			log.Debug().WithError(err).Print("Connecting to the Kopia API Server")
 			return false, nil
+		case err != nil:
+			return false, err
 		}
 		return true, nil
 	})
-	if err != nil {
-		return errors.Wrap(err, "Failed to backup data to Kopia API server")
-	}
-	return nil
+	return errors.Wrap(err, "Failed connecting to the Kopia API Server")
 }
 
 // OpenRepository opens the connected Kopia repository
@@ -112,4 +113,8 @@ func OpenRepository(ctx context.Context) (repo.Repository, error) {
 	}
 
 	return r, nil
+}
+
+func isGetRepoParametersError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), kopiaGetRepoParametersError)
 }
