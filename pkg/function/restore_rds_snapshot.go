@@ -234,7 +234,7 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
 				return err
 			}
-			log.Print("Aurora db cluster is not found")
+			log.Print("Aurora DB cluster is not found")
 		}
 	} else {
 		// DB Cluster is present, delete and wait for it to be deleted
@@ -245,32 +245,32 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 
 	version, err := engineVersion(ctx, rdsCli, snapshotID)
 	if err != nil {
-		return errors.Wrapf(err, "Error getting the engine version before restore")
+		return errors.Wrap(err, "Error getting the engine version before restore")
 	}
 
 	log.Print("Restoring RDS Aurora DB Cluster from snapshot.", field.M{"instanceID": instanceID, "snapshotID": snapshotID})
 	op, err := rdsCli.RestoreDBClusterFromDBSnapshot(ctx, instanceID, snapshotID, dbEngine, version, securityGroupIDs)
 	if err != nil {
-		return errors.Wrapf(err, "Error restorig aurora db cluster from snapshot")
+		return errors.Wrap(err, "Error restorig aurora db cluster from snapshot")
 	}
 
 	// From docs: Above action only restores the DB cluster, not the DB instances for that DB cluster
 	// wait for db cluster to be available
 	log.Print("Waiting for db cluster to be available")
 	if err := rdsCli.WaitUntilDBClusterAvailable(ctx, *op.DBCluster.DBClusterIdentifier); err != nil {
-		return errors.Wrapf(err, "Error waiting for DBCluster to be available")
+		return errors.Wrap(err, "Error waiting for DBCluster to be available")
 	}
 
 	log.Print("Creating DB instance in the cluster")
 	// After Aurora cluster is created, we will have to explictly create the DB instance
 	dbInsOp, err := rdsCli.CreateDBInstanceInCluster(ctx, *op.DBCluster.DBClusterIdentifier, fmt.Sprintf("%s-%s", *op.DBCluster.DBClusterIdentifier, restoredAuroraInstanceSuffix), defaultAuroraInstanceClass, dbEngine)
 	if err != nil {
-		return errors.Wrap(err, "Error while creating aurorage db instance in the cluster.")
+		return errors.Wrap(err, "Error while creating Aurora DB instance in the cluster.")
 	}
 	// wait for instance to be up and running
 	log.Print("Waiting for RDS Aurora instance to be ready.", field.M{"instanceID": instanceID})
 	if err = rdsCli.WaitUntilDBInstanceAvailable(ctx, *dbInsOp.DBInstance.DBInstanceIdentifier); err != nil {
-		return errors.Wrap(err, "Error while waiting for new rds instance to be ready.")
+		return errors.Wrap(err, "Error while waiting for new RDS Aurora instance to be ready.")
 	}
 	return nil
 }
@@ -284,7 +284,7 @@ func deleteAuroraDBCluster(ctx context.Context, rdsCli *rds.RDS, descOp *rdserr.
 				}
 			}
 		} else {
-			log.Print("Waiting for RDS cluster's instance to be deleted", field.M{"instance": k})
+			log.Print("Waiting for RDS Aurora cluster instance to be deleted", field.M{"instance": k})
 			if err := rdsCli.WaitUntilDBInstanceDeleted(ctx, *member.DBInstanceIdentifier); err != nil {
 				return errors.Wrapf(err, "Error while waiting for RDS Aurora DB instance to be deleted")
 			}
