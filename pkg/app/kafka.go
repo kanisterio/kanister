@@ -89,9 +89,10 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 // Object return the configmap referred in blueprint
 func (kc *KafkaCluster) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
-		Kind:      "configMap",
-		Name:      configMapName,
-		Namespace: kc.namespace,
+		APIVersion: "v1",
+		Name:       configMapName,
+		Namespace:  kc.namespace,
+		Resource:   "configmaps",
 	}
 }
 func (kc *KafkaCluster) ConfigMaps() map[string]crv1alpha1.ObjectReference {
@@ -166,8 +167,15 @@ func (kc *KafkaCluster) IsReady(ctx context.Context) (bool, error) {
 // TODO
 func (kc *KafkaCluster) Count(ctx context.Context) (int, error) {
 	log.Print("Counting the records from the mysql instance.", field.M{"app": kc.name})
-	log.Print("Count that we received from application is.", field.M{"app": kc.name, "count": nil})
-	return 0, nil
+	log.Print("Inserting some records in kafka topic.", field.M{"app": kc.name})
+	kubectl := k8s.NewkubernetesClient()
+	count, err := kubectl.Count(ctx, kc.namespace)
+	if err != nil {
+		return 0, errors.Wrapf(err, "Error Insert the record for %s, %s.", kc.name, err)
+	}
+
+	log.Print("Count that we received from application is.", field.M{"app": kc.name, "count": count})
+	return count, nil
 }
 
 // TODO

@@ -30,4 +30,5 @@ type KubeClient interface {
 	DeleteOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error)
 	Ping(ctx context.Context, namespace string) (string, error)
 	Insert(ctx context.Context, namespace string) (string, error)
+	Count(ctx context.Context, namespace string) (int, error)
 }

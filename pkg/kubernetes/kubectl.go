@@ -14,13 +14,28 @@
 package kubernetes
 
 import (
+	"bytes"
 	"context"
+	"flag"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/kanisterio/kanister/pkg/helm"
+	"github.com/pkg/errors"
+	"github.com/segmentio/kafka-go"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/portforward"
+	"k8s.io/client-go/transport/spdy"
+	"k8s.io/client-go/util/homedir"
 )
 
 const (
@@ -55,9 +70,9 @@ func (kubectl kubernetesClient) InstallKafka(ctx context.Context, namespace, yam
 	}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", createKafka)
 }
-func (kubectl kubernetesClient) CreateConfigMap(ctx context.Context, configMapName, namespace, yamlFileRepo, sinkConfigPath, sourceConfigPath, kafkaConfigPath string) (string, error) {
+func (kubectl kubernetesClient) CreateConfigMap(ctx context.Context, configMapName, namespace, yamlFileRepo, kafkaConfigPath, sinkConfigPath, sourceConfigPath string) (string, error) {
 	//	createConfig := []string{"create", "configmap", "s3config", fmt.Sprintf("--from-file=%s/%s --from-file=%s/%s --from-file=%s/%s --from-literal=timeinSeconds=1800", yamlFileRepo, sinkConfigPath, yamlFileRepo, sourceConfigPath, yamlFileRepo, sinkConfigPath), "-n", namespace}
-	createConfig := []string{"create", "-n", namespace, "configmap", configMapName, "--", "from-file=", fmt.Sprintf("%s/%s", yamlFileRepo, sinkConfigPath)}
+	createConfig := []string{"create", "-n", namespace, "configmap", configMapName, fmt.Sprintf("--from-file=adobe-s3-sink.properties=%s/%s", yamlFileRepo, sinkConfigPath), fmt.Sprintf("--from-file=adobe-s3-source.properties=%s/%s", yamlFileRepo, sourceConfigPath), fmt.Sprintf("--from-file=adobe-kafkaConfiguration.properties=%s/%s", yamlFileRepo, kafkaConfigPath), "--from-literal=timeinSeconds=1800"}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", createConfig)
 }
 func (kubectl kubernetesClient) DeleteConfigMap(ctx context.Context, namespace, configMapName string) (string, error) {
@@ -77,15 +92,198 @@ func (kubectl kubernetesClient) DeleteKafka(ctx context.Context, namespace, yaml
 
 func (kubectl kubernetesClient) Ping(ctx context.Context, namespace string) (string, error) {
 	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	pingKafka := []string{"run", "-n", namespace, "kafka-producer", "-ti", "--rm=true", "--image=strimzi/kafka:0.20.0-kafka-2.6.0", "--restart=Never", "--", "bin/kafka-topics.sh", "--create", "--topic", "integration-test", "--bootstrap-server=my-cluster-kafka-bootstrap:9092"}
+	pingKafka := []string{"run", "-n", namespace, "kafka-ping", "-ti", "--rm=true", "--image=strimzi/kafka:0.20.0-kafka-2.6.0", "--restart=Never", "--", "bin/kafka-topics.sh", "--list", "--bootstrap-server=my-cluster-kafka-external-bootstrap:9094"}
 	log.Print(pingKafka)
 	return helm.RunCmdWithTimeout(ctx, "kubectl", pingKafka)
 }
 func (kubectl kubernetesClient) Insert(ctx context.Context, namespace string) (string, error) {
 
 	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	insertKafka := []string{"run", "-n", namespace, "kafka-producer", "-ti", "--rm=true", "--image=strimzi/kafka:0.20.0-kafka-2.6.0", "--restart=Never", "--", "bin/kafka-console-producer.sh", "--topic", "integration-test", "--broker-list=my-cluster-kafka-bootstrap:9092"}
-	log.Print(insertKafka)
-	return helm.RunCmdWithInput(ctx, "kubectl", insertKafka, "abcd")
+	produce(ctx)
+	log.Print("message produced")
+	return "", nil
 
+}
+func (kubectl kubernetesClient) Count(ctx context.Context, namespace string) (int, error) {
+
+	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
+	count := consume(ctx)
+	log.Print("message consumed")
+	return count, nil
+
+}
+
+func produce(ctx context.Context) {
+	// to produce messages
+	topic := "blogs"
+	partition := 0
+	forwarder, err := K8SServicePortForward(ctx, "my-cluster-kafka-external-bootstrap", "kafka", "9094")
+	if err != nil {
+		log.Print("error getting forwarder %s", err)
+	}
+
+	defer forwarder.Close()
+	ports, err := forwarder.GetPorts()
+	if err != nil {
+		log.Print("error getting ports %s", err)
+	}
+	fmt.Print(ports[0])
+	uri := "localhost:" + fmt.Sprint(ports[0].Local)
+	log.Print(uri)
+
+	conn, err := kafka.DialLeader(ctx, "tcp", uri, topic, partition)
+	if err != nil {
+		log.Fatal("failed to dial leader:", err)
+	}
+	conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+	_, err = conn.WriteMessages(
+		kafka.Message{Value: []byte("{'title':'The Matrix','year':1999,'cast':['Keanu Reeves','Laurence Fishburne','Carrie-Anne Moss','Hugo Weaving','Joe Pantoliano'],'genres':['Science Fiction']}")},
+	)
+	if err != nil {
+		log.Fatal("failed to write messages:", err)
+	}
+
+	if err := conn.Close(); err != nil {
+		log.Fatal("failed to close writer:", err)
+	}
+
+}
+
+func getconfig() string {
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	}
+	flag.Parse()
+
+	return *kubeconfig
+}
+
+func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort string) (*portforward.PortForwarder, error) {
+	var selector string
+	errCh := make(chan error)
+	readyChan := make(chan struct{}, 1)
+
+	cfg, err := clientcmd.BuildConfigFromFlags("", "/home/infracloud/.kube/config")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		panic(err.Error())
+	}
+	roundTripper, upgrader, err := spdy.RoundTripperFor(cfg)
+	if err != nil {
+		return &portforward.PortForwarder{}, errors.Wrapf(err, "Failed to create RoundTripper for k8s config")
+	}
+
+	svc, err := clientset.CoreV1().Services(ns).Get(ctx, svcName, metav1.GetOptions{})
+	if err != nil {
+		return &portforward.PortForwarder{}, errors.Wrapf(err, "Failed to get service for component")
+	}
+	for k, v := range svc.Spec.Selector {
+		selector = fmt.Sprintf("%s%s=%s,", selector, k, v)
+	}
+	selector = strings.TrimSuffix(selector, ",")
+	pods, err := clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return &portforward.PortForwarder{}, errors.Wrapf(err, "Failed to list pods for component")
+	}
+	if len(pods.Items) == 0 {
+		return &portforward.PortForwarder{}, errors.Wrapf(err, "Empty pods list for component")
+	}
+	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", ns, pods.Items[0].Name)
+	u, err := url.Parse(cfg.Host)
+	if err != nil {
+		return &portforward.PortForwarder{}, errors.Wrapf(err, "Failed to parse url struct from k8s config")
+	}
+	hostIP := fmt.Sprintf("%s:%s", u.Hostname(), u.Port())
+	serverURL := url.URL{Scheme: "https", Path: path, Host: hostIP}
+
+	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, &serverURL)
+
+	pre, pwe := io.Pipe()
+	pro, pwo := io.Pipe()
+	go func() {
+		buf := bytes.NewBuffer(nil)
+		if _, inErr := buf.ReadFrom(pre); inErr != nil {
+			log.Print(inErr)
+		}
+	}()
+	go func() {
+		buf := bytes.NewBuffer(nil)
+		if _, inErr := buf.ReadFrom(pro); inErr != nil {
+			log.Print(inErr)
+		}
+	}()
+
+	f, err := portforward.New(dialer, []string{fmt.Sprintf(":%s", pPort)}, ctx.Done(), readyChan, pwo, pwe)
+	if err != nil {
+		return &portforward.PortForwarder{}, errors.Wrapf(err, "Failed to create portforward")
+	}
+
+	go func() {
+		errCh <- f.ForwardPorts()
+	}()
+
+	select {
+	case <-readyChan:
+		log.Print("PortForward is Ready")
+	case err = <-errCh:
+		return &portforward.PortForwarder{}, errors.Wrapf(err, "Failed to get Ports from forwarded")
+	}
+
+	return f, nil
+}
+
+func consume(ctx context.Context) int {
+	topic := "blogs"
+	partition := 0
+	forwarder, err := K8SServicePortForward(ctx, "my-cluster-kafka-external-bootstrap", "kafka", "9094")
+	if err != nil {
+		log.Print("error getting forwarder %s", err)
+	}
+
+	defer forwarder.Close()
+	ports, err := forwarder.GetPorts()
+	if err != nil {
+		log.Print("error getting ports %s", err)
+	}
+	fmt.Print(ports[0])
+	uri := "localhost:" + fmt.Sprint(ports[0].Local)
+	log.Print(uri)
+
+	conn, err := kafka.DialLeader(ctx, "tcp", uri, topic, partition)
+	if err != nil {
+		log.Fatal("failed to dial leader:", err)
+	}
+
+	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
+	count := 0
+	b := make([]byte, 10e3) // 10KB max per message
+	messageEnd := false
+	for {
+		_, err := batch.Read(b)
+		if err != nil {
+			messageEnd = true
+			break
+		}
+		count = count + 1
+		fmt.Println(string(b))
+	}
+	if messageEnd == false {
+		if err := batch.Close(); err != nil {
+			log.Fatal("failed to close batch:", err)
+		}
+	}
+	if err := conn.Close(); err != nil {
+		log.Fatal("failed to close connection:", err)
+	}
+	return count
 }

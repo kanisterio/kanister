@@ -224,16 +224,21 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		configMaps = a.ConfigMaps()
 		secrets = a.Secrets()
 	}
+	log.Info().Print("start validating")
 
 	// Validate Blueprint
 	validateBlueprint(c, *bp, configMaps, secrets)
-
+	log.Info().Print(" validating complete")
 	// Create ActionSet specs
+	log.Info().Print("create actionset validating")
 	as := newActionSet(bp.GetName(), profileName, kontroller.namespace, s.app.Object(), configMaps, secrets)
 	// Take backup
+	log.Info().Print("Taking backup")
 	backup := s.createActionset(ctx, c, as, "backup", nil)
-	c.Assert(len(backup), Not(Equals), 0)
+	log.Info().Print("Actionset created")
 
+	c.Assert(len(backup), Not(Equals), 0)
+	log.Info().Print("Actionset validated")
 	// Save timestamp for PITR
 	var restoreOptions map[string]string
 	if b, ok := s.bp.(app.PITRBlueprinter); ok {
@@ -349,6 +354,9 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 	switch action {
 	case "backup":
 		as.Spec.Actions[0].Options = options
+		log.Info().Print("options added")
+		log.Info().Print("calling create with actionset")
+
 		as, err = s.crCli.ActionSets(kontroller.namespace).Create(ctx, as, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 	case "restore", "delete":
@@ -413,19 +421,19 @@ func createNamespace(cli kubernetes.Interface, name string) error {
 }
 
 func (s *IntegrationSuite) TearDownSuite(c *C) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// ctx, cancel := context.WithCancel(context.Background())
+	// defer cancel()
 
 	// Uninstall app
 	if !s.skip {
-		err := s.app.Uninstall(ctx)
-		c.Assert(err, IsNil)
+		// err := s.app.Uninstall(ctx)
+		// c.Assert(err, IsNil)
 	}
 
 	// Uninstall implementation of the apps doesn't delete namespace
 	// Delete the namespace separately
-	err := s.cli.CoreV1().Namespaces().Delete(ctx, s.namespace, metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
+	// err := s.cli.CoreV1().Namespaces().Delete(ctx, s.namespace, metav1.DeleteOptions{})
+	// c.Assert(err, IsNil)
 }
 
 func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {

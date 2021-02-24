@@ -180,6 +180,7 @@ func RunCmdWithTimeout(ctx context.Context, command string, args []string) (stri
 	ctx, cancel := context.WithTimeout(ctx, DefaultCommandTimeout)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, command, args...).CombinedOutput()
+	log.Info().Print(strings.TrimSpace(string(out)))
 	return strings.TrimSpace(string(out)), err
 }
 
