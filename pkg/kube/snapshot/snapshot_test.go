@@ -26,6 +26,7 @@ import (
 	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	. "gopkg.in/check.v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	scv1 "k8s.io/api/storage/v1"
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -404,7 +405,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	snapshotName := snapshotNamePrefix + strconv.Itoa(int(time.Now().UnixNano()))
 	wait := true
 	label := map[string]string{
-		"snapshottest": "testlabel",
+		"SnapshotTest": "testlabel",
 	}
 	err = snapshotter.Create(ctx, snapshotName, s.sourceNamespace, pvc.Name, snapshotClass, wait, label)
 	c.Assert(err, IsNil)
@@ -418,7 +419,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	snapList, err := snapshotter.List(ctx, s.sourceNamespace, label)
 	c.Assert(err, IsNil)
 	c.Assert(len(snapList.Items), Equals, 1)
-	c.Assert(snapList.Items[0].Labels, Equals, label)
+	c.Assert(snapList.Items[0].Labels, DeepEquals, label)
 
 	err = snapshotter.Create(ctx, snapshotName, s.sourceNamespace, pvc.Name, snapshotClass, wait, nil)
 	c.Assert(err, NotNil)
@@ -1092,7 +1093,82 @@ func (s *SnapshotTestSuite) TestGetSnapshotClassbyAnnotation(c *C) {
 	}
 }
 
-func (s *SnapshotTestSuite) TestListSnapshots(c *C) {
-	// dyncli fake
+func (s *SnapshotTestSuite) TestLabels(c *C) {
+	ctx := context.Background()
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotList"}, &unstructured.UnstructuredList{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotList"}, &unstructured.UnstructuredList{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotList"}, &unstructured.UnstructuredList{})
+	ns := "namespace"
+	volName := "vol1"
+	snapName := "snap1"
+	snapClass := "snapClass"
+	fakeCli := fake.NewSimpleClientset(fakePVC(volName, ns))
+	for _, tc := range []struct {
+		dynCli       dynamic.Interface
+		createLabels map[string]string
+		listLabel    map[string]string
+		errChecker   Checker
+		numResults   int
+	}{
+		{
+			dynCli: dynfake.NewSimpleDynamicClient(scheme),
+			createLabels: map[string]string{
+				"label": "1",
+			},
+			listLabel: map[string]string{
+				"label": "1",
+			},
+			errChecker: IsNil,
+			numResults: 1,
+		},
+		{ // nothing that matches label
+			dynCli:       dynfake.NewSimpleDynamicClient(scheme),
+			createLabels: map[string]string{},
+			listLabel: map[string]string{
+				"label": "1",
+			},
+			errChecker: IsNil,
+			numResults: 0,
+		},
+		{ // empty labels  list everytime
+			dynCli: dynfake.NewSimpleDynamicClient(scheme),
+			createLabels: map[string]string{
+				"label": "1",
+			},
+			listLabel:  map[string]string{},
+			errChecker: IsNil,
+			numResults: 1,
+		},
+		{ // nil lists
+			dynCli:     dynfake.NewSimpleDynamicClient(scheme),
+			errChecker: IsNil,
+			numResults: 1,
+		},
+	} {
+		for _, fakeSs := range []snapshot.Snapshotter{
+			snapshot.NewSnapshotAlpha(fakeCli, tc.dynCli),
+			snapshot.NewSnapshotBeta(fakeCli, tc.dynCli),
+			snapshot.NewSnapshotStable(fakeCli, tc.dynCli),
+		} {
+			var err error
+			var list *snapv1.VolumeSnapshotList
+			err = fakeSs.Create(ctx, snapName, ns, volName, &snapClass, false, tc.createLabels)
+			if err == nil {
+				list, err = fakeSs.List(ctx, ns, tc.listLabel)
+				c.Assert(len(list.Items), Equals, tc.numResults)
+			}
+			c.Check(err, tc.errChecker)
+		}
+	}
 
+}
+
+func fakePVC(name, namespace string) *v1.PersistentVolumeClaim {
+	return &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
 }

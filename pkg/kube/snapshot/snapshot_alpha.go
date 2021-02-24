@@ -25,6 +25,7 @@ import (
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	pkglabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/dynamic"
@@ -126,7 +127,7 @@ func (sna *SnapshotAlpha) List(ctx context.Context, namespace string, labels map
 	listOptions := metav1.ListOptions{}
 	if labels != nil {
 		labelSelector := metav1.LabelSelector{MatchLabels: labels}
-		listOptions.LabelSelector = labelSelector.String()
+		listOptions.LabelSelector = pkglabels.Set(labelSelector.MatchLabels).String()
 	}
 	usList, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).List(ctx, listOptions)
 	if err != nil {
@@ -369,7 +370,6 @@ func UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, contentName, snap
 			"metadata": map[string]interface{}{
 				"name":      name,
 				"namespace": namespace,
-				"labels":    labels,
 			},
 		},
 	}
@@ -389,6 +389,9 @@ func UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, contentName, snap
 			"snapshotContentName": contentName,
 			"snapshotClassName":   snapClassName,
 		}
+	}
+	if labels != nil {
+		snap.SetLabels(labels)
 	}
 	return snap
 }
