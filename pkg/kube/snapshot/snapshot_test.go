@@ -1161,7 +1161,6 @@ func (s *SnapshotTestSuite) TestLabels(c *C) {
 			c.Check(err, tc.errChecker)
 		}
 	}
-
 }
 
 func fakePVC(name, namespace string) *v1.PersistentVolumeClaim {
