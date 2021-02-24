@@ -218,7 +218,7 @@ func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction
 		}
 	}()
 
-	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName))
+	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName), nil)
 }
 
 func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, dbEndpoint, username, password string, dbList []string, backupPrefix, backupID string, profile *param.Profile) ([]string, string, error) {

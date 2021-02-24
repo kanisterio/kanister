@@ -16,9 +16,11 @@ package function
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -52,13 +54,16 @@ func (*kubeTaskFunc) Name() string {
 	return KubeTaskFuncName
 }
 
-func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image string, command []string, podOverride crv1alpha1.JSONMap) (map[string]interface{}, error) {
+func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image string, command []string, podOverride crv1alpha1.JSONMap, objectMetaOverride *metav1.ObjectMeta) (map[string]interface{}, error) {
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
 		Image:        image,
 		Command:      command,
 		PodOverride:  podOverride,
+	}
+	if objectMetaOverride != nil {
+		options.Labels = objectMetaOverride.Labels
 	}
 
 	pr := kube.NewPodRunner(cli, options)
@@ -71,6 +76,7 @@ func kubeTaskPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
+		// time.Sleep(60 * time.Second)
 		ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
 		// Fetch logs from the pod
 		r, err := kube.StreamPodLogs(ctx, cli, pod.Namespace, pod.Name)
@@ -107,11 +113,14 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		return nil, err
 	}
 
+	fmt.Println("omo", tp.ObjectMetaOverride)
+	objectMetaOverride := tp.ObjectMetaOverride
+
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return kubeTask(ctx, cli, namespace, image, command, podOverride)
+	return kubeTask(ctx, cli, namespace, image, command, podOverride, &objectMetaOverride)
 }
 
 func (*kubeTaskFunc) RequiredArgs() []string {

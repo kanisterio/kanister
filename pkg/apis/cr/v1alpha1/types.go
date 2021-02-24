@@ -23,6 +23,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	sp "k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -111,6 +112,9 @@ type ActionSpec struct {
 	// PreferredVersion will be used to select the preferred version of Kanister functions
 	// to be executed for this action
 	PreferredVersion string `json:"preferredVersion"`
+	// ObjectMetaOverride is used to specify ObjectMeta that will override the
+	// default ObjectMeta
+	ObjectMetaOverride v1.ObjectMeta `json:"objectMetaOverride,omitempty"`
 }
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.

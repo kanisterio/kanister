@@ -182,6 +182,7 @@ func (in *ActionSpec) DeepCopyInto(out *ActionSpec) {
 			(*out)[key] = val
 		}
 	}
+	in.ObjectMetaOverride.DeepCopyInto(&out.ObjectMetaOverride)
 	return
 }
 
