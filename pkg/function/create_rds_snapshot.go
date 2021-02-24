@@ -52,7 +52,7 @@ const (
 	DBEngineAurora RDSDBEngine = "aurora"
 	// DBEngineAuroraMySQL has db engine for MySQL 5.7-compatible Aurora
 	DBEngineAuroraMySQL RDSDBEngine = "aurora-mysql"
-	// DBEngineAuroraPostgreSQL has db engine aurora postgresql
+	// DBEngineAuroraPostgreSQL has db engine for aurora postgresql
 	DBEngineAuroraPostgreSQL RDSDBEngine = "aurora-postgresql"
 )
 
