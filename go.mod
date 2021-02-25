@@ -43,7 +43,7 @@ require (
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.10
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
-	github.com/kopia/kopia v0.7.4-0.20210203191933-c23d42f84db5
+	github.com/kopia/kopia v0.7.4-0.20210217182901-23273af1cd0c
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.0.0
 	github.com/lib/pq v1.8.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
