@@ -69,13 +69,17 @@ func (sna *SnapshotStable) GetVolumeSnapshotClass(annotationKey, annotationValue
 }
 
 // Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
-func (sna *SnapshotStable) Create(ctx context.Context, name, namespace, volumeName string, snapshotClass *string, waitForReady bool) error {
-	return createSnapshot(ctx, sna.dynCli, sna.kubeCli, VolSnapGVR, name, namespace, volumeName, snapshotClass, waitForReady)
+func (sna *SnapshotStable) Create(ctx context.Context, name, namespace, volumeName string, snapshotClass *string, waitForReady bool, labels map[string]string) error {
+	return createSnapshot(ctx, sna.dynCli, sna.kubeCli, VolSnapGVR, name, namespace, volumeName, snapshotClass, waitForReady, labels)
 }
 
 // Get will return the VolumeSnapshot in the 'namespace' with given 'name'.
 func (sna *SnapshotStable) Get(ctx context.Context, name, namespace string) (*v1.VolumeSnapshot, error) {
 	return getSnapshot(ctx, sna.dynCli, VolSnapGVR, name, namespace)
+}
+
+func (sna *SnapshotStable) List(ctx context.Context, namespace string, labels map[string]string) (*v1.VolumeSnapshotList, error) {
+	return listSnapshots(ctx, sna.dynCli, VolSnapGVR, namespace, labels)
 }
 
 // Delete will delete the VolumeSnapshot and returns any error as a result.
@@ -122,7 +126,7 @@ func (sna *SnapshotStable) CreateFromSource(ctx context.Context, source *Source,
 		return errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
-	snap := UnstructuredVolumeSnapshot(VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName)
+	snap := UnstructuredVolumeSnapshot(VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, nil)
 
 	if err := sna.CreateContentFromSource(ctx, source, contentName, snapshotName, namespace, deletionPolicy); err != nil {
 		return err
