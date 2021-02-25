@@ -10,7 +10,6 @@ replace (
 )
 
 require (
-	bazil.org/fuse v0.0.0-20200117225306-7b5117fecadc // indirect
 	github.com/Azure/azure-sdk-for-go v49.1.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.15
 	github.com/Azure/go-autorest/autorest/adal v0.9.10 // indirect
