@@ -336,7 +336,11 @@ func (s *AdStorage) SnapshotDelete(ctx context.Context, snapshot *blockstorage.S
 	}
 	result, err := s.azCli.SnapshotsClient.Delete(ctx, rg, name)
 	if err != nil {
-		return errors.Wrapf(err, "SnapshotClient.Delete: Failed to delete snapshot with ID %s", snapshot.ID)
+		// Delete doesn't call this method directly, not sure why. However this method ignores
+		// success cases including when the object doesn't exist.
+		if _, err2 := s.azCli.SnapshotsClient.DeleteResponder(result.Response()); err2 != nil {
+			return errors.Wrapf(err2, "SnapshotClient.Delete: Failed to delete snapshot with ID %s", snapshot.ID)
+		}
 	}
 	err = result.WaitForCompletionRef(ctx, s.azCli.SnapshotsClient.Client)
 
@@ -407,7 +411,7 @@ func (s *AdStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) 
 		snap.SnapshotProperties.EncryptionSettingsCollection.Enabled != nil {
 		encrypted = *snap.SnapshotProperties.EncryptionSettingsCollection.Enabled
 	}
-	tags := map[string]string{"": ""}
+	tags := map[string]string{}
 	if snap.Tags != nil {
 		tags = azto.StringMap(snap.Tags)
 	}
@@ -457,6 +461,7 @@ func (s *AdStorage) SnapshotsList(ctx context.Context, tags map[string]string) (
 		}
 		snaps = append(snaps, k10Snap)
 	}
+	snaps = blockstorage.FilterSnapshotsWithTags(snaps, blockstorage.SanitizeTags(tags))
 	return snaps, nil
 }
 

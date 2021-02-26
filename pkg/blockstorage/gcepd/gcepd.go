@@ -337,7 +337,7 @@ func (s *GpdStorage) VolumesList(ctx context.Context, tags map[string]string, zo
 // SnapshotsList is part of blockstorage.Provider
 func (s *GpdStorage) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	var snaps []*blockstorage.Snapshot
-	fltrs := blockstorage.MapToString(tags, " AND ", ":")
+	fltrs := blockstorage.MapToString(blockstorage.SanitizeTags(tags), " AND ", ":")
 	req := s.service.Snapshots.List(s.project).Filter(fltrs)
 	if err := req.Pages(ctx, func(page *compute.SnapshotList) error {
 		for _, snapshot := range page.Items {
