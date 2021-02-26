@@ -191,9 +191,9 @@ actions:
         podOverride:
           containers:
           - name: container
-            imagePullPolicy: IfNotPresent
-        image: akankshakumari393/adobe-s3-source-connector:latest
-        namespace: "{{ .Namespace.Name }}"
+            imagePullPolicy: Always
+        image: ghcr.io/kanisterio/kafka-adobe-s3-sink-connector:latest
+        namespace: "{{ .Object.metadata.namespace }}"
         command:
         - bash
         - -o
