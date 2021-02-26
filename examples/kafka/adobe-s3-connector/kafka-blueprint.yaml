@@ -193,7 +193,7 @@ actions:
           - name: container
             imagePullPolicy: Always
         image: ghcr.io/kanisterio/kafka-adobe-s3-sink-connector:latest
-        namespace: "{{ .Object.metadata.namespace }}"
+        namespace: "{{ .Namespace.Name }}"
         command:
         - bash
         - -o
@@ -202,5 +202,5 @@ actions:
         - pipefail
         - -c
         - |
-          s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
+          s3_path="{{ .ArtifactsIn.s3Dump.KeyValue.s3path }}"
           kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}
