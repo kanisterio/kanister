@@ -16,7 +16,6 @@ package param
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -154,8 +153,6 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 		return nil, err
 	}
 	now := time.Now().UTC()
-	fmt.Println("AS :: ", as)
-	fmt.Println("1OMO : ", as.ObjectMetaOverride)
 	tp := TemplateParams{
 		ArtifactsIn:        as.Artifacts,
 		ConfigMaps:         cms,

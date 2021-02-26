@@ -16,7 +16,6 @@ package function
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -35,11 +34,12 @@ import (
 const (
 	jobPrefix = "kanister-job-"
 	// KubeTaskFuncName gives the function name
-	KubeTaskFuncName       = "KubeTask"
-	KubeTaskNamespaceArg   = "namespace"
-	KubeTaskImageArg       = "image"
-	KubeTaskCommandArg     = "command"
-	KubeTaskPodOverrideArg = "podOverride"
+	KubeTaskFuncName              = "KubeTask"
+	KubeTaskNamespaceArg          = "namespace"
+	KubeTaskImageArg              = "image"
+	KubeTaskCommandArg            = "command"
+	KubeTaskPodOverrideArg        = "podOverride"
+	KubeTaskObjectMetaOverrideArg = "objectMetaOverride"
 )
 
 func init() {
@@ -113,14 +113,16 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 		return nil, err
 	}
 
-	fmt.Println("omo", tp.ObjectMetaOverride)
-	objectMetaOverride := tp.ObjectMetaOverride
+	objectMetaOverride, err := GetObjectMetaOverride(tp, args, KubeTaskPodOverrideArg)
+	if err != nil {
+		return nil, err
+	}
 
 	cli, err := kube.NewClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Kubernetes client")
 	}
-	return kubeTask(ctx, cli, namespace, image, command, podOverride, &objectMetaOverride)
+	return kubeTask(ctx, cli, namespace, image, command, podOverride, objectMetaOverride)
 }
 
 func (*kubeTaskFunc) RequiredArgs() []string {
