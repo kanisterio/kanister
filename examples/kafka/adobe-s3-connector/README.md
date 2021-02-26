@@ -93,9 +93,6 @@ profile 's3-profile-fn64h' created
 
 # Blueprint Definition
 $ kubectl create -f ./kafka-blueprint.yaml -n kasten-io
-
-# create clusterRoleBinding to access policies in kasten-io from kafka namespace
-$ kubectl create -f kafka-ClusterRolebinding.yaml
 ```
 
 ## Perform Backup
