@@ -48,7 +48,7 @@ actions:
 
             sed -i "/^s3.prefix/d" /tmp/config/s3config.properties
             echo -e "\ns3.prefix=${s3_topic_path}\n" >> /tmp/config/s3config.properties
-            
+
             export s3_path="s3://{{ .Profile.Location.Bucket }}/${s3_topic_path}"
             kafkaConfig="{{ index .Object.data "adobe-kafkaConfiguration.properties" | toString }}"
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
@@ -62,43 +62,6 @@ actions:
             export pid=$!
             sh monitorconnect.sh
             exit 0
-    - func: KubeTask
-      name: CleanupPhase
-      args:
-        namespace: "{{ .Object.metadata.namespace }}"
-        podOverride:
-          containers:
-          - name: container
-            imagePullPolicy: Always
-          restartPolicy: Never
-        image: ghcr.io/kanisterio/kafka-cleans3
-        command:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail          
-          - -c
-          - |
-            {{- if .Profile.Credential.KeyPair }}
-            export AWS_SECRET_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
-            export AWS_ACCESS_KEY="{{ .Profile.Credential.KeyPair.ID }}"
-            {{- else }}
-            export AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
-            export AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
-            {{- end }}
-            export region="{{ .Profile.Location.Region }}"
-            export bucket="{{ .Profile.Location.Bucket }}"
-            export TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-            export result="$(curl -v --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $TOKEN" https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/apis/config.kio.kasten.io/v1alpha1/namespaces/kasten-io/policies/kafka-backup)"
-            export monthly=$(echo $result | jq -r '.spec.retention.monthly')
-            export yearly=$(echo $result | jq -r '.spec.retention.yearly')
-            export daily=$(echo $result | jq -r '.spec.retention.daily')
-            export weekly=$(echo $result | jq -r '.spec.retention.weekly')
-            export hourly=$(echo $result | jq -r '.spec.retention.hourly')
-            export frequency=$(echo $result | jq -r '.spec.frequency')
-            sleep 20
-            python3 cleanup.py
   restore:
     type: Deployment
     inputArtifactNames:
@@ -111,8 +74,8 @@ actions:
         podOverride:
           containers:
           - name: container
-            imagePullPolicy: Always
-        image: ghcr.io/kanisterio/kafka-adobe-s3-source-connector
+            imagePullPolicy: IfNotPresent
+        image: akankshakumari393/adobe-s3-source-connector
         command:
         - bash
         - -o
@@ -217,3 +180,27 @@ actions:
             export pid=$!
             sh monitorconnect.sh
             exit 0
+  delete:
+    type: Namespace
+    inputArtifactNames:
+    - s3Dump
+    phases:
+    - func: KubeTask
+      name: deleteFromBlobStore
+      args:
+        podOverride:
+          containers:
+          - name: container
+            imagePullPolicy: IfNotPresent
+        image: akankshakumari393/adobe-s3-source-connector:latest
+        namespace: "{{ .Namespace.Name }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
+          kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}

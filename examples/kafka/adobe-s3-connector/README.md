@@ -6,9 +6,12 @@ While restoration, Topics messages are first purged and then restore operation i
 ## Prerequisites
 
 * Kubernetes 1.9+
-* K10 installed in your cluster, let's say in namespace `<kanister-operator-namespace>` Can be installed (https://docs.kasten.io/latest/install/install.html). in our case we have used `kasten-io` namespace
+* Kanister controller version 0.50.0 installed in your cluster, let's say in namespace <kanister-operator-namespace>. in our case we have used `kasten-io` namespace
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
+## Assumption
+
+* No consumer is consuming the topic at the moment topic is being restored.
 ## Setup Kafka
 Kafka can be deployed via a helm chart https://bitnami.com/stack/kafka/helm, or via an operator like strimzi.io.
 Here deploying Kafka via Strimzi Operator
@@ -37,17 +40,17 @@ kubectl port-forward kafdrop 7000:9000 -n kafka
 Create Producer and Consumer using kafka image provided by strimzi
 ```bash
 # create a producer and push data to it
-$ kubectl -n kafka run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-bootstrap:9092 --topic blogpost
+$ kubectl -n kafka run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-external-bootstrap:9094 --topic blogpost
 > event1
 > event2
 > event3
 
 # creating a consumer on a different terminal
-$ kubectl -n kafka run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic my-topic --from-beginning
+$ kubectl -n kafka run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-external-bootstrap:9094 --topic my-topic --from-beginning
 ```
 
 **NOTE:**
-* Here we have now kafka running with the broker running on service `my-cluster-kafka-bootstrap:9092`
+* Here we have now kafka running with the broker running on service `my-cluster-kafka-external-bootstrap:9094`
 * `adobe-s3-sink.properties` file contain properties related `s3 sink Connector`
 * `adobe-s3-source.properties` file contain properties related `s3 source Connector`
 * `kafkaConfiguration.properties` contain properties pointing to kafka server
@@ -106,15 +109,15 @@ We can verify the backup operation by adding some data to the topic configured e
 
 * lIst all topics in kafka server
 ```bash
-$ kubectl -n kafka run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --bootstrap-server=my-cluster-kafka-bootstrap:9092 --list
+$ kubectl -n kafka run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --bootstrap-server=my-cluster-kafka-external-bootstrap:9094 --list
 ```
 * create a topic to kafka server
 ```bash
-$ kubectl -n kafka run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --create --topic blogpost --bootstrap-server my-cluster-kafka-bootstrap:9092
+$ kubectl -n kafka run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --create --topic blogpost --bootstrap-server my-cluster-kafka-external-bootstrap:9094
 ```
 * create a producer to push data to blogpost topic
 ```bash
-$ kubectl -n kafka run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-bootstrap:9092 --topic blogpost
+$ kubectl -n kafka run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-external-bootstrap:9094 --topic blogpost
 
 >{"title":"The Matrix","year":1999,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
 >{"title":"ABCD3","year":2000,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
@@ -138,7 +141,7 @@ $ kanctl create actionset --action restore --namespace kasten-io --blueprint kaf
 Create a consumer for topics
 ```bash
 # creating a consumer on a different terminal
-$ kubectl -n kafka run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic blogpost --from-beginning
+$ kubectl -n kafka run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-external-bootstrap:9094 --topic blogpost --from-beginning
 ```
 All the messages restored can be viewed
 
