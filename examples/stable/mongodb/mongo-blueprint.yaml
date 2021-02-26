@@ -32,10 +32,10 @@ actions:
             dbPassword='{{ index .Phases.takeConsistentBackup.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
             dump_cmd="mongodump --oplog --gzip --archive --host ${host} -u root -p ${dbPassword}"
             ${dump_cmd} | kando location push --profile '{{ toJson .Profile }}' --path '/mongodb-replicaset-backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs_backup.gz' -
-      objectMetaOverride:
-        labels:
-          name: ankit
-          id: 123
+        objectMetaOverride:
+          labels:
+            name: ankit
+            id: 123
   restore:
     type: StatefulSet
     inputArtifactNames:
@@ -63,10 +63,10 @@ actions:
             dbPassword='{{ index .Phases.pullFromBlobStore.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
             restore_cmd="mongorestore --gzip --archive --oplogReplay --drop --host ${host} -u root -p ${dbPassword}"
             kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.path }}' - | ${restore_cmd}
-      objectMetaOverride:
-        labels:
-          name: ankit
-          id: 123
+        objectMetaOverride:
+          labels:
+            name: ankit
+            id: 123
   delete:
     type: Namespace
     inputArtifactNames:
@@ -87,7 +87,7 @@ actions:
           - |
             s3_path="{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
             kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}
-      objectMetaOverride:
-        labels:
-          name: ankit
-          id: 123
+        objectMetaOverride:
+          labels:
+            name: ankit
+            id: 123
