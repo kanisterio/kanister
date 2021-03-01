@@ -17,3 +17,5 @@ RUN cp ./kafka-connect-s3/build/libs/kafka-connect-s3-chart/kafka-connect/0.0.4-
 
 # adding script to monitor source connector
 COPY /docker/kafka-adobes3Connector/image/adobe-monitorsource.sh monitorconnect.sh
+# script to clean s3
+COPY /docker/kafka-adobes3Connector/image/cleans3.py cleanup.py

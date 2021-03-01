@@ -168,7 +168,7 @@ actions:
 
             kafkaConfig="{{ index .Object.data "adobe-kafkaConfiguration.properties" | toString }}"
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
-            sleep 60
+            
             topicDetail="{{ .ArtifactsIn.s3Dump.KeyValue.backupDetail }}"
             export bootstrapServer=`cat /tmp/config/kafkaConfig.properties | grep "bootstrap.servers=" | awk -F "=" '{print $2}'`
             export topicList=`cat /tmp/config/s3config.properties | grep "topics=" | awk -F "=" '{print $2}'`
@@ -192,7 +192,7 @@ actions:
           containers:
           - name: container
             imagePullPolicy: Always
-        image: ghcr.io/kanisterio/kafka-adobe-s3-sink-connector:latest
+        image: ghcr.io/kanisterio/kafka-adobe-s3-source-connector:latest
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash
@@ -202,5 +202,14 @@ actions:
         - pipefail
         - -c
         - |
-          s3_path="{{ .ArtifactsIn.s3Dump.KeyValue.s3path }}"
-          kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}
+          {{- if .Profile.Credential.KeyPair }}
+          export AWS_SECRET_KEY="{{ .Profile.Credential.KeyPair.Secret }}"
+          export AWS_ACCESS_KEY="{{ .Profile.Credential.KeyPair.ID }}"
+          {{- else }}
+          export AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
+          export AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
+          {{- end }}
+          export s3path="{{ .ArtifactsIn.s3Dump.KeyValue.s3path }}"
+          export region="{{ .Profile.Location.Region }}"
+          export bucket="{{ .Profile.Location.Bucket }}"
+          python3 cleanup.py
