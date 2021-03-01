@@ -238,7 +238,7 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 		}
 	} else {
 		// DB Cluster is present, delete and wait for it to be deleted
-		if err := deleteAuroraDBCluster(ctx, rdsCli, descOp, instanceID); err != nil {
+		if err := DeleteAuroraDBCluster(ctx, rdsCli, descOp, instanceID); err != nil {
 			return nil
 		}
 	}
@@ -275,7 +275,7 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 	return nil
 }
 
-func deleteAuroraDBCluster(ctx context.Context, rdsCli *rds.RDS, descOp *rdserr.DescribeDBClustersOutput, instanceID string) error {
+func DeleteAuroraDBCluster(ctx context.Context, rdsCli *rds.RDS, descOp *rdserr.DescribeDBClustersOutput, instanceID string) error {
 	for k, member := range descOp.DBClusters[0].DBClusterMembers {
 		if _, err := rdsCli.DeleteDBInstance(ctx, *member.DBInstanceIdentifier); err != nil {
 			if aerr, ok := err.(awserr.Error); ok {

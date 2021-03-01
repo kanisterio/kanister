@@ -62,12 +62,26 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass,
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
+func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, engine, dbName, username, password string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
+	dbi := &rds.CreateDBClusterInput{
+		DBClusterIdentifier: &instanceID,
+		DatabaseName:        &dbName,
+		Engine:              &engine,
+		MasterUsername:      &username,
+		MasterUserPassword:  &password,
+		VpcSecurityGroupIds: convertSGIDs(sgIDs),
+	}
+	return r.CreateDBClusterWithContext(ctx, dbi)
+}
+
 func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine string) (*rds.CreateDBInstanceOutput, error) {
+	pa := true
 	dbi := &rds.CreateDBInstanceInput{
 		DBClusterIdentifier:  &restoredClusterID,
 		DBInstanceClass:      &instanceClass,
 		DBInstanceIdentifier: &instanceID,
 		Engine:               &dbEngine,
+		PubliclyAccessible:   &pa,
 	}
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
