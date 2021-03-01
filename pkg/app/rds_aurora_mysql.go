@@ -117,7 +117,6 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 
 	// Get aws config
 	awsConfig, region, err := a.getAWSConfig(ctx)
-	fmt.Printf("awsConfig %+v\n", *awsConfig.Credentials)
 	if err != nil {
 		return errors.Wrapf(err, "Error getting aws config app=%s", a.name)
 	}
@@ -212,11 +211,7 @@ func (a *RDSAuroraMySQLDB) Ping(context.Context) error {
 
 	pingQuery := "select 1"
 	_, err = db.Query(pingQuery)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
