@@ -17,7 +17,6 @@ package helm
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -180,22 +179,5 @@ func RunCmdWithTimeout(ctx context.Context, command string, args []string) (stri
 	ctx, cancel := context.WithTimeout(ctx, DefaultCommandTimeout)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, command, args...).CombinedOutput()
-	log.Info().Print(strings.TrimSpace(string(out)))
-	return strings.TrimSpace(string(out)), err
-}
-
-// RunCmdWithTimeout executes command on host with timeout
-func RunCmdWithInput(ctx context.Context, command string, args []string, input string) (string, error) {
-	log.Debug().Print("Executing command", field.M{"command": command, "args": args})
-	ctx, cancel := context.WithTimeout(ctx, DefaultCommandTimeout)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, command, args...)
-
-	stdin, err := cmd.StdinPipe()
-	io.WriteString(stdin, input)
-	out, err := cmd.CombinedOutput()
-
-	log.Info().Print(string(out))
-
 	return strings.TrimSpace(string(out)), err
 }

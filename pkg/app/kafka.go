@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package app
 
 import (
@@ -41,6 +42,7 @@ type KafkaCluster struct {
 	kafkaConfigPath  string
 	kafkaYaml        string
 	strimziYaml      string
+	topic            string
 	kubernetesClient k8s.KubeClient
 }
 
@@ -52,6 +54,7 @@ func NewKafkaCluster(name string) App {
 		sourceConfigPath: "adobe-s3-source.properties",
 		kafkaConfigPath:  "adobe-kafkaConfiguration.properties",
 		kafkaYaml:        "kafka-cluster.yaml",
+		topic:            "blogs",
 		strimziYaml:      "https://strimzi.io/install/latest?namespace=kafka",
 	}
 }
@@ -135,12 +138,10 @@ func (kc *KafkaCluster) Ping(ctx context.Context) error {
 func (kc *KafkaCluster) Insert(ctx context.Context) error {
 	log.Print("Inserting some records in kafka topic.", field.M{"app": kc.name})
 	kubectl := k8s.NewkubernetesClient()
-	out, err := kubectl.Insert(ctx, kc.namespace)
+	err := kubectl.Insert(ctx, kc.topic, kc.namespace)
 	if err != nil {
-		return errors.Wrapf(err, "Error Insert the record for %s, %s.", kc.name, out)
+		return errors.Wrapf(err, "Error Insert the record for %s", kc.name)
 	}
-	log.Print("Insert to the application was successful.")
-	return nil
 
 	log.Print("Successfully inserted record in the application.", field.M{"app": kc.name})
 	return nil
@@ -164,12 +165,10 @@ func (kc *KafkaCluster) IsReady(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-// TODO
 func (kc *KafkaCluster) Count(ctx context.Context) (int, error) {
-	log.Print("Counting the records from the mysql instance.", field.M{"app": kc.name})
-	log.Print("Inserting some records in kafka topic.", field.M{"app": kc.name})
+	log.Print("Counting records in kafka topic.", field.M{"app": kc.name})
 	kubectl := k8s.NewkubernetesClient()
-	count, err := kubectl.Count(ctx, kc.namespace)
+	count, err := kubectl.Count(ctx, kc.topic, kc.namespace)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error Insert the record for %s, %s.", kc.name, err)
 	}
@@ -178,19 +177,12 @@ func (kc *KafkaCluster) Count(ctx context.Context) (int, error) {
 	return count, nil
 }
 
-// TODO
 func (kc *KafkaCluster) Reset(ctx context.Context) error {
-	log.Print("Resetting the mysql instance.", field.M{"app": "mysql"})
-	// delete all the data from the table
-	log.Print("Reset of the application was successful.", field.M{"app": kc.name})
+	log.Print("Resetting the kafka topic is being handled in blueprint.", field.M{"app": kc.name})
 	return nil
 }
 
-// TODO
 // Initialize is used to initialize the database or create schema
 func (kc *KafkaCluster) Initialize(ctx context.Context) error {
 	return nil
-}
-func (kc *KafkaCluster) execCommand(ctx context.Context, command []string) (string, string, error) {
-	return kube.Exec(kc.cli, kc.namespace, "kafka-producer", "kafka-producer", command, nil)
 }

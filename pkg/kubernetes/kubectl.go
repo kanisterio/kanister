@@ -11,12 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package kubernetes
 
 import (
 	"bytes"
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -32,10 +32,10 @@ import (
 	"github.com/segmentio/kafka-go"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
-	"k8s.io/client-go/util/homedir"
 )
 
 const (
@@ -45,6 +45,7 @@ const (
 type kubernetesClient struct {
 }
 
+// NewkubernetesClient returns kubernetes client
 func NewkubernetesClient() KubeClient {
 	return &kubernetesClient{}
 }
@@ -96,77 +97,74 @@ func (kubectl kubernetesClient) Ping(ctx context.Context, namespace string) (str
 	log.Print(pingKafka)
 	return helm.RunCmdWithTimeout(ctx, "kubectl", pingKafka)
 }
-func (kubectl kubernetesClient) Insert(ctx context.Context, namespace string) (string, error) {
-
-	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	produce(ctx)
-	log.Print("message produced")
-	return "", nil
-
+func (kubectl kubernetesClient) Insert(ctx context.Context, topic, namespace string) error {
+	err := produce(ctx, topic)
+	return err
 }
-func (kubectl kubernetesClient) Count(ctx context.Context, namespace string) (int, error) {
-
-	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	count := consume(ctx)
-	log.Print("message consumed")
-	return count, nil
-
+func (kubectl kubernetesClient) Count(ctx context.Context, topic, namespace string) (int, error) {
+	count, err := consume(ctx, topic)
+	return count, err
 }
 
-func produce(ctx context.Context) {
-	// to produce messages
-	topic := "blogs"
+// to produce messages to kafka
+func produce(ctx context.Context, topic string) error {
 	partition := 0
 	forwarder, err := K8SServicePortForward(ctx, "my-cluster-kafka-external-bootstrap", "kafka", "9094")
 	if err != nil {
-		log.Print("error getting forwarder %s", err)
+		return err
 	}
 
 	defer forwarder.Close()
 	ports, err := forwarder.GetPorts()
 	if err != nil {
-		log.Print("error getting ports %s", err)
+		log.Print("failed to get port:", err)
+		return err
 	}
-	fmt.Print(ports[0])
 	uri := "localhost:" + fmt.Sprint(ports[0].Local)
-	log.Print(uri)
 
 	conn, err := kafka.DialLeader(ctx, "tcp", uri, topic, partition)
 	if err != nil {
-		log.Fatal("failed to dial leader:", err)
+		return err
 	}
 	conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	_, err = conn.WriteMessages(
 		kafka.Message{Value: []byte("{'title':'The Matrix','year':1999,'cast':['Keanu Reeves','Laurence Fishburne','Carrie-Anne Moss','Hugo Weaving','Joe Pantoliano'],'genres':['Science Fiction']}")},
 	)
 	if err != nil {
-		log.Fatal("failed to write messages:", err)
+		return err
 	}
 
 	if err := conn.Close(); err != nil {
-		log.Fatal("failed to close writer:", err)
+		log.Print("failed to close connection:", err)
+		return err
 	}
-
+	return nil
 }
 
-func getconfig() string {
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+// LoadConfig returns a kubernetes client config based on global settings.
+func LoadConfig() (*rest.Config, error) {
+	//	log.Print("Attempting to use InCluster config")
+	config, err := rest.InClusterConfig()
+	if err == nil {
+		return config, nil
 	}
-	flag.Parse()
+	//	log.Print("Attempt to use InCluster config failed")
 
-	return *kubeconfig
+	homeConfig := filepath.Join(os.Getenv("HOME"), ".kube/config")
+	config, err = clientcmd.BuildConfigFromFlags("", homeConfig)
+	if err == nil {
+		return config, nil
+	}
+	return nil, errors.Wrapf(err, "Failed to load default k8s config")
 }
 
+// K8SServicePortForward creates a service port forwarding and returns the forwarder and the error if any
 func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort string) (*portforward.PortForwarder, error) {
 	var selector string
 	errCh := make(chan error)
 	readyChan := make(chan struct{}, 1)
 
-	cfg, err := clientcmd.BuildConfigFromFlags("", "/home/infracloud/.kube/config")
+	cfg, err := LoadConfig()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -241,26 +239,25 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 	return f, nil
 }
 
-func consume(ctx context.Context) int {
-	topic := "blogs"
+func consume(ctx context.Context, topic string) (int, error) {
 	partition := 0
 	forwarder, err := K8SServicePortForward(ctx, "my-cluster-kafka-external-bootstrap", "kafka", "9094")
 	if err != nil {
-		log.Print("error getting forwarder %s", err)
+		log.Print("error getting forwarder")
+		return 0, err
 	}
 
 	defer forwarder.Close()
 	ports, err := forwarder.GetPorts()
 	if err != nil {
-		log.Print("error getting ports %s", err)
+		return 0, err
 	}
-	fmt.Print(ports[0])
 	uri := "localhost:" + fmt.Sprint(ports[0].Local)
-	log.Print(uri)
 
 	conn, err := kafka.DialLeader(ctx, "tcp", uri, topic, partition)
 	if err != nil {
-		log.Fatal("failed to dial leader:", err)
+		log.Print("failed to get connection:", err)
+		return 0, err
 	}
 
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
@@ -279,11 +276,13 @@ func consume(ctx context.Context) int {
 	}
 	if messageEnd == false {
 		if err := batch.Close(); err != nil {
-			log.Fatal("failed to close batch:", err)
+			log.Print("failed to close batch:", err)
+			return 0, err
 		}
 	}
 	if err := conn.Close(); err != nil {
-		log.Fatal("failed to close connection:", err)
+		log.Print("failed to close connection:", err)
+		return 0, err
 	}
-	return count
+	return count, nil
 }

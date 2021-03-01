@@ -11,24 +11,31 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package kubernetes
 
 import (
 	"context"
 )
 
-// TODO make a generic function
+// KubeClient is similar to oc app
 type KubeClient interface {
-	// similar to oc new-app ...
+	// Install the strimzi operator
 	InstallOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error)
+	// Install kafka
 	InstallKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error)
-	// DeleteApp delete an app from the kubernetes cluster
-	// similar to oc delete all -n <ns> -l <label>
+	// Create configMap
 	CreateConfigMap(ctx context.Context, configMapName, namespace, yamlFileRepo, sinkConfigPath, sourceConfigPath, kafkaConfigPath string) (string, error)
+	// Delete configMap
 	DeleteConfigMap(ctx context.Context, namespace, configMapName string) (string, error)
+	// Delete Kafka
 	DeleteKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error)
+	// Delete strimzi operator
 	DeleteOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error)
+	// Ping operation to Kafka
 	Ping(ctx context.Context, namespace string) (string, error)
-	Insert(ctx context.Context, namespace string) (string, error)
-	Count(ctx context.Context, namespace string) (int, error)
+	// Insert operation to Kafka topic
+	Insert(ctx context.Context, topic, namespace string) error
+	// count of kafka topic
+	Count(ctx context.Context, topic, namespace string) (int, error)
 }

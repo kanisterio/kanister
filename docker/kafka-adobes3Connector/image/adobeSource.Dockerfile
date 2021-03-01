@@ -16,6 +16,6 @@ RUN cd kafka-connect-s3 && ./gradlew shadowJar
 RUN cp ./kafka-connect-s3/build/libs/kafka-connect-s3-chart/kafka-connect/0.0.4-2a8a4aa-all.jar /opt/
 
 # adding script to monitor source connector
-COPY /docker/kafka-adobes3Connector/image/adobe-monitorsource.sh monitorconnect.sh
-# script to clean s3
-COPY /docker/kafka-adobes3Connector/image/cleans3.py cleanup.py
+COPY adobe-monitorsource.sh monitorconnect.sh
+
+COPY cleans3.py cleanup.py
