@@ -179,7 +179,7 @@ var _ = Suite(&RDSAuroraMySQL{
 	IntegrationSuite{
 		name:      "rds-aurora-mysql",
 		namespace: "rds-aurora-mysql-test",
-		app:       app.NewRDSAuroraMySQLDB("rds-aurora-dump", "ap-south-1"),
+		app:       app.NewRDSAuroraMySQLDB("rds-aurora-dump", ""),
 		bp:        app.NewBlueprint("rds-aurora-snap", ""),
 		profile:   newSecretProfile(),
 	},
