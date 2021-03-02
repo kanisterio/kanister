@@ -211,7 +211,6 @@ func (a *RDSAuroraMySQLDB) Ping(context.Context) error {
 		if err = a.closeDBConnection(db); err != nil {
 			log.Print("Error clsoing DB connection", field.M{"app": a.name})
 		}
-
 	}()
 
 	pingQuery := "select 1"
@@ -228,7 +227,6 @@ func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
 		if err = a.closeDBConnection(db); err != nil {
 			log.Print("Error clsoing DB connection", field.M{"app": a.name})
 		}
-
 	}()
 
 	query, err := db.Prepare("INSERT INTO pets VALUES (?,?,?,?,?,?);")
@@ -263,7 +261,6 @@ func (a *RDSAuroraMySQLDB) Count(context.Context) (int, error) {
 		if err = a.closeDBConnection(db); err != nil {
 			log.Print("Error clsoing DB connection", field.M{"app": a.name})
 		}
-
 	}()
 
 	rows, err := db.Query("select * from pets;")
@@ -300,7 +297,6 @@ func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
 		if err = a.closeDBConnection(db); err != nil {
 			log.Print("Error clsoing DB connection", field.M{"app": a.name})
 		}
-
 	}()
 
 	query, err := db.Prepare(fmt.Sprintf("DROP DATABASE IF EXISTS %s;", a.dbName))
@@ -336,7 +332,6 @@ func (a *RDSAuroraMySQLDB) Initialize(context.Context) error {
 		if err = a.closeDBConnection(db); err != nil {
 			log.Print("Error clsoing DB connection", field.M{"app": a.name})
 		}
-
 	}()
 
 	query, err := db.Prepare("CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);")
