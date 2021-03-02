@@ -1093,7 +1093,25 @@ func (s *SnapshotTestSuite) TestGetSnapshotClassbyAnnotation(c *C) {
 	}
 }
 
-func (s *SnapshotTestSuite) TestLabels(c *C) {
+type SnapshotLocalTestSuite struct {
+	sourceNamespace       string
+	targetNamespace       string
+	snapshotterAlpha      snapshot.Snapshotter
+	snapshotterBeta       snapshot.Snapshotter
+	snapshotterStable     snapshot.Snapshotter
+	cli                   kubernetes.Interface
+	dynCli                dynamic.Interface
+	snapshotClassAlpha    *string
+	snapshotClassBeta     *string
+	snapshotClassStable   *string
+	storageClassCSIAlpha  string
+	storageClassCSIBeta   string
+	storageClassCSIStable string
+}
+
+var _ = Suite(&SnapshotLocalTestSuite{})
+
+func (s *SnapshotLocalTestSuite) TestLabels(c *C) {
 	ctx := context.Background()
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotList"}, &unstructured.UnstructuredList{})
@@ -1114,10 +1132,10 @@ func (s *SnapshotTestSuite) TestLabels(c *C) {
 		{
 			dynCli: dynfake.NewSimpleDynamicClient(scheme),
 			createLabels: map[string]string{
-				"label": "1",
+				"label": "1/2/3",
 			},
 			listLabel: map[string]string{
-				"label": "1",
+				"label": "1/2/3",
 			},
 			errChecker: IsNil,
 			numResults: 1,
