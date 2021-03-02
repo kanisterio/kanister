@@ -1093,21 +1093,7 @@ func (s *SnapshotTestSuite) TestGetSnapshotClassbyAnnotation(c *C) {
 	}
 }
 
-type SnapshotLocalTestSuite struct {
-	sourceNamespace       string
-	targetNamespace       string
-	snapshotterAlpha      snapshot.Snapshotter
-	snapshotterBeta       snapshot.Snapshotter
-	snapshotterStable     snapshot.Snapshotter
-	cli                   kubernetes.Interface
-	dynCli                dynamic.Interface
-	snapshotClassAlpha    *string
-	snapshotClassBeta     *string
-	snapshotClassStable   *string
-	storageClassCSIAlpha  string
-	storageClassCSIBeta   string
-	storageClassCSIStable string
-}
+type SnapshotLocalTestSuite struct{}
 
 var _ = Suite(&SnapshotLocalTestSuite{})
 
