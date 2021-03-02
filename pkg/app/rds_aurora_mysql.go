@@ -207,7 +207,12 @@ func (a *RDSAuroraMySQLDB) Ping(context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "Error opening database connectio")
 	}
-	defer a.closeDBConnection(db)
+	defer func() {
+		if err = a.closeDBConnection(db); err != nil {
+			log.Print("Error clsoing DB connection", field.M{"app": a.name})
+		}
+
+	}()
 
 	pingQuery := "select 1"
 	_, err = db.Query(pingQuery)
@@ -219,7 +224,12 @@ func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer a.closeDBConnection(db)
+	defer func() {
+		if err = a.closeDBConnection(db); err != nil {
+			log.Print("Error clsoing DB connection", field.M{"app": a.name})
+		}
+
+	}()
 
 	query, err := db.Prepare("INSERT INTO pets VALUES (?,?,?,?,?,?);")
 	if err != nil {
@@ -249,7 +259,12 @@ func (a *RDSAuroraMySQLDB) Count(context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer a.closeDBConnection(db)
+	defer func() {
+		if err = a.closeDBConnection(db); err != nil {
+			log.Print("Error clsoing DB connection", field.M{"app": a.name})
+		}
+
+	}()
 
 	rows, err := db.Query("select * from pets;")
 	if err != nil {
@@ -281,7 +296,12 @@ func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer a.closeDBConnection(db)
+	defer func() {
+		if err = a.closeDBConnection(db); err != nil {
+			log.Print("Error clsoing DB connection", field.M{"app": a.name})
+		}
+
+	}()
 
 	query, err := db.Prepare(fmt.Sprintf("DROP DATABASE IF EXISTS %s;", a.dbName))
 	if err != nil {
@@ -311,8 +331,13 @@ func (a *RDSAuroraMySQLDB) Initialize(context.Context) error {
 	if err != nil {
 		return err
 	}
-	// TODO @viveksinghggits handle this error
-	defer a.closeDBConnection(db)
+
+	defer func() {
+		if err = a.closeDBConnection(db); err != nil {
+			log.Print("Error clsoing DB connection", field.M{"app": a.name})
+		}
+
+	}()
 
 	query, err := db.Prepare("CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);")
 	if err != nil {
@@ -405,7 +430,6 @@ func (a *RDSAuroraMySQLDB) getAWSConfig(ctx context.Context) (*awssdk.Config, st
 
 func (a *RDSAuroraMySQLDB) openDBConnection() (*sql.DB, error) {
 	return sql.Open("mysql", fmt.Sprintf("%s:%s@(%s)/%s", a.username, a.password, a.host, a.dbName))
-
 }
 
 func (a RDSAuroraMySQLDB) closeDBConnection(db *sql.DB) error {
