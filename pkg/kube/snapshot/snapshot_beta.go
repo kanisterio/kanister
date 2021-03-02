@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1beta1"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -89,7 +90,7 @@ func createSnapshot(ctx context.Context, dynCli dynamic.Interface, kubeCli kuber
 		}
 		return errors.Wrapf(err, "Failed to query PVC %s, Namespace %s", volumeName, namespace)
 	}
-
+	labels = blockstorage.SanitizeTags(labels)
 	snap := UnstructuredVolumeSnapshot(snapGVR, name, namespace, volumeName, "", *snapshotClass, labels)
 	if _, err := dynCli.Resource(snapGVR).Namespace(namespace).Create(ctx, snap, metav1.CreateOptions{}); err != nil {
 		return errors.Wrapf(err, "Failed to create snapshot resource %s, Namespace %s", name, namespace)
@@ -132,7 +133,7 @@ func (sna *SnapshotBeta) List(ctx context.Context, namespace string, labels map[
 func listSnapshots(ctx context.Context, dynCli dynamic.Interface, snapGVR schema.GroupVersionResource, namespace string, labels map[string]string) (*v1.VolumeSnapshotList, error) {
 	listOptions := metav1.ListOptions{}
 	if labels != nil {
-		labelSelector := metav1.LabelSelector{MatchLabels: labels}
+		labelSelector := metav1.LabelSelector{MatchLabels: blockstorage.SanitizeTags(labels)}
 		listOptions.LabelSelector = pkglabels.Set(labelSelector.MatchLabels).String()
 	}
 	usList, err := dynCli.Resource(snapGVR).Namespace(namespace).List(ctx, listOptions)

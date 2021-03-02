@@ -2,6 +2,7 @@ package vmware
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -182,9 +183,13 @@ func (p *FcdProvider) SnapshotCopyWithArgs(ctx context.Context, from blockstorag
 // SnapshotCreate is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	var res types.AnyType
-	err := wait.PollImmediate(time.Second, defaultRetryLimit, func() (bool, error) {
+	encodedTags, err := json.Marshal(tags)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to JSON encode tags")
+	}
+	err = wait.PollImmediate(time.Second, defaultRetryLimit, func() (bool, error) {
 		log.Debug().Print("CreateSnapshot", field.M{"VolumeID": volume.ID})
-		task, lerr := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), noDescription)
+		task, lerr := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), string(encodedTags))
 		if lerr != nil {
 			return false, errors.Wrap(lerr, "Failed to create snapshot")
 		}
@@ -275,6 +280,7 @@ func (p *FcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage
 			}
 			snapID := vimID(snapshotID)
 			log.Debug().Print("RetrieveMetadata: " + volID + "," + snapshotID)
+			// TBD retrieve labels from tags
 			kvs, err := p.Gom.RetrieveMetadata(ctx, vimID(volID), &snapID, "")
 			if err != nil {
 				return nil, errors.Wrap(err, "Failed to get snapshot metadata")
