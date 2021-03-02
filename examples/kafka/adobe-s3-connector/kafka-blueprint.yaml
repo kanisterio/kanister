@@ -2,7 +2,6 @@ apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
   name: kafka-blueprint
-  namespace: kasten-io
 actions:
   backup:
     type: Deployment
