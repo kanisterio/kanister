@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +28,7 @@ import (
 const (
 	// FunctionOutputVersion returns version
 	FunctionOutputVersion     = "version"
-	kanisterToolsImage        = "ghcr.io/kanisterio/kanister-tools:0.49.0"
+	kanisterToolsImage        = "ghcr.io/kanisterio/kanister-tools:0.50.0"
 	kanisterToolsImageEnvName = "KANISTER_TOOLS"
 )
 
@@ -156,6 +158,24 @@ func findSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string)
 	return sgIDs, err
 }
 
+func findAuroraSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID string) ([]string, error) {
+	desc, err := rdsCli.DescribeDBClusters(ctx, instanceID)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
+				return nil, err
+			}
+			return nil, nil
+		}
+	}
+
+	var sgIDs []string
+	for _, vpc := range desc.DBClusters[0].VpcSecurityGroups {
+		sgIDs = append(sgIDs, *vpc.VpcSecurityGroupId)
+	}
+	return sgIDs, nil
+}
+
 // findRDSEndpoint returns endpoint to access RDS instance
 func findRDSEndpoint(ctx context.Context, rdsCli *rds.RDS, instanceID string) (string, error) {
 	// Find host of the instance
@@ -186,4 +206,13 @@ func createPostgresSecret(cli kubernetes.Interface, name, namespace, username, p
 
 func deletePostgresSecret(cli kubernetes.Interface, name, namespace string) error {
 	return cli.CoreV1().Secrets(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
+}
+
+func isAuroraCluster(engine string) bool {
+	for _, v := range []string{string(DBEngineAurora), string(DBEngineAuroraMySQL), string(DBEngineAuroraPostgreSQL)} {
+		if engine == v {
+			return true
+		}
+	}
+	return false
 }

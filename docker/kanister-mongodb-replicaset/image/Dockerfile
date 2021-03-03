@@ -1,5 +1,5 @@
 FROM mongo:3.6
-MAINTAINER "Tom Manville <tom@kasten.io>"
+LABEL maintainer="Tom Manville <tom@kasten.io>"
 
 USER root
 
