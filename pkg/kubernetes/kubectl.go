@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package kubernetes
 
 import (
@@ -59,7 +58,7 @@ func (kubectl kubernetesClient) CreateNamespace(ctx context.Context, namespace s
 // InstallOPerator installs strimzi operator
 func (kubectl kubernetesClient) InstallOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error) {
 	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	createOperator := []string{"create", "-n", namespace, "-f", fmt.Sprintf("%s", strimziYaml)}
+	createOperator := []string{"create", "-n", namespace, "-f", strimziYaml}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", createOperator)
 }
 func (kubectl kubernetesClient) InstallKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error) {
@@ -82,7 +81,7 @@ func (kubectl kubernetesClient) DeleteConfigMap(ctx context.Context, namespace, 
 }
 func (kubectl kubernetesClient) DeleteOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error) {
 	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	deleteOperator := []string{"delete", "-n", namespace, "-f", fmt.Sprintf("%s", strimziYaml)}
+	deleteOperator := []string{"delete", "-n", namespace, "-f", strimziYaml}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", deleteOperator)
 }
 func (kubectl kubernetesClient) DeleteKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error) {
@@ -126,7 +125,10 @@ func produce(ctx context.Context, topic string) error {
 	if err != nil {
 		return err
 	}
-	conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+	err = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+	if err != nil {
+		return err
+	}
 	_, err = conn.WriteMessages(
 		kafka.Message{Value: []byte("{'title':'The Matrix','year':1999,'cast':['Keanu Reeves','Laurence Fishburne','Carrie-Anne Moss','Hugo Weaving','Joe Pantoliano'],'genres':['Science Fiction']}")},
 	)
@@ -260,7 +262,11 @@ func consume(ctx context.Context, topic string) (int, error) {
 		return 0, err
 	}
 
-	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	err = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	if err != nil {
+		log.Print("failed to set ReadDeadline:", err)
+		return 0, err
+	}
 	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
 	count := 0
 	b := make([]byte, 10e3) // 10KB max per message
