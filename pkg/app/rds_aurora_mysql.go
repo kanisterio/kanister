@@ -173,6 +173,9 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	if err != nil {
 		return err
 	}
+	if len(*dbCluster.DBCluster) == 0 {
+		return errors.Wrapf("Error install application %s, DBCluster not available", a.name)
+	}
 	a.host = *dbCluster.DBClusters[0].Endpoint
 
 	// Configmap that is going to store the details for blueprint
@@ -190,11 +193,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	}
 
 	_, err = a.cli.CoreV1().ConfigMaps(namespace).Create(ctx, cm, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (a *RDSAuroraMySQLDB) IsReady(context.Context) (bool, error) {
