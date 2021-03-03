@@ -74,7 +74,7 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 		// Wait until snapshot is deleted
 		log.Print("Waiting for RDS snapshot to be deleted", field.M{"SnapshotID": snapshotID})
 		err = rdsCli.WaitUntilDBSnapshotDeleted(ctx, snapshotID)
-		return nil, errors.Wrap(err, "Error while waiting snapshot to be deleted")
+		return nil, errors.Wrap(err, "Error while waiting for snapshot to be deleted")
 	}
 
 	// delete aurora cluster snapshot

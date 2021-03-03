@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2021 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ func (a *RDSAuroraMySQLDB) Init(context.Context) error {
 	if a.region == "" {
 		a.region, ok = os.LookupEnv(aws.Region)
 		if !ok {
-			return fmt.Errorf("Env var %s is not set", aws.Region)
+			return errors.New(fmt.Sprintf("Env var %s is not set", aws.Region))
 		}
 	}
 
@@ -102,11 +102,11 @@ func (a *RDSAuroraMySQLDB) Init(context.Context) error {
 
 	a.accessID, ok = os.LookupEnv(aws.AccessKeyID)
 	if !ok {
-		return fmt.Errorf("Env var %s is not set", aws.AccessKeyID)
+		return errors.New(fmt.Sprintf("Env var %s is not set", aws.AccessKeyID))
 	}
 	a.secretKey, ok = os.LookupEnv(aws.SecretAccessKey)
 	if !ok {
-		return fmt.Errorf("Env var %s is not set", aws.SecretAccessKey)
+		return errors.New(fmt.Sprintf("Env var %s is not set", aws.SecretAccessKey))
 	}
 
 	return nil
@@ -198,18 +198,18 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 }
 
 func (a *RDSAuroraMySQLDB) IsReady(context.Context) (bool, error) {
-	// we are alrady waiting for dbcluster using WaitUntilDBClusterAvailable while installing it
+	// we are already waiting for dbcluster using WaitUntilDBClusterAvailable while installing it
 	return true, nil
 }
 
 func (a *RDSAuroraMySQLDB) Ping(context.Context) error {
 	db, err := a.openDBConnection()
 	if err != nil {
-		return errors.Wrap(err, "Error opening database connectio")
+		return errors.Wrap(err, "Error opening database connection")
 	}
 	defer func() {
 		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error clsoing DB connection", field.M{"app": a.name})
+			log.Print("Error closing DB connection", field.M{"app": a.name})
 		}
 	}()
 
@@ -225,7 +225,7 @@ func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
 	}
 	defer func() {
 		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error clsoing DB connection", field.M{"app": a.name})
+			log.Print("Error closing DB connection", field.M{"app": a.name})
 		}
 	}()
 
@@ -237,7 +237,7 @@ func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
 	// start a transaction
 	tx, err := db.Begin()
 	if err != nil {
-		return errors.Wrap(err, "Error begining transaction")
+		return errors.Wrap(err, "Error beginning transaction")
 	}
 
 	_, err = tx.Stmt(query).Exec("Puffball", "Diane", "hamster", "f", "1999-03-30", "NULL")
@@ -246,7 +246,7 @@ func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "Error commiting data into Aurora DB database")
+		return errors.Wrap(err, "Error committing data into Aurora DB database")
 	}
 
 	return nil
@@ -259,7 +259,7 @@ func (a *RDSAuroraMySQLDB) Count(context.Context) (int, error) {
 	}
 	defer func() {
 		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error clsoing DB connection", field.M{"app": a.name})
+			log.Print("Error closing DB connection", field.M{"app": a.name})
 		}
 	}()
 
@@ -295,7 +295,7 @@ func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
 	}
 	defer func() {
 		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error clsoing DB connection", field.M{"app": a.name})
+			log.Print("Error closing DB connection", field.M{"app": a.name})
 		}
 	}()
 
@@ -307,7 +307,7 @@ func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
 	// start a transaction
 	tx, err := db.Begin()
 	if err != nil {
-		return errors.Wrap(err, "Error begining transaction")
+		return errors.Wrap(err, "Error beginning transaction")
 	}
 
 	_, err = tx.Stmt(query).Exec()
@@ -316,7 +316,7 @@ func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "Error commiting DB reset transaction")
+		return errors.Wrap(err, "Error committing DB reset transaction")
 	}
 
 	return nil
@@ -330,7 +330,7 @@ func (a *RDSAuroraMySQLDB) Initialize(context.Context) error {
 
 	defer func() {
 		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error clsoing DB connection", field.M{"app": a.name})
+			log.Print("Error closing DB connection", field.M{"app": a.name})
 		}
 	}()
 
@@ -351,7 +351,7 @@ func (a *RDSAuroraMySQLDB) Initialize(context.Context) error {
 	}
 
 	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "Error commiting table creation")
+		return errors.Wrap(err, "Error committing table creation")
 	}
 	return nil
 }
@@ -394,7 +394,7 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	// Create ec2 client
 	ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
 	if err != nil {
-		return errors.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
+		return errors.Wrap(err, "Failed to create ec2 client.")
 	}
 
 	// delete security group
