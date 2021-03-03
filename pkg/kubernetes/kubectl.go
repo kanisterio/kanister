@@ -37,10 +37,6 @@ import (
 	"k8s.io/client-go/transport/spdy"
 )
 
-const (
-	kafkaClusterWaitTimeout = 5 * time.Minute
-)
-
 type kubernetesClient struct {
 }
 
@@ -280,7 +276,7 @@ func consume(ctx context.Context, topic string) (int, error) {
 		count = count + 1
 		fmt.Println(string(b))
 	}
-	if messageEnd == false {
+	if !messageEnd {
 		if err := batch.Close(); err != nil {
 			log.Print("failed to close batch:", err)
 			return 0, err
