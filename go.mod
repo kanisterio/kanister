@@ -31,6 +31,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v0.3.0 // indirect
 	github.com/go-openapi/strfmt v0.19.3
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.2
