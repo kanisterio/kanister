@@ -173,7 +173,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	if err != nil {
 		return err
 	}
-	if len(*dbCluster.DBCluster) == 0 {
+	if len(dbCluster.DBClusters) == 0 {
 		return errors.New(fmt.Sprintf("Error installing application %s, DBCluster not available", a.name))
 	}
 	a.host = *dbCluster.DBClusters[0].Endpoint
