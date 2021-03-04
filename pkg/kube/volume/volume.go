@@ -48,19 +48,22 @@ const (
 // An empty 'targetVolID' indicates the caller would like the PV to be dynamically provisioned
 // An empty 'name' indicates the caller would like the name to be auto-generated
 // An error indicating that the PVC already exists is ignored (for idempotency)
-func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, name string, sizeInBytes int64, targetVolID string, annotations map[string]string) (string, error) {
+func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, name string, sizeInBytes int64, targetVolID string, annotations map[string]string, accessmodes []v1.PersistentVolumeAccessMode) (string, error) {
 	sizeFmt := fmt.Sprintf("%d", sizeInBytes)
 	size, err := resource.ParseQuantity(sizeFmt)
 	emptyStorageClass := ""
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to parse sizeFmt %s", sizeFmt)
 	}
+	if accessmodes == nil {
+		accessmodes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
+	}
 	pvc := v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: annotations,
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			AccessModes: accessmodes,
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
 					v1.ResourceName(v1.ResourceStorage): size,
@@ -108,6 +111,7 @@ type CreatePVCFromSnapshotArgs struct {
 	SnapshotName     string
 	RestoreSize      string
 	Labels           map[string]string
+	AccessModes      []v1.PersistentVolumeAccessMode
 }
 
 // CreatePVCFromSnapshot will restore a volume and returns the resulting
@@ -134,6 +138,9 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 		return "", fmt.Errorf("Restore size is empty and no restore size argument given, Volumesnapshot: %s", args.SnapshotName)
 	}
 
+	if args.AccessModes == nil {
+		args.AccessModes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
+	}
 	snapshotKind := "VolumeSnapshot"
 	snapshotAPIGroup := "snapshot.storage.k8s.io"
 	pvc := &v1.PersistentVolumeClaim{
@@ -141,7 +148,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 			Labels: args.Labels,
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			AccessModes: args.AccessModes,
 			DataSource: &v1.TypedLocalObjectReference{
 				APIGroup: &snapshotAPIGroup,
 				Kind:     snapshotKind,
@@ -175,7 +182,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 
 // CreatePV creates a PersistentVolume and returns its name
 // For retry idempotency, checks whether PV associated with volume already exists
-func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstorage.Volume, volType blockstorage.Type, annotations map[string]string) (string, error) {
+func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstorage.Volume, volType blockstorage.Type, annotations map[string]string, accessmodes []v1.PersistentVolumeAccessMode) (string, error) {
 	sizeFmt := fmt.Sprintf("%d", vol.SizeInBytes)
 	size, err := resource.ParseQuantity(sizeFmt)
 	if err != nil {
@@ -191,6 +198,10 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 		return pvl.Items[0].Name, nil
 	}
 
+	if accessmodes == nil {
+		accessmodes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
+	}
+
 	pv := v1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kanister-pv-",
@@ -201,7 +212,7 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 			Capacity: v1.ResourceList{
 				v1.ResourceName(v1.ResourceStorage): size,
 			},
-			AccessModes:                   []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			AccessModes:                   accessmodes,
 			PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
 		},
 	}
