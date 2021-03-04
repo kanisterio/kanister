@@ -55,7 +55,7 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to parse sizeFmt %s", sizeFmt)
 	}
-	if accessmodes == nil {
+	if len(accessmodes) == 0 {
 		accessmodes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
 	}
 	pvc := v1.PersistentVolumeClaim{
@@ -138,7 +138,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 		return "", fmt.Errorf("Restore size is empty and no restore size argument given, Volumesnapshot: %s", args.SnapshotName)
 	}
 
-	if args.AccessModes == nil {
+	if len(args.AccessModes) == 0 {
 		args.AccessModes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
 	}
 	snapshotKind := "VolumeSnapshot"
@@ -198,7 +198,7 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 		return pvl.Items[0].Name, nil
 	}
 
-	if accessmodes == nil {
+	if len(accessmodes) == 0 {
 		accessmodes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
 	}
 
