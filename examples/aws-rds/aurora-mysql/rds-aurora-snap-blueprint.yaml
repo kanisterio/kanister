@@ -34,4 +34,5 @@ actions:
     - func: DeleteRDSSnapshot
       name: deleteSnapshot
       args:
+        dbEngine: "aurora-mysql"
         snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"

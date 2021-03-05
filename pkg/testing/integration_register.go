@@ -171,6 +171,20 @@ var _ = Suite(&FoundationDB{
 	},
 })
 
+type RDSAuroraMySQL struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&RDSAuroraMySQL{
+	IntegrationSuite{
+		name:      "rds-aurora-mysql",
+		namespace: "rds-aurora-mysql-test",
+		app:       app.NewRDSAuroraMySQLDB("rds-aurora-dump", ""),
+		bp:        app.NewBlueprint("rds-aurora-snap", ""),
+		profile:   newSecretProfile(),
+	},
+})
+
 // rds-postgres-dump app
 // Create snapshot, export data and restore from dump
 type RDSPostgreSQLDump struct {

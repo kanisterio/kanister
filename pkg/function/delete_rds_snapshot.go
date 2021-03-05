@@ -46,7 +46,7 @@ func (*deleteRDSSnapshotFunc) Name() string {
 	return DeleteRDSSnapshotFuncName
 }
 
-func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Profile) (map[string]interface{}, error) {
+func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Profile, dbEngine RDSDBEngine) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Profile Validation failed")
@@ -64,24 +64,43 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 		return nil, errors.Wrap(err, "Failed to create RDS client")
 	}
 
-	// Delete Snapshot
-	log.Print("Deleting RDS snapshot", field.M{"SnapshotID": snapshotID})
-	if _, err := rdsCli.DeleteDBSnapshot(ctx, snapshotID); err != nil {
-		return nil, errors.Wrap(err, "Failed to delete snapshot")
+	if !isAuroraCluster(string(dbEngine)) {
+		// Delete Snapshot
+		log.Print("Deleting RDS snapshot", field.M{"SnapshotID": snapshotID})
+		if _, err := rdsCli.DeleteDBSnapshot(ctx, snapshotID); err != nil {
+			return nil, errors.Wrap(err, "Failed to delete snapshot")
+		}
+
+		// Wait until snapshot is deleted
+		log.Print("Waiting for RDS snapshot to be deleted", field.M{"SnapshotID": snapshotID})
+		err = rdsCli.WaitUntilDBSnapshotDeleted(ctx, snapshotID)
+		return nil, errors.Wrap(err, "Error while waiting for snapshot to be deleted")
 	}
 
-	// Wait until snapshot is deleted
-	log.Print("Waiting for RDS snapshot to be deleted", field.M{"SnapshotID": snapshotID})
-	err = rdsCli.WaitUntilDBSnapshotDeleted(ctx, snapshotID)
-	return nil, errors.Wrap(err, "Error while waiting snapshot to be deleted")
+	// delete Aurora DB cluster snapshot
+	log.Print("Deleting Aurora DB cluster snapshot")
+	if _, err := rdsCli.DeleteDBClusterSnapshot(ctx, snapshotID); err != nil {
+		return nil, errors.Wrap(err, "Error deleting Aurora DB cluster snapshot")
+	}
+
+	log.Print("Waiting for Aurora DB cluster snapshot to be deleted")
+	err = rdsCli.WaitUntilDBClusterDeleted(ctx, snapshotID)
+
+	return nil, errors.Wrap(err, "Error waiting for Aurora DB cluster snapshot to be deleted")
 }
 
 func (crs *deleteRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var snapshotID string
+	var dbEngine RDSDBEngine
 	if err := Arg(args, DeleteRDSSnapshotSnapshotIDArg, &snapshotID); err != nil {
 		return nil, err
 	}
-	return deleteRDSSnapshot(ctx, snapshotID, tp.Profile)
+
+	if err := OptArg(args, CreateRDSSnapshotDBEngine, &dbEngine, ""); err != nil {
+		return nil, err
+	}
+
+	return deleteRDSSnapshot(ctx, snapshotID, tp.Profile, dbEngine)
 }
 
 func (*deleteRDSSnapshotFunc) RequiredArgs() []string {

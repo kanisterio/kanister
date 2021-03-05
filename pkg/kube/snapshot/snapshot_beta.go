@@ -90,8 +90,8 @@ func createSnapshot(ctx context.Context, dynCli dynamic.Interface, kubeCli kuber
 		}
 		return errors.Wrapf(err, "Failed to query PVC %s, Namespace %s", volumeName, namespace)
 	}
-	labels = blockstorage.SanitizeTags(labels)
-	snap := UnstructuredVolumeSnapshot(snapGVR, name, namespace, volumeName, "", *snapshotClass, labels)
+
+	snap := UnstructuredVolumeSnapshot(snapGVR, name, namespace, volumeName, "", *snapshotClass, blockstorage.SanitizeTags(labels))
 	if _, err := dynCli.Resource(snapGVR).Namespace(namespace).Create(ctx, snap, metav1.CreateOptions{}); err != nil {
 		return errors.Wrapf(err, "Failed to create snapshot resource %s, Namespace %s", name, namespace)
 	}

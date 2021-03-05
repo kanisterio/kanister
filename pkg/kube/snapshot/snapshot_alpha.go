@@ -97,8 +97,7 @@ func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName s
 		}
 		return errors.Errorf("Failed to query PVC %s, Namespace %s: %v", pvcName, namespace, err)
 	}
-	labels = blockstorage.SanitizeTags(labels)
-	snap := UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, "", *snapshotClass, labels)
+	snap := UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, "", *snapshotClass, blockstorage.SanitizeTags(labels))
 	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Create(ctx, snap, metav1.CreateOptions{}); err != nil {
 		return err
 	}

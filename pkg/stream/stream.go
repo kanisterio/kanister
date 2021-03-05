@@ -86,7 +86,9 @@ func OpenKopiaRepository(ctx context.Context, configFile, password string) (repo
 		return nil, errors.Wrap(err, "Failed to open kopia repository")
 	}
 
-	rw, err := r.NewWriter(ctx, "kanister stream")
+	rw, err := r.NewWriter(ctx, repo.WriteSessionOptions{
+		Purpose: "kanister stream",
+	})
 
 	return rw, errors.Wrap(err, "Failed to open kopia repository writer")
 }
