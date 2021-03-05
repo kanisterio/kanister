@@ -40,7 +40,7 @@ func (s *TestVolSuite) TestCreatePVC(c *C) {
 	targetVolID := "testVolID"
 	annotations := map[string]string{"a1": "foo"}
 	cli := fake.NewSimpleClientset()
-	pvcName, err := CreatePVC(ctx, cli, ns, NoPVCNameSpecified, pvcSize, targetVolID, annotations)
+	pvcName, err := CreatePVC(ctx, cli, ns, NoPVCNameSpecified, pvcSize, targetVolID, annotations, []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce})
 	c.Assert(err, IsNil)
 	pvc, err := cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, pvcName, metav1.GetOptions{})
 	c.Assert(err, IsNil)
@@ -56,4 +56,10 @@ func (s *TestVolSuite) TestCreatePVC(c *C) {
 	c.Assert(len(pvc.Spec.Selector.MatchLabels) >= 1, Equals, true)
 	label := pvc.Spec.Selector.MatchLabels[pvMatchLabelName]
 	c.Assert(label, Equals, filepath.Base(targetVolID))
+
+	_, err = CreatePVC(ctx, cli, ns, "pvc2", pvcSize, targetVolID, annotations, nil)
+	c.Assert(err, IsNil)
+	pvc2, err := cli.CoreV1().PersistentVolumeClaims(ns).Get(ctx, "pvc2", metav1.GetOptions{})
+	c.Assert(err, IsNil)
+	c.Assert(len(pvc2.Spec.AccessModes) >= 1, Equals, true)
 }
