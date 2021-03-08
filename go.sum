@@ -544,6 +544,8 @@ github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
 github.com/kastenhq/stow v0.2.6-kasten.1 h1:QPJmo4T/cROplSfs4LDbpgPmPvR5S4aRCECATdl4pXU=
 github.com/kastenhq/stow v0.2.6-kasten.1/go.mod h1:+0vRL9oMECKjPMP7OeVWl8EIqRCpFwDlth3mrAeV2Kw=
+github.com/kastenhq/stow v0.2.6-kasten.2 h1:BHEjweJxf9gk8mW8MDQAwlRwX/0dv+UxwxVRaYMZo4s=
+github.com/kastenhq/stow v0.2.6-kasten.2/go.mod h1:+0vRL9oMECKjPMP7OeVWl8EIqRCpFwDlth3mrAeV2Kw=
 github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
 github.com/kelseyhightower/envconfig v1.4.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=

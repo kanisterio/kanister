@@ -55,6 +55,14 @@ func runLocationPush(cmd *cobra.Command, args []string) error {
 
 const usePipeParam = `-`
 
+type reader struct {
+	r io.Reader
+}
+
+func (r reader) Read(p []byte) (n int, err error) {
+	return r.r.Read(p)
+}
+
 func sourceReader(source string) (io.Reader, error) {
 	if source != usePipeParam {
 		return os.Open(source)
@@ -66,7 +74,7 @@ func sourceReader(source string) (io.Reader, error) {
 	if fi.Mode()&os.ModeNamedPipe == 0 {
 		return nil, errors.New("Stdin must be piped when the source parameter is \"-\"")
 	}
-	return os.Stdin, nil
+	return reader{r: os.Stdin}, nil
 }
 
 func locationPush(ctx context.Context, p *param.Profile, path string, source io.Reader) error {
