@@ -76,13 +76,13 @@ func MapToKeyValue(stringMap map[string]string) []*KeyValue {
 
 // MapToString creates a string representation of a map with the entries
 // separated by entrySep, and the key separated from the value using kvSep
-func MapToString(m map[string]string, entrySep string, kvSep string) string {
+func MapToString(m map[string]string, entrySep string, kvSep string, keyPrefix string) string {
 	var b bytes.Buffer
 
 	eSep := ""
 	for k, v := range m {
 		b.WriteString(eSep)
-		b.WriteString(k)
+		b.WriteString(keyPrefix + k)
 		b.WriteString(kvSep)
 		b.WriteString(v)
 		eSep = entrySep
