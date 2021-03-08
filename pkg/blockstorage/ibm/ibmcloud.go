@@ -206,6 +206,7 @@ func (s *ibmCloud) SnapshotsList(ctx context.Context, tags map[string]string) ([
 	for _, snap := range ibmsnaps {
 		snaps = append(snaps, s.snapshotParse(ctx, snap))
 	}
+	snaps = blockstorage.FilterSnapshotsWithTags(snaps, tags)
 	return snaps, nil
 }
 

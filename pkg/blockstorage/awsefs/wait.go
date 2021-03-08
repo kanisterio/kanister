@@ -55,7 +55,7 @@ func (e *efs) waitUntilRecoveryPointCompleted(ctx context.Context, id string) er
 		req.SetRecoveryPointArn(id)
 
 		desc, err := e.DescribeRecoveryPointWithContext(ctx, req)
-		if isRecoveryPointNotFound(err) {
+		if isResourceNotFoundException(err) {
 			// Recovery point doesn't appear when the backup jobs finishes.
 			// Since this case is special, it will be counted as non-error.
 			return false, nil
@@ -78,7 +78,7 @@ func (e *efs) waitUntilRecoveryPointVisible(ctx context.Context, id string) erro
 		req.SetRecoveryPointArn(id)
 
 		_, err := e.DescribeRecoveryPointWithContext(ctx, req)
-		if isRecoveryPointNotFound(err) {
+		if isResourceNotFoundException(err) {
 			// Recovery point doesn't appear when the backup jobs finishes.
 			// Since this case is special, it will be counted as non-error.
 			return false, nil
