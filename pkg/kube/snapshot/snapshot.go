@@ -17,7 +17,7 @@ package snapshot
 import (
 	"context"
 
-	"github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -27,6 +27,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1beta1"
 )
 
+//go:generate go run github.com/golang/mock/mockgen -destination=mocks/mock_snapshotter.go -package=mocks . Snapshotter
+// Snapshotter is an interface that describes snapshot operations
 type Snapshotter interface {
 	// GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key
 	//
@@ -53,7 +55,8 @@ type Snapshotter interface {
 	// 'pvcName' is the name of the PVC of which we will take snapshot. It must be in the same namespace 'ns'.
 	// 'waitForReady' will block the caller until the snapshot status is 'ReadyToUse'.
 	// or 'ctx.Done()' is signalled. Otherwise it will return immediately after the snapshot is cut.
-	Create(ctx context.Context, name, namespace, pvcName string, snapshotClass *string, waitForReady bool) error
+	// 'labels' can also be addded to the volume snapshot.
+	Create(ctx context.Context, name, namespace, pvcName string, snapshotClass *string, waitForReady bool, labels map[string]string) error
 	// Get will return the VolumeSnapshot in the namespace 'namespace' with given 'name'.
 	//
 	// 'name' is the name of the VolumeSnapshot that will be returned.
@@ -102,6 +105,9 @@ type Snapshotter interface {
 	// WaitOnReadyToUse will block until the Volumesnapshot in namespace 'namespace' with name 'snapshotName'
 	// has status 'ReadyToUse' or 'ctx.Done()' is signalled.
 	WaitOnReadyToUse(ctx context.Context, snapshotName, namespace string) error
+	// List will list the volumesnapshots in a namespace that match search. If labels aren't provided,
+	// it will list all the snapshots in the namespace
+	List(ctx context.Context, namespace string, labels map[string]string) (*v1.VolumeSnapshotList, error)
 }
 
 // Source represents the CSI source of the Volumesnapshot.

@@ -952,6 +952,7 @@ Arguments:
    :widths: 5,5,5,15
 
    `instanceID`, Yes, `string`, ID of RDS instance you want to create snapshot of
+   `dbEngine`, No, `String`, Required in case of RDS Aurora instance. Supported DB Engines: ``aurora`` ``aurora-mysql`` and ``aurora-postgresql``
 
 
 Outputs:
@@ -1097,7 +1098,7 @@ Arguments:
    `backupID`, No, `string`, unique backup id generated during storing data into object storage
    `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to temporary RDS instance
    `namespace`, No, `string`, namespace in which to execute. Required if ``snapshotID`` is nil
-   `dbEngine`, No, `string`, one of the RDS db engines. Supported engines: ``PostgreSQL``. Required if ``snapshotID`` is nil
+   `dbEngine`, No, `string`, one of the RDS db engines. Supported engines: ``PostgreSQL`` ``aurora`` ``aurora-mysql`` and ``aurora-postgresql``. Required if ``snapshotID`` is nil or Aurora is run in RDS instance
 
 .. note::
    - If ``snapshotID`` is not set, restore will be done from data dump. In that case ``backupID`` `arg` is required.
