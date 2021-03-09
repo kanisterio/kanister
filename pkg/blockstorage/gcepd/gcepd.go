@@ -334,7 +334,7 @@ func (s *GpdStorage) VolumesList(ctx context.Context, tags map[string]string, zo
 	return vols, nil
 }
 
-// SnapshotsList is part of blockstorage.Provider
+// SnapshotsList is part of blockstorage.Provider. It filters on tags.
 func (s *GpdStorage) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	var snaps []*blockstorage.Snapshot
 	fltrs := blockstorage.MapToString(blockstorage.SanitizeTags(tags), " AND ", ":", "labels.")
