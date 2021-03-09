@@ -37,7 +37,7 @@ func isBackupVaultAlreadyExists(err error) bool {
 	return false
 }
 
-func isRecoveryPointNotFound(err error) bool {
+func isResourceNotFoundException(err error) bool {
 	if awsErr, ok := err.(awserr.Error); ok {
 		return awsErr.Code() == backup.ErrCodeResourceNotFoundException
 	}
