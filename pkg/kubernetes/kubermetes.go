@@ -20,18 +20,10 @@ import (
 
 // KubeClient is similar to oc app
 type KubeClient interface {
-	// Install the strimzi operator
-	InstallOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error)
 	// Install kafka
 	InstallKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error)
 	// Create configMap
 	CreateConfigMap(ctx context.Context, configMapName, namespace, yamlFileRepo, sinkConfigPath, sourceConfigPath, kafkaConfigPath string) (string, error)
-	// Delete configMap
-	DeleteConfigMap(ctx context.Context, namespace, configMapName string) (string, error)
-	// Delete Kafka
-	DeleteKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error)
-	// Delete strimzi operator
-	DeleteOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error)
 	// Ping operation to Kafka
 	Ping(ctx context.Context, namespace string) (string, error)
 	// Insert operation to Kafka topic

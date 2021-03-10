@@ -20,6 +20,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	k8s "github.com/kanisterio/kanister/pkg/kubernetes"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -44,6 +45,7 @@ type KafkaCluster struct {
 	strimziYaml      string
 	topic            string
 	kubernetesClient k8s.KubeClient
+	chart            helm.ChartInfo
 }
 
 func NewKafkaCluster(name string) App {
@@ -55,7 +57,12 @@ func NewKafkaCluster(name string) App {
 		kafkaConfigPath:  "adobe-kafkaConfiguration.properties",
 		kafkaYaml:        "kafka-cluster.yaml",
 		topic:            "blogs",
-		strimziYaml:      "https://strimzi.io/install/latest?namespace=kafka",
+		chart: helm.ChartInfo{
+			Release:  appendRandString(name),
+			RepoURL:  helm.KafkaOperatorRepoURL,
+			Chart:    "strimzi-kafka-operator",
+			RepoName: helm.KafkaOperatorRepoName,
+		},
 	}
 }
 func (kc *KafkaCluster) Init(context.Context) error {
@@ -71,13 +78,25 @@ func (kc *KafkaCluster) Init(context.Context) error {
 }
 func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	kc.namespace = namespace
-	kubectl := k8s.NewkubernetesClient()
-	out, err := kubectl.InstallOperator(ctx, namespace, yamlFileRepo, kc.strimziYaml)
+	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrapf(err, "Error installing the operator for %s, %s.", kc.name, out)
+		return errors.Wrap(err, "failed to create helm client")
 	}
+	log.Print("Adding repo.", field.M{"app": kc.name})
+	err = cli.AddRepo(ctx, kc.chart.RepoName, kc.chart.RepoURL)
+	if err != nil {
+		return errors.Wrapf(err, "Error helm repo for app %s.", kc.name)
+	}
+
+	log.Print("Installing kafka operator using helm.", field.M{"app": kc.name})
+	err = cli.Install(ctx, kc.chart.RepoName+"/"+kc.chart.Chart, kc.chart.Version, kc.chart.Release, kc.namespace, kc.chart.Values)
+	if err != nil {
+		return errors.Wrapf(err, "Error intalling operator %s through helm.", kc.name)
+	}
+
+	kubectl := k8s.NewkubernetesClient()
 	time.Sleep(1 * time.Second)
-	out, err = kubectl.InstallKafka(ctx, namespace, yamlFileRepo, kc.kafkaYaml)
+	out, err := kubectl.InstallKafka(ctx, namespace, yamlFileRepo, kc.kafkaYaml)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing the application %s, %s", kc.name, out)
 	}
@@ -105,24 +124,21 @@ func (kc *KafkaCluster) Secrets() map[string]crv1alpha1.ObjectReference {
 	return nil
 }
 
-// TODO
 func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
-	kubectl := k8s.NewkubernetesClient()
-	out, err := kubectl.DeleteConfigMap(ctx, kc.namespace, configMapName)
+	cli, err := helm.NewCliClient()
 	if err != nil {
-		return errors.Wrapf(err, "Error deleting config Map %s, %s", kc.name, out)
+		return errors.Wrap(err, "failed to create helm client")
 	}
-	out, err = kubectl.DeleteKafka(ctx, kc.namespace, yamlFileRepo, kc.kafkaYaml)
+	err = cli.Uninstall(ctx, kc.chart.Release, kc.namespace)
 	if err != nil {
-		return errors.Wrapf(err, "Error deleting the application %s, %s", kc.name, out)
+		log.WithError(err).Print("Failed to uninstall app, you will have to uninstall it manually.", field.M{"app": kc.name})
+		return err
 	}
-	out, err = kubectl.DeleteOperator(ctx, kc.namespace, yamlFileRepo, kc.strimziYaml)
-	if err != nil {
-		return errors.Wrapf(err, "Error deleting the operator for %s, %s.", kc.name, out)
-	}
+
 	log.Print("Application Deleted successfully.", field.M{"app": kc.name})
 	return nil
 }
+
 func (kc *KafkaCluster) Ping(ctx context.Context) error {
 	log.Print("Pinging the application", field.M{"app": kc.name})
 	kubectl := k8s.NewkubernetesClient()
@@ -134,7 +150,6 @@ func (kc *KafkaCluster) Ping(ctx context.Context) error {
 	return nil
 }
 
-// TODO
 func (kc *KafkaCluster) Insert(ctx context.Context) error {
 	log.Print("Inserting some records in kafka topic.", field.M{"app": kc.name})
 	kubectl := k8s.NewkubernetesClient()
@@ -147,7 +162,6 @@ func (kc *KafkaCluster) Insert(ctx context.Context) error {
 	return nil
 }
 
-// TODO
 func (kc *KafkaCluster) IsReady(ctx context.Context) (bool, error) {
 	log.Info().Print("Waiting for application to be ready.", field.M{"app": kc.name})
 	ctx, cancel := context.WithTimeout(ctx, kafkaClusterWaitTimeout)

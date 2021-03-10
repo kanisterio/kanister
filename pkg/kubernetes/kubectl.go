@@ -51,12 +51,6 @@ func (kubectl kubernetesClient) CreateNamespace(ctx context.Context, namespace s
 	return helm.RunCmdWithTimeout(ctx, "kubectl", command)
 }
 
-// InstallOPerator installs strimzi operator
-func (kubectl kubernetesClient) InstallOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error) {
-	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	createOperator := []string{"create", "-n", namespace, "-f", strimziYaml}
-	return helm.RunCmdWithTimeout(ctx, "kubectl", createOperator)
-}
 func (kubectl kubernetesClient) InstallKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error) {
 	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
 	createKafka := []string{"create", "-n", namespace, "-f", fmt.Sprintf("%s/%s", yamlFileRepo, kafkaConfigPath)}
@@ -71,20 +65,6 @@ func (kubectl kubernetesClient) CreateConfigMap(ctx context.Context, configMapNa
 	createConfig := []string{"create", "-n", namespace, "configmap", configMapName, fmt.Sprintf("--from-file=adobe-s3-sink.properties=%s/%s", yamlFileRepo, sinkConfigPath), fmt.Sprintf("--from-file=adobe-s3-source.properties=%s/%s", yamlFileRepo, sourceConfigPath), fmt.Sprintf("--from-file=adobe-kafkaConfiguration.properties=%s/%s", yamlFileRepo, kafkaConfigPath), "--from-literal=timeinSeconds=1800"}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", createConfig)
 }
-func (kubectl kubernetesClient) DeleteConfigMap(ctx context.Context, namespace, configMapName string) (string, error) {
-	deleteConfig := []string{"delete", "-n", namespace, "configmap", configMapName}
-	return helm.RunCmdWithTimeout(ctx, "kubectl", deleteConfig)
-}
-func (kubectl kubernetesClient) DeleteOperator(ctx context.Context, namespace, yamlFileRepo, strimziYaml string) (string, error) {
-	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	deleteOperator := []string{"delete", "-n", namespace, "-f", strimziYaml}
-	return helm.RunCmdWithTimeout(ctx, "kubectl", deleteOperator)
-}
-func (kubectl kubernetesClient) DeleteKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error) {
-	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
-	deleteKafka := []string{"delete", "-n", namespace, "-f", fmt.Sprintf("%s/%s", yamlFileRepo, kafkaConfigPath)}
-	return helm.RunCmdWithTimeout(ctx, "kubectl", deleteKafka)
-}
 
 func (kubectl kubernetesClient) Ping(ctx context.Context, namespace string) (string, error) {
 	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
@@ -93,18 +73,18 @@ func (kubectl kubernetesClient) Ping(ctx context.Context, namespace string) (str
 	return helm.RunCmdWithTimeout(ctx, "kubectl", pingKafka)
 }
 func (kubectl kubernetesClient) Insert(ctx context.Context, topic, namespace string) error {
-	err := produce(ctx, topic)
+	err := produce(ctx, topic, namespace)
 	return err
 }
 func (kubectl kubernetesClient) Count(ctx context.Context, topic, namespace string) (int, error) {
-	count, err := consume(ctx, topic)
+	count, err := consume(ctx, topic, namespace)
 	return count, err
 }
 
 // to produce messages to kafka
-func produce(ctx context.Context, topic string) error {
+func produce(ctx context.Context, topic string, namespace string) error {
 	partition := 0
-	forwarder, err := K8SServicePortForward(ctx, "my-cluster-kafka-external-bootstrap", "kafka", "9094")
+	forwarder, err := K8SServicePortForward(ctx, "my-cluster-kafka-external-bootstrap", namespace, "9094")
 	if err != nil {
 		return err
 	}
@@ -237,9 +217,9 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 	return f, nil
 }
 
-func consume(ctx context.Context, topic string) (int, error) {
+func consume(ctx context.Context, topic string, namespace string) (int, error) {
 	partition := 0
-	forwarder, err := K8SServicePortForward(ctx, "my-cluster-kafka-external-bootstrap", "kafka", "9094")
+	forwarder, err := K8SServicePortForward(ctx, "my-cluster-kafka-external-bootstrap", namespace, "9094")
 	if err != nil {
 		log.Print("error getting forwarder")
 		return 0, err

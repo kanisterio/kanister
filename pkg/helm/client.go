@@ -43,6 +43,10 @@ const (
 	CouchbaseRepoName = "couchbase"
 	CouchbaseRepoURL  = "https://couchbase-partners.github.io/helm-charts"
 
+	// Add kafka Operator charts url
+	KafkaOperatorRepoName = "strimzi"
+	KafkaOperatorRepoURL  = "https://strimzi.io/charts"
+
 	// HelmVersion to differentiate between helm2 and helm3 commands
 	V2 HelmVersion = "helmv2"
 	V3 HelmVersion = "helmv3"

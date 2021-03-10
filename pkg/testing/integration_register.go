@@ -363,7 +363,7 @@ type Kafka struct {
 var _ = Suite(&Kafka{
 	IntegrationSuite{
 		name:      "kafka",
-		namespace: "kafka",
+		namespace: "kafka-test",
 		app:       app.NewKafkaCluster("kafka"),
 		bp:        app.NewBlueprint("kafka", ""),
 		profile:   newSecretProfile(),
