@@ -54,10 +54,6 @@ func (kubectl kubernetesClient) CreateNamespace(ctx context.Context, namespace s
 func (kubectl kubernetesClient) InstallKafka(ctx context.Context, namespace, yamlFileRepo, kafkaConfigPath string) (string, error) {
 	// kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
 	createKafka := []string{"create", "-n", namespace, "-f", fmt.Sprintf("%s/%s", yamlFileRepo, kafkaConfigPath)}
-	file, err := os.Open(fmt.Sprintf("%s/%s", yamlFileRepo, kafkaConfigPath))
-	if err == nil {
-		log.Print(file)
-	}
 	return helm.RunCmdWithTimeout(ctx, "kubectl", createKafka)
 }
 func (kubectl kubernetesClient) CreateConfigMap(ctx context.Context, configMapName, namespace, yamlFileRepo, kafkaConfigPath, sinkConfigPath, sourceConfigPath string) (string, error) {

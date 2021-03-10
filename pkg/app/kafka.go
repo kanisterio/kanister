@@ -41,13 +41,17 @@ type KafkaCluster struct {
 	sinkConfigPath   string
 	sourceConfigPath string
 	kafkaConfigPath  string
+	pathToYaml       string
 	kafkaYaml        string
 	topic            string
 	kubernetesClient k8s.KubeClient
 	chart            helm.ChartInfo
 }
 
-func NewKafkaCluster(name string) App {
+func NewKafkaCluster(name, pathToYaml string) App {
+	if pathToYaml == "" {
+		pathToYaml = yamlFileRepo
+	}
 	return &KafkaCluster{
 		name:             name,
 		kubernetesClient: k8s.NewkubernetesClient(),
@@ -55,6 +59,7 @@ func NewKafkaCluster(name string) App {
 		sourceConfigPath: "adobe-s3-source.properties",
 		kafkaConfigPath:  "adobe-kafkaConfiguration.properties",
 		kafkaYaml:        "kafka-cluster.yaml",
+		pathToYaml:       pathToYaml,
 		topic:            "blogs",
 		chart: helm.ChartInfo{
 			Release:  appendRandString(name),
@@ -95,11 +100,11 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 
 	kubectl := k8s.NewkubernetesClient()
 	time.Sleep(1 * time.Second)
-	out, err := kubectl.InstallKafka(ctx, namespace, yamlFileRepo, kc.kafkaYaml)
+	out, err := kubectl.InstallKafka(ctx, namespace, kc.pathToYaml, kc.kafkaYaml)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing the application %s, %s", kc.name, out)
 	}
-	out, err = kubectl.CreateConfigMap(ctx, configMapName, namespace, yamlFileRepo, kc.kafkaConfigPath, kc.sinkConfigPath, kc.sourceConfigPath)
+	out, err = kubectl.CreateConfigMap(ctx, configMapName, namespace, kc.pathToYaml, kc.kafkaConfigPath, kc.sinkConfigPath, kc.sourceConfigPath)
 	if err != nil {
 		return errors.Wrapf(err, "Error creating config Map %s, %s", kc.name, out)
 	}

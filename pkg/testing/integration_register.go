@@ -364,7 +364,7 @@ var _ = Suite(&Kafka{
 	IntegrationSuite{
 		name:      "kafka",
 		namespace: "kafka-test",
-		app:       app.NewKafkaCluster("kafka"),
+		app:       app.NewKafkaCluster("kafka", ""),
 		bp:        app.NewBlueprint("kafka", ""),
 		profile:   newSecretProfile(),
 	},
