@@ -407,7 +407,7 @@ func (s *AdStorage) snapshotParse(ctx context.Context, snap azcompute.Snapshot) 
 		snap.SnapshotProperties.EncryptionSettingsCollection.Enabled != nil {
 		encrypted = *snap.SnapshotProperties.EncryptionSettingsCollection.Enabled
 	}
-	tags := map[string]string{"": ""}
+	tags := map[string]string{}
 	if snap.Tags != nil {
 		tags = azto.StringMap(snap.Tags)
 	}
@@ -457,6 +457,7 @@ func (s *AdStorage) SnapshotsList(ctx context.Context, tags map[string]string) (
 		}
 		snaps = append(snaps, k10Snap)
 	}
+	snaps = blockstorage.FilterSnapshotsWithTags(snaps, blockstorage.SanitizeTags(tags))
 	return snaps, nil
 }
 
