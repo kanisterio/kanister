@@ -42,7 +42,6 @@ type KafkaCluster struct {
 	sourceConfigPath string
 	kafkaConfigPath  string
 	kafkaYaml        string
-	strimziYaml      string
 	topic            string
 	kubernetesClient k8s.KubeClient
 	chart            helm.ChartInfo
