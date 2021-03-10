@@ -206,7 +206,7 @@ func (s *EbsStorage) SnapshotsList(ctx context.Context, tags map[string]string) 
 	var fltrs []*ec2.Filter
 	dsi := &ec2.DescribeSnapshotsInput{}
 	for k, v := range tags {
-		fltr := ec2.Filter{Name: &k, Values: []*string{&v}}
+		fltr := ec2.Filter{Name: aws.String("tag:" + k), Values: []*string{&v}}
 		fltrs = append(fltrs, &fltr)
 	}
 
