@@ -457,7 +457,6 @@ func (s *AdStorage) SnapshotsList(ctx context.Context, tags map[string]string) (
 		}
 		snaps = append(snaps, k10Snap)
 	}
-	fmt.Println("Sirish", tags)
 	snaps = blockstorage.FilterSnapshotsWithTags(snaps, blockstorage.SanitizeTags(tags))
 	return snaps, nil
 }
