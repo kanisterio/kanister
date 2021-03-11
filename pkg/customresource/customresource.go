@@ -21,12 +21,14 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 
 	// importing go check to bypass the testing flags
 	_ "gopkg.in/check.v1"
@@ -49,7 +51,7 @@ type CustomResource struct {
 	Version string
 
 	// Scope of the CRD. Namespaced or cluster
-	Scope apiextensionsv1beta1.ResourceScope
+	Scope apiextensionsv1.ResourceScope
 
 	// Kind is the serialized interface of the resource.
 	Kind string
@@ -95,15 +97,25 @@ func CreateCustomResources(context Context, resources []CustomResource) error {
 
 func createCRD(context Context, resource CustomResource) error {
 	crdName := fmt.Sprintf("%s.%s", resource.Plural, resource.Group)
-	crd := &apiextensionsv1beta1.CustomResourceDefinition{
+	schema, err := validationSchema(resource)
+	if err != nil {
+		return err
+	}
+	crd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: crdName,
 		},
-		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   resource.Group,
-			Version: resource.Version,
-			Scope:   resource.Scope,
-			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group: resource.Group,
+			Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
+				{
+					Name:    resource.Version,
+					Storage: true,
+					Schema:  schema,
+				},
+			},
+			Scope: resource.Scope,
+			Names: apiextensionsv1.CustomResourceDefinitionNames{
 				Singular: resource.Name,
 				Plural:   resource.Plural,
 				Kind:     resource.Kind,
@@ -111,8 +123,11 @@ func createCRD(context Context, resource CustomResource) error {
 		},
 	}
 
-	_, err := context.APIExtensionClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(contextpkg.TODO(), crd, metav1.CreateOptions{})
+	_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Create(contextpkg.TODO(), crd, metav1.CreateOptions{})
 	if err != nil {
+		fmt.Printf("error creating crd %s\n", err.Error())
+		// this isn't working as expected, if CRD is not being created because of validation failure
+		// this doesn't faile
 		if !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create %s CRD. %+v", resource.Name, err)
 		}
@@ -120,21 +135,35 @@ func createCRD(context Context, resource CustomResource) error {
 	return nil
 }
 
+func validationSchema(resource CustomResource) (*apiextensionsv1.CustomResourceValidation, error) {
+	switch resource.Name {
+	case crv1alpha1.ActionSetResourceName:
+		return &apiextensionsv1.CustomResourceValidation{
+			OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{},
+		}, nil
+	case crv1alpha1.BlueprintResourceName:
+	case crv1alpha1.ProfileResourceName:
+	default:
+		return nil, fmt.Errorf("failed to create validation schema for resource %s", resource.Name)
+	}
+	return nil, nil
+}
+
 func waitForCRDInit(context Context, resource CustomResource) error {
 	crdName := fmt.Sprintf("%s.%s", resource.Plural, resource.Group)
 	return wait.Poll(context.Interval, context.Timeout, func() (bool, error) {
-		crd, err := context.APIExtensionClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(contextpkg.TODO(), crdName, metav1.GetOptions{})
+		crd, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(contextpkg.TODO(), crdName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
 		for _, cond := range crd.Status.Conditions {
 			switch cond.Type {
-			case apiextensionsv1beta1.Established:
-				if cond.Status == apiextensionsv1beta1.ConditionTrue {
+			case apiextensionsv1.Established:
+				if cond.Status == apiextensionsv1.ConditionTrue {
 					return true, nil
 				}
-			case apiextensionsv1beta1.NamesAccepted:
-				if cond.Status == apiextensionsv1beta1.ConditionFalse {
+			case apiextensionsv1.NamesAccepted:
+				if cond.Status == apiextensionsv1.ConditionFalse {
 					return false, fmt.Errorf("Name conflict: %v ", cond.Reason)
 				}
 			}

@@ -21,7 +21,7 @@ package v1alpha1
 import (
 	"reflect"
 
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -41,7 +41,7 @@ var ActionSetResource = customresource.CustomResource{
 	Plural:  ActionSetResourceNamePlural,
 	Group:   ResourceGroup,
 	Version: SchemeVersion,
-	Scope:   apiextensionsv1beta1.NamespaceScoped,
+	Scope:   apiextensionsv1.NamespaceScoped,
 	Kind:    reflect.TypeOf(ActionSet{}).Name(),
 }
 
@@ -51,7 +51,7 @@ var BlueprintResource = customresource.CustomResource{
 	Plural:  BlueprintResourceNamePlural,
 	Group:   ResourceGroup,
 	Version: SchemeVersion,
-	Scope:   apiextensionsv1beta1.NamespaceScoped,
+	Scope:   apiextensionsv1.NamespaceScoped,
 	Kind:    reflect.TypeOf(Blueprint{}).Name(),
 }
 
@@ -61,7 +61,7 @@ var ProfileResource = customresource.CustomResource{
 	Plural:  ProfileResourceNamePlural,
 	Group:   ResourceGroup,
 	Version: SchemeVersion,
-	Scope:   apiextensionsv1beta1.NamespaceScoped,
+	Scope:   apiextensionsv1.NamespaceScoped,
 	Kind:    reflect.TypeOf(Profile{}).Name(),
 }
 
