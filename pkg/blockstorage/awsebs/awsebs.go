@@ -206,7 +206,7 @@ func (s *EbsStorage) SnapshotsList(ctx context.Context, tags map[string]string) 
 	var fltrs []*ec2.Filter
 	dsi := &ec2.DescribeSnapshotsInput{}
 	for k, v := range tags {
-		fltr := ec2.Filter{Name: &k, Values: []*string{&v}}
+		fltr := ec2.Filter{Name: aws.String("tag:" + k), Values: []*string{&v}}
 		fltrs = append(fltrs, &fltr)
 	}
 
@@ -794,6 +794,12 @@ func staticRegionToZones(region string) ([]string, error) {
 			"af-south-1a",
 			"af-south-1b",
 			"af-south-1c",
+		}, nil
+	case "ap-northeast-3":
+		return []string{
+			"ap-northeast-3a",
+			"ap-northeast-3b",
+			"ap-northeast-3c",
 		}, nil
 	}
 	return nil, errors.New("cannot get availability zones for region")

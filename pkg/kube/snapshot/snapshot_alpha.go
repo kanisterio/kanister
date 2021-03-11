@@ -25,11 +25,13 @@ import (
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	pkglabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
@@ -88,15 +90,14 @@ func (sna *SnapshotAlpha) GetVolumeSnapshotClass(annotationKey, annotationValue,
 }
 
 // Create creates a VolumeSnapshot and returns it or any error that happened meanwhile.
-func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName string, snapshotClass *string, waitForReady bool) error {
+func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName string, snapshotClass *string, waitForReady bool, labels map[string]string) error {
 	if _, err := sna.kubeCli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{}); err != nil {
 		if k8errors.IsNotFound(err) {
 			return errors.Errorf("Failed to find PVC %s, Namespace %s", pvcName, namespace)
 		}
 		return errors.Errorf("Failed to query PVC %s, Namespace %s: %v", pvcName, namespace, err)
 	}
-
-	snap := UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, "", *snapshotClass)
+	snap := UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, "", *snapshotClass, blockstorage.SanitizeTags(labels))
 	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Create(ctx, snap, metav1.CreateOptions{}); err != nil {
 		return err
 	}
@@ -119,9 +120,33 @@ func (sna *SnapshotAlpha) Get(ctx context.Context, name, namespace string) (*v1.
 	if err != nil {
 		return nil, err
 	}
+	return TransformUnstructuredSnaphotV1alphaToV1(us)
+}
 
+func (sna *SnapshotAlpha) List(ctx context.Context, namespace string, labels map[string]string) (*v1.VolumeSnapshotList, error) {
+	listOptions := metav1.ListOptions{}
+	if labels != nil {
+		labelSelector := metav1.LabelSelector{MatchLabels: blockstorage.SanitizeTags(labels)}
+		listOptions.LabelSelector = pkglabels.Set(labelSelector.MatchLabels).String()
+	}
+	usList, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).List(ctx, listOptions)
+	if err != nil {
+		return nil, err
+	}
+	vsList := &v1.VolumeSnapshotList{}
+	for _, us := range usList.Items {
+		vs, err := TransformUnstructuredSnaphotV1alphaToV1(&us)
+		if err != nil {
+			return nil, err
+		}
+		vsList.Items = append(vsList.Items, *vs)
+	}
+	return vsList, nil
+}
+
+func TransformUnstructuredSnaphotV1alphaToV1(u *unstructured.Unstructured) (*v1.VolumeSnapshot, error) {
 	vs := &v1alpha1.VolumeSnapshot{}
-	if err := TransformUnstructured(us, vs); err != nil {
+	if err := TransformUnstructured(u, vs); err != nil {
 		return nil, err
 	}
 
@@ -243,7 +268,7 @@ func (sna *SnapshotAlpha) CreateFromSource(ctx context.Context, source *Source, 
 		return errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
-	snap := UnstructuredVolumeSnapshotAlpha(snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName)
+	snap := UnstructuredVolumeSnapshotAlpha(snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, nil)
 	if err := sna.CreateContentFromSource(ctx, source, contentName, snapshotName, namespace, deletionPolicy); err != nil {
 		return err
 	}
@@ -337,7 +362,7 @@ func (sna *SnapshotAlpha) getDeletionPolicyFromClass(snapClassName string) (stri
 	return vsc.DeletionPolicy, nil
 }
 
-func UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, contentName, snapClassName string) *unstructured.Unstructured {
+func UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, contentName, snapClassName string, labels map[string]string) *unstructured.Unstructured {
 	snap := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
@@ -364,6 +389,9 @@ func UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, contentName, snap
 			"snapshotContentName": contentName,
 			"snapshotClassName":   snapClassName,
 		}
+	}
+	if labels != nil {
+		snap.SetLabels(labels)
 	}
 	return snap
 }

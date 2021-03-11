@@ -12,7 +12,7 @@ ENV GODEBUG=asyncpreemptoff=1
 
 COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
 # kopia alpine-1a0875e image
-COPY --from=kanisterio/kopia@sha256:3fef49bcebbafd05d844a38318e7dc805a94c8967b09ce099deafd9f92d92de7 \
+COPY --from=kanisterio/kopia@sha256:6e331f8cc9079062078c262112b6644ab108596f9ff82d552cec67b1a218e1c0 \
   /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
 

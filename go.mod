@@ -31,6 +31,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v0.3.0 // indirect
 	github.com/go-openapi/strfmt v0.19.3
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.2
@@ -43,7 +44,7 @@ require (
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.10
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
-	github.com/kopia/kopia v0.7.4-0.20210203191933-c23d42f84db5
+	github.com/kopia/kopia v0.7.4-0.20210217182901-23273af1cd0c
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.0.0
 	github.com/lib/pq v1.8.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f

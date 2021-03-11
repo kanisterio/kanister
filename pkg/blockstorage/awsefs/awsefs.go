@@ -430,6 +430,9 @@ func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapsho
 	req.SetRecoveryPointArn(snapshot.ID)
 
 	_, err := e.DeleteRecoveryPointWithContext(ctx, req)
+	if isResourceNotFoundException(err) {
+		return nil
+	}
 	return err
 }
 
@@ -518,7 +521,7 @@ func (e *efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blo
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get snapshots from recovery points")
 		}
-		result = append(result, filterSnapshotsWithTags(snaps, tags)...)
+		result = append(result, blockstorage.FilterSnapshotsWithTags(snaps, tags)...)
 	}
 	return result, nil
 }

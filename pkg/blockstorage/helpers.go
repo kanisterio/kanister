@@ -76,16 +76,30 @@ func MapToKeyValue(stringMap map[string]string) []*KeyValue {
 
 // MapToString creates a string representation of a map with the entries
 // separated by entrySep, and the key separated from the value using kvSep
-func MapToString(m map[string]string, entrySep string, kvSep string) string {
+func MapToString(m map[string]string, entrySep string, kvSep string, keyPrefix string) string {
 	var b bytes.Buffer
 
 	eSep := ""
 	for k, v := range m {
 		b.WriteString(eSep)
-		b.WriteString(k)
+		b.WriteString(keyPrefix + k)
 		b.WriteString(kvSep)
 		b.WriteString(v)
 		eSep = entrySep
 	}
 	return b.String()
+}
+
+// FilterSnapshotsWithTags filters a list of snapshots with the given tags.
+func FilterSnapshotsWithTags(snapshots []*Snapshot, tags map[string]string) []*Snapshot {
+	if tags == nil {
+		return snapshots
+	}
+	result := make([]*Snapshot, 0)
+	for i, snap := range snapshots {
+		if ktags.IsSubset(KeyValueToMap(snap.Tags), tags) {
+			result = append(result, snapshots[i])
+		}
+	}
+	return result
 }

@@ -215,7 +215,7 @@ func (s *BlockStorageProviderSuite) TestSnapshotsList(c *C) {
 	var tags map[string]string
 	testSnaphot := s.createSnapshot(c)
 	if s.provider.Type() != blockstorage.TypeEBS {
-		tags = map[string]string{"labels." + ktags.SanitizeValueForGCP(testTagKey): testTagValue}
+		tags = map[string]string{ktags.SanitizeValueForGCP(testTagKey): testTagValue}
 	} else {
 		tags = map[string]string{"tag-key": testTagKey, "tag-value": testTagValue}
 	}
