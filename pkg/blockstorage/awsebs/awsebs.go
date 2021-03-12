@@ -163,7 +163,7 @@ func (s *EbsStorage) VolumesList(ctx context.Context, tags map[string]string, zo
 	var fltrs []*ec2.Filter
 	dvi := &ec2.DescribeVolumesInput{}
 	for k, v := range tags {
-		fltr := ec2.Filter{Name: &k, Values: []*string{&v}}
+		fltr := ec2.Filter{Name: aws.String("tag:" + k), Values: []*string{&v}}
 		fltrs = append(fltrs, &fltr)
 	}
 
