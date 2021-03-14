@@ -1,4 +1,4 @@
-FROM confluentinc/cp-kafka-connect:latest
+FROM confluentinc/cp-kafka-connect:6.1.0
 
 USER root
 
@@ -19,11 +19,7 @@ RUN cd kafka-connect-s3 && ./gradlew shadowJar
 RUN cp ./kafka-connect-s3/build/libs/kafka-connect-s3-chart/kafka-connect/0.0.4-2a8a4aa-all.jar /opt/
 
 # Install kando
-#ADD kando /usr/local/bin/
-RUN wget https://raw.githubusercontent.com/canha/golang-tools-install-script/master/goinstall.sh
-RUN chmod +x goinstall.sh
-RUN source /root/.bashrc
-RUN yum install perl-Digest-SHA -y
-RUN curl https://raw.githubusercontent.com/kanisterio/kanister/master/scripts/get.sh | bash
+ADD kando /usr/local/bin/
+
 # adding script to monitor sink connector
-COPY adobe-monitorsink.sh monitorconnect.sh
+COPY docker/kafka-adobes3Connector/image/adobe-monitorsink.sh monitorconnect.sh

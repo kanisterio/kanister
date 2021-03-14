@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2021 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -122,7 +122,6 @@ func LoadConfig() (*rest.Config, error) {
 	if err == nil {
 		return config, nil
 	}
-	//	log.Print("Attempt to use InCluster config failed")
 
 	homeConfig := filepath.Join(os.Getenv("HOME"), ".kube/config")
 	config, err = clientcmd.BuildConfigFromFlags("", homeConfig)

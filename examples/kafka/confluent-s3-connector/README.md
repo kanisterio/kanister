@@ -3,7 +3,7 @@ To Backup kafka topic data, we have used Amazon S3 Sink connector which periodic
 
 To restore kafka topic data, we have used Amazon S3 Source Connector that reads data exported to S3 by the Connect S3 Sink Connector and publishes it back to an Kafka topic. Depending on the format and partitioner used to write the data to S3, this connector can write to the destination topic using the same partitions as the original messages exported to S3 and maintain the same message order. Configuration is setup to mirror the Kafka Connect S3 Sink Connector and should be possible to make only minor changes to the original sink configuration.
 
-Confluent Amazon S3 Source connector comes with a 30-day trial period without a license key. After 30 days, this connector is available under a Confluent enterprise license. 
+Confluent Amazon S3 Source connector comes with a 30-day trial period without a license key. After 30 days, this connector is available under a Confluent enterprise license.
 
 Topics messages are first purged and then restore operation is performed
 
@@ -12,6 +12,10 @@ Topics messages are first purged and then restore operation is performed
 * Kubernetes 1.9+
 * K10 installed in your cluster, let's say in namespace `<kanister-operator-namespace>` Can be installed (https://docs.kasten.io/latest/install/install.html). in our case we have used `kasten-io` namespace
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
+
+## Assumption
+
+* No consumer is consuming the topic at the moment topic is being restored.
 
 ## Setup Kafka
 Kafka can be deployed via a helm chart https://bitnami.com/stack/kafka/helm, or via an operator like strimzi.io.
@@ -112,7 +116,7 @@ $ kanctl create actionset --action restoreprehook --namespace kasten-io --bluepr
 * Here the topic need to be already present in the kafka cluster.
 * Before running prehook operation confirm that no other consumer is consuming data from that topic
 
-Perform the restore operation 
+Perform the restore operation
 
 ```bash
 # Perform a restore actionset
@@ -142,7 +146,7 @@ $ kubectl delete profiles.cr.kanister.io s3-profile-fn64h -n kafka
 
 ### Troubleshooting
 
-If you run into any issues with the above commands, 
+If you run into any issues with the above commands,
 
 you can check the logs of the controller using:
 ```bash
@@ -154,9 +158,9 @@ $ kubectl describe actionset <actionset-name> -n kasten-io
 ```
 you can also check the logs of kanister job
 ```bash
-# get the pod name  
+# get the pod name
 $ kubectl get pod -n kafka
 
-# check the logs 
-$ kubectl logs <name-of-pod-running the job> -n kafka 
+# check the logs
+$ kubectl logs <name-of-pod-running the job> -n kafka
 ```

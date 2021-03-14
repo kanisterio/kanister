@@ -1,6 +1,6 @@
-FROM confluentinc/cp-kafka-connect:latest
+FROM confluentinc/cp-kafka-connect:6.1.0
 
-# Using Confluent Hub client to install Kafka Connect S3 connector  
+# Using Confluent Hub client to install Kafka Connect S3 connector
 RUN confluent-hub install --no-prompt confluentinc/kafka-connect-s3:5.5.2
 
 USER root

@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2021 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,6 @@ type KubeClient interface {
 	Ping(ctx context.Context, namespace string) (string, error)
 	// Insert operation to Kafka topic
 	Insert(ctx context.Context, topic, namespace string) error
-	// count of kafka topic
+	// Count of kafka topic
 	Count(ctx context.Context, topic, namespace string) (int, error)
 }
