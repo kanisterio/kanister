@@ -47,9 +47,9 @@ actions:
 
             sed -i "/^topics.dir/d" /tmp/config/s3config.properties
 
-                        
+
             echo -e "\ntopics.dir=${s3_topic_path}\n" >> /tmp/config/s3config.properties
-            
+
             export s3_path="s3://{{ .Profile.Location.Bucket }}/${s3_topic_path}"
 
             kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
@@ -64,7 +64,7 @@ actions:
             /bin/connect-standalone /tmp/config/kafkaConfig.properties /tmp/config/s3config.properties &
             export pid=$!
             sh monitorconnect.sh
-            exit 0 
+            exit 0
   restore:
     type: Deployment
     inputArtifactNames:
@@ -118,7 +118,7 @@ actions:
               # purging topic by setting retention to 1ms
               /bin/kafka-configs --bootstrap-server "$bootstrapServer" --entity-type topics --entity-name "$topic" --alter --add-config retention.ms=1
               echo "retention set to 1"
-              # Verifying Purging is complete 
+              # Verifying Purging is complete
               export startOffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -1)"
               export endoffset="$(/bin/kafka-run-class kafka.tools.GetOffsetShell --broker-list "$bootstrapServer" --topic "$topic" --time -2)"
               until [ "$startOffset" = "$endoffset" ]
@@ -158,14 +158,14 @@ actions:
             export AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
             export AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
             {{- end }}
-            region="{{ .Profile.Location.Region }}"
-            bucket="{{ .Profile.Location.Bucket }}"
+            REGION="{{ .Profile.Location.Region }}"
+            BUCKET="{{ .Profile.Location.Bucket }}"
             s3config="{{ index .Object.data "s3Source.properties" | toString }}"
             echo -e "${s3config}\ns3.region=${region}\ns3.bucket.name=${bucket}\n" > /tmp/config/s3config.properties
-            
+
             kafkaConfig="{{ index .Object.data "kafkaConfiguration.properties" | toString }}"
             echo "$kafkaConfig" > /tmp/config/kafkaConfig.properties
-            
+
             s3_path="{{ .ArtifactsIn.s3Dump.KeyValue.s3path }}"
             export topicsDir="$(echo $s3_path | awk -F "/" '{print $4}')"
             echo -e "\ntopics.dir=${topicsDir}\n" >> /tmp/config/s3config.properties
