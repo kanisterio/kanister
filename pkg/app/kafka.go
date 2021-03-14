@@ -329,13 +329,13 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 	go func() {
 		buf := bytes.NewBuffer(nil)
 		if _, inErr := buf.ReadFrom(pre); inErr != nil {
-			//			log.Print("%s", inErr)
+			errors.Wrapf(inErr, "Failed to read from buffer")
 		}
 	}()
 	go func() {
 		buf := bytes.NewBuffer(nil)
 		if _, inErr := buf.ReadFrom(pro); inErr != nil {
-			//			log.Print("%s", inErr)
+			errors.Wrapf(inErr, "Failed to read from buffer")
 		}
 	}()
 
@@ -375,7 +375,6 @@ func consume(ctx context.Context, topic string, namespace string) (int, error) {
 
 	conn, err := kafka.DialLeader(ctx, "tcp", uri, topic, partition)
 	if err != nil {
-		//		log.Print("failed to get connection:", err)
 		return 0, err
 	}
 
@@ -399,12 +398,10 @@ func consume(ctx context.Context, topic string, namespace string) (int, error) {
 	}
 	if !messageEnd {
 		if err := batch.Close(); err != nil {
-			//			log.Print("failed to close batch:", err)
 			return 0, err
 		}
 	}
 	if err := conn.Close(); err != nil {
-		//		log.Print("failed to close connection:", err)
 		return 0, err
 	}
 	return count, nil

@@ -158,7 +158,7 @@ actions:
             export AWS_SECRET_KEY="{{ .Profile.Credential.Secret.Data.aws_secret_access_key | toString }}"
             export AWS_ACCESS_KEY="{{ .Profile.Credential.Secret.Data.aws_access_key_id | toString }}"
             {{- end }}
-            region="{{ .Profile.Location.Region }}"
+            REGION="{{ .Profile.Location.Region }}"
             BUCKET="{{ .Profile.Location.Bucket }}"
             s3config="{{ index .Object.data "s3Source.properties" | toString }}"
             echo -e "${s3config}\ns3.region=${region}\ns3.bucket.name=${bucket}\n" > /tmp/config/s3config.properties
