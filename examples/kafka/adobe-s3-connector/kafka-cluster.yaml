@@ -2,7 +2,6 @@ apiVersion: kafka.strimzi.io/v1beta1
 kind: Kafka
 metadata:
   name: my-cluster
-  namespace: kafka
 spec:
   kafka:
     version: 2.6.0
@@ -10,7 +9,7 @@ spec:
     listeners:
       external:
         type: nodeport
-        tls: false        
+        tls: false
     template:
       pod:
         restartPolicy: Always

@@ -1,4 +1,4 @@
-FROM confluentinc/cp-kafka-connect:latest
+FROM confluentinc/cp-kafka-connect:6.1.0
 
 USER root
 
@@ -20,5 +20,6 @@ RUN cp ./kafka-connect-s3/build/libs/kafka-connect-s3-chart/kafka-connect/0.0.4-
 
 # Install kando
 ADD kando /usr/local/bin/
+
 # adding script to monitor sink connector
-COPY /docker/kafka-adobes3Connector/image/adobe-monitorsink.sh monitorconnect.sh
+COPY docker/kafka-adobes3Connector/image/adobe-monitorsink.sh monitorconnect.sh
