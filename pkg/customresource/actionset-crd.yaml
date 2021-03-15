@@ -18,149 +18,78 @@ spec:
     storage: true
     schema:
       openAPIV3Schema:
-      properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
-        spec:
-          properties:
-            actions:
-              items:
-                description: ActionSpec is the specification for a single Action.
-                properties:
-                  artifacts:
-                    additionalProperties:
-                      properties:
-                        keyValue:
-                          additionalProperties:
-                            type: string
-                          type: object
-                      required:
-                      - keyValue
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              actions:
+                items:
+                  description: ActionSpec is the specification for a single Action.
+                  properties:
+                    artifacts:
+                      additionalProperties:
+                        properties:
+                          keyValue:
+                            additionalProperties:
+                              type: string
+                            type: object
+                        required:
+                        - keyValue
+                        type: object
+                      description: Artifacts will be passed as inputs into this phase.
                       type: object
-                    description: Artifacts will be passed as inputs into this phase.
-                    type: object
-                  blueprint:
-                    description: Blueprint with instructions on how to execute this
-                      action.
-                    type: string
-                  configMaps:
-                    additionalProperties:
-                      properties:
-                        apiVersion:
-                          description: API version of the referent.
-                          type: string
-                        group:
-                          description: API Group of the referent.
-                          type: string
-                        kind:
-                          description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
-                          type: string
-                        name:
-                          description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
-                          type: string
-                        namespace:
-                          description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
-                          type: string
-                        resource:
-                          description: Resource name of the referent.
-                          type: string
-                      required:
-                      - apiVersion
-                      - group
-                      - kind
-                      - name
-                      - resource
-                      type: object
-                    description: ConfigMaps that we'll get and pass into the blueprint.
-                    type: object
-                  name:
-                    description: 'Name is the action we''ll perform. For example:
-                      `backup` or `restore`.'
-                    type: string
-                  object:
-                    description: Object refers to the thing we'll perform this action
-                      on.
-                    properties:
-                      apiVersion:
-                        description: API version of the referent.
-                        type: string
-                      group:
-                        description: API Group of the referent.
-                        type: string
-                      kind:
-                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
-                        type: string
-                      name:
-                        description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
-                        type: string
-                      namespace:
-                        description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
-                        type: string
-                      resource:
-                        description: Resource name of the referent.
-                        type: string
-                    required:
-                    - apiVersion
-                    - group
-                    - kind
-                    - name
-                    - resource
-                    type: object
-                  options:
-                    additionalProperties:
+                    blueprint:
+                      description: Blueprint with instructions on how to execute this
+                        action.
                       type: string
-                    description: Options will be used to specify additional values
-                      to be used in the Blueprint.
-                    type: object
-                  podOverride:
-                    $ref: '#/definitions/k8s.io~1apimachinery~1pkg~1util~1strategicpatch~0JSONMap'
-                    description: PodOverride is used to specify pod specs that will
-                      override the default pod specs
-                  preferredVersion:
-                    description: PreferredVersion will be used to select the preferred
-                      version of Kanister functions to be executed for this action
-                    type: string
-                  profile:
-                    description: Profile is use to specify the location where store
-                      artifacts and the credentials authorized to access them.
-                    properties:
-                      apiVersion:
-                        description: API version of the referent.
-                        type: string
-                      group:
-                        description: API Group of the referent.
-                        type: string
-                      kind:
-                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
-                        type: string
-                      name:
-                        description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
-                        type: string
-                      namespace:
-                        description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
-                        type: string
-                      resource:
-                        description: Resource name of the referent.
-                        type: string
-                    required:
-                    - apiVersion
-                    - group
-                    - kind
-                    - name
-                    - resource
-                    type: object
-                  secrets:
-                    additionalProperties:
+                    configMaps:
+                      additionalProperties:
+                        properties:
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          group:
+                            description: API Group of the referent.
+                            type: string
+                          kind:
+                            description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
+                            type: string
+                          namespace:
+                            description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
+                            type: string
+                          resource:
+                            description: Resource name of the referent.
+                            type: string
+                        required:
+                        - apiVersion
+                        - group
+                        - kind
+                        - name
+                        - resource
+                        type: object
+                      description: ConfigMaps that we'll get and pass into the blueprint.
+                      type: object
+                    name:
+                      description: 'Name is the action we''ll perform. For example:
+                        `backup` or `restore`.'
+                      type: string
+                    object:
+                      description: Object refers to the thing we'll perform this action
+                        on.
                       properties:
                         apiVersion:
                           description: API version of the referent.
@@ -187,117 +116,189 @@ spec:
                       - name
                       - resource
                       type: object
-                    description: Secrets that we'll get and pass into the blueprint.
-                    type: object
-                required:
-                - configMaps
-                - name
-                - object
-                - options
-                - preferredVersion
-                - profile
-                - secrets
-                type: object
-              type: array
-          required:
-          - actions
-          type: object
-        status:
-          description: ActionSetStatus is the status for the actionset. This should
-            only be updated by the controller.
-          properties:
-            actions:
-              items:
-                properties:
-                  artifacts:
-                    additionalProperties:
-                      properties:
-                        keyValue:
-                          additionalProperties:
-                            type: string
-                          type: object
-                      required:
-                      - keyValue
+                    options:
+                      additionalProperties:
+                        type: string
+                      description: Options will be used to specify additional values
+                        to be used in the Blueprint.
                       type: object
-                    description: Artifacts created by this phase.
-                    type: object
-                  blueprint:
-                    description: Blueprint with instructions on how to execute this
-                      action.
-                    type: string
-                  name:
-                    description: 'Name is the action we''ll perform. For example:
-                      `backup` or `restore`.'
-                    type: string
-                  object:
-                    description: Object refers to the thing we'll perform this action
-                      on.
-                    properties:
-                      apiVersion:
-                        description: API version of the referent.
-                        type: string
-                      group:
-                        description: API Group of the referent.
-                        type: string
-                      kind:
-                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
-                        type: string
-                      name:
-                        description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
-                        type: string
-                      namespace:
-                        description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
-                        type: string
-                      resource:
-                        description: Resource name of the referent.
-                        type: string
-                    required:
-                    - apiVersion
-                    - group
-                    - kind
-                    - name
-                    - resource
-                    type: object
-                  phases:
-                    description: Phases are sub-actions an are executed sequentially.
-                    items:
+                    podOverride:
+                      type: object
+                      description: PodOverride is used to specify pod specs that will
+                        override the default pod specs
+                    preferredVersion:
+                      description: PreferredVersion will be used to select the preferred
+                        version of Kanister functions to be executed for this action
+                      type: string
+                    profile:
+                      description: Profile is use to specify the location where store
+                        artifacts and the credentials authorized to access them.
                       properties:
+                        apiVersion:
+                          description: API version of the referent.
+                          type: string
+                        group:
+                          description: API Group of the referent.
+                          type: string
+                        kind:
+                          description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                          type: string
                         name:
+                          description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
                           type: string
-                        output: {}
-                        state:
+                        namespace:
+                          description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
+                          type: string
+                        resource:
+                          description: Resource name of the referent.
                           type: string
                       required:
+                      - apiVersion
+                      - group
+                      - kind
                       - name
-                      - output
-                      - state
+                      - resource
                       type: object
-                    type: array
+                    secrets:
+                      additionalProperties:
+                        properties:
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          group:
+                            description: API Group of the referent.
+                            type: string
+                          kind:
+                            description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
+                            type: string
+                          namespace:
+                            description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
+                            type: string
+                          resource:
+                            description: Resource name of the referent.
+                            type: string
+                        required:
+                        - apiVersion
+                        - group
+                        - kind
+                        - name
+                        - resource
+                        type: object
+                      description: Secrets that we'll get and pass into the blueprint.
+                      type: object
+                  required:
+                  - configMaps
+                  - name
+                  - object
+                  - options
+                  - preferredVersion
+                  - profile
+                  - secrets
+                  type: object
+                type: array
+            required:
+            - actions
+            type: object
+          status:
+            description: ActionSetStatus is the status for the actionset. This should
+              only be updated by the controller.
+            properties:
+              actions:
+                items:
+                  properties:
+                    artifacts:
+                      additionalProperties:
+                        properties:
+                          keyValue:
+                            additionalProperties:
+                              type: string
+                            type: object
+                        required:
+                        - keyValue
+                        type: object
+                      description: Artifacts created by this phase.
+                      type: object
+                    blueprint:
+                      description: Blueprint with instructions on how to execute this
+                        action.
+                      type: string
+                    name:
+                      description: 'Name is the action we''ll perform. For example:
+                        `backup` or `restore`.'
+                      type: string
+                    object:
+                      description: Object refers to the thing we'll perform this action
+                        on.
+                      properties:
+                        apiVersion:
+                          description: API version of the referent.
+                          type: string
+                        group:
+                          description: API Group of the referent.
+                          type: string
+                        kind:
+                          description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                          type: string
+                        name:
+                          description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
+                          type: string
+                        namespace:
+                          description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
+                          type: string
+                        resource:
+                          description: Resource name of the referent.
+                          type: string
+                      required:
+                      - apiVersion
+                      - group
+                      - kind
+                      - name
+                      - resource
+                      type: object
+                    phases:
+                      description: Phases are sub-actions an are executed sequentially.
+                      items:
+                        properties:
+                          name:
+                            type: string
+                          output:
+                            type: object
+                          state:
+                            type: string
+                        required:
+                        - name
+                        - output
+                        - state
+                        type: object
+                      type: array
+                  required:
+                  - artifacts
+                  - blueprint
+                  - name
+                  - object
+                  - phases
+                  type: object
+                type: array
+              error:
+                properties:
+                  message:
+                    type: string
                 required:
-                - artifacts
-                - blueprint
-                - name
-                - object
-                - phases
+                - message
                 type: object
-              type: array
-            error:
-              properties:
-                message:
-                  type: string
-              required:
-              - message
-              type: object
-            state:
-              type: string
-          required:
-          - actions
-          - state
-          type: object
-      required:
-      - metadata
-      - spec
-      type: object
+              state:
+                type: string
+            required:
+            - actions
+            - state
+            type: object
+        required:
+        - metadata
+        - spec
+        type: object
 status:
   acceptedNames:
     kind: ""
