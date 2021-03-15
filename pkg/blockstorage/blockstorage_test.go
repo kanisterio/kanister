@@ -195,13 +195,8 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 }
 
 func (s *BlockStorageProviderSuite) testVolumesList(c *C) {
-	var tags map[string]string
 	var zone string
-	if s.provider.Type() == blockstorage.TypeGPD {
-		tags = map[string]string{"name": "*"}
-	} else {
-		tags = map[string]string{"status": "available"}
-	}
+	tags := map[string]string{"testtag": "testtagvalue"}
 	zone = s.storageAZ
 	vols, err := s.provider.VolumesList(context.Background(), tags, zone)
 	c.Assert(err, IsNil)
@@ -214,11 +209,7 @@ func (s *BlockStorageProviderSuite) testVolumesList(c *C) {
 func (s *BlockStorageProviderSuite) TestSnapshotsList(c *C) {
 	var tags map[string]string
 	testSnaphot := s.createSnapshot(c)
-	if s.provider.Type() != blockstorage.TypeEBS {
-		tags = map[string]string{"labels." + ktags.SanitizeValueForGCP(testTagKey): testTagValue}
-	} else {
-		tags = map[string]string{"tag-key": testTagKey, "tag-value": testTagValue}
-	}
+	tags = map[string]string{testTagKey: testTagValue}
 	snaps, err := s.provider.SnapshotsList(context.Background(), tags)
 	c.Assert(err, IsNil)
 	c.Assert(snaps, NotNil)
