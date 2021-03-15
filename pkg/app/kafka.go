@@ -326,13 +326,13 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 	go func() {
 		buf := bytes.NewBuffer(nil)
 		if _, inErr := buf.ReadFrom(pre); inErr != nil {
-			errors.Wrapf(inErr, "Failed to read from buffer")
+			log.Print(inErr.Error())
 		}
 	}()
 	go func() {
 		buf := bytes.NewBuffer(nil)
 		if _, inErr := buf.ReadFrom(pro); inErr != nil {
-			errors.Wrapf(inErr, "Failed to read from buffer")
+			log.Print(inErr.Error())
 		}
 	}()
 
