@@ -39,7 +39,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
-	k8s "github.com/kanisterio/kanister/pkg/kubernetes"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -65,7 +64,6 @@ type KafkaCluster struct {
 	pathToYaml       string
 	kafkaYaml        string
 	topic            string
-	kubernetesClient k8s.KubeClient
 	chart            helm.ChartInfo
 }
 
@@ -75,7 +73,6 @@ func NewKafkaCluster(name, pathToYaml string) App {
 	}
 	return &KafkaCluster{
 		name:             name,
-		kubernetesClient: k8s.NewkubernetesClient(),
 		sinkConfigPath:   sinkConfigPath,
 		sourceConfigPath: sourceConfigPath,
 		kafkaConfigPath:  kafkaConfigPath,
