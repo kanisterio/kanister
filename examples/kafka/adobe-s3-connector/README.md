@@ -6,7 +6,7 @@ While restoration, Topics messages are first purged and then restore operation i
 ## Prerequisites
 
 * Kubernetes 1.9+
-* Kanister controller version 0.50.0 installed in your cluster, let's say in namespace <kanister-operator-namespace>. in our case we have used `kasten-io` namespace
+* Kanister controller version 0.50.0 installed in your cluster, let's say in namespace <kanister-operator-namespace>. In our case we have used `kasten-io` namespace
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Assumption
@@ -86,7 +86,7 @@ These additional configs apply to the kafka-connect:
 | plugin.path | connector jar location |
 
 ## Setup Blueprint, configMap and location profile
-Before Setting up Blueprint, a profile is created which has s3 Details, alongwith that a configMap with the configuration details. `timeinSeconds` denote the time after which sink connector need to stop if running.
+Before Setting up Blueprint, a profile is created which has s3 Details, alongwith that a configMap with the configuration details. `timeinSeconds` denotes the time after which sink connector need to stop if running.
 ```bash
 # Create ConfigMap with the Properties file s3 properties and kafkaConfiguration.properties
 $ kubectl create configmap s3config --from-file=adobe-s3-sink.properties=./adobe-s3-sink.properties --from-file=adobe-kafkaConfiguration.properties=./adobe-kafkaConfiguration.properties --from-file=adobe-s3-source.properties=./adobe-s3-source.properties --from-literal=timeinSeconds=1800 -n kafka-test
@@ -139,7 +139,7 @@ $ kanctl create actionset --action restore --namespace kasten-io --blueprint kaf
 
 ```
 **NOTE:**
-* Here the topic need to be already present in the kafka cluster.
+* Here the topic needs to be already present in the kafka cluster.
 * Before running prehook operation confirm that no other consumer is consuming data from that topic
 
 ## Verify restore

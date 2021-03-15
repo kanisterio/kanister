@@ -10,7 +10,7 @@ Topics messages are first purged and then restore operation is performed
 ## Prerequisites
 
 * Kubernetes 1.9+
-* K10 installed in your cluster, let's say in namespace `<kanister-operator-namespace>` Can be installed (https://docs.kasten.io/latest/install/install.html). in our case we have used `kasten-io` namespace
+* K10 installed in your cluster, let's say in namespace `<kanister-operator-namespace>` Can be installed (https://docs.kasten.io/latest/install/install.html). In our case we have used `kasten-io` namespace
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Assumption
@@ -113,7 +113,7 @@ $ kanctl create actionset --action restoreprehook --namespace kasten-io --bluepr
 
 ```
 **NOTE:**
-* Here the topic need to be already present in the kafka cluster.
+* Here the topic needs to be already present in the kafka cluster.
 * Before running prehook operation confirm that no other consumer is consuming data from that topic
 
 Perform the restore operation
