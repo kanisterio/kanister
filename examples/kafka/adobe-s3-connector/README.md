@@ -86,7 +86,7 @@ These additional configs apply to the kafka-connect:
 | plugin.path | connector jar location |
 
 ## Setup Blueprint, configMap and location profile
-Before Setting up Blueprint, a profile is created which has s3 Details, alongwith that a configMap with the configuration details. `timeinSeconds` denotes the time after which sink connector need to stop if running.
+Before Setting up Blueprint, a profile is created which has s3 Details, along with that a configMap with the configuration details. `timeinSeconds` denotes the time after which sink connector need to stop if running.
 ```bash
 # Create ConfigMap with the Properties file s3 properties and kafkaConfiguration.properties
 $ kubectl create configmap s3config --from-file=adobe-s3-sink.properties=./adobe-s3-sink.properties --from-file=adobe-kafkaConfiguration.properties=./adobe-kafkaConfiguration.properties --from-file=adobe-s3-source.properties=./adobe-s3-source.properties --from-literal=timeinSeconds=1800 -n kafka-test
