@@ -195,13 +195,8 @@ func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
 }
 
 func (s *BlockStorageProviderSuite) testVolumesList(c *C) {
-	var tags map[string]string
 	var zone string
-	if s.provider.Type() == blockstorage.TypeGPD {
-		tags = map[string]string{"name": "*"}
-	} else {
-		tags = map[string]string{"status": "available"}
-	}
+	tags := map[string]string{"testtag": "testtagvalue"}
 	zone = s.storageAZ
 	vols, err := s.provider.VolumesList(context.Background(), tags, zone)
 	c.Assert(err, IsNil)
@@ -214,11 +209,7 @@ func (s *BlockStorageProviderSuite) testVolumesList(c *C) {
 func (s *BlockStorageProviderSuite) TestSnapshotsList(c *C) {
 	var tags map[string]string
 	testSnaphot := s.createSnapshot(c)
-	if s.provider.Type() != blockstorage.TypeEBS {
-		tags = map[string]string{ktags.SanitizeValueForGCP(testTagKey): testTagValue}
-	} else {
-		tags = map[string]string{"tag-key": testTagKey, "tag-value": testTagValue}
-	}
+	tags = map[string]string{testTagKey: testTagValue}
 	snaps, err := s.provider.SnapshotsList(context.Background(), tags)
 	c.Assert(err, IsNil)
 	c.Assert(snaps, NotNil)
@@ -313,4 +304,27 @@ func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]st
 
 func (b *BlockStorageProviderSuite) isRegional(az string) bool {
 	return strings.Contains(az, "__")
+}
+
+func (b *BlockStorageProviderSuite) TestFilterSnasphotWithTags(c *C) {
+	snapshot1 := &blockstorage.Snapshot{ID: "snap1", Tags: blockstorage.SnapshotTags{
+		{Key: "key1", Value: "val1"},
+		{Key: "key3", Value: ""},
+	}}
+	snapshot2 := &blockstorage.Snapshot{ID: "snap2", Tags: blockstorage.SnapshotTags{
+		{Key: "key2", Value: "val2"},
+	}}
+
+	filterTags := map[string]string{"key1": "val1"}
+	snaps := blockstorage.FilterSnapshotsWithTags([]*blockstorage.Snapshot{snapshot1, snapshot2}, filterTags)
+	c.Assert(len(snaps), Equals, 1)
+
+	snaps = blockstorage.FilterSnapshotsWithTags([]*blockstorage.Snapshot{snapshot1, snapshot2}, nil)
+	c.Assert(len(snaps), Equals, 2)
+
+	snaps = blockstorage.FilterSnapshotsWithTags([]*blockstorage.Snapshot{snapshot1, snapshot2}, map[string]string{})
+	c.Assert(len(snaps), Equals, 2)
+
+	snaps = blockstorage.FilterSnapshotsWithTags([]*blockstorage.Snapshot{snapshot1, snapshot2}, map[string]string{"bad": "tag"})
+	c.Assert(len(snaps), Equals, 0)
 }
