@@ -164,7 +164,7 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error deleting config Map %s, %s", kc.name, out)
 	}
-	deleteCRD := []string{"delete", "-f", fmt.Sprintf("%s/%s", yamlFileRepo, crdYaml)}
+	deleteCRD := []string{"delete", "-f", fmt.Sprintf("%s/%s", kc.pathToYaml, crdYaml)}
 	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
 	if err != nil {
 		return errors.Wrapf(err, "Error deleting CRD %s, %s", kc.name, out)
