@@ -91,7 +91,8 @@ type PVCParams struct {
 
 // NamespaceParams are params for namespaces
 type NamespaceParams struct {
-	Name string
+	Name      string
+	Namespace string
 }
 
 // Profile contains where to store artifacts and how to access them.
@@ -193,7 +194,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 		tp.PVC = pp
 		gvr = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "persistentvolumeclaims"}
 	case NamespaceKind:
-		tp.Namespace = &NamespaceParams{Name: as.Object.Namespace}
+		tp.Namespace = &NamespaceParams{Name: as.Object.Namespace, Namespace: as.Object.Namespace}
 		gvr = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
 		// `Namespace` is a global resource
 		namespace = ""
