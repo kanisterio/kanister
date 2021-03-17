@@ -154,17 +154,25 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
-	err = cli.Uninstall(ctx, kc.chart.Release, kc.namespace)
-	if err != nil {
-		log.WithError(err).Print("Failed to uninstall app, you will have to uninstall it manually.", field.M{"app": kc.name})
-		return err
-	}
+
 	deleteConfig := []string{"delete", "-n", kc.namespace, "configmap", configMapName}
 	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", deleteConfig)
 	if err != nil {
 		return errors.Wrapf(err, "Error deleting config Map %s, %s", kc.name, out)
 	}
-	deleteCRD := []string{"delete", "-f", fmt.Sprintf("%s/%s", kc.pathToYaml, crdYaml)}
+	deleteCluster := []string{"delete", "-f", fmt.Sprintf("%s/%s", kc.pathToYaml, kc.kafkaYaml)}
+	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", deleteCluster)
+	if err != nil {
+		return errors.Wrapf(err, "Error deleting kafka cluster %s, %s", kc.name, out)
+	}
+
+	err = cli.Uninstall(ctx, kc.chart.Release, kc.namespace)
+	if err != nil {
+		log.WithError(err).Print("Failed to uninstall app, you will have to uninstall it manually.", field.M{"app": kc.name})
+		return err
+	}
+
+	deleteCRD := []string{"delete", "-f", fmt.Sprintf("%s/%s", kc.pathToYaml, kc.crdYaml)}
 	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
 	if err != nil {
 		return errors.Wrapf(err, "Error deleting CRD %s, %s", kc.name, out)
