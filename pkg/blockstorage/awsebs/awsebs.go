@@ -144,6 +144,12 @@ func (s *EbsStorage) volumeParse(ctx context.Context, volume interface{}) *block
 	for _, tag := range vol.Tags {
 		tags = append(tags, &blockstorage.KeyValue{Key: aws.StringValue(tag.Key), Value: aws.StringValue(tag.Value)})
 	}
+	var attrs map[string]string
+	if vol.State != nil {
+		attrs = map[string]string{
+			"State": *vol.State,
+		}
+	}
 	return &blockstorage.Volume{
 		Type:         s.Type(),
 		ID:           aws.StringValue(vol.VolumeId),
@@ -151,6 +157,7 @@ func (s *EbsStorage) volumeParse(ctx context.Context, volume interface{}) *block
 		Encrypted:    aws.BoolValue(vol.Encrypted),
 		VolumeType:   aws.StringValue(vol.VolumeType),
 		SizeInBytes:  aws.Int64Value(vol.Size) * blockstorage.BytesInGi,
+		Attributes:   attrs,
 		Tags:         tags,
 		Iops:         aws.Int64Value(vol.Iops),
 		CreationTime: blockstorage.TimeStamp(aws.TimeValue(vol.CreateTime)),
