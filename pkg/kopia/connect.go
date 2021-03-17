@@ -17,17 +17,17 @@ package kopia
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/jpillora/backoff"
-	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/repo/content"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
@@ -39,23 +39,16 @@ const (
 // ConnectToAPIServer connects to the Kopia API server running at the given address
 func ConnectToAPIServer(
 	ctx context.Context,
-	cli kubernetes.Interface,
-	tlsCertSecret,
-	userPassphraseSecret *corev1.Secret,
+	tlsCert,
+	userPassphrase,
 	hostname,
 	serverAddress,
 	username string,
 ) error {
 	// Extra fingerprint from the TLS Certificate secret
-	fingerprint, err := ExtractFingerprintFromCertSecret(ctx, cli, tlsCertSecret.GetName(), tlsCertSecret.GetNamespace())
+	fingerprint, err := ExtractFingerprintFromCertificateJSON(tlsCert)
 	if err != nil {
 		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API Server Certificate Secret")
-	}
-
-	// Extract user passphrase from the secret
-	passphrase, ok := userPassphraseSecret.Data[hostname]
-	if !ok {
-		return errors.Errorf("Failed to extract client passphrase from secret. Secret: %s", userPassphraseSecret.GetName())
 	}
 
 	serverInfo := &repo.APIServerInfo{
@@ -86,7 +79,7 @@ func ConnectToAPIServer(
 		Max:    15 * time.Second,
 	}, func(c context.Context) (bool, error) {
 		// TODO(@pavan): Modify this to use custom config file path, if required
-		err := repo.ConnectAPIServer(ctx, defaultConfigFilePath, serverInfo, string(passphrase), opts)
+		err := repo.ConnectAPIServer(ctx, defaultConfigFilePath, serverInfo, userPassphrase, opts)
 		switch {
 		case isGetRepoParametersError(err):
 			log.Debug().WithError(err).Print("Connecting to the Kopia API Server")
@@ -99,26 +92,36 @@ func ConnectToAPIServer(
 	return errors.Wrap(err, "Failed connecting to the Kopia API Server")
 }
 
-// OpenRepository opens the connected Kopia repository
-func OpenRepository(ctx context.Context) (repo.Repository, error) {
-	if _, err := os.Stat(defaultConfigFilePath); os.IsNotExist(err) {
-		return nil, errors.New("Failed find Kopia configuration file")
+// OpenRepository connects to the kopia repository based on the config stored in the config file
+// NOTE: This assumes that `kopia repository connect` has been already run on the machine
+// OR the above Connect function has been used to connect to the repository server
+func OpenRepository(ctx context.Context, configFile, password, purpose string) (repo.RepositoryWriter, error) {
+	repoConfig := repositoryConfigFileName(configFile)
+	if _, err := os.Stat(repoConfig); os.IsNotExist(err) {
+		return nil, errors.New("Failed find kopia configuration file")
 	}
 
-	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
-	if !ok || password == "" {
-		return nil, errors.New("Failed to retrieve Kopia client passphrase")
-	}
-
-	r, err := repo.Open(ctx, defaultConfigFilePath, password, &repo.Options{})
+	r, err := repo.Open(ctx, repoConfig, password, &repo.Options{})
 	if os.IsNotExist(err) {
-		return nil, errors.New("Failed to find Kopia repository, not connected to any repository")
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to open Kopia repository")
+		return nil, errors.New("Failed to find kopia repository, use `kopia repository create` or kopia repository connect` if already created")
 	}
 
-	return r, nil
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to open kopia repository")
+	}
+
+	rw, err := r.NewWriter(ctx, repo.WriteSessionOptions{
+		Purpose: purpose,
+	})
+
+	return rw, errors.Wrap(err, "Failed to open kopia repository writer")
+}
+
+func repositoryConfigFileName(configFile string) string {
+	if configFile != "" {
+		return configFile
+	}
+	return filepath.Join(os.Getenv("HOME"), ".config", "kopia", "repository.config")
 }
 
 func isGetRepoParametersError(err error) bool {
