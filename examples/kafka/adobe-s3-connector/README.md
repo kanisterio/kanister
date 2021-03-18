@@ -1,12 +1,12 @@
 # Kafka topic backup and restore
-To Backup and restore Kafka topic data, we have used Adobe S3 Kafka connector which periodically polls data from Kafka and in turn uploads it to S3. Each chunk of data is represented as an S3 object. If no partitioner is specified in the configuration, the default partitioner which preserves Kafka partitioning is used.
+To backup and restore Kafka topic data, we have used Adobe S3 Kafka connector which periodically polls data from Kafka and in turn uploads it to S3. Each chunk of data is represented as an S3 object. If no partitioner is specified in the configuration, the default partitioner which preserves Kafka partitioning is used.
 
-While restoration, Topics messages are first purged and then restore operation is performed
+During restore, topic messages are purged before the restore operation is performed.
 
 ## Prerequisites
 
 * Kubernetes 1.9+
-* Kanister controller version 0.50.0 installed in your cluster, let's say in namespace <kanister-operator-namespace>. In our case we have used `kasten-io` namespace
+* Kanister controller version 0.50.0 installed in the cluster in a namespace <kanister-operator-namespace>. This example uses `kasten-io` namespace
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Assumption
@@ -15,7 +15,7 @@ While restoration, Topics messages are first purged and then restore operation i
 
 ## Installing the Chart
 
-To install the Kafka Operator using the chart with the release name `kafka-release`:
+Install the Kafka Operator using the helm chart with release name `kafka-release` using the following commands:
 
 ```bash
 # Add strimzi in your local chart repository
@@ -45,7 +45,7 @@ kubectl port-forward kafdrop 7000:9000 -n kafka-test
 ```
 
 ## Validate producer and consumer
-Create Producer and Consumer using kafka image provided by strimzi
+Create Producer and Consumer using Kafka image provided by strimzi.
 ```bash
 # create a producer and push data to it
 $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-external-bootstrap:9094 --topic blogpost
@@ -58,10 +58,10 @@ $ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafk
 ```
 
 **NOTE:**
-* Here we have now kafka running with the broker running on service `my-cluster-kafka-external-bootstrap:9094`
-* `adobe-s3-sink.properties` file contain properties related `s3 sink Connector`
-* `adobe-s3-source.properties` file contain properties related `s3 source Connector`
-* `kafkaConfiguration.properties` contain properties pointing to kafka server
+* Here, we now have Kafka running with the broker running on service `my-cluster-kafka-external-bootstrap:9094`
+* `adobe-s3-sink.properties` file contains properties related `s3 sink Connector`
+* `adobe-s3-source.properties` file contains properties related `s3 source Connector`
+* `kafkaConfiguration.properties` contains properties pointing to Kafka server
 
 ## Configuration
 
@@ -70,41 +70,39 @@ The following configuration applies to source and sink connector.
 | Config Key | Notes |
 | ---------- | ----- |
 | name | name of the connector |
-| s3.bucket | The name of the bucket to write too. |
+| s3.bucket | The name of the bucket to write to |
 | s3.prefix | Prefix added to all object keys stored in bucket to "namespace" them. |
 | s3.path_style | Force path-style access to bucket |
-| topics | Comma seperated list of topics that need to processed |
-| task.max | max task that should be run inside a connector |
+| topics | Comma separated list of topics that need to be processed |
+| task.max | Max number of tasks that should be run inside the connector |
 | format | S3 File Format |
-| compressed_block_size | How much _uncompressed_ data to write to the file before we rol to a new block/chunk |
+| compressed_block_size | Size of _uncompressed_ data to write to the file before rolling to a new block/chunk |
 
 These additional configs apply to the kafka-connect:
 
 | Config Key | Notes |
 | ---------- | ----- |
 | bootstrap.servers | Kafka broker address in the cluster |
-| plugin.path | connector jar location |
+| plugin.path | Connector jar location |
 
-## Setup Blueprint, configMap and location profile
-Before Setting up Blueprint, a profile is created which has s3 Details, along with that a configMap with the configuration details. `timeinSeconds` denotes the time after which sink connector need to stop if running.
+## Setup Blueprint, ConfigMap and S3 Location profile
+Before setting up the Blueprint, a Kanister Profile is created with S3 details along with a ConfigMap with the configuration details. `timeinSeconds` denotes the time after which sink connector needs to stop running.
 ```bash
-# Create ConfigMap with the Properties file s3 properties and kafkaConfiguration.properties
+# Create ConfigMap with the properties file, S3 properties and kafkaConfiguration.properties
 $ kubectl create configmap s3config --from-file=adobe-s3-sink.properties=./adobe-s3-sink.properties --from-file=adobe-kafkaConfiguration.properties=./adobe-kafkaConfiguration.properties --from-file=adobe-s3-source.properties=./adobe-s3-source.properties --from-literal=timeinSeconds=1800 -n kafka-test
 
-# Create Profile pointing to s3 bucket
+# Create Profile pointing to S3 bucket
 $ kanctl create profile s3compliant --access-key <aws-access-key> \
         --secret-key <aws-secret-key> \
         --bucket <aws-bucket-name> --region <aws-region-name> \
         --namespace kafka-test
-secret 's3-secret-gkvgi4' created
-profile 's3-profile-fn64h' created
 
 # Blueprint Definition
 $ kubectl create -f ./kafka-blueprint.yaml -n kasten-io
 ```
 
 ## Perform Backup
-To perform backup to s3, an actionset is created which will run kafka-connect
+To perform backup to S3, an ActionSet is created to run `kafka-connect`.
 ```bash
 # Create an actionset
 $ kanctl create actionset --action backup --namespace kasten-io --blueprint kafka-blueprint --profile kafka/s3-profile-fn64h --objects v1/configmaps/kafka/s3config
@@ -116,11 +114,11 @@ We can verify the backup operation by adding some data to the topic configured e
 ```bash
 $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --bootstrap-server=my-cluster-kafka-external-bootstrap:9094 --list
 ```
-* Create a topic to Kafka server
+* Create a topic on Kafka server
 ```bash
 $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --create --topic blogpost --bootstrap-server my-cluster-kafka-external-bootstrap:9094
 ```
-* create a producer to push data to blogpost topic
+* Create a producer to push data to blogpost topic
 ```bash
 $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-external-bootstrap:9094 --topic blogpost
 
@@ -129,31 +127,31 @@ $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafk
 >{"title":"Student of the year","year":2001,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
 >{"title":"ABCD","year":2002,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
 ```
-* check S3 bucket for the topic
+* Check S3 bucket for the topic
 
 ## Perform Restore
-To perform restore, a prehook restore operation is performed which will purge all events from the topics in the kafka cluster whose backups were performed previously.
+To perform restore, a pre-hook restore operation is performed which will purge all events from the topics in the Kafka cluster whose backups were performed previously.
 ```bash
 
 $ kanctl create actionset --action restore --namespace kasten-io --blueprint kafka-blueprint --profile kafka/s3-profile-fn64h --objects v1/configmaps/kafka/s3config
 
 ```
 **NOTE:**
-* Here the topic needs to be already present in the kafka cluster.
-* Before running prehook operation confirm that no other consumer is consuming data from that topic
+* Here, the topic must be present in the Kafka cluster
+* Before running pre-hook operation, confirm that no other consumer is consuming data from that topic
 
 ## Verify restore
 Create a consumer for topics
 ```bash
-# creating a consumer on a different terminal
+# Creating a consumer on a different terminal
 $ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-external-bootstrap:9094 --topic blogpost --from-beginning
 ```
-All the messages restored can be viewed
+All the messages restored can be viewed.
 
 ## Delete Blueprint and Profile CR
 
 ```bash
-# delete the blueprint
+# Delete the blueprint
 $ kubectl delete blueprints.cr.kanister.io <blueprint-name> -n kasten-io
 # Get the profile
 $ kubectl get profiles.cr.kanister.io -n kafka-test
@@ -165,21 +163,21 @@ $ kubectl delete profiles.cr.kanister.io s3-profile-fn64h -n kafka-test
 
 ### Troubleshooting
 
-If you run into any issues with the above commands,
+The following debug commands can be used to troubleshoot issues during the backup and restore processes:
 
-you can check the logs of the controller using:
+Check Kanister controller logs:
 ```bash
 $ kubectl --namespace kasten-io logs -l run=kanister-svc -f
 ```
-you can check events of the actionset:
+Check events of the ActionSet:
 ```bash
 $ kubectl describe actionset <actionset-name> -n kasten-io
 ```
-you can also check the logs of kanister job
+Check the logs of the Kanister job
 ```bash
-# get the pod name
+# Get the Kanister job pod name
 $ kubectl get pod -n kafka-test
 
-# check the logs
+# Check the logs
 $ kubectl logs <name-of-pod-running the job> -n kafka-test
 ```
