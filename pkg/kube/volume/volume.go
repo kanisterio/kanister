@@ -111,6 +111,7 @@ type CreatePVCFromSnapshotArgs struct {
 	SnapshotName     string
 	RestoreSize      string
 	Labels           map[string]string
+	VolumeMode       *v1.PersistentVolumeMode
 	AccessModes      []v1.PersistentVolumeAccessMode
 }
 
@@ -149,6 +150,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: args.AccessModes,
+			VolumeMode:  args.VolumeMode,
 			DataSource: &v1.TypedLocalObjectReference{
 				APIGroup: &snapshotAPIGroup,
 				Kind:     snapshotKind,
