@@ -150,6 +150,16 @@ func (s *PodSuite) TestPod(c *C) {
 				},
 			},
 		},
+		{
+			Namespace:     s.namespace,
+			GenerateName:  "test-",
+			Image:         kanisterToolsImage,
+			ContainerName: "test-container",
+			Command:       []string{"sh", "-c", "tail -f /dev/null"},
+			Labels: map[string]string{
+				"run": "pod",
+			},
+		},
 	}
 
 	for _, po := range podOptions {
@@ -187,6 +197,13 @@ func (s *PodSuite) TestPod(c *C) {
 		if po.Resources.Requests != nil {
 			c.Assert(pod.Spec.Containers[0].Resources.Requests, NotNil)
 			c.Assert(pod.Spec.Containers[0].Resources.Requests, DeepEquals, po.Resources.Requests)
+		}
+
+		switch {
+		case po.ContainerName != "":
+			c.Assert(pod.Spec.Containers[0].Name, Equals, po.ContainerName)
+		default:
+			c.Assert(pod.Spec.Containers[0].Name, Equals, defaultContainerName)
 		}
 
 		c.Assert(err, IsNil)
