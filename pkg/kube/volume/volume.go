@@ -48,7 +48,7 @@ const (
 // An empty 'targetVolID' indicates the caller would like the PV to be dynamically provisioned
 // An empty 'name' indicates the caller would like the name to be auto-generated
 // An error indicating that the PVC already exists is ignored (for idempotency)
-func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, name string, sizeInBytes int64, targetVolID string, annotations map[string]string, accessmodes []v1.PersistentVolumeAccessMode) (string, error) {
+func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, name string, sizeInBytes int64, targetVolID string, annotations map[string]string, accessmodes []v1.PersistentVolumeAccessMode, volumemode *v1.PersistentVolumeMode) (string, error) {
 	sizeFmt := fmt.Sprintf("%d", sizeInBytes)
 	size, err := resource.ParseQuantity(sizeFmt)
 	emptyStorageClass := ""
@@ -64,6 +64,7 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: accessmodes,
+			VolumeMode:  volumemode,
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
 					v1.ResourceName(v1.ResourceStorage): size,
@@ -184,7 +185,7 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 
 // CreatePV creates a PersistentVolume and returns its name
 // For retry idempotency, checks whether PV associated with volume already exists
-func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstorage.Volume, volType blockstorage.Type, annotations map[string]string, accessmodes []v1.PersistentVolumeAccessMode) (string, error) {
+func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstorage.Volume, volType blockstorage.Type, annotations map[string]string, accessmodes []v1.PersistentVolumeAccessMode, volumemode *v1.PersistentVolumeMode) (string, error) {
 	sizeFmt := fmt.Sprintf("%d", vol.SizeInBytes)
 	size, err := resource.ParseQuantity(sizeFmt)
 	if err != nil {
@@ -215,6 +216,7 @@ func CreatePV(ctx context.Context, kubeCli kubernetes.Interface, vol *blockstora
 				v1.ResourceName(v1.ResourceStorage): size,
 			},
 			AccessModes:                   accessmodes,
+			VolumeMode:                    volumemode,
 			PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
 		},
 	}
