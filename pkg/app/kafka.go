@@ -160,11 +160,6 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error deleting config Map %s, %s", kc.name, out)
 	}
-	deleteCluster := []string{"delete", "-f", fmt.Sprintf("%s/%s", kc.pathToYaml, kc.kafkaYaml)}
-	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", deleteCluster)
-	if err != nil {
-		return errors.Wrapf(err, "Error deleting kafka cluster %s, %s", kc.name, out)
-	}
 
 	err = cli.Uninstall(ctx, kc.chart.Release, kc.namespace)
 	if err != nil {
@@ -209,7 +204,15 @@ func (kc *KafkaCluster) IsReady(ctx context.Context) (bool, error) {
 	log.Info().Print("Waiting for application to be ready.", field.M{"app": kc.name})
 	ctx, cancel := context.WithTimeout(ctx, kafkaClusterWaitTimeout)
 	defer cancel()
-	err := kube.WaitOnStatefulSetReady(ctx, kc.cli, kc.namespace, "my-cluster-kafka")
+	err := kube.WaitOnDeploymentReady(ctx, kc.cli, kc.namespace, "strimzi-cluster-operator")
+	if err != nil {
+		return false, err
+	}
+	err = kube.WaitOnDeploymentReady(ctx, kc.cli, kc.namespace, "my-cluster-entity-operator")
+	if err != nil {
+		return false, err
+	}
+	err = kube.WaitOnStatefulSetReady(ctx, kc.cli, kc.namespace, "my-cluster-kafka")
 	if err != nil {
 		return false, err
 	}
