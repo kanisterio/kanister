@@ -167,11 +167,11 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 		return err
 	}
 
-	deleteCRD := []string{"delete", "-f", fmt.Sprintf("%s/%s", kc.pathToYaml, kc.crdYaml)}
-	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
-	if err != nil {
-		return errors.Wrapf(err, "Error deleting CRD %s, %s", kc.name, out)
-	}
+	// deleteCRD := []string{"delete", "-f", fmt.Sprintf("%s/%s", kc.pathToYaml, kc.crdYaml)}
+	// out, err = helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "Error deleting CRD %s, %s", kc.name, out)
+	// }
 
 	log.Print("Application Deleted successfully.", field.M{"app": kc.name})
 	return nil
