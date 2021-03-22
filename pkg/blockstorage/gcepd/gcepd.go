@@ -745,7 +745,7 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-west4-c",
 		}, nil
 	}
-	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))
+	return nil, fmt.Errorf("cannot get availability zones for region %s", region)
 }
 
 func isMultiZone(az string) bool {
