@@ -49,7 +49,6 @@ const (
 	sinkConfigPath          = "adobe-s3-sink.properties"
 	sourceConfigPath        = "adobe-s3-source.properties"
 	kafkaConfigPath         = "adobe-kafkaConfiguration.properties"
-	crdYaml                 = "CRD.yaml"
 	kafkaYaml               = "kafka-cluster.yaml"
 	topic                   = "blogs"
 	chart                   = "strimzi-kafka-operator"
@@ -63,7 +62,6 @@ type KafkaCluster struct {
 	sourceConfigPath string
 	kafkaConfigPath  string
 	pathToYaml       string
-	crdYaml          string
 	kafkaYaml        string
 	topic            string
 	chart            helm.ChartInfo
@@ -80,7 +78,6 @@ func NewKafkaCluster(name, pathToYaml string) App {
 		kafkaConfigPath:  kafkaConfigPath,
 		kafkaYaml:        kafkaYaml,
 		pathToYaml:       pathToYaml,
-		crdYaml:          crdYaml,
 		topic:            topic,
 		chart: helm.ChartInfo{
 			Release:  appendRandString(name),
@@ -166,12 +163,6 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 		log.WithError(err).Print("Failed to uninstall app, you will have to uninstall it manually.", field.M{"app": kc.name})
 		return err
 	}
-
-	// deleteCRD := []string{"delete", "-f", fmt.Sprintf("%s/%s", kc.pathToYaml, kc.crdYaml)}
-	// out, err = helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "Error deleting CRD %s, %s", kc.name, out)
-	// }
 
 	log.Print("Application Deleted successfully.", field.M{"app": kc.name})
 	return nil
