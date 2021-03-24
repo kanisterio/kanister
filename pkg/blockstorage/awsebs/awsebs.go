@@ -144,6 +144,12 @@ func (s *EbsStorage) volumeParse(ctx context.Context, volume interface{}) *block
 	for _, tag := range vol.Tags {
 		tags = append(tags, &blockstorage.KeyValue{Key: aws.StringValue(tag.Key), Value: aws.StringValue(tag.Value)})
 	}
+	var attrs map[string]string
+	if vol.State != nil {
+		attrs = map[string]string{
+			"State": *vol.State,
+		}
+	}
 	return &blockstorage.Volume{
 		Type:         s.Type(),
 		ID:           aws.StringValue(vol.VolumeId),
@@ -151,6 +157,7 @@ func (s *EbsStorage) volumeParse(ctx context.Context, volume interface{}) *block
 		Encrypted:    aws.BoolValue(vol.Encrypted),
 		VolumeType:   aws.StringValue(vol.VolumeType),
 		SizeInBytes:  aws.Int64Value(vol.Size) * blockstorage.BytesInGi,
+		Attributes:   attrs,
 		Tags:         tags,
 		Iops:         aws.Int64Value(vol.Iops),
 		CreationTime: blockstorage.TimeStamp(aws.TimeValue(vol.CreateTime)),
@@ -163,7 +170,7 @@ func (s *EbsStorage) VolumesList(ctx context.Context, tags map[string]string, zo
 	var fltrs []*ec2.Filter
 	dvi := &ec2.DescribeVolumesInput{}
 	for k, v := range tags {
-		fltr := ec2.Filter{Name: &k, Values: []*string{&v}}
+		fltr := ec2.Filter{Name: aws.String("tag:" + k), Values: []*string{&v}}
 		fltrs = append(fltrs, &fltr)
 	}
 
@@ -206,7 +213,7 @@ func (s *EbsStorage) SnapshotsList(ctx context.Context, tags map[string]string) 
 	var fltrs []*ec2.Filter
 	dsi := &ec2.DescribeSnapshotsInput{}
 	for k, v := range tags {
-		fltr := ec2.Filter{Name: &k, Values: []*string{&v}}
+		fltr := ec2.Filter{Name: aws.String("tag:" + k), Values: []*string{&v}}
 		fltrs = append(fltrs, &fltr)
 	}
 

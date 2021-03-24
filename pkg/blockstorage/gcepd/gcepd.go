@@ -303,7 +303,7 @@ func (s *GpdStorage) snapshotParse(ctx context.Context, snap *compute.Snapshot) 
 // VolumesList is part of blockstorage.Provider
 func (s *GpdStorage) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	var vols []*blockstorage.Volume
-	fltrs := blockstorage.MapToString(tags, " AND ", ":")
+	fltrs := blockstorage.MapToString(blockstorage.SanitizeTags(tags), " AND ", ":", "labels.")
 	if isMultiZone(zone) {
 		region, err := getRegionFromZones(zone)
 		if err != nil {
@@ -334,10 +334,10 @@ func (s *GpdStorage) VolumesList(ctx context.Context, tags map[string]string, zo
 	return vols, nil
 }
 
-// SnapshotsList is part of blockstorage.Provider
+// SnapshotsList is part of blockstorage.Provider. It filters on tags.
 func (s *GpdStorage) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	var snaps []*blockstorage.Snapshot
-	fltrs := blockstorage.MapToString(tags, " AND ", ":")
+	fltrs := blockstorage.MapToString(blockstorage.SanitizeTags(tags), " AND ", ":", "labels.")
 	req := s.service.Snapshots.List(s.project).Filter(fltrs)
 	if err := req.Pages(ctx, func(page *compute.SnapshotList) error {
 		for _, snapshot := range page.Items {
@@ -647,6 +647,12 @@ func staticRegionToZones(region string) ([]string, error) {
 			"australia-southeast1-b",
 			"australia-southeast1-c",
 		}, nil
+	case "europe-central2":
+		return []string{
+			"europe-central2-a",
+			"europe-central2-b",
+			"europe-central2-c",
+		}, nil
 	case "europe-north1":
 		return []string{
 			"europe-north1-a",
@@ -739,7 +745,7 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-west4-c",
 		}, nil
 	}
-	return nil, errors.New("cannot get availability zones for region")
+	return nil, fmt.Errorf("cannot get availability zones for region %s", region)
 }
 
 func isMultiZone(az string) bool {
