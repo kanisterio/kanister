@@ -116,15 +116,27 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error intalling operator %s through helm.", kc.name)
 	}
-	createKafka := []string{"create", "-n", namespace, "-f", fmt.Sprintf("%s/%s", kc.pathToYaml, kc.kafkaYaml)}
+	createKafka := []string{
+		"create",
+		"-n", namespace,
+		"-f", fmt.Sprintf("%s/%s", kc.pathToYaml, kc.kafkaYaml),
+	}
 	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", createKafka)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing the application %s, %s", kc.name, out)
 	}
-	createConfig := []string{"create", "-n", namespace, "configmap", configMapName, fmt.Sprintf("--from-file=adobe-s3-sink.properties=%s/%s", kc.pathToYaml, kc.sinkConfigPath), fmt.Sprintf("--from-file=adobe-s3-source.properties=%s/%s", kc.pathToYaml, kc.sourceConfigPath), fmt.Sprintf("--from-file=adobe-kafkaConfiguration.properties=%s/%s", kc.pathToYaml, kc.kafkaConfigPath), "--from-literal=timeinSeconds=1800"}
+	createConfig := []string{
+		"create",
+		"-n", namespace,
+		"configmap", configMapName,
+		fmt.Sprintf("--from-file=adobe-s3-sink.properties=%s/%s", kc.pathToYaml, kc.sinkConfigPath),
+		fmt.Sprintf("--from-file=adobe-s3-source.properties=%s/%s", kc.pathToYaml, kc.sourceConfigPath),
+		fmt.Sprintf("--from-file=adobe-kafkaConfiguration.properties=%s/%s", kc.pathToYaml, kc.kafkaConfigPath),
+		"--from-literal=timeinSeconds=1800",
+	}
 	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", createConfig)
 	if err != nil {
-		return errors.Wrapf(err, "Error creating config Map %s, %s", kc.name, out)
+		return errors.Wrapf(err, "Error creating ConfigMap %s, %s", kc.name, out)
 	}
 	log.Print("Application was installed successfully.", field.M{"app": kc.name})
 	return nil
@@ -155,7 +167,7 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 	deleteConfig := []string{"delete", "-n", kc.namespace, "configmap", configMapName}
 	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", deleteConfig)
 	if err != nil {
-		return errors.Wrapf(err, "Error deleting config Map %s, %s", kc.name, out)
+		return errors.Wrapf(err, "Error deleting ConfigMap %s, %s", kc.name, out)
 	}
 
 	err = cli.Uninstall(ctx, kc.chart.Release, kc.namespace)
@@ -164,13 +176,25 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 		return err
 	}
 
-	log.Print("Application Deleted successfully.", field.M{"app": kc.name})
+	log.Print("Application deleted successfully.", field.M{"app": kc.name})
 	return nil
 }
 
 func (kc *KafkaCluster) Ping(ctx context.Context) error {
 	log.Print("Pinging the application", field.M{"app": kc.name})
-	pingKafka := []string{"run", "-n", kc.namespace, "kafka-ping", "-ti", "--rm=true", "--image=strimzi/kafka:0.20.0-kafka-2.6.0", "--restart=Never", "--", "bin/kafka-topics.sh", "--list", "--bootstrap-server=my-cluster-kafka-external-bootstrap:9094"}
+	pingKafka := []string{
+		"run",
+		"-n", kc.namespace,
+		"kafka-ping",
+		"-ti",
+		"--rm=true",
+		"--image=strimzi/kafka:0.20.0-kafka-2.6.0",
+		"--restart=Never",
+		"--",
+		"bin/kafka-topics.sh",
+		"--list",
+		"--bootstrap-server=my-cluster-kafka-external-bootstrap:9094",
+	}
 	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", pingKafka)
 	if err != nil {
 		return errors.Wrapf(err, "Error Pinging the app for %s, %s.", kc.name, out)
@@ -184,7 +208,7 @@ func (kc *KafkaCluster) Insert(ctx context.Context) error {
 
 	err := produce(ctx, kc.topic, kc.namespace)
 	if err != nil {
-		return errors.Wrapf(err, "Error Insert the record for %s", kc.name)
+		return errors.Wrapf(err, "Error inserting the record for %s", kc.name)
 	}
 
 	log.Print("Successfully inserted record in the application.", field.M{"app": kc.name})
@@ -275,7 +299,7 @@ func produce(ctx context.Context, topic string, namespace string) error {
 
 // LoadConfig returns a kubernetes client config based on global settings.
 func LoadConfig() (*rest.Config, error) {
-	//	log.Print("Attempting to use InCluster config")
+	// log.Print("Attempting to use InCluster config")
 	config, err := rest.InClusterConfig()
 	if err == nil {
 		return config, nil
@@ -353,7 +377,7 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 
 	f, err := portforward.New(dialer, []string{fmt.Sprintf(":%s", pPort)}, ctx.Done(), readyChan, pwo, pwe)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create portforward")
+		return nil, errors.Wrapf(err, "Failed to create port forward")
 	}
 
 	go func() {
@@ -364,7 +388,7 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 	case <-readyChan:
 		log.Print("PortForward is Ready")
 	case err = <-errCh:
-		return nil, errors.Wrapf(err, "Failed to get Ports from forwarded")
+		return nil, errors.Wrapf(err, "Failed to get ports from forwarded ports")
 	}
 
 	return f, nil
@@ -392,7 +416,7 @@ func consume(ctx context.Context, topic string, namespace string) (int, error) {
 
 	err = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	if err != nil {
-		//		log.Print("failed to set ReadDeadline:", err)
+		// log.Print("failed to set ReadDeadline:", err)
 		return 0, err
 	}
 	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
