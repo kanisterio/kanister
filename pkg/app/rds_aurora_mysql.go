@@ -298,7 +298,7 @@ func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
 		}
 	}()
 
-	query, err := db.Prepare(fmt.Sprintf("DROP DATABASE IF EXISTS %s;", a.dbName))
+	query, err := db.Prepare("DROP TABLE IF EXISTS pets;")
 	if err != nil {
 		return errors.Wrap(err, "Error preparing reset query")
 	}
@@ -332,25 +332,6 @@ func (a *RDSAuroraMySQLDB) Initialize(context.Context) error {
 			log.Print("Error closing DB connection", field.M{"app": a.name})
 		}
 	}()
-
-	createDB, err := db.Prepare(fmt.Sprintf("create database if not exists %s;", a.dbName))
-	if err != nil {
-		return errors.Wrap(err, "Error creating database while initializing app")
-	}
-
-	x, err := db.Begin()
-	if err != nil {
-		return errors.Wrap(err, "Error beginning transaction to create database")
-	}
-
-	_, err = x.Stmt(createDB).Exec()
-	if err != nil {
-		return errors.Wrap(err, "Error creating database while initializing Aurora application")
-	}
-
-	if err = x.Commit(); err != nil {
-		return errors.Wrap(err, "Error committing database creation")
-	}
 
 	query, err := db.Prepare("CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);")
 	if err != nil {
