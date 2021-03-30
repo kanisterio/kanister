@@ -44,10 +44,10 @@ import (
 
 const (
 	kafkaClusterWaitTimeout = 5 * time.Minute
-	yamlFileRepo            = "../../examples/kafka/adobe-s3-connector"
+	s3ConnectorYamlFileRepo            = "../../examples/kafka/adobe-s3-connector"
 	configMapName           = "s3config"
-	sinkConfigPath          = "adobe-s3-sink.properties"
-	sourceConfigPath        = "adobe-s3-source.properties"
+	s3SinkConfigPath          = "adobe-s3-sink.properties"
+	s3SourceConfigPath        = "adobe-s3-source.properties"
 	kafkaConfigPath         = "adobe-kafkaConfiguration.properties"
 	kafkaYaml               = "kafka-cluster.yaml"
 	topic                   = "blogs"
@@ -299,7 +299,6 @@ func produce(ctx context.Context, topic string, namespace string) error {
 
 // LoadConfig returns a kubernetes client config based on global settings.
 func LoadConfig() (*rest.Config, error) {
-	// log.Print("Attempting to use InCluster config")
 	config, err := rest.InClusterConfig()
 	if err == nil {
 		return config, nil
