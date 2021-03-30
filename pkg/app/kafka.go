@@ -292,7 +292,7 @@ func produce(ctx context.Context, topic string, namespace string) error {
 	return err
 }
 
-// K8SServicePortForward creates a service port forwarding and returns the forwarder and the error if any
+// K8SServicePortForward creates a service port forwarding and returns the forwarder and error if any
 func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort string) (*portforward.PortForwarder, error) {
 	errCh := make(chan error)
 	readyChan := make(chan struct{}, 1)
