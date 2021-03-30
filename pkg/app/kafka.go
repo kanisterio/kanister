@@ -289,11 +289,7 @@ func produce(ctx context.Context, topic string, namespace string) error {
 	_, err = conn.WriteMessages(
 		kafka.Message{Value: []byte("{'title':'The Matrix','year':1999,'cast':['Keanu Reeves','Laurence Fishburne','Carrie-Anne Moss','Hugo Weaving','Joe Pantoliano'],'genres':['Science Fiction']}")},
 	)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // K8SServicePortForward creates a service port forwarding and returns the forwarder and the error if any
