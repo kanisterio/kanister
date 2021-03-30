@@ -21,17 +21,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/segmentio/kafka-go"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 
@@ -43,42 +38,49 @@ import (
 )
 
 const (
-	kafkaClusterWaitTimeout = 5 * time.Minute
-	s3ConnectorYamlFileRepo            = "../../examples/kafka/adobe-s3-connector"
-	configMapName           = "s3config"
+	kafkaClusterWaitTimeout   = 5 * time.Minute
+	s3ConnectorYamlFileRepo   = "../../examples/kafka/adobe-s3-connector"
+	configMapName             = "s3config"
 	s3SinkConfigPath          = "adobe-s3-sink.properties"
 	s3SourceConfigPath        = "adobe-s3-source.properties"
-	kafkaConfigPath         = "adobe-kafkaConfiguration.properties"
-	kafkaYaml               = "kafka-cluster.yaml"
-	topic                   = "blogs"
-	chart                   = "strimzi-kafka-operator"
+	kafkaConfigPath           = "adobe-kafkaConfiguration.properties"
+	kafkaYaml                 = "kafka-cluster.yaml"
+	topic                     = "blogs"
+	chart                     = "strimzi-kafka-operator"
+	strimziImage              = "strimzi/kafka:0.20.0-kafka-2.6.0"
+	bootstrapServerHost       = "my-cluster-kafka-external-bootstrap"
+	bootstrapServerPort       = "9094"
+	strimziOperatorDeployment = "strimzi-cluster-operator"
+	kafkaClusterOperator      = "my-cluster-entity-operator"
+	kafkaStatefulSet          = "my-cluster-kafka"
+	zookeeperStatefulset      = "my-cluster-zookeeper"
 )
 
 type KafkaCluster struct {
-	cli              kubernetes.Interface
-	name             string
-	namespace        string
-	sinkConfigPath   string
-	sourceConfigPath string
-	kafkaConfigPath  string
-	pathToYaml       string
-	kafkaYaml        string
-	topic            string
-	chart            helm.ChartInfo
+	cli                kubernetes.Interface
+	name               string
+	namespace          string
+	s3SinkConfigPath   string
+	s3SourceConfigPath string
+	kafkaConfigPath    string
+	pathToYaml         string
+	kafkaYaml          string
+	topic              string
+	chart              helm.ChartInfo
 }
 
 func NewKafkaCluster(name, pathToYaml string) App {
 	if pathToYaml == "" {
-		pathToYaml = yamlFileRepo
+		pathToYaml = s3ConnectorYamlFileRepo
 	}
 	return &KafkaCluster{
-		name:             name,
-		sinkConfigPath:   sinkConfigPath,
-		sourceConfigPath: sourceConfigPath,
-		kafkaConfigPath:  kafkaConfigPath,
-		kafkaYaml:        kafkaYaml,
-		pathToYaml:       pathToYaml,
-		topic:            topic,
+		name:               name,
+		s3SinkConfigPath:   s3SinkConfigPath,
+		s3SourceConfigPath: s3SourceConfigPath,
+		kafkaConfigPath:    kafkaConfigPath,
+		kafkaYaml:          kafkaYaml,
+		pathToYaml:         pathToYaml,
+		topic:              topic,
 		chart: helm.ChartInfo{
 			Release:  appendRandString(name),
 			RepoURL:  helm.KafkaOperatorRepoURL,
@@ -94,9 +96,6 @@ func (kc *KafkaCluster) Init(context.Context) error {
 		return err
 	}
 	kc.cli, err = kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
 	return err
 }
 
@@ -129,8 +128,8 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 		"create",
 		"-n", namespace,
 		"configmap", configMapName,
-		fmt.Sprintf("--from-file=adobe-s3-sink.properties=%s/%s", kc.pathToYaml, kc.sinkConfigPath),
-		fmt.Sprintf("--from-file=adobe-s3-source.properties=%s/%s", kc.pathToYaml, kc.sourceConfigPath),
+		fmt.Sprintf("--from-file=adobe-s3-sink.properties=%s/%s", kc.pathToYaml, kc.s3SinkConfigPath),
+		fmt.Sprintf("--from-file=adobe-s3-source.properties=%s/%s", kc.pathToYaml, kc.s3SourceConfigPath),
 		fmt.Sprintf("--from-file=adobe-kafkaConfiguration.properties=%s/%s", kc.pathToYaml, kc.kafkaConfigPath),
 		"--from-literal=timeinSeconds=1800",
 	}
@@ -188,12 +187,12 @@ func (kc *KafkaCluster) Ping(ctx context.Context) error {
 		"kafka-ping",
 		"-ti",
 		"--rm=true",
-		"--image=strimzi/kafka:0.20.0-kafka-2.6.0",
+		fmt.Sprintf("--image=%s", strimziImage),
 		"--restart=Never",
 		"--",
 		"bin/kafka-topics.sh",
 		"--list",
-		"--bootstrap-server=my-cluster-kafka-external-bootstrap:9094",
+		fmt.Sprintf("--bootstrap-server=%s:%s", bootstrapServerHost, bootstrapServerPort),
 	}
 	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", pingKafka)
 	if err != nil {
@@ -219,19 +218,19 @@ func (kc *KafkaCluster) IsReady(ctx context.Context) (bool, error) {
 	log.Info().Print("Waiting for application to be ready.", field.M{"app": kc.name})
 	ctx, cancel := context.WithTimeout(ctx, kafkaClusterWaitTimeout)
 	defer cancel()
-	err := kube.WaitOnDeploymentReady(ctx, kc.cli, kc.namespace, "strimzi-cluster-operator")
+	err := kube.WaitOnDeploymentReady(ctx, kc.cli, kc.namespace, strimziOperatorDeployment)
 	if err != nil {
 		return false, err
 	}
-	err = kube.WaitOnDeploymentReady(ctx, kc.cli, kc.namespace, "my-cluster-entity-operator")
+	err = kube.WaitOnDeploymentReady(ctx, kc.cli, kc.namespace, kafkaClusterOperator)
 	if err != nil {
 		return false, err
 	}
-	err = kube.WaitOnStatefulSetReady(ctx, kc.cli, kc.namespace, "my-cluster-kafka")
+	err = kube.WaitOnStatefulSetReady(ctx, kc.cli, kc.namespace, kafkaStatefulSet)
 	if err != nil {
 		return false, err
 	}
-	err = kube.WaitOnStatefulSetReady(ctx, kc.cli, kc.namespace, "my-cluster-zookeeper")
+	err = kube.WaitOnStatefulSetReady(ctx, kc.cli, kc.namespace, zookeeperStatefulset)
 	if err != nil {
 		return false, err
 	}
@@ -264,7 +263,7 @@ func (kc *KafkaCluster) Initialize(ctx context.Context) error {
 // to produce messages to kafka
 func produce(ctx context.Context, topic string, namespace string) error {
 	partition := 0
-	forwarder, err := K8SServicePortForward(ctx, "my-cluster-kafka-external-bootstrap", namespace, "9094")
+	forwarder, err := K8SServicePortForward(ctx, bootstrapServerHost, namespace, bootstrapServerPort)
 	if err != nil {
 		return err
 	}
@@ -280,6 +279,9 @@ func produce(ctx context.Context, topic string, namespace string) error {
 	if err != nil {
 		return err
 	}
+
+	defer conn.Close()
+
 	err = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	if err != nil {
 		return err
@@ -291,39 +293,21 @@ func produce(ctx context.Context, topic string, namespace string) error {
 		return err
 	}
 
-	if err := conn.Close(); err != nil {
-		return err
-	}
 	return nil
-}
-
-// LoadConfig returns a kubernetes client config based on global settings.
-func LoadConfig() (*rest.Config, error) {
-	config, err := rest.InClusterConfig()
-	if err == nil {
-		return config, nil
-	}
-
-	homeConfig := filepath.Join(os.Getenv("HOME"), ".kube/config")
-	config, err = clientcmd.BuildConfigFromFlags("", homeConfig)
-	if err == nil {
-		return config, nil
-	}
-	return nil, errors.Wrapf(err, "Failed to load default k8s config")
 }
 
 // K8SServicePortForward creates a service port forwarding and returns the forwarder and the error if any
 func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort string) (*portforward.PortForwarder, error) {
-	var selector string
 	errCh := make(chan error)
 	readyChan := make(chan struct{}, 1)
 
-	cfg, err := LoadConfig()
+	cfg, err := kube.LoadConfig()
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to Load config")
 	}
 
 	clientset, err := kubernetes.NewForConfig(cfg)
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create Clienset for k8s config")
 	}
@@ -336,12 +320,9 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get service for component")
 	}
-	for k, v := range svc.Spec.Selector {
-		selector = fmt.Sprintf("%s%s=%s,", selector, k, v)
-	}
-	selector = strings.TrimSuffix(selector, ",")
+
 	pods, err := clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
-		LabelSelector: selector,
+		LabelSelector: metav1.FormatLabelSelector(metav1.SetAsLabelSelector(svc.Spec.Selector)),
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to list pods for component")
@@ -395,7 +376,7 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 
 func consume(ctx context.Context, topic string, namespace string) (int, error) {
 	partition := 0
-	forwarder, err := K8SServicePortForward(ctx, "my-cluster-kafka-external-bootstrap", namespace, "9094")
+	forwarder, err := K8SServicePortForward(ctx, bootstrapServerHost, namespace, bootstrapServerPort)
 	if err != nil {
 		log.Print("error getting forwarder")
 		return 0, err
@@ -413,9 +394,10 @@ func consume(ctx context.Context, topic string, namespace string) (int, error) {
 		return 0, err
 	}
 
+	defer conn.Close()
+
 	err = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	if err != nil {
-		// log.Print("failed to set ReadDeadline:", err)
 		return 0, err
 	}
 	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
@@ -435,9 +417,6 @@ func consume(ctx context.Context, topic string, namespace string) (int, error) {
 		if err := batch.Close(); err != nil {
 			return 0, err
 		}
-	}
-	if err := conn.Close(); err != nil {
-		return 0, err
 	}
 	return count, nil
 }
