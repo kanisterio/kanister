@@ -62,5 +62,6 @@ func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEn
 	}
 
 	// Create a kopia snapshot
-	return kankopia.SnapshotSource(ctx, rep, u, sourceInfo, root, snapshotDescription)
+	_, _, err = kankopia.SnapshotSource(ctx, rep, u, sourceInfo, root, snapshotDescription)
+	return errors.Wrap(err, "Failed to create kopia snapshot")
 }
