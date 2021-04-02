@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -61,4 +62,9 @@ func targetWriter(target string) (io.Writer, error) {
 
 func locationPull(ctx context.Context, p *param.Profile, path string, target io.Writer) error {
 	return location.Read(ctx, target, *p, path)
+}
+
+// kopiaLocationPull pulls the data from a kopia snapshot into the given target
+func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Writer) error {
+	return kopia.Read(ctx, path, backupID, target)
 }
