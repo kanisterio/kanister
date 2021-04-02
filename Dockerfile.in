@@ -8,7 +8,7 @@ LABEL name=ARG_BIN \
       release="${kanister_version}" \
       summary="Microservice for application-specific data management" \
       maintainer="Tom Manville<tom@kasten.io>" \
-      description="Framework and utilities for application-specific data management"
+      description="Framework and utilities for application-specific data management, has updated openssl-libs."
 
 RUN microdnf install git && \
     microdnf update openssl-libs && \
