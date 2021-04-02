@@ -26,6 +26,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
+const (
+	backupIDFlagName = "backupID"
+)
+
 func newLocationPullCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pull <target>",
@@ -36,7 +40,12 @@ func newLocationPullCommand() *cobra.Command {
 			return runLocationPull(c, args)
 		},
 	}
+	cmd.Flags().StringP(backupIDFlagName, "b", "", "Pass the backup ID from the location push command (optional)")
 	return cmd
+}
+
+func backupIDFlag(cmd *cobra.Command) string {
+	return cmd.Flag(backupIDFlagName).Value.String()
 }
 
 func runLocationPull(cmd *cobra.Command, args []string) error {
