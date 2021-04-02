@@ -35,49 +35,49 @@ func SnapshotSource(
 	sourceInfo snapshot.SourceInfo,
 	rootDir fs.Entry,
 	description string,
-) error {
+) (string, string, error) {
 	fmt.Printf("Snapshotting %v ...\n", sourceInfo)
 
 	t0 := time.Now()
 
 	previous, err := findPreviousSnapshotManifest(ctx, rep, sourceInfo, nil)
 	if err != nil {
-		return errors.Wrap(err, "Failed to find previous kopia manifests")
+		return "", "", errors.Wrap(err, "Failed to find previous kopia manifests")
 	}
 
 	policyTree, err := policy.TreeForSource(ctx, rep, sourceInfo)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get kopia policy tree")
+		return "", "", errors.Wrap(err, "Failed to get kopia policy tree")
 	}
 
 	manifest, err := u.Upload(ctx, rootDir, policyTree, sourceInfo, previous...)
 	if err != nil {
-		return errors.Wrap(err, "Failed to upload the kopia snapshot")
+		return "", "", errors.Wrap(err, "Failed to upload the kopia snapshot")
 	}
 
 	manifest.Description = description
 
 	snapID, err := snapshot.SaveSnapshot(ctx, rep, manifest)
 	if err != nil {
-		return errors.Wrap(err, "Failed to save kopia manifest")
+		return "", "", errors.Wrap(err, "Failed to save kopia manifest")
 	}
 
 	_, err = policy.ApplyRetentionPolicy(ctx, rep, sourceInfo, true)
 	if err != nil {
-		return errors.Wrap(err, "Failed to apply kopia retention policy")
+		return "", "", errors.Wrap(err, "Failed to apply kopia retention policy")
 	}
 
 	if err = policy.SetManual(ctx, rep, sourceInfo); err != nil {
-		return errors.Wrap(err, "Failed to set manual field in kopia scheduling policy for source")
+		return "", "", errors.Wrap(err, "Failed to set manual field in kopia scheduling policy for source")
 	}
 
 	if ferr := rep.Flush(ctx); ferr != nil {
-		return errors.Wrap(ferr, "Failed to flush kopia repository")
+		return "", "", errors.Wrap(ferr, "Failed to flush kopia repository")
 	}
 
 	fmt.Printf("\nCreated snapshot with root %v and ID %v in %v\n", manifest.RootObjectID(), snapID, time.Since(t0).Truncate(time.Second))
 
-	return err
+	return string(snapID), string(manifest.RootObjectID()), nil
 }
 
 // findPreviousSnapshotManifest returns the list of previous snapshots for a given source,
