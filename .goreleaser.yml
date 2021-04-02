@@ -127,6 +127,8 @@ dockers:
   dockerfile: 'docker/kafka-adobes3Connector/image/adobeSink.Dockerfile'
   extra_files:
   - 'docker/kafka-adobes3Connector/image/adobe-monitorsink.sh'
+archives:
+- allow_different_binary_count: true
 snapshot:
   name_template: '{{ .Tag }}'
 checksum:

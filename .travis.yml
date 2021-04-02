@@ -56,6 +56,3 @@ jobs:
     - stage: test
       script:
       - make golint
-    - stage: test
-      script:
-      - make release-snapshot
