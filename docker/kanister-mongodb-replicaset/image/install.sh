@@ -19,10 +19,10 @@ mv 90forceyes /etc/apt/apt.conf.d/
 
 echo "================= Installing basic packages ==================="
 apt-get update && \
-apt-get install curl wget musl-dev python3 rsync -y
+apt-get install curl wget musl-dev python3.6 rsync -y
 
 echo "================= Installing Python packages ==================="
-wget --progress=dot:mega https://bootstrap.pypa.io/pip/3.5/get-pip.py
+wget --progress=dot:mega https://bootstrap.pypa.io/pip/get-pip.py
 python3 get-pip.py
 
 echo "================= Adding awscli ============"
