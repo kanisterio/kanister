@@ -37,14 +37,16 @@ import (
 
 const (
 	// podReadyWaitTimeout is the time to wait for pod to be ready
-	podReadyWaitTimeout = 15 * time.Minute
-	errAccessingNode    = "Failed to get node"
+	podReadyWaitTimeout  = 15 * time.Minute
+	errAccessingNode     = "Failed to get node"
+	defaultContainerName = "container"
 )
 
 // PodOptions specifies options for `CreatePod`
 type PodOptions struct {
 	Annotations        map[string]string
 	Command            []string
+	ContainerName      string
 	GenerateName       string
 	Image              string
 	Labels             map[string]string
@@ -81,7 +83,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
 			{
-				Name:            "container",
+				Name:            defaultContainerName,
 				Image:           opts.Image,
 				Command:         opts.Command,
 				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
@@ -112,6 +114,11 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 			},
 		},
 		Spec: patchedSpecs,
+	}
+
+	// Override default container name if applicable
+	if opts.ContainerName != "" {
+		pod.Spec.Containers[0].Name = opts.ContainerName
 	}
 
 	// Add Annotations and Labels, if specified

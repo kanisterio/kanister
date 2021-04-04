@@ -647,6 +647,12 @@ func staticRegionToZones(region string) ([]string, error) {
 			"australia-southeast1-b",
 			"australia-southeast1-c",
 		}, nil
+	case "europe-central2":
+		return []string{
+			"europe-central2-a",
+			"europe-central2-b",
+			"europe-central2-c",
+		}, nil
 	case "europe-north1":
 		return []string{
 			"europe-north1-a",
@@ -739,7 +745,7 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-west4-c",
 		}, nil
 	}
-	return nil, errors.New("cannot get availability zones for region")
+	return nil, fmt.Errorf("cannot get availability zones for region %s", region)
 }
 
 func isMultiZone(az string) bool {

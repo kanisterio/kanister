@@ -114,7 +114,19 @@ dockers:
   image_templates:
   - 'ghcr.io/kanisterio/foundationdb:6.2.20'
   dockerfile: 'docker/foundationdb/Dockerfile'
-
+- image_templates:
+  - 'ghcr.io/kanisterio/kafka-adobe-s3-source-connector:{{ .Tag }}'
+  dockerfile: 'docker/kafka-adobes3Connector/image/adobeSource.Dockerfile'
+  extra_files:
+  - 'docker/kafka-adobes3Connector/image/adobe-monitorsource.sh'
+  - 'docker/kafka-adobes3Connector/image/cleans3.py'
+- binaries:
+  - kando
+  image_templates:
+  - 'ghcr.io/kanisterio/kafka-adobe-s3-sink-connector:{{ .Tag }}'
+  dockerfile: 'docker/kafka-adobes3Connector/image/adobeSink.Dockerfile'
+  extra_files:
+  - 'docker/kafka-adobes3Connector/image/adobe-monitorsink.sh'
 snapshot:
   name_template: '{{ .Tag }}'
 checksum:

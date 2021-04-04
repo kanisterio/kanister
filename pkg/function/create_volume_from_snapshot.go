@@ -106,11 +106,11 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		}
 
 		annotations := map[string]string{}
-		pvc, err := kubevolume.CreatePVC(ctx, cli, namespace, pvcName, vol.SizeInBytes, vol.ID, annotations, nil)
+		pvc, err := kubevolume.CreatePVC(ctx, cli, namespace, pvcName, vol.SizeInBytes, vol.ID, annotations, nil, nil)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to create PVC for volume %v", *vol)
 		}
-		pv, err := kubevolume.CreatePV(ctx, cli, vol, vol.Type, annotations, nil)
+		pv, err := kubevolume.CreatePV(ctx, cli, vol, vol.Type, annotations, nil, nil)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to create PV for volume %v", *vol)
 		}
