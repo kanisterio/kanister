@@ -81,8 +81,5 @@ func kopiaLocationPush(ctx context.Context, path string, source io.Reader) error
 	if err != nil {
 		return errors.Wrap(err, "Failed to push data using kopia")
 	}
-	if err = output.PrintOutput(kopia.BackupIdentifierKey, snapID); err != nil {
-		return err
-	}
-	return nil
+	return output.PrintOutput(kopia.BackupIdentifierKey, snapID)
 }
