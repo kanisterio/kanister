@@ -227,7 +227,7 @@ var _ = Suite(&MysqlDBDepConfig{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP3_11, app.EphemeralStorage),
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP3_11, app.EphemeralStorage, "5.7"),
 		bp:        app.NewBlueprint("mysql-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -273,7 +273,7 @@ var _ = Suite(&MysqlDBDepConfig4_4{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc4-4-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_4, app.EphemeralStorage),
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_4, app.EphemeralStorage, "5.7"),
 		bp:        app.NewBlueprint("mysql-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
@@ -319,7 +319,7 @@ var _ = Suite(&MysqlDBDepConfig4_5{
 	IntegrationSuite{
 		name:      "mysqldc",
 		namespace: "mysqldc4-5-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_5, app.EphemeralStorage),
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_5, app.EphemeralStorage, "5.7"),
 		bp:        app.NewBlueprint("mysql-dep-config", ""),
 		profile:   newSecretProfile(),
 	},
