@@ -75,6 +75,7 @@ func SnapshotSource(
 		return "", "", errors.Wrap(ferr, "Failed to flush kopia repository")
 	}
 
+	// TODO: Add size related logs for parsing
 	fmt.Printf("\nCreated snapshot with root %v and ID %v in %v\n", manifest.RootObjectID(), snapID, time.Since(t0).Truncate(time.Second))
 
 	return string(snapID), string(manifest.RootObjectID()), nil
