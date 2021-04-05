@@ -369,3 +369,49 @@ var _ = Suite(&Kafka{
 		profile:   newSecretProfile(),
 	},
 })
+
+// OpenShift apps for version 4.7
+// Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
+type MysqlDBDepConfig4_7 struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MysqlDBDepConfig4_7{
+	IntegrationSuite{
+		name:      "mysqldc",
+		namespace: "mysqldc4-7-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_7, app.EphemeralStorage, "8.0"),
+		bp:        app.NewBlueprint("mysql-dep-config", ""),
+		profile:   newSecretProfile(),
+	},
+})
+
+// MongoDB deployed on openshift cluster
+type MongoDBDepConfig4_7 struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MongoDBDepConfig4_7{
+	IntegrationSuite{
+		name:      "mongodb",
+		namespace: "mongodb4-7-test",
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_7, app.EphemeralStorage),
+		bp:        app.NewBlueprint("mongo-dep-config", ""),
+		profile:   newSecretProfile(),
+	},
+})
+
+// PostgreSQL deployed on openshift cluster
+type PostgreSQLDepConfig4_7 struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&PostgreSQLDepConfig4_7{
+	IntegrationSuite{
+		name:      "postgresdepconf",
+		namespace: "postgresdepconf4-5-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_7, app.EphemeralStorage),
+		bp:        app.NewBlueprint("postgres-dep-config", ""),
+		profile:   newSecretProfile(),
+	},
+})
