@@ -40,7 +40,7 @@ type PostgresDB struct {
 	namespace string
 }
 
-// Last tested chart version "9.0.0"
+// Last tested chart version "10.3.15"
 func NewPostgresDB(name string, subPath string) App {
 	return &PostgresDB{
 		name: name,
@@ -54,7 +54,7 @@ func NewPostgresDB(name string, subPath string) App {
 				"image.repository":                      "kanisterio/postgresql",
 				"image.tag":                             "0.50.0",
 				"postgresqlPassword":                    "test@54321",
-				"postgresqlExtendedConf.archiveCommand": "'envdir /bitnami/postgresql/data/env wal-e wal-push %p'",
+				"postgresqlExtendedConf.archiveCommand": "envdir /bitnami/postgresql/data/env wal-e wal-push %p",
 				"postgresqlExtendedConf.archiveMode":    "true",
 				"postgresqlExtendedConf.archiveTimeout": "60",
 				"postgresqlExtendedConf.walLevel":       "archive",
