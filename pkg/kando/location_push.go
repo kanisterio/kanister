@@ -48,8 +48,15 @@ func runLocationPush(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	ks, err := unmarshalStoreServerFlag(cmd)
+	if err != nil {
+		return err
+	}
 	s := pathFlag(cmd)
 	ctx := context.Background()
+	if ks != nil {
+		return connectToKopiaServer(ctx, ks)
+	}
 	return locationPush(ctx, p, s, source)
 }
 
