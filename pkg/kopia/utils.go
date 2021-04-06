@@ -87,3 +87,25 @@ func extractFingerprintFromSliceOfBytes(pemData []byte) (string, error) {
 	fingerprint := sha256.Sum256(cert.Raw)
 	return hex.EncodeToString(fingerprint[:]), nil
 }
+
+// ExtractFingerprintFromCertificateJSON fetch the fingerprint from a base64 encoded,
+// certificate which is also type asserted into a string.
+func ExtractFingerprintFromCertificateJSON(cert string) (string, error) {
+	var certMap map[string]string
+
+	if err := json.Unmarshal([]byte(cert), &certMap); err != nil {
+		return "", errors.Wrap(err, "Failed to unmarshal Kopia API Server Certificate Secret Data")
+	}
+
+	decodedCertData, err := base64.StdEncoding.DecodeString(certMap[tlsCertificateKey])
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to base64 decode Kopia API Server Certificate Secret Data")
+	}
+
+	fingerprint, err := extractFingerprintFromSliceOfBytes(decodedCertData)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to extract fingerprint Kopia API Server Certificate Secret Data")
+	}
+
+	return fingerprint, nil
+}
