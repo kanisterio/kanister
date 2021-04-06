@@ -75,5 +75,5 @@ func locationPull(ctx context.Context, p *param.Profile, path string, target io.
 
 // kopiaLocationPull pulls the data from a kopia snapshot into the given target
 func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Writer) error {
-	return kopia.Read(ctx, path, backupID, target)
+	return kopia.Read(ctx, backupID, path, target)
 }
