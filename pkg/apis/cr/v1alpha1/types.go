@@ -248,6 +248,7 @@ const (
 	LocationTypeGCS         LocationType = "gcs"
 	LocationTypeS3Compliant LocationType = "s3Compliant"
 	LocationTypeAzure       LocationType = "azure"
+	LocationTypeKopia       LocationType = "kopia"
 )
 
 // Location
@@ -257,6 +258,7 @@ type Location struct {
 	Endpoint string       `json:"endpoint"`
 	Prefix   string       `json:"prefix"`
 	Region   string       `json:"region"`
+	Hostname string       `json:"hostname"`
 }
 
 // CredentialType
@@ -265,13 +267,15 @@ type CredentialType string
 const (
 	CredentialTypeKeyPair CredentialType = "keyPair"
 	CredentialTypeSecret  CredentialType = "secret"
+	CredentialTypeKopia   CredentialType = "kopia"
 )
 
 // Credential
 type Credential struct {
-	Type    CredentialType   `json:"type"`
-	KeyPair *KeyPair         `json:"keyPair,omitempty"`
-	Secret  *ObjectReference `json:"secret,omitempty"`
+	Type         CredentialType   `json:"type"`
+	KeyPair      *KeyPair         `json:"keyPair,omitempty"`
+	Secret       *ObjectReference `json:"secret,omitempty"`
+	KopiaSecrets *KopiaSecret     `json:"kopiaSecrets,omitempty"`
 }
 
 // KeyPair
@@ -279,6 +283,17 @@ type KeyPair struct {
 	IDField     string          `json:"idField"`
 	SecretField string          `json:"secretField"`
 	Secret      ObjectReference `json:"secret"`
+}
+
+type KopiaSecret struct {
+	Username       string          `json:"username,omitempty"`
+	UserPassPhrase *KopiaSecretRef `json:"userPassPhrase,omitempty"`
+	TLSCert        *KopiaSecretRef `json:"tlsCert,omitempty"`
+}
+
+type KopiaSecretRef struct {
+	Key    string           `json:"key"`
+	Secret *ObjectReference `json:"secret"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

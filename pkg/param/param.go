@@ -108,19 +108,28 @@ type CredentialType string
 const (
 	CredentialTypeKeyPair CredentialType = "keyPair"
 	CredentialTypeSecret  CredentialType = "secret"
+	CredentialTypeKopia   CredentialType = "kopia"
 )
 
 // Credential resolves the storage
 type Credential struct {
-	Type    CredentialType
-	KeyPair *KeyPair
-	Secret  *v1.Secret
+	Type        CredentialType
+	KeyPair     *KeyPair
+	Secret      *v1.Secret
+	KopiaServer *StoreServerCreds
 }
 
 // KeyPair is a credential that contains two strings: an ID and a secret.
 type KeyPair struct {
 	ID     string
 	Secret string
+}
+
+// StoreServerCreds contains creds to communicate with Kopia server
+type StoreServerCreds struct {
+	Username string
+	Password string
+	Cert     string
 }
 
 // Phase represents a Blueprint phase and contains the phase output
@@ -240,6 +249,8 @@ func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1
 		return fetchKeyPairCredential(ctx, cli, c.KeyPair)
 	case crv1alpha1.CredentialTypeSecret:
 		return fetchSecretCredential(ctx, cli, c.Secret)
+	case crv1alpha1.CredentialTypeKopia:
+		return fetchKopiaCredential(ctx, cli, c.KopiaSecrets)
 	default:
 		return nil, errors.Errorf("CredentialType '%s' not supported", c.Type)
 	}
@@ -448,6 +459,48 @@ func fetchPVCParams(ctx context.Context, cli kubernetes.Interface, namespace, na
 	return &PVCParams{
 		Name:      name,
 		Namespace: namespace,
+	}, nil
+}
+
+func fetchKopiaCredential(ctx context.Context, cli kubernetes.Interface, ks *crv1alpha1.KopiaSecret) (*Credential, error) {
+	if ks == nil {
+		return nil, errors.New("Kopia Secret reference cannot be nil")
+	}
+
+	if ks.UserPassPhrase.Secret == nil {
+		return nil, errors.New("Kopia UserPassPhrase Secret reference cannot be nil")
+	}
+
+	passSecret, err := cli.CoreV1().Secrets(ks.UserPassPhrase.Secret.Namespace).Get(ctx, ks.UserPassPhrase.Secret.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to fetch the secret %s/%s", ks.UserPassPhrase.Secret.Namespace, ks.UserPassPhrase.Secret.Name)
+	}
+	//if err = secrets.ValidateCredentials(s); err != nil {
+	//	return nil, err
+	//}
+	password, ok := passSecret.Data[ks.UserPassPhrase.Key]
+	if !ok {
+		return nil, errors.New("Failed to fetch userPassPhrase from secret")
+	}
+
+	if ks.TLSCert == nil || ks.TLSCert.Secret == nil {
+		return nil, errors.New("Kopia TLS cert Secret reference cannot be nil")
+	}
+	tlsSecret, err := cli.CoreV1().Secrets(ks.TLSCert.Secret.Namespace).Get(ctx, ks.TLSCert.Secret.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to fetch the secret %s/%s", ks.TLSCert.Secret.Namespace, ks.TLSCert.Secret.Name)
+	}
+	tlsCert, ok := tlsSecret.Data[ks.TLSCert.Key]
+	if !ok {
+		return nil, errors.New("Failed to fetch TLS cert from secret")
+	}
+	return &Credential{
+		Type: CredentialTypeKopia,
+		KopiaServer: &StoreServerCreds{
+			Username: ks.Username,
+			Password: string(password),
+			Cert:     string(tlsCert),
+		},
 	}, nil
 }
 
