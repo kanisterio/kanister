@@ -21,8 +21,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -59,7 +61,14 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	s := pathFlag(cmd)
+	id := backupIDFlag(cmd)
 	ctx := context.Background()
+	if p.Location.Type == crv1alpha1.LocationTypeKopia {
+		if err = connectToKopiaServer(ctx, p); err != nil {
+			return err
+		}
+		return kopiaLocationPull(ctx, id, s, target)
+	}
 	return locationPull(ctx, p, s, target)
 }
 
