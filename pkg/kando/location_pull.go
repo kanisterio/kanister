@@ -44,6 +44,7 @@ func newLocationPullCommand() *cobra.Command {
 	return cmd
 }
 
+// nolint:deadcode
 func backupIDFlag(cmd *cobra.Command) string {
 	return cmd.Flag(backupIDFlagName).Value.String()
 }
@@ -74,6 +75,7 @@ func locationPull(ctx context.Context, p *param.Profile, path string, target io.
 }
 
 // kopiaLocationPull pulls the data from a kopia snapshot into the given target
+// nolint:deadcode
 func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Writer) error {
 	return kopia.Read(ctx, backupID, path, target)
 }

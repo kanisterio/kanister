@@ -76,6 +76,7 @@ func locationPush(ctx context.Context, p *param.Profile, path string, source io.
 }
 
 // kopiaLocationPush pushes the data from the source using a kopia snapshot
+// nolint:deadcode
 func kopiaLocationPush(ctx context.Context, path string, source io.Reader) error {
 	snapID, _, err := kopia.Write(ctx, path, source)
 	if err != nil {
