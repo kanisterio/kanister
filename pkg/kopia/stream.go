@@ -69,6 +69,7 @@ func Write(ctx context.Context, path string, source io.Reader) (string, string, 
 }
 
 // Read reads a kopia snapshot with the given ID and copies it to the given target
+// TODO@pavan: Support files as target
 func Read(ctx context.Context, backupID, path string, target io.Writer) error {
 	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
 	if !ok || password == "" {
