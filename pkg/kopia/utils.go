@@ -22,7 +22,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"path/filepath"
 
+	"github.com/kopia/kopia/repo"
+	"github.com/kopia/kopia/repo/manifest"
+	"github.com/kopia/kopia/repo/object"
+	"github.com/kopia/kopia/snapshot"
+	"github.com/kopia/kopia/snapshot/snapshotfs"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -44,6 +50,9 @@ const (
 	// tlsCertificateKey represents the key used to fetch the certificate
 	// from the secret.
 	tlsCertificateKey = "tls.crt"
+
+	// BackupIdentifierKey is the artifact key used for kopia snapshot ID
+	BackupIdentifierKey = "backupID"
 )
 
 // ExtractFingerprintFromCertSecret extracts the fingerprint from the given certificate secret
@@ -108,4 +117,34 @@ func ExtractFingerprintFromCertificateJSON(cert string) (string, error) {
 	}
 
 	return fingerprint, nil
+}
+
+// getStreamingFileObjectIDFromSnapshot returns the kopia object ID of the fs.StreamingFile object from the repository
+func getStreamingFileObjectIDFromSnapshot(ctx context.Context, rep repo.Repository, path, backupID string) (object.ID, error) {
+	// Example: if the path from the blueprint is `/mysql-backups/1/2/mysqldump.sql`, the given backupID
+	// belongs to the root entry `/mysql-backups/1/2` with `mysqldump.sql` as a nested entry.
+	// The goal here is to find the nested entry and extract the object ID
+
+	// Load the kopia snapshot with the given backupID
+	m, err := snapshot.LoadSnapshot(ctx, rep, manifest.ID(backupID))
+	if err != nil {
+		return "", errors.Wrapf(err, "Failed to load kopia snapshot with ID: %v", backupID)
+	}
+
+	// root entry of the kopia snapshot is a static directory with filepath.Dir(path) as its path
+	if m.RootEntry == nil {
+		return "", errors.New("No root entry found in kopia manifest")
+	}
+	rootEntry, err := snapshotfs.SnapshotRoot(rep, m)
+	if err != nil {
+		return "", errors.Wrapf(err, "Failed to get root entry from kopia snapshot with ID: %v", backupID)
+	}
+
+	// Get the nested entry belonging to the backed up streaming file and return its object ID
+	e, err := snapshotfs.GetNestedEntry(ctx, rootEntry, []string{filepath.Base(path)})
+	if err != nil {
+		return "", errors.Wrapf(err, "Failed to get nested entry from kopia snapshot: %v", filepath.Base(path))
+	}
+
+	return e.(object.HasObjectID).ObjectID(), nil
 }

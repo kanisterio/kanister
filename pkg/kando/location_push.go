@@ -22,7 +22,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
+	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -71,4 +73,14 @@ func sourceReader(source string) (io.Reader, error) {
 
 func locationPush(ctx context.Context, p *param.Profile, path string, source io.Reader) error {
 	return location.Write(ctx, source, *p, path)
+}
+
+// kopiaLocationPush pushes the data from the source using a kopia snapshot
+// nolint:unused,deadcode
+func kopiaLocationPush(ctx context.Context, path string, source io.Reader) error {
+	snapID, _, err := kopia.Write(ctx, path, source)
+	if err != nil {
+		return errors.Wrap(err, "Failed to push data using kopia")
+	}
+	return output.PrintOutput(kopia.BackupIdentifierKey, snapID)
 }
