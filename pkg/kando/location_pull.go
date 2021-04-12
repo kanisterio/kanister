@@ -91,7 +91,7 @@ func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Wri
 
 func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 	log.Debug().Print("Connecting to kopia server")
-	err := kopia.ConnectToAPIServer(ctx, kp.Credential.KopiaServer.Cert, kp.Credential.KopiaServer.Password, kp.Location.Hostname, kp.Location.Endpoint, kp.Credential.KopiaServer.Username)
+	err := kopia.ConnectToAPIServer(ctx, kp.Credential.KopiaServerSecret.Cert, kp.Credential.KopiaServerSecret.Password, kp.Credential.KopiaServerSecret.Hostname, kp.Location.Endpoint, kp.Credential.KopiaServerSecret.Username)
 	if err == nil {
 		log.Debug().Print("Connected to kopia server")
 	}

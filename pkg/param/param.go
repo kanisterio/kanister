@@ -113,10 +113,10 @@ const (
 
 // Credential resolves the storage
 type Credential struct {
-	Type        CredentialType
-	KeyPair     *KeyPair
-	Secret      *v1.Secret
-	KopiaServer *StoreServerCreds
+	Type              CredentialType
+	KeyPair           *KeyPair
+	Secret            *v1.Secret
+	KopiaServerSecret *StoreServerCreds
 }
 
 // KeyPair is a credential that contains two strings: an ID and a secret.
@@ -128,6 +128,7 @@ type KeyPair struct {
 // StoreServerCreds contains creds to communicate with Kopia server
 type StoreServerCreds struct {
 	Username string
+	Hostname string
 	Password string
 	Cert     string
 }
@@ -250,7 +251,7 @@ func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1
 	case crv1alpha1.CredentialTypeSecret:
 		return fetchSecretCredential(ctx, cli, c.Secret)
 	case crv1alpha1.CredentialTypeKopia:
-		return fetchKopiaCredential(ctx, cli, c.KopiaSecrets)
+		return fetchKopiaCredential(ctx, cli, c.KopiaServerSecret)
 	default:
 		return nil, errors.Errorf("CredentialType '%s' not supported", c.Type)
 	}
@@ -462,7 +463,7 @@ func fetchPVCParams(ctx context.Context, cli kubernetes.Interface, namespace, na
 	}, nil
 }
 
-func fetchKopiaCredential(ctx context.Context, cli kubernetes.Interface, ks *crv1alpha1.KopiaSecret) (*Credential, error) {
+func fetchKopiaCredential(ctx context.Context, cli kubernetes.Interface, ks *crv1alpha1.KopiaServerSecret) (*Credential, error) {
 	if ks == nil {
 		return nil, errors.New("Kopia Secret reference cannot be nil")
 	}
@@ -496,7 +497,8 @@ func fetchKopiaCredential(ctx context.Context, cli kubernetes.Interface, ks *crv
 	}
 	return &Credential{
 		Type: CredentialTypeKopia,
-		KopiaServer: &StoreServerCreds{
+		KopiaServerSecret: &StoreServerCreds{
+			Hostname: ks.Hostname,
 			Username: ks.Username,
 			Password: string(password),
 			Cert:     string(tlsCert),

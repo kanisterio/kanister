@@ -258,7 +258,6 @@ type Location struct {
 	Endpoint string       `json:"endpoint"`
 	Prefix   string       `json:"prefix"`
 	Region   string       `json:"region"`
-	Hostname string       `json:"hostname"`
 }
 
 // CredentialType
@@ -272,10 +271,10 @@ const (
 
 // Credential
 type Credential struct {
-	Type         CredentialType   `json:"type"`
-	KeyPair      *KeyPair         `json:"keyPair,omitempty"`
-	Secret       *ObjectReference `json:"secret,omitempty"`
-	KopiaSecrets *KopiaSecret     `json:"kopiaSecrets,omitempty"`
+	Type              CredentialType     `json:"type"`
+	KeyPair           *KeyPair           `json:"keyPair,omitempty"`
+	Secret            *ObjectReference   `json:"secret,omitempty"`
+	KopiaServerSecret *KopiaServerSecret `json:"kopiaSecrets,omitempty"`
 }
 
 // KeyPair
@@ -285,13 +284,14 @@ type KeyPair struct {
 	Secret      ObjectReference `json:"secret"`
 }
 
-type KopiaSecret struct {
-	Username       string          `json:"username,omitempty"`
-	UserPassPhrase *KopiaSecretRef `json:"userPassPhrase,omitempty"`
-	TLSCert        *KopiaSecretRef `json:"tlsCert,omitempty"`
+type KopiaServerSecret struct {
+	Username       string                `json:"username,omitempty"`
+	Hostname       string                `json:"hostname,omitempty"`
+	UserPassPhrase *KopiaServerSecretRef `json:"userPassPhrase,omitempty"`
+	TLSCert        *KopiaServerSecretRef `json:"tlsCert,omitempty"`
 }
 
-type KopiaSecretRef struct {
+type KopiaServerSecretRef struct {
 	Key    string           `json:"key"`
 	Secret *ObjectReference `json:"secret"`
 }
