@@ -30,6 +30,7 @@ SHORT_APPS="^PostgreSQL$|^PITRPostgreSQL|^MySQL$|Elasticsearch|^MongoDB$|Maria"
 OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
 OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"
 OC_APPS4_5="MysqlDBDepConfig4_5|MongoDBDepConfig4_5|PostgreSQLDepConfig4_5"
+OC_APPS4_7="MysqlDBDepConfig4_7|MongoDBDepConfig4_7|PostgreSQLDepConfig4_7"
 
 check_dependencies() {
     # Check if minio is already deployed
@@ -83,6 +84,9 @@ case "${1}" in
                 ;;
             "4.5")
                 TEST_APPS=${OC_APPS4_5}
+                ;;
+            "4.7")
+                TEST_APPS=${OC_APPS4_7}
                 ;;
             *)
                 usage

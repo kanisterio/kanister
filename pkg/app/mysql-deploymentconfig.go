@@ -49,11 +49,12 @@ type MysqlDepConfig struct {
 	dbTemplateVersion DBTemplate
 }
 
-func NewMysqlDepConfig(name string, templateVersion DBTemplate, storageType storage) App {
+func NewMysqlDepConfig(name string, templateVersion DBTemplate, storageType storage, tag string) App {
 	return &MysqlDepConfig{
 		name: name,
 		params: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "secretpassword",
+			"MYSQL_VERSION":       tag,
 		},
 		storageType:       storageType,
 		osClient:          openshift.NewOpenShiftClient(),

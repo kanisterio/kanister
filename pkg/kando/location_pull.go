@@ -21,8 +21,13 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
+)
+
+const (
+	backupIDFlagName = "backupID"
 )
 
 func newLocationPullCommand() *cobra.Command {
@@ -35,7 +40,13 @@ func newLocationPullCommand() *cobra.Command {
 			return runLocationPull(c, args)
 		},
 	}
+	cmd.Flags().StringP(backupIDFlagName, "b", "", "Pass the backup ID from the location push command (optional)")
 	return cmd
+}
+
+// nolint:unused,deadcode
+func backupIDFlag(cmd *cobra.Command) string {
+	return cmd.Flag(backupIDFlagName).Value.String()
 }
 
 func runLocationPull(cmd *cobra.Command, args []string) error {
@@ -61,4 +72,10 @@ func targetWriter(target string) (io.Writer, error) {
 
 func locationPull(ctx context.Context, p *param.Profile, path string, target io.Writer) error {
 	return location.Read(ctx, target, *p, path)
+}
+
+// kopiaLocationPull pulls the data from a kopia snapshot into the given target
+// nolint:unused,deadcode
+func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Writer) error {
+	return kopia.Read(ctx, backupID, path, target)
 }
