@@ -258,7 +258,6 @@ type Location struct {
 	Endpoint string       `json:"endpoint"`
 	Prefix   string       `json:"prefix"`
 	Region   string       `json:"region"`
-	Hostname string       `json:"hostname"`
 }
 
 // CredentialType
