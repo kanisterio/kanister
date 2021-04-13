@@ -22,7 +22,7 @@ require (
 	github.com/Masterminds/sprig v2.15.0+incompatible
 	github.com/aokoli/goutils v1.1.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
-	github.com/aws/aws-sdk-go v1.38.1
+	github.com/aws/aws-sdk-go v1.38.17
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
@@ -42,7 +42,7 @@ require (
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.10
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
-	github.com/kopia/kopia v0.8.0-beta3.0.20210330134459-c9cc16936cae
+	github.com/kopia/kopia v0.8.2-0.20210412184047-667d171714af
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.0.0
 	github.com/lib/pq v1.9.0
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
@@ -63,9 +63,9 @@ require (
 	go.mongodb.org/mongo-driver v1.1.2 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
-	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
+	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324 // indirect
-	google.golang.org/api v0.42.0
+	google.golang.org/api v0.44.0
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
