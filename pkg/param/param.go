@@ -116,7 +116,7 @@ type Credential struct {
 	Type              CredentialType
 	KeyPair           *KeyPair
 	Secret            *v1.Secret
-	KopiaServerSecret *StoreServerCreds
+	KopiaServerSecret *KopiaServerCreds
 }
 
 // KeyPair is a credential that contains two strings: an ID and a secret.
@@ -125,8 +125,8 @@ type KeyPair struct {
 	Secret string
 }
 
-// StoreServerCreds contains creds to communicate with Kopia server
-type StoreServerCreds struct {
+// KopiaServerCreds contains creds to communicate with Kopia server
+type KopiaServerCreds struct {
 	Username string
 	Hostname string
 	Password string
@@ -468,20 +468,17 @@ func fetchKopiaCredential(ctx context.Context, cli kubernetes.Interface, ks *crv
 		return nil, errors.New("Kopia Secret reference cannot be nil")
 	}
 
-	if ks.UserPassPhrase.Secret == nil {
-		return nil, errors.New("Kopia UserPassPhrase Secret reference cannot be nil")
+	if ks.UserPassphrase.Secret == nil {
+		return nil, errors.New("Kopia UserPassphrase Secret reference cannot be nil")
 	}
 
-	passSecret, err := cli.CoreV1().Secrets(ks.UserPassPhrase.Secret.Namespace).Get(ctx, ks.UserPassPhrase.Secret.Name, metav1.GetOptions{})
+	passSecret, err := cli.CoreV1().Secrets(ks.UserPassphrase.Secret.Namespace).Get(ctx, ks.UserPassphrase.Secret.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to fetch the secret %s/%s", ks.UserPassPhrase.Secret.Namespace, ks.UserPassPhrase.Secret.Name)
+		return nil, errors.Wrapf(err, "Failed to fetch the secret %s/%s", ks.UserPassphrase.Secret.Namespace, ks.UserPassphrase.Secret.Name)
 	}
-	//if err = secrets.ValidateCredentials(s); err != nil {
-	//	return nil, err
-	//}
-	password, ok := passSecret.Data[ks.UserPassPhrase.Key]
+	password, ok := passSecret.Data[ks.UserPassphrase.Key]
 	if !ok {
-		return nil, errors.New("Failed to fetch userPassPhrase from secret")
+		return nil, errors.New("Failed to fetch user passphrase from secret")
 	}
 
 	if ks.TLSCert == nil || ks.TLSCert.Secret == nil {
@@ -497,7 +494,7 @@ func fetchKopiaCredential(ctx context.Context, cli kubernetes.Interface, ks *crv
 	}
 	return &Credential{
 		Type: CredentialTypeKopia,
-		KopiaServerSecret: &StoreServerCreds{
+		KopiaServerSecret: &KopiaServerCreds{
 			Hostname: ks.Hostname,
 			Username: ks.Username,
 			Password: string(password),

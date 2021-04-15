@@ -274,7 +274,7 @@ type Credential struct {
 	Type              CredentialType     `json:"type"`
 	KeyPair           *KeyPair           `json:"keyPair,omitempty"`
 	Secret            *ObjectReference   `json:"secret,omitempty"`
-	KopiaServerSecret *KopiaServerSecret `json:"kopiaSecrets,omitempty"`
+	KopiaServerSecret *KopiaServerSecret `json:"kopiaServerSecret,omitempty"`
 }
 
 // KeyPair
@@ -284,13 +284,15 @@ type KeyPair struct {
 	Secret      ObjectReference `json:"secret"`
 }
 
+// KopiaServerSecret contains credentials to connect to Kopia server
 type KopiaServerSecret struct {
 	Username       string                `json:"username,omitempty"`
 	Hostname       string                `json:"hostname,omitempty"`
-	UserPassPhrase *KopiaServerSecretRef `json:"userPassPhrase,omitempty"`
+	UserPassphrase *KopiaServerSecretRef `json:"userPassphrase,omitempty"`
 	TLSCert        *KopiaServerSecretRef `json:"tlsCert,omitempty"`
 }
 
+// KopiaServerSecretRef refers to K8s secrets containing Kopia creds
 type KopiaServerSecretRef struct {
 	Key    string           `json:"key"`
 	Secret *ObjectReference `json:"secret"`
