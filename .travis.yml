@@ -57,6 +57,8 @@ jobs:
       script:
       - make golint
     - stage: test
+      services:
+      - docker
       script:
       - make release-snapshot
       # Push images if PR is merged to master
