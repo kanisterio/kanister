@@ -81,6 +81,8 @@ func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Wri
 	return kopia.Read(ctx, backupID, path, target)
 }
 
+// connectToKopiaServer connects to the kopia server with given creds
+// nolint:unused,deadcode
 func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 	log.Debug().Print("Connecting to kopia server")
 	err := kopia.ConnectToAPIServer(ctx, kp.Credential.KopiaServerSecret.Cert, kp.Credential.KopiaServerSecret.Password, kp.Credential.KopiaServerSecret.Hostname, kp.Location.Endpoint, kp.Credential.KopiaServerSecret.Username)
