@@ -19,6 +19,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -33,6 +34,7 @@ func newLocationDeleteCommand() *cobra.Command {
 			return runLocationDelete(c)
 		},
 	}
+	cmd.Flags().StringP(backupIDFlagName, "b", "", "Pass the backup ID from the location push command (optional)")
 	return cmd
 }
 
@@ -43,7 +45,14 @@ func runLocationDelete(cmd *cobra.Command) error {
 	}
 	cmd.SilenceUsage = true
 	s := pathFlag(cmd)
+	id := backupIDFlag(cmd)
 	ctx := context.Background()
+	if p.Location.Type == crv1alpha1.LocationTypeKopia {
+		if err = connectToKopiaServer(ctx, p); err != nil {
+			return err
+		}
+		return kopiaLocationDelete(ctx, id, s)
+	}
 	return locationDelete(ctx, p, s)
 }
 
