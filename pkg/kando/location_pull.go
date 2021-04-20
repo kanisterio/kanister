@@ -23,7 +23,6 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
-	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -84,10 +83,5 @@ func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Wri
 // connectToKopiaServer connects to the kopia server with given creds
 // nolint:unused,deadcode
 func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
-	log.Debug().Print("Connecting to kopia server")
-	err := kopia.ConnectToAPIServer(ctx, kp.Credential.KopiaServerSecret.Cert, kp.Credential.KopiaServerSecret.Password, kp.Credential.KopiaServerSecret.Hostname, kp.Location.Endpoint, kp.Credential.KopiaServerSecret.Username)
-	if err == nil {
-		log.Debug().Print("Connected to kopia server")
-	}
-	return err
+	return kopia.ConnectToAPIServer(ctx, kp.Credential.KopiaServerSecret.Cert, kp.Credential.KopiaServerSecret.Password, kp.Credential.KopiaServerSecret.Hostname, kp.Location.Endpoint, kp.Credential.KopiaServerSecret.Username)
 }
