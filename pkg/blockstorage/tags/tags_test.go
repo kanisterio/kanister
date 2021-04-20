@@ -30,6 +30,10 @@ func (s *TagsSuite) TestSanitizeValueForGCP(c *C) {
 			output: "kasten__snapshot-wordpress-on-rbd-ceph-ns",
 		},
 		{
+			input:  "kasten__snapshot-wordpress-on-rbd-ceph-ns---",
+			output: "kasten__snapshot-wordpress-on-rbd-ceph-ns",
+		},
+		{
 			input:  "kasten__snapshot-wordpress! ?*()",
 			output: "kasten__snapshot-wordpress______",
 		},
