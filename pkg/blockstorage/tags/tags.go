@@ -88,6 +88,7 @@ func SanitizeValueForGCP(value string) string {
 	}
 	sanitizedVal = strings.ToLower(sanitizedVal)
 	sanitizedVal = re.ReplaceAllString(sanitizedVal, "_")
+	sanitizedVal = strings.TrimRight(sanitizedVal, "_-")
 	return sanitizedVal
 }
 
