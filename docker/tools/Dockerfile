@@ -11,8 +11,8 @@ LABEL name="kanister-tools" \
 ENV GODEBUG=asyncpreemptoff=1
 
 COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
-# kopia alpine-1a0875e image
-COPY --from=kanisterio/kopia@sha256:6e331f8cc9079062078c262112b6644ab108596f9ff82d552cec67b1a218e1c0 \
+# kopia alpine-667d171 image
+COPY --from=kanisterio/kopia@sha256:28a3c9ce2528e662ca7a0c68e59d3c6faeaa504e2985fd281a53e49249e062b9 \
   /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
 
