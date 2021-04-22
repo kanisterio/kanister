@@ -19,6 +19,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -44,6 +45,12 @@ func runLocationDelete(cmd *cobra.Command) error {
 	s := pathFlag(cmd)
 	ctx := context.Background()
 	return locationDelete(ctx, p, s)
+}
+
+// kopiaLocationDelete pulls the data from a kopia snapshot into the given target
+// nolint:unused,deadcode
+func kopiaLocationDelete(ctx context.Context, backupID, path string) error {
+	return kopia.DeleteSnapshot(ctx, backupID, path)
 }
 
 func locationDelete(ctx context.Context, p *param.Profile, path string) error {

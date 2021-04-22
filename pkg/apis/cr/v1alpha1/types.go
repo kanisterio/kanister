@@ -248,6 +248,7 @@ const (
 	LocationTypeGCS         LocationType = "gcs"
 	LocationTypeS3Compliant LocationType = "s3Compliant"
 	LocationTypeAzure       LocationType = "azure"
+	LocationTypeKopia       LocationType = "kopia"
 )
 
 // Location
@@ -265,13 +266,15 @@ type CredentialType string
 const (
 	CredentialTypeKeyPair CredentialType = "keyPair"
 	CredentialTypeSecret  CredentialType = "secret"
+	CredentialTypeKopia   CredentialType = "kopia"
 )
 
 // Credential
 type Credential struct {
-	Type    CredentialType   `json:"type"`
-	KeyPair *KeyPair         `json:"keyPair,omitempty"`
-	Secret  *ObjectReference `json:"secret,omitempty"`
+	Type              CredentialType     `json:"type"`
+	KeyPair           *KeyPair           `json:"keyPair,omitempty"`
+	Secret            *ObjectReference   `json:"secret,omitempty"`
+	KopiaServerSecret *KopiaServerSecret `json:"kopiaServerSecret,omitempty"`
 }
 
 // KeyPair
@@ -279,6 +282,20 @@ type KeyPair struct {
 	IDField     string          `json:"idField"`
 	SecretField string          `json:"secretField"`
 	Secret      ObjectReference `json:"secret"`
+}
+
+// KopiaServerSecret contains credentials to connect to Kopia server
+type KopiaServerSecret struct {
+	Username       string                `json:"username,omitempty"`
+	Hostname       string                `json:"hostname,omitempty"`
+	UserPassphrase *KopiaServerSecretRef `json:"userPassphrase,omitempty"`
+	TLSCert        *KopiaServerSecretRef `json:"tlsCert,omitempty"`
+}
+
+// KopiaServerSecretRef refers to K8s secrets containing Kopia creds
+type KopiaServerSecretRef struct {
+	Key    string           `json:"key"`
+	Secret *ObjectReference `json:"secret"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
