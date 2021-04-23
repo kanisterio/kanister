@@ -80,7 +80,7 @@ dockers:
   build_flag_templates:
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - image_templates:
-  - 'ghcr.io/kanisterio/kanister-kubectl:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/kanister-kubectl-1.18:{{ .Tag }}'
   dockerfile: 'docker/kanister-kubectl/Dockerfile'
   build_flag_templates:
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
