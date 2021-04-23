@@ -9,7 +9,7 @@ This example is to demonstrate how Kanister can be integrated with AWS RDS insta
 ## Prerequisites
 
 - Kubernetes 1.10+
-- Kanister controller version 0.50.0 installed in your cluster
+- Kanister controller version 0.51.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Create RDS instance on AWS
