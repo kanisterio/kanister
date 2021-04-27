@@ -12,7 +12,7 @@ actions:
     - func: KubeTask
       name: takeSnapshot
       args:
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.50.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.51.0
         command:
           - sh
           - -o
@@ -35,7 +35,7 @@ actions:
     - func: KubeTask
       name: uploadSnapshot
       args:
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.50.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.51.0
         command:
           - sh
           - -o
@@ -53,7 +53,7 @@ actions:
     - func: KubeTask
       name: removeSnapshot
       args:
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.50.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.51.0
         command:
           - sh
           - -o
@@ -73,7 +73,7 @@ actions:
       name: deleteFromObjectStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: "ghcr.io/kanisterio/kanister-tools:0.50.0"
+        image: "ghcr.io/kanisterio/kanister-tools:0.51.0"
         command:
         - bash
         - -o
