@@ -1,7 +1,5 @@
 FROM alpine:3.10.5
 
-MAINTAINER Tom Manville <tom@kasten.io>
-
 RUN apk add --update --no-cache ca-certificates bash git docker jq \
     && update-ca-certificates \
     && rm -rf /var/cache/apk/*
@@ -20,6 +18,8 @@ RUN wget -O /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases
     chmod +x /usr/local/bin/kind && \
     wget https://github.com/cli/cli/releases/download/v1.9.2/gh_1.9.2_linux_386.tar.gz -O ghcli.tar.gz && \
     tar --strip-components=1 -xf ghcli.tar.gz
+
+LABEL Author="Tom Manville <tom@kasten.io>"
 
 ENV CGO_ENABLED=0 \
     GO111MODULE="on" \
