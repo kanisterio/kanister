@@ -17,14 +17,16 @@ package app
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/segmentio/kafka-go"
+	//"github.com/segmentio/kafka-go"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/portforward"
@@ -48,8 +50,10 @@ const (
 	topic                     = "blogs"
 	chart                     = "strimzi-kafka-operator"
 	strimziImage              = "strimzi/kafka:0.20.0-kafka-2.6.0"
-	bootstrapServerHost       = "my-cluster-kafka-external-bootstrap"
-	bootstrapServerPort       = "9094"
+	bootstrapServerHost       = "my-cluster-kafka-bootstrap"
+	bootstrapServerPort       = "9092"
+	bridgeServiceName         = "kafka-bridge-service"
+	bridgeServicePort         = "8080"
 	strimziOperatorDeployment = "strimzi-cluster-operator"
 	kafkaClusterOperator      = "my-cluster-entity-operator"
 	kafkaStatefulSet          = "my-cluster-kafka"
@@ -137,6 +141,16 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error creating ConfigMap %s, %s", kc.name, out)
 	}
+	createKafkaBridge := []string{
+		"create",
+		"-n", namespace,
+		"-f", fmt.Sprintf("%s/%s", kc.pathToYaml, "kafka-bridge.yaml"),
+	}
+	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", createKafkaBridge)
+
+	if err != nil {
+		return errors.Wrapf(err, "Error installing the application %s, %s", kc.name, out)
+	}
 	log.Print("Application was installed successfully.", field.M{"app": kc.name})
 	return nil
 }
@@ -205,7 +219,7 @@ func (kc *KafkaCluster) Ping(ctx context.Context) error {
 func (kc *KafkaCluster) Insert(ctx context.Context) error {
 	log.Print("Inserting some records in kafka topic.", field.M{"app": kc.name})
 
-	err := produce(ctx, kc.topic, kc.namespace)
+	err := InsertRecord(ctx, kc.namespace)
 	if err != nil {
 		return errors.Wrapf(err, "Error inserting the record for %s", kc.name)
 	}
@@ -234,14 +248,18 @@ func (kc *KafkaCluster) IsReady(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
+	err = kube.WaitOnDeploymentReady(ctx, kc.cli, kc.namespace, "kafka-bridge")
+	if err != nil {
+		return false, err
+	}
 	log.Print("Application instance is ready.", field.M{"app": kc.name})
 	return true, nil
 }
 
 func (kc *KafkaCluster) Count(ctx context.Context) (int, error) {
 	log.Print("Counting records in kafka topic.", field.M{"app": kc.name})
-	count, err := consume(ctx, kc.topic, kc.namespace)
+
+	count, err := ConsumeRecord(ctx, kc.namespace)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error counting the records for %s, %s.", kc.name, err)
 	}
@@ -260,36 +278,74 @@ func (kc *KafkaCluster) Initialize(ctx context.Context) error {
 	return nil
 }
 
-// to produce messages to kafka
-func produce(ctx context.Context, topic string, namespace string) error {
-	partition := 0
-	forwarder, err := K8SServicePortForward(ctx, bootstrapServerHost, namespace, bootstrapServerPort)
+type Message struct {
+	Topic     string `json:"topic"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	Partition int    `json:"partition"`
+	Offset    int    `json:"offset"`
+}
+
+// curl -X POST http://localhost:8080/topics/bridge-quickstart-topic -H 'content-type: application/vnd.kafka.json.v2+json' -d '{"records": [{"key": "my-key","value": "sales-lead-0001"}]}'
+type InsertPayload struct {
+	Records []Records `json:"records"`
+}
+type Records struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+func InsertRecord(ctx context.Context, namespace string) error {
+	log.Print("Inserting record")
+
+	forwarder, err := K8SServicePortForward(ctx, bridgeServiceName, namespace, bridgeServicePort)
 	if err != nil {
 		return err
 	}
-
 	defer forwarder.Close()
 	ports, err := forwarder.GetPorts()
 	if err != nil {
 		return err
 	}
-	uri := "localhost:" + fmt.Sprint(ports[0].Local)
+	uri := "http://localhost:" + fmt.Sprint(ports[0].Local)
 
-	conn, err := kafka.DialLeader(ctx, "tcp", uri, topic, partition)
+	data := InsertPayload{
+		Records: []Records{
+			{
+				Value: "sales-lead-0001",
+			},
+		},
+	}
+	payloadBytes, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
+	body := bytes.NewReader(payloadBytes)
 
-	defer conn.Close()
+	req, err := http.NewRequest("POST", uri+"/topics/blogs", body)
+	log.Print("Inserting record")
 
-	err = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 	if err != nil {
+		fmt.Println("error in craeting request")
 		return err
 	}
-	_, err = conn.WriteMessages(
-		kafka.Message{Value: []byte("{'title':'The Matrix','year':1999,'cast':['Keanu Reeves','Laurence Fishburne','Carrie-Anne Moss','Hugo Weaving','Joe Pantoliano'],'genres':['Science Fiction']}")},
-	)
-	return err
+	req.Header.Set("Content-Type", "application/vnd.kafka.json.v2+json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("error in sending response")
+		return err
+	}
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("error in raeding bytes")
+		return err
+	}
+
+	log.Print(string(bytes))
+
+	defer resp.Body.Close()
+	return nil
 }
 
 // K8SServicePortForward creates a service port forwarding and returns the forwarder and error if any
@@ -370,49 +426,143 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 	return f, nil
 }
 
-func consume(ctx context.Context, topic string, namespace string) (int, error) {
-	partition := 0
-	forwarder, err := K8SServicePortForward(ctx, bootstrapServerHost, namespace, bootstrapServerPort)
+// curl -X POST http://localhost:8080/consumers/bridge-quickstart-consumer-group -H 'content-type: application/vnd.kafka.v2+json' -d '{"name": "bridge-quickstart-consumer","auto.offset.reset": "earliest","format": "json","enable.auto.commit": false,"fetch.min.bytes": 512,"consumer.request.timeout.ms": 30000}'
+
+type Payload struct {
+	Name                     string `json:"name"`
+	AutoOffsetReset          string `json:"auto.offset.reset"`
+	Format                   string `json:"format"`
+	EnableAutoCommit         bool   `json:"enable.auto.commit"`
+	FetchMinBytes            int    `json:"fetch.min.bytes"`
+	ConsumerRequestTimeoutMs int    `json:"consumer.request.timeout.ms"`
+}
+
+func createConsumerGroup(uri string) error {
+	data := Payload{
+		Name:                     "blogs-consumer",
+		AutoOffsetReset:          "earliest",
+		Format:                   "json",
+		EnableAutoCommit:         true,
+		FetchMinBytes:            512,
+		ConsumerRequestTimeoutMs: 30000,
+	}
+	payloadBytes, err := json.Marshal(data)
 	if err != nil {
-		log.Print("error getting forwarder")
-		return 0, err
+		return err
+	}
+	body := bytes.NewReader(payloadBytes)
+
+	req, err := http.NewRequest("POST", uri+"/consumers/blogs-consumer-group", body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/vnd.kafka.v2+json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
 	}
 
+	fmt.Println(string(bytes))
+	return nil
+}
+
+// curl -X POST http://localhost:8080/consumers/bridge-quickstart-consumer-group/instances/bridge-quickstart-consumer/subscription -H 'content-type: application/vnd.kafka.v2+json' -d '{"topics": ["bridge-quickstart-topic"]}'
+
+type SubscriptionPayload struct {
+	Topics []string `json:"topics"`
+}
+
+func Subscribe(uri string) error {
+	data := SubscriptionPayload{
+		// fill struct
+		Topics: []string{"blogs"},
+	}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	body := bytes.NewReader(payloadBytes)
+
+	req, err := http.NewRequest("POST", uri+"/consumers/blogs-consumer-group/instances/blogs-consumer/subscription", body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/vnd.kafka.v2+json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(bytes))
+	return nil
+}
+
+// curl -X GET http://localhost:8080/consumers/bridge-quickstart-consumer-group/instances/bridge-quickstart-consumer/records   -H 'accept: application/vnd.kafka.json.v2+json'
+
+func getBody(uri string) (int, error) {
+
+	req, err := http.NewRequest("GET", uri+"/consumers/blogs-consumer-group/instances/blogs-consumer/records", nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Accept", "application/vnd.kafka.json.v2+json")
+
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return 0, err
+	}
+	responseBody := string(bytes)
+	var Message []Message
+	_ = json.Unmarshal([]byte(responseBody), &Message)
+	log.Print(responseBody)
+
+	fmt.Printf("Message : %+v", Message)
+	return len(Message), nil
+}
+
+func ConsumeRecord(ctx context.Context, namespace string) (int, error) {
+	forwarder, err := K8SServicePortForward(ctx, bridgeServiceName, namespace, bridgeServicePort)
+	if err != nil {
+		return 0, err
+	}
 	defer forwarder.Close()
 	ports, err := forwarder.GetPorts()
 	if err != nil {
 		return 0, err
 	}
-	uri := "localhost:" + fmt.Sprint(ports[0].Local)
-
-	conn, err := kafka.DialLeader(ctx, "tcp", uri, topic, partition)
-	if err != nil {
-		return 0, err
-	}
-
-	defer conn.Close()
-
-	err = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-	if err != nil {
-		return 0, err
-	}
-	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
-	count := 0
-	b := make([]byte, 10e3) // 10KB max per message
-	messageEnd := false
+	uri := "http://localhost:" + fmt.Sprint(ports[0].Local)
+	fmt.Println("consuming records")
+	createConsumerGroup(uri)
+	fmt.Println("subscribing")
+	Subscribe(uri)
+	fmt.Println("getting records")
+	a, _ := getBody(uri)
+	fmt.Println("gotting the records second time")
 	for {
-		_, err := batch.Read(b)
-		if err != nil {
-			messageEnd = true
+		a, _ = getBody(uri)
+		if a > 0 {
+			log.Print(string(a))
 			break
 		}
-		count = count + 1
-		fmt.Println(string(b))
 	}
-	if !messageEnd {
-		if err := batch.Close(); err != nil {
-			return 0, err
-		}
-	}
-	return count, nil
+	return a, nil
 }
