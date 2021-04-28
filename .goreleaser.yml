@@ -20,21 +20,21 @@ builds:
   - linux
   goarch: &goarch
   - amd64
-- id: kando
-  binary: kando
-  main: cmd/kando/main.go
-  ldflags: *ldflags
-  env: *env
-  goos: &goos
-  - linux
-  goarch: *goarch
-- id: controller
-  binary: controller
-  main: cmd/controller/main.go
-  ldflags: *ldflags
-  env: *env
-  goos: *goos
-  goarch: *goarch
+# - id: kando
+#   binary: kando
+#   main: cmd/kando/main.go
+#   ldflags: *ldflags
+#   env: *env
+#   goos: &goos
+#   - linux
+#   goarch: *goarch
+# - id: controller
+#   binary: controller
+#   main: cmd/controller/main.go
+#   ldflags: *ldflags
+#   env: *env
+#   goos: *goos
+#   goarch: *goarch
 dockers:
 # - binaries:
 #   - controller
