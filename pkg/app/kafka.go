@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	//"github.com/segmentio/kafka-go"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/portforward"
@@ -58,6 +57,8 @@ const (
 	kafkaClusterOperator      = "my-cluster-entity-operator"
 	kafkaStatefulSet          = "my-cluster-kafka"
 	zookeeperStatefulset      = "my-cluster-zookeeper"
+	kafkaBridgeDeployment     = "kafka-bridge"
+	kafkaBridge               = "kafka-bridge.yaml"
 )
 
 type KafkaCluster struct {
@@ -144,7 +145,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	createKafkaBridge := []string{
 		"create",
 		"-n", namespace,
-		"-f", fmt.Sprintf("%s/%s", kc.pathToYaml, "kafka-bridge.yaml"),
+		"-f", fmt.Sprintf("%s/%s", kc.pathToYaml, kafkaBridge),
 	}
 	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", createKafkaBridge)
 
@@ -248,7 +249,7 @@ func (kc *KafkaCluster) IsReady(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	err = kube.WaitOnDeploymentReady(ctx, kc.cli, kc.namespace, "kafka-bridge")
+	err = kube.WaitOnDeploymentReady(ctx, kc.cli, kc.namespace, kafkaBridgeDeployment)
 	if err != nil {
 		return false, err
 	}
@@ -259,7 +260,7 @@ func (kc *KafkaCluster) IsReady(ctx context.Context) (bool, error) {
 func (kc *KafkaCluster) Count(ctx context.Context) (int, error) {
 	log.Print("Counting records in kafka topic.", field.M{"app": kc.name})
 
-	count, err := ConsumeRecord(ctx, kc.namespace)
+	count, err := consumeTopic(ctx, kc.namespace)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error counting the records for %s, %s.", kc.name, err)
 	}
@@ -286,18 +287,30 @@ type Message struct {
 	Offset    int    `json:"offset"`
 }
 
-// curl -X POST http://localhost:8080/topics/bridge-quickstart-topic -H 'content-type: application/vnd.kafka.json.v2+json' -d '{"records": [{"key": "my-key","value": "sales-lead-0001"}]}'
 type InsertPayload struct {
 	Records []Records `json:"records"`
 }
+
 type Records struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
-func InsertRecord(ctx context.Context, namespace string) error {
-	log.Print("Inserting record")
+type Payload struct {
+	Name                     string `json:"name"`
+	AutoOffsetReset          string `json:"auto.offset.reset"`
+	Format                   string `json:"format"`
+	EnableAutoCommit         bool   `json:"enable.auto.commit"`
+	FetchMinBytes            int    `json:"fetch.min.bytes"`
+	ConsumerRequestTimeoutMs int    `json:"consumer.request.timeout.ms"`
+}
 
+type SubscriptionPayload struct {
+	Topics []string `json:"topics"`
+}
+
+// InsertRecord creates a topic and insert a record
+func InsertRecord(ctx context.Context, namespace string) error {
 	forwarder, err := K8SServicePortForward(ctx, bridgeServiceName, namespace, bridgeServicePort)
 	if err != nil {
 		return err
@@ -322,29 +335,22 @@ func InsertRecord(ctx context.Context, namespace string) error {
 	}
 	body := bytes.NewReader(payloadBytes)
 
-	req, err := http.NewRequest("POST", uri+"/topics/blogs", body)
-	log.Print("Inserting record")
-
+	req, err := http.NewRequest("POST", uri+"/topics/"+topic, body)
 	if err != nil {
-		fmt.Println("error in craeting request")
 		return err
 	}
 	req.Header.Set("Content-Type", "application/vnd.kafka.json.v2+json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("error in sending response")
 		return err
 	}
+	defer resp.Body.Close()
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("error in raeding bytes")
 		return err
 	}
-
 	log.Print(string(bytes))
-
-	defer resp.Body.Close()
 	return nil
 }
 
@@ -426,17 +432,7 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 	return f, nil
 }
 
-// curl -X POST http://localhost:8080/consumers/bridge-quickstart-consumer-group -H 'content-type: application/vnd.kafka.v2+json' -d '{"name": "bridge-quickstart-consumer","auto.offset.reset": "earliest","format": "json","enable.auto.commit": false,"fetch.min.bytes": 512,"consumer.request.timeout.ms": 30000}'
-
-type Payload struct {
-	Name                     string `json:"name"`
-	AutoOffsetReset          string `json:"auto.offset.reset"`
-	Format                   string `json:"format"`
-	EnableAutoCommit         bool   `json:"enable.auto.commit"`
-	FetchMinBytes            int    `json:"fetch.min.bytes"`
-	ConsumerRequestTimeoutMs int    `json:"consumer.request.timeout.ms"`
-}
-
+// createConsumerGroup creates a consumer group in kafka cluster
 func createConsumerGroup(uri string) error {
 	data := Payload{
 		Name:                     "blogs-consumer",
@@ -451,8 +447,7 @@ func createConsumerGroup(uri string) error {
 		return err
 	}
 	body := bytes.NewReader(payloadBytes)
-
-	req, err := http.NewRequest("POST", uri+"/consumers/blogs-consumer-group", body)
+	req, err := http.NewRequest("POST", uri+"/consumers/"+topic+"-consumer-group", body)
 	if err != nil {
 		return err
 	}
@@ -463,26 +458,18 @@ func createConsumerGroup(uri string) error {
 		return err
 	}
 	defer resp.Body.Close()
-
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-
 	fmt.Println(string(bytes))
 	return nil
 }
 
-// curl -X POST http://localhost:8080/consumers/bridge-quickstart-consumer-group/instances/bridge-quickstart-consumer/subscription -H 'content-type: application/vnd.kafka.v2+json' -d '{"topics": ["bridge-quickstart-topic"]}'
-
-type SubscriptionPayload struct {
-	Topics []string `json:"topics"`
-}
-
-func Subscribe(uri string) error {
+// Subscribe subscribes a consumer to topic provided in kafka cluster
+func subscribe(uri string) error {
 	data := SubscriptionPayload{
-		// fill struct
-		Topics: []string{"blogs"},
+		Topics: []string{topic},
 	}
 	payloadBytes, err := json.Marshal(data)
 	if err != nil {
@@ -490,7 +477,7 @@ func Subscribe(uri string) error {
 	}
 	body := bytes.NewReader(payloadBytes)
 
-	req, err := http.NewRequest("POST", uri+"/consumers/blogs-consumer-group/instances/blogs-consumer/subscription", body)
+	req, err := http.NewRequest("POST", uri+"/consumers/"+topic+"-consumer-group/instances/"+topic+"-consumer/subscription", body)
 	if err != nil {
 		return err
 	}
@@ -505,16 +492,13 @@ func Subscribe(uri string) error {
 	if err != nil {
 		return err
 	}
-
 	fmt.Println(string(bytes))
 	return nil
 }
 
-// curl -X GET http://localhost:8080/consumers/bridge-quickstart-consumer-group/instances/bridge-quickstart-consumer/records   -H 'accept: application/vnd.kafka.json.v2+json'
-
-func getBody(uri string) (int, error) {
-
-	req, err := http.NewRequest("GET", uri+"/consumers/blogs-consumer-group/instances/blogs-consumer/records", nil)
+// consumeMessage consumes the message from a topic
+func consumeMessage(uri string) (int, error) {
+	req, err := http.NewRequest("GET", uri+"/consumers/"+topic+"-consumer-group/instances/"+topic+"-consumer/records", nil)
 	if err != nil {
 		return 0, err
 	}
@@ -535,11 +519,10 @@ func getBody(uri string) (int, error) {
 	_ = json.Unmarshal([]byte(responseBody), &Message)
 	log.Print(responseBody)
 
-	fmt.Printf("Message : %+v", Message)
 	return len(Message), nil
 }
 
-func ConsumeRecord(ctx context.Context, namespace string) (int, error) {
+func consumeTopic(ctx context.Context, namespace string) (int, error) {
 	forwarder, err := K8SServicePortForward(ctx, bridgeServiceName, namespace, bridgeServicePort)
 	if err != nil {
 		return 0, err
@@ -550,19 +533,23 @@ func ConsumeRecord(ctx context.Context, namespace string) (int, error) {
 		return 0, err
 	}
 	uri := "http://localhost:" + fmt.Sprint(ports[0].Local)
-	fmt.Println("consuming records")
-	createConsumerGroup(uri)
-	fmt.Println("subscribing")
-	Subscribe(uri)
-	fmt.Println("getting records")
-	a, _ := getBody(uri)
-	fmt.Println("gotting the records second time")
+	err = createConsumerGroup(uri)
+	if err != nil {
+		return 0, err
+	}
+	err = subscribe(uri)
+	if err != nil {
+		return 0, err
+	}
+	recordCount := 0
 	for {
-		a, _ = getBody(uri)
-		if a > 0 {
-			log.Print(string(a))
+		recordCount, err = consumeMessage(uri)
+		if err != nil {
+			return 0, err
+		}
+		if recordCount > 0 {
 			break
 		}
 	}
-	return a, nil
+	return recordCount, nil
 }
