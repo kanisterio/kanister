@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -44,7 +45,6 @@ func newLocationPullCommand() *cobra.Command {
 	return cmd
 }
 
-// nolint:unused,deadcode
 func backupIDFlag(cmd *cobra.Command) string {
 	return cmd.Flag(backupIDFlagName).Value.String()
 }
@@ -59,7 +59,14 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	s := pathFlag(cmd)
+	id := backupIDFlag(cmd)
 	ctx := context.Background()
+	if p.Location.Type == crv1alpha1.LocationTypeKopia {
+		if err = connectToKopiaServer(ctx, p); err != nil {
+			return err
+		}
+		return kopiaLocationPull(ctx, id, s, target)
+	}
 	return locationPull(ctx, p, s, target)
 }
 
@@ -75,13 +82,11 @@ func locationPull(ctx context.Context, p *param.Profile, path string, target io.
 }
 
 // kopiaLocationPull pulls the data from a kopia snapshot into the given target
-// nolint:unused,deadcode
 func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Writer) error {
 	return kopia.Read(ctx, backupID, path, target)
 }
 
 // connectToKopiaServer connects to the kopia server with given creds
-// nolint:unused,deadcode
 func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 	return kopia.ConnectToAPIServer(ctx, kp.Credential.KopiaServerSecret.Cert, kp.Credential.KopiaServerSecret.Password, kp.Credential.KopiaServerSecret.Hostname, kp.Location.Endpoint, kp.Credential.KopiaServerSecret.Username)
 }
