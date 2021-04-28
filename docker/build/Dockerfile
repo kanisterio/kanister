@@ -16,13 +16,15 @@ COPY --from=alpine/helm:3.1.0 /usr/bin/helm /usr/local/bin/
 
 COPY --from=golangci/golangci-lint:v1.23.7 /usr/bin/golangci-lint /usr/local/bin/
 
-RUN wget -O /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-linux-amd64 \
-    && chmod +x /usr/local/bin/kind
+RUN wget -O /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-linux-amd64 && \
+    chmod +x /usr/local/bin/kind && \
+    wget https://github.com/cli/cli/releases/download/v1.9.2/gh_1.9.2_linux_386.tar.gz -O ghcli.tar.gz && \
+    tar --strip-components=1 -xf ghcli.tar.gz
 
 ENV CGO_ENABLED=0 \
     GO111MODULE="on" \
     GOROOT="/usr/local/go" \
     GOCACHE=/go/.cache/go-build \
     GO_EXTLINK_ENABLED=0 \
-    PATH="/usr/local/go/bin:${PATH}" 
-  
+    PATH="/usr/local/go/bin:${PATH}"
+
