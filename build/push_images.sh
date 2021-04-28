@@ -23,5 +23,5 @@ IMAGES=("mysql-sidecar" "kafka-adobe-s3-sink-connector" "postgres-kanister-tools
 TAG=${1:-"latest"}
 
 for i in ${IMAGES[@]}; do
-   echo "docker push $IMAGE_REGISTRY/$i:$TAG"
+   docker push $IMAGE_REGISTRY/$i:$TAG
 done
