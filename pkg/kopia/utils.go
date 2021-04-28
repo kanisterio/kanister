@@ -57,6 +57,12 @@ const (
 	// ObjectStorePathOption is the option that specifies the repository to
 	// use when describing repo
 	ObjectStorePathOption = "objectStorePath"
+
+	// Kopia profile option keys
+	// DataStoreGeneralContentCacheSizeMBKey is the key to pass content cache size for general command workloads
+	DataStoreGeneralContentCacheSizeMBKey = "dataStoreGeneralContentCacheSize"
+	// DataStoreGeneralMetadataCacheSizeMBKey is the key to pass metadata cache size for general command workloads
+	DataStoreGeneralMetadataCacheSizeMBKey = "dataStoreGeneralMetadataCacheSize"
 )
 
 // ExtractFingerprintFromCertSecret extracts the fingerprint from the given certificate secret
@@ -162,4 +168,26 @@ func getStreamingFileObjectIDFromSnapshot(ctx context.Context, rep repo.Reposito
 	}
 
 	return e.(object.HasObjectID).ObjectID(), nil
+}
+
+// GetDataStoreGeneralContentCacheSize finds and return content cache size from the options
+func GetDataStoreGeneralContentCacheSize(opt map[string]int) int {
+	if opt == nil {
+		return defaultDataStoreGeneralContentCacheSizeMB
+	}
+	if contentCacheSize, ok := opt[DataStoreGeneralContentCacheSizeMBKey]; ok {
+		return contentCacheSize
+	}
+	return defaultDataStoreGeneralContentCacheSizeMB
+}
+
+// GetDataStoreGeneralMetadataCacheSize finds and return metadata cache size from the options
+func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
+	if opt == nil {
+		return defaultDataStoreGeneralMetadataCacheSizeMB
+	}
+	if metadataCacheSize, ok := opt[DataStoreGeneralContentCacheSizeMBKey]; ok {
+		return metadataCacheSize
+	}
+	return defaultDataStoreGeneralMetadataCacheSizeMB
 }

@@ -131,6 +131,7 @@ type KopiaServerCreds struct {
 	Hostname string
 	Password string
 	Cert     string
+	Options  map[string]int
 }
 
 // Phase represents a Blueprint phase and contains the phase output
@@ -499,6 +500,7 @@ func fetchKopiaCredential(ctx context.Context, cli kubernetes.Interface, ks *crv
 			Username: ks.Username,
 			Password: string(password),
 			Cert:     string(tlsCert),
+			Options:  ks.Options,
 		},
 	}, nil
 }
