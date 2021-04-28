@@ -20,7 +20,7 @@ actions:
           - name: container
             imagePullPolicy: IfNotPresent
           restartPolicy: Never
-        image: ghcr.io/kanisterio/kafka-adobe-s3-sink-connector
+        image: ghcr.io/kanisterio/kafka-adobe-s3-sink-connector:0.51.0
         command:
           - bash
           - -o
@@ -75,7 +75,7 @@ actions:
           containers:
           - name: container
             imagePullPolicy: IfNotPresent
-        image: ghcr.io/kanisterio/kafka-adobe-s3-source-connector
+        image: ghcr.io/kanisterio/kafka-adobe-s3-source-connector:0.51.0
         command:
         - bash
         - -o
@@ -136,7 +136,7 @@ actions:
           containers:
           - name: container
             imagePullPolicy: IfNotPresent
-        image: ghcr.io/kanisterio/kafka-adobe-s3-source-connector
+        image: ghcr.io/kanisterio/kafka-adobe-s3-source-connector:0.51.0
         command:
           - bash
           - -o
@@ -193,7 +193,7 @@ actions:
           containers:
           - name: container
             imagePullPolicy: IfNotPresent
-        image: ghcr.io/kanisterio/kafka-adobe-s3-source-connector
+        image: ghcr.io/kanisterio/kafka-adobe-s3-source-connector:0.51.0
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash
