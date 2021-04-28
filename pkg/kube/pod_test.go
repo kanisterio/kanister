@@ -102,12 +102,14 @@ func (s *PodSuite) TestPod(c *C) {
 			Image:              kanisterToolsImage,
 			Command:            []string{"sh", "-c", "tail -f /dev/null"},
 			ServiceAccountName: testSAName,
+			RestartPolicy:      v1.RestartPolicyAlways,
 		},
 		{
-			Namespace:    cns,
-			GenerateName: "test-",
-			Image:        kanisterToolsImage,
-			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+			Namespace:     cns,
+			GenerateName:  "test-",
+			Image:         kanisterToolsImage,
+			Command:       []string{"sh", "-c", "tail -f /dev/null"},
+			RestartPolicy: v1.RestartPolicyOnFailure,
 		},
 		{
 			Namespace:          cns,
@@ -115,6 +117,7 @@ func (s *PodSuite) TestPod(c *C) {
 			Image:              kanisterToolsImage,
 			Command:            []string{"sh", "-c", "tail -f /dev/null"},
 			ServiceAccountName: testSAName,
+			RestartPolicy:      v1.RestartPolicyNever,
 		},
 		{
 			Namespace:    s.namespace,
@@ -204,6 +207,13 @@ func (s *PodSuite) TestPod(c *C) {
 			c.Assert(pod.Spec.Containers[0].Name, Equals, po.ContainerName)
 		default:
 			c.Assert(pod.Spec.Containers[0].Name, Equals, defaultContainerName)
+		}
+
+		switch {
+		case po.RestartPolicy == "":
+			c.Assert(pod.Spec.RestartPolicy, Equals, v1.RestartPolicyNever)
+		default:
+			c.Assert(pod.Spec.RestartPolicy, Equals, po.RestartPolicy)
 		}
 
 		c.Assert(err, IsNil)

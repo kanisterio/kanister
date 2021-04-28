@@ -55,6 +55,7 @@ type PodOptions struct {
 	Volumes            map[string]string
 	PodOverride        crv1alpha1.JSONMap
 	Resources          v1.ResourceRequirements
+	RestartPolicy      v1.RestartPolicy
 }
 
 // CreatePod creates a pod with a single container based on the specified image
@@ -79,6 +80,10 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		}
 	}
 
+	if opts.RestartPolicy == "" {
+		opts.RestartPolicy = v1.RestartPolicyNever
+	}
+
 	volumeMounts, podVolumes := createVolumeSpecs(opts.Volumes)
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
@@ -95,7 +100,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		// restarted.  The possible values include Always, OnFailure and Never
 		// with Always being the default.  OnFailure policy will result in
 		// failed containers being restarted with an exponential back-off delay.
-		RestartPolicy:      v1.RestartPolicyOnFailure,
+		RestartPolicy:      opts.RestartPolicy,
 		Volumes:            podVolumes,
 		ServiceAccountName: sa,
 	}
