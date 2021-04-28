@@ -79,11 +79,11 @@ dockers:
 #   dockerfile: 'docker/kanister-mysql/image/Dockerfile'
 #   build_flag_templates:
 #   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
-- image_templates:
-  - 'ghcr.io/kanisterio/kanister-kubectl:1.18'
-  dockerfile: 'docker/kanister-kubectl/Dockerfile'
-  build_flag_templates:
-  - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
+# - image_templates:
+#   - 'ghcr.io/kanisterio/kanister-kubectl:1.18'
+#   dockerfile: 'docker/kanister-kubectl/Dockerfile'
+#   build_flag_templates:
+#   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 # - binaries:
 #   - kando
 #   image_templates:
