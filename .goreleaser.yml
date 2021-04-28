@@ -3,23 +3,23 @@ before:
   hooks:
   - go mod download
 builds:
-- id: kanctl
-  binary: kanctl
-  main: cmd/kanctl/main.go
-  ldflags: &ldflags
-  - -s -w
-    -X github.com/kanisterio/kanister/pkg/version.VERSION={{.Version}}
-    -X github.com/kanisterio/kanister/pkg/version.GIT_COMMIT={{.Commit}}
-    -X github.com/kanisterio/kanister/pkg/version.BUILD_DATE={{.Date}}
-  env: &env
-  - GO111MODULE=on
-  - CGO_ENABLED=0
-  - GO_EXTLINK_ENABLED=0
-  goos:
-  - darwin
-  - linux
-  goarch: &goarch
-  - amd64
+# - id: kanctl
+#   binary: kanctl
+#   main: cmd/kanctl/main.go
+#   ldflags: &ldflags
+#   - -s -w
+#     -X github.com/kanisterio/kanister/pkg/version.VERSION={{.Version}}
+#     -X github.com/kanisterio/kanister/pkg/version.GIT_COMMIT={{.Commit}}
+#     -X github.com/kanisterio/kanister/pkg/version.BUILD_DATE={{.Date}}
+#   env: &env
+#   - GO111MODULE=on
+#   - CGO_ENABLED=0
+#   - GO_EXTLINK_ENABLED=0
+#   goos:
+#   - darwin
+#   - linux
+#   goarch: &goarch
+#   - amd64
 # - id: kando
 #   binary: kando
 #   main: cmd/kando/main.go
@@ -60,9 +60,9 @@ dockers:
 #   image_templates:
 #   - 'ghcr.io/kanisterio/postgres-tools-9.6:{{ .Tag }}'
 #   dockerfile: 'docker/postgres-tools-9.6/Dockerfile'
-# - image_templates:
-#   - 'ghcr.io/kanisterio/postgresql:{{ .Tag }}'
-#   dockerfile: 'docker/postgresql/Dockerfile'
+- image_templates:
+  - 'ghcr.io/kanisterio/postgresql:{{ .Tag }}'
+  dockerfile: 'docker/postgresql/Dockerfile'
 # - binaries:
 #   - kando
 #   image_templates:
