@@ -36,7 +36,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
+
+const consumeTimeout = 5 * time.Minute
 
 const (
 	kafkaClusterWaitTimeout   = 5 * time.Minute
@@ -435,7 +438,7 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 // createConsumerGroup creates a consumer group in kafka cluster
 func createConsumerGroup(uri string) error {
 	data := Payload{
-		Name:                     "blogs-consumer",
+		Name:                     topic + "-consumer",
 		AutoOffsetReset:          "earliest",
 		Format:                   "json",
 		EnableAutoCommit:         true,
@@ -462,7 +465,7 @@ func createConsumerGroup(uri string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(bytes))
+	log.Print(string(bytes))
 	return nil
 }
 
@@ -492,7 +495,7 @@ func subscribe(uri string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(bytes))
+	log.Print(string(bytes))
 	return nil
 }
 
@@ -517,8 +520,9 @@ func consumeMessage(uri string) (int, error) {
 	responseBody := string(bytes)
 	var Message []Message
 	_ = json.Unmarshal([]byte(responseBody), &Message)
-	log.Print(responseBody)
-
+	if len(Message) > 0 {
+		log.Print(responseBody)
+	}
 	return len(Message), nil
 }
 
@@ -542,14 +546,22 @@ func consumeTopic(ctx context.Context, namespace string) (int, error) {
 		return 0, err
 	}
 	recordCount := 0
-	for {
-		recordCount, err = consumeMessage(uri)
-		if err != nil {
-			return 0, err
+	ctx, cancel := context.WithTimeout(ctx, consumeTimeout)
+	defer cancel()
+	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		for {
+			recordCount, err = consumeMessage(uri)
+			if err != nil {
+				return false, err
+			}
+			if recordCount > 0 {
+				return true, nil
+			}
 		}
-		if recordCount > 0 {
-			break
-		}
+		return false, nil
+	})
+	if err != nil {
+		return 0, err
 	}
 	return recordCount, nil
 }
