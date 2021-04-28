@@ -243,7 +243,7 @@ gorelease:
 	@$(MAKE) run CMD='-c "./build/gorelease.sh"'
 
 release-snapshot:
-	@$(MAKE) run CMD='-c "goreleaser --debug release --rm-dist --snapshot"'
+	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=latest goreleaser --debug release --rm-dist --snapshot"'
 
 go-mod-download:
 	@$(MAKE) run CMD='-c "go mod download"'

@@ -80,7 +80,7 @@ dockers:
   build_flag_templates:
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
 - image_templates:
-  - 'ghcr.io/kanisterio/kanister-kubectl:1.18'
+  - 'ghcr.io/kanisterio/kanister-kubectl-1.18:{{ .Tag }}'
   dockerfile: 'docker/kanister-kubectl/Dockerfile'
   build_flag_templates:
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
@@ -112,7 +112,7 @@ dockers:
 - binaries:
   - kando
   image_templates:
-  - 'ghcr.io/kanisterio/foundationdb:6.2.20'
+  - 'ghcr.io/kanisterio/foundationdb:{{ .Tag }}'
   dockerfile: 'docker/foundationdb/Dockerfile'
 - image_templates:
   - 'ghcr.io/kanisterio/kafka-adobe-s3-source-connector:{{ .Tag }}'
