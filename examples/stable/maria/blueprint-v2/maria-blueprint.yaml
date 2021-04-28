@@ -1,0 +1,88 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: maria-blueprint
+actions:
+  backup:
+    type: StatefulSet
+    outputArtifacts:
+      mariaBackup:
+        keyValue:
+          backupPath: "{{ .Phases.dumpToStore.Output.backupPath }}"
+          backupID: "{{ .Phases.dumpToStore.Output.backupID }}"
+    phases:
+    - func: KubeTask
+      name: dumpToStore
+      objects:
+        mariaSecret:
+          kind: Secret
+          name: '{{ .StatefulSet.Name }}'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        image: ghcr.io/kanisterio/mysql-sidecar:0.51.0
+        namespace: "{{ .StatefulSet.Namespace }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          backup_path="/maria-backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql"
+          root_password="{{ index .Phases.dumpToStore.Secrets.mariaSecret.Data "mariadb-root-password" | toString }}"
+          exclude_db="('information_schema', 'mysql', 'performance_schema')"
+          dump_databases=""
+          for db in `mysql -u root  -h {{ .StatefulSet.Name }} --password=${root_password} -ANe "use information_schema; select schema_name from schemata where schema_name not in ${exclude_db}"`
+          do
+                  dump_databases="${dump_databases} ${db}"
+          done
+          mysqldump -u root --password=${root_password} -h {{ .StatefulSet.Name }} --column-statistics=0 --single-transaction --databases ${dump_databases} | kando location push --profile '{{ toJson .Profile }}' --path ${backup_path} -
+          kando output backupPath ${backup_path}
+  restore:
+    type: StatefulSet
+    inputArtifactNames:
+    - mariaBackup
+    phases:
+    - func: KubeTask
+      name: restoreFromStore
+      objects:
+        mariaSecret:
+          kind: Secret
+          name: '{{ .StatefulSet.Name }}'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        image: ghcr.io/kanisterio/mysql-sidecar:0.51.0
+        namespace: "{{ .StatefulSet.Namespace }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          backup_path="{{ .ArtifactsIn.mariaBackup.KeyValue.backupPath }}"
+          backup_id="{{ .ArtifactsIn.mariaBackup.KeyValue.backupID }}"
+          root_password="{{ index .Phases.restoreFromStore.Secrets.mariaSecret.Data "mariadb-root-password" | toString }}"
+          kando location pull --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id} - | mysql -u root --password=${root_password} -h {{ .StatefulSet.Name }}
+  delete:
+    type: Namespace
+    inputArtifactNames:
+    - mariaBackup
+    phases:
+    - func: KubeTask
+      name: deleteFromStore
+      args:
+        image: ghcr.io/kanisterio/mysql-sidecar:0.51.0
+        namespace: "{{ .Namespace.Name }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          backup_path="{{ .ArtifactsIn.mariaBackup.KeyValue.backupPath }}"
+          kando location delete --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id}
