@@ -279,7 +279,7 @@ func checkPVCAndPVStatus(vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, nam
 	return nil
 }
 
-// WaitForPodCompletion waits for a pod to reach a terminal state
+// WaitForPodCompletion waits for a pod to reach a terminal state, or timeout
 func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		p, err := cli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
