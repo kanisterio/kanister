@@ -55,7 +55,7 @@ require (
 	github.com/prometheus/client_golang v1.10.0
 	github.com/renier/xmlrpc v0.0.0-20170708154548-ce4a1a486c03 // indirect
 	github.com/satori/go.uuid v1.2.0
-	github.com/segmentio/kafka-go v0.4.10
+	github.com/segmentio/kafka-go v0.4.10 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
 	github.com/spf13/cobra v1.1.1
