@@ -98,7 +98,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		},
 		// RestartPolicy dictates when the containers of the pod should be
 		// restarted.  The possible values include Always, OnFailure and Never
-		// with Always being the default.  OnFailure policy will result in
+		// with Never being the default.  OnFailure policy will result in
 		// failed containers being restarted with an exponential back-off delay.
 		RestartPolicy:      opts.RestartPolicy,
 		Volumes:            podVolumes,
