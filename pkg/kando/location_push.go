@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/output"
@@ -52,6 +53,12 @@ func runLocationPush(cmd *cobra.Command, args []string) error {
 	}
 	s := pathFlag(cmd)
 	ctx := context.Background()
+	if p.Location.Type == crv1alpha1.LocationTypeKopia {
+		if err = connectToKopiaServer(ctx, p); err != nil {
+			return err
+		}
+		return kopiaLocationPush(ctx, s, source)
+	}
 	return locationPush(ctx, p, s, source)
 }
 
@@ -76,7 +83,6 @@ func locationPush(ctx context.Context, p *param.Profile, path string, source io.
 }
 
 // kopiaLocationPush pushes the data from the source using a kopia snapshot
-// nolint:unused,deadcode
 func kopiaLocationPush(ctx context.Context, path string, source io.Reader) error {
 	snapID, _, err := kopia.Write(ctx, path, source)
 	if err != nil {

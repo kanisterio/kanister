@@ -57,5 +57,14 @@ jobs:
       script:
       - make golint
     - stage: test
+      services:
+      - docker
       script:
       - make release-snapshot
+      # Push images if PR is merged to master
+      - |
+        if [[ "$TRAVIS_BRANCH" == "master" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
+          sudo chown "$USER":"$USER" "$HOME"/.docker -R
+          docker login ghcr.io -u "$GITHUB_USERNAME" -p "$GITHUB_TOKEN"
+          ./build/push_images.sh
+        fi
