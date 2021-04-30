@@ -33,7 +33,7 @@ var _ = Suite(&PITRPostgreSQL{
 		name:      "pitr-postgres",
 		namespace: "pitr-postgres-test",
 		app:       app.NewPostgresDB("pitr-postgres", ""),
-		bp:        app.NewPITRBlueprint("pitr-postgres", ""),
+		bp:        app.NewPITRBlueprint("pitr-postgres", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -48,7 +48,7 @@ var _ = Suite(&PostgreSQL{
 		name:      "postgres",
 		namespace: "postgres-test",
 		app:       app.NewPostgresDB("postgres", ""),
-		bp:        app.NewBlueprint("postgres", ""),
+		bp:        app.NewBlueprint("postgres", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -63,7 +63,7 @@ var _ = Suite(&MySQL{
 		name:      "mysql",
 		namespace: "mysql-test",
 		app:       app.NewMysqlDB("mysql"),
-		bp:        app.NewBlueprint("mysql", ""),
+		bp:        app.NewBlueprint("mysql", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -78,7 +78,7 @@ var _ = Suite(&Maria{
 		name:      "mariadb",
 		namespace: "mariadb-test",
 		app:       app.NewMariaDB("maria"),
-		bp:        app.NewBlueprint("maria", ""),
+		bp:        app.NewBlueprint("maria", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -93,7 +93,7 @@ var _ = Suite(&Elasticsearch{
 		name:      "elasticsearch",
 		namespace: "es-test",
 		app:       app.NewElasticsearchInstance("elasticsearch"),
-		bp:        app.NewBlueprint("elasticsearch", ""),
+		bp:        app.NewBlueprint("elasticsearch", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -108,7 +108,7 @@ var _ = Suite(&MongoDB{
 		name:      "mongo",
 		namespace: "mongo-test",
 		app:       app.NewMongoDB("mongo"),
-		bp:        app.NewBlueprint("mongo", ""),
+		bp:        app.NewBlueprint("mongo", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -122,7 +122,7 @@ var _ = Suite(&Cassandra{IntegrationSuite{
 	name:      "cassandra",
 	namespace: "cassandra-test",
 	app:       app.NewCassandraInstance("cassandra"),
-	bp:        app.NewBlueprint("cassandra", ""),
+	bp:        app.NewBlueprint("cassandra", "", true),
 	profile:   newSecretProfile(),
 },
 })
@@ -137,7 +137,7 @@ var _ = Suite(&Couchbase{
 		name:      "couchbase",
 		namespace: "couchbase-test",
 		app:       app.NewCouchbaseDB("couchbase"),
-		bp:        app.NewBlueprint("couchbase", ""),
+		bp:        app.NewBlueprint("couchbase", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -152,7 +152,7 @@ var _ = Suite(&RDSPostgreSQL{
 		name:      "rds-postgres",
 		namespace: "rds-postgres-test",
 		app:       app.NewRDSPostgresDB("rds-postgres", ""),
-		bp:        app.NewBlueprint("rds-postgres", ""),
+		bp:        app.NewBlueprint("rds-postgres", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -166,7 +166,7 @@ var _ = Suite(&FoundationDB{
 		name:      "foundationdb",
 		namespace: "fdb-test",
 		app:       app.NewFoundationDB("foundationdb"),
-		bp:        app.NewBlueprint("foundationdb", ""),
+		bp:        app.NewBlueprint("foundationdb", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -180,7 +180,7 @@ var _ = Suite(&RDSAuroraMySQL{
 		name:      "rds-aurora-mysql",
 		namespace: "rds-aurora-mysql-test",
 		app:       app.NewRDSAuroraMySQLDB("rds-aurora-dump", ""),
-		bp:        app.NewBlueprint("rds-aurora-snap", ""),
+		bp:        app.NewBlueprint("rds-aurora-snap", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -196,7 +196,7 @@ var _ = Suite(&RDSPostgreSQLDump{
 		name:      "rds-postgres-dump",
 		namespace: "rds-postgres-dump-test",
 		app:       app.NewRDSPostgresDB("rds-postgres-dump", ""),
-		bp:        app.NewBlueprint("rds-postgres-dump", ""),
+		bp:        app.NewBlueprint("rds-postgres-dump", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -212,7 +212,7 @@ var _ = Suite(&RDSPostgreSQLSnap{
 		name:      "rds-postgres-snap",
 		namespace: "rds-postgres-snap-test",
 		app:       app.NewRDSPostgresDB("rds-postgres-snap", ""),
-		bp:        app.NewBlueprint("rds-postgres-snap", ""),
+		bp:        app.NewBlueprint("rds-postgres-snap", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -228,7 +228,7 @@ var _ = Suite(&MysqlDBDepConfig{
 		name:      "mysqldc",
 		namespace: "mysqldc-test",
 		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP3_11, app.EphemeralStorage, "5.7"),
-		bp:        app.NewBlueprint("mysql-dep-config", ""),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -243,7 +243,7 @@ var _ = Suite(&MongoDBDepConfig{
 		name:      "mongodb",
 		namespace: "mongodb-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP3_11, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", ""),
+		bp:        app.NewBlueprint("mongo-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -258,7 +258,7 @@ var _ = Suite(&PostgreSQLDepConfig{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf-test",
 		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP3_11, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", ""),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -274,7 +274,7 @@ var _ = Suite(&MysqlDBDepConfig4_4{
 		name:      "mysqldc",
 		namespace: "mysqldc4-4-test",
 		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_4, app.EphemeralStorage, "5.7"),
-		bp:        app.NewBlueprint("mysql-dep-config", ""),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -289,7 +289,7 @@ var _ = Suite(&MongoDBDepConfig4_4{
 		name:      "mongodb",
 		namespace: "mongodb4-4-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_4, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", ""),
+		bp:        app.NewBlueprint("mongo-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -304,7 +304,7 @@ var _ = Suite(&PostgreSQLDepConfig4_4{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-4-test",
 		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_4, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", ""),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -320,7 +320,7 @@ var _ = Suite(&MysqlDBDepConfig4_5{
 		name:      "mysqldc",
 		namespace: "mysqldc4-5-test",
 		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_5, app.EphemeralStorage, "5.7"),
-		bp:        app.NewBlueprint("mysql-dep-config", ""),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -335,7 +335,7 @@ var _ = Suite(&MongoDBDepConfig4_5{
 		name:      "mongodb",
 		namespace: "mongodb4-5-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_5, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", ""),
+		bp:        app.NewBlueprint("mongo-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -350,7 +350,7 @@ var _ = Suite(&PostgreSQLDepConfig4_5{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-5-test",
 		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_5, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", ""),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -365,7 +365,7 @@ var _ = Suite(&Kafka{
 		name:      "kafka",
 		namespace: "kafka-test",
 		app:       app.NewKafkaCluster("kafka", ""),
-		bp:        app.NewBlueprint("kafka", ""),
+		bp:        app.NewBlueprint("kafka", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -381,7 +381,7 @@ var _ = Suite(&MysqlDBDepConfig4_7{
 		name:      "mysqldc",
 		namespace: "mysqldc4-7-test",
 		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_7, app.EphemeralStorage, "8.0"),
-		bp:        app.NewBlueprint("mysql-dep-config", ""),
+		bp:        app.NewBlueprint("mysql-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -396,7 +396,7 @@ var _ = Suite(&MongoDBDepConfig4_7{
 		name:      "mongodb",
 		namespace: "mongodb4-7-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_7, app.EphemeralStorage),
-		bp:        app.NewBlueprint("mongo-dep-config", ""),
+		bp:        app.NewBlueprint("mongo-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -411,7 +411,7 @@ var _ = Suite(&PostgreSQLDepConfig4_7{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-5-test",
 		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_7, app.EphemeralStorage),
-		bp:        app.NewBlueprint("postgres-dep-config", ""),
+		bp:        app.NewBlueprint("postgres-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
