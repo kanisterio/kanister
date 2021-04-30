@@ -42,26 +42,29 @@ import (
 const consumeTimeout = 5 * time.Minute
 
 const (
-	kafkaClusterWaitTimeout   = 5 * time.Minute
-	s3ConnectorYamlFileRepo   = "../../examples/kafka/adobe-s3-connector"
-	configMapName             = "s3config"
-	s3SinkConfigPath          = "adobe-s3-sink.properties"
-	s3SourceConfigPath        = "adobe-s3-source.properties"
-	kafkaConfigPath           = "adobe-kafkaConfiguration.properties"
-	kafkaYaml                 = "kafka-cluster.yaml"
-	topic                     = "blogs"
-	chart                     = "strimzi-kafka-operator"
-	strimziImage              = "strimzi/kafka:0.20.0-kafka-2.6.0"
-	bootstrapServerHost       = "my-cluster-kafka-bootstrap"
-	bootstrapServerPort       = "9092"
-	bridgeServiceName         = "kafka-bridge-service"
-	bridgeServicePort         = "8080"
-	strimziOperatorDeployment = "strimzi-cluster-operator"
-	kafkaClusterOperator      = "my-cluster-entity-operator"
-	kafkaStatefulSet          = "my-cluster-kafka"
-	zookeeperStatefulset      = "my-cluster-zookeeper"
-	kafkaBridgeDeployment     = "kafka-bridge"
-	kafkaBridge               = "kafka-bridge.yaml"
+	kafkaClusterWaitTimeout    = 5 * time.Minute
+	s3ConnectorYamlFileRepo    = "../../examples/kafka/adobe-s3-connector"
+	configMapName              = "s3config"
+	s3SinkConfigPath           = "adobe-s3-sink.properties"
+	s3SourceConfigPath         = "adobe-s3-source.properties"
+	kafkaConfigPath            = "adobe-kafkaConfiguration.properties"
+	kafkaYaml                  = "kafka-cluster.yaml"
+	topic                      = "blogs"
+	chart                      = "strimzi-kafka-operator"
+	strimziImage               = "strimzi/kafka:0.20.0-kafka-2.6.0"
+	bootstrapServerHost        = "my-cluster-kafka-bootstrap"
+	bootstrapServerPort        = "9092"
+	bridgeServiceName          = "kafka-bridge-service"
+	bridgeServicePort          = "8080"
+	strimziOperatorDeployment  = "strimzi-cluster-operator"
+	kafkaClusterOperator       = "my-cluster-entity-operator"
+	kafkaStatefulSet           = "my-cluster-kafka"
+	zookeeperStatefulset       = "my-cluster-zookeeper"
+	kafkaBridgeDeployment      = "kafka-bridge"
+	kafkaBridge                = "kafka-bridge.yaml"
+	subscriptionURLPathFormat  = "/consumers/%s-consumer-group/instances/%s-consumer/subscription"
+	consumerGroupURLPathFormat = "/consumers/%s-consumer-group"
+	consumeTopicMessage        = "/consumers/%s-consumer-group/instances/%s-consumer/records"
 )
 
 type KafkaCluster struct {
@@ -355,7 +358,7 @@ func (kc *KafkaCluster) InsertRecord(ctx context.Context, namespace string) erro
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return errors.New("Record not Inserted")
+		return errors.New("Error inserting records in topic")
 	}
 	defer resp.Body.Close()
 	bytes, err := ioutil.ReadAll(resp.Body)
@@ -459,7 +462,7 @@ func createConsumerGroup(uri string) error {
 		return err
 	}
 	body := bytes.NewReader(payloadBytes)
-	req, err := http.NewRequest("POST", uri+"/consumers/"+topic+"-consumer-group", body)
+	req, err := http.NewRequest("POST", uri+fmt.Sprintf(consumerGroupURLPathFormat, topic), body)
 	if err != nil {
 		return err
 	}
@@ -469,9 +472,10 @@ func createConsumerGroup(uri string) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
-		log.Info().Print(string(resp.StatusCode))
-		return errors.New("Consumer not created")
+
+	if resp.StatusCode != 200 && resp.StatusCode != 409 {
+		// we are checking if consumer is already present and if not present it should be created
+		return errors.New("Error creating consumer")
 	}
 	defer resp.Body.Close()
 	bytes, err := ioutil.ReadAll(resp.Body)
@@ -493,7 +497,7 @@ func subscribe(uri string) error {
 	}
 	body := bytes.NewReader(payloadBytes)
 
-	req, err := http.NewRequest("POST", uri+"/consumers/"+topic+"-consumer-group/instances/"+topic+"-consumer/subscription", body)
+	req, err := http.NewRequest("POST", uri+fmt.Sprintf(subscriptionURLPathFormat, topic, topic), body)
 	if err != nil {
 		return err
 	}
@@ -504,7 +508,7 @@ func subscribe(uri string) error {
 		return err
 	}
 	if resp.StatusCode != 204 {
-		return errors.New("Could Not subscribe to the message")
+		return errors.New("Error subscribing to the topic")
 	}
 	defer resp.Body.Close()
 	bytes, err := ioutil.ReadAll(resp.Body)
@@ -517,7 +521,7 @@ func subscribe(uri string) error {
 
 // consumeMessage consumes the message from a topic
 func consumeMessage(uri string) (int, error) {
-	req, err := http.NewRequest("GET", uri+"/consumers/"+topic+"-consumer-group/instances/"+topic+"-consumer/records", nil)
+	req, err := http.NewRequest("GET", uri+fmt.Sprintf(consumeTopicMessage, topic, topic), nil)
 	if err != nil {
 		return 0, err
 	}
@@ -525,7 +529,7 @@ func consumeMessage(uri string) (int, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp.StatusCode != 200 {
-		return 0, errors.New("Record not Inserted")
+		return 0, errors.New("Error consuming records from topic")
 	}
 	if err != nil {
 		return 0, err
