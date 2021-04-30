@@ -223,7 +223,7 @@ func (kc *KafkaCluster) Ping(ctx context.Context) error {
 func (kc *KafkaCluster) Insert(ctx context.Context) error {
 	log.Print("Inserting some records in kafka topic.", field.M{"app": kc.name})
 
-	err := InsertRecord(ctx, kc.namespace)
+	err := kc.InsertRecord(ctx, kc.namespace)
 	if err != nil {
 		return errors.Wrapf(err, "Error inserting the record for %s", kc.name)
 	}
@@ -282,6 +282,7 @@ func (kc *KafkaCluster) Initialize(ctx context.Context) error {
 	return nil
 }
 
+//Message describes the response we get after consuming a topic
 type Message struct {
 	Topic     string `json:"topic"`
 	Key       string `json:"key"`
@@ -290,15 +291,18 @@ type Message struct {
 	Offset    int    `json:"offset"`
 }
 
+// InsertPayload is a list of Records passed to a topic
 type InsertPayload struct {
 	Records []Records `json:"records"`
 }
 
+// Records takes value and place that to a partition in a topic based on hash of the key
 type Records struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
+// Payload sets the consumer configuration
 type Payload struct {
 	Name                     string `json:"name"`
 	AutoOffsetReset          string `json:"auto.offset.reset"`
@@ -308,12 +312,13 @@ type Payload struct {
 	ConsumerRequestTimeoutMs int    `json:"consumer.request.timeout.ms"`
 }
 
+// SubscriptionPayload takes the list of topic names to subscribe
 type SubscriptionPayload struct {
 	Topics []string `json:"topics"`
 }
 
 // InsertRecord creates a topic and insert a record
-func InsertRecord(ctx context.Context, namespace string) error {
+func (kc *KafkaCluster) InsertRecord(ctx context.Context, namespace string) error {
 	forwarder, err := K8SServicePortForward(ctx, bridgeServiceName, namespace, bridgeServicePort)
 	if err != nil {
 		return err
@@ -342,18 +347,22 @@ func InsertRecord(ctx context.Context, namespace string) error {
 	if err != nil {
 		return err
 	}
+
 	req.Header.Set("Content-Type", "application/vnd.kafka.json.v2+json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode != 200 {
+		return errors.New("Record not Inserted")
+	}
 	defer resp.Body.Close()
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	log.Print(string(bytes))
+	log.Debug().Print(string(bytes))
 	return nil
 }
 
@@ -460,12 +469,16 @@ func createConsumerGroup(uri string) error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode != 200 {
+		log.Info().Print(string(resp.StatusCode))
+		return errors.New("Consumer not created")
+	}
 	defer resp.Body.Close()
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	log.Print(string(bytes))
+	log.Debug().Print(string(bytes))
 	return nil
 }
 
@@ -490,12 +503,15 @@ func subscribe(uri string) error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode != 204 {
+		return errors.New("Could Not subscribe to the message")
+	}
 	defer resp.Body.Close()
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	log.Print(string(bytes))
+	log.Debug().Print(string(bytes))
 	return nil
 }
 
@@ -508,7 +524,9 @@ func consumeMessage(uri string) (int, error) {
 	req.Header.Set("Accept", "application/vnd.kafka.json.v2+json")
 
 	resp, err := http.DefaultClient.Do(req)
-
+	if resp.StatusCode != 200 {
+		return 0, errors.New("Record not Inserted")
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -521,7 +539,7 @@ func consumeMessage(uri string) (int, error) {
 	var Message []Message
 	_ = json.Unmarshal([]byte(responseBody), &Message)
 	if len(Message) > 0 {
-		log.Print(responseBody)
+		log.Debug().Print(string(bytes))
 	}
 	return len(Message), nil
 }
@@ -563,5 +581,5 @@ func consumeTopic(ctx context.Context, namespace string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return recordCount, nil
+	return recordCount, err
 }
