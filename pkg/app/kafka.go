@@ -541,7 +541,10 @@ func consumeMessage(uri string) (int, error) {
 	}
 	responseBody := string(bytes)
 	var Message []Message
-	_ = json.Unmarshal([]byte(responseBody), &Message)
+	err = json.Unmarshal([]byte(responseBody), &Message)
+	if err != nil {
+		return 0, err
+	}
 	if len(Message) > 0 {
 		log.Debug().Print(string(bytes))
 	}
