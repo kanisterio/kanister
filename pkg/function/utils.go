@@ -58,6 +58,23 @@ func ValidateCredentials(creds *param.Credential) error {
 		return nil
 	case param.CredentialTypeSecret:
 		return secrets.ValidateCredentials(creds.Secret)
+	case param.CredentialTypeKopia:
+		if creds.KopiaServerSecret == nil {
+			return errors.New("Empty KopiaServerSecret field")
+		}
+		if len(creds.KopiaServerSecret.Username) == 0 {
+			return errors.New("Kopia Username is not set")
+		}
+		if len(creds.KopiaServerSecret.Password) == 0 {
+			return errors.New("Kopia UserPassphrase is not set")
+		}
+		if len(creds.KopiaServerSecret.Hostname) == 0 {
+			return errors.New("Kopia Hostname is not set")
+		}
+		if len(creds.KopiaServerSecret.Cert) == 0 {
+			return errors.New("Kopia TLSCert is not set")
+		}
+		return nil
 	default:
 		return errors.Errorf("Unsupported type '%s' for credentials", creds.Type)
 	}
@@ -75,6 +92,7 @@ func ValidateProfile(profile *param.Profile) error {
 	case crv1alpha1.LocationTypeS3Compliant:
 	case crv1alpha1.LocationTypeGCS:
 	case crv1alpha1.LocationTypeAzure:
+	case crv1alpha1.LocationTypeKopia:
 	default:
 		return errors.New("Location type not supported")
 	}
