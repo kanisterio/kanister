@@ -127,11 +127,11 @@ type KeyPair struct {
 
 // KopiaServerCreds contains creds to communicate with Kopia server
 type KopiaServerCreds struct {
-	Username string
-	Hostname string
-	Password string
-	Cert     string
-	Options  map[string]int
+	Username       string
+	Hostname       string
+	Password       string
+	Cert           string
+	ConnectOptions map[string]int
 }
 
 // Phase represents a Blueprint phase and contains the phase output
@@ -496,11 +496,11 @@ func fetchKopiaCredential(ctx context.Context, cli kubernetes.Interface, ks *crv
 	return &Credential{
 		Type: CredentialTypeKopia,
 		KopiaServerSecret: &KopiaServerCreds{
-			Hostname: ks.Hostname,
-			Username: ks.Username,
-			Password: string(password),
-			Cert:     string(tlsCert),
-			Options:  ks.Options,
+			Hostname:       ks.Hostname,
+			Username:       ks.Username,
+			Password:       string(password),
+			Cert:           string(tlsCert),
+			ConnectOptions: ks.ConnectOptions,
 		},
 	}, nil
 }
