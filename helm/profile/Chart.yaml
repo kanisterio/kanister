@@ -3,7 +3,7 @@ description: A helm chart to create profile custom resource for kanister
 engine: gotpl
 name: profile
 home: https://kanister.io/
-version: 0.50.0
+version: 0.51.2
 maintainers:
   - email: tom@kasten.io
     name: tdmanv
