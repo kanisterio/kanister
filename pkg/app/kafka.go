@@ -486,7 +486,7 @@ func createConsumerGroup(uri string) error {
 	return nil
 }
 
-// Subscribe subscribes a consumer to topic provided in kafka cluster
+// subscribe subscribes a consumer to topic provided in kafka cluster
 func subscribe(uri string) error {
 	data := SubscriptionPayload{
 		Topics: []string{topic},
