@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 image:
   repository: ghcr.io/kanisterio/controller
-  tag: 0.50.0
+  tag: 0.51.7
   pullPolicy: IfNotPresent
 rbac:
   create: true

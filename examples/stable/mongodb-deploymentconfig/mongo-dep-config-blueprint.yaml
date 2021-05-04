@@ -19,7 +19,7 @@ actions:
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
         namespace: "{{ .DeploymentConfig.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.50.0
+        image: ghcr.io/kanisterio/mongodb:0.51.7
         command:
           - bash
           - -o
@@ -47,7 +47,7 @@ actions:
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
         namespace: "{{ .DeploymentConfig.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.50.0
+        image: ghcr.io/kanisterio/mongodb:0.51.7
         command:
           - bash
           - -o
@@ -69,7 +69,7 @@ actions:
       name: deleteFromBlobStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: ghcr.io/kanisterio/mongodb:0.50.0
+        image: ghcr.io/kanisterio/mongodb:0.51.7
         command:
           - bash
           - -o
