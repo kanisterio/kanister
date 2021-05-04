@@ -48,17 +48,17 @@ kubectl port-forward kafdrop 7000:9000 -n kafka-test
 Create Producer and Consumer using Kafka image provided by strimzi.
 ```bash
 # create a producer and push data to it
-$ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-external-bootstrap:9094 --topic blogpost
+$ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-bootstrap:9092 --topic blogpost
 > event1
 > event2
 > event3
 
 # creating a consumer on a different terminal
-$ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-external-bootstrap:9094 --topic my-topic --from-beginning
+$ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic blogpost --from-beginning
 ```
 
 **NOTE:**
-* Here, we now have Kafka running with the broker running on service `my-cluster-kafka-external-bootstrap:9094`
+* Here, we now have Kafka running with the broker running on service `my-cluster-kafka-bootstrap:9092`
 * `adobe-s3-sink.properties` file contains properties related `s3 sink Connector`
 * `adobe-s3-source.properties` file contains properties related `s3 source Connector`
 * `kafkaConfiguration.properties` contains properties pointing to Kafka server
@@ -112,15 +112,15 @@ We can verify the backup operation by adding some data to the topic configured e
 
 * List all topics in Kafka server
 ```bash
-$ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --bootstrap-server=my-cluster-kafka-external-bootstrap:9094 --list
+$ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --bootstrap-server=my-cluster-kafka-bootstrap:9092 --list
 ```
 * Create a topic on Kafka server
 ```bash
-$ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --create --topic blogpost --bootstrap-server my-cluster-kafka-external-bootstrap:9094
+$ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --create --topic blogpost --bootstrap-server my-cluster-kafka-bootstrap:9092
 ```
 * Create a producer to push data to blogpost topic
 ```bash
-$ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-external-bootstrap:9094 --topic blogpost
+$ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-bootstrap:9092 --topic blogpost
 
 >{"title":"The Matrix","year":1999,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
 >{"title":"ABCD3","year":2000,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
@@ -144,7 +144,7 @@ $ kanctl create actionset --action restore --namespace kasten-io --blueprint kaf
 Create a consumer for topics
 ```bash
 # Creating a consumer on a different terminal
-$ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-external-bootstrap:9094 --topic blogpost --from-beginning
+$ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic blogpost --from-beginning
 ```
 All the messages restored can be viewed.
 
