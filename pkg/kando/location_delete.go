@@ -56,7 +56,7 @@ func runLocationDelete(cmd *cobra.Command) error {
 	return locationDelete(ctx, p, s)
 }
 
-// kopiaLocationDelete deletes kopia snapshot with given backupID
+// kopiaLocationDelete deletes the kopia snapshot with given backupID
 func kopiaLocationDelete(ctx context.Context, backupID, path string) error {
 	return kopia.DeleteSnapshot(ctx, backupID, path)
 }
