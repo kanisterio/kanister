@@ -63,7 +63,7 @@ func NewMongoDB(name string) App {
 				"architecture":     "replicaset",
 				"image.registry":   "ghcr.io",
 				"image.repository": "kanisterio/mongodb",
-				"image.tag":        "0.50.0",
+				"image.tag":        "0.51.3",
 			},
 		},
 	}
