@@ -54,7 +54,7 @@ $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafk
 > event3
 
 # creating a consumer on a different terminal
-$ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic my-topic --from-beginning
+$ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic blogpost --from-beginning
 ```
 
 **NOTE:**
