@@ -44,6 +44,8 @@ func ConnectToAPIServer(
 	hostname,
 	serverAddress,
 	username string,
+	contentCacheMB,
+	metadataCacheMB int,
 ) error {
 	// Extra fingerprint from the TLS Certificate secret
 	fingerprint, err := ExtractFingerprintFromCertificate(tlsCert)
@@ -62,8 +64,8 @@ func ConnectToAPIServer(
 		PersistCredentials: defaultConnectPersistCredentials,
 		CachingOptions: content.CachingOptions{
 			CacheDirectory:            defaultCacheDirectory,
-			MaxCacheSizeBytes:         int64(defaultDataStoreGeneralContentCacheSizeMB << 20),
-			MaxMetadataCacheSizeBytes: int64(defaultDataStoreGeneralMetadataCacheSizeMB << 20),
+			MaxCacheSizeBytes:         int64(contentCacheMB << 20),
+			MaxMetadataCacheSizeBytes: int64(metadataCacheMB << 20),
 			MaxListCacheDurationSec:   int(defaultConnectMaxListCacheDuration.Seconds()),
 		},
 		ClientOptions: repo.ClientOptions{

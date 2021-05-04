@@ -290,6 +290,7 @@ type KopiaServerSecret struct {
 	Hostname       string                `json:"hostname,omitempty"`
 	UserPassphrase *KopiaServerSecretRef `json:"userPassphrase,omitempty"`
 	TLSCert        *KopiaServerSecretRef `json:"tlsCert,omitempty"`
+	ConnectOptions map[string]int        `json:"connectOptions,omitempty"`
 }
 
 // KopiaServerSecretRef refers to K8s secrets containing Kopia creds
