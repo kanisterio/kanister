@@ -8,8 +8,6 @@ LABEL name="kanister-tools" \
     maintainer="Tom Manville<tom@kasten.io>" \
     description="Kanister tools for application-specific data management"
 
-ENV GODEBUG=asyncpreemptoff=1
-
 COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
 # kopia alpine-667d171 image
 COPY --from=kanisterio/kopia@sha256:28a3c9ce2528e662ca7a0c68e59d3c6faeaa504e2985fd281a53e49249e062b9 \
