@@ -394,13 +394,14 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	}
 	pvc, err = s.cli.CoreV1().PersistentVolumeClaims(s.sourceNamespace).Create(ctx, pvc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	_ = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		pvc, err = s.cli.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(ctx, pvc.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
 		return pvc.Status.Phase == corev1.ClaimBound, nil
 	})
+	c.Assert(err, IsNil)
 
 	snapshotName := snapshotNamePrefix + strconv.Itoa(int(time.Now().UnixNano()))
 	wait := true
