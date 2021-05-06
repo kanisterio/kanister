@@ -41,10 +41,9 @@ actions:
             BUCKET="{{ .Profile.Location.Bucket }}"
             export CONNECTORNAME=$HOSTNAME
             S3CONFIG="{{ index .Object.data "adobe-s3-sink.properties" | toString }}"
-            echo -e "${S3CONFIG}\ns3.bucket=${BUCKET}\nname=${CONNECTORNAME}\n" > /tmp/config/s3config.properties
+            echo -e "${S3CONFIG}\ns3.region=${REGION}\ns3.bucket=${BUCKET}\nname=${CONNECTORNAME}\n" > /tmp/config/s3config.properties
             S3FOLDER=`cat /tmp/config/s3config.properties | grep "s3.prefix=" | awk -F "=" '{print $2}'`
             S3_TOPIC_PATH="${S3FOLDER}_{{ .Time | date "2006-01-02T15:04:05" }}"
-
             sed -i "/^s3.prefix/d" /tmp/config/s3config.properties
             echo -e "\ns3.prefix=${S3_TOPIC_PATH}\n" >> /tmp/config/s3config.properties
 
@@ -157,7 +156,7 @@ actions:
             BUCKET="{{ .Profile.Location.Bucket }}"
             export CONNECTORNAME=$HOSTNAME
             S3CONFIG="{{ index .Object.data "adobe-s3-source.properties" | toString }}"
-            echo -e "${S3CONFIG}\ns3.bucket=${BUCKET}\nname=${CONNECTORNAME}\n" > /tmp/config/s3config.properties
+            echo -e "${S3CONFIG}\ns3.region=${REGION}\ns3.bucket=${BUCKET}\nname=${CONNECTORNAME}\n" > /tmp/config/s3config.properties
             sed -i "/^s3.prefix/d" /tmp/config/s3config.properties
 
             S3_PATH="{{ .ArtifactsIn.s3Dump.KeyValue.s3path }}"
