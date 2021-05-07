@@ -55,6 +55,7 @@ type PodOptions struct {
 	Volumes            map[string]string
 	PodOverride        crv1alpha1.JSONMap
 	Resources          v1.ResourceRequirements
+	RestartPolicy      v1.RestartPolicy
 }
 
 // CreatePod creates a pod with a single container based on the specified image
@@ -79,6 +80,10 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		}
 	}
 
+	if opts.RestartPolicy == "" {
+		opts.RestartPolicy = v1.RestartPolicyNever
+	}
+
 	volumeMounts, podVolumes := createVolumeSpecs(opts.Volumes)
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
@@ -93,9 +98,9 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		},
 		// RestartPolicy dictates when the containers of the pod should be
 		// restarted.  The possible values include Always, OnFailure and Never
-		// with Always being the default.  OnFailure policy will result in
+		// with Never being the default.  OnFailure policy will result in
 		// failed containers being restarted with an exponential back-off delay.
-		RestartPolicy:      v1.RestartPolicyOnFailure,
+		RestartPolicy:      opts.RestartPolicy,
 		Volumes:            podVolumes,
 		ServiceAccountName: sa,
 	}
@@ -274,7 +279,7 @@ func checkPVCAndPVStatus(vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, nam
 	return nil
 }
 
-// WaitForPodCompletion waits for a pod to reach a terminal state
+// WaitForPodCompletion waits for a pod to reach a terminal state, or timeout
 func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		p, err := cli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -282,14 +287,8 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 			return true, err
 		}
 		switch p.Status.Phase {
-		case v1.PodRunning:
-			for _, con := range p.Status.ContainerStatuses {
-				if con.State.Terminated != nil {
-					return false, errors.Errorf("Container %v is terminated, while Pod %v is Running. Container termination status: %v. Pod details (%s)", con.Name, name, con.State.Terminated, p.String())
-				}
-			}
 		case v1.PodFailed:
-			return false, errors.Errorf("Pod %s failed", name)
+			return false, errors.Errorf("Pod %s failed. Pod details (%s)", name, p.String())
 		}
 		return p.Status.Phase == v1.PodSucceeded, nil
 	})
