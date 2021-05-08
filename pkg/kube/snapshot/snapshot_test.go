@@ -406,7 +406,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	snapshotName := snapshotNamePrefix + strconv.Itoa(int(time.Now().UnixNano()))
 	wait := true
 	label := map[string]string{
-		"SnapshotTest": "testlabel",
+		"snapshottest": "testlabel",
 	}
 	err = snapshotter.Create(ctx, snapshotName, s.sourceNamespace, pvc.Name, snapshotClass, wait, label)
 	c.Assert(err, IsNil)
