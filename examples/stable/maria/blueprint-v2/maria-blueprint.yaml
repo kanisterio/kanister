@@ -37,7 +37,7 @@ actions:
           do
                   dump_databases="${dump_databases} ${db}"
           done
-          mysqldump -u root --password=${root_password} -h {{ .StatefulSet.Name }} --column-statistics=0 --single-transaction --databases ${dump_databases} | kando location push --profile '{{ toJson .Profile }}' --path ${backup_path} -
+          mysqldump -u root --password=${root_password} -h {{ .StatefulSet.Name }} --column-statistics=0 --single-transaction --databases ${dump_databases} | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${backup_path} -
           kando output backupPath ${backup_path}
   restore:
     type: StatefulSet
@@ -65,7 +65,7 @@ actions:
           backup_path="{{ .ArtifactsIn.mariaBackup.KeyValue.backupPath }}"
           backup_id="{{ .ArtifactsIn.mariaBackup.KeyValue.backupID }}"
           root_password="{{ index .Phases.restoreFromStore.Secrets.mariaSecret.Data "mariadb-root-password" | toString }}"
-          kando location pull --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id} - | mysql -u root --password=${root_password} -h {{ .StatefulSet.Name }}
+          kando location pull --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id} - | gunzip | mysql -u root --password=${root_password} -h {{ .StatefulSet.Name }}
   delete:
     type: Namespace
     inputArtifactNames:
@@ -85,4 +85,5 @@ actions:
         - -c
         - |
           backup_path="{{ .ArtifactsIn.mariaBackup.KeyValue.backupPath }}"
+          backup_id="{{ .ArtifactsIn.mariaBackup.KeyValue.backupID }}"
           kando location delete --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id}
