@@ -74,7 +74,7 @@ actions:
       name: deleteBackup
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: ghcr.io/kanisterio/kanister-tools:0.51.0
+        image: ghcr.io/kanisterio/kanister-tools:0.53.0
         command:
           - bash
           - -o

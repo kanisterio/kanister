@@ -19,7 +19,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.51.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.53.0
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -32,8 +32,8 @@ actions:
           export PGHOST='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
           export PGUSER='postgres'
           export PGPASSWORD='{{ index .Phases.pgDump.Secrets.pgSecret.Data "postgresql-password" | toString }}'
-          backup_path=pg_backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/backup.sql
-          pg_dumpall --clean -U $PGUSER | kando location push --profile '{{ toJson .Profile }}' --path "${backup_path}" -
+          backup_path=pg_backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/backup.sql.gz
+          pg_dumpall --clean -U $PGUSER | gzip -c | kando location push --profile '{{ toJson .Profile }}' --path "${backup_path}" -
           kando output backupPath "${backup_path}"
   restore:
     kind: StatefulSet
@@ -48,7 +48,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.51.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.53.0
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -63,7 +63,7 @@ actions:
           export PGPASSWORD='{{ index .Phases.pgRestore.Secrets.pgSecret.Data "postgresql-password" | toString }}'
           backup_path={{ .ArtifactsIn.pgBackup.KeyValue.backupPath }}
           backup_id={{ .ArtifactsIn.pgBackup.KeyValue.backupID }}
-          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_path}" --backupID ${backup_id} - | psql -q -U "${PGUSER}"
+          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_path}" --backupID ${backup_id} - | gunzip -c -f | psql -q -U "${PGUSER}"
   delete:
     type: Namespace
     inputArtifactNames:
@@ -72,7 +72,7 @@ actions:
     - func: KubeTask
       name: deleteDump
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.51.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.53.0
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash
