@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	esWaitTimeout = 3 * time.Minute
+	esWaitTimeout = 5 * time.Minute
 )
 
 // ElasticsearchPingOutput struct gets mapped to the output of curl <es-host>:<es-port>/<index-name>/_search?pretty
