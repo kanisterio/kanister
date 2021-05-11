@@ -98,10 +98,20 @@ func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string)
 		return err
 	}
 
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.chart.Release, esi.namespace, esi.chart.Values)
+	createElasticSearch := []string{
+		"install",
+		"-n", esi.namespace,
+		esi.chart.Release,
+		fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart),
+		"-f", fmt.Sprintf("%s/%s", "../../examples/stable/elasticsearch", "values.yaml"),
+		"--wait",
+		"--version", esi.chart.Version,
+	}
+	_, err = helm.RunCmdWithTimeout(ctx, "helm", createElasticSearch)
 	if err != nil {
 		return err
 	}
+
 	log.Print("Application was installed successfully.", field.M{"app": esi.name})
 	return nil
 }
