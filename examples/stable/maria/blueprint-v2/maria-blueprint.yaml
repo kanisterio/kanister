@@ -29,7 +29,7 @@ actions:
         - pipefail
         - -c
         - |
-          backup_path="/maria-backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql"
+          backup_path="/maria-backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
           root_password="{{ index .Phases.dumpToStore.Secrets.mariaSecret.Data "mariadb-root-password" | toString }}"
           exclude_db="('information_schema', 'mysql', 'performance_schema')"
           dump_databases=""
