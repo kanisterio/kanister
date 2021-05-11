@@ -158,7 +158,7 @@ test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
 
 integration-test: build-dirs
-	@$(MAKE) run CMD='-c "./build/integration-test.sh short"'
+	@$(MAKE) run CMD='-c "./build/integration-test.sh Elasticsearch"'
 
 openshift-test:
 	@/bin/bash ./build/integration-test.sh openshift $(ocp_version)
