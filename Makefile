@@ -58,7 +58,9 @@ IMAGE_NAME := $(BIN)
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
 BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.12
-DOCS_BUILD_IMAGE ?= kanisterio/docker-sphinx
+
+# tag 0.1.0 is, 0.0.1 (latest) + gh + aws binary
+DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.1.0
 
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
 
@@ -158,7 +160,7 @@ test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
 
 integration-test: build-dirs
-	@$(MAKE) run CMD='-c "./build/integration-test.sh Elasticsearch"'
+	@$(MAKE) run CMD='-c "./build/integration-test.sh short"'
 
 openshift-test:
 	@/bin/bash ./build/integration-test.sh openshift $(ocp_version)
