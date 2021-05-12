@@ -70,8 +70,9 @@ The following configuration applies to source and sink connector.
 | Config Key | Notes |
 | ---------- | ----- |
 | name | name of the connector |
-| s3.bucket | The name of the bucket to write to |
-| s3.prefix | Prefix added to all object keys stored in bucket to "namespace" them. |
+| s3.bucket | The name of the bucket to write. This key will be dynamically added from profile |
+| s3.region | The region in which s3 bcuket is present. This key will be dynamically added from profile |
+| s3.prefix | Prefix added to all object keys stored in bucket to "namespace" them |
 | s3.path_style | Force path-style access to bucket |
 | topics | Comma separated list of topics that need to be processed |
 | task.max | Max number of tasks that should be run inside the connector |
