@@ -25,8 +25,7 @@ TEST_TIMEOUT="30m"
 # Set default options
 TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # Regex to match apps to run in short mode
-SHORT_APPS_1="^PostgreSQL$|^PITRPostgreSQL|^MySQL$|Elasticsearch"
-SHORT_APPS_2="^MongoDB$|Maria"
+SHORT_APPS="^PostgreSQL$|^PITRPostgreSQL|^MySQL$|Elasticsearch|^MongoDB$|Maria"
 # OCAPPS has all the apps that are to be tested against openshift cluster
 OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
 OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"
@@ -66,13 +65,9 @@ case "${1}" in
     all)
         TEST_APPS=".*"
         ;;
-    short_1)
+    short)
         # Run only part of apps
-        TEST_APPS=${SHORT_APPS_1}
-        ;;
-    short_2)
-        # Run only part of apps
-        TEST_APPS=${SHORT_APPS_2}
+        TEST_APPS=${SHORT_APPS}
         ;;
     openshift)
         # TODO:// make sure the argument is named ocp_version

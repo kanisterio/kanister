@@ -48,8 +48,7 @@ jobs:
       - make start-kind
       - make install-minio
       script:
-      - make integration-test-1
-      - make integration-test-2
+      - make integration-test
       before_cache:
       - sudo chown -R travis:travis ./.go
       after_script:
