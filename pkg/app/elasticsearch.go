@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	esWaitTimeout = 5 * time.Minute
+	esWaitTimeout = 3 * time.Minute
 )
 
 // ElasticsearchPingOutput struct gets mapped to the output of curl <es-host>:<es-port>/<index-name>/_search?pretty
@@ -97,6 +97,7 @@ func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string)
 	if err != nil {
 		return err
 	}
+
 	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.chart.Release, esi.namespace, esi.chart.Values)
 	if err != nil {
 		return err
