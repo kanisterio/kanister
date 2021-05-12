@@ -17,14 +17,15 @@ package app
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/segmentio/kafka-go"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/portforward"
@@ -35,25 +36,35 @@ import (
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
+const consumeTimeout = 5 * time.Minute
+
 const (
-	kafkaClusterWaitTimeout   = 5 * time.Minute
-	s3ConnectorYamlFileRepo   = "../../examples/kafka/adobe-s3-connector"
-	configMapName             = "s3config"
-	s3SinkConfigPath          = "adobe-s3-sink.properties"
-	s3SourceConfigPath        = "adobe-s3-source.properties"
-	kafkaConfigPath           = "adobe-kafkaConfiguration.properties"
-	kafkaYaml                 = "kafka-cluster.yaml"
-	topic                     = "blogs"
-	chart                     = "strimzi-kafka-operator"
-	strimziImage              = "strimzi/kafka:0.20.0-kafka-2.6.0"
-	bootstrapServerHost       = "my-cluster-kafka-external-bootstrap"
-	bootstrapServerPort       = "9094"
-	strimziOperatorDeployment = "strimzi-cluster-operator"
-	kafkaClusterOperator      = "my-cluster-entity-operator"
-	kafkaStatefulSet          = "my-cluster-kafka"
-	zookeeperStatefulset      = "my-cluster-zookeeper"
+	kafkaClusterWaitTimeout    = 5 * time.Minute
+	s3ConnectorYamlFileRepo    = "../../examples/kafka/adobe-s3-connector"
+	configMapName              = "s3config"
+	s3SinkConfigPath           = "adobe-s3-sink.properties"
+	s3SourceConfigPath         = "adobe-s3-source.properties"
+	kafkaConfigPath            = "adobe-kafkaConfiguration.properties"
+	kafkaYaml                  = "kafka-cluster.yaml"
+	topic                      = "blogs"
+	chart                      = "strimzi-kafka-operator"
+	strimziImage               = "strimzi/kafka:0.20.0-kafka-2.6.0"
+	bootstrapServerHost        = "my-cluster-kafka-bootstrap"
+	bootstrapServerPort        = "9092"
+	bridgeServiceName          = "kafka-bridge-service"
+	bridgeServicePort          = "8080"
+	strimziOperatorDeployment  = "strimzi-cluster-operator"
+	kafkaClusterOperator       = "my-cluster-entity-operator"
+	kafkaStatefulSet           = "my-cluster-kafka"
+	zookeeperStatefulset       = "my-cluster-zookeeper"
+	kafkaBridgeDeployment      = "kafka-bridge"
+	kafkaBridge                = "kafka-bridge.yaml"
+	subscriptionURLPathFormat  = "/consumers/%s-consumer-group/instances/%s-consumer/subscription"
+	consumerGroupURLPathFormat = "/consumers/%s-consumer-group"
+	consumeTopicMessage        = "/consumers/%s-consumer-group/instances/%s-consumer/records"
 )
 
 type KafkaCluster struct {
@@ -137,6 +148,16 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error creating ConfigMap %s, %s", kc.name, out)
 	}
+	createKafkaBridge := []string{
+		"create",
+		"-n", namespace,
+		"-f", fmt.Sprintf("%s/%s", kc.pathToYaml, kafkaBridge),
+	}
+	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", createKafkaBridge)
+
+	if err != nil {
+		return errors.Wrapf(err, "Error installing the application %s, %s", kc.name, out)
+	}
 	log.Print("Application was installed successfully.", field.M{"app": kc.name})
 	return nil
 }
@@ -205,7 +226,7 @@ func (kc *KafkaCluster) Ping(ctx context.Context) error {
 func (kc *KafkaCluster) Insert(ctx context.Context) error {
 	log.Print("Inserting some records in kafka topic.", field.M{"app": kc.name})
 
-	err := produce(ctx, kc.topic, kc.namespace)
+	err := kc.InsertRecord(ctx, kc.namespace)
 	if err != nil {
 		return errors.Wrapf(err, "Error inserting the record for %s", kc.name)
 	}
@@ -234,14 +255,18 @@ func (kc *KafkaCluster) IsReady(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
+	err = kube.WaitOnDeploymentReady(ctx, kc.cli, kc.namespace, kafkaBridgeDeployment)
+	if err != nil {
+		return false, err
+	}
 	log.Print("Application instance is ready.", field.M{"app": kc.name})
 	return true, nil
 }
 
 func (kc *KafkaCluster) Count(ctx context.Context) (int, error) {
 	log.Print("Counting records in kafka topic.", field.M{"app": kc.name})
-	count, err := consume(ctx, kc.topic, kc.namespace)
+
+	count, err := consumeTopic(ctx, kc.namespace)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error counting the records for %s, %s.", kc.name, err)
 	}
@@ -260,36 +285,88 @@ func (kc *KafkaCluster) Initialize(ctx context.Context) error {
 	return nil
 }
 
-// to produce messages to kafka
-func produce(ctx context.Context, topic string, namespace string) error {
-	partition := 0
-	forwarder, err := K8SServicePortForward(ctx, bootstrapServerHost, namespace, bootstrapServerPort)
+//Message describes the response we get after consuming a topic
+type Message struct {
+	Topic     string `json:"topic"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	Partition int    `json:"partition"`
+	Offset    int    `json:"offset"`
+}
+
+// InsertPayload is a list of Records passed to a topic
+type InsertPayload struct {
+	Records []Records `json:"records"`
+}
+
+// Records takes value and place that to a partition in a topic based on hash of the key
+type Records struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+// Payload sets the consumer configuration
+type Payload struct {
+	Name                     string `json:"name"`
+	AutoOffsetReset          string `json:"auto.offset.reset"`
+	Format                   string `json:"format"`
+	EnableAutoCommit         bool   `json:"enable.auto.commit"`
+	FetchMinBytes            int    `json:"fetch.min.bytes"`
+	ConsumerRequestTimeoutMs int    `json:"consumer.request.timeout.ms"`
+}
+
+// SubscriptionPayload takes the list of topic names to subscribe
+type SubscriptionPayload struct {
+	Topics []string `json:"topics"`
+}
+
+// InsertRecord creates a topic and insert a record
+func (kc *KafkaCluster) InsertRecord(ctx context.Context, namespace string) error {
+	forwarder, err := K8SServicePortForward(ctx, bridgeServiceName, namespace, bridgeServicePort)
 	if err != nil {
 		return err
 	}
-
 	defer forwarder.Close()
 	ports, err := forwarder.GetPorts()
 	if err != nil {
 		return err
 	}
-	uri := "localhost:" + fmt.Sprint(ports[0].Local)
+	uri := "http://localhost:" + fmt.Sprint(ports[0].Local)
 
-	conn, err := kafka.DialLeader(ctx, "tcp", uri, topic, partition)
+	data := InsertPayload{
+		Records: []Records{
+			{
+				Value: "sales-lead-0001",
+			},
+		},
+	}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	body := bytes.NewReader(payloadBytes)
+
+	req, err := http.NewRequest("POST", uri+"/topics/"+topic, body)
 	if err != nil {
 		return err
 	}
 
-	defer conn.Close()
+	req.Header.Set("Content-Type", "application/vnd.kafka.json.v2+json")
 
-	err = conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
-	_, err = conn.WriteMessages(
-		kafka.Message{Value: []byte("{'title':'The Matrix','year':1999,'cast':['Keanu Reeves','Laurence Fishburne','Carrie-Anne Moss','Hugo Weaving','Joe Pantoliano'],'genres':['Science Fiction']}")},
-	)
-	return err
+	if resp.StatusCode != 200 {
+		return errors.New("Error inserting records in topic")
+	}
+	defer resp.Body.Close()
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	log.Debug().Print(string(bytes))
+	return nil
 }
 
 // K8SServicePortForward creates a service port forwarding and returns the forwarder and error if any
@@ -370,49 +447,145 @@ func K8SServicePortForward(ctx context.Context, svcName string, ns string, pPort
 	return f, nil
 }
 
-func consume(ctx context.Context, topic string, namespace string) (int, error) {
-	partition := 0
-	forwarder, err := K8SServicePortForward(ctx, bootstrapServerHost, namespace, bootstrapServerPort)
+// createConsumerGroup creates a consumer group in kafka cluster
+func createConsumerGroup(uri string) error {
+	data := Payload{
+		Name:                     topic + "-consumer",
+		AutoOffsetReset:          "earliest",
+		Format:                   "json",
+		EnableAutoCommit:         true,
+		FetchMinBytes:            512,
+		ConsumerRequestTimeoutMs: 30000,
+	}
+	payloadBytes, err := json.Marshal(data)
 	if err != nil {
-		log.Print("error getting forwarder")
-		return 0, err
+		return err
+	}
+	body := bytes.NewReader(payloadBytes)
+	req, err := http.NewRequest("POST", uri+fmt.Sprintf(consumerGroupURLPathFormat, topic), body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/vnd.kafka.v2+json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
 	}
 
+	if resp.StatusCode != 200 && resp.StatusCode != 409 {
+		// we are checking if consumer is already present and if not present it should be created
+		return errors.New("Error creating consumer")
+	}
+	defer resp.Body.Close()
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	log.Debug().Print(string(bytes))
+	return nil
+}
+
+// subscribe subscribes a consumer to topic provided in kafka cluster
+func subscribe(uri string) error {
+	data := SubscriptionPayload{
+		Topics: []string{topic},
+	}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	body := bytes.NewReader(payloadBytes)
+
+	req, err := http.NewRequest("POST", uri+fmt.Sprintf(subscriptionURLPathFormat, topic, topic), body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/vnd.kafka.v2+json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 204 {
+		return errors.New("Error subscribing to the topic")
+	}
+	defer resp.Body.Close()
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	log.Debug().Print(string(bytes))
+	return nil
+}
+
+// consumeMessage consumes the message from a topic
+func consumeMessage(uri string) (int, error) {
+	req, err := http.NewRequest("GET", uri+fmt.Sprintf(consumeTopicMessage, topic, topic), nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Accept", "application/vnd.kafka.json.v2+json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if resp.StatusCode != 200 {
+		return 0, errors.New("Error consuming records from topic")
+	}
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return 0, err
+	}
+	responseBody := string(bytes)
+	var Message []Message
+	err = json.Unmarshal([]byte(responseBody), &Message)
+	if err != nil {
+		return 0, err
+	}
+	if len(Message) > 0 {
+		log.Debug().Print(string(bytes))
+	}
+	return len(Message), nil
+}
+
+func consumeTopic(ctx context.Context, namespace string) (int, error) {
+	forwarder, err := K8SServicePortForward(ctx, bridgeServiceName, namespace, bridgeServicePort)
+	if err != nil {
+		return 0, err
+	}
 	defer forwarder.Close()
 	ports, err := forwarder.GetPorts()
 	if err != nil {
 		return 0, err
 	}
-	uri := "localhost:" + fmt.Sprint(ports[0].Local)
-
-	conn, err := kafka.DialLeader(ctx, "tcp", uri, topic, partition)
+	uri := "http://localhost:" + fmt.Sprint(ports[0].Local)
+	err = createConsumerGroup(uri)
 	if err != nil {
 		return 0, err
 	}
-
-	defer conn.Close()
-
-	err = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	err = subscribe(uri)
 	if err != nil {
 		return 0, err
 	}
-	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
-	count := 0
-	b := make([]byte, 10e3) // 10KB max per message
-	messageEnd := false
-	for {
-		_, err := batch.Read(b)
-		if err != nil {
-			messageEnd = true
-			break
+	recordCount := 0
+	ctx, cancel := context.WithTimeout(ctx, consumeTimeout)
+	defer cancel()
+	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		for {
+			recordCount, err = consumeMessage(uri)
+			if err != nil {
+				return false, err
+			}
+			if recordCount > 0 {
+				return true, nil
+			}
 		}
-		count = count + 1
-		fmt.Println(string(b))
+	})
+	if err != nil {
+		return 0, err
 	}
-	if !messageEnd {
-		if err := batch.Close(); err != nil {
-			return 0, err
-		}
-	}
-	return count, nil
+	return recordCount, err
 }
