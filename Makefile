@@ -159,8 +159,11 @@ deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
 
-integration-test: build-dirs
-	@$(MAKE) run CMD='-c "./build/integration-test.sh short"'
+integration-test-1: build-dirs
+	@$(MAKE) run CMD='-c "./build/integration-test.sh short_1"'
+
+integration-test-2: build-dirs
+	@$(MAKE) run CMD='-c "./build/integration-test.sh short_2"'
 
 openshift-test:
 	@/bin/bash ./build/integration-test.sh openshift $(ocp_version)
