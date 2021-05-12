@@ -13,4 +13,4 @@ RUN curl "https://s3.amazonaws.com/aws-cli/awscli-bundle-${AWS_VERSION}.zip" -o 
     ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
 
 # add helm
-COPY --from=alpine/helm:3.1.0 /usr/bin/helm /usr/local/bin/
+COPY --from=alpine/helm:2.16.10 /usr/bin/helm /usr/local/bin/
