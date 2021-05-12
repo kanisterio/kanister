@@ -10,7 +10,7 @@ During restore, topic messages are purged before the restore operation is perfor
 ## Prerequisites
 
 * Kubernetes 1.9+
-* Kanister controller version 0.53.0 installed in the cluster in a namespace <kanister-operator-namespace>. This example uses `kasten-io` namespace
+* Kanister controller version 0.56.0 installed in the cluster in a namespace <kanister-operator-namespace>. This example uses `kasten-io` namespace
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Assumption
