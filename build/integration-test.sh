@@ -20,7 +20,7 @@ set -o nounset
 # Default bucket name
 INTEGRATION_TEST_DIR=pkg/testing
 # Degree of parallelism for integration tests
-DOP="8"
+DOP="4"
 TEST_TIMEOUT="30m"
 # Set default options
 TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
