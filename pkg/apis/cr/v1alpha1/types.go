@@ -44,6 +44,13 @@ const (
 	ActionSetResourceNamePlural = "actionsets"
 )
 
+var (
+	// KopiaDataMover
+	KopiaDataMover DataMoverType = "kopia"
+	// StowDataMover
+	StowDataMover DataMoverType = "stow"
+)
+
 // JSONMap contains PodOverride specs.
 type JSONMap sp.JSONMap
 
@@ -60,6 +67,8 @@ type ActionSet struct {
 	Spec              *ActionSetSpec   `json:"spec"`
 	Status            *ActionSetStatus `json:"status,omitempty"`
 }
+
+type DataMoverType string
 
 // ObjectReference refers to a kubernetes object.
 type ObjectReference struct {
@@ -191,6 +200,7 @@ var _ runtime.Object = (*Blueprint)(nil)
 type Blueprint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
+	DataMover         DataMoverType               `json:"dataMover"`
 	Actions           map[string]*BlueprintAction `json:"actions"`
 }
 
