@@ -19,6 +19,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -62,6 +63,9 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 	id := backupIDFlag(cmd)
 	ctx := context.Background()
 	if p.Location.Type == crv1alpha1.LocationTypeKopia {
+		if id == "" {
+			return errors.New("Backup ID is required to pull data using kopia")
+		}
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
