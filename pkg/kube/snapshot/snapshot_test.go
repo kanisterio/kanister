@@ -107,13 +107,13 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 	storageClasses, err := cli.StorageV1().StorageClasses().List(context.TODO(), metav1.ListOptions{})
 	c.Assert(err, IsNil)
 	for _, class := range storageClasses.Items {
-		if class.Provisioner == driverAlpha {
+		if class.Provisioner == driverAlpha && *class.VolumeBindingMode == scv1.VolumeBindingImmediate {
 			s.storageClassCSIAlpha = class.Name
 		}
-		if class.Provisioner == driverBeta {
+		if class.Provisioner == driverBeta && *class.VolumeBindingMode == scv1.VolumeBindingImmediate {
 			s.storageClassCSIBeta = class.Name
 		}
-		if class.Provisioner == driverStable {
+		if class.Provisioner == driverStable && *class.VolumeBindingMode == scv1.VolumeBindingImmediate {
 			s.storageClassCSIStable = class.Name
 		}
 	}
@@ -344,6 +344,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotAlpha(c *C) {
 	if s.storageClassCSIAlpha == "" {
 		c.Skip("No Storageclass with CSI provisioner, install CSI and create a storageclass for it")
 	}
+	c.Logf("snapshotclass: %s, storageclass %s", *s.snapshotClassBeta, s.storageClassCSIBeta)
 	c.Logf("VolumeSnapshot test - source namespace: %s - target namespace: %s", s.sourceNamespace, s.targetNamespace)
 	s.testVolumeSnapshot(c, s.snapshotterAlpha, s.storageClassCSIAlpha, s.snapshotClassAlpha)
 }
@@ -355,6 +356,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotBeta(c *C) {
 	if s.storageClassCSIBeta == "" {
 		c.Skip("No Storageclass with CSI provisioner, install CSI and create a storageclass for it")
 	}
+	c.Logf("snapshotclass: %s, storageclass %s", *s.snapshotClassBeta, s.storageClassCSIBeta)
 	c.Logf("VolumeSnapshot test - source namespace: %s - target namespace: %s", s.sourceNamespace, s.targetNamespace)
 	s.testVolumeSnapshot(c, s.snapshotterBeta, s.storageClassCSIBeta, s.snapshotClassBeta)
 }
@@ -366,6 +368,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotStable(c *C) {
 	if s.storageClassCSIStable == "" {
 		c.Skip("No Storageclass with CSI provisioner, install CSI and create a storageclass for it")
 	}
+	c.Logf("snapshotclass: %s, storageclass %s", *s.snapshotClassBeta, s.storageClassCSIBeta)
 	c.Logf("VolumeSnapshot test - source namespace: %s - target namespace: %s", s.sourceNamespace, s.targetNamespace)
 	s.testVolumeSnapshot(c, s.snapshotterStable, s.storageClassCSIStable, s.snapshotClassStable)
 }
@@ -406,7 +409,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	snapshotName := snapshotNamePrefix + strconv.Itoa(int(time.Now().UnixNano()))
 	wait := true
 	label := map[string]string{
-		"SnapshotTest": "testlabel",
+		"snapshottest": "testlabel",
 	}
 	err = snapshotter.Create(ctx, snapshotName, s.sourceNamespace, pvc.Name, snapshotClass, wait, label)
 	c.Assert(err, IsNil)

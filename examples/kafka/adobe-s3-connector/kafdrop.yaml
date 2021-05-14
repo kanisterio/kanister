@@ -13,4 +13,4 @@ spec:
       protocol: TCP
     env:
     - name: KAFKA_BROKERCONNECT
-      value: PLAINTEXT://my-cluster-kafka-external-bootstrap:9094
+      value: PLAINTEXT://my-cluster-kafka-bootstrap:9092
