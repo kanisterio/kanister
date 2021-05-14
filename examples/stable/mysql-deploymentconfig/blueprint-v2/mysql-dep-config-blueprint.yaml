@@ -1,0 +1,83 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: mysql-dep-config-blueprint
+actions:
+  backup:
+    type: DeploymentConfig
+    outputArtifacts:
+      mysqlBackup:
+        keyValue:
+          backupPath: "{{ .Phases.dumpToStore.Output.backupPath }}"
+          backupID: "{{ .Phases.dumpToStore.Output.backupID }}"
+    phases:
+    - func: KubeTask
+      name: dumpToStore
+      objects:
+        mysqlsecret:
+          kind: Secret
+          name: "{{ .DeploymentConfig.Name }}"
+          namespace: "{{ .DeploymentConfig.Namespace }}"
+      args:
+        image: ghcr.io/kanisterio/mysql-sidecar:0.53.0
+        namespace: "{{ .DeploymentConfig.Namespace }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          backup_path="/mysql-backups/{{ .DeploymentConfig.Namespace }}/{{ .DeploymentConfig.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
+          root_password="{{ index .Phases.dumpToStore.Secrets.mysqlsecret.Data "database-root-password" | toString }}"
+          mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ .DeploymentConfig.Name }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${backup_path} -
+          kando output backupPath ${backup_path}
+  restore:
+    type: DeploymentConfig
+    inputArtifactNames:
+    - mysqlBackup
+    phases:
+    - func: KubeTask
+      name: restoreFromStore
+      objects:
+        mysqlsecret:
+          kind: Secret
+          name: "{{ .DeploymentConfig.Name }}"
+          namespace: "{{ .DeploymentConfig.Namespace }}"
+      args:
+        image: ghcr.io/kanisterio/mysql-sidecar:0.53.0
+        namespace: "{{ .DeploymentConfig.Namespace }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          backup_path="{{ .ArtifactsIn.mysqlBackup.KeyValue.backupPath }}"
+          backup_id="{{ .ArtifactsIn.mysqlBackup.KeyValue.backupID }}"
+          root_password="{{ index .Phases.restoreFromStore.Secrets.mysqlsecret.Data "database-root-password" | toString }}"
+          kando location pull --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id} - | gunzip | mysql -u root --password=${root_password} -h {{ .DeploymentConfig.Name }}
+  delete:
+    type: Namespace
+    inputArtifactNames:
+    - mysqlBackup
+    phases:
+    - func: KubeTask
+      name: deleteFromStore
+      args:
+        image: ghcr.io/kanisterio/mysql-sidecar:0.53.0
+        namespace: "{{ .Namespace.Name }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          backup_path="{{ .ArtifactsIn.mysqlBackup.KeyValue.backupPath }}"
+          backup_id="{{ .ArtifactsIn.mysqlBackup.KeyValue.backupID }}"
+          kando location delete --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id}

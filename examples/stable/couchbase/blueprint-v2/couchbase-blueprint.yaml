@@ -1,0 +1,97 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: couchbase-blueprint
+actions:
+  backup:
+    kind: CustomResource
+    outputArtifacts:
+      cbBackup:
+        keyValue:
+          backupPath: "{{ .Phases.TakeBackup.Output.backupPath }}"
+          backupID: "{{ .Phases.TakeBackup.Output.backupID }}"
+    phases:
+    - func: KubeTask
+      name: TakeBackup
+      objects:
+        authSecret:
+          kind: Secret
+          name: "{{ .Object.spec.security.adminSecret }}"
+          namespace: "{{ .Object.metadata.namespace }}"
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        image: ghcr.io/kanisterio/couchbase-tools:0.53.0
+        command:
+          - bash
+          - -o
+          - pipefail
+          - -o
+          - errexit
+          - -c
+          - |
+            rm -rf /backups/test
+            mkdir -p /backups/test
+            cbbackupmgr config --archive /backups/test --repo couchbase
+            cbbackupmgr backup                                              \
+              --archive /backups/test                                       \
+              --repo couchbase                                              \
+              --cluster couchbase://{{ .Object.metadata.name }}.{{ .Object.metadata.namespace }}.svc    \
+              --username {{ .Phases.TakeBackup.Secrets.authSecret.Data.username | toString }} \
+              --password {{ .Phases.TakeBackup.Secrets.authSecret.Data.password | toString }}
+            backup_path='/couchbase-backups/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/backup.tgz'
+            tar zcvf - -C /backups/ test | kando location push --profile '{{ toJson .Profile }}' --path ${backup_path} -
+            kando output backupPath ${backup_path}
+
+  restore:
+    kind: CustomResource
+    inputArtifactNames:
+    - cbBackup
+    phases:
+    - func: KubeTask
+      name: restoreBackup
+      objects:
+        authSecret:
+          kind: Secret
+          name: "{{ .Object.spec.security.adminSecret }}"
+          namespace: "{{ .Object.metadata.namespace }}"
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        image: ghcr.io/kanisterio/couchbase-tools:0.53.0
+        command:
+          - bash
+          - -o
+          - pipefail
+          - -o
+          - errexit
+          - -c
+          - |
+            rm -rf /backups/test
+            mkdir -p /backups/test
+            kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cbBackup.KeyValue.backupPath }}' --backupID '{{ .ArtifactsIn.cbBackup.KeyValue.backupID }}' - | tar zxvf - -C /backups/
+            cbbackupmgr restore                                             \
+              --archive /backups/test                                       \
+              --repo couchbase                                              \
+              --cluster couchbase://{{ .Object.metadata.name }}.{{ .Object.metadata.namespace }}.svc    \
+              --username {{ .Phases.restoreBackup.Secrets.authSecret.Data.username | toString }} \
+              --password {{ .Phases.restoreBackup.Secrets.authSecret.Data.password | toString }} \
+              --force-updates
+
+  delete:
+    type: Namespace
+    phases:
+    - func: KubeTask
+      name: deleteBackup
+      args:
+        namespace: "{{ .Namespace.Name }}"
+        image: ghcr.io/kanisterio/couchbase-tools:0.53.0
+        command:
+          - bash
+          - -o
+          - pipefail
+          - -o
+          - errexit
+          - -c
+          - |
+            backup_path='{{ .ArtifactsIn.cbBackup.KeyValue.backupPath }}'
+            backup_id='{{ .ArtifactsIn.cbBackup.KeyValue.backupID }}'
+            kando location delete --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id}

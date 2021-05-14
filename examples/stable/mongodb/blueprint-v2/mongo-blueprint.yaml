@@ -1,0 +1,87 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: mongodb-blueprint
+actions:
+  backup:
+    type: StatefulSet
+    outputArtifacts:
+      mongoBackup:
+        keyValue:
+          backupPath: "{{ .Phases.takeConsistentBackup.Output.backupPath }}"
+          backupID: "{{ .Phases.takeConsistentBackup.Output.backupID }}"
+    phases:
+    - func: KubeTask
+      name: takeConsistentBackup
+      objects:
+        mongosecret:
+          kind: Secret
+          name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb'
+          namespace: "{{ .StatefulSet.Namespace }}"
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: ghcr.io/kanisterio/mongodb:0.53.0
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+            dbPassword='{{ index .Phases.takeConsistentBackup.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
+            dump_cmd="mongodump --oplog --gzip --archive --host ${host} -u root -p ${dbPassword}"
+            backup_path='/mongodb-replicaset-backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs_backup.gz'
+            ${dump_cmd} | kando location push --profile '{{ toJson .Profile }}' --path ${backup_path} -
+            kando output backupPath ${backup_path}
+  restore:
+    type: StatefulSet
+    inputArtifactNames:
+      - mongoBackup
+    phases:
+    - func: KubeTask
+      name: pullFromStore
+      objects:
+        mongosecret:
+          kind: Secret
+          name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb'
+          namespace: "{{ .StatefulSet.Namespace }}"
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: ghcr.io/kanisterio/mongodb:0.53.0
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+            dbPassword='{{ index .Phases.pullFromStore.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
+            restore_cmd="mongorestore --gzip --archive --oplogReplay --drop --host ${host} -u root -p ${dbPassword}"
+            backup_path='{{ .ArtifactsIn.mongoBackup.KeyValue.backupPath }}'
+            backup_id='{{ .ArtifactsIn.mongoBackup.KeyValue.backupID }}'
+            kando location pull --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id} - | ${restore_cmd}
+  delete:
+    type: Namespace
+    inputArtifactNames:
+      - mongoBackup
+    phases:
+    - func: KubeTask
+      name: deleteFromStore
+      args:
+        namespace: "{{ .Namespace.Name }}"
+        image: ghcr.io/kanisterio/mongodb:0.53.0
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            backup_path="{{ .ArtifactsIn.mongoBackup.KeyValue.backupPath }}"
+            backup_id="{{ .ArtifactsIn.mongoBackup.KeyValue.backupID }}"
+            kando location delete --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id}
