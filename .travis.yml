@@ -18,44 +18,44 @@ cache:
 
 jobs:
   include:
-    - stage: test
-      script:
-      - make docs
-    - stage: test
-      services:
-        - docker
-      install:
-      - make go-mod-download
-      before_script:
-      - docker pull kindest/node:v1.18.2
-      - make start-kind
-      script:
-      - make build
-      # Enable codegen test once we upgrade k8s.io/client-go to work with go1.14
-      # - make codegen
-      - make test
-      before_cache:
-      - sudo chown -R travis:travis ./.go
-      after_script:
-      - make stop-kind
-    - stage: test
-      services:
-        - docker
-      install:
-      - make go-mod-download
-      before_script:
-      - docker pull kindest/node:v1.18.2
-      - make start-kind
-      - make install-minio
-      script:
-      - make integration-test
-      before_cache:
-      - sudo chown -R travis:travis ./.go
-      after_script:
-      - make stop-kind
-    - stage: test
-      script:
-      - make golint
+    # - stage: test
+    #   script:
+    #   - make docs
+    # - stage: test
+    #   services:
+    #     - docker
+    #   install:
+    #   - make go-mod-download
+    #   before_script:
+    #   - docker pull kindest/node:v1.18.2
+    #   - make start-kind
+    #   script:
+    #   - make build
+    #   # Enable codegen test once we upgrade k8s.io/client-go to work with go1.14
+    #   # - make codegen
+    #   - make test
+    #   before_cache:
+    #   - sudo chown -R travis:travis ./.go
+    #   after_script:
+    #   - make stop-kind
+    # - stage: test
+    #   services:
+    #     - docker
+    #   install:
+    #   - make go-mod-download
+    #   before_script:
+    #   - docker pull kindest/node:v1.18.2
+    #   - make start-kind
+    #   - make install-minio
+    #   script:
+    #   - make integration-test
+    #   before_cache:
+    #   - sudo chown -R travis:travis ./.go
+    #   after_script:
+    #   - make stop-kind
+    # - stage: test
+    #   script:
+    #   - make golint
     - stage: test
       services:
       - docker
@@ -63,7 +63,7 @@ jobs:
       - make release-snaps
       # Push images if PR is merged to master
       - |
-        if [[ "$TRAVIS_BRANCH" == "master" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
+        if [[ $? -eq 0 ]] && [[ "$TRAVIS_BRANCH" == "master" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
           sudo chown "$USER":"$USER" "$HOME"/.docker -R
           docker login ghcr.io -u "$GITHUB_USERNAME" -p "$GITHUB_TOKEN"
           ./build/push_images.sh
