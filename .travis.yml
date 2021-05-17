@@ -60,7 +60,7 @@ jobs:
       services:
       - docker
       script:
-      - make release-snapshot
+      - make release-snaps
       # Push images if PR is merged to master
       - |
         if [[ "$TRAVIS_BRANCH" == "master" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
