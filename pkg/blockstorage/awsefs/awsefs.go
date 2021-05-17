@@ -356,7 +356,8 @@ func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetD
 }
 
 func (e *efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
-	desc, err := e.getFileSystemDescriptionWithID(ctx, id)
+	fsID, _ := getIDs(id)
+	desc, err := e.getFileSystemDescriptionWithID(ctx, fsID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get EFS volume")
 	}
@@ -598,9 +599,9 @@ func awsDefaultServiceBackupRole(accountID string) string {
 	return fmt.Sprintf("arn:aws:iam::%s:role/service-role/AWSBackupDefaultServiceRole", accountID)
 }
 
-func resourceARNForEFS(region string, accountID string, fileSystemID string) string {
-	return fmt.Sprintf("arn:aws:elasticfilesystem:%s:%s:file-system/%s", region, accountID, fileSystemID)
-}
+// func resourceARNForEFS(region string, accountID string, fileSystemID string) string {
+// 	return fmt.Sprintf("arn:aws:elasticfilesystem:%s:%s:file-system/%s", region, accountID, fileSystemID)
+// }
 
 func (e *efs) getResourceARN(ctx context.Context, volumeID string) (string, error) {
 	fsID, apID := getIDs(volumeID)
