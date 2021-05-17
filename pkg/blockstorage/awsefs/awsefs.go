@@ -315,11 +315,17 @@ func (e *efs) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) err
 	return err
 }
 
-func (e *efs) getMountTargets(ctx context.Context, fsID string) ([]*awsefs.MountTargetDescription, error) {
+func (e *efs) getMountTargets(ctx context.Context, volumeID string) ([]*awsefs.MountTargetDescription, error) {
 	mts := make([]*awsefs.MountTargetDescription, 0)
 	for resp, req := emptyResponseRequestForMountTargets(); resp.NextMarker != nil; req.Marker = resp.NextMarker {
 		var err error
-		req.SetFileSystemId(fsID)
+		fsID, apID := getIDs(volumeID)
+		switch apID {
+		case "":
+			req.SetFileSystemId(fsID)
+		default:
+			req.SetAccessPointId(apID)
+		}
 		resp, err = e.DescribeMountTargetsWithContext(ctx, req)
 		if err != nil {
 			return nil, err
@@ -327,6 +333,14 @@ func (e *efs) getMountTargets(ctx context.Context, fsID string) ([]*awsefs.Mount
 		mts = append(mts, resp.MountTargets...)
 	}
 	return mts, nil
+}
+
+func getIDs(volumeID string) (string, string) {
+	idSplits := strings.SplitN(volumeID, "::", 2)
+	if len(idSplits) == 2 {
+		return idSplits[0], idSplits[1]
+	}
+	return idSplits[0], ""
 }
 
 func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetDescription) error {
@@ -362,15 +376,16 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to setup K10 vault for AWS Backup")
 	}
-	desc, err := e.getFileSystemDescriptionWithID(ctx, volume.ID)
+
+	arn, err := e.getResourceARN(ctx, volume.ID)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get corresponding description")
+		return nil, errors.Wrap(err, "Failed to get ARN")
 	}
 
 	req := &backup.StartBackupJobInput{}
 	req.SetBackupVaultName(k10BackupVaultName)
 	req.SetIamRoleArn(awsDefaultServiceBackupRole(e.accountID))
-	req.SetResourceArn(resourceARNForEFS(e.region, *desc.OwnerId, *desc.FileSystemId))
+	req.SetResourceArn(arn)
 
 	// Save mount points and security groups as tags
 	infraTags, err := e.getMountPointAndSecurityGroupTags(ctx, volume.ID)
@@ -587,6 +602,26 @@ func resourceARNForEFS(region string, accountID string, fileSystemID string) str
 	return fmt.Sprintf("arn:aws:elasticfilesystem:%s:%s:file-system/%s", region, accountID, fileSystemID)
 }
 
+func (e *efs) getResourceARN(ctx context.Context, volumeID string) (string, error) {
+	fsID, apID := getIDs(volumeID)
+	arn := ""
+	switch apID {
+	case "":
+		fsDesc, err := e.getFileSystemDescriptionWithID(ctx, fsID)
+		if err != nil {
+			return "", errors.Wrap(err, "Failed to get corresponding FileSystem description")
+		}
+		arn = *fsDesc.FileSystemArn
+	default:
+		apDesc, err := e.getAccessPointDescriptionWithID(ctx, apID)
+		if err != nil {
+			return "", errors.Wrap(err, "Failed to get corresponding AccessPoint description")
+		}
+		arn = *apDesc.AccessPointArn
+	}
+	return arn, nil
+}
+
 func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*awsefs.FileSystemDescription, error) {
 	req := &awsefs.DescribeFileSystemsInput{}
 	req.SetFileSystemId(id)
@@ -601,6 +636,25 @@ func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*a
 		return nil, errors.New("Failed to find volume")
 	case 1:
 		return descs.FileSystems[0], nil
+	default:
+		return nil, errors.New("Unexpected condition, multiple filesystems with same ID")
+	}
+}
+
+func (e *efs) getAccessPointDescriptionWithID(ctx context.Context, id string) (*awsefs.AccessPointDescription, error) {
+	req := &awsefs.DescribeAccessPointsInput{}
+	req.SetAccessPointId(id)
+
+	descs, err := e.DescribeAccessPointsWithContext(ctx, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get filesystem description")
+	}
+	availables := filterAvailableAccessPoints(descs.AccessPoints)
+	switch len(availables) {
+	case 0:
+		return nil, errors.New("Failed to find volume")
+	case 1:
+		return descs.AccessPoints[0], nil
 	default:
 		return nil, errors.New("Unexpected condition, multiple filesystems with same ID")
 	}
