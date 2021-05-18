@@ -25,7 +25,8 @@ jobs:
       services:
       - docker
       script:
-      - make release-snaps || exit 1
+      - make release-snaps
+      - echo $?
       # Push images if PR is merged to master
       - |
         if [[ $? -eq 2 ]]; then
