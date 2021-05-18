@@ -22,15 +22,12 @@ jobs:
       script:
       - make docs
     - stage: test
-      script:
-      - make golint
-    - stage: test
       services:
       - docker
       script:
       - make release-snaps
       # Push images if PR is merged to master
       - |
-        if [[ $? -eq 0 ]]; then
-          echo "last command executed successfully"
+        if [[ $? -eq 2 ]]; then
+          echo "last command failed"
         fi
