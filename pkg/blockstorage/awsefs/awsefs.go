@@ -31,6 +31,8 @@ import (
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	kantags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 type efs struct {
@@ -616,7 +618,7 @@ func (e *efs) getResourceARN(ctx context.Context, volumeID string) (string, erro
 		}
 		arn = *fsDesc.FileSystemArn
 	default:
-		apDesc, err := e.getAccessPointDescriptionWithID(ctx, apID)
+		apDesc, err := e.getAccessPointDescriptionWithID(ctx, apID, fsID)
 		if err != nil {
 			return "", errors.Wrap(err, "Failed to get corresponding AccessPoint description")
 		}
@@ -644,14 +646,16 @@ func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*a
 	}
 }
 
-func (e *efs) getAccessPointDescriptionWithID(ctx context.Context, id string) (*awsefs.AccessPointDescription, error) {
+func (e *efs) getAccessPointDescriptionWithID(ctx context.Context, apID, fsID string) (*awsefs.AccessPointDescription, error) {
 	req := &awsefs.DescribeAccessPointsInput{}
-	req.SetAccessPointId(id)
+	req.SetAccessPointId(apID)
+	req.SetFileSystemId(fsID)
 
 	descs, err := e.DescribeAccessPointsWithContext(ctx, req)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get filesystem description")
+		return nil, errors.Wrapf(err, "Failed to get accesspoint description for id (%s)", apID)
 	}
+	log.Info().Print("SIRISH APS", field.M{"APs": descs})
 	availables := filterAvailableAccessPoints(descs.AccessPoints)
 	switch len(availables) {
 	case 0:
@@ -659,7 +663,8 @@ func (e *efs) getAccessPointDescriptionWithID(ctx context.Context, id string) (*
 	case 1:
 		return descs.AccessPoints[0], nil
 	default:
-		return nil, errors.New("Unexpected condition, multiple filesystems with same ID")
+		log.Error().Print("SIRISH too many aps", field.M{"APs": descs})
+		return nil, errors.New("Unexpected condition, multiple accesspoints with same ID")
 	}
 }
 
