@@ -2,6 +2,7 @@ apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
   name: mongodb-blueprint
+dataMover: kopia
 actions:
   backup:
     type: DeploymentConfig

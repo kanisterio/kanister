@@ -2,6 +2,7 @@ apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
   name: couchbase-blueprint
+dataMover: kopia
 actions:
   backup:
     kind: CustomResource

@@ -2,6 +2,7 @@ apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
   name: postgres-bp
+dataMover: kopia
 actions:
   backup:
     kind: StatefulSet
