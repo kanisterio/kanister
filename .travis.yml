@@ -21,15 +21,23 @@ jobs:
     - stage: test
       script:
       - make docs
+      - export EXIT_STATUS=$?
+      # Push images if PR is merged to master
+      - |
+        if [[ $EXIT_STATUS -eq 0 ]]; then
+          echo "last command failed"
+        else 
+          echo "Last command executed successfully"; 
+        fi
     - stage: test
       services:
       - docker
       script:
       - make release-snaps
-      - echo $?
+      - export EXIT_STATUS=$?
       # Push images if PR is merged to master
       - |
-        if [[ $? -eq 2 ]]; then
+        if [[ $EXIT_STATUS -eq 0 ]]; then
           echo "last command failed"
         else 
           echo "Last command executed successfully"; 
