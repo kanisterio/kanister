@@ -22,6 +22,7 @@ jobs:
       script:
       - make docs
       - export EXIT_STATUS=$?
+      - echo $EXIT_STATUS
       # Push images if PR is merged to master
       - |
         if [[ $EXIT_STATUS -eq 0 ]]; then
@@ -35,6 +36,7 @@ jobs:
       script:
       - make release-snaps
       - export EXIT_STATUS=$?
+      - echo $EXIT_STATUS
       # Push images if PR is merged to master
       - |
         if [[ $EXIT_STATUS -eq 0 ]]; then
