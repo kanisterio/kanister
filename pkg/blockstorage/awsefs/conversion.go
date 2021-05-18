@@ -172,7 +172,7 @@ func volumeFromEFSDescription(description *awsefs.FileSystemDescription, zone st
 		Tags:         blockstorage.MapToKeyValue(convertFromEFSTags(description.Tags)),
 		Iops:         0,
 		VolumeType:   "",
-		Attributes:   nil,
+		Attributes:   make(map[string]string),
 	}
 }
 
