@@ -361,7 +361,9 @@ func (e *efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstor
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get EFS volume")
 	}
-	return volumeFromEFSDescription(desc, zone), nil
+	vol := volumeFromEFSDescription(desc, zone)
+	vol.ID = id
+	return vol, nil
 }
 
 func (e *efs) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
