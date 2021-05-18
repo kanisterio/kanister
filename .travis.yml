@@ -30,4 +30,6 @@ jobs:
       - |
         if [[ $? -eq 2 ]]; then
           echo "last command failed"
+        else 
+          echo "Last command executed successfully"; 
         fi
