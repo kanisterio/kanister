@@ -63,8 +63,6 @@ jobs:
       - make release-snaps
       # Push images if PR is merged to master
       - |
-        if [[ $? -eq 0 ]] && [[ "$TRAVIS_BRANCH" == "master" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
-          sudo chown "$USER":"$USER" "$HOME"/.docker -R
-          docker login ghcr.io -u "$GITHUB_USERNAME" -p "$GITHUB_TOKEN"
-          ./build/push_images.sh
+        if [[ $? -eq 0 ]]; then
+          echo "last command executed successfully"
         fi
