@@ -55,6 +55,7 @@ const (
 	efsType            = "EFS"
 	k10BackupVaultName = "k10vault"
 	testMarker         = ""
+	EfsMountPathKey    = "mountPath"
 
 	maxRetries = 10
 )
@@ -191,7 +192,14 @@ func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorag
 	if err = e.createMountTargets(ctx, fsID, mountTargets); err != nil {
 		return nil, errors.Wrap(err, "Failed to create mount targets")
 	}
-	return e.VolumeGet(ctx, fsID, "")
+	volume, err := e.VolumeGet(ctx, fsID, "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get filesystem (%s)", fsID)
+	}
+	if mountPath, ok := snapshot.Volume.Attributes[EfsMountPathKey]; ok {
+		volume.Attributes[EfsMountPathKey] = mountPath
+	}
+	return volume, nil
 }
 
 func efsRestoreTags() map[string]string {
@@ -321,13 +329,8 @@ func (e *efs) getMountTargets(ctx context.Context, volumeID string) ([]*awsefs.M
 	mts := make([]*awsefs.MountTargetDescription, 0)
 	for resp, req := emptyResponseRequestForMountTargets(); resp.NextMarker != nil; req.Marker = resp.NextMarker {
 		var err error
-		fsID, apID := getIDs(volumeID)
-		switch apID {
-		case "":
-			req.SetFileSystemId(fsID)
-		default:
-			req.SetAccessPointId(apID)
-		}
+		fsID, _ := getIDs(volumeID)
+		req.SetFileSystemId(fsID)
 		resp, err = e.DescribeMountTargetsWithContext(ctx, req)
 		if err != nil {
 			return nil, err
@@ -358,13 +361,19 @@ func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetD
 }
 
 func (e *efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
-	fsID, _ := getIDs(id)
-	desc, err := e.getFileSystemDescriptionWithID(ctx, fsID)
+	fsID, apID := getIDs(id)
+	fsDesc, err := e.getFileSystemDescriptionWithID(ctx, fsID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get EFS volume")
 	}
-	vol := volumeFromEFSDescription(desc, zone)
-	vol.ID = id
+	vol := volumeFromEFSDescription(fsDesc, zone)
+	if apID != "" {
+		apDesc, err := e.getAccessPointDescriptionWithID(ctx, apID)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get access point description")
+		}
+		vol.Attributes[EfsMountPathKey] = *apDesc.RootDirectory.Path
+	}
 	return vol, nil
 }
 
@@ -603,28 +612,13 @@ func awsDefaultServiceBackupRole(accountID string) string {
 	return fmt.Sprintf("arn:aws:iam::%s:role/service-role/AWSBackupDefaultServiceRole", accountID)
 }
 
-// func resourceARNForEFS(region string, accountID string, fileSystemID string) string {
-// 	return fmt.Sprintf("arn:aws:elasticfilesystem:%s:%s:file-system/%s", region, accountID, fileSystemID)
-// }
-
 func (e *efs) getResourceARN(ctx context.Context, volumeID string) (string, error) {
-	fsID, apID := getIDs(volumeID)
-	arn := ""
-	switch apID {
-	case "":
-		fsDesc, err := e.getFileSystemDescriptionWithID(ctx, fsID)
-		if err != nil {
-			return "", errors.Wrap(err, "Failed to get corresponding FileSystem description")
-		}
-		arn = *fsDesc.FileSystemArn
-	default:
-		apDesc, err := e.getAccessPointDescriptionWithID(ctx, apID, fsID)
-		if err != nil {
-			return "", errors.Wrap(err, "Failed to get corresponding AccessPoint description")
-		}
-		arn = *apDesc.AccessPointArn
+	fsID, _ := getIDs(volumeID)
+	fsDesc, err := e.getFileSystemDescriptionWithID(ctx, fsID)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to get corresponding FileSystem description")
 	}
-	return arn, nil
+	return *fsDesc.FileSystemArn, nil
 }
 
 func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*awsefs.FileSystemDescription, error) {
@@ -646,10 +640,9 @@ func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*a
 	}
 }
 
-func (e *efs) getAccessPointDescriptionWithID(ctx context.Context, apID, fsID string) (*awsefs.AccessPointDescription, error) {
+func (e *efs) getAccessPointDescriptionWithID(ctx context.Context, apID string) (*awsefs.AccessPointDescription, error) {
 	req := &awsefs.DescribeAccessPointsInput{}
 	req.SetAccessPointId(apID)
-	req.SetFileSystemId(fsID)
 
 	descs, err := e.DescribeAccessPointsWithContext(ctx, req)
 	if err != nil {
