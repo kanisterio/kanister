@@ -67,6 +67,7 @@ var allowedMetadataKeys = map[string]bool{
 	"PerformanceMode": true,
 	"CreationToken":   true,
 	"newFileSystem":   true,
+	"ItemsToRestore":  true,
 }
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
@@ -153,6 +154,9 @@ func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorag
 	}
 	// Add some metadata which are necessary for EFS restore to function properly.
 	filteredTags = kantags.Union(filteredTags, efsRestoreTags())
+	if mountPath, ok := snapshot.Volume.Attributes[EfsMountPathKey]; ok {
+		filteredTags["ItemsToRestore"] = fmt.Sprintf("[\"%s\"]", mountPath)
+	}
 
 	req := &backup.StartRestoreJobInput{}
 	req.SetIamRoleArn(awsDefaultServiceBackupRole(e.accountID))
