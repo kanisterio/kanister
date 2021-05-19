@@ -35,7 +35,7 @@ func newLocationDeleteCommand() *cobra.Command {
 			return runLocationDelete(c)
 		},
 	}
-	cmd.Flags().StringP(backupIDFlagName, "b", "", "Pass the backup ID from the location push command (optional)")
+	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")
 	return cmd
 }
 
@@ -46,16 +46,20 @@ func runLocationDelete(cmd *cobra.Command) error {
 	}
 	cmd.SilenceUsage = true
 	s := pathFlag(cmd)
-	id := backupIDFlag(cmd)
 	ctx := context.Background()
 	if p.Location.Type == crv1alpha1.LocationTypeKopia {
-		if id == "" {
-			return errors.New("Backup ID is required to delete data using kopia")
+		snapJSON := kopiaSnapshotFlag(cmd)
+		if snapJSON == "" {
+			return errors.New("kopia snapshot information is required to delete data using kopia")
+		}
+		kopiaSnap, err := kopia.UnmarshalKopiaSnapshot(snapJSON)
+		if err != nil {
+			return err
 		}
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaLocationDelete(ctx, id, s)
+		return kopiaLocationDelete(ctx, kopiaSnap.BackupID, s)
 	}
 	return locationDelete(ctx, p, s)
 }
