@@ -36,18 +36,28 @@ const (
 	pullRepoPurpose = "kando location pull"
 )
 
+// SnapshotInfo tracks kopia snapshot information produced by a kando command in a phase
+type SnapshotInfo struct {
+	// BackupID is the snapshot ID produced by kopia snapshot operation
+	BackupID string `json:"backupID"`
+	// LogicalSize is the sum of cached and hashed file size in bytes
+	LogicalSize string `json:"logicalSize"`
+	// LogicalSize is the uploaded size in bytes
+	PhysicalSize string `json:"physicalSize"`
+}
+
 // Write creates a kopia snapshot from the given reader
 // A virtual directory tree rooted at filepath.Dir(path) is created with
 // a kopia streaming file with filepath.Base(path) as name
-func Write(ctx context.Context, path string, source io.Reader) (string, string, error) {
+func Write(ctx context.Context, path string, source io.Reader) (string, error) {
 	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
 	if !ok || password == "" {
-		return "", "", errors.New("Failed to retrieve kopia client passphrase")
+		return "", errors.New("Failed to retrieve kopia client passphrase")
 	}
 
 	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pushRepoPurpose)
 	if err != nil {
-		return "", "", errors.Wrap(err, "Failed to open kopia repository")
+		return "", errors.Wrap(err, "Failed to open kopia repository")
 	}
 
 	// Populate the source info with source path
@@ -65,7 +75,23 @@ func Write(ctx context.Context, path string, source io.Reader) (string, string, 
 	u := snapshotfs.NewUploader(rep)
 
 	// Create a kopia snapshot
-	return SnapshotSource(ctx, rep, u, sourceInfo, rootDir, "Kanister Database Backup")
+	snapID, _, err := SnapshotSource(ctx, rep, u, sourceInfo, rootDir, "Kanister Database Backup")
+	if err != nil {
+		return "", err
+	}
+
+	// TODO@pavan: Add kopia snapshot size information
+	snapshotInfo := SnapshotInfo{
+		BackupID:     snapID,
+		LogicalSize:  "0 B",
+		PhysicalSize: "0 B",
+	}
+	snapInfoJSON, err := MarshalKopiaSnapshot(snapshotInfo)
+	if err != nil {
+		return "", err
+	}
+
+	return snapInfoJSON, nil
 }
 
 // Read reads a kopia snapshot with the given ID and copies it to the given target
