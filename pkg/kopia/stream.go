@@ -32,6 +32,10 @@ const (
 	// buffSize is default buffer size used during kopia read
 	bufSize = 65536
 
+	defaultRootDir = "/kanister-backups"
+	dotDirString   = "."
+	slashDirString = "/"
+
 	pushRepoPurpose = "kando location push"
 	pullRepoPurpose = "kando location pull"
 )
@@ -60,11 +64,19 @@ func Write(ctx context.Context, path string, source io.Reader) (string, error) {
 		return "", errors.Wrap(err, "Failed to open kopia repository")
 	}
 
+	// If the path provided does not have a parent directory OR
+	// has just root (`/`) directory as the parent,
+	// use the default directory as root of the snapshot
+	rootPath := filepath.Dir(path)
+	if rootPath == dotDirString || rootPath == slashDirString {
+		rootPath = defaultRootDir
+	}
+
 	// Populate the source info with source path
 	sourceInfo := snapshot.SourceInfo{
 		UserName: rep.ClientOptions().Username,
 		Host:     rep.ClientOptions().Hostname,
-		Path:     filepath.Dir(path),
+		Path:     rootPath,
 	}
 
 	rootDir := virtualfs.NewStaticDirectory(sourceInfo.Path, fs.Entries{
