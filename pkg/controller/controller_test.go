@@ -214,6 +214,30 @@ func newBPWithFakeOutputArtifact() *crv1alpha1.Blueprint {
 	}
 }
 
+func newBPWithKopiaSnapshotOutputArtifact() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-blueprint-",
+		},
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"myAction": {
+				OutputArtifacts: map[string]crv1alpha1.Artifact{
+					"myArt": crv1alpha1.Artifact{
+						KopiaSnapshot: "{{ .Phases.myPhase0.Output.key }}",
+					},
+				},
+				Kind: "Deployment",
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "myPhase0",
+						Func: testutil.OutputFuncName,
+					},
+				},
+			},
+		},
+	}
+}
+
 func (s *ControllerSuite) TestEmptyActionSetStatus(c *C) {
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -501,6 +525,37 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	c.Assert(arts, HasLen, 1)
 	keyVal := arts["myArt"].KeyValue
 	c.Assert(keyVal, DeepEquals, map[string]string{"key": "myValue"})
+}
+
+func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
+	// Create a blueprint that uses func output as kopia snapshot
+	bp := newBPWithKopiaSnapshotOutputArtifact()
+	bp = testutil.BlueprintWithConfigMap(bp)
+	bp, err := s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// Add an actionset that references that blueprint.
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
+	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
+	as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+
+	// Check if the func returned expected output
+	c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"})
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	// Check if the artifacts got updated correctly
+	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), metav1.GetOptions{})
+	arts := as.Status.Actions[0].Artifacts
+	c.Assert(arts, NotNil)
+	c.Assert(arts, HasLen, 1)
+	kopiaSnapshot := arts["myArt"].KopiaSnapshot
+	c.Assert(kopiaSnapshot, Equals, "myValue")
 }
 
 func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
