@@ -164,6 +164,9 @@ type Phase struct {
 // Artifact tracks objects produced by an action.
 type Artifact struct {
 	KeyValue map[string]string `json:"keyValue"`
+	// KopiaSnapshot captures the kopia snapshot information
+	// produced as a JSON string by kando command in phases of an action.
+	KopiaSnapshot string `json:"kopiaSnapshot"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
