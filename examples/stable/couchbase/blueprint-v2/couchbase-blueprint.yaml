@@ -7,9 +7,10 @@ actions:
     kind: CustomResource
     outputArtifacts:
       cbBackup:
-        keyValue:
-          backupPath: "{{ .Phases.TakeBackup.Output.backupPath }}"
-          backupID: "{{ .Phases.TakeBackup.Output.backupID }}"
+        # Capture the kopia snapshot information for subsequent actions
+        # The information includes the kopia snapshot ID which is essential for restore and delete to succeed
+        # `kopiaOutput` is the name provided to kando using `--output-name` flag
+        kopiaSnapshot: "{{ .Phases.TakeBackup.Output.kopiaOutput }}"
     phases:
     - func: KubeTask
       name: TakeBackup
@@ -20,7 +21,7 @@ actions:
           namespace: "{{ .Object.metadata.namespace }}"
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: ghcr.io/kanisterio/couchbase-tools:0.53.0
+        image: ghcr.io/kanisterio/couchbase-tools:0.57.0
         command:
           - bash
           - -o
@@ -38,13 +39,14 @@ actions:
               --cluster couchbase://{{ .Object.metadata.name }}.{{ .Object.metadata.namespace }}.svc    \
               --username {{ .Phases.TakeBackup.Secrets.authSecret.Data.username | toString }} \
               --password {{ .Phases.TakeBackup.Secrets.authSecret.Data.password | toString }}
-            backup_path='/couchbase-backups/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/backup.tgz'
-            tar zcvf - -C /backups/ test | kando location push --profile '{{ toJson .Profile }}' --path ${backup_path} -
-            kando output backupPath ${backup_path}
+            backup_file_path='backup.tgz'
+            tar zcvf - -C /backups/ test | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
 
   restore:
     kind: CustomResource
     inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `cbBackup.KopiaSnapshot`
     - cbBackup
     phases:
     - func: KubeTask
@@ -67,7 +69,8 @@ actions:
           - |
             rm -rf /backups/test
             mkdir -p /backups/test
-            kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cbBackup.KeyValue.backupPath }}' --backupID '{{ .ArtifactsIn.cbBackup.KeyValue.backupID }}' - | tar zxvf - -C /backups/
+            backup_file_path='backup.tgz'
+            kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot '{{ .ArtifactsIn.cbBackup.KopiaSnapshot }}' - | tar zxvf - -C /backups/
             cbbackupmgr restore                                             \
               --archive /backups/test                                       \
               --repo couchbase                                              \
@@ -78,6 +81,10 @@ actions:
 
   delete:
     type: Namespace
+    inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `cbBackup.KopiaSnapshot`
+    - cbBackup
     phases:
     - func: KubeTask
       name: deleteBackup
@@ -92,6 +99,5 @@ actions:
           - errexit
           - -c
           - |
-            backup_path='{{ .ArtifactsIn.cbBackup.KeyValue.backupPath }}'
-            backup_id='{{ .ArtifactsIn.cbBackup.KeyValue.backupID }}'
-            kando location delete --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id}
+            backup_file_path='backup.tgz'
+            kando location delete --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot '{{ .ArtifactsIn.cbBackup.KopiaSnapshot }}'
