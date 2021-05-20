@@ -59,7 +59,7 @@ func runLocationDelete(cmd *cobra.Command) error {
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaLocationDelete(ctx, kopiaSnap.BackupID, s)
+		return kopiaLocationDelete(ctx, kopiaSnap.ID, s)
 	}
 	return locationDelete(ctx, p, s)
 }
