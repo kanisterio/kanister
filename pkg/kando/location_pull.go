@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	kopiaSnapshotFlagName = "kopia-snaphot"
+	kopiaSnapshotFlagName = "kopia-snapshot"
 )
 
 func newLocationPullCommand() *cobra.Command {
