@@ -7,8 +7,10 @@ actions:
     kind: DeploymentConfig
     outputArtifacts:
       pgBackup:
-        keyValue:
-          backupPath: "{{ .Phases.pgDump.Output.backupPath }}"
+        # Capture the kopia snapshot information for subsequent actions
+        # The information includes the kopia snapshot ID which is essential for restore and delete to succeed
+        # `kopiaOutput` is the name provided to kando using `--output-name` flag
+        kopiaSnapshot: "{{ .Phases.pgDump.Output.kopiaOutput }}"
     phases:
     - func: KubeTask
       name: pgDump
@@ -18,7 +20,7 @@ actions:
           name: '{{ .DeploymentConfig.Name }}-{{ .DeploymentConfig.Namespace }}'
           namespace: '{{ .DeploymentConfig.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.53.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.57.0
         namespace: '{{ .DeploymentConfig.Namespace }}'
         command:
         - bash
@@ -31,12 +33,13 @@ actions:
           export PGHOST='{{ .DeploymentConfig.Name }}.{{ .DeploymentConfig.Namespace }}.svc.cluster.local'
           export PGUSER='postgres'
           export PGPASSWORD='{{ index .Phases.pgDump.Secrets.pgSecret.Data "postgresql_admin_password" | toString }}'
-          backup_path=pg_backups/{{ .DeploymentConfig.Namespace }}/{{ .DeploymentConfig.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/backup.sql
-          pg_dumpall --clean -U $PGUSER | gzip -c | kando location push --profile '{{ toJson .Profile }}' --path "${backup_path}" -
-          kando output backupPath "${backup_path}"
+          backup_file_path="backup.sql.gz"
+          pg_dumpall --clean -U $PGUSER | gzip -c | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
   restore:
     kind: DeploymentConfig
     inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `pgBackup.KopiaSnapshot`
     - pgBackup
     phases:
     - func: KubeTask
@@ -47,7 +50,7 @@ actions:
           name: '{{ .DeploymentConfig.Name }}-{{ .DeploymentConfig.Namespace }}'
           namespace: '{{ .DeploymentConfig.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.53.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.57.0
         namespace: '{{ .DeploymentConfig.Namespace }}'
         command:
         - bash
@@ -60,18 +63,20 @@ actions:
           export PGHOST='{{ .DeploymentConfig.Name }}.{{ .DeploymentConfig.Namespace }}.svc.cluster.local'
           export PGUSER='postgres'
           export PGPASSWORD='{{ index .Phases.pgRestore.Secrets.pgSecret.Data "postgresql_admin_password" | toString }}'
-          backup_path={{ .ArtifactsIn.pgBackup.KeyValue.backupPath }}
-          backup_id={{ .ArtifactsIn.pgBackup.KeyValue.backupID }}
-          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_path}" --backupID ${backup_id} - | gunzip -c -f | psql -q -U "${PGUSER}"
+          backup_file_path="backup.sql.gz"
+          kopia_snap='{{ .ArtifactsIn.pgBackup.KopiaSnapshot }}'
+          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | gunzip -c -f | psql -q -U "${PGUSER}"
   delete:
     type: Namespace
     inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `pgBackup.KopiaSnapshot`
       - pgBackup
     phases:
     - func: KubeTask
       name: deleteDump
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.53.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.57.0
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash
@@ -81,6 +86,6 @@ actions:
           - pipefail
           - -c
           - |
-            backup_path='{{ .ArtifactsIn.pgBackup.KeyValue.backupPath }}'
-            backup_id='{{ .ArtifactsIn.pgBackup.KeyValue.backupID }}'
-            kando location delete --profile '{{ toJson .Profile }}' --path "${backup_path}" --backupID ${backup_id}
+            backup_file_path="backup.sql.gz"
+            kopia_snap='{{ .ArtifactsIn.pgBackup.KopiaSnapshot }}'
+            kando location delete --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}"

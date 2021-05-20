@@ -7,15 +7,16 @@ actions:
     type: StatefulSet
     outputArtifacts:
       esBackup:
-        keyValue:
-          backupPath: "{{ .Phases.backupToStore.Output.backupPath }}"
-          backupID: "{{ .Phases.backupToStore.Output.backupID }}"
+        # Capture the kopia snapshot information for subsequent actions
+        # The information includes the kopia snapshot ID which is essential for restore and delete to succeed
+        # `kopiaOutput` is the name provided to kando using `--output-name` flag
+        kopiaSnapshot: "{{ .Phases.backupToStore.Output.kopiaOutput }}"
     phases:
     - func: KubeTask
       name: backupToStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.53.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.57.0"
         command:
         - bash
         - -o
@@ -25,21 +26,22 @@ actions:
         - -c
         - |
           host_name="{{ .Object.spec.serviceName }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
-          BACKUP_PATH=es_backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/backup.gz
+          backup_file_path='backup.gz'
           elasticdump --bulk=true --input=http://${host_name}:9200 --output=/backup
           gzip /backup
-          kando location push --profile '{{ toJson .Profile }}'  /backup.gz --path $BACKUP_PATH
-          kando output backupPath $BACKUP_PATH
+          kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" /backup.gz
   restore:
     type: StatefulSet
     inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `esBackup.KopiaSnapshot`
     - esBackup
     phases:
     - func: KubeTask
       name: restoreFromStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.53.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.57.0"
         command:
         - bash
         - -o
@@ -49,12 +51,14 @@ actions:
         - -c
         - |
           host_name="{{ .Object.spec.serviceName }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
-          backup_path='{{ .ArtifactsIn.esBackup.KeyValue.backupPath }}'
-          backup_id='{{ .ArtifactsIn.esBackup.KeyValue.backupID }}'
-          kando location pull --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id} - | gunzip | elasticdump --bulk=true --input=$ --output=http://${host_name}:9200
+          backup_file_path='backup.gz'
+          kopia_snap='{{ .ArtifactsIn.esBackup.KopiaSnapshot }}'
+          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | gunzip | elasticdump --bulk=true --input=$ --output=http://${host_name}:9200
   delete:
     type: Namespace
     inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `esBackup.KopiaSnapshot`
     - esBackup
     phases:
     - func: KubeTask
@@ -70,6 +74,6 @@ actions:
         - pipefail
         - -c
         - |
-          backup_path='{{ .ArtifactsIn.esBackup.KeyValue.backupPath }}'
-          backup_id='{{ .ArtifactsIn.esBackup.KeyValue.backupID }}'
-          kando location delete --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id}
+          backup_file_path='backup.gz'
+          kopia_snap='{{ .ArtifactsIn.esBackup.KopiaSnapshot }}'
+          kando location delete --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}"
