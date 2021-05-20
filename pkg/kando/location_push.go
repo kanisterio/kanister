@@ -100,7 +100,7 @@ func kopiaLocationPush(ctx context.Context, path, outputName string, source io.R
 		return errors.Wrap(err, "Failed to push data using kopia")
 	}
 
-  snapInfoJSON, err := kopia.MarshalKopiaSnapshot(snapInfo)
+	snapInfoJSON, err := kopia.MarshalKopiaSnapshot(snapInfo)
 	if err != nil {
 		return err
 	}
