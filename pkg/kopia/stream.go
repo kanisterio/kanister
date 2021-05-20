@@ -64,21 +64,23 @@ func Write(ctx context.Context, path string, source io.Reader) (string, error) {
 		return "", errors.Wrap(err, "Failed to open kopia repository")
 	}
 
-	// If the path provided does not have a parent directory OR
+	// If the input `path` provided does not have a parent directory OR
 	// has just root (`/`) directory as the parent,
-	// use the default directory as root of the snapshot
-	rootPath := filepath.Dir(path)
-	if rootPath == dotDirString || rootPath == slashDirString {
-		rootPath = defaultRootDir
+	// use the default directory as root of the kopia snapshot
+	parentPath := filepath.Dir(path)
+	if parentPath == dotDirString || parentPath == slashDirString {
+		parentPath = defaultRootDir
 	}
 
-	// Populate the source info with source path
+	// Populate the source info with parent path as the source
 	sourceInfo := snapshot.SourceInfo{
 		UserName: rep.ClientOptions().Username,
 		Host:     rep.ClientOptions().Hostname,
-		Path:     rootPath,
+		Path:     parentPath,
 	}
 
+	// This creates a virtual directory tree rooted at a static directory
+	// with path as `parentPath` and a kopia fs.StreamingFile as the single child entry
 	rootDir := virtualfs.NewStaticDirectory(sourceInfo.Path, fs.Entries{
 		virtualfs.StreamingFileFromReader(filepath.Base(path), source),
 	})
