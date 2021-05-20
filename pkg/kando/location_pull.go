@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	backupIDFlagName = "backupID"
+	kopiaSnapshotFlagName = "kopia-snaphot"
 )
 
 func newLocationPullCommand() *cobra.Command {
@@ -42,12 +42,12 @@ func newLocationPullCommand() *cobra.Command {
 			return runLocationPull(c, args)
 		},
 	}
-	cmd.Flags().StringP(backupIDFlagName, "b", "", "Pass the backup ID from the location push command (optional)")
+	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")
 	return cmd
 }
 
-func backupIDFlag(cmd *cobra.Command) string {
-	return cmd.Flag(backupIDFlagName).Value.String()
+func kopiaSnapshotFlag(cmd *cobra.Command) string {
+	return cmd.Flag(kopiaSnapshotFlagName).Value.String()
 }
 
 func runLocationPull(cmd *cobra.Command, args []string) error {
@@ -60,16 +60,20 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	s := pathFlag(cmd)
-	id := backupIDFlag(cmd)
 	ctx := context.Background()
 	if p.Location.Type == crv1alpha1.LocationTypeKopia {
-		if id == "" {
-			return errors.New("Backup ID is required to pull data using kopia")
+		snapJSON := kopiaSnapshotFlag(cmd)
+		if snapJSON == "" {
+			return errors.New("kopia snapshot information is required to pull data using kopia")
+		}
+		kopiaSnap, err := kopia.UnmarshalKopiaSnapshot(snapJSON)
+		if err != nil {
+			return err
 		}
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaLocationPull(ctx, id, s, target)
+		return kopiaLocationPull(ctx, kopiaSnap.ID, s, target)
 	}
 	return locationPull(ctx, p, s, target)
 }
@@ -94,5 +98,14 @@ func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Wri
 func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 	contentCacheSize := kopia.GetDataStoreGeneralContentCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
 	metadataCacheSize := kopia.GetDataStoreGeneralMetadataCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
-	return kopia.ConnectToAPIServer(ctx, kp.Credential.KopiaServerSecret.Cert, kp.Credential.KopiaServerSecret.Password, kp.Credential.KopiaServerSecret.Hostname, kp.Location.Endpoint, kp.Credential.KopiaServerSecret.Username, contentCacheSize, metadataCacheSize)
+	return kopia.ConnectToAPIServer(
+		ctx,
+		kp.Credential.KopiaServerSecret.Cert,
+		kp.Credential.KopiaServerSecret.Password,
+		kp.Credential.KopiaServerSecret.Hostname,
+		kp.Location.Endpoint,
+		kp.Credential.KopiaServerSecret.Username,
+		contentCacheSize,
+		metadataCacheSize,
+	)
 }

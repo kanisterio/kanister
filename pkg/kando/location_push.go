@@ -29,6 +29,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
+const (
+	outputNameFlagName    = "output-name"
+	defaultKandoOutputKey = "kandoOutput"
+)
+
 func newLocationPushCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "push <source>",
@@ -39,7 +44,12 @@ func newLocationPushCommand() *cobra.Command {
 			return runLocationPush(c, args)
 		},
 	}
+	cmd.Flags().StringP(outputNameFlagName, "o", defaultKandoOutputKey, "Specify a name to be used for the output produced by kando. Set to `kandoOutput` by default")
 	return cmd
+}
+
+func outputNameFlag(cmd *cobra.Command) string {
+	return cmd.Flag(outputNameFlagName).Value.String()
 }
 
 func runLocationPush(cmd *cobra.Command, args []string) error {
@@ -54,10 +64,11 @@ func runLocationPush(cmd *cobra.Command, args []string) error {
 	s := pathFlag(cmd)
 	ctx := context.Background()
 	if p.Location.Type == crv1alpha1.LocationTypeKopia {
+		outputName := outputNameFlag(cmd)
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaLocationPush(ctx, s, source)
+		return kopiaLocationPush(ctx, s, outputName, source)
 	}
 	return locationPush(ctx, p, s, source)
 }
@@ -83,10 +94,14 @@ func locationPush(ctx context.Context, p *param.Profile, path string, source io.
 }
 
 // kopiaLocationPush pushes the data from the source using a kopia snapshot
-func kopiaLocationPush(ctx context.Context, path string, source io.Reader) error {
-	snapID, _, err := kopia.Write(ctx, path, source)
+func kopiaLocationPush(ctx context.Context, path, outputName string, source io.Reader) error {
+	snapInfo, err := kopia.Write(ctx, path, source)
 	if err != nil {
 		return errors.Wrap(err, "Failed to push data using kopia")
 	}
-	return output.PrintOutput(kopia.BackupIdentifierKey, snapID)
+	snapInfoJSON, err := kopia.MarshalKopiaSnapshot(snapInfo)
+	if err != nil {
+		return err
+	}
+	return output.PrintOutput(outputName, snapInfoJSON)
 }
