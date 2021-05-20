@@ -73,7 +73,7 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaLocationPull(ctx, kopiaSnap.BackupID, s, target)
+		return kopiaLocationPull(ctx, kopiaSnap.ID, s, target)
 	}
 	return locationPull(ctx, p, s, target)
 }

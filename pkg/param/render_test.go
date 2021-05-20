@@ -150,3 +150,60 @@ func (s *RenderSuite) TestRenderObjects(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(out["authSecret"].Name, Equals, "secret-name")
 }
+
+func (s *RenderSuite) TestRenderArtifacts(c *C) {
+	tp := TemplateParams{
+		Phases: map[string]*Phase{
+			"myPhase": &Phase{
+				Output: map[string]interface{}{
+					"kopiaSnapshot": "a-snapshot-id",
+				},
+			},
+		},
+	}
+
+	for _, tc := range []struct {
+		art     map[string]crv1alpha1.Artifact
+		tp      TemplateParams
+		out     map[string]crv1alpha1.Artifact
+		checker Checker
+	}{
+		{
+			art: map[string]crv1alpha1.Artifact{
+				"myArt": crv1alpha1.Artifact{
+					KopiaSnapshot: "{{ .Phases.myPhase.Output.kopiaSnapshot }}",
+				},
+			},
+			tp: tp,
+			out: map[string]crv1alpha1.Artifact{
+				"myArt": crv1alpha1.Artifact{
+					KopiaSnapshot: "a-snapshot-id",
+				},
+			},
+			checker: IsNil,
+		},
+
+		{
+			art: map[string]crv1alpha1.Artifact{
+				"myArt": crv1alpha1.Artifact{
+					KeyValue: map[string]string{
+						"key": "{{ .Phases.myPhase.Output.kopiaSnapshot }}",
+					},
+				},
+			},
+			tp: tp,
+			out: map[string]crv1alpha1.Artifact{
+				"myArt": crv1alpha1.Artifact{
+					KeyValue: map[string]string{
+						"key": "a-snapshot-id",
+					},
+				},
+			},
+			checker: IsNil,
+		},
+	} {
+		ra, err := RenderArtifacts(tc.art, tc.tp)
+		c.Assert(err, tc.checker)
+		c.Assert(ra, DeepEquals, tc.out)
+	}
+}

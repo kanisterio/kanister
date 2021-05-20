@@ -193,7 +193,7 @@ func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
 }
 
 // MarshalKopiaSnapshot encodes kopia SnapshotInfo struct into a string
-func MarshalKopiaSnapshot(snapInfo SnapshotInfo) (string, error) {
+func MarshalKopiaSnapshot(snapInfo *SnapshotInfo) (string, error) {
 	snap, err := json.Marshal(snapInfo)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to marshal kopia snapshot information")
