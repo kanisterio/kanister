@@ -100,6 +100,13 @@ func RenderArtifacts(arts map[string]crv1alpha1.Artifact, tp TemplateParams) (ma
 			}
 			ra.KeyValue[k] = rv
 		}
+		if a.KopiaSnapshot != "" {
+			ks, err := renderStringArg(a.KopiaSnapshot, tp)
+			if err != nil {
+				return nil, err
+			}
+			ra.KopiaSnapshot = ks
+		}
 		rarts[name] = ra
 	}
 	return rarts, nil

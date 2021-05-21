@@ -7,9 +7,10 @@ actions:
     type: StatefulSet
     outputArtifacts:
       mysqlBackup:
-        keyValue:
-          backupPath: "{{ .Phases.dumpToStore.Output.backupPath }}"
-          backupID: "{{ .Phases.dumpToStore.Output.backupID }}"
+        # Capture the kopia snapshot information for subsequent actions
+        # The information includes the kopia snapshot ID which is essential for restore and delete to succeed
+        # `kopiaOutput` is the name provided to kando using `--output-name` flag
+        kopiaSnapshot: "{{ .Phases.dumpToStore.Output.kopiaOutput }}"
     phases:
     - func: KubeTask
       name: dumpToStore
@@ -19,7 +20,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.53.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.57.0
         namespace: "{{ .StatefulSet.Namespace }}"
         command:
         - bash
@@ -29,13 +30,15 @@ actions:
         - pipefail
         - -c
         - |
-          backup_path="/mysql-backups/{{ .StatefulSet.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
+          backup_file_path="dump.sql.gz"
           root_password="{{ index .Phases.dumpToStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-          mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${backup_path} -
-          kando output backupPath ${backup_path}
+          dump_cmd="mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases"
+          ${dump_cmd} | gzip - | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
   restore:
     type: StatefulSet
     inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `mysqlBackup.KopiaSnapshot`
     - mysqlBackup
     phases:
     - func: KubeTask
@@ -46,7 +49,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.53.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.57.0
         namespace: "{{ .StatefulSet.Namespace }}"
         command:
         - bash
@@ -56,19 +59,22 @@ actions:
         - pipefail
         - -c
         - |
-          backup_path="{{ .ArtifactsIn.mysqlBackup.KeyValue.backupPath }}"
-          backup_id="{{ .ArtifactsIn.mysqlBackup.KeyValue.backupID }}"
+          backup_file_path="dump.sql.gz"
+          kopia_snap='{{ .ArtifactsIn.mysqlBackup.KopiaSnapshot }}'
           root_password="{{ index .Phases.restoreFromStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-          kando location pull --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id} - | gunzip | mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}
+          restore_cmd="mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}"
+          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | gunzip | ${restore_cmd}
   delete:
     type: Namespace
     inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `mysqlBackup.KopiaSnapshot`
     - mysqlBackup
     phases:
     - func: KubeTask
       name: deleteFromStore
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.53.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.57.0
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash
@@ -78,6 +84,6 @@ actions:
         - pipefail
         - -c
         - |
-          backup_path="{{ .ArtifactsIn.mysqlBackup.KeyValue.backupPath }}"
-          backup_id="{{ .ArtifactsIn.mysqlBackup.KeyValue.backupID }}"
-          kando location delete --profile '{{ toJson .Profile }}' --path ${backup_path} --backupID ${backup_id}
+          backup_file_path="dump.sql.gz"
+          kopia_snap='{{ .ArtifactsIn.mysqlBackup.KopiaSnapshot }}'
+          kando location delete --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}"
