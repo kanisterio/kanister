@@ -194,6 +194,9 @@ func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
 
 // MarshalKopiaSnapshot encodes kopia SnapshotInfo struct into a string
 func MarshalKopiaSnapshot(snapInfo *SnapshotInfo) (string, error) {
+	if snapInfo.ID == "" {
+		return "", errors.New("kopia snapshot ID cannot be empty")
+	}
 	snap, err := json.Marshal(snapInfo)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to marshal kopia snapshot information")
@@ -205,6 +208,11 @@ func MarshalKopiaSnapshot(snapInfo *SnapshotInfo) (string, error) {
 // UnmarshalKopiaSnapshot decodes a kopia snapshot JSON string into SnapshotInfo struct
 func UnmarshalKopiaSnapshot(snapInfoJSON string) (SnapshotInfo, error) {
 	snap := SnapshotInfo{}
-	err := json.Unmarshal([]byte(snapInfoJSON), &snap)
-	return snap, errors.Wrap(err, "failed to unmarshal kopia snapshot information")
+	if err := json.Unmarshal([]byte(snapInfoJSON), &snap); err != nil {
+		return snap, errors.Wrap(err, "failed to unmarshal kopia snapshot information")
+	}
+	if snap.ID == "" {
+		return snap, errors.New("kopia snapshot ID cannot be empty")
+	}
+	return snap, nil
 }
