@@ -4,7 +4,6 @@ metadata:
   name: mongodb-blueprint
 actions:
   backup:
-    type: DeploymentConfig
     outputArtifacts:
       mongoBackup:
         # Capture the kopia snapshot information for subsequent actions
@@ -37,7 +36,6 @@ actions:
             backup_file_path='rs_backup.gz'
             ${dump_cmd} | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
   restore:
-    type: DeploymentConfig
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `mongoBackup.KopiaSnapshot`
@@ -68,7 +66,6 @@ actions:
             kopia_snap='{{ .ArtifactsIn.mongoBackup.KopiaSnapshot }}'
             kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | ${restore_cmd}
   delete:
-    type: Namespace
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `mongoBackup.KopiaSnapshot`

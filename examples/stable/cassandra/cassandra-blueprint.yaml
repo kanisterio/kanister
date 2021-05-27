@@ -4,7 +4,6 @@ metadata:
   name: cassandra-blueprint
 actions:
   backup:
-    type: StatefulSet
     outputArtifacts:
       params:
         keyValue:
@@ -90,7 +89,6 @@ actions:
           - |
             rm -rf {{ .Phases.getBackupPrefixLocation.Output.localSnapshotPrefixLocation }}
   restore:
-    type: StatefulSet
     inputArtifactNames:
       - params
     phases:
@@ -173,9 +171,8 @@ actions:
                 cd ..
               done
             fi
-            rm -rf {{ .ArtifactsIn.params.KeyValue.snapshotPrefix }} 
+            rm -rf {{ .ArtifactsIn.params.KeyValue.snapshotPrefix }}
   delete:
-    type: Namespace
     inputArtifactNames:
       - params
     phases:

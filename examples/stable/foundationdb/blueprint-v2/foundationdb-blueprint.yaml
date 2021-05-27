@@ -68,7 +68,6 @@ actions:
             fdbrestore start --dest_cluster_file /var/dynamic-conf/fdb.cluster -r file:///data/restored/fdbbackup/$backupname -w
             pkill -9 backup_agent
   delete:
-    type: Namespace
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `fdbBackup.KopiaSnapshot`

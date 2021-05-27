@@ -4,7 +4,6 @@ metadata:
   name: postgresql-blueprint
 actions:
   backup:
-    type: StatefulSet
     outputArtifacts:
       manifest:
         keyValue:
@@ -120,7 +119,6 @@ actions:
             wale_s3_prefix=$(cat "${env_wal_prefix}")
             EOF
   restore:
-    type: StatefulSet
     inputArtifactNames:
       - manifest
     phases:
@@ -274,7 +272,6 @@ actions:
         namespace: '{{ .StatefulSet.Namespace }}'
         replicas: 1
   delete:
-    type: Namespace
     inputArtifactNames:
       - manifest
     phases:

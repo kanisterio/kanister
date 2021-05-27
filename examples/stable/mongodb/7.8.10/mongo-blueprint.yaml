@@ -4,7 +4,6 @@ metadata:
   name: mongodb-blueprint
 actions:
   backup:
-    type: StatefulSet
     outputArtifacts:
       cloudObject:
         keyValue:
@@ -33,7 +32,6 @@ actions:
             dump_cmd="mongodump --oplog --gzip --archive --host ${host} -u root -p ${dbPassword}"
             ${dump_cmd} | kando location push --profile '{{ toJson .Profile }}' --path '/mongodb-replicaset-backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs_backup.gz' -
   restore:
-    type: StatefulSet
     inputArtifactNames:
       - cloudObject
     phases:
@@ -60,7 +58,6 @@ actions:
             restore_cmd="mongorestore --gzip --archive --oplogReplay --drop --host ${host} -u root -p ${dbPassword}"
             kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.path }}' - | ${restore_cmd}
   delete:
-    type: Namespace
     inputArtifactNames:
       - cloudObject
     phases:

@@ -67,7 +67,6 @@ actions:
           kopia_snap='{{ .ArtifactsIn.pgBackup.KopiaSnapshot }}'
           kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | gunzip -c -f | psql -q -U "${PGUSER}"
   delete:
-    type: Namespace
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `pgBackup.KopiaSnapshot`

@@ -80,7 +80,6 @@ actions:
               --force-updates
 
   delete:
-    type: Namespace
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `cbBackup.KopiaSnapshot`

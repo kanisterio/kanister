@@ -4,7 +4,6 @@ metadata:
   name: mysql-blueprint
 actions:
   backup:
-    type: StatefulSet
     outputArtifacts:
       mysqlBackup:
         # Capture the kopia snapshot information for subsequent actions
@@ -35,7 +34,6 @@ actions:
           dump_cmd="mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases"
           ${dump_cmd} | gzip - | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
   restore:
-    type: StatefulSet
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `mysqlBackup.KopiaSnapshot`
@@ -65,7 +63,6 @@ actions:
           restore_cmd="mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}"
           kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | gunzip | ${restore_cmd}
   delete:
-    type: Namespace
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `mysqlBackup.KopiaSnapshot`

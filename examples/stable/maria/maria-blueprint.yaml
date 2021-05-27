@@ -4,7 +4,6 @@ metadata:
   name: maria-blueprint
 actions:
   backup:
-    type: StatefulSet
     outputArtifacts:
       mariaCloudDump:
         keyValue:
@@ -39,7 +38,6 @@ actions:
           mysqldump -u root --password=${root_password} -h {{ .StatefulSet.Name }} --column-statistics=0 --single-transaction --databases ${dump_databases} | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
           kando output s3path ${s3_path}
   restore:
-    type: StatefulSet
     inputArtifactNames:
     - mariaCloudDump
     phases:
@@ -65,7 +63,6 @@ actions:
           root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mariaSecret.Data "mariadb-root-password" | toString }}"
           kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -u root --password=${root_password} -h {{ .StatefulSet.Name }}
   delete:
-    type: Namespace
     inputArtifactNames:
     - mariaCloudDump
     phases:
