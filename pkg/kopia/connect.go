@@ -61,7 +61,6 @@ func ConnectToAPIServer(
 	}
 
 	opts := &repo.ConnectOptions{
-		PersistCredentials: defaultConnectPersistCredentials,
 		CachingOptions: content.CachingOptions{
 			CacheDirectory:            defaultCacheDirectory,
 			MaxCacheSizeBytes:         int64(contentCacheMB << 20),

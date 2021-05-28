@@ -68,7 +68,7 @@ func runLocationPush(cmd *cobra.Command, args []string) error {
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaLocationPush(ctx, s, outputName, source)
+		return kopiaLocationPush(ctx, s, outputName, source, p.Credential.KopiaServerSecret.Password)
 	}
 	return locationPush(ctx, p, s, source)
 }
@@ -94,8 +94,8 @@ func locationPush(ctx context.Context, p *param.Profile, path string, source io.
 }
 
 // kopiaLocationPush pushes the data from the source using a kopia snapshot
-func kopiaLocationPush(ctx context.Context, path, outputName string, source io.Reader) error {
-	snapInfo, err := kopia.Write(ctx, path, source)
+func kopiaLocationPush(ctx context.Context, path, outputName string, source io.Reader, password string) error {
+	snapInfo, err := kopia.Write(ctx, path, source, password)
 	if err != nil {
 		return errors.Wrap(err, "Failed to push data using kopia")
 	}
