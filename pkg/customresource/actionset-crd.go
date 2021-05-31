@@ -272,7 +272,6 @@ spec:
                             type: string
                         required:
                         - name
-                        - output
                         - state
                         type: object
                       type: array
