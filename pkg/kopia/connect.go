@@ -32,7 +32,6 @@ import (
 
 const (
 	defaultConnectMaxListCacheDuration time.Duration = time.Second * 600
-	defaultConnectPersistCredentials                 = true
 	kopiaGetRepoParametersError                      = "unable to get repository parameters"
 )
 
@@ -61,7 +60,6 @@ func ConnectToAPIServer(
 	}
 
 	opts := &repo.ConnectOptions{
-		PersistCredentials: defaultConnectPersistCredentials,
 		CachingOptions: content.CachingOptions{
 			CacheDirectory:            defaultCacheDirectory,
 			MaxCacheSizeBytes:         int64(contentCacheMB << 20),

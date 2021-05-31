@@ -73,7 +73,7 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaLocationPull(ctx, kopiaSnap.ID, s, target)
+		return kopiaLocationPull(ctx, kopiaSnap.ID, s, target, p.Credential.KopiaServerSecret.Password)
 	}
 	return locationPull(ctx, p, s, target)
 }
@@ -90,8 +90,8 @@ func locationPull(ctx context.Context, p *param.Profile, path string, target io.
 }
 
 // kopiaLocationPull pulls the data from a kopia snapshot into the given target
-func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Writer) error {
-	return kopia.Read(ctx, backupID, path, target)
+func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Writer, password string) error {
+	return kopia.Read(ctx, backupID, path, target, password)
 }
 
 // connectToKopiaServer connects to the kopia server with given creds
