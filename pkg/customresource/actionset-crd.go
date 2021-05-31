@@ -1,3 +1,6 @@
+package customresource
+
+const actionsetCRD = `
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -304,3 +307,4 @@ status:
     plural: ""
   conditions: []
   storedVersions: []
+`

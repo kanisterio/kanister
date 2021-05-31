@@ -1,5 +1,6 @@
+package customresource
 
----
+const blueprintCRD = `
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -47,6 +48,7 @@ spec:
                   items:
                     properties:
                       args:
+                        x-kubernetes-preserve-unknown-fields: true
                         type: object
                       func:
                         type: string
@@ -102,3 +104,4 @@ status:
     plural: ""
   conditions: []
   storedVersions: []
+`
