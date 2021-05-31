@@ -32,7 +32,6 @@ import (
 
 const (
 	defaultConnectMaxListCacheDuration time.Duration = time.Second * 600
-	defaultConnectPersistCredentials                 = true
 	kopiaGetRepoParametersError                      = "unable to get repository parameters"
 )
 
