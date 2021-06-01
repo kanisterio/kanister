@@ -90,9 +90,9 @@ type ActionSpec struct {
 	// Artifacts will be passed as inputs into this phase.
 	Artifacts map[string]Artifact `json:"artifacts,omitempty"`
 	// ConfigMaps that we'll get and pass into the blueprint.
-	ConfigMaps map[string]ObjectReference `json:"configMaps"`
+	ConfigMaps map[string]ObjectReference `json:"configMaps,omitempty"`
 	// Secrets that we'll get and pass into the blueprint.
-	Secrets map[string]ObjectReference `json:"secrets"`
+	Secrets map[string]ObjectReference `json:"secrets,omitempty"`
 	// Profile is use to specify the location where store artifacts and the
 	// credentials authorized to access them.
 	Profile *ObjectReference `json:"profile"`
@@ -101,7 +101,7 @@ type ActionSpec struct {
 	PodOverride JSONMap `json:"podOverride,omitempty"`
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
-	Options map[string]string `json:"options"`
+	Options map[string]string `json:"options,omitempty"`
 	// PreferredVersion will be used to select the preferred version of Kanister functions
 	// to be executed for this action
 	PreferredVersion string `json:"preferredVersion"`
@@ -125,7 +125,7 @@ type ActionStatus struct {
 	// Phases are sub-actions an are executed sequentially.
 	Phases []Phase `json:"phases"`
 	// Artifacts created by this phase.
-	Artifacts map[string]Artifact `json:"artifacts"`
+	Artifacts map[string]Artifact `json:"artifacts,omitempty"`
 }
 
 // State is the current state of a phase of execution.
@@ -150,7 +150,7 @@ type Error struct {
 type Phase struct {
 	Name   string                 `json:"name"`
 	State  State                  `json:"state"`
-	Output map[string]interface{} `json:"output"`
+	Output map[string]interface{} `json:"output,omitempty"`
 }
 
 // k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -189,18 +189,18 @@ type Blueprint struct {
 type BlueprintAction struct {
 	Name               string              `json:"name"`
 	Kind               string              `json:"kind"`
-	ConfigMapNames     []string            `json:"configMapNames"`
-	SecretNames        []string            `json:"secretNames"`
-	InputArtifactNames []string            `json:"inputArtifactNames"`
-	OutputArtifacts    map[string]Artifact `json:"outputArtifacts"`
-	Phases             []BlueprintPhase    `json:"phases"`
+	ConfigMapNames     []string            `json:"configMapNames,omitempty"`
+	SecretNames        []string            `json:"secretNames,omitempty"`
+	InputArtifactNames []string            `json:"inputArtifactNames,omitempty"`
+	OutputArtifacts    map[string]Artifact `json:"outputArtifacts,omitempty"`
+	Phases             []BlueprintPhase    `json:"phases,omitempty"`
 }
 
 // BlueprintPhase is a an individual unit of execution.
 type BlueprintPhase struct {
 	Func       string                     `json:"func"`
 	Name       string                     `json:"name"`
-	ObjectRefs map[string]ObjectReference `json:"objects"`
+	ObjectRefs map[string]ObjectReference `json:"objects,omitempty"`
 	Args       map[string]interface{}     `json:"args"`
 }
 
