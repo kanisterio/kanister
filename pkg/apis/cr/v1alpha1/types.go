@@ -38,12 +38,6 @@ const (
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: ResourceGroup, Version: SchemeVersion}
 
-// These names are used to query ActionSet API objects.
-const (
-	ActionSetResourceName       = "actionset"
-	ActionSetResourceNamePlural = "actionsets"
-)
-
 // JSONMap contains PodOverride specs.
 type JSONMap sp.JSONMap
 
@@ -178,12 +172,6 @@ type ActionSetList struct {
 	Items           []*ActionSet `json:"items"`
 }
 
-// These names are used to query Blueprint API objects.
-const (
-	BlueprintResourceName       = "blueprint"
-	BlueprintResourceNamePlural = "blueprints"
-)
-
 var _ runtime.Object = (*Blueprint)(nil)
 
 // +genclient
@@ -224,12 +212,6 @@ type BlueprintList struct {
 	metav1.ListMeta `json:"metadata"`
 	Items           []*Blueprint `json:"items"`
 }
-
-// These names are used to query Profile API objects.
-const (
-	ProfileResourceName       = "profile"
-	ProfileResourceNamePlural = "profiles"
-)
 
 // +genclient
 // +genclient:noStatus

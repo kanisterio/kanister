@@ -51,19 +51,9 @@ spec:
                       resource:
                         description: Resource name of the referent.
                         type: string
-                    required:
-                    - apiVersion
-                    - group
-                    - kind
-                    - name
-                    - resource
                     type: object
                   secretField:
                     type: string
-                required:
-                - idField
-                - secret
-                - secretField
                 type: object
               secret:
                 properties:
@@ -85,17 +75,9 @@ spec:
                   resource:
                     description: Resource name of the referent.
                     type: string
-                required:
-                - apiVersion
-                - group
-                - kind
-                - name
-                - resource
                 type: object
               type:
                 type: string
-            required:
-            - type
             type: object
           kind:
             description: 'Kind is a string value representing the REST resource this
@@ -114,22 +96,11 @@ spec:
                 type: string
               type:
                 type: string
-            required:
-            - bucket
-            - endpoint
-            - prefix
-            - region
-            - type
             type: object
           metadata:
             type: object
           skipSSLVerify:
             type: boolean
-        required:
-        - credential
-        - location
-        - metadata
-        - skipSSLVerify
         type: object
 status:
   acceptedNames:

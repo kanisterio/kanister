@@ -305,8 +305,6 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 		as.Status.State = crv1alpha1.StatePending
 		as.Status.Actions = actions
 	}
-	fmt.Printf("actionset spec that we have is %+v\n", as.Spec)
-	fmt.Printf("actionset status that we have is %+v\n", as.Status)
 	if _, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{}); err != nil {
 		c.logAndErrorEvent(ctx, "Could not update ActionSet:", "Update Failed", err, as)
 	}

@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	// crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 
 	// importing go check to bypass the testing flags
 	_ "gopkg.in/check.v1"
@@ -83,7 +83,6 @@ func CreateCustomResources(context Context, resources []CustomResource) error {
 	}
 	var lastErr error
 	for _, resource := range resources {
-		fmt.Printf("calling create crd for %s\n", resource.Name)
 		err = createCRD(context, resource)
 		if err != nil {
 			lastErr = err
@@ -115,38 +114,13 @@ func decodeSpecIntoObject(spec []byte, intoObj runtime.Object) error {
 }
 
 func createCRD(context Context, resource CustomResource) error {
-	// crdName := fmt.Sprintf("%s.%s", resource.Plural, resource.Group)
 	crd, err := getCRDFromSpec(specFromResName(resource.Name))
 	if err != nil {
 		return err
 	}
-	// crd := &apiextensionsv1.CustomResourceDefinition{
-	// 	ObjectMeta: metav1.ObjectMeta{
-	// 		Name: crdName,
-	// 	},
-	// 	Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-	// 		Group: resource.Group,
-	// 		Versions: []apiextensionsv1.CustomResourceDefinitionVersion{
-	// 			{
-	// 				Name:    resource.Version,
-	// 				Storage: true,
-	// 				Schema:  schema,
-	// 			},
-	// 		},
-	// 		Scope: resource.Scope,
-	// 		Names: apiextensionsv1.CustomResourceDefinitionNames{
-	// 			Singular: resource.Name,
-	// 			Plural:   resource.Plural,
-	// 			Kind:     resource.Kind,
-	// 		},
-	// 	},
-	// }
 
 	_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Create(contextpkg.TODO(), crd, metav1.CreateOptions{})
 	if err != nil {
-		fmt.Printf("error creating crd %s\n", err.Error())
-		// this isn't working as expected, if CRD is not being created because of validation failure
-		// this doesn't faile
 		if !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create %s CRD. %+v", resource.Name, err)
 		}
@@ -156,28 +130,14 @@ func createCRD(context Context, resource CustomResource) error {
 
 func specFromResName(name string) []byte {
 	switch name {
-	case "actionset":
+	case consts.ActionSetResourceName:
 		return []byte(actionsetCRD)
-	case "blueprint":
+	case consts.BlueprintResourceName:
 		return []byte(blueprintCRD)
-	case "profile":
+	case consts.ProfileResourceName:
 		return []byte(profileCRD)
 	}
 	return nil
-}
-
-func validationSchema(resource CustomResource) (*apiextensionsv1.CustomResourceValidation, error) {
-	// switch resource.Name {
-	// case crv1alpha1.ActionSetResourceName:
-	// 	return &apiextensionsv1.CustomResourceValidation{
-	// 		OpenAPIV3Schema: &apiextensionsv1.JSONSchemaProps{},
-	// 	}, nil
-	// case crv1alpha1.BlueprintResourceName:
-	// case crv1alpha1.ProfileResourceName:
-	// default:
-	// 	return nil, fmt.Errorf("failed to create validation schema for resource %s", resource.Name)
-	// }
-	return nil, nil
 }
 
 func waitForCRDInit(context Context, resource CustomResource) error {

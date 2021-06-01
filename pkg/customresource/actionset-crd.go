@@ -45,8 +45,6 @@ spec:
                             additionalProperties:
                               type: string
                             type: object
-                        required:
-                        - keyValue
                         type: object
                       description: Artifacts will be passed as inputs into this phase.
                       type: object
@@ -75,12 +73,6 @@ spec:
                           resource:
                             description: Resource name of the referent.
                             type: string
-                        required:
-                        - apiVersion
-                        - group
-                        - kind
-                        - name
-                        - resource
                         type: object
                       description: ConfigMaps that we'll get and pass into the blueprint.
                       type: object
@@ -110,12 +102,6 @@ spec:
                         resource:
                           description: Resource name of the referent.
                           type: string
-                      required:
-                      - apiVersion
-                      - group
-                      - kind
-                      - name
-                      - resource
                       type: object
                     options:
                       additionalProperties:
@@ -153,12 +139,6 @@ spec:
                         resource:
                           description: Resource name of the referent.
                           type: string
-                      required:
-                      - apiVersion
-                      - group
-                      - kind
-                      - name
-                      - resource
                       type: object
                     secrets:
                       additionalProperties:
@@ -181,27 +161,11 @@ spec:
                           resource:
                             description: Resource name of the referent.
                             type: string
-                        required:
-                        - apiVersion
-                        - group
-                        - kind
-                        - name
-                        - resource
                         type: object
                       description: Secrets that we'll get and pass into the blueprint.
                       type: object
-                  required:
-                  - configMaps
-                  - name
-                  - object
-                  - options
-                  - preferredVersion
-                  - profile
-                  - secrets
                   type: object
                 type: array
-            required:
-            - actions
             type: object
           status:
             description: ActionSetStatus is the status for the actionset. This should
@@ -217,8 +181,6 @@ spec:
                             additionalProperties:
                               type: string
                             type: object
-                        required:
-                        - keyValue
                         type: object
                       description: Artifacts created by this phase.
                       type: object
@@ -252,12 +214,6 @@ spec:
                         resource:
                           description: Resource name of the referent.
                           type: string
-                      required:
-                      - apiVersion
-                      - group
-                      - kind
-                      - name
-                      - resource
                       type: object
                     phases:
                       description: Phases are sub-actions an are executed sequentially.
@@ -270,35 +226,18 @@ spec:
                             type: object
                           state:
                             type: string
-                        required:
-                        - name
-                        - state
                         type: object
                       type: array
-                  required:
-                  - artifacts
-                  - blueprint
-                  - name
-                  - object
-                  - phases
                   type: object
                 type: array
               error:
                 properties:
                   message:
                     type: string
-                required:
-                - message
                 type: object
               state:
                 type: string
-            required:
-            - actions
-            - state
             type: object
-        required:
-        - metadata
-        - spec
         type: object
 status:
   acceptedNames:
