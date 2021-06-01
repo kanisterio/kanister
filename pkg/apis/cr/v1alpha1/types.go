@@ -51,7 +51,7 @@ var _ runtime.Object = (*ActionSet)(nil)
 type ActionSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	Spec              *ActionSetSpec   `json:"spec"`
+	Spec              *ActionSetSpec   `json:"spec,omitempty"`
 	Status            *ActionSetStatus `json:"status,omitempty"`
 }
 
@@ -76,7 +76,7 @@ type ObjectReference struct {
 
 // ActionSetSpec is the specification for the actionset.
 type ActionSetSpec struct {
-	Actions []ActionSpec `json:"actions"`
+	Actions []ActionSpec `json:"actions,omitempty"`
 }
 
 // ActionSpec is the specification for a single Action.
@@ -95,7 +95,7 @@ type ActionSpec struct {
 	Secrets map[string]ObjectReference `json:"secrets,omitempty"`
 	// Profile is use to specify the location where store artifacts and the
 	// credentials authorized to access them.
-	Profile *ObjectReference `json:"profile"`
+	Profile *ObjectReference `json:"profile,omitempty"`
 	// PodOverride is used to specify pod specs that will override the
 	// default pod specs
 	PodOverride JSONMap `json:"podOverride,omitempty"`
@@ -157,7 +157,7 @@ type Phase struct {
 
 // Artifact tracks objects produced by an action.
 type Artifact struct {
-	KeyValue map[string]string `json:"keyValue"`
+	KeyValue map[string]string `json:"keyValue,omitempty"`
 	// KopiaSnapshot captures the kopia snapshot information
 	// produced as a JSON string by kando command in phases of an action.
 	KopiaSnapshot string `json:"kopiaSnapshot"`
