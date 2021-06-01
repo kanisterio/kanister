@@ -160,7 +160,7 @@ type Artifact struct {
 	KeyValue map[string]string `json:"keyValue,omitempty"`
 	// KopiaSnapshot captures the kopia snapshot information
 	// produced as a JSON string by kando command in phases of an action.
-	KopiaSnapshot string `json:"kopiaSnapshot"`
+	KopiaSnapshot string `json:"kopiaSnapshot,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
