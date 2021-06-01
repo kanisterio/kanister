@@ -182,7 +182,7 @@ var _ runtime.Object = (*Blueprint)(nil)
 type Blueprint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	Actions           map[string]*BlueprintAction `json:"actions"`
+	Actions           map[string]*BlueprintAction `json:"actions,omitempty"`
 }
 
 // BlueprintAction describes the set of phases that constitute an action.
