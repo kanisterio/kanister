@@ -45,6 +45,10 @@ spec:
                             additionalProperties:
                               type: string
                             type: object
+                          kopiaSnapshot:
+                            additionalProperties:
+                              type: string
+                            type: object
                         type: object
                       description: Artifacts will be passed as inputs into this phase.
                       type: object
