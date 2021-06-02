@@ -123,7 +123,7 @@ type ActionStatus struct {
 	// Blueprint with instructions on how to execute this action.
 	Blueprint string `json:"blueprint"`
 	// Phases are sub-actions an are executed sequentially.
-	Phases []Phase `json:"phases"`
+	Phases []Phase `json:"phases,omitempty"`
 	// Artifacts created by this phase.
 	Artifacts map[string]Artifact `json:"artifacts,omitempty"`
 }

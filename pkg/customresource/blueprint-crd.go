@@ -42,6 +42,9 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
+                      kopiaSnapshot:
+                        type: string
+                        x-kubernetes-preserve-unknown-fields: true
                     type: object
                   type: object
                 phases:
