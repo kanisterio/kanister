@@ -50,6 +50,17 @@ type SnapshotInfo struct {
 	PhysicalSize int64 `json:"physicalSize"`
 }
 
+// Validate validates SnapshotInfo field values
+func (si *SnapshotInfo) Validate() error {
+	if si == nil {
+		return errors.New("kopia snapshotInfo cannot be nil")
+	}
+	if si.ID == "" {
+		return errors.New("kopia snapshot ID cannot be empty")
+	}
+	return nil
+}
+
 // Write creates a kopia snapshot from the given reader
 // A virtual directory tree rooted at filepath.Dir(path) is created with
 // a kopia streaming file with filepath.Base(path) as name
