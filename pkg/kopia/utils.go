@@ -211,8 +211,5 @@ func UnmarshalKopiaSnapshot(snapInfoJSON string) (SnapshotInfo, error) {
 	if err := json.Unmarshal([]byte(snapInfoJSON), &snap); err != nil {
 		return snap, errors.Wrap(err, "failed to unmarshal kopia snapshot information")
 	}
-	if err := snap.Validate(); err != nil {
-		return snap, err
-	}
-	return snap, nil
+	return snap, snap.Validate()
 }
