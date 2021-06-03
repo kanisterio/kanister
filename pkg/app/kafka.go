@@ -196,6 +196,25 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 		return err
 	}
 
+	deleteCRD := []string{
+		"delete",
+		"crd",
+		"kafkabridges.kafka.strimzi.io",
+		"kafkaconnectors.kafka.strimzi.io",
+		"kafkaconnects.kafka.strimzi.io",
+		"kafkaconnects2is.kafka.strimzi.io",
+		"kafkamirrormaker2s.kafka.strimzi.io",
+		"kafkamirrormakers.kafka.strimzi.io",
+		"kafkarebalances.kafka.strimzi.io",
+		"kafkas.kafka.strimzi.io",
+		"kafkatopics.kafka.strimzi.io",
+		"kafkausers.kafka.strimzi.io",
+	}
+	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
+	if err != nil {
+		return errors.Wrapf(err, "Error deleting kafka CRD %s, %s", kc.name, out)
+	}
+
 	log.Print("Application deleted successfully.", field.M{"app": kc.name})
 	return nil
 }
