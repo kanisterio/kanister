@@ -80,7 +80,7 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 
 func targetWriter(target string) (io.Writer, error) {
 	if target != usePipeParam {
-		return os.Open(target)
+		return os.OpenFile(target, os.O_RDWR|os.O_CREATE, 0755)
 	}
 	return os.Stdout, nil
 }
