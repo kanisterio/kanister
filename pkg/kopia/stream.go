@@ -99,18 +99,25 @@ func Write(ctx context.Context, path string, source io.Reader) (*SnapshotInfo, e
 	// Setup kopia uploader
 	u := snapshotfs.NewUploader(rep)
 
+	// Setup upload progress to capture stats
+	u.Progress = &kandoUploadProgress{}
+
 	// Create a kopia snapshot
 	snapID, _, err := SnapshotSource(ctx, rep, u, sourceInfo, rootDir, "Kanister Database Backup")
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO@pavan: Add kopia snapshot size information
-	zeroSize := int64(0)
+	// Get snapshot stats from uploader
+	var p *kandoUploadProgress
+	if p, ok = u.Progress.(*kandoUploadProgress); !ok {
+		return nil, errors.New("Invalid kando upload progress")
+	}
+	hashedBytes, cachedBytes, uploadedBytes := p.GetStats()
 	snapshotInfo := &SnapshotInfo{
 		ID:           snapID,
-		LogicalSize:  zeroSize,
-		PhysicalSize: zeroSize,
+		LogicalSize:  hashedBytes + cachedBytes,
+		PhysicalSize: uploadedBytes,
 	}
 
 	return snapshotInfo, nil
