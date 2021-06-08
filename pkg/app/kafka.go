@@ -184,12 +184,6 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create helm client")
 	}
 
-	deleteConfig := []string{"delete", "-n", kc.namespace, "configmap", configMapName}
-	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", deleteConfig)
-	if err != nil {
-		return errors.Wrapf(err, "Error deleting ConfigMap %s, %s", kc.name, out)
-	}
-
 	err = cli.Uninstall(ctx, kc.chart.Release, kc.namespace)
 	if err != nil {
 		log.WithError(err).Print("Failed to uninstall app, you will have to uninstall it manually.", field.M{"app": kc.name})
@@ -210,9 +204,9 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 		"kafkatopics.kafka.strimzi.io",
 		"kafkausers.kafka.strimzi.io",
 	}
-	out, err = helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
-	if err != nil {
-		return errors.Wrapf(err, "Error deleting kafka CRD %s, %s", kc.name, out)
+	out, error := helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
+	if error != nil {
+		return errors.Wrapf(error, "Error deleting kafka CRD %s, %s", kc.name, out)
 	}
 
 	log.Print("Application deleted successfully.", field.M{"app": kc.name})
