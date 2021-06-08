@@ -134,7 +134,7 @@ actions:
     - func: PrepareData
       name: performRestore
       args:
-        image: "ghcr.io/kanisterio/postgresql:0.58.0"
+        image: "ghcr.io/kanisterio/postgresql:0.59.0"
         namespace: "{{ .StatefulSet.Namespace }}"
         volumes:
           "data-{{ .StatefulSet.Name }}-0": "/bitnami/postgresql"
@@ -282,7 +282,7 @@ actions:
       name: deleteArtifact
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: "ghcr.io/kanisterio/postgresql:0.58.0"
+        image: "ghcr.io/kanisterio/postgresql:0.59.0"
         command:
           - bash
           - -o
