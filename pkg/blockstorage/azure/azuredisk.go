@@ -226,7 +226,7 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	}
 
 	migrateResourceGroup := s.azCli.ResourceGroup
-	if val, ok := args[blockstorage.AzureMigrateStorageKey]; ok && val != "" {
+	if val, ok := args[blockstorage.AzureMigrateResourceGroup]; ok && val != "" {
 		migrateResourceGroup = val
 	}
 	// specify a resource group?
