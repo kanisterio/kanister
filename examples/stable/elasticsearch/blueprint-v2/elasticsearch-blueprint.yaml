@@ -16,7 +16,7 @@ actions:
       name: backupToStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.58.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.59.0"
         command:
         - bash
         - -o
@@ -41,7 +41,7 @@ actions:
       name: restoreFromStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.58.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.59.0"
         command:
         - bash
         - -o

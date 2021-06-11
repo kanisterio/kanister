@@ -21,7 +21,7 @@ actions:
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
         namespace: "{{ .DeploymentConfig.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.58.0
+        image: ghcr.io/kanisterio/mongodb:0.59.0
         command:
           - bash
           - -o
@@ -52,7 +52,7 @@ actions:
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
         namespace: "{{ .DeploymentConfig.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.58.0
+        image: ghcr.io/kanisterio/mongodb:0.59.0
         command:
           - bash
           - -o
@@ -78,7 +78,7 @@ actions:
       name: deleteFromStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: ghcr.io/kanisterio/mongodb:0.58.0
+        image: ghcr.io/kanisterio/mongodb:0.59.0
         command:
           - bash
           - -o
