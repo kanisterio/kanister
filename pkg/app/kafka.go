@@ -185,8 +185,6 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 	}
 
 	err = kc.cli.CoreV1().ConfigMaps(kc.namespace).Delete(ctx, configMapName, metav1.DeleteOptions{})
-	// deleteConfig := []string{"delete", "-n", kc.namespace, "configmap", configMapName}
-	// out, err := helm.RunCmdWithTimeout(ctx, "kubectl", deleteConfig)
 	if err != nil {
 		return errors.Wrapf(err, "Error deleting ConfigMap %s", kc.name)
 	}
