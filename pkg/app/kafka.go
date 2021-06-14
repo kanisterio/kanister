@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -185,7 +186,7 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 	}
 
 	err = kc.cli.CoreV1().ConfigMaps(kc.namespace).Delete(ctx, configMapName, metav1.DeleteOptions{})
-	if err != nil {
+	if err != nil && !apierrors.IsNotFound(err) {
 		return errors.Wrapf(err, "Error deleting ConfigMap %s", configMapName)
 	}
 
