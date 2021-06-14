@@ -24,7 +24,7 @@ actions:
           - errexit
           - -c
           - |
-            #we are manually starting backup_aegnt here because fdb operator doesnt  have support for 
+            #we are manually starting backup_aegnt here because fdb operator doesnt  have support for
             # backup and restore right now. But they are planning to have it, going further.
             # Once they have the support for backup and restore we will change this to accommodate upstream changes
             /usr/bin/backup_agent -C /var/dynamic-conf/fdb.cluster  &
@@ -33,7 +33,7 @@ actions:
             fdbbackup start  -d file:///data/fdbbackup -w
             pkill -9 backup_agent
             tar zcvf - -C /data/ fdbbackup | kando location push --profile '{{ toJson .Profile }}' --path '/foundationdb-backups/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/backup.tgz' -
-            rm -rf /data/fdbbackup              
+            rm -rf /data/fdbbackup
   restore:
     kind: CustomResource
     inputArtifactNames:
@@ -48,7 +48,7 @@ actions:
         command:
           - bash
           - -o
-          - pipefail            
+          - pipefail
           - -o
           - errexit
           - -c
@@ -61,7 +61,6 @@ actions:
             fdbrestore start --dest_cluster_file /var/dynamic-conf/fdb.cluster -r file:///data/restored/fdbbackup/$backupname -w
             pkill -9 backup_agent
   delete:
-    type: Namespace
     phases:
     - func: KubeTask
       name: deleteBackup
@@ -78,4 +77,3 @@ actions:
           - |
             s3path='{{ .ArtifactsIn.fdbBackup.KeyValue.path }}'
             kando location delete --profile '{{ toJson .Profile }}' --path ${s3path}
-            
