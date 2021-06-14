@@ -184,6 +184,12 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create helm client")
 	}
 
+	deleteConfig := []string{"delete", "-n", kc.namespace, "configmap", configMapName}
+	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", deleteConfig)
+	if err != nil {
+		return errors.Wrapf(err, "Error deleting ConfigMap %s, %s", kc.name, out)
+	}
+
 	err = cli.Uninstall(ctx, kc.chart.Release, kc.namespace)
 	if err != nil {
 		log.WithError(err).Print("Failed to uninstall app, you will have to uninstall it manually.", field.M{"app": kc.name})
