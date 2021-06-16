@@ -4,7 +4,6 @@ metadata:
   name: mysql-dep-config-blueprint
 actions:
   backup:
-    type: DeploymentConfig
     outputArtifacts:
       mysqlBackup:
         # Capture the kopia snapshot information for subsequent actions
@@ -20,7 +19,7 @@ actions:
           name: "{{ .DeploymentConfig.Name }}"
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.58.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.59.0
         namespace: "{{ .DeploymentConfig.Namespace }}"
         command:
         - bash
@@ -35,7 +34,6 @@ actions:
           dump_cmd="mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ .DeploymentConfig.Name }} --single-transaction --all-databases"
           ${dump_cmd} | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
   restore:
-    type: DeploymentConfig
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `mysqlBackup.KopiaSnapshot`
@@ -49,7 +47,7 @@ actions:
           name: "{{ .DeploymentConfig.Name }}"
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.58.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.59.0
         namespace: "{{ .DeploymentConfig.Namespace }}"
         command:
         - bash
@@ -65,7 +63,6 @@ actions:
           restore_cmd="mysql -u root --password=${root_password} -h {{ .DeploymentConfig.Name }}"
           kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | ${restore_cmd}
   delete:
-    type: Namespace
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `mysqlBackup.KopiaSnapshot`
@@ -74,7 +71,7 @@ actions:
     - func: KubeTask
       name: deleteFromStore
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.58.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.59.0
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash

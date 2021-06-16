@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/portforward"
@@ -184,16 +185,34 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create helm client")
 	}
 
-	deleteConfig := []string{"delete", "-n", kc.namespace, "configmap", configMapName}
-	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", deleteConfig)
-	if err != nil {
-		return errors.Wrapf(err, "Error deleting ConfigMap %s, %s", kc.name, out)
+	err = kc.cli.CoreV1().ConfigMaps(kc.namespace).Delete(ctx, configMapName, metav1.DeleteOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return errors.Wrapf(err, "Error deleting ConfigMap %s", configMapName)
 	}
 
 	err = cli.Uninstall(ctx, kc.chart.Release, kc.namespace)
 	if err != nil {
 		log.WithError(err).Print("Failed to uninstall app, you will have to uninstall it manually.", field.M{"app": kc.name})
 		return err
+	}
+
+	deleteCRD := []string{
+		"delete",
+		"crd",
+		"kafkabridges.kafka.strimzi.io",
+		"kafkaconnectors.kafka.strimzi.io",
+		"kafkaconnects.kafka.strimzi.io",
+		"kafkaconnects2is.kafka.strimzi.io",
+		"kafkamirrormaker2s.kafka.strimzi.io",
+		"kafkamirrormakers.kafka.strimzi.io",
+		"kafkarebalances.kafka.strimzi.io",
+		"kafkas.kafka.strimzi.io",
+		"kafkatopics.kafka.strimzi.io",
+		"kafkausers.kafka.strimzi.io",
+	}
+	out, error := helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
+	if error != nil {
+		return errors.Wrapf(error, "Error deleting kafka CRD %s, %s", kc.name, out)
 	}
 
 	log.Print("Application deleted successfully.", field.M{"app": kc.name})

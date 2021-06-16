@@ -20,7 +20,7 @@ actions:
           name: '{{ .DeploymentConfig.Name }}-{{ .DeploymentConfig.Namespace }}'
           namespace: '{{ .DeploymentConfig.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.58.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.59.0
         namespace: '{{ .DeploymentConfig.Namespace }}'
         command:
         - bash
@@ -50,7 +50,7 @@ actions:
           name: '{{ .DeploymentConfig.Name }}-{{ .DeploymentConfig.Namespace }}'
           namespace: '{{ .DeploymentConfig.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.58.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.59.0
         namespace: '{{ .DeploymentConfig.Namespace }}'
         command:
         - bash
@@ -67,7 +67,6 @@ actions:
           kopia_snap='{{ .ArtifactsIn.pgBackup.KopiaSnapshot }}'
           kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | psql -q -U "${PGUSER}"
   delete:
-    type: Namespace
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `pgBackup.KopiaSnapshot`
@@ -76,7 +75,7 @@ actions:
     - func: KubeTask
       name: deleteDump
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.58.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.59.0
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash
