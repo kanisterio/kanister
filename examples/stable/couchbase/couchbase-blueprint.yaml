@@ -74,7 +74,6 @@ actions:
               --force-updates
 
   delete:
-    type: Namespace
     phases:
     - func: KubeTask
       name: deleteBackup

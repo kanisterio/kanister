@@ -4,7 +4,6 @@ metadata:
   name: mysql-blueprint
 actions:
   backup:
-    type: StatefulSet
     outputArtifacts:
       mysqlCloudDump:
         keyValue:
@@ -33,7 +32,6 @@ actions:
           mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "release" | toString }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
           kando output s3path ${s3_path}
   restore:
-    type: StatefulSet
     inputArtifactNames:
     - mysqlCloudDump
     phases:
@@ -59,7 +57,6 @@ actions:
           root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
           kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "release" | toString }}
   delete:
-    type: Namespace
     inputArtifactNames:
     - mysqlCloudDump
     phases:

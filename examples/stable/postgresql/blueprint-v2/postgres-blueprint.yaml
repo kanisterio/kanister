@@ -33,8 +33,8 @@ actions:
           export PGHOST='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
           export PGUSER='postgres'
           export PGPASSWORD='{{ index .Phases.pgDump.Secrets.pgSecret.Data "postgresql-password" | toString }}'
-          backup_file_path="backup.sql.gz"
-          pg_dumpall --clean -U $PGUSER | gzip -c | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
+          backup_file_path="backup.sql"
+          pg_dumpall --clean -U $PGUSER | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
   restore:
     kind: StatefulSet
     inputArtifactNames:
@@ -63,11 +63,10 @@ actions:
           export PGHOST='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
           export PGUSER='postgres'
           export PGPASSWORD='{{ index .Phases.pgRestore.Secrets.pgSecret.Data "postgresql-password" | toString }}'
-          backup_file_path="backup.sql.gz"
+          backup_file_path="backup.sql"
           kopia_snap='{{ .ArtifactsIn.pgBackup.KopiaSnapshot }}'
-          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | gunzip -c -f | psql -q -U "${PGUSER}"
+          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | psql -q -U "${PGUSER}"
   delete:
-    type: Namespace
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `pgBackup.KopiaSnapshot`
@@ -86,6 +85,6 @@ actions:
           - pipefail
           - -c
           - |
-            backup_file_path="backup.sql.gz"
+            backup_file_path="backup.sql"
             kopia_snap='{{ .ArtifactsIn.pgBackup.KopiaSnapshot }}'
             kando location delete --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}"
