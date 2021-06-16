@@ -36,6 +36,7 @@ const (
 	AzureResurceMgrEndpoint    = "AZURE_RESOURCE_MANAGER_ENDPOINT"
 	AzureMigrateStorageAccount = "AZURE_MIGRATE_STORAGE_ACCOUNT_NAME"
 	AzureMigrateStorageKey     = "AZURE_MIGRATE_STORAGE_ACCOUNT_KEY"
+	AzureMigrateResourceGroup  = "AZURE_MIGRATE_RESOURCE_GROUP"
 	AzureActiveDirEndpoint     = "AZURE_AD_ENDPOINT"
 	AzureActiveDirResourceID   = "AZURE_AD_RESOURCE"
 )
