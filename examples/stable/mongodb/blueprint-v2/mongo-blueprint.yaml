@@ -20,7 +20,7 @@ actions:
           namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.59.0
+        image: ghcr.io/kanisterio/mongodb:0.60.0
         command:
           - bash
           - -o
@@ -49,7 +49,7 @@ actions:
           namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.59.0
+        image: ghcr.io/kanisterio/mongodb:0.60.0
         command:
           - bash
           - -o
@@ -74,7 +74,7 @@ actions:
       name: deleteFromStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: ghcr.io/kanisterio/mongodb:0.59.0
+        image: ghcr.io/kanisterio/mongodb:0.60.0
         command:
           - bash
           - -o
