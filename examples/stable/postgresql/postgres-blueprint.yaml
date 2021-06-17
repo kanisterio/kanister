@@ -18,7 +18,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.59.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.60.0
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -47,7 +47,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.59.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.60.0
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -69,7 +69,7 @@ actions:
     - func: KubeTask
       name: deleteDump
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.59.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.60.0
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash
