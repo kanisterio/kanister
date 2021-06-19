@@ -36,7 +36,7 @@ func SnapshotSource(
 	sourceInfo snapshot.SourceInfo,
 	rootDir fs.Entry,
 	description string,
-) (snapID string, snapSize int64, err error) {
+) (string, int64, error) {
 	fmt.Printf("Snapshotting %v ...\n", sourceInfo)
 
 	t0 := time.Now()
@@ -76,9 +76,9 @@ func SnapshotSource(
 		return "", 0, errors.Wrap(ferr, "Failed to flush kopia repository")
 	}
 
-	snapSize = manifest.Stats.TotalFileSize
+	snapSize := manifest.Stats.TotalFileSize
 
-	fmt.Printf("\nCreated snapshot with root %v and ID %v in %v\n", manifest.RootObjectID(), snapID, time.Since(t0).Truncate(time.Second))
+	fmt.Printf("\nCreated snapshot with root %v and ID %v in %v\n", manifest.RootObjectID(), manifestID, time.Since(t0).Truncate(time.Second))
 
 	return string(manifestID), snapSize, nil
 }
