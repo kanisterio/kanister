@@ -58,7 +58,7 @@ func NewCassandraInstance(name string) App {
 			Values: map[string]string{
 				"image.registry":       "ghcr.io",
 				"image.repository":     "kanisterio/cassandra",
-				"image.tag":            "0.60.0",
+				"image.tag":            "0.61.0",
 				"image.pullPolicy":     "Always",
 				"cluster.replicaCount": "1",
 			},
