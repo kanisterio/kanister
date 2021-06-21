@@ -39,6 +39,8 @@ type App interface {
 	Object() crv1alpha1.ObjectReference
 	// Uninstall deletes an app and all it's components from a Namespace.
 	Uninstall(context.Context) error
+	// Get ClusterLevelResources for the app
+	GetClusterScopedResources(context.Context) []crv1alpha1.ObjectReference
 }
 
 // DatabaseApp inherits methods from App, but also includes method to add, read

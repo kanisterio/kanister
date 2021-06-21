@@ -137,6 +137,10 @@ func (cas *CassandraInstance) Uninstall(ctx context.Context) error {
 	return nil
 }
 
+func (cas *CassandraInstance) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 // Ping is used to ping the application to check the datbase connectivity
 func (cas *CassandraInstance) Ping(ctx context.Context) error {
 	log.Print("Pinging the application.", field.M{"app": cas.name})
