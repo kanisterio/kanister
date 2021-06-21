@@ -17,6 +17,7 @@ package param
 import (
 	"bytes"
 	"reflect"
+	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
@@ -119,6 +120,15 @@ func renderStringArg(arg string, tp TemplateParams) (string, error) {
 	}
 	buf := bytes.NewBuffer(nil)
 	if err = t.Execute(buf, tp); err != nil {
+		if strings.Contains(err.Error(), "map has no entry for key ") {
+			// Check if Error is because of undefined key,
+			// which will lead on execute error on first undefined (missingkey=error).
+			// Get the undefined key name from the error message.
+			pos := strings.LastIndex(err.Error(), "map has no entry for key ")
+			adjustedPos := pos + len("map has no entry for key ")
+			key := err.Error()[adjustedPos:len(err.Error())]
+			return "", errors.WithStack(errors.New(key + " key is undefined"))
+		}
 		return "", errors.WithStack(err)
 	}
 	return buf.String(), nil
