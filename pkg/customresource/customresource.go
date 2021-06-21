@@ -118,11 +118,23 @@ func createCRD(context Context, resource CustomResource) error {
 	if err != nil {
 		return err
 	}
-
-	_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Create(contextpkg.TODO(), crd, metav1.CreateOptions{})
+	ctx := contextpkg.Background()
+	_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, crd, metav1.CreateOptions{})
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create %s CRD. %+v", resource.Name, err)
+		}
+
+		// if CRD already exists, get the resource version and create the CRD with that resource version
+		c, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("Failed to get CRD to get resource version %s\n", err.Error())
+		}
+
+		crd.ResourceVersion = c.ResourceVersion
+		_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
+		if err != nil {
+			return fmt.Errorf("Failed to delete already present CRD %s\n", err.Error())
 		}
 	}
 	return nil
