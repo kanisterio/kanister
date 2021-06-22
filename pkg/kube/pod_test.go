@@ -44,7 +44,7 @@ type PodSuite struct {
 const (
 	testSAName         = "test-sa"
 	controllerSA       = "controller-sa"
-	kanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.61.0"
+	kanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:latest"
 )
 
 var _ = Suite(&PodSuite{})
@@ -268,7 +268,7 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 	pod, err := CreatePod(ctx, cli, &PodOptions{
 		Namespace:    s.namespace,
 		GenerateName: "test-",
-		Image:        "ghcr.io/kanisterio/kanister-tools:0.61.0",
+		Image:        "ghcr.io/kanisterio/kanister-tools:latest",
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      vols,
 	})
@@ -285,7 +285,7 @@ func (s *PodSuite) TestGetPodLogs(c *C) {
 	pod, err := CreatePod(context.Background(), s.cli, &PodOptions{
 		Namespace:    s.namespace,
 		GenerateName: "test-",
-		Image:        "ghcr.io/kanisterio/kanister-tools:0.61.0",
+		Image:        "ghcr.io/kanisterio/kanister-tools:latest",
 		Command:      []string{"sh", "-c", "echo hello"},
 	})
 	c.Assert(err, IsNil)
