@@ -165,6 +165,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 
 func (kc *KafkaCluster) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
 	return []crv1alpha1.ObjectReference{
+	// ClusterRoles
 		{
 			APIVersion: "v1",
 			Group:      "rbac.authorization.k8s.io",
@@ -201,6 +202,8 @@ func (kc *KafkaCluster) GetClusterScopedResources(ctx context.Context) []crv1alp
 			Name:       "strimzi-kafka-broker",
 			Resource:   "clusterroles",
 		},
+		
+		// ClusterRoleBindings
 		{
 			APIVersion: "v1",
 			Group:      "rbac.authorization.k8s.io",
@@ -219,6 +222,8 @@ func (kc *KafkaCluster) GetClusterScopedResources(ctx context.Context) []crv1alp
 			Name:       "strimzi-cluster-operator-kafka-client-delegation",
 			Resource:   "clusterrolebindings",
 		},
+		
+		// CRDs
 		{
 			APIVersion: "v1",
 			Group:      "apiextensions.k8s.io",

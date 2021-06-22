@@ -39,7 +39,7 @@ type App interface {
 	Object() crv1alpha1.ObjectReference
 	// Uninstall deletes an app and all it's components from a Namespace.
 	Uninstall(context.Context) error
-	// Get ClusterLevelResources for the app
+	// GetClusterScopedResources returns the list of cluster scoped k8s resources created during app Install
 	GetClusterScopedResources(context.Context) []crv1alpha1.ObjectReference
 }
 
