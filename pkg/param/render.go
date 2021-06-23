@@ -120,18 +120,24 @@ func renderStringArg(arg string, tp TemplateParams) (string, error) {
 	}
 	buf := bytes.NewBuffer(nil)
 	if err = t.Execute(buf, tp); err != nil {
+		// Check if Error is because of undefined key,
+		// which will lead on execute error on first undefined (missingkey=error).
+		// Get the undefined key name from the error message.
 		if strings.Contains(err.Error(), "map has no entry for key ") {
-			// Check if Error is because of undefined key,
-			// which will lead on execute error on first undefined (missingkey=error).
-			// Get the undefined key name from the error message.
-			pos := strings.LastIndex(err.Error(), "map has no entry for key ")
-			adjustedPos := pos + len("map has no entry for key ")
-			key := err.Error()[adjustedPos:len(err.Error())]
-			return "", errors.WithStack(errors.New(key + " key is undefined"))
+			errMsg := NewErrorMessage(err.Error(), "map has no entry for key ")
+			return "", errors.WithStack(errors.New(errMsg))
 		}
 		return "", errors.WithStack(err)
 	}
 	return buf.String(), nil
+}
+
+func NewErrorMessage(err string, value string) string {
+	pos := strings.LastIndex(err, value)
+	adjustedPos := pos + len(value)
+	key := err[adjustedPos:len(err)]
+	key = strings.Trim(key, "\"")
+	return "Error rendering template key: " + key + " is undefined"
 }
 
 // RenderObjectRefs function renders object refs from TemplateParams
