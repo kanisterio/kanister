@@ -108,7 +108,7 @@ func getCRDFromSpec(spec []byte) (*apiextensionsv1.CustomResourceDefinition, err
 func decodeSpecIntoObject(spec []byte, intoObj runtime.Object) error {
 	d := serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 	if _, _, err := d.Decode(spec, nil, intoObj); err != nil {
-		return fmt.Errorf("Failed to decode spec into object %s and spec %s\n", err.Error(), spec)
+		return fmt.Errorf("Failed to decode spec into object: %s; spec %s\n", err.Error(), spec)
 	}
 	return nil
 }
@@ -128,13 +128,13 @@ func createCRD(context Context, resource CustomResource) error {
 		// if CRD already exists, get the resource version and create the CRD with that resource version
 		c, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
 		if err != nil {
-			return fmt.Errorf("Failed to get CRD to get resource version %s\n", err.Error())
+			return fmt.Errorf("Failed to get CRD to get resource version: %s\n", err.Error())
 		}
 
 		crd.ResourceVersion = c.ResourceVersion
 		_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
 		if err != nil {
-			return fmt.Errorf("Failed to delete already present CRD %s\n", err.Error())
+			return fmt.Errorf("Failed to delete already present CRD: %s\n", err.Error())
 		}
 	}
 	return nil

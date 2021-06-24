@@ -77,14 +77,14 @@ spec:
                             description: Resource name of the referent.
                             type: string
                         type: object
-                      description: ConfigMaps that we'll get and pass into the blueprint.
+                      description: ConfigMaps that we will get and pass into the blueprint.
                       type: object
                     name:
-                      description: 'Name is the action we''ll perform. For example:
+                      description: 'Name is the action we will perform. For example:
                         backup or restore.'
                       type: string
                     object:
-                      description: Object refers to the thing we'll perform this action
+                      description: Object refers to the thing we will perform this action
                         on.
                       properties:
                         apiVersion:
@@ -165,7 +165,7 @@ spec:
                             description: Resource name of the referent.
                             type: string
                         type: object
-                      description: Secrets that we'll get and pass into the blueprint.
+                      description: Secrets that we will get and pass into the blueprint.
                       type: object
                   type: object
                 type: array
@@ -195,11 +195,11 @@ spec:
                         action.
                       type: string
                     name:
-                      description: 'Name is the action we''ll perform. For example:
+                      description: 'Name is the action we will perform. For example:
                         backup or restore.'
                       type: string
                     object:
-                      description: Object refers to the thing we'll perform this action
+                      description: Object refers to the resource we perform this action
                         on.
                       properties:
                         apiVersion:
