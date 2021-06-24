@@ -135,7 +135,7 @@ func renderStringArg(arg string, tp TemplateParams) (string, error) {
 func NewErrorMessage(err string, value string) string {
 	pos := strings.LastIndex(err, value)
 	adjustedPos := pos + len(value)
-	key := err[adjustedPos:len(err)]
+	key := err[adjustedPos:]
 	key = strings.Trim(key, "\"")
 	return "Error rendering template key: " + key + " is undefined"
 }
