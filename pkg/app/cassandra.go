@@ -58,7 +58,7 @@ func NewCassandraInstance(name string) App {
 			Values: map[string]string{
 				"image.registry":       "ghcr.io",
 				"image.repository":     "kanisterio/cassandra",
-				"image.tag":            "0.61.0",
+				"image.tag":            "latest",
 				"image.pullPolicy":     "Always",
 				"cluster.replicaCount": "1",
 			},
@@ -134,6 +134,10 @@ func (cas *CassandraInstance) Uninstall(ctx context.Context) error {
 		return errors.Wrapf(err, "Error uninstalling cassandra app.")
 	}
 	log.Print("Application was uninstalled successfully.", field.M{"app": cas.name})
+	return nil
+}
+
+func (cas *CassandraInstance) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
 	return nil
 }
 

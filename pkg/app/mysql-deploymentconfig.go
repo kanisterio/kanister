@@ -116,6 +116,10 @@ func (mdep *MysqlDepConfig) Uninstall(ctx context.Context) error {
 	return err
 }
 
+func (mdep *MysqlDepConfig) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 func (mdep *MysqlDepConfig) Ping(ctx context.Context) error {
 	log.Print("Pinging the application", field.M{"app": mdep.name})
 
