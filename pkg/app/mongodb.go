@@ -136,6 +136,10 @@ func (mongo *MongoDB) Uninstall(ctx context.Context) error {
 	return errors.Wrapf(err, "Error while uninstalling the application.")
 }
 
+func (mongo *MongoDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 func (mongo *MongoDB) Ping(ctx context.Context) error {
 	log.Print("Pinging the application.", field.M{"app": mongo.name})
 	pingCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.secondaryOk(); db\"", mongo.username)}

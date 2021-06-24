@@ -149,6 +149,10 @@ func (fdb *FoundationDB) Uninstall(ctx context.Context) error {
 	return errors.Wrapf(err, "Error uninstalling the operator. Error=%s", out)
 }
 
+func (fdb *FoundationDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 func (fdb *FoundationDB) getRunningFDBPod() (string, error) {
 	// Format of the name of the pods that get generated is
 	// helmReleaseName-sample-index

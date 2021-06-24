@@ -213,6 +213,10 @@ func (pdb PostgresDB) Uninstall(ctx context.Context) error {
 	return errors.Wrapf(cli.Uninstall(ctx, pdb.chart.Release, pdb.namespace), "Failed to uninstall %s helm release", pdb.chart.Release)
 }
 
+func (pdp *PostgresDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 func (pdb PostgresDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	// Get pod and container name
 	pod, container, err := kube.GetPodContainerFromStatefulSet(ctx, pdb.cli, pdb.namespace, pdb.getStatefulSetName())
