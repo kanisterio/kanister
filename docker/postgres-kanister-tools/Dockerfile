@@ -1,4 +1,4 @@
-FROM postgres:12.0-alpine
+FROM postgres:12.3-alpine
 LABEL maintainer="vkamra@kasten.io"
 
 ENV DEBIAN_FRONTEND noninteractive
