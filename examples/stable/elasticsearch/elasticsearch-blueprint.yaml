@@ -4,7 +4,6 @@ metadata:
   name: elasticsearch-blueprint
 actions:
   backup:
-    type: StatefulSet
     outputArtifacts:
       cloudObject:
         keyValue:
@@ -14,7 +13,7 @@ actions:
       name: backupToObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.58.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.61.0"
         command:
         - bash
         - -o
@@ -30,7 +29,6 @@ actions:
           kando location push --profile '{{ toJson .Profile }}'  /backup.gz --path $BACKUP_LOCATION
           kando output backupLocation $BACKUP_LOCATION
   restore:
-    type: StatefulSet
     inputArtifactNames:
     - cloudObject
     phases:
@@ -38,7 +36,7 @@ actions:
       name: restoreFromObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.58.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.61.0"
         command:
         - bash
         - -o
@@ -50,7 +48,6 @@ actions:
           host_name="{{ .Object.spec.serviceName }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
           kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}' - | gunzip | elasticdump --bulk=true --input=$ --output=http://${host_name}:9200
   delete:
-    type: Namespace
     inputArtifactNames:
     - cloudObject
     phases:
@@ -58,7 +55,7 @@ actions:
       name: deleteFromObjectStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.58.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.61.0"
         command:
         - bash
         - -o

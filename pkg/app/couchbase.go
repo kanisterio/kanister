@@ -244,6 +244,10 @@ func (cb CouchbaseDB) Uninstall(ctx context.Context) error {
 	return errors.Wrapf(err, "Failed to uninstall %s helm release", cb.chart.Release)
 }
 
+func (cb CouchbaseDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 func (cb CouchbaseDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	// Get pod and container name
 	podName, err := cb.getRunningCBPod()

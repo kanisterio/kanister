@@ -4,7 +4,6 @@ metadata:
   name: cassandra-blueprint
 actions:
   backup:
-    type: StatefulSet
     outputArtifacts:
       params:
         keyValue:
@@ -90,7 +89,6 @@ actions:
           - |
             rm -rf {{ .Phases.getBackupPrefixLocation.Output.localSnapshotPrefixLocation }}
   restore:
-    type: StatefulSet
     inputArtifactNames:
       - params
     phases:
@@ -105,7 +103,7 @@ actions:
       name: restoreFromObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: ghcr.io/kanisterio/kanister-tools:0.58.0
+        image: ghcr.io/kanisterio/kanister-tools:0.61.0
         backupArtifactPrefix: "{{ .ArtifactsIn.params.KeyValue.backupPrefixLocation }}"
         pods: "{{ range .StatefulSet.Pods }} {{.}}{{end}}"
         restorePath: "{{ .ArtifactsIn.params.KeyValue.restorePathPrefix }}"
@@ -173,9 +171,8 @@ actions:
                 cd ..
               done
             fi
-            rm -rf {{ .ArtifactsIn.params.KeyValue.snapshotPrefix }} 
+            rm -rf {{ .ArtifactsIn.params.KeyValue.snapshotPrefix }}
   delete:
-    type: Namespace
     inputArtifactNames:
       - params
     phases:

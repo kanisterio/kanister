@@ -74,13 +74,12 @@ actions:
               --force-updates
 
   delete:
-    type: Namespace
     phases:
     - func: KubeTask
       name: deleteBackup
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: ghcr.io/kanisterio/kanister-tools:0.58.0
+        image: ghcr.io/kanisterio/kanister-tools:0.61.0
         command:
           - bash
           - -o

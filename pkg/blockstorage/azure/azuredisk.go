@@ -125,6 +125,7 @@ func (s *AdStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot
 
 // SnapshotCopyWithArgs func: args map should contain non-empty StorageAccountName(AZURE_MIGRATE_STORAGE_ACCOUNT_NAME)
 // and StorageKey(AZURE_MIGRATE_STORAGE_ACCOUNT_KEY)
+// A destination ResourceGroup (AZURE_MIGRATE_RESOURCE_GROUP) can be provided. The created snapshot will belong to this.
 func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
 	migrateStorageAccount := args[blockstorage.AzureMigrateStorageAccount]
 	migrateStorageKey := args[blockstorage.AzureMigrateStorageKey]
@@ -225,7 +226,11 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 		},
 	}
 
-	result, err := s.azCli.SnapshotsClient.CreateOrUpdate(ctx, s.azCli.ResourceGroup, snapName, createSnap)
+	migrateResourceGroup := s.azCli.ResourceGroup
+	if val, ok := args[blockstorage.AzureMigrateResourceGroup]; ok && val != "" {
+		migrateResourceGroup = val
+	}
+	result, err := s.azCli.SnapshotsClient.CreateOrUpdate(ctx, migrateResourceGroup, snapName, createSnap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to copy snapshot from source snapshot %v", from)
 	}

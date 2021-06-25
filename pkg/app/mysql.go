@@ -128,6 +128,10 @@ func (mdb *MysqlDB) Uninstall(ctx context.Context) error {
 	return nil
 }
 
+func (mdb *MysqlDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 func (mdb *MysqlDB) Ping(ctx context.Context) error {
 	log.Print("Pinging the mysql database.", field.M{"app": mdb.name})
 

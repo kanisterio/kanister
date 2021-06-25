@@ -143,6 +143,10 @@ func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
 	return nil
 }
 
+func (esi *ElasticsearchInstance) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 func (esi *ElasticsearchInstance) Ping(ctx context.Context) error {
 	log.Print("Pinging the application to check if its accessible.", field.M{"app": esi.name})
 

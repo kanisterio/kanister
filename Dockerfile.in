@@ -1,4 +1,4 @@
-ARG base_image=registry.access.redhat.com/ubi8/ubi-minimal:8.3
+ARG base_image=registry.access.redhat.com/ubi8/ubi-minimal:8.4-200.1622548483
 FROM ${base_image}
 ARG kanister_version
 
