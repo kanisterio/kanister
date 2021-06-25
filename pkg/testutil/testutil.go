@@ -29,6 +29,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
+	"github.com/kanisterio/kanister/pkg/consts"
 )
 
 // NewTestPVC function returns a pointer to a new PVC test object
@@ -238,7 +239,7 @@ func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace, ver
 						Namespace: poNamespace,
 					},
 					Profile: &crv1alpha1.ObjectReference{
-						Kind:      crv1alpha1.ProfileResourceName,
+						Kind:      consts.ProfileResourceName,
 						Name:      TestProfileName,
 						Namespace: namespace,
 					},
