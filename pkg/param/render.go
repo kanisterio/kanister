@@ -26,6 +26,10 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
+const (
+	undefinedKeyErrorMsg = "map has no entry for key "
+)
+
 // RenderArgs function renders the arguments required for execution
 func RenderArgs(args map[string]interface{}, tp TemplateParams) (map[string]interface{}, error) {
 	ram := make(map[string]interface{}, len(args))
@@ -123,21 +127,20 @@ func renderStringArg(arg string, tp TemplateParams) (string, error) {
 		// Check if Error is because of undefined key,
 		// which will lead on execute error on first undefined (missingkey=error).
 		// Get the undefined key name from the error message.
-		if strings.Contains(err.Error(), "map has no entry for key ") {
-			errMsg := NewErrorMessage(err.Error(), "map has no entry for key ")
-			return "", errors.WithStack(errors.New(errMsg))
+		if strings.Contains(err.Error(), undefinedKeyErrorMsg) {
+			return "", newUndefinedKeyError(err.Error())
 		}
 		return "", errors.WithStack(err)
 	}
 	return buf.String(), nil
 }
 
-func NewErrorMessage(err string, value string) string {
-	pos := strings.LastIndex(err, value)
-	adjustedPos := pos + len(value)
+func newUndefinedKeyError(err string) error {
+	pos := strings.LastIndex(err, undefinedKeyErrorMsg)
+	adjustedPos := pos + len(undefinedKeyErrorMsg)
 	key := err[adjustedPos:]
 	key = strings.Trim(key, "\"")
-	return "Error rendering template key: " + key + " is undefined"
+	return errors.WithStack(errors.New("Error rendering template key: " + key + " is undefined"))
 }
 
 // RenderObjectRefs function renders object refs from TemplateParams
