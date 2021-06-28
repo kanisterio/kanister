@@ -140,7 +140,7 @@ func newUndefinedKeyError(err string) error {
 	adjustedPos := pos + len(undefinedKeyErrorMsg)
 	key := err[adjustedPos:]
 	key = strings.Trim(key, "\"")
-	return errors.WithStack(errors.New("Error rendering template key: " + key + " is undefined"))
+	return errors.WithStack(errors.New("Can't render template: key <" + key + "> Not found"))
 }
 
 // RenderObjectRefs function renders object refs from TemplateParams
