@@ -175,7 +175,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 		c.Assert(ok, Equals, true)
 	}
 
-	pods, err := s.cli.CoreV1().Pods(s.namespace).List(context.TODO(), metav1.ListOptions{})
+	pods, err := s.cli.CoreV1().Pods(s.namespace).List(ctx, metav1.ListOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(pods.Items, HasLen, 0)
 }
@@ -224,7 +224,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		c.Assert(ok, Equals, true)
 	}
 
-	pods, err := s.cli.CoreV1().Pods(s.namespace).List(context.TODO(), metav1.ListOptions{})
+	pods, err := s.cli.CoreV1().Pods(s.namespace).List(ctx, metav1.ListOptions{})
 	c.Assert(err, IsNil)
 
 	// This check can flake on underprovisioned clusters so we exit early.
