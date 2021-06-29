@@ -445,6 +445,7 @@ func parseGenericObjectReference(s string) (crv1alpha1.ObjectReference, error) {
 }
 
 func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interface, osCli osversioned.Interface, parsed map[string]bool) ([]crv1alpha1.ObjectReference, error) {
+	ctx := context.TODO()
 	var objects []crv1alpha1.ObjectReference
 	appendObj := func(kind, namespace, name string) {
 		r := fmt.Sprintf("%s=%s/%s", kind, namespace, name)
@@ -457,7 +458,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 	case "all":
 		fallthrough
 	case param.DeploymentKind:
-		dpts, err := cli.AppsV1().Deployments(sns).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+		dpts, err := cli.AppsV1().Deployments(sns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return nil, errors.Errorf("failed to get deployments using selector '%s' in namespace '%s'", selector, sns)
 		}
@@ -470,7 +471,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 		fallthrough
 	case param.DeploymentConfigKind:
 		// use open shift SDK to get the deployment config resource
-		dcs, err := osCli.AppsV1().DeploymentConfigs(sns).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+		dcs, err := osCli.AppsV1().DeploymentConfigs(sns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get deploymentconfig using select '%s' in namespaces '%s'", selector, sns)
 		}
@@ -482,7 +483,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 		}
 		fallthrough
 	case param.StatefulSetKind:
-		ss, err := cli.AppsV1().StatefulSets(sns).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+		ss, err := cli.AppsV1().StatefulSets(sns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return nil, errors.Errorf("failed to get statefulsets using selector '%s' in namespace '%s'", selector, sns)
 		}
@@ -494,7 +495,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 		}
 		fallthrough
 	case param.PVCKind:
-		pvcs, err := cli.CoreV1().PersistentVolumeClaims(sns).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+		pvcs, err := cli.CoreV1().PersistentVolumeClaims(sns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return nil, errors.Errorf("failed to get pvcs using selector '%s' in namespace '%s'", selector, sns)
 		}
@@ -502,7 +503,7 @@ func parseObjectsFromSelector(selector, kind, sns string, cli kubernetes.Interfa
 			appendObj(param.PVCKind, pvc.Namespace, pvc.Name)
 		}
 	case param.NamespaceKind:
-		namespaces, err := cli.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+		namespaces, err := cli.CoreV1().Namespaces().List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return nil, errors.Errorf("failed to get namespaces using selector '%s' '", selector)
 		}
