@@ -78,7 +78,7 @@ func (s *KubeExecTest) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx.TODO(), p, metav1.CreateOptions{})
+	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 }
 

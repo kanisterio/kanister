@@ -61,7 +61,7 @@ func (s *KubeExecAllTest) SetUpSuite(c *C) {
 	s.cli = cli
 	s.crCli = crCli
 	s.osCli = osCli
-    
+
 	ctx := context.TODO()
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{

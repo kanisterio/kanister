@@ -532,7 +532,7 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 }
 
 func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
-    ctx := context.TODO()
+	ctx := context.TODO()
 	// Create a blueprint that uses func output as kopia snapshot
 	bp := newBPWithKopiaSnapshotOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
@@ -564,7 +564,7 @@ func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
 }
 
 func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
-    ctx := context.TODO()
+	ctx := context.TODO()
 	// Create a blueprint that uses func output as artifact
 	bp := newBPWithOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)

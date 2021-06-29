@@ -84,7 +84,7 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 	suffix := strconv.Itoa(int(time.Now().UnixNano() % 100000))
 	s.sourceNamespace = "snapshot-test-source-" + suffix
 	s.targetNamespace = "snapshot-test-target-" + suffix
-    ctx := context.TODO()
+	ctx := context.TODO()
 	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
 	s.cli = cli

@@ -360,7 +360,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 	c.Assert(err, IsNil)
 	c.Assert(cm, NotNil)
 
-    ctx := context.TODO()	
+	ctx := context.TODO()
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "secret-name",
