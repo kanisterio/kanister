@@ -37,6 +37,7 @@ var _ = Suite(&PodWriteSuite{})
 
 func (p *PodWriteSuite) SetUpSuite(c *C) {
 	var err error
+	contxt := context.TODO()
 	p.cli, err = NewClient()
 	c.Assert(err, IsNil)
 	ns := &v1.Namespace{
@@ -44,7 +45,7 @@ func (p *PodWriteSuite) SetUpSuite(c *C) {
 			GenerateName: "podwritertest-",
 		},
 	}
-	ns, err = p.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	ns, err = p.cli.CoreV1().Namespaces().Create(contxt, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	p.namespace = ns.Name
 	pod := &v1.Pod{
@@ -59,7 +60,7 @@ func (p *PodWriteSuite) SetUpSuite(c *C) {
 			},
 		},
 	}
-	p.pod, err = p.cli.CoreV1().Pods(p.namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
+	p.pod, err = p.cli.CoreV1().Pods(p.namespace).Create(contxt, pod, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()

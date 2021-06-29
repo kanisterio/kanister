@@ -238,12 +238,13 @@ func getVolStatus(p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 // 	1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
 // 2. if PVC not present then wait for timeout
 func checkPVCAndPVStatus(vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
+	ctx := context.TODO()
 	if vol.VolumeSource.PersistentVolumeClaim == nil {
 		// wait for timeout
 		return nil
 	}
 	pvcName := vol.VolumeSource.PersistentVolumeClaim.ClaimName
-	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(context.TODO(), pvcName, metav1.GetOptions{})
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(errors.Cause(err)) {
 			// Do not return err, wait for timeout, since sometimes in case of statefulsets, they trigger creation of a volume
@@ -262,7 +263,7 @@ func checkPVCAndPVStatus(vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, nam
 			// wait for timeout
 			return nil
 		}
-		pv, err := cli.CoreV1().PersistentVolumes().Get(context.TODO(), pvName, metav1.GetOptions{})
+		pv, err := cli.CoreV1().PersistentVolumes().Get(ctx, pvName, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(errors.Cause(err)) {
 				// wait for timeout

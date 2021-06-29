@@ -50,7 +50,8 @@ func (sna *SnapshotBeta) CloneVolumeSnapshotClass(sourceClassName, targetClassNa
 }
 
 func cloneSnapshotClass(dynCli dynamic.Interface, snapClassGVR schema.GroupVersionResource, sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
-	usSourceSnapClass, err := dynCli.Resource(snapClassGVR).Get(context.TODO(), sourceClassName, metav1.GetOptions{})
+	ctx := context.TODO()
+	usSourceSnapClass, err := dynCli.Resource(snapClassGVR).Get(ctx, sourceClassName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to find source VolumeSnapshotClass: %s", sourceClassName)
 	}
@@ -67,7 +68,7 @@ func cloneSnapshotClass(dynCli dynamic.Interface, snapClassGVR schema.GroupVersi
 	// Set Annotations/Labels
 	usNew.SetAnnotations(existingAnnotations)
 	usNew.SetLabels(map[string]string{CloneVolumeSnapshotClassLabelName: sourceClassName})
-	if _, err = dynCli.Resource(snapClassGVR).Create(context.TODO(), usNew, metav1.CreateOptions{}); !apierrors.IsAlreadyExists(err) {
+	if _, err = dynCli.Resource(snapClassGVR).Create(ctx, usNew, metav1.CreateOptions{}); !apierrors.IsAlreadyExists(err) {
 		return errors.Wrapf(err, "Failed to create VolumeSnapshotClass: %s", targetClassName)
 	}
 	return nil

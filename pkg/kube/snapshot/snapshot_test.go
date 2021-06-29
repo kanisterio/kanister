@@ -84,7 +84,7 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 	suffix := strconv.Itoa(int(time.Now().UnixNano() % 100000))
 	s.sourceNamespace = "snapshot-test-source-" + suffix
 	s.targetNamespace = "snapshot-test-target-" + suffix
-
+    ctx := context.TODO()
 	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
 	s.cli = cli
@@ -104,7 +104,7 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 	s.snapshotClassBeta = &snapClassBeta
 	snapClassStable, driverStable := findSnapshotClassName(c, s.dynCli, snapshot.VolSnapClassGVR, snapv1.VolumeSnapshotClass{})
 	s.snapshotClassStable = &snapClassStable
-	storageClasses, err := cli.StorageV1().StorageClasses().List(context.TODO(), metav1.ListOptions{})
+	storageClasses, err := cli.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
 	c.Assert(err, IsNil)
 	for _, class := range storageClasses.Items {
 		if class.Provisioner == driverAlpha && *class.VolumeBindingMode == scv1.VolumeBindingImmediate {
@@ -118,10 +118,10 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 		}
 	}
 
-	_, err = cli.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s.sourceNamespace}}, metav1.CreateOptions{})
+	_, err = cli.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s.sourceNamespace}}, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
-	_, err = cli.CoreV1().Namespaces().Create(context.TODO(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s.targetNamespace}}, metav1.CreateOptions{})
+	_, err = cli.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s.targetNamespace}}, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 }
 
@@ -179,6 +179,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *C) {
 }
 
 func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
+	ctx := context.TODO()
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
@@ -221,13 +222,13 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
 			annotationKeyToKeep:   "true",
 			annotationKeyToRemove: "true",
 		})
-		_, err := dynCli.Resource(tc.snapClassGVR).Create(context.TODO(), tc.sourceSnapClassSpec, metav1.CreateOptions{})
+		_, err := dynCli.Resource(tc.snapClassGVR).Create(ctx, tc.sourceSnapClassSpec, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 		err = tc.snapshotter.CloneVolumeSnapshotClass(tc.sourceSnapClassSpec.GetName(), "targetClass", snapshot.DeletionPolicyRetain, []string{annotationKeyToRemove})
 		c.Assert(err, IsNil)
 
 		// New VSC exists
-		createdVSC, err := dynCli.Resource(tc.snapClassGVR).Get(context.TODO(), "targetClass", metav1.GetOptions{})
+		createdVSC, err := dynCli.Resource(tc.snapClassGVR).Get(ctx, "targetClass", metav1.GetOptions{})
 		c.Assert(err, IsNil)
 
 		// Annotations are set correctly
@@ -246,6 +247,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
 }
 
 func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
+	ctx := context.TODO()
 	fakeSnapshotName := "snap-1-fake"
 	fakeContentName := "snapcontent-1-fake"
 	deletionPolicy := "Delete"
@@ -306,11 +308,11 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 			"boundVolumeSnapshotContentName": fakeContentName,
 			"creationTime":                   metav1.Now().Format("2006-01-02T15:04:05Z"),
 		}
-		_, err := dynCli.Resource(tc.snapClassGVR).Create(context.TODO(), tc.snapClassSpec, metav1.CreateOptions{})
+		_, err := dynCli.Resource(tc.snapClassGVR).Create(ctx, tc.snapClassSpec, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
-		_, err = dynCli.Resource(tc.snapGVR).Namespace(defaultNamespace).Create(context.TODO(), tc.snapSpec, metav1.CreateOptions{})
+		_, err = dynCli.Resource(tc.snapGVR).Namespace(defaultNamespace).Create(ctx, tc.snapSpec, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
-		_, err = dynCli.Resource(tc.contentGVR).Create(context.TODO(), tc.contentSpec, metav1.CreateOptions{})
+		_, err = dynCli.Resource(tc.contentGVR).Create(ctx, tc.contentSpec, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
 		_, err = tc.fakeSs.Get(context.Background(), fakeSnapshotName, defaultNamespace)
@@ -322,7 +324,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		clone, err := tc.fakeSs.Get(context.Background(), fakeClone, fakeTargetNamespace)
 		c.Assert(err, IsNil)
 
-		us, err := dynCli.Resource(tc.contentGVR).Get(context.TODO(), *clone.Spec.Source.VolumeSnapshotContentName, metav1.GetOptions{})
+		us, err := dynCli.Resource(tc.contentGVR).Get(ctx, *clone.Spec.Source.VolumeSnapshotContentName, metav1.GetOptions{})
 		c.Assert(err, IsNil)
 		err = snapshot.TransformUnstructured(us, tc.snapContentObject)
 		c.Assert(err, IsNil)
@@ -487,7 +489,8 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 }
 
 func (s *SnapshotTestSuite) cleanupNamespace(c *C, ns string) {
-	pvcs, erra := s.cli.CoreV1().PersistentVolumeClaims(ns).List(context.TODO(), metav1.ListOptions{})
+	ctx := context.TODO()
+	pvcs, erra := s.cli.CoreV1().PersistentVolumeClaims(ns).List(ctx, metav1.ListOptions{})
 	if erra != nil {
 		c.Logf("Failed to list PVCs, Namespace: %s, Error: %v", ns, erra)
 	} else {
@@ -499,7 +502,7 @@ func (s *SnapshotTestSuite) cleanupNamespace(c *C, ns string) {
 		}
 	}
 
-	vss, errb := s.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
+	vss, errb := s.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(ns).List(ctx, metav1.ListOptions{})
 	if errb != nil {
 		c.Logf("Failed to list snapshots, Namespace: %s, Error: %v", ns, errb)
 	} else {
@@ -843,15 +846,16 @@ func (tc snapshotClassTC) testGetSnapshotClass(c *C, dynCli dynamic.Interface, f
 }
 
 func findSnapshotClassName(c *C, dynCli dynamic.Interface, gvr schema.GroupVersionResource, object interface{}) (string, string) {
+	ctx := context.TODO()
 	// Find alpha VolumeSnapshotClass name
-	us, err := dynCli.Resource(gvr).List(context.TODO(), metav1.ListOptions{})
+	us, err := dynCli.Resource(gvr).List(ctx, metav1.ListOptions{})
 	if err != nil && !k8errors.IsNotFound(err) {
 		c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
 		c.Fail()
 	}
 	var snapshotterName, snapshotClass string
 	if (us != nil) && len(us.Items) != 0 {
-		usClass, err := dynCli.Resource(gvr).Get(context.TODO(), us.Items[0].GetName(), metav1.GetOptions{})
+		usClass, err := dynCli.Resource(gvr).Get(ctx, us.Items[0].GetName(), metav1.GetOptions{})
 		if err != nil {
 			c.Logf("Failed to get VolumeSnapshotClass, skipping test. Error: %v", err)
 			c.Fail()
