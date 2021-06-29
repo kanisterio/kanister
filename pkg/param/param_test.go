@@ -360,7 +360,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 	c.Assert(err, IsNil)
 	c.Assert(cm, NotNil)
 
-	ctx := context.TODO()
+	contxt := context.TODO()
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "secret-name",
@@ -389,21 +389,21 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 			},
 		},
 	}
-	_, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, secret, metav1.CreateOptions{})
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Create(contxt, secret, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
 		_ = s.cli.CoreV1().Secrets(s.namespace).Delete(context.TODO(), "secret-name", metav1.DeleteOptions{})
 	}()
 
-	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(ctx, "secret-name", metav1.GetOptions{})
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(contxt, "secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	osCli := osfake.NewSimpleClientset()
 
 	crCli := crfake.NewSimpleClientset()
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, prof, metav1.CreateOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(contxt, prof, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get(ctx, "profName", metav1.GetOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get(contxt, "profName", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	as := crv1alpha1.ActionSpec{
