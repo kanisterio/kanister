@@ -234,13 +234,14 @@ func (s *ParamsSuite) TestFetchDeploymentConfigParams(c *C) {
 	c.Assert(err, IsNil)
 
 	// get again achieve optimistic concurrency
-	newDep, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Get(context.TODO(), dc.Name, metav1.GetOptions{})
+	contxt := context.TODO()
+	newDep, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Get(contxt, dc.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	// edit the deploymentconfig
 	newDep.Spec.Template.Spec.Containers[0].Name = "newname"
 	// update the deploymentconfig
-	updatedDC, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Update(context.TODO(), newDep, metav1.UpdateOptions{})
+	updatedDC, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Update(contxt, newDep, metav1.UpdateOptions{})
 	c.Assert(err, IsNil)
 
 	// once updated, it will take some time to new replicationcontroller and pods to be up and running
@@ -257,11 +258,11 @@ func (s *ParamsSuite) TestFetchDeploymentConfigParams(c *C) {
 	c.Assert(dconf.Containers, DeepEquals, [][]string{{"newname"}})
 
 	// let's scale the deployment config and try things
-	dConfig, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Get(context.TODO(), dc.Name, metav1.GetOptions{})
+	dConfig, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Get(contxt, dc.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	// scale the replicas to 3
 	dConfig.Spec.Replicas = 3
-	updated, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Update(context.TODO(), dConfig, metav1.UpdateOptions{})
+	updated, err := s.osCli.AppsV1().DeploymentConfigs(s.namespace).Update(contxt, dConfig, metav1.UpdateOptions{})
 	c.Assert(err, IsNil)
 	// wait for deploymentconfig to be ready
 	err = kube.WaitOnDeploymentConfigReady(ctx, s.osCli, s.cli, s.namespace, updated.Name)
@@ -359,6 +360,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 	c.Assert(err, IsNil)
 	c.Assert(cm, NotNil)
 
+    ctx := context.TODO()	
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "secret-name",
@@ -387,21 +389,21 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 			},
 		},
 	}
-	_, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, secret, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
 		_ = s.cli.CoreV1().Secrets(s.namespace).Delete(context.TODO(), "secret-name", metav1.DeleteOptions{})
 	}()
 
-	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(context.TODO(), "secret-name", metav1.GetOptions{})
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(ctx, "secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	osCli := osfake.NewSimpleClientset()
 
 	crCli := crfake.NewSimpleClientset()
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), prof, metav1.CreateOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, prof, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get(context.TODO(), "profName", metav1.GetOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get(ctx, "profName", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
 	as := crv1alpha1.ActionSpec{
@@ -530,13 +532,14 @@ func (s *ParamsSuite) TestProfile(c *C) {
 			"value": []byte("myValue"),
 		},
 	}
+	contxt := context.TODO()
 	cli := fake.NewSimpleClientset(ss, pod, secret)
 	dynCli := fakedyncli.NewSimpleDynamicClient(scheme.Scheme, ss)
-	_, err := cli.AppsV1().StatefulSets("").List(context.TODO(), metav1.ListOptions{})
+	_, err := cli.AppsV1().StatefulSets("").List(contxt, metav1.ListOptions{})
 	c.Assert(err, IsNil)
-	_, err = cli.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+	_, err = cli.CoreV1().Pods("").List(contxt, metav1.ListOptions{})
 	c.Assert(err, IsNil)
-	_, err = cli.CoreV1().Secrets("").List(context.TODO(), metav1.ListOptions{})
+	_, err = cli.CoreV1().Secrets("").List(contxt, metav1.ListOptions{})
 	c.Assert(err, IsNil)
 
 	prof := &crv1alpha1.Profile{
@@ -579,13 +582,13 @@ func (s *ParamsSuite) TestProfile(c *C) {
 		},
 	}
 	crCli := crfake.NewSimpleClientset()
-	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).Create(contxt, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).List(context.TODO(), metav1.ListOptions{})
+	_, err = crCli.CrV1alpha1().ActionSets(s.namespace).List(contxt, metav1.ListOptions{})
 	c.Assert(err, IsNil)
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), prof, metav1.CreateOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(contxt, prof, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).List(context.TODO(), metav1.ListOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).List(contxt, metav1.ListOptions{})
 	c.Assert(err, IsNil)
 
 	osCli := osfake.NewSimpleClientset()
@@ -608,6 +611,7 @@ func (s *ParamsSuite) TestProfile(c *C) {
 
 func (s *ParamsSuite) TestParamsWithoutProfile(c *C) {
 	ctx := context.Background()
+	contxt := context.TODO()
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "secret-name",
@@ -619,16 +623,16 @@ func (s *ParamsSuite) TestParamsWithoutProfile(c *C) {
 			"value": []byte("myValue"),
 		},
 	}
-	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
+	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(contxt, secret, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
 		_ = s.cli.CoreV1().Secrets(s.namespace).Delete(context.TODO(), "secret-name", metav1.DeleteOptions{})
 	}()
 
-	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(context.TODO(), "secret-name", metav1.GetOptions{})
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(contxt, "secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
-	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(context.TODO(), s.pvc, metav1.GetOptions{})
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(contxt, s.pvc, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	dynCli := s.getDynamicClient(c, pvc)
 	crCli := crfake.NewSimpleClientset()
@@ -653,6 +657,7 @@ func (s *ParamsSuite) TestParamsWithoutProfile(c *C) {
 
 func (s *ParamsSuite) TestPhaseParams(c *C) {
 	ctx := context.Background()
+	contxt := context.TODO()
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "secret-name",
@@ -681,23 +686,23 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 			},
 		},
 	}
-	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), secret, metav1.CreateOptions{})
+	secret, err := s.cli.CoreV1().Secrets(s.namespace).Create(contxt, secret, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
 		_ = s.cli.CoreV1().Secrets(s.namespace).Delete(context.TODO(), "secret-name", metav1.DeleteOptions{})
 	}()
 
-	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(context.TODO(), "secret-name", metav1.GetOptions{})
+	_, err = s.cli.CoreV1().Secrets(s.namespace).Get(contxt, "secret-name", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
-	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(context.TODO(), s.pvc, metav1.GetOptions{})
+	pvc, err := s.cli.CoreV1().PersistentVolumeClaims(s.namespace).Get(contxt, s.pvc, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	dynCli := s.getDynamicClient(c, pvc)
 	crCli := crfake.NewSimpleClientset()
 	osCli := osfake.NewSimpleClientset()
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), prof, metav1.CreateOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(contxt, prof, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get(context.TODO(), "profName", metav1.GetOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Get(contxt, "profName", metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	as := crv1alpha1.ActionSpec{
 		Object: crv1alpha1.ObjectReference{
