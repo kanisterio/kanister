@@ -57,7 +57,7 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 	s.cli = cli
 	s.crCli = crCli
 	s.osCli = osCli
-
+	ctx := context.TODO()
 	err = resource.CreateCustomResources(context.Background(), config)
 	c.Assert(err, IsNil)
 
@@ -66,16 +66,16 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 			GenerateName: "kanister-scale-test-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), sec, metav1.CreateOptions{})
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), p, metav1.CreateOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 }
 
