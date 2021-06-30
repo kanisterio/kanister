@@ -15,12 +15,13 @@
 package kube
 
 import (
-	"bytes"
 	"io"
+	"io/ioutil"
 	"net/url"
-	"strings"
+	"sync"
 
-	"k8s.io/api/core/v1"
+	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
@@ -59,6 +60,40 @@ func Exec(cli kubernetes.Interface, namespace, pod, container string, command []
 // returning stdout, stderr and error. `options` allowed for
 // additional parameters to be passed.
 func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string, string, error) {
+	config, err := LoadConfig()
+	if err != nil {
+		return "", "", err
+	}
+	o, e, errCh := execStream(kubeCli, config, options)
+	defer func() { _ = o.Close() }()
+	defer func() { _ = e.Close() }()
+
+	var stdout []byte
+	var oerr error
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		stdout, oerr = ioutil.ReadAll(o)
+		if oerr != nil {
+			log.Info("Failed to read stdout:", oerr.Error())
+		}
+		wg.Done()
+	}()
+
+	var stderr []byte
+	var eerr error
+	go func() {
+		stderr, eerr = ioutil.ReadAll(e)
+		if eerr != nil {
+			log.Info("Failed to read stderr:", eerr.Error())
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	return string(stdout), string(stderr), <-errCh
+}
+
+func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options ExecOptions) (io.ReadCloser, io.ReadCloser, chan error) {
 	const tty = false
 	req := kubeCli.CoreV1().RESTClient().Post().
 		Resource("pods").
@@ -80,14 +115,16 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 		TTY:       tty,
 	}, scheme.ParameterCodec)
 
-	config, err := LoadConfig()
-	if err != nil {
-		return "", "", err
-	}
-
-	var stdout, stderr bytes.Buffer
-	err = execute("POST", req.URL(), config, options.Stdin, &stdout, &stderr, tty)
-	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
+	pro, pwo := io.Pipe()
+	pre, pwe := io.Pipe()
+	errCh := make(chan error, 1)
+	go func() {
+		err := execute("POST", req.URL(), config, options.Stdin, pwo, pwe, tty)
+		errCh <- err
+		_ = pwo.Close()
+		_ = pwe.Close()
+	}()
+	return pro, pre, errCh
 }
 
 func execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {
