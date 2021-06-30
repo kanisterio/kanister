@@ -15,6 +15,7 @@
 package param
 
 import (
+	"fmt"
 	"bytes"
 	"reflect"
 	"strings"
@@ -138,7 +139,7 @@ func renderStringArg(arg string, tp TemplateParams) (string, error) {
 func newUndefinedKeyError(err string) error {
 	pos := strings.LastIndex(err, undefinedKeyErrorMsg)
 	adjustedPos := pos + len(undefinedKeyErrorMsg)
-	key = strings.Trim(err[adjustedPos:], "\"")
+	key := strings.Trim(err[adjustedPos:], "\"")
 	return errors.WithStack(errors.New(fmt.Sprintf("Can't render template: \"%s\" Not found", key)))
 }
 
