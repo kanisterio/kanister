@@ -15,8 +15,8 @@
 package param
 
 import (
-	"fmt"
 	"bytes"
+	"fmt"
 	"reflect"
 	"strings"
 	"text/template"
