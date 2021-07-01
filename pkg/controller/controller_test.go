@@ -437,7 +437,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 
 func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	c.Skip("This may not work in MiniKube")
-	contxt := context.TODO()
+	ctx := context.Background()
 	// Create ActionSet
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -451,7 +451,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 			},
 		},
 	}
-	as, err := s.crCli.ActionSets(s.namespace).Create(contxt, as, metav1.CreateOptions{})
+	as, err := s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	msg := "Unit testing event logs"
 	reason := "Test Logs"
@@ -461,11 +461,10 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 
 	// Create Blueprint
 	bp := testutil.NewTestBlueprint("StatefulSet", testutil.WaitFuncName)
-	bp, err = s.crCli.Blueprints(s.namespace).Create(contxt, bp, metav1.CreateOptions{})
+	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	//Test the logAndErrorEvent function
-	ctx := context.Background()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	config, err := kube.LoadConfig()
 	c.Assert(err, IsNil)

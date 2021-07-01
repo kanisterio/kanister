@@ -36,8 +36,7 @@ func (s *WorkloadSuite) TestScaleDeploymentConfig(c *C) {
 			GenerateName: "dc-scale-test-",
 		},
 	}
-	contxt := context.TODO()
-	ns, err = cli.CoreV1().Namespaces().Create(contxt, ns, metav1.CreateOptions{})
+	ns, err = cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
 		err = cli.CoreV1().Namespaces().Delete(context.TODO(), ns.GetName(), metav1.DeleteOptions{})
@@ -48,7 +47,7 @@ func (s *WorkloadSuite) TestScaleDeploymentConfig(c *C) {
 	dc := newDeploymentConfig()
 	osCli, err := osversioned.NewForConfig(cfg)
 	c.Assert(err, IsNil)
-	dc, err = osCli.AppsV1().DeploymentConfigs(ns.GetName()).Create(contxt, dc, metav1.CreateOptions{})
+	dc, err = osCli.AppsV1().DeploymentConfigs(ns.GetName()).Create(ctx, dc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = ScaleDeploymentConfig(ctx, cli, osCli, dc.GetNamespace(), dc.GetName(), 0)
