@@ -22,7 +22,7 @@ jobs:
       services:
       - docker
       script:
-      - make release-snapshot; export EXIT_STATUS=$?
+      - make release-snapshot; export EXIT_STATUS=$? &&
       # Push images if PR is merged to master
       - |
         if [[ "$EXIT_STATUS" -eq 0 ]] && [[ "$TRAVIS_BRANCH" == "master" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
