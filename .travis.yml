@@ -22,6 +22,7 @@ jobs:
       services:
       - docker
       script:
+      - set -ev  
       - make release-snapshot; export EXIT_STATUS=$? &&
       # Push images if PR is merged to master
       - |
