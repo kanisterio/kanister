@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 USER root
 
-RUN apk -v --update add --no-cache curl python3 groff less jq && \
+RUN apk -v --update add --no-cache curl python3 groff less jq py-pip && \
     pip3 install --upgrade pip && \
     pip3 install --upgrade awscli && \
     rm -f /var/cache/apk/*
