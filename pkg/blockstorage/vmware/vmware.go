@@ -40,7 +40,6 @@ const (
 	noDescription     = ""
 	defaultWaitTime   = 10 * time.Minute
 	defaultRetryLimit = 30 * time.Minute
-	invalidStateError = "The operation is not allowed in the current state"
 )
 
 // FcdProvider provides blockstorage.Provider
