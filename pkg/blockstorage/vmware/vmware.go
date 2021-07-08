@@ -242,10 +242,25 @@ func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 		log.Debug().Print("Started SnapshotDelete task", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
 		_, lerr = task.Wait(ctx, defaultWaitTime)
 		if lerr != nil {
-			if strings.Contains(lerr.Error(), invalidStateError) {
-				log.Debug().Print("Retrying SnapshotDelete task", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
-				// retry operation
-				return false, nil
+			// The following error handling was pulled from https://github.com/vmware-tanzu/astrolabe/blob/91eeed4dcf77edd1387a25e984174f159d66fedb/pkg/ivd/ivd_protected_entity.go#L433
+			if soap.IsVimFault(lerr) {
+				switch soap.ToVimFault(err).(type) {
+				case *types.InvalidArgument:
+					log.Debug().WithError(err).Print("Disk doesn't have given snapshot due to the snapshot stamp was removed in the previous DeleteSnapshot operation which failed with InvalidState fault. And it will be resolved by the next snapshot operation on the same VM. Will NOT retry")
+					return true, nil
+				case *types.NotFound:
+					log.Debug().WithError(err).Print("There is a temporary catalog mismatch due to a race condition with one another concurrent DeleteSnapshot operation. And it will be resolved by the next consolidateDisks operation on the same VM. Will NOT retry")
+					return true, nil
+				case *types.InvalidState:
+					log.Debug().WithError(err).Print("There is some operation, other than this DeleteSnapshot invocation, on the same VM still being protected by its VM state. Will retry")
+					return false, nil
+				case *types.TaskInProgress:
+					log.Debug().WithError(err).Print("There is some other InProgress operation on the same VM. Will retry")
+					return false, nil
+				case *types.FileLocked:
+					log.Debug().WithError(err).Print("An error occurred while consolidating disks: Failed to lock the file. Will retry")
+					return false, nil
+				}
 			}
 			return false, errors.Wrap(lerr, "Failed to wait on task")
 		}
