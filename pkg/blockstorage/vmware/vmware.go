@@ -197,10 +197,10 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 					log.Error().WithError(lerr).Print("There is some operation, other than this CreateSnapshot invocation, on the VM attached still being protected by its VM state. Will retry")
 					return false, nil
 				case *vslmtypes.VslmSyncFault:
-					log.Error().WithError(lerr).Print("CreateSnapshot failed with VslmSyncFault possibly due to race between concurrent DeleteSnapshot invocation. Will retry")
+					log.Error().WithError(lerr).Print("CreateSnapshot failed with VslmSyncFault error possibly due to race between concurrent DeleteSnapshot invocation. Will retry")
 					return false, nil
 				case *types.NotFound:
-					log.Error().WithError(lerr).Print("CreateSnapshot failed with NotFound. Will retry")
+					log.Error().WithError(lerr).Print("CreateSnapshot failed with NotFound error. Will retry")
 					return false, nil
 				}
 			}
