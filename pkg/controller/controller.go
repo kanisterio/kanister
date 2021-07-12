@@ -25,9 +25,9 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 	"sync"
 	"time"
-	"strconv"
 
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
 	"github.com/pkg/errors"
@@ -354,7 +354,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 		return errors.WithStack(err)
 	}
 	iv := getEnvAsIntOrDefault("ACTIONSET_TIMEOUT", 30)
-	ctx, cancel:= context.WithTimeout(context.Background(), time.Duration(iv) * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(iv)*time.Second)
 	defer cancel()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	log.Print(string(iv))
