@@ -343,7 +343,6 @@ func (c *Controller) initialActionStatus(namespace string, a crv1alpha1.ActionSp
 }
 
 func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
-	log.Print("In Handle actionset ")
 	if as.Status == nil {
 		return errors.New("ActionSet was not initialized")
 	}
@@ -354,7 +353,6 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.TODO(), as, v1.UpdateOptions{}); err != nil {
 		return errors.WithStack(err)
 	}
-	log.Print("In Running state ")
 	iv := getEnvAsIntOrDefault("ACTIONSET_TIMEOUT", 30)
 	ctx, cancel:= context.WithTimeout(context.Background(), time.Duration(iv) * time.Second)
 	defer cancel()
@@ -364,8 +362,6 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 		if err = c.runAction(ctx, as, i); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
-			log.Print("Some error in run action ")
-			log.Print(string(iv))
 			bpName := as.Spec.Actions[i].Blueprint
 			bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, bpName, v1.GetOptions{})
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[i].Name)
