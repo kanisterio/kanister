@@ -23,8 +23,11 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"sync"
+	"time"
+	"strconv"
 
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
 	"github.com/pkg/errors"
@@ -340,6 +343,7 @@ func (c *Controller) initialActionStatus(namespace string, a crv1alpha1.ActionSp
 }
 
 func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
+	log.Print("In Handle actionset ")
 	if as.Status == nil {
 		return errors.New("ActionSet was not initialized")
 	}
@@ -350,12 +354,18 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.TODO(), as, v1.UpdateOptions{}); err != nil {
 		return errors.WithStack(err)
 	}
-	ctx := context.Background()
+	log.Print("In Running state ")
+	iv := getEnvAsIntOrDefault("ACTIONSET_TIMEOUT", 30)
+	ctx, cancel:= context.WithTimeout(context.Background(), time.Duration(iv) * time.Second)
+	defer cancel()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
+	log.Print(string(iv))
 	for i := range as.Status.Actions {
 		if err = c.runAction(ctx, as, i); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
+			log.Print("Some error in run action ")
+			log.Print(string(iv))
 			bpName := as.Spec.Actions[i].Blueprint
 			bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, bpName, v1.GetOptions{})
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[i].Name)
@@ -371,6 +381,18 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	}
 	log.WithContext(ctx).Print("Created actionset and started executing actions", field.M{"NewActionSetName": as.GetName()})
 	return nil
+}
+
+func getEnvAsIntOrDefault(envKey string, def int) int {
+	if v, ok := os.LookupEnv(envKey); ok {
+		iv, err := strconv.Atoi(v)
+		if err == nil {
+			return iv
+		}
+		log.WithError(err)
+	}
+
+	return def
 }
 
 // nolint:gocognit

@@ -19,6 +19,9 @@ spec:
       - name: {{ template "kanister-operator.fullname" . }}
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: "ACTIONSET_TIMEOUT"
+          value: {{ .Values.actionSetTimeout | quote }}
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}
