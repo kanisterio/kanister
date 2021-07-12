@@ -23,4 +23,4 @@ resources:
 #  cpu: 100m
 #  memory: 128Mi
 
-actionSetTimeout : 2
+actionSetTimeout : 300
