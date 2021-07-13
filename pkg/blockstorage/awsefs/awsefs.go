@@ -31,6 +31,8 @@ import (
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	kantags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 type efs struct {
@@ -53,6 +55,7 @@ const (
 	efsType            = "EFS"
 	k10BackupVaultName = "k10vault"
 	testMarker         = ""
+	EfsMountPathKey    = "mountPath"
 
 	maxRetries = 10
 )
@@ -64,6 +67,7 @@ var allowedMetadataKeys = map[string]bool{
 	"PerformanceMode": true,
 	"CreationToken":   true,
 	"newFileSystem":   true,
+	"ItemsToRestore":  true,
 }
 
 // NewEFSProvider retuns a blockstorage provider for AWS EFS.
@@ -150,6 +154,9 @@ func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorag
 	}
 	// Add some metadata which are necessary for EFS restore to function properly.
 	filteredTags = kantags.Union(filteredTags, efsRestoreTags())
+	if mountPath, ok := snapshot.Volume.Attributes[EfsMountPathKey]; ok {
+		filteredTags["ItemsToRestore"] = fmt.Sprintf("[\"%s\"]", mountPath)
+	}
 
 	req := &backup.StartRestoreJobInput{}
 	req.SetIamRoleArn(awsDefaultServiceBackupRole(e.accountID))
@@ -189,7 +196,14 @@ func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorag
 	if err = e.createMountTargets(ctx, fsID, mountTargets); err != nil {
 		return nil, errors.Wrap(err, "Failed to create mount targets")
 	}
-	return e.VolumeGet(ctx, fsID, "")
+	volume, err := e.VolumeGet(ctx, fsID, "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get filesystem (%s)", fsID)
+	}
+	if mountPath, ok := snapshot.Volume.Attributes[EfsMountPathKey]; ok {
+		volume.Attributes[EfsMountPathKey] = mountPath
+	}
+	return volume, nil
 }
 
 func efsRestoreTags() map[string]string {
@@ -315,10 +329,11 @@ func (e *efs) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) err
 	return err
 }
 
-func (e *efs) getMountTargets(ctx context.Context, fsID string) ([]*awsefs.MountTargetDescription, error) {
+func (e *efs) getMountTargets(ctx context.Context, volumeID string) ([]*awsefs.MountTargetDescription, error) {
 	mts := make([]*awsefs.MountTargetDescription, 0)
 	for resp, req := emptyResponseRequestForMountTargets(); resp.NextMarker != nil; req.Marker = resp.NextMarker {
 		var err error
+		fsID, _ := getIDs(volumeID)
 		req.SetFileSystemId(fsID)
 		resp, err = e.DescribeMountTargetsWithContext(ctx, req)
 		if err != nil {
@@ -327,6 +342,14 @@ func (e *efs) getMountTargets(ctx context.Context, fsID string) ([]*awsefs.Mount
 		mts = append(mts, resp.MountTargets...)
 	}
 	return mts, nil
+}
+
+func getIDs(volumeID string) (string, string) {
+	idSplits := strings.SplitN(volumeID, "::", 2)
+	if len(idSplits) == 2 {
+		return idSplits[0], idSplits[1]
+	}
+	return idSplits[0], ""
 }
 
 func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetDescription) error {
@@ -342,11 +365,20 @@ func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetD
 }
 
 func (e *efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
-	desc, err := e.getFileSystemDescriptionWithID(ctx, id)
+	fsID, apID := getIDs(id)
+	fsDesc, err := e.getFileSystemDescriptionWithID(ctx, fsID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get EFS volume")
 	}
-	return volumeFromEFSDescription(desc, zone), nil
+	vol := volumeFromEFSDescription(fsDesc, zone)
+	if apID != "" {
+		apDesc, err := e.getAccessPointDescriptionWithID(ctx, apID)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get access point description")
+		}
+		vol.Attributes[EfsMountPathKey] = *apDesc.RootDirectory.Path
+	}
+	return vol, nil
 }
 
 func (e *efs) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
@@ -362,15 +394,16 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to setup K10 vault for AWS Backup")
 	}
-	desc, err := e.getFileSystemDescriptionWithID(ctx, volume.ID)
+
+	arn, err := e.getResourceARN(ctx, volume.ID)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get corresponding description")
+		return nil, errors.Wrap(err, "Failed to get ARN")
 	}
 
 	req := &backup.StartBackupJobInput{}
 	req.SetBackupVaultName(k10BackupVaultName)
 	req.SetIamRoleArn(awsDefaultServiceBackupRole(e.accountID))
-	req.SetResourceArn(resourceARNForEFS(e.region, *desc.OwnerId, *desc.FileSystemId))
+	req.SetResourceArn(arn)
 
 	// Save mount points and security groups as tags
 	infraTags, err := e.getMountPointAndSecurityGroupTags(ctx, volume.ID)
@@ -583,8 +616,13 @@ func awsDefaultServiceBackupRole(accountID string) string {
 	return fmt.Sprintf("arn:aws:iam::%s:role/service-role/AWSBackupDefaultServiceRole", accountID)
 }
 
-func resourceARNForEFS(region string, accountID string, fileSystemID string) string {
-	return fmt.Sprintf("arn:aws:elasticfilesystem:%s:%s:file-system/%s", region, accountID, fileSystemID)
+func (e *efs) getResourceARN(ctx context.Context, volumeID string) (string, error) {
+	fsID, _ := getIDs(volumeID)
+	fsDesc, err := e.getFileSystemDescriptionWithID(ctx, fsID)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to get corresponding FileSystem description")
+	}
+	return *fsDesc.FileSystemArn, nil
 }
 
 func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*awsefs.FileSystemDescription, error) {
@@ -603,6 +641,27 @@ func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*a
 		return descs.FileSystems[0], nil
 	default:
 		return nil, errors.New("Unexpected condition, multiple filesystems with same ID")
+	}
+}
+
+func (e *efs) getAccessPointDescriptionWithID(ctx context.Context, apID string) (*awsefs.AccessPointDescription, error) {
+	req := &awsefs.DescribeAccessPointsInput{}
+	req.SetAccessPointId(apID)
+
+	descs, err := e.DescribeAccessPointsWithContext(ctx, req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get accesspoint description for id (%s)", apID)
+	}
+	log.Info().Print("SIRISH APS", field.M{"APs": descs})
+	availables := filterAvailableAccessPoints(descs.AccessPoints)
+	switch len(availables) {
+	case 0:
+		return nil, errors.New("Failed to find volume")
+	case 1:
+		return descs.AccessPoints[0], nil
+	default:
+		log.Error().Print("SIRISH too many aps", field.M{"APs": descs})
+		return nil, errors.New("Unexpected condition, multiple accesspoints with same ID")
 	}
 }
 

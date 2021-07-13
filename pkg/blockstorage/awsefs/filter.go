@@ -30,6 +30,16 @@ func filterAvailable(descriptions []*awsefs.FileSystemDescription) []*awsefs.Fil
 	return result
 }
 
+func filterAvailableAccessPoints(descriptions []*awsefs.AccessPointDescription) []*awsefs.AccessPointDescription {
+	result := make([]*awsefs.AccessPointDescription, 0)
+	for _, desc := range descriptions {
+		if *desc.LifeCycleState == awsefs.LifeCycleStateAvailable {
+			result = append(result, desc)
+		}
+	}
+	return result
+}
+
 func filterWithTags(descriptions []*awsefs.FileSystemDescription, tags map[string]string) []*awsefs.FileSystemDescription {
 	result := make([]*awsefs.FileSystemDescription, 0)
 	for i, desc := range descriptions {
