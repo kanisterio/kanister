@@ -36,8 +36,12 @@ type linkedField struct {
 
 var _ fmt.Stringer = (*linkedField)(nil)
 
-func newField(prev Fields, key string, value interface{}) *linkedField {
-	return &linkedField{prev: asLinkedFields(prev), field: field{key: key, value: value}}
+func newField(prev Fields, key string, value interface{}) Fields {
+	return asLinkedFields(prev).Add(key, value)
+}
+
+func (f *linkedField) Add(key string, value interface{}) Fields {
+	return &linkedField{prev: f, field: field{key: key, value: value}}
 }
 
 func (f *linkedField) Fields() []Field {
