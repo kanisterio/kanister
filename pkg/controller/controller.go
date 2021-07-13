@@ -122,13 +122,14 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 }
 
 func checkCRAccess(cli versioned.Interface, ns string) error {
-	if _, err := cli.CrV1alpha1().ActionSets(ns).List(context.TODO(), v1.ListOptions{}); err != nil {
+	ctx := context.TODO()
+	if _, err := cli.CrV1alpha1().ActionSets(ns).List(ctx, v1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list ActionSets")
 	}
-	if _, err := cli.CrV1alpha1().Blueprints(ns).List(context.TODO(), v1.ListOptions{}); err != nil {
+	if _, err := cli.CrV1alpha1().Blueprints(ns).List(ctx, v1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list Blueprints")
 	}
-	if _, err := cli.CrV1alpha1().Profiles(ns).List(context.TODO(), v1.ListOptions{}); err != nil {
+	if _, err := cli.CrV1alpha1().Profiles(ns).List(ctx, v1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list Profiles")
 	}
 	return nil
@@ -190,7 +191,8 @@ func (c *Controller) onDelete(obj interface{}) {
 }
 
 func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
-	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), v1.GetOptions{})
+	ctx := context.TODO()
+	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), v1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -198,7 +200,7 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 		return err
 	}
 	c.initActionSetStatus(as)
-	as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), v1.GetOptions{})
+	as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), v1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)
 	}

@@ -332,12 +332,13 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 }
 
 func (s *VolumeSnapshotTestSuite) getCreds(c *C, cli kubernetes.Interface, namespace string, pvcname string) (string, string, crv1alpha1.LocationType, error) {
-	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(context.TODO(), pvcname, metav1.GetOptions{})
+	ctx := context.TODO()
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcname, metav1.GetOptions{})
 	if err != nil {
 		return "", "", "", err
 	}
 	pvName := pvc.Spec.VolumeName
-	pv, err := cli.CoreV1().PersistentVolumes().Get(context.TODO(), pvName, metav1.GetOptions{})
+	pv, err := cli.CoreV1().PersistentVolumes().Get(ctx, pvName, metav1.GetOptions{})
 	if err != nil {
 		return "", "", "", err
 	}
