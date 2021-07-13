@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -41,6 +42,8 @@ const (
 	LoggingServiceHostEnv = "LOGGING_SVC_SERVICE_HOST"
 	LoggingServicePortEnv = "LOGGING_SVC_SERVICE_PORT_LOGGING"
 )
+
+const errorFieldName = "error"
 
 type logger struct {
 	level Level
@@ -180,10 +183,26 @@ func (l *logger) Print(msg string, fields ...field.M) {
 		}
 	}
 
+	awsError := false
+	if e, ok := l.err.(awserr.Error); ok {
+		awsError = true
+		logFields["awsErrorCode"] = e.Code()
+		logFields["awsErrorMessage"] = e.Message()
+		if er, ok := e.(awserr.RequestFailure); ok {
+			logFields["awsRequestStatusCode"] = er.StatusCode()
+			logFields["awsRequestID"] = er.RequestID()
+		}
+		if nextErr := e.OrigErr(); nextErr != nil {
+			logFields[errorFieldName] = nextErr
+		}
+	}
+
 	entry := log.WithFields(logFields)
-	if l.err != nil {
+
+	if l.err != nil && !awsError {
 		entry = entry.WithError(l.err)
 	}
+
 	entry.Logln(logrus.Level(l.level), msg)
 }
 
