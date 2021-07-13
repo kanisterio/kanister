@@ -74,24 +74,33 @@ func resolveNamespace(cmd *cobra.Command) (string, error) {
 	return kube.ConfigNamespace()
 }
 
-func initializeClients() (kubernetes.Interface, versioned.Interface, osversioned.Interface, error) {
+func initializeClients() (*Clients, error) {
+	nilCli := Clients{}
+
 	config, err := kube.LoadConfig()
 	if err != nil {
-		return nil, nil, nil, err
+		return &nilCli, errors.Wrap(err, "could not get the config for the kubernetes client")
 	}
 	cli, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "could not get the kubernetes client")
+		return &nilCli, errors.Wrap(err, "could not get the kubernetes client")
 	}
 
 	osCli, err := osversioned.NewForConfig(config)
 	if err != nil {
-		return nil, nil, nil, errors.Wrapf(err, "could not get openshift client")
+		return &nilCli, errors.Wrapf(err, "could not get openshift client")
 	}
 
 	crCli, err := versioned.NewForConfig(config)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "could not get the CRD client")
+		return &nilCli, errors.Wrap(err, "could not get the CRD client")
 	}
-	return cli, crCli, osCli, nil
+
+	clients := Clients{
+		KubeClient: cli,
+		CrdClient:  crCli,
+		OsClient:   osCli,
+	}
+
+	return &clients, nil
 }
