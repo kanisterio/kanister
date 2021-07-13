@@ -136,8 +136,9 @@ type KopiaServerCreds struct {
 
 // Phase represents a Blueprint phase and contains the phase output
 type Phase struct {
-	Secrets map[string]v1.Secret
-	Output  map[string]interface{}
+	ConfigMaps map[string]v1.ConfigMap
+	Secrets    map[string]v1.Secret
+	Output     map[string]interface{}
 }
 
 const (
@@ -147,6 +148,7 @@ const (
 	PVCKind              = "pvc"
 	NamespaceKind        = "namespace"
 	SecretKind           = "secret"
+	ConfigMapKind        = "configmap"
 )
 
 // New function fetches and returns the desired params
@@ -519,8 +521,14 @@ func InitPhaseParams(ctx context.Context, cli kubernetes.Interface, tp *Template
 	if err != nil {
 		return err
 	}
+	cms, err := fetchConfigMaps(ctx, cli, filterByKind(objects, ConfigMapKind))
+	if err != nil {
+		return err
+	}
+
 	tp.Phases[phaseName] = &Phase{
-		Secrets: secrets,
+		Secrets:    secrets,
+		ConfigMaps: cms,
 	}
 	return nil
 }
