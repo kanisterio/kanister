@@ -39,20 +39,21 @@ const timeFormat = time.RFC3339Nano
 
 // TemplateParams are the values that will change between separate runs of Phases.
 type TemplateParams struct {
-	StatefulSet      *StatefulSetParams
-	DeploymentConfig *DeploymentConfigParams
-	Deployment       *DeploymentParams
-	PVC              *PVCParams
-	Namespace        *NamespaceParams
-	ArtifactsIn      map[string]crv1alpha1.Artifact
-	ConfigMaps       map[string]v1.ConfigMap
-	Secrets          map[string]v1.Secret
-	Time             string
-	Profile          *Profile
-	Options          map[string]string
-	Object           map[string]interface{}
-	Phases           map[string]*Phase
-	PodOverride      crv1alpha1.JSONMap
+	StatefulSet        *StatefulSetParams
+	DeploymentConfig   *DeploymentConfigParams
+	Deployment         *DeploymentParams
+	PVC                *PVCParams
+	Namespace          *NamespaceParams
+	ArtifactsIn        map[string]crv1alpha1.Artifact
+	ConfigMaps         map[string]v1.ConfigMap
+	Secrets            map[string]v1.Secret
+	Time               string
+	Profile            *Profile
+	Options            map[string]string
+	Object             map[string]interface{}
+	Phases             map[string]*Phase
+	PodOverride        crv1alpha1.JSONMap
+	ObjectMetaOverride metav1.ObjectMeta
 }
 
 // DeploymentConfigParams are params for deploymentconfig, will be used if working on open shift cluster
@@ -165,13 +166,14 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 	}
 	now := time.Now().UTC()
 	tp := TemplateParams{
-		ArtifactsIn: as.Artifacts,
-		ConfigMaps:  cms,
-		Secrets:     secrets,
-		Profile:     prof,
-		Time:        now.Format(timeFormat),
-		Options:     as.Options,
-		PodOverride: as.PodOverride,
+		ArtifactsIn:        as.Artifacts,
+		ConfigMaps:         cms,
+		Secrets:            secrets,
+		Profile:            prof,
+		Time:               now.Format(timeFormat),
+		Options:            as.Options,
+		PodOverride:        as.PodOverride,
+		ObjectMetaOverride: as.ObjectMetaOverride,
 	}
 	var gvr schema.GroupVersionResource
 	namespace := as.Object.Namespace

@@ -18,6 +18,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -68,6 +69,17 @@ func GetPodSpecOverride(tp param.TemplateParams, args map[string]interface{}, ar
 		}
 	}
 	return podOverride, nil
+}
+
+// GetObjectMetaOverride gets object meta override from args
+func GetObjectMetaOverride(tp param.TemplateParams, args map[string]interface{}, argName string) (*v1.ObjectMeta, error) {
+	var objectMeta v1.ObjectMeta
+	var err error
+	if err = OptArg(args, KubeTaskObjectMetaOverrideArg, &objectMeta, tp.ObjectMetaOverride); err != nil {
+		return nil, err
+	}
+
+	return &objectMeta, nil
 }
 
 // GetYamlList parses yaml formatted list arg and converts it into slice of string.
