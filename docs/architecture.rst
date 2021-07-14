@@ -115,7 +115,6 @@ As a reference, below is an example of a BlueprintAction.
 
   actions:
     example-action:
-      type: Deployment
       phases:
       - func: KubeExec
         name: examplePhase
