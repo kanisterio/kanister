@@ -23,8 +23,11 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
+	"strconv"
 	"sync"
+	"time"
 
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
 	"github.com/pkg/errors"
@@ -340,6 +343,7 @@ func (c *Controller) initialActionStatus(namespace string, a crv1alpha1.ActionSp
 }
 
 func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
+	log.Print("handle actionset called")
 	if as.Status == nil {
 		return errors.New("ActionSet was not initialized")
 	}
@@ -350,10 +354,12 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.TODO(), as, v1.UpdateOptions{}); err != nil {
 		return errors.WithStack(err)
 	}
-	ctx := context.Background()
+	iv := getEnvAsIntOrDefault("ACTIONSET_TIMEOUT", 30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(iv)*time.Second)
+	defer cancel()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	for i := range as.Status.Actions {
-		if err = c.runAction(ctx, as, i); err != nil {
+		if err = c.runAction(ctx, as, i); err != nil || ctx.Err() != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
 			bpName := as.Spec.Actions[i].Blueprint
@@ -362,15 +368,31 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 			c.logAndErrorEvent(ctx, fmt.Sprintf("Failed to launch Action %s:", as.GetName()), reason, err, as, bp)
 			as.Status.State = crv1alpha1.StateFailed
 			as.Status.Error = crv1alpha1.Error{
-				Message: err.Error(),
+				Message: "custom Error message",
 			}
 			as.Status.Actions[i].Phases[0].State = crv1alpha1.StateFailed
 			_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{})
 			return errors.WithStack(err)
 		}
+		if ctx.Err() != nil {
+			log.Print("ctx err is not nil")
+			log.Print(ctx.Err().Error())
+		}
 	}
 	log.WithContext(ctx).Print("Created actionset and started executing actions", field.M{"NewActionSetName": as.GetName()})
 	return nil
+}
+
+func getEnvAsIntOrDefault(envKey string, def int) int {
+	if v, ok := os.LookupEnv(envKey); ok {
+		iv, err := strconv.Atoi(v)
+		if err == nil {
+			return iv
+		}
+		log.WithError(err)
+	}
+
+	return def
 }
 
 // nolint:gocognit
