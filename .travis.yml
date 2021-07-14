@@ -27,7 +27,7 @@ jobs:
       install:
       - make go-mod-download
       before_script:
-      - docker pull kindest/node:v1.18.2
+      - docker pull kindest/node:v1.21.1
       - make start-kind
       script:
       - make build
@@ -44,7 +44,7 @@ jobs:
       install:
       - make go-mod-download
       before_script:
-      - docker pull kindest/node:v1.18.2
+      - docker pull kindest/node:v1.21.1
       - make start-kind
       - make install-minio
       script:
