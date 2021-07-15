@@ -19,9 +19,6 @@ cache:
 jobs:
   include:
     - stage: test
-      script:
-      - make docs
-    - stage: test
       services:
         - docker
       install:
@@ -53,19 +50,3 @@ jobs:
       - sudo chown -R travis:travis ./.go
       after_script:
       - make stop-kind
-    - stage: test
-      script:
-      - make golint
-    - stage: test
-      services:
-      - docker
-      script:
-      - set -ev
-      - make release-snapshot; export EXIT_STATUS=$?
-      # Push images if PR is merged to master
-      - |
-        if [[ "$EXIT_STATUS" -eq 0 ]] && [[ "$TRAVIS_BRANCH" == "master" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
-          sudo chown "$USER":"$USER" "$HOME"/.docker -R
-          docker login ghcr.io -u "$GITHUB_USERNAME" -p "$GITHUB_TOKEN"
-          ./build/push_images.sh 
-        fi

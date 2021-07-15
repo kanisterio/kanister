@@ -16,7 +16,7 @@ export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true
 export KUBECONFIG=$HOME/.kube/config
 export KUBE_VERSION=${KUBE_VERSION:-"v1.21.1"}
-export KIND_VERSION=${KIND_VERSION:-"v0.11.1"}
+export KIND_VERSION=${KIND_VERSION:-"v0.11.0"}
 export LOCAL_CLUSTER_NAME=${LOCAL_CLUSTER_NAME:-"kanister"}
 export LOCAL_PATH_PROV_VERSION="v0.0.11"
 declare -a REQUIRED_BINS=( docker jq go )
@@ -52,7 +52,7 @@ start_localkube() {
     then
         get_localkube
     fi
-    kind create cluster --name ${LOCAL_CLUSTER_NAME} --image=kindest/node:${KUBE_VERSION} -v 1
+    kind create cluster --name ${LOCAL_CLUSTER_NAME} --image=kindest/node:${KUBE_VERSION} -v 6
     if [ -e ${KUBECONFIG} ]; then
         cp -fr ${KUBECONFIG} ${HOME}/.kube/config_bk
     fi
