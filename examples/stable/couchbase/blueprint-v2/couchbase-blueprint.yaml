@@ -21,7 +21,7 @@ actions:
           namespace: "{{ .Object.metadata.namespace }}"
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: ghcr.io/kanisterio/couchbase-tools:0.58.0
+        image: ghcr.io/kanisterio/couchbase-tools:0.63.0
         command:
           - bash
           - -o
@@ -80,7 +80,6 @@ actions:
               --force-updates
 
   delete:
-    type: Namespace
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
     # Use the `--kopia-snapshot` flag in kando to pass in `cbBackup.KopiaSnapshot`

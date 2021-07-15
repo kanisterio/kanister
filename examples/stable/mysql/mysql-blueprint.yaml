@@ -4,7 +4,6 @@ metadata:
   name: mysql-blueprint
 actions:
   backup:
-    type: StatefulSet
     outputArtifacts:
       mysqlCloudDump:
         keyValue:
@@ -18,7 +17,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.58.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.63.0
         namespace: "{{ .StatefulSet.Namespace }}"
         command:
         - bash
@@ -33,7 +32,6 @@ actions:
           mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
           kando output s3path ${s3_path}
   restore:
-    type: StatefulSet
     inputArtifactNames:
     - mysqlCloudDump
     phases:
@@ -45,7 +43,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.58.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.63.0
         namespace: "{{ .StatefulSet.Namespace }}"
         command:
         - bash
@@ -59,14 +57,13 @@ actions:
           root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
           kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}
   delete:
-    type: Namespace
     inputArtifactNames:
     - mysqlCloudDump
     phases:
     - func: KubeTask
       name: deleteFromBlobStore
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.58.0
+        image: ghcr.io/kanisterio/mysql-sidecar:0.63.0
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash

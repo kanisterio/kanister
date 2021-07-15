@@ -46,8 +46,19 @@ type SnapshotInfo struct {
 	ID string `json:"id"`
 	// LogicalSize is the sum of cached and hashed file size in bytes
 	LogicalSize int64 `json:"logicalSize"`
-	// LogicalSize is the uploaded size in bytes
+	// PhysicalSize is the uploaded size in bytes
 	PhysicalSize int64 `json:"physicalSize"`
+}
+
+// Validate validates SnapshotInfo field values
+func (si *SnapshotInfo) Validate() error {
+	if si == nil {
+		return errors.New("kopia snapshotInfo cannot be nil")
+	}
+	if si.ID == "" {
+		return errors.New("kopia snapshot ID cannot be empty")
+	}
+	return nil
 }
 
 // Write creates a kopia snapshot from the given reader
@@ -89,17 +100,15 @@ func Write(ctx context.Context, path string, source io.Reader) (*SnapshotInfo, e
 	u := snapshotfs.NewUploader(rep)
 
 	// Create a kopia snapshot
-	snapID, _, err := SnapshotSource(ctx, rep, u, sourceInfo, rootDir, "Kanister Database Backup")
+	snapID, snapshotSize, err := SnapshotSource(ctx, rep, u, sourceInfo, rootDir, "Kanister Database Backup")
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO@pavan: Add kopia snapshot size information
-	zeroSize := int64(0)
 	snapshotInfo := &SnapshotInfo{
 		ID:           snapID,
-		LogicalSize:  zeroSize,
-		PhysicalSize: zeroSize,
+		LogicalSize:  snapshotSize,
+		PhysicalSize: int64(0),
 	}
 
 	return snapshotInfo, nil

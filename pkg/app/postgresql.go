@@ -52,7 +52,7 @@ func NewPostgresDB(name string, subPath string) App {
 			Values: map[string]string{
 				"image.registry":                        "ghcr.io",
 				"image.repository":                      "kanisterio/postgresql",
-				"image.tag":                             "0.58.0",
+				"image.tag":                             "latest",
 				"postgresqlPassword":                    "test@54321",
 				"postgresqlExtendedConf.archiveCommand": "envdir /bitnami/postgresql/data/env wal-e wal-push %p",
 				"postgresqlExtendedConf.archiveMode":    "true",
@@ -211,6 +211,10 @@ func (pdb PostgresDB) Uninstall(ctx context.Context) error {
 
 	// Uninstall helm chart
 	return errors.Wrapf(cli.Uninstall(ctx, pdb.chart.Release, pdb.namespace), "Failed to uninstall %s helm release", pdb.chart.Release)
+}
+
+func (pdp *PostgresDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
 }
 
 func (pdb PostgresDB) execCommand(ctx context.Context, command []string) (string, string, error) {

@@ -385,6 +385,10 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	return nil
 }
 
+func (pdb RDSPostgresDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 func (pdb RDSPostgresDB) getAWSConfig(ctx context.Context) (*awssdk.Config, string, error) {
 	config := make(map[string]string)
 	config[aws.ConfigRegion] = pdb.region

@@ -38,12 +38,6 @@ const (
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: ResourceGroup, Version: SchemeVersion}
 
-// These names are used to query ActionSet API objects.
-const (
-	ActionSetResourceName       = "actionset"
-	ActionSetResourceNamePlural = "actionsets"
-)
-
 // JSONMap contains PodOverride specs.
 type JSONMap sp.JSONMap
 
@@ -57,7 +51,7 @@ var _ runtime.Object = (*ActionSet)(nil)
 type ActionSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	Spec              *ActionSetSpec   `json:"spec"`
+	Spec              *ActionSetSpec   `json:"spec,omitempty"`
 	Status            *ActionSetStatus `json:"status,omitempty"`
 }
 
@@ -82,7 +76,7 @@ type ObjectReference struct {
 
 // ActionSetSpec is the specification for the actionset.
 type ActionSetSpec struct {
-	Actions []ActionSpec `json:"actions"`
+	Actions []ActionSpec `json:"actions,omitempty"`
 }
 
 // ActionSpec is the specification for a single Action.
@@ -96,18 +90,18 @@ type ActionSpec struct {
 	// Artifacts will be passed as inputs into this phase.
 	Artifacts map[string]Artifact `json:"artifacts,omitempty"`
 	// ConfigMaps that we'll get and pass into the blueprint.
-	ConfigMaps map[string]ObjectReference `json:"configMaps"`
+	ConfigMaps map[string]ObjectReference `json:"configMaps,omitempty"`
 	// Secrets that we'll get and pass into the blueprint.
-	Secrets map[string]ObjectReference `json:"secrets"`
+	Secrets map[string]ObjectReference `json:"secrets,omitempty"`
 	// Profile is use to specify the location where store artifacts and the
 	// credentials authorized to access them.
-	Profile *ObjectReference `json:"profile"`
+	Profile *ObjectReference `json:"profile,omitempty"`
 	// PodOverride is used to specify pod specs that will override the
 	// default pod specs
 	PodOverride JSONMap `json:"podOverride,omitempty"`
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
-	Options map[string]string `json:"options"`
+	Options map[string]string `json:"options,omitempty"`
 	// PreferredVersion will be used to select the preferred version of Kanister functions
 	// to be executed for this action
 	PreferredVersion string `json:"preferredVersion"`
@@ -116,7 +110,7 @@ type ActionSpec struct {
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
 type ActionSetStatus struct {
 	State   State          `json:"state"`
-	Actions []ActionStatus `json:"actions"`
+	Actions []ActionStatus `json:"actions,omitempty"`
 	Error   Error          `json:"error,omitempty"`
 }
 
@@ -129,9 +123,9 @@ type ActionStatus struct {
 	// Blueprint with instructions on how to execute this action.
 	Blueprint string `json:"blueprint"`
 	// Phases are sub-actions an are executed sequentially.
-	Phases []Phase `json:"phases"`
+	Phases []Phase `json:"phases,omitempty"`
 	// Artifacts created by this phase.
-	Artifacts map[string]Artifact `json:"artifacts"`
+	Artifacts map[string]Artifact `json:"artifacts,omitempty"`
 }
 
 // State is the current state of a phase of execution.
@@ -156,17 +150,17 @@ type Error struct {
 type Phase struct {
 	Name   string                 `json:"name"`
 	State  State                  `json:"state"`
-	Output map[string]interface{} `json:"output"`
+	Output map[string]interface{} `json:"output,omitempty"`
 }
 
 // k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Artifact tracks objects produced by an action.
 type Artifact struct {
-	KeyValue map[string]string `json:"keyValue"`
+	KeyValue map[string]string `json:"keyValue,omitempty"`
 	// KopiaSnapshot captures the kopia snapshot information
 	// produced as a JSON string by kando command in phases of an action.
-	KopiaSnapshot string `json:"kopiaSnapshot"`
+	KopiaSnapshot string `json:"kopiaSnapshot,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -178,12 +172,6 @@ type ActionSetList struct {
 	Items           []*ActionSet `json:"items"`
 }
 
-// These names are used to query Blueprint API objects.
-const (
-	BlueprintResourceName       = "blueprint"
-	BlueprintResourceNamePlural = "blueprints"
-)
-
 var _ runtime.Object = (*Blueprint)(nil)
 
 // +genclient
@@ -194,25 +182,25 @@ var _ runtime.Object = (*Blueprint)(nil)
 type Blueprint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	Actions           map[string]*BlueprintAction `json:"actions"`
+	Actions           map[string]*BlueprintAction `json:"actions,omitempty"`
 }
 
 // BlueprintAction describes the set of phases that constitute an action.
 type BlueprintAction struct {
 	Name               string              `json:"name"`
 	Kind               string              `json:"kind"`
-	ConfigMapNames     []string            `json:"configMapNames"`
-	SecretNames        []string            `json:"secretNames"`
-	InputArtifactNames []string            `json:"inputArtifactNames"`
-	OutputArtifacts    map[string]Artifact `json:"outputArtifacts"`
-	Phases             []BlueprintPhase    `json:"phases"`
+	ConfigMapNames     []string            `json:"configMapNames,omitempty"`
+	SecretNames        []string            `json:"secretNames,omitempty"`
+	InputArtifactNames []string            `json:"inputArtifactNames,omitempty"`
+	OutputArtifacts    map[string]Artifact `json:"outputArtifacts,omitempty"`
+	Phases             []BlueprintPhase    `json:"phases,omitempty"`
 }
 
 // BlueprintPhase is a an individual unit of execution.
 type BlueprintPhase struct {
 	Func       string                     `json:"func"`
 	Name       string                     `json:"name"`
-	ObjectRefs map[string]ObjectReference `json:"objects"`
+	ObjectRefs map[string]ObjectReference `json:"objects,omitempty"`
 	Args       map[string]interface{}     `json:"args"`
 }
 
@@ -224,12 +212,6 @@ type BlueprintList struct {
 	metav1.ListMeta `json:"metadata"`
 	Items           []*Blueprint `json:"items"`
 }
-
-// These names are used to query Profile API objects.
-const (
-	ProfileResourceName       = "profile"
-	ProfileResourceNamePlural = "profiles"
-)
 
 // +genclient
 // +genclient:noStatus

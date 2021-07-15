@@ -4,7 +4,6 @@ metadata:
   name: mongodb-blueprint
 actions:
   backup:
-    type: DeploymentConfig
     outputArtifacts:
       cloudObject:
         keyValue:
@@ -19,7 +18,7 @@ actions:
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
         namespace: "{{ .DeploymentConfig.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.58.0
+        image: ghcr.io/kanisterio/mongodb:0.63.0
         command:
           - bash
           - -o
@@ -34,7 +33,6 @@ actions:
             echo $dump_cmd
             ${dump_cmd} | kando location push --profile '{{ toJson .Profile }}' --path '/mongodb-replicaset-backups/{{ .DeploymentConfig.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs_backup.gz' -
   restore:
-    type: DeploymentConfig
     inputArtifactNames:
       - cloudObject
     phases:
@@ -47,7 +45,7 @@ actions:
           namespace: "{{ .DeploymentConfig.Namespace }}"
       args:
         namespace: "{{ .DeploymentConfig.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.58.0
+        image: ghcr.io/kanisterio/mongodb:0.63.0
         command:
           - bash
           - -o
@@ -61,7 +59,6 @@ actions:
             restore_cmd="mongorestore --gzip --archive --drop --host ${host} -u admin -p ${dbPassword}"
             kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.path }}' - | ${restore_cmd}
   delete:
-    type: Namespace
     inputArtifactNames:
       - cloudObject
     phases:
@@ -69,7 +66,7 @@ actions:
       name: deleteFromBlobStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: ghcr.io/kanisterio/mongodb:0.58.0
+        image: ghcr.io/kanisterio/mongodb:0.63.0
         command:
           - bash
           - -o
