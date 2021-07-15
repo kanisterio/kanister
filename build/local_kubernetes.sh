@@ -51,7 +51,11 @@ start_localkube() {
     if ! command -v kind
     then
         get_localkube
+    else 
+        kind version
+        GO111MODULE="on" go get sigs.k8s.io/kind@${KIND_VERSION}
     fi
+
     kind version
     kind create cluster --name ${LOCAL_CLUSTER_NAME} -v 6
     if [ -e ${KUBECONFIG} ]; then
@@ -66,6 +70,8 @@ stop_localkube() {
     if ! command -v kind
     then
         get_localkube
+    else 
+        kind version
     fi
     kind delete cluster --name ${LOCAL_CLUSTER_NAME}
 }
