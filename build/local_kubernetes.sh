@@ -52,7 +52,8 @@ start_localkube() {
     then
         get_localkube
     fi
-    kind create cluster --name ${LOCAL_CLUSTER_NAME} --image=kindest/node:${KUBE_VERSION} -v 6
+    kind version
+    kind create cluster --name ${LOCAL_CLUSTER_NAME} -v 6
     if [ -e ${KUBECONFIG} ]; then
         cp -fr ${KUBECONFIG} ${HOME}/.kube/config_bk
     fi
