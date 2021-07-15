@@ -425,6 +425,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			}
 			var rf func(*crv1alpha1.ActionSet) error
 			if err != nil {
+				// If error is because of context canceled && timeout then update the actionset with failed status 
 				if ctx.Err() != nil {
 					bpName := as.Spec.Actions[aIDX].Blueprint
 					bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(context.Background(), bpName, v1.GetOptions{})
@@ -492,7 +493,6 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		arts, err := param.RenderArtifacts(artTpls, *tp)
 		var af func(*crv1alpha1.ActionSet) error
 		if err != nil {
-			log.Print("artifact could not renedred")
 			af = func(ras *crv1alpha1.ActionSet) error {
 				ras.Status.State = crv1alpha1.StateFailed
 				ras.Status.Error = crv1alpha1.Error{
