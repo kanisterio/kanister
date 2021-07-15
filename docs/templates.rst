@@ -271,7 +271,6 @@ For example, with the following snippet from the time-log example Blueprint:
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       configMapNames:
       - location
       secretNames:
@@ -283,7 +282,6 @@ For example, with the following snippet from the time-log example Blueprint:
 
       ...
     restore:
-      type: Deployment
       inputArtifactNames:
         - exampleArtifact
       ...

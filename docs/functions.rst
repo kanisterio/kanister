@@ -309,7 +309,6 @@ Example:
 
   actions:
     backup:
-      type: Deployment
       outputArtifacts:
         backupInfo:
           keyValue:
@@ -367,7 +366,6 @@ Example:
 
   actions:
     backup:
-      type: Deployment
       outputArtifacts:
         params:
           keyValue:
@@ -729,7 +727,6 @@ of this phase is saved to an Artifact named ``backupInfo``, shown below:
 
   actions:
     backup:
-      type: Deployment
       outputArtifacts:
         backupInfo:
           keyValue:
@@ -870,7 +867,6 @@ Example:
 
   actions:
     backupStats:
-      type: Deployment
       outputArtifacts:
         backupStats:
           keyValue:
@@ -925,7 +921,6 @@ Example:
 
   actions:
     backupStats:
-      type: Deployment
       outputArtifacts:
         backupStats:
           keyValue:
@@ -973,7 +968,6 @@ Example:
 
   actions:
     backup:
-      type: Namespace
       outputArtifacts:
         backupInfo:
           keyValue:
@@ -1037,7 +1031,6 @@ Example:
 
   actions:
     backup:
-      type: Namespace
       outputArtifacts:
         backupInfo:
           keyValue:
