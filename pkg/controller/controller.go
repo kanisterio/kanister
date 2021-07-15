@@ -343,7 +343,6 @@ func (c *Controller) initialActionStatus(namespace string, a crv1alpha1.ActionSp
 }
 
 func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
-	log.Print("handle actionset called")
 	if as.Status == nil {
 		return errors.New("ActionSet was not initialized")
 	}
@@ -359,7 +358,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	defer cancel()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	for i := range as.Status.Actions {
-		if err = c.runAction(ctx, as, i); err != nil || ctx.Err() != nil {
+		if err = c.runAction(ctx, as, i); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
 			bpName := as.Spec.Actions[i].Blueprint
@@ -368,15 +367,11 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 			c.logAndErrorEvent(ctx, fmt.Sprintf("Failed to launch Action %s:", as.GetName()), reason, err, as, bp)
 			as.Status.State = crv1alpha1.StateFailed
 			as.Status.Error = crv1alpha1.Error{
-				Message: "custom Error message",
+				Message: err.Error(),
 			}
 			as.Status.Actions[i].Phases[0].State = crv1alpha1.StateFailed
 			_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{})
 			return errors.WithStack(err)
-		}
-		if ctx.Err() != nil {
-			log.Print("ctx err is not nil")
-			log.Print(ctx.Err().Error())
 		}
 	}
 	log.WithContext(ctx).Print("Created actionset and started executing actions", field.M{"NewActionSetName": as.GetName()})
@@ -391,7 +386,6 @@ func getEnvAsIntOrDefault(envKey string, def int) int {
 		}
 		log.WithError(err)
 	}
-
 	return def
 }
 
@@ -431,6 +425,23 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			}
 			var rf func(*crv1alpha1.ActionSet) error
 			if err != nil {
+				if ctx.Err() != nil {
+					bpName := as.Spec.Actions[aIDX].Blueprint
+					bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(context.Background(), bpName, v1.GetOptions{})
+					reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[aIDX].Name)
+					c.logAndErrorEvent(context.Background(), fmt.Sprintf("Failed to Execute Action %s:", as.GetName()), reason, err, as, bp)
+					as.Status.State = crv1alpha1.StateFailed
+					as.Status.Error = crv1alpha1.Error{
+						Message: err.Error(),
+					}
+					as.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateFailed
+					if _, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.Background(), as, v1.UpdateOptions{}); err != nil {
+						reason = fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[aIDX].Name)
+						msg = fmt.Sprintf("Failed to update ActionSet: %s", as.GetName())
+						c.logAndErrorEvent(context.Background(), msg, reason, err, as, bp)
+					}
+					return nil
+				}
 				rf = func(ras *crv1alpha1.ActionSet) error {
 					ras.Status.State = crv1alpha1.StateFailed
 					ras.Status.Error = crv1alpha1.Error{
@@ -481,6 +492,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		arts, err := param.RenderArtifacts(artTpls, *tp)
 		var af func(*crv1alpha1.ActionSet) error
 		if err != nil {
+			log.Print("artifact could not renedred")
 			af = func(ras *crv1alpha1.ActionSet) error {
 				ras.Status.State = crv1alpha1.StateFailed
 				ras.Status.Error = crv1alpha1.Error{
