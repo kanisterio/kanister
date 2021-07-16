@@ -21,11 +21,12 @@ package v1alpha1
 import (
 	"reflect"
 
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/kanisterio/kanister/pkg/consts"
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
 )
 
@@ -37,31 +38,31 @@ var (
 
 // ActionSetResource is a CRD for actionsets.
 var ActionSetResource = customresource.CustomResource{
-	Name:    ActionSetResourceName,
-	Plural:  ActionSetResourceNamePlural,
+	Name:    consts.ActionSetResourceName,
+	Plural:  consts.ActionSetResourceNamePlural,
 	Group:   ResourceGroup,
 	Version: SchemeVersion,
-	Scope:   apiextensionsv1beta1.NamespaceScoped,
+	Scope:   apiextensionsv1.NamespaceScoped,
 	Kind:    reflect.TypeOf(ActionSet{}).Name(),
 }
 
 // BlueprintResource is a CRD for blueprints.
 var BlueprintResource = customresource.CustomResource{
-	Name:    BlueprintResourceName,
-	Plural:  BlueprintResourceNamePlural,
+	Name:    consts.BlueprintResourceName,
+	Plural:  consts.BlueprintResourceNamePlural,
 	Group:   ResourceGroup,
 	Version: SchemeVersion,
-	Scope:   apiextensionsv1beta1.NamespaceScoped,
+	Scope:   apiextensionsv1.NamespaceScoped,
 	Kind:    reflect.TypeOf(Blueprint{}).Name(),
 }
 
 // ProfileResource is a CRD for blueprints.
 var ProfileResource = customresource.CustomResource{
-	Name:    ProfileResourceName,
-	Plural:  ProfileResourceNamePlural,
+	Name:    consts.ProfileResourceName,
+	Plural:  consts.ProfileResourceNamePlural,
 	Group:   ResourceGroup,
 	Version: SchemeVersion,
-	Scope:   apiextensionsv1beta1.NamespaceScoped,
+	Scope:   apiextensionsv1.NamespaceScoped,
 	Kind:    reflect.TypeOf(Profile{}).Name(),
 }
 

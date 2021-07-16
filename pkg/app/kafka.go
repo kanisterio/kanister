@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/portforward"
@@ -162,6 +163,131 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	return nil
 }
 
+func (kc *KafkaCluster) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return []crv1alpha1.ObjectReference{
+		// ClusterRoles
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-kafka-client",
+			Resource:   "clusterroles",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-cluster-operator-global",
+			Resource:   "clusterroles",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-cluster-operator-namespaced",
+			Resource:   "clusterroles",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-entity-operator",
+			Resource:   "clusterroles",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-topic-operator",
+			Resource:   "clusterroles",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-kafka-broker",
+			Resource:   "clusterroles",
+		},
+
+		// ClusterRoleBindings
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-cluster-operator",
+			Resource:   "clusterrolebindings",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-cluster-operator-kafka-broker-delegation",
+			Resource:   "clusterrolebindings",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-cluster-operator-kafka-client-delegation",
+			Resource:   "clusterrolebindings",
+		},
+
+		// CRDs
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkabridges.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkaconnectors.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkaconnects.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkaconnects2is.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkamirrormaker2s.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkamirrormakers.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkarebalances.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkas.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkatopics.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkausers.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+	}
+}
+
 // Object return the configmap referred in blueprint
 func (kc *KafkaCluster) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
@@ -184,16 +310,34 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "failed to create helm client")
 	}
 
-	deleteConfig := []string{"delete", "-n", kc.namespace, "configmap", configMapName}
-	out, err := helm.RunCmdWithTimeout(ctx, "kubectl", deleteConfig)
-	if err != nil {
-		return errors.Wrapf(err, "Error deleting ConfigMap %s, %s", kc.name, out)
+	err = kc.cli.CoreV1().ConfigMaps(kc.namespace).Delete(ctx, configMapName, metav1.DeleteOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return errors.Wrapf(err, "Error deleting ConfigMap %s", configMapName)
 	}
 
 	err = cli.Uninstall(ctx, kc.chart.Release, kc.namespace)
 	if err != nil {
 		log.WithError(err).Print("Failed to uninstall app, you will have to uninstall it manually.", field.M{"app": kc.name})
 		return err
+	}
+
+	deleteCRD := []string{
+		"delete",
+		"crd",
+		"kafkabridges.kafka.strimzi.io",
+		"kafkaconnectors.kafka.strimzi.io",
+		"kafkaconnects.kafka.strimzi.io",
+		"kafkaconnects2is.kafka.strimzi.io",
+		"kafkamirrormaker2s.kafka.strimzi.io",
+		"kafkamirrormakers.kafka.strimzi.io",
+		"kafkarebalances.kafka.strimzi.io",
+		"kafkas.kafka.strimzi.io",
+		"kafkatopics.kafka.strimzi.io",
+		"kafkausers.kafka.strimzi.io",
+	}
+	out, error := helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
+	if error != nil {
+		return errors.Wrapf(error, "Error deleting kafka CRD %s, %s", kc.name, out)
 	}
 
 	log.Print("Application deleted successfully.", field.M{"app": kc.name})

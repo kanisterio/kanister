@@ -296,6 +296,7 @@ func (s *BlockStorageProviderSuite) getConfig(c *C, region string) map[string]st
 		config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
 		s.args[blockstorage.AzureMigrateStorageAccount] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageAccount)
 		s.args[blockstorage.AzureMigrateStorageKey] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateStorageKey)
+		s.args[blockstorage.AzureMigrateResourceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureMigrateResourceGroup)
 	default:
 		c.Errorf("Unknown blockstorage storage type %s", s.storageType)
 	}

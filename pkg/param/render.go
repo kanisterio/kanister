@@ -16,13 +16,19 @@ package param
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
+	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
 	"github.com/pkg/errors"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+)
+
+const (
+	undefinedKeyErrorMsg = "map has no entry for key "
 )
 
 // RenderArgs function renders the arguments required for execution
@@ -119,9 +125,22 @@ func renderStringArg(arg string, tp TemplateParams) (string, error) {
 	}
 	buf := bytes.NewBuffer(nil)
 	if err = t.Execute(buf, tp); err != nil {
+		// Check if Error is because of undefined key,
+		// which will lead on execute error on first undefined (missingkey=error).
+		// Get the undefined key name from the error message.
+		if strings.Contains(err.Error(), undefinedKeyErrorMsg) {
+			return "", newUndefinedKeyError(err.Error())
+		}
 		return "", errors.WithStack(err)
 	}
 	return buf.String(), nil
+}
+
+func newUndefinedKeyError(err string) error {
+	pos := strings.LastIndex(err, undefinedKeyErrorMsg)
+	adjustedPos := pos + len(undefinedKeyErrorMsg)
+	key := strings.Trim(err[adjustedPos:], "\"")
+	return errors.WithStack(errors.New(fmt.Sprintf("Failed to render template: \"%s\" not found", key)))
 }
 
 // RenderObjectRefs function renders object refs from TemplateParams

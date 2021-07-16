@@ -721,7 +721,7 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 	c.Assert(tp.Phases, IsNil)
 	err = InitPhaseParams(ctx, s.cli, tp, "backup", nil)
 	c.Assert(err, IsNil)
-	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.58.0"})
+	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.63.0"})
 	c.Assert(tp.Phases, HasLen, 1)
 	c.Assert(tp.Phases["backup"], NotNil)
 	c.Assert(tp.Secrets, HasLen, 1)

@@ -49,7 +49,7 @@ func Execute() {
 	}()
 	go func() {
 		if err := s.ListenAndServe(); err != nil {
-			log.WithError(err).Print("Failed to shutdown health check server")
+			log.WithError(err).Print("Failed to start health check server")
 		}
 	}()
 

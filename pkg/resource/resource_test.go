@@ -124,8 +124,11 @@ func (s *ResourceSuite) TestBlueprintClient(c *C) {
 	bp2, err := cli.Blueprints(s.namespace).Get(ctx, name, emptyGetOptions)
 	c.Assert(err, IsNil)
 	c.Assert(bp1, DeepEquals, bp2)
-
-	bp2.Actions = map[string]*crv1alpha1.BlueprintAction{}
+	bp2.Actions = map[string]*crv1alpha1.BlueprintAction{
+		"backup": {
+			Name: "takebackup",
+		},
+	}
 	bp3, err := cli.Blueprints(s.namespace).Update(ctx, bp2, metav1.UpdateOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(bp1.Actions, IsNil)

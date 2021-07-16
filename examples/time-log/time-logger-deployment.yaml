@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
       - name: test-container
-        image: ghcr.io/kanisterio/kanister-tools:0.58.0
+        image: ghcr.io/kanisterio/kanister-tools:0.63.0
         command: ["sh", "-c"]
         args: ["while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"]
         volumeMounts:
