@@ -51,13 +51,7 @@ start_localkube() {
     if ! command -v kind
     then
         get_localkube
-    else 
-        kind version
-        get_localkube
-        kind version
     fi
-
-    kind version
     kind create cluster --name ${LOCAL_CLUSTER_NAME} --image=kindest/node:${KUBE_VERSION} -v 1
     if [ -e ${KUBECONFIG} ]; then
         cp -fr ${KUBECONFIG} ${HOME}/.kube/config_bk
@@ -71,8 +65,6 @@ stop_localkube() {
     if ! command -v kind
     then
         get_localkube
-    else 
-        kind version
     fi
     kind delete cluster --name ${LOCAL_CLUSTER_NAME}
 }
