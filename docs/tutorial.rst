@@ -94,7 +94,6 @@ First Blueprint
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       phases:
       - func: KubeExec
         name: backupToS3
@@ -229,7 +228,6 @@ stdout, but eventually we'll backup the time log to that path.
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       configMapNames:
       - location
       phases:
@@ -330,7 +328,6 @@ For more on this templating, see :ref:`templates`
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       configMapNames:
       - location
       secretNames:
@@ -413,7 +410,6 @@ ConfigMap.
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       configMapNames:
       - location
       secretNames:
@@ -494,7 +490,6 @@ ConfigMap because the ``inputArtifact`` contains the fully specified path.
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       configMapNames:
       - location
       secretNames:
@@ -518,7 +513,6 @@ ConfigMap because the ``inputArtifact`` contains the fully specified path.
                 AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
                 aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path }}/time-log/
     restore:
-      type: Deployment
       secretNames:
       - aws
       inputArtifactNames:
