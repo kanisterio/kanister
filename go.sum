@@ -925,6 +925,8 @@ github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtX
 github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a/go.mod h1:v3UYOV9WzVtRmSR+PDvWpU/qWl4Wa5LApYYX4ZtKbio=
 github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45 h1:zpQBW+l4uPQTfTOxedN5GEcSONhabbCf3X+5+P/H4Jk=
 github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45/go.mod h1:zbnFoBQ9GIjs2RVETy8CNEpb+L+Lwkjs3XZUL0B3/m0=
+github.com/vmware/govmomi v0.22.2-0.20200329013745-f2eef8fc745f h1:6LIYlihC1/LDUhZ7zYVp1WOEY5owzsvogiaHBqvBzPU=
+github.com/vmware/govmomi v0.22.2-0.20200329013745-f2eef8fc745f/go.mod h1:Y+Wq4lst78L85Ge/F8+ORXIWiKYqaro1vhAulACy9Lc=
 github.com/vmware/vmw-guestinfo v0.0.0-20170707015358-25eff159a728/go.mod h1:x9oS4Wk2s2u4tS29nEaDLdzvuHdB19CvSGJjPgkZJNk=
 github.com/willf/bitset v1.1.11/go.mod h1:83CECat5yLh5zVOf4P1ErAgKA5UDvKtgyUABdr3+MjI=
 github.com/willf/bloom v2.0.3+incompatible/go.mod h1:MmAltL9pDMNTrvUkxdg0k0q5I0suxmuwp3KbyrZLOZ8=

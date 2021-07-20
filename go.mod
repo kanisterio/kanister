@@ -58,7 +58,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
 	github.com/spf13/cobra v1.1.1
-	github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45
+	github.com/vmware/govmomi v0.22.2-0.20200329013745-f2eef8fc745f
 	go.mongodb.org/mongo-driver v1.1.2 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
