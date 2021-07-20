@@ -190,7 +190,12 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 		log.Debug().Print("Started CreateSnapshot task", field.M{"VolumeID": volume.ID})
 		res, lerr = task.Wait(ctx, defaultWaitTime)
 		if lerr != nil {
-			msg := fmt.Sprintf("before IsVimFault type %T --- %v", lerr, soap.IsVimFault(lerr))
+			msg := fmt.Sprintf("before usl unwrap type %T --- %v", lerr, soap.IsVimFault(lerr))
+			log.Error().WithError(lerr).Print(msg)
+			if urlErr := (*url.Error)(nil); errors.As(lerr, &urlErr) {
+				lerr = urlErr.Unwrap()
+			}
+			msg = fmt.Sprintf("before IsVimFault type %T --- %v", lerr, soap.IsVimFault(lerr))
 			log.Error().WithError(lerr).Print(msg)
 			if soap.IsVimFault(lerr) {
 				msg := fmt.Sprintf("IsVimFault type %T --- %T", lerr, soap.ToVimFault(lerr))
