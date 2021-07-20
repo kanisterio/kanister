@@ -190,7 +190,11 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 		log.Debug().Print("Started CreateSnapshot task", field.M{"VolumeID": volume.ID})
 		res, lerr = task.Wait(ctx, defaultWaitTime)
 		if lerr != nil {
+			msg := fmt.Sprintf("before IsVimFault type %T --- %v", lerr, soap.IsVimFault(lerr))
+			log.Error().WithError(lerr).Print(msg)
 			if soap.IsVimFault(lerr) {
+				msg := fmt.Sprintf("IsVimFault type %T --- %T", lerr, soap.ToVimFault(lerr))
+				log.Error().WithError(lerr).Print(msg)
 				switch soap.ToVimFault(lerr).(type) {
 				case *types.InvalidState:
 					log.Error().WithError(lerr).Print("There is some operation, other than this CreateSnapshot invocation, on the VM attached still being protected by its VM state. Will retry")
@@ -201,6 +205,8 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 				case *types.NotFound:
 					log.Error().WithError(lerr).Print("CreateSnapshot failed with NotFound error. Will retry")
 					return false, nil
+				default:
+					log.Error().WithError(lerr).Print("Unhandled error case.")
 				}
 			}
 			return false, errors.Wrap(lerr, "Failed to wait on task")
