@@ -20,4 +20,10 @@ RUN microdnf update && microdnf install shadow-utils httpd-tools && \
   microdnf remove shadow-utils && \
   microdnf clean all
 
+RUN microdnf install yum \
+  && yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical \
+  && yum clean all \
+  && microdnf remove yum \
+  && microdnf clean all
+
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]
