@@ -95,7 +95,10 @@ func DeleteSnapshot(ctx context.Context, backupID, path, password string) error 
 	if err != nil {
 		return errors.Wrapf(err, "Failed to load kopia snapshot with ID: %v", backupID)
 	}
-	return rep.DeleteManifest(ctx, m.ID)
+	if err := rep.DeleteManifest(ctx, m.ID); err != nil {
+		return err
+	}
+	return rep.Flush(ctx)
 }
 
 // findPreviousSnapshotManifest returns the list of previous snapshots for a given source,
