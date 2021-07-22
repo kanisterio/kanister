@@ -163,6 +163,131 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	return nil
 }
 
+func (kc *KafkaCluster) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return []crv1alpha1.ObjectReference{
+		// ClusterRoles
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-kafka-client",
+			Resource:   "clusterroles",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-cluster-operator-global",
+			Resource:   "clusterroles",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-cluster-operator-namespaced",
+			Resource:   "clusterroles",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-entity-operator",
+			Resource:   "clusterroles",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-topic-operator",
+			Resource:   "clusterroles",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-kafka-broker",
+			Resource:   "clusterroles",
+		},
+
+		// ClusterRoleBindings
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-cluster-operator",
+			Resource:   "clusterrolebindings",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-cluster-operator-kafka-broker-delegation",
+			Resource:   "clusterrolebindings",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "rbac.authorization.k8s.io",
+			Name:       "strimzi-cluster-operator-kafka-client-delegation",
+			Resource:   "clusterrolebindings",
+		},
+
+		// CRDs
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkabridges.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkaconnectors.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkaconnects.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkaconnects2is.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkamirrormaker2s.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkamirrormakers.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkarebalances.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkas.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkatopics.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+		{
+			APIVersion: "v1",
+			Group:      "apiextensions.k8s.io",
+			Name:       "kafkausers.kafka.strimzi.io",
+			Resource:   "customresourcedefinitions",
+		},
+	}
+}
+
 // Object return the configmap referred in blueprint
 func (kc *KafkaCluster) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{

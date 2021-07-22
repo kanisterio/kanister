@@ -413,6 +413,10 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	return nil
 }
 
+func (a *RDSAuroraMySQLDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 func (a *RDSAuroraMySQLDB) getAWSConfig(ctx context.Context) (*awssdk.Config, string, error) {
 	config := make(map[string]string)
 	config[aws.ConfigRegion] = a.region

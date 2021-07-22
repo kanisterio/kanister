@@ -63,7 +63,7 @@ func NewMongoDB(name string) App {
 				"architecture":     "replicaset",
 				"image.registry":   "ghcr.io",
 				"image.repository": "kanisterio/mongodb",
-				"image.tag":        "0.59.0",
+				"image.tag":        "latest",
 			},
 		},
 	}
@@ -134,6 +134,10 @@ func (mongo *MongoDB) Uninstall(ctx context.Context) error {
 	log.Print("Uninstalling application.", field.M{"app": mongo.name})
 	err = cli.Uninstall(ctx, mongo.chart.Release, mongo.namespace)
 	return errors.Wrapf(err, "Error while uninstalling the application.")
+}
+
+func (mongo *MongoDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
 }
 
 func (mongo *MongoDB) Ping(ctx context.Context) error {

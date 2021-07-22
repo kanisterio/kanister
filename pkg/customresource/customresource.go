@@ -21,12 +21,16 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/consts"
 
 	// importing go check to bypass the testing flags
 	_ "gopkg.in/check.v1"
@@ -49,7 +53,7 @@ type CustomResource struct {
 	Version string
 
 	// Scope of the CRD. Namespaced or cluster
-	Scope apiextensionsv1beta1.ResourceScope
+	Scope apiextensionsv1.ResourceScope
 
 	// Kind is the serialized interface of the resource.
 	Kind string
@@ -93,29 +97,57 @@ func CreateCustomResources(context Context, resources []CustomResource) error {
 	return lastErr
 }
 
-func createCRD(context Context, resource CustomResource) error {
-	crdName := fmt.Sprintf("%s.%s", resource.Plural, resource.Group)
-	crd := &apiextensionsv1beta1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: crdName,
-		},
-		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   resource.Group,
-			Version: resource.Version,
-			Scope:   resource.Scope,
-			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Singular: resource.Name,
-				Plural:   resource.Plural,
-				Kind:     resource.Kind,
-			},
-		},
+func getCRDFromSpec(spec []byte) (*apiextensionsv1.CustomResourceDefinition, error) {
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	if err := decodeSpecIntoObject(spec, crd); err != nil {
+		return nil, err
 	}
+	return crd, nil
+}
 
-	_, err := context.APIExtensionClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(contextpkg.TODO(), crd, metav1.CreateOptions{})
+func decodeSpecIntoObject(spec []byte, intoObj runtime.Object) error {
+	d := serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
+	if _, _, err := d.Decode(spec, nil, intoObj); err != nil {
+		return fmt.Errorf("Failed to decode spec into object: %s; spec %s\n", err.Error(), spec)
+	}
+	return nil
+}
+
+func createCRD(context Context, resource CustomResource) error {
+	crd, err := getCRDFromSpec(specFromResName(resource.Name))
+	if err != nil {
+		return err
+	}
+	ctx := contextpkg.Background()
+	_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, crd, metav1.CreateOptions{})
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create %s CRD. %+v", resource.Name, err)
 		}
+
+		// if CRD already exists, get the resource version and create the CRD with that resource version
+		c, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("Failed to get CRD to get resource version: %s\n", err.Error())
+		}
+
+		crd.ResourceVersion = c.ResourceVersion
+		_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
+		if err != nil {
+			return fmt.Errorf("Failed to delete already present CRD: %s\n", err.Error())
+		}
+	}
+	return nil
+}
+
+func specFromResName(name string) []byte {
+	switch name {
+	case consts.ActionSetResourceName:
+		return []byte(actionsetCRD)
+	case consts.BlueprintResourceName:
+		return []byte(blueprintCRD)
+	case consts.ProfileResourceName:
+		return []byte(profileCRD)
 	}
 	return nil
 }
@@ -123,18 +155,18 @@ func createCRD(context Context, resource CustomResource) error {
 func waitForCRDInit(context Context, resource CustomResource) error {
 	crdName := fmt.Sprintf("%s.%s", resource.Plural, resource.Group)
 	return wait.Poll(context.Interval, context.Timeout, func() (bool, error) {
-		crd, err := context.APIExtensionClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(contextpkg.TODO(), crdName, metav1.GetOptions{})
+		crd, err := context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Get(contextpkg.TODO(), crdName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
 		for _, cond := range crd.Status.Conditions {
 			switch cond.Type {
-			case apiextensionsv1beta1.Established:
-				if cond.Status == apiextensionsv1beta1.ConditionTrue {
+			case apiextensionsv1.Established:
+				if cond.Status == apiextensionsv1.ConditionTrue {
 					return true, nil
 				}
-			case apiextensionsv1beta1.NamesAccepted:
-				if cond.Status == apiextensionsv1beta1.ConditionFalse {
+			case apiextensionsv1.NamesAccepted:
+				if cond.Status == apiextensionsv1.ConditionFalse {
 					return false, fmt.Errorf("Name conflict: %v ", cond.Reason)
 				}
 			}

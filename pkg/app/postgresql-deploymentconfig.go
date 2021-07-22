@@ -140,6 +140,10 @@ func (pgres *PostgreSQLDepConfig) Uninstall(ctx context.Context) error {
 	return err
 }
 
+func (pgres *PostgreSQLDepConfig) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 func (pgres *PostgreSQLDepConfig) Ping(ctx context.Context) error {
 	cmd := "pg_isready -U 'postgres' -h 127.0.0.1 -p 5432"
 	_, stderr, err := pgres.execCommand(ctx, []string{"bash", "-c", cmd})

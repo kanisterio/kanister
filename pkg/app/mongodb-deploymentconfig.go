@@ -116,6 +116,10 @@ func (mongo *MongoDBDepConfig) Uninstall(ctx context.Context) error {
 	return err
 }
 
+func (mongo *MongoDBDepConfig) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
 func (mongo *MongoDBDepConfig) Ping(ctx context.Context) error {
 	log.Print("Pinging the application", field.M{"app": mongo.name})
 

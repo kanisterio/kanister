@@ -680,6 +680,7 @@ func staticRegionToZones(region string) ([]string, error) {
 		}, nil
 	case "eu-west-2":
 		return []string{
+			"eu-west-2-wl1-lon-wlz-1",
 			"eu-west-2a",
 			"eu-west-2b",
 			"eu-west-2c",
@@ -745,8 +746,10 @@ func staticRegionToZones(region string) ([]string, error) {
 			"us-east-1e",
 			"us-east-1f",
 			"us-east-1-bos-1a",
+			"us-east-1-dfw-1a",
 			"us-east-1-iah-1a",
 			"us-east-1-mia-1a",
+			"us-east-1-phl-1a",
 			"us-east-1-wl1-atl-wlz-1",
 			"us-east-1-wl1-bos-wlz-1",
 			"us-east-1-wl1-dfw-wlz-1",
