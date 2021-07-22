@@ -110,7 +110,7 @@ func OpenRepository(ctx context.Context, configFile, password, purpose string) (
 		return nil, errors.Wrap(err, "Failed to open kopia repository")
 	}
 
-	rw, err := r.NewWriter(ctx, repo.WriteSessionOptions{
+	_, rw, err := r.NewWriter(ctx, repo.WriteSessionOptions{
 		Purpose:  purpose,
 		OnUpload: func(i int64) {},
 	})
