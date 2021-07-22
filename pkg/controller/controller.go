@@ -208,7 +208,10 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 	if err := validate.ActionSet(as); err != nil {
 		return err
 	}
-	return c.handleActionSet(as)
+	iv := getEnvAsIntOrDefault("ACTIONSET_TIMEOUT", 30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(iv)*time.Second)
+	defer cancel()
+	return c.handleActionSet(ctx, as)
 }
 
 func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) {
@@ -342,7 +345,7 @@ func (c *Controller) initialActionStatus(namespace string, a crv1alpha1.ActionSp
 	}, nil
 }
 
-func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
+func (c *Controller) handleActionSet(ctx context.Context, as *crv1alpha1.ActionSet) (err error) {
 	if as.Status == nil {
 		return errors.New("ActionSet was not initialized")
 	}
@@ -353,9 +356,6 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.TODO(), as, v1.UpdateOptions{}); err != nil {
 		return errors.WithStack(err)
 	}
-	iv := getEnvAsIntOrDefault("ACTIONSET_TIMEOUT", 30)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(iv)*time.Second)
-	defer cancel()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	for i := range as.Status.Actions {
 		if err = c.runAction(ctx, as, i); err != nil {
@@ -425,7 +425,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			}
 			var rf func(*crv1alpha1.ActionSet) error
 			if err != nil {
-				// If error is because of context canceled && timeout then update the actionset with failed status 
+				// If error is because of context canceled && timeout then update the actionset with failed status
 				if ctx.Err() != nil {
 					bpName := as.Spec.Actions[aIDX].Blueprint
 					bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(context.Background(), bpName, v1.GetOptions{})
