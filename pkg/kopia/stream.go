@@ -117,6 +117,7 @@ func Write(ctx context.Context, path string, source io.Reader) (*SnapshotInfo, e
 	return snapshotInfo, nil
 }
 
+// WriteFile creates a kopia snapshot from the given source file
 func WriteFile(ctx context.Context, path string, sourcePath string) (*SnapshotInfo, error) {
 	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
 	if !ok || password == "" {
@@ -130,7 +131,7 @@ func WriteFile(ctx context.Context, path string, sourcePath string) (*SnapshotIn
 
 	dir, err := filepath.Abs(sourcePath)
 	if err != nil {
-		return nil, errors.Errorf("invalid source: '%s': %s", sourcePath, err)
+		return nil, errors.Wrapf(err, "Invalid source path '%s'", sourcePath)
 	}
 
 	// Populate the source info with parent path as the source
@@ -141,7 +142,7 @@ func WriteFile(ctx context.Context, path string, sourcePath string) (*SnapshotIn
 	}
 	rootDir, err := getLocalFSEntry(ctx, sourceInfo.Path)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get local filesystem entry")
+		return nil, errors.Wrap(err, "Unable to get local filesystem entry")
 	}
 
 	// Setup kopia uploader
@@ -190,7 +191,6 @@ func resolveSymlink(path string) (string, error) {
 }
 
 // Read reads a kopia snapshot with the given ID and copies it to the given target
-// TODO@pavan: Support files as target
 func Read(ctx context.Context, backupID, path string, target io.Writer) error {
 	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
 	if !ok || password == "" {
@@ -221,6 +221,7 @@ func Read(ctx context.Context, backupID, path string, target io.Writer) error {
 	return errors.Wrap(err, "Failed to copy snapshot data to the target")
 }
 
+// Read restores a kopia snapshot with the given ID to the given target
 func ReadFile(ctx context.Context, backupID, target string) error {
 	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
 	if !ok || password == "" {
@@ -234,12 +235,12 @@ func ReadFile(ctx context.Context, backupID, target string) error {
 
 	rootEntry, err := snapshotfs.FilesystemEntryFromIDWithPath(ctx, rep, backupID, false)
 	if err != nil {
-		return errors.Wrap(err, "unable to get filesystem entry")
+		return errors.Wrap(err, "Unable to get filesystem entry")
 	}
 
 	p, err := filepath.Abs(target)
 	if err != nil {
-		return errors.Wrap(err, "unable to resolve path")
+		return errors.Wrap(err, "Unable to resolve path")
 	}
 	// TODO: Do we want to keep this flags configurable?
 	output := &restore.FilesystemOutput{
@@ -252,7 +253,6 @@ func ReadFile(ctx context.Context, backupID, target string) error {
 
 	_, err = restore.Entry(ctx, rep, output, rootEntry, restore.Options{
 		Parallel: 8,
-		//RestoreDirEntryAtDepth: math.MaxInt32,
 	})
 	return errors.Wrap(err, "Failed to copy snapshot data to the target")
 }
