@@ -221,7 +221,7 @@ func Read(ctx context.Context, backupID, path string, target io.Writer) error {
 	return errors.Wrap(err, "Failed to copy snapshot data to the target")
 }
 
-// Read restores a kopia snapshot with the given ID to the given target
+// ReadFile restores a kopia snapshot with the given ID to the given target
 func ReadFile(ctx context.Context, backupID, target string) error {
 	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
 	if !ok || password == "" {
