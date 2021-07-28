@@ -42,7 +42,7 @@ func (s *TestUtilSuite) TestDeployment(c *C) {
 	c.Assert(err, IsNil)
 	crCli, err := crclientv1alpha1.NewForConfig(config)
 	c.Assert(err, IsNil)
-	ctx := context.TODO()
+	ctx := context.Background()
 	ns := NewTestNamespace()
 	ns, err = cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)

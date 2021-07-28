@@ -73,7 +73,7 @@ func (s *DataSuite) SetUpSuite(c *C) {
 	s.crCli = crCli
 	s.osCli = osCli
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	ns := testutil.NewTestNamespace()
 	ns.GenerateName = "kanister-datatest-"
 
