@@ -67,7 +67,6 @@ actions:
             kubectl exec -it -n {{ .Phases.takeSnapshot.Output.etcdNS }} {{ .Phases.takeSnapshot.Output.etcdPod }} -c etcd -- sh -c "rm -rf  /tmp/etcd-backup.db"
 
   delete:
-    type: Namespace
     inputArtifactNames:
     - cloudObject
     phases:
