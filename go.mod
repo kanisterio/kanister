@@ -10,7 +10,7 @@ replace (
 )
 
 require (
-	cloud.google.com/go v0.87.0 // indirect
+	cloud.google.com/go v0.88.0 // indirect
 	cloud.google.com/go/storage v1.16.0 // indirect
 	github.com/Azure/azure-sdk-for-go v54.0.0+incompatible
 	github.com/Azure/azure-storage-blob-go v0.14.0 // indirect
@@ -64,7 +64,7 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
-	github.com/prometheus/common v0.29.0 // indirect
+	github.com/prometheus/common v0.30.0 // indirect
 	github.com/prometheus/procfs v0.7.1 // indirect
 	github.com/renier/xmlrpc v0.0.0-20170708154548-ce4a1a486c03 // indirect
 	github.com/rs/xid v1.3.0 // indirect
@@ -73,16 +73,16 @@ require (
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45
+	github.com/zeebo/blake3 v0.1.2 // indirect
 	go.mongodb.org/mongo-driver v1.5.1 // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
-	golang.org/x/exp v0.0.0-20210715201039-d37aa40e8013 // indirect
-	golang.org/x/net v0.0.0-20210716203947-853a461950ff // indirect
+	golang.org/x/exp v0.0.0-20210722180016-6781d3edade3 // indirect
+	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985 // indirect
 	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
-	google.golang.org/api v0.50.0
-	google.golang.org/genproto v0.0.0-20210721163202-f1cecdd8b78a // indirect
+	google.golang.org/api v0.51.0
+	google.golang.org/genproto v0.0.0-20210726200206-e7812ac95cc0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
