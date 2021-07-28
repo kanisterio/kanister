@@ -24,7 +24,6 @@ import (
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/fs/localfs"
 	"github.com/kopia/kopia/fs/virtualfs"
-	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/snapshot"
 	"github.com/kopia/kopia/snapshot/restore"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
@@ -67,12 +66,7 @@ func (si *SnapshotInfo) Validate() error {
 // Write creates a kopia snapshot from the given reader
 // A virtual directory tree rooted at filepath.Dir(path) is created with
 // a kopia streaming file with filepath.Base(path) as name
-func Write(ctx context.Context, path string, source io.Reader) (*SnapshotInfo, error) {
-	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
-	if !ok || password == "" {
-		return nil, errors.New("Failed to retrieve kopia client passphrase")
-	}
-
+func Write(ctx context.Context, source io.Reader, path, password string) (*SnapshotInfo, error) {
 	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pushRepoPurpose)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to open kopia repository")
@@ -118,12 +112,7 @@ func Write(ctx context.Context, path string, source io.Reader) (*SnapshotInfo, e
 }
 
 // WriteFile creates a kopia snapshot from the given source file
-func WriteFile(ctx context.Context, path string, sourcePath string) (*SnapshotInfo, error) {
-	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
-	if !ok || password == "" {
-		return nil, errors.New("Failed to retrieve kopia client passphrase")
-	}
-
+func WriteFile(ctx context.Context, path, sourcePath, password string) (*SnapshotInfo, error) {
 	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pushRepoPurpose)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to open kopia repository")
@@ -191,12 +180,7 @@ func resolveSymlink(path string) (string, error) {
 }
 
 // Read reads a kopia snapshot with the given ID and copies it to the given target
-func Read(ctx context.Context, backupID, path string, target io.Writer) error {
-	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
-	if !ok || password == "" {
-		return errors.New("Failed to retrieve kopia client passphrase")
-	}
-
+func Read(ctx context.Context, target io.Writer, backupID, path, password string) error {
 	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
@@ -222,12 +206,7 @@ func Read(ctx context.Context, backupID, path string, target io.Writer) error {
 }
 
 // ReadFile restores a kopia snapshot with the given ID to the given target
-func ReadFile(ctx context.Context, backupID, target string) error {
-	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
-	if !ok || password == "" {
-		return errors.New("Failed to retrieve kopia client passphrase")
-	}
-
+func ReadFile(ctx context.Context, backupID, target, password string) error {
 	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
