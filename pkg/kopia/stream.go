@@ -17,12 +17,15 @@ package kopia
 import (
 	"context"
 	"io"
+	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/kopia/kopia/fs"
+	"github.com/kopia/kopia/fs/localfs"
 	"github.com/kopia/kopia/fs/virtualfs"
 	"github.com/kopia/kopia/snapshot"
+	"github.com/kopia/kopia/snapshot/restore"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
 	"github.com/pkg/errors"
 )
@@ -108,6 +111,74 @@ func Write(ctx context.Context, path string, source io.Reader, password string) 
 	return snapshotInfo, nil
 }
 
+// WriteFile creates a kopia snapshot from the given source file
+func WriteFile(ctx context.Context, path string, sourcePath, password string) (*SnapshotInfo, error) {
+	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pushRepoPurpose)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to open kopia repository")
+	}
+
+	dir, err := filepath.Abs(sourcePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Invalid source path '%s'", sourcePath)
+	}
+
+	// Populate the source info with parent path as the source
+	sourceInfo := snapshot.SourceInfo{
+		UserName: rep.ClientOptions().Username,
+		Host:     rep.ClientOptions().Hostname,
+		Path:     filepath.Clean(dir),
+	}
+	rootDir, err := getLocalFSEntry(ctx, sourceInfo.Path)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to get local filesystem entry")
+	}
+
+	// Setup kopia uploader
+	u := snapshotfs.NewUploader(rep)
+
+	// Create a kopia snapshot
+	snapID, snapshotSize, err := SnapshotSource(ctx, rep, u, sourceInfo, rootDir, "Kanister Database Backup")
+	if err != nil {
+		return nil, err
+	}
+
+	snapshotInfo := &SnapshotInfo{
+		ID:           snapID,
+		LogicalSize:  snapshotSize,
+		PhysicalSize: int64(0),
+	}
+	return snapshotInfo, nil
+}
+
+func getLocalFSEntry(ctx context.Context, path0 string) (fs.Entry, error) {
+	path, err := resolveSymlink(path0)
+	if err != nil {
+		return nil, errors.Wrap(err, "resolveSymlink")
+	}
+
+	e, err := localfs.NewEntry(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't get local fs entry")
+	}
+
+	return e, nil
+}
+
+func resolveSymlink(path string) (string, error) {
+	st, err := os.Lstat(path)
+	if err != nil {
+		return "", errors.Wrap(err, "stat")
+	}
+
+	if (st.Mode() & os.ModeSymlink) == 0 {
+		return path, nil
+	}
+
+	// nolint:wrapcheck
+	return filepath.EvalSymlinks(path)
+}
+
 // Read reads a kopia snapshot with the given ID and copies it to the given target
 // TODO@pavan: Support files as target
 func Read(ctx context.Context, backupID, path string, target io.Writer, password string) error {
@@ -132,6 +203,37 @@ func Read(ctx context.Context, backupID, path string, target io.Writer, password
 
 	_, err = copy(target, r)
 
+	return errors.Wrap(err, "Failed to copy snapshot data to the target")
+}
+
+// ReadFile restores a kopia snapshot with the given ID to the given target
+func ReadFile(ctx context.Context, backupID, target, password string) error {
+	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose)
+	if err != nil {
+		return errors.Wrap(err, "Failed to open kopia repository")
+	}
+
+	rootEntry, err := snapshotfs.FilesystemEntryFromIDWithPath(ctx, rep, backupID, false)
+	if err != nil {
+		return errors.Wrap(err, "Unable to get filesystem entry")
+	}
+
+	p, err := filepath.Abs(target)
+	if err != nil {
+		return errors.Wrap(err, "Unable to resolve path")
+	}
+	// TODO: Do we want to keep this flags configurable?
+	output := &restore.FilesystemOutput{
+		TargetPath:             p,
+		OverwriteDirectories:   true,
+		OverwriteFiles:         true,
+		OverwriteSymlinks:      true,
+		IgnorePermissionErrors: true,
+	}
+
+	_, err = restore.Entry(ctx, rep, output, rootEntry, restore.Options{
+		Parallel: 8,
+	})
 	return errors.Wrap(err, "Failed to copy snapshot data to the target")
 }
 

@@ -53,10 +53,6 @@ func outputNameFlag(cmd *cobra.Command) string {
 }
 
 func runLocationPush(cmd *cobra.Command, args []string) error {
-	source, err := sourceReader(args[0])
-	if err != nil {
-		return err
-	}
 	p, err := unmarshalProfileFlag(cmd)
 	if err != nil {
 		return err
@@ -68,7 +64,11 @@ func runLocationPush(cmd *cobra.Command, args []string) error {
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaLocationPush(ctx, s, outputName, source, p.Credential.KopiaServerSecret.Password)
+		return kopiaLocationPush(ctx, s, outputName, args[0], p.Credential.KopiaServerSecret.Password)
+	}
+	source, err := sourceReader(args[0])
+	if err != nil {
+		return err
 	}
 	return locationPush(ctx, p, s, source)
 }
@@ -94,8 +94,15 @@ func locationPush(ctx context.Context, p *param.Profile, path string, source io.
 }
 
 // kopiaLocationPush pushes the data from the source using a kopia snapshot
-func kopiaLocationPush(ctx context.Context, path, outputName string, source io.Reader, password string) error {
-	snapInfo, err := kopia.Write(ctx, path, source, password)
+func kopiaLocationPush(ctx context.Context, path, outputName string, sourcePath, password string) error {
+	var snapInfo *kopia.SnapshotInfo
+	var err error
+	switch sourcePath {
+	case usePipeParam:
+		snapInfo, err = kopia.Write(ctx, path, os.Stdin, password)
+	default:
+		snapInfo, err = kopia.WriteFile(ctx, path, sourcePath, password)
+	}
 	if err != nil {
 		return errors.Wrap(err, "Failed to push data using kopia")
 	}

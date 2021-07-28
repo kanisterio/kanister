@@ -1,4 +1,4 @@
-ARG base_image=registry.access.redhat.com/ubi8/ubi-minimal:8.4-200.1622548483
+ARG base_image=registry.access.redhat.com/ubi8/ubi-minimal:8.4-205
 FROM ${base_image}
 ARG kanister_version
 
@@ -13,6 +13,12 @@ LABEL name=ARG_BIN \
 RUN microdnf install git && \
     microdnf update openssl-libs && \
     microdnf clean all
+
+RUN microdnf install yum \
+  && yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical \
+  && yum clean all \
+  && microdnf remove yum \
+  && microdnf clean all
 
 COPY licenses /licenses/licenses
 
