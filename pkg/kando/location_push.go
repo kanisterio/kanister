@@ -99,7 +99,7 @@ func kopiaLocationPush(ctx context.Context, path, outputName string, sourcePath,
 	var err error
 	switch sourcePath {
 	case usePipeParam:
-		snapInfo, err = kopia.Write(ctx, path, os.Stdin, password)
+		snapInfo, err = kopia.Write(ctx, os.Stdin, path, password)
 	default:
 		snapInfo, err = kopia.WriteFile(ctx, path, sourcePath, password)
 	}

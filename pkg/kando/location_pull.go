@@ -90,10 +90,10 @@ func locationPull(ctx context.Context, p *param.Profile, path string, target io.
 }
 
 // kopiaLocationPull pulls the data from a kopia snapshot into the given target
-func kopiaLocationPull(ctx context.Context, backupID, path string, targetPath, password string) error {
+func kopiaLocationPull(ctx context.Context, backupID, path, targetPath, password string) error {
 	switch targetPath {
 	case usePipeParam:
-		return kopia.Read(ctx, backupID, path, os.Stdout, password)
+		return kopia.Read(ctx, os.Stdout, backupID, path, password)
 	default:
 		return kopia.ReadFile(ctx, backupID, targetPath, password)
 	}
