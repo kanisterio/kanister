@@ -4,7 +4,6 @@ metadata:
   name: kafka-blueprint
 actions:
   backup:
-    type: Deployment
     outputArtifacts:
       s3Dump:
         keyValue:
@@ -62,7 +61,6 @@ actions:
             sh monitorconnect.sh
             exit 0
   restore:
-    type: Deployment
     inputArtifactNames:
     - s3Dump
     phases:
@@ -181,7 +179,6 @@ actions:
             sh monitorconnect.sh
             exit 0
   delete:
-    type: Namespace
     inputArtifactNames:
     - s3Dump
     phases:

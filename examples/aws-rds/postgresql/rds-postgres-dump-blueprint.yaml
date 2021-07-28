@@ -41,7 +41,7 @@ actions:
     inputArtifactNames:
     - backupInfo
     phases:
-    - func: RestoreRDSSnapshot 
+    - func: RestoreRDSSnapshot
       name: restoreSnapshots
       objects:
         dbsecret:
@@ -59,7 +59,6 @@ actions:
         dbEngine: "PostgreSQL"
 
   delete:
-    type: Namespace
     phases:
     - func: KubeTask
       name: deleteBackup
