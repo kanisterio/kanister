@@ -180,7 +180,6 @@ func resolveSymlink(path string) (string, error) {
 }
 
 // Read reads a kopia snapshot with the given ID and copies it to the given target
-// TODO@pavan: Support files as target
 func Read(ctx context.Context, target io.Writer, backupID, path, password string) error {
 	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose)
 	if err != nil {

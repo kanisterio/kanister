@@ -94,7 +94,7 @@ func locationPush(ctx context.Context, p *param.Profile, path string, source io.
 }
 
 // kopiaLocationPush pushes the data from the source using a kopia snapshot
-func kopiaLocationPush(ctx context.Context, path, outputName string, sourcePath, password string) error {
+func kopiaLocationPush(ctx context.Context, path, outputName, sourcePath, password string) error {
 	var snapInfo *kopia.SnapshotInfo
 	var err error
 	switch sourcePath {
