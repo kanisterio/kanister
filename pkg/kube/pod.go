@@ -293,7 +293,7 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		}
 		return p.Status.Phase == v1.PodSucceeded, nil
 	})
-	return errors.Wrap(err, "Pod did not transition into complete state")
+	return errors.Wrap(err, "Pod failed or did not transition into complete state")
 }
 
 // use Strategic Merge to patch default pod specs with the passed specs

@@ -5,7 +5,6 @@ metadata:
   namespace: kanister
 actions:
   backup:
-    type: Deployment
     outputArtifacts:
       backupInfo:
         keyValue:
@@ -16,7 +15,6 @@ actions:
       args:
         namespace: "{{ .Deployment.Namespace }}"
   restore:
-    type: Deployment
     inputArtifactNames:
       - backupInfo
     phases:
@@ -40,7 +38,6 @@ actions:
         kind: Deployment
         replicas: 1
   delete:
-    type: Deployment
     inputArtifactNames:
       - backupInfo
     phases:

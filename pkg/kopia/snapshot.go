@@ -84,12 +84,7 @@ func SnapshotSource(
 }
 
 // DeleteSnapshot deletes Kopia snapshot with given manifest ID
-func DeleteSnapshot(ctx context.Context, backupID, path string) error {
-	password, ok := repo.GetPersistedPassword(ctx, defaultConfigFilePath)
-	if !ok || password == "" {
-		return errors.New("Failed to retrieve kopia client passphrase")
-	}
-
+func DeleteSnapshot(ctx context.Context, backupID, path, password string) error {
 	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
@@ -100,7 +95,10 @@ func DeleteSnapshot(ctx context.Context, backupID, path string) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to load kopia snapshot with ID: %v", backupID)
 	}
-	return rep.DeleteManifest(ctx, m.ID)
+	if err := rep.DeleteManifest(ctx, m.ID); err != nil {
+		return err
+	}
+	return rep.Flush(ctx)
 }
 
 // findPreviousSnapshotManifest returns the list of previous snapshots for a given source,

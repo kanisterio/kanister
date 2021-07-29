@@ -12,7 +12,7 @@ actions:
     - func: KubeTask
       name: takeSnapshot
       args:
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.61.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.64.0
         command:
           - sh
           - -o
@@ -37,7 +37,7 @@ actions:
     - func: KubeTask
       name: uploadSnapshot
       args:
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.61.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.64.0
         command:
           - sh
           - -o
@@ -55,7 +55,7 @@ actions:
     - func: KubeTask
       name: removeSnapshot
       args:
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.61.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.64.0
         command:
           - sh
           - -o
@@ -67,7 +67,6 @@ actions:
             kubectl exec -it -n {{ .Phases.takeSnapshot.Output.etcdNS }} {{ .Phases.takeSnapshot.Output.etcdPod }} -c etcd -- sh -c "rm -rf  /tmp/etcd-backup.db"
 
   delete:
-    type: Namespace
     inputArtifactNames:
     - cloudObject
     phases:
@@ -75,7 +74,7 @@ actions:
       name: deleteFromObjectStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: "ghcr.io/kanisterio/kanister-tools:0.61.0"
+        image: "ghcr.io/kanisterio/kanister-tools:0.64.0"
         command:
         - bash
         - -o

@@ -114,6 +114,7 @@ spec:
                       type: object
                     podOverride:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                       description: PodOverride is used to specify pod specs that will
                         override the default pod specs
                     preferredVersion:
