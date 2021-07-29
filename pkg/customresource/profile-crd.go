@@ -76,6 +76,72 @@ spec:
                     description: Resource name of the referent.
                     type: string
                 type: object
+              kopiaServerSecret:
+                x-kubernetes-preserve-unknown-fields: true
+                properties:
+                  username:
+                    type: string
+                  hostname:
+                    type: string
+                  userPassphrase:
+                    x-kubernetes-preserve-unknown-fields: true
+                    properties:
+                      key:
+                        type: string
+                      secret:
+                        properties:
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          group:
+                            description: API Group of the referent.
+                            type: string
+                          kind:
+                            description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
+                            type: string
+                          namespace:
+                            description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
+                            type: string
+                          resource:
+                            description: Resource name of the referent.
+                            type: string
+                        type: object
+                    type: object
+                  tlsCert:
+                    x-kubernetes-preserve-unknown-fields: true
+                    properties:
+                      key:
+                        type: string
+                      secret:
+                        properties:
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          group:
+                            description: API Group of the referent.
+                            type: string
+                          kind:
+                            description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
+                            type: string
+                          namespace:
+                            description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
+                            type: string
+                          resource:
+                            description: Resource name of the referent.
+                            type: string
+                        type: object
+                    type: object
+                  connectOptions:
+                    additionalProperties:
+                      type: integer
+                    type: object
+                type: object
               type:
                 type: string
             type: object

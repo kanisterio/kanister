@@ -54,7 +54,7 @@ func ListUnstructuredObject(resource schema.GroupVersionResource, namespace stri
 // ListUnstructuredObjectWithCli returns the referenced API objects as a map[string]interface{} using the specified CLI
 // TODO: deprecate `ListUnstructuredObject`
 func ListUnstructuredObjectWithCli(cli dynamic.Interface, resource schema.GroupVersionResource, namespace string) (runtime.Unstructured, error) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	if namespace == "" {
 		return cli.Resource(resource).List(ctx, metav1.ListOptions{})
 	}

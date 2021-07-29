@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4-205
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \
@@ -9,8 +9,8 @@ LABEL name="kanister-tools" \
     description="Kanister tools for application-specific data management"
 
 COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
-# kopia alpine-30d16967 image
-COPY --from=kanisterio/kopia@sha256:dafd7c37f11c02e6930fe88c418b7cdcedc9b9f07d2727e78d8bd685ced8923e \
+# kopia alpine-7dd9e33 image
+COPY --from=ghcr.io/kanisterio/kopia@sha256:cdea37da815dd97bc437f384531a0bab41528281b7b23bc2543e3af26a21c967 \
   /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
 
@@ -19,5 +19,11 @@ RUN microdnf update && microdnf install shadow-utils httpd-tools && \
   adduser -U kanister -u 1000 && \
   microdnf remove shadow-utils && \
   microdnf clean all
+
+RUN microdnf install yum \
+  && yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical \
+  && yum clean all \
+  && microdnf remove yum \
+  && microdnf clean all
 
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]

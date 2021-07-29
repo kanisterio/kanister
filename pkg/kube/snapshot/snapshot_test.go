@@ -84,7 +84,7 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 	suffix := strconv.Itoa(int(time.Now().UnixNano() % 100000))
 	s.sourceNamespace = "snapshot-test-source-" + suffix
 	s.targetNamespace = "snapshot-test-target-" + suffix
-	ctx := context.TODO()
+	ctx := context.Background()
 	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
 	s.cli = cli
@@ -179,7 +179,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *C) {
 }
 
 func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
@@ -247,7 +247,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
 }
 
 func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	fakeSnapshotName := "snap-1-fake"
 	fakeContentName := "snapcontent-1-fake"
 	deletionPolicy := "Delete"
@@ -489,7 +489,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 }
 
 func (s *SnapshotTestSuite) cleanupNamespace(c *C, ns string) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	pvcs, erra := s.cli.CoreV1().PersistentVolumeClaims(ns).List(ctx, metav1.ListOptions{})
 	if erra != nil {
 		c.Logf("Failed to list PVCs, Namespace: %s, Error: %v", ns, erra)

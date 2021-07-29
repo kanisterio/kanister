@@ -79,7 +79,7 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 			GenerateName: "kanistercontrollertest-",
 		},
 	}
-	ctx := context.TODO()
+	ctx := context.Background()
 	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
@@ -370,7 +370,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			// Add a blueprint with a mocked kanister function.
 			bp := testutil.NewTestBlueprint(pok, tc.funcNames...)
 			bp = testutil.BlueprintWithConfigMap(bp)
-			ctx := context.TODO()
+			ctx := context.Background()
 			bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 			c.Assert(err, IsNil)
 
@@ -499,7 +499,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 }
 
 func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	// Create a blueprint that uses func output as artifact
 	bp := newBPWithOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
@@ -531,7 +531,7 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 }
 
 func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	// Create a blueprint that uses func output as kopia snapshot
 	bp := newBPWithKopiaSnapshotOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
@@ -563,7 +563,7 @@ func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
 }
 
 func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	// Create a blueprint that uses func output as artifact
 	bp := newBPWithOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
@@ -614,7 +614,7 @@ func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
 }
 
 func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	bp := newBPWithFakeOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
 	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})

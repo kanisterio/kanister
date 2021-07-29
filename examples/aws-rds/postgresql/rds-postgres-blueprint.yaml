@@ -13,7 +13,7 @@ actions:
     - func: KubeTask
       name: backupSnapshots
       args:
-        image: "ghcr.io/kanisterio/postgres-kanister-tools:0.61.0"
+        image: "ghcr.io/kanisterio/postgres-kanister-tools:0.64.0"
         namespace: "{{ .Object.metadata.namespace }}"
         command:
           - bash
@@ -49,7 +49,7 @@ actions:
     - func: KubeTask
       name: restoreSnapshots
       args:
-        image: "ghcr.io/kanisterio/postgres-kanister-tools:0.61.0"
+        image: "ghcr.io/kanisterio/postgres-kanister-tools:0.64.0"
         namespace: "{{ .Object.metadata.namespace }}"
         command:
           - bash
@@ -80,14 +80,13 @@ actions:
             aws rds restore-db-instance-from-db-snapshot --db-instance-identifier="{{ index .Object.data "postgres.instanceid" }}" --db-snapshot-identifier="{{ .ArtifactsIn.snapshot.KeyValue.id }}" --vpc-security-group-ids "{{ .ArtifactsIn.snapshot.KeyValue.sgid }}" --region "{{ .Profile.Location.Region }}"
             aws rds wait db-instance-available --region "{{ .Profile.Location.Region }}" --db-instance-identifier="{{ index .Object.data "postgres.instanceid" }}"
   delete:
-    type: Namespace
     inputArtifactNames:
     - snapshot
     phases:
     - func: KubeTask
       name: restoreSnapshots
       args:
-        image: "ghcr.io/kanisterio/postgres-kanister-tools:0.61.0"
+        image: "ghcr.io/kanisterio/postgres-kanister-tools:0.64.0"
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash

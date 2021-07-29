@@ -57,7 +57,7 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 	s.cli = cli
 	s.crCli = crCli
 	s.osCli = osCli
-	ctx := context.TODO()
+	ctx := context.Background()
 	err = resource.CreateCustomResources(context.Background(), config)
 	c.Assert(err, IsNil)
 

@@ -32,7 +32,6 @@ import (
 
 const (
 	defaultConnectMaxListCacheDuration time.Duration = time.Second * 600
-	defaultConnectPersistCredentials                 = true
 	kopiaGetRepoParametersError                      = "unable to get repository parameters"
 )
 
@@ -61,7 +60,6 @@ func ConnectToAPIServer(
 	}
 
 	opts := &repo.ConnectOptions{
-		PersistCredentials: defaultConnectPersistCredentials,
 		CachingOptions: content.CachingOptions{
 			CacheDirectory:            defaultCacheDirectory,
 			MaxCacheSizeBytes:         int64(contentCacheMB << 20),
@@ -112,7 +110,7 @@ func OpenRepository(ctx context.Context, configFile, password, purpose string) (
 		return nil, errors.Wrap(err, "Failed to open kopia repository")
 	}
 
-	rw, err := r.NewWriter(ctx, repo.WriteSessionOptions{
+	_, rw, err := r.NewWriter(ctx, repo.WriteSessionOptions{
 		Purpose:  purpose,
 		OnUpload: func(i int64) {},
 	})

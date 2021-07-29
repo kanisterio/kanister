@@ -62,7 +62,7 @@ func (s *KubeExecAllTest) SetUpSuite(c *C) {
 	s.crCli = crCli
 	s.osCli = osCli
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kubeexecall-",
