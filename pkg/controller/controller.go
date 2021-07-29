@@ -77,7 +77,7 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get a CustomResource client")
 	}
-	if err := checkCRAccess(crClient, namespace); err != nil {
+	if err := checkCRAccess(ctx, crClient, namespace); err != nil {
 		return err
 	}
 	clientset, err := kubernetes.NewForConfig(c.config)
@@ -121,8 +121,7 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 	return nil
 }
 
-func checkCRAccess(cli versioned.Interface, ns string) error {
-	ctx := context.TODO()
+func checkCRAccess(ctx context.Context, cli versioned.Interface, ns string) error {
 	if _, err := cli.CrV1alpha1().ActionSets(ns).List(ctx, v1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list ActionSets")
 	}
@@ -191,8 +190,7 @@ func (c *Controller) onDelete(obj interface{}) {
 }
 
 func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
-	ctx := context.TODO()
-	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), v1.GetOptions{})
+	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), v1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -200,7 +198,7 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 		return err
 	}
 	c.initActionSetStatus(as)
-	as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), v1.GetOptions{})
+	as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), v1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)
 	}

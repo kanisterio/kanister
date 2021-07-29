@@ -197,7 +197,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 		}
 
 		// check if pvc and pv are up and ready to mount
-		if err := getVolStatus(p, cli, namespace); err != nil {
+		if err := getVolStatus(timeoutCtx, p, cli, namespace); err != nil {
 			return false, err
 		}
 
@@ -224,9 +224,9 @@ func checkNodesStatus(p *v1.Pod, cli kubernetes.Interface) error {
 // 1. if PVC is present then check the status of PVC
 // 	1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
 // 2. if PVC not present then wait for timeout
-func getVolStatus(p *v1.Pod, cli kubernetes.Interface, namespace string) error {
+func getVolStatus(ctx context.Context, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 	for _, vol := range p.Spec.Volumes {
-		if err := checkPVCAndPVStatus(vol, p, cli, namespace); err != nil {
+		if err := checkPVCAndPVStatus(ctx, vol, p, cli, namespace); err != nil {
 			return err
 		}
 	}
@@ -237,8 +237,7 @@ func getVolStatus(p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 // 1. if PVC is present then check the status of PVC
 // 	1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
 // 2. if PVC not present then wait for timeout
-func checkPVCAndPVStatus(vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
-	ctx := context.TODO()
+func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 	if vol.VolumeSource.PersistentVolumeClaim == nil {
 		// wait for timeout
 		return nil
