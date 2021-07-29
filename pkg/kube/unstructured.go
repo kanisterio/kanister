@@ -24,18 +24,17 @@ import (
 )
 
 // FetchUnstructuredObject returns the referenced API object as a map[string]interface{}
-func FetchUnstructuredObject(resource schema.GroupVersionResource, namespace, name string) (runtime.Unstructured, error) {
+func FetchUnstructuredObject(ctx context.Context, resource schema.GroupVersionResource, namespace, name string) (runtime.Unstructured, error) {
 	cli, err := client()
 	if err != nil {
 		return nil, err
 	}
-	return FetchUnstructuredObjectWithCli(cli, resource, namespace, name)
+	return FetchUnstructuredObjectWithCli(ctx, cli, resource, namespace, name)
 }
 
 // FetchUnstructuredObjectWithCli returns the referenced API object as a map[string]interface{} using the specified CLI
 // TODO: deprecate `FetchUnstructuredObject`
-func FetchUnstructuredObjectWithCli(cli dynamic.Interface, resource schema.GroupVersionResource, namespace, name string) (runtime.Unstructured, error) {
-	ctx := context.TODO()
+func FetchUnstructuredObjectWithCli(ctx context.Context, cli dynamic.Interface, resource schema.GroupVersionResource, namespace, name string) (runtime.Unstructured, error) {
 	if namespace == "" {
 		_, _ = cli.Resource(resource).Get(ctx, name, metav1.GetOptions{})
 	}

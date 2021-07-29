@@ -98,11 +98,11 @@ func (s *SnapshotTestSuite) SetUpSuite(c *C) {
 	s.snapshotterStable = snapshot.NewSnapshotStable(cli, dynCli)
 
 	// Find alpha VolumeSnapshotClass name
-	snapClassAlpha, driverAlpha := findSnapshotClassName(c, s.dynCli, v1alpha1.VolSnapClassGVR, v1alpha1.VolumeSnapshotClass{})
+	snapClassAlpha, driverAlpha := findSnapshotClassName(c, ctx, s.dynCli, v1alpha1.VolSnapClassGVR, v1alpha1.VolumeSnapshotClass{})
 	s.snapshotClassAlpha = &snapClassAlpha
-	snapClassBeta, driverBeta := findSnapshotClassName(c, s.dynCli, v1beta1.VolSnapClassGVR, v1beta1.VolumeSnapshotClass{})
+	snapClassBeta, driverBeta := findSnapshotClassName(c, ctx, s.dynCli, v1beta1.VolSnapClassGVR, v1beta1.VolumeSnapshotClass{})
 	s.snapshotClassBeta = &snapClassBeta
-	snapClassStable, driverStable := findSnapshotClassName(c, s.dynCli, snapshot.VolSnapClassGVR, snapv1.VolumeSnapshotClass{})
+	snapClassStable, driverStable := findSnapshotClassName(c, ctx, s.dynCli, snapshot.VolSnapClassGVR, snapv1.VolumeSnapshotClass{})
 	s.snapshotClassStable = &snapClassStable
 	storageClasses, err := cli.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
 	c.Assert(err, IsNil)
@@ -845,8 +845,7 @@ func (tc snapshotClassTC) testGetSnapshotClass(c *C, dynCli dynamic.Interface, f
 	}
 }
 
-func findSnapshotClassName(c *C, dynCli dynamic.Interface, gvr schema.GroupVersionResource, object interface{}) (string, string) {
-	ctx := context.TODO()
+func findSnapshotClassName(c *C, ctx context.Context, dynCli dynamic.Interface, gvr schema.GroupVersionResource, object interface{}) (string, string) {
 	// Find alpha VolumeSnapshotClass name
 	us, err := dynCli.Resource(gvr).List(ctx, metav1.ListOptions{})
 	if err != nil && !k8errors.IsNotFound(err) {

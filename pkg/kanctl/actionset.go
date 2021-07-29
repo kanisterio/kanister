@@ -639,7 +639,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 					Version:  obj.APIVersion,
 					Resource: obj.Resource,
 				}
-				_, err = kube.FetchUnstructuredObject(gvr, obj.Namespace, obj.Name)
+				_, err = kube.FetchUnstructuredObject(ctx, gvr, obj.Namespace, obj.Name)
 			}
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, obj.Kind, obj.Name, obj.Namespace)
