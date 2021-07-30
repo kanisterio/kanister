@@ -123,8 +123,8 @@ func (p *FcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blo
 		return nil, errors.Wrap(err, "Failed to wait on task")
 	}
 	if res == nil {
-		return nil, errors.Errorf("vSphere task did not complete. TaskRefType: %s, TaskRefValue: %s VolID: %s, SnapshotID: %s, NewVolID: %s",
-			task.ManagedObjectReference.Type, task.ManagedObjectReference.Value, vimID(snapshotID), uid)
+		return nil, errors.Errorf("vSphere task did not complete. TaskRefType: %s, TaskRefValue: %s, VolID: %s, SnapshotID: %s, NewVolID: %s",
+			task.ManagedObjectReference.Type, task.ManagedObjectReference.Value, volID, snapshotID, uid)
 	}
 	log.Debug().Print("CreateDiskFromSnapshot task complete", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
 	obj, ok := res.(types.VStorageObject)
