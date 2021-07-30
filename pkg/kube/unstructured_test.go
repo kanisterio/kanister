@@ -16,6 +16,7 @@ package kube
 
 import (
 	"bytes"
+	"context"
 	. "gopkg.in/check.v1"
 	"text/template"
 
