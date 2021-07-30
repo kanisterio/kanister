@@ -208,10 +208,7 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 	if err := validate.ActionSet(as); err != nil {
 		return err
 	}
-	iv := getEnvAsIntOrDefault("ACTIONSET_TIMEOUT", 30)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(iv)*time.Second)
-	defer cancel()
-	return c.handleActionSet(ctx, as)
+	return c.handleActionSet(as)
 }
 
 func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) {
@@ -345,7 +342,8 @@ func (c *Controller) initialActionStatus(namespace string, a crv1alpha1.ActionSp
 	}, nil
 }
 
-func (c *Controller) handleActionSet(ctx context.Context, as *crv1alpha1.ActionSet) (err error) {
+func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
+	log.Info().Print("Starting to handle ActionSet")
 	if as.Status == nil {
 		return errors.New("ActionSet was not initialized")
 	}
@@ -356,11 +354,17 @@ func (c *Controller) handleActionSet(ctx context.Context, as *crv1alpha1.ActionS
 	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.TODO(), as, v1.UpdateOptions{}); err != nil {
 		return errors.WithStack(err)
 	}
+	iv := getEnvAsIntOrDefault("ACTIONSET_TIMEOUT", 30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(iv)*time.Second)
+	defer cancel()
+	log.Info().Print("calling handle ActionSet")
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	for i := range as.Status.Actions {
+		log.Info().Print("calling run action")
 		if err = c.runAction(ctx, as, i); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
+			log.Info().Print("error in not nil")
 			bpName := as.Spec.Actions[i].Blueprint
 			bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, bpName, v1.GetOptions{})
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[i].Name)
@@ -374,8 +378,42 @@ func (c *Controller) handleActionSet(ctx context.Context, as *crv1alpha1.ActionS
 			return errors.WithStack(err)
 		}
 	}
+	//
+	// if timeout reached - kill the tomb go routines and call cancel
+	// If go routine finished its job first -> return successfull and call cancel()
+	v, ok := c.actionSetTombMap.Load(as.GetName())
+	if !ok {
+		return nil
+	}
+	t, castOk := v.(*tomb.Tomb)
+	if !castOk {
+		return nil
+	}
 	log.WithContext(ctx).Print("Created actionset and started executing actions", field.M{"NewActionSetName": as.GetName()})
-	return nil
+	for {
+		select {
+		case <-ctx.Done():
+			err = errors.New("killed because of timeout")
+			log.Info().Print("timeout reached I think PRINTING ERROR")
+			log.Info().Print(ctx.Err().Error())
+			log.Info().Print("ERROR PRINTED ")
+			t.Kill(err)
+			log.Info().Print("KILLED THE ACTIONSET")
+			c.actionSetTombMap.Delete(as.GetName())
+			log.Info().Print("deleetd from map")
+			reason := fmt.Sprintf("ActionSetFailed due to timeout")
+			c.logAndErrorEvent(ctx, fmt.Sprintf("Failed to launch Action %s:", as.GetName()), reason, err, as)
+			as.Status.State = crv1alpha1.StateFailed
+			as.Status.Error = crv1alpha1.Error{
+				Message: err.Error(),
+			}
+			_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.TODO(), as, v1.UpdateOptions{})
+			return errors.WithStack(err)
+		case <-t.Dead():
+			log.Info().Print("Go routine finished ")
+			return nil
+		}
+	}
 }
 
 func getEnvAsIntOrDefault(envKey string, def int) int {
@@ -408,10 +446,14 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	}
 	ns, name := as.GetNamespace(), as.GetName()
 	var t *tomb.Tomb
-	t, ctx = tomb.WithContext(ctx)
+	t, ctx = tomb.WithContext(context.Background())
 	c.actionSetTombMap.Store(as.Name, t)
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
+	log.Info().Print("executing go routines now")
 	t.Go(func() error {
+		log.Info().Print("sleeping sec")
+		time.Sleep(30 * time.Second)
+		log.Info().Print("slept for 30 sec")
 		for i, p := range phases {
 			ctx = field.Context(ctx, consts.PhaseNameKey, p.Name())
 			c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing phase %s", p.Name()), "Started Phase", as)
@@ -424,25 +466,28 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				msg = fmt.Sprintf("Failed to init phase params: %#v:", as.Status.Actions[aIDX].Phases[i])
 			}
 			var rf func(*crv1alpha1.ActionSet) error
+			log.Print("check for now")
 			if err != nil {
+				log.Print("err in exec")
 				// If error is because of context canceled && timeout then update the actionset with failed status
-				if ctx.Err() != nil {
-					bpName := as.Spec.Actions[aIDX].Blueprint
-					bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(context.Background(), bpName, v1.GetOptions{})
-					reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[aIDX].Name)
-					c.logAndErrorEvent(context.Background(), fmt.Sprintf("Failed to Execute Action %s:", as.GetName()), reason, err, as, bp)
-					as.Status.State = crv1alpha1.StateFailed
-					as.Status.Error = crv1alpha1.Error{
-						Message: err.Error(),
-					}
-					as.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateFailed
-					if _, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.Background(), as, v1.UpdateOptions{}); err != nil {
-						reason = fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[aIDX].Name)
-						msg = fmt.Sprintf("Failed to update ActionSet: %s", as.GetName())
-						c.logAndErrorEvent(context.Background(), msg, reason, err, as, bp)
-					}
-					return nil
-				}
+				// if ctx.Err() != nil {
+				// 	log.Print("error is not nil")
+				// 	bpName := as.Spec.Actions[aIDX].Blueprint
+				// 	bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(context.Background(), bpName, v1.GetOptions{})
+				// 	reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[aIDX].Name)
+				// 	c.logAndErrorEvent(context.Background(), fmt.Sprintf("Failed to Execute Action %s:", as.GetName()), reason, err, as, bp)
+				// 	as.Status.State = crv1alpha1.StateFailed
+				// 	as.Status.Error = crv1alpha1.Error{
+				// 		Message: err.Error(),
+				// 	}
+				// 	as.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateFailed
+				// 	if _, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.Background(), as, v1.UpdateOptions{}); err != nil {
+				// 		reason = fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[aIDX].Name)
+				// 		msg = fmt.Sprintf("Failed to update ActionSet: %s", as.GetName())
+				// 		c.logAndErrorEvent(context.Background(), msg, reason, err, as, bp)
+				// 	}
+				// 	return nil
+				// }
 				rf = func(ras *crv1alpha1.ActionSet) error {
 					ras.Status.State = crv1alpha1.StateFailed
 					ras.Status.Error = crv1alpha1.Error{
@@ -459,12 +504,14 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				}
 			}
 			if rErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), ns, name, rf); rErr != nil {
+				log.Print("Errror in rErr")
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
 				msg := fmt.Sprintf("Failed to update phase: %#v:", as.Status.Actions[aIDX].Phases[i])
 				c.logAndErrorEvent(ctx, msg, reason, rErr, as, bp)
 				return nil
 			}
 			if err != nil {
+				log.Print("oberall error")
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
 				if msg == "" {
 					msg = fmt.Sprintf("Failed to execute phase: %#v:", as.Status.Actions[aIDX].Phases[i])
@@ -483,6 +530,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				ras.Status.State = crv1alpha1.StateComplete
 				return nil
 			}); rErr != nil {
+				log.Print("Error after lenght")
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
 				msg := fmt.Sprintf("Failed to update ActionSet: %s", name)
 				c.logAndErrorEvent(ctx, msg, reason, rErr, as, bp)
@@ -490,9 +538,11 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			return nil
 		}
 		// Render the artifacts
+		log.Print("Rendering artifacts")
 		arts, err := param.RenderArtifacts(artTpls, *tp)
 		var af func(*crv1alpha1.ActionSet) error
 		if err != nil {
+			log.Print("Error in rendering")
 			af = func(ras *crv1alpha1.ActionSet) error {
 				ras.Status.State = crv1alpha1.StateFailed
 				ras.Status.Error = crv1alpha1.Error{
@@ -507,14 +557,17 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				return nil
 			}
 		}
+		log.Print("successfull in rendering artifacts")
 		// Update ActionSet
 		if aErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), ns, name, af); aErr != nil {
+			log.Print("reconcile failed")
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
 			msg := fmt.Sprintf("Failed to update Output Artifacts: %#v:", artTpls)
 			c.logAndErrorEvent(ctx, msg, reason, aErr, as, bp)
 			return nil
 		}
 		if err != nil {
+			log.Print("check for now overall aerror")
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", action.Name)
 			msg := "Failed to render output artifacts"
 			c.logAndErrorEvent(ctx, msg, reason, err, as, bp)
@@ -522,6 +575,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		}
 		return nil
 	})
+	log.Print("Returned out of runAction")
 	return nil
 }
 
@@ -565,3 +619,10 @@ func setObjectKind(obj runtime.Object) {
 	}
 	ok.SetGroupVersionKind(gvk)
 }
+
+// time="2021-07-30T11:55:42.489424718Z" level=info msg="slept for 30 sec" File=/home/infracloud/go/pkg/mod/gopkg.in/tomb.v2@v2.0.0-20161208151619-d5d1b5820637/tomb.go Function="gopkg.in/tomb%2ev2.(*Tomb).run" Line=163 cluster_name=17fa1d16-d94a-4a0a-b910-91be54eed07e hostname=kanister-kanister-operator-9fd9768fb-6btq6
+// time="2021-07-30T11:55:42.489595851Z" level=info msg="Executing phase takeConsistentBackup" ActionSet=backup-xls5k File=pkg/controller/controller.go Function="github.com/kanisterio/kanister/pkg/controller.(*Controller).runAction.func1" Line=449 Phase=takeConsistentBackup cluster_name=17fa1d16-d94a-4a0a-b910-91be54eed07e hostname=kanister-kanister-operator-9fd9768fb-6btq6
+// time="2021-07-30T11:55:42.489960365Z" level=info msg="check for now" File=pkg/controller/controller.go Function="github.com/kanisterio/kanister/pkg/controller.(*Controller).runAction.func1" Line=459 cluster_name=17fa1d16-d94a-4a0a-b910-91be54eed07e hostname=kanister-kanister-operator-9fd9768fb-6btq6
+// time="2021-07-30T11:55:42.490082111Z" level=info msg="err in exec" File=pkg/controller/controller.go Function="github.com/kanisterio/kanister/pkg/controller.(*Controller).runAction.func1" Line=461 cluster_name=17fa1d16-d94a-4a0a-b910-91be54eed07e hostname=kanister-kanister-operator-9fd9768fb-6btq6
+// time="2021-07-30T11:55:42.490492153Z" level=info msg="Errror in rErr" File=pkg/controller/controller.go Function="github.com/kanisterio/kanister/pkg/controller.(*Controller).runAction.func1" Line=497 cluster_name=17fa1d16-d94a-4a0a-b910-91be54eed07e hostname=kanister-kanister-operator-9fd9768fb-6btq6
+// time="2021-07-30T11:55:42.49065567Z" level=info msg="Failed to update phase: v1alpha1.Phase{Name:\"takeConsistentBackup\", State:\"pending\", Output:map[string]interface {}(nil)}:" ActionSet=backup-xls5k File=pkg/controller/controller.go Function="github.com/kanisterio/kanister/pkg/controller.(*Controller).runAction.func1" Line=500 Phase=takeConsistentBackup cluster_name=17fa1d16-d94a-4a0a-b910-91be54eed07e error="context canceled" hostname=kanister-kanister-operator-9fd9768fb-6btq6
