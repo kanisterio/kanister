@@ -354,7 +354,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.TODO(), as, v1.UpdateOptions{}); err != nil {
 		return errors.WithStack(err)
 	}
-	iv := getEnvAsIntOrDefault("ACTIONSET_TIMEOUT", 30)
+	iv := getEnvAsIntOrDefault("ACTIONSET_TIMEOUT", 600)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(iv)*time.Second)
 	defer cancel()
 	log.Info().Print("calling handle ActionSet")
@@ -418,6 +418,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 
 func getEnvAsIntOrDefault(envKey string, def int) int {
 	if v, ok := os.LookupEnv(envKey); ok {
+		log.Info().Print("env key found")
 		iv, err := strconv.Atoi(v)
 		if err == nil {
 			return iv
