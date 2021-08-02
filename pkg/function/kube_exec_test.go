@@ -178,11 +178,11 @@ func (s *KubeExecTest) TestParseLogAndCreateOutput(c *C) {
 		errChecker Checker
 		outChecker Checker
 	}{
-		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.63.0\"}", map[string]interface{}{"version": "0.63.0"}, IsNil, NotNil},
-		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.63.0\"}\n###Phase-output###: {\"key\":\"path\",\"value\":\"/backup/path\"}",
-			map[string]interface{}{"version": "0.63.0", "path": "/backup/path"}, IsNil, NotNil},
-		{"Random message ###Phase-output###: {\"key\":\"version\",\"value\":\"0.63.0\"}", map[string]interface{}{"version": "0.63.0"}, IsNil, NotNil},
-		{"Random message with newline \n###Phase-output###: {\"key\":\"version\",\"value\":\"0.63.0\"}", map[string]interface{}{"version": "0.63.0"}, IsNil, NotNil},
+		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.65.0\"}", map[string]interface{}{"version": "0.65.0"}, IsNil, NotNil},
+		{"###Phase-output###: {\"key\":\"version\",\"value\":\"0.65.0\"}\n###Phase-output###: {\"key\":\"path\",\"value\":\"/backup/path\"}",
+			map[string]interface{}{"version": "0.65.0", "path": "/backup/path"}, IsNil, NotNil},
+		{"Random message ###Phase-output###: {\"key\":\"version\",\"value\":\"0.65.0\"}", map[string]interface{}{"version": "0.65.0"}, IsNil, NotNil},
+		{"Random message with newline \n###Phase-output###: {\"key\":\"version\",\"value\":\"0.65.0\"}", map[string]interface{}{"version": "0.65.0"}, IsNil, NotNil},
 		{"###Phase-output###: Invalid message", nil, NotNil, IsNil},
 		{"Random message", nil, IsNil, IsNil},
 	} {
