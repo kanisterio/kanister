@@ -5,7 +5,6 @@ metadata:
   namespace: kanister
 actions:
   backup:
-    type: StatefulSet
     configMapNames:
       - "location"
     secretNames:
@@ -41,7 +40,6 @@ actions:
             fi
             ${cmd[@]} ${file} "{{ .ConfigMaps.location.Data.bucket }}/backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs0.tar"
   restore:
-    type: StatefulSet
     inputArtifactNames:
       - cloudObject
     phases:
@@ -76,7 +74,6 @@ actions:
                 --drop --oplogReplay \
                 --dir ./rs0/dump
   delete:
-    type: StatefulSet
     inputArtifactNames:
       - cloudObject
     phases:
