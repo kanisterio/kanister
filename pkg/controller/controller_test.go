@@ -17,6 +17,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -36,6 +37,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/kanisterio/kanister/pkg/resource"
@@ -335,11 +337,6 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				version:   kanister.DefaultVersion,
 			},
 			{
-				funcNames: []string{testutil.CancelFuncName},
-				name:      "CancelFunc",
-				version:   kanister.DefaultVersion,
-			},
-			{
 				funcNames: []string{testutil.ArgFuncName},
 				name:      "ArgFuncVersion",
 				version:   testutil.TestVersion,
@@ -429,6 +426,67 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			} else {
 				c.Assert(err, NotNil)
 			}
+		}
+	}
+}
+
+func (s *ControllerSuite) TestCancelFunction(c *C) {
+	if _, ok := os.LookupEnv("ACTIONSET_TIMEOUT"); !ok {
+		os.Setenv("ACTIONSET_TIMEOUT", "10")
+		defer os.Unsetenv("ACTIONSET_TIMEOUT")
+	}
+
+	for _, pok := range []string{"StatefulSet"} {
+		for _, tc := range []struct {
+			funcNames string
+			args      [][]string
+			name      string
+			version   string
+		}{
+			{
+				funcNames: testutil.CancelFuncName,
+				name:      "CancelFunc",
+				version:   kanister.DefaultVersion,
+			},
+		} {
+			var err error
+			log.Info().Print(tc.name)
+			// Add a blueprint with a mocked kanister function.
+			bp := testutil.NewTestBlueprint(pok, tc.funcNames)
+			bp = testutil.BlueprintWithConfigMap(bp)
+			bp, err = s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
+			c.Assert(err, IsNil)
+
+			var n string
+			switch pok {
+			case "StatefulSet":
+				n = s.ss.GetName()
+			case "Deployment":
+				n = s.deployment.GetName()
+			default:
+				c.FailNow()
+			}
+			// Add an actionset that references that blueprint.
+			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace, tc.version)
+			as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
+			as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
+			err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
+			final := crv1alpha1.StateComplete
+			cancel := false
+			if tc.funcNames == testutil.CancelFuncName {
+				c.Assert(testutil.CancelFuncOut().Error(), DeepEquals, "context canceled")
+				cancel = true
+			}
+			if !cancel {
+				err = s.waitOnActionSetState(c, as, final)
+				c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
+			}
+			err = s.crCli.Blueprints(s.namespace).Delete(context.TODO(), bp.GetName(), metav1.DeleteOptions{})
+			c.Assert(err, IsNil)
+			err = s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
+			c.Assert(err, IsNil)
 		}
 	}
 }
