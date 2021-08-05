@@ -36,7 +36,7 @@ type Snapshotter interface {
 	// 'annotationValue' is the value for annotationKey in VolumeSnapshotClass spec.
 	// 'storageClassName' is the name of the storageClass that shares the same driver as the VolumeSnapshotClass.
 	// This returns error if no VolumeSnapshotClass found.
-	GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error)
+	GetVolumeSnapshotClass(ctx context.Context, annotationKey, annotationValue, storageClassName string) (string, error)
 
 	// CloneVolumeSnapshotClass creates a copy of the source volume snapshot
 	// class with the specified deletion policy and name. If the target
@@ -47,7 +47,7 @@ type Snapshotter interface {
 	// 'newDeletionPolicy' is the deletion policy to set on the target.
 	// 'excludeAnnotations' are the annotations that should not be set on the
 	// target
-	CloneVolumeSnapshotClass(sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error
+	CloneVolumeSnapshotClass(ctx context.Context, sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error
 	// Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
 	//
 	// 'name' is the name of the VolumeSnapshot.

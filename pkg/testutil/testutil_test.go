@@ -42,9 +42,9 @@ func (s *TestUtilSuite) TestDeployment(c *C) {
 	c.Assert(err, IsNil)
 	crCli, err := crclientv1alpha1.NewForConfig(config)
 	c.Assert(err, IsNil)
-
+	ctx := context.Background()
 	ns := NewTestNamespace()
-	ns, err = cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	ns, err = cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
 		err := cli.CoreV1().Namespaces().Delete(context.TODO(), ns.GetName(), metav1.DeleteOptions{})
@@ -52,7 +52,7 @@ func (s *TestUtilSuite) TestDeployment(c *C) {
 	}()
 
 	d := NewTestDeployment(1)
-	d, err = cli.AppsV1().Deployments(ns.GetName()).Create(context.TODO(), d, metav1.CreateOptions{})
+	d, err = cli.AppsV1().Deployments(ns.GetName()).Create(ctx, d, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
 		err = cli.AppsV1().Deployments(ns.GetName()).Delete(context.TODO(), d.GetName(), metav1.DeleteOptions{})
@@ -60,7 +60,7 @@ func (s *TestUtilSuite) TestDeployment(c *C) {
 	}()
 
 	ss := NewTestStatefulSet(1)
-	ss, err = cli.AppsV1().StatefulSets(ns.GetName()).Create(context.TODO(), ss, metav1.CreateOptions{})
+	ss, err = cli.AppsV1().StatefulSets(ns.GetName()).Create(ctx, ss, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
 		err := cli.AppsV1().StatefulSets(ns.GetName()).Delete(context.TODO(), ss.GetName(), metav1.DeleteOptions{})
@@ -80,21 +80,21 @@ func (s *TestUtilSuite) TestDeployment(c *C) {
 			name: ss.GetName(),
 		},
 	} {
-		testCRs(c, crCli, ns.GetName(), po.kind, po.name)
+		testCRs(c, ctx, crCli, ns.GetName(), po.kind, po.name)
 	}
 
 	cm := NewTestConfigMap()
-	cm, err = cli.CoreV1().ConfigMaps(ns.GetName()).Create(context.TODO(), cm, metav1.CreateOptions{})
+	cm, err = cli.CoreV1().ConfigMaps(ns.GetName()).Create(ctx, cm, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	err = cli.CoreV1().ConfigMaps(ns.GetName()).Delete(context.TODO(), cm.GetName(), metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }
 
-func testCRs(c *C, cli crclientv1alpha1.CrV1alpha1Interface, namespace, poKind, poName string) {
+func testCRs(c *C, ctx context.Context, cli crclientv1alpha1.CrV1alpha1Interface, namespace, poKind, poName string) {
 	var err error
 	bp := NewTestBlueprint(poKind, FailFuncName)
 	bp = BlueprintWithConfigMap(bp)
-	bp, err = cli.Blueprints(namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
+	bp, err = cli.Blueprints(namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	defer func() {
 		err := cli.Blueprints(namespace).Delete(context.TODO(), bp.GetName(), metav1.DeleteOptions{})
@@ -103,7 +103,7 @@ func testCRs(c *C, cli crclientv1alpha1.CrV1alpha1Interface, namespace, poKind, 
 
 	as := NewTestActionSet(namespace, bp.GetName(), poKind, poName, namespace, kanister.DefaultVersion)
 	as = ActionSetWithConfigMap(as, "")
-	as, err = cli.ActionSets(namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+	as, err = cli.ActionSets(namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	err = cli.ActionSets(namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
 	c.Assert(err, IsNil)

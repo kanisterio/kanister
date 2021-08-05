@@ -37,6 +37,7 @@ var _ = Suite(&PodWriteSuite{})
 
 func (p *PodWriteSuite) SetUpSuite(c *C) {
 	var err error
+	ctx := context.Background()
 	p.cli, err = NewClient()
 	c.Assert(err, IsNil)
 	ns := &v1.Namespace{
@@ -44,7 +45,7 @@ func (p *PodWriteSuite) SetUpSuite(c *C) {
 			GenerateName: "podwritertest-",
 		},
 	}
-	ns, err = p.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	ns, err = p.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	p.namespace = ns.Name
 	pod := &v1.Pod{
@@ -59,9 +60,10 @@ func (p *PodWriteSuite) SetUpSuite(c *C) {
 			},
 		},
 	}
-	p.pod, err = p.cli.CoreV1().Pods(p.namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
+	p.pod, err = p.cli.CoreV1().Pods(p.namespace).Create(ctx, pod, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	c.Assert(WaitForPodReady(ctx, p.cli, p.namespace, p.pod.Name), IsNil)
 	p.pod, err = p.cli.CoreV1().Pods(p.namespace).Get(ctx, p.pod.Name, metav1.GetOptions{})

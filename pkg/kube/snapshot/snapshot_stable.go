@@ -59,13 +59,13 @@ func NewSnapshotStable(kubeCli kubernetes.Interface, dynCli dynamic.Interface) S
 }
 
 // CloneVolumeSnapshotClass creates a copy of the source volume snapshot class
-func (sna *SnapshotStable) CloneVolumeSnapshotClass(sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
-	return cloneSnapshotClass(sna.dynCli, VolSnapClassGVR, sourceClassName, targetClassName, newDeletionPolicy, excludeAnnotations)
+func (sna *SnapshotStable) CloneVolumeSnapshotClass(ctx context.Context, sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
+	return cloneSnapshotClass(ctx, sna.dynCli, VolSnapClassGVR, sourceClassName, targetClassName, newDeletionPolicy, excludeAnnotations)
 }
 
 // GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
-func (sna *SnapshotStable) GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error) {
-	return GetSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
+func (sna *SnapshotStable) GetVolumeSnapshotClass(ctx context.Context, annotationKey, annotationValue, storageClassName string) (string, error) {
+	return GetSnapshotClassbyAnnotation(ctx, sna.dynCli, sna.kubeCli, VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
 }
 
 // Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
