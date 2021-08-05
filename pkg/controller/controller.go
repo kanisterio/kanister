@@ -80,7 +80,7 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get a CustomResource client")
 	}
-	if err := checkCRAccess(crClient, namespace); err != nil {
+	if err := checkCRAccess(ctx, crClient, namespace); err != nil {
 		return err
 	}
 	clientset, err := kubernetes.NewForConfig(c.config)
@@ -124,14 +124,14 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 	return nil
 }
 
-func checkCRAccess(cli versioned.Interface, ns string) error {
-	if _, err := cli.CrV1alpha1().ActionSets(ns).List(context.TODO(), v1.ListOptions{}); err != nil {
+func checkCRAccess(ctx context.Context, cli versioned.Interface, ns string) error {
+	if _, err := cli.CrV1alpha1().ActionSets(ns).List(ctx, v1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list ActionSets")
 	}
-	if _, err := cli.CrV1alpha1().Blueprints(ns).List(context.TODO(), v1.ListOptions{}); err != nil {
+	if _, err := cli.CrV1alpha1().Blueprints(ns).List(ctx, v1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list Blueprints")
 	}
-	if _, err := cli.CrV1alpha1().Profiles(ns).List(context.TODO(), v1.ListOptions{}); err != nil {
+	if _, err := cli.CrV1alpha1().Profiles(ns).List(ctx, v1.ListOptions{}); err != nil {
 		return errors.Wrap(err, "Could not list Profiles")
 	}
 	return nil

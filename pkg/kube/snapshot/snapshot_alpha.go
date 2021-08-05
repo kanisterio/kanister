@@ -61,8 +61,8 @@ func NewSnapshotAlpha(kubeCli kubernetes.Interface, dynCli dynamic.Interface) Sn
 }
 
 // CloneVolumeSnapshotClass creates a copy of the source volume snapshot class
-func (sna *SnapshotAlpha) CloneVolumeSnapshotClass(sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
-	usSourceSnapClass, err := sna.dynCli.Resource(v1alpha1.VolSnapClassGVR).Get(context.TODO(), sourceClassName, metav1.GetOptions{})
+func (sna *SnapshotAlpha) CloneVolumeSnapshotClass(ctx context.Context, sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
+	usSourceSnapClass, err := sna.dynCli.Resource(v1alpha1.VolSnapClassGVR).Get(ctx, sourceClassName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to find source VolumeSnapshotClass: %s", sourceClassName)
 	}
@@ -78,15 +78,15 @@ func (sna *SnapshotAlpha) CloneVolumeSnapshotClass(sourceClassName, targetClassN
 	// Set Annotations/Labels
 	usNew.SetAnnotations(existingAnnotations)
 	usNew.SetLabels(map[string]string{CloneVolumeSnapshotClassLabelName: sourceClassName})
-	if _, err = sna.dynCli.Resource(v1alpha1.VolSnapClassGVR).Create(context.TODO(), usNew, metav1.CreateOptions{}); !apierrors.IsAlreadyExists(err) {
+	if _, err = sna.dynCli.Resource(v1alpha1.VolSnapClassGVR).Create(ctx, usNew, metav1.CreateOptions{}); !apierrors.IsAlreadyExists(err) {
 		return errors.Wrapf(err, "Failed to create VolumeSnapshotClass: %s", targetClassName)
 	}
 	return nil
 }
 
 // GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
-func (sna *SnapshotAlpha) GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error) {
-	return GetSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, v1alpha1.VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
+func (sna *SnapshotAlpha) GetVolumeSnapshotClass(ctx context.Context, annotationKey, annotationValue, storageClassName string) (string, error) {
+	return GetSnapshotClassbyAnnotation(ctx, sna.dynCli, sna.kubeCli, v1alpha1.VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
 }
 
 // Create creates a VolumeSnapshot and returns it or any error that happened meanwhile.
@@ -447,21 +447,21 @@ func TransformUnstructured(u *unstructured.Unstructured, value interface{}) erro
 
 // GetSnapshotClassbyAnnotation checks if the provided annotation is present in either the storageclass
 // or volumesnapshotclass and returns the volumesnapshotclass.
-func GetSnapshotClassbyAnnotation(dynCli dynamic.Interface, kubeCli kubernetes.Interface, gvr schema.GroupVersionResource, annotationKey, annotationValue, storageClass string) (string, error) {
+func GetSnapshotClassbyAnnotation(ctx context.Context, dynCli dynamic.Interface, kubeCli kubernetes.Interface, gvr schema.GroupVersionResource, annotationKey, annotationValue, storageClass string) (string, error) {
 	// fetch storageClass
-	sc, err := kubeCli.StorageV1().StorageClasses().Get(context.TODO(), storageClass, metav1.GetOptions{})
+	sc, err := kubeCli.StorageV1().StorageClasses().Get(ctx, storageClass, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Errorf("Failed to find StorageClass (%s) in the cluster: %v", storageClass, err)
 	}
 	// Check if storageclass annotation override is present.
 	if val, ok := sc.Annotations[annotationKey]; ok {
-		vsc, err := dynCli.Resource(gvr).Get(context.TODO(), val, metav1.GetOptions{})
+		vsc, err := dynCli.Resource(gvr).Get(ctx, val, metav1.GetOptions{})
 		if err != nil {
 			return "", errors.Errorf("Failed to get VolumeSnapshotClass (%s) specified in Storageclass (%s) annotations: %v", val, sc.Name, err)
 		}
 		return vsc.GetName(), nil
 	}
-	us, err := dynCli.Resource(gvr).List(context.TODO(), metav1.ListOptions{})
+	us, err := dynCli.Resource(gvr).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return "", errors.Errorf("Failed to get VolumeSnapshotClasses in the cluster: %v", err)
 	}

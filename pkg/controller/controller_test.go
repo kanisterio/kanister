@@ -81,30 +81,31 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 			GenerateName: "kanistercontrollertest-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	ctx := context.Background()
+	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), sec, metav1.CreateOptions{})
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	_, err = s.crCli.Profiles(s.namespace).Create(context.TODO(), p, metav1.CreateOptions{})
+	_, err = s.crCli.Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	ss := testutil.NewTestStatefulSet(1)
-	ss, err = s.cli.AppsV1().StatefulSets(s.namespace).Create(context.TODO(), ss, metav1.CreateOptions{})
+	ss, err = s.cli.AppsV1().StatefulSets(s.namespace).Create(ctx, ss, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.ss = ss
 
 	d := testutil.NewTestDeployment(1)
-	d, err = s.cli.AppsV1().Deployments(s.namespace).Create(context.TODO(), d, metav1.CreateOptions{})
+	d, err = s.cli.AppsV1().Deployments(s.namespace).Create(ctx, d, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.deployment = d
 
 	cm := testutil.NewTestConfigMap()
-	cm, err = s.cli.CoreV1().ConfigMaps(s.namespace).Create(context.TODO(), cm, metav1.CreateOptions{})
+	cm, err = s.cli.CoreV1().ConfigMaps(s.namespace).Create(ctx, cm, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.confimap = cm
 }
@@ -366,7 +367,8 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			// Add a blueprint with a mocked kanister function.
 			bp := testutil.NewTestBlueprint(pok, tc.funcNames...)
 			bp = testutil.BlueprintWithConfigMap(bp)
-			bp, err = s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
+			ctx := context.Background()
+			bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 			c.Assert(err, IsNil)
 
 			var n string
@@ -382,7 +384,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			// Add an actionset that references that blueprint.
 			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace, tc.version)
 			as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
-			as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+			as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
 
 			err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
@@ -493,6 +495,7 @@ func (s *ControllerSuite) TestCancelFunction(c *C) {
 
 func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	c.Skip("This may not work in MiniKube")
+	ctx := context.Background()
 	// Create ActionSet
 	as := &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -506,7 +509,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 			},
 		},
 	}
-	as, err := s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+	as, err := s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	msg := "Unit testing event logs"
 	reason := "Test Logs"
@@ -516,11 +519,10 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 
 	// Create Blueprint
 	bp := testutil.NewTestBlueprint("StatefulSet", testutil.WaitFuncName)
-	bp, err = s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
+	bp, err = s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	//Test the logAndErrorEvent function
-	ctx := context.Background()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	config, err := kube.LoadConfig()
 	c.Assert(err, IsNil)
@@ -555,16 +557,17 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 }
 
 func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
+	ctx := context.Background()
 	// Create a blueprint that uses func output as artifact
 	bp := newBPWithOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
-	bp, err := s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
+	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
-	as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
@@ -577,7 +580,7 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	c.Assert(err, IsNil)
 
 	// Check if the artifacts got updated correctly
-	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), metav1.GetOptions{})
+	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 	arts := as.Status.Actions[0].Artifacts
 	c.Assert(arts, NotNil)
 	c.Assert(arts, HasLen, 1)
@@ -586,16 +589,17 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 }
 
 func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
+	ctx := context.Background()
 	// Create a blueprint that uses func output as kopia snapshot
 	bp := newBPWithKopiaSnapshotOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
-	bp, err := s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
+	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
-	as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
@@ -608,7 +612,7 @@ func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
 	c.Assert(err, IsNil)
 
 	// Check if the artifacts got updated correctly
-	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), metav1.GetOptions{})
+	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 	arts := as.Status.Actions[0].Artifacts
 	c.Assert(arts, NotNil)
 	c.Assert(arts, HasLen, 1)
@@ -617,10 +621,11 @@ func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
 }
 
 func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
+	ctx := context.Background()
 	// Create a blueprint that uses func output as artifact
 	bp := newBPWithOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
-	bp, err := s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
+	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
@@ -645,7 +650,7 @@ func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
 		},
 	}
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
-	as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
@@ -658,7 +663,7 @@ func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
 	c.Assert(err, IsNil)
 
 	// Check if the artifacts got updated correctly
-	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), metav1.GetOptions{})
+	as, _ = s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
 	arts := as.Status.Actions[0].Artifacts
 	c.Assert(arts, NotNil)
 	c.Assert(arts, HasLen, 1)
@@ -667,15 +672,16 @@ func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
 }
 
 func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
+	ctx := context.Background()
 	bp := newBPWithFakeOutputArtifact()
 	bp = testutil.BlueprintWithConfigMap(bp)
-	bp, err := s.crCli.Blueprints(s.namespace).Create(context.TODO(), bp, metav1.CreateOptions{})
+	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
 	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
-	as, err = s.crCli.ActionSets(s.namespace).Create(context.TODO(), as, metav1.CreateOptions{})
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)

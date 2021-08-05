@@ -216,7 +216,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 			Resource: as.Object.Resource,
 		}
 	}
-	u, err := kube.FetchUnstructuredObjectWithCli(dynCli, gvr, namespace, as.Object.Name)
+	u, err := kube.FetchUnstructuredObjectWithCli(ctx, dynCli, gvr, namespace, as.Object.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not fetch object name: %s, namespace: %s, group: %s, version: %s, resource: %s", as.Object.Name, namespace, gvr.Group, gvr.Version, gvr.Resource)
 	}
