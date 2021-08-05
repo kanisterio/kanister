@@ -112,7 +112,8 @@ func (p *FcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blo
 		return nil, errors.Wrap(err, "Failed to split snapshot full ID")
 	}
 	log.Debug().Print("CreateDiskFromSnapshot foo", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
-	task, err := p.Gom.CreateDiskFromSnapshot(ctx, vimID(volID), vimID(snapshotID), uuid.NewV1().String(), nil, nil, "")
+	uid := uuid.NewV1().String()
+	task, err := p.Gom.CreateDiskFromSnapshot(ctx, vimID(volID), vimID(snapshotID), uid, nil, nil, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create disk from snapshot")
 	}
@@ -120,6 +121,10 @@ func (p *FcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blo
 	res, err := task.Wait(ctx, defaultWaitTime)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to wait on task")
+	}
+	if res == nil {
+		return nil, errors.Errorf("vSphere task did not complete. TaskRefType: %s, TaskRefValue: %s, VolID: %s, SnapshotID: %s, NewVolID: %s",
+			task.ManagedObjectReference.Type, task.ManagedObjectReference.Value, volID, snapshotID, uid)
 	}
 	log.Debug().Print("CreateDiskFromSnapshot task complete", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
 	obj, ok := res.(types.VStorageObject)
