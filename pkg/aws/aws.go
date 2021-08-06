@@ -49,14 +49,26 @@ const (
 	roleARNEnvKey                  = "AWS_ROLE_ARN"
 
 	// TODO: Make this configurable via `config`
-	assumeRoleDurationDefault = 90 * time.Minute
+	AssumeRoleDurationDefault = 90 * time.Minute
+	AssumeRoleDuration        = "assumeRoleDuration"
 )
+
+func durationFromString(config map[string]string) (time.Duration, error) {
+	d, ok := config[AssumeRoleDuration]
+	if !ok || d == "" {
+		return AssumeRoleDurationDefault, nil
+	}
+	return time.ParseDuration(d)
+}
 
 // GetCredentials returns credentials to use for AWS operations
 func GetCredentials(ctx context.Context, config map[string]string) (*credentials.Credentials, error) {
 	var creds *credentials.Credentials
 	var assumedRole string
-	assumeRoleDuration := assumeRoleDurationDefault
+	assumeRoleDuration, err := durationFromString(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get assume role duration")
+	}
 	switch {
 	case config[AccessKeyID] != "" && config[SecretAccessKey] != "":
 		// If AccessKeys were provided - use those
@@ -84,7 +96,7 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 
 	// If the caller wants to use a specific role, use the credentials initialized above to assume that
 	// role and return those credentials instead
-	creds, err := awsrole.Switch(ctx, creds, config[ConfigRole], assumeRoleDuration)
+	creds, err = awsrole.Switch(ctx, creds, config[ConfigRole], assumeRoleDuration)
 	return creds, errors.Wrap(err, "Failed to switch roles")
 }
 

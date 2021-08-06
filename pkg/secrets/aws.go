@@ -2,6 +2,7 @@ package secrets
 
 import (
 	"context"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v1 "k8s.io/api/core/v1"
@@ -64,14 +65,19 @@ func ValidateAWSCredentials(secret *v1.Secret) error {
 //
 // If the type of the secret is not "secret.kanister.io/aws", it returns an error.
 // If the required types are not avaialable in the secrets, it returns an errror.
-func ExtractAWSCredentials(ctx context.Context, secret *v1.Secret) (*credentials.Value, error) {
+//
+// ExtractAWSCredentials accepts an assumeRoleDuration which is used to set
+// the duration of the AWS session token provided by K10. AWS allows a maximum value of
+// 12 hours when no role chaining is involved.
+func ExtractAWSCredentials(ctx context.Context, secret *v1.Secret, assumeRoleDuration time.Duration) (*credentials.Value, error) {
 	if err := ValidateAWSCredentials(secret); err != nil {
 		return nil, err
 	}
 	config := map[string]string{
-		aws.AccessKeyID:     string(secret.Data[AWSAccessKeyID]),
-		aws.SecretAccessKey: string(secret.Data[AWSSecretAccessKey]),
-		aws.ConfigRole:      string(secret.Data[ConfigRole]),
+		aws.AccessKeyID:        string(secret.Data[AWSAccessKeyID]),
+		aws.SecretAccessKey:    string(secret.Data[AWSSecretAccessKey]),
+		aws.ConfigRole:         string(secret.Data[ConfigRole]),
+		aws.AssumeRoleDuration: assumeRoleDuration.String(),
 	}
 	creds, err := aws.GetCredentials(ctx, config)
 	if err != nil {
