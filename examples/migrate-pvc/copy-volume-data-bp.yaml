@@ -1,0 +1,52 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: copy-volume-bp
+  namespace: kanister
+actions:
+  
+  backup:
+    type: PersistentVolumeClaim    
+    outputArtifacts:
+      pvc:
+        keyValue:
+          backupID: "{{ .Phases.copyVolume.Output.backupID }}"
+          backupRoot: "{{ .Phases.copyVolume.Output.backupRoot }}"
+          backupArtifactLocation: "{{ .Phases.copyVolume.Output.backupArtifactLocation }}"
+          backupTag: "{{ .Phases.copyVolume.Output.backupTag }}"
+    phases:
+    - func: CopyVolumeData
+      name: copyVolume
+      args:
+        namespace: "{{ .PVC.Namespace }}"
+        volume: "{{ .PVC.Name }}"
+        dataArtifactPrefix: "{{ .PVC.Namespace }}/{{ .PVC.Name }}"
+  
+  restore:
+    type: PersistentVolumeClaim
+    inputArtifactNames:
+      - pvc       
+    phases:
+    # clean the pvc before restoring it 
+    - func: PrepareData
+      name: wipeOutPVC
+      args: 
+        namespace: "{{ .PVC.Namespace }}"
+        image: ghcr.io/kanisterio/kanister-tools:0.61.0
+        volumes: 
+          "{{ .PVC.Name }}": "{{ .ArtifactsIn.pvc.KeyValue.backupRoot }}"
+        command:
+        - sh
+        - -c
+        - |
+          rm -rf {{ .ArtifactsIn.pvc.KeyValue.backupRoot }}/*          
+    - func: RestoreData
+      name: RestoreFromObjectStore
+      args:
+        namespace: "{{ .PVC.Namespace }}"
+        image: ghcr.io/kanisterio/kanister-tools:0.61.0
+        backupArtifactPrefix: "{{ .ArtifactsIn.pvc.KeyValue.backupArtifactLocation }}" 
+        backupTag: "{{ .ArtifactsIn.pvc.KeyValue.backupTag }}"
+        volumes: 
+          "{{ .PVC.Name }}": "{{ .ArtifactsIn.pvc.KeyValue.backupRoot }}"
+  

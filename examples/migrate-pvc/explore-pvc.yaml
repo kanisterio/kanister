@@ -1,0 +1,27 @@
+# temporary pod to explore the data in the pvc
+apiVersion: v1 
+kind: Pod
+metadata:
+  name: explore-data  
+spec:
+    restartPolicy: Never
+    strategy:
+      type: Recreate
+    containers:
+    - name: create-data-container
+      image: alpine:3.7
+      resources:
+          requests:
+            memory: 256Mi
+            cpu: 100m
+      command: ["tail"]
+      args:     
+      - -f
+      - /dev/null    
+      volumeMounts:
+      - name: my-pvc
+        mountPath: /my-pvc
+    volumes:
+    - name: my-pvc
+      persistentVolumeClaim:
+        claimName: my-pvc  
