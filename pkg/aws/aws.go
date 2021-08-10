@@ -26,6 +26,8 @@ import (
 	"github.com/pkg/errors"
 
 	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
@@ -69,6 +71,7 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get assume role duration")
 	}
+	log.Info().Print("Assume Role Duration setup", field.M{"assumeRoleDuration": assumeRoleDuration})
 	switch {
 	case config[AccessKeyID] != "" && config[SecretAccessKey] != "":
 		// If AccessKeys were provided - use those
