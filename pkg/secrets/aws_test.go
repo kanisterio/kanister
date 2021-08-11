@@ -78,7 +78,7 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 	}
 	for testNum, tc := range tcs {
 		creds, err := ExtractAWSCredentials(context.Background(), tc.secret, aws.AssumeRoleDurationDefault)
-		c.Check(creds, DeepEquals, tc.expected, Commentf("test number:%d", testNum))
+		c.Check(creds, DeepEquals, tc.expected, Commentf("test number: %d", testNum))
 		c.Check(err, tc.errChecker)
 	}
 }
