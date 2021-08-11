@@ -91,9 +91,7 @@ func ExtractAWSCredentials(ctx context.Context, secret *v1.Secret, assumeRoleDur
 	}
 	exp, err := creds.ExpiresAt()
 	if err == nil {
-		log.Info().Print("Credential expiration", field.M{"expirationTime": exp})
-	} else {
-		log.Info().Print("No expiration in credentials")
+		log.Debug().Print("Credential expiration", field.M{"expirationTime": exp})
 	}
 	return &val, nil
 }
