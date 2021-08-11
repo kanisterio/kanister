@@ -82,10 +82,7 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to create session to initialize Web Identify credentials")
 		}
-		svc := sts.New(sess)
-		p := stscreds.NewWebIdentityRoleProvider(svc, os.Getenv(roleARNEnvKey), "", os.Getenv(webIdentityTokenFilePathEnvKey))
-		p.Duration = assumeRoleDuration
-		creds = credentials.NewCredentials(p)
+		creds = getCredentialsWithDuration(sess, assumeRoleDuration)
 		assumedRole = os.Getenv(roleARNEnvKey)
 	default:
 		return nil, errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY required to initialize AWS credentials")
@@ -104,6 +101,17 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 	// role and return those credentials instead
 	creds, err = awsrole.Switch(ctx, creds, config[ConfigRole], assumeRoleDuration)
 	return creds, errors.Wrap(err, "Failed to switch roles")
+}
+
+// getCredentialsWithDuration returns credentials with the given duration.
+// In order to set a custom assume role duration, we have to get the
+// the provider first and then set it's Duration field before
+// getting the credentials from the provider.
+func getCredentialsWithDuration(sess *session.Session, duration time.Duration) *credentials.Credentials {
+	svc := sts.New(sess)
+	p := stscreds.NewWebIdentityRoleProvider(svc, os.Getenv(roleARNEnvKey), "", os.Getenv(webIdentityTokenFilePathEnvKey))
+	p.Duration = duration
+	return credentials.NewCredentials(p)
 }
 
 // GetConfig returns a configuration to establish AWS connection and connected region name.
