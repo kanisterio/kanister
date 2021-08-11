@@ -27,6 +27,8 @@ import (
 	"github.com/pkg/errors"
 
 	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
@@ -70,14 +72,13 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get assume role duration")
 	}
+	log.Debug().Print("Assume Role Duration setup", field.M{"assumeRoleDuration": assumeRoleDuration})
 	switch {
 	case config[AccessKeyID] != "" && config[SecretAccessKey] != "":
 		// If AccessKeys were provided - use those
 		creds = credentials.NewStaticCredentials(config[AccessKeyID], config[SecretAccessKey], "")
 	case os.Getenv(webIdentityTokenFilePathEnvKey) != "" && os.Getenv(roleARNEnvKey) != "":
-		logLevel := aws.LogDebugWithHTTPBody
-		awsCfg := aws.Config{LogLevel: &logLevel}
-		sess, err := session.NewSessionWithOptions(session.Options{AssumeRoleDuration: assumeRoleDuration, Config: awsCfg})
+		sess, err := session.NewSessionWithOptions(session.Options{AssumeRoleDuration: assumeRoleDuration})
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to create session to initialize Web Identify credentials")
 		}
