@@ -69,8 +69,13 @@ func ValidateAWSCredentials(secret *v1.Secret) error {
 // If the required types are not avaialable in the secrets, it returns an errror.
 //
 // ExtractAWSCredentials accepts an assumeRoleDuration which is used to set
-// the duration of the AWS session token provided by K10. AWS allows a maximum value of
-// 12 hours when no role chaining is involved.
+// the duration of the AWS session token provided by K10.
+// When this setting is not provided, the default duration of a token is 1h.
+// The minimum value allowed is 15 minutes (15m).
+// The maximum value depends on the max duration setting
+// of the IAM role - The setting can be viewed using instructions here
+// https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html#id_roles_use_view-role-max-session.
+// The IAM role's max duration setting can be modified between 1h to 12h.
 func ExtractAWSCredentials(ctx context.Context, secret *v1.Secret, assumeRoleDuration time.Duration) (*credentials.Value, error) {
 	if err := ValidateAWSCredentials(secret); err != nil {
 		return nil, err
