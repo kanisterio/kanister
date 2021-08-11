@@ -8,6 +8,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/pkg/errors"
 )
 
@@ -86,6 +88,12 @@ func ExtractAWSCredentials(ctx context.Context, secret *v1.Secret, assumeRoleDur
 	val, err := creds.Get()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get AWS credentials")
+	}
+	exp, err := creds.ExpiresAt()
+	if err == nil {
+		log.Info().Print("Credential expiration", field.M{"expirationTime": exp})
+	} else {
+		log.Info().Print("No expiration in credentials")
 	}
 	return &val, nil
 }

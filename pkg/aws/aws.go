@@ -78,7 +78,9 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 		// If AccessKeys were provided - use those
 		creds = credentials.NewStaticCredentials(config[AccessKeyID], config[SecretAccessKey], "")
 	case os.Getenv(webIdentityTokenFilePathEnvKey) != "" && os.Getenv(roleARNEnvKey) != "":
-		sess, err := session.NewSessionWithOptions(session.Options{AssumeRoleDuration: assumeRoleDuration})
+		logLevel := aws.LogDebugWithHTTPBody
+		awsCfg := aws.Config{LogLevel: &logLevel}
+		sess, err := session.NewSessionWithOptions(session.Options{AssumeRoleDuration: assumeRoleDuration, Config: awsCfg})
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to create session to initialize Web Identify credentials")
 		}
