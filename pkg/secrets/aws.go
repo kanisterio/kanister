@@ -69,7 +69,7 @@ func ValidateAWSCredentials(secret *v1.Secret) error {
 // If the required types are not avaialable in the secrets, it returns an errror.
 //
 // ExtractAWSCredentials accepts an assumeRoleDuration which is used to set
-// the duration of the AWS session token provided by K10.
+// the duration of the AWS session token.
 // When this setting is not provided, the default duration of a token is 1h.
 // The minimum value allowed is 15 minutes (15m).
 // The maximum value depends on the max duration setting
