@@ -23,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/pkg/errors"
 
 	awsrole "github.com/kanisterio/kanister/pkg/aws/role"
@@ -81,8 +82,10 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to create session to initialize Web Identify credentials")
 		}
-		// If we have credentials to use with a Web Identity provider - use those
-		creds = stscreds.NewWebIdentityCredentials(sess, os.Getenv(roleARNEnvKey), "", os.Getenv(webIdentityTokenFilePathEnvKey))
+		svc := sts.New(sess)
+		p := stscreds.NewWebIdentityRoleProvider(svc, os.Getenv(roleARNEnvKey), "", os.Getenv(webIdentityTokenFilePathEnvKey))
+		p.Duration = assumeRoleDuration
+		creds = credentials.NewCredentials(p)
 		assumedRole = os.Getenv(roleARNEnvKey)
 	default:
 		return nil, errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY required to initialize AWS credentials")
