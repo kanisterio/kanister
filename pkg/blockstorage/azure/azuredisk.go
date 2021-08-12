@@ -717,6 +717,8 @@ func staticRegionToZones(region string) ([]string, error) {
 		return nil, nil
 	case "norwaywest":
 		return nil, nil
+	case "qatarcentral":
+		return nil, nil
 	case "southafricanorth":
 		return nil, nil
 	case "southafricawest":
