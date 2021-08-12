@@ -19,21 +19,21 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/filter"
 	"github.com/pkg/errors"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CRDMatcher returns a ResourceTypeMatcher that matches all CRs in this cluster.
 func CRDMatcher(ctx context.Context, cli crdclient.Interface) (filter.ResourceTypeMatcher, error) {
-	crds, err := cli.ApiextensionsV1beta1().CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
+	crds, err := cli.ApiextensionsV1().CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to query CRDs in cluster")
 	}
 	return crdsToMatcher(crds.Items), nil
 }
 
-func crdsToMatcher(crds []apiextensions.CustomResourceDefinition) filter.ResourceTypeMatcher {
+func crdsToMatcher(crds []apiextensionsv1.CustomResourceDefinition) filter.ResourceTypeMatcher {
 	gvrs := make(filter.ResourceTypeMatcher, 0, len(crds))
 	for _, crd := range crds {
 		gvr := filter.ResourceTypeRequirement{
