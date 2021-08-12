@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
@@ -312,7 +313,7 @@ func osSecretFromProfile(ctx context.Context, pType objectstore.ProviderType, p 
 		if err != nil {
 			return nil, errorf(err, "Could not fetch the secret specified in credential")
 		}
-		creds, err := secrets.ExtractAWSCredentials(ctx, s)
+		creds, err := secrets.ExtractAWSCredentials(ctx, s, aws.AssumeRoleDurationDefault)
 		if err != nil {
 			return nil, err
 		}

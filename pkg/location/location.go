@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
@@ -229,7 +230,7 @@ func getAWSSecret(ctx context.Context, cred param.Credential) (*objectstore.Secr
 		}
 		return os, nil
 	case param.CredentialTypeSecret:
-		creds, err := secrets.ExtractAWSCredentials(ctx, cred.Secret)
+		creds, err := secrets.ExtractAWSCredentials(ctx, cred.Secret, aws.AssumeRoleDurationDefault)
 		if err != nil {
 			return nil, err
 		}

@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -235,7 +236,7 @@ func resticS3CredentialArgs(creds param.Credential) ([]string, error) {
 }
 
 func resticS3CredentialSecretArgs(secret *v1.Secret) ([]string, error) {
-	creds, err := secrets.ExtractAWSCredentials(context.Background(), secret)
+	creds, err := secrets.ExtractAWSCredentials(context.Background(), secret, aws.AssumeRoleDurationDefault)
 	if err != nil {
 		return nil, err
 	}
