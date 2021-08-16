@@ -60,6 +60,10 @@ type RDSPostgresDB struct {
 	sqlDB             *sql.DB
 }
 
+const (
+	dbInstanceType = "db.t3.micro"
+)
+
 func NewRDSPostgresDB(name string, customRegion string) App {
 	return &RDSPostgresDB{
 		name:              name,
@@ -146,7 +150,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rdsCli.CreateDBInstance(ctx, 20, "db.t2.micro", pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID})
+	_, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID})
 	if err != nil {
 		return err
 	}
