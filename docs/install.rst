@@ -10,7 +10,7 @@ Installing Kanister
 Prerequisites
 =============
 
-* Kubernetes 1.8 or higher with Beta APIs enabled
+* Kubernetes 1.16 or higher
 
 * `kubectl <https://kubernetes.io/docs/tasks/tools/install-kubectl/>`_ installed
   and setup
