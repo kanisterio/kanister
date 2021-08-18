@@ -13,7 +13,8 @@ of Kanister's features to manage the application's data.
 Prerequisites
 =============
 
-* Kubernetes 1.16 or higher
+* Kubernetes ``1.16`` or higher. For cluster version lower than ``1.16``,
+  we recommend installing Kanister version lower than ``0.63.0``
 
 * `kubectl <https://kubernetes.io/docs/tasks/tools/install-kubectl/>`_ installed
   and setup
