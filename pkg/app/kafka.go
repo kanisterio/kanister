@@ -28,6 +28,8 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
@@ -70,6 +72,7 @@ const (
 
 type KafkaCluster struct {
 	cli                kubernetes.Interface
+	dynClient          dynamic.Interface
 	name               string
 	namespace          string
 	s3SinkConfigPath   string
@@ -108,7 +111,14 @@ func (kc *KafkaCluster) Init(context.Context) error {
 		return err
 	}
 	kc.cli, err = kubernetes.NewForConfig(cfg)
-	return err
+	if err != nil {
+		return errors.Wrap(err, "failed to get a k8s client")
+	}
+	kc.dynClient, err = dynamic.NewForConfig(cfg)
+	if err != nil {
+		return errors.Wrap(err, "failed to get a k8s dynamic client")
+	}
+	return nil
 }
 
 func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
@@ -245,12 +255,6 @@ func (kc *KafkaCluster) GetClusterScopedResources(ctx context.Context) []crv1alp
 		{
 			APIVersion: "v1",
 			Group:      "apiextensions.k8s.io",
-			Name:       "kafkaconnects2is.kafka.strimzi.io",
-			Resource:   "customresourcedefinitions",
-		},
-		{
-			APIVersion: "v1",
-			Group:      "apiextensions.k8s.io",
 			Name:       "kafkamirrormaker2s.kafka.strimzi.io",
 			Resource:   "customresourcedefinitions",
 		},
@@ -321,23 +325,16 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 		return err
 	}
 
-	deleteCRD := []string{
-		"delete",
-		"crd",
-		"kafkabridges.kafka.strimzi.io",
-		"kafkaconnectors.kafka.strimzi.io",
-		"kafkaconnects.kafka.strimzi.io",
-		"kafkaconnects2is.kafka.strimzi.io",
-		"kafkamirrormaker2s.kafka.strimzi.io",
-		"kafkamirrormakers.kafka.strimzi.io",
-		"kafkarebalances.kafka.strimzi.io",
-		"kafkas.kafka.strimzi.io",
-		"kafkatopics.kafka.strimzi.io",
-		"kafkausers.kafka.strimzi.io",
-	}
-	out, error := helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
-	if error != nil {
-		return errors.Wrapf(error, "Error deleting kafka CRD %s, %s", kc.name, out)
+	var gvr schema.GroupVersionResource
+	ClusterLevelResources := kc.GetClusterScopedResources(ctx)
+	// delete ClusterScopedResources if present
+	for _, clr := range ClusterLevelResources {
+		gvr = schema.GroupVersionResource{Group: clr.Group, Version: clr.APIVersion, Resource: clr.Resource}
+		err = kc.dynClient.Resource(gvr).Delete(ctx, clr.Name, metav1.DeleteOptions{})
+		if err != nil && !apierrors.IsNotFound(err) {
+			log.WithError(err).Print("Failed to delete cluster resource", field.M{"app": kc.name})
+			return err
+		}
 	}
 
 	log.Print("Application deleted successfully.", field.M{"app": kc.name})
