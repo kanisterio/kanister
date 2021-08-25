@@ -52,7 +52,7 @@ const (
 	roleARNEnvKey                  = "AWS_ROLE_ARN"
 
 	// TODO: Make this configurable via `config`
-	AssumeRoleDurationDefault = 90 * time.Minute
+	AssumeRoleDurationDefault = 60 * time.Minute
 	AssumeRoleDuration        = "assumeRoleDuration"
 )
 
