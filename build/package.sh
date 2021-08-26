@@ -28,7 +28,7 @@ build_licenses_info_image() {
         mount_cmd="--volumes-from $(grep docker -m 1 /proc/self/cgroup|cut -d/ -f3)"
     fi
     docker run --rm ${mount_cmd} \
-        "kanisterio/license-extractor:4e0a91a" \
+        "ghcr.io/kanisterio/license-extractor:4e0a91a" \
         --mode merge \
         --source ${src_dir} \
         --target ${target_file}\
