@@ -7,7 +7,7 @@
 * Kubernetes 1.9+
 * Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
 * PV support on the underlying infrastructure
-* Kanister controller version 0.65.0 installed in your cluster
+* Kanister controller version 0.66.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Chart Details
@@ -29,7 +29,7 @@ $ kubectl create namespace mongo-test
 $ helm install my-release bitnami/mongodb --namespace mongo-test \
 	--set architecture="replicaset" \
 	--set image.repository=ghcr.io/kanisterio/mongodb \
-	--set image.tag=0.65.0
+	--set image.tag=0.66.0
 ```
 
 The command deploys MongoDB on the Kubernetes cluster in the mongo-test namespace

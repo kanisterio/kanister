@@ -9,5 +9,5 @@ maintainers:
   - email: tom@kasten.io
     name: tdmanv
 icon: https://kasten.io/assets/img/kanister-logo.png
-appVersion: 0.65.0
+appVersion: 0.66.0
 source: https://github.com/kanisterio/kanister
