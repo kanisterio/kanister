@@ -80,5 +80,8 @@ func (s *VMWareSuite) TestTimeoutEnvSetting(c *C) {
 	timeout = time.Duration(getEnvAsIntOrDefault(vmWareTimeoutMinEnv, int(defaultWaitTime/time.Minute))) * time.Minute
 	c.Assert(timeout, Equals, defaultWaitTime)
 
+	timeout = time.Duration(getEnvAsIntOrDefault("someotherenv", int(defaultWaitTime/time.Minute))) * time.Minute
+	c.Assert(timeout, Equals, defaultWaitTime)
+
 	os.Setenv(vmWareTimeoutMinEnv, tempEnv)
 }
