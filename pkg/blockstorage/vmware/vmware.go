@@ -362,7 +362,7 @@ func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string)
 func getEnvAsIntOrDefault(envKey string, def int) int {
 	if v, ok := os.LookupEnv(envKey); ok {
 		iv, err := strconv.Atoi(v)
-		if err == nil {
+		if err == nil && iv > 0 {
 			return iv
 		}
 	}
