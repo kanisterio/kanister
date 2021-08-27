@@ -365,6 +365,7 @@ func getEnvAsIntOrDefault(envKey string, def int) int {
 		if err == nil && iv > 0 {
 			return iv
 		}
+		log.Debug().Print("Using default timeout value for vSphere because of invalid environment variable", field.M{"envVar": v})
 	}
 
 	return def
