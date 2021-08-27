@@ -1,7 +1,9 @@
 package vmware
 
 import (
+	"os"
 	"testing"
+	"time"
 
 	. "gopkg.in/check.v1"
 )
@@ -54,4 +56,21 @@ func (s *VMWareSuite) TestURLParse(c *C) {
 			c.Assert(err, ErrorMatches, ".*"+tc.expErrString+".*")
 		}
 	}
+}
+
+func (s *VMWareSuite) TestTimeoutEnvSetting(c *C) {
+	tempEnv := os.Getenv(vmWareTimeoutMinEnv)
+	os.Unsetenv(vmWareTimeoutMinEnv)
+	timeout := time.Duration(getEnvAsIntOrDefault(vmWareTimeoutMinEnv, int(defaultWaitTime/time.Minute))) * time.Minute
+	c.Assert(timeout, Equals, defaultWaitTime)
+
+	os.Setenv(vmWareTimeoutMinEnv, "7")
+	timeout = time.Duration(getEnvAsIntOrDefault(vmWareTimeoutMinEnv, int(defaultWaitTime/time.Minute))) * time.Minute
+	c.Assert(timeout, Equals, 7*time.Minute)
+
+	os.Setenv(vmWareTimeoutMinEnv, "badValue")
+	timeout = time.Duration(getEnvAsIntOrDefault(vmWareTimeoutMinEnv, int(defaultWaitTime/time.Minute))) * time.Minute
+	c.Assert(timeout, Equals, defaultWaitTime)
+
+	os.Setenv(vmWareTimeoutMinEnv, tempEnv)
 }
