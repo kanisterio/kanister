@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -38,8 +40,14 @@ const (
 	VSpherePasswordKey = "VSpherePasswordKey"
 
 	noDescription     = ""
-	defaultWaitTime   = 10 * time.Minute
+	defaultWaitTime   = 60 * time.Minute
 	defaultRetryLimit = 30 * time.Minute
+
+	vmWareTimeoutMinEnv = "VMWARE_GOM_TIMEOUT_MIN"
+)
+
+var (
+	vmWareTimeout = time.Duration(getEnvAsIntOrDefault(vmWareTimeoutMinEnv, int(defaultWaitTime/time.Minute))) * time.Minute
 )
 
 // FcdProvider provides blockstorage.Provider
@@ -118,7 +126,7 @@ func (p *FcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blo
 		return nil, errors.Wrap(err, "Failed to create disk from snapshot")
 	}
 	log.Debug().Print("Started CreateDiskFromSnapshot task", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
-	res, err := task.Wait(ctx, defaultWaitTime)
+	res, err := task.Wait(ctx, vmWareTimeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to wait on task")
 	}
@@ -151,7 +159,7 @@ func (p *FcdProvider) VolumeDelete(ctx context.Context, volume *blockstorage.Vol
 	if err != nil {
 		return errors.Wrap(err, "Failed to delete the disk")
 	}
-	_, err = task.Wait(ctx, defaultWaitTime)
+	_, err = task.Wait(ctx, vmWareTimeout)
 	return err
 }
 
@@ -193,7 +201,7 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 			return false, errors.Wrap(lerr, "Failed to create snapshot")
 		}
 		log.Debug().Print("Started CreateSnapshot task", field.M{"VolumeID": volume.ID})
-		res, lerr = task.Wait(ctx, defaultWaitTime)
+		res, lerr = task.Wait(ctx, vmWareTimeout)
 		if lerr != nil {
 			if soap.IsVimFault(lerr) {
 				switch soap.ToVimFault(lerr).(type) {
@@ -252,7 +260,7 @@ func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 			return false, errors.Wrap(lerr, "Failed to delete snapshot")
 		}
 		log.Debug().Print("Started SnapshotDelete task", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
-		_, lerr = task.Wait(ctx, defaultWaitTime)
+		_, lerr = task.Wait(ctx, vmWareTimeout)
 		if lerr != nil {
 			// The following error handling was pulled from https://github.com/vmware-tanzu/astrolabe/blob/91eeed4dcf77edd1387a25e984174f159d66fedb/pkg/ivd/ivd_protected_entity.go#L433
 			if soap.IsVimFault(lerr) {
@@ -334,7 +342,7 @@ func (p *FcdProvider) setTagsVolume(ctx context.Context, volume *blockstorage.Vo
 	if err != nil {
 		return errors.Wrap(err, "Failed to update metadata")
 	}
-	_, err = task.Wait(ctx, defaultWaitTime)
+	_, err = task.Wait(ctx, vmWareTimeout)
 	if err != nil {
 		return errors.Wrap(err, "Failed to wait on task")
 	}
@@ -349,4 +357,16 @@ func (p *FcdProvider) VolumesList(ctx context.Context, tags map[string]string, z
 // SnapshotsList is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	return nil, errors.New("Not implemented")
+}
+
+func getEnvAsIntOrDefault(envKey string, def int) int {
+	if v, ok := os.LookupEnv(envKey); ok {
+		iv, err := strconv.Atoi(v)
+		if err == nil && iv > 0 {
+			return iv
+		}
+		log.Debug().Print("Using default timeout value for vSphere because of invalid environment variable", field.M{"envVar": v})
+	}
+
+	return def
 }
