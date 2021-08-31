@@ -254,10 +254,7 @@ func s3Endpoint(id string, c ProviderConfig) string {
 	return awsS3Endpoint(id, r)
 }
 
-// Stow uses path-style requests when specifying an endpoint.
-// https://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html#path-style-access
-// https://github.com/graymeta/stow/blob/master/s3/config.go#L159
-
+// https://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html
 const awsS3EndpointFmt = "https://%s.s3.%s.amazonaws.com"
 
 func awsS3Endpoint(id string, region string) string {
