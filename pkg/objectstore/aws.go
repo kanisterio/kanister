@@ -58,8 +58,9 @@ func awsConfig(ctx context.Context, pc ProviderConfig, s SecretAws) (*aws.Config
 	}
 	cfg = cfg.WithRegion(r)
 	if pc.Endpoint != "" {
-		cfg = cfg.WithEndpoint(pc.Endpoint).WithS3ForcePathStyle(true)
+		cfg = cfg.WithEndpoint(pc.Endpoint)
 	}
+	cfg = cfg.WithS3ForcePathStyle(false)
 	if pc.SkipSSLVerify {
 		h := &http.Client{
 			Transport: &http.Transport{
