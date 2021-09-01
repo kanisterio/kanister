@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -19,15 +18,17 @@ const (
 
 // KubectlOperation implements methods to perform kubectl operations
 type KubectlOperation struct {
-	factory cmdutil.Factory
-	specs   io.Reader
+	factory   cmdutil.Factory
+	specs     io.Reader
+	namespace string
 }
 
 // NewKubectlOperations returns new KubectlOperations object
-func NewKubectlOperations(specsString string) *KubectlOperation {
+func NewKubectlOperations(specsString, namespace string) *KubectlOperation {
 	return &KubectlOperation{
-		factory: cmdutil.NewFactory(genericclioptions.NewConfigFlags(false)),
-		specs:   strings.NewReader(specsString),
+		factory:   cmdutil.NewFactory(genericclioptions.NewConfigFlags(false)),
+		specs:     strings.NewReader(specsString),
+		namespace: namespace,
 	}
 }
 
@@ -43,25 +44,29 @@ func (k *KubectlOperation) Execute(op Operation) error {
 
 func (k *KubectlOperation) create() error {
 	// TODO: Create namespace if doesn't exists before creating an resource
-	request := k.factory.NewBuilder().
+	result := k.factory.NewBuilder().
 		Unstructured().
-		NamespaceParam(metav1.NamespaceDefault).
-		DefaultNamespace().
+		NamespaceParam(k.namespace).
 		Stream(k.specs, "resource").
 		Flatten().
 		Do()
-	err := request.Err()
+	err := result.Err()
 	if err != nil {
 		return err
 	}
-	err = request.Visit(func(info *resource.Info, err error) error {
+	err = result.Visit(func(info *resource.Info, err error) error {
 		if err != nil {
 			return err
+		}
+		namespace := k.namespace
+		// Override namespace if the namespace is set in resource specs
+		if info.Namespace != "" {
+			namespace = info.Namespace
 		}
 		_, err = resource.
 			NewHelper(info.Client, info.Mapping).
 			WithFieldManager("kanister-create").
-			Create(info.Namespace, true, info.Object)
+			Create(namespace, true, info.Object)
 		return err
 	})
 	return err

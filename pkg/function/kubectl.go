@@ -20,6 +20,7 @@ import (
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func init() {
@@ -35,6 +36,8 @@ const (
 	KubectlFuncName = "kubectl"
 	// KubectlSpecsArg provides resource specs yaml
 	KubectlSpecsArg = "specs"
+	// KubectlNamespaceArg provides resource namespace
+	KubectlNamespaceArg = "namespace"
 	// KubectlOperationArg is the kubectl operation needs to be executed
 	KubectlOperationArg = "operation"
 )
@@ -46,7 +49,7 @@ func (*kubectl) Name() string {
 }
 
 func (crs *kubectl) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var specs string
+	var specs, namespace string
 	var op kube.Operation
 	if err := Arg(args, KubectlSpecsArg, &specs); err != nil {
 		return nil, err
@@ -54,7 +57,10 @@ func (crs *kubectl) Exec(ctx context.Context, tp param.TemplateParams, args map[
 	if err := Arg(args, KubectlOperationArg, &op); err != nil {
 		return nil, err
 	}
-	kubectlOp := kube.NewKubectlOperations(specs)
+	if err := OptArg(args, KubectlNamespaceArg, &namespace, metav1.NamespaceDefault); err != nil {
+		return nil, err
+	}
+	kubectlOp := kube.NewKubectlOperations(specs, namespace)
 	return nil, kubectlOp.Execute(op)
 }
 

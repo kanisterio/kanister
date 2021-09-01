@@ -17,11 +17,13 @@ package function
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
+	extensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -36,7 +38,8 @@ import (
 var _ = Suite(&KubectlSuite{})
 
 type KubectlSuite struct {
-	cli       kubernetes.Interface
+	kubeCli   kubernetes.Interface
+	crdCli    crdclient.Interface
 	dynCli    dynamic.Interface
 	namespace string
 }
@@ -44,7 +47,7 @@ type KubectlSuite struct {
 func (s *KubectlSuite) SetUpSuite(c *C) {
 	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
-	s.cli = cli
+	s.kubeCli = cli
 
 	dynCli, err := kube.NewDynamicClient()
 	c.Assert(err, IsNil)
@@ -55,30 +58,38 @@ func (s *KubectlSuite) SetUpSuite(c *C) {
 			GenerateName: "kanisterkubetasktest-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	cns, err := s.kubeCli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
-	os.Setenv("POD_NAMESPACE", cns.Name)
-	os.Setenv("POD_SERVICE_ACCOUNT", "default")
+	// Create CRD
+	crdCli, err := kube.NewCRDClient()
+	c.Assert(err, IsNil)
+	s.crdCli = crdCli
+	_, err = s.crdCli.ApiextensionsV1().CustomResourceDefinitions().Create(context.TODO(), getSampleCRD(), metav1.CreateOptions{})
+	if apierrors.IsAlreadyExists(err) {
+		return
+	}
+	c.Assert(err, IsNil)
 }
 
 func (s *KubectlSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
-		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
+		_ = s.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
+	_ = s.crdCli.ApiextensionsV1().CustomResourceDefinitions().Delete(context.TODO(), getSampleCRD().GetName(), metav1.DeleteOptions{})
 }
 
 func createPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
-		Name: "create",
+		Name: "create-in-ns",
 		Func: KubectlFuncName,
 		Args: map[string]interface{}{
 			KubectlOperationArg: "create",
+			KubectlNamespaceArg: namespace,
 			KubectlSpecsArg: fmt.Sprintf(`apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: test-deployment
-  namespace: %s
 spec:
   replicas: 1
   selector:
@@ -102,6 +113,29 @@ apiVersion: v1
 kind: Service
 metadata:
   name: test-deployment
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: demo
+  type: ClusterIP`),
+		},
+	}
+}
+
+func createInSpecsNsPhase(namespace string) crv1alpha1.BlueprintPhase {
+	return crv1alpha1.BlueprintPhase{
+		Name: "create-in-def-ns",
+		Func: KubectlFuncName,
+		Args: map[string]interface{}{
+			KubectlOperationArg: "create",
+			KubectlSpecsArg: fmt.Sprintf(`apiVersion: apps/v1
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-deployment-2
   namespace: %s
 spec:
   ports:
@@ -110,7 +144,25 @@ spec:
     targetPort: 80
   selector:
     app: demo
-  type: ClusterIP`, namespace, namespace),
+  type: ClusterIP`, namespace),
+		},
+	}
+}
+
+func createCRPhase(namespace string) crv1alpha1.BlueprintPhase {
+	return crv1alpha1.BlueprintPhase{
+		Name: "create-crd-cr",
+		Func: KubectlFuncName,
+		Args: map[string]interface{}{
+			KubectlOperationArg: "create",
+			KubectlSpecsArg: fmt.Sprintf(`apiVersion: samplecontroller.k8s.io/v1alpha1
+kind: Foo
+metadata:
+  name: example-foo
+  namespace: %s
+spec:
+  deploymentName: example-foo
+  replicas: 1`, namespace),
 		},
 	}
 }
@@ -154,6 +206,26 @@ func (s *KubectlSuite) TestKubectl(c *C) {
 				},
 			},
 		},
+		{
+			bp: newCreateResourceBlueprint(createInSpecsNsPhase(s.namespace)),
+			expResource: []resourceRef{
+				{
+					gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
+					name:      "test-deployment-2",
+					namespace: s.namespace,
+				},
+			},
+		},
+		{
+			bp: newCreateResourceBlueprint(createCRPhase(s.namespace)),
+			expResource: []resourceRef{
+				{
+					gvr:       schema.GroupVersionResource{Group: "samplecontroller.k8s.io", Version: "v1alpha1", Resource: "foos"},
+					name:      "example-foo",
+					namespace: s.namespace,
+				},
+			},
+		},
 	} {
 		phases, err := kanister.GetPhases(tc.bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
@@ -166,4 +238,41 @@ func (s *KubectlSuite) TestKubectl(c *C) {
 			}
 		}
 	}
+}
+
+func getSampleCRD() *extensionsv1.CustomResourceDefinition {
+	return &extensionsv1.CustomResourceDefinition{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "CustomResourceDefinition",
+			APIVersion: "apiextensions.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "foos.samplecontroller.k8s.io",
+			Annotations: map[string]string{
+				"api-approved.kubernetes.io": "unapproved",
+			},
+		},
+		Spec: extensionsv1.CustomResourceDefinitionSpec{
+			Group: "samplecontroller.k8s.io",
+			Names: extensionsv1.CustomResourceDefinitionNames{
+				Plural: "foos",
+				Kind:   "Foo",
+			},
+			Scope: extensionsv1.ResourceScope("Namespaced"),
+			Versions: []extensionsv1.CustomResourceDefinitionVersion{
+				extensionsv1.CustomResourceDefinitionVersion{
+					Name:    "v1alpha1",
+					Served:  true,
+					Storage: true,
+					Schema: &extensionsv1.CustomResourceValidation{
+						OpenAPIV3Schema: &extensionsv1.JSONSchemaProps{
+							Type:       "object",
+							Properties: map[string]extensionsv1.JSONSchemaProps{},
+						},
+					},
+				},
+			},
+		},
+	}
+
 }
