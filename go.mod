@@ -84,10 +84,10 @@ require (
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
 	//pinned k8s.io to v0.20.1 tag
-	k8s.io/api v0.22.1
+	k8s.io/api v0.20.1
 	k8s.io/apiextensions-apiserver v0.20.1
-	k8s.io/apimachinery v0.22.1
-	k8s.io/cli-runtime v0.22.1
-	k8s.io/client-go v0.22.1
-	k8s.io/kubectl v0.22.1
+	k8s.io/apimachinery v0.20.1
+	k8s.io/cli-runtime v0.20.1
+	k8s.io/client-go v0.20.1
+	k8s.io/kubectl v0.20.1
 )
