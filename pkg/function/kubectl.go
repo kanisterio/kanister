@@ -33,7 +33,7 @@ var (
 
 const (
 	// KubectlFuncName gives the name of the function
-	KubectlFuncName = "kubectl"
+	KubectlFuncName = "Kubectl"
 	// KubectlSpecsArg provides resource specs yaml
 	KubectlSpecsArg = "specs"
 	// KubectlNamespaceArg provides resource namespace
