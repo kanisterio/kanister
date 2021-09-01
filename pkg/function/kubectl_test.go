@@ -33,15 +33,15 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
-var _ = Suite(&CreateK8sResourceSuite{})
+var _ = Suite(&KubectlSuite{})
 
-type CreateK8sResourceSuite struct {
+type KubectlSuite struct {
 	cli       kubernetes.Interface
 	dynCli    dynamic.Interface
 	namespace string
 }
 
-func (s *CreateK8sResourceSuite) SetUpSuite(c *C) {
+func (s *KubectlSuite) SetUpSuite(c *C) {
 	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
 	s.cli = cli
@@ -62,7 +62,7 @@ func (s *CreateK8sResourceSuite) SetUpSuite(c *C) {
 	os.Setenv("POD_SERVICE_ACCOUNT", "default")
 }
 
-func (s *CreateK8sResourceSuite) TearDownSuite(c *C) {
+func (s *KubectlSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -71,9 +71,10 @@ func (s *CreateK8sResourceSuite) TearDownSuite(c *C) {
 func createPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "create",
-		Func: CreateK8sResourceFuncName,
+		Func: KubectlFuncName,
 		Args: map[string]interface{}{
-			SpecsArg: fmt.Sprintf(`apiVersion: apps/v1
+			KubectlOperationArg: "create",
+			KubectlSpecsArg: fmt.Sprintf(`apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: test-deployment
@@ -124,7 +125,7 @@ func newCreateResourceBlueprint(phases ...crv1alpha1.BlueprintPhase) crv1alpha1.
 	}
 }
 
-func (s *CreateK8sResourceSuite) TestCreateK8sResource(c *C) {
+func (s *KubectlSuite) TestKubectl(c *C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{}

@@ -23,35 +23,44 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&createK8sResource{})
+	_ = kanister.Register(&kubectl{})
 }
 
 var (
-	_ kanister.Func = (*createK8sResource)(nil)
+	_ kanister.Func = (*kubectl)(nil)
 )
 
 const (
-	// CreateK8sResourceFuncName gives the name of the function
-	CreateK8sResourceFuncName = "CreateK8sResource"
-	SpecsArg                  = "specs"
+	// KubectlFuncName gives the name of the function
+	KubectlFuncName = "kubectl"
+	// KubectlSpecsArg provides resource specs yaml
+	KubectlSpecsArg = "specs"
+	// KubectlOperationArg is the kubectl operation needs to be executed
+	KubectlOperationArg = "operation"
 )
 
-type createK8sResource struct{}
+type kubectl struct{}
 
-func (*createK8sResource) Name() string {
-	return CreateK8sResourceFuncName
+func (*kubectl) Name() string {
+	return KubectlFuncName
 }
 
-func (crs *createK8sResource) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+func (crs *kubectl) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var specs string
-	if err := Arg(args, SpecsArg, &specs); err != nil {
+	var op kube.Operation
+	if err := Arg(args, KubectlSpecsArg, &specs); err != nil {
 		return nil, err
 	}
-	return nil, kube.CreateResourceFromSpecs(specs)
+	if err := Arg(args, KubectlOperationArg, &op); err != nil {
+		return nil, err
+	}
+	kubectlOp := kube.NewKubectlOperations(specs)
+	return nil, kubectlOp.Execute(op)
 }
 
-func (*createK8sResource) RequiredArgs() []string {
+func (*kubectl) RequiredArgs() []string {
 	return []string{
-		SpecsArg,
+		KubectlSpecsArg,
+		KubectlOperationArg,
 	}
 }
