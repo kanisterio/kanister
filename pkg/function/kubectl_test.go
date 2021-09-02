@@ -274,5 +274,4 @@ func getSampleCRD() *extensionsv1.CustomResourceDefinition {
 			},
 		},
 	}
-
 }
