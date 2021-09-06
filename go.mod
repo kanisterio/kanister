@@ -40,7 +40,6 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0
-	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
@@ -71,7 +70,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.1.3
 	github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45
 	github.com/zeebo/blake3 v0.1.2 // indirect
 	go.mongodb.org/mongo-driver v1.5.1 // indirect
@@ -90,5 +89,6 @@ require (
 	k8s.io/api v0.20.1
 	k8s.io/apiextensions-apiserver v0.20.1
 	k8s.io/apimachinery v0.20.1
+	k8s.io/cli-runtime v0.20.1
 	k8s.io/client-go v0.20.1
 )
