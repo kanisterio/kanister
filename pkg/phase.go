@@ -22,6 +22,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/function/wait"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -58,7 +59,7 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 			if ap.Name != p.name {
 				continue
 			}
-			args, err := param.RenderArgs(ap.Args, tp)
+			args, err := param.RenderArgs(ap.Args, tp, map[string]bool{wait.ConditionsArg: true})
 			if err != nil {
 				return nil, err
 			}

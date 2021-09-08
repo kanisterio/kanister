@@ -32,9 +32,13 @@ const (
 )
 
 // RenderArgs function renders the arguments required for execution
-func RenderArgs(args map[string]interface{}, tp TemplateParams) (map[string]interface{}, error) {
+func RenderArgs(args map[string]interface{}, tp TemplateParams, skipObjectMap map[string]bool) (map[string]interface{}, error) {
 	ram := make(map[string]interface{}, len(args))
 	for n, v := range args {
+		if skip, ok := skipObjectMap[n]; ok && skip {
+			ram[n] = v
+			continue
+		}
 		rv, err := render(v, tp)
 		if err != nil {
 			return nil, err
