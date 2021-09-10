@@ -158,7 +158,8 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 	_, err = p.getOrCreateBucket(ctx, existingBucket)
 	c.Log(fmt.Sprintf("%+v", err))
 	c.Assert(err, IsNil)
-	_, err = p.GetBucket(ctx, nonExistentBucket)
+	bucket, err := p.GetBucket(ctx, nonExistentBucket)
+	c.Log(bucket, err)
 	c.Assert(IsBucketNotFoundError(err), Equals, true)
 
 	for _, tc := range []struct {
@@ -226,13 +227,13 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 			bucketRegion: "tom-minio-region",
 			valid:        false,
 		},
-		{
-			bucketName:   existingBucket,
-			endpoint:     "https://play.min.io:9000",
-			clientRegion: "",
-			bucketRegion: "minio-region",
-			valid:        false,
-		},
+		// {
+		// 	bucketName:   existingBucket,
+		// 	endpoint:     "https://play.min.io:9000",
+		// 	clientRegion: "",
+		// 	bucketRegion: "minio-region",
+		// 	valid:        false,
+		// },
 		{
 			bucketName:   "kanister-test-govcloud",
 			endpoint:     "",
