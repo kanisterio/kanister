@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2021 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,20 +18,25 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/Masterminds/sprig"
-	kanister "github.com/kanisterio/kanister/pkg"
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/function/wait"
-	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+
+	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/function/wait"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 type WaitConditions struct {
@@ -49,6 +54,10 @@ func init() {
 }
 
 var _ kanister.Func = (*waitFunc)(nil)
+
+// jsonpathRegex represents pattern in which jsonpath is specified in the wait conditions
+// e.g { $.status.phase }
+var jsonpathRegex = regexp.MustCompile(`(?m){\s*\$([^}]*)`)
 
 type waitFunc struct{}
 
@@ -70,8 +79,12 @@ func (ktf *waitFunc) Exec(ctx context.Context, tp param.TemplateParams, args map
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Printf("%#v\n", conditions)
-	err = waitForCondition(dynCli, conditions)
+	timeoutDur, err := time.ParseDuration(timeout)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to parse timeout")
+	}
+
+	err = waitForCondition(ctx, dynCli, conditions, timeoutDur)
 	return nil, err
 }
 
@@ -79,22 +92,45 @@ func (*waitFunc) RequiredArgs() []string {
 	return []string{wait.TimeoutArg, wait.ConditionsArg}
 }
 
-func waitForCondition(dynCli dynamic.Interface, waitCond WaitConditions) error {
-	// TODO: Use polling mechanism
-	for _, cond := range waitCond.AnyOf {
-		result, err := evaluateCondition(dynCli, cond)
-		if err != nil {
-			return err
+func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond WaitConditions, timeout time.Duration) error {
+	ctxTimeout, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	var evalErr error
+	result := false
+	err := poll.Wait(ctxTimeout, func(ctx context.Context) (bool, error) {
+		for _, cond := range waitCond.AnyOf {
+			result, evalErr = evaluateCondition(ctx, dynCli, cond)
+			if evalErr != nil {
+				// TODO: Fail early if the error is due to jsonpath syntax
+				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition")
+				return false, nil
+			}
+			if result {
+				return true, nil
+			}
+
 		}
-		if result {
-			return nil
+		for _, cond := range waitCond.AllOf {
+			result, evalErr = evaluateCondition(ctx, dynCli, cond)
+			if evalErr != nil {
+				// TODO: Fail early if the error is due to jsonpath syntax
+				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition")
+				return false, nil
+			}
+			if !result {
+				return false, nil
+			}
 		}
+		return false, nil
+	})
+	if evalErr != nil {
+		return errors.Wrap(err, evalErr.Error())
 	}
-	return nil
+	return err
 }
 
-func evaluateCondition(dynCli dynamic.Interface, cond Condition) (bool, error) {
-	obj, err := fetchObjectFromRef(dynCli, cond.ObjectReference)
+func evaluateCondition(ctx context.Context, dynCli dynamic.Interface, cond Condition) (bool, error) {
+	obj, err := fetchObjectFromRef(ctx, dynCli, cond.ObjectReference)
 	if err != nil {
 		return false, err
 	}
@@ -102,8 +138,8 @@ func evaluateCondition(dynCli dynamic.Interface, cond Condition) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	fmt.Println("Resolved conditions", rcondition, err)
-	t, err := template.New("config").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(rcondition)
+	log.Debug().Print(fmt.Sprintf("Resolved jsonpath: %s", rcondition))
+	t, err := template.New("config").Option("missingkey=zero").Funcs(sprig.TxtFuncMap()).Parse(rcondition)
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
@@ -111,25 +147,34 @@ func evaluateCondition(dynCli dynamic.Interface, cond Condition) (bool, error) {
 	if err = t.Execute(buf, nil); err != nil {
 		return false, errors.WithStack(err)
 	}
-	return buf.String() == "true", nil
+	return strings.TrimSpace(buf.String()) == "true", nil
 }
 
-func fetchObjectFromRef(dynCli dynamic.Interface, objRef crv1alpha1.ObjectReference) (runtime.Object, error) {
+func fetchObjectFromRef(ctx context.Context, dynCli dynamic.Interface, objRef crv1alpha1.ObjectReference) (runtime.Object, error) {
 	gvr := schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}
-	return dynCli.Resource(gvr).Get(context.TODO(), objRef.Name, metav1.GetOptions{})
+	if objRef.Namespace != "" {
+		return dynCli.Resource(gvr).Namespace(objRef.Namespace).Get(ctx, objRef.Name, metav1.GetOptions{})
+	}
+	return dynCli.Resource(gvr).Get(ctx, objRef.Name, metav1.GetOptions{})
 }
 
 func resolveJsonpath(obj runtime.Object, condStr string) (string, error) {
 	resolvedCondStr := condStr
-	slist := strings.Fields(condStr)
-	for _, s := range slist {
-		if strings.HasPrefix(s, "$.") {
-			value, err := kube.ResolveJsonpathToString(obj, fmt.Sprintf("{%s}", strings.TrimPrefix(s, "$")))
-			if err != nil {
-				return resolvedCondStr, err
+	for _, matchList := range jsonpathRegex.FindAllSubmatch([]byte(condStr), -1) {
+		matchedSource := ""
+		for i, _ := range matchList {
+			if i == 0 {
+				// Add ending "}" excluded by regex
+				matchedSource = string(matchList[i]) + "}"
+				continue
 			}
-			// TODO: Check value type and don't add quotes if not string
-			resolvedCondStr = strings.ReplaceAll(resolvedCondStr, s, fmt.Sprintf(`"%s"`, value))
+			matchedJsonpath := string(matchList[i])
+			transCond := fmt.Sprintf("{%s}", strings.TrimSpace(matchedJsonpath))
+			value, err := kube.ResolveJsonpathToString(obj, transCond)
+			if err != nil {
+				return "", err
+			}
+			resolvedCondStr = strings.ReplaceAll(resolvedCondStr, matchedSource, fmt.Sprintf("%s", value))
 		}
 	}
 	return resolvedCondStr, nil
