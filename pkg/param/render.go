@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/jsonpath"
 )
 
 const (
@@ -32,13 +33,9 @@ const (
 )
 
 // RenderArgs function renders the arguments required for execution
-func RenderArgs(args map[string]interface{}, tp TemplateParams, skipObjectMap map[string]bool) (map[string]interface{}, error) {
+func RenderArgs(args map[string]interface{}, tp TemplateParams) (map[string]interface{}, error) {
 	ram := make(map[string]interface{}, len(args))
 	for n, v := range args {
-		if skip, ok := skipObjectMap[n]; ok && skip {
-			ram[n] = v
-			continue
-		}
 		rv, err := render(v, tp)
 		if err != nil {
 			return nil, err
@@ -123,6 +120,11 @@ func RenderArtifacts(arts map[string]crv1alpha1.Artifact, tp TemplateParams) (ma
 }
 
 func renderStringArg(arg string, tp TemplateParams) (string, error) {
+	// Skip render if contains jsonpath arg
+	matched := jsonpath.FindJsonpathArgs(arg)
+	if len(matched) != 0 {
+		return arg, nil
+	}
 	t, err := template.New("config").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(arg)
 	if err != nil {
 		return "", errors.WithStack(err)

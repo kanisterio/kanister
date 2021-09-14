@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -32,7 +31,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/function/wait"
+	"github.com/kanisterio/kanister/pkg/jsonpath"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -49,30 +48,32 @@ type Condition struct {
 	Condition       string
 }
 
+const (
+	WaitFuncName      = "Wait"
+	WaitTimeoutArg    = "timeout"
+	WaitConditionsArg = "conditions"
+)
+
 func init() {
 	_ = kanister.Register(&waitFunc{})
 }
 
 var _ kanister.Func = (*waitFunc)(nil)
 
-// jsonpathRegex represents pattern in which jsonpath is specified in the wait conditions
-// e.g { $.status.phase }
-var jsonpathRegex = regexp.MustCompile(`(?m){\s*\$([^}]*)`)
-
 type waitFunc struct{}
 
 func (*waitFunc) Name() string {
-	return wait.FuncName
+	return WaitFuncName
 }
 
 func (ktf *waitFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var timeout string
 	var conditions WaitConditions
 	var err error
-	if err = Arg(args, wait.TimeoutArg, &timeout); err != nil {
+	if err = Arg(args, WaitTimeoutArg, &timeout); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, wait.ConditionsArg, &conditions); err != nil {
+	if err = Arg(args, WaitConditionsArg, &conditions); err != nil {
 		return nil, err
 	}
 	dynCli, err := kube.NewDynamicClient()
@@ -83,13 +84,12 @@ func (ktf *waitFunc) Exec(ctx context.Context, tp param.TemplateParams, args map
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to parse timeout")
 	}
-
 	err = waitForCondition(ctx, dynCli, conditions, timeoutDur)
 	return nil, err
 }
 
 func (*waitFunc) RequiredArgs() []string {
-	return []string{wait.TimeoutArg, wait.ConditionsArg}
+	return []string{WaitTimeoutArg, WaitConditionsArg}
 }
 
 func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond WaitConditions, timeout time.Duration) error {
@@ -160,22 +160,14 @@ func fetchObjectFromRef(ctx context.Context, dynCli dynamic.Interface, objRef cr
 
 func resolveJsonpath(obj runtime.Object, condStr string) (string, error) {
 	resolvedCondStr := condStr
-	for _, matchList := range jsonpathRegex.FindAllSubmatch([]byte(condStr), -1) {
-		matchedSource := ""
-		for i, _ := range matchList {
-			if i == 0 {
-				// Add ending "}" excluded by regex
-				matchedSource = string(matchList[i]) + "}"
-				continue
-			}
-			matchedJsonpath := string(matchList[i])
-			transCond := fmt.Sprintf("{%s}", strings.TrimSpace(matchedJsonpath))
-			value, err := kube.ResolveJsonpathToString(obj, transCond)
-			if err != nil {
-				return "", err
-			}
-			resolvedCondStr = strings.ReplaceAll(resolvedCondStr, matchedSource, fmt.Sprintf("%s", value))
+
+	for s, match := range jsonpath.FindJsonpathArgs(condStr) {
+		transCond := fmt.Sprintf("{%s}", strings.TrimSpace(match))
+		value, err := jsonpath.ResolveJsonpathToString(obj, transCond)
+		if err != nil {
+			return "", err
 		}
+		resolvedCondStr = strings.ReplaceAll(resolvedCondStr, s, fmt.Sprintf("%s", value))
 	}
 	return resolvedCondStr, nil
 }

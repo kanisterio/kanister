@@ -74,7 +74,7 @@ require (
 	github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45
 	github.com/zeebo/blake3 v0.1.2 // indirect
 	go.mongodb.org/mongo-driver v1.5.1 // indirect
-	go.uber.org/zap v1.16.0
+	go.uber.org/zap v1.17.0
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/exp v0.0.0-20210722180016-6781d3edade3 // indirect
 	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985 // indirect
@@ -91,4 +91,5 @@ require (
 	k8s.io/apimachinery v0.20.1
 	k8s.io/cli-runtime v0.20.1
 	k8s.io/client-go v0.20.1
+	k8s.io/kubectl v0.20.1
 )

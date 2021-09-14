@@ -26,7 +26,6 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/function/wait"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -111,10 +110,10 @@ func getDeploy() *appsv1.Deployment {
 func waitNsPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "waitNsReady",
-		Func: wait.FuncName,
+		Func: WaitFuncName,
 		Args: map[string]interface{}{
-			wait.TimeoutArg: "1m",
-			wait.ConditionsArg: map[string]interface{}{
+			WaitTimeoutArg: "1m",
+			WaitConditionsArg: map[string]interface{}{
 				"anyOf": []interface{}{
 					map[string]interface{}{
 						"condition": `{{ if (eq "{ $.status.phase }" "Invalid")}}true{{ else }}false{{ end }}`,
@@ -141,10 +140,10 @@ func waitNsPhase(namespace string) crv1alpha1.BlueprintPhase {
 func waitNsTimeoutPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "waitNsReady",
-		Func: wait.FuncName,
+		Func: WaitFuncName,
 		Args: map[string]interface{}{
-			wait.TimeoutArg: "10s",
-			wait.ConditionsArg: map[string]interface{}{
+			WaitTimeoutArg: "10s",
+			WaitConditionsArg: map[string]interface{}{
 				"allOf": []interface{}{
 					map[string]interface{}{
 						"condition": `{{ if (eq "{$.status.phase}" "Inactive")}}true{{ else }}false{{ end }}`,
@@ -171,10 +170,10 @@ func waitNsTimeoutPhase(namespace string) crv1alpha1.BlueprintPhase {
 func waitDeployPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "waitDeployReady",
-		Func: wait.FuncName,
+		Func: WaitFuncName,
 		Args: map[string]interface{}{
-			wait.TimeoutArg: "1m",
-			wait.ConditionsArg: map[string]interface{}{
+			WaitTimeoutArg: "1m",
+			WaitConditionsArg: map[string]interface{}{
 				"anyOf": []interface{}{
 					map[string]interface{}{
 						"condition": `{{ if and (eq {$.spec.replicas} {$.status.availableReplicas} )
