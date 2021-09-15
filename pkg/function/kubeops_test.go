@@ -35,16 +35,66 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
-var _ = Suite(&KubectlSuite{})
+const (
+	deploySpecs = `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  #generateName: deployment-
+  name: test-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+      - image: nginx:1.12
+        imagePullPolicy: IfNotPresent
+        name: web
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP`
 
-type KubectlSuite struct {
+	serviceSpecs = `apiVersion: apps/v1
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-deployment-2
+  namespace: %s
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: demo
+  type: ClusterIP`
+
+	fooCRSpecs = `apiVersion: samplecontroller.k8s.io/v1alpha1
+kind: Foo
+metadata:
+  name: example-foo
+  namespace: %s
+spec:
+  deploymentName: example-foo
+  replicas: 1`
+)
+
+var _ = Suite(&KubeopsSuite{})
+
+type KubeopsSuite struct {
 	kubeCli   kubernetes.Interface
 	crdCli    crdclient.Interface
 	dynCli    dynamic.Interface
 	namespace string
 }
 
-func (s *KubectlSuite) SetUpSuite(c *C) {
+func (s *KubeopsSuite) SetUpSuite(c *C) {
 	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
 	s.kubeCli = cli
@@ -72,7 +122,7 @@ func (s *KubectlSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 }
 
-func (s *KubectlSuite) TearDownSuite(c *C) {
+func (s *KubeopsSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
 		_ = s.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -82,45 +132,11 @@ func (s *KubectlSuite) TearDownSuite(c *C) {
 func createPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "create-in-ns",
-		Func: KubectlFuncName,
+		Func: KubeopsFuncName,
 		Args: map[string]interface{}{
-			KubectlOperationArg: "create",
-			KubectlNamespaceArg: namespace,
-			KubectlSpecsArg: fmt.Sprintf(`apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test-deployment
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: demo
-  template:
-    metadata:
-      labels:
-        app: demo
-    spec:
-      containers:
-      - image: nginx:1.12
-        imagePullPolicy: IfNotPresent
-        name: web
-        ports:
-        - containerPort: 80
-          name: http
-          protocol: TCP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: test-deployment
-spec:
-  ports:
-  - port: 80
-    protocol: TCP
-    targetPort: 80
-  selector:
-    app: demo
-  type: ClusterIP`),
+			KubeopsOperationArg: "create",
+			KubeopsNamespaceArg: namespace,
+			KubeopsSpecsArg:     fmt.Sprintf(deploySpecs),
 		},
 	}
 }
@@ -128,23 +144,10 @@ spec:
 func createInSpecsNsPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "create-in-def-ns",
-		Func: KubectlFuncName,
+		Func: KubeopsFuncName,
 		Args: map[string]interface{}{
-			KubectlOperationArg: "create",
-			KubectlSpecsArg: fmt.Sprintf(`apiVersion: apps/v1
-apiVersion: v1
-kind: Service
-metadata:
-  name: test-deployment-2
-  namespace: %s
-spec:
-  ports:
-  - port: 80
-    protocol: TCP
-    targetPort: 80
-  selector:
-    app: demo
-  type: ClusterIP`, namespace),
+			KubeopsOperationArg: "create",
+			KubeopsSpecsArg:     fmt.Sprintf(serviceSpecs, namespace),
 		},
 	}
 }
@@ -152,17 +155,10 @@ spec:
 func createCRPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "create-crd-cr",
-		Func: KubectlFuncName,
+		Func: KubeopsFuncName,
 		Args: map[string]interface{}{
-			KubectlOperationArg: "create",
-			KubectlSpecsArg: fmt.Sprintf(`apiVersion: samplecontroller.k8s.io/v1alpha1
-kind: Foo
-metadata:
-  name: example-foo
-  namespace: %s
-spec:
-  deploymentName: example-foo
-  replicas: 1`, namespace),
+			KubeopsOperationArg: "create",
+			KubeopsSpecsArg:     fmt.Sprintf(fooCRSpecs, namespace),
 		},
 	}
 }
@@ -177,7 +173,7 @@ func newCreateResourceBlueprint(phases ...crv1alpha1.BlueprintPhase) crv1alpha1.
 	}
 }
 
-func (s *KubectlSuite) TestKubectl(c *C) {
+func (s *KubeopsSuite) TestKubeops(c *C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{}
@@ -189,53 +185,49 @@ func (s *KubectlSuite) TestKubectl(c *C) {
 	}
 	for _, tc := range []struct {
 		bp          crv1alpha1.Blueprint
-		expResource []resourceRef
+		expResource resourceRef
 	}{
 		{
 			bp: newCreateResourceBlueprint(createPhase(s.namespace)),
-			expResource: []resourceRef{
-				{
-					gvr:       schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"},
-					name:      "test-deployment",
-					namespace: s.namespace,
-				},
-				{
-					gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
-					name:      "test-deployment",
-					namespace: s.namespace,
-				},
+			expResource: resourceRef{
+				gvr:       schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"},
+				name:      "test-deployment",
+				namespace: s.namespace,
 			},
 		},
 		{
 			bp: newCreateResourceBlueprint(createInSpecsNsPhase(s.namespace)),
-			expResource: []resourceRef{
-				{
-					gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
-					name:      "test-deployment-2",
-					namespace: s.namespace,
-				},
+			expResource: resourceRef{
+				gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
+				name:      "test-deployment-2",
+				namespace: s.namespace,
 			},
 		},
 		{
 			bp: newCreateResourceBlueprint(createCRPhase(s.namespace)),
-			expResource: []resourceRef{
-				{
-					gvr:       schema.GroupVersionResource{Group: "samplecontroller.k8s.io", Version: "v1alpha1", Resource: "foos"},
-					name:      "example-foo",
-					namespace: s.namespace,
-				},
+			expResource: resourceRef{
+				gvr:       schema.GroupVersionResource{Group: "samplecontroller.k8s.io", Version: "v1alpha1", Resource: "foos"},
+				name:      "example-foo",
+				namespace: s.namespace,
 			},
 		},
 	} {
 		phases, err := kanister.GetPhases(tc.bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			_, err := p.Exec(ctx, tc.bp, action, tp)
+			out, err := p.Exec(ctx, tc.bp, action, tp)
 			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
-			for _, res := range tc.expResource {
-				_, err = s.dynCli.Resource(res.gvr).Namespace(res.namespace).Get(context.TODO(), res.name, metav1.GetOptions{})
-				c.Assert(err, IsNil)
+			_, err = s.dynCli.Resource(tc.expResource.gvr).Namespace(tc.expResource.namespace).Get(context.TODO(), tc.expResource.name, metav1.GetOptions{})
+			c.Assert(err, IsNil)
+			expOut := map[string]interface{}{
+				"apiVersion": tc.expResource.gvr.Version,
+				"group":      tc.expResource.gvr.Group,
+				"resource":   tc.expResource.gvr.Resource,
+				"kind":       "",
+				"name":       tc.expResource.name,
+				"namespace":  tc.expResource.namespace,
 			}
+			c.Assert(out, DeepEquals, expOut)
 		}
 	}
 }
