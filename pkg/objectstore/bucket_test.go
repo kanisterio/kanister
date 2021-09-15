@@ -60,7 +60,7 @@ func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *C) {
 
 	pc1 := ProviderConfig{
 		Type:     pt,
-		Endpoint: awsS3Endpoint(r1),
+		Endpoint: awsS3Endpoint(bn, r1),
 		Region:   r1,
 	}
 
@@ -71,7 +71,7 @@ func (s *BucketSuite) TestValidS3ClientBucketRegionMismatch(c *C) {
 
 	pc3 := ProviderConfig{
 		Type:     pt,
-		Endpoint: awsS3Endpoint(r2),
+		Endpoint: awsS3Endpoint(bn, r2),
 		Region:   r2,
 	}
 
