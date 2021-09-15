@@ -36,7 +36,7 @@ This will install the Kanister controller in the ``kanister`` namespace
    $ helm repo add kanister https://charts.kanister.io/
 
    # Install the Kanister operator controller using helm
-   $ helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=|version|
+   $ helm install --name-template "myrelease-{{randAscii 6}}" --namespace kanister kanister/kanister-operator --set image.tag=|version|
 
    # Create an S3 Compliant Kanister profile using kanctl
    $ kanctl create profile s3compliant --bucket <bucket> --access-key ${AWS_ACCESS_KEY_ID} \
