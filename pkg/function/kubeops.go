@@ -33,32 +33,32 @@ var (
 )
 
 const (
-	// KubeopsFuncName gives the name of the function
-	KubeopsFuncName = "Kubeops"
-	// KubeopsSpecsArg provides resource specs yaml
-	KubeopsSpecsArg = "specs"
-	// KubeopsNamespaceArg provides resource namespace
-	KubeopsNamespaceArg = "namespace"
-	// KubeopsOperationArg is the kubeops operation needs to be executed
-	KubeopsOperationArg = "operation"
+	// KubeOpsFuncName gives the name of the function
+	KubeOpsFuncName = "KubeOps"
+	// KubeOpsSpecsArg provides resource specs yaml
+	KubeOpsSpecsArg = "specs"
+	// KubeOpsNamespaceArg provides resource namespace
+	KubeOpsNamespaceArg = "namespace"
+	// KubeOpsOperationArg is the kubeops operation needs to be executed
+	KubeOpsOperationArg = "operation"
 )
 
 type kubeops struct{}
 
 func (*kubeops) Name() string {
-	return KubeopsFuncName
+	return KubeOpsFuncName
 }
 
 func (crs *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var specs, namespace string
 	var op kube.Operation
-	if err := Arg(args, KubeopsSpecsArg, &specs); err != nil {
+	if err := Arg(args, KubeOpsSpecsArg, &specs); err != nil {
 		return nil, err
 	}
-	if err := Arg(args, KubeopsOperationArg, &op); err != nil {
+	if err := Arg(args, KubeOpsOperationArg, &op); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, KubeopsNamespaceArg, &namespace, metav1.NamespaceDefault); err != nil {
+	if err := OptArg(args, KubeOpsNamespaceArg, &namespace, metav1.NamespaceDefault); err != nil {
 		return nil, err
 	}
 	kubeopsOp := kube.NewKubectlOperations(specs, namespace)
@@ -80,7 +80,7 @@ func (crs *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[
 
 func (*kubeops) RequiredArgs() []string {
 	return []string{
-		KubeopsSpecsArg,
-		KubeopsOperationArg,
+		KubeOpsSpecsArg,
+		KubeOpsOperationArg,
 	}
 }

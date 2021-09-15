@@ -85,16 +85,16 @@ spec:
   replicas: 1`
 )
 
-var _ = Suite(&KubeopsSuite{})
+var _ = Suite(&KubeOpsSuite{})
 
-type KubeopsSuite struct {
+type KubeOpsSuite struct {
 	kubeCli   kubernetes.Interface
 	crdCli    crdclient.Interface
 	dynCli    dynamic.Interface
 	namespace string
 }
 
-func (s *KubeopsSuite) SetUpSuite(c *C) {
+func (s *KubeOpsSuite) SetUpSuite(c *C) {
 	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
 	s.kubeCli = cli
@@ -122,7 +122,7 @@ func (s *KubeopsSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 }
 
-func (s *KubeopsSuite) TearDownSuite(c *C) {
+func (s *KubeOpsSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
 		_ = s.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -132,11 +132,11 @@ func (s *KubeopsSuite) TearDownSuite(c *C) {
 func createPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "create-in-ns",
-		Func: KubeopsFuncName,
+		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
-			KubeopsOperationArg: "create",
-			KubeopsNamespaceArg: namespace,
-			KubeopsSpecsArg:     fmt.Sprintf(deploySpecs),
+			KubeOpsOperationArg: "create",
+			KubeOpsNamespaceArg: namespace,
+			KubeOpsSpecsArg:     fmt.Sprintf(deploySpecs),
 		},
 	}
 }
@@ -144,10 +144,10 @@ func createPhase(namespace string) crv1alpha1.BlueprintPhase {
 func createInSpecsNsPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "create-in-def-ns",
-		Func: KubeopsFuncName,
+		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
-			KubeopsOperationArg: "create",
-			KubeopsSpecsArg:     fmt.Sprintf(serviceSpecs, namespace),
+			KubeOpsOperationArg: "create",
+			KubeOpsSpecsArg:     fmt.Sprintf(serviceSpecs, namespace),
 		},
 	}
 }
@@ -155,10 +155,10 @@ func createInSpecsNsPhase(namespace string) crv1alpha1.BlueprintPhase {
 func createCRPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "create-crd-cr",
-		Func: KubeopsFuncName,
+		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
-			KubeopsOperationArg: "create",
-			KubeopsSpecsArg:     fmt.Sprintf(fooCRSpecs, namespace),
+			KubeOpsOperationArg: "create",
+			KubeOpsSpecsArg:     fmt.Sprintf(fooCRSpecs, namespace),
 		},
 	}
 }
@@ -173,7 +173,7 @@ func newCreateResourceBlueprint(phases ...crv1alpha1.BlueprintPhase) crv1alpha1.
 	}
 }
 
-func (s *KubeopsSuite) TestKubeops(c *C) {
+func (s *KubeOpsSuite) TestKubeOps(c *C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 	tp := param.TemplateParams{}
