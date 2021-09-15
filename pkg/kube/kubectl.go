@@ -50,7 +50,7 @@ func NewKubectlOperations(specsString, namespace string) *KubectlOperation {
 	}
 }
 
-// Execute executes kubectl operatiot
+// Execute executes kubectl operation
 func (k *KubectlOperation) Execute(op Operation) (*crv1alpha1.ObjectReference, error) {
 	switch op {
 	case CreateOperation:
