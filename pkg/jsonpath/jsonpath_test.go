@@ -12,28 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kube
+package jsonpath
 
 import (
+	"testing"
+
 	. "gopkg.in/check.v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
+// Hook up gocheck into the "go test" runner.
+func Test(t *testing.T) { TestingT(t) }
+
 type JsonpathSuite struct{}
 
 var _ = Suite(&JsonpathSuite{})
 
-func runtimeObjFromYAML(c *C, specs string) runtime.Object {
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-	obj, _, err := decode([]byte(specs), nil, nil)
-	c.Assert(err, IsNil)
-	return obj
-}
-
-func (js *JsonpathSuite) TestDeploymentReady(c *C) {
-	deploy := `apiVersion: apps/v1
+const deploy = `apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
@@ -98,6 +95,15 @@ status:
   replicas: 3
   updatedReplicas: 3
 `
+
+func runtimeObjFromYAML(c *C, specs string) runtime.Object {
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+	obj, _, err := decode([]byte(specs), nil, nil)
+	c.Assert(err, IsNil)
+	return obj
+}
+
+func (js *JsonpathSuite) TestDeploymentReady(c *C) {
 	obj := runtimeObjFromYAML(c, deploy)
 	replica, err := ResolveJsonpathToString(obj, "{.spec.replicas}")
 	c.Assert(err, IsNil)
@@ -122,4 +128,48 @@ status:
 
 	_, err = ResolveJsonpathToString(obj, "{.status.something}")
 	c.Assert(err, NotNil)
+}
+
+func (js *JsonpathSuite) TestFindJsonpathArgs(c *C) {
+	for _, tc := range []struct {
+		arg            string
+		expJsonpathArg map[string]string
+	}{
+		{
+			arg: "{{ if (eq {$.spec.replicas} { $.status.replicas } )}}true{{ else }}false{{ end }}",
+			expJsonpathArg: map[string]string{
+				"{$.spec.replicas}":     ".spec.replicas",
+				"{ $.status.replicas }": ".status.replicas ",
+			},
+		},
+		{
+			arg: `{{ if and (eq {$.spec.replicas} {$.status.availableReplicas} )
+				(and (eq "{ $.status.conditions[?(@.type == "Available")].type }" "Available")
+				(eq "{ $.status.conditions[?(@.type == "Available")].status }" "True"))}}
+				true
+				{{ else }}
+				false
+				{{ end }}`,
+			expJsonpathArg: map[string]string{
+				"{$.spec.replicas}":                                          ".spec.replicas",
+				"{$.status.availableReplicas}":                               ".status.availableReplicas",
+				"{ $.status.conditions[?(@.type == \"Available\")].type }":   ".status.conditions[?(@.type == \"Available\")].type ",
+				"{ $.status.conditions[?(@.type == \"Available\")].status }": ".status.conditions[?(@.type == \"Available\")].status ",
+			},
+		},
+		{
+			arg: "{{ if (eq {$.book[?(@.price<10).quantity} 10 )}}true{{ else }}false{{ end }}",
+			expJsonpathArg: map[string]string{
+				"{$.book[?(@.price<10).quantity}": ".book[?(@.price<10).quantity",
+			},
+		},
+		{
+			arg:            "{{ if (eq .Book.Quantity} 10 )}}true{{ else }}false{{ end }}",
+			expJsonpathArg: map[string]string{},
+		},
+	} {
+		m := FindJsonpathArgs(tc.arg)
+		c.Assert(m, DeepEquals, tc.expJsonpathArg)
+	}
+
 }

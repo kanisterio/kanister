@@ -12,16 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kube
+package jsonpath
 
 import (
 	"bytes"
+	"regexp"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/printers"
 )
 
-// resolveJsonpath resolves jsonpath value from the k8s resource object
+// jsonpathRegex represents pattern in which jsonpath is specified in the wait conditions
+// e.g { $.status.phase }
+var jsonpathRegex = regexp.MustCompile(`(?m){\s*\$([^}]*)`)
+
+// FindJsonpathArgs returns matched jsonpath args in the string
+func FindJsonpathArgs(s string) map[string]string {
+	matchMap := make(map[string]string)
+	for _, matchList := range jsonpathRegex.FindAllSubmatch([]byte(s), -1) {
+		matchedSource := ""
+		for i, _ := range matchList {
+			if i == 0 {
+				// Add ending "}" excluded by regex
+				matchedSource = string(matchList[i]) + "}"
+				continue
+			}
+			matchMap[matchedSource] = string(matchList[i])
+		}
+	}
+	return matchMap
+}
+
+// ResolveJsonpath resolves jsonpath value from the k8s resource object
 func ResolveJsonpathToString(obj runtime.Object, jsonpathStr string) (string, error) {
 	var buff bytes.Buffer
 	jp, err := printers.NewJSONPathPrinter(jsonpathStr)
