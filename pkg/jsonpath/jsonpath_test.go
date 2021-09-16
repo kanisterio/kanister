@@ -171,5 +171,4 @@ func (js *JsonpathSuite) TestFindJsonpathArgs(c *C) {
 		m := FindJsonpathArgs(tc.arg)
 		c.Assert(m, DeepEquals, tc.expJsonpathArg)
 	}
-
 }
