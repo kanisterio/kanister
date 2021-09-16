@@ -31,7 +31,7 @@ func FindJsonpathArgs(s string) map[string]string {
 	matchMap := make(map[string]string)
 	for _, matchList := range jsonpathRegex.FindAllSubmatch([]byte(s), -1) {
 		matchedSource := ""
-		for i = range matchList {
+		for i := range matchList {
 			if i == 0 {
 				// Add ending "}" excluded by regex
 				matchedSource = string(matchList[i]) + "}"
