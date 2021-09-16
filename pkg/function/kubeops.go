@@ -35,8 +35,8 @@ var (
 const (
 	// KubeOpsFuncName gives the name of the function
 	KubeOpsFuncName = "KubeOps"
-	// KubeOpsSpecsArg provides resource spec yaml
-	KubeOpsSpecsArg = "spec"
+	// KubeOpsSpecArg provides resource spec yaml
+	KubeOpsSpecArg = "spec"
 	// KubeOpsNamespaceArg provides resource namespace
 	KubeOpsNamespaceArg = "namespace"
 	// KubeOpsOperationArg is the kubeops operation needs to be executed
@@ -52,7 +52,7 @@ func (*kubeops) Name() string {
 func (crs *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var spec, namespace string
 	var op kube.Operation
-	if err := Arg(args, KubeOpsSpecsArg, &spec); err != nil {
+	if err := Arg(args, KubeOpsSpecArg, &spec); err != nil {
 		return nil, err
 	}
 	if err := Arg(args, KubeOpsOperationArg, &op); err != nil {
@@ -80,7 +80,7 @@ func (crs *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[
 
 func (*kubeops) RequiredArgs() []string {
 	return []string{
-		KubeOpsSpecsArg,
+		KubeOpsSpecArg,
 		KubeOpsOperationArg,
 	}
 }

@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	deploySpecs = `apiVersion: apps/v1
+	deploySpec = `apiVersion: apps/v1
 kind: Deployment
 metadata:
   #generateName: deployment-
@@ -60,7 +60,7 @@ spec:
           name: http
           protocol: TCP`
 
-	serviceSpecs = `apiVersion: apps/v1
+	serviceSpec = `apiVersion: apps/v1
 apiVersion: v1
 kind: Service
 metadata:
@@ -75,7 +75,7 @@ spec:
     app: demo
   type: ClusterIP`
 
-	fooCRSpecs = `apiVersion: samplecontroller.k8s.io/v1alpha1
+	fooCRSpec = `apiVersion: samplecontroller.k8s.io/v1alpha1
 kind: Foo
 metadata:
   name: example-foo
@@ -136,7 +136,7 @@ func createPhase(namespace string) crv1alpha1.BlueprintPhase {
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
 			KubeOpsNamespaceArg: namespace,
-			KubeOpsSpecsArg:     deploySpecs,
+			KubeOpsSpecArg:     deploySpec,
 		},
 	}
 }
@@ -147,7 +147,7 @@ func createInSpecsNsPhase(namespace string) crv1alpha1.BlueprintPhase {
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
-			KubeOpsSpecsArg:     fmt.Sprintf(serviceSpecs, namespace),
+			KubeOpsSpecArg:     fmt.Sprintf(serviceSpec, namespace),
 		},
 	}
 }
@@ -158,7 +158,7 @@ func createCRPhase(namespace string) crv1alpha1.BlueprintPhase {
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
-			KubeOpsSpecsArg:     fmt.Sprintf(fooCRSpecs, namespace),
+			KubeOpsSpecArg:     fmt.Sprintf(fooCRSpec, namespace),
 		},
 	}
 }
