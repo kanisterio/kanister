@@ -86,6 +86,9 @@ func (k *KubectlOperation) create() (*crv1alpha1.ObjectReference, error) {
 			NewHelper(info.Client, info.Mapping).
 			WithFieldManager("kanister-create").
 			Create(namespace, true, info.Object)
+		if err != nil {
+			return err
+		}
 		// convert the runtime.Object to unstructured.Unstructured
 		unstructObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 		if err != nil {
