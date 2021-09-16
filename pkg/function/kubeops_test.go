@@ -136,7 +136,7 @@ func createPhase(namespace string) crv1alpha1.BlueprintPhase {
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
 			KubeOpsNamespaceArg: namespace,
-			KubeOpsSpecArg:     deploySpec,
+			KubeOpsSpecArg:      deploySpec,
 		},
 	}
 }
@@ -147,7 +147,7 @@ func createInSpecsNsPhase(namespace string) crv1alpha1.BlueprintPhase {
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
-			KubeOpsSpecArg:     fmt.Sprintf(serviceSpec, namespace),
+			KubeOpsSpecArg:      fmt.Sprintf(serviceSpec, namespace),
 		},
 	}
 }
@@ -158,7 +158,7 @@ func createCRPhase(namespace string) crv1alpha1.BlueprintPhase {
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
-			KubeOpsSpecArg:     fmt.Sprintf(fooCRSpec, namespace),
+			KubeOpsSpecArg:      fmt.Sprintf(fooCRSpec, namespace),
 		},
 	}
 }
