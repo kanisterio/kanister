@@ -136,7 +136,7 @@ func createPhase(namespace string) crv1alpha1.BlueprintPhase {
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
 			KubeOpsNamespaceArg: namespace,
-			KubeOpsSpecsArg:     fmt.Sprintf(deploySpecs),
+			KubeOpsSpecsArg:     deploySpecs,
 		},
 	}
 }
