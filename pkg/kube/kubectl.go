@@ -37,15 +37,15 @@ const (
 // KubectlOperation implements methods to perform kubectl operations
 type KubectlOperation struct {
 	factory   cmdutil.Factory
-	specs     io.Reader
+	spec      io.Reader
 	namespace string
 }
 
 // NewKubectlOperations returns new KubectlOperations object
-func NewKubectlOperations(specsString, namespace string) *KubectlOperation {
+func NewKubectlOperations(specString, namespace string) *KubectlOperation {
 	return &KubectlOperation{
 		factory:   cmdutil.NewFactory(genericclioptions.NewConfigFlags(false)),
-		specs:     strings.NewReader(specsString),
+		spec:      strings.NewReader(specString),
 		namespace: namespace,
 	}
 }
@@ -61,11 +61,11 @@ func (k *KubectlOperation) Execute(op Operation) (*crv1alpha1.ObjectReference, e
 }
 
 func (k *KubectlOperation) create() (*crv1alpha1.ObjectReference, error) {
-	// TODO: Create namespace if doesn't exists before creating an resource
+	// TODO: Create namespace if doesn't exist before creating an resource
 	result := k.factory.NewBuilder().
 		Unstructured().
 		NamespaceParam(k.namespace).
-		Stream(k.specs, "resource").
+		Stream(k.spec, "resource").
 		Flatten().
 		Do()
 	err := result.Err()
@@ -78,7 +78,7 @@ func (k *KubectlOperation) create() (*crv1alpha1.ObjectReference, error) {
 			return err
 		}
 		namespace := k.namespace
-		// Override namespace if the namespace is set in resource specs
+		// Override namespace if the namespace is set in resource spec
 		if info.Namespace != "" {
 			namespace = info.Namespace
 		}
