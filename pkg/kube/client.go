@@ -16,8 +16,10 @@ package kube
 
 import (
 	"github.com/pkg/errors"
+	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes" // Load the GCP plugin - required to authenticate against
+
 	// GKE clusters
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
@@ -78,4 +80,15 @@ func NewDynamicClient() (dynamic.Interface, error) {
 		return nil, err
 	}
 	return clientset, nil
+}
+
+// NewCRDClient returns a Dynamic client configured by the Kanister environment.
+func NewCRDClient() (crdclient.Interface, error) {
+	config, err := LoadConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// creates the clientset
+	return crdclient.NewForConfig(config)
 }
