@@ -16,7 +16,6 @@ package function
 
 import (
 	"context"
-	"time"
 
 	. "gopkg.in/check.v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -208,8 +207,6 @@ func newWaitBlueprint(phases ...crv1alpha1.BlueprintPhase) *crv1alpha1.Blueprint
 }
 
 func (s *WaitSuite) TestWait(c *C) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 	tp := param.TemplateParams{}
 	action := "test"
 	for _, tc := range []struct {
@@ -232,7 +229,7 @@ func (s *WaitSuite) TestWait(c *C) {
 		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			_, err := p.Exec(ctx, *tc.bp, action, tp)
+			_, err := p.Exec(context.TODO(), *tc.bp, action, tp)
 			c.Assert(err, tc.checker)
 		}
 	}
