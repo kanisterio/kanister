@@ -124,6 +124,7 @@ func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond Wa
 		}
 		return false, nil
 	})
+	err = errors.Wrap(err, "Failed to wait for the condition to be met")
 	if evalErr != nil {
 		return errors.Wrap(err, evalErr.Error())
 	}

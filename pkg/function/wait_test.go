@@ -61,7 +61,7 @@ func (s *WaitSuite) TearDownSuite(c *C) {
 }
 
 func getDeploy() *appsv1.Deployment {
-	replica := int32(2)
+	replica := int32(1)
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
