@@ -1,6 +1,6 @@
 FROM alpine:3.10.5
 
-MAINTAINER Tom Manville <tom@kasten.io>
+LABEL maintainer="Tom Manville<tom@kasten.io>"
 
 RUN apk add --update --no-cache ca-certificates bash git docker jq \
     && update-ca-certificates \
@@ -24,5 +24,4 @@ ENV CGO_ENABLED=0 \
     GOROOT="/usr/local/go" \
     GOCACHE=/go/.cache/go-build \
     GO_EXTLINK_ENABLED=0 \
-    PATH="/usr/local/go/bin:${PATH}" 
-  
+    PATH="/usr/local/go/bin:${PATH}"
