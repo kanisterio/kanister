@@ -18,7 +18,6 @@ import (
 	"context"
 
 	. "gopkg.in/check.v1"
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -27,6 +26,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 var _ = Suite(&WaitSuite{})
@@ -34,6 +34,7 @@ var _ = Suite(&WaitSuite{})
 type WaitSuite struct {
 	cli       kubernetes.Interface
 	namespace string
+	deploy    string
 }
 
 func (s *WaitSuite) SetUpSuite(c *C) {
@@ -49,60 +50,15 @@ func (s *WaitSuite) SetUpSuite(c *C) {
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
-	_, err = s.cli.AppsV1().Deployments(cns.Name).Create(context.TODO(), getDeploy(), metav1.CreateOptions{})
+	d, err := s.cli.AppsV1().Deployments(cns.Name).Create(context.TODO(), testutil.NewTestDeployment(int32(1)), metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
+	s.deploy = d.Name
 }
 
 func (s *WaitSuite) TearDownSuite(c *C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
-	}
-}
-
-func getDeploy() *appsv1.Deployment {
-	replica := int32(1)
-	return &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Deployment",
-			APIVersion: "apps/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-deployment",
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replica,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": "demo",
-				},
-			},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": "demo",
-					},
-				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						v1.Container{
-							Name:  "web",
-							Image: "nginx:1.12",
-							Ports: []v1.ContainerPort{
-								v1.ContainerPort{
-									Name:          "http",
-									HostPort:      0,
-									ContainerPort: 80,
-									Protocol:      v1.Protocol("TCP"),
-								},
-							},
-							Resources:       v1.ResourceRequirements{},
-							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
-						},
-					},
-				},
-			},
-		},
 	}
 }
 
@@ -166,7 +122,7 @@ func waitNsTimeoutPhase(namespace string) crv1alpha1.BlueprintPhase {
 	}
 }
 
-func waitDeployPhase(namespace string) crv1alpha1.BlueprintPhase {
+func waitDeployPhase(namespace, deploy string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "waitDeployReady",
 		Func: WaitFuncName,
@@ -186,7 +142,7 @@ func waitDeployPhase(namespace string) crv1alpha1.BlueprintPhase {
 							"apiVersion": "v1",
 							"group":      "apps",
 							"resource":   "deployments",
-							"name":       getDeploy().GetName(),
+							"name":       deploy,
 							"namespace":  namespace,
 						},
 					},
@@ -214,7 +170,7 @@ func (s *WaitSuite) TestWait(c *C) {
 		checker Checker
 	}{
 		{
-			bp:      newWaitBlueprint(waitDeployPhase(s.namespace)),
+			bp:      newWaitBlueprint(waitDeployPhase(s.namespace, s.deploy)),
 			checker: IsNil,
 		},
 		{
