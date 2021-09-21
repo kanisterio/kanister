@@ -170,7 +170,7 @@ func resolveJsonpath(obj runtime.Object, condStr string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		resolvedCondStr = strings.ReplaceAll(resolvedCondStr, s, fmt.Sprintf("%s", value))
+		resolvedCondStr = strings.ReplaceAll(resolvedCondStr, s, value)
 	}
 	return resolvedCondStr, nil
 }
