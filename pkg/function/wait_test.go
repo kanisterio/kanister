@@ -171,7 +171,7 @@ func waitDeployPhase(namespace string) crv1alpha1.BlueprintPhase {
 		Name: "waitDeployReady",
 		Func: WaitFuncName,
 		Args: map[string]interface{}{
-			WaitTimeoutArg: "1m",
+			WaitTimeoutArg: "5m",
 			WaitConditionsArg: map[string]interface{}{
 				"anyOf": []interface{}{
 					map[string]interface{}{
