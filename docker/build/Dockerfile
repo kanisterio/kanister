@@ -1,12 +1,12 @@
 FROM alpine:3.10.5
 
-MAINTAINER Tom Manville <tom@kasten.io>
+LABEL maintainer="Tom Manville<tom@kasten.io>"
 
 RUN apk add --update --no-cache ca-certificates bash git docker jq \
     && update-ca-certificates \
     && rm -rf /var/cache/apk/*
 
-COPY --from=golang:1.14.4-alpine3.12 /usr/local/go/ /usr/local/go/
+COPY --from=golang:1.16.8-alpine3.14 /usr/local/go/ /usr/local/go/
 
 COPY --from=bitnami/kubectl:1.17 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
 
@@ -24,5 +24,4 @@ ENV CGO_ENABLED=0 \
     GOROOT="/usr/local/go" \
     GOCACHE=/go/.cache/go-build \
     GO_EXTLINK_ENABLED=0 \
-    PATH="/usr/local/go/bin:${PATH}" 
-  
+    PATH="/usr/local/go/bin:${PATH}"
