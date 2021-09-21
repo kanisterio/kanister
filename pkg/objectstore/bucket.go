@@ -21,7 +21,9 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
@@ -190,7 +192,13 @@ func s3BucketRegion(ctx context.Context, cfg ProviderConfig, sec Secret, bucketN
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create session, region = %s", r)
 	}
-	return s3manager.GetBucketRegion(ctx, s, bucketName, cfg.Region)
+	svc := s3.New(s)
+	return s3manager.GetBucketRegionWithClient(ctx, svc, bucketName, func(r *request.Request) {
+		// GetBucketRegionWithClient() uses credentials.AnonymousCredentials by
+		// default which fails the api request in AWS China. We override the
+		// creds with the creds used by the client as a workaround.
+		r.Config.Credentials = svc.Config.Credentials
+	})
 }
 
 func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName string) (Bucket, error) {
