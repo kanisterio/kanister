@@ -1,6 +1,6 @@
 module github.com/kanisterio/kanister
 
-go 1.12
+go 1.16
 
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
@@ -29,7 +29,6 @@ require (
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/efarrer/iothrottler v0.0.2 // indirect
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
-	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/strfmt v0.19.3
 	github.com/go-sql-driver/mysql v1.6.0
