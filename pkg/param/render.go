@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/jsonpath"
 )
 
 const (
@@ -119,6 +120,11 @@ func RenderArtifacts(arts map[string]crv1alpha1.Artifact, tp TemplateParams) (ma
 }
 
 func renderStringArg(arg string, tp TemplateParams) (string, error) {
+	// Skip render if contains jsonpath arg
+	matched := jsonpath.FindJsonpathArgs(arg)
+	if len(matched) != 0 {
+		return arg, nil
+	}
 	t, err := template.New("config").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(arg)
 	if err != nil {
 		return "", errors.WithStack(err)
