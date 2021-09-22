@@ -32,6 +32,8 @@ import (
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	kantags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 type efs struct {
@@ -315,7 +317,10 @@ func (e *efs) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) err
 
 	req := &awsefs.DeleteFileSystemInput{}
 	req.SetFileSystemId(volume.ID)
-	_, err = e.DeleteFileSystemWithContext(ctx, req)
+	output, err := e.DeleteFileSystemWithContext(ctx, req)
+	if err == nil {
+		log.Info().Print("Delete EFS output", field.M{"output": output.String()})
+	}
 	if isVolumeNotFound(err) {
 		return nil
 	}
@@ -436,7 +441,10 @@ func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapsho
 	req.SetBackupVaultName(efsBackupVaultName)
 	req.SetRecoveryPointArn(snapshot.ID)
 
-	_, err := e.DeleteRecoveryPointWithContext(ctx, req)
+	output, err := e.DeleteRecoveryPointWithContext(ctx, req)
+	if err == nil {
+		log.Info().Print("Delete EFS snapshot", field.M{"output": output.String()})
+	}
 	if isResourceNotFoundException(err) {
 		return nil
 	}
