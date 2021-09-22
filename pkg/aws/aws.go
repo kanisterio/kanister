@@ -38,6 +38,13 @@ const (
 	// It is optional.
 	ConfigRole = "role"
 
+	// ConfigEFSVaultName represents the key for the EFS vault name in the map
+	// "config". It is optional.
+	ConfigEFSVaultName = "efsVaultName"
+	// EfsBackupVaultNameEnv describes the environment variable used to set the
+	// backup vault name.
+	EfsBackupVaultNameEnv = "EFS_BACKUP_VAULT_NAME"
+
 	// AccessKeyID represents AWS Access key ID
 	AccessKeyID = "AWS_ACCESS_KEY_ID"
 	// SecretAccessKey represents AWS Secret Access Key

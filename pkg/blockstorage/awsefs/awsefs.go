@@ -39,9 +39,10 @@ import (
 type efs struct {
 	*awsefs.EFS
 	*backup.Backup
-	accountID string
-	region    string
-	role      string
+	accountID       string
+	region          string
+	role            string
+	backupVaultName string
 }
 
 var _ blockstorage.Provider = (*efs)(nil)
@@ -58,12 +59,6 @@ const (
 	testMarker                = ""
 
 	maxRetries = 10
-
-	efsBackupVaultNameEnv = "EFS_BACKUP_VAULT_NAME"
-)
-
-var (
-	efsBackupVaultName = getEnvAsStringOrDefault(efsBackupVaultNameEnv, defaultK10BackupVaultName)
 )
 
 var allowedMetadataKeys = map[string]bool{
@@ -96,12 +91,19 @@ func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage
 	accountID := *user.Account
 	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
 	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
+
+	efsVault, ok := config[awsconfig.ConfigEFSVaultName]
+	if !ok || efsVault == "" {
+		efsVault = defaultK10BackupVaultName
+	}
+
 	return &efs{
-		EFS:       efsCli,
-		Backup:    backupCli,
-		region:    region,
-		accountID: accountID,
-		role:      config[awsconfig.ConfigRole],
+		EFS:             efsCli,
+		Backup:          backupCli,
+		region:          region,
+		accountID:       accountID,
+		role:            config[awsconfig.ConfigRole],
+		backupVaultName: efsVault,
 	}, nil
 }
 
@@ -138,7 +140,7 @@ func (e *efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*bl
 
 func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
 	reqM := &backup.GetRecoveryPointRestoreMetadataInput{}
-	reqM.SetBackupVaultName(efsBackupVaultName)
+	reqM.SetBackupVaultName(e.backupVaultName)
 	reqM.SetRecoveryPointArn(snapshot.ID)
 
 	respM, err := e.GetRecoveryPointRestoreMetadataWithContext(ctx, reqM)
@@ -380,7 +382,7 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 	}
 
 	req := &backup.StartBackupJobInput{}
-	req.SetBackupVaultName(efsBackupVaultName)
+	req.SetBackupVaultName(e.backupVaultName)
 	req.SetIamRoleArn(awsDefaultServiceBackupRole(e.accountID))
 	req.SetResourceArn(resourceARNForEFS(e.region, *desc.OwnerId, *desc.FileSystemId))
 
@@ -403,7 +405,7 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 	}
 
 	req2 := &backup.DescribeRecoveryPointInput{}
-	req2.SetBackupVaultName(efsBackupVaultName)
+	req2.SetBackupVaultName(e.backupVaultName)
 	req2.SetRecoveryPointArn(*resp.RecoveryPointArn)
 	describeRP, err := e.DescribeRecoveryPointWithContext(ctx, req2)
 	if err != nil {
@@ -423,7 +425,7 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 
 func (e *efs) createK10DefaultBackupVault() error {
 	req := &backup.CreateBackupVaultInput{}
-	req.SetBackupVaultName(efsBackupVaultName)
+	req.SetBackupVaultName(e.backupVaultName)
 
 	_, err := e.CreateBackupVault(req)
 	if isBackupVaultAlreadyExists(err) {
@@ -438,7 +440,7 @@ func (e *efs) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blo
 
 func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
 	req := &backup.DeleteRecoveryPointInput{}
-	req.SetBackupVaultName(efsBackupVaultName)
+	req.SetBackupVaultName(e.backupVaultName)
 	req.SetRecoveryPointArn(snapshot.ID)
 
 	output, err := e.DeleteRecoveryPointWithContext(ctx, req)
@@ -453,7 +455,7 @@ func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapsho
 
 func (e *efs) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
 	req := &backup.DescribeRecoveryPointInput{}
-	req.SetBackupVaultName(efsBackupVaultName)
+	req.SetBackupVaultName(e.backupVaultName)
 	req.SetRecoveryPointArn(id)
 
 	resp, err := e.DescribeRecoveryPointWithContext(ctx, req)
@@ -527,7 +529,7 @@ func (e *efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blo
 	result := make([]*blockstorage.Snapshot, 0)
 	for resp, req := emptyResponseRequestForBackups(); resp.NextToken != nil; req.NextToken = resp.NextToken {
 		var err error
-		req.SetBackupVaultName(efsBackupVaultName)
+		req.SetBackupVaultName(e.backupVaultName)
 		resp, err = e.ListRecoveryPointsByBackupVaultWithContext(ctx, req)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to list recovery points by vault")
