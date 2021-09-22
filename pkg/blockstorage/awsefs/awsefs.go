@@ -55,7 +55,6 @@ const (
 
 	efsType                   = "EFS"
 	defaultK10BackupVaultName = "k10vault"
-	testMarker                = ""
 
 	maxRetries = 10
 )
@@ -572,25 +571,25 @@ func (e *efs) snapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.Rec
 }
 
 func emptyResponseRequestForBackups() (*backup.ListRecoveryPointsByBackupVaultOutput, *backup.ListRecoveryPointsByBackupVaultInput) {
-	resp := (&backup.ListRecoveryPointsByBackupVaultOutput{}).SetNextToken(testMarker)
+	resp := (&backup.ListRecoveryPointsByBackupVaultOutput{}).SetNextToken("")
 	req := &backup.ListRecoveryPointsByBackupVaultInput{}
 	return resp, req
 }
 
 func emptyResponseRequestForFilesystems() (*awsefs.DescribeFileSystemsOutput, *awsefs.DescribeFileSystemsInput) {
-	resp := (&awsefs.DescribeFileSystemsOutput{}).SetNextMarker(testMarker)
+	resp := (&awsefs.DescribeFileSystemsOutput{}).SetNextMarker("")
 	req := &awsefs.DescribeFileSystemsInput{}
 	return resp, req
 }
 
 func emptyResponseRequestForListTags() (*backup.ListTagsOutput, *backup.ListTagsInput) {
-	resp := (&backup.ListTagsOutput{}).SetNextToken(testMarker)
+	resp := (&backup.ListTagsOutput{}).SetNextToken("")
 	req := &backup.ListTagsInput{}
 	return resp, req
 }
 
 func emptyResponseRequestForMountTargets() (*awsefs.DescribeMountTargetsOutput, *awsefs.DescribeMountTargetsInput) {
-	resp := (&awsefs.DescribeMountTargetsOutput{}).SetNextMarker(testMarker)
+	resp := (&awsefs.DescribeMountTargetsOutput{}).SetNextMarker("")
 	req := &awsefs.DescribeMountTargetsInput{}
 	return resp, req
 }
