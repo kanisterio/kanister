@@ -39,13 +39,13 @@ import (
 )
 
 type WaitConditions struct {
-	AnyOf []Condition
-	AllOf []Condition
+	AnyOf []Condition `json:"anyOf,omitempty"`
+	AllOf []Condition `json:"allOf,omitempty"`
 }
 
 type Condition struct {
-	ObjectReference crv1alpha1.ObjectReference
-	Condition       string
+	ObjectReference crv1alpha1.ObjectReference `json:"objectReference,omitempty"`
+	Condition       string                     `json:"condition,omitempty"`
 }
 
 const (
