@@ -17,7 +17,6 @@ package awsefs
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -648,12 +647,4 @@ func (e *efs) getMountPointAndSecurityGroupTags(ctx context.Context, id string) 
 		resultTags[key] = value
 	}
 	return resultTags, nil
-}
-
-func getEnvAsStringOrDefault(envKey string, def string) string {
-	if v, ok := os.LookupEnv(envKey); ok {
-		return v
-	}
-
-	return def
 }
