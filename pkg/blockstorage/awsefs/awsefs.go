@@ -31,14 +31,17 @@ import (
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	kantags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 type efs struct {
 	*awsefs.EFS
 	*backup.Backup
-	accountID string
-	region    string
-	role      string
+	accountID       string
+	region          string
+	role            string
+	backupVaultName string
 }
 
 var _ blockstorage.Provider = (*efs)(nil)
@@ -50,9 +53,8 @@ const (
 	burstingThroughputMode = awsefs.ThroughputModeBursting
 	defaultThroughputMode  = burstingThroughputMode
 
-	efsType            = "EFS"
-	k10BackupVaultName = "k10vault"
-	testMarker         = ""
+	efsType                   = "EFS"
+	defaultK10BackupVaultName = "k10vault"
 
 	maxRetries = 10
 )
@@ -87,12 +89,19 @@ func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage
 	accountID := *user.Account
 	efsCli := awsefs.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
 	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
+
+	efsVault, ok := config[awsconfig.ConfigEFSVaultName]
+	if !ok || efsVault == "" {
+		efsVault = defaultK10BackupVaultName
+	}
+
 	return &efs{
-		EFS:       efsCli,
-		Backup:    backupCli,
-		region:    region,
-		accountID: accountID,
-		role:      config[awsconfig.ConfigRole],
+		EFS:             efsCli,
+		Backup:          backupCli,
+		region:          region,
+		accountID:       accountID,
+		role:            config[awsconfig.ConfigRole],
+		backupVaultName: efsVault,
 	}, nil
 }
 
@@ -129,7 +138,7 @@ func (e *efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*bl
 
 func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
 	reqM := &backup.GetRecoveryPointRestoreMetadataInput{}
-	reqM.SetBackupVaultName(k10BackupVaultName)
+	reqM.SetBackupVaultName(e.backupVaultName)
 	reqM.SetRecoveryPointArn(snapshot.ID)
 
 	respM, err := e.GetRecoveryPointRestoreMetadataWithContext(ctx, reqM)
@@ -308,7 +317,10 @@ func (e *efs) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) err
 
 	req := &awsefs.DeleteFileSystemInput{}
 	req.SetFileSystemId(volume.ID)
-	_, err = e.DeleteFileSystemWithContext(ctx, req)
+	output, err := e.DeleteFileSystemWithContext(ctx, req)
+	if err == nil {
+		log.Info().Print("Delete EFS output", field.M{"output": output.String()})
+	}
 	if isVolumeNotFound(err) {
 		return nil
 	}
@@ -368,7 +380,7 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 	}
 
 	req := &backup.StartBackupJobInput{}
-	req.SetBackupVaultName(k10BackupVaultName)
+	req.SetBackupVaultName(e.backupVaultName)
 	req.SetIamRoleArn(awsDefaultServiceBackupRole(e.accountID))
 	req.SetResourceArn(resourceARNForEFS(e.region, *desc.OwnerId, *desc.FileSystemId))
 
@@ -391,7 +403,7 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 	}
 
 	req2 := &backup.DescribeRecoveryPointInput{}
-	req2.SetBackupVaultName(k10BackupVaultName)
+	req2.SetBackupVaultName(e.backupVaultName)
 	req2.SetRecoveryPointArn(*resp.RecoveryPointArn)
 	describeRP, err := e.DescribeRecoveryPointWithContext(ctx, req2)
 	if err != nil {
@@ -411,7 +423,7 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 
 func (e *efs) createK10DefaultBackupVault() error {
 	req := &backup.CreateBackupVaultInput{}
-	req.SetBackupVaultName(k10BackupVaultName)
+	req.SetBackupVaultName(e.backupVaultName)
 
 	_, err := e.CreateBackupVault(req)
 	if isBackupVaultAlreadyExists(err) {
@@ -426,10 +438,13 @@ func (e *efs) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blo
 
 func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
 	req := &backup.DeleteRecoveryPointInput{}
-	req.SetBackupVaultName(k10BackupVaultName)
+	req.SetBackupVaultName(e.backupVaultName)
 	req.SetRecoveryPointArn(snapshot.ID)
 
-	_, err := e.DeleteRecoveryPointWithContext(ctx, req)
+	output, err := e.DeleteRecoveryPointWithContext(ctx, req)
+	if err == nil {
+		log.Info().Print("Delete EFS snapshot", field.M{"output": output.String()})
+	}
 	if isResourceNotFoundException(err) {
 		return nil
 	}
@@ -438,7 +453,7 @@ func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapsho
 
 func (e *efs) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
 	req := &backup.DescribeRecoveryPointInput{}
-	req.SetBackupVaultName(k10BackupVaultName)
+	req.SetBackupVaultName(e.backupVaultName)
 	req.SetRecoveryPointArn(id)
 
 	resp, err := e.DescribeRecoveryPointWithContext(ctx, req)
@@ -512,7 +527,7 @@ func (e *efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blo
 	result := make([]*blockstorage.Snapshot, 0)
 	for resp, req := emptyResponseRequestForBackups(); resp.NextToken != nil; req.NextToken = resp.NextToken {
 		var err error
-		req.SetBackupVaultName(k10BackupVaultName)
+		req.SetBackupVaultName(e.backupVaultName)
 		resp, err = e.ListRecoveryPointsByBackupVaultWithContext(ctx, req)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to list recovery points by vault")
@@ -556,25 +571,25 @@ func (e *efs) snapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.Rec
 }
 
 func emptyResponseRequestForBackups() (*backup.ListRecoveryPointsByBackupVaultOutput, *backup.ListRecoveryPointsByBackupVaultInput) {
-	resp := (&backup.ListRecoveryPointsByBackupVaultOutput{}).SetNextToken(testMarker)
+	resp := (&backup.ListRecoveryPointsByBackupVaultOutput{}).SetNextToken("")
 	req := &backup.ListRecoveryPointsByBackupVaultInput{}
 	return resp, req
 }
 
 func emptyResponseRequestForFilesystems() (*awsefs.DescribeFileSystemsOutput, *awsefs.DescribeFileSystemsInput) {
-	resp := (&awsefs.DescribeFileSystemsOutput{}).SetNextMarker(testMarker)
+	resp := (&awsefs.DescribeFileSystemsOutput{}).SetNextMarker("")
 	req := &awsefs.DescribeFileSystemsInput{}
 	return resp, req
 }
 
 func emptyResponseRequestForListTags() (*backup.ListTagsOutput, *backup.ListTagsInput) {
-	resp := (&backup.ListTagsOutput{}).SetNextToken(testMarker)
+	resp := (&backup.ListTagsOutput{}).SetNextToken("")
 	req := &backup.ListTagsInput{}
 	return resp, req
 }
 
 func emptyResponseRequestForMountTargets() (*awsefs.DescribeMountTargetsOutput, *awsefs.DescribeMountTargetsInput) {
-	resp := (&awsefs.DescribeMountTargetsOutput{}).SetNextMarker(testMarker)
+	resp := (&awsefs.DescribeMountTargetsOutput{}).SetNextMarker("")
 	req := &awsefs.DescribeMountTargetsInput{}
 	return resp, req
 }
