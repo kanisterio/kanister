@@ -448,6 +448,9 @@ func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapsho
 	if isResourceNotFoundException(err) {
 		return nil
 	}
+	if isDeleteInProgress(err) {
+		return nil
+	}
 	return err
 }
 
