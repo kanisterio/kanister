@@ -41,8 +41,8 @@ import (
 const (
 	// defaultPodReadyWaitTimeout is the time to wait for pod to be ready
 	defaultPodReadyWaitTimeout = 15 * time.Minute
-	// podStartTimeoutEnv is the env var to get pod startup wait timeout
-	podStartTimeoutEnv   = "KANISTER_POD_START_TIMEOUT"
+	// podReadyWaitTimeoutEnv is the env var to get pod ready wait timeout
+	podReadyWaitTimeoutEnv   = "KANISTER_POD_READY_WAIT_TIMEOUT"
 	errAccessingNode     = "Failed to get node"
 	defaultContainerName = "container"
 )
@@ -180,7 +180,7 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 
 // WaitForPodReady waits for a pod to exit the pending state
 func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
-	timeoutCtx, waitCancel := context.WithTimeout(ctx, getPodStartTimeout())
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, getPodReadyWaitTimeout())
 	defer waitCancel()
 	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		p, err := cli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -355,10 +355,10 @@ func strategicMergeJsonPatch(original, override interface{}) ([]byte, error) {
 	return mergedPatch, nil
 }
 
-// getPodStartTimeout returns the pod ready wait timeout from ENV if configured
+// getPodReadyWaitTimeout returns the pod ready wait timeout from ENV if configured
 // returns the default of 15 minutes otherwise
-func getPodStartTimeout() time.Duration {
-	if v, ok := os.LookupEnv(podStartTimeoutEnv); ok {
+func getPodReadyWaitTimeout() time.Duration {
+	if v, ok := os.LookupEnv(podReadyWaitTimeoutEnv); ok {
 		iv, err := strconv.Atoi(v)
 		if err == nil {
 			return time.Duration(iv) * time.Minute
