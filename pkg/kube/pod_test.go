@@ -684,3 +684,13 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 		c.Assert(podSpec, DeepEquals, test.Expected)
 	}
 }
+
+func (s *PodSuite) TestGetPodReadyWaitTimeout(c *C) {
+	// Setup ENV to change the default timeout
+	os.Setenv(PodReadyWaitTimeoutEnv, "5")
+	c.Assert(GetPodReadyWaitTimeout(), Equals, time.Minute*5)
+	os.Unsetenv(PodReadyWaitTimeoutEnv)
+
+	// Check without ENV set
+	c.Assert(GetPodReadyWaitTimeout(), Equals, DefaultPodReadyWaitTimeout)
+}
