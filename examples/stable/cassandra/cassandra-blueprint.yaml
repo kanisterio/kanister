@@ -103,7 +103,7 @@ actions:
       name: restoreFromObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: ghcr.io/kanisterio/kanister-tools:0.67.0
+        image: ghcr.io/kanisterio/kanister-tools:0.68.0
         backupArtifactPrefix: "{{ .ArtifactsIn.params.KeyValue.backupPrefixLocation }}"
         pods: "{{ range .StatefulSet.Pods }} {{.}}{{end}}"
         restorePath: "{{ .ArtifactsIn.params.KeyValue.restorePathPrefix }}"
