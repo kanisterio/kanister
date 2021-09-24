@@ -42,9 +42,9 @@ const (
 	// DefaultPodReadyWaitTimeout is the time to wait for pod to be ready
 	DefaultPodReadyWaitTimeout = 15 * time.Minute
 	// PodReadyWaitTimeoutEnv is the env var to get pod ready wait timeout
-	PodReadyWaitTimeoutEnv   = "KANISTER_POD_READY_WAIT_TIMEOUT"
-	errAccessingNode     = "Failed to get node"
-	defaultContainerName = "container"
+	PodReadyWaitTimeoutEnv = "KANISTER_POD_READY_WAIT_TIMEOUT"
+	errAccessingNode       = "Failed to get node"
+	defaultContainerName   = "container"
 )
 
 // PodOptions specifies options for `CreatePod`
