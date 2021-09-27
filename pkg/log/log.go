@@ -25,6 +25,10 @@ const (
 	InfoLevel Level = Level(logrus.InfoLevel)
 	// ErrorLevel log level.
 	ErrorLevel Level = Level(logrus.ErrorLevel)
+
+	// LevelVarName is the environment variable that controls
+	// init log levels
+	LevelVarName = "LOG_LEVEL"
 )
 
 // OutputSink describes the current output sink.
@@ -121,6 +125,17 @@ func SetFormatter(format OutputFormat) {
 func init() {
 	SetFormatter(TextFormat)
 	initEnvVarFields()
+	level, err := logrus.ParseLevel(os.Getenv(LevelVarName))
+
+	if err != nil {
+		level = logrus.InfoLevel
+	}
+	SetLevel(Level(level))
+}
+
+// SetLevel sets the current log level.
+func SetLevel(level Level) {
+	log.SetLevel(logrus.Level(level))
 }
 
 func Info() Logger {

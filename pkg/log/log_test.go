@@ -105,3 +105,26 @@ func testLogMessage(c *C, msg string, print func(string, ...field.M), fields ...
 	c.Assert(entry["msg"], Equals, msg)
 	return entry
 }
+
+func (s *LogSuite) TestLogLevel(c *C) {
+	log.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339Nano})
+
+	var output bytes.Buffer
+	log.SetOutput(&output)
+	ctx := field.Context(context.Background(), "key", "value")
+	var entry map[string]interface{}
+	//Check if debug level log is printed when log level is info
+	Debug().WithContext(ctx).Print("Testing debug level")
+	err := json.Unmarshal(output.Bytes(), &entry)
+
+	c.Assert(err, NotNil)
+	c.Assert(output.String(), HasLen, 0)
+
+	//Check if debug level log is printed when log level is debug
+	log.SetLevel(logrus.DebugLevel)
+	Debug().WithContext(ctx).Print("Testing debug level")
+	err = json.Unmarshal(output.Bytes(), &entry)
+	c.Assert(err, IsNil)
+	c.Assert(entry, NotNil)
+	c.Assert(entry["msg"], Equals, "Testing debug level")
+}
