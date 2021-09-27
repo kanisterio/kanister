@@ -18,6 +18,7 @@ import (
 	"context"
 	"io"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -110,5 +111,9 @@ func (k *KubectlOperation) Delete(objRef crv1alpha1.ObjectReference, namespace s
 		namespace = objRef.Namespace
 	}
 	err := k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Delete(context.Background(), objRef.Name, metav1.DeleteOptions{})
+	if apierrors.IsNotFound(err) {
+		return &objRef, nil
+	}
+
 	return &objRef, err
 }
