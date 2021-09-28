@@ -15,6 +15,8 @@
 package awsefs
 
 import (
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/backup"
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
@@ -47,6 +49,16 @@ func isResourceNotFoundException(err error) bool {
 func isMountTargetNotFound(err error) bool {
 	if awsErr, ok := err.(awserr.Error); ok {
 		return awsErr.Code() == awsefs.ErrCodeMountTargetNotFound
+	}
+	return false
+}
+
+func isDeleteInProgress(err error) bool {
+	if awsErr, ok := err.(awserr.Error); ok {
+		if awsErr.Code() == backup.ErrCodeInvalidRequestException &&
+			strings.Contains(awsErr.Message(), "Recovery point already started the deletion process") {
+			return true
+		}
 	}
 	return false
 }

@@ -257,7 +257,16 @@ func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 		log.Debug().Print("SnapshotDelete", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
 		task, lerr := p.Gom.DeleteSnapshot(ctx, vimID(volID), vimID(snapshotID))
 		if lerr != nil {
-			return false, errors.Wrap(lerr, "Failed to delete snapshot")
+			if soap.IsSoapFault(lerr) {
+				soapFault := soap.ToSoapFault(lerr)
+				receivedFault := soapFault.Detail.Fault
+				_, ok := receivedFault.(types.NotFound)
+				if ok {
+					log.Debug().Print("The FCD id was not found in VC during deletion, assuming success", field.M{"err": lerr, "VolumeID": volID, "SnapshotID": snapshotID})
+					return true, nil
+				}
+			}
+			return false, errors.Wrap(lerr, "Failed to create a task for the DeleteSnapshot invocation on an IVD Protected Entity")
 		}
 		log.Debug().Print("Started SnapshotDelete task", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
 		_, lerr = task.Wait(ctx, vmWareTimeout)
