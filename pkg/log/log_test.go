@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 	"testing"
 	"time"
 
@@ -121,10 +122,12 @@ func (s *LogSuite) TestLogLevel(c *C) {
 	c.Assert(output.String(), HasLen, 0)
 
 	//Check if debug level log is printed when log level is debug
-	log.SetLevel(logrus.DebugLevel)
+	os.Setenv("LOG_LEVEL", "debug")
+	defer os.Unsetenv("LOG_LEVEL")
+	initLogLevel()
 	Debug().WithContext(ctx).Print("Testing debug level")
-	err = json.Unmarshal(output.Bytes(), &entry)
-	c.Assert(err, IsNil)
+	cerr := json.Unmarshal(output.Bytes(), &entry)
+	c.Assert(cerr, IsNil)
 	c.Assert(entry, NotNil)
 	c.Assert(entry["msg"], Equals, "Testing debug level")
 }
