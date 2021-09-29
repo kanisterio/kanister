@@ -33,6 +33,9 @@ $ helm install bitnami/mongodb --name my-release --namespace mongo-test \
 
 The command deploys MongoDB on the Kubernetes cluster in the mongo-test namespace
 
+**NOTE:**
+
+If you are installing the chart with release name `mongodb`, some changes would be needed in the blueprint `mongo-blueprint.yaml`
 
 ## Integrating with Kanister
 
