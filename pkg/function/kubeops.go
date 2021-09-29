@@ -17,11 +17,17 @@ package function
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func init() {
@@ -39,6 +45,8 @@ const (
 	KubeOpsSpecArg = "spec"
 	// KubeOpsNamespaceArg provides resource namespace
 	KubeOpsNamespaceArg = "namespace"
+	// KubeOpsObjectReference specifies object details for delete operation
+	KubeOpsObjectReferenceArg = "objectReference"
 	// KubeOpsOperationArg is the kubeops operation needs to be executed
 	KubeOpsOperationArg = "operation"
 )
@@ -52,7 +60,8 @@ func (*kubeops) Name() string {
 func (crs *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var spec, namespace string
 	var op kube.Operation
-	if err := Arg(args, KubeOpsSpecArg, &spec); err != nil {
+	var objRefArg crv1alpha1.ObjectReference
+	if err := OptArg(args, KubeOpsSpecArg, &spec, ""); err != nil {
 		return nil, err
 	}
 	if err := Arg(args, KubeOpsOperationArg, &op); err != nil {
@@ -61,8 +70,16 @@ func (crs *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[
 	if err := OptArg(args, KubeOpsNamespaceArg, &namespace, metav1.NamespaceDefault); err != nil {
 		return nil, err
 	}
-	kubeopsOp := kube.NewKubectlOperations(spec, namespace)
-	objRef, err := kubeopsOp.Execute(op)
+	if ArgExists(args, KubeOpsObjectReferenceArg) {
+		if err := OptArg(args, KubeOpsObjectReferenceArg, &objRefArg, nil); err != nil {
+			return nil, err
+		}
+	}
+	dynCli, err := kube.NewDynamicClient()
+	if err != nil {
+		return nil, err
+	}
+	objRef, err := execKubeOperation(dynCli, op, namespace, spec, objRefArg)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +95,28 @@ func (crs *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[
 	return out, nil
 }
 
+func execKubeOperation(dynCli dynamic.Interface, op kube.Operation, namespace, spec string, objRef crv1alpha1.ObjectReference) (*crv1alpha1.ObjectReference, error) {
+	kubeopsOp := kube.NewKubectlOperations(dynCli)
+	switch op {
+	case kube.CreateOperation:
+		if len(spec) == 0 {
+			return nil, errors.New(fmt.Sprintf("spec cannot be empty for %s operation", kube.CreateOperation))
+		}
+		return kubeopsOp.Create(strings.NewReader(spec), namespace)
+	case kube.DeleteOperation:
+		if objRef.Name == "" ||
+			objRef.Group == "" ||
+			objRef.APIVersion == "" ||
+			objRef.Resource == "" {
+			return nil, errors.New(fmt.Sprintf("missing one or more required fields name/namespace/group/apiVersion/resource in objectReference for %s operation", kube.DeleteOperation))
+		}
+		return kubeopsOp.Delete(objRef, namespace)
+	}
+	return nil, errors.New(fmt.Sprintf("invalid operation '%s'", op))
+}
+
 func (*kubeops) RequiredArgs() []string {
 	return []string{
-		KubeOpsSpecArg,
 		KubeOpsOperationArg,
 	}
 }
