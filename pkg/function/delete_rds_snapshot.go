@@ -17,9 +17,9 @@ package function
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
+	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
