@@ -18,6 +18,8 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	awsrds "github.com/aws/aws-sdk-go/service/rds"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
@@ -67,10 +69,18 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 	if !isAuroraCluster(string(dbEngine)) {
 		// Delete Snapshot
 		log.Print("Deleting RDS snapshot", field.M{"SnapshotID": snapshotID})
-		if _, err := rdsCli.DeleteDBSnapshot(ctx, snapshotID); err != nil {
-			return nil, errors.Wrap(err, "Failed to delete snapshot")
+		_, err := rdsCli.DeleteDBSnapshot(ctx, snapshotID)
+		if err != nil {
+			if err, ok := err.(awserr.Error); ok {
+				switch err.Code() {
+				case awsrds.ErrCodeDBSnapshotNotFoundFault:
+					log.Info().Print("DB Snapshot already deleted", field.M{"SnapshotId": snapshotID})
+					return nil, nil
+				default:
+					return nil, errors.Wrap(err, "Failed to delete snapshot")
+				}
+			}
 		}
-
 		// Wait until snapshot is deleted
 		log.Print("Waiting for RDS snapshot to be deleted", field.M{"SnapshotID": snapshotID})
 		err = rdsCli.WaitUntilDBSnapshotDeleted(ctx, snapshotID)
