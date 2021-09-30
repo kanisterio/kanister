@@ -89,7 +89,7 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 
 	// delete Aurora DB cluster snapshot
 	log.Print("Deleting Aurora DB cluster snapshot")
-	_, err := rdsCli.DeleteDBClusterSnapshot(ctx, snapshotID)
+	_, err = rdsCli.DeleteDBClusterSnapshot(ctx, snapshotID)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {
