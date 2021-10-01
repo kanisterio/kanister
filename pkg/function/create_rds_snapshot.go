@@ -48,6 +48,8 @@ const (
 	CreateRDSSnapshotSnapshotID = "snapshotID"
 	// CreateRDSSnapshotSecurityGroupID to set securityGroupIDs in output artifact
 	CreateRDSSnapshotSecurityGroupID = "securityGroupID"
+	// Allocated Storage Amount
+	CreateRDSSnapshotAllocatedStorage = "allocatedStorage"
 	// DBEngineAurora has db engine aurora for MySQL 5.6-compatible
 	DBEngineAurora RDSDBEngine = "aurora"
 	// DBEngineAuroraMySQL has db engine for MySQL 5.7-compatible Aurora
@@ -63,6 +65,7 @@ func (*createRDSSnapshotFunc) Name() string {
 }
 
 func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEngine, profile *param.Profile) (map[string]interface{}, error) {
+	var allocatedStorage int64
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Profile Validation failed")
@@ -85,7 +88,8 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 
 	log.Print("Creating RDS snapshot", field.M{"SnapshotID": snapshotID})
 	if !isAuroraCluster(string(dbEngine)) {
-		if _, err := rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID); err != nil {
+		dbSnapshotOutput, err := rdsCli.CreateDBSnapshot(ctx, instanceID, snapshotID)
+		if err != nil {
 			return nil, errors.Wrap(err, "Failed to create snapshot")
 		}
 
@@ -94,6 +98,8 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		if err := rdsCli.WaitUntilDBSnapshotAvailable(ctx, snapshotID); err != nil {
 			return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
 		}
+		allocatedStorage = *(dbSnapshotOutput.DBSnapshot.AllocatedStorage)
+		log.Print("Added allcated storage", field.M{"AllocatedStoraeg": string(allocatedStorage)})
 	} else {
 		if _, err := rdsCli.CreateDBClusterSnapshot(ctx, instanceID, snapshotID); err != nil {
 			return nil, errors.Wrap(err, "Failed to create cluster snapshot")
@@ -124,9 +130,10 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 	}
 
 	output := map[string]interface{}{
-		CreateRDSSnapshotSnapshotID:      snapshotID,
-		CreateRDSSnapshotInstanceIDArg:   instanceID,
-		CreateRDSSnapshotSecurityGroupID: string(sgIDYaml),
+		CreateRDSSnapshotSnapshotID:       snapshotID,
+		CreateRDSSnapshotInstanceIDArg:    instanceID,
+		CreateRDSSnapshotSecurityGroupID:  string(sgIDYaml),
+		CreateRDSSnapshotAllocatedStorage: string(allocatedStorage),
 	}
 	return output, nil
 }
