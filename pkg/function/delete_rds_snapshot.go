@@ -94,7 +94,7 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {
 			case awsrds.ErrCodeDBClusterSnapshotNotFoundFault:
-				log.Info().Print("DB Cluster Snapshot already deleted", field.M{"SnapshotId": snapshotID})
+				log.Info().Print("Could not find matching Aurora DB cluster snapshot; might have been deleted previously", field.M{"SnapshotId": snapshotID})
 				return nil, nil
 			default:
 				return nil, errors.Wrap(err, "Error deleting Aurora DB cluster snapshot")
