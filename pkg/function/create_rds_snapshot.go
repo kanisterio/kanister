@@ -17,6 +17,7 @@ package function
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -99,7 +100,7 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 			return nil, errors.Wrap(err, "Error while waiting snapshot to be available")
 		}
 		allocatedStorage = *(dbSnapshotOutput.DBSnapshot.AllocatedStorage)
-		log.Print("Added allcated storage", field.M{"AllocatedStoraeg": string(allocatedStorage)})
+		log.Print("Added allocated storage", field.M{"AllocatedStorage": strconv.FormatInt(allocatedStorage, 10)})
 	} else {
 		if _, err := rdsCli.CreateDBClusterSnapshot(ctx, instanceID, snapshotID); err != nil {
 			return nil, errors.Wrap(err, "Failed to create cluster snapshot")
@@ -133,7 +134,7 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		CreateRDSSnapshotSnapshotID:       snapshotID,
 		CreateRDSSnapshotInstanceIDArg:    instanceID,
 		CreateRDSSnapshotSecurityGroupID:  string(sgIDYaml),
-		CreateRDSSnapshotAllocatedStorage: string(allocatedStorage),
+		CreateRDSSnapshotAllocatedStorage: strconv.FormatInt(allocatedStorage, 10),
 	}
 	return output, nil
 }
