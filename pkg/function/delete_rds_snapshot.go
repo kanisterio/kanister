@@ -74,7 +74,7 @@ func deleteRDSSnapshot(ctx context.Context, snapshotID string, profile *param.Pr
 			if err, ok := err.(awserr.Error); ok {
 				switch err.Code() {
 				case awsrds.ErrCodeDBSnapshotNotFoundFault:
-					log.Info().Print("DB Snapshot already deleted", field.M{"SnapshotId": snapshotID})
+					log.Info().Print("Could not find matching RDS snapshot; might have been deleted previously", field.M{"SnapshotId": snapshotID})
 					return nil, nil
 				default:
 					return nil, errors.Wrap(err, "Failed to delete snapshot")
