@@ -39,7 +39,6 @@ const (
 	deploySpec = `apiVersion: apps/v1
 kind: Deployment
 metadata:
-  #generateName: deployment-
   name: test-deployment
 spec:
   replicas: 1
@@ -105,7 +104,7 @@ func (s *KubeOpsSuite) SetUpSuite(c *C) {
 
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "kanisterkubetasktest-",
+			GenerateName: "kanisterkubeopstest-",
 		},
 	}
 	cns, err := s.kubeCli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
@@ -131,12 +130,30 @@ func (s *KubeOpsSuite) TearDownSuite(c *C) {
 
 func createPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
-		Name: "create-in-ns",
+		Name: "createDeploy",
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
 			KubeOpsNamespaceArg: namespace,
 			KubeOpsSpecArg:      deploySpec,
+		},
+	}
+}
+
+func deletePhase(gvr schema.GroupVersionResource, name, namespace string) crv1alpha1.BlueprintPhase {
+	return crv1alpha1.BlueprintPhase{
+		Name: "deleteDeploy",
+		Func: KubeOpsFuncName,
+		Args: map[string]interface{}{
+			KubeOpsOperationArg: "delete",
+			KubeOpsNamespaceArg: namespace,
+			KubeOpsObjectReferenceArg: map[string]interface{}{
+				"apiVersion": gvr.Version,
+				"group":      gvr.Group,
+				"resource":   gvr.Resource,
+				"name":       name,
+				"namespace":  namespace,
+			},
 		},
 	}
 }
@@ -188,14 +205,6 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 		expResource resourceRef
 	}{
 		{
-			bp: newCreateResourceBlueprint(createPhase(s.namespace)),
-			expResource: resourceRef{
-				gvr:       schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"},
-				name:      "test-deployment",
-				namespace: s.namespace,
-			},
-		},
-		{
 			bp: newCreateResourceBlueprint(createInSpecsNsPhase(s.namespace)),
 			expResource: resourceRef{
 				gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
@@ -229,6 +238,46 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 			}
 			c.Assert(out, DeepEquals, expOut)
 		}
+	}
+}
+
+func (s *KubeOpsSuite) TestKubeOpsCreateWaitDelete(c *C) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	tp := param.TemplateParams{}
+	action := "test"
+	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
+	deployName := "test-deployment"
+
+	bp := newCreateResourceBlueprint(createPhase(s.namespace),
+		waitDeployPhase(s.namespace, deployName),
+		deletePhase(gvr, deployName, s.namespace))
+	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
+	c.Assert(err, IsNil)
+	for _, p := range phases {
+		out, err := p.Exec(ctx, bp, action, tp)
+		c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
+
+		_, err = s.dynCli.Resource(gvr).Namespace(s.namespace).Get(context.TODO(), deployName, metav1.GetOptions{})
+		if p.Name() == "deleteDeploy" {
+			c.Assert(err, NotNil)
+			c.Assert(apierrors.IsNotFound(err), Equals, true)
+		} else {
+			c.Assert(err, IsNil)
+		}
+
+		if p.Name() == "waitDeployReady" {
+			continue
+		}
+		expOut := map[string]interface{}{
+			"apiVersion": gvr.Version,
+			"group":      gvr.Group,
+			"resource":   gvr.Resource,
+			"kind":       "",
+			"name":       deployName,
+			"namespace":  s.namespace,
+		}
+		c.Assert(out, DeepEquals, expOut)
 	}
 }
 
