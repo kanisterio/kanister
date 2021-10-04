@@ -134,7 +134,7 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		CreateRDSSnapshotSnapshotID:       snapshotID,
 		CreateRDSSnapshotInstanceIDArg:    instanceID,
 		CreateRDSSnapshotSecurityGroupID:  string(sgIDYaml),
-		CreateRDSSnapshotAllocatedStorage: strconv.FormatInt(allocatedStorage, 10),
+		CreateRDSSnapshotAllocatedStorage: strconv.FormatInt(allocatedStorage, 10) + "GiB",
 	}
 	return output, nil
 }
