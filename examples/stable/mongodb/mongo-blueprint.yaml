@@ -30,7 +30,7 @@ actions:
             {{- if eq (index .Object.metadata.labels "app.kubernetes.io/instance") "mongodb" }}
               host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
             {{- else }}
-              host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+              host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
             {{- end }}
             dbPassword='{{ index .Phases.takeConsistentBackup.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
             dump_cmd="mongodump --oplog --gzip --archive --host ${host} -u root -p ${dbPassword}"
@@ -60,7 +60,7 @@ actions:
             {{- if eq (index .Object.metadata.labels "app.kubernetes.io/instance") "mongodb" }}
               host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
             {{- else }}
-              host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+              host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
             {{- end }}
             dbPassword='{{ index .Phases.pullFromBlobStore.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
             restore_cmd="mongorestore --gzip --archive --oplogReplay --drop --host ${host} -u root -p ${dbPassword}"
