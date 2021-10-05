@@ -29,7 +29,11 @@ actions:
           - pipefail
           - -c
           - |
-            host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+            {{- if eq (index .Object.metadata.labels "app.kubernetes.io/instance") "mongodb" }}
+              host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+            {{- else }}
+              host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+            {{- end }}
             dbPassword='{{ index .Phases.takeConsistentBackup.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
             dump_cmd="mongodump --oplog --gzip --archive --host ${host} -u root -p ${dbPassword}"
             backup_file_path='rs_backup.gz'
@@ -58,7 +62,11 @@ actions:
           - pipefail
           - -c
           - |
-            host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+            {{- if eq (index .Object.metadata.labels "app.kubernetes.io/instance") "mongodb" }}
+              host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+            {{- else }}
+              host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+            {{- end }}
             dbPassword='{{ index .Phases.pullFromStore.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
             restore_cmd="mongorestore --gzip --archive --oplogReplay --drop --host ${host} -u root -p ${dbPassword}"
             backup_file_path='rs_backup.gz'
@@ -86,3 +94,4 @@ actions:
             backup_file_path='rs_backup.gz'
             kopia_snap='{{ .ArtifactsIn.mongoBackup.KopiaSnapshot }}'
             kando location delete --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}"
+            
