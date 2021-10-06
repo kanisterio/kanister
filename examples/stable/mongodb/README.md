@@ -56,32 +56,15 @@ The command will configure a location where artifacts resulting from Kanister da
 ### Create Blueprint
 Create Blueprint in the same namespace as the controller
 
-
-**NOTE:**
-
-If you have installed the mongodb chart with release name `mongodb`, some changes would be needed in the blueprint `mongo-blueprint.yaml`. 
-
-You need [yq](https://github.com/mikefarah/yq) tool to be installed on your system.
-Use below command to apply changes on the blueprint
-
-```bash
-yq e -i '.actions["backup","restore"].phases[].objects.mongosecret.name ="{{ index .Object.metadata.labels \"app.kubernetes.io/instance\" }}"' mongo-blueprint.yaml
-```
-
-
 ```bash
 $ kubectl create -f ./mongo-blueprint.yaml -n kasten-io
 ```
-
 
 Once MongoDB is running, you can populate it with some data. Let's add a collection called "restaurants" to a test database:
 
 ```bash
 # Connect to MongoDB primary pod
 $ kubectl exec -ti my-release-mongodb-0 -n mongo-test -- bash
-
-# if you have used `mongodb` as release name use below command to connect to MongoDB primary pod
-$ kubectl exec -ti mongodb-0 -n mongo-test -- bash
 
 # From inside the shell, use the mongo CLI to insert some data into the test database
 $ mongo admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.insert({'name' : 'Roys', 'cuisine' : 'Hawaiian', 'id' : '8675309'})"
