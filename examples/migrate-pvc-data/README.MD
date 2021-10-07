@@ -1,6 +1,6 @@
-# Migrate a PVC from a kubernetes cluster to another one 
+# Migrate the volume data of a PVC from a kubernetes cluster to another one 
 
-We'll demonstrate how to migrate a PVC from a cluster (source cluster )
+We'll demonstrate how to migrate the volume data of a PVC from a cluster (source cluster )
 to another one (destination cluster) with Kanister.
 
 This example was tested to migrate a PVC from an openshift 3.9 cluster to an openshift 4.7 cluster.
@@ -12,14 +12,19 @@ version.
 
 The PVC must not be mounted by any pods during the backup or during the restore.
 
-## Prerequisite  
+## Prerequisites on both source and destination cluster
 
+* Kubernetes 1.9+
+* Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
+* PV support on the underlying infrastructure
+* Kanister controller version 0.61.0 installed in your cluster, let's say in namespace `<kanister-operator-namespace>`
+* Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
-### Install kanister on both cluster 
+To install kanister and related tools you can follow [this](https://docs.kanister.io/install.html#install) link.
 
-```
-helm install myrelease --namespace kanister kanister/kanister-operator --set image.tag=0.61.0 --version 0.61.0
-```
+**NOTE:**
+The helm commands that are mentioned in this document are run with the helm version 3. If you are using other helm client version the commands may differ slightly.
+
 
 ### Install the same profile and blueprint on both cluster 
 
@@ -55,6 +60,8 @@ kubectl create -f create-data.yaml -n test-pvc
 kubectl create -f explore-pvc.yaml -n test-pvc
 ```
 
+Create data pod will just last the time to execute the command `echo 'hello world' >> /my-pvc/my-file`. This is for creating some test data and validating we successfully migrate it.
+
 Use explore-data to explore the data in the PVC 
 ```
 kubectl exec -it -n test-pvc explore-data -- /bin/sh
@@ -74,7 +81,7 @@ kubectl delete -f explore-pvc.yaml
 
 ### Create a backup 
 
-Use kanctl to create the backup 
+Create an Actionset to trigger the backup action of the copy-volume blueprint.
 ```
 kanctl create actionset -n kanister -a backup -v test-pvc/my-pvc -b copy-volume-bp -p default-profile
 actionset backup-mvwhh created

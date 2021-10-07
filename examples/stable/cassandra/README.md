@@ -13,7 +13,7 @@ As the official documentation of [Cassandra](http://cassandra.apache.org/) says,
 To install kanister and related tools you can follow [this](https://docs.kanister.io/install.html#install) link.
 
 **NOTE:**
-The helm commands that are mentioned in this document are run with the helm version 3. If you are using other helm clinet version the commands may differ slightly.
+The helm commands that are mentioned in this document are run with the helm version 3. If you are using other helm client version the commands may differ slightly.
 
 ## Chart Details
 
@@ -81,7 +81,7 @@ cqlsh> select * from restaurants.guests;
 
 ### Protect the application
 The next step is to protect the application/data that we just stored, so that if something bad happens we have the backup data to restore. To protect the application we will have to take the backup of the database using [Actionset](https://1docs.kanister.io/architecture.html#actionsets) Kanister resource.
-Create an Actionset in the same name space as the kanister controller
+Create an Actionset in the same namespace as the kanister controller
 ```bash
 # kanister-operator-namespace will be the namespace where you kanister operator is installed
 # blueprint-name will be the name of the blueprint that you will get after creating the blueprint from the Create Blueprint step

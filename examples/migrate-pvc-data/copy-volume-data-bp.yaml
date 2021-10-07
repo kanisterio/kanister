@@ -49,4 +49,3 @@ actions:
         backupTag: "{{ .ArtifactsIn.pvc.KeyValue.backupTag }}"
         volumes: 
           "{{ .PVC.Name }}": "{{ .ArtifactsIn.pvc.KeyValue.backupRoot }}"
-  
