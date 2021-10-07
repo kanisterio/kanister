@@ -10,6 +10,8 @@ defaultProfile
 Dockerfile
 Elasticsearch
 gcs
+gibibytes
+GiB
 helm
 kanctl
 Kando
