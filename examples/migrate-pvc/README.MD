@@ -100,7 +100,7 @@ kanctl --namespace kanister create actionset -a restore --from backup-mvwhh --dr
 
 Switch your kubectl context to the destination cluster
 
-Create the ns and the empty PVC
+Create the namespace and the empty PVC
 ```
 kubectl create ns test-pvc
 kubectl create -f my-pvc.yaml -n test-pvc
