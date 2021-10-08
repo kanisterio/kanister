@@ -76,4 +76,3 @@ actions:
           - |
             s3_path="{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
             kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}
-            
