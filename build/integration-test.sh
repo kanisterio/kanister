@@ -25,7 +25,9 @@ TEST_TIMEOUT="30m"
 # Set default options
 TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # Regex to match apps to run in short mode
-SHORT_APPS="^PostgreSQL$|^PITRPostgreSQL|^MySQL$|Elasticsearch|^MongoDB$|Maria"
+# TODO: PITRPostgreSQL app is incompatible with PostgreSQL:13.4.0`
+# Re-enable PITRPostgreSQL app once fixed
+SHORT_APPS="^PostgreSQL$|^MySQL$|Elasticsearch|^MongoDB$|Maria"
 # OCAPPS has all the apps that are to be tested against openshift cluster
 OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
 OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"
