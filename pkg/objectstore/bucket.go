@@ -198,19 +198,19 @@ func s3BucketRegion(ctx context.Context, cfg ProviderConfig, sec Secret, bucketN
 	// s3-compatible stores may not support s3manager.GetBucketRegion() API, so
 	// prefer to use the get-bucket-location API instead
 	if cfg.Endpoint != "" {
-		if resp, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{
+		resp, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{
 			Bucket: aws.String(bucketName),
-		}); err == nil {
+		})
+		if err == nil {
 			if resp.LocationConstraint == nil { // per the AWS SDK doc a nil location means us-east-1
 				return "us-east-1", nil
 			}
 			return *resp.LocationConstraint, nil
-		} else {
-			log.Error().
-				WithContext(ctx).
-				WithError(err).
-				Print("GetBucketLocation() failed, falling back to GetBucketRegion()", field.M{"config": c})
 		}
+		log.Error().
+			WithContext(ctx).
+			WithError(err).
+			Print("GetBucketLocation() failed, falling back to GetBucketRegion()", field.M{"config": c})
 		// fallback to GetBucketRegion() API if we fail (could be due to
 		// access-denied or incorrect policies etc)
 	}
