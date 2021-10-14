@@ -15,57 +15,53 @@
 package kube
 
 import (
+	"context"
 	"io"
-	"strings"
 
-	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
+	"k8s.io/client-go/dynamic"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
+// Operation represents kubectl operation
 type Operation string
 
 const (
+	// CreateOperation represents kubectl create operation
 	CreateOperation Operation = "create"
+	// DeleteOperation represents kubectl delete operation
+	DeleteOperation Operation = "delete"
 )
 
 // KubectlOperation implements methods to perform kubectl operations
 type KubectlOperation struct {
-	factory   cmdutil.Factory
-	spec      io.Reader
-	namespace string
+	dynCli  dynamic.Interface
+	factory cmdutil.Factory
 }
 
 // NewKubectlOperations returns new KubectlOperations object
-func NewKubectlOperations(specString, namespace string) *KubectlOperation {
+func NewKubectlOperations(dynCli dynamic.Interface) *KubectlOperation {
 	return &KubectlOperation{
-		factory:   cmdutil.NewFactory(genericclioptions.NewConfigFlags(false)),
-		spec:      strings.NewReader(specString),
-		namespace: namespace,
+		dynCli:  dynCli,
+		factory: cmdutil.NewFactory(genericclioptions.NewConfigFlags(false)),
 	}
 }
 
-// Execute executes kubectl operation
-func (k *KubectlOperation) Execute(op Operation) (*crv1alpha1.ObjectReference, error) {
-	switch op {
-	case CreateOperation:
-		return k.create()
-	default:
-		return nil, errors.New("not implemented")
-	}
-}
-
-func (k *KubectlOperation) create() (*crv1alpha1.ObjectReference, error) {
+// Create k8s resource from spec manifest
+func (k *KubectlOperation) Create(spec io.Reader, namespace string) (*crv1alpha1.ObjectReference, error) {
 	// TODO: Create namespace if doesn't exist before creating an resource
 	result := k.factory.NewBuilder().
 		Unstructured().
-		NamespaceParam(k.namespace).
-		Stream(k.spec, "resource").
+		NamespaceParam(namespace).
+		Stream(spec, "resource").
 		Flatten().
 		Do()
 	err := result.Err()
@@ -77,7 +73,6 @@ func (k *KubectlOperation) create() (*crv1alpha1.ObjectReference, error) {
 		if err != nil {
 			return err
 		}
-		namespace := k.namespace
 		// Override namespace if the namespace is set in resource spec
 		if info.Namespace != "" {
 			namespace = info.Namespace
@@ -105,4 +100,20 @@ func (k *KubectlOperation) create() (*crv1alpha1.ObjectReference, error) {
 		return err
 	})
 	return objRef, err
+}
+
+// Delete k8s resource referred by objectReference
+func (k *KubectlOperation) Delete(objRef crv1alpha1.ObjectReference, namespace string) (*crv1alpha1.ObjectReference, error) {
+	if namespace == "" {
+		namespace = metav1.NamespaceDefault
+	}
+	if objRef.Namespace != "" {
+		namespace = objRef.Namespace
+	}
+	err := k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Delete(context.Background(), objRef.Name, metav1.DeleteOptions{})
+	if apierrors.IsNotFound(err) {
+		return &objRef, nil
+	}
+
+	return &objRef, err
 }
