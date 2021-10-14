@@ -960,6 +960,7 @@ Outputs:
    `snapshotID`,`string`, ID of the RDS snapshot that has been created
    `instanceID`, `string`, ID of the RDS instance
    `securityGroupID`, `[]string`, AWS Security Group IDs associated with the RDS instance
+   `allocatedStorage`, `string`, Specifies the allocated storage size in gibibytes (GiB)
 
 Example:
 
@@ -974,6 +975,7 @@ Example:
             snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
             instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
             securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+            allocatedStorage: "{{ .Phases.createSnapshot.Output.allocatedStorage }}"
             backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
       configMapNames:
       - dbconfig

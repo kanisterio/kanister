@@ -40,7 +40,7 @@ type PostgresDB struct {
 	namespace string
 }
 
-// Last tested chart version "10.3.15"
+// Last tested chart version "10.12.3". Also we are using postgres version 13.4
 func NewPostgresDB(name string, subPath string) App {
 	return &PostgresDB{
 		name: name,

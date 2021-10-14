@@ -52,7 +52,13 @@ $ kanctl create profile s3compliant --access-key <aws-access-key-id> \
 
 The command will configure a location where artifacts resulting from Kanister data operations such as backup should go. This is stored as a profiles.cr.kanister.io CustomResource (CR) which is then referenced in Kanister ActionSets. Every ActionSet requires a Profile reference to complete the action. This CR (profiles.cr.kanister.io) can be shared between Kanister-enabled application instances.
 
+**NOTE:**
 
+If you have installed MongoDB chart using existing mongo secret by setting paramter `--set auth.existingSecret=<mongo-secret-name>` you will need to modify the secret name in the blueprint `mongo-blueprint.yaml` at following places:
+```bash
+actions.backup.phases[0].objects.mongosecret.name: <mongo-secret-name>
+actions.restore.phases[0].objects.mongosecret.name: <mongo-secret-name>
+```
 ### Create Blueprint
 Create Blueprint in the same namespace as the controller
 
