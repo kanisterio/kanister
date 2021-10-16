@@ -128,10 +128,12 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 	if err != nil {
 		return nil, errors.Wrapf(err, "Couldn't find DBInstance Version")
 	}
-
+    log.Print("DB Engine Version", field.M{"Db engine Version": dbEngineVersion})
+	log.Print("Executing Dump Command")
 	// Extract dump from DB
 	output, err := execDumpCommand(ctx, dbEngine, BackupAction, namespace, dbEndpoint, username, password, databases, backupPrefix, backupID, profile, dbEngineVersion)
 	if err != nil {
+		log.Print("failed executing exportRDSSnapshotToLoc Function")
 		return nil, errors.Wrap(err, "Unable to extract and push db dump to location")
 	}
 
@@ -199,12 +201,14 @@ func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction
 	username = strings.TrimSpace(username)
 	password = strings.TrimSpace(password)
 
+	log.Print("Preparing Command ")
 	// Prepare and execute command with kubetask
 	command, image, err := prepareCommand(ctx, dbEngine, action, dbEndpoint, username, password, databases, backupPrefix, backupID, profile, dbEngineVersion)
 	if err != nil {
 		return nil, err
 	}
-
+	justString := strings.Join(command," ")
+    log.Print(justString)
 	// Create Kubernetes client
 	cli, err := kube.NewClient()
 	if err != nil {
@@ -223,7 +227,7 @@ func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction
 			log.Error().WithError(err).Print("Failed to cleanup postgres-secret")
 		}
 	}()
-
+    log.Print("Executing kubeTask")
 	return kubeTask(ctx, cli, namespace, image, command, injectPostgresSecrets(secretName))
 }
 
