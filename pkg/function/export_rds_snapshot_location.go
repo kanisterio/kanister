@@ -124,7 +124,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 	backupID := fmt.Sprintf("backup-%s.tar.gz", rand.String(10))
 
 	// get the engine version
-	dbEngineVersion, err := findRDSDBEngineVersion(ctx, rdsCli, tmpInstanceID)
+	dbEngineVersion, err := rdsDBEngineVersion(ctx, rdsCli, tmpInstanceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Couldn't find DBInstance Version")
 	}

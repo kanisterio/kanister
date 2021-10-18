@@ -171,7 +171,7 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 	dbEndpoint := *descOp.DBInstances[0].Endpoint.Address
 
 	// get the engine version
-	dbEngineVersion, err := findRDSDBEngineVersion(ctx, rdsCli, instanceID)
+	dbEngineVersion, err := rdsDBEngineVersion(ctx, rdsCli, instanceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Couldn't find DBInstance Version")
 	}
@@ -192,18 +192,18 @@ func postgresRestoreCommand(pgHost, username, password string, dbList []string, 
 		return nil, errors.New("No database found. Atleast one db needed to connect")
 	}
 
-	// check if PostgresDB version > 13
+	// check if PostgresDB version < 13
 	v1, err := version.NewVersion(dbEngineVersion)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Couldn't find DBInstance Version")
 	}
 	// Add Constraints
-	constraints, err := version.NewConstraint(">= " + RDSPostgresDBInstanceEngineVersion)
+	constraints, err := version.NewConstraint("< " + RDSPostgresDBInstanceEngineVersion)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Couldn't add constraint to DBInstance Version")
 	}
 	// Verify Constraints
-	if !constraints.Check(v1) {
+	if constraints.Check(v1) {
 		replaceCommand = " sed 's/LOCALE/LC_COLLATE/' |"
 	}
 
