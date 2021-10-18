@@ -66,8 +66,9 @@ const (
 	// PostgreSQLEngine stores the postgres appname
 	PostgreSQLEngine RDSDBEngine = "PostgreSQL"
 
-	restoredAuroraInstanceSuffix = "instance-1"
-	defaultAuroraInstanceClass   = "db.r5.large"
+	restoredAuroraInstanceSuffix       = "instance-1"
+	defaultAuroraInstanceClass         = "db.r5.large"
+	RDSPostgresDBInstanceEngineVersion = "13.0"
 )
 
 type restoreRDSSnapshotFunc struct{}
@@ -197,7 +198,7 @@ func postgresRestoreCommand(pgHost, username, password string, dbList []string, 
 		return nil, errors.Wrapf(err, "Couldn't find DBInstance Version")
 	}
 	// Add Constraints
-	constraints, err := version.NewConstraint(">= 13.0")
+	constraints, err := version.NewConstraint(">= " + RDSPostgresDBInstanceEngineVersion)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Couldn't add constraint to DBInstance Version")
 	}
