@@ -150,7 +150,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", "12.6", pdb.username, pdb.password, []string{pdb.securityGroupID})
+	_, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", "13.3", pdb.username, pdb.password, []string{pdb.securityGroupID})
 	if err != nil {
 		return err
 	}
@@ -314,7 +314,7 @@ func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 
 func (pdb RDSPostgresDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
-		"dbconfig": {
+		"dbconfig": crv1alpha1.ObjectReference{
 			Kind:      "configmap",
 			Name:      "dbconfig",
 			Namespace: pdb.namespace,
@@ -324,7 +324,7 @@ func (pdb RDSPostgresDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 
 func (pdb RDSPostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
-		"dbsecret": {
+		"dbsecret": crv1alpha1.ObjectReference{
 			Kind:      "secret",
 			Name:      "dbsecret",
 			Namespace: pdb.namespace,
