@@ -225,7 +225,7 @@ func postgresRestoreCommand(pgHost, username, password string, dbList []string, 
 		"-c",
 		fmt.Sprintf(`
 		export PGHOST=%s
-		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | psql -q -U "${PGUSER}" %s
+		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | sed 's/LOCALE/LC_COLLATE/' | psql -q -U "${PGUSER}" %s
 		`, pgHost, profile, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID), dbList[0]),
 	}, nil
 }
