@@ -208,7 +208,7 @@ func findRDSEndpoint(ctx context.Context, rdsCli *rds.RDS, instanceID string) (s
 	return *dbInstance.DBInstances[0].Endpoint.Address, nil
 }
 
-// findRDSEndpoint returns the database engine version
+// findRDSDBEngineVersion returns the database engine version
 func findRDSDBEngineVersion(ctx context.Context, rdsCli *rds.RDS, instanceID string) (string, error) {
 	dbInstance, err := rdsCli.DescribeDBInstances(ctx, instanceID)
 	if err != nil {
