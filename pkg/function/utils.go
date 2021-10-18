@@ -208,6 +208,20 @@ func findRDSEndpoint(ctx context.Context, rdsCli *rds.RDS, instanceID string) (s
 	return *dbInstance.DBInstances[0].Endpoint.Address, nil
 }
 
+// rdsDBEngineVersion returns the database engine version
+func rdsDBEngineVersion(ctx context.Context, rdsCli *rds.RDS, instanceID string) (string, error) {
+	dbInstance, err := rdsCli.DescribeDBInstances(ctx, instanceID)
+	if err != nil {
+		return "", err
+	}
+
+	if (len(dbInstance.DBInstances) == 0) || (dbInstance.DBInstances[0].EngineVersion == nil) {
+		return "", errors.Errorf("DB Instance's Engine version is nil")
+	}
+
+	return *dbInstance.DBInstances[0].EngineVersion, nil
+}
+
 func createPostgresSecret(cli kubernetes.Interface, name, namespace, username, password string) error {
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
