@@ -49,12 +49,13 @@ func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS,
 }
 
 // CreateDBInstanceWithContext
-func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, username, password string, sgIDs []string) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, engineVersion, username, password string, sgIDs []string) (*rds.CreateDBInstanceOutput, error) {
 	dbi := &rds.CreateDBInstanceInput{
 		AllocatedStorage:     &storage,
 		DBInstanceIdentifier: &instanceID,
 		VpcSecurityGroupIds:  convertSGIDs(sgIDs),
 		DBInstanceClass:      &instanceClass,
+		EngineVersion:        &engineVersion,
 		Engine:               &engine,
 		MasterUsername:       &username,
 		MasterUserPassword:   &password,
