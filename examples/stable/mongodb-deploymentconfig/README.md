@@ -14,7 +14,7 @@ cluster's DeploymentConfig resources.
 
 - Setup OpenShift, you can follow steps mentioned below
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.68.0 installed in your cluster in namespace `kanister`
+- Kanister controller version 0.69.0 installed in your cluster in namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 **Note**
@@ -90,6 +90,18 @@ data operations such as backup should go. This is stored as a `profiles.cr.kanis
 *CustomResource (CR)* which is then referenced in Kanister ActionSets. Every ActionSet
 requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
 can be shared between Kanister-enabled application instances.
+
+
+**NOTE:**
+
+If MongoDB chart is installed specifying existing secret by setting parameter `--set
+auth.existingSecret=<mongo-secret-name>` you will need to modify the secret name in
+the blueprint `mongo-blueprint.yaml` at following places:
+
+```bash
+actions.backup.phases[0].objects.mongosecret.name: <mongo-secret-name>
+actions.restore.phases[0].objects.mongosecret.name: <mongo-secret-name>
+```
 
 ### Create Blueprint
 

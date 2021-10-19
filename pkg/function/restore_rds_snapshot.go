@@ -20,6 +20,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	rdserr "github.com/aws/aws-sdk-go/service/rds"
+	"github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -65,8 +66,9 @@ const (
 	// PostgreSQLEngine stores the postgres appname
 	PostgreSQLEngine RDSDBEngine = "PostgreSQL"
 
-	restoredAuroraInstanceSuffix = "instance-1"
-	defaultAuroraInstanceClass   = "db.r5.large"
+	restoredAuroraInstanceSuffix       = "instance-1"
+	defaultAuroraInstanceClass         = "db.r5.large"
+	RDSPostgresDBInstanceEngineVersion = "13.0"
 )
 
 type restoreRDSSnapshotFunc struct{}
@@ -167,7 +169,14 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 	}
 
 	dbEndpoint := *descOp.DBInstances[0].Endpoint.Address
-	if _, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, dbEndpoint, username, password, nil, backupArtifactPrefix, backupID, profile); err != nil {
+
+	// get the engine version
+	dbEngineVersion, err := rdsDBEngineVersion(ctx, rdsCli, instanceID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Couldn't find DBInstance Version")
+	}
+
+	if _, err = execDumpCommand(ctx, dbEngine, RestoreAction, namespace, dbEndpoint, username, password, nil, backupArtifactPrefix, backupID, profile, dbEngineVersion); err != nil {
 		return nil, errors.Wrapf(err, "Failed to restore RDS from dump. InstanceID=%s", instanceID)
 	}
 
@@ -177,9 +186,25 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 }
 
 // nolint:unparam
-func postgresRestoreCommand(pgHost, username, password string, dbList []string, backupArtifactPrefix, backupID string, profile []byte) ([]string, error) {
+func postgresRestoreCommand(pgHost, username, password string, dbList []string, backupArtifactPrefix, backupID string, profile []byte, dbEngineVersion string) ([]string, error) {
+	replaceCommand := ""
 	if len(dbList) == 0 {
 		return nil, errors.New("No database found. Atleast one db needed to connect")
+	}
+
+	// check if PostgresDB version < 13
+	v1, err := version.NewVersion(dbEngineVersion)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Couldn't find DBInstance Version")
+	}
+	// Add Constraints
+	constraints, err := version.NewConstraint("< " + RDSPostgresDBInstanceEngineVersion)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Couldn't add constraint to DBInstance Version")
+	}
+	// Verify Constraints
+	if constraints.Check(v1) {
+		replaceCommand = " sed 's/LOCALE/LC_COLLATE/' |"
 	}
 
 	return []string{
@@ -191,8 +216,8 @@ func postgresRestoreCommand(pgHost, username, password string, dbList []string, 
 		"-c",
 		fmt.Sprintf(`
 		export PGHOST=%s
-		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | psql -q -U "${PGUSER}" %s
-		`, pgHost, profile, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID), dbList[0]),
+		kando location pull --profile '%s' --path "%s" - | gunzip -c -f |%s psql -q -U "${PGUSER}" %s
+		`, pgHost, profile, fmt.Sprintf("%s/%s", backupArtifactPrefix, backupID), replaceCommand, dbList[0]),
 	}, nil
 }
 
