@@ -91,6 +91,18 @@ data operations such as backup should go. This is stored as a `profiles.cr.kanis
 requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
 can be shared between Kanister-enabled application instances.
 
+
+**NOTE:**
+
+If MongoDB chart is installed specifying existing secret by setting parameter `--set
+auth.existingSecret=<mongo-secret-name>` you will need to modify the secret name in
+the blueprint `mongo-blueprint.yaml` at following places:
+
+```bash
+actions.backup.phases[0].objects.mongosecret.name: <mongo-secret-name>
+actions.restore.phases[0].objects.mongosecret.name: <mongo-secret-name>
+```
+
 ### Create Blueprint
 
 Create Blueprint in the same namespace as the controller (`kanister`)
