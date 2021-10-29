@@ -438,15 +438,21 @@ func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
 		c.Skip("Test only applicable to S3")
 	}
 	ctx := context.Background()
-	_, err := s.provider.ListBuckets(ctx)
+	origBucket, err := s.provider.GetBucket(ctx, testBucketName)
 	c.Assert(err, IsNil)
+	c.Assert(origBucket, NotNil)
+	ol, oerr := origBucket.ListObjects(ctx)
+	c.Assert(oerr, IsNil)
+	c.Assert(ol, NotNil)
+
 	b, err := GetOrCreateBucket(ctx, s.provider, testBucketName)
 	c.Assert(err, IsNil)
 	c.Assert(b, NotNil)
-
 	l, err := b.ListObjects(ctx)
 	c.Assert(err, IsNil)
 	c.Assert(l, NotNil)
+	c.Assert(len(l), Equals, len(ol))
+
 	objectName := s.suiteDirPrefix + "foo"
 	err = b.PutBytes(ctx, objectName, []byte("content"), nil)
 	c.Assert(err, IsNil)
