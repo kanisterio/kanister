@@ -441,18 +441,29 @@ func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
 	origBucket, err := s.provider.GetBucket(ctx, testBucketName)
 	c.Assert(err, IsNil)
 	c.Assert(origBucket, NotNil)
-	ol, oerr := origBucket.ListObjects(ctx)
-	c.Assert(oerr, IsNil)
-	c.Assert(ol, NotNil)
+
+	//Creating an object in existing bucket to check it later when we call GetOrCreateBucket,
+	//to see if existing bucket was returned
+	orgBucketObjectName := s.suiteDirPrefix + "GetRegions"
+	err = origBucket.PutBytes(ctx, orgBucketObjectName, []byte("content-getRegions"), nil)
+	c.Assert(err, IsNil)
+	defer func() {
+		err = origBucket.Delete(ctx, orgBucketObjectName)
+		c.Assert(err, IsNil)
+	}()
 
 	b, err := GetOrCreateBucket(ctx, s.provider, testBucketName)
 	c.Assert(err, IsNil)
 	c.Assert(b, NotNil)
+
+	//Checking if same bucket was returned by checking if object
+	//that was created previously exists in newly retrieved bucket
+	_, _, err = b.Get(ctx, orgBucketObjectName)
+	c.Assert(err, IsNil)
+
 	l, err := b.ListObjects(ctx)
 	c.Assert(err, IsNil)
 	c.Assert(l, NotNil)
-	c.Assert(len(l), Equals, len(ol))
-
 	objectName := s.suiteDirPrefix + "foo"
 	err = b.PutBytes(ctx, objectName, []byte("content"), nil)
 	c.Assert(err, IsNil)
