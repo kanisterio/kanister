@@ -18,7 +18,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.68.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.69.0
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -47,7 +47,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.68.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.69.0
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -61,7 +61,7 @@ actions:
           export PGUSER='postgres'
           export PGPASSWORD='{{ index .Phases.pgRestore.Secrets.pgSecret.Data "postgresql-password" | toString }}'
           BACKUP_LOCATION={{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}
-          kando location pull --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" - | gunzip -c -f | psql -q -U "${PGUSER}"
+          kando location pull --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" - | gunzip -c -f | sed 's/LOCALE/LC_COLLATE/' | psql -q -U "${PGUSER}"
   delete:
     inputArtifactNames:
       - cloudObject
@@ -69,7 +69,7 @@ actions:
     - func: KubeTask
       name: deleteDump
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.68.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.69.0
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash

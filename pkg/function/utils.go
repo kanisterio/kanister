@@ -28,7 +28,7 @@ import (
 const (
 	// FunctionOutputVersion returns version
 	FunctionOutputVersion     = "version"
-	kanisterToolsImage        = "ghcr.io/kanisterio/kanister-tools:0.68.0"
+	kanisterToolsImage        = "ghcr.io/kanisterio/kanister-tools:0.69.0"
 	kanisterToolsImageEnvName = "KANISTER_TOOLS"
 )
 
@@ -206,6 +206,20 @@ func findRDSEndpoint(ctx context.Context, rdsCli *rds.RDS, instanceID string) (s
 		return "", errors.Errorf("Received nil endpoint")
 	}
 	return *dbInstance.DBInstances[0].Endpoint.Address, nil
+}
+
+// rdsDBEngineVersion returns the database engine version
+func rdsDBEngineVersion(ctx context.Context, rdsCli *rds.RDS, instanceID string) (string, error) {
+	dbInstance, err := rdsCli.DescribeDBInstances(ctx, instanceID)
+	if err != nil {
+		return "", err
+	}
+
+	if (len(dbInstance.DBInstances) == 0) || (dbInstance.DBInstances[0].EngineVersion == nil) {
+		return "", errors.Errorf("DB Instance's Engine version is nil")
+	}
+
+	return *dbInstance.DBInstances[0].EngineVersion, nil
 }
 
 func createPostgresSecret(cli kubernetes.Interface, name, namespace, username, password string) error {

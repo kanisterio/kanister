@@ -40,7 +40,7 @@ type PostgresDB struct {
 	namespace string
 }
 
-// Last tested chart version "10.3.15"
+// Last tested chart version "10.12.3". Also we are using postgres version 13.4
 func NewPostgresDB(name string, subPath string) App {
 	return &PostgresDB{
 		name: name,
@@ -53,6 +53,7 @@ func NewPostgresDB(name string, subPath string) App {
 				"image.registry":                        "ghcr.io",
 				"image.repository":                      "kanisterio/postgresql",
 				"image.tag":                             "latest",
+				"image.pullPolicy":                      "Always",
 				"postgresqlPassword":                    "test@54321",
 				"postgresqlExtendedConf.archiveCommand": "envdir /bitnami/postgresql/data/env wal-e wal-push %p",
 				"postgresqlExtendedConf.archiveMode":    "true",

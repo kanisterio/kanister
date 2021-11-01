@@ -108,6 +108,8 @@ func testLogMessage(c *C, msg string, print func(string, ...field.M), fields ...
 }
 
 func (s *LogSuite) TestLogLevel(c *C) {
+	os.Unsetenv(LevelEnvName)
+	initLogLevel()
 	log.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339Nano})
 
 	var output bytes.Buffer
@@ -122,8 +124,11 @@ func (s *LogSuite) TestLogLevel(c *C) {
 	c.Assert(output.String(), HasLen, 0)
 
 	//Check if debug level log is printed when log level is debug
-	os.Setenv("LOG_LEVEL", "debug")
-	defer os.Unsetenv("LOG_LEVEL")
+	os.Setenv(LevelEnvName, "debug")
+	defer func() {
+		os.Unsetenv(LevelEnvName)
+		initLogLevel()
+	}()
 	initLogLevel()
 	Debug().WithContext(ctx).Print("Testing debug level")
 	cerr := json.Unmarshal(output.Bytes(), &entry)

@@ -14,11 +14,11 @@ actions:
       objects:
         mongosecret:
           kind: Secret
-          name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb'
+          name: '{{ .StatefulSet.Name }}'
           namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.68.0
+        image: ghcr.io/kanisterio/mongodb:0.69.0
         command:
           - bash
           - -o
@@ -27,7 +27,7 @@ actions:
           - pipefail
           - -c
           - |
-            host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+            host='{{ .StatefulSet.Name }}-0.{{ .StatefulSet.Name }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
             dbPassword='{{ index .Phases.takeConsistentBackup.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
             dump_cmd="mongodump --oplog --gzip --archive --host ${host} -u root -p ${dbPassword}"
             ${dump_cmd} | kando location push --profile '{{ toJson .Profile }}' --path '/mongodb-replicaset-backups/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/rs_backup.gz' -
@@ -40,11 +40,11 @@ actions:
       objects:
         mongosecret:
           kind: Secret
-          name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb'
+          name: '{{ .StatefulSet.Name }}'
           namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: ghcr.io/kanisterio/mongodb:0.68.0
+        image: ghcr.io/kanisterio/mongodb:0.69.0
         command:
           - bash
           - -o
@@ -53,7 +53,7 @@ actions:
           - pipefail
           - -c
           - |
-            host='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-0.{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-mongodb-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+            host='{{ .StatefulSet.Name }}-0.{{ .StatefulSet.Name }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
             dbPassword='{{ index .Phases.pullFromBlobStore.Secrets.mongosecret.Data "mongodb-root-password" | toString }}'
             restore_cmd="mongorestore --gzip --archive --oplogReplay --drop --host ${host} -u root -p ${dbPassword}"
             kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.path }}' - | ${restore_cmd}
@@ -65,7 +65,7 @@ actions:
       name: deleteFromBlobStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: ghcr.io/kanisterio/mongodb:0.68.0
+        image: ghcr.io/kanisterio/mongodb:0.69.0
         command:
           - bash
           - -o
