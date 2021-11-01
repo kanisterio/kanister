@@ -63,7 +63,7 @@ func cloneSnapshotClass(ctx context.Context, dynCli dynamic.Interface, snapClass
 	for _, key := range excludeAnnotations {
 		delete(existingAnnotations, key)
 	}
-	usNew := UnstructuredVolumeSnapshotClass(snapClassGVR, targetClassName, sourceSnapClass.Driver, newDeletionPolicy)
+	usNew := UnstructuredVolumeSnapshotClass(snapClassGVR, targetClassName, sourceSnapClass.Driver, newDeletionPolicy, sourceSnapClass.Parameters)
 	// Set Annotations/Labels
 	usNew.SetAnnotations(existingAnnotations)
 	usNew.SetLabels(map[string]string{CloneVolumeSnapshotClassLabelName: sourceClassName})
@@ -401,7 +401,7 @@ func UnstructuredVolumeSnapshotContent(gvr schema.GroupVersionResource, name, sn
 	}
 }
 
-func UnstructuredVolumeSnapshotClass(gvr schema.GroupVersionResource, name, driver, deletionPolicy string) *unstructured.Unstructured {
+func UnstructuredVolumeSnapshotClass(gvr schema.GroupVersionResource, name, driver, deletionPolicy string, params map[string]string) *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
@@ -411,6 +411,15 @@ func UnstructuredVolumeSnapshotClass(gvr schema.GroupVersionResource, name, driv
 			},
 			VolSnapClassBetaDriverKey: driver,
 			"deletionPolicy":          deletionPolicy,
+			"parameters":              Mss2msi(params),
 		},
 	}
+}
+
+func Mss2msi(in map[string]string) map[string]interface{} {
+	paramsMap := map[string]interface{}{}
+	for k, v := range in {
+		paramsMap[k] = v
+	}
+	return paramsMap
 }
