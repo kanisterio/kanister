@@ -417,6 +417,9 @@ func UnstructuredVolumeSnapshotClass(gvr schema.GroupVersionResource, name, driv
 }
 
 func Mss2msi(in map[string]string) map[string]interface{} {
+	if in == nil {
+		return nil
+	}
 	paramsMap := map[string]interface{}{}
 	for k, v := range in {
 		paramsMap[k] = v
