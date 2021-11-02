@@ -416,6 +416,8 @@ func UnstructuredVolumeSnapshotClass(gvr schema.GroupVersionResource, name, driv
 	}
 }
 
+// Mss2msi takes a map of string:string and returns a string:inteface map.
+// This is useful since the unstructured type take map[string]interface{} as values.
 func Mss2msi(in map[string]string) map[string]interface{} {
 	if in == nil {
 		return nil
