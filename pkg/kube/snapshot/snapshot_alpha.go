@@ -74,7 +74,7 @@ func (sna *SnapshotAlpha) CloneVolumeSnapshotClass(ctx context.Context, sourceCl
 	for _, key := range excludeAnnotations {
 		delete(existingAnnotations, key)
 	}
-	usNew := UnstructuredVolumeSnapshotClassAlpha(targetClassName, sourceSnapClass.Snapshotter, newDeletionPolicy)
+	usNew := UnstructuredVolumeSnapshotClassAlpha(targetClassName, sourceSnapClass.Snapshotter, newDeletionPolicy, sourceSnapClass.Parameters)
 	// Set Annotations/Labels
 	usNew.SetAnnotations(existingAnnotations)
 	usNew.SetLabels(map[string]string{CloneVolumeSnapshotClassLabelName: sourceClassName})
@@ -421,7 +421,7 @@ func UnstructuredVolumeSnapshotContentAlpha(name, snapshotName, snapshotNs, dele
 	}
 }
 
-func UnstructuredVolumeSnapshotClassAlpha(name, driver, deletionPolicy string) *unstructured.Unstructured {
+func UnstructuredVolumeSnapshotClassAlpha(name, driver, deletionPolicy string, params map[string]string) *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
@@ -431,6 +431,7 @@ func UnstructuredVolumeSnapshotClassAlpha(name, driver, deletionPolicy string) *
 			},
 			VolSnapClassAlphaDriverKey: driver,
 			"deletionPolicy":           deletionPolicy,
+			"parameters":               Mss2msi(params),
 		},
 	}
 }
