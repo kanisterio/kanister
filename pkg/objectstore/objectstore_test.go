@@ -442,8 +442,8 @@ func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(origBucket, NotNil)
 
-	//Creating an object in existing bucket to check it later when we call GetOrCreateBucket,
-	//to see if existing bucket was returned
+	// Creating an object in existing bucket to check it later when we call GetOrCreateBucket,
+	// to see if existing bucket was returned
 	orgBucketObjectName := s.suiteDirPrefix + "GetRegions"
 	err = origBucket.PutBytes(ctx, orgBucketObjectName, []byte("content-getRegions"), nil)
 	c.Assert(err, IsNil)
@@ -456,8 +456,8 @@ func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(b, NotNil)
 
-	//Checking if same bucket was returned by checking if object
-	//that was created previously exists in newly retrieved bucket
+	// Checking if same bucket was returned by checking if object
+	// that was created previously exists in newly retrieved bucket
 	_, _, err = b.Get(ctx, orgBucketObjectName)
 	c.Assert(err, IsNil)
 
