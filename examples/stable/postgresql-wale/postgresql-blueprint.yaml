@@ -221,17 +221,6 @@ actions:
             mv ${PGDATA}/kanister-restore/* ${PGDATA}/
             rm -fr ${PGDATA}/kanister-restore
 
-            # Create the recovery file that will apply the WAL files.
-            cat << EOF > "${PGDATA}"/recovery.conf
-            restore_command = 'envdir "${PGDATA}/env" wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
-            {{- if .Options }}
-            {{- if .Options.pitr }}
-            recovery_target_time = '{{ toDate "2006-01-02T15:04:05Z" .Options.pitr | date "2006-01-02 15:04:05 GMT" }}'
-            {{- end }}
-            {{- end }}
-            EOF
-            sync
-
             # Create required configuration dir/config files
             # Create empty conf.d directory
             if [ ! -d $PGDATA/conf.d ]; then
@@ -240,6 +229,19 @@ actions:
 
             # Create default postgresql.conf
             cp /opt/bitnami/postgresql/share/postgresql.conf.sample $PGDATA/postgresql.conf
+
+            # Create the recovery file that will apply the WAL files.
+            touch $PGDATA/recovery.signal
+            cat << EOF >> "${PGDATA}"/postgresql.conf
+            restore_command = 'envdir "${PGDATA}/env" wal-e --s3-prefix ${old_wale_prefix} wal-fetch "%f" "%p"'
+            hot_standby = off
+            {{- if .Options }}
+            {{- if .Options.pitr }}
+            recovery_target_time = '{{ toDate "2006-01-02T15:04:05Z" .Options.pitr | date "2006-01-02 15:04:05 GMT" }}'
+            {{- end }}
+            {{- end }}
+            EOF
+            sync
 
             # Create default pg_hba.conf
             cat << EOF > $PGDATA/pg_hba.conf
@@ -264,6 +266,7 @@ actions:
             timeline={{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}
             wale_s3_prefix="s3://{{ .Profile.Location.Bucket }}/{{ .ArtifactsIn.manifest.KeyValue.prefix }}/${timeline}"
             echo "${wale_s3_prefix}" > "${env_wal_prefix}"
+            rm $PGDATA/recovery.signal
     - func: ScaleWorkload
       name: restartPod
       args:
