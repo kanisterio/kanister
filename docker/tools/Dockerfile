@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4-212
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.5-204
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \
@@ -19,11 +19,5 @@ RUN microdnf update && microdnf install shadow-utils httpd-tools && \
   adduser -U kanister -u 1000 && \
   microdnf remove shadow-utils && \
   microdnf clean all
-
-RUN microdnf install yum \
-  && yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical \
-  && yum clean all \
-  && microdnf remove yum \
-  && microdnf clean all
 
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]
