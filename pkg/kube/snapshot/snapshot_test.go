@@ -195,23 +195,28 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
 	)
 	dynCli := dynfake.NewSimpleDynamicClient(scheme)
 
+	fakeParams := map[string]string{
+		"param1": "value1",
+		"param2": "value2",
+	}
+
 	for _, tc := range []struct {
 		sourceSnapClassSpec *unstructured.Unstructured
 		snapClassGVR        schema.GroupVersionResource
 		snapshotter         snapshot.Snapshotter
 	}{
 		{
-			sourceSnapClassSpec: snapshot.UnstructuredVolumeSnapshotClassAlpha(fakeClass, fakeDriver, snapshot.DeletionPolicyDelete),
+			sourceSnapClassSpec: snapshot.UnstructuredVolumeSnapshotClassAlpha(fakeClass, fakeDriver, snapshot.DeletionPolicyDelete, fakeParams),
 			snapClassGVR:        v1alpha1.VolSnapClassGVR,
 			snapshotter:         snapshot.NewSnapshotAlpha(fakeCli, dynCli),
 		},
 		{
-			sourceSnapClassSpec: snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, fakeClass, fakeDriver, snapshot.DeletionPolicyDelete),
+			sourceSnapClassSpec: snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, fakeClass, fakeDriver, snapshot.DeletionPolicyDelete, fakeParams),
 			snapClassGVR:        v1beta1.VolSnapClassGVR,
 			snapshotter:         snapshot.NewSnapshotBeta(fakeCli, dynCli),
 		},
 		{
-			sourceSnapClassSpec: snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, fakeClass, fakeDriver, snapshot.DeletionPolicyDelete),
+			sourceSnapClassSpec: snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, fakeClass, fakeDriver, snapshot.DeletionPolicyDelete, fakeParams),
 			snapClassGVR:        snapshot.VolSnapClassGVR,
 			snapshotter:         snapshot.NewSnapshotStable(fakeCli, dynCli),
 		},
@@ -234,6 +239,9 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotClassCloneFake(c *C) {
 		// Annotations are set correctly
 		c.Assert(createdVSC.GetAnnotations(), DeepEquals, map[string]string{annotationKeyToKeep: "true"})
 		c.Assert(createdVSC.GetLabels(), DeepEquals, map[string]string{snapshot.CloneVolumeSnapshotClassLabelName: tc.sourceSnapClassSpec.GetName()})
+
+		// Parameters are set correctly
+		c.Assert(createdVSC.Object["parameters"], DeepEquals, snapshot.Mss2msi(fakeParams))
 
 		// Lookup by old annotation correctly returns the source VSC
 		scWithOldAnnotation, err := tc.snapshotter.GetVolumeSnapshotClass(ctx, annotationKeyToRemove, "true", fakeSC)
@@ -268,7 +276,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		fakeSs            snapshot.Snapshotter
 	}{
 		{
-			snapClassSpec:     snapshot.UnstructuredVolumeSnapshotClassAlpha(fakeClass, fakeDriver, deletionPolicy),
+			snapClassSpec:     snapshot.UnstructuredVolumeSnapshotClassAlpha(fakeClass, fakeDriver, deletionPolicy, nil),
 			snapClassGVR:      v1alpha1.VolSnapClassGVR,
 			contentSpec:       snapshot.UnstructuredVolumeSnapshotContentAlpha(fakeContentName, fakeSnapshotName, defaultNamespace, deletionPolicy, fakeDriver, fakeSnapshotHandle, fakeClass),
 			contentGVR:        v1alpha1.VolSnapContentGVR,
@@ -278,7 +286,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 			fakeSs:            snapshot.NewSnapshotAlpha(nil, dynCli),
 		},
 		{
-			snapClassSpec: snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, fakeClass, fakeDriver, deletionPolicy),
+			snapClassSpec: snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, fakeClass, fakeDriver, deletionPolicy, nil),
 			snapClassGVR:  v1beta1.VolSnapClassGVR,
 			contentSpec:   snapshot.UnstructuredVolumeSnapshotContent(v1beta1.VolSnapContentGVR, fakeContentName, fakeSnapshotName, defaultNamespace, deletionPolicy, fakeDriver, fakeSnapshotHandle, fakeClass),
 			contentGVR:    v1beta1.VolSnapContentGVR,
@@ -289,7 +297,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 			fakeSs:            snapshot.NewSnapshotBeta(nil, dynCli),
 		},
 		{
-			snapClassSpec: snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, fakeClass, fakeDriver, deletionPolicy),
+			snapClassSpec: snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, fakeClass, fakeDriver, deletionPolicy, nil),
 			snapClassGVR:  snapshot.VolSnapClassGVR,
 			contentSpec:   snapshot.UnstructuredVolumeSnapshotContent(snapshot.VolSnapContentGVR, fakeContentName, fakeSnapshotName, defaultNamespace, deletionPolicy, fakeDriver, fakeSnapshotHandle, fakeClass),
 			contentGVR:    snapshot.VolSnapContentGVR,
@@ -625,9 +633,9 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 			annotationKey:    "test-1",
 			annotationValue:  "true",
 			storageClassName: fakeSC,
-			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-1", fakeDriver, "Delete"),
-			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-1", fakeDriver, "Delete"),
-			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-1", fakeDriver, "Delete"),
+			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-1", fakeDriver, "Delete", nil),
+			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-1", fakeDriver, "Delete", nil),
+			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-1", fakeDriver, "Delete", nil),
 			testKey:          "test-1",
 			testValue:        "true",
 			check:            IsNil,
@@ -637,9 +645,9 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 			annotationKey:    "",
 			annotationValue:  "",
 			storageClassName: fakeSC,
-			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-2", fakeDriver, "Delete"),
-			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-2", fakeDriver, "Delete"),
-			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-2", fakeDriver, "Delete"),
+			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-2", fakeDriver, "Delete", nil),
+			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-2", fakeDriver, "Delete", nil),
+			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-2", fakeDriver, "Delete", nil),
 			testKey:          "",
 			testValue:        "",
 			check:            IsNil,
@@ -649,9 +657,9 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 			annotationKey:    "test-3",
 			annotationValue:  "false",
 			storageClassName: fakeSC,
-			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-2", fakeDriver, "Delete"),
-			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-2", fakeDriver, "Delete"),
-			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-2", fakeDriver, "Delete"),
+			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-2", fakeDriver, "Delete", nil),
+			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-2", fakeDriver, "Delete", nil),
+			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-2", fakeDriver, "Delete", nil),
 			testKey:          "invalid",
 			testValue:        "false",
 			check:            NotNil,
@@ -661,9 +669,9 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 			annotationKey:    "test-4",
 			annotationValue:  "false",
 			storageClassName: fakeSC,
-			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-4", fakeDriver, "Delete"),
-			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-4", fakeDriver, "Delete"),
-			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-4", fakeDriver, "Delete"),
+			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-4", fakeDriver, "Delete", nil),
+			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-4", fakeDriver, "Delete", nil),
+			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-4", fakeDriver, "Delete", nil),
 			testKey:          "test-4",
 			testValue:        "true",
 			check:            NotNil,
@@ -673,9 +681,9 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 			annotationKey:    "test-5",
 			annotationValue:  "true",
 			storageClassName: "badStorageClass",
-			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-5", fakeDriver, "Delete"),
-			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-5", fakeDriver, "Delete"),
-			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-5", fakeDriver, "Delete"),
+			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-5", fakeDriver, "Delete", nil),
+			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-5", fakeDriver, "Delete", nil),
+			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-5", fakeDriver, "Delete", nil),
 			testKey:          "test-5",
 			testValue:        "true",
 			check:            NotNil,
@@ -685,9 +693,9 @@ func (s *SnapshotTestSuite) TestGetVolumeSnapshotClassFake(c *C) {
 			annotationKey:    "test-6",
 			annotationValue:  "true",
 			storageClassName: fakeSC,
-			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-6", "driverMismatch", "Delete"),
-			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-6", "driverMismatch", "Delete"),
-			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-6", "driverMismatch", "Delete"),
+			snapClassAlpha:   snapshot.UnstructuredVolumeSnapshotClassAlpha("test-6", "driverMismatch", "Delete", nil),
+			snapClassBeta:    snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "test-6", "driverMismatch", "Delete", nil),
+			snapClassStable:  snapshot.UnstructuredVolumeSnapshotClass(snapshot.VolSnapClassGVR, "test-6", "driverMismatch", "Delete", nil),
 			testKey:          "test-6",
 			testValue:        "true",
 			check:            NotNil,
@@ -1024,11 +1032,11 @@ func (s *SnapshotTestSuite) TestCreateFromSourceStable(c *C) {
 
 func (s *SnapshotTestSuite) TestGetSnapshotClassbyAnnotation(c *C) {
 	ctx := context.Background()
-	vsc1 := snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "vsc1", "driver", snapshot.DeletionPolicyDelete)
+	vsc1 := snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "vsc1", "driver", snapshot.DeletionPolicyDelete, nil)
 	vsc1.SetAnnotations(map[string]string{
 		"key": "value",
 	})
-	vsc2 := snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "vsc2", "driver", snapshot.DeletionPolicyDelete)
+	vsc2 := snapshot.UnstructuredVolumeSnapshotClass(v1beta1.VolSnapClassGVR, "vsc2", "driver", snapshot.DeletionPolicyDelete, nil)
 	sc1 := &scv1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "sc1",
