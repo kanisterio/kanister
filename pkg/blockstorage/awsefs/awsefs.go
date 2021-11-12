@@ -349,6 +349,10 @@ func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetD
 		if err != nil {
 			return err
 		}
+		err = e.waitUntilMountTargetIsDeleted(ctx, *mt.MountTargetId)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
