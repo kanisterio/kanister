@@ -24,7 +24,7 @@ $ helm repo update
 
 # If you are using helm v3
 $ kubectl create ns postgres-test
-$ helm install my-release --namespace postgres-test bitnami/postgresql
+$ helm install my-release --set primary.persistence.size=1Gi,volumePermissions.enabled=true--namespace postgres-test bitnami/postgresql
 
 # If you are using helm v2
 $ helm install --name my-release --namespace postgres-test bitnami/postgresql
