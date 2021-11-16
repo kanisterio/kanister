@@ -133,6 +133,13 @@ func (e *efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*bl
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get recently create EFS instance")
 	}
+	_, mountTargets, err := filterAndGetMountTargetsFromTags(blockstorage.KeyValueToMap(volume.Tags))
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get filtered tags and mount targets")
+	}
+	if err = e.createMountTargets(ctx, vol.ID, mountTargets); err != nil {
+		return nil, errors.Wrap(err, "Failed to create mount targets")
+	}
 	return vol, nil
 }
 
@@ -254,12 +261,12 @@ func parseMountTargetValue(value string) (*mountTarget, error) {
 	// Example value:
 	// subnet-123+securityGroup-1+securityGroup-2
 	tokens := strings.Split(value, securityGroupSeperator)
-	if len(tokens) <= 1 {
+	if len(tokens) < 1 {
 		return nil, errors.New("Malformed string for mount target values")
 	}
 	subnetID := tokens[0]
 	sgs := make([]string, 0)
-	if len(tokens[1]) != 0 {
+	if len(tokens) > 1 {
 		sgs = append(sgs, tokens[1:]...)
 	}
 	return &mountTarget{
@@ -346,6 +353,10 @@ func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetD
 		req := &awsefs.DeleteMountTargetInput{}
 		req.SetMountTargetId(*mt.MountTargetId)
 		_, err := e.DeleteMountTargetWithContext(ctx, req)
+		if err != nil {
+			return err
+		}
+		err = e.waitUntilMountTargetIsDeleted(ctx, *mt.MountTargetId)
 		if err != nil {
 			return err
 		}
