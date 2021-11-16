@@ -34,6 +34,7 @@ const (
 type IngressMgr interface {
 	List(ctx context.Context, ns string) (runtime.Object, error)
 	Get(ctx context.Context, ns, name string) (runtime.Object, error)
+	IngressPath(ctx context.Context, ns, releaseName string) (string, error)
 }
 
 func NewIngressMgr(ctx context.Context, kubeCli kubernetes.Interface) (IngressMgr, error) {
