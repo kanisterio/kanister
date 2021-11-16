@@ -114,6 +114,22 @@ func (e *efs) waitUntilMountTargetReady(ctx context.Context, mountTargetID strin
 	})
 }
 
+func (e *efs) waitUntilMountTargetIsDeleted(ctx context.Context, mountTargetID string) error {
+	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		req := &awsefs.DescribeMountTargetsInput{}
+		req.SetMountTargetId(mountTargetID)
+
+		_, err := e.DescribeMountTargetsWithContext(ctx, req)
+		if isMountTargetNotFound(err) {
+			return true, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		return false, nil
+	})
+}
+
 func (e *efs) waitUntilRestoreComplete(ctx context.Context, restoreJobID string) error {
 	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		req := &backup.DescribeRestoreJobInput{}
