@@ -28,15 +28,25 @@ import (
 )
 
 const (
-	ingressRes = "ingresses"
+	ingressRes        = "ingresses"
+	gatewaySvcName    = "gateway"
+	ingressNameSuffix = "ingress"
 )
 
+// IngressMgr is an abstraction over the behaviour of the ingress resources that
+// depend on the APIVersion of the ingress resource
 type IngressMgr interface {
+	// List can be used to list all the ingress resources from `ns` namespace
 	List(ctx context.Context, ns string) (runtime.Object, error)
+	// Get can be used to to get ingress resource with name `name` in `ns` namespace
 	Get(ctx context.Context, ns, name string) (runtime.Object, error)
+	// IngressPath can be used to get the backend path that is specified in the
+	// ingress resource in `ns` namespace and name `releaseName-ingress`
 	IngressPath(ctx context.Context, ns, releaseName string) (string, error)
 }
 
+// NewIngressMgr can be used to get the IngressMgr based on the APIVersion of the ingress resources on the cluster
+// so that, respecitve methods from that APIVersion can be called
 func NewIngressMgr(ctx context.Context, kubeCli kubernetes.Interface) (IngressMgr, error) {
 	exists, err := kube.IsResAvailableInGroupVersion(ctx, kubeCli.Discovery(), netv1.GroupName, netv1.SchemeGroupVersion.Version, ingressRes)
 	if err != nil {
