@@ -28,18 +28,20 @@ import (
 
 // Client is a wrapper for Client client
 type Client struct {
-	SubscriptionID  string
-	ResourceGroup   string
-	BaseURI         string
-	Authorizer      *autorest.BearerAuthorizer
-	DisksClient     *compute.DisksClient
-	SnapshotsClient *compute.SnapshotsClient
+	SubscriptionID   string
+	ResourceGroup    string
+	BaseURI          string
+	Authorizer       *autorest.BearerAuthorizer
+	DisksClient      *compute.DisksClient
+	SnapshotsClient  *compute.SnapshotsClient
+	CloudEnvironment string
 }
 
 // NewClient returns a Client struct
 func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	var resourceGroup string
 	var subscriptionID string
+	var cloudEnvironment string
 	var baseURI string
 	var ok bool
 	var err error
@@ -62,7 +64,16 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		}
 	}
 
-	authorizer, err := getAuthorizer(azure.PublicCloud, config)
+	if cloudEnvironment, ok = config[blockstorage.AzureCloudEnviornmentID]; !ok || cloudEnvironment == "" {
+		cloudEnvironment = "AzurePublicCloud"
+	}
+
+	env, err := azure.EnvironmentFromName(cloudEnvironment)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch the cloud environment.")
+	}
+
+	authorizer, err := getAuthorizer(env, config)
 	if err != nil {
 		return nil, err
 	}
