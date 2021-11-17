@@ -28,13 +28,12 @@ import (
 
 // Client is a wrapper for Client client
 type Client struct {
-	SubscriptionID   string
-	ResourceGroup    string
-	BaseURI          string
-	Authorizer       *autorest.BearerAuthorizer
-	DisksClient      *compute.DisksClient
-	SnapshotsClient  *compute.SnapshotsClient
-	CloudEnvironment string
+	SubscriptionID  string
+	ResourceGroup   string
+	BaseURI         string
+	Authorizer      *autorest.BearerAuthorizer
+	DisksClient     *compute.DisksClient
+	SnapshotsClient *compute.SnapshotsClient
 }
 
 // NewClient returns a Client struct
