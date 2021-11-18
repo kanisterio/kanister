@@ -41,13 +41,14 @@ func IsOSRouteGroupAvailable(ctx context.Context, cli discovery.DiscoveryInterfa
 }
 
 func IsResAvailableInGroupVersion(ctx context.Context, cli discovery.DiscoveryInterface, groupName, version, resource string) (bool, error) {
+	gv := fmt.Sprintf("%s/%s", groupName, version)
 	resList, err := cli.ServerPreferredResources()
 	if err != nil {
 		return false, err
 	}
 	for _, res := range resList {
 		for _, r := range res.APIResources {
-			if r.Name == resource && fmt.Sprintf("%s/%s", groupName, version) == res.GroupVersion {
+			if r.Name == resource && gv == res.GroupVersion {
 				return true, nil
 			}
 		}
