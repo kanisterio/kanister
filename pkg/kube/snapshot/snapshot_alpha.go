@@ -422,6 +422,19 @@ func UnstructuredVolumeSnapshotContentAlpha(name, snapshotName, snapshotNs, dele
 }
 
 func UnstructuredVolumeSnapshotClassAlpha(name, driver, deletionPolicy string, params map[string]string) *unstructured.Unstructured {
+	if params == nil {
+		return &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
+				"kind":       VolSnapClassKind,
+				"metadata": map[string]interface{}{
+					"name": name,
+				},
+				VolSnapClassAlphaDriverKey: driver,
+				"deletionPolicy":           deletionPolicy,
+			},
+		}
+	}
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": fmt.Sprintf("%s/%s", v1alpha1.GroupName, v1alpha1.Version),
