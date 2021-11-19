@@ -402,17 +402,21 @@ func UnstructuredVolumeSnapshotContent(gvr schema.GroupVersionResource, name, sn
 }
 
 func UnstructuredVolumeSnapshotClass(gvr schema.GroupVersionResource, name, driver, deletionPolicy string, params map[string]string) *unstructured.Unstructured {
-	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
-			"kind":       VolSnapClassKind,
-			"metadata": map[string]interface{}{
-				"name": name,
-			},
-			VolSnapClassBetaDriverKey: driver,
-			"deletionPolicy":          deletionPolicy,
-			"parameters":              Mss2msi(params),
+	obj := map[string]interface{}{
+		"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
+		"kind":       VolSnapClassKind,
+		"metadata": map[string]interface{}{
+			"name": name,
 		},
+		VolSnapClassBetaDriverKey: driver,
+		"deletionPolicy":          deletionPolicy,
+	}
+	if params != nil {
+		obj["parameters"] = Mss2msi(params)
+	}
+
+	return &unstructured.Unstructured{
+		Object: obj,
 	}
 }
 
