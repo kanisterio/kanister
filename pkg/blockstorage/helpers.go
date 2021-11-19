@@ -39,6 +39,7 @@ const (
 	AzureMigrateResourceGroup  = "AZURE_MIGRATE_RESOURCE_GROUP"
 	AzureActiveDirEndpoint     = "AZURE_AD_ENDPOINT"
 	AzureActiveDirResourceID   = "AZURE_AD_RESOURCE"
+	AzureCloudEnviornmentID    = "AZURE_CLOUD_ENV_ID"
 )
 
 // SanitizeTags are used to sanitize the tags
