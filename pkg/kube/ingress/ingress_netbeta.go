@@ -26,29 +26,30 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type IngressNetBeta struct {
+// NetworkingV1beta1 implements ingress.Manager interface
+type NetworkingV1beta1 struct {
 	kubeCli kubernetes.Interface
 }
 
-func NewIngressNetBeta(cli kubernetes.Interface) *IngressNetBeta {
-	return &IngressNetBeta{
+func NewNetworkingV1beta1(cli kubernetes.Interface) *NetworkingV1beta1 {
+	return &NetworkingV1beta1{
 		kubeCli: cli,
 	}
 }
 
 // List can be used to list all the ingress resources from `ns` namespace
-func (i *IngressNetBeta) List(ctx context.Context, ns string) (runtime.Object, error) {
+func (i *NetworkingV1beta1) List(ctx context.Context, ns string) (runtime.Object, error) {
 	return i.kubeCli.NetworkingV1beta1().Ingresses(ns).List(ctx, metav1.ListOptions{})
 }
 
 // Get can be used to to get ingress resource with name `name` in `ns` namespace
-func (i *IngressNetBeta) Get(ctx context.Context, ns, name string) (runtime.Object, error) {
+func (i *NetworkingV1beta1) Get(ctx context.Context, ns, name string) (runtime.Object, error) {
 	return i.kubeCli.NetworkingV1beta1().Ingresses(ns).Get(ctx, name, metav1.GetOptions{})
 }
 
 // IngressPath can be used to get the backend path that is specified in the
 // ingress resource in `ns` namespace and name `releaseName-ingress`
-func (i *IngressNetBeta) IngressPath(ctx context.Context, ns, releaseName string) (string, error) {
+func (i *NetworkingV1beta1) IngressPath(ctx context.Context, ns, releaseName string) (string, error) {
 	obj, err := i.Get(ctx, ns, fmt.Sprintf("%s-%s", releaseName, ingressNameSuffix))
 	if apierrors.IsNotFound(err) {
 		// Try the release name if the ingress does not exist.

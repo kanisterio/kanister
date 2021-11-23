@@ -33,9 +33,9 @@ const (
 	ingressNameSuffix = "ingress"
 )
 
-// IngressMgr is an abstraction over the behaviour of the ingress resources that
-// depend on the APIVersion of the ingress resource
-type IngressMgr interface {
+// Manager is an abstraction over the behaviour of the ingress resources that
+// depends on the APIVersion of the ingress resource
+type Manager interface {
 	// List can be used to list all the ingress resources from `ns` namespace
 	List(ctx context.Context, ns string) (runtime.Object, error)
 	// Get can be used to to get ingress resource with name `name` in `ns` namespace
@@ -45,15 +45,15 @@ type IngressMgr interface {
 	IngressPath(ctx context.Context, ns, releaseName string) (string, error)
 }
 
-// NewIngressMgr can be used to get the IngressMgr based on the APIVersion of the ingress resources on the cluster
+// NewManager can be used to get the Manager based on the APIVersion of the ingress resources on the cluster
 // so that, respecitve methods from that APIVersion can be called
-func NewIngressMgr(ctx context.Context, kubeCli kubernetes.Interface) (IngressMgr, error) {
+func NewManager(ctx context.Context, kubeCli kubernetes.Interface) (Manager, error) {
 	exists, err := kube.IsResAvailableInGroupVersion(ctx, kubeCli.Discovery(), netv1.GroupName, netv1.SchemeGroupVersion.Version, ingressRes)
 	if err != nil {
 		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
 	}
 	if exists {
-		return NewIngressNetV1(kubeCli), nil
+		return NewNetworkingV1(kubeCli), nil
 	}
 
 	exists, err = kube.IsResAvailableInGroupVersion(ctx, kubeCli.Discovery(), extensionsv1beta1.GroupName, extensionsv1beta1.SchemeGroupVersion.Version, ingressRes)
@@ -61,7 +61,7 @@ func NewIngressMgr(ctx context.Context, kubeCli kubernetes.Interface) (IngressMg
 		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
 	}
 	if exists {
-		return NewIngressExtBeta(kubeCli), nil
+		return NewExtensionsV1beta1(kubeCli), nil
 	}
 
 	exists, err = kube.IsResAvailableInGroupVersion(ctx, kubeCli.Discovery(), netv1beta1.GroupName, netv1beta1.SchemeGroupVersion.Version, ingressRes)
@@ -69,7 +69,7 @@ func NewIngressMgr(ctx context.Context, kubeCli kubernetes.Interface) (IngressMg
 		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
 	}
 	if exists {
-		return NewIngressNetBeta(kubeCli), nil
+		return NewNetworkingV1beta1(kubeCli), nil
 	}
 	return nil, errors.New("Ingress resources are not available")
 }
