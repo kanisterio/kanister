@@ -50,7 +50,7 @@ func (i *NetworkingV1) Get(ctx context.Context, ns, name string) (runtime.Object
 // IngressPath can be used to get the backend path that is specified in the
 // ingress resource in `ns` namespace and name `releaseName-ingress`
 func (i *NetworkingV1) IngressPath(ctx context.Context, ns, releaseName string) (string, error) {
-	obj, err := i.Get(ctx, ns, fmt.Sprintf("%s-%s", releaseName, ingressNameSuffix))
+	obj, err := i.Get(ctx, ns, fmt.Sprintf(ingressNameFormat, releaseName, ingressNameSuffix))
 	if apierrors.IsNotFound(err) {
 		// Try the release name if the ingress does not exist.
 		// This is possible if the user setup OIDC using the localhost IP

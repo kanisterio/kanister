@@ -31,6 +31,7 @@ const (
 	ingressRes        = "ingresses"
 	gatewaySvcName    = "gateway"
 	ingressNameSuffix = "ingress"
+	ingressNameFormat = "%s-%s"
 )
 
 // Manager is an abstraction over the behaviour of the ingress resources that
