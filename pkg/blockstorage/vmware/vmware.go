@@ -237,8 +237,12 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	if snap.SizeInBytes == 0 {
 		snap.SizeInBytes = volume.SizeInBytes
 	}
-
 	snap.Volume = &volume
+
+	if err = p.SetTags(ctx, snap, tags); err != nil {
+		return nil, errors.Wrap(err, "Failed to set tags")
+	}
+
 	return snap, nil
 }
 
@@ -337,7 +341,7 @@ func (p *FcdProvider) SetTags(ctx context.Context, resource interface{}, tags ma
 	case *blockstorage.Volume:
 		return p.setTagsVolume(ctx, r, tags)
 	case *blockstorage.Snapshot:
-		return nil
+		return p.setTagsSnapshot(ctx, r, tags)
 	default:
 		return errors.New("Unsupported type for resource")
 	}
@@ -358,6 +362,21 @@ func (p *FcdProvider) setTagsVolume(ctx context.Context, volume *blockstorage.Vo
 	return nil
 }
 
+func (p *FcdProvider) setTagsSnapshot(ctx context.Context, snapshot *blockstorage.Snapshot, tags map[string]string) error {
+	if snapshot == nil {
+		return errors.New("Empty snapshot")
+	}
+	task, err := p.Gom.UpdateMetadata(ctx, vimID(snapshot.ID), convertTagsToKeyValue(tags), nil)
+	if err != nil {
+		return errors.Wrap(err, "Failed to update metadata")
+	}
+	_, err = task.Wait(ctx, vmWareTimeout)
+	if err != nil {
+		return errors.Wrap(err, "Failed to wait on task")
+	}
+	return nil
+}
+
 // VolumesList is part of blockstorage.Provider
 func (p *FcdProvider) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	return nil, errors.New("Not implemented")
@@ -365,7 +384,28 @@ func (p *FcdProvider) VolumesList(ctx context.Context, tags map[string]string, z
 
 // SnapshotsList is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
-	return nil, errors.New("Not implemented")
+	var snapshotIDs []types.ID
+	var err error
+	if len(tags) == 1 {
+		for k, v := range tags {
+			snapshotIDs, err = p.Gom.ListObjectsAttachedToTag(ctx, types.ID{Id: ""}, k, v)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	var snapshots []*blockstorage.Snapshot
+	if len(snapshotIDs) > 0 {
+		for _, snapshotID := range snapshotIDs {
+			snapshot, err := p.SnapshotGet(ctx, snapshotID.Id)
+			if err != nil {
+				return nil, err
+			}
+			snapshots = append(snapshots, snapshot)
+		}
+
+	}
+	return snapshots, nil
 }
 
 func getEnvAsIntOrDefault(envKey string, def int) int {
