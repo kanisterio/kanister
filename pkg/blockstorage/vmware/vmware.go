@@ -366,7 +366,11 @@ func (p *FcdProvider) setTagsSnapshot(ctx context.Context, snapshot *blockstorag
 	if snapshot == nil {
 		return errors.New("Empty snapshot")
 	}
-	task, err := p.Gom.UpdateMetadata(ctx, vimID(snapshot.ID), convertTagsToKeyValue(tags), nil)
+	_, snapshotID, err := SplitSnapshotFullID(snapshot.ID)
+	if err != nil {
+		return errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
+	}
+	task, err := p.Gom.UpdateMetadata(ctx, vimID(snapshotID), convertTagsToKeyValue(tags), nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to update metadata")
 	}
