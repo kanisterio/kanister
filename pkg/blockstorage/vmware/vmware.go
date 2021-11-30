@@ -11,6 +11,8 @@ import (
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 	"github.com/vmware/govmomi/cns"
+	"github.com/vmware/govmomi/vapi/rest"
+	vapitags "github.com/vmware/govmomi/vapi/tags"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/methods"
 	"github.com/vmware/govmomi/vim25/soap"
@@ -44,6 +46,9 @@ const (
 	defaultRetryLimit = 30 * time.Minute
 
 	vmWareTimeoutMinEnv = "VMWARE_GOM_TIMEOUT_MIN"
+
+	catalogIdCategory = "kasten.io/catalogid"
+	k10TagPrefix      = "K10Identifier"
 )
 
 var (
@@ -52,8 +57,9 @@ var (
 
 // FcdProvider provides blockstorage.Provider
 type FcdProvider struct {
-	Gom *vslm.GlobalObjectManager
-	Cns *cns.Client
+	Gom        *vslm.GlobalObjectManager
+	Cns        *cns.Client
+	TagManager *vapitags.Manager
 }
 
 // NewProvider creates new VMWare FCD provider with the config.
@@ -96,10 +102,16 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create VSLM client")
 	}
+	c := rest.NewClient(cli)
+	tm := vapitags.NewManager(c)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create tag manager")
+	}
 	gom := vslm.NewGlobalObjectManager(vslmCli)
 	return &FcdProvider{
-		Cns: cnsCli,
-		Gom: gom,
+		Cns:        cnsCli,
+		Gom:        gom,
+		TagManager: tm,
 	}, nil
 }
 
@@ -366,15 +378,42 @@ func (p *FcdProvider) setTagsSnapshot(ctx context.Context, snapshot *blockstorag
 	if snapshot == nil {
 		return errors.New("Empty snapshot")
 	}
-	_, snapshotID, err := SplitSnapshotFullID(snapshot.ID)
+	_, _, err := SplitSnapshotFullID(snapshot.ID)
 	if err != nil {
 		return errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
 	}
-	for cat, val := range tags {
-		err := p.Gom.AttachTag(ctx, vimID(snapshotID), cat, val)
-		if err != nil {
-			return errors.Wrap(err, "Failed to update metadata")
+	val, ok := tags[catalogIdCategory]
+	if !ok {
+		return nil
+	}
+	categoryName := fmt.Sprintf("%s:%s", k10TagPrefix, val)
+	var id string
+	cat, err := p.TagManager.GetCategory(ctx, categoryName)
+	if err != nil {
+		if !soap.IsVimFault(err) {
+			return errors.Wrap(err, "Error fetching catefory")
 		}
+		if _, ok := soap.ToVimFault(err).(*types.NotFound); !ok {
+			return errors.Wrap(err, "Invalid get category request")
+		}
+	}
+	if cat == nil {
+		id, err = p.TagManager.CreateCategory(ctx, &vapitags.Category{
+			Name: categoryName,
+		})
+		if err != nil {
+			return errors.Wrap(err, "Failed to create category")
+		}
+	} else {
+		id = cat.ID
+	}
+
+	_, err = p.TagManager.CreateTag(ctx, &vapitags.Tag{
+		CategoryID: id,
+		Name:       snapshot.ID,
+	})
+	if err != nil {
+		return errors.Wrap(err, "Failed to create tag")
 	}
 	return nil
 }
