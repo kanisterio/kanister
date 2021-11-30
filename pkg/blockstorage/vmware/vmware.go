@@ -425,20 +425,20 @@ func (p *FcdProvider) VolumesList(ctx context.Context, tags map[string]string, z
 
 // SnapshotsList is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
-	var snapshotIDs []types.ID
-	var err error
-	if len(tags) == 1 {
-		for k, v := range tags {
-			snapshotIDs, err = p.Gom.ListObjectsAttachedToTag(ctx, types.ID{Id: ""}, k, v)
-			if err != nil {
-				return nil, err
-			}
-		}
+	val, ok := tags[catalogIdCategory]
+	if !ok {
+		return nil, errors.Errorf("Unable to list for tags")
 	}
+	categoryName := fmt.Sprintf("%s:%s", k10TagPrefix, val)
+	snapshotIDs, err := p.TagManager.ListTagsForCategory(ctx, categoryName)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to list tags")
+	}
+
 	var snapshots []*blockstorage.Snapshot
 	if len(snapshotIDs) > 0 {
 		for _, snapshotID := range snapshotIDs {
-			snapshot, err := p.SnapshotGet(ctx, snapshotID.Id)
+			snapshot, err := p.SnapshotGet(ctx, snapshotID)
 			if err != nil {
 				return nil, err
 			}
