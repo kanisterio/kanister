@@ -387,25 +387,28 @@ func (p *FcdProvider) setTagsSnapshot(ctx context.Context, snapshot *blockstorag
 		return nil
 	}
 	categoryName := fmt.Sprintf("%s:%s", k10TagPrefix, val)
-	var id string
-	cat, err := p.TagManager.GetCategory(ctx, categoryName)
+
+	cats, err := p.TagManager.GetCategories(ctx)
 	if err != nil {
-		if !soap.IsVimFault(err) {
-			return errors.Wrap(err, "Error fetching catefory")
-		}
-		if _, ok := soap.ToVimFault(err).(*types.NotFound); !ok {
-			return errors.Wrap(err, "Invalid get category request")
+		return errors.Wrap(err, "Failed to fetch categories")
+	}
+	found := false
+	var id string
+	for _, cat := range cats {
+		if cat.Name == categoryName {
+			id = cat.ID
+			found = true
+			break
 		}
 	}
-	if cat == nil {
+
+	if !found {
 		id, err = p.TagManager.CreateCategory(ctx, &vapitags.Category{
 			Name: categoryName,
 		})
 		if err != nil {
 			return errors.Wrap(err, "Failed to create category")
 		}
-	} else {
-		id = cat.ID
 	}
 
 	_, err = p.TagManager.CreateTag(ctx, &vapitags.Tag{
