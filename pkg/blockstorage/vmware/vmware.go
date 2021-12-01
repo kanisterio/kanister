@@ -103,6 +103,7 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 		return nil, errors.Wrap(err, "Failed to create VSLM client")
 	}
 	c := rest.NewClient(cli)
+	c.Login(ctx, url.UserPassword(username, password))
 	tm := vapitags.NewManager(c)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create tag manager")
@@ -388,27 +389,22 @@ func (p *FcdProvider) setTagsSnapshot(ctx context.Context, snapshot *blockstorag
 	}
 	categoryName := fmt.Sprintf("%s:%s", k10TagPrefix, val)
 
-	cats, err := p.TagManager.GetCategories(ctx)
+	cat, err := p.TagManager.GetCategory(ctx, categoryName)
 	if err != nil {
-		return errors.Wrap(err, "Failed to fetch categories")
-	}
-	found := false
-	var id string
-	for _, cat := range cats {
-		if cat.Name == categoryName {
-			id = cat.ID
-			found = true
-			break
+		if _, ok := soap.ToVimFault(err).(*types.NotFound); !ok {
+			return errors.Wrap(err, "Failed to fetch category")
 		}
 	}
-
-	if !found {
+	var id string
+	if cat == nil {
 		id, err = p.TagManager.CreateCategory(ctx, &vapitags.Category{
 			Name: categoryName,
 		})
 		if err != nil {
 			return errors.Wrap(err, "Failed to create category")
 		}
+	} else {
+		id = cat.ID
 	}
 
 	_, err = p.TagManager.CreateTag(ctx, &vapitags.Tag{
