@@ -146,7 +146,7 @@ func (e *efs) waitUntilRestoreComplete(ctx context.Context, restoreJobID string)
 		case backup.RestoreJobStatusCompleted:
 			return true, nil
 		case backup.RestoreJobStatusAborted, backup.RestoreJobStatusFailed:
-			return false, errors.New("Restore job is not completed successfully")
+			return false, errors.Errorf("Restore job is not completed successfully (%s)\n", *resp.StatusMessage)
 		default:
 			return false, nil
 		}
