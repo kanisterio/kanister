@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -60,6 +61,7 @@ type FcdProvider struct {
 	Gom        *vslm.GlobalObjectManager
 	Cns        *cns.Client
 	TagManager *vapitags.Manager
+	categoryID string
 }
 
 // NewProvider creates new VMWare FCD provider with the config.
@@ -119,6 +121,12 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 // Type is part of blockstorage.Provider
 func (p *FcdProvider) Type() blockstorage.Type {
 	return blockstorage.TypeFCD
+}
+
+// Type is part of blockstorage.Provider
+func (p *FcdProvider) SetCategoryID(categoryID string) {
+	p.categoryID = categoryID
+	return
 }
 
 // VolumeCreate is part of blockstorage.Provider
@@ -375,44 +383,79 @@ func (p *FcdProvider) setTagsVolume(ctx context.Context, volume *blockstorage.Vo
 	return nil
 }
 
+// GetOrCreateCategory takes a category name and attempts to get or create the category
+// it returns the category ID.
+func (p *FcdProvider) GetOrCreateCategory(ctx context.Context, categoryName string) (string, error) {
+	cat, err := p.TagManager.GetCategory(ctx, categoryName)
+	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") {
+			id, err := p.TagManager.CreateCategory(ctx, &vapitags.Category{
+				Name:        categoryName,
+				Cardinality: "SINGLE",
+			})
+			if err != nil {
+				return "", errors.Wrap(err, "Failed to create category")
+			}
+			return id, nil
+		}
+		return "", errors.Wrap(err, "Failed to get category")
+	}
+	return cat.ID, nil
+}
+
+// GetCategoryID takes a category name and returns the category ID if it finds it.
+func (p *FcdProvider) GetCategoryID(ctx context.Context, categoryName string) (string, error) {
+	cat, err := p.TagManager.GetCategory(ctx, categoryName)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to find category")
+	}
+	return cat.ID, nil
+}
+
+type snapshotTag struct {
+	volid  string
+	snapid string
+	key    string
+	value  string
+}
+
+func (t *snapshotTag) print() string {
+	return fmt.Sprintf("%s:%s:%s:%s", t.volid, t.snapid, t.key, t.value)
+}
+
+func (p *FcdProvider) parseTag(tag string) (*snapshotTag, error) {
+	parts := strings.Split(tag, ":")
+	if len(parts) != 4 {
+		return nil, errors.Errorf("Malformed tag (%s)", tag)
+	}
+	return &snapshotTag{parts[0], parts[1], parts[2], parts[3]}, nil
+}
+
+// setTagsSnapshot sets tags for a snapshot
+// the tags are of the form volid:snapid:tag:value
+// these tags are assigned to a predefined category that is initialized by the FcdProvider
 func (p *FcdProvider) setTagsSnapshot(ctx context.Context, snapshot *blockstorage.Snapshot, tags map[string]string) error {
+	if p.categoryID == "" {
+		log.Debug().Print("vSphere snapshot tagging is disabled")
+		return nil
+	}
 	if snapshot == nil {
 		return errors.New("Empty snapshot")
 	}
-	_, _, err := SplitSnapshotFullID(snapshot.ID)
+	volID, snapID, err := SplitSnapshotFullID(snapshot.ID)
 	if err != nil {
-		return errors.Wrap(err, "Cannot infer volume ID from full snapshot ID")
+		return errors.Wrap(err, "Cannot infer volumeID and snapshotID from full snapshot ID")
 	}
-	val, ok := tags[catalogIdCategory]
-	if !ok {
-		return nil
-	}
-	categoryName := fmt.Sprintf("%s:%s", k10TagPrefix, val)
 
-	cat, err := p.TagManager.GetCategory(ctx, categoryName)
-	if err != nil {
-		if _, ok := soap.ToVimFault(err).(*types.NotFound); !ok {
-			return errors.Wrap(err, "Failed to fetch category")
-		}
-	}
-	var id string
-	if cat == nil {
-		id, err = p.TagManager.CreateCategory(ctx, &vapitags.Category{
-			Name: categoryName,
+	for k, v := range tags {
+		tag := &snapshotTag{volID, snapID, k, v}
+		_, err = p.TagManager.CreateTag(ctx, &vapitags.Tag{
+			CategoryID: p.categoryID,
+			Name:       tag.print(),
 		})
-		if err != nil {
-			return errors.Wrap(err, "Failed to create category")
+		if err != nil && !strings.Contains(err.Error(), "ALREADY_EXISTS") {
+			return errors.Wrapf(err, "Failed to create tag (%s) for categoryID (%s) ", tag, p.categoryID)
 		}
-	} else {
-		id = cat.ID
-	}
-
-	_, err = p.TagManager.CreateTag(ctx, &vapitags.Tag{
-		CategoryID: id,
-		Name:       snapshot.ID,
-	})
-	if err != nil {
-		return errors.Wrap(err, "Failed to create tag")
 	}
 	return nil
 }
@@ -424,14 +467,19 @@ func (p *FcdProvider) VolumesList(ctx context.Context, tags map[string]string, z
 
 // SnapshotsList is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
-	val, ok := tags[catalogIdCategory]
-	if !ok {
-		return nil, errors.Errorf("Unable to list for tags")
+	if p.categoryID == "" {
+		log.Debug().Print("vSphere snapshot tagging is disabled (categoryID not set). Cannot list snapshots")
+		return nil, nil
 	}
-	categoryName := fmt.Sprintf("%s:%s", k10TagPrefix, val)
-	snapshotIDs, err := p.TagManager.ListTagsForCategory(ctx, categoryName)
+
+	categoryTags, err := p.TagManager.GetTagsForCategory(ctx, p.categoryID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to list tags")
+	}
+
+	snapshotIDs, err := p.getSnapshotIDsFromTags(categoryTags, tags)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get snapshotIDs from tags")
 	}
 
 	var snapshots []*blockstorage.Snapshot
@@ -443,9 +491,37 @@ func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string)
 			}
 			snapshots = append(snapshots, snapshot)
 		}
-
 	}
 	return snapshots, nil
+}
+
+func (p *FcdProvider) getSnapshotIDsFromTags(categoryTags []vapitags.Tag, tags map[string]string) ([]string, error) {
+	snapshotTagMap := map[string]map[string]string{}
+	for _, catTag := range categoryTags {
+		parsedTag, err := p.parseTag(catTag.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to parse tag")
+		}
+		if _, ok := snapshotTagMap[parsedTag.snapid]; !ok {
+			snapshotTagMap[parsedTag.snapid] = map[string]string{}
+		}
+		snapshotTagMap[parsedTag.snapid][parsedTag.key] = parsedTag.value
+	}
+
+	snapshotIDs := []string{}
+	for snapshotID, snapshotTags := range snapshotTagMap {
+		tagsMatch := true
+		for k, v := range tags {
+			if val, ok := snapshotTags[k]; !ok || val != v {
+				tagsMatch = false
+				break
+			}
+		}
+		if tagsMatch {
+			snapshotIDs = append(snapshotIDs, snapshotID)
+		}
+	}
+	return snapshotIDs, nil
 }
 
 func getEnvAsIntOrDefault(envKey string, def int) int {

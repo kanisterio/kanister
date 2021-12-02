@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	vapitags "github.com/vmware/govmomi/vapi/tags"
 	. "gopkg.in/check.v1"
 )
 
@@ -84,4 +85,55 @@ func (s *VMWareSuite) TestTimeoutEnvSetting(c *C) {
 	c.Assert(timeout, Equals, 5*time.Minute)
 
 	os.Setenv(vmWareTimeoutMinEnv, tempEnv)
+}
+
+func (s *VMWareSuite) TestGetSnapshotIDsFromTags(c *C) {
+	for _, tc := range []struct {
+		catTags    []vapitags.Tag
+		tags       map[string]string
+		errChecker Checker
+		snapIDs    []string
+	}{
+		{
+			catTags: []vapitags.Tag{
+				{Name: "v1:s1:k1:v1"},
+				{Name: "v1:s1:k2:v2"},
+				{Name: "v1:s2:k1:v1"},
+			},
+			tags: map[string]string{
+				"k1": "v1",
+				"k2": "v2",
+			},
+			snapIDs:    []string{"s1"},
+			errChecker: IsNil,
+		},
+		{
+			catTags: []vapitags.Tag{
+				{Name: "v1:s1:k1:v1"},
+				{Name: "v1:s1:k2:v2"},
+				{Name: "v1:s2:k1:v1"},
+			},
+			tags: map[string]string{
+				"k1": "v1",
+			},
+			snapIDs:    []string{"s1", "s2"},
+			errChecker: IsNil,
+		},
+		{
+			catTags: []vapitags.Tag{
+				{Name: "v1:s1k1:v1"},
+			},
+			tags: map[string]string{
+				"k1": "v1",
+			},
+			errChecker: NotNil,
+		},
+	} {
+		fp := &FcdProvider{}
+		snapIDs, err := fp.getSnapshotIDsFromTags(tc.catTags, tc.tags)
+		c.Assert(err, tc.errChecker)
+		if tc.errChecker == IsNil {
+			c.Assert(snapIDs, DeepEquals, tc.snapIDs)
+		}
+	}
 }
