@@ -121,6 +121,15 @@ func (s *VMWareSuite) TestGetSnapshotIDsFromTags(c *C) {
 		},
 		{
 			catTags: []vapitags.Tag{
+				{Name: "v1:s1:k1:v1"},
+				{Name: "v1:s1:k2:v2"},
+				{Name: "v1:s2:k1:v1"},
+			},
+			snapIDs:    []string{"s1", "s2"},
+			errChecker: IsNil,
+		},
+		{
+			catTags: []vapitags.Tag{
 				{Name: "v1:s1k1:v1"},
 			},
 			tags: map[string]string{

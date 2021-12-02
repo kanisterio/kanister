@@ -319,6 +319,7 @@ func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 			return false, errors.Wrap(lerr, "Failed to wait on task")
 		}
 		log.Debug().Print("SnapshotDelete task complete", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
+		p.deleteTagsSnapshot(ctx, snapshot)
 		return true, nil
 	})
 }
@@ -420,7 +421,11 @@ type snapshotTag struct {
 }
 
 func (t *snapshotTag) print() string {
-	return fmt.Sprintf("%s:%s:%s:%s", t.volid, t.snapid, t.key, t.value)
+	volid := strings.ReplaceAll(t.volid, ":", "-")
+	snapid := strings.ReplaceAll(t.snapid, ":", "-")
+	key := strings.ReplaceAll(t.key, ":", "-")
+	value := strings.ReplaceAll(t.value, ":", "-")
+	return fmt.Sprintf("%s:%s:%s:%s", volid, snapid, key, value)
 }
 
 func (p *FcdProvider) parseTag(tag string) (*snapshotTag, error) {
@@ -455,6 +460,37 @@ func (p *FcdProvider) setTagsSnapshot(ctx context.Context, snapshot *blockstorag
 		})
 		if err != nil && !strings.Contains(err.Error(), "ALREADY_EXISTS") {
 			return errors.Wrapf(err, "Failed to create tag (%s) for categoryID (%s) ", tag, p.categoryID)
+		}
+	}
+	return nil
+}
+
+func (p *FcdProvider) deleteTagsSnapshot(ctx context.Context, snapshot *blockstorage.Snapshot) error {
+	if p.categoryID == "" {
+		log.Debug().Print("vSphere snapshot tagging is disabled (categoryID not set). Cannot list snapshots")
+		return nil
+	}
+	if snapshot == nil {
+		return errors.New("Empty snapshot")
+	}
+	volID, snapID, err := SplitSnapshotFullID(snapshot.ID)
+	if err != nil {
+		return errors.Wrap(err, "Cannot infer volumeID and snapshotID from full snapshot ID")
+	}
+	categoryTags, err := p.TagManager.GetTagsForCategory(ctx, p.categoryID)
+	if err != nil {
+		return errors.Wrap(err, "Failed to list tags")
+	}
+	for _, tag := range categoryTags {
+		parsedTag, err := p.parseTag(tag.Name)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to parse tag (%s)", tag.Name)
+		}
+		if parsedTag.snapid == snapID && parsedTag.volid == volID {
+			err := p.TagManager.DeleteTag(ctx, &tag)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to delete tag (%s)", tag.Name)
+			}
 		}
 	}
 	return nil
