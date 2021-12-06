@@ -215,9 +215,9 @@ func (s *VMWareSuite) TestSetTagsSnapshot(c *C) {
 		}
 		provider := &FcdProvider{
 			categoryID: tc.catID,
-			TagManager: ftm,
+			tagManager: ftm,
 		}
-		err := provider.setTagsSnapshot(ctx, tc.snapshot, tc.tags)
+		err := provider.setSnapshotTags(ctx, tc.snapshot, tc.tags)
 		c.Assert(err, tc.errChecker)
 		if tc.errChecker == IsNil {
 			c.Assert(ftm.numCreates, Equals, tc.expNumCreates)
@@ -294,9 +294,9 @@ func (s *VMWareSuite) TestDeleteTagsSnapshot(c *C) {
 		}
 		provider := &FcdProvider{
 			categoryID: tc.catID,
-			TagManager: ftm,
+			tagManager: ftm,
 		}
-		err := provider.deleteTagsSnapshot(ctx, tc.snapshot)
+		err := provider.deleteSnapshotTags(ctx, tc.snapshot)
 		c.Assert(err, tc.errChecker)
 		if tc.errChecker == IsNil {
 			c.Assert(ftm.numDeletes, Equals, tc.expNumDeletes)
