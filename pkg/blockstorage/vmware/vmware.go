@@ -47,9 +47,6 @@ const (
 	defaultRetryLimit = 30 * time.Minute
 
 	vmWareTimeoutMinEnv = "VMWARE_GOM_TIMEOUT_MIN"
-
-	catalogIdCategory = "kasten.io/catalogid"
-	k10TagPrefix      = "K10Identifier"
 )
 
 var (
@@ -60,7 +57,7 @@ var (
 type FcdProvider struct {
 	Gom        *vslm.GlobalObjectManager
 	Cns        *cns.Client
-	TagManager *vapitags.Manager
+	TagManager tagManager
 	categoryID string
 }
 
@@ -418,6 +415,9 @@ func (p *FcdProvider) GetCategoryID(ctx context.Context, categoryName string) (s
 	return cat.ID, nil
 }
 
+// snapshotTag is the struct that will be used to create vmware tags
+// the tags are of the form volid:snapid:tag:value
+// these tags are assigned to a predefined category that is initialized by the FcdProvider
 type snapshotTag struct {
 	volid  string
 	snapid string
@@ -442,8 +442,6 @@ func (p *FcdProvider) parseTag(tag string) (*snapshotTag, error) {
 }
 
 // setTagsSnapshot sets tags for a snapshot
-// the tags are of the form volid:snapid:tag:value
-// these tags are assigned to a predefined category that is initialized by the FcdProvider
 func (p *FcdProvider) setTagsSnapshot(ctx context.Context, snapshot *blockstorage.Snapshot, tags map[string]string) error {
 	if p.categoryID == "" {
 		log.Debug().Print("vSphere snapshot tagging is disabled")
@@ -575,4 +573,12 @@ func getEnvAsIntOrDefault(envKey string, def int) int {
 	}
 
 	return def
+}
+
+type tagManager interface {
+	GetCategory(ctx context.Context, id string) (*vapitags.Category, error)
+	CreateCategory(ctx context.Context, category *vapitags.Category) (string, error)
+	CreateTag(ctx context.Context, tag *vapitags.Tag) (string, error)
+	GetTagsForCategory(ctx context.Context, id string) ([]vapitags.Tag, error)
+	DeleteTag(ctx context.Context, tag *vapitags.Tag) error
 }
