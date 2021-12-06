@@ -105,7 +105,10 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 		return nil, errors.Wrap(err, "Failed to create VSLM client")
 	}
 	c := rest.NewClient(cli)
-	c.Login(ctx, url.UserPassword(username, password))
+	err = c.Login(ctx, url.UserPassword(username, password))
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to login to VAPI rest client")
+	}
 	tm := vapitags.NewManager(c)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create tag manager")
@@ -126,7 +129,6 @@ func (p *FcdProvider) Type() blockstorage.Type {
 // Type is part of blockstorage.Provider
 func (p *FcdProvider) SetCategoryID(categoryID string) {
 	p.categoryID = categoryID
-	return
 }
 
 // VolumeCreate is part of blockstorage.Provider
@@ -319,7 +321,10 @@ func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 			return false, errors.Wrap(lerr, "Failed to wait on task")
 		}
 		log.Debug().Print("SnapshotDelete task complete", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
-		p.deleteTagsSnapshot(ctx, snapshot)
+		err = p.deleteTagsSnapshot(ctx, snapshot)
+		if err != nil {
+			return false, errors.Wrap(err, "Failed to delete snapshot tags")
+		}
 		return true, nil
 	})
 }
