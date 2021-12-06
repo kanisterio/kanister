@@ -53,6 +53,8 @@ func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEn
 
 	// Setup kopia uploader
 	u := snapshotfs.NewUploader(rep)
+	// Fail full snapshot if errors are encountered during upload
+	u.FailFast = true
 
 	// Populate the source info with source path and file
 	sourceInfo := snapshot.SourceInfo{

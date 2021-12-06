@@ -17,6 +17,7 @@ package kopia
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/kopia/kopia/fs"
@@ -39,7 +40,7 @@ func SnapshotSource(
 ) (string, int64, error) {
 	fmt.Printf("Snapshotting %v ...\n", sourceInfo)
 
-	t0 := time.Now()
+	snapshotStartTime := time.Now()
 
 	previous, err := findPreviousSnapshotManifest(ctx, rep, sourceInfo, nil)
 	if err != nil {
@@ -58,8 +59,7 @@ func SnapshotSource(
 
 	manifest.Description = description
 
-	manifestID, err := snapshot.SaveSnapshot(ctx, rep, manifest)
-	if err != nil {
+	if _, err := snapshot.SaveSnapshot(ctx, rep, manifest); err != nil {
 		return "", 0, errors.Wrap(err, "Failed to save kopia manifest")
 	}
 
@@ -76,9 +76,25 @@ func SnapshotSource(
 		return "", 0, errors.Wrap(ferr, "Failed to flush kopia repository")
 	}
 
+	return reportSnapshotStatus(ctx, snapshotStartTime, manifest)
+}
+
+func reportSnapshotStatus(ctx context.Context, snapshotStartTime time.Time, manifest *snapshot.Manifest) (string, int64, error) {
+	manifestID := manifest.ID
 	snapSize := manifest.Stats.TotalFileSize
 
-	fmt.Printf("\nCreated snapshot with root %v and ID %v in %v\n", manifest.RootObjectID(), manifestID, time.Since(t0).Truncate(time.Second))
+	fmt.Printf("\nCreated snapshot with root %v and ID %v in %v\n", manifest.RootObjectID(), manifestID, time.Since(snapshotStartTime).Truncate(time.Second))
+
+	// Even if the manifest is created, it might contain fatal errors and failed entries
+	var errs []string
+	if ds := manifest.RootEntry.DirSummary; ds != nil {
+		for _, ent := range ds.FailedEntries {
+			errs = append(errs, ent.Error)
+		}
+	}
+	if len(errs) != 0 {
+		return "", 0, errors.New(strings.Join(errs, "\n"))
+	}
 
 	return string(manifestID), snapSize, nil
 }
