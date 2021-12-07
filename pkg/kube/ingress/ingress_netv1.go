@@ -47,6 +47,15 @@ func (i *NetworkingV1) Get(ctx context.Context, ns, name string) (runtime.Object
 	return i.kubeCli.NetworkingV1().Ingresses(ns).Get(ctx, name, metav1.GetOptions{})
 }
 
+// Create can be used to create an ingress resource in networking v1 apiVersion
+func (i *NetworkingV1) Create(ctx context.Context, ingress runtime.Object, ns string, opts metav1.CreateOptions) (runtime.Object, error) {
+	ing, ok := ingress.(*netv1.Ingress)
+	if !ok {
+		return nil, errors.New("Failed converting runtime.Object to networking/v1 ingress")
+	}
+	return i.kubeCli.NetworkingV1().Ingresses(ns).Create(ctx, ing, opts)
+}
+
 // IngressPath can be used to get the backend path that is specified in the
 // ingress resource in `ns` namespace and name `releaseName-ingress`
 func (i *NetworkingV1) IngressPath(ctx context.Context, ns, releaseName string) (string, error) {
