@@ -46,7 +46,7 @@ type Manager interface {
 	// ingress resource in `ns` namespace and name `releaseName-ingress`
 	IngressPath(ctx context.Context, ns, releaseName string) (string, error)
 	// Create accepts an ingress in as runtime.Object and creates on the cluster
-	Create(ctx context.Context, ingress runtime.Object, ns string, opts metav1.CreateOptions) (runtime.Object, error)
+	Create(ctx context.Context, ingress runtime.Object, opts metav1.CreateOptions) (runtime.Object, error)
 }
 
 // NewManager can be used to get the Manager based on the APIVersion of the ingress resources on the cluster
