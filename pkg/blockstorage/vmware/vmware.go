@@ -435,12 +435,13 @@ func (t *snapshotTag) String() string {
 	return fmt.Sprintf("%s:%s:%s:%s", volid, snapid, key, value)
 }
 
-func (p *FcdProvider) parseSnapshotTag(tag string) (*snapshotTag, error) {
+func (t *snapshotTag) Parse(tag string) error {
 	parts := strings.Split(tag, ":")
 	if len(parts) != 4 {
-		return nil, errors.Errorf("Malformed tag (%s)", tag)
+		return errors.Errorf("Malformed tag (%s)", tag)
 	}
-	return &snapshotTag{parts[0], parts[1], parts[2], parts[3]}, nil
+	t.volid, t.snapid, t.key, t.value = parts[0], parts[1], parts[2], parts[3]
+	return nil
 }
 
 // setSnapshotTags sets tags for a snapshot
@@ -487,7 +488,8 @@ func (p *FcdProvider) deleteSnapshotTags(ctx context.Context, snapshot *blocksto
 		return errors.Wrap(err, "Failed to list tags")
 	}
 	for _, tag := range categoryTags {
-		parsedTag, err := p.parseSnapshotTag(tag.Name)
+		parsedTag := &snapshotTag{}
+		err := parsedTag.Parse(tag.Name)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to parse tag (%s)", tag.Name)
 		}
@@ -539,7 +541,8 @@ func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string)
 func (p *FcdProvider) getSnapshotIDsFromTags(categoryTags []vapitags.Tag, tags map[string]string) ([]string, error) {
 	snapshotTagMap := map[string]map[string]string{}
 	for _, catTag := range categoryTags {
-		parsedTag, err := p.parseSnapshotTag(catTag.Name)
+		parsedTag := &snapshotTag{}
+		err := parsedTag.Parse(catTag.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to parse tag")
 		}
