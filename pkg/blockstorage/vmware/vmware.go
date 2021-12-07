@@ -6,11 +6,14 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 	"github.com/vmware/govmomi/cns"
+	"github.com/vmware/govmomi/vapi/rest"
+	vapitags "github.com/vmware/govmomi/vapi/tags"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/methods"
 	"github.com/vmware/govmomi/vim25/soap"
@@ -52,8 +55,11 @@ var (
 
 // FcdProvider provides blockstorage.Provider
 type FcdProvider struct {
-	Gom *vslm.GlobalObjectManager
-	Cns *cns.Client
+	Gom        *vslm.GlobalObjectManager
+	Cns        *cns.Client
+	TagsSvc    *vapitags.Manager
+	tagManager tagManager
+	categoryID string
 }
 
 // NewProvider creates new VMWare FCD provider with the config.
@@ -96,16 +102,32 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create VSLM client")
 	}
+	c := rest.NewClient(cli)
+	err = c.Login(ctx, url.UserPassword(username, password))
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to login to VAPI rest client")
+	}
+	tm := vapitags.NewManager(c)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create tag manager")
+	}
 	gom := vslm.NewGlobalObjectManager(vslmCli)
 	return &FcdProvider{
-		Cns: cnsCli,
-		Gom: gom,
+		Cns:        cnsCli,
+		Gom:        gom,
+		TagsSvc:    tm,
+		tagManager: tm,
 	}, nil
 }
 
 // Type is part of blockstorage.Provider
 func (p *FcdProvider) Type() blockstorage.Type {
 	return blockstorage.TypeFCD
+}
+
+// Type is part of blockstorage.Provider
+func (p *FcdProvider) SetCategoryID(categoryID string) {
+	p.categoryID = categoryID
 }
 
 // VolumeCreate is part of blockstorage.Provider
@@ -237,8 +259,12 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	if snap.SizeInBytes == 0 {
 		snap.SizeInBytes = volume.SizeInBytes
 	}
-
 	snap.Volume = &volume
+
+	if err = p.SetTags(ctx, snap, tags); err != nil {
+		return nil, errors.Wrap(err, "Failed to set tags")
+	}
+
 	return snap, nil
 }
 
@@ -294,6 +320,10 @@ func (p *FcdProvider) SnapshotDelete(ctx context.Context, snapshot *blockstorage
 			return false, errors.Wrap(lerr, "Failed to wait on task")
 		}
 		log.Debug().Print("SnapshotDelete task complete", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
+		err = p.deleteSnapshotTags(ctx, snapshot)
+		if err != nil {
+			return false, errors.Wrap(err, "Failed to delete snapshot tags")
+		}
 		return true, nil
 	})
 }
@@ -337,7 +367,7 @@ func (p *FcdProvider) SetTags(ctx context.Context, resource interface{}, tags ma
 	case *blockstorage.Volume:
 		return p.setTagsVolume(ctx, r, tags)
 	case *blockstorage.Snapshot:
-		return nil
+		return p.setSnapshotTags(ctx, r, tags)
 	default:
 		return errors.New("Unsupported type for resource")
 	}
@@ -358,6 +388,121 @@ func (p *FcdProvider) setTagsVolume(ctx context.Context, volume *blockstorage.Vo
 	return nil
 }
 
+// GetOrCreateCategory takes a category name and attempts to get or create the category
+// it returns the category ID.
+func (p *FcdProvider) GetOrCreateCategory(ctx context.Context, categoryName string) (string, error) {
+	id, err := p.GetCategoryID(ctx, categoryName)
+	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") {
+			id, err := p.tagManager.CreateCategory(ctx, &vapitags.Category{
+				Name:        categoryName,
+				Cardinality: "SINGLE",
+			})
+			if err != nil {
+				return "", errors.Wrap(err, "Failed to create category")
+			}
+			return id, nil
+		}
+		return "", err
+	}
+	return id, nil
+}
+
+// GetCategoryID takes a category name and returns the category ID if it finds it.
+func (p *FcdProvider) GetCategoryID(ctx context.Context, categoryName string) (string, error) {
+	cat, err := p.tagManager.GetCategory(ctx, categoryName)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to find category")
+	}
+	return cat.ID, nil
+}
+
+// snapshotTag is the struct that will be used to create vmware tags
+// the tags are of the form volid:snapid:tag:value
+// these tags are assigned to a predefined category that is initialized by the FcdProvider
+type snapshotTag struct {
+	volid  string
+	snapid string
+	key    string
+	value  string
+}
+
+func (t *snapshotTag) String() string {
+	volid := strings.ReplaceAll(t.volid, ":", "-")
+	snapid := strings.ReplaceAll(t.snapid, ":", "-")
+	key := strings.ReplaceAll(t.key, ":", "-")
+	value := strings.ReplaceAll(t.value, ":", "-")
+	return fmt.Sprintf("%s:%s:%s:%s", volid, snapid, key, value)
+}
+
+func (t *snapshotTag) Parse(tag string) error {
+	parts := strings.Split(tag, ":")
+	if len(parts) != 4 {
+		return errors.Errorf("Malformed tag (%s)", tag)
+	}
+	t.volid, t.snapid, t.key, t.value = parts[0], parts[1], parts[2], parts[3]
+	return nil
+}
+
+// setSnapshotTags sets tags for a snapshot
+func (p *FcdProvider) setSnapshotTags(ctx context.Context, snapshot *blockstorage.Snapshot, tags map[string]string) error {
+	if p.categoryID == "" {
+		log.Debug().Print("vSphere snapshot tagging is disabled")
+		return nil
+	}
+	if snapshot == nil {
+		return errors.New("Empty snapshot")
+	}
+	volID, snapID, err := SplitSnapshotFullID(snapshot.ID)
+	if err != nil {
+		return errors.Wrap(err, "Cannot infer volumeID and snapshotID from full snapshot ID")
+	}
+
+	for k, v := range tags {
+		tag := &snapshotTag{volID, snapID, k, v}
+		_, err = p.tagManager.CreateTag(ctx, &vapitags.Tag{
+			CategoryID: p.categoryID,
+			Name:       tag.String(),
+		})
+		if err != nil && !strings.Contains(err.Error(), "ALREADY_EXISTS") {
+			return errors.Wrapf(err, "Failed to create tag (%s) for categoryID (%s) ", tag, p.categoryID)
+		}
+	}
+	return nil
+}
+
+func (p *FcdProvider) deleteSnapshotTags(ctx context.Context, snapshot *blockstorage.Snapshot) error {
+	if p.categoryID == "" {
+		log.Debug().Print("vSphere snapshot tagging is disabled (categoryID not set). Cannot list snapshots")
+		return nil
+	}
+	if snapshot == nil {
+		return errors.New("Empty snapshot")
+	}
+	volID, snapID, err := SplitSnapshotFullID(snapshot.ID)
+	if err != nil {
+		return errors.Wrap(err, "Cannot infer volumeID and snapshotID from full snapshot ID")
+	}
+	categoryTags, err := p.tagManager.GetTagsForCategory(ctx, p.categoryID)
+	if err != nil {
+		return errors.Wrap(err, "Failed to list tags")
+	}
+	for _, tag := range categoryTags {
+		parsedTag := &snapshotTag{}
+		err := parsedTag.Parse(tag.Name)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to parse tag (%s)", tag.Name)
+		}
+		if parsedTag.snapid == snapID && parsedTag.volid == volID {
+			err := p.tagManager.DeleteTag(ctx, &tag)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to delete tag (%s)", tag.Name)
+			}
+		}
+	}
+	return nil
+}
+
 // VolumesList is part of blockstorage.Provider
 func (p *FcdProvider) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	return nil, errors.New("Not implemented")
@@ -365,7 +510,62 @@ func (p *FcdProvider) VolumesList(ctx context.Context, tags map[string]string, z
 
 // SnapshotsList is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
-	return nil, errors.New("Not implemented")
+	if p.categoryID == "" {
+		log.Debug().Print("vSphere snapshot tagging is disabled (categoryID not set). Cannot list snapshots")
+		return nil, nil
+	}
+
+	categoryTags, err := p.tagManager.GetTagsForCategory(ctx, p.categoryID)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to list tags")
+	}
+
+	snapshotIDs, err := p.getSnapshotIDsFromTags(categoryTags, tags)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get snapshotIDs from tags")
+	}
+
+	var snapshots []*blockstorage.Snapshot
+	if len(snapshotIDs) > 0 {
+		for _, snapshotID := range snapshotIDs {
+			snapshot, err := p.SnapshotGet(ctx, snapshotID)
+			if err != nil {
+				return nil, err
+			}
+			snapshots = append(snapshots, snapshot)
+		}
+	}
+	return snapshots, nil
+}
+
+func (p *FcdProvider) getSnapshotIDsFromTags(categoryTags []vapitags.Tag, tags map[string]string) ([]string, error) {
+	snapshotTagMap := map[string]map[string]string{}
+	for _, catTag := range categoryTags {
+		parsedTag := &snapshotTag{}
+		err := parsedTag.Parse(catTag.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to parse tag")
+		}
+		if _, ok := snapshotTagMap[parsedTag.snapid]; !ok {
+			snapshotTagMap[parsedTag.snapid] = map[string]string{}
+		}
+		snapshotTagMap[parsedTag.snapid][parsedTag.key] = parsedTag.value
+	}
+
+	snapshotIDs := []string{}
+	for snapshotID, snapshotTags := range snapshotTagMap {
+		tagsMatch := true
+		for k, v := range tags {
+			if val, ok := snapshotTags[k]; !ok || val != v {
+				tagsMatch = false
+				break
+			}
+		}
+		if tagsMatch {
+			snapshotIDs = append(snapshotIDs, snapshotID)
+		}
+	}
+	return snapshotIDs, nil
 }
 
 func getEnvAsIntOrDefault(envKey string, def int) int {
@@ -378,4 +578,12 @@ func getEnvAsIntOrDefault(envKey string, def int) int {
 	}
 
 	return def
+}
+
+type tagManager interface {
+	GetCategory(ctx context.Context, id string) (*vapitags.Category, error)
+	CreateCategory(ctx context.Context, category *vapitags.Category) (string, error)
+	CreateTag(ctx context.Context, tag *vapitags.Tag) (string, error)
+	GetTagsForCategory(ctx context.Context, id string) ([]vapitags.Tag, error)
+	DeleteTag(ctx context.Context, tag *vapitags.Tag) error
 }
