@@ -1180,7 +1180,7 @@ Arguments:
    :align: left
    :widths: 5,5,5,15
 
-   `operation`, Yes, `string`, ``create`` or ``delete`` kubernetes resource
+   `operation`, Yes, `string`, ``create`` or ``delete`` Kubernetes resource
    `namespace`, No, `string`, namespace in which the operation is executed
    `spec`, No, `string`, resource spec that needs to be created
    `objectReference`, No, `map[string]interface{}`, object reference for delete operation
