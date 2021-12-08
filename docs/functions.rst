@@ -1220,6 +1220,45 @@ Example:
                   protocol: TCP
 
 
+Wait
+----
+
+This function is used to add wait on a Kubernetes resource
+till it matches a desired state.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `timeout`, Yes, `string`, wait timeout
+   `conditions`, Yes, `map[string]interface{}`, list of wait conditions that match ``anyOf`` or ``allOf`` the conditions
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: Wait
+    name: waitNsReady
+    args:
+      timeout: 60s
+      conditions:
+        allOf:
+          - condition: `{{ if (eq "{ $.status.phase }" "Invalid")}}true{{ else }}false{{ end }}`
+            objectReference:
+              apiVersion: v1
+							resource: namespaces
+							name: "{{ .Namespace.Name }}"
+          - condition: `{{ if (eq "{ $.status.phase }" "Active")}}true{{ else }}false{{ end }}`
+            objectReference:
+              apiVersion: v1
+							resource: namespaces
+							name: "{{ .Namespace.Name }}"
+
+
 Registering Functions
 ---------------------
 
