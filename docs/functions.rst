@@ -1250,13 +1250,13 @@ Example:
           - condition: `{{ if (eq "{ $.status.phase }" "Invalid")}}true{{ else }}false{{ end }}`
             objectReference:
               apiVersion: v1
-							resource: namespaces
-							name: "{{ .Namespace.Name }}"
+              resource: namespaces
+              name: "{{ .Namespace.Name }}"
           - condition: `{{ if (eq "{ $.status.phase }" "Active")}}true{{ else }}false{{ end }}`
             objectReference:
               apiVersion: v1
-							resource: namespaces
-							name: "{{ .Namespace.Name }}"
+              resource: namespaces
+              name: "{{ .Namespace.Name }}"
 
 
 Registering Functions
