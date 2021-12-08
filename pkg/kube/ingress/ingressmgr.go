@@ -22,6 +22,7 @@ import (
 	netv1 "k8s.io/api/networking/v1"
 	netv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 
@@ -46,7 +47,7 @@ type Manager interface {
 	// ingress resource in `ns` namespace and name `releaseName-ingress`
 	IngressPath(ctx context.Context, ns, releaseName string) (string, error)
 	// Create accepts an ingress in as runtime.Object and creates on the cluster
-	Create(ctx context.Context, ingress runtime.Object, opts metav1.CreateOptions) (runtime.Object, error)
+	Create(ctx context.Context, ingress *unstructured.Unstructured, opts metav1.CreateOptions) (runtime.Object, error)
 }
 
 // NewManager can be used to get the Manager based on the APIVersion of the ingress resources on the cluster

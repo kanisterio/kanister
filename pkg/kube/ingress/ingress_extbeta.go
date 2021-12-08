@@ -22,6 +22,7 @@ import (
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 )
@@ -48,12 +49,13 @@ func (i *ExtensionsV1beta1) Get(ctx context.Context, ns, name string) (runtime.O
 }
 
 // Create can be used to create an ingress resource in extensions v1beta1 apiVersion
-func (i *ExtensionsV1beta1) Create(ctx context.Context, ingress runtime.Object, opts metav1.CreateOptions) (runtime.Object, error) {
-	ing, ok := ingress.(*extensionsv1beta1.Ingress)
-	if !ok {
-		return nil, errors.New("Failed converting runtime.Object to networking/v1 ingress")
+func (i *ExtensionsV1beta1) Create(ctx context.Context, ingress *unstructured.Unstructured, opts metav1.CreateOptions) (runtime.Object, error) {
+	var ing extensionsv1beta1.Ingress
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(ingress.UnstructuredContent(), &ing)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed converting runtime.Object to networking/v1 ingress")
 	}
-	return i.kubeCli.ExtensionsV1beta1().Ingresses(ing.Namespace).Create(ctx, ing, opts)
+	return i.kubeCli.ExtensionsV1beta1().Ingresses(ing.Namespace).Create(ctx, &ing, opts)
 }
 
 // IngressPath can be used to get the backend path that is specified in the
