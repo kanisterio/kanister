@@ -1166,6 +1166,60 @@ Example:
       args:
         snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
 
+
+KubeOps
+-------
+
+This function is used to manage Kubernetes resources. We can use it to 
+either create or delete resources on Kubernetes cluster.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `operation`, Yes, `string`, ``create`` or ``delete`` kubernetes resource 
+   `namespace`, No, `string`, namespace in which the operation is executed
+   `spec`, No, `string`, resource spec that needs to be created
+   `objectReference`, No, `map[string]interface{}`, object reference for delete operation
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+  
+  - func: KubeOps
+    name: createDeploy
+    args:
+      operation: create
+      namespace: "{{ .Deployment.Namespace }}"
+      spec:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: "{{ .Deployment.Name }}"
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: example
+          template:
+            metadata:
+              labels:
+                app: example
+            spec:
+              containers:
+              - image: busybox
+                imagePullPolicy: IfNotPresent
+                name: container
+                ports:
+                - containerPort: 80
+                  name: http
+                  protocol: TCP
+
+
 Registering Functions
 ---------------------
 
