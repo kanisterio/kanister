@@ -1232,7 +1232,7 @@ Arguments:
    :widths: 5,5,5,15
 
    `timeout`, Yes, `string`, wait timeout
-   `conditions`, Yes, `map[string]interface{}`, keys for conditions map could be ``allOf`` and/or ``anyOf`` with a value as list of Condition ``[]Condition``
+   `conditions`, Yes, `map[string]interface{}`, keys should be ``allOf`` and/or ``anyOf`` with a value as list of Condition ``[]Condition``
 
 Condition struct:
 
