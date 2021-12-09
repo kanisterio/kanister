@@ -1234,19 +1234,19 @@ Arguments:
    `timeout`, Yes, `string`, wait timeout
    `conditions`, Yes, `map[string]interface{}`, keys should be ``allOf`` and/or ``anyOf`` with value as ``[]Condition``
 
-Condition struct:
+``Condition`` struct:
 
 .. code-block:: yaml
   :linenos:
 
-  - condition: "Go template condition to return true or false"
-    objectReference:
-      apiVersion: "Kubernetes API version"
-      resource: "Kubernetes resource to wait on"
-      name: "Name of the resource"
+  condition: "Go template condition to return true or false"
+  objectReference:
+    apiVersion: "Kubernetes API version"
+    resource: "Kubernetes resource to wait on"
+    name: "Name of the resource"
 
 .. note::
-    We can refer object key value in go template condition by fetching it with the help of a ``$`` prefix JSON-path syntax.
+    We can refer object key value in go template condition with the help of a ``$`` prefix JSON-path syntax.
 
 Example:
 
