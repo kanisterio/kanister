@@ -1166,12 +1166,10 @@ Example:
       args:
         snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
 
-
 KubeOps
 -------
 
-This function is used to manage Kubernetes resources. We can use it to
-either create or delete resources on Kubernetes cluster.
+This function is used to create or delete Kubernetes resources.
 
 Arguments:
 
@@ -1234,7 +1232,21 @@ Arguments:
    :widths: 5,5,5,15
 
    `timeout`, Yes, `string`, wait timeout
-   `conditions`, Yes, `map[string]interface{}`, list of wait conditions that match ``anyOf`` or ``allOf`` the conditions
+   `conditions`, Yes, `map[string]interface{}`, keys for conditions map could be ``allOf`` and/or ``anyOf`` with a value as list of Condition ([]Condition)
+
+struct Condition:
+
+.. code-block:: yaml
+  :linenos:
+
+  - condition: "Go template condition to return true or false"
+    objectReference:
+      apiVersion: "Kubernetes API version"
+      resource: "Kubernetes resource to wait on"
+      name: "Name of the resource"
+
+.. note::
+    We can refer object key value in go template condition by fetching it with the help of a ``$`` prefix JSON-path syntax.
 
 Example:
 
@@ -1247,12 +1259,12 @@ Example:
       timeout: 60s
       conditions:
         allOf:
-          - condition: `{{ if (eq "{ $.status.phase }" "Invalid")}}true{{ else }}false{{ end }}`
+          - condition: '{{ if (eq "{ $.status.phase }" "Invalid")}}true{{ else }}false{{ end }}'
             objectReference:
               apiVersion: v1
               resource: namespaces
               name: "{{ .Namespace.Name }}"
-          - condition: `{{ if (eq "{ $.status.phase }" "Active")}}true{{ else }}false{{ end }}`
+          - condition: '{{ if (eq "{ $.status.phase }" "Active")}}true{{ else }}false{{ end }}'
             objectReference:
               apiVersion: v1
               resource: namespaces
