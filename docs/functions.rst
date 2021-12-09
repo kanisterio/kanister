@@ -1222,7 +1222,7 @@ Wait
 ----
 
 This function is used to wait on a Kubernetes resource
-until a desired state is reached.
+until desired state is reached.
 
 Arguments:
 
@@ -1239,14 +1239,14 @@ Arguments:
 .. code-block:: yaml
   :linenos:
 
-  condition: "Go template condition to return true or false"
+  condition: "Go template condition that returns true or false"
   objectReference:
-    apiVersion: "Kubernetes API version"
-    resource: "Kubernetes resource to wait on"
+    apiVersion: "Kubernetes resource API version"
+    resource: "Type of resource to wait for"
     name: "Name of the resource"
 
 .. note::
-    We can refer object key value in go template condition with the help of a ``$`` prefix JSON-path syntax.
+    We can refer object key-value in Go template condition with the help of a ``$`` prefix JSON-path syntax.
 
 Example:
 
