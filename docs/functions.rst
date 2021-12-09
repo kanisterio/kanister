@@ -1223,8 +1223,8 @@ Example:
 Wait
 ----
 
-This function is used to add wait on a Kubernetes resource
-till it matches a desired state.
+This function is used to wait on a Kubernetes resource
+until a desired state is reached.
 
 Arguments:
 
