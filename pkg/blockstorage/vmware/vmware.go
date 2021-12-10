@@ -546,10 +546,11 @@ func (p *FcdProvider) getSnapshotIDsFromTags(categoryTags []vapitags.Tag, tags m
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to parse tag")
 		}
-		if _, ok := snapshotTagMap[parsedTag.snapid]; !ok {
-			snapshotTagMap[parsedTag.snapid] = map[string]string{}
+		snapId := SnapshotFullID(parsedTag.volid, parsedTag.snapid)
+		if _, ok := snapshotTagMap[snapId]; !ok {
+			snapshotTagMap[snapId] = map[string]string{}
 		}
-		snapshotTagMap[parsedTag.snapid][parsedTag.key] = parsedTag.value
+		snapshotTagMap[snapId][parsedTag.key] = parsedTag.value
 	}
 
 	snapshotIDs := []string{}

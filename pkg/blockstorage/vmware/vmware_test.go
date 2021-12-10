@@ -108,7 +108,7 @@ func (s *VMWareSuite) TestGetSnapshotIDsFromTags(c *C) {
 				"k1": "v1",
 				"k2": "v2",
 			},
-			snapIDs:    []string{"s1"},
+			snapIDs:    []string{"v1:s1"},
 			errChecker: IsNil,
 		},
 		{
@@ -120,7 +120,7 @@ func (s *VMWareSuite) TestGetSnapshotIDsFromTags(c *C) {
 			tags: map[string]string{
 				"k1": "v1",
 			},
-			snapIDs:    []string{"s1", "s2"},
+			snapIDs:    []string{"v1:s1", "v1:s2"},
 			errChecker: IsNil,
 		},
 		{
@@ -129,7 +129,7 @@ func (s *VMWareSuite) TestGetSnapshotIDsFromTags(c *C) {
 				{Name: "v1:s1:k2:v2"},
 				{Name: "v1:s2:k1:v1"},
 			},
-			snapIDs:    []string{"s1", "s2"},
+			snapIDs:    []string{"v1:s1", "v1:s2"},
 			errChecker: IsNil,
 		},
 		{
