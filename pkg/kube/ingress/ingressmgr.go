@@ -53,6 +53,15 @@ type Manager interface {
 // NewManager can be used to get the Manager based on the APIVersion of the ingress resources on the cluster
 // so that, respecitve methods from that APIVersion can be called
 func NewManager(ctx context.Context, kubeCli kubernetes.Interface) (Manager, error) {
+	// return early if its fake CLI because fakecli doesn't implement `ServerPreferredResources` correctly
+	list, err := kubeCli.Discovery().ServerPreferredResources()
+	if err != nil {
+		return nil, errors.New("Error finding if the CLI was fake CLI")
+	}
+	if len(list) == 0 {
+		return nil, nil
+	}
+
 	exists, err := kube.IsResAvailableInGroupVersion(ctx, kubeCli.Discovery(), netv1.GroupName, netv1.SchemeGroupVersion.Version, ingressRes)
 	if err != nil {
 		return nil, errors.Errorf("Failed to call discovery APIs: %v", err)
