@@ -70,7 +70,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
 	github.com/spf13/cobra v1.1.3
-	github.com/vmware/govmomi v0.21.1-0.20191008161538-40aebf13ba45
+	github.com/vmware/govmomi v0.22.2-0.20200329013745-f2eef8fc745f
 	github.com/zeebo/blake3 v0.1.2 // indirect
 	go.mongodb.org/mongo-driver v1.5.1 // indirect
 	go.uber.org/zap v1.17.0
