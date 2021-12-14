@@ -58,7 +58,7 @@ func NewManager(ctx context.Context, kubeCli kubernetes.Interface) (Manager, err
 	if err != nil {
 		return nil, errors.New("Error finding if the CLI was fake CLI")
 	}
-	if len(list) == 0 {
+	if list == nil {
 		return nil, nil
 	}
 
