@@ -53,7 +53,7 @@ func (i *ExtensionsV1beta1) Create(ctx context.Context, ingress *unstructured.Un
 	var ing extensionsv1beta1.Ingress
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(ingress.UnstructuredContent(), &ing)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed converting runtime.Object to networking/v1 ingress")
+		return nil, errors.Wrapf(err, "Failed converting runtime.Object to extensions/v1beta1 ingress")
 	}
 	return i.kubeCli.ExtensionsV1beta1().Ingresses(ing.Namespace).Create(ctx, &ing, opts)
 }
