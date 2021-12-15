@@ -347,14 +347,13 @@ func (p *FcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage
 			if err != nil {
 				return nil, errors.Wrap(err, "Failed to convert object to snapshot")
 			}
-			snapID := vimID(snapshotID)
 			log.Debug().Print("RetrieveMetadata: " + volID + "," + snapshotID)
-			kvs, err := p.Gom.RetrieveMetadata(ctx, vimID(volID), &snapID, "")
+			tags, err := p.getSnapshotTags(ctx, id, volID)
 			if err != nil {
 				return nil, errors.Wrap(err, "Failed to get snapshot metadata")
 			}
 			log.Debug().Print("RetrieveMetadata done: " + volID + "," + snapshotID)
-			snapshot.Tags = convertKeyValueToTags(kvs)
+			snapshot.Tags = tags
 			return snapshot, nil
 		}
 	}
@@ -508,6 +507,24 @@ func (p *FcdProvider) VolumesList(ctx context.Context, tags map[string]string, z
 	return nil, errors.New("Not implemented")
 }
 
+func (p *FcdProvider) getSnapshotTags(ctx context.Context, fullSnapshotID string, volid string) ([]*blockstorage.KeyValue, error) {
+	if p.categoryID == "" {
+		if p.Gom == nil {
+			return nil, errors.New("GlobalObjectManager not initialized")
+		}
+		kvs, err := p.Gom.RetrieveMetadata(ctx, vimID(volid), nil, "")
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get volume metadata")
+		}
+		return convertKeyValueToTags(kvs), nil
+	}
+	categoryTags, err := p.tagManager.GetTagsForCategory(ctx, p.categoryID)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to list tags")
+	}
+	return p.getTagsFromSnapshotID(categoryTags, fullSnapshotID)
+}
+
 // SnapshotsList is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	if p.categoryID == "" {
@@ -538,12 +555,26 @@ func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string)
 	return snapshots, nil
 }
 
+func (p *FcdProvider) getTagsFromSnapshotID(categoryTags []vapitags.Tag, fullSnapshotID string) ([]*blockstorage.KeyValue, error) {
+	tags := map[string]string{}
+	for _, catTag := range categoryTags {
+		parsedTag := &snapshotTag{}
+		if err := parsedTag.Parse(catTag.Name); err != nil {
+			return nil, errors.Wrapf(err, "Failed to parse tag")
+		}
+		snapId := SnapshotFullID(parsedTag.volid, parsedTag.snapid)
+		if snapId == fullSnapshotID {
+			tags[parsedTag.key] = parsedTag.value
+		}
+	}
+	return blockstorage.MapToKeyValue(tags), nil
+}
+
 func (p *FcdProvider) getSnapshotIDsFromTags(categoryTags []vapitags.Tag, tags map[string]string) ([]string, error) {
 	snapshotTagMap := map[string]map[string]string{}
 	for _, catTag := range categoryTags {
 		parsedTag := &snapshotTag{}
-		err := parsedTag.Parse(catTag.Name)
-		if err != nil {
+		if err := parsedTag.Parse(catTag.Name); err != nil {
 			return nil, errors.Wrapf(err, "Failed to parse tag")
 		}
 		snapId := SnapshotFullID(parsedTag.volid, parsedTag.snapid)

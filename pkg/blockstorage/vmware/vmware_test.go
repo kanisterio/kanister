@@ -2,6 +2,7 @@ package vmware
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -300,6 +301,72 @@ func (s *VMWareSuite) TestDeleteTagsSnapshot(c *C) {
 		c.Assert(err, tc.errChecker)
 		if tc.errChecker == IsNil {
 			c.Assert(ftm.numDeletes, Equals, tc.expNumDeletes)
+		}
+	}
+}
+
+func (s *VMWareSuite) TestGetSnapshotTags(c *C) {
+	ctx := context.Background()
+	for _, tc := range []struct {
+		snapshotID   string
+		catID        string
+		volID        string
+		categoryTags []vapitags.Tag
+		expNumTags   int
+		errGetTags   error
+		errChecker   Checker
+	}{
+		{ // success
+			snapshotID: "v1:s1",
+			volID:      "v1",
+			categoryTags: []vapitags.Tag{
+				{Name: "v1:s1:t1:v1"},
+				{Name: "v1:s1:t2:v2"},
+				{Name: "v1:s2:t3:v3"},
+				{Name: "v3:s2:t4:v4"},
+			},
+			errChecker: IsNil,
+			catID:      "something",
+			expNumTags: 2,
+		},
+		{ // bad tag
+			snapshotID: "v1:s1",
+			volID:      "v1",
+			categoryTags: []vapitags.Tag{
+				{Name: "v1:s1:t1:v1"},
+				{Name: "v1:s1:t2:v2"},
+				{Name: "v1:s2:t3:v3"},
+				{Name: "v3:s2t4:v4"},
+			},
+			catID:      "something",
+			errChecker: NotNil,
+		},
+		{ // bad tag
+			snapshotID:   "v1:s1",
+			volID:        "v1",
+			categoryTags: []vapitags.Tag{},
+			errGetTags:   errors.New("get tags error"),
+			errChecker:   NotNil,
+			catID:        "something",
+		},
+		{ // empty cat id
+			errChecker: NotNil,
+			catID:      "",
+			expNumTags: 0,
+		},
+	} {
+		ftm := &fakeTagManager{
+			retGetTagsForCategory: tc.categoryTags,
+			errGetTagsForCategory: tc.errGetTags,
+		}
+		provider := &FcdProvider{
+			categoryID: tc.catID,
+			tagManager: ftm,
+		}
+		tags, err := provider.getSnapshotTags(ctx, tc.snapshotID, tc.volID)
+		c.Assert(err, tc.errChecker)
+		if tc.errChecker == IsNil {
+			c.Assert(len(tags), Equals, tc.expNumTags)
 		}
 	}
 }
