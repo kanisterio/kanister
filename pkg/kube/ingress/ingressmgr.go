@@ -76,5 +76,8 @@ func NewManager(ctx context.Context, kubeCli kubernetes.Interface) (Manager, err
 	if exists {
 		return NewNetworkingV1beta1(kubeCli), nil
 	}
-	return nil, errors.New("Ingress resources are not available")
+
+	// We were not able to figure out which groupVersion, resource is available in.
+	// Most probably its because fake CLI was used, fallback to extensions/v1beta1
+	return NewExtensionsV1beta1(kubeCli), nil
 }
