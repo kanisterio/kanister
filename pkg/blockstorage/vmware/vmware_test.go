@@ -310,7 +310,6 @@ func (s *VMWareSuite) TestGetSnapshotTags(c *C) {
 	for _, tc := range []struct {
 		snapshotID   string
 		catID        string
-		volID        string
 		categoryTags []vapitags.Tag
 		expNumTags   int
 		errGetTags   error
@@ -318,7 +317,6 @@ func (s *VMWareSuite) TestGetSnapshotTags(c *C) {
 	}{
 		{ // success
 			snapshotID: "v1:s1",
-			volID:      "v1",
 			categoryTags: []vapitags.Tag{
 				{Name: "v1:s1:t1:v1"},
 				{Name: "v1:s1:t2:v2"},
@@ -331,7 +329,6 @@ func (s *VMWareSuite) TestGetSnapshotTags(c *C) {
 		},
 		{ // bad tag
 			snapshotID: "v1:s1",
-			volID:      "v1",
 			categoryTags: []vapitags.Tag{
 				{Name: "v1:s1:t1:v1"},
 				{Name: "v1:s1:t2:v2"},
@@ -343,14 +340,13 @@ func (s *VMWareSuite) TestGetSnapshotTags(c *C) {
 		},
 		{ // bad tag
 			snapshotID:   "v1:s1",
-			volID:        "v1",
 			categoryTags: []vapitags.Tag{},
 			errGetTags:   errors.New("get tags error"),
 			errChecker:   NotNil,
 			catID:        "something",
 		},
 		{ // empty cat id
-			errChecker: NotNil,
+			errChecker: IsNil,
 			catID:      "",
 			expNumTags: 0,
 		},
@@ -363,7 +359,7 @@ func (s *VMWareSuite) TestGetSnapshotTags(c *C) {
 			categoryID: tc.catID,
 			tagManager: ftm,
 		}
-		tags, err := provider.getSnapshotTags(ctx, tc.snapshotID, tc.volID)
+		tags, err := provider.getSnapshotTags(ctx, tc.snapshotID)
 		c.Assert(err, tc.errChecker)
 		if tc.errChecker == IsNil {
 			c.Assert(len(tags), Equals, tc.expNumTags)
