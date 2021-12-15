@@ -1222,7 +1222,7 @@ Wait
 ----
 
 This function is used to wait on a Kubernetes resource
-until desired state is reached.
+until a desired state is reached.
 
 Arguments:
 
