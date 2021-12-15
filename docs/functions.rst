@@ -1246,7 +1246,7 @@ Arguments:
     name: "Name of the resource"
 
 .. note::
-    We can refer object key-value in Go template condition with the help of a ``$`` prefix JSON-path syntax.
+    We can refer to the object key-value in Go template condition with the help of a ``$`` prefix JSON-path syntax.
 
 Example:
 
