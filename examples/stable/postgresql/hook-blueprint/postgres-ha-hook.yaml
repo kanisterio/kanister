@@ -52,5 +52,3 @@ actions:
           export conn_info_standby='user=repmgr password='${PGREPL}' host='${secondaryHost}' dbname=repmgr port=5432 connect_timeout=5'
           psql -U postgres -h $PGHOST -d repmgr -c "update repmgr.nodes set conninfo='${conn_info_primary}' where type='primary'"
           psql -U postgres -h $PGHOST -d repmgr -c "update repmgr.nodes set conninfo='${conn_info_standby}' where type='standby'"
-        
-          
