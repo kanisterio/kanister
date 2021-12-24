@@ -42,8 +42,8 @@ actions:
         - -c
         - |
           export PGHOST='{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local'
-          export PGPASSWORD='{{ index .Phases.pgUpdate.Secrets.pgSecret.Data "postgresql-password" | toString }}'
-          export PGREPL='{{ index .Phases.pgUpdate.Secrets.pgSecret.Data "repmgr-password" | toString }}'
+          export PGPASSWORD='{{ index .Phases.PgUpdate.Secrets.pgSecret.Data "postgresql-password" | toString }}'
+          export PGREPL='{{ index .Phases.PgUpdate.Secrets.pgSecret.Data "repmgr-password" | toString }}'
           postgresMaster=$(psql -U postgres -h $PGHOST -d repmgr  -t -c "select node_name from repmgr.nodes where type='primary'")
           postgresStandby=$(psql -U postgres -h $PGHOST -d repmgr  -t -c "select node_name from repmgr.nodes where type='standby'")
           primaryHost=''${postgresMaster}'.{{ .StatefulSet.Name }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
