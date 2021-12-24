@@ -6,11 +6,11 @@ actions:
   postRestoreHook:
     phases:
     - func: Wait
-      name: WaitForPod
+      name: WaitForPodReady
       args:
-       timeout: 120s
+       timeout: 240s
        conditions:
-         anyOf:
+          anyOf:
           - condition: '{{ if { $.status.containerStatuses[].ready } }}true{{ else }}false{{ end }}'
             objectReference:
               apiVersion: v1
@@ -24,7 +24,7 @@ actions:
               name: '{{ .StatefulSet.Name }}-1' 
               namespace: '{{ .StatefulSet.Namespace }}'
     - func: KubeTask
-      name: pgUpdate
+      name: PgUpdate
       objects:
         pgSecret:
           kind: Secret
@@ -41,7 +41,7 @@ actions:
         - pipefail
         - -c
         - |
-          export PGHOST='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-{{ index .Object.metadata.labels "app.kubernetes.io/name" }}-pgpool.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+          export PGHOST='{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local'
           export PGPASSWORD='{{ index .Phases.pgUpdate.Secrets.pgSecret.Data "postgresql-password" | toString }}'
           export PGREPL='{{ index .Phases.pgUpdate.Secrets.pgSecret.Data "repmgr-password" | toString }}'
           postgresMaster=$(psql -U postgres -h $PGHOST -d repmgr  -t -c "select node_name from repmgr.nodes where type='primary'")
