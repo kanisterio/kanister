@@ -56,7 +56,7 @@ type Snapshotter interface {
 	// 'waitForReady' will block the caller until the snapshot status is 'ReadyToUse'.
 	// or 'ctx.Done()' is signalled. Otherwise it will return immediately after the snapshot is cut.
 	// 'labels' can also be addded to the volume snapshot.
-	Create(ctx context.Context, name, namespace, pvcName string, snapshotClass *string, waitForReady bool, labels map[string]string) error
+	Create(ctx context.Context, name, namespace, pvcName string, snapshotClass *string, waitForReady bool, labels map[string]string) (*v1.VolumeSnapshot, error)
 	// Get will return the VolumeSnapshot in the namespace 'namespace' with given 'name'.
 	//
 	// 'name' is the name of the VolumeSnapshot that will be returned.

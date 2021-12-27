@@ -90,28 +90,28 @@ func (sna *SnapshotAlpha) GetVolumeSnapshotClass(ctx context.Context, annotation
 }
 
 // Create creates a VolumeSnapshot and returns it or any error that happened meanwhile.
-func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName string, snapshotClass *string, waitForReady bool, labels map[string]string) error {
+func (sna *SnapshotAlpha) Create(ctx context.Context, name, namespace, pvcName string, snapshotClass *string, waitForReady bool, labels map[string]string) (*v1.VolumeSnapshot, error) {
 	if _, err := sna.kubeCli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcName, metav1.GetOptions{}); err != nil {
 		if k8errors.IsNotFound(err) {
-			return errors.Errorf("Failed to find PVC %s, Namespace %s", pvcName, namespace)
+			return nil, errors.Errorf("Failed to find PVC %s, Namespace %s", pvcName, namespace)
 		}
-		return errors.Errorf("Failed to query PVC %s, Namespace %s: %v", pvcName, namespace, err)
+		return nil, errors.Errorf("Failed to query PVC %s, Namespace %s: %v", pvcName, namespace, err)
 	}
 	snap := UnstructuredVolumeSnapshotAlpha(name, namespace, pvcName, "", *snapshotClass, blockstorage.SanitizeTags(labels))
 	if _, err := sna.dynCli.Resource(v1alpha1.VolSnapGVR).Namespace(namespace).Create(ctx, snap, metav1.CreateOptions{}); err != nil {
-		return err
+		return nil, err
 	}
 
 	if !waitForReady {
-		return nil
+		return nil, nil
 	}
 
 	if err := sna.WaitOnReadyToUse(ctx, name, namespace); err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err := sna.Get(ctx, name, namespace)
-	return err
+	vs, err := sna.Get(ctx, name, namespace)
+	return vs, err
 }
 
 // Get will return the VolumeSnapshot in the 'namespace' with given 'name'.

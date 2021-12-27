@@ -79,33 +79,33 @@ func (sna *SnapshotBeta) GetVolumeSnapshotClass(ctx context.Context, annotationK
 }
 
 // Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
-func (sna *SnapshotBeta) Create(ctx context.Context, name, namespace, volumeName string, snapshotClass *string, waitForReady bool, labels map[string]string) error {
+func (sna *SnapshotBeta) Create(ctx context.Context, name, namespace, volumeName string, snapshotClass *string, waitForReady bool, labels map[string]string) (*v1.VolumeSnapshot, error) {
 	return createSnapshot(ctx, sna.dynCli, sna.kubeCli, v1beta1.VolSnapGVR, name, namespace, volumeName, snapshotClass, waitForReady, labels)
 }
 
-func createSnapshot(ctx context.Context, dynCli dynamic.Interface, kubeCli kubernetes.Interface, snapGVR schema.GroupVersionResource, name, namespace, volumeName string, snapshotClass *string, waitForReady bool, labels map[string]string) error {
+func createSnapshot(ctx context.Context, dynCli dynamic.Interface, kubeCli kubernetes.Interface, snapGVR schema.GroupVersionResource, name, namespace, volumeName string, snapshotClass *string, waitForReady bool, labels map[string]string) (*v1.VolumeSnapshot, error) {
 	if _, err := kubeCli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, volumeName, metav1.GetOptions{}); err != nil {
 		if k8errors.IsNotFound(err) {
-			return errors.Errorf("Failed to find PVC %s, Namespace %s", volumeName, namespace)
+			return nil, errors.Errorf("Failed to find PVC %s, Namespace %s", volumeName, namespace)
 		}
-		return errors.Wrapf(err, "Failed to query PVC %s, Namespace %s", volumeName, namespace)
+		return nil, errors.Wrapf(err, "Failed to query PVC %s, Namespace %s", volumeName, namespace)
 	}
 
 	snap := UnstructuredVolumeSnapshot(snapGVR, name, namespace, volumeName, "", *snapshotClass, blockstorage.SanitizeTags(labels))
 	if _, err := dynCli.Resource(snapGVR).Namespace(namespace).Create(ctx, snap, metav1.CreateOptions{}); err != nil {
-		return errors.Wrapf(err, "Failed to create snapshot resource %s, Namespace %s", name, namespace)
+		return nil, errors.Wrapf(err, "Failed to create snapshot resource %s, Namespace %s", name, namespace)
 	}
 
 	if !waitForReady {
-		return nil
+		return nil, nil
 	}
 
 	if err := waitOnReadyToUse(ctx, dynCli, snapGVR, name, namespace); err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err := getSnapshot(ctx, dynCli, snapGVR, name, namespace)
-	return err
+	vs, err := getSnapshot(ctx, dynCli, snapGVR, name, namespace)
+	return vs, err
 }
 
 // Get will return the VolumeSnapshot in the 'namespace' with given 'name'.
