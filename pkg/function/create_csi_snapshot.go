@@ -16,8 +16,7 @@ package function
 
 import (
 	"context"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
+	"github.com/kanisterio/kanister/pkg/kube"
 
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -80,8 +79,14 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		return nil, err
 	}
 
-	var dynCli dynamic.Interface
-	var kubeCli kubernetes.Interface
+	kubeCli, err := kube.NewClient()
+	if err != nil {
+		return nil, err
+	}
+	dynCli, err := kube.NewDynamicClient()
+	if err != nil {
+		return nil, err
+	}
 	snapShotter, err := snapshot.NewSnapshotter(kubeCli, dynCli)
 	if err != nil {
 		return nil, err
