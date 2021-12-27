@@ -18,7 +18,6 @@ import (
 	"context"
 	"github.com/kanisterio/kanister/pkg/kube"
 
-
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
@@ -43,8 +42,6 @@ const (
 	CreateCSISnapshotNamespaceArg = "namespace"
 	// CreateCSISnapshotSnapshotClassArg specifies the name of the VolumeSnapshotClass
 	CreateCSISnapshotSnapshotClassArg = "snapshotClass"
-	// CreateCSISnapshotWaitForReadyArg enables/disables a wait for snapshot status to be 'ReadyToUse'
-	CreateCSISnapshotWaitForReadyArg = "waitForReady"
 	// CreateCSISnapshotLabelsArg has labels that are to be added to the new VolumeSnapshot
 	CreateCSISnapshotLabelsArg = "labels"
 )
@@ -56,7 +53,6 @@ func (*createCSISnapshotFunc) Name() string {
 }
 
 func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var waitForReady bool
 	var snapshotClass *string
 	var labels map[string]string
 	var name, pvc, namespace string
@@ -66,13 +62,10 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err := Arg(args, CreateCSISnapshotPVCNameArg, &pvc); err != nil {
 		return nil, err
 	}
-	if err := Arg(args, CreateCSISnapshotNamespaceArg, &namespace); err != nil {
-		return nil, err
-	}
 	if err := Arg(args, CreateCSISnapshotSnapshotClassArg, &snapshotClass); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, CreateCSISnapshotWaitForReadyArg, &waitForReady, true); err != nil {
+	if err := OptArg(args, CreateCSISnapshotNamespaceArg, &namespace, "default"); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, CreateCSISnapshotLabelsArg, &labels, map[string]string{}); err != nil {
@@ -91,6 +84,7 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err != nil {
 		return nil, err
 	}
+	waitForReady := true
 	vs, err := snapShotter.Create(ctx, name, namespace, pvc, snapshotClass, waitForReady, labels)
 	if err != nil {
 		return nil, err
@@ -100,12 +94,8 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		"name": name,
 		"pvc": pvc,
 		"namespace": namespace,
-		"restoreSize": "",
-		"snapshotContent": "",
-	}
-	if vs != nil {
-		snapshotInfo["restoreSize"] = vs.Status.RestoreSize.String()
-		snapshotInfo["snapshotContent"] = vs.Status.BoundVolumeSnapshotContentName
+		"restoreSize": vs.Status.RestoreSize.String(),
+		"snapshotContent": vs.Status.BoundVolumeSnapshotContentName,
 	}
 	return snapshotInfo, nil
 }
@@ -114,7 +104,6 @@ func (*createCSISnapshotFunc) RequiredArgs() []string {
 	return []string{
 		CreateCSISnapshotNameArg,
 		CreateCSISnapshotPVCNameArg,
-		CreateCSISnapshotNamespaceArg,
 		CreateCSISnapshotSnapshotClassArg,
 	}
 }
