@@ -86,7 +86,10 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		return nil, err
 	}
 	waitForReady := true
-	vs, err := snapShotter.Create(ctx, name, namespace, pvc, snapshotClass, waitForReady, labels)
+	if err := snapShotter.Create(ctx, name, namespace, pvc, snapshotClass, waitForReady, labels); err != nil {
+		return nil, err
+	}
+	vs, err := snapShotter.Get(ctx, name, namespace)
 	if err != nil {
 		return nil, err
 	}

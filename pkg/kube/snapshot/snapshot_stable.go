@@ -69,7 +69,7 @@ func (sna *SnapshotStable) GetVolumeSnapshotClass(ctx context.Context, annotatio
 }
 
 // Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
-func (sna *SnapshotStable) Create(ctx context.Context, name, namespace, volumeName string, snapshotClass *string, waitForReady bool, labels map[string]string) (*v1.VolumeSnapshot, error) {
+func (sna *SnapshotStable) Create(ctx context.Context, name, namespace, volumeName string, snapshotClass *string, waitForReady bool, labels map[string]string) error {
 	return createSnapshot(ctx, sna.dynCli, sna.kubeCli, VolSnapGVR, name, namespace, volumeName, snapshotClass, waitForReady, labels)
 }
 

@@ -162,13 +162,13 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotFake(c *C) {
 		snapshot.NewSnapshotBeta(fakeCli, dynfake.NewSimpleDynamicClient(scheme)),
 		snapshot.NewSnapshotStable(fakeCli, dynfake.NewSimpleDynamicClient(scheme)),
 	} {
-		_, err = fakeSs.Create(context.Background(), snapshotName, defaultNamespace, volName, &fakeClass, false, nil)
+		err = fakeSs.Create(context.Background(), snapshotName, defaultNamespace, volName, &fakeClass, false, nil)
 		c.Assert(err, IsNil)
 		snap, err := fakeSs.Get(context.Background(), snapshotName, defaultNamespace)
 		c.Assert(err, IsNil)
 		c.Assert(snap.Name, Equals, snapshotName)
 
-		_, err = fakeSs.Create(context.Background(), snapshotName, defaultNamespace, volName, &fakeClass, false, nil)
+		err = fakeSs.Create(context.Background(), snapshotName, defaultNamespace, volName, &fakeClass, false, nil)
 		c.Assert(err, NotNil)
 		deletedSnap, err := fakeSs.Delete(context.Background(), snap.Name, snap.Namespace)
 		c.Assert(err, IsNil)
@@ -421,7 +421,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	label := map[string]string{
 		"snapshottest": "testlabel",
 	}
-	_, err = snapshotter.Create(ctx, snapshotName, s.sourceNamespace, pvc.Name, snapshotClass, wait, label)
+	err = snapshotter.Create(ctx, snapshotName, s.sourceNamespace, pvc.Name, snapshotClass, wait, label)
 	c.Assert(err, IsNil)
 
 	snap, err := snapshotter.Get(ctx, snapshotName, s.sourceNamespace)
@@ -435,7 +435,7 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	c.Assert(len(snapList.Items), Equals, 1)
 	c.Assert(snapList.Items[0].Labels, DeepEquals, label)
 
-	_, err = snapshotter.Create(ctx, snapshotName, s.sourceNamespace, pvc.Name, snapshotClass, wait, nil)
+	err = snapshotter.Create(ctx, snapshotName, s.sourceNamespace, pvc.Name, snapshotClass, wait, nil)
 	c.Assert(err, NotNil)
 
 	snapshotCloneName := snapshotName + "-clone"
@@ -1175,7 +1175,7 @@ func (s *SnapshotLocalTestSuite) TestLabels(c *C) {
 		} {
 			var err error
 			var list *snapv1.VolumeSnapshotList
-			_, err = fakeSs.Create(ctx, snapName, ns, volName, &snapClass, false, tc.createLabels)
+			err = fakeSs.Create(ctx, snapName, ns, volName, &snapClass, false, tc.createLabels)
 			if err == nil {
 				list, err = fakeSs.List(ctx, ns, tc.listLabel)
 				c.Assert(len(list.Items), Equals, tc.numResults)
