@@ -16,11 +16,12 @@ package function
 
 import (
 	"context"
+
 	"github.com/kanisterio/kanister/pkg/kube"
 
-	"github.com/kanisterio/kanister/pkg/param"
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 func init() {
@@ -91,10 +92,10 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	}
 
 	snapshotInfo := map[string]interface{}{
-		"name": name,
-		"pvc": pvc,
-		"namespace": namespace,
-		"restoreSize": vs.Status.RestoreSize.String(),
+		"name":            name,
+		"pvc":             pvc,
+		"namespace":       namespace,
+		"restoreSize":     vs.Status.RestoreSize.String(),
 		"snapshotContent": vs.Status.BoundVolumeSnapshotContentName,
 	}
 	return snapshotInfo, nil
