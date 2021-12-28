@@ -62,10 +62,10 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err := Arg(args, CreateCSISnapshotPVCNameArg, &pvc); err != nil {
 		return nil, err
 	}
-	if err := Arg(args, CreateCSISnapshotSnapshotClassArg, &snapshotClass); err != nil {
+	if err := Arg(args, CreateCSISnapshotNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, CreateCSISnapshotNamespaceArg, &namespace, "default"); err != nil {
+	if err := Arg(args, CreateCSISnapshotSnapshotClassArg, &snapshotClass); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, CreateCSISnapshotLabelsArg, &labels, map[string]string{}); err != nil {
@@ -104,6 +104,7 @@ func (*createCSISnapshotFunc) RequiredArgs() []string {
 	return []string{
 		CreateCSISnapshotNameArg,
 		CreateCSISnapshotPVCNameArg,
+		CreateCSISnapshotNamespaceArg,
 		CreateCSISnapshotSnapshotClassArg,
 	}
 }

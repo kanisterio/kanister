@@ -1284,8 +1284,8 @@ Arguments:
 
    `name`, Yes, `string`, name of the VolumeSnapshot
    `pvc`, Yes, `string`, name of the PersistentVolumeClaim to be captured
-   `snapshotClass`, Yes, `string`, name of the VolumeSnapshotClass
    `namespace`, Yes, `string`, namespace of the PersistentVolumeClaim and resultant VolumeSnapshot
+   `snapshotClass`, Yes, `string`, name of the VolumeSnapshotClass
    `labels`, No, `map[string]string`, labels for the VolumeSnapshot
 
 Outputs:
