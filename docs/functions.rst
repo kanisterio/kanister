@@ -1217,7 +1217,6 @@ Example:
                   name: http
                   protocol: TCP
 
-
 Wait
 ----
 
@@ -1269,6 +1268,62 @@ Example:
               apiVersion: v1
               resource: namespaces
               name: "{{ .Namespace.Name }}"
+
+CreateCSISnapshot
+-----------------
+
+This function is used to Create CSI VolumeSnapshot for a PersistentVolumeClaim.
+It halts the action until ``ReadyToUse`` status of VolumeSnapshot is ``true``.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, Yes, `string`, name of the VolumeSnapshot
+   `pvc`, Yes, `string`, name of the PersistentVolumeClaim to be captured
+   `snapshotClass`, Yes, `string`, name of the VolumeSnapshotClass
+   `namespace`, Yes, `string`, namespace of the PersistentVolumeClaim and resultant VolumeSnapshot
+   `labels`, No, `map[string]string`, labels for the VolumeSnapshot
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `name`,`string`, name of the CSI VolumeSnapshot
+   `pvc`,`string`, name of the captured PVC
+   `namespace`, string, namespace of the captured PVC and VolumeSnapshot
+   `restoreSize`, string, required memory size to restore PVC
+   `snapshotContent`, string, name of the VolumeSnapshotContent
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+  backup:
+    outputArtifacts:
+      snapshotInfo:
+        keyValue:
+          name: "{{ .Phases.createCSISnapshot.Output.name }}"
+          pvc: "{{ .Phases.createCSISnapshot.Output.pvc }}"
+          namespace: "{{ .Phases.createCSISnapshot.Output.namespace }}"
+          restoreSize: "{{ .Phases.createCSISnapshot.Output.restoreSize }}"
+          snapshotContent: "{{ .Phases.createCSISnapshot.Output.snapshotContent }}"
+    phases:
+    - func: CreateCSISnapshot
+      name: createCSISnapshot
+      args:
+        name: "{{ .PVC.Name }}-volumesnapshot"
+        pvc: "{{ .PVC.Name }}"
+        namespace: "{{ .PVC.Namespace }}"
+        snapshotClass: do-block-storage
 
 
 Registering Functions

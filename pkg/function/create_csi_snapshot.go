@@ -18,8 +18,8 @@ import (
 	"context"
 	"github.com/kanisterio/kanister/pkg/kube"
 
-	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/param"
+	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 )
 
