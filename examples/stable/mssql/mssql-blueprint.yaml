@@ -14,11 +14,6 @@ actions:
     phases:
       - func: KubeTask
         name: dumpToObjectStore
-#        objects:
-#          mssqlSecret:
-#            kind: Secret
-#            name: '{{ index .Object.metadata.name "mssql" }}'
-#            namespace: '{{ .StatefulSet.Namespace }}'
         args:
           image: chaitanyadelphian/mssql-tools:1.0.2
           command:
