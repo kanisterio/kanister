@@ -15,6 +15,7 @@
 package function
 
 import (
+	"fmt"
 	"context"
 
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -67,7 +68,7 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err := Arg(args, CreateCSISnapshotSnapshotClassArg, &snapshotClass); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, CreateCSISnapshotNameArg, &name, defaultSnapshotName(pvc, 30)); err != nil {
+	if err := OptArg(args, CreateCSISnapshotNameArg, &name, defaultSnapshotName(pvc, 8)); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, CreateCSISnapshotLabelsArg, &labels, map[string]string{}); err != nil {
@@ -114,10 +115,7 @@ func (*createCSISnapshotFunc) RequiredArgs() []string {
 	}
 }
 
-// Generates a default snapshot name using;
-// 1. PVC name
-// 2. constant string "-snapshot-"
-// 3. a random alphanumeric string suffix
+// defaultSnapshotName generates snapshot name using pvcName-snapshot-randomValue
 func defaultSnapshotName(pvcName string, len int) string {
-	return pvcName + "-snapshot-" + rand.String(len)
+	return fmt.Sprintf("%s-snapshot-%s", pvcName, rand.String(len))
 }
