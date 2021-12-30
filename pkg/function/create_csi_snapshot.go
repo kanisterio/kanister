@@ -17,9 +17,8 @@ package function
 import (
 	"context"
 
-	"github.com/kanisterio/kanister/pkg/kube"
-
 	kanister "github.com/kanisterio/kanister/pkg"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -85,6 +84,7 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err != nil {
 		return nil, err
 	}
+	// waitForReady is set to true by default because snapshot information is needed as output artifacts
 	waitForReady := true
 	if err := snapshotter.Create(ctx, name, namespace, pvc, snapshotClass, waitForReady, labels); err != nil {
 		return nil, err
