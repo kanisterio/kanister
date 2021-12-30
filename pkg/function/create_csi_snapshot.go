@@ -17,6 +17,8 @@ package function
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/util/rand"
+
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
@@ -56,9 +58,6 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	var snapshotClass *string
 	var labels map[string]string
 	var name, pvc, namespace string
-	if err := Arg(args, CreateCSISnapshotNameArg, &name); err != nil {
-		return nil, err
-	}
 	if err := Arg(args, CreateCSISnapshotPVCNameArg, &pvc); err != nil {
 		return nil, err
 	}
@@ -66,6 +65,9 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		return nil, err
 	}
 	if err := Arg(args, CreateCSISnapshotSnapshotClassArg, &snapshotClass); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, CreateCSISnapshotNameArg, &name, defaultSnapshotName(pvc, 30)); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, CreateCSISnapshotLabelsArg, &labels, map[string]string{}); err != nil {
@@ -106,9 +108,16 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 
 func (*createCSISnapshotFunc) RequiredArgs() []string {
 	return []string{
-		CreateCSISnapshotNameArg,
 		CreateCSISnapshotPVCNameArg,
 		CreateCSISnapshotNamespaceArg,
 		CreateCSISnapshotSnapshotClassArg,
 	}
+}
+
+// Generates a default snapshot name using;
+// 1. PVC name
+// 2. constant string "-snapshot-"
+// 3. a random alphanumeric string suffix
+func defaultSnapshotName(pvcName string, len int) string {
+	return pvcName + "-snapshot-" + rand.String(len)
 }
