@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2022 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -124,14 +124,14 @@ func restoreCSISnapshot(ctx context.Context, args restoreCSISnapshotArgs) error 
 	if err != nil {
 		return err
 	}
-	pvc := getPVCManifest(args)
-	if _, err = kubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(ctx, &pvc, metav1.CreateOptions{}); err != nil {
+	pvc := newPVCManifest(args)
+	if _, err = kubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(ctx, pvc, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func getPVCManifest(args restoreCSISnapshotArgs) v1.PersistentVolumeClaim {
+func newPVCManifest(args restoreCSISnapshotArgs) *v1.PersistentVolumeClaim {
 	snapshotAPIGroup := SnapshotAPIGroup
 	pvc := &v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -157,5 +157,5 @@ func getPVCManifest(args restoreCSISnapshotArgs) v1.PersistentVolumeClaim {
 	if args.Labels != nil {
 		pvc.ObjectMeta.Labels = args.Labels
 	}
-	return *pvc
+	return pvc
 }
