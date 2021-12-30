@@ -55,7 +55,7 @@ Kubernetes cluster. It will push the controller docker image to your docker repo
 .. code-block:: bash
 
    # Build controller binary
-   $ make build
+   $ make build-controller
 
    # Package the binary in a docker image and push it to your image registry
    $ make release-controller REGISTRY=<MY REGISTRY>
