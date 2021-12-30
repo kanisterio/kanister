@@ -29,9 +29,7 @@ if [ -z "${VERSION}" ]; then
 fi
 
 export CGO_ENABLED=0
-go build -v                                                      \
+go install -v                                                      \
     -installsuffix "static"                                        \
     -ldflags "-X ${PKG}/pkg/version.VERSION=${VERSION}"            \
-    ./cmd/controller
-
-mv -f controller bin/amd64/
+    ./cmd/...

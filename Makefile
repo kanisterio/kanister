@@ -88,6 +88,15 @@ all-push: $(addprefix push-, $(ALL_ARCH))
 
 build: bin/$(ARCH)/$(BIN)
 
+build-contoller: 
+	@echo "building: $@"
+	@$(MAKE) run CMD='-c " \
+		GOARCH=$(ARCH)       \
+		VERSION=$(VERSION) \
+		PKG=$(PKG)         \
+		./build/build-controller.sh   \
+	"'
+
 bin/$(ARCH)/$(BIN):
 	@echo "building: $@"
 	@$(MAKE) run CMD='-c " \
