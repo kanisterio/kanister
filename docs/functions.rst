@@ -1166,6 +1166,7 @@ Example:
       args:
         snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
 
+
 KubeOps
 -------
 
@@ -1216,6 +1217,7 @@ Example:
                 - containerPort: 80
                   name: http
                   protocol: TCP
+
 
 Wait
 ----
@@ -1269,11 +1271,12 @@ Example:
               resource: namespaces
               name: "{{ .Namespace.Name }}"
 
+
 CreateCSISnapshot
 -----------------
 
-This function is used to Create CSI VolumeSnapshot for a PersistentVolumeClaim.
-It halts the action until ``ReadyToUse`` status of VolumeSnapshot is ``true``.
+This function is used to create CSI VolumeSnapshot for a PersistentVolumeClaim.
+By default, it waits for the ``ReadyToUse`` status of the VolumeSnapshot to be ``true``.
 
 Arguments:
 
