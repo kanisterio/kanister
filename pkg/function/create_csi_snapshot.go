@@ -37,11 +37,11 @@ var (
 const (
 	// CreateCSIVolumeSnapshotFuncName gives the name of the function
 	CreateCSISnapshotFuncName = "CreateCSISnapshot"
-	// CreateCSISnapshotNameArg provides name of the VolumeSnapshot to be created
+	// CreateCSISnapshotNameArg provides name of the new VolumeSnapshot
 	CreateCSISnapshotNameArg = "name"
-	// CreateCSISnapshotPVCNameArg gives the name of the PVC to be captured
+	// CreateCSISnapshotPVCNameArg gives the name of the captured PVC
 	CreateCSISnapshotPVCNameArg = "pvc"
-	// CreateCSISnapshotNamespaceArg mentions the namespace of the PVC
+	// CreateCSISnapshotNamespaceArg mentions the namespace of the captured PVC
 	CreateCSISnapshotNamespaceArg = "namespace"
 	// CreateCSISnapshotSnapshotClassArg specifies the name of the VolumeSnapshotClass
 	CreateCSISnapshotSnapshotClassArg = "snapshotClass"
