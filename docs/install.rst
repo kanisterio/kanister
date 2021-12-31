@@ -50,7 +50,7 @@ Building and Deploying from Source
 
 Use the following commands to build, package, and deploy the controller to your
 Kubernetes cluster. It will push the controller docker image to your docker repo
-``<MY REGISTRY>`` and the controller will be deployed in the default namespace.
+``<MY REGISTRY>`` and the controller will be deployed in the ``kanister`` namespace.
 
 .. code-block:: bash
 
@@ -69,7 +69,7 @@ Deploy a Released Version
 
 To deploy a released version of the controller, issue the command below. Modify
 the namespace fields in ``bundle.yaml.in`` to deploy in a namespace of your
-choice. By default, the controller will be deployed into the ``default``
+choice. By default, the controller will be deployed into the ``kanister``
 namespace.
 
 .. substitution-code-block:: bash

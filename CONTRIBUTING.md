@@ -2,7 +2,7 @@
 
 ## How Can I Contribute?
   ### * Reporting Bugs
-  Before creating bug reports, please check the list of issues as you might find out that you don't need to create one. Also when creating a bug report, plaese include as many details as possible as this information may help us resolve the issue faster.
+  Before creating bug reports, please check the list of issues as you might find out that you don't need to create one. Also when creating a bug report, please include as many details as possible as this information may help us resolve the issue faster.
 
   ### * Suggesting Enhancements
   You can suggest minor improvements to existing functionality and or a completely new feature. 
@@ -11,7 +11,7 @@
   You can start by looking through `good-first-issue` issues:
 
 ## Local Development
-Once you are done with your changes, you need to ensure that your changes does not fail in CI build
+Once you are done with your changes, you need to ensure that your changes do not fail in the CI build
 
 ```bash
 
@@ -21,11 +21,16 @@ make golint
 #build the project
 make build
 
+#Run unit test 
+make test
+
 #Run E2E test
-#From project root directory
+#From the project root directory
 make integration-test
 
 ```
+To test and deploy your changes to a local Kubernetes cluster refer this https://docs.kanister.io/install.html#building-and-deploying-from-source
+
 ## Contributing to documentation
 For complete documentation visit https://docs.kanister.io/
 
@@ -50,7 +55,7 @@ If you find a bug or have a feature request, please submit an issue at https://g
 
 ## Submitting code via Pull Requests
 * We follow the [Github Pull Request Model](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) for all contributions.
-* For large bodies of work, we recommend creating an issue and labelling it design outlining the feature that you wish to build, and describing how it will be implemented. This gives a chance for review to happen early, and ensures no wasted effort occurs.
+* For large bodies of work, we recommend creating an issue and labeling it design outlining the feature that you wish to build, and describing how it will be implemented. This gives a chance for review to happen early and ensures no wasted effort occurs.
 * For new features, documentation must be included.
 * Once review has occurred, please rebase your PR down to a single commit. This will ensure a nice clean Git history.
 
