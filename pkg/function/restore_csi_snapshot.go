@@ -106,7 +106,7 @@ func (*restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	if err := restoreCSISnapshot(ctx, restoreArgs); err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{}, nil
+	return nil, nil
 }
 
 func (*restoreCSISnapshotFunc) RequiredArgs() []string {
