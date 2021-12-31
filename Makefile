@@ -88,8 +88,8 @@ all-push: $(addprefix push-, $(ALL_ARCH))
 
 build: bin/$(ARCH)/$(BIN)
 
-build-contoller: 
-	@echo "building: $@"
+build-controller: 
+	@echo "building controller"
 	@$(MAKE) run CMD='-c " \
 		GOARCH=$(ARCH)       \
 		VERSION=$(VERSION) \
