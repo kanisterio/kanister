@@ -1276,7 +1276,7 @@ CreateCSISnapshot
 -----------------
 
 This function is used to create CSI VolumeSnapshot for a PersistentVolumeClaim.
-By default, it waits for the ``ReadyToUse`` status of the VolumeSnapshot to be ``true``.
+By default, it waits for the VolumeSnapshot to be ``ReadyToUse``.
 
 Arguments:
 

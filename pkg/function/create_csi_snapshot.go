@@ -37,16 +37,20 @@ var (
 const (
 	// CreateCSIVolumeSnapshotFuncName gives the name of the function
 	CreateCSISnapshotFuncName = "CreateCSISnapshot"
-	// CreateCSISnapshotNameArg provides name of the VolumeSnapshot to be created
+	// CreateCSISnapshotNameArg provides name of the new VolumeSnapshot
 	CreateCSISnapshotNameArg = "name"
-	// CreateCSISnapshotPVCNameArg gives the name of the PVC to be captured
+	// CreateCSISnapshotPVCNameArg gives the name of the captured PVC
 	CreateCSISnapshotPVCNameArg = "pvc"
-	// CreateCSISnapshotNamespaceArg mentions the namespace of the PVC
+	// CreateCSISnapshotNamespaceArg mentions the namespace of the captured PVC
 	CreateCSISnapshotNamespaceArg = "namespace"
 	// CreateCSISnapshotSnapshotClassArg specifies the name of the VolumeSnapshotClass
 	CreateCSISnapshotSnapshotClassArg = "snapshotClass"
 	// CreateCSISnapshotLabelsArg has labels that are to be added to the new VolumeSnapshot
 	CreateCSISnapshotLabelsArg = "labels"
+	// CreateCSISnapshotRestoreSizeArg gives the storage size required for PV/PVC restoration
+	CreateCSISnapshotRestoreSizeArg = "restoreSize"
+	// CreateCSISnapshotSnapshotContentNameArg provides the name of the dynamically provisioned VolumeSnapshotContent
+	CreateCSISnapshotSnapshotContentNameArg = "snapshotContent"
 )
 
 type createCSISnapshotFunc struct{}
@@ -98,11 +102,11 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	}
 
 	snapshotInfo := map[string]interface{}{
-		"name":            name,
-		"pvc":             pvc,
-		"namespace":       namespace,
-		"restoreSize":     vs.Status.RestoreSize.String(),
-		"snapshotContent": vs.Status.BoundVolumeSnapshotContentName,
+		CreateCSISnapshotNameArg:                name,
+		CreateCSISnapshotPVCNameArg:             pvc,
+		CreateCSISnapshotNamespaceArg:           namespace,
+		CreateCSISnapshotRestoreSizeArg:         vs.Status.RestoreSize.String(),
+		CreateCSISnapshotSnapshotContentNameArg: vs.Status.BoundVolumeSnapshotContentName,
 	}
 	return snapshotInfo, nil
 }
