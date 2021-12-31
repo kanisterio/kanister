@@ -79,6 +79,9 @@ metadata:
   namespace: kanister
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: kanister-operator
   template:
     metadata:
       labels:
