@@ -88,6 +88,12 @@ all-push: $(addprefix push-, $(ALL_ARCH))
 
 build: bin/$(ARCH)/$(BIN)
 
+build-controller: 
+	@$(MAKE) run CMD='-c " \
+	goreleaser build --id $(BIN) --rm-dist --debug --snapshot \
+	&& cp dist/$(BIN)_linux_$(ARCH)/$(BIN) bin/$(ARCH)/$(BIN) \
+	"'
+
 bin/$(ARCH)/$(BIN):
 	@echo "building: $@"
 	@$(MAKE) run CMD='-c " \
