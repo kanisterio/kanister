@@ -19,7 +19,7 @@ actions:
           - name: container
             imagePullPolicy: Always
           restartPolicy: Never
-        image: akankshakumari393/confluent-kafka-s3:latest
+        image: akankshakumari393/confluent-kafka-s3:v9.99.9-dev
         command:
           - bash
           - -o
@@ -76,7 +76,7 @@ actions:
           containers:
           - name: container
             imagePullPolicy: Always
-        image: akankshakumari393/confluent-kafka-s3source:latest
+        image: akankshakumari393/confluent-kafka-s3source:v9.99.9-dev
         command:
         - bash
         - -o
@@ -139,7 +139,7 @@ actions:
           containers:
           - name: container
             imagePullPolicy: Always
-        image: akankshakumari393/confluent-kafka-s3source:latest
+        image: akankshakumari393/confluent-kafka-s3source:v9.99.9-dev
         command:
           - bash
           - -o
