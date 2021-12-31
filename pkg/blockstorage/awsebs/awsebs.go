@@ -842,5 +842,5 @@ func staticRegionToZones(region string) ([]string, error) {
 			"cn-northwest-1c",
 		}, nil
 	}
-	return nil, errors.New("cannot get availability zones for region")
+	return nil, errors.New("Cannot get availability zones for region")
 }
