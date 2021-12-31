@@ -1285,7 +1285,7 @@ Arguments:
    :align: left
    :widths: 5,5,5,15
 
-   `name`, No, `string`, name of the VolumeSnapshot. Default value is ``<pvc>-snapshot-<20-char-random-alphanumeric-suffix>``
+   `name`, No, `string`, name of the VolumeSnapshot. Default value is ``<pvc>-snapshot-<random-alphanumeric-suffix>``
    `pvc`, Yes, `string`, name of the PersistentVolumeClaim to be captured
    `namespace`, Yes, `string`, namespace of the PersistentVolumeClaim and resultant VolumeSnapshot
    `snapshotClass`, Yes, `string`, name of the VolumeSnapshotClass
