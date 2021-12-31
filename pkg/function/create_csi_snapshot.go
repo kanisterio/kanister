@@ -49,7 +49,7 @@ const (
 	CreateCSISnapshotLabelsArg = "labels"
 	// CreateCSISnapshotRestoreSizeArg gives the storage size required for PV/PVC restoration
 	CreateCSISnapshotRestoreSizeArg = "restoreSize"
-	// CreateCSISnapshotSnapshotContentNameArg provides the name of the dynamically provisioned VolumeSnapshotContent
+	// CreateCSISnapshotSnapshotContentNameArg provides the name of dynamically provisioned VolumeSnapshotContent
 	CreateCSISnapshotSnapshotContentNameArg = "snapshotContent"
 )
 
