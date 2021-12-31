@@ -1285,7 +1285,7 @@ Arguments:
    :align: left
    :widths: 5,5,5,15
 
-   `name`, No, `string`, name of the VolumeSnapshot. Default value is ``<pvc>-snapshot-<8-char-random-alphanumeric-suffix>``
+   `name`, No, `string`, name of the VolumeSnapshot. Default value is ``<pvc>-snapshot-<20-char-random-alphanumeric-suffix>``
    `pvc`, Yes, `string`, name of the PersistentVolumeClaim to be captured
    `namespace`, Yes, `string`, namespace of the PersistentVolumeClaim and resultant VolumeSnapshot
    `snapshotClass`, Yes, `string`, name of the VolumeSnapshotClass
@@ -1310,22 +1310,67 @@ Example:
   :linenos:
 
   actions:
-  backup:
-    outputArtifacts:
-      snapshotInfo:
-        keyValue:
-          name: "{{ .Phases.createCSISnapshot.Output.name }}"
-          pvc: "{{ .Phases.createCSISnapshot.Output.pvc }}"
-          namespace: "{{ .Phases.createCSISnapshot.Output.namespace }}"
-          restoreSize: "{{ .Phases.createCSISnapshot.Output.restoreSize }}"
-          snapshotContent: "{{ .Phases.createCSISnapshot.Output.snapshotContent }}"
-    phases:
-    - func: CreateCSISnapshot
-      name: createCSISnapshot
-      args:
-        pvc: "{{ .PVC.Name }}"
-        namespace: "{{ .PVC.Namespace }}"
-        snapshotClass: do-block-storage
+    backup:
+      outputArtifacts:
+        snapshotInfo:
+          keyValue:
+            name: "{{ .Phases.createCSISnapshot.Output.name }}"
+            pvc: "{{ .Phases.createCSISnapshot.Output.pvc }}"
+            namespace: "{{ .Phases.createCSISnapshot.Output.namespace }}"
+            restoreSize: "{{ .Phases.createCSISnapshot.Output.restoreSize }}"
+            snapshotContent: "{{ .Phases.createCSISnapshot.Output.snapshotContent }}"
+      phases:
+      - func: CreateCSISnapshot
+        name: createCSISnapshot
+        args:
+          pvc: "{{ .PVC.Name }}"
+          namespace: "{{ .PVC.Namespace }}"
+          snapshotClass: do-block-storage
+
+RestoreCSISnapshot
+------------------
+
+This function restores a new PersistentVolumeClaim using CSI VolumeSnapshot.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, Yes, `string`, name of the VolumeSnapshot
+   `pvc`, Yes, `string`, name of the new PVC
+   `namespace`, Yes, `string`, namespace of the VolumeSnapshot and resultant PersistentVolumeClaim
+   `storageClass`, Yes, `string`, name of the StorageClass
+   `restoreSize`, Yes, `string`, required memory size to restore PVC
+   `accessModes`, No, `[]string`, access modes for the underlying PV (Default is ``[]{"ReadWriteOnce"}```)
+   `volumeMode`, No, `string`, mode of volume (Default is ``"Filesystem"```)
+   `labels`, No, `map[string]string`, optional labels for the PersistentVolumeClaim
+
+.. note::
+    Output artifact ``snapshotInfo`` from ``CreateCSISnapshot`` function can be used as an input artifact in this function.
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    restore:
+      inputArtifactNames:
+      - snapshotInfo
+      phases:
+      - func: RestoreCSISnapshot
+        name: restoreCSISnapshot
+        args:
+          name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.name }}"
+          pvc: "{{ .ArtifactsIn.snapshotInfo.KeyValue.pvc }}-restored"
+          namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
+          storageClass: do-block-storage
+          restoreSize: "{{ .ArtifactsIn.snapshotInfo.KeyValue.restoreSize }}"
+          accessModes: ["ReadWriteOnce"]
+          volumeMode: "Filesystem"
 
 
 Registering Functions

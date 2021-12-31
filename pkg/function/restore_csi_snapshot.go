@@ -38,11 +38,11 @@ const (
 	SnapshotAPIGroup = "snapshot.storage.k8s.io"
 	// RestoreCSISnapshotFuncName gives the name of the function
 	RestoreCSISnapshotFuncName = "RestoreCSISnapshot"
-	// RestoreCSISnapshotNameArg provides name of the VolumeSnapshot to be used
+	// RestoreCSISnapshotNameArg provides name of the VolumeSnapshot
 	RestoreCSISnapshotNameArg = "name"
-	// RestoreCSISnapshotPVCNameArg gives the name of the PVC to be restored
+	// RestoreCSISnapshotPVCNameArg gives the name of the newly restored PVC
 	RestoreCSISnapshotPVCNameArg = "pvc"
-	// RestoreCSISnapshotNamespaceArg mentions the namespace of the PVC
+	// RestoreCSISnapshotNamespaceArg mentions the namespace of the newly restored PVC
 	RestoreCSISnapshotNamespaceArg = "namespace"
 	// RestoreCSISnapshotStorageClassArg specifies the name of the StorageClass
 	RestoreCSISnapshotStorageClassArg = "storageClass"
@@ -50,7 +50,7 @@ const (
 	RestoreCSISnapshotRestoreSizeArg = "restoreSize"
 	// RestoreCSISnapshotAccessModesArg lists down the accessmodes for the underlying PV
 	RestoreCSISnapshotAccessModesArg = "accessModes"
-	// RestoreCSISnapshotLabelsArg has labels that will be added to the restored PVC
+	// RestoreCSISnapshotLabelsArg has labels that will be added to the newly restored PVC
 	RestoreCSISnapshotLabelsArg = "labels"
 	// RestoreCSISnapshotVolumeModeArg defines mode of volume
 	RestoreCSISnapshotVolumeModeArg = "volumeMode"
@@ -106,7 +106,7 @@ func (*restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	if err := restoreCSISnapshot(ctx, restoreArgs); err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{}, nil
+	return nil, nil
 }
 
 func (*restoreCSISnapshotFunc) RequiredArgs() []string {
