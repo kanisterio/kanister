@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	dynfake "k8s.io/client-go/dynamic/fake"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -45,11 +44,12 @@ const (
 )
 
 type CreateCSISnapshotTestSuite struct {
-	cli                 kubernetes.Interface
+	scheme              runtime.Scheme
+	fakeCli             fake.Clientset
 	snapName            string
 	pvcName             string
 	namespace           string
-	volumeSnapshotClass *string
+	volumeSnapshotClass string
 	storageClass        string
 }
 
@@ -64,7 +64,7 @@ func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 
 	volumeSnapshotClass, driver := FindSnapshotClassName(c, ctx, dynCli, snapshot.VolSnapClassGVR, snapv1.VolumeSnapshotClass{})
-	testSuite.volumeSnapshotClass = &volumeSnapshotClass
+	testSuite.volumeSnapshotClass = volumeSnapshotClass
 
 	storageClasses, err := kubeCli.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
 	c.Assert(err, IsNil)
@@ -74,41 +74,39 @@ func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *C) {
 			break
 		}
 	}
-	testSuite.namespace = CreateCSISnapshotTestNamespace
 	testSuite.pvcName = CreateCSISnapshotPVCName
 	testSuite.snapName = CreateCSISnapshotSnapshotName
-
-	testSuite.cli = fake.NewSimpleClientset()
-}
-
-func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *C) {
-	ctx := context.Background()
-
-	_, err := testSuite.cli.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
-
-	testSuite.createPVC(c, testSuite.cli)
 
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
+	testSuite.scheme = *scheme
 
-	fakeSnapshotter, err := snapshot.NewSnapshotter(testSuite.cli, dynfake.NewSimpleDynamicClient(scheme))
+	testSuite.fakeCli = *fake.NewSimpleClientset()
+	testSuite.namespace = CreateCSISnapshotTestNamespace
+	_, err = testSuite.fakeCli.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	err = fakeSnapshotter.Create(ctx, testSuite.snapName, testSuite.namespace, testSuite.pvcName, testSuite.volumeSnapshotClass, true, nil)
+}
+
+func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *C) {
+
+	testSuite.createPVC(c)
+
+	fakeSnapshotter, err := snapshot.NewSnapshotter(&testSuite.fakeCli, dynfake.NewSimpleDynamicClient(&testSuite.scheme))
+	c.Assert(err, IsNil)
+	err = fakeSnapshotter.Create(context.Background(), testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, true, nil)
 	c.Assert(err, IsNil)
 }
 
 func (testSuite *CreateCSISnapshotTestSuite) TearDownSuite(c *C) {
 	ctx := context.Background()
-	err := testSuite.cli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
+	err := testSuite.fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }
 
-func (testSuite *CreateCSISnapshotTestSuite) createPVC(c *C, kubeCli kubernetes.Interface) {
-	ctx := context.Background()
-	_, err := kubeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(ctx, getPVCManifest(testSuite.pvcName, testSuite.storageClass), metav1.CreateOptions{})
+func (testSuite *CreateCSISnapshotTestSuite) createPVC(c *C) {
+	_, err := testSuite.fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(context.TODO(), getPVCManifest(testSuite.pvcName, testSuite.storageClass), metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 }
 
