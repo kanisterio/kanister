@@ -15,7 +15,7 @@ actions:
       - func: KubeTask
         name: dumpToObjectStore
         args:
-          image: chaitanyadelphian/mssql-tools:1.0.2
+          image: ghcr.io/kanisterio/mssql-tools:0.71.0
           command:
             - bash
             - -o
@@ -46,7 +46,7 @@ actions:
       - func: KubeTask
         name: restoreFromBlobStore
         args:
-          image: chaitanyadelphian/mssql-tools:1.0.2
+          image: ghcr.io/kanisterio/mssql-tools:0.71.0
           command:
             - bash
             - -o
@@ -73,7 +73,7 @@ actions:
       - func: KubeTask
         name: deleteFromBlobStore
         args:
-          image: chaitanyadelphian/mssql-tools:1.0.2
+          image: ghcr.io/kanisterio/mssql-tools:0.71.0
           command:
             - bash
             - -o
