@@ -64,6 +64,7 @@ func NewMongoDB(name string) App {
 				"image.registry":   "ghcr.io",
 				"image.repository": "kanisterio/mongodb",
 				"image.tag":        "latest",
+				"image.pullPolicy": "Always",
 			},
 		},
 	}
