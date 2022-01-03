@@ -35,6 +35,7 @@ actions:
               cd /tmp/
               tar -zcvf backup.tar.gz backup/
               kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} backup.tar.gz
+              kubectl exec -it {{ index .Deployment.Pods 0 }} -n {{ index .Deployment.Namespace }} -- rm -r /tmp/backup
               kando output s3path ${s3_path}
   restore:
     inputArtifactNames:
