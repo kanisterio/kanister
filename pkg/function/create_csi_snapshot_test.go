@@ -17,18 +17,12 @@ package function
 import (
 	"context"
 
-	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
-	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
-	scv1 "k8s.io/api/storage/v1"
-	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 	dynfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -40,6 +34,10 @@ const (
 	CreateCSISnapshotPVCName = "test-pvc"
 	// CreateCSISnapshotSnapshotName is the name of the snapshot
 	CreateCSISnapshotSnapshotName = "test-snapshot"
+	// CreateCSISnapshotSnapshotClass is the fake snapshot class
+	CreateCSISnapshotSnapshotClass = "test-snapshot-class"
+	// CreateCSISnapshotStorageClass is the fake storage class
+	CreateCSISnapshotStorageClass = "test-storage-class"
 )
 
 type CreateCSISnapshotTestSuite struct {
@@ -55,24 +53,9 @@ type CreateCSISnapshotTestSuite struct {
 var _ = Suite(&CreateCSISnapshotTestSuite{})
 
 func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *C) {
-	ctx := context.Background()
 
-	kubeCli, err := kube.NewClient()
-	c.Assert(err, IsNil)
-	dynCli, err := kube.NewDynamicClient()
-	c.Assert(err, IsNil)
-
-	volumeSnapshotClass, driver := FindSnapshotClassName(c, ctx, dynCli, snapshot.VolSnapClassGVR, snapv1.VolumeSnapshotClass{})
-	testSuite.volumeSnapshotClass = volumeSnapshotClass
-
-	storageClasses, err := kubeCli.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
-	c.Assert(err, IsNil)
-	for _, class := range storageClasses.Items {
-		if class.Provisioner == driver && *class.VolumeBindingMode == scv1.VolumeBindingImmediate {
-			testSuite.storageClass = class.Name
-			break
-		}
-	}
+	testSuite.volumeSnapshotClass = CreateCSISnapshotSnapshotClass
+	testSuite.storageClass = CreateCSISnapshotStorageClass
 	testSuite.pvcName = CreateCSISnapshotPVCName
 	testSuite.snapName = CreateCSISnapshotSnapshotName
 
@@ -102,7 +85,8 @@ func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *C) {
 		},
 	}
 	testSuite.fakeCli = fakeCli
-	testSuite.fakeSnapshotter, err = snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
+	fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
+	testSuite.fakeSnapshotter = fakeSnapshotter
 	c.Assert(err, IsNil)
 
 	testSuite.namespace = CreateCSISnapshotTestNamespace
@@ -145,30 +129,4 @@ func getPVCManifest(pvcName, storageClassName string) *v1.PersistentVolumeClaim 
 			},
 		},
 	}
-}
-
-func FindSnapshotClassName(c *C, ctx context.Context, dynCli dynamic.Interface, gvr schema.GroupVersionResource, object interface{}) (string, string) {
-	us, err := dynCli.Resource(gvr).List(ctx, metav1.ListOptions{})
-	if err != nil && !k8errors.IsNotFound(err) {
-		c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
-		c.Fail()
-	}
-	var driverName, snapshotClass string
-	if (us != nil) && len(us.Items) != 0 {
-		usClass, err := dynCli.Resource(gvr).Get(ctx, us.Items[0].GetName(), metav1.GetOptions{})
-		if err != nil {
-			c.Logf("Failed to get VolumeSnapshotClass, skipping test. Error: %v", err)
-			c.Fail()
-		}
-		snapshotClass = usClass.GetName()
-		if vsc, ok := object.(snapv1.VolumeSnapshotClass); ok {
-			err := snapshot.TransformUnstructured(usClass, &vsc)
-			if err != nil {
-				c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
-				c.Fail()
-			}
-			driverName = vsc.Driver
-		}
-	}
-	return snapshotClass, driverName
 }
