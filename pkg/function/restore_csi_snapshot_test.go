@@ -117,9 +117,9 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 			Labels:       nil,
 		}
 		newPVC := newPVCManifest(restoreArgs)
-		restoredPVC, err := fakeCli.CoreV1().PersistentVolumeClaims(restoreArgs.Namespace).Create(context.Background(), newPVC, metav1.CreateOptions{})
+		createPVC(c, restoreArgs.Namespace, newPVC, fakeCli)
 		c.Assert(err, IsNil)
-		c.Assert(restoredPVC.Name, Equals, testSuite.newPVCName)
+		c.Assert(newPVC.Name, Equals, testSuite.newPVCName)
 
 		err = fakeCli.CoreV1().Namespaces().Delete(context.Background(), testSuite.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
