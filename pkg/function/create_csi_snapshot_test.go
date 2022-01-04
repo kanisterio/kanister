@@ -53,7 +53,6 @@ type CreateCSISnapshotTestSuite struct {
 var _ = Suite(&CreateCSISnapshotTestSuite{})
 
 func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *C) {
-
 	testSuite.volumeSnapshotClass = CreateCSISnapshotSnapshotClass
 	testSuite.storageClass = CreateCSISnapshotStorageClass
 	testSuite.pvcName = CreateCSISnapshotPVCName
