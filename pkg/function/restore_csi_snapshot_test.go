@@ -47,7 +47,7 @@ type RestoreCSISnapshotTestSuite struct {
 	fakeSnapshotter     snapshot.Snapshotter
 	snapName            string
 	pvcName             string
-	newPVCName     string
+	newPVCName          string
 	namespace           string
 	volumeSnapshotClass string
 	storageClass        string
@@ -56,7 +56,6 @@ type RestoreCSISnapshotTestSuite struct {
 var _ = Suite(&RestoreCSISnapshotTestSuite{})
 
 func (testSuite *RestoreCSISnapshotTestSuite) SetUpSuite(c *C) {
-
 	testSuite.volumeSnapshotClass = RestoreCSISnapshotSnapshotClass
 	testSuite.storageClass = RestoreCSISnapshotStorageClass
 	testSuite.pvcName = RestoreCSISnapshotOriginalPVCName
