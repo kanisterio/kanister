@@ -1,6 +1,7 @@
 # Microsoft SQL Server
 
-Microsoft SQL Server is one of the most popular and widely used database in the world.
+MS SQL Server is a relational database management system (RDBMS) developed by Microsoft. This product is built for the basic function of storing retrieving data as required by other applications. 
+It can be run either on the same computer or on another across a network.
 
 ## Introduction
 This document will cover how to install SQL Server and how to run backup/restore actions.
@@ -14,31 +15,32 @@ This document will cover how to install SQL Server and how to run backup/restore
 
 ## Installing Microsoft SQL Server
 
+Resources created as part of installation
+- PVC
+- Deployment
+- Service
+
+### Create Namespace
+
+```bash
+$ kubectl create ns sqlserver
+```
+
 ### Create Password
 
 ```bash
-$ kubectl create secret generic mssql --from-literal=SA_PASSWORD="MyC0m9l&xP@ssw0rd"
+$ kubectl create secret generic mssql --from-literal=SA_PASSWORD="MyC0m9l&xP@ssw0rd" -n sqlserver
 ```
 
 ### Create storage
 Execute following commands to create PVC for SQL Server installation.
 ```bash
-$ cat > pvc.yaml <<EOF
-kind: StorageClass
-apiVersion: storage.k8s.io/v1
-metadata:
-     name: azure-disk
-provisioner: kubernetes.io/azure-disk
-parameters:
-  storageaccounttype: Standard_LRS
-  kind: Managed
----
+$ cat <<EOF | kubectl create -f -
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: mssql-data
-  annotations:
-    volume.beta.kubernetes.io/storage-class: azure-disk
+  namespace: sqlserver
 spec:
   accessModes:
   - ReadWriteOnce
@@ -46,19 +48,18 @@ spec:
     requests:
       storage: 8Gi
 EOF
-
-$ kubectl create -f pvc.yaml
 ```
 
 ### Create Deployment
 Create service and deployment by using following code
 
 ```bash
-$ cat > deployment.yaml <<EOF
+$ cat <<EOF | kubectl create -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mssql-deployment
+  namespace: sqlserver
 spec:
   replicas: 1
   selector:
@@ -100,6 +101,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mssql-deployment
+  namespace: sqlserver
 spec:
   selector:
     app: mssql
@@ -109,8 +111,6 @@ spec:
       targetPort: 1433
   type: ClusterIP
 EOF
-
-$ kubectl create -f deployment.yaml
 ```
 
 ## Create Database
@@ -120,14 +120,12 @@ SQL server comes equiped with command line utility called `sqlcmd`.
 Let's use this utility to interact with database.
 
 ```bash
-$ kubectl exec -it $(kubectl get pods --selector=app=mssql -o=jsonpath='{.items[0].metadata.name}') -- bash
+$ kubectl exec -it -n sqlserver $(kubectl get pods --selector=app=mssql -o=jsonpath='{.items[0].metadata.name}' -n sqlserver) -- bash
 
-Once inside container login using sqlcmd cli.
-
+# Once inside the container, login using sqlcmd cli.
 $ /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "MyC0m9l&xP@ssw0rd"
 
-Execute following script to create database named TestDB and add table Inventory with some data.
-
+# Execute the following script to create a database named TestDB and add table Inventory with some data.
 # Create database "TestDB"
 1> CREATE DATABASE TestDB
 2> SELECT Name from sys.Databases
@@ -159,12 +157,11 @@ id          name                                               quantity
           2 orange                                                     154
 
 ```
-After following all given steps database named `TestDB` should have tabled called `Inventory`
-with some data.
+After following all given steps database named `TestDB` should have table called `Inventory`
 
 ## Integrating with Kanister
 
-If you have deployed SQL Server with name other than `mssql-deployment` and namespace other than `default`, 
+If you have deployed SQL Server with name other than `mssql-deployment` and namespace other than `sqlserver`, 
 you need to modify the commands(backup, restore and delete) used below to use the correct release name and namespace
 
 ### Create Profile
@@ -191,11 +188,11 @@ can be shared between Kanister-enabled application instances.
 
 Create Blueprint in the same namespace as the Kanister controller
 
-Execute following command to create blueprint
+Execute following command to create the blueprint
 ```bash
 $ kubectl create -f ./mssql-blueprint.yaml -n kanister
 ```
-Blueprint with name `mssql-blueprint` will be created inside namespace `kanister`
+Blueprint with name `mssql-blueprint` will be created in `kanister` namespace
 
 ## Protect the Application
 
@@ -210,7 +207,7 @@ s3-profile-k4r8w   7d1h
 
 # Create Actionset
 # Please make sure the value of profile and blueprint matches with the names of profile and blueprint that we have created already
-$ kanctl create actionset --action backup --namespace kanister --blueprint mssql-blueprint --profile s3-profile-k4r8w --secrets mssql=default/mssql --deployment default/mssql-deployment
+$ kanctl create actionset --action backup --namespace kanister --blueprint mssql-blueprint --profile s3-profile-k4r8w --secrets mssql=sqlserver/mssql --deployment sqlserver/mssql-deployment
 actionset backup-dzchc created
 
 
@@ -219,7 +216,7 @@ NAME                         AGE
 backup-dzchc                 29s
 
 # View the status of the actionset
-# Please make sure the name of the actionset here matches with name of the name of actionset that we have created already
+# Please make sure the name of the actionset here matches with the name of actionset that we have created above and make sure the status is complete.
 $ kubectl describe actionset backup-dzchc -n kanister
 ```
 
@@ -229,7 +226,8 @@ Let's say someone accidentally deleted the test database using the following com
 
 ```bash
 # Connect to SQL Sever by running a shell inside mssql pod
-$ kubectl exec -it $(kubectl get pods --selector=app=mssql -o=jsonpath='{.items[0].metadata.name}') -- bash
+$ kubectl exec -it -n sqlserver $(kubectl get pods --selector=app=mssql -o=jsonpath='{.items[0].metadata.name}' -n sqlserver) -- bash
+
 $ /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "MyC0m9l&xP@ssw0rd"
 
 1> SELECT Name from sys.Databases
@@ -316,7 +314,7 @@ If you run into any issues with the above commands, you can check the logs of th
 $ kubectl --namespace kanister logs -l app=kanister-operator
 ```
 
-you can also check events of the actionset
+You can also check events of the actionset
 
 ```bash
 $ kubectl describe actionset restore-backup-dzchc-vqr5v -n kanister
@@ -330,9 +328,9 @@ To uninstall/delete the `mssql` deployment:
 
 ```bash
 # Delete deployment, service and pvc
-$ kubectl delete service/mssql-deployment
-$ kubectl delete deployment.apps/mssql-deployment
-$ kubectl delete pvc mssql-data
+$ kubectl delete service/mssql-deployment -n sqlserver
+$ kubectl delete deployment.apps/mssql-deployment -n sqlserver
+$ kubectl delete pvc mssql-data -n sqlserver
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.

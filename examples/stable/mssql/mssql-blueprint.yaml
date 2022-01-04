@@ -44,7 +44,7 @@ actions:
       - mssql
     phases:
       - func: KubeTask
-        name: restoreFromBlobStore
+        name: restoreFromObjectStore
         args:
           image: ghcr.io/kanisterio/mssql-tools:0.71.0
           command:
@@ -63,7 +63,6 @@ actions:
               kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | tar zxvf - -C /tmp/
               kubectl cp /tmp/backup ${mssql_pod}:/tmp/backup
               scripts=$(ls /tmp/backup)
-              echo $scripts
               for script in $scripts; do database="$(cut -d'.' -f1 <<<"$script")"; /opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "restore database $database from disk = '/tmp/backup/$script' with replace"; done
               kubectl exec -it {{ index .Deployment.Pods 0 }} -n {{ index .Deployment.Namespace }} -- rm -r /tmp/backup
   delete:
