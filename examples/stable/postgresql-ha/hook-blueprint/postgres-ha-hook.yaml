@@ -3,7 +3,7 @@ kind: Blueprint
 metadata:
   name: postgresql-hooks
 actions:
-  postRestoreHook:
+  postrestorehook:
     phases:
     - func: Wait
       name: WaitForPodReady
