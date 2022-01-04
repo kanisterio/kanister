@@ -137,3 +137,5 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+archives:
+  - allow_different_binary_count: true
