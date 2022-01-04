@@ -1310,22 +1310,22 @@ Example:
   :linenos:
 
   actions:
-  backup:
-    outputArtifacts:
-      snapshotInfo:
-        keyValue:
-          name: "{{ .Phases.createCSISnapshot.Output.name }}"
-          pvc: "{{ .Phases.createCSISnapshot.Output.pvc }}"
-          namespace: "{{ .Phases.createCSISnapshot.Output.namespace }}"
-          restoreSize: "{{ .Phases.createCSISnapshot.Output.restoreSize }}"
-          snapshotContent: "{{ .Phases.createCSISnapshot.Output.snapshotContent }}"
-    phases:
-    - func: CreateCSISnapshot
-      name: createCSISnapshot
-      args:
-        pvc: "{{ .PVC.Name }}"
-        namespace: "{{ .PVC.Namespace }}"
-        snapshotClass: do-block-storage
+    backup:
+      outputArtifacts:
+        snapshotInfo:
+          keyValue:
+            name: "{{ .Phases.createCSISnapshot.Output.name }}"
+            pvc: "{{ .Phases.createCSISnapshot.Output.pvc }}"
+            namespace: "{{ .Phases.createCSISnapshot.Output.namespace }}"
+            restoreSize: "{{ .Phases.createCSISnapshot.Output.restoreSize }}"
+            snapshotContent: "{{ .Phases.createCSISnapshot.Output.snapshotContent }}"
+      phases:
+      - func: CreateCSISnapshot
+        name: createCSISnapshot
+        args:
+          pvc: "{{ .PVC.Name }}"
+          namespace: "{{ .PVC.Namespace }}"
+          snapshotClass: do-block-storage
 
 
 Registering Functions
