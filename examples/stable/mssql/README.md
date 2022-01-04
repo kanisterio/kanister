@@ -33,8 +33,8 @@ $ kubectl create secret generic mssql --from-literal=SA_PASSWORD="MyC0m9l&xP@ssw
 ```
 
 ### Create storage
+Execute following commands to create PVC for SQL Server installation. 
 Default storage class will be used to provision PVC.
-Execute following commands to create PVC for SQL Server installation.
 ```bash
 $ cat <<EOF | kubectl create -f -
 kind: PersistentVolumeClaim
