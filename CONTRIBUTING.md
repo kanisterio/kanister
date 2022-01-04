@@ -2,14 +2,16 @@
 
 ## How Can I Contribute?
   ### * Reporting Bugs
-  Before creating bug reports, please check the list of issues as you might find out that you don't need to create one. Also when creating a bug report, please include as many details as possible as this information may help us resolve the issue faster.
+  Before creating bug reports, please check the list of issues as you might find out that you don't need to create one. Also when creating a bug report, please include as many details as possible as this information may help us resolve the issue faster. To report a bug please submit an issue at https://github.com/kanisterio/kanister/issues
 
   ### * Suggesting Enhancements
-  You can suggest minor improvements to existing functionality and or a completely new feature. 
+  You can suggest minor improvements to existing functionality and or a completely new feature. For that  we recommend creating an issue at https://github.com/kanisterio/kanister/issues and labeling it design outlining the feature that you wish to build, and describing how it will be implemented. This gives a chance for review to happen early and ensures no wasted effort occurs.
 
   ### * Your first code contribution
-  You can start by looking through `good-first-issue` issues:
-
+  * You can start by looking through `good-first-issue` issues. We follow the [Github Pull Request Model](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) for all contributions.
+  * For new features, documentation must be included.
+  * Once review has occurred, please rebase your PR down to a single commit. This will ensure a nice clean Git history.
+  
 ## Local Development
 Once you are done with your changes, you need to ensure that your changes do not fail in the CI build
 
@@ -49,15 +51,6 @@ make docs
 - The built docs can be viewed and validated visually by opening `/docs/_build/html/index.html`.
 
 - Push a PR with the changes for review.
-
-## Submitting issues
-If you find a bug or have a feature request, please submit an issue at https://github.com/kanisterio/kanister/issues
-
-## Submitting code via Pull Requests
-* We follow the [Github Pull Request Model](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) for all contributions.
-* For large bodies of work, we recommend creating an issue and labeling it design outlining the feature that you wish to build, and describing how it will be implemented. This gives a chance for review to happen early and ensures no wasted effort occurs.
-* For new features, documentation must be included.
-* Once review has occurred, please rebase your PR down to a single commit. This will ensure a nice clean Git history.
 
 ## Contacting Developers
 Using [Slack](https://join.slack.com/t/kanisterio/shared_invite/enQtNzg2MDc4NzA0ODY4LTU1NDU2NDZhYjk3YmE5MWNlZWMwYzk1NjNjOGQ3NjAyMjcxMTIyNTE1YzZlMzgwYmIwNWFkNjU0NGFlMzNjNTk) is the quickest way to get in touch with developers.
