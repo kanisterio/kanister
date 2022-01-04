@@ -60,7 +60,7 @@ func (*createCSISnapshotFunc) Name() string {
 }
 
 func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var snapshotClass *string
+	var snapshotClass string
 	var labels map[string]string
 	var name, pvc, namespace string
 	if err := Arg(args, CreateCSISnapshotPVCNameArg, &pvc); err != nil {
@@ -93,7 +93,7 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	}
 	// waitForReady is set to true by default because snapshot information is needed as output artifacts
 	waitForReady := true
-	if err := snapshotter.Create(ctx, name, namespace, pvc, snapshotClass, waitForReady, labels); err != nil {
+	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, waitForReady, labels); err != nil {
 		return nil, err
 	}
 	vs, err := snapshotter.Get(ctx, name, namespace)
