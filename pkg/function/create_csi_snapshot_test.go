@@ -117,9 +117,11 @@ func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *C) {
 
 func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *C) {
 	testSuite.createPVC(c)
-
 	err := testSuite.fakeSnapshotter.Create(context.Background(), testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, nil)
 	c.Assert(err, IsNil)
+	vs, err := testSuite.fakeSnapshotter.Get(context.Background(), testSuite.snapName, testSuite.namespace)
+	c.Assert(err, IsNil)
+	c.Assert(vs.Name, Equals, testSuite.snapName)
 }
 
 func (testSuite *CreateCSISnapshotTestSuite) TearDownSuite(c *C) {
