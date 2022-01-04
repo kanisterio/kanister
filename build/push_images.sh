@@ -20,7 +20,7 @@ set -o nounset
 IMAGE_REGISTRY="ghcr.io/kanisterio"
 IMAGES=("mysql-sidecar" "kafka-adobe-s3-sink-connector" "postgres-kanister-tools" "postgresql" "postgres-tools-9.6" "cassandra" "kanister-kubectl-1.18" "mongo-sidecar" "mongodb" "es-sidecar" "controller" "kanister-tools" "couchbase-tools" "kafka-adobe-s3-source-connector" "foundationdb")
 
-TAG=${1:-"latest"}
+TAG=${1:-"v9.99.9-dev"}
 
 for i in ${IMAGES[@]}; do
    docker push $IMAGE_REGISTRY/$i:$TAG
