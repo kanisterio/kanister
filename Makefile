@@ -57,7 +57,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.14
+BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.15
 
 # tag 0.1.0 is, 0.0.1 (latest) + gh + aws + helm binary
 DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
@@ -87,6 +87,12 @@ all-container: $(addprefix container-, $(ALL_ARCH))
 all-push: $(addprefix push-, $(ALL_ARCH))
 
 build: bin/$(ARCH)/$(BIN)
+
+build-controller: 
+	@$(MAKE) run CMD='-c " \
+	goreleaser build --id $(BIN) --rm-dist --debug --snapshot \
+	&& cp dist/$(BIN)_linux_$(ARCH)/$(BIN) bin/$(ARCH)/$(BIN) \
+	"'
 
 bin/$(ARCH)/$(BIN):
 	@echo "building: $@"
@@ -245,7 +251,7 @@ gorelease:
 	@$(MAKE) run CMD='-c "./build/gorelease.sh"'
 
 release-snapshot:
-	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=latest goreleaser --debug release --rm-dist --snapshot"'
+	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot"'
 
 go-mod-download:
 	@$(MAKE) run CMD='-c "go mod download"'
