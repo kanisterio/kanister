@@ -153,9 +153,9 @@ func validateImageTags(c *C, bp *crv1alpha1.Blueprint) {
 			if !ok {
 				continue
 			}
-			// Verify if the tag is "latest"
+			// Verify if the tag is "v9.99.9-dev"
 			c.Log(fmt.Sprintf("phase:%s, image:%s", phase.Name, image.(string)))
-			c.Assert(strings.Split(image.(string), ":")[1], Equals, "latest")
+			c.Assert(strings.Split(image.(string), ":")[1], Equals, "v9.99.9-dev")
 			c.Assert(phase.Args["podOverride"], DeepEquals, podOverride)
 		}
 	}
