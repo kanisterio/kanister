@@ -15,8 +15,10 @@
 ## Local Development
 Once you are done with your changes, you need to ensure that your changes do not fail in the CI build
 
-```bash
+**NOTE:**
+We need to have a local kubernetes cluster to test changes. To spin up a local kubernetes cluster using kind we can run `make start-kind` from the project root directory. Similary to delete the clutser we can run `make stop-kind`
 
+```bash
 #Run golint command to make sure your code is properly formatted
 make golint
 
@@ -29,7 +31,6 @@ make test
 #Run E2E test
 #From the project root directory
 make integration-test
-
 ```
 To test and deploy your changes to a local Kubernetes cluster refer this https://docs.kanister.io/install.html#building-and-deploying-from-source
 
