@@ -44,8 +44,8 @@ const (
 )
 
 type CreateCSISnapshotTestSuite struct {
-	scheme              runtime.Scheme
-	fakeCli             fake.Clientset
+	fakeCli             *fake.Clientset
+	fakeSnapshotter     snapshot.Snapshotter
 	snapName            string
 	pvcName             string
 	namespace           string
@@ -81,21 +81,44 @@ func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *C) {
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
 	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
-	testSuite.scheme = *scheme
 
-	testSuite.fakeCli = *fake.NewSimpleClientset()
+	fakeCli := fake.NewSimpleClientset()
+	fakeCli.Resources = []*metav1.APIResourceList{
+		{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "VolumeSnapshot",
+				APIVersion: "v1alpha1",
+			},
+			GroupVersion: "snapshot.storage.k8s.io/v1alpha1",
+		},
+		{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "VolumeSnapshot",
+				APIVersion: "v1beta1",
+			},
+			GroupVersion: "snapshot.storage.k8s.io/v1beta1",
+		},
+		{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "VolumeSnapshot",
+				APIVersion: "v1",
+			},
+			GroupVersion: "snapshot.storage.k8s.io/v1",
+		},
+	}
+	testSuite.fakeCli = fakeCli
+	testSuite.fakeSnapshotter, err = snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
+	c.Assert(err, IsNil)
+
 	testSuite.namespace = CreateCSISnapshotTestNamespace
 	_, err = testSuite.fakeCli.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 }
 
 func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *C) {
-
 	testSuite.createPVC(c)
 
-	fakeSnapshotter, err := snapshot.NewSnapshotter(&testSuite.fakeCli, dynfake.NewSimpleDynamicClient(&testSuite.scheme))
-	c.Assert(err, IsNil)
-	err = fakeSnapshotter.Create(context.Background(), testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, true, nil)
+	err := testSuite.fakeSnapshotter.Create(context.Background(), testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, nil)
 	c.Assert(err, IsNil)
 }
 
