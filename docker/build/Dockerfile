@@ -10,7 +10,7 @@ COPY --from=golang:1.16.8-alpine3.14 /usr/local/go/ /usr/local/go/
 
 COPY --from=bitnami/kubectl:1.17 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
 
-COPY --from=goreleaser/goreleaser:v0.127.0 /bin/goreleaser /usr/local/bin/
+COPY --from=goreleaser/goreleaser:v1.2.4 /usr/local/bin/goreleaser /usr/local/bin/
 
 COPY --from=alpine/helm:3.1.0 /usr/bin/helm /usr/local/bin/
 
