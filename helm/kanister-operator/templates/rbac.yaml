@@ -27,12 +27,12 @@ rules:
 - apiGroups:
   - snapshot.storage.k8s.io
   resources:
-  - "volumesnapshots"
-  - "volumesnapshotcontents"
+  - volumesnapshots
+  - volumesnapshotcontents
   verbs:
-  - "get"
-  - "create"
-  - "delete"
+  - get
+  - create
+  - delete
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
