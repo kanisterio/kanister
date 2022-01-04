@@ -52,7 +52,7 @@ func NewPostgresDB(name string, subPath string) App {
 			Values: map[string]string{
 				"image.registry":                        "ghcr.io",
 				"image.repository":                      "kanisterio/postgresql",
-				"image.tag":                             "latest",
+				"image.tag":                             "v9.99.9-dev",
 				"image.pullPolicy":                      "Always",
 				"postgresqlPassword":                    "test@54321",
 				"postgresqlExtendedConf.archiveCommand": "envdir /bitnami/postgresql/data/env wal-e wal-push %p",
