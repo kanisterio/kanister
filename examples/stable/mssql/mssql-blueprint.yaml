@@ -62,8 +62,8 @@ actions:
               server_name="{{ index .Deployment.Name }}.{{index .Deployment.Namespace}}.svc.cluster.local"
               kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | tar zxvf - -C /tmp/
               kubectl cp /tmp/backup ${mssql_pod}:/tmp/backup
-              scripts=$(ls /tmp/backup)
-              for script in $scripts; do database="$(cut -d'.' -f1 <<<"$script")"; /opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "restore database $database from disk = '/tmp/backup/$script' with replace"; done
+              backup_files=$(ls /tmp/backup)
+              for script in $backup_files; do database="$(cut -d'.' -f1 <<<"$script")"; /opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "restore database $database from disk = '/tmp/backup/$script' with replace"; done
               kubectl exec -it {{ index .Deployment.Pods 0 }} -n {{ index .Deployment.Namespace }} -- rm -r /tmp/backup
   delete:
     inputArtifactNames:
