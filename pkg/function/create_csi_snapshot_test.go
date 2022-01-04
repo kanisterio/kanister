@@ -26,7 +26,6 @@ import (
 	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -78,10 +77,6 @@ func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *C) {
 	testSuite.snapName = CreateCSISnapshotSnapshotName
 
 	scheme := runtime.NewScheme()
-	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1alpha1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
-	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1beta1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
-	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotClassList"}, &unstructured.UnstructuredList{})
-
 	fakeCli := fake.NewSimpleClientset()
 	fakeCli.Resources = []*metav1.APIResourceList{
 		{
@@ -158,7 +153,7 @@ func FindSnapshotClassName(c *C, ctx context.Context, dynCli dynamic.Interface, 
 		c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
 		c.Fail()
 	}
-	var snapshotterName, snapshotClass string
+	var driverName, snapshotClass string
 	if (us != nil) && len(us.Items) != 0 {
 		usClass, err := dynCli.Resource(gvr).Get(ctx, us.Items[0].GetName(), metav1.GetOptions{})
 		if err != nil {
@@ -172,8 +167,8 @@ func FindSnapshotClassName(c *C, ctx context.Context, dynCli dynamic.Interface, 
 				c.Logf("Failed to query VolumeSnapshotClass, skipping test. Error: %v", err)
 				c.Fail()
 			}
-			snapshotterName = vsc.Driver
+			driverName = vsc.Driver
 		}
 	}
-	return snapshotClass, snapshotterName
+	return snapshotClass, driverName
 }
