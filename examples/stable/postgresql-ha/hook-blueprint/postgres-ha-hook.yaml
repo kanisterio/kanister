@@ -17,12 +17,6 @@ actions:
               resource: pods
               name: '{{ .StatefulSet.Name }}-0'
               namespace: '{{ .StatefulSet.Namespace }}'
-          - condition: '{{ if { $.status.containerStatuses[].ready } }}true{{ else }}false{{ end }}'
-            objectReference:
-              apiVersion: v1
-              resource: pods
-              name: '{{ .StatefulSet.Name }}-1' 
-              namespace: '{{ .StatefulSet.Namespace }}'
     - func: KubeTask
       name: PgUpdate
       objects:
