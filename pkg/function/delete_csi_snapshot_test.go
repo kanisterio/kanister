@@ -140,7 +140,6 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 		vs, err = fakeSnapshotter.Get(context.Background(), testSuite.snapName, testSuite.namespace)
 		c.Assert(err, NotNil)
 
-
 		err = fakeCli.CoreV1().Namespaces().Delete(context.Background(), testSuite.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
