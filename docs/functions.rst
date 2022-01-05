@@ -1271,6 +1271,38 @@ Example:
               name: "{{ .Namespace.Name }}"
 
 
+DeleteCSISnapshot
+-----------------
+
+This function deletes a VolumeSnapshot from given namespace.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, Yes, `string`, name of the VolumeSnapshot
+   `namespace`, Yes, `string`, namespace of the VolumeSnapshot
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    delete:
+      inputArtifactNames:
+      - snapshotInfo
+      phases:
+      - func: DeleteCSISnapshot
+        name: deleteCSISnapshot
+        args:
+          name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.name }}"
+          namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
+
+
 Registering Functions
 ---------------------
 
