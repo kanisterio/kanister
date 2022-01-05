@@ -61,6 +61,7 @@ type PodOptions struct {
 	PodOverride        crv1alpha1.JSONMap
 	Resources          v1.ResourceRequirements
 	RestartPolicy      v1.RestartPolicy
+	OwnerReferences    []metav1.OwnerReference
 }
 
 // CreatePod creates a pod with a single container based on the specified image
@@ -138,6 +139,11 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	if pod.ObjectMeta.Labels == nil {
 		pod.ObjectMeta.Labels = map[string]string{}
 	}
+
+	if opts.OwnerReferences != nil {
+		pod.SetOwnerReferences(opts.OwnerReferences)
+	}
+
 	for key, value := range opts.Labels {
 		pod.ObjectMeta.Labels[key] = value
 	}

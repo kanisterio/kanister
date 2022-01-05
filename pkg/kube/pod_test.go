@@ -44,7 +44,7 @@ type PodSuite struct {
 const (
 	testSAName         = "test-sa"
 	controllerSA       = "controller-sa"
-	kanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:latest"
+	kanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
 )
 
 var _ = Suite(&PodSuite{})
@@ -268,7 +268,7 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 	pod, err := CreatePod(ctx, cli, &PodOptions{
 		Namespace:    s.namespace,
 		GenerateName: "test-",
-		Image:        "ghcr.io/kanisterio/kanister-tools:latest",
+		Image:        "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",
 		Command:      []string{"sh", "-c", "tail -f /dev/null"},
 		Volumes:      vols,
 	})
