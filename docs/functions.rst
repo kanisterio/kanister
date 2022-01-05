@@ -1393,6 +1393,7 @@ Example:
 
 .. code-block:: yaml
   :linenos:
+
   actions:
     delete:
       inputArtifactNames:
