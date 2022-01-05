@@ -30,7 +30,7 @@ import (
 
 const (
 	// DeleteCSISnapshotTestNamespace is the namespace where testing is done
-	DeleteCSISnapshotTestNamespace = "test-restore-csi-snapshot"
+	DeleteCSISnapshotTestNamespace = "test-delete-csi-snapshot"
 	// DeleteCSISnapshotOriginalPVCName is the name of the PVC that will be captured
 	DeleteCSISnapshotOriginalPVCName = "test-pvc"
 	// DeleteCSISnapshotPVCName is the name of the new PVC that will be restored
