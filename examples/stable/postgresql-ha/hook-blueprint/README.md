@@ -4,15 +4,17 @@
 
 ## Introduction
 
-This Helm chart has been developed based on [Postgresql](https://github.com/bitnami/charts/tree/master/bitnami/postgresql) chart but including some changes to guarantee high availability such as:
+This Helm chart has been developed based on [PostgreSQL](https://github.com/bitnami/charts/tree/master/bitnami/postgresql) chart but including some changes to guarantee high availability such as:
 
 - A new deployment, service have been added to deploy [Pgpool-II](https://pgpool.net/mediawiki/index.php/Main_Page) to act as proxy for PostgreSQL backend. It helps to reduce connection overhead, acts as a load balancer for PostgreSQL, and ensures database node failover.
 - Replacing `bitnami/postgresql` with `bitnami/postgresql-repmgr` which includes and configures repmgr. Repmgr ensures standby nodes assume the primary role when the primary node is unhealthy.
 
-Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment and management of Helm Charts in clusters. This chart has been tested to work with NGINX Ingress, cert-manager, fluentd and Prometheus on top of the [BKPR](https://kubeprod.io/).
-
 ## Requirements
-When restoring the postgres with high availability in a different namespace, the standby instance pod goes into ``CrashLoopBackOff`` since the connection info for the primary/secondary nodes in the ``repmgr`` database points to source namespace. The blueprint ``postgres-ha-hook.yaml`` can be used to solve this issue which will update the ``repmgr`` database with correct connection information for primary and secondary instances
+When restoring the postgreSQL with high availability in a different namespace, the standby instance pod goes into `CrashLoopBackOff` since the connection info for the primary/secondary nodes in the `repmgr` database points to source namespace. The blueprint `postgres-ha-hook.yaml` can be used to solve this issue which will update the `repmgr` database with correct connection information for primary and secondary instances
+
+**NOTE:**
+
+This blueprint is only required when you face above mentioned issue, else you will only be installing the helm chart for postgreSQL with high availability by following the steps.
 
 ## Prerequisites
 
@@ -40,25 +42,19 @@ The command deploys PostgreSQL HA on the Kubernetes cluster in the default confi
 
 > **Tip**: List all releases using `helm list`
 
-In case, if you don't have `Kanister` installed already, you can use following commands to do that.
-Add Kanister Helm repository and install Kanister operator
-```bash
-$ helm repo add kanister https://charts.kanister.io
-$ helm install --name kanister --namespace kasten-io kanister/kanister-operator --set image.tag=0.71.0
-
 ```
 
 ### Create Blueprint
 Create Blueprint in the same namespace as the controller
 
 ```bash
-$ kubectl create -f ./postgres-ha-hook-blueprint.yaml -n kasten-io
+$ kubectl create -f ./postgres-ha-hook-blueprint.yaml -n kanister
 ```
 
 ### After Restore of the application
-Lets assume, restore is done in a namespace `postgres-ha-test2`
+Let's assume, restore is done in a namespace `postgres-ha-test2`
 
-The pod ``my-release-postgresql-ha-postgresql-1`` in ``postgres-ha-test2`` goes into ``CrashLoopBackoff`` because of wrong connection information
+The pod `my-release-postgresql-ha-postgresql-1` in `postgres-ha-test2` goes into `CrashLoopBackoff` because of wrong connection information.
 
 Check the primary/standby connection information in rpmgr database 
 
@@ -85,20 +81,20 @@ cluster.local dbname=repmgr port=5432 connect_timeout=5
 
 ```
 
-The conninfo column is pointing to source namespace ``postgres-ha-test``. Hence we need to create an actionset on statefulset in namespace ``postgres-ha-test2``. An easy way to do this is to leverage kanctl, a command-line tool that helps create ActionSets that depend on other ActionSets:
+The `conninfo` column is pointing to source namespace `postgres-ha-test`. Hence we need to create an actionset on statefulset in namespace `postgres-ha-test2` as that will update the `conninfo` column for primary/standy nodes with correct information.  An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
 
 ```bash
-$ kanctl create actionset --action postrestorehook --namespace kasten-io --blueprint postgresql-hooks --statefulset postgres-ha-test2/my-release-postgresql-ha-postgresql
+$ kanctl create actionset --action postrestorehook --namespace kanister --blueprint postgresql-hooks --statefulset postgres-ha-test2/my-release-postgresql-ha-postgresql
 actionset postrestorehook-z2x49 created
 
 
 ## Check status
-$ kubectl describe actionsets.cr.kanister.io postrestorehook-z2x49 --namespace kasten-io
+$ kubectl describe actionsets.cr.kanister.io postrestorehook-z2x49 --namespace kanister
 ```
 
-Once the ActionSet status is set to "complete", The secondary instance pod ``my-release-postgresql-ha-postgresql-1`` starts successfully.
+Once the ActionSet status is set to "complete", The secondary instance pod `my-release-postgresql-ha-postgresql-1` starts successfully.
 
-Verify the connection information by logging into primary instance ``my-release-postgresql-ha-postgresql-0``
+Verify the connection information by logging into primary instance `my-release-postgresql-ha-postgresql-0`
 
 ```
 I have no name!@my-release-postgresql-ha-postgresql-0:/$ PGPASSWORD=${POSTGRES_PASSWORD} psql -U $POSTGRES_USER
@@ -125,7 +121,7 @@ cluster.local dbname=repmgr port=5432 connect_timeout=5
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kubectl delete actionsets.cr.kanister.io postrestorehook-z2x49 -n kasten-io
+$ kubectl delete actionsets.cr.kanister.io postrestorehook-z2x49 -n kanister
 actionset.cr.kanister.io "postrestorehook-z2x49" deleted
 
 ```
@@ -135,13 +131,13 @@ actionset.cr.kanister.io "postrestorehook-z2x49" deleted
 If you run into any issues with the above commands, you can check the logs of the controller using:
 
 ```bash
-$ kubectl --namespace kasten-io logs -l app=kanister-operator
+$ kubectl --namespace kanister logs -l app=kanister-operator
 ```
 
 you can also check events of the actionset
 
 ```bash
-$ kubectl describe actionset <actionset-name> -n kasten-io
+$ kubectl describe actionset <actionset-name> -n kanister
 ```
 
 ## Cleanup
@@ -165,7 +161,7 @@ $ kubectl delete -n postgres-ha-test2
 Remove Blueprint 
 
 ```bash
-$ kubectl delete blueprints.cr.kanister.io postgresql-hooks -n kasten-io 
+$ kubectl delete blueprints.cr.kanister.io postgresql-hooks -n kanister 
 blueprint.cr.kanister.io "postgresql-hooks" deleted
 
 ```
