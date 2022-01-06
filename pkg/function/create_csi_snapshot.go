@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"gopkg.in/tomb.v2"
+
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -51,6 +53,8 @@ const (
 	CreateCSISnapshotRestoreSizeArg = "restoreSize"
 	// CreateCSISnapshotSnapshotContentNameArg provides the name of dynamically provisioned VolumeSnapshotContent
 	CreateCSISnapshotSnapshotContentNameArg = "snapshotContent"
+	// CreateCSISnapshotDefaultTimeout is the time duration in minutes for VolumeSnapshot to be ReadyToUse before context is timed out
+	CreateCSISnapshotDefaultTimeout = 2
 )
 
 type createCSISnapshotFunc struct{}
@@ -93,6 +97,10 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	}
 	// waitForReady is set to true by default because snapshot information is needed as output artifacts
 	waitForReady := true
+	Tomb := &tomb.Tomb{}
+	ctx, cancel := context.WithTimeout(Tomb.Context(ctx), CreateCSISnapshotDefaultTimeout)
+	defer cancel()
+
 	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, waitForReady, labels); err != nil {
 		return nil, err
 	}
