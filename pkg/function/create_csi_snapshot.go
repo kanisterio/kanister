@@ -17,6 +17,7 @@ package function
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"gopkg.in/tomb.v2"
 
@@ -54,7 +55,7 @@ const (
 	// CreateCSISnapshotSnapshotContentNameArg provides the name of dynamically provisioned VolumeSnapshotContent
 	CreateCSISnapshotSnapshotContentNameArg = "snapshotContent"
 	// CreateCSISnapshotDefaultTimeout is the time duration in minutes for VolumeSnapshot to be ReadyToUse before context is timed out
-	CreateCSISnapshotDefaultTimeout = 2
+	CreateCSISnapshotDefaultTimeout = 2 * time.Minute
 )
 
 type createCSISnapshotFunc struct{}
