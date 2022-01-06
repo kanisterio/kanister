@@ -105,7 +105,7 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 
 	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, waitForReady, labels); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			createTimeoutExceededError(ctx, snapshotter, name, namespace)
+			return createTimeoutExceededError(ctx, snapshotter, name, namespace)
 		}
 		return nil, err
 	}
