@@ -1166,6 +1166,111 @@ Example:
       args:
         snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
 
+KubeOps
+-------
+
+This function is used to create or delete Kubernetes resources.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `operation`, Yes, `string`, ``create`` or ``delete`` Kubernetes resource
+   `namespace`, No, `string`, namespace in which the operation is executed
+   `spec`, No, `string`, resource spec that needs to be created
+   `objectReference`, No, `map[string]interface{}`, object reference for delete operation
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: KubeOps
+    name: createDeploy
+    args:
+      operation: create
+      namespace: "{{ .Deployment.Namespace }}"
+      spec:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: "{{ .Deployment.Name }}"
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: example
+          template:
+            metadata:
+              labels:
+                app: example
+            spec:
+              containers:
+              - image: busybox
+                imagePullPolicy: IfNotPresent
+                name: container
+                ports:
+                - containerPort: 80
+                  name: http
+                  protocol: TCP
+
+
+Wait
+----
+
+This function is used to wait on a Kubernetes resource
+until a desired state is reached.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `timeout`, Yes, `string`, wait timeout
+   `conditions`, Yes, `map[string]interface{}`, keys should be ``allOf`` and/or ``anyOf`` with value as ``[]Condition``
+
+``Condition`` struct:
+
+.. code-block:: yaml
+  :linenos:
+
+  condition: "Go template condition that returns true or false"
+  objectReference:
+    apiVersion: "Kubernetes resource API version"
+    resource: "Type of resource to wait for"
+    name: "Name of the resource"
+
+.. note::
+    We can refer to the object key-value in Go template condition with the help of a ``$`` prefix JSON-path syntax.
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: Wait
+    name: waitNsReady
+    args:
+      timeout: 60s
+      conditions:
+        allOf:
+          - condition: '{{ if (eq "{ $.status.phase }" "Invalid")}}true{{ else }}false{{ end }}'
+            objectReference:
+              apiVersion: v1
+              resource: namespaces
+              name: "{{ .Namespace.Name }}"
+          - condition: '{{ if (eq "{ $.status.phase }" "Active")}}true{{ else }}false{{ end }}'
+            objectReference:
+              apiVersion: v1
+              resource: namespaces
+              name: "{{ .Namespace.Name }}"
+
+
 Registering Functions
 ---------------------
 

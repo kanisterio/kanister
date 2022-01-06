@@ -98,7 +98,7 @@ func newTestPodTemplateSpec() v1.PodTemplateSpec {
 			Containers: []v1.Container{
 				v1.Container{
 					Name:    "test-container",
-					Image:   "ghcr.io/kanisterio/kanister-tools:latest",
+					Image:   "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev",
 					Command: []string{"tail"},
 					Args:    []string{"-f", "/dev/null"},
 				},

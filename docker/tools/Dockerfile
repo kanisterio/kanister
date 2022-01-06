@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.5-204
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.5-218
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \
@@ -15,7 +15,7 @@ COPY --from=ghcr.io/kastenhq/kopia@sha256:ad987e7062686fb1c2485e7c1a942687086821
 COPY LICENSE /licenses/LICENSE
 
 ADD kando /usr/local/bin/
-RUN microdnf update && microdnf install shadow-utils httpd-tools && \
+RUN microdnf update && microdnf install shadow-utils httpd-tools gzip && \
   adduser -U kanister -u 1000 && \
   microdnf remove shadow-utils && \
   microdnf clean all

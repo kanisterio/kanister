@@ -2,6 +2,7 @@ package vmware
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -108,7 +109,7 @@ func (s *VMWareSuite) TestGetSnapshotIDsFromTags(c *C) {
 				"k1": "v1",
 				"k2": "v2",
 			},
-			snapIDs:    []string{"s1"},
+			snapIDs:    []string{"v1:s1"},
 			errChecker: IsNil,
 		},
 		{
@@ -120,7 +121,7 @@ func (s *VMWareSuite) TestGetSnapshotIDsFromTags(c *C) {
 			tags: map[string]string{
 				"k1": "v1",
 			},
-			snapIDs:    []string{"s1", "s2"},
+			snapIDs:    []string{"v1:s1", "v1:s2"},
 			errChecker: IsNil,
 		},
 		{
@@ -129,7 +130,7 @@ func (s *VMWareSuite) TestGetSnapshotIDsFromTags(c *C) {
 				{Name: "v1:s1:k2:v2"},
 				{Name: "v1:s2:k1:v1"},
 			},
-			snapIDs:    []string{"s1", "s2"},
+			snapIDs:    []string{"v1:s1", "v1:s2"},
 			errChecker: IsNil,
 		},
 		{
@@ -300,6 +301,68 @@ func (s *VMWareSuite) TestDeleteTagsSnapshot(c *C) {
 		c.Assert(err, tc.errChecker)
 		if tc.errChecker == IsNil {
 			c.Assert(ftm.numDeletes, Equals, tc.expNumDeletes)
+		}
+	}
+}
+
+func (s *VMWareSuite) TestGetSnapshotTags(c *C) {
+	ctx := context.Background()
+	for _, tc := range []struct {
+		snapshotID   string
+		catID        string
+		categoryTags []vapitags.Tag
+		expNumTags   int
+		errGetTags   error
+		errChecker   Checker
+	}{
+		{ // success
+			snapshotID: "v1:s1",
+			categoryTags: []vapitags.Tag{
+				{Name: "v1:s1:t1:v1"},
+				{Name: "v1:s1:t2:v2"},
+				{Name: "v1:s2:t3:v3"},
+				{Name: "v3:s2:t4:v4"},
+			},
+			errChecker: IsNil,
+			catID:      "something",
+			expNumTags: 2,
+		},
+		{ // bad tag
+			snapshotID: "v1:s1",
+			categoryTags: []vapitags.Tag{
+				{Name: "v1:s1:t1:v1"},
+				{Name: "v1:s1:t2:v2"},
+				{Name: "v1:s2:t3:v3"},
+				{Name: "v3:s2t4:v4"},
+			},
+			catID:      "something",
+			errChecker: NotNil,
+		},
+		{ // bad tag
+			snapshotID:   "v1:s1",
+			categoryTags: []vapitags.Tag{},
+			errGetTags:   errors.New("get tags error"),
+			errChecker:   NotNil,
+			catID:        "something",
+		},
+		{ // empty cat id
+			errChecker: IsNil,
+			catID:      "",
+			expNumTags: 0,
+		},
+	} {
+		ftm := &fakeTagManager{
+			retGetTagsForCategory: tc.categoryTags,
+			errGetTagsForCategory: tc.errGetTags,
+		}
+		provider := &FcdProvider{
+			categoryID: tc.catID,
+			tagManager: ftm,
+		}
+		tags, err := provider.getSnapshotTags(ctx, tc.snapshotID)
+		c.Assert(err, tc.errChecker)
+		if tc.errChecker == IsNil {
+			c.Assert(len(tags), Equals, tc.expNumTags)
 		}
 	}
 }
