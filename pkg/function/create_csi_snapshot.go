@@ -27,6 +27,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/pkg/errors"
 )
 
 func init() {
@@ -100,7 +101,10 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	waitForReady := true
 	Tomb := &tomb.Tomb{}
 	ctx, cancel := context.WithTimeout(Tomb.Context(ctx), CreateCSISnapshotDefaultTimeout)
-	defer cancel()
+	defer func() (map[string]interface{}, error) {
+		defer cancel()
+		return nil, errors.New("SnapshotContent not provisioned in given timeout. Please check if CSI driver is installed correctly and if it supports VolumeSnapshot feature.")
+	}()
 
 	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, waitForReady, labels); err != nil {
 		return nil, err
