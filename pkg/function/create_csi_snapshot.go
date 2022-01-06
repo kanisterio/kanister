@@ -17,7 +17,6 @@ package function
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -52,8 +51,6 @@ const (
 	CreateCSISnapshotRestoreSizeArg = "restoreSize"
 	// CreateCSISnapshotSnapshotContentNameArg provides the name of dynamically provisioned VolumeSnapshotContent
 	CreateCSISnapshotSnapshotContentNameArg = "snapshotContent"
-	// CreateCSISnapshotDefaultTimeout is the time duration in minutes for VolumeSnapshot to be ReadyToUse before context is timed out
-	CreateCSISnapshotDefaultTimeout = 2 * time.Minute
 )
 
 type createCSISnapshotFunc struct{}
