@@ -105,7 +105,7 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 
 	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, waitForReady, labels); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return createTimeoutExceededError(ctx, snapshotter, name, namespace)
+			return nil, errors.New("SnapshotContent not provisioned within given timeout. Please check if CSI driver is installed correctly and if it supports VolumeSnapshot feature.")
 		}
 		return nil, err
 	}
@@ -135,11 +135,4 @@ func (*createCSISnapshotFunc) RequiredArgs() []string {
 // defaultSnapshotName generates snapshot name using pvcName-snapshot-randomValue
 func defaultSnapshotName(pvcName string, len int) string {
 	return fmt.Sprintf("%s-snapshot-%s", pvcName, rand.String(len))
-}
-
-func createTimeoutExceededError(ctx context.Context, snapshotter snapshot.Snapshotter, name, namespace string) (map[string]interface{}, error) {
-	if _, err := snapshotter.Delete(ctx, name, namespace); err != nil {
-		return nil, err
-	}
-	return nil, errors.New("SnapshotContent not provisioned within given timeout. Please check if CSI driver is installed correctly and if it supports VolumeSnapshot feature.")
 }
