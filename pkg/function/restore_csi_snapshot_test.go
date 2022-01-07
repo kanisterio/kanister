@@ -133,7 +133,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 		restoreArgs.AccessModes = originalPVC.Spec.AccessModes
 		err = validateVolumeModeArg(restoreArgs)
 		c.Assert(err, IsNil)
-		
+
 		newPVC := newPVCManifest(restoreArgs)
 		createPVC(c, restoreArgs.Namespace, newPVC, fakeCli)
 		c.Assert(newPVC.Name, Equals, testSuite.newPVCName)
