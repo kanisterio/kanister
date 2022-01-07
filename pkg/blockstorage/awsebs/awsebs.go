@@ -82,7 +82,7 @@ func newEC2Client(awsRegion string, config *aws.Config) (*EC2, error) {
 	}
 	s, err := session.NewSession(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create session for EFS")
+		return nil, errors.Wrap(err, "Failed to create session for EBS")
 	}
 	conf := config.WithMaxRetries(maxRetries).WithRegion(awsRegion).WithCredentials(config.Credentials)
 	return &EC2{EC2: ec2.New(s, conf)}, nil
@@ -618,8 +618,34 @@ func GetRegionFromEC2Metadata() (string, error) {
 
 // FromRegion is part of zone.Mapper
 func (s *EbsStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
+
 	// Fall back to using a static map.
 	return staticRegionToZones(region)
+}
+
+func (s *EbsStorage) RegionToZoneMap(ctx context.Context) (map[string][]string, error) {
+	trueBool := true
+	result, err := s.Ec2Cli.DescribeRegions(&ec2.DescribeRegionsInput{AllRegions: &trueBool})
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to describe regions")
+	}
+	rtzMap := map[string][]string{}
+	filterValue := "region-name"
+	for _, region := range result.Regions {
+		zones, err := s.Ec2Cli.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{
+			AllAvailabilityZones: &trueBool,
+			Filters: []*ec2.Filter{
+				{Name: &filterValue, Values: []*string{region.RegionName}},
+			},
+		})
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get client for region")
+		}
+		for _, az := range zones.AvailabilityZones {
+			rtzMap[*region.RegionName] = append(rtzMap[*region.RegionName], *az.ZoneName)
+		}
+	}
+	return rtzMap, nil
 }
 
 func (s *EbsStorage) queryRegionToZones(ctx context.Context, region string) ([]string, error) {
