@@ -176,7 +176,7 @@ func validateVolumeModeArg(args restoreCSISnapshotArgs) error {
 		v1.PersistentVolumeFilesystem,
 		v1.PersistentVolumeBlock,
 	} {
-		if args.VolumeMode != validVolumeMode {
+		if args.VolumeMode == validVolumeMode {
 			return errors.New("Given volumeMode" + string(args.VolumeMode) + " is invalid")
 		}
 	}
