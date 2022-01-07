@@ -17,8 +17,6 @@ package function
 import (
 	"context"
 
-	"github.com/kanisterio/kanister/pkg/kube/snapshot"
-
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -26,6 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	dynfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 )
 
 const (
@@ -87,10 +87,11 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 			GroupVersion: "snapshot.storage.k8s.io/v1",
 		},
 	} {
+		ctx := context.Background()
 		fakeCli := fake.NewSimpleClientset()
 		fakeCli.Resources = []*metav1.APIResourceList{apiResourceList}
 
-		_, err := fakeCli.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
+		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
 		scheme := runtime.NewScheme()
@@ -114,10 +115,10 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(context.TODO(), originalPVC, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
-		err = fakeSnapshotter.Create(context.Background(), testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, nil)
+		err = fakeSnapshotter.Create(ctx, testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, nil)
 		c.Assert(err, IsNil)
 
-		vs, err := fakeSnapshotter.Get(context.Background(), testSuite.snapName, testSuite.namespace)
+		vs, err := fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
 		c.Assert(err, IsNil)
 		c.Assert(vs.Name, Equals, testSuite.snapName)
 
@@ -135,12 +136,12 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 		c.Assert(err, IsNil)
 		c.Assert(newPVC.Name, Equals, testSuite.newPVCName)
 
-		vs, err = fakeSnapshotter.Delete(context.Background(), testSuite.snapName, testSuite.namespace)
+		vs, err = fakeSnapshotter.Delete(ctx, testSuite.snapName, testSuite.namespace)
 		c.Assert(err, IsNil)
-		vs, err = fakeSnapshotter.Get(context.Background(), testSuite.snapName, testSuite.namespace)
+		vs, err = fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
 		c.Assert(err, NotNil)
 
-		err = fakeCli.CoreV1().Namespaces().Delete(context.Background(), testSuite.namespace, metav1.DeleteOptions{})
+		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
 }
