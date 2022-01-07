@@ -12,7 +12,7 @@ You can suggest minor improvements to existing functionality and or a completely
 You can start by looking through `good-first-issue` issues. 
   
 #### Local Developement
-Once you are done with your changes, you need to ensure that your changes do not fail in the CI build
+Once you are done with your changes, you need to make sure, that your changes are not breaking anything.
 
 **NOTE:**
 We need to have a local Kubernetes cluster to test changes. We can use Kind[https://kind.sigs.k8s.io/] to spin up a local Kubernetes cluster, `make start-kind` can be run from the project's root directory to create one. Similarly to delete the cluster we can run `make stop-kind`
@@ -57,6 +57,12 @@ make docs
 ## Raising PR 
 * We follow the [Github Pull Request Model](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) for all contributions.
 * For new features, documentation must be included.
+* Here are some guidelines that we should follow while writing a commit message:
+  - Use Imperative mood in the commit message. For example, `Fix bug` and not `Fixed bug` or `Fixes bug.
+  - Commit message should not start with lower case.
+  - Your commit message should not contain any whitespace errors.
+  - Remove unnecessary punctuation marks.
+  - Do not assume the reviewer understands what the original problem was. Ensure to add it.
 
 ## Contacting Developers
 Using [Slack](https://join.slack.com/t/kanisterio/shared_invite/enQtNzg2MDc4NzA0ODY4LTU1NDU2NDZhYjk3YmE5MWNlZWMwYzk1NjNjOGQ3NjAyMjcxMTIyNTE1YzZlMzgwYmIwNWFkNjU0NGFlMzNjNTk) is the quickest way to get in touch with developers.
