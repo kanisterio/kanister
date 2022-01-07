@@ -16,10 +16,8 @@ package function
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"time"
-
-	"gopkg.in/tomb.v2"
 
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -27,7 +25,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -55,8 +52,6 @@ const (
 	CreateCSISnapshotRestoreSizeArg = "restoreSize"
 	// CreateCSISnapshotSnapshotContentNameArg provides the name of dynamically provisioned VolumeSnapshotContent
 	CreateCSISnapshotSnapshotContentNameArg = "snapshotContent"
-	// CreateCSISnapshotDefaultTimeout is the time duration in minutes for VolumeSnapshot to be ReadyToUse before context is timed out
-	CreateCSISnapshotDefaultTimeout = 2 * time.Minute
 )
 
 type createCSISnapshotFunc struct{}
@@ -95,18 +90,14 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	}
 	snapshotter, err := snapshot.NewSnapshotter(kubeCli, dynCli)
 	if err != nil {
+		if errors.Is(context.DeadlineExceeded, err) {
+			return nil, errors.New("SnapshotContent not provisioned within given timeout. Please check if CSI driver is installed correctly and supports VolumeSnapshot feature")
+		}
 		return nil, err
 	}
 	// waitForReady is set to true by default because snapshot information is needed as output artifacts
 	waitForReady := true
-	Tomb := &tomb.Tomb{}
-	ctx, cancel := context.WithTimeout(Tomb.Context(ctx), CreateCSISnapshotDefaultTimeout)
-	defer cancel()
-
 	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, waitForReady, labels); err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, errors.New("SnapshotContent not provisioned within given timeout. Please check if CSI driver is installed correctly and if it supports VolumeSnapshot feature.")
-		}
 		return nil, err
 	}
 	vs, err := snapshotter.Get(ctx, name, namespace)

@@ -17,8 +17,6 @@ package function
 import (
 	"context"
 
-	"github.com/kanisterio/kanister/pkg/kube/snapshot"
-
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -26,6 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	dynfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 )
 
 const (
