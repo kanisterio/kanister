@@ -2,21 +2,19 @@
 
 ## How Can I Contribute?
   ### * Reporting Bugs
-  Before creating bug reports, please check the list of issues as you might find out that you don't need to create one. Also when creating a bug report, please include as many details as possible as this information may help us resolve the issue faster. To report a bug please submit an issue at https://github.com/kanisterio/kanister/issues
-
+  Before creating bug reports, please check the list of issues as you might find out that a similar issue is already created and you don't need to create one. Also when creating a bug report, please include as many details as possible as this information may help us resolve the issue faster.
   ### * Suggesting Enhancements
-  You can suggest minor improvements to existing functionality and or a completely new feature. For that  we recommend creating an issue at https://github.com/kanisterio/kanister/issues and labeling it design outlining the feature that you wish to build, and describing how it will be implemented. This gives a chance for review to happen early and ensures no wasted effort occurs.
+  You can suggest minor improvements to existing functionality and or a completely new feature. For that we recommend creating an issue at https://github.com/kanisterio/kanister/issues or reaching out to us at our slack workspace.
 
   ### * Your first code contribution
   * You can start by looking through `good-first-issue` issues. We follow the [Github Pull Request Model](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) for all contributions.
   * For new features, documentation must be included.
-  * Once review has occurred, please rebase your PR down to a single commit. This will ensure a nice clean Git history.
   
 ## Local Development
 Once you are done with your changes, you need to ensure that your changes do not fail in the CI build
 
 **NOTE:**
-We need to have a local kubernetes cluster to test changes. To spin up a local kubernetes cluster using kind we can run `make start-kind` from the project root directory. Similary to delete the clutser we can run `make stop-kind`
+We need to have a local kubernetes cluster to test changes. We can use Kind[https://kind.sigs.k8s.io/] to spin up a local kubernetes cluster, `make start-kind` can be run from the project's root directory to create one. Similary to delete the clutser we can run `make stop-kind`
 
 ```bash
 #Run golint command to make sure your code is properly formatted
@@ -32,7 +30,7 @@ make test
 #From the project root directory
 make integration-test
 ```
-To test and deploy your changes to a local Kubernetes cluster refer this https://docs.kanister.io/install.html#building-and-deploying-from-source
+To test and deploy your changes to a local Kubernetes cluster [this document](https://docs.kanister.io/install.html#building-and-deploying-from-source) can be referred.
 
 ## Contributing to documentation
 For complete documentation visit https://docs.kanister.io/
