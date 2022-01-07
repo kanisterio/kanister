@@ -172,13 +172,11 @@ func newPVCManifest(args restoreCSISnapshotArgs) *v1.PersistentVolumeClaim {
 }
 
 func validateVolumeModeArg(args restoreCSISnapshotArgs) error {
-	for _, validVolumeMode := range []v1.PersistentVolumeMode{
-		v1.PersistentVolumeFilesystem,
-		v1.PersistentVolumeBlock,
-	} {
-		if args.VolumeMode == validVolumeMode {
-			return errors.New("Given volumeMode" + string(args.VolumeMode) + " is invalid")
-		}
+	switch args.VolumeMode {
+	case v1.PersistentVolumeFilesystem,
+		v1.PersistentVolumeBlock:
+	default:
+		return errors.New("Given volumeMode" + string(args.VolumeMode) + " is invalid")
 	}
 	return nil
 }
