@@ -156,8 +156,8 @@ func getOriginalPVCManifest(pvcName, storageClassName string) *v1.PersistentVolu
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			StorageClassName: &storageClassName,
-			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-			VolumeMode: &volumeMode,
+			AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			VolumeMode:       &volumeMode,
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
 					v1.ResourceStorage: resource.MustParse("1Gi"),
