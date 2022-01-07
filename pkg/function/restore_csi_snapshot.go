@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"errors"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -95,13 +96,22 @@ func (*restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	if err := OptArg(args, RestoreCSISnapshotAccessModesArg, &restoreArgs.AccessModes, []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}); err != nil {
 		return nil, err
 	}
+	if err := validateVolumeAccessModesArg(restoreArgs); err != nil {
+		return nil, err
+	}
 	if err := OptArg(args, RestoreCSISnapshotVolumeModeArg, &restoreArgs.VolumeMode, v1.PersistentVolumeFilesystem); err != nil {
+		return nil, err
+	}
+	if err := validateVolumeModeArg(restoreArgs); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, RestoreCSISnapshotLabelsArg, &restoreArgs.Labels, nil); err != nil {
 		return nil, err
 	}
-	size := resource.MustParse(restoreSize)
+	size, err := resource.ParseQuantity(restoreSize)
+	if err != nil {
+		return nil, err
+	}
 	restoreArgs.RestoreSize = &size
 
 	if err := restoreCSISnapshot(ctx, restoreArgs); err != nil {
@@ -159,4 +169,29 @@ func newPVCManifest(args restoreCSISnapshotArgs) *v1.PersistentVolumeClaim {
 		pvc.ObjectMeta.Labels = args.Labels
 	}
 	return pvc
+}
+
+func validateVolumeModeArg(args restoreCSISnapshotArgs) error {
+	for _, validVolumeMode := range []v1.PersistentVolumeMode{
+		v1.PersistentVolumeFilesystem,
+		v1.PersistentVolumeBlock,
+	} {
+		if args.VolumeMode == validVolumeMode {
+			return errors.New("Given volumeMode" + string(args.VolumeMode) + " is invalid")
+		}
+	}
+	return nil
+}
+
+func validateVolumeAccessModesArg(args restoreCSISnapshotArgs) error {
+	for _, accessModeInArg := range args.AccessModes {
+		switch accessModeInArg {
+		case v1.ReadOnlyMany,
+			v1.ReadWriteMany,
+			v1.ReadWriteOnce:
+		default:
+			return errors.New("Given accessMode" + string(accessModeInArg) + " is invalid")
+		}
+	}
+	return nil
 }
