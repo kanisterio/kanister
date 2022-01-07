@@ -1,0 +1,48 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: postgresql-hooks
+actions:
+  postrestorehook:
+    phases:
+    - func: Wait
+      name: WaitForPodReady
+      args:
+       timeout: 240s
+       conditions:
+          anyOf:
+          - condition: '{{ if { $.status.containerStatuses[].ready } }}true{{ else }}false{{ end }}'
+            objectReference:
+              apiVersion: v1
+              resource: pods
+              name: '{{ .StatefulSet.Name }}-0'
+              namespace: '{{ .StatefulSet.Namespace }}'
+    - func: KubeTask
+      name: PgUpdate
+      objects:
+        pgSecret:
+          kind: Secret
+          name: '{{ .StatefulSet.Name }}'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        namespace: '{{ .StatefulSet.Namespace }}'
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.69.0
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          export PGHOST='{{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+          export PGPASSWORD='{{ index .Phases.PgUpdate.Secrets.pgSecret.Data "postgresql-password" | toString }}'
+          export PGREPL='{{ index .Phases.PgUpdate.Secrets.pgSecret.Data "repmgr-password" | toString }}'
+          postgresMaster=$(psql -U postgres -h $PGHOST -d repmgr  -t -c "select node_name from repmgr.nodes where type='primary'")
+          postgresStandby=$(psql -U postgres -h $PGHOST -d repmgr  -t -c "select node_name from repmgr.nodes where type='standby'")
+          primaryHost=''${postgresMaster}'.{{ .StatefulSet.Name }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+          secondaryHost=''${postgresStandby}'.{{ .StatefulSet.Name }}-headless.{{ .StatefulSet.Namespace }}.svc.cluster.local' 
+          export conn_info_primary='user=repmgr password='${PGREPL}' host='${primaryHost}' dbname=repmgr port=5432 connect_timeout=5'
+          export conn_info_standby='user=repmgr password='${PGREPL}' host='${secondaryHost}' dbname=repmgr port=5432 connect_timeout=5'
+          psql -U postgres -h $PGHOST -d repmgr -c "update repmgr.nodes set conninfo='${conn_info_primary}' where type='primary'"
+          psql -U postgres -h $PGHOST -d repmgr -c "update repmgr.nodes set conninfo='${conn_info_standby}' where type='standby'"
