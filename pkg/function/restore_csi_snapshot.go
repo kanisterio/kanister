@@ -176,7 +176,7 @@ func validateVolumeModeArg(args restoreCSISnapshotArgs) error {
 	case v1.PersistentVolumeFilesystem,
 		v1.PersistentVolumeBlock:
 	default:
-		return errors.New("Given volumeMode" + string(args.VolumeMode) + " is invalid")
+		return errors.New("Given volumeMode " + string(args.VolumeMode) + " is invalid")
 	}
 	return nil
 }
@@ -188,7 +188,7 @@ func validateVolumeAccessModesArg(args restoreCSISnapshotArgs) error {
 			v1.ReadWriteMany,
 			v1.ReadWriteOnce:
 		default:
-			return errors.New("Given accessMode" + string(accessModeInArg) + " is invalid")
+			return errors.New("Given accessMode " + string(accessModeInArg) + " is invalid")
 		}
 	}
 	return nil
