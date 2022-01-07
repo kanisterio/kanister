@@ -112,7 +112,7 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 				},
 			},
 		}
-		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(context.TODO(), originalPVC, metav1.CreateOptions{})
+		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(ctx, originalPVC, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
 		err = fakeSnapshotter.Create(ctx, testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, nil)
@@ -132,7 +132,7 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 			Labels:       nil,
 		}
 		newPVC := newPVCManifest(restoreArgs)
-		_, err = fakeCli.CoreV1().PersistentVolumeClaims(restoreArgs.Namespace).Create(context.TODO(), newPVC, metav1.CreateOptions{})
+		_, err = fakeCli.CoreV1().PersistentVolumeClaims(restoreArgs.Namespace).Create(ctx, newPVC, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 		c.Assert(newPVC.Name, Equals, testSuite.newPVCName)
 
