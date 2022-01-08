@@ -170,6 +170,14 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 func getPVCRestoreSize(ctx context.Context, args *CreatePVCFromSnapshotArgs) (*resource.Quantity, error) {
 	quantities := []*resource.Quantity{}
 
+	if args.RestoreSize != "" {
+		s, err := resource.ParseQuantity(args.RestoreSize)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse quantity (%s)", args.RestoreSize)
+		}
+		quantities = append(quantities, &s)
+	}
+
 	sns, err := snapshot.NewSnapshotter(args.KubeCli, args.DynCli)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get snapshotter")
@@ -180,13 +188,6 @@ func getPVCRestoreSize(ctx context.Context, args *CreatePVCFromSnapshotArgs) (*r
 	}
 	if snap.Status != nil && snap.Status.RestoreSize != nil {
 		quantities = append(quantities, snap.Status.RestoreSize)
-	}
-	if args.RestoreSize != "" {
-		s, err := resource.ParseQuantity(args.RestoreSize)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to parse quantity (%s)", args.RestoreSize)
-		}
-		quantities = append(quantities, &s)
 	}
 
 	if len(quantities) == 0 {

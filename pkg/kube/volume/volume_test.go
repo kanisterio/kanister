@@ -146,17 +146,6 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 			sizeValue:  10737418240,
 			errChecker: IsNil,
 		},
-		{ // bad args restore size
-			args: &CreatePVCFromSnapshotArgs{
-				KubeCli: fakeCli,
-				DynCli: dynfake.NewSimpleDynamicClient(scheme,
-					s.fakeUnstructuredSnasphotWSize("vsName", "vsNamespace", "")),
-				SnapshotName: "vsName",
-				Namespace:    "vsNamespace",
-				RestoreSize:  "10wut",
-			},
-			errChecker: NotNil,
-		},
 		{ // Failed to find snapshot
 			args: &CreatePVCFromSnapshotArgs{
 				KubeCli:      fakeCli,
@@ -172,6 +161,14 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 				DynCli:       dynfake.NewSimpleDynamicClient(scheme),
 				SnapshotName: "vsName",
 				Namespace:    "vsNamespace",
+			},
+			errChecker: NotNil,
+		},
+		{ // bad args restore size
+			args: &CreatePVCFromSnapshotArgs{
+				SnapshotName: "vsName",
+				Namespace:    "vsNamespace",
+				RestoreSize:  "10wut",
 			},
 			errChecker: NotNil,
 		},
