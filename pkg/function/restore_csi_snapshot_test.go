@@ -87,10 +87,11 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 			GroupVersion: "snapshot.storage.k8s.io/v1",
 		},
 	} {
+		ctx := context.Background()
 		fakeCli := fake.NewSimpleClientset()
 		fakeCli.Resources = []*metav1.APIResourceList{apiResourceList}
 
-		_, err := fakeCli.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
+		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
 		scheme := runtime.NewScheme()
@@ -100,10 +101,10 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 		originalPVC := getOriginalPVCManifest(testSuite.pvcName, testSuite.storageClass)
 		createPVC(c, testSuite.namespace, originalPVC, fakeCli)
 
-		err = fakeSnapshotter.Create(context.Background(), testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, nil)
+		err = fakeSnapshotter.Create(ctx, testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, nil)
 		c.Assert(err, IsNil)
 
-		vs, err := fakeSnapshotter.Get(context.Background(), testSuite.snapName, testSuite.namespace)
+		vs, err := fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
 		c.Assert(err, IsNil)
 		c.Assert(vs.Name, Equals, testSuite.snapName)
 
@@ -113,33 +114,56 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 			Namespace:    testSuite.namespace,
 			StorageClass: testSuite.storageClass,
 			RestoreSize:  originalPVC.Spec.Resources.Requests.Storage(),
+			VolumeMode:   *originalPVC.Spec.VolumeMode,
+			AccessModes:  originalPVC.Spec.AccessModes,
 			Labels:       nil,
 		}
-
-		var invalidVolumeMode v1.PersistentVolumeMode = "test"
-		restoreArgs.VolumeMode = invalidVolumeMode
-		err = validateVolumeModeArg(restoreArgs)
-		c.Assert(err, NotNil)
-
-		var invalidAccessMode []v1.PersistentVolumeAccessMode = []v1.PersistentVolumeAccessMode{"test"}
-		restoreArgs.AccessModes = invalidAccessMode
-		err = validateVolumeAccessModesArg(restoreArgs)
-		c.Assert(err, NotNil)
-
-		restoreArgs.VolumeMode = *originalPVC.Spec.VolumeMode
-		err = validateVolumeModeArg(restoreArgs)
-		c.Assert(err, IsNil)
-
-		restoreArgs.AccessModes = originalPVC.Spec.AccessModes
-		err = validateVolumeModeArg(restoreArgs)
-		c.Assert(err, IsNil)
-
 		newPVC := newPVCManifest(restoreArgs)
 		createPVC(c, restoreArgs.Namespace, newPVC, fakeCli)
 		c.Assert(newPVC.Name, Equals, testSuite.newPVCName)
 
-		err = fakeCli.CoreV1().Namespaces().Delete(context.Background(), testSuite.namespace, metav1.DeleteOptions{})
+		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
+	}
+}
+
+func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
+	for _, scenario := range []struct {
+		Arg         v1.PersistentVolumeMode
+		ExpectedErr Checker
+	}{
+		{
+			Arg:         "test",
+			ExpectedErr: NotNil,
+		},
+		{
+			Arg:         "Filesystem",
+			ExpectedErr: IsNil,
+		},
+	} {
+		restoreArgs := restoreCSISnapshotArgs{VolumeMode: scenario.Arg}
+		err := validateVolumeModeArg(restoreArgs)
+		c.Assert(err, scenario.ExpectedErr)
+	}
+}
+
+func (testSuite *RestoreCSISnapshotTestSuite) TestValidateAccessModeArg(c *C) {
+	for _, scenario := range []struct {
+		Arg         []v1.PersistentVolumeAccessMode
+		ExpectedErr Checker
+	}{
+		{
+			Arg:         []v1.PersistentVolumeAccessMode{"test"},
+			ExpectedErr: NotNil,
+		},
+		{
+			Arg:         []v1.PersistentVolumeAccessMode{"ReadWriteOnce"},
+			ExpectedErr: IsNil,
+		},
+	} {
+		restoreArgs := restoreCSISnapshotArgs{AccessModes: scenario.Arg}
+		err := validateVolumeAccessModesArg(restoreArgs)
+		c.Assert(err, scenario.ExpectedErr)
 	}
 }
 
@@ -156,8 +180,8 @@ func getOriginalPVCManifest(pvcName, storageClassName string) *v1.PersistentVolu
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			StorageClassName: &storageClassName,
-			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-			VolumeMode: &volumeMode,
+			AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			VolumeMode:       &volumeMode,
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
 					v1.ResourceStorage: resource.MustParse("1Gi"),
