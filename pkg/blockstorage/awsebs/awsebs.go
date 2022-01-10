@@ -18,6 +18,7 @@ package awsebs
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -618,7 +619,11 @@ func GetRegionFromEC2Metadata() (string, error) {
 
 // FromRegion is part of zone.Mapper
 func (s *EbsStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
-
+	dynMap, err := s.RegionToZoneMap(ctx)
+	if err != nil {
+		fmt.Println("SIrish", err.Error())
+	}
+	fmt.Println(dynMap)
 	// Fall back to using a static map.
 	return staticRegionToZones(region)
 }
