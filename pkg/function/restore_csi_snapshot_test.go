@@ -143,6 +143,46 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 	}
 }
 
+func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
+	for _, scenario := range []struct {
+		Arg         v1.PersistentVolumeMode
+		ExpectedErr Checker
+	}{
+		{
+			Arg:         "test",
+			ExpectedErr: NotNil,
+		},
+		{
+			Arg:         "Filesystem",
+			ExpectedErr: IsNil,
+		},
+	} {
+		restoreArgs := restoreCSISnapshotArgs{VolumeMode: scenario.Arg}
+		err := validateVolumeModeArg(restoreArgs)
+		c.Assert(err, scenario.ExpectedErr)
+	}
+}
+
+func (testSuite *RestoreCSISnapshotTestSuite) TestValidateAccessModeArg(c *C) {
+	for _, scenario := range []struct {
+		Arg         []v1.PersistentVolumeAccessMode
+		ExpectedErr Checker
+	}{
+		{
+			Arg:         []v1.PersistentVolumeAccessMode{"test"},
+			ExpectedErr: NotNil,
+		},
+		{
+			Arg:         []v1.PersistentVolumeAccessMode{"ReadWriteOnce"},
+			ExpectedErr: IsNil,
+		},
+	} {
+		restoreArgs := restoreCSISnapshotArgs{AccessModes: scenario.Arg}
+		err := validateVolumeAccessModesArg(restoreArgs)
+		c.Assert(err, scenario.ExpectedErr)
+	}
+}
+
 func createPVC(c *C, namespace string, pvc *v1.PersistentVolumeClaim, fakeCli *fake.Clientset) {
 	_, err := fakeCli.CoreV1().PersistentVolumeClaims(namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
