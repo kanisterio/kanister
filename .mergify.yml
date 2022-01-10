@@ -1,3 +1,10 @@
+queue_rules:
+  - name: default
+    conditions:
+      - "#approved-reviews-by>=1"
+      - status-success=Travis CI - Pull Request
+      - label=kueue
+      - label!="hold off merging"
 pull_request_rules:
   - name: Automatic merge
     conditions:
