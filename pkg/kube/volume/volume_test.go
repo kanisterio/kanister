@@ -138,9 +138,9 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 			args: &CreatePVCFromSnapshotArgs{
 				KubeCli: fakeCli,
 				DynCli: dynfake.NewSimpleDynamicClient(scheme,
-					s.fakeUnstructuredSnasphotWSize("vsName1", "vsNamespace", "9Gi")),
+					s.fakeUnstructuredSnasphotWSize("vsName1", "vsNamespace1", "9Gi")),
 				SnapshotName: "vsName1",
-				Namespace:    "vsNamespace",
+				Namespace:    "vsNamespace1",
 				RestoreSize:  "10Gi",
 			},
 			sizeValue:  10737418240,
