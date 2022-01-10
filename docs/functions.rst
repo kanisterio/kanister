@@ -118,7 +118,7 @@ This allows you to run a new Pod from a Blueprint.
    :align: left
    :widths: 5,5,5,15
 
-   `namespace`, No, `string`, namespace in which to execute (if not mentioned will create pod under controller namespace)
+   `namespace`, No, `string`, namespace in which to execute (if not mentioned the pod will be created in controller's namespace)
    `image`, Yes, `string`, image to be used for executing the task
    `command`, Yes, `[]string`,  command list to execute
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
