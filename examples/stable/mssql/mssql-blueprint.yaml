@@ -2,7 +2,6 @@ apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
   name: mssql-blueprint
-  namespace: kanister
 actions:
   backup:
     outputArtifacts:
@@ -15,7 +14,7 @@ actions:
       - func: KubeTask
         name: dumpToObjectStore
         args:
-          image: ghcr.io/kanisterio/mssql-tools:0.71.0
+          image: chaitanyadelphian/mssql-tools:1.0.2
           command:
             - bash
             - -o
@@ -46,7 +45,7 @@ actions:
       - func: KubeTask
         name: restoreFromObjectStore
         args:
-          image: ghcr.io/kanisterio/mssql-tools:0.71.0
+          image: chaitanyadelphian/mssql-tools:1.0.2
           command:
             - bash
             - -o
@@ -72,7 +71,7 @@ actions:
       - func: KubeTask
         name: deleteFromBlobStore
         args:
-          image: ghcr.io/kanisterio/mssql-tools:0.71.0
+          image: chaitanyadelphian/mssql-tools:1.0.2
           command:
             - bash
             - -o

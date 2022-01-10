@@ -1,4 +1,6 @@
+//go:build integration
 // +build integration
+
 // Copyright 2019 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -213,6 +215,20 @@ var _ = Suite(&RDSPostgreSQLSnap{
 		namespace: "rds-postgres-snap-test",
 		app:       app.NewRDSPostgresDB("rds-postgres-snap", ""),
 		bp:        app.NewBlueprint("rds-postgres-snap", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+type MSSQL struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MSSQL{
+	IntegrationSuite{
+		name:      "mssql",
+		namespace: "mssql-test",
+		app:       app.NewMssqlDB("mssql"),
+		bp:        app.NewBlueprint("mssql", "", true),
 		profile:   newSecretProfile(),
 	},
 })
