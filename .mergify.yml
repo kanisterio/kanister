@@ -7,8 +7,8 @@ pull_request_rules:
       - label=kueue
       - label!="hold off merging"
     actions:
-      merge:
-        strict: smart
+      queue:
+        name: default
         method: squash
   - name: delete head branch after merge
     conditions:
