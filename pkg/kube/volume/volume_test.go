@@ -181,13 +181,13 @@ func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
 	}
 }
 
-func (s *TestVolSuite) fakeUnstructuredSnasphotWSize(name, namespace, size string) *unstructured.Unstructured {
+func (s *TestVolSuite) fakeUnstructuredSnasphotWSize(vsName, namespace, size string) *unstructured.Unstructured {
 	gvr := schema.GroupVersionResource{Group: "snapshot.storage.k8s.io", Version: "v1", Resource: "volumesnapshots"}
 	Object := map[string]interface{}{
 		"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
 		"kind":       "VolumeSnapshot",
 		"metadata": map[string]interface{}{
-			"name":      name,
+			"name":      vsName,
 			"namespace": namespace,
 		},
 	}
