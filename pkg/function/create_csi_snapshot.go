@@ -16,9 +16,9 @@ package function
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -91,7 +91,8 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	snapshotter, err := snapshot.NewSnapshotter(kubeCli, dynCli)
 	if err != nil {
 		if errors.Is(context.DeadlineExceeded, err) {
-			return nil, errors.New("SnapshotContent not provisioned within given timeout. Please check if CSI driver is installed correctly and supports VolumeSnapshot feature")
+			timeoutMsg := "SnapshotContent not provisioned within given timeout. Please check if CSI driver is installed correctly and supports VolumeSnapshot feature"
+			return nil, errors.Wrap(err, timeoutMsg)
 		}
 		return nil, err
 	}

@@ -127,6 +127,11 @@ dockers:
   dockerfile: 'docker/kafka-adobes3Connector/image/adobeSink.Dockerfile'
   extra_files:
   - 'docker/kafka-adobes3Connector/image/adobe-monitorsink.sh'
+- ids:
+    - kando
+  image_templates:
+    - 'ghcr.io/kanisterio/mssql-tools:{{ .Tag }}'
+  dockerfile: 'docker/mssql-tools/Dockerfile'
 snapshot:
   name_template: '{{ .Tag }}'
 checksum:
