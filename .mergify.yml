@@ -5,6 +5,7 @@ queue_rules:
       - status-success=Travis CI - Pull Request
       - label=kueue
       - label!="hold off merging"
+
 pull_request_rules:
   - name: Automatic merge
     conditions:
