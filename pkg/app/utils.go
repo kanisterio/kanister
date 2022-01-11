@@ -22,7 +22,7 @@ import (
 
 const (
 	dbTemplateURI = "https://raw.githubusercontent.com/openshift/origin/%s/examples/db-templates/%s-%s-template.json"
-	// PersistentStorage can be used if we want to deploy database with Persistent
+	// PersistentStorage can be used if we want to deploy database with Persistent Volumes
 	PersistentStorage storage = "persistent" // nolint:varcheck
 
 	// EphemeralStorage can be used if we don't want to deploy database with Persistent
