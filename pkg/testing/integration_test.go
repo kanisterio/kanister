@@ -1,4 +1,6 @@
+//go:build integration
 // +build integration
+
 // Copyright 2019 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
@@ -51,10 +54,12 @@ func Test(t *test.T) {
 
 // Global variables shared across Suite instances
 type kanisterKontroller struct {
-	namespace string
-	context   context.Context
-	cancel    context.CancelFunc
-	kubeCli   *kubernetes.Clientset
+	namespace          string
+	context            context.Context
+	cancel             context.CancelFunc
+	kubeCli            *kubernetes.Clientset
+	serviceAccount     *v1.ServiceAccount
+	clusterRoleBinding *rbacv1.ClusterRoleBinding
 }
 
 var kontroller kanisterKontroller
@@ -69,10 +74,10 @@ func integrationSetup(t *test.T) {
 	}
 	cli, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		t.Fatalf("Integration test setup failure: Error createing kubeCli; err=%v", err)
+		t.Fatalf("Integration test setup failure: Error creating kubeCli; err=%v", err)
 	}
 	if err = createNamespace(cli, ns); err != nil {
-		t.Fatalf("Integration test setup failure: Error createing namespace; err=%v", err)
+		t.Fatalf("Integration test setup failure: Error creating namespace; err=%v", err)
 	}
 	// Set Controller namespace and service account
 	os.Setenv(kube.PodNSEnvVar, ns)
@@ -85,10 +90,23 @@ func integrationSetup(t *test.T) {
 	if err = ctlr.StartWatch(ctx, ns); err != nil {
 		t.Fatalf("Integration test setup failure: Error starting controller; err=%v", err)
 	}
+
+	sa, err := cli.CoreV1().ServiceAccounts(ns).Create(ctx, getServiceAccount(ns), metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Integration test setup failure: Error creating service account controller; err=%v", err)
+	}
+	// create role binding
+	crb, err := cli.RbacV1().ClusterRoleBindings().Create(ctx, getClusterRoleBinding(sa), metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Integration test setup failure: Error creating clusterRoleBinding; err=%v", err)
+	}
+
 	kontroller.namespace = ns
 	kontroller.context = ctx
 	kontroller.cancel = cancel
 	kontroller.kubeCli = cli
+	kontroller.serviceAccount = sa
+	kontroller.clusterRoleBinding = crb
 }
 
 func integrationCleanup(t *test.T) {
@@ -97,6 +115,9 @@ func integrationCleanup(t *test.T) {
 	}
 	if kontroller.namespace != "" {
 		kontroller.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), kontroller.namespace, metav1.DeleteOptions{})
+	}
+	if kontroller.clusterRoleBinding != nil {
+		kontroller.kubeCli.RbacV1().ClusterRoleBindings().Delete(context.TODO(), kontroller.clusterRoleBinding.Name, metav1.DeleteOptions{})
 	}
 }
 
@@ -436,4 +457,40 @@ func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {
 		return err == nil, nil
 	})
 	return err
+}
+
+// getServiceAccount return ServiceAccount object
+func getServiceAccount(namespace string) *v1.ServiceAccount {
+	return &v1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      namespace + "-sa",
+			Namespace: namespace,
+		},
+	}
+}
+
+// getClusterRoleBinding returns ClusterRoleBinding object which grants cluster-admin permission to
+// given ServiceAccount
+func getClusterRoleBinding(sa *v1.ServiceAccount) *rbacv1.ClusterRoleBinding {
+	return &rbacv1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: sa.Namespace + "-cluster-admin",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      "default",
+				Namespace: sa.Namespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     "cluster-admin",
+		},
+	}
 }

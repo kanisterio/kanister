@@ -2,25 +2,25 @@ package app
 
 import (
 	"context"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
-	k8sresource "k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/kubernetes"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
-	deploymentReplicas = 1
-	mssqlWaitTimeout   = 2 * time.Minute
+	mssqlWaitTimeout = 2 * time.Minute
 )
 
 type MssqlDB struct {
@@ -81,7 +81,11 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	log.Print("Secret with name " + secret.Name + " created successfully")
 	m.secret = secret
 	// Create PVC
-	pvc, err := m.cli.CoreV1().PersistentVolumeClaims(namespace).Create(ctx, m.getPVCObj(), metav1.CreateOptions{})
+	pvcObj, err := m.getPVCObj()
+	if err != nil {
+		return err
+	}
+	pvc, err := m.cli.CoreV1().PersistentVolumeClaims(namespace).Create(ctx, pvcObj, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -89,7 +93,11 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	m.pvc = pvc
 
 	// Create Deployment
-	deployment, err := m.cli.AppsV1().Deployments(namespace).Create(ctx, m.getDeploymentObj(), metav1.CreateOptions{})
+	deploymentObj, err := m.getDeploymentObj()
+	if err != nil {
+		return err
+	}
+	deployment, err := m.cli.AppsV1().Deployments(namespace).Create(ctx, deploymentObj, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -97,7 +105,11 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	m.deployment = deployment
 
 	// Create Service
-	service, err := m.cli.CoreV1().Services(namespace).Create(ctx, m.getServiceObj(), metav1.CreateOptions{})
+	serviceObj, err := m.getServiceObj()
+	if err != nil {
+		return err
+	}
+	service, err := m.cli.CoreV1().Services(namespace).Create(ctx, serviceObj, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -129,7 +141,7 @@ func (m *MssqlDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (m *MssqlDB) Uninstall(ctx context.Context) error {
-	/*// Delete PVC
+	// Delete PVC
 	err := m.cli.CoreV1().PersistentVolumeClaims(m.namespace).Delete(ctx, m.pvc.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
@@ -155,7 +167,7 @@ func (m *MssqlDB) Uninstall(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Print("Secret deleted successfully")*/
+	log.Print("Secret deleted successfully")
 	return nil
 }
 
@@ -170,7 +182,6 @@ func (m *MssqlDB) Ping(ctx context.Context) error {
 		return errors.Wrapf(err, "Error while Pinging the database %s", stderr)
 	}
 	log.Print("Ping to the application was success.", field.M{"app": m.name})
-	time.Sleep(20 * time.Minute)
 	return err
 }
 
@@ -247,117 +258,91 @@ func (m MssqlDB) execCommand(ctx context.Context, command []string) (string, str
 	return kube.Exec(m.cli, m.namespace, podName, containerName, command, nil)
 }
 
-func (m *MssqlDB) getDeploymentObj() *appsv1.Deployment {
-	return &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "mssql-deployment",
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: ptrint32(deploymentReplicas),
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": "mssql",
-				},
-			},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": "mssql",
-					},
-				},
-				Spec: v1.PodSpec{
-					TerminationGracePeriodSeconds: ptrint64(30),
-					SecurityContext: &v1.PodSecurityContext{
-						FSGroup: ptrint64(10001),
-					},
-					Hostname: "mssqlinst",
-					Containers: []v1.Container{
-						{
-							Name:  "mssql",
-							Image: "mcr.microsoft.com/mssql/server:2019-latest",
-							Ports: []v1.ContainerPort{
-								{ContainerPort: 1433},
-							},
-							Env: []v1.EnvVar{
-								{
-									Name:  "MSSQL_PID",
-									Value: "Developer",
-								},
-								{
-									Name:  "ACCEPT_EULA",
-									Value: "Y",
-								},
-								{
-									Name: "SA_PASSWORD",
-									ValueFrom: &v1.EnvVarSource{
-										SecretKeyRef: &v1.SecretKeySelector{
-											LocalObjectReference: v1.LocalObjectReference{
-												Name: "mssql",
-											},
-											Key: "SA_PASSWORD",
-										},
-									},
-								},
-							},
-							VolumeMounts: []v1.VolumeMount{
-								{
-									Name:      "mssqldb",
-									MountPath: "/var/opt/mssql",
-								},
-							},
-						},
-					},
-					Volumes: []v1.Volume{
-						{
-							Name: "mssqldb",
-							VolumeSource: v1.VolumeSource{
-								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-									ClaimName: "mssql-data",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+func (m *MssqlDB) getDeploymentObj() (*appsv1.Deployment, error) {
+	deploymentManifest :=
+		`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mssql-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mssql
+  template:
+    metadata:
+      labels:
+        app: mssql
+    spec:
+      terminationGracePeriodSeconds: 30
+      hostname: mssqlinst
+      securityContext:
+        fsGroup: 10001
+      containers:
+        - name: mssql
+          image: mcr.microsoft.com/mssql/server:2019-latest
+          ports:
+            - containerPort: 1433
+          env:
+            - name: MSSQL_PID
+              value: "Developer"
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mssql
+                  key: SA_PASSWORD
+          volumeMounts:
+            - name: mssqldb
+              mountPath: /var/opt/mssql
+      volumes:
+        - name: mssqldb
+          persistentVolumeClaim:
+            claimName: mssql-data`
+
+	var deployment *appsv1.Deployment
+	err := yaml.Unmarshal([]byte(deploymentManifest), &deployment)
+	return deployment, err
 }
 
-func (m *MssqlDB) getPVCObj() *v1.PersistentVolumeClaim {
-	return &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "mssql-data",
-		},
-		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{"ReadWriteOnce"},
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceName(v1.ResourceStorage): k8sresource.MustParse("2Gi"),
-				},
-			},
-		},
-	}
+func (m *MssqlDB) getPVCObj() (*v1.PersistentVolumeClaim, error) {
+	pvcmaniFest :=
+		`kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: mssql-data
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi`
+
+	var pvc *v1.PersistentVolumeClaim
+	err := yaml.Unmarshal([]byte(pvcmaniFest), &pvc)
+	return pvc, err
 }
 
-func (m *MssqlDB) getServiceObj() *v1.Service {
-	return &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "mssql-deployment",
-		},
-		Spec: v1.ServiceSpec{
-			Selector: map[string]string{
-				"app": "mssql",
-			},
-			Ports: []v1.ServicePort{
-				{
-					Protocol:   "TCP",
-					Port:       1443,
-					TargetPort: intstr.IntOrString{IntVal: 1443},
-				},
-			},
-			Type: "ClusterIP",
-		},
-	}
+func (m *MssqlDB) getServiceObj() (*v1.Service, error) {
+	serviceManifest :=
+		`apiVersion: v1
+kind: Service
+metadata:
+  name: mssql-deployment
+spec:
+  selector:
+    app: mssql
+  ports:
+    - protocol: TCP
+      port: 1433
+      targetPort: 1433
+  type: ClusterIP`
+
+	var service *v1.Service
+	err := yaml.Unmarshal([]byte(serviceManifest), &service)
+	return service, err
+
 }
 
 func (m MssqlDB) getSecretObj() *v1.Secret {
