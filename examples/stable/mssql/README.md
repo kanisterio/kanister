@@ -1,14 +1,13 @@
 # Microsoft SQL Server
 
-MS SQL Server is a relational database management system (RDBMS) developed by Microsoft. This product is built for the basic function of storing retrieving data as required by other applications. 
-It can be run either on the same computer or on another across a network.
+MS SQL Server is a relational database management system (RDBMS) developed by Microsoft. This product is built for the basic function of storing retrieving data as required by other applications.
 
 ## Introduction
 This document will cover how to install SQL Server and how to run backup/restore actions.
 
 ## Prerequisites
 
-- Kubernetes 1.6+ with Beta APIs enabled
+- Kubernetes 1.16+ with Beta APIs enabled
 - PV provisioner support in the underlying infrastructure
 - Kanister controller version 0.71.0 installed in your cluster, let's assume in Namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
