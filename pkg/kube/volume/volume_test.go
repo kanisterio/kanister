@@ -16,13 +16,19 @@ package volume
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
 
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	dynfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -64,4 +70,132 @@ func (s *TestVolSuite) TestCreatePVC(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(pvc2.Spec.AccessModes) >= 1, Equals, true)
 	c.Assert(*pvc2.Spec.VolumeMode, Equals, v1.PersistentVolumeBlock)
+}
+
+func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
+	ctx := context.Background()
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "snapshot.storage.k8s.io", Version: "v1", Kind: "VolumeSnapshotList"}, &unstructured.UnstructuredList{})
+	fakeCli := fake.NewSimpleClientset()
+	fakeCli.Resources = []*metav1.APIResourceList{{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "VolumeSnapshot",
+			APIVersion: "v1",
+		},
+		GroupVersion: "snapshot.storage.k8s.io/v1",
+	}}
+	for _, tc := range []struct {
+		args       *CreatePVCFromSnapshotArgs
+		sizeValue  int64
+		errChecker Checker
+	}{
+		{ // only snapshot restore size
+			args: &CreatePVCFromSnapshotArgs{
+				KubeCli: fakeCli,
+				DynCli: dynfake.NewSimpleDynamicClient(scheme,
+					s.fakeUnstructuredSnasphotWSize("vsName", "vsNamespace", "10Gi")),
+				SnapshotName: "vsName",
+				Namespace:    "vsNamespace",
+			},
+			sizeValue:  10737418240,
+			errChecker: IsNil,
+		},
+		{ // only args restore size
+			args: &CreatePVCFromSnapshotArgs{
+				KubeCli: fakeCli,
+				DynCli: dynfake.NewSimpleDynamicClient(scheme,
+					s.fakeUnstructuredSnasphotWSize("vsName", "vsNamespace", "")),
+				SnapshotName: "vsName",
+				Namespace:    "vsNamespace",
+				RestoreSize:  "10Gi",
+			},
+			sizeValue:  10737418240,
+			errChecker: IsNil,
+		},
+		{ // neither
+			args: &CreatePVCFromSnapshotArgs{
+				KubeCli: fakeCli,
+				DynCli: dynfake.NewSimpleDynamicClient(scheme,
+					s.fakeUnstructuredSnasphotWSize("vsName", "vsNamespace", "")),
+				SnapshotName: "vsName",
+				Namespace:    "vsNamespace",
+			},
+			errChecker: NotNil,
+		},
+		{ // both, snapshot size is bigger
+			args: &CreatePVCFromSnapshotArgs{
+				KubeCli: fakeCli,
+				DynCli: dynfake.NewSimpleDynamicClient(scheme,
+					s.fakeUnstructuredSnasphotWSize("vsName", "vsNamespace", "10Gi")),
+				SnapshotName: "vsName",
+				Namespace:    "vsNamespace",
+				RestoreSize:  "9Gi",
+			},
+			sizeValue:  10737418240,
+			errChecker: IsNil,
+		},
+		{ // both, args size is bigger
+			args: &CreatePVCFromSnapshotArgs{
+				KubeCli: fakeCli,
+				DynCli: dynfake.NewSimpleDynamicClient(scheme,
+					s.fakeUnstructuredSnasphotWSize("vsName1", "vsNamespace1", "9Gi")),
+				SnapshotName: "vsName1",
+				Namespace:    "vsNamespace1",
+				RestoreSize:  "10Gi",
+			},
+			sizeValue:  10737418240,
+			errChecker: IsNil,
+		},
+		{ // Failed to find snapshot
+			args: &CreatePVCFromSnapshotArgs{
+				KubeCli:      fakeCli,
+				DynCli:       dynfake.NewSimpleDynamicClient(scheme),
+				SnapshotName: "vsName",
+				Namespace:    "vsNamespace",
+			},
+			errChecker: NotNil,
+		},
+		{ // Failed to create snapshotter
+			args: &CreatePVCFromSnapshotArgs{
+				KubeCli:      fake.NewSimpleClientset(), // fails to find dynamic api
+				DynCli:       dynfake.NewSimpleDynamicClient(scheme),
+				SnapshotName: "vsName",
+				Namespace:    "vsNamespace",
+			},
+			errChecker: NotNil,
+		},
+		{ // bad args restore size
+			args: &CreatePVCFromSnapshotArgs{
+				SnapshotName: "vsName",
+				Namespace:    "vsNamespace",
+				RestoreSize:  "10wut",
+			},
+			errChecker: NotNil,
+		},
+	} {
+		q, err := getPVCRestoreSize(ctx, tc.args)
+		c.Assert(err, tc.errChecker)
+		if tc.errChecker == IsNil {
+			c.Assert(q.Value(), Equals, tc.sizeValue)
+		}
+	}
+}
+
+func (s *TestVolSuite) fakeUnstructuredSnasphotWSize(vsName, namespace, size string) *unstructured.Unstructured {
+	gvr := schema.GroupVersionResource{Group: "snapshot.storage.k8s.io", Version: "v1", Resource: "volumesnapshots"}
+	Object := map[string]interface{}{
+		"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
+		"kind":       "VolumeSnapshot",
+		"metadata": map[string]interface{}{
+			"name":      vsName,
+			"namespace": namespace,
+		},
+	}
+	if size != "" {
+		q := resource.MustParse(size)
+		Object["status"] = map[string]interface{}{
+			"restoreSize": q.ToUnstructured(),
+		}
+	}
+	return &unstructured.Unstructured{Object: Object}
 }
