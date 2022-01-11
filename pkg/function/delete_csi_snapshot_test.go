@@ -29,18 +29,8 @@ import (
 )
 
 const (
-	// DeleteCSISnapshotTestNamespace is the namespace where testing is done
-	DeleteCSISnapshotTestNamespace = "test-delete-csi-snapshot"
-	// DeleteCSISnapshotOriginalPVCName is the name of the PVC that will be captured
-	DeleteCSISnapshotOriginalPVCName = "test-pvc"
-	// DeleteCSISnapshotPVCName is the name of the new PVC that will be restored
-	DeleteCSISnapshotNewPVCName = "test-pvc-restored"
-	// DeleteCSISnapshotSnapshotName is the name of the snapshot
-	DeleteCSISnapshotSnapshotName = "test-snapshot"
-	// DeleteCSISnapshotSnapshotClass is the fake snapshot class
-	DeleteCSISnapshotSnapshotClass = "test-snapshot-class"
-	// DeleteCSISnapshotStorageClass is the fake storage class
-	DeleteCSISnapshotStorageClass = "test-storage-class"
+	// testDeleteNamespace is the namespace where testing is done
+	testDeleteNamespace = "test-delete-csi-snapshot"
 )
 
 type DeleteCSISnapshotTestSuite struct {
@@ -55,12 +45,12 @@ type DeleteCSISnapshotTestSuite struct {
 var _ = Suite(&DeleteCSISnapshotTestSuite{})
 
 func (testSuite *DeleteCSISnapshotTestSuite) SetUpSuite(c *C) {
-	testSuite.volumeSnapshotClass = DeleteCSISnapshotSnapshotClass
-	testSuite.storageClass = DeleteCSISnapshotStorageClass
-	testSuite.pvcName = DeleteCSISnapshotOriginalPVCName
-	testSuite.newPVCName = DeleteCSISnapshotNewPVCName
-	testSuite.snapName = DeleteCSISnapshotSnapshotName
-	testSuite.namespace = DeleteCSISnapshotTestNamespace
+	testSuite.volumeSnapshotClass = snapshotClass
+	testSuite.storageClass = storageClass
+	testSuite.pvcName = originalPVCName
+	testSuite.newPVCName = newPVCName
+	testSuite.snapName = snapshotName
+	testSuite.namespace = testDeleteNamespace
 }
 
 func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
@@ -136,9 +126,9 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 		c.Assert(err, IsNil)
 		c.Assert(newPVC.Name, Equals, testSuite.newPVCName)
 
-		vs, err = fakeSnapshotter.Delete(ctx, testSuite.snapName, testSuite.namespace)
+		_, err = fakeSnapshotter.Delete(ctx, testSuite.snapName, testSuite.namespace)
 		c.Assert(err, IsNil)
-		vs, err = fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
+		_, err = fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
 		c.Assert(err, NotNil)
 
 		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
