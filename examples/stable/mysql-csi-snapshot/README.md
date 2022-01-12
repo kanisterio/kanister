@@ -30,7 +30,8 @@ $ helm repo update
 # Install the MySQL database (Helm Version 3)
 $ kubectl create namespace mysql
 $ helm install mysql-release bitnami/mysql --namespace mysql \
-    --set auth.rootPassword='asd#45@mysqlEXAMPLE'
+    --set auth.rootPassword='asd#45@mysqlEXAMPLE' \
+    --set architecture="standalone"
 ```
 
 Above command deploys a MySQL instance in the mysql namespace.
