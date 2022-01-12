@@ -18,7 +18,7 @@ This document explains how Kanister leverages the use of CSI VolumeSnapshots to 
 
 ## Install MySQL
 
-Install the MySQL database using the bitnami chart with the release name mysql-release
+Install the MySQL database using the bitnami chart with the release name mysql-release.
 
 ```bash
 # Add bitnami in your local chart repository
@@ -52,7 +52,7 @@ Connect to the MySQL database.
 $ kubectl exec -it $(kubectl get pods -n mysql --selector=app.kubernetes.io/instance=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql -- bash
 ```
 
-From inside the shell, use the mysql CLI to insert some data into the test database
+From inside the shell, use the mysql CLI to insert some data into the test database.
 
 ```bash
 $ mysql --user=root --password=asd#45@mysqlEXAMPLE
