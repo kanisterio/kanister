@@ -65,9 +65,6 @@ func (m *MssqlDB) Init(ctx context.Context) error {
 	}
 
 	m.cli, err = kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
 	return err
 }
 
@@ -78,8 +75,9 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	if err != nil {
 		return err
 	}
-	log.Print("Secret with name " + secret.Name + " created successfully")
+	log.Print("Secret with name "+secret.Name+" created successfully", field.M{"app": m.name})
 	m.secret = secret
+
 	// Create PVC
 	pvcObj, err := m.getPVCObj()
 	if err != nil {
@@ -89,7 +87,7 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	if err != nil {
 		return err
 	}
-	log.Print("PVC with name " + pvc.Name + " created successfully")
+	log.Print("PVC with name "+pvc.Name+" created successfully", field.M{"app": m.name})
 	m.pvc = pvc
 
 	// Create Deployment
@@ -101,7 +99,7 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	if err != nil {
 		return err
 	}
-	log.Print("Deployment with name " + deployment.Name + " created successfully")
+	log.Print("Deployment with name "+deployment.Name+" created successfully", field.M{"app": m.name})
 	m.deployment = deployment
 
 	// Create Service
@@ -113,7 +111,7 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	if err != nil {
 		return err
 	}
-	log.Print("Service with name " + service.Name + " created successfully")
+	log.Print("Service with name "+service.Name+" created successfully", field.M{"app": m.name})
 	m.service = service
 
 	return err
@@ -141,38 +139,38 @@ func (m *MssqlDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (m *MssqlDB) Uninstall(ctx context.Context) error {
-	// Delete PVC
-	err := m.cli.CoreV1().PersistentVolumeClaims(m.namespace).Delete(ctx, m.pvc.Name, metav1.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-	log.Print("PVC deleted successfully")
-
 	// Delete Deployment
-	err = m.cli.AppsV1().Deployments(m.namespace).Delete(ctx, m.deployment.Name, metav1.DeleteOptions{})
+	err := m.cli.AppsV1().Deployments(m.namespace).Delete(ctx, m.deployment.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
-	log.Print("Deployment deleted successfully")
+	log.Debug().Print("Deployment deleted successfully", field.M{"app": m.name})
+
+	// Delete PVC
+	err = m.cli.CoreV1().PersistentVolumeClaims(m.namespace).Delete(ctx, m.pvc.Name, metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	log.Debug().Print("PVC deleted successfully", field.M{"app": m.name})
 
 	// Delete Service
 	err = m.cli.CoreV1().Services(m.namespace).Delete(ctx, m.service.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
-	log.Print("Service deleted successfully")
+	log.Debug().Print("Service deleted successfully", field.M{"app": m.name})
 
 	//Delete Secret
 	err = m.cli.CoreV1().Secrets(m.namespace).Delete(ctx, m.secret.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
-	log.Print("Secret deleted successfully")
+	log.Debug().Print("Secret deleted successfully", field.M{"app": m.name})
 	return nil
 }
 
 func (m *MssqlDB) Ping(ctx context.Context) error {
-	log.Print("Pinging database")
+	log.Print("Pinging mssql database", field.M{"app": m.name})
 	count := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUname + " -P \"" + m.dbPass + "\" -Q " +
 		"\"SELECT name FROM sys.databases WHERE name NOT IN ('master','model','msdb','tempdb')\" -b -s \",\" -h -1"
 
@@ -186,7 +184,7 @@ func (m *MssqlDB) Ping(ctx context.Context) error {
 }
 
 func (m *MssqlDB) Insert(ctx context.Context) error {
-	log.Print("Adding entry to database")
+	log.Print("Adding entry to database", field.M{"app": m.name})
 	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUname + " -P \"" + m.dbPass + "\" -Q " +
 		"\"USE test; INSERT INTO Inventory VALUES (1, 'banana', 150)\""
 
@@ -199,7 +197,7 @@ func (m *MssqlDB) Insert(ctx context.Context) error {
 }
 
 func (m *MssqlDB) Count(ctx context.Context) (int, error) {
-	log.Print("Counting entries from database")
+	log.Print("Counting entries from database", field.M{"app": m.name})
 	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUname + " -P \"" + m.dbPass + "\" -Q " +
 		"\"SET NOCOUNT ON; USE test; SELECT COUNT(*) FROM Inventory\" -h -1"
 
@@ -209,11 +207,14 @@ func (m *MssqlDB) Count(ctx context.Context) (int, error) {
 		return 0, errors.Wrapf(err, "Error while inserting data into table %s", stderr)
 	}
 	rowsReturned, err := strconv.Atoi(strings.TrimSpace(strings.Split(stdout, "\n")[1]))
+	if err != nil {
+		return 0, errors.Wrapf(err, "Error while converting data %s", stderr)
+	}
 	return rowsReturned, nil
 }
 
 func (m *MssqlDB) Reset(ctx context.Context) error {
-	log.Print("Reseting database")
+	log.Print("Reseting database", field.M{"app": m.name})
 	delete := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUname + " -P \"" + m.dbPass + "\" -Q " +
 		"\"DROP DATABASE test\""
 	deleteQuery := []string{"sh", "-c", delete}
@@ -225,7 +226,7 @@ func (m *MssqlDB) Reset(ctx context.Context) error {
 }
 
 func (m *MssqlDB) Initialize(ctx context.Context) error {
-	log.Print("Initializing database")
+	log.Print("Initializing database", field.M{"app": m.name})
 	createDB := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUname + " -P \"" + m.dbPass + "\" -Q " +
 		"\"CREATE DATABASE test\""
 
@@ -355,12 +356,4 @@ func (m MssqlDB) getSecretObj() *v1.Secret {
 		},
 		Type: "Opaque",
 	}
-}
-
-func ptrint32(p int32) *int32 {
-	return &p
-}
-
-func ptrint64(p int64) *int64 {
-	return &p
 }
