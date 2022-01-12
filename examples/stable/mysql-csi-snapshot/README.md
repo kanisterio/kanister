@@ -7,6 +7,7 @@ This document explains how Kanister leverages the use of CSI VolumeSnapshots to 
 
 ## Prerequisites
 
+- Helm 3 installed
 - Kubernetes 1.16+ with Beta APIs enabled
 - PV provisioner support in the underlying infrastructure
 - Kanister controller version 0.71.0 installed in your cluster, let's assume in Namespace `kanister`
@@ -86,7 +87,7 @@ mysql> SELECT * FROM employees;
 
 Create Blueprint in the same namespace as the Kanister controller.
 
-> **Note**: Please use the appropriate VolumeSnapshotClass and StorageClass in the ./mysql-csi-snapshot-bp.yaml file before running the following command
+> **Note**: Please use appropriate snapshotClass and storageClass in the ./mysql-csi-snapshot-bp.yaml file. You can correct the blueprint using kubectl patch or kubectl edit commands.
 
 ```bash
 $ kubectl create -f ./mysql-csi-snapshot-bp.yaml -n kanister
@@ -94,11 +95,11 @@ $ kubectl create -f ./mysql-csi-snapshot-bp.yaml -n kanister
 
 ## Backup the application data
 
-You can now take a backup of the MySQL data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller. An easy way to do this is by using ``kanctl``.
+Take a backup of the MySQL data using the backup ActionSet from above blueprint. Create an ActionSet in the same namespace as the controller. An easy way to do this is by using ``kanctl``.
 
 ```bash
 # Create Actionset
-# Please make sure the value of profile and blueprint matches with the names of profile and blueprint that we have created already
+# Please make sure the value of blueprint matches with the name of blueprint that we created previously
 $ kanctl create actionset --action backup --namespace kanister --blueprint mysql-csi-snapshot-bp --pvc mysql/$(kubectl get pvc -n mysql --selector=app.kubernetes.io/instance=mysql-release -o=jsonpath='{.items[0].metadata.name}')
 actionset backup-mlvcv created
 
@@ -174,7 +175,7 @@ data-mysql-release-0-restored   Bound    pvc-2eb6fb89-78bc-4c2e-8c1e-c270d664f31
 $ kubectl --namespace kanister describe actionset restore-backup-mlvcv-6z9xn
 ```
 
-Next, we need to add the newly restored PVC data-mysql-release-0-restored in the mysql-release StatefulSet spec template. One of the easiest way to do that is using ``kubectl patch`` command.
+Next, we need to add the newly restored PVC ``data-mysql-release-0-restored`` in the ``mysql-release`` StatefulSet spec template. One of the easiest way to do that is using ``kubectl patch`` command.
 
 ```bash
 $ kubectl -n mysql patch statefulset mysql-release --type=json -p='[{"op": "add", "path": "/spec/template/spec/volumes/-", "value": {"name": "restored-data", "persistentVolumeClaim": {"claimName": "data-mysql-release-0-restored"}}}]'
@@ -186,7 +187,7 @@ Once the patch is complete and MySQL pod is set to “running“, you can see th
 
 # Verify the restored application data
 
-To verify if restore was successful, we need to connect to the MySQL CLI and query the test database that we created in [this]() step.
+To verify if restore was successful, we need to connect to the MySQL CLI and query the test database that we created in [this](https://github.com/kanisterio/kanister/tree/master/examples/stable/mysql-csi-snapshot#create-application-data) step.
 
 ```bash
 # Enter into a shell inside MySQL's pod
@@ -226,6 +227,7 @@ mysql> SELECT * FROM employees;
 The CSI VolumeSnapshot created by the backup action can be cleaned up using the following command.
 
 ```bash
+# Make sure to use correct backup actionset name here
 $ kanctl --namespace kanister create actionset --action delete --from backup-mlvcv
 actionset delete-backup-mlvcv-cq6bw created
 
