@@ -37,7 +37,7 @@ type MssqlDB struct {
 func NewMssqlDB(name string) App {
 	return &MssqlDB{
 		name: name,
-		// These values are hard coded creating secret
+		// These values are hard coded while creating secret
 		dbUserName: "sa",
 		dbPass:     "MyC0m9l&xP@ssw0rd",
 	}
