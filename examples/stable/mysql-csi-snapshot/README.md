@@ -1,4 +1,4 @@
-# MySQL DB using CSI VolumeSnapshots
+# Backup and restore MySQL DB using CSI VolumeSnapshot
 
 VolumeSnapshots provide Kubernetes users with a standardized way to copy a volume's contents at a particular point in time without creating an entirely new volume. This functionality enables, for example, database administrators to backup databases before performing edit or delete modifications.
 
@@ -88,7 +88,7 @@ mysql> SELECT * FROM employees;
 
 Create Blueprint in the same namespace as the Kanister controller.
 
-> **Note**: Please use appropriate snapshotClass and storageClass in the ./mysql-csi-snapshot-bp.yaml file. You can correct the blueprint using kubectl patch or kubectl edit commands.
+> **Note**: We used a Kubernetes cluster on DigitalOcean. Hence, snapshotClass and storageClass in the ./mysql-csi-snapshot-bp.yaml file is set to ``do-block-storage``. Please correct these arguments as per your cluster setup. Either before creating the blueprint or after creating with the help of ``kubectl patch`` or ``kubectl edit`` commands.
 
 ```bash
 $ kubectl create -f ./mysql-csi-snapshot-bp.yaml -n kanister
@@ -96,7 +96,7 @@ $ kubectl create -f ./mysql-csi-snapshot-bp.yaml -n kanister
 
 ## Backup the application data
 
-Take a backup of the MySQL data using the backup ActionSet from above blueprint. Create an ActionSet in the same namespace as the controller. An easy way to do this is by using ``kanctl``.
+Take a backup of the MySQL data using the backup ActionSet from above blueprint. Create an ActionSet in the `kanister` namespace. An easy way to do this is by using `kanctl`.
 
 ```bash
 # Create Actionset
