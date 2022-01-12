@@ -3,7 +3,7 @@
 VolumeSnapshots provide Kubernetes users with a standardized way to copy a volume's contents at a particular point in time without creating an entirely new volume. This functionality enables, for example, database administrators to backup databases before performing edit or delete modifications.
 
 ## Introduction
-This document explains how Kanister leverages the use of CSI VolumeSnapshots to take backup and restore of a database in MySQL.
+This document explains how Kanister leverages the use of CSI VolumeSnapshots to take backup and restore of databases in MySQL.
 
 ## Prerequisites
 
@@ -44,7 +44,7 @@ $ kubectl get secret mysql-release --namespace mysql -o jsonpath="{.data.mysql-r
 
 > **Tip**: List all releases using `helm list --all-namespaces`, using Helm Version 3.
 
-# Create Application data
+## Create Application data
 
 Connect to the MySQL database.
 
@@ -82,9 +82,9 @@ mysql> SELECT * FROM employees;
 1 row in set (0.00 sec)
 ```
 
-# Backup MySQL DB
+## Backup MySQL DB
 
-## Create Blueprint
+### Create Blueprint
 
 Create Blueprint in the same namespace as the Kanister controller.
 
@@ -94,13 +94,13 @@ Create Blueprint in the same namespace as the Kanister controller.
 $ kubectl create -f ./mysql-csi-snapshot-blueprint.yaml -n kanister
 ```
 
-## Backup the application data
+### Backup the application data
 
 Take a backup of the MySQL data using the backup ActionSet from above blueprint. Create an ActionSet in the `kanister` namespace. An easy way to do this is by using `kanctl`.
 
 ```bash
 # Create Actionset
-# Please make sure the value of blueprint matches with the name of blueprint that we created previously
+# Please make sure the value of blueprint matches with the name of blueprint that was created earlier
 $ kanctl create actionset --action backup --namespace kanister --blueprint mysql-csi-snapshot-bp --pvc mysql/$(kubectl get pvc -n mysql --selector=app.kubernetes.io/instance=mysql-release -o=jsonpath='{.items[0].metadata.name}')
 actionset backup-mlvcv created
 
@@ -109,7 +109,7 @@ NAME                         AGE
 backup-mlvcv                 112s
 
 # View the status of the actionset
-# Please make sure the name of the actionset here matches with name of the name of actionset that we have created already
+# Please make sure the name of the actionset here matches with name of the actionset created above
 $ kubectl --namespace kanister describe actionset backup-mlvcv
 
 # Check the CSI VolumeSnapshot created
@@ -118,7 +118,7 @@ NAME                                  READYTOUSE   SOURCEPVC              SOURCE
 data-mysql-release-0-snapshot-cd26z   true         data-mysql-release-0                           8Gi           do-block-storage   snapcontent-2e411d1d-0b5f-48d4-9b79-b19e824c2e38   3h40m          3h40m
 ```
 
-# Disaster strikes!
+## Disaster strikes!
 
 Let's say someone accidentally deleted the test database.
 
@@ -157,7 +157,7 @@ mysql> SHOW DATABASES;
 5 rows in set (0.01 sec)
 ```
 
-# Restore MySQL DB
+## Restore MySQL DB
 
 To restore the missing data, you should use the backup that you created before. We use `kanctl` for creating this restore action. `kanctl` helps create ActionSets that depend on other ActionSets.
 
@@ -176,7 +176,7 @@ data-mysql-release-0-restored   Bound    pvc-2eb6fb89-78bc-4c2e-8c1e-c270d664f31
 $ kubectl --namespace kanister describe actionset restore-backup-mlvcv-6z9xn
 ```
 
-Next, we need to add the newly restored PVC `data-mysql-release-0-restored` in the `mysql-release` StatefulSet spec template. One of the easiest way to do that is using `kubectl patch` command.
+Next, we need to add the newly restored PVC `data-mysql-release-0-restored` in the `mysql-release` StatefulSet spec template. One of the easiest way you can do that is by using `kubectl patch` command.
 
 ```bash
 $ kubectl -n mysql patch statefulset mysql-release --type=json -p='[{"op": "add", "path": "/spec/template/spec/volumes/-", "value": {"name": "restored-data", "persistentVolumeClaim": {"claimName": "data-mysql-release-0-restored"}}}]'
@@ -184,11 +184,11 @@ $ kubectl -n mysql patch statefulset mysql-release --type=json -p='[{"op": "add"
 $ kubectl -n mysql patch statefulset mysql-release --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts", "value": [{"mountPath": "/bitnami/mysql", "name": "restored-data"}, {"mountPath": "/opt/bitnami/mysql/conf/my.cnf", "name": "config", "subPath": "my.cnf"}]}]'
 ```
 
-Once the patch is complete and MySQL pod is set to “running“, you can see that the data has been successfully restored to MySQL.
+Once the patch is complete and MySQL pod is set to “Running“, you can check if the data has been restored to previous state.
 
-# Verify the restored application data
+## Verify the restored application data
 
-To verify if restore was successful, we need to connect to the MySQL CLI and query the test database that we created in [this](https://github.com/kanisterio/kanister/tree/master/examples/stable/mysql-csi-snapshot#create-application-data) step.
+To verify if restore was successful, you need to connect to the MySQL CLI and query the test database that was created in [this](https://github.com/kanisterio/kanister/tree/master/examples/stable/mysql-csi-snapshot#create-application-data) step.
 
 ```bash
 # Enter into a shell inside MySQL's pod
@@ -223,7 +223,9 @@ mysql> SELECT * FROM employees;
 1 row in set (0.00 sec)
 ```
 
-# Delete the Artifacts
+Thus, with the help of Kanister, we have successfully backed up our MySQL application data and recovered it after a disaster.
+
+## Delete the Artifacts
 
 The CSI VolumeSnapshot created by the backup action can be cleaned up using the following command.
 
@@ -236,9 +238,9 @@ actionset delete-backup-mlvcv-cq6bw created
 $ kubectl --namespace kanister describe actionset delete-backup-glptq-cq6bw
 ```
 
-# Cleanup
+## Cleanup
 
-## Uninstalling the helm chart
+### Uninstalling the helm chart
 
 To uninstall/delete the `mysql-release` deployment.
 
@@ -252,7 +254,7 @@ $ kubectl delete namespace mysql
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
 
-## Delete CRs
+### Delete CRs
 
 Remove the blueprint.
 
