@@ -13,7 +13,7 @@ This document explains how Kanister leverages the use of CSI VolumeSnapshots to 
 - Kanister controller version 0.71.0 installed in your cluster, let's assume in Namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 - CSI Driver installed
-- VolumeSnapshotClass and StorageClass resource defined (uses above CSI Driver)
+- VolumeSnapshotClass and StorageClass resources defined (uses above CSI Driver)
 - Snapshot APIs enabled
 
 ## Install MySQL
