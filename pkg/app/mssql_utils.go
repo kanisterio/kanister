@@ -7,6 +7,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	dbUserName = "sa"
+	dbPass     = "MyC0m9l&xP@ssw0rd"
+)
+
 func (m *MssqlDB) getDeploymentObj() (*appsv1.Deployment, error) {
 	deploymentManifest :=
 		`apiVersion: apps/v1
@@ -97,10 +102,10 @@ spec:
 func (m MssqlDB) getSecretObj() *v1.Secret {
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "mssql",
+			Name: m.name,
 		},
 		Data: map[string][]byte{
-			"SA_PASSWORD": []byte("MyC0m9l&xP@ssw0rd"),
+			"SA_PASSWORD": []byte(dbPass),
 		},
 		Type: "Opaque",
 	}

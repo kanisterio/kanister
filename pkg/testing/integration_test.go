@@ -1,4 +1,6 @@
+//go:build integration
 // +build integration
+
 // Copyright 2019 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,7 +80,7 @@ func integrationSetup(t *test.T) {
 	if err = createNamespace(cli, ns); err != nil {
 		t.Fatalf("Integration test setup failure: Error creating namespace; err=%v", err)
 	}
-	sa, err := cli.CoreV1().ServiceAccounts(ns).Create(ctx, getServiceAccount(ns), metav1.CreateOptions{})
+	sa, err := cli.CoreV1().ServiceAccounts(ns).Create(ctx, getServiceAccount(ns, controllerSA), metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("Integration test setup failure: Error creating service account; err=%v", err)
 	}
@@ -94,7 +96,7 @@ func integrationSetup(t *test.T) {
 	}
 	// Set Controller namespace and service account
 	os.Setenv(kube.PodNSEnvVar, ns)
-	os.Setenv(kube.PodSAEnvVar, sa.Name)
+	os.Setenv(kube.PodSAEnvVar, controllerSA)
 
 	if err = resource.CreateCustomResources(ctx, cfg); err != nil {
 		t.Fatalf("Integration test setup failure: Error createing custom resources; err=%v", err)
@@ -131,6 +133,7 @@ func integrationCleanup(t *test.T) {
 const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
 	appWaitTimeout = 3 * time.Minute
+	controllerSA   = "kanister-sa"
 )
 
 type secretProfile struct {
@@ -466,10 +469,10 @@ func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {
 }
 
 // getServiceAccount return ServiceAccount object
-func getServiceAccount(namespace string) *v1.ServiceAccount {
+func getServiceAccount(namespace, name string) *v1.ServiceAccount {
 	return &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namespace + "-sa",
+			Name:      name,
 			Namespace: namespace,
 		},
 	}

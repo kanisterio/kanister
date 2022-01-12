@@ -30,16 +30,11 @@ type MssqlDB struct {
 	service    *v1.Service
 	pvc        *v1.PersistentVolumeClaim
 	secret     *v1.Secret
-	dbUserName string
-	dbPass     string
 }
 
 func NewMssqlDB(name string) App {
 	return &MssqlDB{
 		name: name,
-		// These values are hard coded while creating secret
-		dbUserName: "sa",
-		dbPass:     "MyC0m9l&xP@ssw0rd",
 	}
 }
 
@@ -64,7 +59,7 @@ func (m *MssqlDB) Init(ctx context.Context) error {
 	}
 
 	m.cli, err = kubernetes.NewForConfig(cfg)
-	return err
+	return nil
 }
 
 func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
@@ -73,7 +68,7 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	if err != nil {
 		return err
 	}
-	log.Print("Secret with name "+secret.Name+" created successfully", field.M{"app": m.name})
+	log.Print("Secret created successfully", field.M{"app": m.name, "secret": secret.Name})
 	m.secret = secret
 
 	pvcObj, err := m.getPVCObj()
@@ -84,7 +79,7 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	if err != nil {
 		return err
 	}
-	log.Print("PVC with name "+pvc.Name+" created successfully", field.M{"app": m.name})
+	log.Print("PVC created successfully", field.M{"app": m.name, "pvc": pvc.Name})
 	m.pvc = pvc
 
 	deploymentObj, err := m.getDeploymentObj()
@@ -95,7 +90,7 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	if err != nil {
 		return err
 	}
-	log.Print("Deployment with name "+deployment.Name+" created successfully", field.M{"app": m.name})
+	log.Print("Deployment created successfully", field.M{"app": m.name, "deployment": deployment.Name})
 	m.deployment = deployment
 
 	serviceObj, err := m.getServiceObj()
@@ -106,10 +101,10 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	if err != nil {
 		return err
 	}
-	log.Print("Service with name "+service.Name+" created successfully", field.M{"app": m.name})
+	log.Print("Service created successfully", field.M{"app": m.name, "service": service.Name})
 	m.service = service
 
-	return err
+	return nil
 }
 
 func (m *MssqlDB) IsReady(ctx context.Context) (bool, error) {
@@ -138,31 +133,31 @@ func (m *MssqlDB) Uninstall(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Debug().Print("Deployment deleted successfully", field.M{"app": m.name})
+	log.Print("Deployment deleted successfully", field.M{"app": m.name})
 
 	err = m.cli.CoreV1().PersistentVolumeClaims(m.namespace).Delete(ctx, m.pvc.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
-	log.Debug().Print("PVC deleted successfully", field.M{"app": m.name})
+	log.Print("PVC deleted successfully", field.M{"app": m.name})
 
 	err = m.cli.CoreV1().Services(m.namespace).Delete(ctx, m.service.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
-	log.Debug().Print("Service deleted successfully", field.M{"app": m.name})
+	log.Print("Service deleted successfully", field.M{"app": m.name})
 
 	err = m.cli.CoreV1().Secrets(m.namespace).Delete(ctx, m.secret.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
-	log.Debug().Print("Secret deleted successfully", field.M{"app": m.name})
+	log.Print("Secret deleted successfully", field.M{"app": m.name})
 	return nil
 }
 
 func (m *MssqlDB) Ping(ctx context.Context) error {
 	log.Print("Pinging mssql database", field.M{"app": m.name})
-	count := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
+	count := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
 		"\"SELECT name FROM sys.databases WHERE name NOT IN ('master','model','msdb','tempdb')\" -b -s \",\" -h -1"
 
 	loginMssql := []string{"sh", "-c", count}
@@ -171,12 +166,12 @@ func (m *MssqlDB) Ping(ctx context.Context) error {
 		return errors.Wrapf(err, "Error while Pinging the database: %s", stderr)
 	}
 	log.Print("Ping to the application was success.", field.M{"app": m.name})
-	return err
+	return nil
 }
 
 func (m *MssqlDB) Insert(ctx context.Context) error {
 	log.Print("Adding entry to database", field.M{"app": m.name})
-	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
+	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
 		"\"USE test; INSERT INTO Inventory VALUES (1, 'banana', 150)\""
 
 	insertQuery := []string{"sh", "-c", insert}
@@ -184,12 +179,12 @@ func (m *MssqlDB) Insert(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
 	}
-	return err
+	return nil
 }
 
 func (m *MssqlDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting entries from database", field.M{"app": m.name})
-	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
+	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
 		"\"SET NOCOUNT ON; USE test; SELECT COUNT(*) FROM Inventory\" -h -1"
 
 	insertQuery := []string{"sh", "-c", insert}
@@ -206,22 +201,22 @@ func (m *MssqlDB) Count(ctx context.Context) (int, error) {
 
 func (m *MssqlDB) Reset(ctx context.Context) error {
 	log.Print("Reseting database", field.M{"app": m.name})
-	delete := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
+	delete := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
 		"\"DROP DATABASE test\""
 	deleteQuery := []string{"sh", "-c", delete}
 	_, stderr, err := m.execCommand(ctx, deleteQuery)
 	if err != nil {
 		return errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
 	}
-	return err
+	return nil
 }
 
 func (m *MssqlDB) Initialize(ctx context.Context) error {
 	log.Print("Initializing database", field.M{"app": m.name})
-	createDB := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
+	createDB := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
 		"\"CREATE DATABASE test\""
 
-	createTable := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
+	createTable := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
 		"\"USE test; CREATE TABLE Inventory (id INT, name NVARCHAR(50), quantity INT)\""
 
 	execQuery := []string{"sh", "-c", createDB}
@@ -235,7 +230,7 @@ func (m *MssqlDB) Initialize(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error while creating table: %s", stderr)
 	}
-	return err
+	return nil
 }
 
 func (m *MssqlDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
@@ -245,7 +240,7 @@ func (m *MssqlDB) GetClusterScopedResources(ctx context.Context) []crv1alpha1.Ob
 func (m MssqlDB) execCommand(ctx context.Context, command []string) (string, string, error) {
 	podName, containerName, err := kube.GetPodContainerFromDeployment(ctx, m.cli, m.namespace, m.deployment.Name)
 	if err != nil || podName == "" {
-		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", m.name)
+		return "", "", errors.Wrapf(err, "Error getting pod and container name for app %s.", m.name)
 	}
 	return kube.Exec(m.cli, m.namespace, podName, containerName, command, nil)
 }
