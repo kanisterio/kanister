@@ -91,7 +91,7 @@ Create Blueprint in the same namespace as the Kanister controller.
 > **Note**: We used a Kubernetes cluster on DigitalOcean. Hence, snapshotClass and storageClass in the ./mysql-csi-snapshot-bp.yaml file is set to `do-block-storage`. Please correct these arguments as per your cluster setup. You can make use of `kubectl patch` or `kubectl edit` commands to make these changes.
 
 ```bash
-$ kubectl create -f ./mysql-csi-snapshot-bp.yaml -n kanister
+$ kubectl create -f ./mysql-csi-snapshot-blueprint.yaml -n kanister
 ```
 
 ## Backup the application data
