@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	// testNamespace is the namespace where testing is done
+	// testRestoreNamespace is the namespace where testing is done
 	testRestoreNamespace = "test-restore-csi-snapshot"
 	// originalPVCName is the name of the PVC that will be captured
 	originalPVCName = "test-pvc"
