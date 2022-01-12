@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -31,16 +30,16 @@ type MssqlDB struct {
 	service    *v1.Service
 	pvc        *v1.PersistentVolumeClaim
 	secret     *v1.Secret
-	dbUname    string
+	dbUserName string
 	dbPass     string
 }
 
 func NewMssqlDB(name string) App {
 	return &MssqlDB{
 		name: name,
-		// These values are hard coded while creating blueprint it self
-		dbUname: "sa",
-		dbPass:  "MyC0m9l&xP@ssw0rd",
+		// These values are hard coded creating secret
+		dbUserName: "sa",
+		dbPass:     "MyC0m9l&xP@ssw0rd",
 	}
 }
 
@@ -52,7 +51,7 @@ func (m *MssqlDB) Secrets() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
 		"mssql": {
 			Kind:      "Secret",
-			Name:      "mssql",
+			Name:      m.name,
 			Namespace: m.namespace,
 		},
 	}
@@ -70,7 +69,6 @@ func (m *MssqlDB) Init(ctx context.Context) error {
 
 func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	m.namespace = namespace
-	//Create Secret
 	secret, err := m.cli.CoreV1().Secrets(namespace).Create(ctx, m.getSecretObj(), metav1.CreateOptions{})
 	if err != nil {
 		return err
@@ -78,7 +76,6 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	log.Print("Secret with name "+secret.Name+" created successfully", field.M{"app": m.name})
 	m.secret = secret
 
-	// Create PVC
 	pvcObj, err := m.getPVCObj()
 	if err != nil {
 		return err
@@ -90,7 +87,6 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	log.Print("PVC with name "+pvc.Name+" created successfully", field.M{"app": m.name})
 	m.pvc = pvc
 
-	// Create Deployment
 	deploymentObj, err := m.getDeploymentObj()
 	if err != nil {
 		return err
@@ -102,7 +98,6 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 	log.Print("Deployment with name "+deployment.Name+" created successfully", field.M{"app": m.name})
 	m.deployment = deployment
 
-	// Create Service
 	serviceObj, err := m.getServiceObj()
 	if err != nil {
 		return err
@@ -118,7 +113,7 @@ func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
 }
 
 func (m *MssqlDB) IsReady(ctx context.Context) (bool, error) {
-	log.Print("Waiting for the mssql deployment to be ready.", field.M{"app": m.name})
+	log.Print("Waiting for the mssql application to be ready.", field.M{"app": m.name})
 	ctx, cancel := context.WithTimeout(ctx, mssqlWaitTimeout)
 	defer cancel()
 
@@ -139,28 +134,24 @@ func (m *MssqlDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (m *MssqlDB) Uninstall(ctx context.Context) error {
-	// Delete Deployment
 	err := m.cli.AppsV1().Deployments(m.namespace).Delete(ctx, m.deployment.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
 	log.Debug().Print("Deployment deleted successfully", field.M{"app": m.name})
 
-	// Delete PVC
 	err = m.cli.CoreV1().PersistentVolumeClaims(m.namespace).Delete(ctx, m.pvc.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
 	log.Debug().Print("PVC deleted successfully", field.M{"app": m.name})
 
-	// Delete Service
 	err = m.cli.CoreV1().Services(m.namespace).Delete(ctx, m.service.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
 	log.Debug().Print("Service deleted successfully", field.M{"app": m.name})
 
-	//Delete Secret
 	err = m.cli.CoreV1().Secrets(m.namespace).Delete(ctx, m.secret.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
@@ -171,13 +162,13 @@ func (m *MssqlDB) Uninstall(ctx context.Context) error {
 
 func (m *MssqlDB) Ping(ctx context.Context) error {
 	log.Print("Pinging mssql database", field.M{"app": m.name})
-	count := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUname + " -P \"" + m.dbPass + "\" -Q " +
+	count := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
 		"\"SELECT name FROM sys.databases WHERE name NOT IN ('master','model','msdb','tempdb')\" -b -s \",\" -h -1"
 
 	loginMssql := []string{"sh", "-c", count}
 	_, stderr, err := m.execCommand(ctx, loginMssql)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database %s", stderr)
+		return errors.Wrapf(err, "Error while Pinging the database: %s", stderr)
 	}
 	log.Print("Ping to the application was success.", field.M{"app": m.name})
 	return err
@@ -185,64 +176,64 @@ func (m *MssqlDB) Ping(ctx context.Context) error {
 
 func (m *MssqlDB) Insert(ctx context.Context) error {
 	log.Print("Adding entry to database", field.M{"app": m.name})
-	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUname + " -P \"" + m.dbPass + "\" -Q " +
+	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
 		"\"USE test; INSERT INTO Inventory VALUES (1, 'banana', 150)\""
 
 	insertQuery := []string{"sh", "-c", insert}
 	_, stderr, err := m.execCommand(ctx, insertQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting data into table %s", stderr)
+		return errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
 	}
 	return err
 }
 
 func (m *MssqlDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting entries from database", field.M{"app": m.name})
-	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUname + " -P \"" + m.dbPass + "\" -Q " +
+	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
 		"\"SET NOCOUNT ON; USE test; SELECT COUNT(*) FROM Inventory\" -h -1"
 
 	insertQuery := []string{"sh", "-c", insert}
 	stdout, stderr, err := m.execCommand(ctx, insertQuery)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while inserting data into table %s", stderr)
+		return 0, errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
 	}
 	rowsReturned, err := strconv.Atoi(strings.TrimSpace(strings.Split(stdout, "\n")[1]))
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting data %s", stderr)
+		return 0, errors.Wrapf(err, "Error while converting data: %s", stderr)
 	}
 	return rowsReturned, nil
 }
 
 func (m *MssqlDB) Reset(ctx context.Context) error {
 	log.Print("Reseting database", field.M{"app": m.name})
-	delete := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUname + " -P \"" + m.dbPass + "\" -Q " +
+	delete := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
 		"\"DROP DATABASE test\""
 	deleteQuery := []string{"sh", "-c", delete}
 	_, stderr, err := m.execCommand(ctx, deleteQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting data into table %s", stderr)
+		return errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
 	}
 	return err
 }
 
 func (m *MssqlDB) Initialize(ctx context.Context) error {
 	log.Print("Initializing database", field.M{"app": m.name})
-	createDB := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUname + " -P \"" + m.dbPass + "\" -Q " +
+	createDB := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
 		"\"CREATE DATABASE test\""
 
-	createTable := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUname + " -P \"" + m.dbPass + "\" -Q " +
+	createTable := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + m.dbUserName + " -P \"" + m.dbPass + "\" -Q " +
 		"\"USE test; CREATE TABLE Inventory (id INT, name NVARCHAR(50), quantity INT)\""
 
 	execQuery := []string{"sh", "-c", createDB}
 	_, stderr, err := m.execCommand(ctx, execQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while creating the database %s", stderr)
+		return errors.Wrapf(err, "Error while creating the database: %s", stderr)
 	}
 
 	execQuery = []string{"sh", "-c", createTable}
 	_, stderr, err = m.execCommand(ctx, execQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while creating table %s", stderr)
+		return errors.Wrapf(err, "Error while creating table: %s", stderr)
 	}
 	return err
 }
@@ -257,103 +248,4 @@ func (m MssqlDB) execCommand(ctx context.Context, command []string) (string, str
 		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", m.name)
 	}
 	return kube.Exec(m.cli, m.namespace, podName, containerName, command, nil)
-}
-
-func (m *MssqlDB) getDeploymentObj() (*appsv1.Deployment, error) {
-	deploymentManifest :=
-		`apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mssql-deployment
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: mssql
-  template:
-    metadata:
-      labels:
-        app: mssql
-    spec:
-      terminationGracePeriodSeconds: 30
-      hostname: mssqlinst
-      securityContext:
-        fsGroup: 10001
-      containers:
-        - name: mssql
-          image: mcr.microsoft.com/mssql/server:2019-latest
-          ports:
-            - containerPort: 1433
-          env:
-            - name: MSSQL_PID
-              value: "Developer"
-            - name: ACCEPT_EULA
-              value: "Y"
-            - name: SA_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mssql
-                  key: SA_PASSWORD
-          volumeMounts:
-            - name: mssqldb
-              mountPath: /var/opt/mssql
-      volumes:
-        - name: mssqldb
-          persistentVolumeClaim:
-            claimName: mssql-data`
-
-	var deployment *appsv1.Deployment
-	err := yaml.Unmarshal([]byte(deploymentManifest), &deployment)
-	return deployment, err
-}
-
-func (m *MssqlDB) getPVCObj() (*v1.PersistentVolumeClaim, error) {
-	pvcmaniFest :=
-		`kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: mssql-data
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 4Gi`
-
-	var pvc *v1.PersistentVolumeClaim
-	err := yaml.Unmarshal([]byte(pvcmaniFest), &pvc)
-	return pvc, err
-}
-
-func (m *MssqlDB) getServiceObj() (*v1.Service, error) {
-	serviceManifest :=
-		`apiVersion: v1
-kind: Service
-metadata:
-  name: mssql-deployment
-spec:
-  selector:
-    app: mssql
-  ports:
-    - protocol: TCP
-      port: 1433
-      targetPort: 1433
-  type: ClusterIP`
-
-	var service *v1.Service
-	err := yaml.Unmarshal([]byte(serviceManifest), &service)
-	return service, err
-
-}
-
-func (m MssqlDB) getSecretObj() *v1.Secret {
-	return &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "mssql",
-		},
-		Data: map[string][]byte{
-			"SA_PASSWORD": []byte("MyC0m9l&xP@ssw0rd"),
-		},
-		Type: "Opaque",
-	}
 }
