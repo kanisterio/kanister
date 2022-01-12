@@ -18,7 +18,7 @@ This document explains how Kanister leverages the use of CSI VolumeSnapshots to 
 
 ## Install MySQL
 
-Install the MySQL database using the bitnami chart with the release name mysql-release.
+Install the MySQL database using the bitnami chart with the release name `mysql-release`.
 
 ```bash
 # Add bitnami in your local chart repository
@@ -34,7 +34,7 @@ $ helm install mysql-release bitnami/mysql --namespace mysql \
     --set architecture="standalone"
 ```
 
-Above command deploys a MySQL instance in the mysql namespace.
+Above command deploys a MySQL instance in the `mysql` namespace.
 
 To retrieve your root password run the following command.
 
@@ -88,7 +88,7 @@ mysql> SELECT * FROM employees;
 
 Create Blueprint in the same namespace as the Kanister controller.
 
-> **Note**: We used a Kubernetes cluster on DigitalOcean. Hence, snapshotClass and storageClass in the ./mysql-csi-snapshot-bp.yaml file is set to ``do-block-storage``. Please correct these arguments as per your cluster setup. Either before creating the blueprint or after creating with the help of ``kubectl patch`` or ``kubectl edit`` commands.
+> **Note**: We used a Kubernetes cluster on DigitalOcean. Hence, snapshotClass and storageClass in the ./mysql-csi-snapshot-bp.yaml file is set to `do-block-storage`. Please correct these arguments as per your cluster setup. Either before creating the blueprint or after creating with the help of `kubectl patch` or `kubectl edit` commands.
 
 ```bash
 $ kubectl create -f ./mysql-csi-snapshot-bp.yaml -n kanister
@@ -159,7 +159,7 @@ mysql> SHOW DATABASES;
 
 # Restore MySQL DB
 
-To restore the missing data, you should use the backup that you created before. We use ``kanctl`` for creating this restore action. ``kanctl`` helps create ActionSets that depend on other ActionSets.
+To restore the missing data, you should use the backup that you created before. We use `kanctl` for creating this restore action. `kanctl` helps create ActionSets that depend on other ActionSets.
 
 ```bash
 # Make sure to use correct backup actionset name here
@@ -176,7 +176,7 @@ data-mysql-release-0-restored   Bound    pvc-2eb6fb89-78bc-4c2e-8c1e-c270d664f31
 $ kubectl --namespace kanister describe actionset restore-backup-mlvcv-6z9xn
 ```
 
-Next, we need to add the newly restored PVC ``data-mysql-release-0-restored`` in the ``mysql-release`` StatefulSet spec template. One of the easiest way to do that is using ``kubectl patch`` command.
+Next, we need to add the newly restored PVC `data-mysql-release-0-restored` in the `mysql-release` StatefulSet spec template. One of the easiest way to do that is using `kubectl patch` command.
 
 ```bash
 $ kubectl -n mysql patch statefulset mysql-release --type=json -p='[{"op": "add", "path": "/spec/template/spec/volumes/-", "value": {"name": "restored-data", "persistentVolumeClaim": {"claimName": "data-mysql-release-0-restored"}}}]'
@@ -240,7 +240,7 @@ $ kubectl --namespace kanister describe actionset delete-backup-glptq-cq6bw
 
 ## Uninstalling the helm chart
 
-To uninstall/delete the mysql-release deployment.
+To uninstall/delete the `mysql-release` deployment.
 
 ```bash
 # Helm Version 3
