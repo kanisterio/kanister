@@ -1,4 +1,4 @@
-# Backup and Restore of MySQL DB using CSI VolumeSnapshots
+# MySQL DB using CSI VolumeSnapshots
 
 VolumeSnapshots provide Kubernetes users with a standardized way to copy a volume's contents at a particular point in time without creating an entirely new volume. This functionality enables, for example, database administrators to backup databases before performing edit or delete modifications.
 
