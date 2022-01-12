@@ -1,0 +1,44 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: mysql-csi-snapshot-bp
+actions:
+  backup:
+    outputArtifacts:
+      snapshotInfo:
+        keyValue:
+          name: "{{ .Phases.createCSISnapshot.Output.name }}"
+          pvc: "{{ .Phases.createCSISnapshot.Output.pvc }}"
+          namespace: "{{ .Phases.createCSISnapshot.Output.namespace }}"
+          restoreSize: "{{ .Phases.createCSISnapshot.Output.restoreSize }}"
+          snapshotContent: "{{ .Phases.createCSISnapshot.Output.snapshotContent }}"
+    phases:
+    - func: CreateCSISnapshot
+      name: createCSISnapshot
+      args:
+        pvc: "{{ .PVC.Name }}"
+        namespace: "{{ .PVC.Namespace }}"
+        snapshotClass: do-block-storage
+  restore:
+    inputArtifactNames:
+    - snapshotInfo
+    phases:
+    - func: RestoreCSISnapshot
+      name: restoreCSISnapshot
+      args:
+        name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.name }}"
+        pvc: "{{ .ArtifactsIn.snapshotInfo.KeyValue.pvc }}-restored"
+        namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
+        storageClass: do-block-storage
+        restoreSize: "{{ .ArtifactsIn.snapshotInfo.KeyValue.restoreSize }}"
+        accessModes: ["ReadWriteOnce"]
+        volumeMode: "Filesystem"
+  delete:
+    inputArtifactNames:
+    - snapshotInfo
+    phases:
+    - func: DeleteCSISnapshot
+      name: deleteCSISnapshot
+      args:
+        name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.name }}"
+        namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
