@@ -96,13 +96,13 @@ func (*restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	if err := OptArg(args, RestoreCSISnapshotAccessModesArg, &restoreArgs.AccessModes, []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}); err != nil {
 		return nil, err
 	}
-	if err := validateVolumeAccessModesArg(restoreArgs); err != nil {
+	if err := validateVolumeAccessModesArg(restoreArgs.AccessModes); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, RestoreCSISnapshotVolumeModeArg, &restoreArgs.VolumeMode, v1.PersistentVolumeFilesystem); err != nil {
 		return nil, err
 	}
-	if err := validateVolumeModeArg(restoreArgs); err != nil {
+	if err := validateVolumeModeArg(restoreArgs.VolumeMode); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, RestoreCSISnapshotLabelsArg, &restoreArgs.Labels, nil); err != nil {
@@ -171,18 +171,18 @@ func newPVCManifest(args restoreCSISnapshotArgs) *v1.PersistentVolumeClaim {
 	return pvc
 }
 
-func validateVolumeModeArg(args restoreCSISnapshotArgs) error {
-	switch args.VolumeMode {
+func validateVolumeModeArg(volumeMode v1.PersistentVolumeMode) error {
+	switch volumeMode {
 	case v1.PersistentVolumeFilesystem,
 		v1.PersistentVolumeBlock:
 	default:
-		return errors.New("Given volumeMode " + string(args.VolumeMode) + " is invalid")
+		return errors.New("Given volumeMode " + string(volumeMode) + " is invalid")
 	}
 	return nil
 }
 
-func validateVolumeAccessModesArg(args restoreCSISnapshotArgs) error {
-	for _, accessModeInArg := range args.AccessModes {
+func validateVolumeAccessModesArg(accessModes []v1.PersistentVolumeAccessMode) error {
+	for _, accessModeInArg := range accessModes {
 		switch accessModeInArg {
 		case v1.ReadOnlyMany,
 			v1.ReadWriteMany,

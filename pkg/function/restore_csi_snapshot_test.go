@@ -131,12 +131,12 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
 			ExpectedErr: NotNil,
 		},
 		{
-			Arg:         "Filesystem",
+			Arg:         v1.PersistentVolumeFilesystem,
 			ExpectedErr: IsNil,
 		},
 	} {
 		restoreArgs := restoreCSISnapshotArgs{VolumeMode: scenario.Arg}
-		err := validateVolumeModeArg(restoreArgs)
+		err := validateVolumeModeArg(restoreArgs.VolumeMode)
 		c.Assert(err, scenario.ExpectedErr)
 	}
 }
@@ -151,12 +151,12 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateAccessModeArg(c *C) {
 			ExpectedErr: NotNil,
 		},
 		{
-			Arg:         []v1.PersistentVolumeAccessMode{"ReadWriteOnce"},
+			Arg:         []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 			ExpectedErr: IsNil,
 		},
 	} {
 		restoreArgs := restoreCSISnapshotArgs{AccessModes: scenario.Arg}
-		err := validateVolumeAccessModesArg(restoreArgs)
+		err := validateVolumeAccessModesArg(restoreArgs.AccessModes)
 		c.Assert(err, scenario.ExpectedErr)
 	}
 }
