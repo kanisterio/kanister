@@ -9,12 +9,9 @@ This document explains how Kanister leverages the use of CSI VolumeSnapshots to 
 
 - Helm 3 installed
 - Kubernetes 1.16+ with Beta APIs enabled
-- PV provisioner support in the underlying infrastructure
 - Kanister controller version 0.71.0 installed in your cluster, let's assume in Namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
-- CSI Driver installed
-- VolumeSnapshotClass and StorageClass resources defined (uses above CSI Driver)
-- Snapshot APIs enabled
+- VolumeSnapshots should be supported by CSI Driver and respective CRDs should be available
 
 ## Install MySQL
 
@@ -88,7 +85,7 @@ mysql> SELECT * FROM employees;
 
 Create Blueprint in the same namespace as the Kanister controller.
 
-> **Note**: We used a Kubernetes cluster on DigitalOcean. Hence, snapshotClass and storageClass in the ./mysql-csi-snapshot-blueprint.yaml file is set to `do-block-storage`. Please correct these arguments as per your cluster setup. You can make use of `kubectl patch` or `kubectl edit` commands to make these changes.
+> **Note**:  We have set up the Kubernetes cluster on DigitalOcean. Hence, `snapshotClass` and `storageClass` in the `./mysql-csi-snapshot-blueprint.yaml` file is set to `do-block-storage`. Please correct these arguments as per your cluster setup before creating the blueprint.
 
 ```bash
 $ kubectl create -f ./mysql-csi-snapshot-blueprint.yaml -n kanister
@@ -96,7 +93,7 @@ $ kubectl create -f ./mysql-csi-snapshot-blueprint.yaml -n kanister
 
 ### Backup the application data
 
-Take a backup of the MySQL data using the backup ActionSet from above blueprint. Create an ActionSet in the `kanister` namespace. An easy way to do this is by using `kanctl`.
+Snapshot the MySQL database using the backup ActionSet from above blueprint. Create an ActionSet in the `kanister` namespace. An easy way to do this is by using `kanctl`.
 
 ```bash
 # Create Actionset
@@ -159,7 +156,7 @@ mysql> SHOW DATABASES;
 
 ## Restore MySQL DB
 
-To restore the missing data, you should use the backup that you created before. We use `kanctl` for creating this restore action. `kanctl` helps create ActionSets that depend on other ActionSets.
+To restore the missing data, you should use the backup that you created before. We will use `kanctl` for creating this restore action.
 
 ```bash
 # Make sure to use correct backup actionset name here
@@ -188,7 +185,7 @@ Once the patch is complete and MySQL pod is set to “Running“, you can check 
 
 ## Verify the restored application data
 
-To verify if restore was successful, you need to connect to the MySQL CLI and query the test database that was created in [this](https://github.com/kanisterio/kanister/tree/master/examples/stable/mysql-csi-snapshot#create-application-data) step.
+To verify if restore was successful, you need to connect to the MySQL CLI and query the `test` database that was created in [this](https://github.com/kanisterio/kanister/tree/master/examples/stable/mysql-csi-snapshot#create-application-data) step.
 
 ```bash
 # Enter into a shell inside MySQL's pod
@@ -223,7 +220,7 @@ mysql> SELECT * FROM employees;
 1 row in set (0.00 sec)
 ```
 
-Thus, with the help of Kanister, we have successfully backed up our MySQL application data and recovered it after a disaster.
+Thus, with the help of Kanister, we have successfully backed up our MySQL application and recovered it after a disaster.
 
 ## Delete the Artifacts
 
