@@ -112,7 +112,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 			AccessModes:  originalPVC.Spec.AccessModes,
 			Labels:       nil,
 		}
-		err = restoreCSISnapshot(ctx, fakeCli, restoreArgs)
+		_, err = restoreCSISnapshot(ctx, fakeCli, restoreArgs)
 		c.Assert(err, IsNil)
 
 		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
