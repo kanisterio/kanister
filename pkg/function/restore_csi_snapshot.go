@@ -135,7 +135,7 @@ func (*restoreCSISnapshotFunc) RequiredArgs() []string {
 	}
 }
 
-func getClient() (kubernetes.Interface, error){
+func getClient() (kubernetes.Interface, error) {
 	kubeCli, err := kube.NewClient()
 	return kubeCli, err
 }
