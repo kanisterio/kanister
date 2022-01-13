@@ -3,7 +3,7 @@
 VolumeSnapshots provide Kubernetes users with a standardized way to copy a volume's contents at a particular point in time without creating an entirely new volume. This functionality enables, for example, database administrators to backup databases before performing edit or delete modifications.
 
 ## Introduction
-This document explains how Kanister leverages the use of CSI VolumeSnapshots to take backup and restore of databases in MySQL.
+This document explains how Kanister leverages the use of CSI VolumeSnapshots to capture and restore MySQL database.
 
 ## Prerequisites
 
