@@ -33,7 +33,7 @@ make integration-test
 ```
 To test and deploy your changes to a local Kubernetes cluster [this document](https://docs.kanister.io/install.html#building-and-deploying-from-source) can be referred.
 
-- Push a PR with the changes for review. Please see [Raising PR](#raising-pr)
+- Create a pull request with the changes for review. Please refer [Raising PR](#raising-pr)
 
 ### Contributing to documentation
 For complete documentation visit https://docs.kanister.io/
@@ -58,7 +58,7 @@ make docs
 * We follow the [Github Pull Request Model](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) for all contributions.
 * For new features, documentation must be included.
 * Here are some guidelines that we should follow while writing a commit message:
-  - Use Imperative mood in the commit message. For example, `Add go mod check while init` and not `Added go mod check while init`.
+  - Commit message should be imperative. For example, `Add go mod check while init` and not `Added go mod check while init`.
   - Commit message should not start with lower case.
   - Your commit message should not contain any whitespace errors.
   - Remove unnecessary punctuation marks.
