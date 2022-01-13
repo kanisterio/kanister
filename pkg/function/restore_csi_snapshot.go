@@ -119,7 +119,7 @@ func (*restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	if err != nil {
 		return nil, err
 	}
-	if err := restoreCSISnapshot(ctx, kubeCli, restoreArgs); err != nil {
+	if _, err := restoreCSISnapshot(ctx, kubeCli, restoreArgs); err != nil {
 		return nil, err
 	}
 	return nil, nil
@@ -140,12 +140,12 @@ func getClient() (kubernetes.Interface, error) {
 	return kubeCli, err
 }
 
-func restoreCSISnapshot(ctx context.Context, kubeCli kubernetes.Interface, args restoreCSISnapshotArgs) error {
+func restoreCSISnapshot(ctx context.Context, kubeCli kubernetes.Interface, args restoreCSISnapshotArgs) (*v1.PersistentVolumeClaim, error) {
 	pvc := newPVCManifest(args)
 	if _, err := kubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(ctx, pvc, metav1.CreateOptions{}); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return pvc, nil
 }
 
 func newPVCManifest(args restoreCSISnapshotArgs) *v1.PersistentVolumeClaim {
