@@ -568,7 +568,7 @@ func isNotFoundError(err error) bool {
 
 // FromRegion is part of zone.Mapper
 func (s *GpdStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
-	rtzMap, err := s.RegionToZoneMap(ctx)
+	rtzMap, err := s.dynamicRegionToZoneMap(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get region to zone map")
 	}
@@ -579,8 +579,20 @@ func (s *GpdStorage) FromRegion(ctx context.Context, region string) ([]string, e
 	return zones, nil
 }
 
-// RegionToZoneMap returns the region to zone map fetched from the provider
-func (s *GpdStorage) RegionToZoneMap(ctx context.Context) (map[string][]string, error) {
+func (s *GpdStorage) GetRegions(ctx context.Context) ([]string, error) {
+	regionMap, err := s.dynamicRegionToZoneMap(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch dynamic region map")
+	}
+	regions := []string{}
+	for region := range regionMap {
+		regions = append(regions, region)
+	}
+	return regions, nil
+}
+
+// dynamicRegionToZoneMap returns the region to zone map fetched from the provider
+func (s *GpdStorage) dynamicRegionToZoneMap(ctx context.Context) (map[string][]string, error) {
 	regionMap := make(map[string][]string)
 	req := s.service.Zones.List(s.project)
 	if err := req.Pages(ctx, func(page *compute.ZoneList) error {

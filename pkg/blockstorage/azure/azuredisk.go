@@ -623,6 +623,18 @@ func (s *AdStorage) FromRegion(ctx context.Context, region string) ([]string, er
 	return zones, nil
 }
 
+func (s *AdStorage) GetRegions(ctx context.Context) ([]string, error) {
+	regionMap, err := s.dynamicRegionMapAzure(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch dynamic region map")
+	}
+	regions := []string{}
+	for region := range regionMap {
+		regions = append(regions, region)
+	}
+	return regions, nil
+}
+
 func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blockstorage.Snapshot) (global bool, regionsAndZones map[string][]string, err error) {
 	// A few checks from VolumeCreateFromSnapshot
 	if snapshot.Volume == nil {
