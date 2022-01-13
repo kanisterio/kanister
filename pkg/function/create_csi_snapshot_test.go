@@ -29,16 +29,16 @@ import (
 )
 
 const (
-	// testCreateNamespace is the namespace where testing is done
-	testCreateNamespace = "test-create-csi-snapshot"
-	// pvcName is the name of the PVC that will be captured
-	pvcName = "test-pvc"
-	// snapshotName is the name of the snapshot
-	snapshotName = "test-snapshot"
-	// snapshotClass is the fake snapshot class
-	snapshotClass = "test-snapshot-class"
-	// storageClass is the fake storage class
-	storageClass = "test-storage-class"
+	// CreateCSISnapshotTestNamespace is the namespace where testing is done
+	CreateCSISnapshotTestNamespace = "test-create-csi-snapshot"
+	// CreateCSISnapshotPVCName is the name of the PVC that will be captured
+	CreateCSISnapshotPVCName = "test-pvc"
+	// CreateCSISnapshotSnapshotName is the name of the snapshot
+	CreateCSISnapshotSnapshotName = "test-snapshot"
+	// CreateCSISnapshotSnapshotClass is the fake snapshot class
+	CreateCSISnapshotSnapshotClass = "test-snapshot-class"
+	// CreateCSISnapshotStorageClass is the fake storage class
+	CreateCSISnapshotStorageClass = "test-storage-class"
 )
 
 type CreateCSISnapshotTestSuite struct {
@@ -52,11 +52,11 @@ type CreateCSISnapshotTestSuite struct {
 var _ = Suite(&CreateCSISnapshotTestSuite{})
 
 func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *C) {
-	testSuite.volumeSnapshotClass = snapshotClass
-	testSuite.storageClass = storageClass
-	testSuite.pvcName = pvcName
-	testSuite.snapName = snapshotName
-	testSuite.namespace = testCreateNamespace
+	testSuite.volumeSnapshotClass = CreateCSISnapshotSnapshotClass
+	testSuite.storageClass = CreateCSISnapshotStorageClass
+	testSuite.pvcName = CreateCSISnapshotPVCName
+	testSuite.snapName = CreateCSISnapshotSnapshotName
+	testSuite.namespace = CreateCSISnapshotTestNamespace
 }
 
 func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *C) {
