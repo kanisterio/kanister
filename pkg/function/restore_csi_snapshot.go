@@ -21,6 +21,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -114,7 +115,11 @@ func (*restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	}
 	restoreArgs.RestoreSize = &size
 
-	if err := restoreCSISnapshot(ctx, restoreArgs); err != nil {
+	kubeCli, err := getClient()
+	if err != nil {
+		return nil, err
+	}
+	if err := restoreCSISnapshot(ctx, kubeCli, restoreArgs); err != nil {
 		return nil, err
 	}
 	return nil, nil
@@ -130,13 +135,14 @@ func (*restoreCSISnapshotFunc) RequiredArgs() []string {
 	}
 }
 
-func restoreCSISnapshot(ctx context.Context, args restoreCSISnapshotArgs) error {
+func getClient() (kubernetes.Interface, error){
 	kubeCli, err := kube.NewClient()
-	if err != nil {
-		return err
-	}
+	return kubeCli, err
+}
+
+func restoreCSISnapshot(ctx context.Context, kubeCli kubernetes.Interface, args restoreCSISnapshotArgs) error {
 	pvc := newPVCManifest(args)
-	if _, err = kubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(ctx, pvc, metav1.CreateOptions{}); err != nil {
+	if _, err := kubeCli.CoreV1().PersistentVolumeClaims(args.Namespace).Create(ctx, pvc, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 	return nil
