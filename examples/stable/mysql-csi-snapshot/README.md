@@ -93,11 +93,12 @@ $ kubectl create -f ./mysql-csi-snapshot-blueprint.yaml -n kanister
 
 ### Backup the application data
 
-Snapshot the MySQL database using the backup ActionSet from above blueprint. Create an ActionSet in the `kanister` namespace. An easy way to do this is by using `kanctl`.
+Snapshot MySQL database using the backup ActionSet from above blueprint. Create an ActionSet in the `kanister` namespace. An easy way to do this is by using `kanctl`.
 
 ```bash
 # Create Actionset
 # Please make sure the value of blueprint matches with the name of blueprint that was created earlier
+# --pvc argument specifies the PVC on which the action is performed
 $ kanctl create actionset --action backup --namespace kanister --blueprint mysql-csi-snapshot-bp --pvc mysql/$(kubectl get pvc -n mysql --selector=app.kubernetes.io/instance=mysql-release -o=jsonpath='{.items[0].metadata.name}')
 actionset backup-mlvcv created
 
