@@ -1389,6 +1389,9 @@ Arguments:
    `name`, Yes, `string`, name of the VolumeSnapshot
    `namespace`, Yes, `string`, namespace of the VolumeSnapshot
 
+.. note::
+    Output artifact ``snapshotInfo`` from ``CreateCSISnapshot`` function can be used as an input artifact in this function.
+
 Example:
 
 .. code-block:: yaml

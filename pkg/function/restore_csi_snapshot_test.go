@@ -29,18 +29,12 @@ import (
 )
 
 const (
-	// RestoreCSISnapshotTestNamespace is the namespace where testing is done
-	RestoreCSISnapshotTestNamespace = "test-restore-csi-snapshot"
-	// RestoreCSISnapshotOriginalPVCName is the name of the PVC that will be captured
-	RestoreCSISnapshotOriginalPVCName = "test-pvc"
-	// RestoreCSISnapshotPVCName is the name of the new PVC that will be restored
-	RestoreCSISnapshotNewPVCName = "test-pvc-restored"
-	// RestoreCSISnapshotSnapshotName is the name of the snapshot
-	RestoreCSISnapshotSnapshotName = "test-snapshot"
-	// RestoreCSISnapshotSnapshotClass is the fake snapshot class
-	RestoreCSISnapshotSnapshotClass = "test-snapshot-class"
-	// RestoreCSISnapshotStorageClass is the fake storage class
-	RestoreCSISnapshotStorageClass = "test-storage-class"
+	// testRestoreNamespace is the namespace where testing is done
+	testRestoreNamespace = "test-restore-csi-snapshot"
+	// originalPVCName is the name of the PVC that will be captured
+	originalPVCName = "test-pvc"
+	// newPVCName is the name of the new PVC that will be restored
+	newPVCName = "test-pvc-restored"
 )
 
 type RestoreCSISnapshotTestSuite struct {
@@ -55,12 +49,12 @@ type RestoreCSISnapshotTestSuite struct {
 var _ = Suite(&RestoreCSISnapshotTestSuite{})
 
 func (testSuite *RestoreCSISnapshotTestSuite) SetUpSuite(c *C) {
-	testSuite.volumeSnapshotClass = RestoreCSISnapshotSnapshotClass
-	testSuite.storageClass = RestoreCSISnapshotStorageClass
-	testSuite.pvcName = RestoreCSISnapshotOriginalPVCName
-	testSuite.newPVCName = RestoreCSISnapshotNewPVCName
-	testSuite.snapName = RestoreCSISnapshotSnapshotName
-	testSuite.namespace = RestoreCSISnapshotTestNamespace
+	testSuite.volumeSnapshotClass = snapshotClass
+	testSuite.storageClass = storageClass
+	testSuite.pvcName = originalPVCName
+	testSuite.newPVCName = newPVCName
+	testSuite.snapName = snapshotName
+	testSuite.namespace = testRestoreNamespace
 }
 
 func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
@@ -137,12 +131,12 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
 			ExpectedErr: NotNil,
 		},
 		{
-			Arg:         "Filesystem",
+			Arg:         v1.PersistentVolumeFilesystem,
 			ExpectedErr: IsNil,
 		},
 	} {
 		restoreArgs := restoreCSISnapshotArgs{VolumeMode: scenario.Arg}
-		err := validateVolumeModeArg(restoreArgs)
+		err := validateVolumeModeArg(restoreArgs.VolumeMode)
 		c.Assert(err, scenario.ExpectedErr)
 	}
 }
@@ -157,12 +151,12 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateAccessModeArg(c *C) {
 			ExpectedErr: NotNil,
 		},
 		{
-			Arg:         []v1.PersistentVolumeAccessMode{"ReadWriteOnce"},
+			Arg:         []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 			ExpectedErr: IsNil,
 		},
 	} {
 		restoreArgs := restoreCSISnapshotArgs{AccessModes: scenario.Arg}
-		err := validateVolumeAccessModesArg(restoreArgs)
+		err := validateVolumeAccessModesArg(restoreArgs.AccessModes)
 		c.Assert(err, scenario.ExpectedErr)
 	}
 }

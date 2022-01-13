@@ -73,7 +73,7 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err := Arg(args, CreateCSISnapshotSnapshotClassArg, &snapshotClass); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, CreateCSISnapshotNameArg, &name, defaultSnapshotName(pvc, 20)); err != nil {
+	if err := OptArg(args, CreateCSISnapshotNameArg, &name, defaultSnapshotName(pvc, 5)); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, CreateCSISnapshotLabelsArg, &labels, map[string]string{}); err != nil {
