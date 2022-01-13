@@ -1,4 +1,6 @@
+//go:build integration
 // +build integration
+
 // Copyright 2019 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +18,7 @@
 package testing
 
 import (
-	"context"
+	context "context"
 	"os"
 	test "testing"
 	"time"
@@ -82,12 +84,10 @@ func integrationSetup(t *test.T) {
 	if err != nil {
 		t.Fatalf("Integration test setup failure: Error creating service account; err=%v", err)
 	}
-	// create cluster role
 	clusterRole, err := cli.RbacV1().ClusterRoles().Create(ctx, getClusterRole(ns), metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("Integration test setup failure: Error creating clusterrole; err=%v", err)
 	}
-	// create cluster role binding
 	crb, err := cli.RbacV1().ClusterRoleBindings().Create(ctx, getClusterRoleBinding(sa, clusterRole), metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("Integration test setup failure: Error creating clusterRoleBinding; err=%v", err)
@@ -114,24 +114,28 @@ func integrationSetup(t *test.T) {
 }
 
 func integrationCleanup(t *test.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextWaitTimeout)
+	defer cancel()
+
 	if kontroller.cancel != nil {
 		kontroller.cancel()
 	}
 	if kontroller.namespace != "" {
-		kontroller.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), kontroller.namespace, metav1.DeleteOptions{})
+		kontroller.kubeCli.CoreV1().Namespaces().Delete(ctx, kontroller.namespace, metav1.DeleteOptions{})
 	}
 	if kontroller.clusterRoleBinding != nil && kontroller.clusterRoleBinding.Name != "" {
-		kontroller.kubeCli.RbacV1().ClusterRoleBindings().Delete(context.TODO(), kontroller.clusterRoleBinding.Name, metav1.DeleteOptions{})
+		kontroller.kubeCli.RbacV1().ClusterRoleBindings().Delete(ctx, kontroller.clusterRoleBinding.Name, metav1.DeleteOptions{})
 	}
 	if kontroller.clusterRole != nil && kontroller.clusterRole.Name != "" {
-		kontroller.kubeCli.RbacV1().ClusterRoles().Delete(context.TODO(), kontroller.clusterRole.Name, metav1.DeleteOptions{})
+		kontroller.kubeCli.RbacV1().ClusterRoles().Delete(ctx, kontroller.clusterRole.Name, metav1.DeleteOptions{})
 	}
 }
 
 const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
-	appWaitTimeout = 3 * time.Minute
-	controllerSA   = "kanister-sa"
+	appWaitTimeout     = 3 * time.Minute
+	controllerSA       = "kanister-sa"
+	contextWaitTimeout = 10 * time.Minute
 )
 
 type secretProfile struct {
@@ -466,7 +470,6 @@ func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {
 	return err
 }
 
-// getServiceAccount return ServiceAccount object
 func getServiceAccount(namespace, name string) *v1.ServiceAccount {
 	return &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
@@ -476,7 +479,6 @@ func getServiceAccount(namespace, name string) *v1.ServiceAccount {
 	}
 }
 
-// getClusterRole this creates role to apply get,create on pods and pods/exec
 func getClusterRole(namespace string) *rbacv1.ClusterRole {
 	return &rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
@@ -496,7 +498,6 @@ func getClusterRole(namespace string) *rbacv1.ClusterRole {
 	}
 }
 
-// getClusterRoleBinding returns ClusterRoleBinding object binds given ClusterRole to ServiceAccount
 func getClusterRoleBinding(sa *v1.ServiceAccount, role *rbacv1.ClusterRole) *rbacv1.ClusterRoleBinding {
 	return &rbacv1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{

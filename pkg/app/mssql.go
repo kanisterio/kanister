@@ -200,7 +200,7 @@ func (m *MssqlDB) Count(ctx context.Context) (int, error) {
 	}
 	rowsReturned, err := strconv.Atoi(strings.TrimSpace(strings.Split(stdout, "\n")[1]))
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting data: %s", stderr)
+		return 0, errors.Wrapf(err, "Error while converting response of count query: %s", stderr)
 	}
 	return rowsReturned, nil
 }
@@ -335,7 +335,6 @@ spec:
 	var service *v1.Service
 	err := yaml.Unmarshal([]byte(serviceManifest), &service)
 	return service, err
-
 }
 
 func (m MssqlDB) getSecretObj() *v1.Secret {
