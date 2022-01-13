@@ -114,6 +114,10 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 	return phases, nil
 }
 
+func (p *Phase) Validate() error {
+	return checkRequiredArgs(p.f.RequiredArgs(), p.args)
+}
+
 func checkRequiredArgs(reqArgs []string, args map[string]interface{}) error {
 	for _, a := range reqArgs {
 		if _, ok := args[a]; !ok {

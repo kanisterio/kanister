@@ -16,6 +16,7 @@ package kanctl
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -69,6 +70,8 @@ func performValidation(cmd *cobra.Command, args []string) error {
 	switch p.resourceKind {
 	case "profile":
 		return performProfileValidation(p)
+	case "blueprint":
+		return performBlueprintValidation(p)
 	default:
 		return errors.Errorf("expected profile.. got %s. Not supported", p.resourceKind)
 	}
