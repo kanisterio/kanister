@@ -1,3 +1,11 @@
+queue_rules:
+  - name: default
+    conditions:
+      - "#approved-reviews-by>=1"
+      - status-success=Travis CI - Pull Request
+      - label=kueue
+      - label!="hold off merging"
+
 pull_request_rules:
   - name: Automatic merge
     conditions:
@@ -7,8 +15,8 @@ pull_request_rules:
       - label=kueue
       - label!="hold off merging"
     actions:
-      merge:
-        strict: smart
+      queue:
+        name: default
         method: squash
   - name: delete head branch after merge
     conditions:
