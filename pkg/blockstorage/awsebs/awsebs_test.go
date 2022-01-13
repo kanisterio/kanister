@@ -16,8 +16,8 @@ package awsebs
 
 import (
 	"context"
-	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -103,18 +103,28 @@ func (s AWSEBSSuite) TestGetRegions(c *C) {
 	config := map[string]string{}
 	if id, ok := os.LookupEnv(kaws.AccessKeyID); ok {
 		config[kaws.AccessKeyID] = id
+	} else {
+		c.Skip("cannot find access key")
 	}
 	if secret, ok := os.LookupEnv(kaws.SecretAccessKey); ok {
 		config[kaws.SecretAccessKey] = secret
+	} else {
+		c.Skip("cannot find secret access key")
 	}
+	// create provider with regoin
 	config[kaws.ConfigRegion] = "us-west-2"
 	bsp, err := NewProvider(ctx, config)
 	c.Assert(err, IsNil)
 	ebsp := bsp.(*EbsStorage)
-	// r2zmap, err := ebsp.RegionToZoneMap(ctx)
-	// c.Assert(err, IsNil)
-	// fmt.Println(r2zmap)
-	zones, err := ebsp.FromRegion(ctx, "us-west-1")
+
+	// get zones with other region
+	zones, err := ebsp.FromRegion(ctx, "us-east-1")
 	c.Assert(err, IsNil)
-	fmt.Println(zones)
+	for _, zone := range zones {
+		c.Assert(strings.Contains(zone, "us-east-1"), Equals, true)
+	}
+
+	regions, err := ebsp.GetRegions(ctx)
+	c.Assert(err, IsNil)
+	c.Assert(regions, NotNil)
 }
