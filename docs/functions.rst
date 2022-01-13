@@ -118,7 +118,7 @@ This allows you to run a new Pod from a Blueprint.
    :align: left
    :widths: 5,5,5,15
 
-   `namespace`, Yes, `string`, namespace in which to execute
+   `namespace`, No, `string`, namespace in which to execute (the pod will be created in controller's namespace if not specified)
    `image`, Yes, `string`, image to be used for executing the task
    `command`, Yes, `[]string`,  command list to execute
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
@@ -1166,6 +1166,7 @@ Example:
       args:
         snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
 
+
 KubeOps
 -------
 
@@ -1269,6 +1270,62 @@ Example:
               apiVersion: v1
               resource: namespaces
               name: "{{ .Namespace.Name }}"
+
+
+CreateCSISnapshot
+-----------------
+
+This function is used to create CSI VolumeSnapshot for a PersistentVolumeClaim.
+By default, it waits for the VolumeSnapshot to be ``ReadyToUse``.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, No, `string`, name of the VolumeSnapshot. Default value is ``<pvc>-snapshot-<random-alphanumeric-suffix>``
+   `pvc`, Yes, `string`, name of the PersistentVolumeClaim to be captured
+   `namespace`, Yes, `string`, namespace of the PersistentVolumeClaim and resultant VolumeSnapshot
+   `snapshotClass`, Yes, `string`, name of the VolumeSnapshotClass
+   `labels`, No, `map[string]string`, labels for the VolumeSnapshot
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `name`,`string`, name of the CSI VolumeSnapshot
+   `pvc`,`string`, name of the captured PVC
+   `namespace`, string, namespace of the captured PVC and VolumeSnapshot
+   `restoreSize`, string, required memory size to restore PVC
+   `snapshotContent`, string, name of the VolumeSnapshotContent
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backup:
+      outputArtifacts:
+        snapshotInfo:
+          keyValue:
+            name: "{{ .Phases.createCSISnapshot.Output.name }}"
+            pvc: "{{ .Phases.createCSISnapshot.Output.pvc }}"
+            namespace: "{{ .Phases.createCSISnapshot.Output.namespace }}"
+            restoreSize: "{{ .Phases.createCSISnapshot.Output.restoreSize }}"
+            snapshotContent: "{{ .Phases.createCSISnapshot.Output.snapshotContent }}"
+      phases:
+      - func: CreateCSISnapshot
+        name: createCSISnapshot
+        args:
+          pvc: "{{ .PVC.Name }}"
+          namespace: "{{ .PVC.Namespace }}"
+          snapshotClass: do-block-storage
 
 
 Registering Functions
