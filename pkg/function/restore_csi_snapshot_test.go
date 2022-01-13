@@ -135,8 +135,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
 			ExpectedErr: IsNil,
 		},
 	} {
-		restoreArgs := restoreCSISnapshotArgs{VolumeMode: scenario.Arg}
-		err := validateVolumeModeArg(restoreArgs.VolumeMode)
+		err := validateVolumeModeArg(scenario.Arg)
 		c.Assert(err, scenario.ExpectedErr)
 	}
 }
@@ -155,8 +154,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateAccessModeArg(c *C) {
 			ExpectedErr: IsNil,
 		},
 	} {
-		restoreArgs := restoreCSISnapshotArgs{AccessModes: scenario.Arg}
-		err := validateVolumeAccessModesArg(restoreArgs.AccessModes)
+		err := validateVolumeAccessModesArg(scenario.Arg)
 		c.Assert(err, scenario.ExpectedErr)
 	}
 }
