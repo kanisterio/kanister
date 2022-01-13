@@ -73,7 +73,7 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err := Arg(args, CreateCSISnapshotSnapshotClassArg, &snapshotClass); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, CreateCSISnapshotNameArg, &name, defaultSnapshotName(pvc, 20)); err != nil {
+	if err := OptArg(args, CreateCSISnapshotNameArg, &name, defaultSnapshotName(pvc, 5)); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, CreateCSISnapshotLabelsArg, &labels, map[string]string{}); err != nil {
@@ -96,6 +96,18 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		}
 		return nil, err
 	}
+	return createCSISnapshot(ctx, snapshotter, labels, name, namespace, pvc, snapshotClass)
+}
+
+func (*createCSISnapshotFunc) RequiredArgs() []string {
+	return []string{
+		CreateCSISnapshotPVCNameArg,
+		CreateCSISnapshotNamespaceArg,
+		CreateCSISnapshotSnapshotClassArg,
+	}
+}
+
+func createCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, labels map[string]string, name, namespace, pvc, snapshotClass string) (map[string]interface{}, error){
 	// waitForReady is set to true by default because snapshot information is needed as output artifacts
 	waitForReady := true
 	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, waitForReady, labels); err != nil {
@@ -114,14 +126,6 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 		CreateCSISnapshotSnapshotContentNameArg: vs.Status.BoundVolumeSnapshotContentName,
 	}
 	return snapshotInfo, nil
-}
-
-func (*createCSISnapshotFunc) RequiredArgs() []string {
-	return []string{
-		CreateCSISnapshotPVCNameArg,
-		CreateCSISnapshotNamespaceArg,
-		CreateCSISnapshotSnapshotClassArg,
-	}
 }
 
 // defaultSnapshotName generates snapshot name using pvcName-snapshot-randomValue
