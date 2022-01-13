@@ -126,7 +126,7 @@ func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 		c.Assert(err, IsNil)
 		c.Assert(newPVC.Name, Equals, testSuite.newPVCName)
 
-		_, err = fakeSnapshotter.Delete(ctx, testSuite.snapName, testSuite.namespace)
+		_, err = deleteCSISnapshot(ctx, fakeSnapshotter, testSuite.snapName, testSuite.namespace)
 		c.Assert(err, IsNil)
 		_, err = fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
 		c.Assert(err, NotNil)

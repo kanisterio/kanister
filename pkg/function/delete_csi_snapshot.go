@@ -17,6 +17,8 @@ package function
 import (
 	"context"
 
+	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
@@ -66,7 +68,7 @@ func (*deleteCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err != nil {
 		return nil, err
 	}
-	if _, err := snapshotter.Delete(ctx, name, namespace); err != nil {
+	if _, err := deleteCSISnapshot(ctx, snapshotter, name, namespace); err != nil {
 		return nil, err
 	}
 	return nil, nil
@@ -77,4 +79,8 @@ func (*deleteCSISnapshotFunc) RequiredArgs() []string {
 		DeleteCSISnapshotNameArg,
 		DeleteCSISnapshotNamespaceArg,
 	}
+}
+
+func deleteCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, name, namespace string) (*v1.VolumeSnapshot, error) {
+	return snapshotter.Delete(ctx, name, namespace)
 }
