@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/skus"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/subscriptions"
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	azto "github.com/Azure/go-autorest/autorest/to"
@@ -610,7 +612,15 @@ func (s *AdStorage) SetTags(ctx context.Context, resource interface{}, tags map[
 }
 
 func (s *AdStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
-	return staticRegionToZones(region)
+	regionMap, err := s.dynamicRegionMapAzure(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch dynamic region map")
+	}
+	zones, ok := regionMap[region]
+	if !ok {
+		return nil, errors.Errorf("Zones for region %s not found", region)
+	}
+	return zones, nil
 }
 
 func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blockstorage.Snapshot) (global bool, regionsAndZones map[string][]string, err error) {
@@ -622,163 +632,56 @@ func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 		return false, nil, errors.Errorf("Required VolumeType not set")
 	}
 
-	zl, err := staticRegionToZones(snapshot.Region)
+	zl, err := s.FromRegion(ctx, snapshot.Region)
 	if err != nil {
 		return false, nil, err
 	}
 	return false, map[string][]string{snapshot.Region: zl}, nil
 }
 
-func staticRegionToZones(region string) ([]string, error) {
-	switch region {
-	case "asia":
-		return nil, nil
-	case "asiapacific":
-		return nil, nil
-	case "australia":
-		return nil, nil
-	case "australiacentral":
-		return nil, nil
-	case "australiacentral2":
-		return nil, nil
-	case "australiaeast":
-		return []string{"australiaeast-1", "australiaeast-2", "australiaeast-3"}, nil
-	case "australiasoutheast":
-		return nil, nil
-	case "brazil":
-		return nil, nil
-	case "brazilsouth":
-		return []string{"brazilsouth-1", "brazilsouth-2", "brazilsouth-3"}, nil
-	case "brazilsoutheast":
-		return nil, nil
-	case "canada":
-		return nil, nil
-	case "canadacentral":
-		return []string{"canadacentral-1", "canadacentral-2", "canadacentral-3"}, nil
-	case "canadaeast":
-		return nil, nil
-	case "centralindia":
-		return []string{"centralindia-1", "centralindia-2", "centralindia-3"}, nil
-	case "centralus":
-		return []string{"centralus-1", "centralus-2", "centralus-3"}, nil
-	case "centraluseuap":
-		return []string{"centraluseuap-1"}, nil
-	case "centralusstage":
-		return nil, nil
-	case "eastasia":
-		return []string{"eastasia-1", "eastasia-2", "eastasia-3"}, nil
-	case "eastasiastage":
-		return nil, nil
-	case "eastus":
-		return []string{"eastus-1", "eastus-2", "eastus-3"}, nil
-	case "eastus2":
-		return []string{"eastus2-1", "eastus2-2", "eastus2-3"}, nil
-	case "eastus2euap":
-		return []string{"eastus2euap-1", "eastus2euap-2", "eastus2euap-3"}, nil
-	case "eastus2stage":
-		return nil, nil
-	case "eastusstage":
-		return nil, nil
-	case "europe":
-		return nil, nil
-	case "france":
-		return nil, nil
-	case "francecentral":
-		return []string{"francecentral-1", "francecentral-2", "francecentral-3"}, nil
-	case "francesouth":
-		return nil, nil
-	case "germany":
-		return nil, nil
-	case "germanynorth":
-		return nil, nil
-	case "germanywestcentral":
-		return []string{"germanywestcentral-1", "germanywestcentral-2", "germanywestcentral-3"}, nil
-	case "global":
-		return nil, nil
-	case "india":
-		return nil, nil
-	case "japan":
-		return nil, nil
-	case "japaneast":
-		return []string{"japaneast-1", "japaneast-2", "japaneast-3"}, nil
-	case "japanwest":
-		return nil, nil
-	case "jioindiacentral":
-		return nil, nil
-	case "jioindiawest":
-		return nil, nil
-	case "korea":
-		return nil, nil
-	case "koreacentral":
-		return []string{"koreacentral-1", "koreacentral-2", "koreacentral-3"}, nil
-	case "koreasouth":
-		return nil, nil
-	case "northcentralus":
-		return nil, nil
-	case "northcentralusstage":
-		return nil, nil
-	case "northeurope":
-		return []string{"northeurope-1", "northeurope-2", "northeurope-3"}, nil
-	case "norway":
-		return nil, nil
-	case "norwayeast":
-		return []string{"norwayeast-1", "norwayeast-2", "norwayeast-3"}, nil
-	case "norwaywest":
-		return nil, nil
-	case "southafrica":
-		return nil, nil
-	case "southafricanorth":
-		return []string{"southafricanorth-1", "southafricanorth-2", "southafricanorth-3"}, nil
-	case "southafricawest":
-		return nil, nil
-	case "southcentralus":
-		return []string{"southcentralus-1", "southcentralus-2", "southcentralus-3"}, nil
-	case "southcentralusstage":
-		return nil, nil
-	case "southeastasia":
-		return []string{"southeastasia-1", "southeastasia-2", "southeastasia-3"}, nil
-	case "southeastasiastage":
-		return nil, nil
-	case "southindia":
-		return nil, nil
-	case "swedencentral":
-		return []string{"swedencentral-1", "swedencentral-2", "swedencentral-3"}, nil
-	case "switzerland":
-		return nil, nil
-	case "switzerlandnorth":
-		return nil, nil
-	case "switzerlandwest":
-		return nil, nil
-	case "uae":
-		return nil, nil
-	case "uaecentral":
-		return nil, nil
-	case "uaenorth":
-		return nil, nil
-	case "uk":
-		return nil, nil
-	case "uksouth":
-		return []string{"uksouth-1", "uksouth-2", "uksouth-3"}, nil
-	case "ukwest":
-		return nil, nil
-	case "unitedstates":
-		return nil, nil
-	case "westcentralus":
-		return nil, nil
-	case "westeurope":
-		return []string{"westeurope-1", "westeurope-2", "westeurope-3"}, nil
-	case "westindia":
-		return nil, nil
-	case "westus":
-		return nil, nil
-	case "westus2":
-		return []string{"westus2-1", "westus2-2", "westus2-3"}, nil
-	case "westus2stage":
-		return nil, nil
-	case "westus3":
-		return []string{"westus3-1", "westus3-2", "westus3-3"}, nil
-	case "westusstage":
-		return nil, nil
+// dynamicRegionMapAzure derives a mapping from Regions to zones for Azure. Depends on subscriptionID
+func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]string, error) {
+	subscriptionsCLient := subscriptions.NewClient()
+	subscriptionsCLient.Authorizer = s.azCli.Authorizer
+	llResp, err := subscriptionsCLient.ListLocations(ctx, s.azCli.SubscriptionID)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))
+	regionMap := make(map[string]map[string]struct{})
+	for _, location := range *llResp.Value {
+		regionMap[*location.Name] = make(map[string]struct{})
+	}
+
+	skuClient := skus.NewResourceSkusClient(s.azCli.SubscriptionID)
+	skuClient.Authorizer = s.azCli.Authorizer
+	skuResults, err := skuClient.ListComplete(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for skuResults.Value().Name != nil {
+		if *skuResults.Value().ResourceType == "disks" {
+			for _, location := range *skuResults.Value().LocationInfo {
+				if val, ok := regionMap[*location.Location]; ok {
+					for _, zone := range *location.Zones {
+						val[zone] = struct{}{}
+					}
+					regionMap[*location.Location] = val
+				}
+			}
+		}
+		if err = skuResults.NextWithContext(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	// convert to map of []string
+	regionMapResult := make(map[string][]string)
+	for region, zoneSet := range regionMap {
+		var zoneArray []string
+		for zone := range zoneSet {
+			zoneArray = append(zoneArray, region+"-"+zone)
+		}
+		regionMapResult[region] = zoneArray
+	}
+	return regionMapResult, nil
 }

@@ -16,6 +16,8 @@ package awsebs
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -23,6 +25,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	. "gopkg.in/check.v1"
+
+	kaws "github.com/kanisterio/kanister/pkg/aws"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
@@ -92,4 +96,25 @@ func (s AWSEBSSuite) TestVolumeParse(c *C) {
 	c.Check(volume.Type, Equals, blockstorage.TypeEBS)
 	c.Check(volume.VolumeType, Equals, expected.VolumeType)
 	c.Check(volume.Attributes, DeepEquals, expected.Attributes)
+}
+
+func (s AWSEBSSuite) TestGetRegions(c *C) {
+	ctx := context.Background()
+	config := map[string]string{}
+	if id, ok := os.LookupEnv(kaws.AccessKeyID); ok {
+		config[kaws.AccessKeyID] = id
+	}
+	if secret, ok := os.LookupEnv(kaws.SecretAccessKey); ok {
+		config[kaws.SecretAccessKey] = secret
+	}
+	config[kaws.ConfigRegion] = "us-west-2"
+	bsp, err := NewProvider(ctx, config)
+	c.Assert(err, IsNil)
+	ebsp := bsp.(*EbsStorage)
+	// r2zmap, err := ebsp.RegionToZoneMap(ctx)
+	// c.Assert(err, IsNil)
+	// fmt.Println(r2zmap)
+	zones, err := ebsp.FromRegion(ctx, "us-west-1")
+	c.Assert(err, IsNil)
+	fmt.Println(zones)
 }
