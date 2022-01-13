@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -73,7 +74,7 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if err := Arg(args, CreateCSISnapshotSnapshotClassArg, &snapshotClass); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, CreateCSISnapshotNameArg, &name, defaultSnapshotName(pvc, 20)); err != nil {
+	if err := OptArg(args, CreateCSISnapshotNameArg, &name, defaultSnapshotName(pvc, 5)); err != nil {
 		return nil, err
 	}
 	if err := OptArg(args, CreateCSISnapshotLabelsArg, &labels, map[string]string{}); err != nil {
@@ -98,10 +99,7 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	}
 	// waitForReady is set to true by default because snapshot information is needed as output artifacts
 	waitForReady := true
-	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, waitForReady, labels); err != nil {
-		return nil, err
-	}
-	vs, err := snapshotter.Get(ctx, name, namespace)
+	vs, err := createCSISnapshot(ctx, snapshotter, labels, name, namespace, pvc, snapshotClass, waitForReady)
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +120,17 @@ func (*createCSISnapshotFunc) RequiredArgs() []string {
 		CreateCSISnapshotNamespaceArg,
 		CreateCSISnapshotSnapshotClassArg,
 	}
+}
+
+func createCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, labels map[string]string, name, namespace, pvc, snapshotClass string, wait bool) (*v1.VolumeSnapshot, error) {
+	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, wait, labels); err != nil {
+		return nil, err
+	}
+	vs, err := snapshotter.Get(ctx, name, namespace)
+	if err != nil {
+		return nil, err
+	}
+	return vs, nil
 }
 
 // defaultSnapshotName generates snapshot name using pvcName-snapshot-randomValue
