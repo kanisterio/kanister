@@ -112,9 +112,8 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestRestoreCSISnapshot(c *C) {
 			AccessModes:  originalPVC.Spec.AccessModes,
 			Labels:       nil,
 		}
-		newPVC := newPVCManifest(restoreArgs)
-		createPVC(c, restoreArgs.Namespace, newPVC, fakeCli)
-		c.Assert(newPVC.Name, Equals, testSuite.newPVCName)
+		err = restoreCSISnapshot(ctx, fakeCli, restoreArgs)
+		c.Assert(err, IsNil)
 
 		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
@@ -135,8 +134,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateVolumeModeArg(c *C) {
 			ExpectedErr: IsNil,
 		},
 	} {
-		restoreArgs := restoreCSISnapshotArgs{VolumeMode: scenario.Arg}
-		err := validateVolumeModeArg(restoreArgs.VolumeMode)
+		err := validateVolumeModeArg(scenario.Arg)
 		c.Assert(err, scenario.ExpectedErr)
 	}
 }
@@ -155,8 +153,7 @@ func (testSuite *RestoreCSISnapshotTestSuite) TestValidateAccessModeArg(c *C) {
 			ExpectedErr: IsNil,
 		},
 	} {
-		restoreArgs := restoreCSISnapshotArgs{AccessModes: scenario.Arg}
-		err := validateVolumeAccessModesArg(restoreArgs.AccessModes)
+		err := validateVolumeAccessModesArg(scenario.Arg)
 		c.Assert(err, scenario.ExpectedErr)
 	}
 }
