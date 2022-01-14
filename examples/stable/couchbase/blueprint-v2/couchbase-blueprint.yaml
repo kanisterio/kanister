@@ -21,7 +21,7 @@ actions:
           namespace: "{{ .Object.metadata.namespace }}"
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: ghcr.io/kanisterio/couchbase-tools:0.71.0
+        image: ghcr.io/kanisterio/couchbase-tools:0.72.0
         command:
           - bash
           - -o
