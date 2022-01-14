@@ -2,15 +2,16 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -23,6 +24,7 @@ const (
 	mssqlWaitTimeout = 5 * time.Minute
 	dbUserName       = "sa"
 	dbPass           = "MyC0m9l&xP@ssw0rd"
+	connString       = "/opt/mssql-tools/bin/sqlcmd -S localhost -U %s -P \"%s\" -Q "
 )
 
 type MssqlDB struct {
@@ -163,8 +165,8 @@ func (m *MssqlDB) Uninstall(ctx context.Context) error {
 
 func (m *MssqlDB) Ping(ctx context.Context) error {
 	log.Print("Pinging mssql database", field.M{"app": m.name})
-	count := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
-		"\"SELECT name FROM sys.databases WHERE name NOT IN ('master','model','msdb','tempdb')\" -b -s \",\" -h -1"
+	count := fmt.Sprintf(connString+
+		"\"SELECT name FROM sys.databases WHERE name NOT IN ('master','model','msdb','tempdb')\" -b -s \",\" -h -1", dbUserName, dbPass)
 
 	loginMssql := []string{"sh", "-c", count}
 	_, stderr, err := m.execCommand(ctx, loginMssql)
@@ -177,8 +179,8 @@ func (m *MssqlDB) Ping(ctx context.Context) error {
 
 func (m *MssqlDB) Insert(ctx context.Context) error {
 	log.Print("Adding entry to database", field.M{"app": m.name})
-	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
-		"\"USE test; INSERT INTO Inventory VALUES (1, 'banana', 150)\""
+	insert := fmt.Sprintf(connString+
+		"\"USE test; INSERT INTO Inventory VALUES (1, 'banana', 150)\"", dbUserName, dbPass)
 
 	insertQuery := []string{"sh", "-c", insert}
 	_, stderr, err := m.execCommand(ctx, insertQuery)
@@ -190,8 +192,8 @@ func (m *MssqlDB) Insert(ctx context.Context) error {
 
 func (m *MssqlDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting entries from database", field.M{"app": m.name})
-	insert := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
-		"\"SET NOCOUNT ON; USE test; SELECT COUNT(*) FROM Inventory\" -h -1"
+	insert := fmt.Sprintf(connString+
+		"\"SET NOCOUNT ON; USE test; SELECT COUNT(*) FROM Inventory\" -h -1", dbUserName, dbPass)
 
 	insertQuery := []string{"sh", "-c", insert}
 	stdout, stderr, err := m.execCommand(ctx, insertQuery)
@@ -207,8 +209,7 @@ func (m *MssqlDB) Count(ctx context.Context) (int, error) {
 
 func (m *MssqlDB) Reset(ctx context.Context) error {
 	log.Print("Reseting database", field.M{"app": m.name})
-	delete := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
-		"\"DROP DATABASE test\""
+	delete := fmt.Sprintf(connString+"\"DROP DATABASE test\"", dbUserName, dbPass)
 	deleteQuery := []string{"sh", "-c", delete}
 	_, stderr, err := m.execCommand(ctx, deleteQuery)
 	if err != nil {
@@ -219,11 +220,10 @@ func (m *MssqlDB) Reset(ctx context.Context) error {
 
 func (m *MssqlDB) Initialize(ctx context.Context) error {
 	log.Print("Initializing database", field.M{"app": m.name})
-	createDB := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
-		"\"CREATE DATABASE test\""
+	createDB := fmt.Sprintf(connString+"\"CREATE DATABASE test\"", dbUserName, dbPass)
 
-	createTable := "/opt/mssql-tools/bin/sqlcmd -S localhost -U " + dbUserName + " -P \"" + dbPass + "\" -Q " +
-		"\"USE test; CREATE TABLE Inventory (id INT, name NVARCHAR(50), quantity INT)\""
+	createTable := fmt.Sprintf(connString+
+		"\"USE test; CREATE TABLE Inventory (id INT, name NVARCHAR(50), quantity INT)\"", dbUserName, dbPass)
 
 	execQuery := []string{"sh", "-c", createDB}
 	_, stderr, err := m.execCommand(ctx, execQuery)
