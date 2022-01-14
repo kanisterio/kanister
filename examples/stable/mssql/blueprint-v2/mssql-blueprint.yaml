@@ -16,7 +16,7 @@ actions:
             name: '{{ index .Object.metadata.labels "app" }}'
             namespace: '{{ .Deployment.Namespace }}'
         args:
-          image: chaitanyadelphian/mssql-tools:1.0.4
+          image: ghcr.io/kanisterio/mssql-tools:0.71.0
           command:
             - bash
             - -o
@@ -25,7 +25,7 @@ actions:
             - pipefail
             - -c
             - |
-              kopiaPath="/mssql-backups/{{ index .Deployment.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/backup.tar.gz"
+              kopiaPath="backup.tar.gz"
               root_password="{{ index .Phases.dumpToObjectStore.Secrets.mssql.Data "SA_PASSWORD" | toString }}"
               root_uname="sa"
               mssql_pod="{{ index .Deployment.Namespace }}/{{ index .Deployment.Pods 0 }}"
@@ -35,9 +35,8 @@ actions:
               kubectl cp ${mssql_pod}:/tmp/backup /tmp/backup
               cd /tmp/
               tar -zcvf backup.tar.gz backup/
-              kando location push --profile '{{ toJson .Profile }}' --path ${kopiaPath} backup.tar.gz --output-name "kopiaOutput"
+              kando location push --profile '{{ toJson .Profile }}' --path "${kopiaPath}" backup.tar.gz --output-name "kopiaOutput"
               kubectl exec -it {{ index .Deployment.Pods 0 }} -n {{ index .Deployment.Namespace }} -- rm -r /tmp/backup
-              kando output kopiaOutput ${kopiaPath}
   restore:
     inputArtifactNames:
       - mssqlCloudDump
@@ -50,7 +49,7 @@ actions:
             name: '{{ index .Object.metadata.labels "app" }}'
             namespace: '{{ .Deployment.Namespace }}'
         args:
-          image: chaitanyadelphian/mssql-tools:1.0.4
+          image: ghcr.io/kanisterio/mssql-tools:0.71.0
           command:
             - bash
             - -o
@@ -59,12 +58,15 @@ actions:
             - pipefail
             - -c
             - |
-              kopia_snap="{{ .ArtifactsIn.mssqlCloudDump.KopiaSnapshot }}"
+              kopiaPath="backup.tar.gz"
+              kopia_snap='{{ .ArtifactsIn.mssqlCloudDump.KopiaSnapshot }}'
               root_password="{{ index .Phases.restoreFromObjectStore.Secrets.mssql.Data "SA_PASSWORD" | toString }}"
               root_uname="sa"
               mssql_pod="{{ index .Deployment.Namespace }}/{{ index .Deployment.Pods 0 }}"
-              server_name="{{ index .Deployment.Name }}.{{index .Deployment.Namespace}}.svc.cluster.local"
-              kando location pull --profile '{{ toJson .Profile }}' --path ${kopia_snap} --kopia-snapshot ${kopia_snap} - | tar zxvf - -C /tmp/
+              server_name="{{ index .Deployment.Name }}.{{ index .Deployment.Namespace }}.svc.cluster.local"
+              kando location pull --profile '{{ toJson .Profile }}' --path "${kopiaPath}" --kopia-snapshot ${kopia_snap} /tmp/backup.tar.gz
+              cd /tmp/
+              tar -zxvf backup.tar.gz
               kubectl cp /tmp/backup ${mssql_pod}:/tmp/backup
               backup_files=$(ls /tmp/backup)
               for script in $backup_files; do database="$(cut -d'.' -f1 <<<"$script")"; /opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "restore database $database from disk = '/tmp/backup/$script' with replace"; done
@@ -76,7 +78,7 @@ actions:
       - func: KubeTask
         name: deleteFromBlobStore
         args:
-          image: chaitanyadelphian/mssql-tools:1.0.4
+          image: ghcr.io/kanisterio/mssql-tools:0.71.0
           command:
             - bash
             - -o
@@ -85,5 +87,6 @@ actions:
             - pipefail
             - -c
             - |
+              kopiaPath="backup.tar.gz"
               kopia_snap='{{ .ArtifactsIn.mssqlCloudDump.KopiaSnapshot }}'
-              kando location delete --profile '{{ toJson .Profile }}' --path ${kopia_snap} --kopia-snapshot "${kopia_snap}"
+              kando location delete --profile '{{ toJson .Profile }}' --path ${kopiaPath} --kopia-snapshot "${kopia_snap}"
