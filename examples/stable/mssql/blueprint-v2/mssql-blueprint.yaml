@@ -33,9 +33,7 @@ actions:
               databases=$(/opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "SET NOCOUNT ON; SELECT name FROM sys.databases WHERE name NOT IN ('master','model','msdb','tempdb')" -b -s "," -h -1)
               for database in $databases; do /opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "backup database $database to disk = '/tmp/backup/$database.bak' with format;"; done
               kubectl cp ${mssql_pod}:/tmp/backup /tmp/backup
-              cd /tmp/
-              tar -zcvf backup.tar.gz backup/
-              kando location push --profile '{{ toJson .Profile }}' --path "${kopiaPath}" backup.tar.gz --output-name "kopiaOutput"
+              tar zcvf - -C /tmp/ backup | kando location push --profile '{{ toJson .Profile }}' --path "${kopiaPath}" --output-name "kopiaOutput" -
               kubectl exec -it {{ index .Deployment.Pods 0 }} -n {{ index .Deployment.Namespace }} -- rm -r /tmp/backup
   restore:
     inputArtifactNames:
@@ -64,9 +62,7 @@ actions:
               root_uname="sa"
               mssql_pod="{{ index .Deployment.Namespace }}/{{ index .Deployment.Pods 0 }}"
               server_name="{{ index .Deployment.Name }}.{{ index .Deployment.Namespace }}.svc.cluster.local"
-              kando location pull --profile '{{ toJson .Profile }}' --path "${kopiaPath}" --kopia-snapshot ${kopia_snap} /tmp/backup.tar.gz
-              cd /tmp/
-              tar -zxvf backup.tar.gz
+              kando location pull --profile '{{ toJson .Profile }}' --path "${kopiaPath}" --kopia-snapshot ${kopia_snap} - | tar zxvf - -C /tmp/
               kubectl cp /tmp/backup ${mssql_pod}:/tmp/backup
               backup_files=$(ls /tmp/backup)
               for script in $backup_files; do database="$(cut -d'.' -f1 <<<"$script")"; /opt/mssql-tools/bin/sqlcmd -S ${server_name} -U ${root_uname} -P ${root_password} -Q "restore database $database from disk = '/tmp/backup/$script' with replace"; done
