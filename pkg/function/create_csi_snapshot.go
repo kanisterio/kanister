@@ -133,7 +133,7 @@ func createCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, na
 	return vs, nil
 }
 
-// defaultSnapshotName generates snapshot name using pvcName-snapshot-randomValue
+// defaultSnapshotName generates snapshot name using <pvcName>-snapshot-<randomValue>
 func defaultSnapshotName(pvcName string, len int) string {
 	return fmt.Sprintf("%s-snapshot-%s", pvcName, rand.String(len))
 }
