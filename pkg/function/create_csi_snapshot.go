@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
 
@@ -98,10 +99,7 @@ func (*createCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	}
 	// waitForReady is set to true by default because snapshot information is needed as output artifacts
 	waitForReady := true
-	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, waitForReady, labels); err != nil {
-		return nil, err
-	}
-	vs, err := snapshotter.Get(ctx, name, namespace)
+	vs, err := createCSISnapshot(ctx, snapshotter, name, namespace, pvc, snapshotClass, waitForReady, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +122,18 @@ func (*createCSISnapshotFunc) RequiredArgs() []string {
 	}
 }
 
-// defaultSnapshotName generates snapshot name using pvcName-snapshot-randomValue
+func createCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, name, namespace, pvc, snapshotClass string, wait bool, labels map[string]string) (*v1.VolumeSnapshot, error) {
+	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, wait, labels); err != nil {
+		return nil, err
+	}
+	vs, err := snapshotter.Get(ctx, name, namespace)
+	if err != nil {
+		return nil, err
+	}
+	return vs, nil
+}
+
+// defaultSnapshotName generates snapshot name using <pvcName>-snapshot-<randomValue>
 func defaultSnapshotName(pvcName string, len int) string {
 	return fmt.Sprintf("%s-snapshot-%s", pvcName, rand.String(len))
 }
