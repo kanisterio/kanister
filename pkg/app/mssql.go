@@ -64,10 +64,7 @@ func (m *MssqlDB) Init(ctx context.Context) error {
 	}
 
 	m.cli, err = kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (m *MssqlDB) Install(ctx context.Context, namespace string) error {
