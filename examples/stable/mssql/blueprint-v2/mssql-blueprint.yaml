@@ -16,7 +16,7 @@ actions:
             name: '{{ index .Object.metadata.labels "app" }}'
             namespace: '{{ .Deployment.Namespace }}'
         args:
-          image: ghcr.io/kanisterio/mssql-tools:0.71.0
+          image: ghcr.io/kanisterio/mssql-tools:0.72.0
           command:
             - bash
             - -o
@@ -47,7 +47,7 @@ actions:
             name: '{{ index .Object.metadata.labels "app" }}'
             namespace: '{{ .Deployment.Namespace }}'
         args:
-          image: ghcr.io/kanisterio/mssql-tools:0.71.0
+          image: ghcr.io/kanisterio/mssql-tools:0.72.0
           command:
             - bash
             - -o
@@ -74,7 +74,7 @@ actions:
       - func: KubeTask
         name: deleteFromBlobStore
         args:
-          image: ghcr.io/kanisterio/mssql-tools:0.71.0
+          image: ghcr.io/kanisterio/mssql-tools:0.72.0
           command:
             - bash
             - -o
