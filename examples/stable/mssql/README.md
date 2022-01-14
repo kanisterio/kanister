@@ -60,6 +60,8 @@ kind: Deployment
 metadata:
   name: mssql-deployment
   namespace: sqlserver
+  labels:
+    app: mssql
 spec:
   replicas: 1
   selector:
