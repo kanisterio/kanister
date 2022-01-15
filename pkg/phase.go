@@ -109,6 +109,7 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 			name:    p.Name,
 			objects: objs,
 			f:       funcs[p.Func][regVersion],
+			args:    p.Args,
 		})
 	}
 	return phases, nil

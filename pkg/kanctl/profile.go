@@ -34,6 +34,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/secrets"
+	"github.com/kanisterio/kanister/pkg/utils"
 	"github.com/kanisterio/kanister/pkg/validate"
 )
 
@@ -384,18 +385,18 @@ func performProfileValidation(p *validateParams) error {
 func validateProfile(ctx context.Context, profile *v1alpha1.Profile, cli kubernetes.Interface, schemaValidationOnly bool, printFailStageOnly bool) error {
 	var err error
 	if err = validate.ProfileSchema(profile); err != nil {
-		printStage(schemaValidation, fail)
+		utils.PrintStage(schemaValidation, utils.Fail)
 		return err
 	}
 	if !printFailStageOnly {
-		printStage(schemaValidation, pass)
+		utils.PrintStage(schemaValidation, utils.Pass)
 	}
 
 	if profile.Location.Bucket != "" {
 		for _, d := range []string{regionValidation, readAccessValidation, writeAccessValidation} {
 			if schemaValidationOnly {
 				if !printFailStageOnly {
-					printStage(d, skip)
+					utils.PrintStage(d, utils.Skip)
 				}
 				continue
 			}
@@ -408,16 +409,16 @@ func validateProfile(ctx context.Context, profile *v1alpha1.Profile, cli kuberne
 				err = validate.WriteAccess(ctx, profile, cli)
 			}
 			if err != nil {
-				printStage(d, fail)
+				utils.PrintStage(d, utils.Fail)
 				return err
 			}
 			if !printFailStageOnly {
-				printStage(d, pass)
+				utils.PrintStage(d, utils.Pass)
 			}
 		}
 	}
 	if !printFailStageOnly {
-		printStage(fmt.Sprintf("All checks passed.. %s\n", pass), "")
+		utils.PrintStage(fmt.Sprintf("All checks passed.. %s\n", utils.Pass), "")
 	}
 	return nil
 }

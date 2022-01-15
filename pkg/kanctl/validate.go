@@ -15,8 +15,6 @@
 package kanctl
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -28,14 +26,6 @@ type validateParams struct {
 	namespace            string
 	schemaValidationOnly bool
 }
-
-type indicator string
-
-const (
-	fail indicator = `❌`
-	pass indicator = `✅`
-	skip indicator = `🚫`
-)
 
 const (
 	nameFlag                 = "name"
@@ -96,17 +86,4 @@ func extractValidateParams(cmd *cobra.Command, args []string) (*validateParams, 
 		namespace:            rns,
 		schemaValidationOnly: schemaValidationOnly,
 	}, nil
-}
-
-func printStage(description string, i indicator) {
-	switch i {
-	case pass:
-		fmt.Printf("Passed the '%s' check.. %s\n", description, i)
-	case skip:
-		fmt.Printf("Skipping the '%s' check.. %s\n", description, i)
-	case fail:
-		fmt.Printf("Failed the '%s' check.. %s\n", description, i)
-	default:
-		fmt.Println(description)
-	}
 }

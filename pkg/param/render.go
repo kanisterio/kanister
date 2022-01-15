@@ -151,6 +151,10 @@ func newUndefinedKeyError(err string) error {
 
 // RenderObjectRefs function renders object refs from TemplateParams
 func RenderObjectRefs(in map[string]crv1alpha1.ObjectReference, tp TemplateParams) (map[string]crv1alpha1.ObjectReference, error) {
+	if tp.Time == "" {
+		return nil, nil
+	}
+
 	out := make(map[string]crv1alpha1.ObjectReference, len(in))
 	for k, v := range in {
 		rv, err := render(v, tp)

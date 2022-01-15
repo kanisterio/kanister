@@ -9,7 +9,7 @@ import (
 
 func performBlueprintValidation(p *validateParams) error {
 	if p.filename == "" {
-		return errors.New("Name is not supported for blueprint resources, please specify blueprint manfiest using -f.")
+		return errors.New("--name is not supported for blueprint resources, please specify blueprint manifest using -f.")
 	}
 
 	// read blueprint from specified file

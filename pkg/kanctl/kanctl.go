@@ -47,7 +47,8 @@ func Execute() {
 		if Verbose {
 			log.WithError(err).Print("Kanctl failed to execute")
 		} else {
-			log.Error().Print(err.Error())
+			// this is duplicating the error message
+			// log.Error().Print(err.Error())
 		}
 		os.Exit(1)
 	}
