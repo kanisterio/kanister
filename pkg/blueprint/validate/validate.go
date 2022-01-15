@@ -11,17 +11,17 @@ import (
 )
 
 func Do(bp *crv1alpha1.Blueprint) error {
-	for name := range bp.Actions {
-		// this already checks if the function names referred in the action are correct
+	for name, action := range bp.Actions {
+		// GetPhases also checks if the function names referred in the action are correct
 		phases, err := kanister.GetPhases(*bp, name, kanister.DefaultVersion, param.TemplateParams{})
 		if err != nil {
 			utils.PrintStage(fmt.Sprintf("Validation of action %s, error %s", name, err.Error()), utils.Fail)
 			return err
 		}
 
-		for _, phase := range phases {
+		for i, phase := range phases {
 			// validate function's mandatory arguments
-			if err := phase.Validate(); err != nil {
+			if err := phase.Validate(action.Phases[i].Args); err != nil {
 				utils.PrintStage(fmt.Sprintf("Validation of phase %s of action %s, error %s", phase.Name(), name, err.Error()), utils.Fail)
 				return err
 			}
