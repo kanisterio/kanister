@@ -20,7 +20,7 @@ This blueprint is only required when you face above mentioned issue, else you wi
 
 - Kubernetes 1.10+
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.71.0 installed in your cluster
+- Kanister controller version 0.72.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Installing the Chart
