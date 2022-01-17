@@ -65,14 +65,17 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 	if err != nil {
 		return "", "", err
 	}
-	o, e, errCh := execStream(kubeCli, config, options)
+	o, e := execStream(kubeCli, config, options)
 
 	var stdout []byte
-	var err error
+	var oerr error
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	go func() {
 		stdout, oerr = ioutil.ReadAll(o)
+		if oerr != nil {
+			log.Error("Failed to read stderr:", oerr.Error())
+		}
 		wg.Done()
 	}()
 
