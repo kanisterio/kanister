@@ -206,6 +206,9 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		err = pingAppAndWait(ctx, a)
 		c.Assert(err, IsNil)
 
+		err = a.Reset(ctx)
+		c.Assert(err, IsNil)
+
 		err = a.Initialize(ctx)
 		c.Assert(err, IsNil)
 

@@ -370,16 +370,15 @@ var _ = Suite(&Kafka{
 	},
 })
 
-// OpenShift apps for version 4.7
 // Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
-type MysqlDBDepConfig4_7 struct {
+type MysqlDBDepConfig4_9 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MysqlDBDepConfig4_7{
+var _ = Suite(&MysqlDBDepConfig4_9{
 	IntegrationSuite{
 		name:      "mysqldc",
-		namespace: "mysqldc4-7-test",
+		namespace: "mysqldc4-9-test",
 		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_9, app.EphemeralStorage, "8.0"),
 		bp:        app.NewBlueprint("mysql-dep-config", "", true),
 		profile:   newSecretProfile(),
@@ -387,14 +386,14 @@ var _ = Suite(&MysqlDBDepConfig4_7{
 })
 
 // MongoDB deployed on openshift cluster
-type MongoDBDepConfig4_7 struct {
+type MongoDBDepConfig4_9 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MongoDBDepConfig4_7{
+var _ = Suite(&MongoDBDepConfig4_9{
 	IntegrationSuite{
 		name:      "mongodb",
-		namespace: "mongodb4-7-test",
+		namespace: "mongodb4-9-test",
 		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_9, app.EphemeralStorage),
 		bp:        app.NewBlueprint("mongo-dep-config", "", true),
 		profile:   newSecretProfile(),
@@ -402,11 +401,11 @@ var _ = Suite(&MongoDBDepConfig4_7{
 })
 
 // PostgreSQL deployed on openshift cluster
-type PostgreSQLDepConfig4_7 struct {
+type PostgreSQLDepConfig4_9 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQLDepConfig4_7{
+var _ = Suite(&PostgreSQLDepConfig4_9{
 	IntegrationSuite{
 		name:      "postgresdepconf",
 		namespace: "postgresdepconf4-5-test",
