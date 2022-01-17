@@ -1,4 +1,6 @@
+//go:build integration
 // +build integration
+
 // Copyright 2019 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +18,7 @@
 package testing
 
 import (
-	"context"
+	context "context"
 	"os"
 	test "testing"
 	"time"
@@ -24,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
@@ -51,10 +54,13 @@ func Test(t *test.T) {
 
 // Global variables shared across Suite instances
 type kanisterKontroller struct {
-	namespace string
-	context   context.Context
-	cancel    context.CancelFunc
-	kubeCli   *kubernetes.Clientset
+	namespace          string
+	context            context.Context
+	cancel             context.CancelFunc
+	kubeCli            *kubernetes.Clientset
+	serviceAccount     *v1.ServiceAccount
+	clusterRole        *rbacv1.ClusterRole
+	clusterRoleBinding *rbacv1.ClusterRoleBinding
 }
 
 var kontroller kanisterKontroller
@@ -69,10 +75,22 @@ func integrationSetup(t *test.T) {
 	}
 	cli, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		t.Fatalf("Integration test setup failure: Error createing kubeCli; err=%v", err)
+		t.Fatalf("Integration test setup failure: Error creating kubeCli; err=%v", err)
 	}
 	if err = createNamespace(cli, ns); err != nil {
-		t.Fatalf("Integration test setup failure: Error createing namespace; err=%v", err)
+		t.Fatalf("Integration test setup failure: Error creating namespace; err=%v", err)
+	}
+	sa, err := cli.CoreV1().ServiceAccounts(ns).Create(ctx, getServiceAccount(ns, controllerSA), metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Integration test setup failure: Error creating service account; err=%v", err)
+	}
+	clusterRole, err := cli.RbacV1().ClusterRoles().Create(ctx, getClusterRole(ns), metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Integration test setup failure: Error creating clusterrole; err=%v", err)
+	}
+	crb, err := cli.RbacV1().ClusterRoleBindings().Create(ctx, getClusterRoleBinding(sa, clusterRole), metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Integration test setup failure: Error creating clusterRoleBinding; err=%v", err)
 	}
 	// Set Controller namespace and service account
 	os.Setenv(kube.PodNSEnvVar, ns)
@@ -85,25 +103,39 @@ func integrationSetup(t *test.T) {
 	if err = ctlr.StartWatch(ctx, ns); err != nil {
 		t.Fatalf("Integration test setup failure: Error starting controller; err=%v", err)
 	}
+
 	kontroller.namespace = ns
 	kontroller.context = ctx
 	kontroller.cancel = cancel
 	kontroller.kubeCli = cli
+	kontroller.serviceAccount = sa
+	kontroller.clusterRole = clusterRole
+	kontroller.clusterRoleBinding = crb
 }
 
 func integrationCleanup(t *test.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextWaitTimeout)
+	defer cancel()
+
 	if kontroller.cancel != nil {
 		kontroller.cancel()
 	}
 	if kontroller.namespace != "" {
-		kontroller.kubeCli.CoreV1().Namespaces().Delete(context.TODO(), kontroller.namespace, metav1.DeleteOptions{})
+		kontroller.kubeCli.CoreV1().Namespaces().Delete(ctx, kontroller.namespace, metav1.DeleteOptions{})
+	}
+	if kontroller.clusterRoleBinding != nil && kontroller.clusterRoleBinding.Name != "" {
+		kontroller.kubeCli.RbacV1().ClusterRoleBindings().Delete(ctx, kontroller.clusterRoleBinding.Name, metav1.DeleteOptions{})
+	}
+	if kontroller.clusterRole != nil && kontroller.clusterRole.Name != "" {
+		kontroller.kubeCli.RbacV1().ClusterRoles().Delete(ctx, kontroller.clusterRole.Name, metav1.DeleteOptions{})
 	}
 }
 
 const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
-	appWaitTimeout = 3 * time.Minute
-	controllerSA   = "default"
+	appWaitTimeout     = 3 * time.Minute
+	controllerSA       = "kanister-sa"
+	contextWaitTimeout = 10 * time.Minute
 )
 
 type secretProfile struct {
@@ -436,4 +468,56 @@ func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {
 		return err == nil, nil
 	})
 	return err
+}
+
+func getServiceAccount(namespace, name string) *v1.ServiceAccount {
+	return &v1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+}
+
+func getClusterRole(namespace string) *rbacv1.ClusterRole {
+	return &rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRole",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace + "-pod-reader",
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				Verbs:     []string{"get", "create"},
+				APIGroups: []string{""},
+				Resources: []string{"pods", "pods/exec"},
+			},
+		},
+	}
+}
+
+func getClusterRoleBinding(sa *v1.ServiceAccount, role *rbacv1.ClusterRole) *rbacv1.ClusterRoleBinding {
+	return &rbacv1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRoleBinding",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: sa.Namespace + "-global-pod-reader",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      sa.Name,
+				Namespace: sa.Namespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     role.Name,
+		},
+	}
 }
