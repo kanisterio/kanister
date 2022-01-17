@@ -41,7 +41,6 @@ func Do(bp *crv1alpha1.Blueprint) error {
 			}
 			utils.PrintStage(fmt.Sprintf("Validation of phase %s of action %s", phase.Name(), name), utils.Pass)
 		}
-
 	}
 
 	return nil
