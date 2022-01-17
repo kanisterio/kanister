@@ -29,16 +29,16 @@ import (
 )
 
 const (
-	// CreateCSISnapshotTestNamespace is the namespace where testing is done
-	CreateCSISnapshotTestNamespace = "test-create-csi-snapshot"
-	// CreateCSISnapshotPVCName is the name of the PVC that will be captured
-	CreateCSISnapshotPVCName = "test-pvc"
-	// CreateCSISnapshotSnapshotName is the name of the snapshot
-	CreateCSISnapshotSnapshotName = "test-snapshot"
-	// CreateCSISnapshotSnapshotClass is the fake snapshot class
-	CreateCSISnapshotSnapshotClass = "test-snapshot-class"
-	// CreateCSISnapshotStorageClass is the fake storage class
-	CreateCSISnapshotStorageClass = "test-storage-class"
+	// testCreateNamespace is the namespace where testing is done
+	testCreateNamespace = "test-create-csi-snapshot"
+	// pvcName is the name of the PVC that will be captured
+	pvcName = "test-pvc"
+	// snapshotName is the name of the snapshot
+	snapshotName = "test-snapshot"
+	// snapshotClass is the fake snapshot class
+	snapshotClass = "test-snapshot-class"
+	// storageClass is the fake storage class
+	storageClass = "test-storage-class"
 )
 
 type CreateCSISnapshotTestSuite struct {
@@ -52,11 +52,11 @@ type CreateCSISnapshotTestSuite struct {
 var _ = Suite(&CreateCSISnapshotTestSuite{})
 
 func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *C) {
-	testSuite.volumeSnapshotClass = CreateCSISnapshotSnapshotClass
-	testSuite.storageClass = CreateCSISnapshotStorageClass
-	testSuite.pvcName = CreateCSISnapshotPVCName
-	testSuite.snapName = CreateCSISnapshotSnapshotName
-	testSuite.namespace = CreateCSISnapshotTestNamespace
+	testSuite.volumeSnapshotClass = snapshotClass
+	testSuite.storageClass = storageClass
+	testSuite.pvcName = pvcName
+	testSuite.snapName = snapshotName
+	testSuite.namespace = testCreateNamespace
 }
 
 func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *C) {
@@ -83,27 +83,24 @@ func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *C) {
 			GroupVersion: "snapshot.storage.k8s.io/v1",
 		},
 	} {
+		ctx := context.Background()
 		fakeCli := fake.NewSimpleClientset()
 		fakeCli.Resources = []*metav1.APIResourceList{apiResourceList}
 
-		_, err := fakeCli.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
+		_, err := fakeCli.CoreV1().Namespaces().Create(ctx, &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testSuite.namespace}}, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
 		scheme := runtime.NewScheme()
 		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
 		c.Assert(err, IsNil)
 
-		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(context.TODO(), getPVCManifest(testSuite.pvcName, testSuite.storageClass), metav1.CreateOptions{})
+		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(ctx, getPVCManifest(testSuite.pvcName, testSuite.storageClass), metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
-		err = fakeSnapshotter.Create(context.Background(), testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, nil)
+		_, err = createCSISnapshot(ctx, fakeSnapshotter, testSuite.snapName, testSuite.namespace, testSuite.pvcName, testSuite.volumeSnapshotClass, false, nil)
 		c.Assert(err, IsNil)
 
-		vs, err := fakeSnapshotter.Get(context.Background(), testSuite.snapName, testSuite.namespace)
-		c.Assert(err, IsNil)
-		c.Assert(vs.Name, Equals, testSuite.snapName)
-
-		err = fakeCli.CoreV1().Namespaces().Delete(context.Background(), testSuite.namespace, metav1.DeleteOptions{})
+		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
 }
