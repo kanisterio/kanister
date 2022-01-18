@@ -1328,6 +1328,52 @@ Example:
           snapshotClass: do-block-storage
 
 
+RestoreCSISnapshot
+------------------
+
+This function restores a new PersistentVolumeClaim using CSI VolumeSnapshot.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, Yes, `string`, name of the VolumeSnapshot
+   `pvc`, Yes, `string`, name of the new PVC
+   `namespace`, Yes, `string`, namespace of the VolumeSnapshot and resultant PersistentVolumeClaim
+   `storageClass`, Yes, `string`, name of the StorageClass
+   `restoreSize`, Yes, `string`, required memory size to restore PVC
+   `accessModes`, No, `[]string`, access modes for the underlying PV (Default is ``[]{"ReadWriteOnce"}```)
+   `volumeMode`, No, `string`, mode of volume (Default is ``"Filesystem"```)
+   `labels`, No, `map[string]string`, optional labels for the PersistentVolumeClaim
+
+.. note::
+    Output artifact ``snapshotInfo`` from ``CreateCSISnapshot`` function can be used as an input artifact in this function.
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    restore:
+      inputArtifactNames:
+      - snapshotInfo
+      phases:
+      - func: RestoreCSISnapshot
+        name: restoreCSISnapshot
+        args:
+          name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.name }}"
+          pvc: "{{ .ArtifactsIn.snapshotInfo.KeyValue.pvc }}-restored"
+          namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
+          storageClass: do-block-storage
+          restoreSize: "{{ .ArtifactsIn.snapshotInfo.KeyValue.restoreSize }}"
+          accessModes: ["ReadWriteOnce"]
+          volumeMode: "Filesystem"
+
+
 Registering Functions
 ---------------------
 
