@@ -85,6 +85,22 @@ func (s *ExecSuite) TestStderr(c *C) {
 		c.Assert(stdout, Equals, "")
 		c.Assert(stderr, Equals, "hello")
 	}
+
+	cmd = []string{"sh", "-c", "echo -n hello && exit 1"}
+	for _, cs := range s.pod.Status.ContainerStatuses {
+		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+		c.Assert(err, NotNil)
+		c.Assert(stdout, Equals, "hello")
+		c.Assert(stderr, Equals, "")
+	}
+
+	cmd = []string{"sh", "-c", "count=0; while true; do printf $count; let count=$count+1; if [ $count -eq 6 ]; then exit 1; fi; done"}
+	for _, cs := range s.pod.Status.ContainerStatuses {
+		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+		c.Assert(err, NotNil)
+		c.Assert(stdout, Equals, "012345")
+		c.Assert(stderr, Equals, "")
+	}
 }
 
 func (s *ExecSuite) TestExecEcho(c *C) {

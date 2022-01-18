@@ -21,7 +21,6 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -65,17 +64,14 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 	if err != nil {
 		return "", "", err
 	}
-	o, e := execStream(kubeCli, config, options)
+	o, e, errCh := execStream(kubeCli, config, options)
 
 	var stdout []byte
 	var oerr error
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
 		stdout, oerr = ioutil.ReadAll(o)
-		if oerr != nil {
-			log.Error("Failed to read stderr:", oerr.Error())
-		}
 		wg.Done()
 	}()
 
@@ -83,16 +79,24 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 	var eerr error
 	go func() {
 		stderr, eerr = ioutil.ReadAll(e)
-		if err != nil {
-			log.Error("Failed to read stderr:", eerr.Error())
-		}
+		wg.Done()
+	}()
+	go func() {
+		err = <-errCh
 		wg.Done()
 	}()
 	wg.Wait()
+	// Add more info to err
+	if oerr != nil {
+		err = errors.Wrapf(err, "Failed to read stdout: %s", oerr.Error())
+	}
+	if eerr != nil {
+		err = errors.Wrapf(err, "Failed to read stderr: %s", eerr.Error())
+	}
 	return string(stdout), string(stderr), errors.Wrap(err, "Failed to exec command in pod")
 }
 
-func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options ExecOptions) (*io.PipeReader, *io.PipeReader) {
+func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options ExecOptions) (*io.PipeReader, *io.PipeReader, chan error) {
 	const tty = false
 	req := kubeCli.CoreV1().RESTClient().Post().
 		Resource("pods").
@@ -123,7 +127,7 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 		_ = pwo.CloseWithError(err)
 		_ = pwe.CloseWithError(err)
 	}()
-	return pro, pre
+	return pro, pre, errCh
 }
 
 func execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {
