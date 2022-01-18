@@ -254,6 +254,8 @@ func (m *MssqlDB) getDeploymentObj() (*appsv1.Deployment, error) {
 kind: Deployment
 metadata:
   name: mssql-deployment
+  labels:
+    app: mssql
 spec:
   replicas: 1
   selector:
