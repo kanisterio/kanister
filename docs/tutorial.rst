@@ -563,3 +563,19 @@ and manually updating the action set to use artifacts created by the
 previous action set can be cumbersome. In situations like this, it is
 useful to instead use ``kanctl``. To learn how to leverage ``kanctl`` to
 create action sets, see :ref:`architecture` .
+
+Blueprint Development
+=====================
+
+To start with Blueprint development we need to be aware about some terms such as Actions, Phase, KanisterFunctions, Objects.
+
+You need to define action for your application, For example backup, restore, delete.
+
+Each action consists of phases and each phase executes a :doc:`Kanister Function </functions>`
+which we specify through `func` field inside the phase. We can find the 
+list of :doc:`Existing Functions </functions>` here.
+
+Now each phase can consume or create Artifacts. Artifacts are generally used to reference backup data.  
+
+Artifacts created by phases in an action are Output Artifacts. Artifacts consumed by an action are Input Artifacts.
+
