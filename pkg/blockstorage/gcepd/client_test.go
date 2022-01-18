@@ -16,8 +16,10 @@ package gcepd
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	. "gopkg.in/check.v1"
@@ -56,4 +58,28 @@ func (s *ClientSuite) GetEnvOrSkip(c *C, varName string) string {
 		c.Skip("Required environment variable " + varName + " is not set")
 	}
 	return v
+}
+
+func (s ClientSuite) TestGetRegions(c *C) {
+	ctx := context.Background()
+	config := map[string]string{}
+	creds := s.GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
+
+	// create provider with regoin
+	config[blockstorage.GoogleCloudCreds] = creds
+	bsp, err := NewProvider(config)
+	c.Assert(err, IsNil)
+	gpds := bsp.(*GpdStorage)
+
+	// get zones with other region
+	zones, err := gpds.FromRegion(ctx, "us-east1")
+	fmt.Println(zones)
+	c.Assert(err, IsNil)
+	for _, zone := range zones {
+		c.Assert(strings.Contains(zone, "us-east1"), Equals, true)
+	}
+
+	regions, err := gpds.GetRegions(ctx)
+	c.Assert(err, IsNil)
+	c.Assert(regions, NotNil)
 }

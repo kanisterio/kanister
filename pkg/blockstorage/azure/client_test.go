@@ -16,6 +16,8 @@ package azure
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
@@ -51,4 +53,31 @@ func (s *ClientSuite) TestClient(c *C) {
 	c.Assert(azCli.SnapshotsClient, NotNil)
 	_, err = azCli.DisksClient.List(context.Background())
 	c.Assert(err, IsNil)
+}
+
+func (s ClientSuite) TestGetRegions(c *C) {
+	ctx := context.Background()
+	config := map[string]string{}
+	config[blockstorage.AzureSubscriptionID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureSubscriptionID)
+	config[blockstorage.AzureTenantID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureTenantID)
+	config[blockstorage.AzureCientID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCientID)
+	config[blockstorage.AzureClentSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClentSecret)
+	config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
+	// config[blockstorage.AzureCloudEnviornmentID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCloudEnviornmentID)
+
+	bsp, err := NewProvider(ctx, config)
+	c.Assert(err, IsNil)
+	ads := bsp.(*AdStorage)
+
+	// get zones with other region
+	zones, err := ads.FromRegion(ctx, "eastus")
+	fmt.Println(zones)
+	c.Assert(err, IsNil)
+	for _, zone := range zones {
+		c.Assert(strings.Contains(zone, "eastus"), Equals, true)
+	}
+
+	regions, err := ads.GetRegions(ctx)
+	c.Assert(err, IsNil)
+	c.Assert(regions, NotNil)
 }
