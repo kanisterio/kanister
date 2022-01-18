@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	// value of testDeleteNamespace is the namespace where testing is done
+	// testDeleteNamespace specifies the namespace where testing is done
 	testDeleteNamespace = "test-delete-csi-snapshot"
 )
 
