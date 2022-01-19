@@ -567,15 +567,22 @@ create action sets, see :ref:`architecture` .
 Blueprint Development
 =====================
 
-To start with Blueprint development we need to be aware about some terms such as Actions, Phase, KanisterFunctions, Objects.
+To start with Blueprint development we need to be aware about some terms such as
+Actions, Phase, KanisterFunctions, Objects.
 
-You need to define action for your application, For example backup, restore, delete.
+Define and Add actions for the blueprint as per your blueprints. Each action performs a
+set of task. For example backup, restore, delete.
 
-Each action consists of phases and each phase executes a :doc:`Kanister Function </functions>`
-which we specify through `func` field inside the phase. We can find the 
-list of :doc:`Existing Functions </functions>` here.
+Each action consists of phases and each phase executes a
+:doc:`Kanister Function </functions>`
+which we specify through `func` field inside the phase. We can find the
+list of :doc:`Existing Functions </functions>` supported by kanister here.
 
-Now each phase can consume or create Artifacts. Artifacts are generally used to reference backup data.  
+Arguments to the functions can be provided through `args` field.
 
-Artifacts created by phases in an action are Output Artifacts. Artifacts consumed by an action are Input Artifacts.
-
+Each phase can consume or create :ref:`Artifacts <tutorial>`. Artifacts
+are generally used to reference backed up data. For example, If there is
+backup action performed on S3 then the artifact
+will hold reference to that data.
+Artifacts created by phases in an action are Output Artifacts.
+Artifacts consumed by an action are Input Artifacts.
