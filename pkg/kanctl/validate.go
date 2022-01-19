@@ -15,6 +15,7 @@
 package kanctl
 
 import (
+	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -25,11 +26,13 @@ type validateParams struct {
 	filename             string
 	namespace            string
 	schemaValidationOnly bool
+	functionVersion      string
 }
 
 const (
 	nameFlag                 = "name"
 	filenameFlag             = "filename"
+	funcVersionFlag          = "functionVersion"
 	resourceNamespaceFlag    = "resource-namespace"
 	schemaValidationOnlyFlag = "schema-validation-only"
 )
@@ -47,6 +50,7 @@ func newValidateCommand() *cobra.Command {
 	cmd.Flags().StringP(filenameFlag, "f", "", "yaml or json file of the custom resource to validate")
 	cmd.Flags().String(resourceNamespaceFlag, "default", "namespace of the custom resource. Used when validating resource specified using --name.")
 	cmd.Flags().Bool(schemaValidationOnlyFlag, false, "if set, only schema of resource will be validated")
+	cmd.Flags().StringP(funcVersionFlag, "v", kanister.DefaultVersion, "kanister function version, e.g., v0.0.0")
 	return cmd
 }
 
@@ -79,11 +83,17 @@ func extractValidateParams(cmd *cobra.Command, args []string) (*validateParams, 
 	}
 	rns, _ := cmd.Flags().GetString(resourceNamespaceFlag)
 	schemaValidationOnly, _ := cmd.Flags().GetBool(schemaValidationOnlyFlag)
+	funcVersion, err := cmd.Flags().GetString(funcVersionFlag)
+	if err != nil {
+		return nil, err
+	}
+
 	return &validateParams{
 		resourceKind:         resourceKind,
 		name:                 name,
 		filename:             filename,
 		namespace:            rns,
 		schemaValidationOnly: schemaValidationOnly,
+		functionVersion:      funcVersion,
 	}, nil
 }

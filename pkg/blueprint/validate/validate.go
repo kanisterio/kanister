@@ -24,10 +24,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
-func Do(bp *crv1alpha1.Blueprint) error {
+func Do(bp *crv1alpha1.Blueprint, funcVersion string) error {
 	for name, action := range bp.Actions {
 		// GetPhases also checks if the function names referred in the action are correct
-		phases, err := kanister.GetPhases(*bp, name, kanister.DefaultVersion, param.TemplateParams{})
+		phases, err := kanister.GetPhases(*bp, name, funcVersion, param.TemplateParams{})
 		if err != nil {
 			utils.PrintStage(fmt.Sprintf("validation of action %s", name), utils.Fail)
 			return err

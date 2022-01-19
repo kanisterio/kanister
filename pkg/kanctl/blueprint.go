@@ -32,5 +32,5 @@ func performBlueprintValidation(p *validateParams) error {
 		return err
 	}
 
-	return validate.Do(bp)
+	return validate.Do(bp, p.functionVersion)
 }
