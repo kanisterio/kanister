@@ -9,7 +9,7 @@ This document explains how Kanister leverages the use of CSI VolumeSnapshots to 
 
 - Helm 3 installed
 - Kubernetes 1.16+ with Beta APIs enabled
-- Kanister controller version 0.71.0 installed in your cluster, let's assume in Namespace `kanister`
+- Kanister controller version 0.72.0 installed in the cluster, let's assume in namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 - VolumeSnapshots should be supported by CSI Driver and respective CRDs should be available
 
@@ -24,7 +24,7 @@ $ helm repo add bitnami https://charts.bitnami.com/bitnami
 # Update your local chart repository
 $ helm repo update
 
-# Install the MySQL database (Helm Version 3)
+# Install the MySQL database
 $ kubectl create namespace mysql
 $ helm install mysql-release bitnami/mysql --namespace mysql \
     --set auth.rootPassword='asd#45@mysqlEXAMPLE' \
@@ -33,13 +33,13 @@ $ helm install mysql-release bitnami/mysql --namespace mysql \
 
 Above command deploys a MySQL instance in the `mysql` namespace.
 
-To retrieve your root password run the following command.
+Retrieve the root password with the following command.
 
 ```bash
 $ kubectl get secret mysql-release --namespace mysql -o jsonpath="{.data.mysql-root-password}" | base64 --decode`
 ```
 
-> **Tip**: List all releases using `helm list --all-namespaces`, using Helm Version 3.
+> **Tip**: List all releases using `helm list --all-namespaces`.
 
 ## Create Application data
 
@@ -83,9 +83,9 @@ mysql> SELECT * FROM employees;
 
 ### Create Blueprint
 
-Create Blueprint in the same namespace as the Kanister controller.
+Create the Blueprint in the `kanister` namespace.
 
-> **Note**:  We have set up the Kubernetes cluster on DigitalOcean. Hence, `snapshotClass` and `storageClass` in the `./mysql-csi-snapshot-blueprint.yaml` file is set to `do-block-storage`. Please correct these arguments as per your cluster setup before creating the blueprint.
+> **Note**:  This example uses a Kubernetes cluster on DigitalOcean. Therefore the `snapshotClass` and `storageClass` in the `./mysql-csi-snapshot-blueprint.yaml` file are set to `do-block-storage`. Change the arguments appropriately before creating the blueprint.
 
 ```bash
 $ kubectl create -f ./mysql-csi-snapshot-blueprint.yaml -n kanister
@@ -186,7 +186,7 @@ Once the patch is complete and MySQL pod is set to “Running“, you can check 
 
 ## Verify the restored application data
 
-To verify if restore was successful, you need to connect to the MySQL CLI and query the `test` database that was created in [this](https://github.com/kanisterio/kanister/tree/master/examples/stable/mysql-csi-snapshot#create-application-data) step.
+To verify if the restore was successful, connect to the MySQL CLI and query the `test` database that was created in [this](https://github.com/kanisterio/kanister/tree/master/examples/stable/mysql-csi-snapshot#create-application-data) step.
 
 ```bash
 # Enter into a shell inside MySQL's pod
@@ -221,8 +221,6 @@ mysql> SELECT * FROM employees;
 1 row in set (0.00 sec)
 ```
 
-Thus, with the help of Kanister, we have successfully backed up our MySQL application and recovered it after a disaster.
-
 ## Delete the Artifacts
 
 The CSI VolumeSnapshot created by the backup action can be cleaned up using the following command.
@@ -243,7 +241,7 @@ $ kubectl --namespace kanister describe actionset delete-backup-glptq-cq6bw
 To uninstall/delete the `mysql-release` deployment.
 
 ```bash
-# Helm Version 3
+# Delete the MySQL database
 $ helm delete mysql-release -n mysql
 
 # Remove mysql namespace
