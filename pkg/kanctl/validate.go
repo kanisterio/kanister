@@ -63,7 +63,7 @@ func performValidation(cmd *cobra.Command, args []string) error {
 	case "blueprint":
 		return performBlueprintValidation(p)
 	default:
-		return errors.Errorf("expected profile.. got %s. Not supported", p.resourceKind)
+		return errors.Errorf("resource %s is not supported for validate subcommand", p.resourceKind)
 	}
 }
 

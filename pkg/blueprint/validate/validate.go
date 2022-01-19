@@ -29,17 +29,17 @@ func Do(bp *crv1alpha1.Blueprint) error {
 		// GetPhases also checks if the function names referred in the action are correct
 		phases, err := kanister.GetPhases(*bp, name, kanister.DefaultVersion, param.TemplateParams{})
 		if err != nil {
-			utils.PrintStage(fmt.Sprintf("Validation of action %s, error %s", name, err.Error()), utils.Fail)
+			utils.PrintStage(fmt.Sprintf("validation of action %s", name), utils.Fail)
 			return err
 		}
 
 		for i, phase := range phases {
 			// validate function's mandatory arguments
 			if err := phase.Validate(action.Phases[i].Args); err != nil {
-				utils.PrintStage(fmt.Sprintf("Validation of phase %s of action %s, error %s", phase.Name(), name, err.Error()), utils.Fail)
+				utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", phase.Name(), name), utils.Fail)
 				return err
 			}
-			utils.PrintStage(fmt.Sprintf("Validation of phase %s of action %s", phase.Name(), name), utils.Pass)
+			utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", phase.Name(), name), utils.Pass)
 		}
 	}
 

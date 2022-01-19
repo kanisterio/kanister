@@ -140,7 +140,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 			err:         NotNil,
 		},
 	} {
-		bp := Blueprint()
+		bp := blueprint()
 		bp.Actions["backup"].Phases = tc.phases
 		err := Do(bp)
 		if err != nil {
@@ -150,7 +150,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 	}
 }
 
-func Blueprint() *crv1alpha1.Blueprint {
+func blueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"backup": {
