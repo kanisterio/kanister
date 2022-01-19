@@ -567,22 +567,31 @@ create action sets, see :ref:`architecture` .
 Blueprint Development
 =====================
 
-To start with Blueprint development we need to be aware about some terms such as
+To start with Blueprint development we need to be aware of some terms such as
 Actions, Phase, KanisterFunctions, Objects.
 
-Define and Add actions for the blueprint as per your blueprints. Each action performs a
-set of task. For example backup, restore, delete.
+Define and add actions for the blueprint as per your application. Each action performs a
+set of tasks. For example, backup, restore and delete.
 
 Each action consists of phases and each phase executes a
 :doc:`Kanister Function </functions>`
 which we specify through `func` field inside the phase. We can find the
-list of :doc:`Existing Functions </functions>` supported by kanister here.
+list of :doc:`Existing Functions </functions>` supported by Kanister here.
 
 Arguments to the functions can be provided through `args` field.
 
 Each phase can consume or create :ref:`Artifacts <tutorial>`. Artifacts
-are generally used to reference backed up data. For example, If there is
+are generally used to reference backed-up data. For example, If there is
 backup action performed on S3 then the artifact
-will hold reference to that data.
+will hold a reference to that data.
 Artifacts created by phases in an action are Output Artifacts.
 Artifacts consumed by an action are Input Artifacts.
+
+An action can also consume information from Kubernetes objects
+such as :ref:`ConfigMap <tutorial>` and :ref:`Secret <tutorial>`
+
+To consume data from objects we need to reference it using `configMapNames`
+and `secretNames` fields in an action.
+
+To access ConfigMap, Secrets, Artifacts data in an action in Blueprint,
+we need to use :ref:`templates`.
