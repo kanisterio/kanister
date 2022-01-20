@@ -20,6 +20,7 @@ import (
 
 	. "gopkg.in/check.v1"
 
+	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
@@ -142,7 +143,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 	} {
 		bp := blueprint()
 		bp.Actions["backup"].Phases = tc.phases
-		err := Do(bp)
+		err := Do(bp, kanister.DefaultVersion)
 		if err != nil {
 			c.Assert(strings.Contains(err.Error(), tc.errContains), Equals, true)
 		}
