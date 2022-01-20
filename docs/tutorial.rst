@@ -180,6 +180,8 @@ The execution transitions of an ActionSet can be seen by using the following com
 In case of an action failure, the Kanister controller will emit failure events to both
 the ActionSet and its associated Blueprint.
 
+.. _consumingConfigMap:
+
 Consuming ConfigMaps
 ====================
 
@@ -273,6 +275,8 @@ a reference to the ConfigMap we just created.
 
 You can check the controller logs to see if your bucket path rendered
 successfully.
+
+.. _consumingSecret:
 
 Consuming Secrets
 =================
@@ -377,6 +381,8 @@ Create a new ActionSet that has the name-to-Secret reference in its action's
           name: aws-creds
           namespace: kanister
   EOF
+
+.. _artifacts:
 
 Artifacts
 =========
@@ -567,20 +573,20 @@ create action sets, see :ref:`architecture` .
 Blueprint Development
 =====================
 
-To start with Blueprint development we need to be aware of some terms such as
-Actions, Phase, KanisterFunctions, Objects.
+To start with Blueprint Development we need to be aware of some terms such as
+Actions, Phase, KanisterFunctions, Objects which has already been covered in
+this tutorial.
 
-Define and add actions for the blueprint as per your application. Each action performs a
-set of tasks. For example, backup, restore and delete.
+Define and add ``actions`` for the blueprint as per your application. Each action
+performs a set of tasks. For example, backup, restore, and delete.
 
-Each action consists of phases and each phase executes a
-:doc:`Kanister Function </functions>`
-which we specify through `func` field inside the phase. We can find the
-list of :doc:`Existing Functions </functions>` supported by Kanister here.
+``actions`` in the blueprint consists of ``phases`` and each phase executes a
+:ref:`functions`
+which we specify through ``func`` field inside the phase. We can find the
+list of :ref:`existingfunctions` supported by Kanister here. Arguments to the
+functions can be provided through ``args`` field.
 
-Arguments to the functions can be provided through `args` field.
-
-Each phase can consume or create :ref:`Artifacts <tutorial>`. Artifacts
+Each phase can consume or create :ref:`artifacts`. Artifacts
 are generally used to reference backed-up data. For example, If there is
 backup action performed on S3 then the artifact
 will hold a reference to that data.
@@ -588,10 +594,76 @@ Artifacts created by phases in an action are Output Artifacts.
 Artifacts consumed by an action are Input Artifacts.
 
 An action can also consume information from Kubernetes objects
-such as :ref:`ConfigMap <tutorial>` and :ref:`Secret <tutorial>`
+such as :ref:`Secret<consumingSecret>` and :ref:`ConfigMap<consumingConfigMap>`
 
-To consume data from objects we need to reference it using `configMapNames`
-and `secretNames` fields in an action.
+To consume data from objects we need to reference it using ``configMapNames``
+and ``secretNames`` fields in an action.
 
-To access ConfigMap, Secrets, Artifacts data in an action in Blueprint,
-we need to use :ref:`templates`.
+We use :ref:`templates` to access ConfigMap, Secrets, Artifacts data in
+the blueprint. See the example below.
+
+Here in this blueprint ``time-log-bp`` we have defined two actions
+``backup`` and ``restore``
+
+The ``backup`` action defines `backupToS3` phase
+which executes the ``KubeExec`` function.
+The function consumes data from `location` ConfigMap and `aws` Secret
+and takes the backup of the time log and pushes it to S3.
+The reference of S3 location is then passed as an Output Artifact `timelog`.
+
+``restore`` action restores the older time log from the `path` provided in
+the Output Artifact. The phase `restoreFromS3` executes the ``KubeExec`` function
+and consumes information from `aws` Secret and Input Artifact `timelog`.
+
+.. code-block:: yaml
+
+  cat <<EOF | kubectl apply -f -
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: Blueprint
+  metadata:
+    name: time-log-bp
+    namespace: kanister
+  actions:
+    backup:
+      configMapNames:
+      - location
+      secretNames:
+      - aws
+      outputArtifacts:
+        timeLog:
+          keyValue:
+            path: '{{ .ConfigMaps.location.Data.path }}/time-log/'
+      phases:
+        - func: KubeExec
+          name: backupToS3
+          args:
+            namespace: "{{ .Deployment.Namespace }}"
+            pod: "{{ index .Deployment.Pods 0 }}"
+            container: test-container
+            command:
+              - sh
+              - -c
+              - |
+                AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
+                AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+                aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path }}/time-log/
+    restore:
+      secretNames:
+      - aws
+      inputArtifactNames:
+      - timeLog
+      phases:
+      - func: KubeExec
+        name: restoreFromS3
+        args:
+          namespace: "{{ .Deployment.Namespace }}"
+          pod: "{{ index .Deployment.Pods 0 }}"
+          container: test-container
+          command:
+            - sh
+            - -c
+            - |
+              AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
+              AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
+              aws s3 cp {{ .ArtifactsIn.timeLog.KeyValue.path | quote }} /var/log/time.log
+  EOF

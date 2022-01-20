@@ -26,6 +26,8 @@ a ``BlueprintPhase`` is used to lookup a Kanister Function.  After
 
 The ``RequiredArgs`` method returns the list of argument names that are required.
 
+.. _existingfunctions:
+
 Existing Functions
 ==================
 
