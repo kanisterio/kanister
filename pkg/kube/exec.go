@@ -124,8 +124,8 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 	go func() {
 		err := execute("POST", req.URL(), config, options.Stdin, pwo, pwe, tty)
 		errCh <- err
-		_ = pwo.CloseWithError(err)
-		_ = pwe.CloseWithError(err)
+		_ = pwo.Close()
+		_ = pwe.Close()
 	}()
 	return pro, pre, errCh
 }
