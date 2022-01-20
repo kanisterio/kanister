@@ -217,6 +217,20 @@ var _ = Suite(&RDSPostgreSQLSnap{
 	},
 })
 
+type MSSQL struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MSSQL{
+	IntegrationSuite{
+		name:      "mssql",
+		namespace: "mssql-test",
+		app:       app.NewMssqlDB("mssql"),
+		bp:        app.NewBlueprint("mssql", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
 // OpenShift apps for version 3.11
 // Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
 type MysqlDBDepConfig struct {
