@@ -16,10 +16,8 @@ rules:
   - ""
   resources:
   - events
-  - persistentvolumeclaims
   verbs:
   - create
-  - delete
 - apiGroups:
   - apiextensions.k8s.io
   resources:
