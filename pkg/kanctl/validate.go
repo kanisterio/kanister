@@ -83,10 +83,7 @@ func extractValidateParams(cmd *cobra.Command, args []string) (*validateParams, 
 	}
 	rns, _ := cmd.Flags().GetString(resourceNamespaceFlag)
 	schemaValidationOnly, _ := cmd.Flags().GetBool(schemaValidationOnlyFlag)
-	funcVersion, err := cmd.Flags().GetString(funcVersionFlag)
-	if err != nil {
-		return nil, err
-	}
+	funcVersion, _ := cmd.Flags().GetString(funcVersionFlag)
 
 	return &validateParams{
 		resourceKind:         resourceKind,
