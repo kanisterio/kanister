@@ -30,7 +30,9 @@ SHORT_APPS="^PostgreSQL$|^PITRPostgreSQL|^MySQL$|Elasticsearch|^MongoDB$|Maria|^
 OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
 OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"
 OC_APPS4_5="MysqlDBDepConfig4_5|MongoDBDepConfig4_5|PostgreSQLDepConfig4_5"
-OC_APPS4_7="MysqlDBDepConfig4_7|MongoDBDepConfig4_7|PostgreSQLDepConfig4_7"
+# MongoDB is not provided as external DB template in release 4.9 anymore
+# https://github.com/openshift/origin/commit/4ea9e6c5961eb815c200df933eee30c48a5c9166
+OC_APPS4_9="MysqlDBDepConfig4_9|PostgreSQLDepConfig4_9"
 
 check_dependencies() {
     # Check if minio is already deployed
@@ -85,8 +87,8 @@ case "${1}" in
             "4.5")
                 TEST_APPS=${OC_APPS4_5}
                 ;;
-            "4.7")
-                TEST_APPS=${OC_APPS4_7}
+            "4.9")
+                TEST_APPS=${OC_APPS4_9}
                 ;;
             *)
                 usage
