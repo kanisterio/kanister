@@ -105,7 +105,6 @@ func execKubeOperation(dynCli dynamic.Interface, op kube.Operation, namespace, s
 		return kubeopsOp.Create(strings.NewReader(spec), namespace)
 	case kube.DeleteOperation:
 		if objRef.Name == "" ||
-			objRef.Group == "" ||
 			objRef.APIVersion == "" ||
 			objRef.Resource == "" {
 			return nil, errors.New(fmt.Sprintf("missing one or more required fields name/namespace/group/apiVersion/resource in objectReference for %s operation", kube.DeleteOperation))
