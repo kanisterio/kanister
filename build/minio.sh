@@ -63,7 +63,7 @@ usage() {
 Usage: ${0} <operation>
 Where operation is one of the following:
   install_minio: installs minio on k8s cluster
-  uninstall_minio: uninstalls minio 
+  uninstall_minio: uninstalls minio
 EOM
     exit 1
 }

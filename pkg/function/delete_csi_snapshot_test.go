@@ -29,37 +29,31 @@ import (
 )
 
 const (
-	// testCreateNamespace is the namespace where testing is done
-	testCreateNamespace = "test-create-csi-snapshot"
-	// pvcName is the name of the PVC that will be captured
-	pvcName = "test-pvc"
-	// snapshotName is the name of the snapshot
-	snapshotName = "test-snapshot"
-	// snapshotClass is the fake snapshot class
-	snapshotClass = "test-snapshot-class"
-	// storageClass is the fake storage class
-	storageClass = "test-storage-class"
+	// testDeleteNamespace specifies the namespace where testing is done
+	testDeleteNamespace = "test-delete-csi-snapshot"
 )
 
-type CreateCSISnapshotTestSuite struct {
+type DeleteCSISnapshotTestSuite struct {
 	snapName            string
 	pvcName             string
+	newPVCName          string
 	namespace           string
 	volumeSnapshotClass string
 	storageClass        string
 }
 
-var _ = Suite(&CreateCSISnapshotTestSuite{})
+var _ = Suite(&DeleteCSISnapshotTestSuite{})
 
-func (testSuite *CreateCSISnapshotTestSuite) SetUpSuite(c *C) {
+func (testSuite *DeleteCSISnapshotTestSuite) SetUpSuite(c *C) {
 	testSuite.volumeSnapshotClass = snapshotClass
 	testSuite.storageClass = storageClass
-	testSuite.pvcName = pvcName
+	testSuite.pvcName = originalPVCName
+	testSuite.newPVCName = newPVCName
 	testSuite.snapName = snapshotName
-	testSuite.namespace = testCreateNamespace
+	testSuite.namespace = testDeleteNamespace
 }
 
-func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *C) {
+func (testSuite *DeleteCSISnapshotTestSuite) TestDeleteCSISnapshot(c *C) {
 	for _, apiResourceList := range []*metav1.APIResourceList{
 		{
 			TypeMeta: metav1.TypeMeta{
@@ -94,30 +88,50 @@ func (testSuite *CreateCSISnapshotTestSuite) TestCreateCSISnapshot(c *C) {
 		fakeSnapshotter, err := snapshot.NewSnapshotter(fakeCli, dynfake.NewSimpleDynamicClient(scheme))
 		c.Assert(err, IsNil)
 
-		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(ctx, getPVCManifest(testSuite.pvcName, testSuite.storageClass), metav1.CreateOptions{})
+		originalPVC := &v1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: testSuite.pvcName,
+			},
+			Spec: v1.PersistentVolumeClaimSpec{
+				StorageClassName: &testSuite.storageClass,
+				AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+				Resources: v1.ResourceRequirements{
+					Requests: v1.ResourceList{
+						v1.ResourceStorage: resource.MustParse("1Gi"),
+					},
+				},
+			},
+		}
+		_, err = fakeCli.CoreV1().PersistentVolumeClaims(testSuite.namespace).Create(ctx, originalPVC, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 
-		_, err = createCSISnapshot(ctx, fakeSnapshotter, testSuite.snapName, testSuite.namespace, testSuite.pvcName, testSuite.volumeSnapshotClass, false, nil)
+		err = fakeSnapshotter.Create(ctx, testSuite.snapName, testSuite.namespace, testSuite.pvcName, &testSuite.volumeSnapshotClass, false, nil)
 		c.Assert(err, IsNil)
+
+		vs, err := fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
+		c.Assert(err, IsNil)
+		c.Assert(vs.Name, Equals, testSuite.snapName)
+
+		restoreArgs := restoreCSISnapshotArgs{
+			Name:         testSuite.snapName,
+			PVC:          testSuite.newPVCName,
+			Namespace:    testSuite.namespace,
+			StorageClass: testSuite.storageClass,
+			RestoreSize:  originalPVC.Spec.Resources.Requests.Storage(),
+			AccessModes:  originalPVC.Spec.AccessModes,
+			Labels:       nil,
+		}
+		newPVC := newPVCManifest(restoreArgs)
+		_, err = fakeCli.CoreV1().PersistentVolumeClaims(restoreArgs.Namespace).Create(ctx, newPVC, metav1.CreateOptions{})
+		c.Assert(err, IsNil)
+		c.Assert(newPVC.Name, Equals, testSuite.newPVCName)
+
+		_, err = deleteCSISnapshot(ctx, fakeSnapshotter, testSuite.snapName, testSuite.namespace)
+		c.Assert(err, IsNil)
+		_, err = fakeSnapshotter.Get(ctx, testSuite.snapName, testSuite.namespace)
+		c.Assert(err, NotNil)
 
 		err = fakeCli.CoreV1().Namespaces().Delete(ctx, testSuite.namespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
-	}
-}
-
-func getPVCManifest(pvcName, storageClassName string) *v1.PersistentVolumeClaim {
-	return &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: pvcName,
-		},
-		Spec: v1.PersistentVolumeClaimSpec{
-			StorageClassName: &storageClassName,
-			AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceStorage: resource.MustParse("1Gi"),
-				},
-			},
-		},
 	}
 }
