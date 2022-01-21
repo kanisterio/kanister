@@ -110,10 +110,11 @@ func (k *KubectlOperation) Delete(objRef crv1alpha1.ObjectReference, namespace s
 	if objRef.Namespace != "" {
 		namespace = objRef.Namespace
 	}
-	err := k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Delete(context.Background(), objRef.Name, metav1.DeleteOptions{})
-	if apierrors.IsNotFound(err) {
-		return &objRef, nil
+	_ = k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Delete(context.Background(), objRef.Name, metav1.DeleteOptions{})
+	for {
+		_, err := k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Get(context.Background(), objRef.Name, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			return &objRef, nil
+		}
 	}
-
-	return &objRef, err
 }

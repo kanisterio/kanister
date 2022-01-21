@@ -74,6 +74,18 @@ spec:
     app: demo
   type: ClusterIP`
 
+  serviceCoreResourceSpec = `apiVersion: v1
+kind: Service
+metadata:
+  name: test-svc
+spec:
+  selector:
+    app: MyApp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9376`
+
 	fooCRSpec = `apiVersion: samplecontroller.k8s.io/v1alpha1
 kind: Foo
 metadata:
@@ -82,18 +94,6 @@ metadata:
 spec:
   deploymentName: example-foo
   replicas: 1`
-
-	pvcSpec = `apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: test-pvc
-spec:
-  storageClassName: do-block-storage
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi`
 )
 
 var _ = Suite(&KubeOpsSuite{})
@@ -258,18 +258,18 @@ func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
 	defer cancel()
 	tp := param.TemplateParams{}
 	action := "test"
-	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "persistentvolumeclaims"}
-	pvcName := "test-pvc"
+	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
+	serviceName := "test-svc"
 
-	bp := newCreateResourceBlueprint(createPhase(s.namespace, pvcSpec),
-		deletePhase(gvr, pvcName, s.namespace))
+	bp := newCreateResourceBlueprint(createPhase(s.namespace, serviceCoreResourceSpec),
+		deletePhase(gvr, serviceName, s.namespace))
 	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
 		out, err := p.Exec(ctx, bp, action, tp)
 		c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
 
-		_, err = s.dynCli.Resource(gvr).Namespace(s.namespace).Get(ctx, pvcName, metav1.GetOptions{})
+		_, err = s.dynCli.Resource(gvr).Namespace(s.namespace).Get(ctx, serviceName, metav1.GetOptions{})
 		if p.Name() == "deleteDeploy" {
 			c.Assert(err, NotNil)
 			c.Assert(apierrors.IsNotFound(err), Equals, true)
@@ -282,7 +282,7 @@ func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
 			"group":      gvr.Group,
 			"resource":   gvr.Resource,
 			"kind":       "",
-			"name":       pvcName,
+			"name":       serviceName,
 			"namespace":  s.namespace,
 		}
 		c.Assert(out, DeepEquals, expOut)
