@@ -17,20 +17,19 @@ package kube
 import (
 	"context"
 	"io"
-	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/dynamic"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 // Operation represents kubectl operation
@@ -45,19 +44,15 @@ const (
 
 // KubectlOperation implements methods to perform kubectl operations
 type KubectlOperation struct {
-	dynCli             dynamic.Interface
-	factory            cmdutil.Factory
-	deleteWaitInterval time.Duration
-	deleteWaitTimeout  time.Duration
+	dynCli  dynamic.Interface
+	factory cmdutil.Factory
 }
 
 // NewKubectlOperations returns new KubectlOperations object
 func NewKubectlOperations(dynCli dynamic.Interface) *KubectlOperation {
 	return &KubectlOperation{
-		dynCli:             dynCli,
-		factory:            cmdutil.NewFactory(genericclioptions.NewConfigFlags(false)),
-		deleteWaitInterval: 500 * time.Millisecond,
-		deleteWaitTimeout:  60 * time.Second,
+		dynCli:  dynCli,
+		factory: cmdutil.NewFactory(genericclioptions.NewConfigFlags(false)),
 	}
 }
 
@@ -109,17 +104,17 @@ func (k *KubectlOperation) Create(spec io.Reader, namespace string) (*crv1alpha1
 }
 
 // Delete k8s resource referred by objectReference
-func (k *KubectlOperation) Delete(objRef crv1alpha1.ObjectReference, namespace string) (*crv1alpha1.ObjectReference, error) {
+func (k *KubectlOperation) Delete(ctx context.Context, objRef crv1alpha1.ObjectReference, namespace string) (*crv1alpha1.ObjectReference, error) {
 	if namespace == "" {
 		namespace = metav1.NamespaceDefault
 	}
 	if objRef.Namespace != "" {
 		namespace = objRef.Namespace
 	}
-	_ = k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Delete(context.Background(), objRef.Name, metav1.DeleteOptions{})
+	_ = k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Delete(ctx, objRef.Name, metav1.DeleteOptions{})
 
-	err := wait.Poll(k.deleteWaitInterval, k.deleteWaitTimeout, func() (done bool, err error) {
-		_, err = k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Get(context.Background(), objRef.Name, metav1.GetOptions{})
+	err := poll.Wait(ctx, func(context.Context) (done bool, err error) {
+		_, err = k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Get(ctx, objRef.Name, metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
 			return true, nil
 		}
