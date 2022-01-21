@@ -224,6 +224,7 @@ func (s *LogSuite) TestSafeDumpPodObject(c *C) {
 	} {
 		s := SafeDumpPodObject(tc.pod)
 		if tc.pod == nil {
+			c.Assert(s, Equals, "")
 			continue
 		}
 		c.Assert(strings.Contains(s, fmt.Sprintf("Command:[%s]", tc.expCommand)), Equals, true)
