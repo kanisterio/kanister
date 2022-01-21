@@ -17,12 +17,14 @@ package kube
 import (
 	"context"
 	"io"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/dynamic"
@@ -43,8 +45,10 @@ const (
 
 // KubectlOperation implements methods to perform kubectl operations
 type KubectlOperation struct {
-	dynCli  dynamic.Interface
-	factory cmdutil.Factory
+	dynCli             dynamic.Interface
+	factory            cmdutil.Factory
+	deleteWaitInterval time.Duration
+	deleteWaitTimeout  time.Duration
 }
 
 // NewKubectlOperations returns new KubectlOperations object
@@ -52,6 +56,8 @@ func NewKubectlOperations(dynCli dynamic.Interface) *KubectlOperation {
 	return &KubectlOperation{
 		dynCli:  dynCli,
 		factory: cmdutil.NewFactory(genericclioptions.NewConfigFlags(false)),
+		deleteWaitInterval: 500 * time.Millisecond,
+		deleteWaitTimeout: 60 * time.Second,
 	}
 }
 
@@ -111,10 +117,13 @@ func (k *KubectlOperation) Delete(objRef crv1alpha1.ObjectReference, namespace s
 		namespace = objRef.Namespace
 	}
 	_ = k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Delete(context.Background(), objRef.Name, metav1.DeleteOptions{})
-	for {
-		_, err := k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Get(context.Background(), objRef.Name, metav1.GetOptions{})
+
+	err := wait.Poll(k.deleteWaitInterval, k.deleteWaitTimeout, func() (done bool, err error) {
+		_, err = k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Get(context.Background(), objRef.Name, metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
-			return &objRef, nil
+			return true, nil
 		}
-	}
+		return false, err
+	})
+	return &objRef, err
 }
