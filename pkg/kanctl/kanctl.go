@@ -46,9 +46,8 @@ func Execute() {
 	if err := root.Execute(); err != nil {
 		if Verbose {
 			log.WithError(err).Print("Kanctl failed to execute")
-		} else {
-			log.Error().Print(err.Error())
 		}
+
 		os.Exit(1)
 	}
 }
