@@ -74,18 +74,6 @@ spec:
     app: demo
   type: ClusterIP`
 
-  serviceCoreResourceSpec = `apiVersion: v1
-kind: Service
-metadata:
-  name: test-svc
-spec:
-  selector:
-    app: MyApp
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 9376`
-
 	fooCRSpec = `apiVersion: samplecontroller.k8s.io/v1alpha1
 kind: Foo
 metadata:
@@ -259,10 +247,9 @@ func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
 	tp := param.TemplateParams{}
 	action := "test"
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
-	serviceName := "test-svc"
+	serviceName := "test-deployment-2"
 
-	bp := newCreateResourceBlueprint(createPhase(s.namespace, serviceCoreResourceSpec),
-		deletePhase(gvr, serviceName, s.namespace))
+	bp := newCreateResourceBlueprint(deletePhase(gvr, serviceName, s.namespace))
 	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
