@@ -18,10 +18,10 @@ This document explains how Kanister leverages the use of CSI VolumeSnapshots to 
 Install the MySQL database using the bitnami chart with the release name `mysql-release`.
 
 ```bash
-# Add bitnami in your local chart repository
+# Add bitnami in local chart repository
 $ helm repo add bitnami https://charts.bitnami.com/bitnami
 
-# Update your local chart repository
+# Update local chart repository
 $ helm repo update
 
 # Install the MySQL database
@@ -50,7 +50,7 @@ Connect to the MySQL database.
 $ kubectl exec -it $(kubectl get pods -n mysql --selector=app.kubernetes.io/instance=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql -- bash
 ```
 
-From inside the shell, use the mysql CLI to insert some data into the test database.
+From inside the shell, use mysql CLI to insert some data into the `test` database.
 
 ```bash
 $ mysql --user=root --password=asd#45@mysqlEXAMPLE
@@ -97,7 +97,7 @@ Snapshot MySQL database using the backup ActionSet from above blueprint. Create 
 
 ```bash
 # Create Actionset
-# Please make sure the value of blueprint matches with the name of blueprint that was created earlier
+# Make sure the value of blueprint matches the name of blueprint created earlier
 # --pvc argument specifies the PVC on which the action is performed
 $ kanctl create actionset --action backup --namespace kanister --blueprint mysql-csi-snapshot-bp --pvc mysql/$(kubectl get pvc -n mysql --selector=app.kubernetes.io/instance=mysql-release -o=jsonpath='{.items[0].metadata.name}')
 actionset backup-mlvcv created
@@ -107,7 +107,7 @@ NAME                         AGE
 backup-mlvcv                 112s
 
 # View the status of the actionset
-# Please make sure the name of the actionset here matches with name of the actionset created above
+# Make sure the name of the actionset here matches the name of the actionset created above
 $ kubectl --namespace kanister describe actionset backup-mlvcv
 
 # Check the CSI VolumeSnapshot created
@@ -118,7 +118,7 @@ data-mysql-release-0-snapshot-cd26z   true         data-mysql-release-0         
 
 ## Disaster strikes!
 
-Let's say someone accidentally deleted the test database.
+Let's say someone accidentally deleted the `test` database.
 
 ```bash
 # Connect to MySQL by running a shell inside MySQL's pod
@@ -157,20 +157,20 @@ mysql> SHOW DATABASES;
 
 ## Restore MySQL DB
 
-To restore the missing data, you should use the backup that you created before. We will use `kanctl` for creating this restore action.
+To restore the missing data, use the backup created earlier. This can be achieved using `kanctl` for creating the restore action.
 
 ```bash
 # Make sure to use correct backup actionset name here
 $ kanctl --namespace kanister create actionset --action restore --from backup-mlvcv
 actionset restore-backup-mlvcv-6z9xn created
 
-# Check the PVCs in mysql namespace. You should see a new PVC in the format '<PVC-name>-restored'
+# Check the PVCs in mysql namespace. A new PVC is created with the name of format '<PVC-name>-restored'
 $ kubectl -n mysql  get pvc
 NAME                            STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS       AGE
 data-mysql-release-0            Bound    pvc-b966c5ef-3d20-4ec2-9ab3-1a868737ea0a   8Gi        RWO            do-block-storage   4m14s
 data-mysql-release-0-restored   Bound    pvc-2eb6fb89-78bc-4c2e-8c1e-c270d664f311   8Gi        RWO            do-block-storage   18s
 
-# Use following command to debug if a new PVC in the format '<PVC-name>-restored' is not created
+# In case a new PVC is not created, use the following command to check events in the actionset
 $ kubectl --namespace kanister describe actionset restore-backup-mlvcv-6z9xn
 ```
 
@@ -182,7 +182,7 @@ $ kubectl -n mysql patch statefulset mysql-release --type=json -p='[{"op": "add"
 $ kubectl -n mysql patch statefulset mysql-release --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts", "value": [{"mountPath": "/bitnami/mysql", "name": "restored-data"}, {"mountPath": "/opt/bitnami/mysql/conf/my.cnf", "name": "config", "subPath": "my.cnf"}]}]'
 ```
 
-Once the patch is complete and MySQL pod is set to “Running“, you can check if the data has been restored to previous state.
+Once the patch is complete and MySQL pod is set to “Running“ status, check if the data has been restored.
 
 ## Verify the restored application data
 
