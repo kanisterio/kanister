@@ -15,6 +15,8 @@
 package param
 
 import (
+	"time"
+
 	. "gopkg.in/check.v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -136,6 +138,7 @@ func (s *RenderSuite) TestRender(c *C) {
 
 func (s *RenderSuite) TestRenderObjects(c *C) {
 	tp := TemplateParams{
+		Time: time.Now().String(),
 		Object: map[string]interface{}{
 			"spec": map[string]string{"authSecret": "secret-name"},
 		},
