@@ -79,7 +79,7 @@ func (crs *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[
 	if err != nil {
 		return nil, err
 	}
-	objRef, err := execKubeOperation(dynCli, op, namespace, spec, objRefArg)
+	objRef, err := execKubeOperation(ctx, dynCli, op, namespace, spec, objRefArg)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (crs *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[
 	return out, nil
 }
 
-func execKubeOperation(dynCli dynamic.Interface, op kube.Operation, namespace, spec string, objRef crv1alpha1.ObjectReference) (*crv1alpha1.ObjectReference, error) {
+func execKubeOperation(ctx context.Context, dynCli dynamic.Interface, op kube.Operation, namespace, spec string, objRef crv1alpha1.ObjectReference) (*crv1alpha1.ObjectReference, error) {
 	kubeopsOp := kube.NewKubectlOperations(dynCli)
 	switch op {
 	case kube.CreateOperation:
@@ -109,7 +109,7 @@ func execKubeOperation(dynCli dynamic.Interface, op kube.Operation, namespace, s
 			objRef.Resource == "" {
 			return nil, errors.New(fmt.Sprintf("missing one or more required fields name/namespace/group/apiVersion/resource in objectReference for %s operation", kube.DeleteOperation))
 		}
-		return kubeopsOp.Delete(objRef, namespace)
+		return kubeopsOp.Delete(ctx, objRef, namespace)
 	}
 	return nil, errors.New(fmt.Sprintf("invalid operation '%s'", op))
 }
