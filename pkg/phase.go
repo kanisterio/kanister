@@ -114,7 +114,7 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 	return phases, nil
 }
 
-// Validate gets the provided arguments from blueprint and makes sure that required arguments are thre
+// Validate gets the provided arguments from a blueprint and verifies that the required arguments are present
 func (p *Phase) Validate(args map[string]interface{}) error {
 	return checkRequiredArgs(p.f.RequiredArgs(), args)
 }

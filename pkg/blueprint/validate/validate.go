@@ -24,6 +24,9 @@ import (
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
+// Do takes a blueprint and validates if the function names in phases are correct
+// and all the required arguments for the kanister functions are provided. This doesn't
+// check anything with template params yet.
 func Do(bp *crv1alpha1.Blueprint, funcVersion string) error {
 	for name, action := range bp.Actions {
 		// GetPhases also checks if the function names referred in the action are correct
