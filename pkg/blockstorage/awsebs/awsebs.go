@@ -621,7 +621,7 @@ func GetRegionFromEC2Metadata() (string, error) {
 func (s *EbsStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
 	ec2Cli, err := newEC2Client(region, s.config)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not get EC2 client")
+		return nil, errors.Wrapf(err, "Could not get EC2 client while fetching zones FromRegion")
 	}
 	trueBool := true
 	filterValue := "region-name"
