@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/caller"
 	"github.com/kanisterio/kanister/pkg/config"
@@ -29,6 +30,8 @@ const (
 	// LevelVarName is the environment variable that controls
 	// init log levels
 	LevelEnvName = "LOG_LEVEL"
+
+	redactString = "<*****>"
 )
 
 // OutputSink describes the current output sink.
@@ -235,4 +238,21 @@ func entryToJSON(entry *logrus.Entry) []byte {
 	bytes = append(bytes, n...)
 
 	return bytes
+}
+
+// SafeDumpPodObject redacts commands and args in Pod manifest to hide sensitive info,
+// converts Pod object into string and returns it
+func SafeDumpPodObject(pod *v1.Pod) string {
+	if pod == nil {
+		return ""
+	}
+	for i, _ := range pod.Spec.Containers {
+		if pod.Spec.Containers[i].Command != nil {
+			pod.Spec.Containers[i].Command = []string{redactString}
+		}
+		if pod.Spec.Containers[i].Args != nil {
+			pod.Spec.Containers[i].Args = []string{redactString}
+		}
+	}
+	return pod.String()
 }

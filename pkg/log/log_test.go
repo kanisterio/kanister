@@ -5,13 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/sirupsen/logrus"
 	. "gopkg.in/check.v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kanisterio/kanister/pkg/field"
 )
 
 const (
@@ -135,4 +140,93 @@ func (s *LogSuite) TestLogLevel(c *C) {
 	c.Assert(cerr, IsNil)
 	c.Assert(entry, NotNil)
 	c.Assert(entry["msg"], Equals, "Testing debug level")
+}
+
+func (s *LogSuite) TestSafeDumpPodObject(c *C) {
+	for _, tc := range []struct {
+		pod        *corev1.Pod
+		expCommand string
+		expArgs    string
+	}{
+		// Nil Pod object
+		{
+			pod: nil,
+		},
+		// Pod object with command and arg set
+		{
+			pod: &corev1.Pod{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Pod",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						corev1.Container{
+							Name:            "test",
+							Image:           "nginx:1.12",
+							ImagePullPolicy: corev1.PullPolicy("IfNotPresent"),
+							Command:         []string{"sh", "-c"},
+							Args:            []string{"username=\"admin\", password=\"admin123\""},
+						},
+					},
+				},
+			},
+			expCommand: redactString,
+			expArgs:    redactString,
+		},
+		// Pod object without command or arg set
+		{
+			pod: &corev1.Pod{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Pod",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						corev1.Container{
+							Name:            "test",
+							Image:           "nginx:1.12",
+							ImagePullPolicy: corev1.PullPolicy("IfNotPresent"),
+						},
+					},
+				},
+			},
+		},
+		// Pod object with only command set
+		{
+			pod: &corev1.Pod{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Pod",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						corev1.Container{
+							Name:            "test",
+							Image:           "nginx:1.12",
+							ImagePullPolicy: corev1.PullPolicy("IfNotPresent"),
+							Command:         []string{"sh", "-c", "kando location push --profile '{\"Location\":{\"type\":\"s3Compliant\",\"bucket\":\"kanister.io\",\"endpoint\":\"\",\"prefix\":\"\",\"region\":\"ap-south-1\"},\"Credential\":{\"Type\":\"keyPair\",\"KeyPair\":{\"ID\":\"AKIAPEXAMPLE\",\"Secret\":\"5q1aiajkSAKEXAMPLE\"},\"Secret\":null},\"SkipSSLVerify\":false}' --path \"pg_backups/test-postgresql-instance-xwqp10ywg/2020-01-02T06:58:28Z/backup.tar.gz\""},
+						},
+					},
+				},
+			},
+			expCommand: redactString,
+		},
+	} {
+		s := SafeDumpPodObject(tc.pod)
+		if tc.pod == nil {
+			continue
+		}
+		c.Assert(strings.Contains(s, fmt.Sprintf("Command:[%s]", tc.expCommand)), Equals, true)
+		c.Assert(strings.Contains(s, fmt.Sprintf("Args:[%s]", tc.expArgs)), Equals, true)
+	}
 }
