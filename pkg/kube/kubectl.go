@@ -54,10 +54,10 @@ type KubectlOperation struct {
 // NewKubectlOperations returns new KubectlOperations object
 func NewKubectlOperations(dynCli dynamic.Interface) *KubectlOperation {
 	return &KubectlOperation{
-		dynCli:  dynCli,
-		factory: cmdutil.NewFactory(genericclioptions.NewConfigFlags(false)),
+		dynCli:             dynCli,
+		factory:            cmdutil.NewFactory(genericclioptions.NewConfigFlags(false)),
 		deleteWaitInterval: 500 * time.Millisecond,
-		deleteWaitTimeout: 60 * time.Second,
+		deleteWaitTimeout:  60 * time.Second,
 	}
 }
 
