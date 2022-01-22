@@ -65,7 +65,7 @@ func (s ClientSuite) TestGetRegions(c *C) {
 	config := map[string]string{}
 	creds := s.GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
 
-	// create provider with regoin
+	// create provider with region
 	config[blockstorage.GoogleCloudCreds] = creds
 	bsp, err := NewProvider(config)
 	c.Assert(err, IsNil)
@@ -77,6 +77,7 @@ func (s ClientSuite) TestGetRegions(c *C) {
 	c.Assert(err, IsNil)
 	for _, zone := range zones {
 		c.Assert(strings.Contains(zone, "us-east1"), Equals, true)
+		c.Assert(strings.Contains(zone, "us-west1"), Equals, false)
 	}
 
 	regions, err := gpds.GetRegions(ctx)

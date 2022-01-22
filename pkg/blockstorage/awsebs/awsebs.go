@@ -621,14 +621,14 @@ func GetRegionFromEC2Metadata() (string, error) {
 func (s *EbsStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
 	ec2Cli, err := newEC2Client(region, s.config)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not get EC2 client while fetching zones FromRegion")
+		return nil, errors.Wrapf(err, "Could not get EC2 client while fetching zones FromRegion (%s)", region)
 	}
 	trueBool := true
-	filterValue := "region-name"
+	filterKey := "region-name"
 	zones, err := ec2Cli.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{
 		AllAvailabilityZones: &trueBool,
 		Filters: []*ec2.Filter{
-			{Name: &filterValue, Values: []*string{&region}},
+			{Name: &filterKey, Values: []*string{&region}},
 		},
 	})
 	if err != nil {

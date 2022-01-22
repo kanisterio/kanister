@@ -75,6 +75,7 @@ func (s ClientSuite) TestGetRegions(c *C) {
 	c.Assert(err, IsNil)
 	for _, zone := range zones {
 		c.Assert(strings.Contains(zone, "eastus"), Equals, true)
+		c.Assert(strings.Contains(zone, "westus"), Equals, false)
 	}
 
 	regions, err := ads.GetRegions(ctx)

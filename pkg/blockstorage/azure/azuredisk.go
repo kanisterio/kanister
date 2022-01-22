@@ -614,7 +614,7 @@ func (s *AdStorage) SetTags(ctx context.Context, resource interface{}, tags map[
 func (s *AdStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
 	regionMap, err := s.dynamicRegionMapAzure(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch dynamic region map")
+		return nil, errors.Wrapf(err, "Failed to fetch dynamic region map for region (%s)", region)
 	}
 	zones, ok := regionMap[region]
 	if !ok {
@@ -671,7 +671,7 @@ func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]str
 		return nil, err
 	}
 	for skuResults.Value().Name != nil {
-		if *skuResults.Value().ResourceType == "disks" {
+		if skuResults.Value().ResourceType != nil && *skuResults.Value().ResourceType == "disks" {
 			for _, location := range *skuResults.Value().LocationInfo {
 				if val, ok := regionMap[*location.Location]; ok {
 					for _, zone := range *location.Zones {

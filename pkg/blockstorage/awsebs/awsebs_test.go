@@ -16,7 +16,6 @@ package awsebs
 
 import (
 	"context"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -27,6 +26,7 @@ import (
 	. "gopkg.in/check.v1"
 
 	kaws "github.com/kanisterio/kanister/pkg/aws"
+	envconfig "github.com/kanisterio/kanister/pkg/config"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
@@ -101,17 +101,11 @@ func (s AWSEBSSuite) TestVolumeParse(c *C) {
 func (s AWSEBSSuite) TestGetRegions(c *C) {
 	ctx := context.Background()
 	config := map[string]string{}
-	if id, ok := os.LookupEnv(kaws.AccessKeyID); ok {
-		config[kaws.AccessKeyID] = id
-	} else {
-		c.Skip("cannot find access key")
-	}
-	if secret, ok := os.LookupEnv(kaws.SecretAccessKey); ok {
-		config[kaws.SecretAccessKey] = secret
-	} else {
-		c.Skip("cannot find secret access key")
-	}
-	// create provider with regoin
+
+	config[kaws.AccessKeyID] = envconfig.GetEnvOrSkip(c, kaws.AccessKeyID)
+	config[kaws.SecretAccessKey] = envconfig.GetEnvOrSkip(c, kaws.SecretAccessKey)
+
+	// create provider with region
 	config[kaws.ConfigRegion] = "us-west-2"
 	bsp, err := NewProvider(ctx, config)
 	c.Assert(err, IsNil)
@@ -122,6 +116,7 @@ func (s AWSEBSSuite) TestGetRegions(c *C) {
 	c.Assert(err, IsNil)
 	for _, zone := range zones {
 		c.Assert(strings.Contains(zone, "us-east-1"), Equals, true)
+		c.Assert(strings.Contains(zone, "us-west-2"), Equals, false)
 	}
 
 	regions, err := ebsp.GetRegions(ctx)

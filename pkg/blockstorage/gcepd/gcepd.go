@@ -570,7 +570,7 @@ func isNotFoundError(err error) bool {
 func (s *GpdStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
 	rtzMap, err := s.dynamicRegionToZoneMap(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get region to zone map")
+		return nil, errors.Wrapf(err, "Failed to get region to zone map for region (%s)", region)
 	}
 	zones, ok := rtzMap[region]
 	if !ok {
