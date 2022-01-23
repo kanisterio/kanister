@@ -130,7 +130,7 @@ $ kubectl --namespace kanister describe actionset delete-backup-glptq-cq6bw
 To uninstall the application delete `time-log` namespace.
 
 ```bash
-# Remove mysql namespace
+# Remove time-log namespace
 $ kubectl delete namespace time-log
 ```
 
@@ -139,7 +139,7 @@ $ kubectl delete namespace time-log
 Remove the blueprint.
 
 ```bash
-$ kubectl delete blueprints.cr.kanister.io mysql-csi-snapshot-bp -n kanister
+$ kubectl delete blueprints.cr.kanister.io csi-snapshot-bp -n kanister
 ```
 
 Remove the actionsets.
