@@ -112,17 +112,21 @@ func (k *KubectlOperation) Delete(ctx context.Context, objRef crv1alpha1.ObjectR
 		namespace = objRef.Namespace
 	}
 	err := k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Delete(ctx, objRef.Name, metav1.DeleteOptions{})
-	if apierrors.IsNotFound(err) {
-		return &objRef, nil
+	if err != nil {
+		return &objRef, err
 	}
+	return waitForResourceDeletion(ctx, k, objRef, namespace)
+}
 
-	// Waiting for resource to be deleted by fetching the resource repeatedly and checking for NotFound error
-	err = poll.Wait(ctx, func(context.Context) (done bool, err error) {
+func waitForResourceDeletion(ctx context.Context, k *KubectlOperation, objRef crv1alpha1.ObjectReference, namespace string) (*crv1alpha1.ObjectReference, error) {
+	if err := poll.Wait(ctx, func(context.Context) (done bool, err error) {
 		_, err = k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Get(ctx, objRef.Name, metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
 			return true, nil
 		}
 		return false, err
-	})
-	return &objRef, err
+	}); err != nil {
+		return &objRef, err
+	}
+	return &objRef, nil
 }
