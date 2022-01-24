@@ -15,8 +15,6 @@
 package awsebs
 
 import (
-	"context"
-
 	. "gopkg.in/check.v1"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage/zone"
@@ -52,13 +50,4 @@ func (s ZoneSuite) TestZoneWithUnknownNodeZones(c *C) {
 		z := zone.SanitizeAvailableZones(tc.in, tc.zones)
 		c.Assert(z, DeepEquals, tc.out)
 	}
-}
-
-var _ zone.Mapper = (*ebsTest)(nil)
-
-type ebsTest struct{}
-
-func (et *ebsTest) FromRegion(ctx context.Context, region string) ([]string, error) {
-	// Fall back to using a static map.
-	return staticRegionToZones(region)
 }
