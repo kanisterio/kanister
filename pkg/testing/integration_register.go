@@ -68,6 +68,21 @@ var _ = Suite(&MySQL{
 	},
 })
 
+// mysql app for csi volumesnapshot
+type CSISnapshot struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&CSISnapshot{
+	IntegrationSuite{
+		name:      "time-logger",
+		namespace: "time-log",
+		app:       app.NewCSISnapshot("time-logger"),
+		bp:        app.NewBlueprint("csi-snapshot", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
 // mariaDB app
 type Maria struct {
 	IntegrationSuite
