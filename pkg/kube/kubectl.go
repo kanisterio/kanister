@@ -29,6 +29,7 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 // Operation represents kubectl operation
@@ -103,17 +104,27 @@ func (k *KubectlOperation) Create(spec io.Reader, namespace string) (*crv1alpha1
 }
 
 // Delete k8s resource referred by objectReference
-func (k *KubectlOperation) Delete(objRef crv1alpha1.ObjectReference, namespace string) (*crv1alpha1.ObjectReference, error) {
+func (k *KubectlOperation) Delete(ctx context.Context, objRef crv1alpha1.ObjectReference, namespace string) (*crv1alpha1.ObjectReference, error) {
 	if namespace == "" {
 		namespace = metav1.NamespaceDefault
 	}
 	if objRef.Namespace != "" {
 		namespace = objRef.Namespace
 	}
-	err := k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Delete(context.Background(), objRef.Name, metav1.DeleteOptions{})
-	if apierrors.IsNotFound(err) {
-		return &objRef, nil
+	err := k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Delete(ctx, objRef.Name, metav1.DeleteOptions{})
+	if err != nil {
+		return &objRef, err
 	}
+	return waitForResourceDeletion(ctx, k, objRef, namespace)
+}
 
+func waitForResourceDeletion(ctx context.Context, k *KubectlOperation, objRef crv1alpha1.ObjectReference, namespace string) (*crv1alpha1.ObjectReference, error) {
+	err := poll.Wait(ctx, func(context.Context) (done bool, err error) {
+		_, err = k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Get(ctx, objRef.Name, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			return true, nil
+		}
+		return false, err
+	})
 	return &objRef, err
 }

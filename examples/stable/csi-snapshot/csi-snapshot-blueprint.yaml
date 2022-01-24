@@ -1,7 +1,7 @@
 apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
-  name: mysql-csi-snapshot-bp
+  name: csi-snapshot-bp
 actions:
   backup:
     outputArtifacts:
@@ -16,23 +16,48 @@ actions:
     - func: CreateCSISnapshot
       name: createCSISnapshot
       args:
-        pvc: "{{ .PVC.Name }}"
-        namespace: "{{ .PVC.Namespace }}"
+        pvc: "{{ (index .Object.spec.template.spec.volumes 0).persistentVolumeClaim.claimName }}"
+        namespace: "{{ .Object.metadata.namespace }}"
         snapshotClass: do-block-storage
   restore:
     inputArtifactNames:
     - snapshotInfo
     phases:
+    - func: ScaleWorkload
+      name: scaleDownSS
+      args:
+        name: "{{ .Deployment.Name }}"
+        namespace: "{{ .Deployment.Namespace }}"
+        kind: deployment
+        replicas: 0
+    - func: KubeOps
+      name: deleteOriginalPVC
+      args:
+        operation: delete
+        namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
+        objectReference:
+          apiVersion: v1
+          group: ""
+          resource: persistentvolumeclaims
+          name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.pvc }}"
+          namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
     - func: RestoreCSISnapshot
-      name: restoreCSISnapshot
+      name: restorePVCFromSnapshot
       args:
         name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.name }}"
-        pvc: "{{ .ArtifactsIn.snapshotInfo.KeyValue.pvc }}-restored"
+        pvc: "{{ .ArtifactsIn.snapshotInfo.KeyValue.pvc }}"
         namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
         storageClass: do-block-storage
         restoreSize: "{{ .ArtifactsIn.snapshotInfo.KeyValue.restoreSize }}"
         accessModes: ["ReadWriteOnce"]
         volumeMode: "Filesystem"
+    - func: ScaleWorkload
+      name: scaleUpSS
+      args:
+        name: "{{ .Deployment.Name }}"
+        namespace: "{{ .Deployment.Namespace }}"
+        kind: deployment
+        replicas: 1
   delete:
     inputArtifactNames:
     - snapshotInfo

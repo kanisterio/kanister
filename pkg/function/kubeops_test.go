@@ -128,14 +128,14 @@ func (s *KubeOpsSuite) TearDownSuite(c *C) {
 	_ = s.crdCli.ApiextensionsV1().CustomResourceDefinitions().Delete(context.TODO(), getSampleCRD().GetName(), metav1.DeleteOptions{})
 }
 
-func createPhase(namespace string) crv1alpha1.BlueprintPhase {
+func createPhase(namespace string, spec string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "createDeploy",
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
 			KubeOpsNamespaceArg: namespace,
-			KubeOpsSpecArg:      deploySpec,
+			KubeOpsSpecArg:      spec,
 		},
 	}
 }
@@ -241,6 +241,41 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 	}
 }
 
+func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	tp := param.TemplateParams{}
+	action := "test"
+	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
+	serviceName := "test-deployment-2"
+
+	bp := newCreateResourceBlueprint(deletePhase(gvr, serviceName, s.namespace))
+	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
+	c.Assert(err, IsNil)
+	for _, p := range phases {
+		out, err := p.Exec(ctx, bp, action, tp)
+		c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
+
+		_, err = s.dynCli.Resource(gvr).Namespace(s.namespace).Get(ctx, serviceName, metav1.GetOptions{})
+		if p.Name() == "deleteDeploy" {
+			c.Assert(err, NotNil)
+			c.Assert(apierrors.IsNotFound(err), Equals, true)
+		} else {
+			c.Assert(err, IsNil)
+		}
+
+		expOut := map[string]interface{}{
+			"apiVersion": gvr.Version,
+			"group":      gvr.Group,
+			"resource":   gvr.Resource,
+			"kind":       "",
+			"name":       serviceName,
+			"namespace":  s.namespace,
+		}
+		c.Assert(out, DeepEquals, expOut)
+	}
+}
+
 func (s *KubeOpsSuite) TestKubeOpsCreateWaitDelete(c *C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
@@ -249,7 +284,7 @@ func (s *KubeOpsSuite) TestKubeOpsCreateWaitDelete(c *C) {
 	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
 	deployName := "test-deployment"
 
-	bp := newCreateResourceBlueprint(createPhase(s.namespace),
+	bp := newCreateResourceBlueprint(createPhase(s.namespace, deploySpec),
 		waitDeployPhase(s.namespace, deployName),
 		deletePhase(gvr, deployName, s.namespace))
 	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
