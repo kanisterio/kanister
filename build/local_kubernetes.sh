@@ -64,16 +64,12 @@ start_localkube() {
     SNAPSHOTTER_VERSION=v5.0.0
 
     # Install VolumeSnapshot CRDs
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
+    kubectl apply -fhttps://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/client/config/crd/snapshot.storage.k8s.io_{volumesnapshots.yaml,volumesnapshotclasses.yaml,volumesnapshotcontents.yaml}
 
     # Create snapshot controller
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+    kubectl apply -fhttps://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/deploy/kubernetes/snapshot-controller/{rbac-snapshot-controller.yaml,setup-snapshot-controller.yaml}
 
     # Install the CSI Hostpath Driver
-    apt install -y curl
     cd /tmp
     git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
     cd csi-driver-host-path
