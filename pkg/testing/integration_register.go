@@ -70,7 +70,7 @@ var _ = Suite(&MySQL{
 	},
 })
 
-// mysql app for csi volumesnapshot
+// time-log app for csi volumesnapshot
 type CSISnapshot struct {
 	IntegrationSuite
 }
