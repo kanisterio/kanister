@@ -94,9 +94,8 @@ func (csi *CSISnapshot) Insert(ctx context.Context) error {
 func (csi *CSISnapshot) Reset(ctx context.Context) error {
 	log.Print("Resetting the application.", field.M{"app": csi.name})
 
-	// delete all the data from the table
 	removeLogFileCmd := []string{"sh", "-c", "rm /var/log/time.log"}
-	_, stderr, err := csi.execCommand(ctx, removeLogFileCmd)
+	stderr, err := csi.execCommand(ctx, removeLogFileCmd)
 	if err != nil {
 		return errors.Wrapf(err, "Error while deleting log file: %s", stderr)
 	}
@@ -139,7 +138,7 @@ func (csi *CSISnapshot) Ping(ctx context.Context) error {
 	log.Print("Pinging the application.", field.M{"app": csi.name})
 
 	listDirectories := []string{"sh", "-c", "ls /var/log"}
-	_, stderr, err := csi.execCommand(ctx, listDirectories)
+	stderr, err := csi.execCommand(ctx, listDirectories)
 	if err != nil {
 		return errors.Wrapf(err, "Error while Pinging the application %s", stderr)
 	}
@@ -164,12 +163,13 @@ func (csi *CSISnapshot) Secrets() map[string]crv1alpha1.ObjectReference {
 	return nil
 }
 
-func (csi *CSISnapshot) execCommand(ctx context.Context, command []string) (string, string, error) {
+func (csi *CSISnapshot) execCommand(ctx context.Context, command []string) (string, error) {
 	podname, containername, err := kube.GetPodContainerFromDeployment(ctx, csi.cli, csi.namespace, csi.name)
 	if err != nil || podname == "" {
-		return "", "", errors.Wrapf(err, "Error  getting pod and containername %s.", csi.name)
+		return "", errors.Wrapf(err, "Error getting pod and containername %s.", csi.name)
 	}
-	return kube.Exec(csi.cli, csi.namespace, podname, containername, command, nil)
+	_, stderr, err := kube.Exec(csi.cli, csi.namespace, podname, containername, command, nil)
+	return stderr, err
 }
 
 func (csi CSISnapshot) getAppDeploymentObj() (*appsv1.Deployment, error) {
