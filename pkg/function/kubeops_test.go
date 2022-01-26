@@ -128,14 +128,14 @@ func (s *KubeOpsSuite) TearDownSuite(c *C) {
 	_ = s.crdCli.ApiextensionsV1().CustomResourceDefinitions().Delete(context.TODO(), getSampleCRD().GetName(), metav1.DeleteOptions{})
 }
 
-func createPhase(namespace string, spec string) crv1alpha1.BlueprintPhase {
+func createPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "createDeploy",
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
 			KubeOpsNamespaceArg: namespace,
-			KubeOpsSpecArg:      spec,
+			KubeOpsSpecArg:      deploySpec,
 		},
 	}
 }
@@ -284,7 +284,7 @@ func (s *KubeOpsSuite) TestKubeOpsCreateWaitDelete(c *C) {
 	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
 	deployName := "test-deployment"
 
-	bp := newCreateResourceBlueprint(createPhase(s.namespace, deploySpec),
+	bp := newCreateResourceBlueprint(createPhase(s.namespace),
 		waitDeployPhase(s.namespace, deployName),
 		deletePhase(gvr, deployName, s.namespace))
 	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
