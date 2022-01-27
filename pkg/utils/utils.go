@@ -1,7 +1,4 @@
-//go:build !integration
-// +build !integration
-
-// Copyright 2019 The Kanister Authors.
+// Copyright 2022 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,15 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testing
+package utils
 
-import (
-	test "testing"
+import "fmt"
 
-	. "gopkg.in/check.v1"
+type indicator string
+
+const (
+	Fail indicator = `❌`
+	Pass indicator = `✅`
+	Skip indicator = `🚫`
 )
 
-// Hook up gocheck into the "go test" runner (non-integration builds)
-func Test(t *test.T) {
-	TestingT(t)
+func PrintStage(description string, i indicator) {
+	switch i {
+	case Pass:
+		fmt.Printf("Passed the '%s' check.. %s\n", description, i)
+	case Skip:
+		fmt.Printf("Skipping the '%s' check.. %s\n", description, i)
+	case Fail:
+		fmt.Printf("Failed the '%s' check.. %s\n", description, i)
+	default:
+		fmt.Println(description)
+	}
 }

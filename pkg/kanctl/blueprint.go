@@ -1,7 +1,4 @@
-//go:build !integration
-// +build !integration
-
-// Copyright 2019 The Kanister Authors.
+// Copyright 2022 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,15 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testing
+package kanctl
 
 import (
-	test "testing"
+	"errors"
 
-	. "gopkg.in/check.v1"
+	"github.com/kanisterio/kanister/pkg/blueprint"
+	"github.com/kanisterio/kanister/pkg/blueprint/validate"
 )
 
-// Hook up gocheck into the "go test" runner (non-integration builds)
-func Test(t *test.T) {
-	TestingT(t)
+func performBlueprintValidation(p *validateParams) error {
+	if p.filename == "" {
+		return errors.New("--name is not supported for blueprint resources, please specify blueprint manifest using -f.")
+	}
+
+	// read blueprint from specified file
+	bp, err := blueprint.ReadFromFile(p.filename)
+	if err != nil {
+		return err
+	}
+
+	return validate.Do(bp, p.functionVersion)
 }

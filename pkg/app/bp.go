@@ -23,6 +23,7 @@ import (
 	bp "github.com/kanisterio/kanister/pkg/blueprint"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 const (
@@ -59,6 +60,12 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.App})
 	}
+
+	// set the name to a dynamically generated value
+	// so that the name wont conflict with the same application
+	// installed using other ways
+	bpr.ObjectMeta.Name = fmt.Sprintf("%s-%s", bpr.ObjectMeta.Name, rand.String(5))
+
 	if b.UseDevImages {
 		updateImageTags(bpr)
 	}
