@@ -128,14 +128,14 @@ func (s *KubeOpsSuite) TearDownSuite(c *C) {
 	_ = s.crdCli.ApiextensionsV1().CustomResourceDefinitions().Delete(context.TODO(), getSampleCRD().GetName(), metav1.DeleteOptions{})
 }
 
-func createPhase(namespace string) crv1alpha1.BlueprintPhase {
+func createPhase(namespace string, spec string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "createDeploy",
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
 			KubeOpsNamespaceArg: namespace,
-			KubeOpsSpecArg:      deploySpec,
+			KubeOpsSpecArg:      spec,
 		},
 	}
 }
@@ -239,6 +239,10 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 			c.Assert(out, DeepEquals, expOut)
 		}
 	}
+	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
+	serviceName := "test-deployment-2"
+	err := s.dynCli.Resource(gvr).Namespace(s.namespace).Delete(ctx, serviceName, metav1.DeleteOptions{})
+	c.Assert(err, IsNil)
 }
 
 func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
@@ -248,8 +252,10 @@ func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
 	action := "test"
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
 	serviceName := "test-deployment-2"
+	spec := fmt.Sprintf(serviceSpec, s.namespace)
 
-	bp := newCreateResourceBlueprint(deletePhase(gvr, serviceName, s.namespace))
+	bp := newCreateResourceBlueprint(createPhase(s.namespace, spec),
+		deletePhase(gvr, serviceName, s.namespace))
 	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
@@ -284,7 +290,7 @@ func (s *KubeOpsSuite) TestKubeOpsCreateWaitDelete(c *C) {
 	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
 	deployName := "test-deployment"
 
-	bp := newCreateResourceBlueprint(createPhase(s.namespace),
+	bp := newCreateResourceBlueprint(createPhase(s.namespace, deploySpec),
 		waitDeployPhase(s.namespace, deployName),
 		deletePhase(gvr, deployName, s.namespace))
 	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)

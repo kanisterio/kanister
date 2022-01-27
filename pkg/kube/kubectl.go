@@ -103,7 +103,7 @@ func (k *KubectlOperation) Create(spec io.Reader, namespace string) (*crv1alpha1
 	return objRef, err
 }
 
-// Delete k8s resource referred by objectReference
+// Delete k8s resource referred by objectReference. Waits for the resource to be deleted
 func (k *KubectlOperation) Delete(ctx context.Context, objRef crv1alpha1.ObjectReference, namespace string) (*crv1alpha1.ObjectReference, error) {
 	if namespace == "" {
 		namespace = metav1.NamespaceDefault
