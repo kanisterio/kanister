@@ -41,18 +41,6 @@ import (
 func Execute() {
 	ctx := context.Background()
 
-	s := handler.NewServer()
-	defer func() {
-		if err := s.Shutdown(ctx); err != nil {
-			log.WithError(err).Print("Failed to shutdown health check server")
-		}
-	}()
-	go func() {
-		if err := s.ListenAndServe(); err != nil {
-			log.WithError(err).Print("Failed to start health check server")
-		}
-	}()
-
 	// Initialize the clients.
 	log.Print("Getting kubernetes context")
 	config, err := rest.InClusterConfig()
@@ -81,6 +69,11 @@ func Execute() {
 		log.WithError(err).Print("Failed to start controller.")
 		cancel()
 		return
+	}
+
+	err = handler.RunWebhookServer()
+	if err != nil {
+		log.WithError(err).Print("Failed to start kanister controller server")
 	}
 
 	// create signals to stop watching the resources
