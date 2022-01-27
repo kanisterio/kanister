@@ -588,7 +588,7 @@ functions can be provided through ``args`` field.
 
 We can also provide ``objects`` in a phase which is a map of references
 to the Kubernetes objects on which the action will be performed. To
-reference ``objects`` in the blueprint.
+reference ``objects`` in the blueprint, we can use templates. See the sample blueprint below.
 
 Each phase can consume or create :ref:`artifacts`. Artifacts
 are generally used to reference backed-up data. For example, If there is
