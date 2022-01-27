@@ -30,9 +30,6 @@ func (b *BlueprintValidator) Handle(ctx context.Context, r admission.Request) ad
 	return admission.Allowed("")
 }
 
-// BlueprintValidator implements admission.DecoderInjector.
-// A decoder will be automatically injected.
-
 // InjectDecoder injects the decoder.
 func (b *BlueprintValidator) InjectDecoder(d *admission.Decoder) error {
 	b.decoder = d

@@ -42,8 +42,6 @@ type Info struct {
 	Version string `json:"version"`
 }
 
-// var _ http.Handler = (*healthCheckHandler)(nil)
-
 type healthCheckHandler struct{}
 
 //NewHealthCheckHandler function returns pointer to an empty healthCheckHandler
