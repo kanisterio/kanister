@@ -147,6 +147,7 @@ Where operation is one of the following:
   get_localkube: installs kind
   start_localkube : localkube start
   stop_localkube : localkube stop
+  install_csi_hostpath_driver : installs CSI hostpath driver
 EOM
     exit 1
 }
@@ -157,6 +158,9 @@ case "${1}" in
         # Alphabetically sorted
         get_localkube)
             time -p get_localkube
+            ;;
+        install_csi_hostpath_driver)
+            time -p install_csi_hostpath_driver
             ;;
         start_localkube)
             time -p start_localkube
