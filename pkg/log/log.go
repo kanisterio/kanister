@@ -246,7 +246,7 @@ func SafeDumpPodObject(pod *v1.Pod) string {
 	if pod == nil {
 		return ""
 	}
-	for i, _ := range pod.Spec.Containers {
+	for i := range pod.Spec.Containers {
 		if pod.Spec.Containers[i].Command != nil {
 			pod.Spec.Containers[i].Command = []string{redactString}
 		}
