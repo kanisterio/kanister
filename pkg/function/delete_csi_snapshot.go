@@ -19,8 +19,6 @@ import (
 
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/dynamic"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
