@@ -2,7 +2,7 @@ FROM alpine:3.10.5
 
 LABEL maintainer="Tom Manville<tom@kasten.io>"
 
-RUN apk add --update --no-cache ca-certificates bash git docker jq \
+RUN apk add --update --no-cache ca-certificates bash git docker curl jq \
     && update-ca-certificates \
     && rm -rf /var/cache/apk/*
 
