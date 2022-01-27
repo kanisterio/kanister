@@ -24,7 +24,7 @@ func (b *BlueprintValidator) Handle(ctx context.Context, r admission.Request) ad
 	}
 
 	if err := validate.Do(bp, kanister.DefaultVersion); err != nil {
-		return admission.Denied(fmt.Sprintf("Failed to validate blueprint, error %s\n", err.Error()))
+		return admission.Denied(fmt.Sprintf("Invalid blueprint, %s\n", err.Error()))
 	}
 
 	return admission.Allowed("")
