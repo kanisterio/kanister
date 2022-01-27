@@ -36,9 +36,9 @@ type FakeBlueprints struct {
 	ns   string
 }
 
-var blueprintsResource = schema.GroupVersionResource{Group: "cr.kanister.io", Version: "v1alpha1", Resource: "blueprints"}
+var blueprintsResource = schema.GroupVersionResource{Group: "cr", Version: "v1alpha1", Resource: "blueprints"}
 
-var blueprintsKind = schema.GroupVersionKind{Group: "cr.kanister.io", Version: "v1alpha1", Kind: "Blueprint"}
+var blueprintsKind = schema.GroupVersionKind{Group: "cr", Version: "v1alpha1", Kind: "Blueprint"}
 
 // Get takes name of the blueprint, and returns the corresponding blueprint object, and an error if there is any.
 func (c *FakeBlueprints) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Blueprint, err error) {
@@ -105,7 +105,7 @@ func (c *FakeBlueprints) Update(ctx context.Context, blueprint *v1alpha1.Bluepri
 // Delete takes name of the blueprint and deletes it. Returns an error if one occurs.
 func (c *FakeBlueprints) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(blueprintsResource, c.ns, name), &v1alpha1.Blueprint{})
+		Invokes(testing.NewDeleteActionWithOptions(blueprintsResource, c.ns, name, opts), &v1alpha1.Blueprint{})
 
 	return err
 }
