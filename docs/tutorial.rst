@@ -574,17 +574,21 @@ Blueprint Development
 =====================
 
 To start with Blueprint Development we need to be aware of some terms such as
-Actions, Phase, KanisterFunctions, Objects which has already been covered in
+Blueprints, Actions, Phase, KanisterFunctions, Objects which has already been covered in
 this tutorial.
 
 Define and add ``actions`` for the blueprint as per your application. Each action
-performs a set of tasks. For example, backup, restore, and delete.
+performs a set of tasks. For example, backup, restore, and delete. These action name can be cosmetic as well.
 
 ``actions`` in the blueprint consists of ``phases`` and each phase executes a
 :ref:`functions`
 which we specify through ``func`` field inside the phase. We can find the
 list of :ref:`existingfunctions` supported by Kanister here. Arguments to the
 functions can be provided through ``args`` field.
+
+We can also provide ``objects`` in a phase which is a map of references
+to the Kubernetes objects on which the action will be performed. To
+reference ``objects`` in the blueprint.
 
 Each phase can consume or create :ref:`artifacts`. Artifacts
 are generally used to reference backed-up data. For example, If there is
@@ -594,16 +598,17 @@ Artifacts created by phases in an action are Output Artifacts.
 Artifacts consumed by an action are Input Artifacts.
 
 An action can also consume information from Kubernetes objects
-such as :ref:`Secret<consumingSecret>` and :ref:`ConfigMap<consumingConfigMap>`
+such as :ref:`Secret<consumingSecret>` and :ref:`ConfigMap<consumingConfigMap>`.
 
-To consume data from objects we need to reference it using ``configMapNames``
-and ``secretNames`` fields in an action.
+To consume data from objects such as ConfigMap and Secret we need to reference
+it using ``configMapNames`` and ``secretNames`` fields in an action.
 
 We use :ref:`templates` to access ConfigMap, Secrets, Artifacts data in
 the blueprint. See the example below.
 
 Here in this blueprint ``time-log-bp`` we have defined two actions
-``backup`` and ``restore``
+``backup`` and ``restore``. This blueprint pushes time log to S3 using backup
+action and then restore it using the restore action.
 
 The ``backup`` action defines `backupToS3` phase
 which executes the ``KubeExec`` function.
@@ -636,6 +641,10 @@ and consumes information from `aws` Secret and Input Artifact `timelog`.
       phases:
         - func: KubeExec
           name: backupToS3
+          timelogsecret:
+            kind: Secret
+            name: '{{ .Deployment.Name }}'
+            namespace: "{{ .Deployment.Namespace }}"
           args:
             namespace: "{{ .Deployment.Namespace }}"
             pod: "{{ index .Deployment.Pods 0 }}"
@@ -646,7 +655,8 @@ and consumes information from `aws` Secret and Input Artifact `timelog`.
               - |
                 AWS_ACCESS_KEY_ID={{ .Secrets.aws.Data.aws_access_key_id | toString }}         \
                 AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
-                aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path }}/time-log/
+                hostname='{{ index .Phases.backupToS3.Secrets.timelogsecret.Data "hostname" | toString }}'
+                aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path }}/time-log
     restore:
       secretNames:
       - aws
