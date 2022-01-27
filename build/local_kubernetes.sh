@@ -60,16 +60,16 @@ start_localkube() {
     kind get kubeconfig --name="kanister" > "${HOME}/.kube/config"
     wait_for_nodes
     wait_for_pods
+}
 
-    SNAPSHOTTER_VERSION=v5.0.0
-
+install_csi_hostpath_driver() {
     # Install VolumeSnapshot CRDs
     kubectl apply -fhttps://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/client/config/crd/snapshot.storage.k8s.io_{volumesnapshots.yaml,volumesnapshotclasses.yaml,volumesnapshotcontents.yaml}
 
     # Create snapshot controller
     kubectl apply -fhttps://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/deploy/kubernetes/snapshot-controller/{rbac-snapshot-controller.yaml,setup-snapshot-controller.yaml}
 
-    # Install the CSI Hostpath Driver
+    # Deploy the CSI Hostpath Driver
     cd /tmp
     git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
     cd csi-driver-host-path

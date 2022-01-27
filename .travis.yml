@@ -47,6 +47,7 @@ jobs:
       - docker pull kindest/node:v1.21.1
       - make start-kind
       - make install-minio
+      - make install-csi-hostpath-driver
       script:
       - make integration-test
       before_cache:
@@ -67,5 +68,5 @@ jobs:
         if [[ "$EXIT_STATUS" -eq 0 ]] && [[ "$TRAVIS_BRANCH" == "master" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
           sudo chown "$USER":"$USER" "$HOME"/.docker -R
           docker login ghcr.io -u "$GITHUB_USERNAME" -p "$GITHUB_TOKEN"
-          ./build/push_images.sh 
+          ./build/push_images.sh
         fi

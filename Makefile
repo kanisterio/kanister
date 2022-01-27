@@ -265,6 +265,9 @@ tiller:
 install-minio:
 	@$(MAKE) run CMD='-c "./build/minio.sh install_minio"'
 
+install-csi-hostpath-driver:
+	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh install_csi_hostpath_driver"'
+
 uninstall-minio:
 	@$(MAKE) run CMD='-c "./build/minio.sh uninstall_minio"'
 
