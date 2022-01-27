@@ -568,11 +568,31 @@ func isNotFoundError(err error) bool {
 
 // FromRegion is part of zone.Mapper
 func (s *GpdStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
-	return staticRegionToZones(region)
+	rtzMap, err := s.dynamicRegionToZoneMap(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get region to zone map for region (%s)", region)
+	}
+	zones, ok := rtzMap[region]
+	if !ok {
+		return nil, fmt.Errorf("cannot get availability zones for region %s", region)
+	}
+	return zones, nil
 }
 
-// RegionToZoneMap returns the region to zone map fetched from the provider
-func (s *GpdStorage) RegionToZoneMap(ctx context.Context) (map[string][]string, error) {
+func (s *GpdStorage) GetRegions(ctx context.Context) ([]string, error) {
+	regionMap, err := s.dynamicRegionToZoneMap(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch dynamic region map")
+	}
+	regions := []string{}
+	for region := range regionMap {
+		regions = append(regions, region)
+	}
+	return regions, nil
+}
+
+// dynamicRegionToZoneMap returns the region to zone map fetched from the provider
+func (s *GpdStorage) dynamicRegionToZoneMap(ctx context.Context) (map[string][]string, error) {
 	regionMap := make(map[string][]string)
 	req := s.service.Zones.List(s.project)
 	if err := req.Pages(ctx, func(page *compute.ZoneList) error {
@@ -589,187 +609,6 @@ func (s *GpdStorage) RegionToZoneMap(ctx context.Context) (map[string][]string, 
 		return nil, err
 	}
 	return regionMap, nil
-}
-
-func staticRegionToZones(region string) ([]string, error) {
-	switch region {
-	case "asia-east1":
-		return []string{
-			"asia-east1-a",
-			"asia-east1-b",
-			"asia-east1-c",
-		}, nil
-	case "asia-east2":
-		return []string{
-			"asia-east2-a",
-			"asia-east2-b",
-			"asia-east2-c",
-		}, nil
-	case "asia-northeast1":
-		return []string{
-			"asia-northeast1-a",
-			"asia-northeast1-b",
-			"asia-northeast1-c",
-		}, nil
-	case "asia-northeast2":
-		return []string{
-			"asia-northeast2-a",
-			"asia-northeast2-b",
-			"asia-northeast2-c",
-		}, nil
-	case "asia-northeast3":
-		return []string{
-			"asia-northeast3-a",
-			"asia-northeast3-b",
-			"asia-northeast3-c",
-		}, nil
-	case "asia-south1":
-		return []string{
-			"asia-south1-a",
-			"asia-south1-b",
-			"asia-south1-c",
-		}, nil
-	case "asia-south2":
-		return []string{
-			"asia-south2-a",
-			"asia-south2-b",
-			"asia-south2-c",
-		}, nil
-	case "asia-southeast1":
-		return []string{
-			"asia-southeast1-a",
-			"asia-southeast1-b",
-			"asia-southeast1-c",
-		}, nil
-	case "asia-southeast2":
-		return []string{
-			"asia-southeast2-a",
-			"asia-southeast2-b",
-			"asia-southeast2-c",
-		}, nil
-	case "australia-southeast1":
-		return []string{
-			"australia-southeast1-a",
-			"australia-southeast1-b",
-			"australia-southeast1-c",
-		}, nil
-	case "australia-southeast2":
-		return []string{
-			"australia-southeast2-a",
-			"australia-southeast2-b",
-			"australia-southeast2-c",
-		}, nil
-	case "europe-central2":
-		return []string{
-			"europe-central2-a",
-			"europe-central2-b",
-			"europe-central2-c",
-		}, nil
-	case "europe-north1":
-		return []string{
-			"europe-north1-a",
-			"europe-north1-b",
-			"europe-north1-c",
-		}, nil
-	case "europe-west1":
-		return []string{
-			"europe-west1-b",
-			"europe-west1-c",
-			"europe-west1-d",
-		}, nil
-	case "europe-west2":
-		return []string{
-			"europe-west2-a",
-			"europe-west2-b",
-			"europe-west2-c",
-		}, nil
-	case "europe-west3":
-		return []string{
-			"europe-west3-a",
-			"europe-west3-b",
-			"europe-west3-c",
-		}, nil
-	case "europe-west4":
-		return []string{
-			"europe-west4-a",
-			"europe-west4-b",
-			"europe-west4-c",
-		}, nil
-	case "europe-west6":
-		return []string{
-			"europe-west6-a",
-			"europe-west6-b",
-			"europe-west6-c",
-		}, nil
-	case "northamerica-northeast1":
-		return []string{
-			"northamerica-northeast1-a",
-			"northamerica-northeast1-b",
-			"northamerica-northeast1-c",
-		}, nil
-	case "northamerica-northeast2":
-		return []string{
-			"northamerica-northeast2-a",
-			"northamerica-northeast2-b",
-			"northamerica-northeast2-c",
-		}, nil
-	case "southamerica-east1":
-		return []string{
-			"southamerica-east1-a",
-			"southamerica-east1-b",
-			"southamerica-east1-c",
-		}, nil
-	case "southamerica-west1":
-		return []string{
-			"southamerica-west1-a",
-			"southamerica-west1-b",
-			"southamerica-west1-c",
-		}, nil
-	case "us-central1":
-		return []string{
-			"us-central1-a",
-			"us-central1-b",
-			"us-central1-c",
-			"us-central1-f",
-		}, nil
-	case "us-east1":
-		return []string{
-			"us-east1-b",
-			"us-east1-c",
-			"us-east1-d",
-		}, nil
-	case "us-east4":
-		return []string{
-			"us-east4-a",
-			"us-east4-b",
-			"us-east4-c",
-		}, nil
-	case "us-west1":
-		return []string{
-			"us-west1-a",
-			"us-west1-b",
-			"us-west1-c",
-		}, nil
-	case "us-west2":
-		return []string{
-			"us-west2-a",
-			"us-west2-b",
-			"us-west2-c",
-		}, nil
-	case "us-west3":
-		return []string{
-			"us-west3-a",
-			"us-west3-b",
-			"us-west3-c",
-		}, nil
-	case "us-west4":
-		return []string{
-			"us-west4-a",
-			"us-west4-b",
-			"us-west4-c",
-		}, nil
-	}
-	return nil, fmt.Errorf("cannot get availability zones for region %s", region)
 }
 
 func isMultiZone(az string) bool {

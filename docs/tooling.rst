@@ -232,6 +232,9 @@ A new S3Compliant profile can be created using the s3compliant subcommand
 kanctl validate
 ---------------
 
+Profile and Blueprint resources can be validated using ``kanctl validate <resource>``
+command.
+
 .. code-block:: bash
 
   $ kanctl validate --help
@@ -242,6 +245,7 @@ kanctl validate
 
   Flags:
     -f, --filename string             yaml or json file of the custom resource to validate
+    -v, --functionVersion string      kanister function version, e.g., v0.0.0 (defaults to v0.0.0)
     -h, --help                        help for validate
         --name string                 specify the K8s name of the custom resource to validate
         --resource-namespace string   namespace of the custom resource. Used when validating resource specified using
@@ -251,8 +255,7 @@ kanctl validate
   Global Flags:
     -n, --namespace string   Override namespace obtained from kubectl context
 
-Only profile validation is supported for now. You can either validate an existing
-profile in K8s or a new profile yet to be created.
+You can either validate an existing profile in K8s or a new profile yet to be created.
 
 .. code-block:: bash
 
@@ -287,6 +290,21 @@ profile in K8s or a new profile yet to be created.
   Passed the 'Validate read access to bucket specified in profile' check.. ✅
   Passed the 'Validate write access to bucket specified in profile' check.. ✅
   All checks passed.. ✅
+
+Blueprint resources can be validated by specifying locally present blueprint manifest
+using ``-f`` flag and optionally ``-v`` flag for kanister function version.
+
+.. substitution-code-block:: bash
+
+   # Download mysql blueprint locally
+   $ curl -O https://raw.githubusercontent.com/kanisterio/kanister/|version|/examples/stable/mysql/mysql-blueprint.yaml
+
+   # Run blueprint validator
+   $ kanctl validate blueprint -f mysql-blueprint.yaml
+    Passed the 'validation of phase dumpToObjectStore in action backup' check.. ✅
+    Passed the 'validation of phase deleteFromBlobStore in action delete' check.. ✅
+    Passed the 'validation of phase restoreFromBlobStore in action restore' check.. ✅
+
 
 Kando
 =====
