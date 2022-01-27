@@ -2,7 +2,7 @@
 
 ## Introduction
 VolumeSnapshots provide Kubernetes users with a standardized way to copy a volume's contents at a particular point in time without creating an entirely new volume. This functionality enables, for example, database administrators to backup databases before performing edit or delete modifications.
-This example demonstrates Kanister's ability to protect an application called Time Log using CSI VolumeSnapshots. Time Log application is contrived but useful for demonstrating Kanister's features. Every second it appends the current time to a log file.
+This example demonstrates Kanister's ability to protect an application called Time-Logger using CSI VolumeSnapshots. Time-Logger application is contrived but useful for demonstrating Kanister's features. The application appends the current time to a log file every second.
 
 ## Prerequisites
 
@@ -14,7 +14,7 @@ This example demonstrates Kanister's ability to protect an application called Ti
 
 ## Install application
 
-Install Time Log application.
+Install Time-Logger application.
 
 ```bash
 # Create namespace
@@ -79,8 +79,8 @@ $ kubectl exec -it $(kubectl get pods -n time-log -l app=time-logger -o=jsonpath
 # Remove the log file
 $ rm /var/log/time.log
 
-# Check the first entry recorded in the /var/log/time.log again. It is now replaced with new entry.
-# This is because Time Log app recreates the log file once it's deleted and starts adding newer entries to it.
+# Check the first entry recorded in the /var/log/time.log again. It is now replaced with a new entry.
+# This is because Time-Logger app recreates the log file once it's deleted and starts adding newer entries to it.
 $ head --lines=1 /var/log/time.log
 Sun Jan 23 09:15:43 UTC 2022
 ```
@@ -100,7 +100,7 @@ $ kubectl --namespace kanister describe actionset restore-backup-mlvcv-6z9xn
 
 ## Verify the restored application data
 
-To verify restore action, we check the first entry of file `/var/log/time.log` and confirm that it's been restored with the original value
+To verify restore action, check the first entry of the file `/var/log/time.log` and confirm that it's been restored with the original value.
 
 ```bash
 # Run a shell inside time-logger deployment's pod
