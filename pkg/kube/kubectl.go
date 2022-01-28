@@ -118,7 +118,7 @@ func (k *KubectlOperation) Delete(ctx context.Context, objRef crv1alpha1.ObjectR
 	return waitForResourceDeletion(ctx, k, objRef, namespace)
 }
 
-// Wait for resource to get deleted by repeatedly checking for NotFound error
+// waitForResourceDeletion repeatedly checks for NotFound error after fetching the resource
 func waitForResourceDeletion(ctx context.Context, k *KubectlOperation, objRef crv1alpha1.ObjectReference, namespace string) (*crv1alpha1.ObjectReference, error) {
 	err := poll.Wait(ctx, func(context.Context) (done bool, err error) {
 		_, err = k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Get(ctx, objRef.Name, metav1.GetOptions{})
