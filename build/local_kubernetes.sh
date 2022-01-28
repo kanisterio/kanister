@@ -75,8 +75,10 @@ install_csi_hostpath_driver() {
     cd csi-driver-host-path
     ./deploy/kubernetes-1.21/deploy.sh
 
-    # Create StorageClass
+    # Create StorageClass and make it default
     kubectl apply -f ./examples/csi-storageclass.yaml
+    kubectl patch storageclass standard -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+    kubectl patch storageclass csi-hostpath-sc -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 }
 
 stop_localkube() {
