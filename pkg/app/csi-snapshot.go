@@ -16,11 +16,14 @@ package app
 
 import (
 	"context"
+	"encoding/json"
+	"strconv"
 
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 
@@ -29,6 +32,12 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 )
+
+type patchMapValue struct {
+	Op    string            `json:"op"`
+	Path  string            `json:"path"`
+	Value map[string]string `json:"value"`
+}
 
 type CSISnapshot struct {
 	cli        kubernetes.Interface
@@ -59,6 +68,13 @@ func (csi *CSISnapshot) Init(ctx context.Context) error {
 }
 
 func (csi *CSISnapshot) Install(ctx context.Context, namespace string) error {
+	if err := applyPatchToStorageClass(ctx, csi, "standard", false); err != nil {
+		return err
+	}
+	if err := applyPatchToStorageClass(ctx, csi, "csi-hostpath-sc", true); err != nil {
+		return err
+	}
+	log.Print("'csi-hostpath-sc' StorageClass is default", field.M{"app": csi.name})
 	csi.namespace = namespace
 	pvcObj, err := csi.getAppPersistentVolumeClaimObj()
 	if err != nil {
@@ -131,6 +147,13 @@ func (csi *CSISnapshot) Uninstall(ctx context.Context) error {
 		return err
 	}
 	log.Print("Namespace deleted successfully", field.M{"app": csi.name})
+	if err := applyPatchToStorageClass(ctx, csi, "csi-hostpath-sc", false); err != nil {
+		return err
+	}
+	if err := applyPatchToStorageClass(ctx, csi, "standard", true); err != nil {
+		return err
+	}
+	log.Print("'standard' StorageClass is default", field.M{"app": csi.name})
 	return nil
 }
 
@@ -222,4 +245,19 @@ spec:
 	var pvc *v1.PersistentVolumeClaim
 	err := yaml.Unmarshal([]byte(pvcManifest), &pvc)
 	return pvc, err
+}
+
+func applyPatchToStorageClass(ctx context.Context, csi *CSISnapshot, storageClassName string, isDefault bool) error {
+	payload := []patchMapValue{{
+		Op:   "replace",
+		Path: "/metadata/annotations",
+		Value: map[string]string{
+			"storageclass.kubernetes.io/is-default-class": strconv.FormatBool(isDefault),
+		},
+	}}
+	payloadBytes, _ := json.Marshal(payload)
+	if _, err := csi.cli.StorageV1().StorageClasses().Patch(ctx, storageClassName, types.JSONPatchType, payloadBytes, metav1.PatchOptions{}); err != nil {
+		return errors.Wrapf(err, "Error while applying patch to %s storageclass: %s", storageClassName, err)
+	}
+	return nil
 }
