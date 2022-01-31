@@ -46,8 +46,8 @@ jobs:
       before_script:
       - docker pull kindest/node:v1.21.1
       - make start-kind
-      - make install-minio
       - make install-csi-hostpath-driver
+      - make install-minio
       script:
       - make integration-test
       before_cache:
