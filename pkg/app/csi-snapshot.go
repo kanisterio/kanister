@@ -68,13 +68,13 @@ func (csi *CSISnapshot) Init(ctx context.Context) error {
 }
 
 func (csi *CSISnapshot) Install(ctx context.Context, namespace string) error {
-	if err := applyPatchToStorageClass(ctx, csi, "standard", false); err != nil {
-		return err
-	}
-	if err := applyPatchToStorageClass(ctx, csi, "csi-hostpath-sc", true); err != nil {
-		return err
-	}
-	log.Print("'csi-hostpath-sc' StorageClass is default", field.M{"app": csi.name})
+	// if err := applyPatchToStorageClass(ctx, csi, "standard", false); err != nil {
+	// 	return err
+	// }
+	// if err := applyPatchToStorageClass(ctx, csi, "csi-hostpath-sc", true); err != nil {
+	// 	return err
+	// }
+	// log.Print("'csi-hostpath-sc' StorageClass is default", field.M{"app": csi.name})
 	csi.namespace = namespace
 	pvcObj, err := csi.getAppPersistentVolumeClaimObj()
 	if err != nil {
@@ -147,13 +147,13 @@ func (csi *CSISnapshot) Uninstall(ctx context.Context) error {
 		return err
 	}
 	log.Print("Namespace deleted successfully", field.M{"app": csi.name})
-	if err := applyPatchToStorageClass(ctx, csi, "csi-hostpath-sc", false); err != nil {
-		return err
-	}
-	if err := applyPatchToStorageClass(ctx, csi, "standard", true); err != nil {
-		return err
-	}
-	log.Print("'standard' StorageClass is default", field.M{"app": csi.name})
+	// if err := applyPatchToStorageClass(ctx, csi, "csi-hostpath-sc", false); err != nil {
+	// 	return err
+	// }
+	// if err := applyPatchToStorageClass(ctx, csi, "standard", true); err != nil {
+	// 	return err
+	// }
+	// log.Print("'standard' StorageClass is default", field.M{"app": csi.name})
 	return nil
 }
 
@@ -236,6 +236,7 @@ metadata:
   labels:
     app: time-logger
 spec:
+  storageClassName: csi-hostpath-sc
   accessModes:
   - ReadWriteOnce
   resources:
