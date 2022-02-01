@@ -32,7 +32,8 @@ import (
 const (
 	healthCheckPath = "/v0/healthz"
 	metricsPath     = "/metrics"
-	whCertsDir      = "/var/run/webhook/serving-cert"
+	healthCheckAddr = ":8000"
+	WHCertsDir      = "/var/run/webhook/serving-cert"
 	whHandlePath    = "/validate/v1alpha1/blueprint"
 )
 
@@ -42,12 +43,9 @@ type Info struct {
 	Version string `json:"version"`
 }
 
-type healthCheckHandler struct{}
+var _ http.Handler = (*healthCheckHandler)(nil)
 
-//NewHealthCheckHandler function returns pointer to an empty healthCheckHandler
-func NewHealthCheckHandler() *healthCheckHandler {
-	return &healthCheckHandler{}
-}
+type healthCheckHandler struct{}
 
 func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	version := version.VERSION
@@ -73,11 +71,18 @@ func RunWebhookServer() error {
 	hookServer.Register(healthCheckPath, &healthCheckHandler{})
 	hookServer.Register(metricsPath, promhttp.Handler())
 
-	hookServer.CertDir = whCertsDir
+	hookServer.CertDir = WHCertsDir
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func NewServer() *http.Server {
+	m := &http.ServeMux{}
+	m.Handle(healthCheckPath, &healthCheckHandler{})
+	m.Handle(metricsPath, promhttp.Handler())
+	return &http.Server{Addr: healthCheckAddr, Handler: m}
 }

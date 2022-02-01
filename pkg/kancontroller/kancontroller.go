@@ -24,6 +24,7 @@ package kancontroller
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -40,6 +41,29 @@ import (
 
 func Execute() {
 	ctx := context.Background()
+
+	// Run HTTPS webhook server if webhook certificates are mounted in the pod
+	//otherwise normal HTTP server for health and prom endpoints
+	if isCACertMounted() {
+		go func() {
+			err := handler.RunWebhookServer()
+			if err != nil {
+				log.WithError(err).Print("Failed to start validating webhook server")
+			}
+		}()
+	} else {
+		s := handler.NewServer()
+		defer func() {
+			if err := s.Shutdown(ctx); err != nil {
+				log.WithError(err).Print("Failed to shutdown health check server")
+			}
+		}()
+		go func() {
+			if err := s.ListenAndServe(); err != nil {
+				log.WithError(err).Print("Failed to start health check server")
+			}
+		}()
+	}
 
 	// Initialize the clients.
 	log.Print("Getting kubernetes context")
@@ -71,11 +95,6 @@ func Execute() {
 		return
 	}
 
-	err = handler.RunWebhookServer()
-	if err != nil {
-		log.WithError(err).Print("Failed to start kanister controller server")
-	}
-
 	// create signals to stop watching the resources
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
@@ -84,4 +103,12 @@ func Execute() {
 	<-signalChan
 	log.Print("shutdown signal received, exiting...")
 	cancel()
+}
+
+func isCACertMounted() bool {
+	if _, err := os.Stat(fmt.Sprintf("%s/%s", handler.WHCertsDir, "tls.crt")); err != nil {
+		return false
+	}
+
+	return true
 }
