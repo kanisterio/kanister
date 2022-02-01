@@ -20,8 +20,8 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -30,7 +30,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
-type CSISnapshot struct {
+type TimeLogCSI struct {
 	cli        kubernetes.Interface
 	namespace  string
 	name       string
@@ -38,189 +38,203 @@ type CSISnapshot struct {
 	pvc        v1.PersistentVolumeClaim
 }
 
-func NewCSISnapshot(name string) App {
-	return &CSISnapshot{
+// NewTimeLogCSI instantiates the TimeLogCSI integration test app
+func NewTimeLogCSI(name string) App {
+	return &TimeLogCSI{
 		name: name,
 	}
 }
 
-func (csi *CSISnapshot) Init(ctx context.Context) error {
+// Init initialises kubernetes CLI
+func (tlc *TimeLogCSI) Init(ctx context.Context) error {
 	cfg, err := kube.LoadConfig()
 	if err != nil {
 		return err
 	}
-
-	csi.cli, err = kubernetes.NewForConfig(cfg)
+	tlc.cli, err = kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (csi *CSISnapshot) Install(ctx context.Context, namespace string) error {
-	csi.namespace = namespace
-	pvcObj, err := csi.getAppPersistentVolumeClaimObj()
+// Install deploys the TimeLogCSI App Deployment and PVC
+func (tlc *TimeLogCSI) Install(ctx context.Context, namespace string) error {
+	tlc.namespace = namespace
+	pvcObj := tlc.getAppPersistentVolumeClaimObj()
+	pvc, err := tlc.cli.CoreV1().PersistentVolumeClaims(namespace).Create(ctx, pvcObj, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
-	pvc, err := csi.cli.CoreV1().PersistentVolumeClaims(namespace).Create(ctx, pvcObj, metav1.CreateOptions{})
+	log.Print("PVC created successfully", field.M{"app": tlc.name, "pvc": pvc.Name})
+	tlc.pvc = *pvc
+	deploymentObj := tlc.getAppDeploymentObj()
+	deployment, err := tlc.cli.AppsV1().Deployments(namespace).Create(ctx, deploymentObj, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
-	log.Print("PVC created successfully", field.M{"app": csi.name, "pvc": pvc.Name})
-	csi.pvc = *pvc
-	deploymentObj, err := csi.getAppDeploymentObj()
-	if err != nil {
-		return err
-	}
-	deployment, err := csi.cli.AppsV1().Deployments(namespace).Create(ctx, deploymentObj, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	csi.deployment = *deployment
-	log.Print("Deployment created successfully", field.M{"app": csi.name, "deployment": deployment.Name})
+	tlc.deployment = *deployment
+	log.Print("Deployment created successfully", field.M{"app": tlc.name, "deployment": deployment.Name})
 	return nil
 }
 
-func (csi *CSISnapshot) Initialize(ctx context.Context) error {
-	return nil
-}
-
-func (csi *CSISnapshot) Insert(ctx context.Context) error {
-	return nil
-}
-
-func (csi *CSISnapshot) Reset(ctx context.Context) error {
-	log.Print("Resetting the application.", field.M{"app": csi.name})
+// Reset deletes the log file present at the volume mount path
+func (tlc *TimeLogCSI) Reset(ctx context.Context) error {
+	log.Print("Resetting the application.", field.M{"app": tlc.name})
 
 	removeLogFileCmd := []string{"sh", "-c", "rm /var/log/time.log"}
-	stderr, err := csi.execCommand(ctx, removeLogFileCmd)
+	stderr, err := tlc.execCommand(ctx, removeLogFileCmd)
 	if err != nil {
 		return errors.Wrapf(err, "Error while deleting log file: %s", stderr)
 	}
 
-	log.Print("Reset of the application was successful.", field.M{"app": csi.name})
+	log.Print("Reset of the application was successful.", field.M{"app": tlc.name})
 	return nil
 }
 
-func (csi *CSISnapshot) IsReady(ctx context.Context) (bool, error) {
-	log.Print("Waiting for the application to be ready.", field.M{"app": csi.name})
+// IsReady waits for the App Deployment to be in 'Ready' state
+func (tlc *TimeLogCSI) IsReady(ctx context.Context) (bool, error) {
+	log.Print("Waiting for the application to be ready.", field.M{"app": tlc.name})
 	ctx, cancel := context.WithTimeout(ctx, mssqlWaitTimeout)
 	defer cancel()
 
-	err := kube.WaitOnDeploymentReady(ctx, csi.cli, csi.namespace, csi.deployment.Name)
+	err := kube.WaitOnDeploymentReady(ctx, tlc.cli, tlc.namespace, tlc.deployment.Name)
 	if err != nil {
 		return false, err
 	}
-	log.Print("Application instance is ready.", field.M{"app": csi.name})
+	log.Print("Application instance is ready.", field.M{"app": tlc.name})
 	return true, nil
 }
 
-func (csi *CSISnapshot) Object() crv1alpha1.ObjectReference {
+// Object defines the objectReference that will be used to create actions in blueprint
+func (tlc *TimeLogCSI) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		Kind:      "deployment",
-		Name:      csi.name,
-		Namespace: csi.namespace,
+		Name:      tlc.name,
+		Namespace: tlc.namespace,
 	}
 }
 
-func (csi *CSISnapshot) Uninstall(ctx context.Context) error {
-	err := csi.cli.CoreV1().Namespaces().Delete(ctx, csi.namespace, metav1.DeleteOptions{})
+// Uninstall removes the TimeLogCSI app from the cluster
+func (tlc *TimeLogCSI) Uninstall(ctx context.Context) error {
+	err := tlc.cli.CoreV1().Namespaces().Delete(ctx, tlc.namespace, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
-	log.Print("Namespace deleted successfully", field.M{"app": csi.name})
+	log.Print("Namespace deleted successfully", field.M{"app": tlc.name})
 	return nil
 }
 
-func (csi *CSISnapshot) Ping(ctx context.Context) error {
-	log.Print("Pinging the application.", field.M{"app": csi.name})
+// Ping is used to check the connection with Deployment Pod
+func (tlc *TimeLogCSI) Ping(ctx context.Context) error {
+	log.Print("Pinging the application.", field.M{"app": tlc.name})
 
 	listDirectories := []string{"sh", "-c", "ls /var/log"}
-	stderr, err := csi.execCommand(ctx, listDirectories)
+	stderr, err := tlc.execCommand(ctx, listDirectories)
 	if err != nil {
 		return errors.Wrapf(err, "Error while Pinging the application %s", stderr)
 	}
 
-	log.Print("Ping to the application was success.", field.M{"app": csi.name})
+	log.Print("Ping to the application was success.", field.M{"app": tlc.name})
 	return nil
 }
 
-func (csi *CSISnapshot) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+func (tlc *TimeLogCSI) Insert(ctx context.Context) error {
 	return nil
 }
 
-func (csi *CSISnapshot) Count(ctx context.Context) (int, error) {
+func (tlc *TimeLogCSI) Initialize(ctx context.Context) error {
+	return nil
+}
+
+func (tlc *TimeLogCSI) Count(ctx context.Context) (int, error) {
 	return 3, nil
 }
 
-func (csi *CSISnapshot) ConfigMaps() map[string]crv1alpha1.ObjectReference {
+func (tlc *TimeLogCSI) Secrets() map[string]crv1alpha1.ObjectReference {
 	return nil
 }
 
-func (csi *CSISnapshot) Secrets() map[string]crv1alpha1.ObjectReference {
+func (tlc *TimeLogCSI) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 	return nil
 }
 
-func (csi *CSISnapshot) execCommand(ctx context.Context, command []string) (string, error) {
-	podname, containername, err := kube.GetPodContainerFromDeployment(ctx, csi.cli, csi.namespace, csi.name)
+func (tlc *TimeLogCSI) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
+	return nil
+}
+
+func (tlc *TimeLogCSI) execCommand(ctx context.Context, command []string) (string, error) {
+	podname, containername, err := kube.GetPodContainerFromDeployment(ctx, tlc.cli, tlc.namespace, tlc.name)
 	if err != nil || podname == "" {
-		return "", errors.Wrapf(err, "Error getting pod and containername %s.", csi.name)
+		return "", errors.Wrapf(err, "Error getting pod and containername %s.", tlc.name)
 	}
-	_, stderr, err := kube.Exec(csi.cli, csi.namespace, podname, containername, command, nil)
+	_, stderr, err := kube.Exec(tlc.cli, tlc.namespace, podname, containername, command, nil)
 	return stderr, err
 }
 
-func (csi CSISnapshot) getAppDeploymentObj() (*appsv1.Deployment, error) {
-	deploymentManifest := `apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: time-logger
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: time-logger
-  template:
-    metadata:
-      labels:
-        app: time-logger
-    spec:
-      containers:
-      - name: test-container
-        image: ghcr.io/kanisterio/kanister-tools:0.72.0
-        command: ["sh", "-c"]
-        args: ["while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"]
-        volumeMounts:
-        - name: data
-          mountPath: /var/log
-      volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: time-log-pvc`
-
-	var deployment *appsv1.Deployment
-	err := yaml.Unmarshal([]byte(deploymentManifest), &deployment)
-	return deployment, err
+func (tlc TimeLogCSI) getAppDeploymentObj() *appsv1.Deployment {
+	depReplicas := int32(1)
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: tlc.name,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &depReplicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": tlc.name},
+			},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": tlc.name},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:    "test-container",
+							Image:   "ghcr.io/kanisterio/kanister-tools:0.72.0",
+							Command: []string{"sh", "-c"},
+							Args:    []string{"while true; do for x in $(seq 1200); do date >> /var/log/time.log; sleep 1; done; truncate /var/log/time.log --size 0; done"},
+							VolumeMounts: []v1.VolumeMount{
+								{
+									Name:      "data",
+									MountPath: "/var/log",
+								},
+							},
+						},
+					},
+					Volumes: []v1.Volume{
+						{
+							Name: "data",
+							VolumeSource: v1.VolumeSource{
+								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+									ClaimName: "time-log-pvc",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	return deployment
 }
 
-func (csi CSISnapshot) getAppPersistentVolumeClaimObj() (*v1.PersistentVolumeClaim, error) {
-	pvcManifest := `apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: time-log-pvc
-  labels:
-    app: time-logger
-spec:
-  storageClassName: csi-hostpath-sc
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi`
-
-	var pvc *v1.PersistentVolumeClaim
-	err := yaml.Unmarshal([]byte(pvcManifest), &pvc)
-	return pvc, err
+func (tlc TimeLogCSI) getAppPersistentVolumeClaimObj() *v1.PersistentVolumeClaim {
+	storageClassName := "csi-hostpath-sc"
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "time-log-pvc",
+			Labels: map[string]string{"app": tlc.name},
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			StorageClassName: &storageClassName,
+			AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: *resource.NewQuantity(1073741824, resource.BinarySI),
+				},
+			},
+		},
+	}
+	return pvc
 }

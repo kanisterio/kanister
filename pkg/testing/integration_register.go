@@ -71,15 +71,15 @@ var _ = Suite(&MySQL{
 })
 
 // time-log app for csi volumesnapshot
-type CSISnapshot struct {
+type TimeLogCSI struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&CSISnapshot{
+var _ = Suite(&TimeLogCSI{
 	IntegrationSuite{
 		name:      "time-logger",
 		namespace: "time-log",
-		app:       app.NewCSISnapshot("time-logger"),
+		app:       app.NewTimeLogCSI("time-logger"),
 		bp:        app.NewBlueprint("csi-snapshot", "", true),
 		profile:   newSecretProfile(),
 	},
