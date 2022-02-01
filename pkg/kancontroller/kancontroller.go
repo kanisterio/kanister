@@ -41,16 +41,24 @@ import (
 
 func Execute() {
 	ctx := context.Background()
+	// Initialize the clients.
+	log.Print("Getting kubernetes context")
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		log.WithError(err).Print("Failed to get k8s config")
+		return
+	}
 
 	// Run HTTPS webhook server if webhook certificates are mounted in the pod
 	//otherwise normal HTTP server for health and prom endpoints
 	if isCACertMounted() {
-		go func() {
-			err := handler.RunWebhookServer()
+		go func(config *rest.Config) {
+			err := handler.RunWebhookServer(config)
 			if err != nil {
 				log.WithError(err).Print("Failed to start validating webhook server")
+				return
 			}
-		}()
+		}(config)
 	} else {
 		s := handler.NewServer()
 		defer func() {
@@ -63,14 +71,6 @@ func Execute() {
 				log.WithError(err).Print("Failed to start health check server")
 			}
 		}()
-	}
-
-	// Initialize the clients.
-	log.Print("Getting kubernetes context")
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		log.WithError(err).Print("Failed to get k8s config")
-		return
 	}
 
 	// Make sure the CRD's exist.

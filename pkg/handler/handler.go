@@ -19,13 +19,14 @@ import (
 	"io"
 	"net/http"
 
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
 	"github.com/kanisterio/kanister/pkg/version"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -60,10 +61,11 @@ func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.WriteString(w, string(js))
 }
 
-func RunWebhookServer() error {
-	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{})
+// RunWebhookServer starts the validating webhook resources for blueprint kanister resources
+func RunWebhookServer(c *rest.Config) error {
+	mgr, err := manager.New(c, manager.Options{})
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create new webhook manager")
 	}
 
 	hookServer := mgr.GetWebhookServer()

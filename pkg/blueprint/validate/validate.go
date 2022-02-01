@@ -22,6 +22,7 @@ import (
 	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/utils"
+	"github.com/pkg/errors"
 )
 
 // Do takes a blueprint and validates if the function names in phases are correct
@@ -33,14 +34,14 @@ func Do(bp *crv1alpha1.Blueprint, funcVersion string) error {
 		phases, err := kanister.GetPhases(*bp, name, funcVersion, param.TemplateParams{})
 		if err != nil {
 			utils.PrintStage(fmt.Sprintf("validation of action %s", name), utils.Fail)
-			return fmt.Errorf("validation of action %s, error: %s", name, err.Error())
+			return errors.Wrapf(err, fmt.Sprintf("Failed to validate action %s", name))
 		}
 
 		for i, phase := range phases {
 			// validate function's mandatory arguments
 			if err := phase.Validate(action.Phases[i].Args); err != nil {
 				utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", phase.Name(), name), utils.Fail)
-				return fmt.Errorf("validation of phase %s in action %s, error: %s", phase.Name(), name, err.Error())
+				return errors.Wrapf(err, "Failed to validate phase %s in action %s", phase.Name(), name)
 			}
 			utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", phase.Name(), name), utils.Pass)
 		}
