@@ -126,7 +126,7 @@ func SetFormatter(format OutputFormat) {
 }
 
 func init() {
-	SetFormatter(TextFormat)
+	SetFormatter(JSONFormat)
 	initEnvVarFields()
 	initLogLevel()
 }
