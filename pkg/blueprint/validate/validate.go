@@ -34,7 +34,7 @@ func Do(bp *crv1alpha1.Blueprint, funcVersion string) error {
 		phases, err := kanister.GetPhases(*bp, name, funcVersion, param.TemplateParams{})
 		if err != nil {
 			utils.PrintStage(fmt.Sprintf("validation of action %s", name), utils.Fail)
-			return errors.Wrapf(err, fmt.Sprintf("Failed to validate action %s", name))
+			return errors.Wrapf(err, "Failed to validate action %s", name)
 		}
 
 		for i, phase := range phases {

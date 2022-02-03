@@ -9,6 +9,7 @@ replace (
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
 
+// Direct and indirect dependencies are grouped together
 require (
 	github.com/Azure/azure-sdk-for-go v54.0.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.19
@@ -56,9 +57,9 @@ require (
 	k8s.io/cli-runtime v0.20.1
 	k8s.io/client-go v0.20.1
 	k8s.io/kubectl v0.20.1
-)
 
-require sigs.k8s.io/controller-runtime v0.8.0
+	sigs.k8s.io/controller-runtime v0.8.0
+)
 
 require (
 	cloud.google.com/go v0.88.0 // indirect
