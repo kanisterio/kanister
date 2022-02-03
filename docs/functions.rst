@@ -1194,7 +1194,7 @@ Example:
     args:
       operation: create
       namespace: "{{ .Deployment.Namespace }}"
-      spec:
+      spec: |-
         apiVersion: apps/v1
         kind: Deployment
         metadata:
