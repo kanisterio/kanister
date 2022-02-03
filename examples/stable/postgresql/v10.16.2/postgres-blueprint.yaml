@@ -6,11 +6,9 @@ actions:
   backup:
     kind: StatefulSet
     outputArtifacts:
-      pgBackup:
-        # Capture the kopia snapshot information for subsequent actions
-        # The information includes the kopia snapshot ID which is essential for restore and delete to succeed
-        # `kopiaOutput` is the name provided to kando using `--output-name` flag
-        kopiaSnapshot: "{{ .Phases.pgDump.Output.kopiaOutput }}"
+      cloudObject:
+        keyValue:
+          backupLocation: "{{ .Phases.pgDump.Output.backupLocation }}"
     phases:
     - func: KubeTask
       name: pgDump
@@ -32,15 +30,14 @@ actions:
         - |
           export PGHOST='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
           export PGUSER='postgres'
-          export PGPASSWORD='{{ index .Phases.pgDump.Secrets.pgSecret.Data "postgres-password" | toString }}'
-          backup_file_path="backup.sql"
-          pg_dumpall --clean -U $PGUSER | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
+          export PGPASSWORD='{{ index .Phases.pgDump.Secrets.pgSecret.Data "postgresql-password" | toString }}'
+          BACKUP_LOCATION=pg_backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/backup.sql.gz
+          pg_dumpall --clean -U $PGUSER | gzip -c | kando location push --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" -
+          kando output backupLocation "${BACKUP_LOCATION}"
   restore:
     kind: StatefulSet
     inputArtifactNames:
-    # The kopia snapshot info created in backup phase can be used here
-    # Use the `--kopia-snapshot` flag in kando to pass in `pgBackup.KopiaSnapshot`
-    - pgBackup
+    - cloudObject
     phases:
     - func: KubeTask
       name: pgRestore
@@ -62,15 +59,12 @@ actions:
         - |
           export PGHOST='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
           export PGUSER='postgres'
-          export PGPASSWORD='{{ index .Phases.pgRestore.Secrets.pgSecret.Data "postgres-password" | toString }}'
-          backup_file_path="backup.sql"
-          kopia_snap='{{ .ArtifactsIn.pgBackup.KopiaSnapshot }}'
-          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | psql -q -U "${PGUSER}"
+          export PGPASSWORD='{{ index .Phases.pgRestore.Secrets.pgSecret.Data "postgresql-password" | toString }}'
+          BACKUP_LOCATION={{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}
+          kando location pull --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" - | gunzip -c -f | sed 's/LOCALE/LC_COLLATE/' | psql -q -U "${PGUSER}"
   delete:
     inputArtifactNames:
-    # The kopia snapshot info created in backup phase can be used here
-    # Use the `--kopia-snapshot` flag in kando to pass in `pgBackup.KopiaSnapshot`
-      - pgBackup
+      - cloudObject
     phases:
     - func: KubeTask
       name: deleteDump
@@ -85,6 +79,5 @@ actions:
           - pipefail
           - -c
           - |
-            backup_file_path="backup.sql"
-            kopia_snap='{{ .ArtifactsIn.pgBackup.KopiaSnapshot }}'
-            kando location delete --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}"
+            kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}'
+
