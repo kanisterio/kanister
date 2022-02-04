@@ -229,6 +229,8 @@ A new S3Compliant profile can be created using the s3compliant subcommand
   secret 's3-secret-chst2' created
   profile 's3-profile-5mmkj' created
 
+.. _kanctlvalidate:
+
 kanctl validate
 ---------------
 
@@ -304,6 +306,9 @@ using ``-f`` flag and optionally ``-v`` flag for kanister function version.
     Passed the 'validation of phase dumpToObjectStore in action backup' check.. ✅
     Passed the 'validation of phase deleteFromBlobStore in action delete' check.. ✅
     Passed the 'validation of phase restoreFromBlobStore in action restore' check.. ✅
+
+``kanctl validate blueprint`` right now checks that kanister function names
+are correct and all the mandatory arguments to the functions are provided.
 
 
 Kando
