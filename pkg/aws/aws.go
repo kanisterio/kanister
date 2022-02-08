@@ -58,6 +58,13 @@ const (
 	// TODO: Make this configurable via `config`
 	AssumeRoleDurationDefault = 60 * time.Minute
 	AssumeRoleDuration        = "assumeRoleDuration"
+
+	// ConfigUserAgentString represents the key for user agent string in the map "config"
+	ConfigUserAgentString = "userAgentString"
+
+	// UserAgentEnv represents the env variable that needs to be set append a user agent string
+	// to the HTTP header.
+	UserAgentEnv = "AWS_EXECUTION_ENV"
 )
 
 func durationFromString(config map[string]string) (time.Duration, error) {
@@ -128,5 +135,17 @@ func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Co
 	if err != nil {
 		return nil, "", errors.Wrap(err, "could not initialize AWS credentials for operation")
 	}
+	err = setUserAgentString(config)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "failed to set user agent string")
+	}
 	return &aws.Config{Credentials: creds}, region, nil
+}
+
+func setUserAgentString(config map[string]string) error {
+	if userAgentString, ok := config[ConfigUserAgentString]; ok && userAgentString != "" {
+		err := os.Setenv(UserAgentEnv, userAgentString)
+		return err
+	}
+	return nil
 }
