@@ -51,7 +51,7 @@ Stable Helm charts that have been updated with Kanister support.
 
 ## Community Meetings
 
-We hold public community meetings, to discuss roadmap and other desing discussions, once every two weeks on Thursday at 06:00 PM CET.
+We hold public community meetings, for roadmap and other design discussions, once every two weeks on Thursday at 06:00 PM CET.
 
 - Agenda and meeting notes can be found in [this document](https://docs.google.com/document/d/17LiqwVkeK0MVyfvGwsHPKhaz-nvoaafyAsd7I1R6K3Y/edit?usp=sharing).
 - To get yourself added into the regular Community meetings invite, please drop a mail to vivek@kasten.io.
