@@ -18,11 +18,13 @@ import (
 	"context"
 
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 func init() {
@@ -71,6 +73,9 @@ func (*deleteCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams,
 	if _, err := deleteCSISnapshot(ctx, snapshotter, name, namespace); err != nil {
 		return nil, err
 	}
+	if err := waitForCSISnapshotDeletion(ctx, snapshotter, name, namespace); err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 
@@ -83,4 +88,14 @@ func (*deleteCSISnapshotFunc) RequiredArgs() []string {
 
 func deleteCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, name, namespace string) (*v1.VolumeSnapshot, error) {
 	return snapshotter.Delete(ctx, name, namespace)
+}
+
+func waitForCSISnapshotDeletion(ctx context.Context, snapshotter snapshot.Snapshotter, name, namespace string) error {
+	return poll.Wait(ctx, func(context.Context) (done bool, err error) {
+		_, err = snapshotter.Get(ctx, name, namespace)
+		if apierrors.IsNotFound(err) {
+			return true, nil
+		}
+		return false, err
+	})
 }

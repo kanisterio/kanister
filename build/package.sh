@@ -24,7 +24,10 @@ build_licenses_info_image() {
     local src_dir="$(pwd)"
     local target_file="$(pwd)/licenses"
     local mount_cmd="-v $(pwd):$(pwd)"
-    if grep docker /proc/1/cgroup -qa; then
+    # Checking if executed inside docker container
+    if [ -n "${CONTAINER_NAME:-}" ]; then
+        mount_cmd="--volumes-from ${CONTAINER_NAME}"
+    elif grep docker /proc/1/cgroup -qa; then
         mount_cmd="--volumes-from $(grep docker -m 1 /proc/self/cgroup|cut -d/ -f3)"
     fi
     docker run --rm ${mount_cmd} \

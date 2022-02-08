@@ -9,7 +9,7 @@ Kanister Architecture Overview
 The design of Kanister follows the operator pattern. This means
 Kanister defines its own resources and interacts with those resources
 through a controller. `This blog post
-<https://coreos.com/blog/introducing-operators.html>`_ describes the
+<https://www.redhat.com/en/blog/operators-over-easy-introduction-kubernetes-operators>`_ describes the
 pattern in detail.
 
 In particular, Kanister is composed of three main components: the
