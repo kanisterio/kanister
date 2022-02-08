@@ -24,6 +24,7 @@ package kancontroller
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -40,25 +41,36 @@ import (
 
 func Execute() {
 	ctx := context.Background()
-
-	s := handler.NewServer()
-	defer func() {
-		if err := s.Shutdown(ctx); err != nil {
-			log.WithError(err).Print("Failed to shutdown health check server")
-		}
-	}()
-	go func() {
-		if err := s.ListenAndServe(); err != nil {
-			log.WithError(err).Print("Failed to start health check server")
-		}
-	}()
-
 	// Initialize the clients.
 	log.Print("Getting kubernetes context")
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		log.WithError(err).Print("Failed to get k8s config")
 		return
+	}
+
+	// Run HTTPS webhook server if webhook certificates are mounted in the pod
+	//otherwise normal HTTP server for health and prom endpoints
+	if isCACertMounted() {
+		go func(config *rest.Config) {
+			err := handler.RunWebhookServer(config)
+			if err != nil {
+				log.WithError(err).Print("Failed to start validating webhook server")
+				return
+			}
+		}(config)
+	} else {
+		s := handler.NewServer()
+		defer func() {
+			if err := s.Shutdown(ctx); err != nil {
+				log.WithError(err).Print("Failed to shutdown health check server")
+			}
+		}()
+		go func() {
+			if err := s.ListenAndServe(); err != nil {
+				log.WithError(err).Print("Failed to start health check server")
+			}
+		}()
 	}
 
 	// Make sure the CRD's exist.
@@ -91,4 +103,12 @@ func Execute() {
 	<-signalChan
 	log.Print("shutdown signal received, exiting...")
 	cancel()
+}
+
+func isCACertMounted() bool {
+	if _, err := os.Stat(fmt.Sprintf("%s/%s", handler.WHCertsDir, "tls.crt")); err != nil {
+		return false
+	}
+
+	return true
 }
