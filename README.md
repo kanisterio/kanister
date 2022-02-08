@@ -55,6 +55,7 @@ We hold public community meetings, for roadmap and other design discussions, onc
 
 - Agenda and meeting notes can be found in [this document](https://docs.google.com/document/d/17LiqwVkeK0MVyfvGwsHPKhaz-nvoaafyAsd7I1R6K3Y/edit?usp=sharing).
 - To get yourself added into the regular Community meetings invite, please drop a mail to vivek@kasten.io.
+- Meeting joining details can be found in the meeting invite itself.
 
 ## Resources
 
