@@ -307,8 +307,8 @@ using ``-f`` flag and optionally ``-v`` flag for kanister function version.
     Passed the 'validation of phase deleteFromBlobStore in action delete' check.. ✅
     Passed the 'validation of phase restoreFromBlobStore in action restore' check.. ✅
 
-``kanctl validate blueprint`` right now checks that kanister function names
-are correct and all the mandatory arguments to the functions are provided.
+``kanctl validate blueprint`` currently verifies the Kanister function names
+and presence of the mandatory arguments to those functions.
 
 
 Kando
