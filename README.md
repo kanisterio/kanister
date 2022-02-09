@@ -70,6 +70,9 @@ issue](https://github.com/kanisterio/kanister/issues).
 
 ## Presentations
 
+- [DoK - Kanister: Application Level Data Operations on Kubernetes](https://www.youtube.com/watch?v=ooJFt0bid1I&t=791s)
+- [Kanister Overview 2021 ](https://www.youtube.com/watch?v=wFD42Zpbfts&t=1s)
+- [CNCF Webinar - Integrating Backup Into Your GitOps CI/CD Pipeline](https://www.youtube.com/watch?v=2zik5jDjVvM)
 - [SIG Apps Demo](https://youtu.be/uzIp-CjsX1c?t=82)
 - [Percona Live 2018](https://www.youtube.com/watch?v=dS0kv0k8D_E)
 
