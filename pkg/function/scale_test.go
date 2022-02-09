@@ -135,7 +135,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 	ctx := context.Background()
 	d := testutil.NewTestDeployment(1)
 	d.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-		PreStop: &v1.Handler{
+		PreStop: &v1.LifecycleHandler{
 			Exec: &v1.ExecAction{
 				Command: []string{"sleep", "30"},
 			},
@@ -184,7 +184,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 	ctx := context.Background()
 	ss := testutil.NewTestStatefulSet(1)
 	ss.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-		PreStop: &v1.Handler{
+		PreStop: &v1.LifecycleHandler{
 			Exec: &v1.ExecAction{
 				Command: []string{"sleep", "30"},
 			},

@@ -1,0 +1,36 @@
+{{ $altNames := list  ( printf "%s.%s" ( include "kanister-operator.fullname" . ) .Release.Namespace )  ( printf "%s.%s.svc" ( include "kanister-operator.fullname" . ) .Release.Namespace ) }}
+# generate ca cert with 365 days of validity
+{{ $ca := genCA ( printf "%s-ca" ( include "kanister-operator.fullname" . ) ) 365 }}
+# generate cert with CN="component-svc", SAN=$altNames and with 365 days of validity
+{{ $cert := genSignedCert ( printf "%s" ( include "kanister-operator.fullname" . ) ) nil $altNames 365 $ca }}
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: kanister-webhook-certs
+data:
+  tls.crt: {{ $cert.Cert | b64enc }}
+  tls.key: {{ $cert.Key | b64enc }}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: "blueprints.cr.kanister.io"
+webhooks:
+- name: "blueprints.cr.kanister.io"
+  rules:
+  - apiGroups:   ["cr.kanister.io"]
+    apiVersions: ["v1alpha1"]
+    operations:  ["CREATE", "UPDATE"]
+    resources:   ["blueprints"]
+    scope:       "Namespaced"
+  clientConfig:
+    service:
+      namespace: {{ .Release.Namespace }}
+      name: {{ template "kanister-operator.fullname" . }}
+      path: "/validate/v1alpha1/blueprint"
+      port: {{ .Values.controller.service.port }}
+    caBundle: {{ b64enc $ca.Cert }}
+  admissionReviewVersions: ["v1", "v1beta1"]
+  sideEffects: None
+  timeoutSeconds: 5
