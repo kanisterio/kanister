@@ -49,6 +49,15 @@ Stable Helm charts that have been updated with Kanister support.
 [![asciicast](https://asciinema.org/a/303478.svg)](https://asciinema.org/a/303478?speed=1.5)
 
 
+## Community Meetings
+
+We hold public community meetings, for roadmap and other design discussions, once every two weeks on Thursday at 06:00 PM CET.
+
+- Agenda and meeting notes can be found in [this document](https://docs.google.com/document/d/17LiqwVkeK0MVyfvGwsHPKhaz-nvoaafyAsd7I1R6K3Y/edit?usp=sharing).
+- To get yourself added into the regular Community meetings invite, please drop a mail to vivek@kasten.io.
+- Meeting joining details can be found in the meeting invite itself.
+
+
 ## Resources
 
 To get started or to better understand kanister, see the
