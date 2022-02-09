@@ -57,6 +57,7 @@ We hold public community meetings, for roadmap and other design discussions, onc
 - To get yourself added into the regular Community meetings invite, please drop a mail to vivek@kasten.io.
 - Meeting joining details can be found in the meeting invite itself.
 
+
 ## Resources
 
 To get started or to better understand kanister, see the
