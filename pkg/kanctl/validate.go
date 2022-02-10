@@ -15,7 +15,7 @@
 package kanctl
 
 import (
-	"fmt"
+	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -26,19 +26,13 @@ type validateParams struct {
 	filename             string
 	namespace            string
 	schemaValidationOnly bool
+	functionVersion      string
 }
-
-type indicator string
-
-const (
-	fail indicator = `❌`
-	pass indicator = `✅`
-	skip indicator = `🚫`
-)
 
 const (
 	nameFlag                 = "name"
 	filenameFlag             = "filename"
+	funcVersionFlag          = "functionVersion"
 	resourceNamespaceFlag    = "resource-namespace"
 	schemaValidationOnlyFlag = "schema-validation-only"
 )
@@ -56,6 +50,7 @@ func newValidateCommand() *cobra.Command {
 	cmd.Flags().StringP(filenameFlag, "f", "", "yaml or json file of the custom resource to validate")
 	cmd.Flags().String(resourceNamespaceFlag, "default", "namespace of the custom resource. Used when validating resource specified using --name.")
 	cmd.Flags().Bool(schemaValidationOnlyFlag, false, "if set, only schema of resource will be validated")
+	cmd.Flags().StringP(funcVersionFlag, "v", kanister.DefaultVersion, "kanister function version, e.g., v0.0.0")
 	return cmd
 }
 
@@ -69,8 +64,10 @@ func performValidation(cmd *cobra.Command, args []string) error {
 	switch p.resourceKind {
 	case "profile":
 		return performProfileValidation(p)
+	case "blueprint":
+		return performBlueprintValidation(p)
 	default:
-		return errors.Errorf("expected profile.. got %s. Not supported", p.resourceKind)
+		return errors.Errorf("resource %s is not supported for validate subcommand", p.resourceKind)
 	}
 }
 
@@ -86,24 +83,14 @@ func extractValidateParams(cmd *cobra.Command, args []string) (*validateParams, 
 	}
 	rns, _ := cmd.Flags().GetString(resourceNamespaceFlag)
 	schemaValidationOnly, _ := cmd.Flags().GetBool(schemaValidationOnlyFlag)
+	funcVersion, _ := cmd.Flags().GetString(funcVersionFlag)
+
 	return &validateParams{
 		resourceKind:         resourceKind,
 		name:                 name,
 		filename:             filename,
 		namespace:            rns,
 		schemaValidationOnly: schemaValidationOnly,
+		functionVersion:      funcVersion,
 	}, nil
-}
-
-func printStage(description string, i indicator) {
-	switch i {
-	case pass:
-		fmt.Printf("Passed the '%s' check.. %s\n", description, i)
-	case skip:
-		fmt.Printf("Skipping the '%s' check.. %s\n", description, i)
-	case fail:
-		fmt.Printf("Failed the '%s' check.. %s\n", description, i)
-	default:
-		fmt.Println(description)
-	}
 }

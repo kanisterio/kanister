@@ -19,15 +19,23 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/kanisterio/kanister/pkg/validatingwebhook"
 	"github.com/kanisterio/kanister/pkg/version"
+	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
 	healthCheckPath = "/v0/healthz"
 	metricsPath     = "/metrics"
 	healthCheckAddr = ":8000"
+	WHCertsDir      = "/var/run/webhook/serving-cert"
+	whHandlePath    = "/validate/v1alpha1/blueprint"
 )
 
 // Info provides information about kanister controller
@@ -39,11 +47,6 @@ type Info struct {
 var _ http.Handler = (*healthCheckHandler)(nil)
 
 type healthCheckHandler struct{}
-
-//NewHealthCheckHandler function returns pointer to an empty healthCheckHandler
-func NewHealthCheckHandler() *healthCheckHandler {
-	return &healthCheckHandler{}
-}
 
 func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	version := version.VERSION
@@ -58,7 +61,27 @@ func (*healthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.WriteString(w, string(js))
 }
 
-// NewServer returns a pointer to the http Server
+// RunWebhookServer starts the validating webhook resources for blueprint kanister resources
+func RunWebhookServer(c *rest.Config) error {
+	mgr, err := manager.New(c, manager.Options{})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create new webhook manager")
+	}
+
+	hookServer := mgr.GetWebhookServer()
+	hookServer.Register(whHandlePath, &webhook.Admission{Handler: &validatingwebhook.BlueprintValidator{}})
+	hookServer.Register(healthCheckPath, &healthCheckHandler{})
+	hookServer.Register(metricsPath, promhttp.Handler())
+
+	hookServer.CertDir = WHCertsDir
+
+	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func NewServer() *http.Server {
 	m := &http.ServeMux{}
 	m.Handle(healthCheckPath, &healthCheckHandler{})

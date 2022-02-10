@@ -118,6 +118,11 @@ Once we create a Blueprint, we can see its events by using the following command
     ----     ------    ----  ----                 -------
     Normal   Added      4m   Kanister Controller  Added blueprint time-log-bp
 
+When a blueprint resource is created, it goes through a
+`validating webhook <https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#validatingadmissionwebhook>`_
+controller that validates the resource. Refer to :ref:`this<kanctlvalidate>`
+documentation for more details.
+
 The next CustomResource we'll deploy is an ActionSet. An ActionSet is created
 each time you want to execute any Kanister actions. The ActionSet contains all
 the runtime information the controller needs during execution. It may contain

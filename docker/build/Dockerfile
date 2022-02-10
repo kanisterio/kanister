@@ -2,11 +2,11 @@ FROM alpine:3.10.5
 
 LABEL maintainer="Tom Manville<tom@kasten.io>"
 
-RUN apk add --update --no-cache ca-certificates bash git docker jq \
+RUN apk add --update --no-cache ca-certificates bash git docker curl jq \
     && update-ca-certificates \
     && rm -rf /var/cache/apk/*
 
-COPY --from=golang:1.16.8-alpine3.14 /usr/local/go/ /usr/local/go/
+COPY --from=golang:1.17.6-alpine3.15 /usr/local/go/ /usr/local/go/
 
 COPY --from=bitnami/kubectl:1.17 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
 

@@ -105,7 +105,7 @@ func (c *FakeActionSets) Update(ctx context.Context, actionSet *v1alpha1.ActionS
 // Delete takes name of the actionSet and deletes it. Returns an error if one occurs.
 func (c *FakeActionSets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(actionsetsResource, c.ns, name), &v1alpha1.ActionSet{})
+		Invokes(testing.NewDeleteActionWithOptions(actionsetsResource, c.ns, name, opts), &v1alpha1.ActionSet{})
 
 	return err
 }

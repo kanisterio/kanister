@@ -20,7 +20,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.72.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.73.0
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -32,7 +32,7 @@ actions:
         - |
           export PGHOST='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
           export PGUSER='postgres'
-          export PGPASSWORD='{{ index .Phases.pgDump.Secrets.pgSecret.Data "postgresql-password" | toString }}'
+          export PGPASSWORD='{{ index .Phases.pgDump.Secrets.pgSecret.Data "postgres-password" | toString }}'
           backup_file_path="backup.sql"
           pg_dumpall --clean -U $PGUSER | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
   restore:
@@ -50,7 +50,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.72.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.73.0
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -62,7 +62,7 @@ actions:
         - |
           export PGHOST='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
           export PGUSER='postgres'
-          export PGPASSWORD='{{ index .Phases.pgRestore.Secrets.pgSecret.Data "postgresql-password" | toString }}'
+          export PGPASSWORD='{{ index .Phases.pgRestore.Secrets.pgSecret.Data "postgres-password" | toString }}'
           backup_file_path="backup.sql"
           kopia_snap='{{ .ArtifactsIn.pgBackup.KopiaSnapshot }}'
           kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | psql -q -U "${PGUSER}"
@@ -75,7 +75,7 @@ actions:
     - func: KubeTask
       name: deleteDump
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.72.0
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.73.0
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash

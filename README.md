@@ -49,6 +49,15 @@ Stable Helm charts that have been updated with Kanister support.
 [![asciicast](https://asciinema.org/a/303478.svg)](https://asciinema.org/a/303478?speed=1.5)
 
 
+## Community Meetings
+
+We hold public community meetings, for roadmap and other design discussions, once every two weeks on Thursday at 06:00 PM CET.
+
+- Agenda and meeting notes can be found in [this document](https://docs.google.com/document/d/17LiqwVkeK0MVyfvGwsHPKhaz-nvoaafyAsd7I1R6K3Y/edit?usp=sharing).
+- To get yourself added into the regular Community meetings invite, please drop a mail to vivek@kasten.io.
+- Meeting joining details can be found in the meeting invite itself.
+
+
 ## Resources
 
 To get started or to better understand kanister, see the
@@ -61,6 +70,9 @@ issue](https://github.com/kanisterio/kanister/issues).
 
 ## Presentations
 
+- [DoK - Kanister: Application Level Data Operations on Kubernetes](https://www.youtube.com/watch?v=ooJFt0bid1I&t=791s)
+- [Kanister Overview 2021 ](https://www.youtube.com/watch?v=wFD42Zpbfts&t=1s)
+- [CNCF Webinar - Integrating Backup Into Your GitOps CI/CD Pipeline](https://www.youtube.com/watch?v=2zik5jDjVvM)
 - [SIG Apps Demo](https://youtu.be/uzIp-CjsX1c?t=82)
 - [Percona Live 2018](https://www.youtube.com/watch?v=dS0kv0k8D_E)
 

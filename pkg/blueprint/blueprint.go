@@ -25,10 +25,8 @@ package blueprint
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 
-	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
@@ -46,11 +44,6 @@ func ReadFromFile(path string) (*crv1alpha1.Blueprint, error) {
 	if err := dec.Decode(&bp); err != nil {
 		return nil, err
 	}
-
-	// set the name to a dynamically generated value
-	// so that the name wont conflict with the same application
-	// installed as part of k10
-	bp.ObjectMeta.Name = fmt.Sprintf("%s-%s", bp.ObjectMeta.Name, rand.String(5))
 
 	return &bp, err
 }

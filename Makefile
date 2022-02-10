@@ -42,7 +42,7 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 # Mention the vm-driver that should be used to install OpenShift
 vm-driver ?= "kvm"
 # Default OCP version in which the OpenShift apps are going to run
-ocp_version ?= "4.7"
+ocp_version ?= "4.9"
 ###
 ### These variables should not need tweaking.
 ###
@@ -57,7 +57,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.15
+BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.17
 
 # tag 0.1.0 is, 0.0.1 (latest) + gh + aws + helm binary
 DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
@@ -88,7 +88,7 @@ all-push: $(addprefix push-, $(ALL_ARCH))
 
 build: bin/$(ARCH)/$(BIN)
 
-build-controller: 
+build-controller:
 	@$(MAKE) run CMD='-c " \
 	goreleaser build --id $(BIN) --rm-dist --debug --snapshot \
 	&& cp dist/$(BIN)_linux_$(ARCH)/$(BIN) bin/$(ARCH)/$(BIN) \
@@ -264,6 +264,9 @@ tiller:
 
 install-minio:
 	@$(MAKE) run CMD='-c "./build/minio.sh install_minio"'
+
+install-csi-hostpath-driver:
+	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh install_csi_hostpath_driver"'
 
 uninstall-minio:
 	@$(MAKE) run CMD='-c "./build/minio.sh uninstall_minio"'
