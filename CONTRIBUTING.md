@@ -12,10 +12,7 @@ You can suggest minor improvements to existing functionality and or a completely
 You can start by looking through `good-first-issue` issues. 
   
 #### Local Developement
-Once you are done with your changes, you need to make sure, that your changes are not breaking anything.
-
-**NOTE:**
-We need to have a local Kubernetes cluster to test changes. We can use [Kind](https://kind.sigs.k8s.io/) to spin up a local Kubernetes cluster, `make start-kind` can be run from the project's root directory to create one. Similarly to delete the cluster we can run `make stop-kind`
+Once we are done with the changes, we need to make sure, that the changes are not breaking anything and are passing the unit as well as the integration test.
 
 ```bash
 #Run golint command to make sure your code is properly formatted
@@ -26,14 +23,36 @@ make build
 
 #Run unit test 
 make test
+```
 
-#Run E2E test
-#From the project root directory
+We need to have a local Kubernetes cluster to deploy the controller with the changes included and run the integration test. 
+
+We can use [Kind](https://kind.sigs.k8s.io/) to spin up a local Kubernetes cluster, `make start-kind` can be run from the project's root directory to create one. Similarly to delete the cluster we can run `make stop-kind`.
+
+To deploy the controller to a Kubernetes cluster [this document](https://docs.kanister.io/install.html#building-and-deploying-from-source) can be referred.
+
+Once the kanister controller is deployed, run the integration test.
+
+```bash
+# Run E2E test
+# From the project root directory
 make integration-test
 ```
-To test and deploy your changes to a local Kubernetes cluster [this document](https://docs.kanister.io/install.html#building-and-deploying-from-source) can be referred.
+The above command runs the integration test for all the applications. To run the integration test for a specific application use the following command.
 
-- Create a pull request with the changes for review. Please refer [Raising PR](#raising-pr)
+```bash
+# specify the application(or regex expression) for which the integration test needs to be run.
+# For example ^PostgreSQL$
+SHORT_APPS="^PostgreSQL$|^MySQL$|Elasticsearch|^MongoDB$|Maria|^MSSQL$"
+
+# Run E2E test
+# From the project root directory
+./build/integration-test.sh ${SHORT_APPS}
+
+```
+**Note:** We can find the application name from `/pkg/testing/integration_register.go`
+
+Once the integration test passes. Create a pull request with the changes for review. Please refer [Raising PR](#raising-pr)
 
 ### Contributing to documentation
 For complete documentation visit https://docs.kanister.io/
@@ -41,9 +60,9 @@ For complete documentation visit https://docs.kanister.io/
 Kanister docs are generated using [Sphinx](https://www.sphinx-doc.org/en/master/) and are written in [reStructuredText](https://docutils.sourceforge.io/rst.html). The source `.rst` files are in the Kanister repository under the `/docs` folder.
 
 ### Updating documentation
-- Modify or add `.rst` file(s) under the `/docs` folder.
+- We can modify or add `.rst` file(s) under the `/docs` folder.
 
-- Build Docs locally.
+- Build Docs locally
 ```bash
 make docs
 ```
