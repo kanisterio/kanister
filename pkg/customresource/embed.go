@@ -1,0 +1,14 @@
+package customresource
+
+import "embed"
+
+// embed.go embeds the CRD yamls (actionset, profile, blueprint) with the
+// controller binary so that we can read these manifests in runtime.
+
+// We need these manfiests at two places, at `pkg/customresource/` and at
+// `helm/kanister-operator/crds`. To make sure we are not duplicating the
+// things we have original files at `pkg/customresource` and have soft links
+// at `helm/kanister-operator/crds`.
+
+//go:embed actionset.yaml profile.yaml blueprint.yaml
+var yamls embed.FS

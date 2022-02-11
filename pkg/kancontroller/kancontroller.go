@@ -27,16 +27,22 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"k8s.io/client-go/rest"
 
 	"github.com/kanisterio/kanister/pkg/controller"
+	"github.com/kanisterio/kanister/pkg/field"
 	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/handler"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/resource"
+)
+
+const (
+	createCRDEnvVar = "CREATE_CRDS"
 )
 
 func Execute() {
@@ -73,10 +79,12 @@ func Execute() {
 		}()
 	}
 
-	// Make sure the CRD's exist.
-	if err := resource.CreateCustomResources(ctx, config); err != nil {
-		log.WithError(err).Print("Failed to create CustomResources.")
-		return
+	// CRDs should only be created if the env var CREATE_CRDS is set to true
+	if createCRDs() {
+		if err := resource.CreateCustomResources(ctx, config); err != nil {
+			log.WithError(err).Print("Failed to create CustomResources.")
+			return
+		}
 	}
 
 	ns, err := kube.GetControllerNamespace()
@@ -111,4 +119,18 @@ func isCACertMounted() bool {
 	}
 
 	return true
+}
+
+func createCRDs() bool {
+	createCRD := os.Getenv(createCRDEnvVar)
+	if createCRD == "" {
+		return false
+	}
+	c, err := strconv.ParseBool(createCRD)
+	if err != nil {
+		log.Print("environment variable", field.M{"CREATE_CRDS": createCRD})
+		return false
+	}
+
+	return c
 }
