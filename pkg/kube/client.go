@@ -15,6 +15,8 @@
 package kube
 
 import (
+	"os"
+
 	"github.com/pkg/errors"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/dynamic"
@@ -46,10 +48,21 @@ func ConfigNamespace() (string, error) {
 
 // LoadConfig returns a kubernetes client config based on global settings.
 func LoadConfig() (*rest.Config, error) {
-	if c, err := rest.InClusterConfig(); err == nil {
-		return c, nil
+	kubeConfigEnv := os.Getenv(clientcmd.RecommendedConfigPathEnvVar)
+	if len(kubeConfigEnv) != 0 {
+		return clientcmd.BuildConfigFromFlags("", kubeConfigEnv)
 	}
-	return newClientConfig().ClientConfig()
+
+	clientset, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
+	if err != nil {
+		if c, err := rest.InClusterConfig(); err == nil {
+			return c, nil
+		} else {
+			return newClientConfig().ClientConfig()
+		}
+	}
+
+	return clientset, nil
 }
 
 // NewClient returns a k8 client configured by the kanister environment.
