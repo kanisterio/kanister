@@ -29,6 +29,8 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
@@ -105,12 +107,10 @@ func (k *KubectlOperation) Create(spec io.Reader, namespace string) (*crv1alpha1
 
 // Delete k8s resource referred by objectReference. Waits for the resource to be deleted
 func (k *KubectlOperation) Delete(ctx context.Context, objRef crv1alpha1.ObjectReference, namespace string) (*crv1alpha1.ObjectReference, error) {
-	if namespace == "" {
-		namespace = metav1.NamespaceDefault
-	}
 	if objRef.Namespace != "" {
 		namespace = objRef.Namespace
 	}
+	log.Print("Deleting object.", field.M{"namespace": namespace, "objRef": objRef})
 	err := k.dynCli.Resource(schema.GroupVersionResource{Group: objRef.Group, Version: objRef.APIVersion, Resource: objRef.Resource}).Namespace(namespace).Delete(ctx, objRef.Name, metav1.DeleteOptions{})
 	if err != nil {
 		return &objRef, err

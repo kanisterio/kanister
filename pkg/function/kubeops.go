@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -67,7 +66,7 @@ func (crs *kubeops) Exec(ctx context.Context, tp param.TemplateParams, args map[
 	if err := Arg(args, KubeOpsOperationArg, &op); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, KubeOpsNamespaceArg, &namespace, metav1.NamespaceDefault); err != nil {
+	if err := OptArg(args, KubeOpsNamespaceArg, &namespace, nil); err != nil {
 		return nil, err
 	}
 	if ArgExists(args, KubeOpsObjectReferenceArg) {
