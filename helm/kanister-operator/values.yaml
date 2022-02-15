@@ -10,6 +10,7 @@ rbac:
 serviceAccount:
   create: true
   name:
+  annotations:
 controller:
   service:
     port: 443
