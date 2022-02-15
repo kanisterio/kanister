@@ -18,12 +18,14 @@ rules:
   - events
   verbs:
   - create
+{{ if .Values.controller.createCRDs }}
 - apiGroups:
   - apiextensions.k8s.io
   resources:
   - customresourcedefinitions
   verbs:
   - "*"
+{{ end }}
 - apiGroups:
   - snapshot.storage.k8s.io
   resources:
