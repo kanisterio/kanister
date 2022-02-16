@@ -79,7 +79,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 
 	baseURI, ok = config[blockstorage.AzureResurceMgrEndpoint]
 	if !ok {
-		baseURI = compute.DefaultBaseURI
+		baseURI = env.ResourceManagerEndpoint
 	}
 
 	disksClient := compute.NewDisksClient(subscriptionID)
@@ -118,12 +118,12 @@ func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.B
 	}
 
 	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
-	if aDDEndpoint, ok := config[blockstorage.AzureActiveDirEndpoint]; ok {
-		credConfig.AADEndpoint = aDDEndpoint
+	if credConfig.AADEndpoint, ok = config[blockstorage.AzureActiveDirEndpoint]; !ok {
+		credConfig.AADEndpoint = env.ActiveDirectoryEndpoint
 	}
 
-	if aDDResourceID, ok := config[blockstorage.AzureActiveDirResourceID]; ok {
-		credConfig.Resource = aDDResourceID
+	if credConfig.Resource, ok = config[blockstorage.AzureActiveDirResourceID]; !ok {
+		credConfig.Resource = env.ResourceManagerEndpoint
 	}
 
 	a, err := credConfig.Authorizer()
