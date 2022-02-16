@@ -58,6 +58,14 @@ func Register(f Func) error {
 	return nil
 }
 
+func RegisteredFunctions() map[string]struct{} {
+	names := make(map[string]struct{}, len(funcs))
+	for k := range funcs {
+		names[k] = struct{}{}
+	}
+	return names
+}
+
 // RegisterVersion allows Kanister Functions to be registered with the given version
 func RegisterVersion(f Func, v string) error {
 	version := *semver.MustParse(v)
