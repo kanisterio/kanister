@@ -82,13 +82,11 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		baseURI = env.ResourceManagerEndpoint
 	}
 
-	disksClient := compute.NewDisksClient(subscriptionID)
+	disksClient := compute.NewDisksClientWithBaseURI(baseURI, subscriptionID)
 	disksClient.Authorizer = authorizer
-	disksClient.BaseURI = baseURI
 
-	snapshotsClient := compute.NewSnapshotsClient(subscriptionID)
+	snapshotsClient := compute.NewSnapshotsClientWithBaseURI(baseURI, subscriptionID)
 	snapshotsClient.Authorizer = authorizer
-	snapshotsClient.BaseURI = baseURI
 
 	return &Client{
 		BaseURI:         baseURI,
