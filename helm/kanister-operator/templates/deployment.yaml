@@ -27,8 +27,8 @@ spec:
           - name: webhook-certs
             mountPath: /var/run/webhook/serving-cert
         env:
-        - name: CREATE_CRDS
-          value: {{ .Values.controller.createCRDs | quote }}
+        - name: CREATEORUPDATE_CRDS
+          value: {{ .Values.controller.updateCRDs | quote }}
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}

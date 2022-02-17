@@ -42,7 +42,7 @@ import (
 )
 
 const (
-	createCRDEnvVar = "CREATE_CRDS"
+	createOrUpdateCRDEnvVar = "CREATEORUPDATE_CRDS"
 )
 
 func Execute() {
@@ -79,8 +79,8 @@ func Execute() {
 		}()
 	}
 
-	// CRDs should only be created if the env var CREATE_CRDS is set to true
-	if createCRDs() {
+	// CRDs should only be created/updated if the env var CREATEORUPDATE_CRDS is set to true
+	if createOrUpdateCRDs() {
 		if err := resource.CreateCustomResources(ctx, config); err != nil {
 			log.WithError(err).Print("Failed to create CustomResources.")
 			return
@@ -121,14 +121,14 @@ func isCACertMounted() bool {
 	return true
 }
 
-func createCRDs() bool {
-	createCRD := os.Getenv(createCRDEnvVar)
-	if createCRD == "" {
+func createOrUpdateCRDs() bool {
+	createOrUpdateCRD := os.Getenv(createOrUpdateCRDEnvVar)
+	if createOrUpdateCRD == "" {
 		return false
 	}
-	c, err := strconv.ParseBool(createCRD)
+	c, err := strconv.ParseBool(createOrUpdateCRD)
 	if err != nil {
-		log.Print("environment variable", field.M{"CREATE_CRDS": createCRD})
+		log.Print("environment variable", field.M{"CREATE_CRDS": createOrUpdateCRD})
 		return false
 	}
 

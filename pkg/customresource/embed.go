@@ -10,5 +10,7 @@ import "embed"
 // things we have original files at `pkg/customresource` and have soft links
 // at `helm/kanister-operator/crds`.
 
-//go:embed actionset.yaml profile.yaml blueprint.yaml
+//go:embed actionset.yaml
+//go:embed blueprint.yaml
+//go:embed profile.yaml
 var yamls embed.FS
