@@ -169,3 +169,7 @@ func (*DescribeBackupsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 func (*DescribeBackupsFunc) RequiredArgs() []string {
 	return []string{DescribeBackupsArtifactPrefixArg}
 }
+
+func (*DescribeBackupsFunc) Arguments() []string {
+	return []string{DescribeBackupsArtifactPrefixArg, DescribeBackupsEncryptionKeyArg}
+}

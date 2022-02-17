@@ -93,6 +93,10 @@ func (*waitFunc) RequiredArgs() []string {
 	return []string{WaitTimeoutArg, WaitConditionsArg}
 }
 
+func (*waitFunc) Arguments() []string {
+	return []string{WaitTimeoutArg, WaitConditionsArg}
+}
+
 // waitForCondition wait till the condition satisfies within the timeout duration
 func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond WaitConditions, timeout time.Duration) error {
 	ctxTimeout, cancel := context.WithTimeout(ctx, timeout)

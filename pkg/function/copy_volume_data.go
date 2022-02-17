@@ -169,3 +169,8 @@ func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 func (*copyVolumeDataFunc) RequiredArgs() []string {
 	return []string{CopyVolumeDataNamespaceArg, CopyVolumeDataVolumeArg, CopyVolumeDataArtifactPrefixArg}
 }
+
+func (*copyVolumeDataFunc) Arguments() []string {
+	return []string{CopyVolumeDataNamespaceArg, CopyVolumeDataVolumeArg, CopyVolumeDataArtifactPrefixArg,
+		CopyVolumeDataEncryptionKeyArg}
+}

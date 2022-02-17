@@ -37,6 +37,7 @@ var (
 type Func interface {
 	Name() string
 	RequiredArgs() []string
+	Arguments() []string
 	Exec(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error)
 }
 

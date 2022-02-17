@@ -309,3 +309,7 @@ func getConfig(profile *param.Profile, sType blockstorage.Type) map[string]strin
 func (*createVolumeSnapshotFunc) RequiredArgs() []string {
 	return []string{CreateVolumeSnapshotNamespaceArg}
 }
+
+func (*createVolumeSnapshotFunc) Arguments() []string {
+	return []string{CreateVolumeSnapshotNamespaceArg, CreateVolumeSnapshotPVCsArg, CreateVolumeSnapshotSkipWaitArg}
+}

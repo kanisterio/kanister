@@ -125,3 +125,7 @@ func (*CheckRepositoryFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 func (*CheckRepositoryFunc) RequiredArgs() []string {
 	return []string{CheckRepositoryArtifactPrefixArg}
 }
+
+func (*CheckRepositoryFunc) Arguments() []string {
+	return []string{CheckRepositoryArtifactPrefixArg, CheckRepositoryEncryptionKeyArg}
+}

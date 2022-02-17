@@ -125,3 +125,7 @@ func (crs *deleteRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplatePar
 func (*deleteRDSSnapshotFunc) RequiredArgs() []string {
 	return []string{DeleteRDSSnapshotSnapshotIDArg}
 }
+
+func (*deleteRDSSnapshotFunc) Arguments() []string {
+	return []string{DeleteRDSSnapshotSnapshotIDArg, CreateRDSSnapshotDBEngine}
+}

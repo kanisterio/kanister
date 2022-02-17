@@ -122,6 +122,11 @@ func (*createCSISnapshotFunc) RequiredArgs() []string {
 	}
 }
 
+func (*createCSISnapshotFunc) Arguments() []string {
+	return []string{CreateCSISnapshotPVCNameArg, CreateCSISnapshotNamespaceArg,
+		CreateCSISnapshotSnapshotClassArg, CreateCSISnapshotNameArg, CreateCSISnapshotLabelsArg}
+}
+
 func createCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, name, namespace, pvc, snapshotClass string, wait bool, labels map[string]string) (*v1.VolumeSnapshot, error) {
 	if err := snapshotter.Create(ctx, name, namespace, pvc, &snapshotClass, wait, labels); err != nil {
 		return nil, err

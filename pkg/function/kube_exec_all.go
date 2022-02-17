@@ -80,6 +80,10 @@ func (*kubeExecAllFunc) RequiredArgs() []string {
 	return []string{KubeExecAllNamespaceArg, KubeExecAllPodsNameArg, KubeExecAllContainersNameArg, KubeExecAllCommandArg}
 }
 
+func (*kubeExecAllFunc) Arguments() []string {
+	return []string{KubeExecAllNamespaceArg, KubeExecAllPodsNameArg, KubeExecAllContainersNameArg, KubeExecAllCommandArg}
+}
+
 func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps []string, cs []string, cmd []string) (map[string]interface{}, error) {
 	numContainers := len(ps) * len(cs)
 	errChan := make(chan error, numContainers)

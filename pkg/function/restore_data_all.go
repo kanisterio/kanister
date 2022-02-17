@@ -173,3 +173,9 @@ func (*restoreDataAllFunc) RequiredArgs() []string {
 	return []string{RestoreDataAllNamespaceArg, RestoreDataAllImageArg,
 		RestoreDataAllBackupArtifactPrefixArg, RestoreDataAllBackupInfo}
 }
+
+func (*restoreDataAllFunc) Arguments() []string {
+	return []string{RestoreDataAllNamespaceArg, RestoreDataAllImageArg,
+		RestoreDataAllBackupArtifactPrefixArg, RestoreDataAllBackupInfo,
+		RestoreDataAllRestorePathArg, RestoreDataAllEncryptionKeyArg, RestoreDataAllPodsArg, RestoreDataAllPodOverrideArg}
+}

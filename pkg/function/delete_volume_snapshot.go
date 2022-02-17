@@ -112,3 +112,7 @@ func (kef *deleteVolumeSnapshotFunc) Exec(ctx context.Context, tp param.Template
 func (*deleteVolumeSnapshotFunc) RequiredArgs() []string {
 	return []string{DeleteVolumeSnapshotNamespaceArg, DeleteVolumeSnapshotManifestArg}
 }
+
+func (*deleteVolumeSnapshotFunc) Arguments() []string {
+	return []string{DeleteVolumeSnapshotNamespaceArg, DeleteVolumeSnapshotManifestArg}
+}
