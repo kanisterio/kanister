@@ -53,16 +53,15 @@ func LoadConfig() (*rest.Config, error) {
 		return clientcmd.BuildConfigFromFlags("", kubeConfigEnv)
 	}
 
-	clientset, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
-	if err != nil {
-		if c, err := rest.InClusterConfig(); err == nil {
-			return c, nil
-		} else {
-			return newClientConfig().ClientConfig()
-		}
+	if c, err := clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile); err == nil {
+		return c, nil
 	}
 
-	return clientset, nil
+	if c, err := rest.InClusterConfig(); err == nil {
+		return c, nil
+	}
+
+	return newClientConfig().ClientConfig()
 }
 
 // NewClient returns a k8 client configured by the kanister environment.
