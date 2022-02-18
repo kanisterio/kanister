@@ -2,6 +2,16 @@
 
 ## How Can I Contribute?
 
+### Raising PR 
+* We follow the [Github Pull Request Model](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) for all contributions.
+* For new features, documentation must be included.
+* Here are some guidelines that we should follow while writing a commit message:
+  - Commit message should be imperative. For example, `Add go mod check while init` and not `Added go mod check while init`.
+  - Commit message should not start with lower case.
+  - Your commit message should not contain any whitespace errors.
+  - Remove unnecessary punctuation marks.
+  - Use the body to explain what changes you have made and why you made them.
+
 ### Reporting Bugs
 Before creating bug reports, please check the list of issues as you might find out that a similar issue is already created and you don't need to create one. Also when creating a bug report, please include as many details as possible as this information may help us resolve the issue faster.
 
@@ -72,16 +82,6 @@ make docs
 - The built docs can be viewed and validated visually by opening `/docs/_build/html/index.html`.
 
 - Push a PR with the changes for review. Please see [Raising PR](#raising-pr)
-
-## Raising PR 
-* We follow the [Github Pull Request Model](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) for all contributions.
-* For new features, documentation must be included.
-* Here are some guidelines that we should follow while writing a commit message:
-  - Commit message should be imperative. For example, `Add go mod check while init` and not `Added go mod check while init`.
-  - Commit message should not start with lower case.
-  - Your commit message should not contain any whitespace errors.
-  - Remove unnecessary punctuation marks.
-  - Use the body to explain what changes you have made and why you made them.
 
 ## Contacting Developers
 Using [Slack](https://join.slack.com/t/kanisterio/shared_invite/enQtNzg2MDc4NzA0ODY4LTU1NDU2NDZhYjk3YmE5MWNlZWMwYzk1NjNjOGQ3NjAyMjcxMTIyNTE1YzZlMzgwYmIwNWFkNjU0NGFlMzNjNTk) is the quickest way to get in touch with developers.
