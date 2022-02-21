@@ -48,6 +48,10 @@ func (tf *testFunc) RequiredArgs() []string {
 	return nil
 }
 
+func (tf *testFunc) Arguments() []string {
+	return nil
+}
+
 func (s *PhaseSuite) TestExec(c *C) {
 	for _, tc := range []struct {
 		artifact string
