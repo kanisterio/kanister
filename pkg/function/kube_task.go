@@ -126,5 +126,6 @@ func (*kubeTaskFunc) Arguments() []string {
 		KubeTaskImageArg,
 		KubeTaskCommandArg,
 		KubeTaskNamespaceArg,
+		KubeTaskPodOverrideArg,
 	}
 }
