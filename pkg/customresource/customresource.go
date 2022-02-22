@@ -127,7 +127,7 @@ func createCRD(context Context, resource CustomResource) error {
 	_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, crd, metav1.CreateOptions{})
 	if err != nil {
 		if !apierrors.IsAlreadyExists(err) {
-			return fmt.Errorf("Failed to create %s CRD. %+v", resource.Name, err)
+			return errors.Errorf("Failed to create %s CRD. %+v", resource.Name, err)
 		}
 
 		// if CRD already exists, get the resource version and create the CRD with that resource version

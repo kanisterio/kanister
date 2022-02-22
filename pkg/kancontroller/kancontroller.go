@@ -27,13 +27,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 
 	"k8s.io/client-go/rest"
 
 	"github.com/kanisterio/kanister/pkg/controller"
-	"github.com/kanisterio/kanister/pkg/field"
 	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/handler"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -126,11 +124,6 @@ func createOrUpdateCRDs() bool {
 	if createOrUpdateCRD == "" {
 		return false
 	}
-	c, err := strconv.ParseBool(createOrUpdateCRD)
-	if err != nil {
-		log.Print("environment variable", field.M{"CREATE_CRDS": createOrUpdateCRD})
-		return false
-	}
 
-	return c
+	return createOrUpdateCRD == "true"
 }
