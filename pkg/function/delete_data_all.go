@@ -109,7 +109,6 @@ func (*deleteDataAllFunc) RequiredArgs() []string {
 		DeleteDataAllBackupArtifactPrefixArg,
 		DeleteDataAllBackupInfo,
 	}
-
 }
 
 func (*deleteDataAllFunc) Arguments() []string {
