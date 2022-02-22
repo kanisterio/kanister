@@ -52,8 +52,8 @@ const (
 	Region = "AWS_REGION"
 
 	// From AWS SDK "aws/session/env_config.go"
-	webIdentityTokenFilePathEnvKey = "AWS_WEB_IDENTITY_TOKEN_FILE"
-	roleARNEnvKey                  = "AWS_ROLE_ARN"
+	WebIdentityTokenFilePathEnvKey = "AWS_WEB_IDENTITY_TOKEN_FILE"
+	RoleARNEnvKey                  = "AWS_ROLE_ARN"
 
 	// TODO: Make this configurable via `config`
 	AssumeRoleDurationDefault = 60 * time.Minute
@@ -81,13 +81,13 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 	case config[AccessKeyID] != "" && config[SecretAccessKey] != "":
 		// If AccessKeys were provided - use those
 		creds = credentials.NewStaticCredentials(config[AccessKeyID], config[SecretAccessKey], "")
-	case os.Getenv(webIdentityTokenFilePathEnvKey) != "" && os.Getenv(roleARNEnvKey) != "":
+	case os.Getenv(WebIdentityTokenFilePathEnvKey) != "" && os.Getenv(RoleARNEnvKey) != "":
 		sess, err := session.NewSessionWithOptions(session.Options{AssumeRoleDuration: assumeRoleDuration})
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to create session to initialize Web Identify credentials")
 		}
 		creds = getCredentialsWithDuration(sess, assumeRoleDuration)
-		assumedRole = os.Getenv(roleARNEnvKey)
+		assumedRole = os.Getenv(RoleARNEnvKey)
 	default:
 		return nil, errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY required to initialize AWS credentials")
 	}
@@ -113,7 +113,7 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 // getting the credentials from the provider.
 func getCredentialsWithDuration(sess *session.Session, duration time.Duration) *credentials.Credentials {
 	svc := sts.New(sess)
-	p := stscreds.NewWebIdentityRoleProvider(svc, os.Getenv(roleARNEnvKey), "", os.Getenv(webIdentityTokenFilePathEnvKey))
+	p := stscreds.NewWebIdentityRoleProvider(svc, os.Getenv(RoleARNEnvKey), "", os.Getenv(WebIdentityTokenFilePathEnvKey))
 	p.Duration = duration
 	return credentials.NewCredentials(p)
 }
