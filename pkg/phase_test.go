@@ -87,3 +87,43 @@ func (s *PhaseSuite) TestExec(c *C) {
 		c.Assert(output, Equals, tc.expected)
 	}
 }
+
+func (s *PhaseSuite) TestCheckSupportedArgs(c *C) {
+	for _, tc := range []struct {
+		supprtedArgs []string
+		providedArgs map[string]interface{}
+		err          Checker
+		expErr       string
+	}{
+		{
+			supprtedArgs: []string{"a", "b", "c"},
+			providedArgs: map[string]interface{}{
+				"a": "val",
+				"b": "val",
+				"c": "val",
+			},
+			err: IsNil,
+		},
+		{
+			supprtedArgs: []string{"a", "b", "c"},
+			providedArgs: map[string]interface{}{
+				"a": "val",
+				"b": "val",
+				"c": "val",
+				"d": "val",
+			},
+			err:    NotNil,
+			expErr: "argument d is not supported",
+		},
+		{
+			supprtedArgs: []string{"a", "b", "c"},
+			providedArgs: map[string]interface{}{},
+			err:          IsNil},
+	} {
+		err := checkUnsupportedArgs(tc.supprtedArgs, tc.providedArgs)
+		if err != nil {
+			c.Assert(err.Error(), Equals, tc.expErr)
+		}
+		c.Assert(err, tc.err)
+	}
+}
