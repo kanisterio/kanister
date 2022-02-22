@@ -77,7 +77,12 @@ func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 }
 
 func (*kubeExecAllFunc) RequiredArgs() []string {
-	return []string{KubeExecAllNamespaceArg, KubeExecAllPodsNameArg, KubeExecAllContainersNameArg, KubeExecAllCommandArg}
+	return []string{
+		KubeExecAllNamespaceArg,
+		KubeExecAllPodsNameArg,
+		KubeExecAllContainersNameArg,
+		KubeExecAllCommandArg,
+	}
 }
 
 func (*kubeExecAllFunc) Arguments() []string {

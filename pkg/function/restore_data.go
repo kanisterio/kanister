@@ -214,8 +214,11 @@ func (*restoreDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 }
 
 func (*restoreDataFunc) RequiredArgs() []string {
-	return []string{RestoreDataNamespaceArg, RestoreDataImageArg,
-		RestoreDataBackupArtifactPrefixArg}
+	return []string{
+		RestoreDataNamespaceArg,
+		RestoreDataImageArg,
+		RestoreDataBackupArtifactPrefixArg,
+	}
 }
 
 func (*restoreDataFunc) Arguments() []string {

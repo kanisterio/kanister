@@ -90,7 +90,10 @@ func (ktf *waitFunc) Exec(ctx context.Context, tp param.TemplateParams, args map
 }
 
 func (*waitFunc) RequiredArgs() []string {
-	return []string{WaitTimeoutArg, WaitConditionsArg}
+	return []string{
+		WaitTimeoutArg,
+		WaitConditionsArg,
+	}
 }
 
 func (*waitFunc) Arguments() []string {

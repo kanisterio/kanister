@@ -147,7 +147,11 @@ func (*BackupDataStatsFunc) Exec(ctx context.Context, tp param.TemplateParams, a
 }
 
 func (*BackupDataStatsFunc) RequiredArgs() []string {
-	return []string{BackupDataStatsNamespaceArg, BackupDataStatsBackupArtifactPrefixArg, BackupDataStatsBackupIdentifierArg}
+	return []string{
+		BackupDataStatsNamespaceArg,
+		BackupDataStatsBackupArtifactPrefixArg,
+		BackupDataStatsBackupIdentifierArg,
+	}
 }
 
 func (*BackupDataStatsFunc) Arguments() []string {

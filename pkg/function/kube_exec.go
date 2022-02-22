@@ -107,7 +107,11 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 }
 
 func (*kubeExecFunc) RequiredArgs() []string {
-	return []string{KubeExecNamespaceArg, KubeExecPodNameArg, KubeExecCommandArg}
+	return []string{
+		KubeExecNamespaceArg,
+		KubeExecPodNameArg,
+		KubeExecCommandArg,
+	}
 }
 
 func (*kubeExecFunc) Arguments() []string {

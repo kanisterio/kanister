@@ -120,8 +120,13 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 }
 
 func (*backupDataFunc) RequiredArgs() []string {
-	return []string{BackupDataNamespaceArg, BackupDataPodArg, BackupDataContainerArg,
-		BackupDataIncludePathArg, BackupDataBackupArtifactPrefixArg}
+	return []string{
+		BackupDataNamespaceArg,
+		BackupDataPodArg,
+		BackupDataContainerArg,
+		BackupDataIncludePathArg,
+		BackupDataBackupArtifactPrefixArg,
+	}
 }
 
 func (*backupDataFunc) Arguments() []string {

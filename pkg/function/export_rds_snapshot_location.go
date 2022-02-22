@@ -191,7 +191,12 @@ func (crs *exportRDSSnapshotToLocationFunc) Exec(ctx context.Context, tp param.T
 }
 
 func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
-	return []string{ExportRDSSnapshotToLocNamespaceArg, ExportRDSSnapshotToLocInstanceIDArg, ExportRDSSnapshotToLocSnapshotIDArg, ExportRDSSnapshotToLocDBEngineArg}
+	return []string{
+		ExportRDSSnapshotToLocNamespaceArg,
+		ExportRDSSnapshotToLocInstanceIDArg,
+		ExportRDSSnapshotToLocSnapshotIDArg,
+		ExportRDSSnapshotToLocDBEngineArg,
+	}
 }
 
 func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
