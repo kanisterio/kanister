@@ -92,7 +92,7 @@ func authenticateAWSCredentials(ctx context.Context, config map[string]string, a
 // check of caller want to assume a different role
 // return as is if ConfigRole is empty, or already same as assumedRole
 // otherwise proceed to switch role
-func awsRoleSwitching(ctx context.Context, creds *credentials.Credentials, targetRole string, currentRole string, assumeRoleDuration time.Duration) (*credentials.Credentials, error) {
+func switchAWSRole(ctx context.Context, creds *credentials.Credentials, targetRole string, currentRole string, assumeRoleDuration time.Duration) (*credentials.Credentials, error) {
 	if targetRole == "" || targetRole == currentRole {
 		return creds, nil
 	} else {
@@ -123,7 +123,7 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 	}
 
 	// check if role switching is needed, then return creds
-	return awsRoleSwitching(ctx, creds, config[ConfigRole], assumedRole, assumeRoleDuration)
+	return switchAWSRole(ctx, creds, config[ConfigRole], assumedRole, assumeRoleDuration)
 }
 
 // getCredentialsWithDuration returns credentials with the given duration.
