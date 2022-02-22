@@ -14,6 +14,7 @@ implements the following go interface:
       Name() string
       Exec(ctx context.Context, args ...string) (map[string]interface{}, error)
       RequiredArgs() []string
+      Arguments() []string
   }
 
 Kanister Functions are registered by the return value of ``Name()``, which must be
@@ -24,7 +25,9 @@ a ``BlueprintPhase`` is used to lookup a Kanister Function.  After
 ``BlueprintPhase.Args`` are rendered, they are passed into the Kanister Function's
 ``Exec()`` method.
 
-The ``RequiredArgs`` method returns the list of argument names that are required.
+The ``RequiredArgs`` method returns the list of argument names that are required. And
+``Arguments`` method returns the list of all the argument names that are supported
+by the function.
 
 Existing Functions
 ==================
