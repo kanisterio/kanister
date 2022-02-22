@@ -311,5 +311,9 @@ func (*createVolumeSnapshotFunc) RequiredArgs() []string {
 }
 
 func (*createVolumeSnapshotFunc) Arguments() []string {
-	return []string{CreateVolumeSnapshotNamespaceArg, CreateVolumeSnapshotPVCsArg, CreateVolumeSnapshotSkipWaitArg}
+	return []string{
+		CreateVolumeSnapshotNamespaceArg,
+		CreateVolumeSnapshotPVCsArg,
+		CreateVolumeSnapshotSkipWaitArg,
+	}
 }

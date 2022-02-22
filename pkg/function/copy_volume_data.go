@@ -171,6 +171,10 @@ func (*copyVolumeDataFunc) RequiredArgs() []string {
 }
 
 func (*copyVolumeDataFunc) Arguments() []string {
-	return []string{CopyVolumeDataNamespaceArg, CopyVolumeDataVolumeArg, CopyVolumeDataArtifactPrefixArg,
-		CopyVolumeDataEncryptionKeyArg}
+	return []string{
+		CopyVolumeDataNamespaceArg,
+		CopyVolumeDataVolumeArg,
+		CopyVolumeDataArtifactPrefixArg,
+		CopyVolumeDataEncryptionKeyArg,
+	}
 }

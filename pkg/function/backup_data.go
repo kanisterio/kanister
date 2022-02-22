@@ -125,8 +125,14 @@ func (*backupDataFunc) RequiredArgs() []string {
 }
 
 func (*backupDataFunc) Arguments() []string {
-	return []string{BackupDataNamespaceArg, BackupDataPodArg, BackupDataContainerArg,
-		BackupDataIncludePathArg, BackupDataBackupArtifactPrefixArg, BackupDataEncryptionKeyArg}
+	return []string{
+		BackupDataNamespaceArg,
+		BackupDataPodArg,
+		BackupDataContainerArg,
+		BackupDataIncludePathArg,
+		BackupDataBackupArtifactPrefixArg,
+		BackupDataEncryptionKeyArg,
+	}
 }
 
 type backupDataParsedOutput struct {

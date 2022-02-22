@@ -127,5 +127,8 @@ func (*deleteRDSSnapshotFunc) RequiredArgs() []string {
 }
 
 func (*deleteRDSSnapshotFunc) Arguments() []string {
-	return []string{DeleteRDSSnapshotSnapshotIDArg, CreateRDSSnapshotDBEngine}
+	return []string{
+		DeleteRDSSnapshotSnapshotIDArg,
+		CreateRDSSnapshotDBEngine,
+	}
 }

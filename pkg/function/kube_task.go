@@ -119,5 +119,9 @@ func (*kubeTaskFunc) RequiredArgs() []string {
 }
 
 func (*kubeTaskFunc) Arguments() []string {
-	return []string{KubeTaskImageArg, KubeTaskCommandArg, KubeTaskNamespaceArg}
+	return []string{
+		KubeTaskImageArg,
+		KubeTaskCommandArg,
+		KubeTaskNamespaceArg,
+	}
 }

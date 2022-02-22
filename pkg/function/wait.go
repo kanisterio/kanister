@@ -94,7 +94,10 @@ func (*waitFunc) RequiredArgs() []string {
 }
 
 func (*waitFunc) Arguments() []string {
-	return []string{WaitTimeoutArg, WaitConditionsArg}
+	return []string{
+		WaitTimeoutArg,
+		WaitConditionsArg,
+	}
 }
 
 // waitForCondition wait till the condition satisfies within the timeout duration

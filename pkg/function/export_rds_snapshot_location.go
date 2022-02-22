@@ -195,8 +195,15 @@ func (*exportRDSSnapshotToLocationFunc) RequiredArgs() []string {
 }
 
 func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
-	return []string{ExportRDSSnapshotToLocNamespaceArg, ExportRDSSnapshotToLocInstanceIDArg, ExportRDSSnapshotToLocSnapshotIDArg, ExportRDSSnapshotToLocDBEngineArg,
-		ExportRDSSnapshotToLocDBUsernameArg, ExportRDSSnapshotToLocDBPasswordArg, ExportRDSSnapshotToLocBackupArtPrefixArg}
+	return []string{
+		ExportRDSSnapshotToLocNamespaceArg,
+		ExportRDSSnapshotToLocInstanceIDArg,
+		ExportRDSSnapshotToLocSnapshotIDArg,
+		ExportRDSSnapshotToLocDBEngineArg,
+		ExportRDSSnapshotToLocDBUsernameArg,
+		ExportRDSSnapshotToLocDBPasswordArg,
+		ExportRDSSnapshotToLocBackupArtPrefixArg,
+	}
 }
 
 func execDumpCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction, namespace, dbEndpoint, username, password string, databases []string, backupPrefix, backupID string, profile *param.Profile, dbEngineVersion string) (map[string]interface{}, error) {

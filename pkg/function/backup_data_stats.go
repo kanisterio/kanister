@@ -151,6 +151,11 @@ func (*BackupDataStatsFunc) RequiredArgs() []string {
 }
 
 func (*BackupDataStatsFunc) Arguments() []string {
-	return []string{BackupDataStatsNamespaceArg, BackupDataStatsBackupArtifactPrefixArg,
-		BackupDataStatsBackupIdentifierArg, BackupDataStatsMode, BackupDataStatsEncryptionKeyArg}
+	return []string{
+		BackupDataStatsNamespaceArg,
+		BackupDataStatsBackupArtifactPrefixArg,
+		BackupDataStatsBackupIdentifierArg,
+		BackupDataStatsMode,
+		BackupDataStatsEncryptionKeyArg,
+	}
 }

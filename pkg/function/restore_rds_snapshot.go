@@ -82,8 +82,16 @@ func (*restoreRDSSnapshotFunc) RequiredArgs() []string {
 }
 
 func (*restoreRDSSnapshotFunc) Arguments() []string {
-	return []string{RestoreRDSSnapshotInstanceID, RestoreRDSSnapshotSnapshotID, RestoreRDSSnapshotDBEngine,
-		RestoreRDSSnapshotBackupArtifactPrefix, RestoreRDSSnapshotBackupID, RestoreRDSSnapshotUsername, RestoreRDSSnapshotPassword, RestoreRDSSnapshotNamespace}
+	return []string{
+		RestoreRDSSnapshotInstanceID,
+		RestoreRDSSnapshotSnapshotID,
+		RestoreRDSSnapshotDBEngine,
+		RestoreRDSSnapshotBackupArtifactPrefix,
+		RestoreRDSSnapshotBackupID,
+		RestoreRDSSnapshotUsername,
+		RestoreRDSSnapshotPassword,
+		RestoreRDSSnapshotNamespace,
+	}
 }
 
 func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

@@ -161,5 +161,8 @@ func (*createRDSSnapshotFunc) RequiredArgs() []string {
 }
 
 func (crs *createRDSSnapshotFunc) Arguments() []string {
-	return []string{CreateRDSSnapshotInstanceIDArg, CreateRDSSnapshotDBEngine}
+	return []string{
+		CreateRDSSnapshotInstanceIDArg,
+		CreateRDSSnapshotDBEngine,
+	}
 }

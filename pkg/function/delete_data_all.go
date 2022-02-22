@@ -108,6 +108,11 @@ func (*deleteDataAllFunc) RequiredArgs() []string {
 }
 
 func (*deleteDataAllFunc) Arguments() []string {
-	return []string{DeleteDataAllNamespaceArg, DeleteDataAllBackupArtifactPrefixArg, DeleteDataAllBackupInfo,
-		DeleteDataAllEncryptionKeyArg, DeleteDataAllReclaimSpace}
+	return []string{
+		DeleteDataAllNamespaceArg,
+		DeleteDataAllBackupArtifactPrefixArg,
+		DeleteDataAllBackupInfo,
+		DeleteDataAllEncryptionKeyArg,
+		DeleteDataAllReclaimSpace,
+	}
 }

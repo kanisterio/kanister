@@ -87,7 +87,12 @@ func (*scaleWorkloadFunc) RequiredArgs() []string {
 }
 
 func (*scaleWorkloadFunc) Arguments() []string {
-	return []string{ScaleWorkloadReplicas, ScaleWorkloadNamespaceArg, ScaleWorkloadNameArg, ScaleWorkloadKindArg}
+	return []string{
+		ScaleWorkloadReplicas,
+		ScaleWorkloadNamespaceArg,
+		ScaleWorkloadNameArg,
+		ScaleWorkloadKindArg,
+	}
 }
 
 func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, kind, name string, replicas int32, err error) {

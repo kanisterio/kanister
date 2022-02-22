@@ -87,7 +87,10 @@ func (*deleteCSISnapshotFunc) RequiredArgs() []string {
 }
 
 func (*deleteCSISnapshotFunc) Arguments() []string {
-	return []string{DeleteCSISnapshotNameArg, DeleteCSISnapshotNamespaceArg}
+	return []string{
+		DeleteCSISnapshotNameArg,
+		DeleteCSISnapshotNamespaceArg,
+	}
 }
 
 func deleteCSISnapshot(ctx context.Context, snapshotter snapshot.Snapshotter, name, namespace string) (*v1.VolumeSnapshot, error) {

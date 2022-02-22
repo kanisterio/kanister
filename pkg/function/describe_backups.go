@@ -171,5 +171,8 @@ func (*DescribeBackupsFunc) RequiredArgs() []string {
 }
 
 func (*DescribeBackupsFunc) Arguments() []string {
-	return []string{DescribeBackupsArtifactPrefixArg, DescribeBackupsEncryptionKeyArg}
+	return []string{
+		DescribeBackupsArtifactPrefixArg,
+		DescribeBackupsEncryptionKeyArg,
+	}
 }

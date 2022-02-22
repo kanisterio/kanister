@@ -111,5 +111,10 @@ func (*kubeExecFunc) RequiredArgs() []string {
 }
 
 func (*kubeExecFunc) Arguments() []string {
-	return []string{KubeExecNamespaceArg, KubeExecPodNameArg, KubeExecCommandArg, KubeExecContainerNameArg}
+	return []string{
+		KubeExecNamespaceArg,
+		KubeExecPodNameArg,
+		KubeExecCommandArg,
+		KubeExecContainerNameArg,
+	}
 }

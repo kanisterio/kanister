@@ -127,5 +127,8 @@ func (*CheckRepositoryFunc) RequiredArgs() []string {
 }
 
 func (*CheckRepositoryFunc) Arguments() []string {
-	return []string{CheckRepositoryArtifactPrefixArg, CheckRepositoryEncryptionKeyArg}
+	return []string{
+		CheckRepositoryArtifactPrefixArg,
+		CheckRepositoryEncryptionKeyArg,
+	}
 }

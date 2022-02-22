@@ -121,5 +121,10 @@ func (*kubeops) RequiredArgs() []string {
 }
 
 func (*kubeops) Arguments() []string {
-	return []string{KubeOpsSpecArg, KubeOpsOperationArg, KubeOpsNamespaceArg, KubeOpsObjectReferenceArg}
+	return []string{
+		KubeOpsSpecArg,
+		KubeOpsOperationArg,
+		KubeOpsNamespaceArg,
+		KubeOpsObjectReferenceArg,
+	}
 }

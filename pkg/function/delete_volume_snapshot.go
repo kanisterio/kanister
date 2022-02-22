@@ -114,5 +114,8 @@ func (*deleteVolumeSnapshotFunc) RequiredArgs() []string {
 }
 
 func (*deleteVolumeSnapshotFunc) Arguments() []string {
-	return []string{DeleteVolumeSnapshotNamespaceArg, DeleteVolumeSnapshotManifestArg}
+	return []string{
+		DeleteVolumeSnapshotNamespaceArg,
+		DeleteVolumeSnapshotManifestArg,
+	}
 }

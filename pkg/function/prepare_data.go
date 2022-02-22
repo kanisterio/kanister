@@ -157,6 +157,12 @@ func (*prepareDataFunc) RequiredArgs() []string {
 }
 
 func (*prepareDataFunc) Arguments() []string {
-	return []string{PrepareDataNamespaceArg, PrepareDataImageArg, PrepareDataCommandArg,
-		PrepareDataVolumes, PrepareDataServiceAccount, PrepareDataPodOverrideArg}
+	return []string{
+		PrepareDataNamespaceArg,
+		PrepareDataImageArg,
+		PrepareDataCommandArg,
+		PrepareDataVolumes,
+		PrepareDataServiceAccount,
+		PrepareDataPodOverrideArg,
+	}
 }

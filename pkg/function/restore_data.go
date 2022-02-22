@@ -219,7 +219,15 @@ func (*restoreDataFunc) RequiredArgs() []string {
 }
 
 func (*restoreDataFunc) Arguments() []string {
-	return []string{RestoreDataNamespaceArg, RestoreDataImageArg,
-		RestoreDataBackupArtifactPrefixArg, RestoreDataRestorePathArg,
-		RestoreDataEncryptionKeyArg, RestoreDataPodArg, RestoreDataVolsArg, RestoreDataBackupTagArg, RestoreDataBackupIdentifierArg}
+	return []string{
+		RestoreDataNamespaceArg,
+		RestoreDataImageArg,
+		RestoreDataBackupArtifactPrefixArg,
+		RestoreDataRestorePathArg,
+		RestoreDataEncryptionKeyArg,
+		RestoreDataPodArg,
+		RestoreDataVolsArg,
+		RestoreDataBackupTagArg,
+		RestoreDataBackupIdentifierArg,
+	}
 }
