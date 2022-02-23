@@ -67,7 +67,7 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 				return nil, errors.Wrapf(err, "Required args missing for function %s", p.f.Name())
 			}
 
-			if err = checkUnsupportedArgs(p.f.Arguments(), args); err != nil {
+			if err = checkSupportedArgs(p.f.Arguments(), args); err != nil {
 				return nil, errors.Wrapf(err, "Checking supported args for function %s.", p.f.Name())
 			}
 
@@ -78,7 +78,7 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 	return p.f.Exec(ctx, tp, p.args)
 }
 
-func checkUnsupportedArgs(supportedArgs []string, args map[string]interface{}) error {
+func checkSupportedArgs(supportedArgs []string, args map[string]interface{}) error {
 	for a := range args {
 		if !slices.Contains(supportedArgs, a) {
 			return errors.Errorf("argument %s is not supported", a)
@@ -131,7 +131,7 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 
 // Validate gets the provided arguments from a blueprint and verifies that the required arguments are present
 func (p *Phase) Validate(args map[string]interface{}) error {
-	if err := checkUnsupportedArgs(p.f.Arguments(), args); err != nil {
+	if err := checkSupportedArgs(p.f.Arguments(), args); err != nil {
 		return err
 	}
 

@@ -118,9 +118,10 @@ func (s *PhaseSuite) TestCheckSupportedArgs(c *C) {
 		{
 			supprtedArgs: []string{"a", "b", "c"},
 			providedArgs: map[string]interface{}{},
-			err:          IsNil},
+			err:          IsNil,
+		},
 	} {
-		err := checkUnsupportedArgs(tc.supprtedArgs, tc.providedArgs)
+		err := checkSupportedArgs(tc.supprtedArgs, tc.providedArgs)
 		if err != nil {
 			c.Assert(err.Error(), Equals, tc.expErr)
 		}
