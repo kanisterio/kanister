@@ -218,20 +218,26 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 		log.Print("Updated ActionSet", field.M{"ActionSetName": newAS.Name})
 		return err
 	}
+	ctx := context.TODO()
+	ctx = field.Context(ctx, consts.ActionsetNameKey, newAS.GetName())
+	// adding labels in the context as field for better logging
+	for key, value := range newAS.GetLabels() {
+		ctx = field.Context(ctx, key, value)
+	}
 	if newAS.Status == nil || newAS.Status.State != crv1alpha1.StateRunning {
 		if newAS.Status == nil {
-			log.Print("Updated ActionSet", field.M{"Actionset": newAS.Name, "Status": "nil"})
+			log.WithContext(ctx).Print("Updated ActionSet", field.M{"Actionset": newAS.Name, "Status": "nil"})
 		} else if newAS.Status.State == crv1alpha1.StateComplete {
-			c.logAndSuccessEvent(context.TODO(), fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State), "Update Complete", newAS)
+			c.logAndSuccessEvent(ctx, fmt.Sprintf("Updated ActionSet '%s' Status->%s", newAS.Name, newAS.Status.State), "Update Complete", newAS)
 		} else {
-			log.Print("Updated ActionSet", field.M{"Actionset": newAS.Name, "Status": newAS.Status.State})
+			log.WithContext(ctx).Print("Updated ActionSet", field.M{"Actionset": newAS.Name, "Status": newAS.Status.State})
 		}
 		return nil
 	}
 	for _, as := range newAS.Status.Actions {
 		for _, p := range as.Phases {
 			if p.State != crv1alpha1.StateComplete {
-				log.Print("Updated ActionSet", field.M{"Actionset": newAS.Name, "Status": newAS.Status.State, "Phase": fmt.Sprintf("%s->%s", p.Name, p.State)})
+				log.WithContext(ctx).Print("Updated ActionSet", field.M{"Actionset": newAS.Name, "Status": newAS.Status.State, "Phase": fmt.Sprintf("%s->%s", p.Name, p.State)})
 				return nil
 			}
 		}
@@ -352,6 +358,11 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	}
 	ctx := context.Background()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
+	// adding labels in the context as field for better logging
+	for key, value := range as.GetLabels() {
+		ctx = field.Context(ctx, key, value)
+	}
+
 	for i := range as.Status.Actions {
 		if err = c.runAction(ctx, as, i); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous

@@ -79,7 +79,7 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 		snapshot, err := provider.SnapshotGet(ctx, pvcInfo.SnapshotID)
 		if err != nil {
 			if strings.Contains(err.Error(), SnapshotDoesNotExistError) {
-				log.Debug().Print("Snapshot already deleted", field.M{"SnapshotID": pvcInfo.SnapshotID})
+				log.WithContext(ctx).Print("Snapshot already deleted", field.M{"SnapshotID": pvcInfo.SnapshotID})
 			} else {
 				return nil, errors.Wrapf(err, "Failed to get Snapshot from Provider")
 			}
@@ -87,7 +87,7 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 		if err = provider.SnapshotDelete(ctx, snapshot); err != nil {
 			return nil, err
 		}
-		log.Print("Successfully deleted snapshot", field.M{"SnapshotID": pvcInfo.SnapshotID})
+		log.WithContext(ctx).Print("Successfully deleted snapshot", field.M{"SnapshotID": pvcInfo.SnapshotID})
 		providerList[pvcInfo.PVCName] = provider
 	}
 	return providerList, nil

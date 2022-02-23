@@ -53,7 +53,7 @@ func splitLines(ctx context.Context, r io.ReadCloser, f func(context.Context, st
 func LogAndParse(ctx context.Context, r io.ReadCloser) (map[string]interface{}, error) {
 	out := make(map[string]interface{})
 	err := splitLines(ctx, r, func(ctx context.Context, l string) error {
-		log.Info().Print("", field.M{"Pod_Out": l})
+		log.WithContext(ctx).Print("", field.M{"Pod_Out": l})
 		o, err := Parse(l)
 		if err != nil {
 			return err
