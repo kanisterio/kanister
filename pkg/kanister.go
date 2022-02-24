@@ -67,6 +67,10 @@ func RegisteredFunctions() map[string]struct{} {
 	return names
 }
 
+func KanisterFuncForName(funName, version string) Func {
+	return funcs[funName][*semver.MustParse(version)]
+}
+
 // RegisterVersion allows Kanister Functions to be registered with the given version
 func RegisterVersion(f Func, v string) error {
 	version := *semver.MustParse(v)
