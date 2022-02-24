@@ -89,7 +89,7 @@ func authenticateAWSCredentials(ctx context.Context, config map[string]string, a
 	return creds, assumedRole, nil
 }
 
-// check of caller want to assume a different role
+// switchAWSRole checks if the caller wants to assume a different role
 // return as is if ConfigRole is empty, or already same as assumedRole
 // otherwise proceed to switch role
 func switchAWSRole(ctx context.Context, creds *credentials.Credentials, targetRole string, currentRole string, assumeRoleDuration time.Duration) (*credentials.Credentials, error) {
