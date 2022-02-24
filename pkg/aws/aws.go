@@ -95,7 +95,7 @@ func authenticateAWSCredentials(ctx context.Context, config map[string]string, a
 func switchAWSRole(ctx context.Context, creds *credentials.Credentials, targetRole string, currentRole string, assumeRoleDuration time.Duration) (*credentials.Credentials, error) {
 	if targetRole == "" || targetRole == currentRole {
 		return creds, nil
-
+	}
 	// When you use role chaining, your new credentials are limited to a maximum duration of one hour
 	// https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html
 	if currentRole != "" {
