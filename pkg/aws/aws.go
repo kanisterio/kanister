@@ -84,7 +84,7 @@ func authenticateAWSCredentials(ctx context.Context, config map[string]string, a
 		creds = getCredentialsWithDuration(sess, assumeRoleDuration)
 		assumedRole = os.Getenv(roleARNEnvKey)
 	default:
-		return nil, "", errors.New("AWS_ACCESS_KEY_ID and AWS_3SECRET_ACCESS_KEY required to initialize AWS credentials")
+		return nil, "", errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY required to initialize AWS credentials")
 	}
 	return creds, assumedRole, nil
 }
