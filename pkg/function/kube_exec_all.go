@@ -91,8 +91,8 @@ func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps
 				ctx = field.Context(ctx, consts.PodNameKey, p)
 				ctx = field.Context(ctx, consts.ContainerNameKey, c)
 				stdout, stderr, err := kube.Exec(cli, namespace, p, c, cmd, nil)
-				format.Log(p, c, stdout)
-				format.Log(p, c, stderr)
+				format.LogWithCtx(ctx, p, c, stdout)
+				format.LogWithCtx(ctx, p, c, stderr)
 				errChan <- err
 				output = output + "\n" + stdout
 			}(p, c)

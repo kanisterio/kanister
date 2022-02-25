@@ -99,8 +99,8 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 				return nil, err
 			}
 			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
 			}
@@ -117,8 +117,8 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 				return nil, err
 			}
 			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to forget data")
 			}

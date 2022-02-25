@@ -118,8 +118,8 @@ func describeBackupsPodFunc(cli kubernetes.Interface, tp param.TemplateParams, n
 			return nil, err
 		}
 		stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to get backup stats")
 		}

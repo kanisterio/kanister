@@ -96,8 +96,8 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	_ = field.Context(ctx, consts.ContainerNameKey, container)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
+	format.LogWithCtx(ctx, pod, container, stdout)
+	format.LogWithCtx(ctx, pod, container, stderr)
 	if err != nil {
 		return nil, err
 	}
