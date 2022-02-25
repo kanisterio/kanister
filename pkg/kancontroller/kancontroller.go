@@ -124,7 +124,7 @@ func isCACertMounted() bool {
 func createOrUpdateCRDs() bool {
 	createOrUpdateCRD := os.Getenv(createOrUpdateCRDEnvVar)
 	if createOrUpdateCRD == "" {
-		return false
+		return true
 	}
 
 	c, err := strconv.ParseBool(createOrUpdateCRD)
