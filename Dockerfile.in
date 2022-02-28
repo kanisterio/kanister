@@ -12,6 +12,7 @@ LABEL name=ARG_BIN \
 
 RUN microdnf update openssl-libs && \
     microdnf update cyrus-sasl && \
+    microdnf update cyrus-sasl-lib && \
     microdnf install git && \
     microdnf clean all
 
