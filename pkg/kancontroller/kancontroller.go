@@ -130,7 +130,7 @@ func createOrUpdateCRDs() bool {
 	c, err := strconv.ParseBool(createOrUpdateCRD)
 	if err != nil {
 		log.Print("environment variable", field.M{"CREATEORUPDATE_CRDS": createOrUpdateCRD})
-		return false
+		return true
 	}
 
 	return c
