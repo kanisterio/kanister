@@ -38,7 +38,7 @@ In case, if you don't have `Kanister` installed already, you can use following c
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
-$ helm install --name kanister --namespace kasten-io kanister/kanister-operator --set image.tag=0.74.0
+$ helm install --name kanister --namespace kanister kanister/kanister-operator --set image.tag=0.74.0
 ```
 
 ## Integrating with Kanister
@@ -68,7 +68,7 @@ can be shared between Kanister-enabled application instances.
 Create Blueprint in the same namespace as the controller
 
 ```bash
-$ kubectl create -f ./postgres-blueprint.yaml -n kasten-io
+$ kubectl create -f ./postgres-blueprint.yaml -n kanister
 ```
 
 Once Postgres is running, you can populate it with some data. Let's add a table called "company" to a "test" database:
@@ -77,7 +77,7 @@ Once Postgres is running, you can populate it with some data. Let's add a table 
 $ kubectl exec -ti my-release-postgresql-0 -n postgres-test -- bash
 
 ## use psql cli to add entries in postgresql database
-$ PGPASSWORD=${POSTGRES_PASSWORD} psql -U $POSTGRES_USER
+$ PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres
 psql (11.6)
 Type "help" for help.
 
@@ -100,13 +100,13 @@ postgres=# \l
 postgres=# \c test
 You are now connected to database "test" as user "postgres".
 test=# CREATE TABLE COMPANY(
-test(#     ID INT PRIMARY KEY     NOT NULL,
-test(#     NAME           TEXT    NOT NULL,
-test(#     AGE            INT     NOT NULL,
-test(#     ADDRESS        CHAR(50),
-test(#     SALARY         REAL,
-test(#     CREATED_AT    TIMESTAMP
-test(# );
+     ID INT PRIMARY KEY     NOT NULL,
+     NAME           TEXT    NOT NULL,
+     AGE            INT     NOT NULL,
+     ADDRESS        CHAR(50),
+     SALARY         REAL,
+     CREATED_AT    TIMESTAMP
+);
 CREATE TABLE
 
 ## Insert data into the table
@@ -141,15 +141,15 @@ $ kubectl get profile -n postgres-test
 NAME               AGE
 s3-profile-7d6wt   7m25s
 
-$ kanctl create actionset --action backup --namespace kasten-io --blueprint postgres-bp --statefulset postgres-test/my-release-postgresql --profile postgres-test/s3-profile-7d6wt
+$ kanctl create actionset --action backup --namespace kanister --blueprint postgres-bp --statefulset postgres-test/my-release-postgresql --profile postgres-test/s3-profile-7d6wt
 actionset backup-llfb8 created
 
-$ kubectl --namespace kasten-io get actionsets.cr.kanister.io
+$ kubectl --namespace kanister get actionsets.cr.kanister.io
 NAME           AGE
 backup-glptq   38s
 
 # View the status of the actionset
-$ kubectl --namespace kasten-io describe actionset backup-glptq
+$ kubectl --namespace kanister describe actionset backup-glptq
 ```
 
 ### Disaster strikes!
@@ -161,7 +161,7 @@ Let's say someone accidentally deleted the test database using the following com
 $ kubectl exec -ti my-release-postgresql-0 -n postgres-test -- bash
 
 ## use psql cli to add entries in postgresql database
-$ PGPASSWORD=${POSTGRES_PASSWORD} psql -U ${POSTGRES_USER}
+$ PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres
 psql (11.5)
 Type "help" for help.
 
@@ -197,11 +197,11 @@ postgres=# \l
 To restore the missing data, you should use the backup that you created before. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action restore --from backup-glptq
+$ kanctl --namespace kanister create actionset --action restore --from backup-glptq
 actionset restore-backup-glptq-6jzt4 created
 
 ## Check status
-$ kubectl --namespace kasten-io describe actionset restore-backup-glptq-6jzt4
+$ kubectl --namespace kanister describe actionset restore-backup-glptq-6jzt4
 ```
 
 Once the ActionSet status is set to "complete", you can see that the data has been successfully restored to PostgreSQL
@@ -235,11 +235,11 @@ test=# select * from company;
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action delete --from backup-glptq
+$ kanctl --namespace kanister create actionset --action delete --from backup-glptq
 actionset delete-backup-glptq-cq6bw created
 
 # View the status of the ActionSet
-$ kubectl --namespace kasten-io describe actionset delete-backup-glptq-cq6bw
+$ kubectl --namespace kanister describe actionset delete-backup-glptq-cq6bw
 ```
 
 ## Troubleshooting
@@ -247,13 +247,13 @@ $ kubectl --namespace kasten-io describe actionset delete-backup-glptq-cq6bw
 If you run into any issues with the above commands, you can check the logs of the controller using:
 
 ```bash
-$ kubectl --namespace kasten-io logs -l app=kanister-operator
+$ kubectl --namespace kanister logs -l app=kanister-operator
 ```
 
 you can also check events of the actionset
 
 ```bash
-$ kubectl describe actionset <actionset-name> -n kasten-io
+$ kubectl describe actionset <actionset-name> -n kanister
 ```
 
 ## Cleanup
@@ -274,7 +274,7 @@ $ helm delete my-release -n postgres-test
 Remove Blueprint and Profile CR
 
 ```bash
-$ kubectl delete blueprints.cr.kanister.io postgres-bp -n kasten-io
+$ kubectl delete blueprints.cr.kanister.io postgres-bp -n kanister
 
 $ kubectl get profiles.cr.kanister.io -n postgres-test
 NAME               AGE
