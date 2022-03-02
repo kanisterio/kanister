@@ -29,6 +29,8 @@ type Client interface {
 	Install(ctx context.Context, chart, version, release, namespace string, values map[string]string) error
 	// Uninstall deletes helm release from the given namespace
 	Uninstall(ctx context.Context, release, namespace string) error
+	// Upgrade upgrades an installed helm release
+	Upgrade(ctx context.Context, chart, version, release, namespace string, values map[string]string) error
 }
 
 // ChartInfo holds information to fetch and install helm chart

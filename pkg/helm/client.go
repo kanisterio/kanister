@@ -22,6 +22,11 @@ import (
 	"strings"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
@@ -56,8 +61,9 @@ const (
 )
 
 type CliClient struct {
-	version HelmVersion
-	helmBin string
+	version    HelmVersion
+	kubeClient kubernetes.Interface
+	helmBin    string
 }
 
 // FindVersion returns HelmVersion based on helm binary present in the path
@@ -87,15 +93,16 @@ func GetHelmBinName() string {
 	return "helm"
 }
 
-func NewCliClient() (Client, error) {
+func NewCliClient(kubeCli kubernetes.Interface) (Client, error) {
 	version, err := FindVersion()
 	if err != nil {
 		return nil, err
 	}
 
 	return &CliClient{
-		version: version,
-		helmBin: GetHelmBinName(),
+		version:    version,
+		helmBin:    GetHelmBinName(),
+		kubeClient: kubeCli,
 	}, nil
 }
 
@@ -126,6 +133,18 @@ func (h CliClient) UpdateRepo(ctx context.Context) error {
 
 // Install installs helm chart with given release name
 func (h CliClient) Install(ctx context.Context, chart, version, release, namespace string, values map[string]string) error {
+	// create namespace if it doesn't exist
+	if _, err := h.kubeClient.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{}); err != nil && apierrors.IsNotFound(err) {
+		ns := &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+		}
+		if _, err = h.kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
+			return err
+		}
+	}
+
 	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
 	var setVals string
 	for k, v := range values {
@@ -142,6 +161,29 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
 	if err != nil {
 		log.Error().Print("Error installing helm chart", field.M{"output": out})
+		return err
+	}
+	log.Debug().Print("Result", field.M{"output": out})
+	return nil
+}
+
+func (h CliClient) Upgrade(ctx context.Context, chart, version, release, namespace string, values map[string]string) error {
+	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
+	var setVals string
+	for k, v := range values {
+		setVals += fmt.Sprintf("%s=%s,", k, v)
+	}
+
+	var cmd []string
+	if h.version == V3 {
+		cmd = []string{"upgrade", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
+	} else {
+		cmd = []string{"upgrade", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
+	}
+
+	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
+	if err != nil {
+		log.Error().Print("Error upgrading helm chart", field.M{"output": out})
 		return err
 	}
 	log.Debug().Print("Result", field.M{"output": out})

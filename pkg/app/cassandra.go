@@ -21,13 +21,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -82,7 +83,7 @@ func (cas *CassandraInstance) Install(ctx context.Context, namespace string) err
 	cas.namespace = namespace
 
 	log.Print("Installing application.", field.M{"app": cas.name})
-	cli, err := helm.NewCliClient()
+	cli, err := helm.NewCliClient(cas.cli)
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
@@ -125,7 +126,7 @@ func (cas *CassandraInstance) Object() crv1alpha1.ObjectReference {
 // Uninstall us used to remove the datbase application
 func (cas *CassandraInstance) Uninstall(ctx context.Context) error {
 	log.Print("Uninstalling application.", field.M{"app": cas.name})
-	cli, err := helm.NewCliClient()
+	cli, err := helm.NewCliClient(cas.cli)
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}

@@ -20,13 +20,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -87,7 +88,7 @@ func (esi *ElasticsearchInstance) Init(ctx context.Context) error {
 func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string) error {
 	esi.namespace = namespace
 	// Get the HELM cli
-	cli, err := helm.NewCliClient()
+	cli, err := helm.NewCliClient(esi.cli)
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
@@ -129,7 +130,7 @@ func (esi *ElasticsearchInstance) Object() crv1alpha1.ObjectReference {
 }
 
 func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
-	cli, err := helm.NewCliClient()
+	cli, err := helm.NewCliClient(esi.cli)
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}

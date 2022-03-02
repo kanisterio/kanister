@@ -21,14 +21,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
-	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -75,7 +76,7 @@ func (m *MariaDB) Init(context.Context) error {
 
 func (m *MariaDB) Install(ctx context.Context, namespace string) error {
 	m.namespace = namespace
-	cli, err := helm.NewCliClient()
+	cli, err := helm.NewCliClient(m.cli)
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
@@ -115,7 +116,7 @@ func (m *MariaDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (m *MariaDB) Uninstall(ctx context.Context) error {
-	cli, err := helm.NewCliClient()
+	cli, err := helm.NewCliClient(m.cli)
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}

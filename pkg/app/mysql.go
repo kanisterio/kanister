@@ -20,14 +20,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
-	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -74,7 +75,7 @@ func (mdb *MysqlDB) Init(ctx context.Context) error {
 
 func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
 	mdb.namespace = namespace
-	cli, err := helm.NewCliClient()
+	cli, err := helm.NewCliClient(mdb.cli)
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
@@ -114,7 +115,7 @@ func (mdb *MysqlDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (mdb *MysqlDB) Uninstall(ctx context.Context) error {
-	cli, err := helm.NewCliClient()
+	cli, err := helm.NewCliClient(mdb.cli)
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
