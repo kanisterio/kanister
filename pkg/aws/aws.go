@@ -68,15 +68,10 @@ func durationFromString(config map[string]string) (time.Duration, error) {
 	return time.ParseDuration(d)
 }
 
-// GetCredentials returns credentials to use for AWS operations
-func GetCredentials(ctx context.Context, config map[string]string) (*credentials.Credentials, error) {
+func authenticateAWSCredentials(ctx context.Context, config map[string]string, assumeRoleDuration time.Duration) (*credentials.Credentials, string, error) {
 	var creds *credentials.Credentials
 	var assumedRole string
-	assumeRoleDuration, err := durationFromString(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get assume role duration")
-	}
-	log.Debug().Print("Assume Role Duration setup", field.M{"assumeRoleDuration": assumeRoleDuration})
+
 	switch {
 	case config[AccessKeyID] != "" && config[SecretAccessKey] != "":
 		// If AccessKeys were provided - use those
@@ -84,27 +79,50 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 	case os.Getenv(webIdentityTokenFilePathEnvKey) != "" && os.Getenv(roleARNEnvKey) != "":
 		sess, err := session.NewSessionWithOptions(session.Options{AssumeRoleDuration: assumeRoleDuration})
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to create session to initialize Web Identify credentials")
+			return nil, "", errors.Wrap(err, "Failed to create session to initialize Web Identify credentials")
 		}
 		creds = getCredentialsWithDuration(sess, assumeRoleDuration)
 		assumedRole = os.Getenv(roleARNEnvKey)
 	default:
-		return nil, errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY required to initialize AWS credentials")
+		return nil, "", errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY required to initialize AWS credentials")
 	}
-	// If the caller didn't want to assume a different role, we're done
-	if config[ConfigRole] == "" || config[ConfigRole] == assumedRole {
+	return creds, assumedRole, nil
+}
+
+// switchAWSRole checks if the caller wants to assume a different role
+// return as is if ConfigRole is empty, or already same as assumedRole
+// otherwise proceed to switch role
+func switchAWSRole(ctx context.Context, creds *credentials.Credentials, targetRole string, currentRole string, assumeRoleDuration time.Duration) (*credentials.Credentials, error) {
+	if targetRole == "" || targetRole == currentRole {
 		return creds, nil
 	}
 	// When you use role chaining, your new credentials are limited to a maximum duration of one hour
 	// https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html
-	if assumedRole != "" {
+	if currentRole != "" {
 		assumeRoleDuration = 60 * time.Minute
 	}
-
 	// If the caller wants to use a specific role, use the credentials initialized above to assume that
 	// role and return those credentials instead
-	creds, err = awsrole.Switch(ctx, creds, config[ConfigRole], assumeRoleDuration)
+	creds, err := awsrole.Switch(ctx, creds, targetRole, assumeRoleDuration)
 	return creds, errors.Wrap(err, "Failed to switch roles")
+}
+
+// GetCredentials returns credentials to use for AWS operations
+func GetCredentials(ctx context.Context, config map[string]string) (*credentials.Credentials, error) {
+	assumeRoleDuration, err := durationFromString(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get assume role duration")
+	}
+	log.Debug().Print("Assume Role Duration setup", field.M{"assumeRoleDuration": assumeRoleDuration})
+
+	// authenticate AWS creds
+	creds, assumedRole, err := authenticateAWSCredentials(ctx, config, assumeRoleDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	// check if role switching is needed, then return creds
+	return switchAWSRole(ctx, creds, config[ConfigRole], assumedRole, assumeRoleDuration)
 }
 
 // getCredentialsWithDuration returns credentials with the given duration.

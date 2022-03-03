@@ -653,7 +653,7 @@ func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 
 // dynamicRegionMapAzure derives a mapping from Regions to zones for Azure. Depends on subscriptionID
 func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]string, error) {
-	subscriptionsCLient := subscriptions.NewClient()
+	subscriptionsCLient := subscriptions.NewClientWithBaseURI(s.azCli.BaseURI)
 	subscriptionsCLient.Authorizer = s.azCli.Authorizer
 	llResp, err := subscriptionsCLient.ListLocations(ctx, s.azCli.SubscriptionID)
 	if err != nil {
@@ -664,7 +664,7 @@ func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]str
 		regionMap[*location.Name] = make(map[string]struct{})
 	}
 
-	skuClient := skus.NewResourceSkusClient(s.azCli.SubscriptionID)
+	skuClient := skus.NewResourceSkusClientWithBaseURI(s.azCli.BaseURI, s.azCli.SubscriptionID)
 	skuClient.Authorizer = s.azCli.Authorizer
 	skuResults, err := skuClient.ListComplete(ctx)
 	if err != nil {
