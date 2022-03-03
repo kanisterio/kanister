@@ -54,7 +54,7 @@ func (h *HelmTestSuite) SetUpSuite(c *C) {
 
 	helmValues := make(map[string]string)
 
-	kanisterApp, err := NewHelmApp(helmValues, kanisterName, "kanister/kanister-operator", kanisterName, "", false, h.kubeClient)
+	kanisterApp, err := NewHelmApp(h.kubeClient, helmValues, kanisterName, "kanister/kanister-operator", kanisterName, "", false)
 	c.Assert(err, IsNil)
 
 	// add kanister repo

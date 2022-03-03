@@ -32,7 +32,7 @@ type HelmApp struct {
 	namespace  string
 }
 
-func NewHelmApp(values map[string]string, name, chart, ns, version string, dr bool, kubeCli kubernetes.Interface) (*HelmApp, error) {
+func NewHelmApp(kubeCli kubernetes.Interface, values map[string]string, name, chart, ns, version string, dr bool) (*HelmApp, error) {
 	cli, err := helm.NewCliClient(kubeCli)
 	if err != nil {
 		return nil, err
