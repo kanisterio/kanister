@@ -26,12 +26,7 @@ import (
 )
 
 func Log(podName string, containerName string, output string) {
-	if output != "" {
-		logs := regexp.MustCompile("[\r\n]").Split(output, -1)
-		for _, l := range logs {
-			info(podName, containerName, l)
-		}
-	}
+	LogWithCtx(context.Background(), podName, containerName, output)
 }
 
 func LogStream(podName string, containerName string, output io.ReadCloser) chan string {
