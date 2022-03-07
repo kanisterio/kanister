@@ -1,32 +1,15 @@
 # Examples
 
-## Helm Examples
+This folder contains some Helm charts that have been updated to include Kanisteri
+blueprints, to make experimenting with Kanister easier.
 
-To make it easier to experiment with Kanister, we have modified a few upstream Helm charts to add Kanister Blueprints as well as easily configure the application via Helm. More information on these is available in the [kanister docs](https://docs.kanister.io/helm.html) with a brief summary available below:
+If you are new to Kanister, start with the `time-log` blueprint. After that,
+feel free to try out some of the more advanced examples like the blueprints for
+MySQL, PgSQL, MongoDB and ElasticSearch, following the instructions in the
+[Kanister documentation](https://docs.kanister.io/helm.html#kanister-enabled-applications).
 
+Every example has its own README.md with information on how to set things up and
+commands to be run.
 
-* `kanister-mongodb-replicaset/`
-
-     Dynamically scaleable MongoDB replica set protected using mongodump
-
-* `kanister-mysql/`
-
-     Single-node MySQL deployment protected using mysqldump.
-
-* `kanister-postgresql/`
-
-    PostgreSQL deployment protected using continuous archiving of PostgreSQL WAL files and base backups. Supports advanced features such as Point-In-Time-Restore (PITR).
-
-## Non-Helm Examples
-
-* `mongo-sidecar/`
-
-    MongoDB statefulset with a Kanister sidecar. Uses monogdump.
-
-* `postgres-basic-pgdump/`
-
-    Unmodified PostgreSQL deployment (deployed via the Patroni operator) and protected using `pg_dumpall`.
-
-* `time-log/`
-
-    Kanister tutorial. Demonstrates Kanister features using a simple time-logger deployment.
+Found a mistake in a blueprint? Having difficulty getting the blueprints to
+work? Find us on the Kanister [Slack](kanisterio.slack.com).
