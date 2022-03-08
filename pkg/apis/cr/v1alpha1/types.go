@@ -185,6 +185,9 @@ type Blueprint struct {
 	Actions           map[string]*BlueprintAction `json:"actions,omitempty"`
 }
 
+// In some scenarios we must  have a type that is reference to Blueprint type
+type BlueprintP *Blueprint
+
 // BlueprintAction describes the set of phases that constitute an action.
 type BlueprintAction struct {
 	Name               string              `json:"name"`
