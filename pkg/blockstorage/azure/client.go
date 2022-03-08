@@ -79,16 +79,14 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 
 	baseURI, ok = config[blockstorage.AzureResurceMgrEndpoint]
 	if !ok {
-		baseURI = compute.DefaultBaseURI
+		baseURI = env.ResourceManagerEndpoint
 	}
 
-	disksClient := compute.NewDisksClient(subscriptionID)
+	disksClient := compute.NewDisksClientWithBaseURI(baseURI, subscriptionID)
 	disksClient.Authorizer = authorizer
-	disksClient.BaseURI = baseURI
 
-	snapshotsClient := compute.NewSnapshotsClient(subscriptionID)
+	snapshotsClient := compute.NewSnapshotsClientWithBaseURI(baseURI, subscriptionID)
 	snapshotsClient.Authorizer = authorizer
-	snapshotsClient.BaseURI = baseURI
 
 	return &Client{
 		BaseURI:         baseURI,
@@ -102,30 +100,10 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 
 // nolint:unparam
 func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
-	tenantID, ok := config[blockstorage.AzureTenantID]
-	if !ok {
-		return nil, errors.New("Cannot get tenantID from config")
+	credConfig, err := getCredConfig(env, config)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get Azure ClientCredentialsConfig")
 	}
-
-	clientID, ok := config[blockstorage.AzureCientID]
-	if !ok {
-		return nil, errors.New("Cannot get clientID from config")
-	}
-
-	clientSecret, ok := config[blockstorage.AzureClentSecret]
-	if !ok {
-		return nil, errors.New("Cannot get clientSecret from config")
-	}
-
-	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
-	if aDDEndpoint, ok := config[blockstorage.AzureActiveDirEndpoint]; ok {
-		credConfig.AADEndpoint = aDDEndpoint
-	}
-
-	if aDDResourceID, ok := config[blockstorage.AzureActiveDirResourceID]; ok {
-		credConfig.Resource = aDDResourceID
-	}
-
 	a, err := credConfig.Authorizer()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get Azure authorizer")
@@ -136,4 +114,32 @@ func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.B
 		return nil, errors.New("Failed to get Azure authorizer")
 	}
 	return ba, nil
+}
+
+func getCredConfig(env azure.Environment, config map[string]string) (auth.ClientCredentialsConfig, error) {
+	tenantID, ok := config[blockstorage.AzureTenantID]
+	if !ok {
+		return auth.ClientCredentialsConfig{}, errors.New("Cannot get tenantID from config")
+	}
+
+	clientID, ok := config[blockstorage.AzureCientID]
+	if !ok {
+		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientID from config")
+	}
+
+	clientSecret, ok := config[blockstorage.AzureClentSecret]
+	if !ok {
+		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientSecret from config")
+	}
+
+	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
+	if credConfig.AADEndpoint, ok = config[blockstorage.AzureActiveDirEndpoint]; !ok || credConfig.AADEndpoint == "" {
+		credConfig.AADEndpoint = env.ActiveDirectoryEndpoint
+	}
+
+	if credConfig.Resource, ok = config[blockstorage.AzureActiveDirResourceID]; !ok || credConfig.Resource == "" {
+		credConfig.Resource = env.ResourceManagerEndpoint
+	}
+
+	return credConfig, nil
 }

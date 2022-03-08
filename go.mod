@@ -43,7 +43,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.2.1
-	github.com/vmware/govmomi v0.22.2-0.20200329013745-f2eef8fc745f
+	github.com/vmware/govmomi v0.27.4
 	go.uber.org/zap v1.19.1
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	google.golang.org/api v0.51.0
