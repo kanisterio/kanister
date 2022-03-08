@@ -249,6 +249,7 @@ Example:
     name: ShutdownApplication
     args:
       namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
       kind: deployment
       replicas: 0
   - func: PrepareData
