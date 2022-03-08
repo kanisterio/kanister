@@ -13,6 +13,10 @@ serviceAccount:
 controller:
   service:
     port: 443
+  # updateCRDs specifies if kanister controller should create/update the CRDs
+  # false : CRDs would be created by helm
+  # true : CRDs would be created by kanister controller
+  updateCRDs: true
 resources:
 # We usually recommend not to specify default resources and to leave this as a conscious
 # choice for the user. This also increases chances charts run on environments with little
