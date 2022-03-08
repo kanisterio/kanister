@@ -20,14 +20,15 @@ Next create a Blueprint which describes how backup and restore actions can be ex
 
 ```bash
 # Configure access to an S3 Bucket
-$ helm install kanister/profile                 \
-    --name profile --namespace kanister       \
+$ helm install profile kanister/profile                 \
+    --namespace kanister       \
     --set defaultProfile=true                 \
     --set location.type='s3Compliant' \
     --set location.bucket="my-kanister-bucket"      \
     --set location.region="us-west-2"              \
     --set aws.accessKey="${AWS_ACCESS_KEY_ID}" \
     --set aws.secretKey="${AWS_SECRET_ACCESS_KEY}"
+
 
 # Create the kanister blueprint that has instructions on how to backup the PVCs
 $ kubectl apply -f examples/picture-gallery-pvc-snapshot/blueprint.yaml

@@ -25,10 +25,6 @@ $ helm repo update
 # Using helm v3
 $ helm install my-release bitnami/mongodb --namespace mongo-test \
 	--set architecture="replicaset"
-
-# Using helm < v3
-$ helm install bitnami/mongodb --name my-release --namespace mongo-test \
-	--set architecture="replicaset"
 ```
 
 The command deploys MongoDB on the Kubernetes cluster in the mongo-test namespace
