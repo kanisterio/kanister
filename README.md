@@ -57,6 +57,15 @@ We hold public community meetings, for roadmap and other design discussions, onc
 - To get yourself added into the regular Community meetings invite, please drop a mail to vivek@kasten.io.
 - Meeting joining details can be found in the meeting invite itself.
 
+## Code of Conduct
+
+Kanister is for everyone. We ask that our users and contributors take a few
+minutes to review our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for our security policy, including how to report
+vulnerabilities.
 
 ## Resources
 
@@ -77,4 +86,5 @@ issue](https://github.com/kanisterio/kanister/issues).
 - [Percona Live 2018](https://www.youtube.com/watch?v=dS0kv0k8D_E)
 
 ## License
+
 Apache License 2.0, see [LICENSE](https://github.com/kanisterio/kanister/blob/master/LICENSE).
