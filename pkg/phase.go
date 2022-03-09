@@ -19,6 +19,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
+	"k8s.io/utils/strings/slices"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -65,11 +66,25 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 			if err = checkRequiredArgs(p.f.RequiredArgs(), args); err != nil {
 				return nil, errors.Wrapf(err, "Required args missing for function %s", p.f.Name())
 			}
+
+			if err = checkSupportedArgs(p.f.Arguments(), args); err != nil {
+				return nil, errors.Wrapf(err, "Checking supported args for function %s.", p.f.Name())
+			}
+
 			p.args = args
 		}
 	}
 	// Execute the function
 	return p.f.Exec(ctx, tp, p.args)
+}
+
+func checkSupportedArgs(supportedArgs []string, args map[string]interface{}) error {
+	for a := range args {
+		if !slices.Contains(supportedArgs, a) {
+			return errors.Errorf("argument %s is not supported", a)
+		}
+	}
+	return nil
 }
 
 // GetPhases renders the returns a list of Phases with pre-rendered arguments.
@@ -116,6 +131,10 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 
 // Validate gets the provided arguments from a blueprint and verifies that the required arguments are present
 func (p *Phase) Validate(args map[string]interface{}) error {
+	if err := checkSupportedArgs(p.f.Arguments(), args); err != nil {
+		return err
+	}
+
 	return checkRequiredArgs(p.f.RequiredArgs(), args)
 }
 

@@ -135,6 +135,19 @@ func (*restoreCSISnapshotFunc) RequiredArgs() []string {
 	}
 }
 
+func (*restoreCSISnapshotFunc) Arguments() []string {
+	return []string{
+		RestoreCSISnapshotNameArg,
+		RestoreCSISnapshotPVCNameArg,
+		RestoreCSISnapshotNamespaceArg,
+		RestoreCSISnapshotStorageClassArg,
+		RestoreCSISnapshotRestoreSizeArg,
+		RestoreCSISnapshotAccessModesArg,
+		RestoreCSISnapshotVolumeModeArg,
+		RestoreCSISnapshotLabelsArg,
+	}
+}
+
 func getClient() (kubernetes.Interface, error) {
 	kubeCli, err := kube.NewClient()
 	return kubeCli, err
