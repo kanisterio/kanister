@@ -4,7 +4,7 @@ go 1.17
 
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
-	github.com/graymeta/stow => github.com/kastenhq/stow v0.2.6-kasten.1
+	github.com/graymeta/stow => github.com/kastenhq/stow v0.2.6-kasten.1.0.20220308203144-2310804551b7
 	github.com/rook/operator-kit => github.com/kastenhq/operator-kit v0.0.0-20180316185208-859e831cc18d
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
