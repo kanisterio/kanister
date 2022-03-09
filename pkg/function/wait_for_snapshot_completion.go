@@ -51,6 +51,10 @@ func (*waitForSnapshotCompletionFunc) RequiredArgs() []string {
 	return []string{WaitForSnapshotCompletionSnapshotsArg}
 }
 
+func (*waitForSnapshotCompletionFunc) Arguments() []string {
+	return []string{WaitForSnapshotCompletionSnapshotsArg}
+}
+
 func (kef *waitForSnapshotCompletionFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var snapshotinfo string
 	if err := Arg(args, WaitForSnapshotCompletionSnapshotsArg, &snapshotinfo); err != nil {

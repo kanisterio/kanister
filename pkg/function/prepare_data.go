@@ -153,5 +153,20 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 }
 
 func (*prepareDataFunc) RequiredArgs() []string {
-	return []string{PrepareDataNamespaceArg, PrepareDataImageArg, PrepareDataCommandArg}
+	return []string{
+		PrepareDataNamespaceArg,
+		PrepareDataImageArg,
+		PrepareDataCommandArg,
+	}
+}
+
+func (*prepareDataFunc) Arguments() []string {
+	return []string{
+		PrepareDataNamespaceArg,
+		PrepareDataImageArg,
+		PrepareDataCommandArg,
+		PrepareDataVolumes,
+		PrepareDataServiceAccount,
+		PrepareDataPodOverrideArg,
+	}
 }
