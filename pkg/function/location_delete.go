@@ -59,3 +59,7 @@ func (*locationDeleteFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 func (*locationDeleteFunc) RequiredArgs() []string {
 	return []string{LocationDeleteArtifactArg}
 }
+
+func (*locationDeleteFunc) Arguments() []string {
+	return []string{LocationDeleteArtifactArg}
+}

@@ -130,6 +130,10 @@ func (mf *mockKanisterFunc) RequiredArgs() []string {
 	return nil
 }
 
+func (mf *mockKanisterFunc) Arguments() []string {
+	return []string{testBPArg}
+}
+
 func CancelFuncOut() error {
 	return <-cancelFuncCh
 }

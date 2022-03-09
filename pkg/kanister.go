@@ -37,6 +37,7 @@ var (
 type Func interface {
 	Name() string
 	RequiredArgs() []string
+	Arguments() []string
 	Exec(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error)
 }
 
@@ -58,7 +59,19 @@ func Register(f Func) error {
 	return nil
 }
 
-// RegisterVersion allows Kanister Functions to be registered with the given version
+func RegisteredFunctions() map[string]struct{} {
+	names := make(map[string]struct{}, len(funcs))
+	for k := range funcs {
+		names[k] = struct{}{}
+	}
+	return names
+}
+
+func KanisterFuncForName(funcName, version string) Func {
+	return funcs[funcName][*semver.MustParse(version)]
+}
+
+// RegisterVersion allows a Kanister Function to be registered with the given version
 func RegisterVersion(f Func, v string) error {
 	version := *semver.MustParse(v)
 	funcMu.Lock()
