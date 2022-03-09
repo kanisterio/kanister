@@ -71,7 +71,7 @@ func KanisterFuncForName(funcName, version string) Func {
 	return funcs[funcName][*semver.MustParse(version)]
 }
 
-// RegisterVersion allows Kanister Functions to be registered with the given version
+// RegisterVersion allows a Kanister Function to be registered with the given version
 func RegisterVersion(f Func, v string) error {
 	version := *semver.MustParse(v)
 	funcMu.Lock()
