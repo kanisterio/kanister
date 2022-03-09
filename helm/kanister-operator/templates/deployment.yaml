@@ -26,6 +26,9 @@ spec:
         volumeMounts:
           - name: webhook-certs
             mountPath: /var/run/webhook/serving-cert
+        env:
+        - name: CREATEORUPDATE_CRDS
+          value: {{ .Values.controller.updateCRDs | quote }}
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}
