@@ -48,6 +48,10 @@ func (tf *testFunc) RequiredArgs() []string {
 	return nil
 }
 
+func (tf *testFunc) Arguments() []string {
+	return nil
+}
+
 func (s *PhaseSuite) TestExec(c *C) {
 	for _, tc := range []struct {
 		artifact string
@@ -81,5 +85,46 @@ func (s *PhaseSuite) TestExec(c *C) {
 		_, err = p.Exec(context.Background(), crv1alpha1.Blueprint{}, "", tp)
 		c.Assert(err, IsNil)
 		c.Assert(output, Equals, tc.expected)
+	}
+}
+
+func (s *PhaseSuite) TestCheckSupportedArgs(c *C) {
+	for _, tc := range []struct {
+		supprtedArgs []string
+		providedArgs map[string]interface{}
+		err          Checker
+		expErr       string
+	}{
+		{
+			supprtedArgs: []string{"a", "b", "c"},
+			providedArgs: map[string]interface{}{
+				"a": "val",
+				"b": "val",
+				"c": "val",
+			},
+			err: IsNil,
+		},
+		{
+			supprtedArgs: []string{"a", "b", "c"},
+			providedArgs: map[string]interface{}{
+				"a": "val",
+				"b": "val",
+				"c": "val",
+				"d": "val",
+			},
+			err:    NotNil,
+			expErr: "argument d is not supported",
+		},
+		{
+			supprtedArgs: []string{"a", "b", "c"},
+			providedArgs: map[string]interface{}{},
+			err:          IsNil,
+		},
+	} {
+		err := checkSupportedArgs(tc.supprtedArgs, tc.providedArgs)
+		if err != nil {
+			c.Assert(err.Error(), Equals, tc.expErr)
+		}
+		c.Assert(err, tc.err)
 	}
 }

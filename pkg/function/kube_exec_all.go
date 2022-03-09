@@ -77,7 +77,21 @@ func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 }
 
 func (*kubeExecAllFunc) RequiredArgs() []string {
-	return []string{KubeExecAllNamespaceArg, KubeExecAllPodsNameArg, KubeExecAllContainersNameArg, KubeExecAllCommandArg}
+	return []string{
+		KubeExecAllNamespaceArg,
+		KubeExecAllPodsNameArg,
+		KubeExecAllContainersNameArg,
+		KubeExecAllCommandArg,
+	}
+}
+
+func (*kubeExecAllFunc) Arguments() []string {
+	return []string{
+		KubeExecAllNamespaceArg,
+		KubeExecAllPodsNameArg,
+		KubeExecAllContainersNameArg,
+		KubeExecAllCommandArg,
+	}
 }
 
 func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps []string, cs []string, cmd []string) (map[string]interface{}, error) {
