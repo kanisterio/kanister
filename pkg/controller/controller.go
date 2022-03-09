@@ -24,6 +24,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
@@ -215,9 +216,11 @@ func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) {
 // nolint:unparam
 func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error {
 	ctx := field.Context(context.Background(), consts.ActionsetNameKey, newAS.GetName())
-	// adding labels in the context as field for better logging
+	// adding labels with prefix "kanister.io/" in the context as field for better logging
 	for key, value := range newAS.GetLabels() {
-		ctx = field.Context(ctx, key, value)
+		if strings.HasPrefix(key, consts.LabelPrefix) {
+			ctx = field.Context(ctx, key, value)
+		}
 	}
 
 	if err := validate.ActionSet(newAS); err != nil {
@@ -358,9 +361,11 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	}
 	ctx := context.Background()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
-	// adding labels in the context as field for better logging
+	// adding labels with prefix "kanister.io/" in the context as field for better logging
 	for key, value := range as.GetLabels() {
-		ctx = field.Context(ctx, key, value)
+		if strings.HasPrefix(key, consts.LabelPrefix) {
+			ctx = field.Context(ctx, key, value)
+		}
 	}
 
 	for i := range as.Status.Actions {
