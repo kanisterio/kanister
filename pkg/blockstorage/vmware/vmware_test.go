@@ -64,6 +64,31 @@ func (s *VMWareSuite) TestURLParse(c *C) {
 	}
 }
 
+func (s *VMWareSuite) TestIsParaVirtualized(c *C) {
+	// the constructor needs VIM so just check the parsing of the config map.
+
+	config := map[string]string{}
+	c.Assert(false, Equals, configIsParaVirtualized(config))
+	config[VSphereIsParaVirtualizedKey] = "false"
+	c.Assert(false, Equals, configIsParaVirtualized(config))
+	config[VSphereIsParaVirtualizedKey] = "true"
+	c.Assert(true, Equals, configIsParaVirtualized(config))
+	config[VSphereIsParaVirtualizedKey] = "TRUE"
+	c.Assert(true, Equals, configIsParaVirtualized(config))
+	config[VSphereIsParaVirtualizedKey] = "1"
+	c.Assert(true, Equals, configIsParaVirtualized(config))
+
+	fcd := &FcdProvider{}
+	c.Assert(false, Equals, fcd.IsParaVirtualized())
+	fcd.isParaVirtualized = true
+	c.Assert(true, Equals, fcd.IsParaVirtualized())
+
+	// failed operations
+	v, err := fcd.VolumeCreateFromSnapshot(context.Background(), blockstorage.Snapshot{}, nil)
+	c.Assert(true, Equals, errors.Is(err, ErrNotSupportedWithParaVirtualizedVolumes))
+	c.Assert(v, IsNil)
+}
+
 func (s *VMWareSuite) TestTimeoutEnvSetting(c *C) {
 	tempEnv := os.Getenv(vmWareTimeoutMinEnv)
 	os.Unsetenv(vmWareTimeoutMinEnv)
