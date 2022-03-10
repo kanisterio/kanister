@@ -17,6 +17,16 @@ const (
 	AzureStorageEnvironment string = "azure_storage_environment"
 )
 
+// ValidateAzureCredentials validates secret has all necessary information
+// for Azure credentials. It also checks the secret doesn't have unnnecessary
+// information.
+//
+// Required fields:
+// - azure_storage_account_id
+// - azure_storage_key
+//
+// Optional field:
+// - azure_storage_environment
 func ValidateAzureCredentials(secret *v1.Secret) error {
 	if string(secret.Type) != AzureSecretType {
 		return errors.New("Secret is not Azure secret")
@@ -37,6 +47,15 @@ func ValidateAzureCredentials(secret *v1.Secret) error {
 	return nil
 }
 
+// ExtractAzureCredentials extracts Azure credential values from the given secret.
+//
+// Extracted values from the secrets are:
+// - azure_storage_account_id (required)
+// - azure_storage_key (required)
+// - azure_storage_environment (optional)
+//
+// If the type of the secret is not "secrets.kanister.io/azure", it returns an error.
+// If the required types are not avaialable in the secrets, it returns an errror.
 func ExtractAzureCredentials(secret *v1.Secret) (*objectstore.SecretAzure, error) {
 	if err := ValidateAzureCredentials(secret); err != nil {
 		return nil, err
