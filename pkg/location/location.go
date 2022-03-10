@@ -207,15 +207,32 @@ func getOSSecret(ctx context.Context, pType objectstore.ProviderType, cred param
 			ServiceKey: cred.KeyPair.Secret,
 		}
 	case objectstore.ProviderTypeAzure:
-		secret.Type = objectstore.SecretTypeAzStorageAccount
-		secret.Azure = &objectstore.SecretAzure{
-			StorageAccount: cred.KeyPair.ID,
-			StorageKey:     cred.KeyPair.Secret,
-		}
+		return getAzureSecret(cred)
 	default:
 		return nil, errors.Errorf("unknown or unsupported provider type '%s'", pType)
 	}
 	return secret, nil
+}
+
+func getAzureSecret(cred param.Credential) (*objectstore.Secret, error) {
+	os := &objectstore.Secret{
+		Type: objectstore.SecretTypeAzStorageAccount,
+	}
+	switch cred.Type {
+	case param.CredentialTypeKeyPair:
+		os.Azure = &objectstore.SecretAzure{
+			StorageAccount: cred.KeyPair.ID,
+			StorageKey:     cred.KeyPair.Secret,
+		}
+
+	case param.CredentialTypeSecret:
+		azSecret, err := secrets.ExtractAzureCredentials(cred.Secret)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to extract azure credentials")
+		}
+		os.Azure = azSecret
+	}
+	return os, nil
 }
 
 func getAWSSecret(ctx context.Context, cred param.Credential) (*objectstore.Secret, error) {
