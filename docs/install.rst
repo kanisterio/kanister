@@ -45,6 +45,16 @@ This will install the Kanister controller in the ``kanister`` namespace
                                        --namespace kanister
 
 
+Kanister Custom Resource Definitions (CRD)
+==========================================
+
+`Custom Resource Definitions <https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/>`_
+that Kanister needs are, by default, managed by Kanister controller. If Kanister
+controller doesn't have the authorization to create or update CRDs, you can disable
+that using ``controller.updateCRDs`` helm flag. If set to ``false``, helm will
+manage the CRDs instead of Kanister controller.
+
+
 Building and Deploying from Source
 ==================================
 
