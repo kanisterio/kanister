@@ -76,7 +76,6 @@ actions:
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
         pod: "{{ index .StatefulSet.Pods 0}}"
-        containers: "cassandra"
         command:
           - bash
           - -o
@@ -120,7 +119,6 @@ actions:
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
         pod: "{{ index .StatefulSet.Pods 0 }}"
-        containers: "cassandra"
         command:
           - bash
           - -o
