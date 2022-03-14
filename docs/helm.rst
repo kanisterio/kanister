@@ -26,7 +26,7 @@ You also need to install the Kanister controller
 
 .. substitution-code-block:: console
 
-   $ helm install myrelease --namespace kanister --create-namespace --kanister/kanister-operator --set image.tag=|version|
+   $ helm install myrelease --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=|version|
 
 Kanister-Enabled Applications
 =============================

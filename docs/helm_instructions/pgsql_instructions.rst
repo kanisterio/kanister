@@ -22,7 +22,7 @@ Then install the sample PostgreSQL application in its own namespace.
   .. code-block:: rst
 
      # Install Kanister-enabled PostgreSQL
-     $ helm install kanister/kanister-postgresql -n postgresql \
+     $ helm install postgresql kanister/kanister-postgresql \
           --namespace postgresql-test \
           --set profile.create='true' \
           --set profile.profileName='postgres-test-profile' \
@@ -39,7 +39,7 @@ Then install the sample PostgreSQL application in its own namespace.
   .. code-block:: rst
 
      # Install Kanister-enabled PostgreSQL
-     $ helm install kanister/kanister-postgresql -n postgresql \
+     $ helm install postgresql kanister/kanister-postgresql \
           --namespace postgresql-test
 
 The settings in the command above represent the minimum recommended set for
@@ -63,7 +63,7 @@ your installation.
   .. code-block:: rst
 
      # Install Kanister-enabled PostgreSQL
-     $ helm install kanister/kanister-postgresql -n postgresql \
+     $ helm install postgresql kanister/kanister-postgresql \
           --namespace postgresql-test
 
 .. note:: The above command will attempt to use dynamic storage provisioning
