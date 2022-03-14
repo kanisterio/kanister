@@ -16,7 +16,7 @@ Prerequisites
 * `kubectl <https://kubernetes.io/docs/tasks/tools/install-kubectl/>`_ installed
   and setup
 
-* `helm <https://helm.sh>`_ installed and initialized using the command ``helm init``
+* `helm <https://helm.sh>`_ installed
 
 * :ref:`kanctl <tooling>` installed
 
@@ -36,7 +36,7 @@ This will install the Kanister controller in the ``kanister`` namespace
    $ helm repo add kanister https://charts.kanister.io/
 
    # Install the Kanister operator controller using helm
-   $ helm install myrelease --namespace kanister kanister/kanister-operator --set image.tag=|version|
+   $ helm install myrelease --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=|version|
 
    # Create an S3 Compliant Kanister profile using kanctl
    $ kanctl create profile s3compliant --bucket <bucket> --access-key ${AWS_ACCESS_KEY_ID} \

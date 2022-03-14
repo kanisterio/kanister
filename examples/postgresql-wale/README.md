@@ -41,7 +41,7 @@ In case, if you don't have `Kanister` installed already, you can use following c
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
-$ helm install kanister --namespace kanister kanister/kanister-operator --set image.tag=0.74.0
+$ helm install kanister --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=0.74.0
 ```
 
 ## Integrating with Kanister

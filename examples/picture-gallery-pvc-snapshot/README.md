@@ -29,7 +29,6 @@ $ helm install profile kanister/profile                 \
     --set aws.accessKey="${AWS_ACCESS_KEY_ID}" \
     --set aws.secretKey="${AWS_SECRET_ACCESS_KEY}"
 
-
 # Create the kanister blueprint that has instructions on how to backup the PVCs
 $ kubectl apply -f examples/picture-gallery-pvc-snapshot/blueprint.yaml
 blueprint "picture-gallery" created
