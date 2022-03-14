@@ -1332,6 +1332,58 @@ Example:
           snapshotClass: do-block-storage
 
 
+CreateCSISnapshotStatic
+-----------------------
+
+This function creates a pair of CSI VolumeSnapshot and VolumeSnapshotContent.
+It is commonly used to pre-provision snapshot volume and snapshot volume content
+resources as described in the Kubernetes `documentation
+<https://kubernetes.io/docs/concepts/storage/volume-snapshots/#static>`_.
+
+The deletion behavior is defined by the ``deletionPolicy`` property (``Retain``,
+``Delete``) of the snapshot class.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, Yes, `string`, name of the new VolumeSnapshot
+   `namespace`, Yes, `string`, namespace of the new VolumeSnapshot
+   `driver`, Yes, `string`, name of the CSI driver for the new VolumeSnapshotContent
+   `handle`, Yes, `string`, unique identifier of the volume created on the storage backend used as the source of the new VolumeSnapshotContent
+   `snapshotClass`, Yes, `string`, name of the VolumeSnapshotClass to use
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `name`,`string`, name of the new VolumeSnapshot
+   `namespace`, string, namespace of the new VolumeSnapshot
+   `restoreSize`, string, required memory size to restore the volume
+   `snapshotContent`, string, name of the new VolumeSnapshotContent
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    createStaticSnapshot:
+      phases:
+      - func: CreateCSISnapshotStatic
+        name: createCSISnapshotStatic
+        args:
+          name: volume-snapshot
+          namespace: namespace
+          snapshotClass: csi-hostpath-snapclass
+          driver: 7bdd0de3-aaeb-11e8-9aae-0242ac110002
+
 RestoreCSISnapshot
 ------------------
 
@@ -1411,6 +1463,34 @@ Example:
         args:
           name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.name }}"
           namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
+
+DeleteCSISnapshotContent
+------------------------
+
+This function deletes a VolumeSnapshotContent resource. Only unbounded
+VolumeSnapshotContent can be deleted using this function.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, Yes, `string`, name of the VolumeSnapshot
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    deleteVSC:
+      phases:
+      - func: DeleteCSISnapshotContent
+        name: deleteCSISnapshotContent
+        args:
+          name: "test-snapshot-content-content-dfc8fa67-8b11-4fdf-bf94-928589c2eed8"
 
 
 Registering Functions
