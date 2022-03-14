@@ -64,7 +64,7 @@ func ConnectToAPIServer(
 			CacheDirectory:            defaultCacheDirectory,
 			MaxCacheSizeBytes:         int64(contentCacheMB << 20),
 			MaxMetadataCacheSizeBytes: int64(metadataCacheMB << 20),
-			MaxListCacheDurationSec:   int(defaultConnectMaxListCacheDuration.Seconds()),
+			MaxListCacheDuration:      content.DurationSeconds(defaultConnectMaxListCacheDuration.Seconds()),
 		},
 		ClientOptions: repo.ClientOptions{
 			Hostname: hostname,
