@@ -18,7 +18,6 @@ import (
 	"context"
 
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
-	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -104,10 +103,6 @@ func (*createCSISnapshotStaticFunc) Exec(ctx context.Context, tp param.TemplateP
 
 	snapshotter, err := snapshot.NewSnapshotter(kubeCli, dynCli)
 	if err != nil {
-		if errors.Is(context.DeadlineExceeded, err) {
-			timeoutMsg := "SnapshotContent not provisioned within given timeout. Please check if CSI driver is installed correctly and supports VolumeSnapshot feature"
-			return nil, errors.Wrap(err, timeoutMsg)
-		}
 		return nil, err
 	}
 
