@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -92,4 +93,6 @@ func (h *HelmTestSuite) TearDownSuite(c *C) {
 	c.Log("Uninstalling chart")
 	err := h.helmApp.Uninstall()
 	c.Assert(err, IsNil)
+
+	c.Assert(h.kubeClient.CoreV1().Namespaces().Delete(context.Background(), h.helmApp.namespace, metav1.DeleteOptions{}), IsNil)
 }

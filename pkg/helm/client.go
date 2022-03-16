@@ -168,7 +168,7 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 }
 
 func (h CliClient) Upgrade(ctx context.Context, chart, version, release, namespace string, values map[string]string) error {
-	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
+	log.Debug().Print("Upgrading helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
 	var setVals string
 	for k, v := range values {
 		setVals += fmt.Sprintf("%s=%s,", k, v)
