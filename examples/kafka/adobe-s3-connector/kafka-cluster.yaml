@@ -4,7 +4,7 @@ metadata:
   name: my-cluster
 spec:
   kafka:
-    version: 2.8.0
+    version: 3.1.0
     replicas: 1
     listeners:
       - name: plain
@@ -15,6 +15,10 @@ spec:
         port: 9093
         type: internal
         tls: true
+    logging:
+      type: inline
+      loggers:
+        kafka.root.logger.level: "INFO"
     template:
       pod:
         securityContext:
@@ -24,8 +28,7 @@ spec:
       offsets.topic.replication.factor: 1
       transaction.state.log.replication.factor: 1
       transaction.state.log.min.isr: 1
-      log.message.format.version: "2.8"
-      inter.broker.protocol.version: "2.8"
+      inter.broker.protocol.version: "3.1"
     storage:
       type: jbod
       volumes:
@@ -40,6 +43,10 @@ spec:
         securityContext:
           runAsUser: 0
           fsGroup: 0
+    logging:
+      type: inline
+      loggers:
+        zookeeper.root.logger.level: "INFO"
     storage:
       type: persistent-claim
       size: 100Gi
