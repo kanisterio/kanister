@@ -49,12 +49,12 @@ Kanister Custom Resource Definitions (CRDs)
 ===========================================
 
 Kanister defines a few `Custom Resource Definitions (CRDs) <https://docs.kanister.io/architecture.html#custom-resources>`_
-to express backup workflow and their execution. By default, these CRDs are
+to express and execute data protection workflows. By default, these CRDs are
 managed (created/updated) by the Kanister controller.
 
-If the Kanister controller doesn't have the authorization to create or
-update CRDs, you can disable that using the ``controller.updateCRDs`` helm
-flag. If set to ``false``, helm will manage the CRDs instead of the Kanister
+If the Kanister controller doesn't have the permissions to create or
+update CRDs, you can disable that using the ``controller.updateCRDs`` Helm
+flag. If set to ``false``, Helm will manage the CRDs instead of the Kanister
 controller.
 
 
