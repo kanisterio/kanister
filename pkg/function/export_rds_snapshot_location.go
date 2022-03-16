@@ -208,6 +208,8 @@ func (*exportRDSSnapshotToLocationFunc) Arguments() []string {
 		ExportRDSSnapshotToLocDBUsernameArg,
 		ExportRDSSnapshotToLocDBPasswordArg,
 		ExportRDSSnapshotToLocBackupArtPrefixArg,
+		ExportRDSSnapshotToLocDatabasesArg,
+		ExportRDSSnapshotToLocSecGrpIDArg,
 	}
 }
 

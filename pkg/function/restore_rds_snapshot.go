@@ -91,6 +91,7 @@ func (*restoreRDSSnapshotFunc) Arguments() []string {
 		RestoreRDSSnapshotUsername,
 		RestoreRDSSnapshotPassword,
 		RestoreRDSSnapshotNamespace,
+		RestoreRDSSnapshotSecGrpID,
 	}
 }
 
