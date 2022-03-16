@@ -93,6 +93,6 @@ func (h *HelmTestSuite) TearDownSuite(c *C) {
 	c.Log("Uninstalling chart")
 	err := h.helmApp.Uninstall()
 	c.Assert(err, IsNil)
-
+	// Uninstall doesn't delete namespace, delete namespace separately
 	c.Assert(h.kubeClient.CoreV1().Namespaces().Delete(context.Background(), h.helmApp.namespace, metav1.DeleteOptions{}), IsNil)
 }
