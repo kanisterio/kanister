@@ -1,6 +1,6 @@
 # Examples
 
-This folder contains some Helm charts that have been updated to include Kanisteri
+This folder contains some Helm charts that have been updated to include Kanister
 blueprints, to make experimenting with Kanister easier.
 
 If you are new to Kanister, start with the `time-log` blueprint. After that,
