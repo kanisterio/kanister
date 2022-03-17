@@ -28,7 +28,7 @@ const (
 	maxNumErrorRetries = 3
 )
 
-func (e *efs) waitUntilFileSystemAvailable(ctx context.Context, id string) error {
+func (e *Efs) waitUntilFileSystemAvailable(ctx context.Context, id string) error {
 	return poll.WaitWithRetries(ctx, maxNumErrorRetries, poll.IsAlwaysRetryable, func(ctx context.Context) (bool, error) {
 		req := &awsefs.DescribeFileSystemsInput{}
 		req.SetFileSystemId(id)
@@ -48,7 +48,7 @@ func (e *efs) waitUntilFileSystemAvailable(ctx context.Context, id string) error
 	})
 }
 
-func (e *efs) waitUntilRecoveryPointCompleted(ctx context.Context, id string) error {
+func (e *Efs) waitUntilRecoveryPointCompleted(ctx context.Context, id string) error {
 	return poll.WaitWithRetries(ctx, maxNumErrorRetries, poll.IsAlwaysRetryable, func(ctx context.Context) (bool, error) {
 		req := &backup.DescribeRecoveryPointInput{}
 		req.SetBackupVaultName(e.backupVaultName)
@@ -71,7 +71,7 @@ func (e *efs) waitUntilRecoveryPointCompleted(ctx context.Context, id string) er
 	})
 }
 
-func (e *efs) waitUntilRecoveryPointVisible(ctx context.Context, id string) error {
+func (e *Efs) waitUntilRecoveryPointVisible(ctx context.Context, id string) error {
 	return poll.WaitWithRetries(ctx, maxNumErrorRetries, poll.IsAlwaysRetryable, func(ctx context.Context) (bool, error) {
 		req := &backup.DescribeRecoveryPointInput{}
 		req.SetBackupVaultName(e.backupVaultName)
@@ -90,7 +90,7 @@ func (e *efs) waitUntilRecoveryPointVisible(ctx context.Context, id string) erro
 	})
 }
 
-func (e *efs) waitUntilMountTargetReady(ctx context.Context, mountTargetID string) error {
+func (e *Efs) waitUntilMountTargetReady(ctx context.Context, mountTargetID string) error {
 	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		req := &awsefs.DescribeMountTargetsInput{}
 		req.SetMountTargetId(mountTargetID)
@@ -114,7 +114,7 @@ func (e *efs) waitUntilMountTargetReady(ctx context.Context, mountTargetID strin
 	})
 }
 
-func (e *efs) waitUntilMountTargetIsDeleted(ctx context.Context, mountTargetID string) error {
+func (e *Efs) waitUntilMountTargetIsDeleted(ctx context.Context, mountTargetID string) error {
 	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		req := &awsefs.DescribeMountTargetsInput{}
 		req.SetMountTargetId(mountTargetID)
@@ -130,7 +130,7 @@ func (e *efs) waitUntilMountTargetIsDeleted(ctx context.Context, mountTargetID s
 	})
 }
 
-func (e *efs) waitUntilRestoreComplete(ctx context.Context, restoreJobID string) error {
+func (e *Efs) waitUntilRestoreComplete(ctx context.Context, restoreJobID string) error {
 	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		req := &backup.DescribeRestoreJobInput{}
 		req.SetRestoreJobId(restoreJobID)
