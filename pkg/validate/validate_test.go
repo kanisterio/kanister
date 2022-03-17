@@ -15,13 +15,19 @@
 package validate
 
 import (
+	"context"
 	"testing"
 
 	. "gopkg.in/check.v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -593,5 +599,201 @@ func (s *ValidateSuite) TestProfileSchema(c *C) {
 	for _, tc := range tcs {
 		err := ProfileSchema(tc.profile)
 		c.Check(err, tc.checker)
+	}
+}
+
+func (s *ValidateSuite) TestOsSecretFromProfile(c *C) {
+	ctx := context.Background()
+	for i, tc := range []struct {
+		pType      objectstore.ProviderType
+		p          *crv1alpha1.Profile
+		cli        kubernetes.Interface
+		expected   *objectstore.Secret
+		errChecker Checker
+	}{
+		{
+			p: &crv1alpha1.Profile{
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeSecret,
+					Secret: &crv1alpha1.ObjectReference{
+						Name:      "secname",
+						Namespace: "secnamespace",
+					},
+				},
+			},
+			pType: objectstore.ProviderTypeAzure,
+			cli: fake.NewSimpleClientset(&v1.Secret{
+				Type: v1.SecretType(secrets.AzureSecretType),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secname",
+					Namespace: "secnamespace",
+				},
+				Data: map[string][]byte{
+					secrets.AzureStorageAccountID:   []byte("said"),
+					secrets.AzureStorageAccountKey:  []byte("sakey"),
+					secrets.AzureStorageEnvironment: []byte("env"),
+				},
+			}),
+			expected: &objectstore.Secret{
+				Type: objectstore.SecretTypeAzStorageAccount,
+				Azure: &objectstore.SecretAzure{
+					StorageAccount:  "said",
+					StorageKey:      "sakey",
+					EnvironmentName: "env",
+				},
+			},
+			errChecker: IsNil,
+		},
+		{
+			p: &crv1alpha1.Profile{
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeKeyPair,
+					KeyPair: &crv1alpha1.KeyPair{
+						IDField:     secrets.AzureStorageAccountID,
+						SecretField: secrets.AzureStorageAccountKey,
+						Secret: crv1alpha1.ObjectReference{
+							Name:      "secname",
+							Namespace: "secnamespace",
+						},
+					},
+				},
+			},
+			pType: objectstore.ProviderTypeAzure,
+			cli: fake.NewSimpleClientset(&v1.Secret{
+				Type: v1.SecretType(secrets.AzureSecretType),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secname",
+					Namespace: "secnamespace",
+				},
+				Data: map[string][]byte{
+					secrets.AzureStorageAccountID:   []byte("said"),
+					secrets.AzureStorageAccountKey:  []byte("sakey"),
+					secrets.AzureStorageEnvironment: []byte("env"),
+				},
+			}),
+			expected: &objectstore.Secret{
+				Type: objectstore.SecretTypeAzStorageAccount,
+				Azure: &objectstore.SecretAzure{
+					StorageAccount:  "said",
+					StorageKey:      "sakey",
+					EnvironmentName: "",
+				},
+			},
+			errChecker: IsNil,
+		},
+		{ // bad secret field err
+			p: &crv1alpha1.Profile{
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeKeyPair,
+					KeyPair: &crv1alpha1.KeyPair{
+						IDField:     secrets.AzureStorageAccountID,
+						SecretField: secrets.AWSSecretAccessKey, // bad field
+						Secret: crv1alpha1.ObjectReference{
+							Name:      "secname",
+							Namespace: "secnamespace",
+						},
+					},
+				},
+			},
+			pType: objectstore.ProviderTypeAzure,
+			cli: fake.NewSimpleClientset(&v1.Secret{
+				Type: v1.SecretType(secrets.AzureSecretType),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secname",
+					Namespace: "secnamespace",
+				},
+				Data: map[string][]byte{
+					secrets.AzureStorageAccountID:   []byte("said"),
+					secrets.AzureStorageAccountKey:  []byte("sakey"),
+					secrets.AzureStorageEnvironment: []byte("env"),
+				},
+			}),
+			expected:   nil,
+			errChecker: NotNil,
+		},
+		{ // bad id field err
+			p: &crv1alpha1.Profile{
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeKeyPair,
+					KeyPair: &crv1alpha1.KeyPair{
+						IDField:     "badidfield",
+						SecretField: secrets.AzureStorageAccountKey,
+						Secret: crv1alpha1.ObjectReference{
+							Name:      "secname",
+							Namespace: "secnamespace",
+						},
+					},
+				},
+			},
+			pType: objectstore.ProviderTypeAzure,
+			cli: fake.NewSimpleClientset(&v1.Secret{
+				Type: v1.SecretType(secrets.AzureSecretType),
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secname",
+					Namespace: "secnamespace",
+				},
+				Data: map[string][]byte{
+					secrets.AzureStorageAccountID:   []byte("said"),
+					secrets.AzureStorageAccountKey:  []byte("sakey"),
+					secrets.AzureStorageEnvironment: []byte("env"),
+				},
+			}),
+			expected:   nil,
+			errChecker: NotNil,
+		},
+		{ // missing secret
+			p: &crv1alpha1.Profile{
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeKeyPair,
+					KeyPair: &crv1alpha1.KeyPair{
+						IDField:     "badidfield",
+						SecretField: secrets.AzureStorageAccountKey,
+						Secret: crv1alpha1.ObjectReference{
+							Name:      "secname",
+							Namespace: "secnamespace",
+						},
+					},
+				},
+			},
+			pType:      objectstore.ProviderTypeAzure,
+			cli:        fake.NewSimpleClientset(),
+			expected:   nil,
+			errChecker: NotNil,
+		},
+		{ // missing keypair
+			p: &crv1alpha1.Profile{
+				Credential: crv1alpha1.Credential{
+					Type:    crv1alpha1.CredentialTypeKeyPair,
+					KeyPair: nil,
+				},
+			},
+			pType:      objectstore.ProviderTypeAzure,
+			cli:        fake.NewSimpleClientset(),
+			expected:   nil,
+			errChecker: NotNil,
+		},
+		{ // missing secret
+			p: &crv1alpha1.Profile{
+				Credential: crv1alpha1.Credential{
+					Type: crv1alpha1.CredentialTypeSecret,
+					Secret: &crv1alpha1.ObjectReference{
+						Name:      "secname",
+						Namespace: "secnamespace",
+					},
+				},
+			},
+			pType:      objectstore.ProviderTypeAzure,
+			cli:        fake.NewSimpleClientset(),
+			expected:   nil,
+			errChecker: NotNil,
+		},
+	} {
+		secret, err := osSecretFromProfile(ctx, tc.pType, tc.p, tc.cli)
+		c.Check(secret, DeepEquals, tc.expected, Commentf("test number: %d", i))
+		// c.Check(secret.Type, Equals, tc.expected.Type, Commentf("test number: %d", i))
+		// c.Check(secret.Aws, DeepEquals, tc.expected.Aws, Commentf("test number: %d", i))
+		// c.Check(secret.Azure, DeepEquals, tc.expected.Azure, Commentf("test number: %d", i))
+		// c.Check(secret.Gcp, DeepEquals, tc.expected.Gcp, Commentf("test number: %d", i))
+		c.Check(err, tc.errChecker)
 	}
 }
