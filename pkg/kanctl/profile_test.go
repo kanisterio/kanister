@@ -100,5 +100,4 @@ func (k *KanctlTestSuite) TestConstructProfile(c *check.C) {
 		prof := constructProfile(tc.lp, tc.secret)
 		c.Assert(prof.Credential.Type, check.Equals, tc.retCredType)
 	}
-
 }
