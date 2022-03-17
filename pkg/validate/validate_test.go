@@ -790,10 +790,6 @@ func (s *ValidateSuite) TestOsSecretFromProfile(c *C) {
 	} {
 		secret, err := osSecretFromProfile(ctx, tc.pType, tc.p, tc.cli)
 		c.Check(secret, DeepEquals, tc.expected, Commentf("test number: %d", i))
-		// c.Check(secret.Type, Equals, tc.expected.Type, Commentf("test number: %d", i))
-		// c.Check(secret.Aws, DeepEquals, tc.expected.Aws, Commentf("test number: %d", i))
-		// c.Check(secret.Azure, DeepEquals, tc.expected.Azure, Commentf("test number: %d", i))
-		// c.Check(secret.Gcp, DeepEquals, tc.expected.Gcp, Commentf("test number: %d", i))
 		c.Check(err, tc.errChecker)
 	}
 }
