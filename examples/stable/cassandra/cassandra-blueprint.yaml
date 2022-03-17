@@ -76,7 +76,6 @@ actions:
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
         pod: "{{ index .StatefulSet.Pods 0}}"
-        containers: "cassandra"
         command:
           - bash
           - -o
@@ -103,7 +102,7 @@ actions:
       name: restoreFromObjectStore
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: ghcr.io/kanisterio/kanister-tools:0.73.0
+        image: ghcr.io/kanisterio/kanister-tools:0.74.0
         backupArtifactPrefix: "{{ .ArtifactsIn.params.KeyValue.backupPrefixLocation }}"
         pods: "{{ range .StatefulSet.Pods }} {{.}}{{end}}"
         restorePath: "{{ .ArtifactsIn.params.KeyValue.restorePathPrefix }}"
@@ -120,7 +119,6 @@ actions:
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
         pod: "{{ index .StatefulSet.Pods 0 }}"
-        containers: "cassandra"
         command:
           - bash
           - -o

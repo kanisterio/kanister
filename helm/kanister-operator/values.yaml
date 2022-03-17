@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 image:
   repository: ghcr.io/kanisterio/controller
-  tag: 0.73.0
+  tag: 0.74.0
   pullPolicy: IfNotPresent
 rbac:
   create: true
@@ -14,6 +14,10 @@ serviceAccount:
 controller:
   service:
     port: 443
+  # updateCRDs specifies if kanister controller should create/update the CRDs
+  # false : CRDs would be created by helm
+  # true : CRDs would be created by kanister controller
+  updateCRDs: true
 resources:
 # We usually recommend not to specify default resources and to leave this as a conscious
 # choice for the user. This also increases chances charts run on environments with little

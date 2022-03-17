@@ -45,6 +45,8 @@ type SecretAzure struct {
 	StorageAccount string
 	// storage key
 	StorageKey string
+	// environment name
+	EnvironmentName string
 }
 
 // SecretGcp GCP credentials
