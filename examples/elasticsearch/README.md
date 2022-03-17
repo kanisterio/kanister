@@ -122,7 +122,7 @@ $ curl 'localhost:9200/customer/_search?q=*&pretty'
 In order to perform backup, restore, and delete operations on the running elasticsearch, we need to create a blueprint. You can create that using the command below from the root of kanister repo.
 
 ```bash
-kubectl create -f ./examples/stable/elasticsearch/elasticsearch-blueprint.yaml -n kasten-io
+kubectl create -f ./examples/elasticsearch/elasticsearch-blueprint.yaml -n kasten-io
 ```
 
 ## Protect the Application

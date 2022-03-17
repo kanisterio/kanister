@@ -299,7 +299,7 @@ using ``-f`` flag and optionally ``-v`` flag for kanister function version.
 .. substitution-code-block:: bash
 
    # Download mysql blueprint locally
-   $ curl -O https://raw.githubusercontent.com/kanisterio/kanister/|version|/examples/stable/mysql/mysql-blueprint.yaml
+   $ curl -O https://raw.githubusercontent.com/kanisterio/kanister/|version|/examples/mysql/mysql-blueprint.yaml
 
    # Run blueprint validator
    $ kanctl validate blueprint -f mysql-blueprint.yaml
