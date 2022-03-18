@@ -96,8 +96,8 @@ made.
 
 ### Submitting Pull Requests
 
-When submitting a pull request, it's important that you clearly communicate your
-intent, by clearly:
+When submitting a pull request, it's important that you communicate your intent,
+by clearly:
 
 1. describing the problem you are trying to solve with links to the relevant
 GitHub issues
@@ -116,7 +116,7 @@ Once the maintainers approve your PR, they will label it as `kueue`. The
 `mergify` bot will then squash the commits in your PR, and add it to the merge
 queue. The bot will auto-merge your work when it's ready.
 
-Congratulation! Your pull request has been successfully merged! 👏
+Congratulations! Your pull request has been successfully merged! 👏
 
 Thank you for reading through our contributing guide to ensure your
 contributions are high quality and easy for our community to review and accept. 🤝

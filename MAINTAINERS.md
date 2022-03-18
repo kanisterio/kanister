@@ -16,8 +16,8 @@ These are the current Kanister maintainers:
 
 ## Maintainer Responsibilities
 
-Maintainers are active and visible members of the community. They have the a lot
-of experience with the project and are expected to have the knowledge and
+Maintainers are active and visible members of the community. They have a lot of
+experience with the project and are expected to have the knowledge and
 insight to lead its growth and improvement.
 
 This section describes their responsibilities.
