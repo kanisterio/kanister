@@ -76,7 +76,7 @@ func (m *MariaDB) Init(context.Context) error {
 
 func (m *MariaDB) Install(ctx context.Context, namespace string) error {
 	m.namespace = namespace
-	cli, err := helm.NewCliClient(m.cli)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
@@ -116,7 +116,7 @@ func (m *MariaDB) Object() crv1alpha1.ObjectReference {
 }
 
 func (m *MariaDB) Uninstall(ctx context.Context) error {
-	cli, err := helm.NewCliClient(m.cli)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}

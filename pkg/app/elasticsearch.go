@@ -88,7 +88,7 @@ func (esi *ElasticsearchInstance) Init(ctx context.Context) error {
 func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string) error {
 	esi.namespace = namespace
 	// Get the HELM cli
-	cli, err := helm.NewCliClient(esi.cli)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
@@ -130,7 +130,7 @@ func (esi *ElasticsearchInstance) Object() crv1alpha1.ObjectReference {
 }
 
 func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
-	cli, err := helm.NewCliClient(esi.cli)
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
