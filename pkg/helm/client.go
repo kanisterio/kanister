@@ -22,8 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/client-go/kubernetes"
-
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 )
@@ -58,9 +56,8 @@ const (
 )
 
 type CliClient struct {
-	version    HelmVersion
-	kubeClient kubernetes.Interface
-	helmBin    string
+	version HelmVersion
+	helmBin string
 }
 
 // FindVersion returns HelmVersion based on helm binary present in the path
@@ -90,16 +87,15 @@ func GetHelmBinName() string {
 	return "helm"
 }
 
-func NewCliClient(kubeCli kubernetes.Interface) (Client, error) {
+func NewCliClient() (Client, error) {
 	version, err := FindVersion()
 	if err != nil {
 		return nil, err
 	}
 
 	return &CliClient{
-		version:    version,
-		helmBin:    GetHelmBinName(),
-		kubeClient: kubeCli,
+		version: version,
+		helmBin: GetHelmBinName(),
 	}, nil
 }
 

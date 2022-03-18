@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2022 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ func (h *HelmTestSuite) SetUpSuite(c *C) {
 
 	helmValues := make(map[string]string)
 
-	kanisterApp, err := NewHelmApp(h.kubeClient, helmValues, kanisterName, "kanister/kanister-operator", kanisterName, "", false)
+	kanisterApp, err := NewHelmApp(helmValues, kanisterName, "kanister/kanister-operator", kanisterName, "", false)
 	c.Assert(err, IsNil)
 
 	// add kanister repo

@@ -1,4 +1,4 @@
-// Copyright 2019 The Kanister Authors.
+// Copyright 2022 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@ package helm
 import (
 	"context"
 
-	"k8s.io/client-go/kubernetes"
-
 	"github.com/kanisterio/kanister/pkg/helm"
 )
 
@@ -32,8 +30,8 @@ type HelmApp struct {
 	namespace  string
 }
 
-func NewHelmApp(kubeCli kubernetes.Interface, values map[string]string, name, chart, ns, version string, dr bool) (*HelmApp, error) {
-	cli, err := helm.NewCliClient(kubeCli)
+func NewHelmApp(values map[string]string, name, chart, ns, version string, dr bool) (*HelmApp, error) {
+	cli, err := helm.NewCliClient()
 	if err != nil {
 		return nil, err
 	}
