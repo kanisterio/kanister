@@ -126,6 +126,9 @@ type ActionStatus struct {
 	Phases []Phase `json:"phases,omitempty"`
 	// Artifacts created by this phase.
 	Artifacts map[string]Artifact `json:"artifacts,omitempty"`
+	//  DeferPhase is the phase that is executed at the end of an action
+	// irrespective of the status of other phases in the action
+	DeferPhase Phase `json:"deferPhase,omitempty"`
 }
 
 // State is the current state of a phase of execution.
@@ -194,6 +197,7 @@ type BlueprintAction struct {
 	InputArtifactNames []string            `json:"inputArtifactNames,omitempty"`
 	OutputArtifacts    map[string]Artifact `json:"outputArtifacts,omitempty"`
 	Phases             []BlueprintPhase    `json:"phases,omitempty"`
+	DeferPhase         *BlueprintPhase     `json:"deferPhase,omitempty"`
 }
 
 // BlueprintPhase is a an individual unit of execution.

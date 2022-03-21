@@ -55,7 +55,13 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 			return nil, errors.Errorf("Action {%s} not found in action map", action)
 		}
 		// Render the argument templates for the Phase's function
-		for _, ap := range a.Phases {
+		phases := []crv1alpha1.BlueprintPhase{}
+		phases = append(phases, a.Phases...)
+		if a.DeferPhase != nil {
+			phases = append(phases, *a.DeferPhase)
+		}
+
+		for _, ap := range phases {
 			if ap.Name != p.name {
 				continue
 			}
@@ -85,6 +91,47 @@ func checkSupportedArgs(supportedArgs []string, args map[string]interface{}) err
 		}
 	}
 	return nil
+}
+
+func GetDeferPhase(bp crv1alpha1.Blueprint, action, version string, tp param.TemplateParams) (*Phase, error) {
+	a, ok := bp.Actions[action]
+	if !ok {
+		return nil, errors.Errorf("Action {%s} not found in blueprint actions", action)
+	}
+
+	if a.DeferPhase == nil {
+		return nil, nil
+	}
+
+	defaultVersion, funcVersion, err := getFunctionVersion(version)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get function version")
+	}
+
+	regVersion := *funcVersion
+	if _, ok := funcs[a.DeferPhase.Func]; !ok {
+		return nil, errors.Errorf("Requested function {%s} has not been registered", a.DeferPhase.Func)
+	}
+	if _, ok := funcs[a.DeferPhase.Func][regVersion]; !ok {
+		if funcVersion.Equal(defaultVersion) {
+			return nil, errors.Errorf("Requested function {%s} has not been registered with version {%s}", a.DeferPhase.Func, version)
+		}
+		if _, ok := funcs[a.DeferPhase.Func][*defaultVersion]; !ok {
+			return nil, errors.Errorf("Requested function {%s} has not been registered with versions {%s} or {%s}", a.DeferPhase.Func, version, DefaultVersion)
+		}
+		log.Info().Print("Falling back to default version of the function", field.M{"Function": a.DeferPhase.Func, "PreferredVersion": version, "FallbackVersion": DefaultVersion})
+		regVersion = *defaultVersion
+	}
+	objs, err := param.RenderObjectRefs(a.DeferPhase.ObjectRefs, tp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Phase{
+		name:    a.DeferPhase.Name,
+		objects: objs,
+		f:       funcs[a.DeferPhase.Func][regVersion],
+	}, nil
 }
 
 // GetPhases renders the returns a list of Phases with pre-rendered arguments.

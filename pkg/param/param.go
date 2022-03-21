@@ -52,6 +52,7 @@ type TemplateParams struct {
 	Options          map[string]string
 	Object           map[string]interface{}
 	Phases           map[string]*Phase
+	DeferPhase       *Phase
 	PodOverride      crv1alpha1.JSONMap
 }
 
@@ -510,6 +511,12 @@ func UpdatePhaseParams(ctx context.Context, tp *TemplateParams, phaseName string
 	tp.Phases[phaseName].Output = output
 }
 
+// UpdateDeferPhaseParams updates the TemplateParams deferPhase output with passed output
+// this output would be generated/passed by execution of the phase
+func UpdateDeferPhaseParams(ctx context.Context, tp *TemplateParams, output map[string]interface{}) {
+	tp.DeferPhase.Output = output
+}
+
 // InitPhaseParams initializes the TemplateParams with Phase information
 func InitPhaseParams(ctx context.Context, cli kubernetes.Interface, tp *TemplateParams, phaseName string, objects map[string]crv1alpha1.ObjectReference) error {
 	if tp.Phases == nil {
@@ -522,5 +529,10 @@ func InitPhaseParams(ctx context.Context, cli kubernetes.Interface, tp *Template
 	tp.Phases[phaseName] = &Phase{
 		Secrets: secrets,
 	}
+
+	tp.DeferPhase = &Phase{
+		Secrets: secrets,
+	}
+
 	return nil
 }
