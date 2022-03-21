@@ -601,6 +601,10 @@ func (c *Controller) renderActionsetArtifacts(ctx context.Context,
 				ras.Status.State = crv1alpha1.StateFailed
 			}
 			return nil
+		}); rErr != nil {
+			reason := fmt.Sprintf("ActionSetFailed Action: %s", actionName)
+			msg := fmt.Sprintf("Failed to update ActionSet: %s", actionsetName)
+			c.logAndErrorEvent(ctx, msg, reason, rErr, as, bp)
 		}
 	}
 	// Update ActionSet
