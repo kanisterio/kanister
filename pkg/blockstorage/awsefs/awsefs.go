@@ -546,7 +546,7 @@ func (e *Efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blo
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to list recovery points by vault")
 		}
-		snaps, err := e.snapshotsFromRecoveryPoints(ctx, resp.RecoveryPoints)
+		snaps, err := e.SnapshotsFromRecoveryPoints(ctx, resp.RecoveryPoints)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get snapshots from recovery points")
 		}
@@ -555,7 +555,7 @@ func (e *Efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blo
 	return result, nil
 }
 
-func (e *Efs) snapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.RecoveryPointByBackupVault) ([]*blockstorage.Snapshot, error) {
+func (e *Efs) SnapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.RecoveryPointByBackupVault) ([]*blockstorage.Snapshot, error) {
 	result := make([]*blockstorage.Snapshot, 0)
 	for _, rp := range rps {
 		if rp.RecoveryPointArn == nil {
