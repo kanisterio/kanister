@@ -145,7 +145,8 @@ func createCSISnapshotStatic(
 	ctx context.Context,
 	snapshotter snapshot.Snapshotter,
 	name, namespace, driver, snapshotHandle, snapshotClass string,
-	wait bool) (*v1.VolumeSnapshot, error) {
+	wait bool,
+) (*v1.VolumeSnapshot, error) {
 	source := &snapshot.Source{
 		Handle:                  snapshotHandle,
 		Driver:                  driver,
