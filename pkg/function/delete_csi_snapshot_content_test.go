@@ -29,29 +29,22 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 )
 
-type DeleteCSISnapshotContentTestSuite struct {
-	snapshotContentName string
-	snapshotName        string
-	snapshotNamespace   string
-	snapshotClassName   string
-	deletionPolicy      string
-	driver              string
-	handle              string
-}
+type DeleteCSISnapshotContentTestSuite struct{}
 
 var _ = Suite(&DeleteCSISnapshotContentTestSuite{})
 
-func (testSuite *DeleteCSISnapshotContentTestSuite) SetUpSuite(c *C) {
-	testSuite.snapshotContentName = "test-delete-snapshot-content"
-	testSuite.snapshotName = "test-delete-snapshot-name"
-	testSuite.snapshotNamespace = "test-delete-snapshot-namespace"
-	testSuite.snapshotClassName = "test-delete-snapshot-class"
-	testSuite.deletionPolicy = "Retain"
-	testSuite.driver = "test-delete-driver"
-	testSuite.handle = "test-delete-handle"
-}
+func (testSuite *DeleteCSISnapshotContentTestSuite) SetUpSuite(c *C) {}
 
 func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent(c *C) {
+	const (
+		snapshotContentName = "test-delete-snapshot-content"
+		snapshotName        = "test-delete-snapshot-name"
+		snapshotNamespace   = "test-delete-snapshot-namespace"
+		snapshotClassName   = "test-delete-snapshot-class"
+		deletionPolicy      = "Retain"
+		driver              = "test-delete-driver"
+		handle              = "test-delete-handle"
+	)
 	for _, api := range []*metav1.APIResourceList{
 		{
 			TypeMeta: metav1.TypeMeta{
@@ -85,15 +78,15 @@ func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent
 		c.Assert(err, IsNil)
 
 		source := &snapshot.Source{
-			Handle:                  testSuite.snapshotNamespace,
-			Driver:                  testSuite.driver,
-			VolumeSnapshotClassName: testSuite.snapshotClassName,
+			Handle:                  snapshotNamespace,
+			Driver:                  driver,
+			VolumeSnapshotClassName: snapshotClassName,
 		}
 		err = fakeSnapshotter.CreateContentFromSource(ctx, source,
-			testSuite.snapshotContentName,
-			testSuite.snapshotName,
-			testSuite.snapshotNamespace,
-			testSuite.deletionPolicy)
+			snapshotContentName,
+			snapshotName,
+			snapshotNamespace,
+			deletionPolicy)
 		c.Assert(err, IsNil)
 
 		gv := strings.Split(api.GroupVersion, "/")
@@ -103,13 +96,13 @@ func (testSuite *DeleteCSISnapshotContentTestSuite) TestDeleteCSISnapshotContent
 			Resource: snapshot.VolumeSnapshotContentResourcePlural,
 		}
 
-		_, err = dynCli.Resource(gvr).Get(ctx, testSuite.snapshotContentName, metav1.GetOptions{})
+		_, err = dynCli.Resource(gvr).Get(ctx, snapshotContentName, metav1.GetOptions{})
 		c.Assert(err, IsNil)
 
-		err = deleteCSISnapshotContent(ctx, fakeSnapshotter, testSuite.snapshotContentName)
+		err = deleteCSISnapshotContent(ctx, fakeSnapshotter, snapshotContentName)
 		c.Assert(err, IsNil)
 
-		_, err = dynCli.Resource(gvr).Get(ctx, testSuite.snapshotContentName, metav1.GetOptions{})
+		_, err = dynCli.Resource(gvr).Get(ctx, snapshotContentName, metav1.GetOptions{})
 		c.Assert(err, NotNil)
 	}
 }

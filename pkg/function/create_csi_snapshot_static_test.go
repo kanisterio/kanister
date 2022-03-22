@@ -30,27 +30,22 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube/snapshot"
 )
 
-type CreateCSISnapshotStaticTestSuite struct {
-	snapshotName   string
-	namespace      string
-	deletionPolicy string
-	driver         string
-	snapshotHandle string
-	snapshotClass  string
-}
+type CreateCSISnapshotStaticTestSuite struct{}
 
 var _ = Suite(&CreateCSISnapshotStaticTestSuite{})
 
-func (testSuite *CreateCSISnapshotStaticTestSuite) SetUpSuite(c *C) {
-	testSuite.snapshotName = "test-snapshot"
-	testSuite.namespace = "test-namespace"
-	testSuite.deletionPolicy = "Retain"
-	testSuite.driver = "test-driver"
-	testSuite.snapshotClass = "test-snapshot-class"
-	testSuite.snapshotHandle = "test-snapshot-handle"
-}
+func (testSuite *CreateCSISnapshotStaticTestSuite) SetUpSuite(c *C) {}
 
 func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c *C) {
+	const (
+		snapshotName   = "test-snapshot"
+		namespace      = "test-namespace"
+		deletionPolicy = "Retain"
+		driver         = "test-driver"
+		snapshotClass  = "test-snapshot-class"
+		snapshotHandle = "test-snapshot-handle"
+	)
+
 	for _, api := range []*metav1.APIResourceList{
 		{
 			TypeMeta: metav1.TypeMeta{
@@ -85,7 +80,7 @@ func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c
 
 		namespace := &v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: testSuite.namespace,
+				Name: namespace,
 			},
 		}
 		_, err = fakeCli.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
@@ -100,9 +95,9 @@ func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c
 
 		snapshotClass := snapshot.UnstructuredVolumeSnapshotClass(
 			gvr,
-			testSuite.snapshotClass,
-			testSuite.driver,
-			testSuite.deletionPolicy,
+			snapshotClass,
+			driver,
+			deletionPolicy,
 			nil)
 		_, err = dynCli.Resource(gvr).Create(ctx, snapshotClass, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
@@ -110,10 +105,10 @@ func (testSuite *CreateCSISnapshotStaticTestSuite) TestCreateCSISnapshotStatic(c
 		_, err = createCSISnapshotStatic(
 			ctx,
 			fakeSnapshotter,
-			testSuite.snapshotName,
+			snapshotName,
 			namespace.GetName(),
-			testSuite.driver,
-			testSuite.snapshotHandle,
+			driver,
+			snapshotHandle,
 			snapshotClass.GetName(), false)
 		c.Assert(err, IsNil)
 
