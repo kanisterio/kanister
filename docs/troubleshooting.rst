@@ -48,3 +48,22 @@ or file an issue on `GitHub
 <https://github.com/kanisterio/kanister/issues>`_. A `mailing list
 <https://groups.google.com/forum/#!forum/kanisterio>`_ is also
 available if needed.
+
+Validating webhook for Blueprints
+=================================
+For the validating webhook to work, the Kubernetes API Server needs to
+connect to port ``9443`` of the Kanister operator. If your cluster has
+a firewall setup, it has to be configured to allow that communication.
+
+GKE
+---
+If you get an error while applying a blueprint, that the webhook can't be reached
+you need to check if your firewall misses a rule for port 9443:
+
+.. code-block:: console
+
+   $ kubectl apply -f blueprint.yaml
+   Error from server (InternalError): error when creating "blueprint.yaml": Internal error occurred: failed calling webhook "blueprints.cr.kanister.io": failed to call webhook: Post "https://kanister-kanister-operator.kanister.svc:443/validate/v1alpha1/blueprint?timeout=5s": context deadline exceeded
+
+
+See `GKE: Adding firewall rules for specific use cases <https://cloud.google.com/kubernetes-engine/docs/how-to/private-clusters#add_firewall_rules>`_ and `kubernetes/kubernetes: Using non-443 ports for admission webhooks requires firewall rule in GKE <https://github.com/kubernetes/kubernetes/issues/79739>`_ for more details.
