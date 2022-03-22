@@ -24,7 +24,7 @@ $ helm repo add bitnami https://charts.bitnami.com/bitnami
 # Update your local chart repository
 $ helm repo update
 
-# Install the MySQL database (Helm Version 3)
+# Install the MySQL database
 $ kubectl create namespace mysql-test
 $ helm install mysql-release bitnami/mysql --version 6.14.11 --namespace mysql-test \
     --set root.password='asd#45@mysqlEXAMPLE' 
