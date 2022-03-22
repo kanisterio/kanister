@@ -134,7 +134,7 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 
 	var cmd []string
 	if h.version == V3 {
-		cmd = []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
+		cmd = []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait", "--create-namespace"}
 	} else {
 		cmd = []string{"install", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
 	}
@@ -142,6 +142,29 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
 	if err != nil {
 		log.Error().Print("Error installing helm chart", field.M{"output": out})
+		return err
+	}
+	log.Debug().Print("Result", field.M{"output": out})
+	return nil
+}
+
+func (h CliClient) Upgrade(ctx context.Context, chart, version, release, namespace string, values map[string]string) error {
+	log.Debug().Print("Upgrading helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
+	var setVals string
+	for k, v := range values {
+		setVals += fmt.Sprintf("%s=%s,", k, v)
+	}
+
+	var cmd []string
+	if h.version == V3 {
+		cmd = []string{"upgrade", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
+	} else {
+		cmd = []string{"upgrade", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
+	}
+
+	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
+	if err != nil {
+		log.Error().Print("Error upgrading helm chart", field.M{"output": out})
 		return err
 	}
 	log.Debug().Print("Result", field.M{"output": out})
