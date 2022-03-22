@@ -52,11 +52,11 @@ const (
 	// CreateCSISnapshotStaticSnapshotClassArg specifies the name of the VolumeSnapshotClass
 	CreateCSISnapshotStaticSnapshotClassArg = "snapshotClass"
 
-	// CreateCSISnapshotStaticRestoreSizeArg gives the storage size required for PV/PVC restoration
-	CreateCSISnapshotStaticRestoreSizeArg = "restoreSize"
+	// CreateCSISnapshotStaticOutputRestoreSize gives the storage size required for PV/PVC restoration
+	CreateCSISnapshotStaticOutputRestoreSize = "restoreSize"
 
-	// CreateCSISnapshotStaticSnapshotContentNameArg provides the name of dynamically provisioned VolumeSnapshotContent
-	CreateCSISnapshotStaticSnapshotContentNameArg = "snapshotContent"
+	// CreateCSISnapshotStaticOutputSnapshotContentName provides the name of dynamically provisioned VolumeSnapshotContent
+	CreateCSISnapshotStaticOutputSnapshotContentName = "snapshotContent"
 )
 
 type createCSISnapshotStaticFunc struct{}
@@ -116,8 +116,8 @@ func (*createCSISnapshotStaticFunc) Exec(ctx context.Context, tp param.TemplateP
 	return map[string]interface{}{
 		CreateCSISnapshotStaticNameArg:                name,
 		CreateCSISnapshotStaticNamespaceArg:           namespace,
-		CreateCSISnapshotStaticRestoreSizeArg:         vs.Status.RestoreSize.String(),
-		CreateCSISnapshotStaticSnapshotContentNameArg: vs.Status.BoundVolumeSnapshotContentName,
+		CreateCSISnapshotStaticOutputRestoreSize:         vs.Status.RestoreSize.String(),
+		CreateCSISnapshotStaticOutputSnapshotContentName: vs.Status.BoundVolumeSnapshotContentName,
 	}, nil
 }
 
