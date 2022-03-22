@@ -114,8 +114,8 @@ func (*createCSISnapshotStaticFunc) Exec(ctx context.Context, tp param.TemplateP
 	}
 
 	return map[string]interface{}{
-		CreateCSISnapshotStaticNameArg:                name,
-		CreateCSISnapshotStaticNamespaceArg:           namespace,
+		CreateCSISnapshotStaticNameArg:                   name,
+		CreateCSISnapshotStaticNamespaceArg:              namespace,
 		CreateCSISnapshotStaticOutputRestoreSize:         vs.Status.RestoreSize.String(),
 		CreateCSISnapshotStaticOutputSnapshotContentName: vs.Status.BoundVolumeSnapshotContentName,
 	}, nil
