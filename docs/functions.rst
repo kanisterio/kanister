@@ -1386,6 +1386,7 @@ Example:
           driver: hostpath.csi.k8s.io
           handle: 7bdd0de3-aaeb-11e8-9aae-0242ac110002
 
+
 RestoreCSISnapshot
 ------------------
 
@@ -1465,6 +1466,7 @@ Example:
         args:
           name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.name }}"
           namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
+
 
 DeleteCSISnapshotContent
 ------------------------
