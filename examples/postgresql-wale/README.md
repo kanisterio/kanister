@@ -23,7 +23,7 @@ $ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 
 $ helm install my-release bitnami/postgresql  \
-	--namespace postgres-test \
+	--namespace postgres-test --create-namespace \
 	--set image.repository=ghcr.io/kanisterio/postgresql \
 	--set image.tag=0.74.0 \
 	--set postgresqlPassword=postgres-12345 \

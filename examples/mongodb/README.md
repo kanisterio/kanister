@@ -22,7 +22,7 @@ To install the chart with the release name `my-release`:
 $ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 
-$ helm install my-release bitnami/mongodb --namespace mongo-test \
+$ helm install my-release bitnami/mongodb --namespace mongo-test --create-namespace \
 	--set architecture="replicaset"
 ```
 
