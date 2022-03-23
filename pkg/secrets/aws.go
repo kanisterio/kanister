@@ -29,7 +29,7 @@ const (
 )
 
 // ValidateAWSCredentials validates secret has all necessary information
-// for AWS credentials. It also checks the secret doesn't have unnnecessary
+// for AWS credentials. It also checks the secret doesn't have unnecessary
 // information.
 //
 // Required fields:
@@ -66,7 +66,7 @@ func ValidateAWSCredentials(secret *v1.Secret) error {
 // - role (optional)
 //
 // If the type of the secret is not "secret.kanister.io/aws", it returns an error.
-// If the required types are not avaialable in the secrets, it returns an errror.
+// If the required types are not available in the secrets, it returns an error.
 //
 // ExtractAWSCredentials accepts an assumeRoleDuration which is used to set
 // the duration of the AWS session token.

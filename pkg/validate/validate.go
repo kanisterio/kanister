@@ -325,7 +325,7 @@ func osSecretFromProfile(ctx context.Context, pType objectstore.ProviderType, p 
 	// The following is KeyPair codepath
 	kp := p.Credential.KeyPair
 	if kp == nil {
-		return nil, errorf(validateErr, "Invalid credentials kv cannot be nil")
+		return nil, errorf(validateErr, "Invalid credentials kp cannot be nil")
 	}
 	s, err := cli.CoreV1().Secrets(kp.Secret.Namespace).Get(ctx, kp.Secret.Name, metav1.GetOptions{})
 	if err != nil {
