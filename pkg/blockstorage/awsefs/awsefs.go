@@ -35,7 +35,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
-type efs struct {
+type Efs struct {
 	*awsefs.EFS
 	*backup.Backup
 	accountID       string
@@ -44,7 +44,7 @@ type efs struct {
 	backupVaultName string
 }
 
-var _ blockstorage.Provider = (*efs)(nil)
+var _ blockstorage.Provider = (*Efs)(nil)
 
 const (
 	generalPurposePerformanceMode = awsefs.PerformanceModeGeneralPurpose
@@ -95,7 +95,7 @@ func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage
 		efsVault = defaultK10BackupVaultName
 	}
 
-	return &efs{
+	return &Efs{
 		EFS:             efsCli,
 		Backup:          backupCli,
 		region:          region,
@@ -105,14 +105,14 @@ func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage
 	}, nil
 }
 
-func (e *efs) Type() blockstorage.Type {
+func (e *Efs) Type() blockstorage.Type {
 	return blockstorage.TypeEFS
 }
 
 // VolumeCreate implements interface method for EFS. It sends EFS volume create request
 // to AWS EFS and waits until the file system is available. Eventually, it returns the
 // volume info that is sent back from the AWS EFS.
-func (e *efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
+func (e *Efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
 	req := &awsefs.CreateFileSystemInput{}
 	req.SetCreationToken(uuid.NewV4().String())
 	req.SetPerformanceMode(defaultPerformanceMode)
@@ -143,7 +143,7 @@ func (e *efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*bl
 	return vol, nil
 }
 
-func (e *efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
+func (e *Efs) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
 	reqM := &backup.GetRecoveryPointRestoreMetadataInput{}
 	reqM.SetBackupVaultName(e.backupVaultName)
 	reqM.SetRecoveryPointArn(snapshot.ID)
@@ -224,7 +224,7 @@ type mountTarget struct {
 
 type mountTargets map[string]*mountTarget
 
-func (e *efs) createMountTargets(ctx context.Context, fsID string, mts mountTargets) error {
+func (e *Efs) createMountTargets(ctx context.Context, fsID string, mts mountTargets) error {
 	created := make([]*awsefs.MountTargetDescription, 0)
 	for _, v := range mts {
 		req := &awsefs.CreateMountTargetInput{}
@@ -297,7 +297,7 @@ func filterAndGetMountTargetsFromTags(tags map[string]string) (map[string]string
 	return filteredTags, mts, nil
 }
 
-func (e *efs) getBackupTags(ctx context.Context, arn string) (map[string]string, error) {
+func (e *Efs) getBackupTags(ctx context.Context, arn string) (map[string]string, error) {
 	result := make(map[string]string)
 	for resp, req := emptyResponseRequestForListTags(); resp.NextToken != nil; req.NextToken = resp.NextToken {
 		var err error
@@ -312,7 +312,7 @@ func (e *efs) getBackupTags(ctx context.Context, arn string) (map[string]string,
 	return result, nil
 }
 
-func (e *efs) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
+func (e *Efs) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) error {
 	mts, err := e.getMountTargets(ctx, volume.ID)
 	if isVolumeNotFound(err) {
 		return nil
@@ -334,7 +334,7 @@ func (e *efs) VolumeDelete(ctx context.Context, volume *blockstorage.Volume) err
 	return err
 }
 
-func (e *efs) getMountTargets(ctx context.Context, fsID string) ([]*awsefs.MountTargetDescription, error) {
+func (e *Efs) getMountTargets(ctx context.Context, fsID string) ([]*awsefs.MountTargetDescription, error) {
 	mts := make([]*awsefs.MountTargetDescription, 0)
 	for resp, req := emptyResponseRequestForMountTargets(); resp.NextMarker != nil; req.Marker = resp.NextMarker {
 		var err error
@@ -348,7 +348,7 @@ func (e *efs) getMountTargets(ctx context.Context, fsID string) ([]*awsefs.Mount
 	return mts, nil
 }
 
-func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetDescription) error {
+func (e *Efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetDescription) error {
 	for _, mt := range mts {
 		req := &awsefs.DeleteMountTargetInput{}
 		req.SetMountTargetId(*mt.MountTargetId)
@@ -364,7 +364,7 @@ func (e *efs) deleteMountTargets(ctx context.Context, mts []*awsefs.MountTargetD
 	return nil
 }
 
-func (e *efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
+func (e *Efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
 	desc, err := e.getFileSystemDescriptionWithID(ctx, id)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get EFS volume")
@@ -372,15 +372,15 @@ func (e *efs) VolumeGet(ctx context.Context, id string, zone string) (*blockstor
 	return volumeFromEFSDescription(desc, zone), nil
 }
 
-func (e *efs) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
+func (e *Efs) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot) (*blockstorage.Snapshot, error) {
 	return nil, errors.New("Not implemented")
 }
 
-func (e *efs) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+func (e *Efs) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
 	return nil, errors.New("Copy Snapshot with Args not implemented")
 }
 
-func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
+func (e *Efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	err := e.createK10DefaultBackupVault()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to setup K10 vault for AWS Backup")
@@ -432,7 +432,7 @@ func (e *efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 	}, nil
 }
 
-func (e *efs) createK10DefaultBackupVault() error {
+func (e *Efs) createK10DefaultBackupVault() error {
 	req := &backup.CreateBackupVaultInput{}
 	req.SetBackupVaultName(e.backupVaultName)
 
@@ -443,11 +443,11 @@ func (e *efs) createK10DefaultBackupVault() error {
 	return err
 }
 
-func (e *efs) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blockstorage.Snapshot) error {
+func (e *Efs) SnapshotCreateWaitForCompletion(ctx context.Context, snapshot *blockstorage.Snapshot) error {
 	return e.waitUntilRecoveryPointCompleted(ctx, snapshot.ID)
 }
 
-func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
+func (e *Efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapshot) error {
 	req := &backup.DeleteRecoveryPointInput{}
 	req.SetBackupVaultName(e.backupVaultName)
 	req.SetRecoveryPointArn(snapshot.ID)
@@ -465,7 +465,7 @@ func (e *efs) SnapshotDelete(ctx context.Context, snapshot *blockstorage.Snapsho
 	return err
 }
 
-func (e *efs) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
+func (e *Efs) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapshot, error) {
 	req := &backup.DescribeRecoveryPointInput{}
 	req.SetBackupVaultName(e.backupVaultName)
 	req.SetRecoveryPointArn(id)
@@ -488,7 +488,7 @@ func (e *efs) SnapshotGet(ctx context.Context, id string) (*blockstorage.Snapsho
 	return snapshotFromRecoveryPoint(resp, vol, e.region)
 }
 
-func (e *efs) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
+func (e *Efs) SetTags(ctx context.Context, resource interface{}, tags map[string]string) error {
 	switch r := resource.(type) {
 	case *blockstorage.Volume:
 		return e.setEFSTags(ctx, r.ID, tags)
@@ -499,7 +499,7 @@ func (e *efs) SetTags(ctx context.Context, resource interface{}, tags map[string
 	}
 }
 
-func (e *efs) setBackupTags(ctx context.Context, arn string, tags map[string]string) error {
+func (e *Efs) setBackupTags(ctx context.Context, arn string, tags map[string]string) error {
 	if len(tags) == 0 {
 		return nil
 	}
@@ -511,7 +511,7 @@ func (e *efs) setBackupTags(ctx context.Context, arn string, tags map[string]str
 	return err
 }
 
-func (e *efs) setEFSTags(ctx context.Context, id string, tags map[string]string) error {
+func (e *Efs) setEFSTags(ctx context.Context, id string, tags map[string]string) error {
 	if len(tags) == 0 {
 		return nil
 	}
@@ -523,7 +523,7 @@ func (e *efs) setEFSTags(ctx context.Context, id string, tags map[string]string)
 	return err
 }
 
-func (e *efs) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
+func (e *Efs) VolumesList(ctx context.Context, tags map[string]string, zone string) ([]*blockstorage.Volume, error) {
 	result := make([]*blockstorage.Volume, 0)
 	for resp, req := emptyResponseRequestForFilesystems(); resp.NextMarker != nil; req.Marker = resp.NextMarker {
 		var err error
@@ -537,7 +537,7 @@ func (e *efs) VolumesList(ctx context.Context, tags map[string]string, zone stri
 	return result, nil
 }
 
-func (e *efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
+func (e *Efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	result := make([]*blockstorage.Snapshot, 0)
 	for resp, req := emptyResponseRequestForBackups(); resp.NextToken != nil; req.NextToken = resp.NextToken {
 		var err error
@@ -546,7 +546,7 @@ func (e *efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blo
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to list recovery points by vault")
 		}
-		snaps, err := e.snapshotsFromRecoveryPoints(ctx, resp.RecoveryPoints)
+		snaps, err := e.SnapshotsFromRecoveryPoints(ctx, resp.RecoveryPoints)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get snapshots from recovery points")
 		}
@@ -555,7 +555,7 @@ func (e *efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blo
 	return result, nil
 }
 
-func (e *efs) snapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.RecoveryPointByBackupVault) ([]*blockstorage.Snapshot, error) {
+func (e *Efs) SnapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.RecoveryPointByBackupVault) ([]*blockstorage.Snapshot, error) {
 	result := make([]*blockstorage.Snapshot, 0)
 	for _, rp := range rps {
 		if rp.RecoveryPointArn == nil {
@@ -616,7 +616,7 @@ func resourceARNForEFS(region string, accountID string, fileSystemID string) str
 	return fmt.Sprintf("arn:aws:elasticfilesystem:%s:%s:file-system/%s", region, accountID, fileSystemID)
 }
 
-func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*awsefs.FileSystemDescription, error) {
+func (e *Efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*awsefs.FileSystemDescription, error) {
 	req := &awsefs.DescribeFileSystemsInput{}
 	req.SetFileSystemId(id)
 
@@ -635,7 +635,7 @@ func (e *efs) getFileSystemDescriptionWithID(ctx context.Context, id string) (*a
 	}
 }
 
-func (e *efs) getMountPointAndSecurityGroupTags(ctx context.Context, id string) (map[string]string, error) {
+func (e *Efs) getMountPointAndSecurityGroupTags(ctx context.Context, id string) (map[string]string, error) {
 	mts, err := e.getMountTargets(ctx, id)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get mount target for the volume")
