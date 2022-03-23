@@ -24,7 +24,7 @@ $ helm repo add bitnami https://charts.bitnami.com/bitnami
 # Update your local chart repository
 $ helm repo update
 
-# Install the maria database (Helm Version 3)
+# Install the maria database
 $ kubectl create namespace maria-db
 $ helm install my-release bitnami/mariadb -n maria-db
 

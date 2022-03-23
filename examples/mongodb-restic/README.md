@@ -25,7 +25,6 @@ $ helm repo update
 # Create namespace for test
 $ kubectl create namespace mongo-test
 
-# Using helm v3
 $ helm install my-release bitnami/mongodb --namespace mongo-test \
 	--set architecture="replicaset" \
 	--set image.repository=ghcr.io/kanisterio/mongodb \
