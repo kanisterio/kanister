@@ -31,7 +31,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/kopia/kopia v0.8.2-0.20210706000840-5642a8a52192
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.0.0
-	github.com/lib/pq v1.10.1
+	github.com/lib/pq v1.10.4
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v1.4.1
 
