@@ -64,12 +64,13 @@ and backup to an AWS S3 bucket.
   helm repo add kanister http://charts.kanister.io
 
   # Install the Kanister Controller
-  helm install --name myrelease --namespace kanister kanister/kanister-operator --set image.tag=|version|
+  helm install myrelease --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=|version|
 
   # Install MySQL and configure its Kanister Blueprint.
   # Also create a Profile CR that can be used in ActionSets
-  helm install kanister/kanister-mysql                                      \
-      --name mysql-release --namespace mysql-ns                             \
+
+  helm install mysql-release kanister/kanister-mysql                        \
+      --namespace mysql-ns                                                  \
       --set profile.create='true'                                           \
       --set profile.location.type='s3Compliant'                             \
       --set profile.location.bucket='mysql-backup-bucket'                   \

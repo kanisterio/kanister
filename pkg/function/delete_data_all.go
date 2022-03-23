@@ -104,5 +104,19 @@ func (*deleteDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 }
 
 func (*deleteDataAllFunc) RequiredArgs() []string {
-	return []string{DeleteDataAllNamespaceArg, DeleteDataAllBackupArtifactPrefixArg, DeleteDataAllBackupInfo}
+	return []string{
+		DeleteDataAllNamespaceArg,
+		DeleteDataAllBackupArtifactPrefixArg,
+		DeleteDataAllBackupInfo,
+	}
+}
+
+func (*deleteDataAllFunc) Arguments() []string {
+	return []string{
+		DeleteDataAllNamespaceArg,
+		DeleteDataAllBackupArtifactPrefixArg,
+		DeleteDataAllBackupInfo,
+		DeleteDataAllEncryptionKeyArg,
+		DeleteDataAllReclaimSpace,
+	}
 }

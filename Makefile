@@ -57,7 +57,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.17
+BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.18
 
 # tag 0.1.0 is, 0.0.1 (latest) + gh + aws + helm binary
 DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
@@ -164,6 +164,9 @@ deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 
 test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
+
+helm-test: build-dirs
+	@$(MAKE) run CMD='-c "./build/helm-test.sh $(SRC_DIRS)"'
 
 integration-test: build-dirs
 	@$(MAKE) run CMD='-c "./build/integration-test.sh short"'
