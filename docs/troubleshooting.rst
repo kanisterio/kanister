@@ -58,7 +58,7 @@ a firewall setup, it has to be configured to allow that communication.
 GKE
 ---
 If you get an error while applying a blueprint, that the webhook can't be reached
-you need to check if your firewall misses a rule for port 9443:
+you need to check if your firewall misses a rule for port ``9443``:
 
 .. code-block:: console
 
