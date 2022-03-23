@@ -15,11 +15,12 @@
 package kube
 
 import (
+	"bytes"
 	"io"
-	"io/ioutil"
 	"net/url"
-	"sync"
+	"os"
 
+	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -36,9 +37,9 @@ type ExecOptions struct {
 	PodName       string
 	ContainerName string
 
-	Stdin         io.Reader
-	CaptureStdout bool
-	CaptureStderr bool
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
 // Exec is our version of the call to `kubectl exec` that does not depend on
@@ -50,10 +51,36 @@ func Exec(cli kubernetes.Interface, namespace, pod, container string, command []
 		PodName:       pod,
 		ContainerName: container,
 		Stdin:         stdin,
-		CaptureStdout: true,
-		CaptureStderr: true,
 	}
 	return ExecWithOptions(cli, opts)
+}
+
+// ExecAsync is similar to Exec, except that inbound outputs are written to
+// stdout and stderr immediately. Unlike Exec, the outputs are not returned to
+// the caller.
+func ExecAsync(cli kubernetes.Interface, namespace, pod, container string, command []string, stdin io.Reader) error {
+	stdout := &format.Writer{
+		W:         os.Stdout,
+		Pod:       pod,
+		Container: container,
+	}
+	stderr := &format.Writer{
+		W:         os.Stderr,
+		Pod:       pod,
+		Container: container,
+	}
+	opts := ExecOptions{
+		Command:       command,
+		Namespace:     namespace,
+		PodName:       pod,
+		ContainerName: container,
+		Stdin:         stdin,
+		Stdout:        stdout,
+		Stderr:        stderr,
+	}
+
+	_, _, err := ExecWithOptions(cli, opts)
+	return err
 }
 
 // ExecWithOptions executes a command in the specified container,
@@ -64,39 +91,23 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 	if err != nil {
 		return "", "", err
 	}
-	o, e, errCh := execStream(kubeCli, config, options)
 
-	var stdout []byte
-	var oerr error
-	wg := sync.WaitGroup{}
-	wg.Add(3)
-	go func() {
-		stdout, oerr = ioutil.ReadAll(o)
-		wg.Done()
-	}()
+	outbuf := &bytes.Buffer{}
+	if options.Stdout == nil {
+		options.Stdout = outbuf
+	}
 
-	var stderr []byte
-	var eerr error
-	go func() {
-		stderr, eerr = ioutil.ReadAll(e)
-		wg.Done()
-	}()
-	go func() {
-		err = <-errCh
-		wg.Done()
-	}()
-	wg.Wait()
-	// Add more info to err
-	if oerr != nil {
-		err = errors.Wrapf(err, "Failed to read stdout: %s", oerr.Error())
+	errbuf := &bytes.Buffer{}
+	if options.Stderr == nil {
+		options.Stderr = errbuf
 	}
-	if eerr != nil {
-		err = errors.Wrapf(err, "Failed to read stderr: %s", eerr.Error())
-	}
-	return string(stdout), string(stderr), errors.Wrap(err, "Failed to exec command in pod")
+
+	errCh := execStream(kubeCli, config, options)
+	err = <-errCh
+	return outbuf.String(), errbuf.String(), errors.Wrap(err, "Failed to exec command in pod")
 }
 
-func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options ExecOptions) (*io.PipeReader, *io.PipeReader, chan error) {
+func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options ExecOptions) chan error {
 	const tty = false
 	req := kubeCli.CoreV1().RESTClient().Post().
 		Resource("pods").
@@ -104,7 +115,6 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 		Namespace(options.Namespace).
 		SubResource("exec")
 
-	// Add container name if passed
 	if len(options.ContainerName) != 0 {
 		req.Param("container", options.ContainerName)
 	}
@@ -113,21 +123,22 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 		Container: options.ContainerName,
 		Command:   options.Command,
 		Stdin:     options.Stdin != nil,
-		Stdout:    options.CaptureStdout,
-		Stderr:    options.CaptureStderr,
+		Stdout:    options.Stdout != nil,
+		Stderr:    options.Stderr != nil,
 		TTY:       tty,
 	}, scheme.ParameterCodec)
 
-	pro, pwo := io.Pipe()
-	pre, pwe := io.Pipe()
 	errCh := make(chan error, 1)
 	go func() {
-		err := execute("POST", req.URL(), config, options.Stdin, pwo, pwe, tty)
+		err := execute("POST", req.URL(), config,
+			options.Stdin,
+			options.Stdout,
+			options.Stderr,
+			tty)
 		errCh <- err
-		_ = pwo.Close()
-		_ = pwe.Close()
 	}()
-	return pro, pre, errCh
+
+	return errCh
 }
 
 func execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {

@@ -104,6 +104,47 @@ func (s *ExecSuite) TestStderr(c *C) {
 	}
 }
 
+func (s *ExecSuite) TestExecWithWriterOptions(c *C) {
+	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
+
+	var testCases = []struct {
+		cmd         []string
+		expectedOut string
+		expectedErr string
+	}{
+		{
+			cmd:         []string{"sh", "-c", "printf 'test'"},
+			expectedOut: "test",
+			expectedErr: "",
+		},
+		{
+			cmd:         []string{"sh", "-c", "printf 'test' >&2"},
+			expectedOut: "",
+			expectedErr: "test",
+		},
+	}
+
+	for _, testCase := range testCases {
+		bufout := &bytes.Buffer{}
+		buferr := &bytes.Buffer{}
+
+		opts := ExecOptions{
+			Command:       testCase.cmd,
+			Namespace:     s.pod.Namespace,
+			PodName:       s.pod.Name,
+			ContainerName: "", // use default container
+			Stdin:         nil,
+			Stdout:        bufout,
+			Stderr:        buferr,
+		}
+		_, _, err := ExecWithOptions(s.cli, opts)
+		c.Assert(err, IsNil)
+		c.Assert(bufout.String(), Equals, testCase.expectedOut)
+		c.Assert(buferr.String(), Equals, testCase.expectedErr)
+	}
+}
+
 func (s *ExecSuite) TestExecEcho(c *C) {
 	cmd := []string{"sh", "-c", "cat -"}
 	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
