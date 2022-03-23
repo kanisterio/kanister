@@ -19,7 +19,7 @@ Then install the sample MongoDB replica set application in its own namespace.
   .. code-block:: rst
 
      # Install Kanister-enabled MongoDB Replica Set
-     $ helm install kanister/kanister-mongodb-replicaset -n mongodb \
+     $ helm install mongodb kanister/kanister-mongodb-replicaset \
           --namespace mongodb-test \
           --set profile.create='true' \
           --set profile.profileName='mongo-test-profile' \
@@ -37,7 +37,7 @@ Then install the sample MongoDB replica set application in its own namespace.
   .. code-block:: rst
 
      # Install Kanister-enabled MongoDB Replica Set
-     $ helm install kanister/kanister-mongodb-replicaset -n mongodb \
+     $ helm install mongodb kanister/kanister-mongodb-replicaset \
           --namespace mongodb-test \
           --set persistentVolume.size=2Gi
 
@@ -53,7 +53,7 @@ your installation of a single node replica set.
   .. code-block:: rst
 
      # Install Kanister-enabled MongoDB Replica Set
-     $ helm install kanister/kanister-mongodb-replicaset -n mongodb \
+     $ helm install mongodb kanister/kanister-mongodb-replicaset \
           --namespace mongodb-test \
           --set persistentVolume.size=2Gi
 
