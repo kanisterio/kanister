@@ -49,6 +49,7 @@ or file an issue on `GitHub
 <https://groups.google.com/forum/#!forum/kanisterio>`_ is also
 available if needed.
 
+
 Validating webhook for Blueprints
 =================================
 For the validating webhook to work, the Kubernetes API Server needs to
@@ -57,8 +58,8 @@ a firewall setup, it has to be configured to allow that communication.
 
 GKE
 ---
-If you get an error while applying a blueprint, that the webhook can't be reached
-you need to check if your firewall misses a rule for port ``9443``:
+If you get an error while applying a blueprint, that the webhook can't be reached,
+check if your firewall misses a rule for port ``9443``:
 
 .. code-block:: console
 
