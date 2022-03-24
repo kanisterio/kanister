@@ -42,10 +42,6 @@ Then install the sample Elasticsearch application with the release name `my-rele
 `es-test` using the command below. Make sure you have the kanister controller running in namespace `kasten-io` which is the default setting in Elasticsearch charts. Otherwise, you will also have to set the `kanister.controller_namespace` parameter value to the respective kanister controller namespace in the following command:
 
 ```bash
-$ helm install --namespace es-test --name elasticsearch elastic/elasticsearch --set antiAffinity=soft
-```
-If you are running helm version `v3.0.0`, please use the commands below:
-```bash
 $ kubectl create namespace es-test
 $ helm install --namespace es-test elasticsearch elastic/elasticsearch --set antiAffinity=soft
 ```

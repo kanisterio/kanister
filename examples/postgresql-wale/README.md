@@ -23,7 +23,7 @@ $ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 
 $ helm install my-release bitnami/postgresql  \
-	--namespace postgres-test \
+	--namespace postgres-test --create-namespace \
 	--set image.repository=ghcr.io/kanisterio/postgresql \
 	--set image.tag=0.74.0 \
 	--set postgresqlPassword=postgres-12345 \
@@ -41,7 +41,7 @@ In case, if you don't have `Kanister` installed already, you can use following c
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
-$ helm install --name kanister --namespace kasten-io kanister/kanister-operator --set image.tag=0.74.0
+$ helm install kanister --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=0.74.0
 ```
 
 ## Integrating with Kanister
@@ -71,7 +71,7 @@ can be shared between Kanister-enabled application instances.
 Create Blueprint in the same namespace as the controller
 
 ```bash
-$ kubectl create -f ./postgresql-blueprint.yaml -n kasten-io
+$ kubectl create -f ./postgresql-blueprint.yaml -n kanister
 ```
 
 ### Create a Base Backup
@@ -90,7 +90,7 @@ apiVersion: cr.kanister.io/v1alpha1
 kind: ActionSet
 metadata:
     name: pg-base-backup
-    namespace: kasten-io
+    namespace: kanister
 spec:
     actions:
     - name: backup
@@ -111,7 +111,7 @@ spec:
 EOF
 
 # View the status of the actionset
-$ kubectl --namespace kasten-io describe actionset pg-base-backup
+$ kubectl --namespace kanister describe actionset pg-base-backup
 ```
 
 
@@ -224,14 +224,14 @@ To restore the missing data, you should use the backup that you created before. 
 Let's use PostgreSQL Point-In-Time Recovery to recover data till perticular time
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action restore --from pg-base-backup --options pitr=2019-09-16T14:41:00Z
+$ kanctl --namespace kanister create actionset --action restore --from pg-base-backup --options pitr=2019-09-16T14:41:00Z
 actionset restore-pg-base-backup-d7g7w created
 
 ## NOTE: pitr argument to the command is optional. If you want to restore data till the latest consistent state, you can skip '--options pitr' option
-# e.g $ kanctl --namespace kasten-io create actionset --action restore --from pg-base-backup
+# e.g $ kanctl --namespace kanister create actionset --action restore --from pg-base-backup
 
 ## Check status
-$ kubectl --namespace kasten-io describe actionset restore-pg-base-backup-d7g7w
+$ kubectl --namespace kanister describe actionset restore-pg-base-backup-d7g7w
 ```
 
 Once the ActionSet status is set to "complete", you can see that the data has been successfully restored to PostgreSQL
@@ -267,13 +267,13 @@ test=# select * from company;
 If you run into any issues with the above commands, you can check the logs of the controller using:
 
 ```bash
-$ kubectl --namespace kasten-io logs -l app=kanister-operator
+$ kubectl --namespace kanister logs -l app=kanister-operator
 ```
 
 you can also check events of the actionset
 
 ```bash
-$ kubectl describe actionset restore-backup-md6gb-d7g7w -n kasten-io
+$ kubectl describe actionset restore-backup-md6gb-d7g7w -n kanister
 ```
 
 ## Cleanup
@@ -293,7 +293,7 @@ To completely remove the release include the `--purge` flag.
 Remove Blueprint and Profile CR
 
 ```bash
-$ kubectl delete blueprints.cr.kanister.io postgresql-blueprint -n kasten-io
+$ kubectl delete blueprints.cr.kanister.io postgresql-blueprint -n kanister
 
 $ kubectl get profiles.cr.kanister.io -n postgres-test
 NAME               AGE

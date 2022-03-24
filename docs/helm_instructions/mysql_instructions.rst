@@ -19,7 +19,7 @@ Then install the sample MySQL application in its own namespace.
   .. code-block:: rst
 
      # Install Kanister-enabled MySQL
-     $ helm install kanister/kanister-mysql -n mysql --namespace mysql-test \
+     $ helm install mysql kanister/kanister-mysql --namespace mysql-test \
           --set profile.create='true' \
           --set profile.profileName='mysql-test-profile' \
           --set profile.location.type='s3Compliant' \
@@ -36,7 +36,7 @@ Then install the sample MySQL application in its own namespace.
   .. code-block:: rst
 
      # Install Kanister-enabled MySQL
-     $ helm install kanister/kanister-mysql -n mysql --namespace mysql-test \
+     $ helm install mysql kanister/kanister-mysql --namespace mysql-test \
           --set mysqlRootPassword="asd#45@mysqlEXAMPLE" \
           --set persistence.size=10Gi
 
@@ -53,7 +53,7 @@ your installation.
   .. code-block:: rst
 
      # Install Kanister-enabled MySQL
-     $ helm install kanister/kanister-mysql -n mysql --namespace mysql-test \
+     $ helm install mysql kanister/kanister-mysql --namespace mysql-test \
           --set mysqlRootPassword="asd#45@mysqlEXAMPLE" \
           --set persistence.size=10Gi
 
