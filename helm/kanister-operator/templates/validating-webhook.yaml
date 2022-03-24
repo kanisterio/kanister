@@ -1,3 +1,4 @@
+{{- if .Values.bpValidatingWebhook.enabled -}}
 {{ $altNames := list  ( printf "%s.%s" ( include "kanister-operator.fullname" . ) .Release.Namespace )  ( printf "%s.%s.svc" ( include "kanister-operator.fullname" . ) .Release.Namespace ) }}
 # generate ca cert with 365 days of validity
 {{ $ca := genCA ( printf "%s-ca" ( include "kanister-operator.fullname" . ) ) 365 }}
@@ -34,3 +35,4 @@ webhooks:
   admissionReviewVersions: ["v1", "v1beta1"]
   sideEffects: None
   timeoutSeconds: 5
+{{- end -}}
