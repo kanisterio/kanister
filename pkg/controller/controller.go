@@ -501,6 +501,10 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 		var rf func(*crv1alpha1.ActionSet) error
 		if err != nil {
 			rf = func(as *crv1alpha1.ActionSet) error {
+				as.Status.State = crv1alpha1.StateFailed
+				as.Status.Error = crv1alpha1.Error{
+					Message: err.Error(),
+				}
 				as.Status.Actions[aIDX].DeferPhase.State = crv1alpha1.StateFailed
 				return nil
 			}
