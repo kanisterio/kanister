@@ -379,7 +379,7 @@ func (e *Efs) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapsh
 }
 
 func (e *Efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	err := e.CreateK10DefaultBackupVault()
+	err := e.CreateDefaultBackupVault()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to setup K10 vault for AWS Backup")
 	}
@@ -431,7 +431,7 @@ func (e *Efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 }
 
 // Create a Backup Vault, also checks if vault already exist
-func (e *Efs) CreateK10DefaultBackupVault() error {
+func (e *Efs) CreateDefaultBackupVault() error {
 	req := &backup.CreateBackupVaultInput{}
 	req.SetBackupVaultName(e.BackupVaultName)
 
