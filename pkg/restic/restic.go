@@ -194,7 +194,7 @@ func resticArgs(profile *param.Profile, repository, encryptionKey string) ([]str
 	case crv1alpha1.LocationTypeGCS:
 		cmd = resticGCSArgs(profile, repository)
 	case crv1alpha1.LocationTypeAzure:
-		cmd = resticAzureArgs(profile, repository)
+		cmd, err = resticAzureArgs(profile, repository)
 	default:
 		return nil, errors.New("Unsupported type '%s' for the location")
 	}
@@ -258,12 +258,26 @@ func resticGCSArgs(profile *param.Profile, repository string) []string {
 	}
 }
 
-func resticAzureArgs(profile *param.Profile, repository string) []string {
-	return []string{
-		fmt.Sprintf("export %s=%s\n", location.AzureStorageAccount, profile.Credential.KeyPair.ID),
-		fmt.Sprintf("export %s=%s\n", location.AzureStorageKey, profile.Credential.KeyPair.Secret),
-		fmt.Sprintf("export %s=azure:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
+func resticAzureArgs(profile *param.Profile, repository string) ([]string, error) {
+	var storageAccountID, storageAccountKey string
+	switch profile.Credential.Type {
+	case param.CredentialTypeKeyPair:
+		storageAccountID = profile.Credential.KeyPair.ID
+		storageAccountKey = profile.Credential.KeyPair.Secret
+	case param.CredentialTypeSecret:
+		creds, err := secrets.ExtractAzureCredentials(profile.Credential.Secret)
+		if err != nil {
+			return nil, err
+		}
+		storageAccountID = creds.StorageAccount
+		storageAccountKey = creds.StorageKey
 	}
+
+	return []string{
+		fmt.Sprintf("export %s=%s\n", location.AzureStorageAccount, storageAccountID),
+		fmt.Sprintf("export %s=%s\n", location.AzureStorageKey, storageAccountKey),
+		fmt.Sprintf("export %s=azure:%s/\n", ResticRepository, strings.Replace(repository, "/", ":/", 1)),
+	}, nil
 }
 
 // GetOrCreateRepository will check if the repository already exists and initialize one if not

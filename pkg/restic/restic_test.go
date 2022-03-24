@@ -169,6 +169,62 @@ func (s *ResticDataSuite) TestResticArgs(c *C) {
 				"restic",
 			},
 		},
+		{
+			profile: &param.Profile{
+				Location: v1alpha1.Location{
+					Type: v1alpha1.LocationTypeAzure,
+				},
+				Credential: param.Credential{
+					Type: param.CredentialTypeSecret,
+					Secret: &v1.Secret{
+						Type: v1.SecretType(secrets.AzureSecretType),
+						Data: map[string][]byte{
+							secrets.AzureStorageAccountID:  []byte("id"),
+							secrets.AzureStorageAccountKey: []byte("secret"),
+						},
+					},
+				},
+			},
+			repo:     "repo",
+			password: "my-secret",
+			expected: []string{
+				"export AZURE_ACCOUNT_NAME=id\n",
+				"export AZURE_ACCOUNT_KEY=secret\n",
+				"export RESTIC_REPOSITORY=azure:repo/\n",
+				"export RESTIC_PASSWORD=my-secret\n",
+				"restic",
+			},
+		},
+		{
+			profile: &param.Profile{
+				Location: v1alpha1.Location{
+					Type: v1alpha1.LocationTypeAzure,
+				},
+				Credential: param.Credential{
+					Type: param.CredentialTypeKeyPair,
+					Secret: &v1.Secret{
+						Type: v1.SecretType(secrets.AzureSecretType),
+						Data: map[string][]byte{
+							secrets.AzureStorageAccountID:  []byte("id"),
+							secrets.AzureStorageAccountKey: []byte("secret"),
+						},
+					},
+					KeyPair: &param.KeyPair{
+						ID:     "kpID",
+						Secret: "kpSecret",
+					},
+				},
+			},
+			repo:     "repo",
+			password: "my-secret",
+			expected: []string{
+				"export AZURE_ACCOUNT_NAME=kpID\n",
+				"export AZURE_ACCOUNT_KEY=kpSecret\n",
+				"export RESTIC_REPOSITORY=azure:repo/\n",
+				"export RESTIC_PASSWORD=my-secret\n",
+				"restic",
+			},
+		},
 	} {
 		args, err := resticArgs(tc.profile, tc.repo, tc.password)
 		c.Assert(err, IsNil)

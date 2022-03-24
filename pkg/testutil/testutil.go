@@ -176,7 +176,7 @@ func NewSecretProfileFromLocation(location crv1alpha1.Location) (*v1.Secret, *cr
 		key = os.Getenv(awsconfig.AccessKeyID)
 		val = os.Getenv(awsconfig.SecretAccessKey)
 		if role := os.Getenv(awsconfig.ConfigRole); role != "" {
-			data["role"] = role
+			data[awsconfig.ConfigRole] = role
 		}
 	case crv1alpha1.LocationTypeGCS:
 		os.Getenv(blockstorage.GoogleCloudCreds)
