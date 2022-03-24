@@ -25,6 +25,12 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
+var regex *regexp.Regexp
+
+func init() {
+	regex = regexp.MustCompile("[\r\n]")
+}
+
 func Log(podName string, containerName string, output string) {
 	LogWithCtx(context.Background(), podName, containerName, output)
 }
@@ -54,7 +60,7 @@ func info(podName string, containerName string, l string) {
 
 func LogWithCtx(ctx context.Context, podName string, containerName string, output string) {
 	if output != "" {
-		logs := regexp.MustCompile("[\r\n]").Split(output, -1)
+		logs := regex.Split(output, -1)
 		for _, l := range logs {
 			infoWithCtx(ctx, podName, containerName, l)
 		}
