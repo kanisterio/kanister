@@ -33,7 +33,7 @@ require (
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.0.0
 	github.com/lib/pq v1.10.4
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
-	github.com/mitchellh/mapstructure v1.4.1
+	github.com/mitchellh/mapstructure v1.4.3
 
 	//pinned openshift to release-4.5 branch
 	github.com/openshift/api v0.0.0-20200526144822-34f54f12813a
