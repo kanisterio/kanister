@@ -197,7 +197,9 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 	if err := validate.ActionSet(as); err != nil {
 		return err
 	}
-	c.initActionSetStatus(as)
+	if as.Status == nil {
+		c.initActionSetStatus(as)
+	}
 	as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), v1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)
@@ -276,10 +278,6 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	if as.Spec == nil {
 		log.Error().WithContext(ctx).Print("Cannot initialize an ActionSet without a spec.")
-		return
-	}
-	if as.Status != nil {
-		log.Error().WithContext(ctx).Print("Cannot initialize non-nil ActionSet Status")
 		return
 	}
 	as.Status = &crv1alpha1.ActionSetStatus{State: crv1alpha1.StatePending}
