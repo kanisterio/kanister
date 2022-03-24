@@ -53,9 +53,7 @@ const (
 	burstingThroughputMode = awsefs.ThroughputModeBursting
 	defaultThroughputMode  = burstingThroughputMode
 
-	efsType                   = "EFS"
-	defaultK10BackupVaultName = "k10vault"
-
+	efsType    = "EFS"
 	maxRetries = 10
 )
 
@@ -91,9 +89,8 @@ func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage
 	backupCli := backup.New(s, aws.NewConfig().WithRegion(region).WithCredentials(awsConfig.Credentials).WithMaxRetries(maxRetries))
 
 	efsVault, ok := config[awsconfig.ConfigEFSVaultName]
-	//todo_aws : if not ok, err right away , move the code below to K10
 	if !ok || efsVault == "" {
-		efsVault = defaultK10BackupVaultName
+		return nil, errors.New("EFS vault name is empty")
 	}
 
 	return &Efs{
