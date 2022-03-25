@@ -25,11 +25,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
-var regex *regexp.Regexp
-
-func init() {
-	regex = regexp.MustCompile("[\r\n]")
-}
+var regex = regexp.MustCompile("[\r\n]")
 
 func Log(podName string, containerName string, output string) {
 	LogWithCtx(context.Background(), podName, containerName, output)
