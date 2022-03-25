@@ -13,7 +13,7 @@ replace (
 require (
 	github.com/Azure/azure-sdk-for-go v62.3.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.24
-	github.com/Azure/go-autorest/autorest/azure/auth v0.5.7
+	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/BurntSushi/toml v1.0.0
 	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
