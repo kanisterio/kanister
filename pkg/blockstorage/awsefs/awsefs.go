@@ -554,6 +554,25 @@ func (e *Efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blo
 	return result, nil
 }
 
+// List a limited amount of snapshots based on given limit input
+func (e *Efs) SnapshotsListWLimit(ctx context.Context, tags map[string]string, limit int64) ([]*blockstorage.Snapshot, error) {
+	result := make([]*blockstorage.Snapshot, 0)
+	var err error
+	req := &backup.ListRecoveryPointsByBackupVaultInput{}
+	req.SetBackupVaultName(e.BackupVaultName)
+	req.SetMaxResults(limit)
+	resp, err := e.ListRecoveryPointsByBackupVaultWithContext(ctx, req) //backup API
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to list recovery points by vault")
+	}
+	snaps, err := e.SnapshotsFromRecoveryPoints(ctx, resp.RecoveryPoints)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get snapshots from recovery points")
+	}
+	result = append(result, blockstorage.FilterSnapshotsWithTags(snaps, tags)...)
+	return result, err
+}
+
 func (e *Efs) SnapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.RecoveryPointByBackupVault) ([]*blockstorage.Snapshot, error) {
 	result := make([]*blockstorage.Snapshot, 0)
 	for _, rp := range rps {

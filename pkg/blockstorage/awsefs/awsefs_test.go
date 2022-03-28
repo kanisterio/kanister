@@ -28,7 +28,7 @@ type AwsEfsSuite struct{}
 
 var _ = check.Suite(&AwsEfsSuite{})
 
-func (a *AwsEfsSuite) TestBackupVaultNameWC(c *check.C) {
+func (a *AwsEfsSuite) TestBackupVaultName(c *check.C) {
 	testutil.GetEnvOrSkip(c, awsconfig.AccessKeyID)
 	testutil.GetEnvOrSkip(c, awsconfig.SecretAccessKey)
 	ctx := context.Background()
