@@ -138,7 +138,7 @@ func (s *ControllerSuite) TestWatch(c *C) {
 
 // nolint:unparam
 func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	err := poll.Wait(ctx, func(context.Context) (bool, error) {
 		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
