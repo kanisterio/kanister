@@ -51,7 +51,7 @@ func (e *Efs) waitUntilFileSystemAvailable(ctx context.Context, id string) error
 func (e *Efs) waitUntilRecoveryPointCompleted(ctx context.Context, id string) error {
 	return poll.WaitWithRetries(ctx, maxNumErrorRetries, poll.IsAlwaysRetryable, func(ctx context.Context) (bool, error) {
 		req := &backup.DescribeRecoveryPointInput{}
-		req.SetBackupVaultName(e.BackupVaultName)
+		req.SetBackupVaultName(e.backupVaultName)
 		req.SetRecoveryPointArn(id)
 
 		desc, err := e.DescribeRecoveryPointWithContext(ctx, req)
@@ -74,7 +74,7 @@ func (e *Efs) waitUntilRecoveryPointCompleted(ctx context.Context, id string) er
 func (e *Efs) waitUntilRecoveryPointVisible(ctx context.Context, id string) error {
 	return poll.WaitWithRetries(ctx, maxNumErrorRetries, poll.IsAlwaysRetryable, func(ctx context.Context) (bool, error) {
 		req := &backup.DescribeRecoveryPointInput{}
-		req.SetBackupVaultName(e.BackupVaultName)
+		req.SetBackupVaultName(e.backupVaultName)
 		req.SetRecoveryPointArn(id)
 
 		_, err := e.DescribeRecoveryPointWithContext(ctx, req)
