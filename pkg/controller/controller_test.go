@@ -17,6 +17,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -35,6 +36,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -57,6 +59,11 @@ type ControllerSuite struct {
 }
 
 var _ = Suite(&ControllerSuite{})
+
+const (
+	testAction        = "myAction"
+	mysqlSidecarImage = "ghcr.io/kanisterio/mysql-sidecar:0.74.0"
+)
 
 func (s *ControllerSuite) SetUpSuite(c *C) {
 	config, err := kube.LoadConfig()
@@ -182,6 +189,69 @@ func newBPWithOutputArtifact() *crv1alpha1.Blueprint {
 					{
 						Name: "myPhase0",
 						Func: testutil.OutputFuncName,
+					},
+				},
+			},
+		},
+	}
+}
+
+func newBPWithDeferPhase() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-blueprint-defer-",
+		},
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"backup": {
+				// set output artifacts from main phase as well as deferPhase
+				OutputArtifacts: map[string]crv1alpha1.Artifact{
+					"mainPhaseOutput": {
+						KeyValue: map[string]string{
+							"op": "{{ .Phases.backupPhase.Output.value }}",
+						},
+					},
+					"deferPhaseOutput": {
+						KeyValue: map[string]string{
+							"op": "{{ .DeferPhase.Output.value }}",
+						},
+					},
+				},
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "backupPhase",
+						Func: function.KubeTaskFuncName,
+						Args: map[string]interface{}{
+							"image":     mysqlSidecarImage,
+							"namespace": "default",
+							"command":   []string{"kando", "output", "value", "mainValue"},
+						},
+					},
+				},
+				DeferPhase: &crv1alpha1.BlueprintPhase{
+					Name: "deferPhase",
+					Func: function.KubeTaskFuncName,
+					Args: map[string]interface{}{
+						"image":     mysqlSidecarImage,
+						"namespace": "default",
+						"command":   []string{"kando", "output", "value", "deferValue"},
+					},
+				},
+			},
+			"restore": {
+				InputArtifactNames: []string{
+					"mainPhaseOutput",
+					"deferPhaseOutput",
+				},
+				Phases: []crv1alpha1.BlueprintPhase{
+					{
+						Name: "restorePhase",
+						Func: function.KubeTaskFuncName,
+						Args: map[string]interface{}{
+							"image":     mysqlSidecarImage,
+							"namespace": "default",
+							// this will try to render the output artifact that was set from deferPhase of backup action
+							"command": []string{"echo", "{{ .ArtifactsIn.deferPhaseOutput.KeyValue.op }}"},
+						},
 					},
 				},
 			},
@@ -385,7 +455,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			}
 
 			// Add an actionset that references that blueprint.
-			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace, tc.version)
+			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace, tc.version, testAction)
 			as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 			as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
@@ -498,6 +568,39 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	c.Assert(len(events.Items), Equals, 0)
 }
 
+func (s *ControllerSuite) TestDeferPhase(c *C) {
+	os.Setenv(kube.PodNSEnvVar, "test")
+
+	ctx := context.Background()
+	bp := newBPWithDeferPhase()
+
+	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// create backup actionset and wait for it to be completed
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	// get the actionset
+	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	// create restore actionset and wait for it to be completed
+	// if it's completed, simply means artifacts are rendered correctly
+	ras := testutil.NewTestRestoreActionSet(s.namespace, bp.GetName(), s.deployment.GetName(), as.Status.Actions[0].Artifacts)
+	ras, err = s.crCli.ActionSets(s.namespace).Create(ctx, ras, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitOnActionSetState(c, ras, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+	err = s.waitOnActionSetState(c, ras, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+}
+
 func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	ctx := context.Background()
 	// Create a blueprint that uses func output as artifact
@@ -507,7 +610,7 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
-	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, testAction)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
@@ -539,7 +642,7 @@ func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
-	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, testAction)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
@@ -621,7 +724,7 @@ func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
-	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, testAction)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
