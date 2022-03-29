@@ -124,17 +124,17 @@ func (s *EbsStorage) CheckVolumeCreate(ctx context.Context) (bool, error) {
 
 	ec2Cli, err := newEC2Client(*s.config.Region, s.config)
 	if err != nil {
-		return false, errors.Wrapf(err, "Could not get EC2 client")
+		return false, errors.Wrap(err, "Could not get EC2 client")
 	}
 	dai := &ec2.DescribeAvailabilityZonesInput{}
 	az, err := ec2Cli.DescribeAvailabilityZones(dai)
 	if err != nil {
-		return false, err
+		return false, errors.New("Fail to get available zone for EC2 client")
 	}
 	if az != nil {
 		zoneName = az.AvailabilityZones[1].ZoneName
 	} else {
-		return false, errors.New("No zone avaialble for EC2 client")
+		return false, errors.New("No available zone for EC2 client")
 	}
 
 	cvi := &ec2.CreateVolumeInput{
@@ -143,10 +143,10 @@ func (s *EbsStorage) CheckVolumeCreate(ctx context.Context) (bool, error) {
 		DryRun:           &dryRun,
 	}
 	_, err = s.Ec2Cli.CreateVolume(cvi)
-	if isDryRunErr(err) {
-		return true, nil
+	if !isDryRunErr(err) {
+		return false, errors.Wrap(err, "Could not create volume with EC2 client")
 	}
-	return false, errors.Wrapf(err, "Could not create volume with EC2 client")
+	return true, nil
 }
 
 // VolumeGet is part of blockstorage.Provider
