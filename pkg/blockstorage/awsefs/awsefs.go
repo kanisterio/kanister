@@ -53,9 +53,7 @@ const (
 	burstingThroughputMode = awsefs.ThroughputModeBursting
 	defaultThroughputMode  = burstingThroughputMode
 
-	efsType                   = "EFS"
-	defaultK10BackupVaultName = "k10vault"
-
+	efsType    = "EFS"
 	maxRetries = 10
 )
 
@@ -92,7 +90,7 @@ func NewEFSProvider(ctx context.Context, config map[string]string) (blockstorage
 
 	efsVault, ok := config[awsconfig.ConfigEFSVaultName]
 	if !ok || efsVault == "" {
-		efsVault = defaultK10BackupVaultName
+		return nil, errors.New("EFS vault name is empty")
 	}
 
 	return &Efs{
@@ -381,7 +379,7 @@ func (e *Efs) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapsh
 }
 
 func (e *Efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	err := e.createK10DefaultBackupVault()
+	err := e.CreateBackupVaultWrapper()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to setup K10 vault for AWS Backup")
 	}
@@ -432,7 +430,8 @@ func (e *Efs) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, ta
 	}, nil
 }
 
-func (e *Efs) createK10DefaultBackupVault() error {
+// Create a Backup Vault, also checks if vault already exist
+func (e *Efs) CreateBackupVaultWrapper() error {
 	req := &backup.CreateBackupVaultInput{}
 	req.SetBackupVaultName(e.backupVaultName)
 
@@ -553,6 +552,25 @@ func (e *Efs) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blo
 		result = append(result, blockstorage.FilterSnapshotsWithTags(snaps, tags)...)
 	}
 	return result, nil
+}
+
+// List a limited amount of snapshots based on given limit input
+func (e *Efs) SnapshotsListWLimit(ctx context.Context, tags map[string]string, limit int64) ([]*blockstorage.Snapshot, error) {
+	result := make([]*blockstorage.Snapshot, 0)
+	var err error
+	req := &backup.ListRecoveryPointsByBackupVaultInput{}
+	req.SetBackupVaultName(e.backupVaultName)
+	req.SetMaxResults(limit)
+	resp, err := e.ListRecoveryPointsByBackupVaultWithContext(ctx, req) //backup API
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to list recovery points by vault")
+	}
+	snaps, err := e.SnapshotsFromRecoveryPoints(ctx, resp.RecoveryPoints)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get snapshots from recovery points")
+	}
+	result = append(result, blockstorage.FilterSnapshotsWithTags(snaps, tags)...)
+	return result, err
 }
 
 func (e *Efs) SnapshotsFromRecoveryPoints(ctx context.Context, rps []*backup.RecoveryPointByBackupVault) ([]*blockstorage.Snapshot, error) {
