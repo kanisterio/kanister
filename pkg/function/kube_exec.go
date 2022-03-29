@@ -21,8 +21,6 @@ import (
 	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
-	"github.com/kanisterio/kanister/pkg/consts"
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/output"
@@ -93,11 +91,9 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = Arg(args, KubeExecCommandArg, &cmd); err != nil {
 		return nil, err
 	}
-	ctx = field.Context(ctx, consts.PodNameKey, pod)
-	_ = field.Context(ctx, consts.ContainerNameKey, container)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
+	format.LogWithCtx(ctx, pod, container, stdout)
+	format.LogWithCtx(ctx, pod, container, stderr)
 	if err != nil {
 		return nil, err
 	}

@@ -45,8 +45,8 @@ func NewPodWriter(cli kubernetes.Interface, path string, content io.Reader) *Pod
 func (p *PodWriter) Write(ctx context.Context, namespace, podName, containerName string) error {
 	cmd := []string{"sh", "-c", "cat - > " + p.path}
 	stdout, stderr, err := Exec(p.cli, namespace, podName, containerName, cmd, p.content)
-	format.Log(podName, containerName, stdout)
-	format.Log(podName, containerName, stderr)
+	format.LogWithCtx(ctx, podName, containerName, stdout)
+	format.LogWithCtx(ctx, podName, containerName, stderr)
 	return errors.Wrap(err, "Failed to write contents to file")
 }
 
@@ -54,7 +54,7 @@ func (p *PodWriter) Write(ctx context.Context, namespace, podName, containerName
 func (p *PodWriter) Remove(ctx context.Context, namespace, podName, containerName string) error {
 	cmd := []string{"sh", "-c", "rm " + p.path}
 	stdout, stderr, err := Exec(p.cli, namespace, podName, containerName, cmd, nil)
-	format.Log(podName, containerName, stdout)
-	format.Log(podName, containerName, stderr)
+	format.LogWithCtx(ctx, podName, containerName, stdout)
+	format.LogWithCtx(ctx, podName, containerName, stderr)
 	return errors.Wrap(err, "Failed to delete file")
 }
