@@ -141,5 +141,16 @@ func (kef *createVolumeFromSnapshotFunc) Exec(ctx context.Context, tp param.Temp
 }
 
 func (*createVolumeFromSnapshotFunc) RequiredArgs() []string {
-	return []string{CreateVolumeFromSnapshotNamespaceArg, CreateVolumeFromSnapshotManifestArg}
+	return []string{
+		CreateVolumeFromSnapshotNamespaceArg,
+		CreateVolumeFromSnapshotManifestArg,
+	}
+}
+
+func (*createVolumeFromSnapshotFunc) Arguments() []string {
+	return []string{
+		CreateVolumeFromSnapshotNamespaceArg,
+		CreateVolumeFromSnapshotManifestArg,
+		CreateVolumeFromSnapshotPVCNamesArg,
+	}
 }

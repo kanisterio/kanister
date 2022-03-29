@@ -15,6 +15,8 @@ func ValidateCredentials(secret *v1.Secret) error {
 	switch string(secret.Type) {
 	case AWSSecretType:
 		return ValidateAWSCredentials(secret)
+	case AzureSecretType:
+		return ValidateAzureCredentials(secret)
 	default:
 		return errors.Errorf("Unsupported type '%s' for secret '%s:%s'", string(secret.Type), secret.Namespace, secret.Name)
 	}

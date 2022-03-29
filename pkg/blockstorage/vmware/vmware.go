@@ -2,6 +2,7 @@ package vmware
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -42,6 +43,12 @@ const (
 	// VSpherePasswordKey represents key for the password.
 	VSpherePasswordKey = "VSpherePasswordKey"
 
+	// VSphereIsParaVirtualizedKey is the key for the para-virtualized indicator.
+	// A value of "true" or "1" implies use of a para-virtualized CSI driver in the
+	// cluster. When this is true then some operations will fail.
+	// Note: it is up to the creator of the provider to determine if a para-virtualized environment exists.
+	VSphereIsParaVirtualizedKey = "VSphereIsParaVirtualizedKey"
+
 	noDescription     = ""
 	defaultWaitTime   = 60 * time.Minute
 	defaultRetryLimit = 30 * time.Minute
@@ -51,15 +58,18 @@ const (
 
 var (
 	vmWareTimeout = time.Duration(getEnvAsIntOrDefault(vmWareTimeoutMinEnv, int(defaultWaitTime/time.Minute))) * time.Minute
+
+	ErrNotSupportedWithParaVirtualizedVolumes = stderrors.New("operation not supported with para-virtualized volumes")
 )
 
 // FcdProvider provides blockstorage.Provider
 type FcdProvider struct {
-	Gom        *vslm.GlobalObjectManager
-	Cns        *cns.Client
-	TagsSvc    *vapitags.Manager
-	tagManager tagManager
-	categoryID string
+	Gom               *vslm.GlobalObjectManager
+	Cns               *cns.Client
+	TagsSvc           *vapitags.Manager
+	tagManager        tagManager
+	categoryID        string
+	isParaVirtualized bool
 }
 
 // NewProvider creates new VMWare FCD provider with the config.
@@ -113,11 +123,26 @@ func NewProvider(config map[string]string) (blockstorage.Provider, error) {
 	}
 	gom := vslm.NewGlobalObjectManager(vslmCli)
 	return &FcdProvider{
-		Cns:        cnsCli,
-		Gom:        gom,
-		TagsSvc:    tm,
-		tagManager: tm,
+		Cns:               cnsCli,
+		Gom:               gom,
+		TagsSvc:           tm,
+		tagManager:        tm,
+		isParaVirtualized: configIsParaVirtualized(config),
 	}, nil
+}
+
+func configIsParaVirtualized(config map[string]string) bool {
+	if isParaVirtualizedVal, ok := config[VSphereIsParaVirtualizedKey]; ok {
+		if strings.ToLower(isParaVirtualizedVal) == "true" || isParaVirtualizedVal == "1" {
+			return true
+		}
+	}
+	return false
+}
+
+// IsParaVirtualized is not part of blockstorage.Provider.
+func (p *FcdProvider) IsParaVirtualized() bool {
+	return p.isParaVirtualized
 }
 
 // Type is part of blockstorage.Provider
@@ -137,6 +162,9 @@ func (p *FcdProvider) VolumeCreate(ctx context.Context, volume blockstorage.Volu
 
 // VolumeCreateFromSnapshot is part of blockstorage.Provider
 func (p *FcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
+	if p.IsParaVirtualized() {
+		return nil, errors.WithStack(ErrNotSupportedWithParaVirtualizedVolumes)
+	}
 	volID, snapshotID, err := SplitSnapshotFullID(snapshot.ID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to split snapshot full ID")

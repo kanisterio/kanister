@@ -655,7 +655,7 @@ func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]string, error) {
 	subscriptionsCLient := subscriptions.NewClientWithBaseURI(s.azCli.BaseURI)
 	subscriptionsCLient.Authorizer = s.azCli.Authorizer
-	llResp, err := subscriptionsCLient.ListLocations(ctx, s.azCli.SubscriptionID)
+	llResp, err := subscriptionsCLient.ListLocations(ctx, s.azCli.SubscriptionID, nil)
 	if err != nil {
 		return nil, err
 	}

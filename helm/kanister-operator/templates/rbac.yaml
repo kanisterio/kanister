@@ -18,17 +18,20 @@ rules:
   - events
   verbs:
   - create
+{{- if .Values.controller.updateCRDs }}
 - apiGroups:
   - apiextensions.k8s.io
   resources:
   - customresourcedefinitions
   verbs:
   - "*"
+{{- end }}
 - apiGroups:
   - snapshot.storage.k8s.io
   resources:
   - volumesnapshots
   - volumesnapshotcontents
+  - volumesnapshotclasses
   verbs:
   - get
   - create

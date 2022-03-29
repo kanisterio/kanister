@@ -170,6 +170,23 @@ func (*restoreDataAllFunc) Exec(ctx context.Context, tp param.TemplateParams, ar
 }
 
 func (*restoreDataAllFunc) RequiredArgs() []string {
-	return []string{RestoreDataAllNamespaceArg, RestoreDataAllImageArg,
-		RestoreDataAllBackupArtifactPrefixArg, RestoreDataAllBackupInfo}
+	return []string{
+		RestoreDataAllNamespaceArg,
+		RestoreDataAllImageArg,
+		RestoreDataAllBackupArtifactPrefixArg,
+		RestoreDataAllBackupInfo,
+	}
+}
+
+func (*restoreDataAllFunc) Arguments() []string {
+	return []string{
+		RestoreDataAllNamespaceArg,
+		RestoreDataAllImageArg,
+		RestoreDataAllBackupArtifactPrefixArg,
+		RestoreDataAllBackupInfo,
+		RestoreDataAllRestorePathArg,
+		RestoreDataAllEncryptionKeyArg,
+		RestoreDataAllPodsArg,
+		RestoreDataAllPodOverrideArg,
+	}
 }

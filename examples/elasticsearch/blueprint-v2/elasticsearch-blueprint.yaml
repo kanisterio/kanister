@@ -1,0 +1,76 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: elasticsearch-blueprint
+actions:
+  backup:
+    outputArtifacts:
+      esBackup:
+        # Capture the kopia snapshot information for subsequent actions
+        # The information includes the kopia snapshot ID which is essential for restore and delete to succeed
+        # `kopiaOutput` is the name provided to kando using `--output-name` flag
+        kopiaSnapshot: "{{ .Phases.backupToStore.Output.kopiaOutput }}"
+    phases:
+    - func: KubeTask
+      name: backupToStore
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: "ghcr.io/kanisterio/es-sidecar:0.75.0"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          host_name="{{ .Object.spec.serviceName }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
+          backup_file_path='backup.gz'
+          elasticdump --bulk=true --input=http://${host_name}:9200 --output=/backup
+          gzip /backup
+          kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" /backup.gz
+  restore:
+    inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `esBackup.KopiaSnapshot`
+    - esBackup
+    phases:
+    - func: KubeTask
+      name: restoreFromStore
+      args:
+        namespace: "{{ .StatefulSet.Namespace }}"
+        image: "ghcr.io/kanisterio/es-sidecar:0.75.0"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          host_name="{{ .Object.spec.serviceName }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
+          backup_file_path='backup.gz'
+          kopia_snap='{{ .ArtifactsIn.esBackup.KopiaSnapshot }}'
+          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | gunzip | elasticdump --bulk=true --input=$ --output=http://${host_name}:9200
+  delete:
+    inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `esBackup.KopiaSnapshot`
+    - esBackup
+    phases:
+    - func: KubeTask
+      name: deleteFromStore
+      args:
+        namespace: "{{ .Namespace.Name }}"
+        image: "ghcr.io/kanisterio/es-sidecar:0.53.0"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          backup_file_path='backup.gz'
+          kopia_snap='{{ .ArtifactsIn.esBackup.KopiaSnapshot }}'
+          kando location delete --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}"

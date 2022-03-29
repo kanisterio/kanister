@@ -170,13 +170,14 @@ func gcsConfig(ctx context.Context, secret *Secret) (stowKind string, stowConfig
 }
 
 func azureConfig(ctx context.Context, secret *Secret) (stowKind string, stowConfig stow.Config, err error) {
-	var azAccount, azStorageKey string
+	var azAccount, azStorageKey, azEnvName string
 	if secret != nil {
 		if secret.Type != SecretTypeAzStorageAccount {
 			return "", nil, errors.Errorf("invalid secret type %s", secret.Type)
 		}
 		azAccount = secret.Azure.StorageAccount
 		azStorageKey = secret.Azure.StorageKey
+		azEnvName = secret.Azure.EnvironmentName
 	} else {
 		var ok bool
 		azAccount, ok = os.LookupEnv("AZURE_STORAGE_ACCOUNT")
@@ -188,10 +189,12 @@ func azureConfig(ctx context.Context, secret *Secret) (stowKind string, stowConf
 		if !ok {
 			return "", nil, errors.New("AZURE_STORAGE_KEY environment not set")
 		}
+		azEnvName, _ = os.LookupEnv("AZURE_ENV_NAME") // not required to be set.
 	}
 	return stowaz.Kind, stow.ConfigMap{
 		stowaz.ConfigAccount: azAccount,
 		stowaz.ConfigKey:     azStorageKey,
+		stowaz.ConfigEnvName: azEnvName,
 	}, nil
 }
 
