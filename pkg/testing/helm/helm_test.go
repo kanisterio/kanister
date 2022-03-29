@@ -53,7 +53,9 @@ func (h *HelmTestSuite) SetUpSuite(c *C) {
 
 	h.deploymentName = fmt.Sprintf("%s-%s", kanisterName, "kanister-operator")
 
-	helmValues := make(map[string]string)
+	helmValues := map[string]string{
+		"bpValidatingWebhook.enabled": "false",
+	}
 
 	kanisterApp, err := NewHelmApp(helmValues, kanisterName, "kanister/kanister-operator", kanisterName, "", false)
 	c.Assert(err, IsNil)
@@ -80,7 +82,8 @@ func (h *HelmTestSuite) TestUpgrade(c *C) {
 	c.Log("Upgrading the kanister release with local chart and updated image")
 	// upgrade the installed application
 	updatedValues := map[string]string{
-		"image.tag": "v9.99.9-dev",
+		"image.tag":                   "v9.99.9-dev",
+		"bpValidatingWebhook.enabled": "false",
 	}
 	c.Assert(h.helmApp.Upgrade("../../../helm/kanister-operator", updatedValues), IsNil)
 
