@@ -15,7 +15,8 @@ cache:
   directories:
   - .go/pkg/mod/cache
   - .go/cache
-
+# Build stages is a way to group jobs, and run jobs in each stage in parallel,
+# but run one stage after another sequentially.
 jobs:
   include:
     - stage: test
@@ -50,6 +51,21 @@ jobs:
       - make install-minio
       script:
       - make integration-test
+      - make helm-test
+      before_cache:
+      - sudo chown -R travis:travis ./.go
+      after_script:
+      - make stop-kind
+    - stage: test
+      services:
+        - docker
+      install:
+      - make go-mod-download
+      before_script:
+      - docker pull kindest/node:v1.21.1
+      - make start-kind
+      script:
+      - make helm-test
       before_cache:
       - sudo chown -R travis:travis ./.go
       after_script:

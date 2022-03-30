@@ -25,11 +25,13 @@ import (
 	"time"
 
 	. "gopkg.in/check.v1"
+	v1 "k8s.io/api/core/v1"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
@@ -205,5 +207,113 @@ func (s *LocationSuite) TestReaderSize(c *C) {
 		_, size, err := readerSize(bytes.NewBufferString(tc.input), tc.buffSize)
 		c.Assert(err, IsNil)
 		c.Assert(size, Equals, tc.expectedSize)
+	}
+}
+
+func (s *LocationSuite) TestGetAzureSecret(c *C) {
+	for _, tc := range []struct {
+		cred        param.Credential
+		retAzSecret *objectstore.SecretAzure
+		errChecker  Checker
+	}{
+		{
+			cred: param.Credential{
+				Type: param.CredentialTypeKeyPair,
+				KeyPair: &param.KeyPair{
+					ID:     "id",
+					Secret: "secret",
+				},
+				Secret: &v1.Secret{
+					Type: v1.SecretType(secrets.AzureSecretType),
+					Data: map[string][]byte{
+						secrets.AzureStorageAccountID:   []byte("said"),
+						secrets.AzureStorageAccountKey:  []byte("sakey"),
+						secrets.AzureStorageEnvironment: []byte("env"),
+					},
+				},
+			},
+			retAzSecret: &objectstore.SecretAzure{
+				StorageAccount: "id",
+				StorageKey:     "secret",
+			},
+			errChecker: IsNil,
+		},
+		{
+			cred: param.Credential{
+				Type: param.CredentialTypeSecret,
+				KeyPair: &param.KeyPair{
+					ID:     "id",
+					Secret: "secret",
+				},
+				Secret: &v1.Secret{
+					Type: v1.SecretType(secrets.AzureSecretType),
+					Data: map[string][]byte{
+						secrets.AzureStorageAccountID:   []byte("said"),
+						secrets.AzureStorageAccountKey:  []byte("sakey"),
+						secrets.AzureStorageEnvironment: []byte("env"),
+					},
+				},
+			},
+			retAzSecret: &objectstore.SecretAzure{
+				StorageAccount:  "said",
+				StorageKey:      "sakey",
+				EnvironmentName: "env",
+			},
+			errChecker: IsNil,
+		},
+		{ // missing required field
+			cred: param.Credential{
+				Type: param.CredentialTypeSecret,
+				KeyPair: &param.KeyPair{
+					ID:     "id",
+					Secret: "secret",
+				},
+				Secret: &v1.Secret{
+					Type: v1.SecretType(secrets.AzureSecretType),
+					Data: map[string][]byte{
+						secrets.AzureStorageAccountID:   []byte("said"),
+						secrets.AzureStorageEnvironment: []byte("env"),
+					},
+				},
+			},
+			retAzSecret: &objectstore.SecretAzure{
+				StorageAccount:  "said",
+				StorageKey:      "sakey",
+				EnvironmentName: "env",
+			},
+			errChecker: NotNil,
+		},
+		{ // additional incorrect field
+			cred: param.Credential{
+				Type: param.CredentialTypeSecret,
+				KeyPair: &param.KeyPair{
+					ID:     "id",
+					Secret: "secret",
+				},
+				Secret: &v1.Secret{
+					Type: v1.SecretType(secrets.AzureSecretType),
+					Data: map[string][]byte{
+						secrets.AzureStorageAccountID:   []byte("said"),
+						secrets.AzureStorageAccountKey:  []byte("sakey"),
+						"extrafield":                    []byte("extra"),
+						secrets.AzureStorageEnvironment: []byte("env"),
+					},
+				},
+			},
+			retAzSecret: &objectstore.SecretAzure{
+				StorageAccount:  "said",
+				StorageKey:      "sakey",
+				EnvironmentName: "env",
+			},
+			errChecker: NotNil,
+		},
+	} {
+		secret, err := getAzureSecret(tc.cred)
+		c.Assert(err, tc.errChecker)
+		if tc.errChecker == IsNil {
+			c.Assert(secret.Azure.StorageKey, Equals, tc.retAzSecret.StorageKey)
+			c.Assert(secret.Azure.StorageAccount, Equals, tc.retAzSecret.StorageAccount)
+			c.Assert(secret.Azure.EnvironmentName, Equals, tc.retAzSecret.EnvironmentName)
+		}
 	}
 }

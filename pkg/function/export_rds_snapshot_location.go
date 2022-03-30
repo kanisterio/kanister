@@ -60,7 +60,7 @@ const (
 	BackupAction  RDSAction = "backup"
 	RestoreAction RDSAction = "restore"
 
-	postgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.74.0"
+	postgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.75.0"
 )
 
 type exportRDSSnapshotToLocationFunc struct{}
@@ -103,7 +103,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 		}
 	}
 
-	log.Print("Spin up temporary RDS instance from the snapshot.", field.M{"SnapshotID": snapshotID, "InstanceID": tmpInstanceID})
+	log.WithContext(ctx).Print("Spin up temporary RDS instance from the snapshot.", field.M{"SnapshotID": snapshotID, "InstanceID": tmpInstanceID})
 	// Create tmp instance from snapshot
 	if err := restoreFromSnapshot(ctx, rdsCli, tmpInstanceID, snapshotID, sgIDs); err != nil {
 		return nil, errors.Wrapf(err, "Failed to restore snapshot. SnapshotID=%s", snapshotID)
@@ -320,13 +320,13 @@ func postgresBackupCommand(dbEndpoint, username, password string, dbList []strin
 
 func cleanupRDSDB(ctx context.Context, rdsCli *rds.RDS, instanceID string) error {
 	// Deleting tmp instance
-	log.Print("Delete temporary RDS instance.", field.M{"InstanceID": instanceID})
+	log.WithContext(ctx).Print("Delete temporary RDS instance.", field.M{"InstanceID": instanceID})
 	if _, err := rdsCli.DeleteDBInstance(ctx, instanceID); err != nil {
 		return err
 	}
 
 	// Wait until instance is deleted
-	log.Print("Waiting for RDS DB instance to be deleted", field.M{"InstanceID": instanceID})
+	log.WithContext(ctx).Print("Waiting for RDS DB instance to be deleted", field.M{"InstanceID": instanceID})
 	return rdsCli.WaitUntilDBInstanceDeleted(ctx, instanceID)
 }
 

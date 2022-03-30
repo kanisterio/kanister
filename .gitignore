@@ -6,3 +6,4 @@
 /.vendor
 /bin
 /dist
+**/*.swp

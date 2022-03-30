@@ -13,7 +13,7 @@ If you want to avoid doing that upgrade to Elasticsearch 5.6 first before moving
 
 * Kubernetes 1.9+ with Beta APIs enabled.
 * PV support on the underlying infrastructure.
-* Kanister version 0.74.0 with `profiles.cr.kanister.io` CRD installed
+* Kanister version 0.75.0 with `profiles.cr.kanister.io` CRD installed
 
 ## StatefulSets Details
 * https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
@@ -41,10 +41,6 @@ $ helm repo add elastic https://helm.elastic.co
 Then install the sample Elasticsearch application with the release name `my-release` in its own namespace
 `es-test` using the command below. Make sure you have the kanister controller running in namespace `kasten-io` which is the default setting in Elasticsearch charts. Otherwise, you will also have to set the `kanister.controller_namespace` parameter value to the respective kanister controller namespace in the following command:
 
-```bash
-$ helm install --namespace es-test --name elasticsearch elastic/elasticsearch --set antiAffinity=soft
-```
-If you are running helm version `v3.0.0`, please use the commands below:
 ```bash
 $ kubectl create namespace es-test
 $ helm install --namespace es-test elasticsearch elastic/elasticsearch --set antiAffinity=soft

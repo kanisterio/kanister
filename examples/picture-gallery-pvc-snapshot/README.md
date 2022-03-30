@@ -20,8 +20,8 @@ Next create a Blueprint which describes how backup and restore actions can be ex
 
 ```bash
 # Configure access to an S3 Bucket
-$ helm install kanister/profile                 \
-    --name profile --namespace kanister       \
+$ helm install profile kanister/profile                 \
+    --namespace kanister --create-namespace     \
     --set defaultProfile=true                 \
     --set location.type='s3Compliant' \
     --set location.bucket="my-kanister-bucket"      \

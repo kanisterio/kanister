@@ -8,6 +8,7 @@ const (
 	GoogleCloudCredsFilePath = "/tmp/creds.txt"
 	LabelKeyCreatedBy        = "createdBy"
 	LabelValueKanister       = "kanister"
+	LabelPrefix              = "kanister.io/"
 )
 
 // These names are used to query ActionSet API objects.
