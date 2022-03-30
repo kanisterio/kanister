@@ -160,6 +160,7 @@ func (s *BucketSuite) TestGetRegionForBucket(c *C) {
 	c.Assert(err, IsNil)
 	bucket, err := p.GetBucket(ctx, nonExistentBucket)
 	c.Log(bucket, err)
+	c.Assert(err, NotNil)
 	c.Assert(IsBucketNotFoundError(err), Equals, true)
 
 	for _, tc := range []struct {

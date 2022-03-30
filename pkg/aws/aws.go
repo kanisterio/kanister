@@ -120,7 +120,6 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 	if err != nil {
 		return nil, err
 	}
-
 	// check if role switching is needed, then return creds
 	return switchAWSRole(ctx, creds, config[ConfigRole], assumedRole, assumeRoleDuration)
 }
@@ -147,4 +146,22 @@ func GetConfig(ctx context.Context, config map[string]string) (awsConfig *aws.Co
 		return nil, "", errors.Wrap(err, "could not initialize AWS credentials for operation")
 	}
 	return &aws.Config{Credentials: creds}, region, nil
+}
+
+func IsAwsCredsValid(ctx context.Context, config map[string]string) (bool, error) {
+	var maxRetries int = 10
+	awsConfig, region, err := GetConfig(ctx, config)
+	if err != nil {
+		return false, errors.Wrap(err, "Failed to get config for AWS creds")
+	}
+	s, err := session.NewSession(awsConfig)
+	if err != nil {
+		return false, errors.Wrap(err, "Failed to create session with provided creds")
+	}
+	stsCli := sts.New(s, aws.NewConfig().WithRegion(region).WithMaxRetries(maxRetries))
+	_, err = stsCli.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		return false, errors.Wrap(err, "Failed to get user with provided creds")
+	}
+	return true, nil
 }

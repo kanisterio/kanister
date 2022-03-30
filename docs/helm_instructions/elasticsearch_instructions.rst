@@ -20,7 +20,7 @@ Then install the sample Elasticsearch application in its own namespace.
   .. code-block:: rst
 
      # Install Kanister-enabled Elasticsearch
-     $ helm install kanister/kanister-elasticsearch -n elasticsearch \
+     $ helm install elasticsearch kanister/kanister-elasticsearch \
           --namespace es-test \
           --set profile.create='true' \
           --set profile.profileName='es-test-profile' \
@@ -36,7 +36,7 @@ Then install the sample Elasticsearch application in its own namespace.
   .. code-block:: rst
 
      # Install Kanister-enabled Elasticsearch
-     $ helm install kanister/kanister-elasticsearch -n elasticsearch --namespace es-test
+     $ helm install elasticsearch kanister/kanister-elasticsearch --namespace es-test
 
 
 The settings in the command above represent the minimum recommended set for
@@ -51,7 +51,7 @@ your installation.
   .. code-block:: rst
 
      # Install Kanister-enabled Elasticsearch
-     $ helm install kanister/kanister-elasticsearch -n elasticsearch --namespace es-test
+     $ helm install elasticsearch kanister/kanister-elasticsearch elasticsearch --namespace es-test
 
 .. note:: The above command will attempt to use dynamic storage provisioning
    based on the the default storage class for your cluster. You will to need to
