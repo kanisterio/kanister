@@ -16,6 +16,7 @@ package format
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"regexp"
 	"strings"
@@ -24,13 +25,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
+var regex = regexp.MustCompile("[\r\n]")
+
 func Log(podName string, containerName string, output string) {
-	if output != "" {
-		logs := regexp.MustCompile("[\r\n]").Split(output, -1)
-		for _, l := range logs {
-			info(podName, containerName, l)
-		}
-	}
+	LogWithCtx(context.Background(), podName, containerName, output)
 }
 
 func LogStream(podName string, containerName string, output io.ReadCloser) chan string {
@@ -53,5 +51,20 @@ func LogStream(podName string, containerName string, output io.ReadCloser) chan 
 func info(podName string, containerName string, l string) {
 	if strings.TrimSpace(l) != "" {
 		log.Print("Pod Update", field.M{"Pod": podName, "Container": containerName, "Out": l})
+	}
+}
+
+func LogWithCtx(ctx context.Context, podName string, containerName string, output string) {
+	if output != "" {
+		logs := regex.Split(output, -1)
+		for _, l := range logs {
+			infoWithCtx(ctx, podName, containerName, l)
+		}
+	}
+}
+
+func infoWithCtx(ctx context.Context, podName string, containerName string, l string) {
+	if strings.TrimSpace(l) != "" {
+		log.WithContext(ctx).Print("Pod Update", field.M{"Pod": podName, "Container": containerName, "Out": l})
 	}
 }
