@@ -486,11 +486,7 @@ from the output that is being generated from ``DeferPhase``
           image: ghcr.io/kanisterio/mysql-sidecar:0.74.0
           namespace: "{{ .Deployment.Namespace }}"
           command:
-          - bash
-          - -o
-          - errexit
-          - -o
-          - pipefail
+          - sh
           - -c
           - |
             echo "DeferPhase"

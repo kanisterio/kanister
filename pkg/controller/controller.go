@@ -418,6 +418,9 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	// deferPhase is the phase that should be run after every successful or failed action run
 	// can be specified in blueprint using actions[name].deferPhase
 	deferPhase, err := kanister.GetDeferPhase(*bp, action.Name, action.PreferredVersion, *tp)
+	if err != nil {
+		return err
+	}
 
 	ns, name := as.GetNamespace(), as.GetName()
 	var t *tomb.Tomb
@@ -425,6 +428,11 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	c.actionSetTombMap.Store(as.Name, t)
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	t.Go(func() error {
+		var coreErr error
+		defer func(error) {
+			c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as, err)
+		}(coreErr)
+
 		for i, p := range phases {
 			ctx = field.Context(ctx, consts.PhaseNameKey, p.Name())
 			c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing phase %s", p.Name()), "Started Phase", as)
@@ -459,7 +467,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
 				msg := fmt.Sprintf("Failed to update phase: %#v:", as.Status.Actions[aIDX].Phases[i])
 				c.logAndErrorEvent(ctx, msg, reason, rErr, as, bp)
-				c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as, rErr)
+				coreErr = rErr
 				return nil
 			}
 
@@ -469,13 +477,12 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 					msg = fmt.Sprintf("Failed to execute phase: %#v:", as.Status.Actions[aIDX].Phases[i])
 				}
 				c.logAndErrorEvent(ctx, msg, reason, err, as, bp)
-				c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as, err)
+				coreErr = err
 				return nil
 			}
 			param.UpdatePhaseParams(ctx, tp, p.Name(), output)
 			c.logAndSuccessEvent(ctx, fmt.Sprintf("Completed phase %s", p.Name()), "Ended Phase", as)
 		}
-		c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as, nil)
 		return nil
 	})
 	return nil

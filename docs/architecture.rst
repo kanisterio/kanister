@@ -74,11 +74,6 @@ The definition of a ``BlueprintAction`` is:
       DeferPhase         *BlueprintPhase     `json:"deferPhase,omitempty"`
   }
 
-- ``DeferPhase`` is an optional ``BlueprintPhase`` that you want to invoke at
-  the end of the actions. ``DeferPhase`` can easily be used to do some
-  cleanup operations after the actual operation's phases/steps. Since
-  ``DeferPhase`` is used to cleanup the resources it will run even if the
-  actions' main phases are failed.
 - ``Kind`` represents the type of Kubernetes object this BlueprintAction is written for.
   Specifying this is optional and going forward, if this is specified, Kanister will
   enforce that it matches the ``Object`` kind specified in an ActionSet referencing this
@@ -90,6 +85,11 @@ The definition of a ``BlueprintAction`` is:
   to the ``BlueprintAction``.
 - ``Phases`` is a required list of ``BlueprintPhases``. These phases are invoked
   in order when executing this Action.
+- ``DeferPhase`` is an optional ``BlueprintPhase`` that you want to invoke at
+  the end of the actions. ``DeferPhase`` can easily be used to do some
+  cleanup operations after the actual operation's phases/steps. Since
+  ``DeferPhase`` is used to cleanup the resources it will run even if the
+  actions' main phases are failed.
 
 .. code-block:: go
   :linenos:

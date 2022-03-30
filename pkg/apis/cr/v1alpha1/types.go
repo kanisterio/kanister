@@ -126,7 +126,7 @@ type ActionStatus struct {
 	Phases []Phase `json:"phases,omitempty"`
 	// Artifacts created by this phase.
 	Artifacts map[string]Artifact `json:"artifacts,omitempty"`
-	//  DeferPhase is the phase that is executed at the end of an action
+	// DeferPhase is the phase that is executed at the end of an action
 	// irrespective of the status of other phases in the action
 	DeferPhase Phase `json:"deferPhase,omitempty"`
 }
