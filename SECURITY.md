@@ -1,9 +1,5 @@
 # Security Policy
 
-## Supported Versions
-
-To be confirmed.
-
 ## Reporting a Vulnerability
 
 To report a security problem in Kanister, please contact the maintainers listed
