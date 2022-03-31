@@ -29,7 +29,7 @@ require (
 	github.com/hashicorp/go-version v1.4.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
-	github.com/kopia/kopia v0.10.7-0.20220327194640-4f36e4e1d03c
+	github.com/kopia/kopia v0.10.7-0.20220330221649-08cf7eb936c6
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.0.0
 	github.com/lib/pq v1.10.4
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
@@ -46,7 +46,7 @@ require (
 	github.com/vmware/govmomi v0.27.4
 	go.uber.org/zap v1.21.0
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a
-	google.golang.org/api v0.73.0
+	google.golang.org/api v0.74.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
