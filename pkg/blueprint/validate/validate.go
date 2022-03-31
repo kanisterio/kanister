@@ -25,6 +25,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	BPValidationErr = "Failed to validate"
+)
+
 // Do takes a blueprint and validates if the function names in phases are correct
 // and all the required arguments for the kanister functions are provided. This doesn't
 // check anything with template params yet.
@@ -34,14 +38,14 @@ func Do(bp *crv1alpha1.Blueprint, funcVersion string) error {
 		phases, err := kanister.GetPhases(*bp, name, funcVersion, param.TemplateParams{})
 		if err != nil {
 			utils.PrintStage(fmt.Sprintf("validation of action %s", name), utils.Fail)
-			return errors.Wrapf(err, "Failed to validate action %s", name)
+			return errors.Wrapf(err, "%s action %s", BPValidationErr, name)
 		}
 
 		for i, phase := range phases {
 			// validate function's mandatory arguments
 			if err := phase.Validate(action.Phases[i].Args); err != nil {
 				utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", phase.Name(), name), utils.Fail)
-				return errors.Wrapf(err, "Failed to validate phase %s in action %s", phase.Name(), name)
+				return errors.Wrapf(err, "%s phase %s in action %s", BPValidationErr, phase.Name(), name)
 			}
 			utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", phase.Name(), name), utils.Pass)
 		}
