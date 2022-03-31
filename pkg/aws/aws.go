@@ -130,7 +130,12 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 // getting the credentials from the provider.
 func getCredentialsWithDuration(sess *session.Session, duration time.Duration) *credentials.Credentials {
 	svc := sts.New(sess)
-	p := stscreds.NewWebIdentityRoleProvider(svc, os.Getenv(roleARNEnvKey), "", os.Getenv(webIdentityTokenFilePathEnvKey))
+	p := stscreds.NewWebIdentityRoleProviderWithOptions(
+		svc,
+		os.Getenv(roleARNEnvKey),
+		"",
+		stscreds.FetchTokenPath(os.Getenv(webIdentityTokenFilePathEnvKey)),
+	)
 	p.Duration = duration
 	return credentials.NewCredentials(p)
 }
