@@ -429,7 +429,6 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	t.Go(func() error {
 		var coreErr error
-<<<<<<< HEAD
 		defer func() {
 			var deferErr error
 			if deferPhase != nil {
@@ -437,11 +436,6 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			}
 			c.renderActionsetArtifacts(ctx, as, aIDX, ns, name, action.Name, bp, tp, coreErr, deferErr)
 		}()
-=======
-		defer func(error) {
-			c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as, err)
-		}(coreErr)
->>>>>>> Refactor code and add test for utility functions
 
 		for i, p := range phases {
 			ctx = field.Context(ctx, consts.PhaseNameKey, p.Name())
@@ -607,10 +601,6 @@ func (c *Controller) renderActionsetArtifacts(ctx context.Context,
 				ras.Status.State = crv1alpha1.StateFailed
 			}
 			return nil
-		}); rErr != nil {
-			reason := fmt.Sprintf("ActionSetFailed Action: %s", actionName)
-			msg := fmt.Sprintf("Failed to update ActionSet: %s", actionsetName)
-			c.logAndErrorEvent(ctx, msg, reason, rErr, as, bp)
 		}
 	}
 	// Update ActionSet
