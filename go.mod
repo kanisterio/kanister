@@ -12,7 +12,7 @@ replace (
 // Direct and indirect dependencies are grouped together
 require (
 	github.com/Azure/azure-sdk-for-go v62.3.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.24
+	github.com/Azure/go-autorest/autorest v0.11.25
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/BurntSushi/toml v1.0.0
@@ -30,7 +30,7 @@ require (
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/kopia/kopia v0.10.7-0.20220330221649-08cf7eb936c6
-	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.0.0
+	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/lib/pq v1.10.4
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v1.4.3
