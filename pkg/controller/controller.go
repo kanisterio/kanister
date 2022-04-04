@@ -431,7 +431,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		var coreErr error
 		defer func() {
 			if deferPhase != nil {
-				c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as)
+				coreErr = c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as)
 			}
 			c.renderActionsetArtifacts(ctx, as, aIDX, ns, name, action.Name, bp, tp, coreErr)
 		}()
@@ -505,7 +505,7 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 	actionName string,
 	aIDX int,
 	as *crv1alpha1.ActionSet,
-) {
+) error {
 	actionsetName, actionsetNS := as.GetName(), as.GetNamespace()
 	ctx = field.Context(ctx, consts.PhaseNameKey, as.Status.Actions[aIDX].DeferPhase.Name)
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing deferPhase %s", as.Status.Actions[aIDX].DeferPhase.Name), "Started deferPhase", as)
@@ -533,7 +533,7 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 		reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
 		msg := fmt.Sprintf("Failed to update defer phase: %#v:", as.Status.Actions[aIDX].DeferPhase)
 		c.logAndErrorEvent(ctx, msg, reason, rErr, as, bp)
-		return
+		return rErr
 	}
 
 	if err != nil {
@@ -542,11 +542,12 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 			msg = fmt.Sprintf("Failed to execute defer phase: %#v:", as.Status.Actions[aIDX].DeferPhase)
 		}
 		c.logAndErrorEvent(ctx, msg, reason, err, as, bp)
-		return
+		return err
 	}
 
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Completed deferPhase %s", as.Status.Actions[aIDX].DeferPhase.Name), "Ended deferPhase", as)
 	param.UpdateDeferPhaseParams(context.Background(), tp, output)
+	return nil
 }
 
 func (c *Controller) renderActionsetArtifacts(ctx context.Context,
@@ -562,7 +563,12 @@ func (c *Controller) renderActionsetArtifacts(ctx context.Context,
 	if len(artTpls) == 0 {
 		// No artifacts, set ActionSetStatus to complete
 		if rErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), actionsetNS, actionsetName, func(ras *crv1alpha1.ActionSet) error {
-			ras.Status.State = crv1alpha1.StateComplete
+			if coreErr == nil {
+				ras.Status.State = crv1alpha1.StateComplete
+			} else {
+				ras.Status.State = crv1alpha1.StateFailed
+			}
+
 			return nil
 		}); rErr != nil {
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", actionName)
