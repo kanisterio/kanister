@@ -145,7 +145,7 @@ func (s *ControllerSuite) TestWatch(c *C) {
 
 // nolint:unparam
 func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	err := poll.Wait(ctx, func(context.Context) (bool, error) {
 		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
@@ -203,11 +203,16 @@ func newBPWithDeferPhase() *crv1alpha1.Blueprint {
 		},
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"backup": {
-				// set output artifacts from main phase as well as deferPhase
+				// set output artifacts from main phases as well as deferPhase
 				OutputArtifacts: map[string]crv1alpha1.Artifact{
-					"mainPhaseOutput": {
+					"mainPhaseOutputOne": {
 						KeyValue: map[string]string{
-							"op": "{{ .Phases.backupPhase.Output.value }}",
+							"op": "{{ .Phases.backupPhaseOne.Output.value }}",
+						},
+					},
+					"mainPhaseOutputTwo": {
+						KeyValue: map[string]string{
+							"op": "{{ .Phases.backupPhaseTwo.Output.value }}",
 						},
 					},
 					"deferPhaseOutput": {
@@ -218,12 +223,21 @@ func newBPWithDeferPhase() *crv1alpha1.Blueprint {
 				},
 				Phases: []crv1alpha1.BlueprintPhase{
 					{
-						Name: "backupPhase",
+						Name: "backupPhaseOne",
 						Func: function.KubeTaskFuncName,
 						Args: map[string]interface{}{
 							"image":     mysqlSidecarImage,
 							"namespace": "default",
 							"command":   []string{"kando", "output", "value", "mainValue"},
+						},
+					},
+					{
+						Name: "backupPhaseTwo",
+						Func: function.KubeTaskFuncName,
+						Args: map[string]interface{}{
+							"image":     mysqlSidecarImage,
+							"namespace": "default",
+							"command":   []string{"kando", "output", "value", "mainValueTwo"},
 						},
 					},
 				},
@@ -239,7 +253,8 @@ func newBPWithDeferPhase() *crv1alpha1.Blueprint {
 			},
 			"restore": {
 				InputArtifactNames: []string{
-					"mainPhaseOutput",
+					"mainPhaseOutputOne",
+					"mainPhaseOutputTwo",
 					"deferPhaseOutput",
 				},
 				Phases: []crv1alpha1.BlueprintPhase{
@@ -249,8 +264,8 @@ func newBPWithDeferPhase() *crv1alpha1.Blueprint {
 						Args: map[string]interface{}{
 							"image":     mysqlSidecarImage,
 							"namespace": "default",
-							// this will try to render the output artifact that was set from deferPhase of backup action
-							"command": []string{"echo", "{{ .ArtifactsIn.deferPhaseOutput.KeyValue.op }}"},
+							// this will try to render the output artifact that was set from all the phases of backup action
+							"command": []string{"echo", "{{ .ArtifactsIn.deferPhaseOutput.KeyValue.op }}", "{{ .ArtifactsIn.mainPhaseOutputOne.KeyValue.op }}", "{{ .ArtifactsIn.mainPhaseOutputTwo.KeyValue.op }}"},
 						},
 					},
 				},
