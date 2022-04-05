@@ -259,7 +259,7 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 				ScaleWorkloadNamespaceArg: "foo",
 				ScaleWorkloadNameArg:      "app",
 				ScaleWorkloadKindArg:      param.StatefulSetKind,
-				ScaleWorkloadWait:         false,
+				ScaleWorkloadWaitArg:      false,
 			},
 			wantKind:         param.StatefulSetKind,
 			wantName:         "app",

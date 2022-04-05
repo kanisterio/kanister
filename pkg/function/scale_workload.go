@@ -35,7 +35,7 @@ const (
 	ScaleWorkloadNameArg      = "name"
 	ScaleWorkloadKindArg      = "kind"
 	ScaleWorkloadReplicas     = "replicas"
-	ScaleWorkloadWait         = "waitForReady"
+	ScaleWorkloadWaitArg      = "waitForReady"
 )
 
 func init() {
@@ -93,6 +93,7 @@ func (*scaleWorkloadFunc) Arguments() []string {
 		ScaleWorkloadNamespaceArg,
 		ScaleWorkloadNameArg,
 		ScaleWorkloadKindArg,
+		ScaleWorkloadWaitArg,
 	}
 }
 
@@ -153,7 +154,7 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, k
 	if err != nil {
 		return namespace, kind, name, replicas, waitForReady, err
 	}
-	err = OptArg(args, ScaleWorkloadKindArg, &waitForReady, waitForReady)
+	err = OptArg(args, ScaleWorkloadWaitArg, &waitForReady, waitForReady)
 	if err != nil {
 		return namespace, kind, name, replicas, waitForReady, err
 	}
