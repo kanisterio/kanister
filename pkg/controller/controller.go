@@ -430,10 +430,11 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	t.Go(func() error {
 		var coreErr error
 		defer func() {
+			var deferErr error
 			if deferPhase != nil {
-				coreErr = c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as)
+				deferErr = c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as)
 			}
-			c.renderActionsetArtifacts(ctx, as, aIDX, ns, name, action.Name, bp, tp, coreErr)
+			c.renderActionsetArtifacts(ctx, as, aIDX, ns, name, action.Name, bp, tp, coreErr, deferErr)
 		}()
 
 		for i, p := range phases {
@@ -556,14 +557,14 @@ func (c *Controller) renderActionsetArtifacts(ctx context.Context,
 	actionsetNS, actionsetName, actionName string,
 	bp *crv1alpha1.Blueprint,
 	tp *param.TemplateParams,
-	coreErr error,
+	coreErr, deferErr error,
 ) {
 	// Check if output artifacts are present
 	artTpls := as.Status.Actions[aIDX].Artifacts
 	if len(artTpls) == 0 {
 		// No artifacts, set ActionSetStatus to complete
 		if rErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), actionsetNS, actionsetName, func(ras *crv1alpha1.ActionSet) error {
-			if coreErr == nil {
+			if coreErr == nil && deferErr == nil {
 				ras.Status.State = crv1alpha1.StateComplete
 			} else {
 				ras.Status.State = crv1alpha1.StateFailed
@@ -593,7 +594,7 @@ func (c *Controller) renderActionsetArtifacts(ctx context.Context,
 			ras.Status.Actions[aIDX].Artifacts = arts
 			// make sure that the core phases that were run also didnt return any error
 			// and then set actionset's state to be complete
-			if coreErr == nil {
+			if coreErr == nil && deferErr == nil {
 				ras.Status.State = crv1alpha1.StateComplete
 			} else {
 				ras.Status.State = crv1alpha1.StateFailed
