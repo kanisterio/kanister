@@ -716,6 +716,13 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 	c.Assert(err, IsNil)
 	err = s.waitOnActionSetState(c, ras, crv1alpha1.StateComplete)
 	c.Assert(err, IsNil)
+
+	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	c.Assert(as.Status.Actions[0].Artifacts["mainPhaseOutputOne"].KeyValue, DeepEquals, map[string]string{"op": "mainValue"})
+	c.Assert(as.Status.Actions[0].Artifacts["mainPhaseOutputTwo"].KeyValue, DeepEquals, map[string]string{"op": "mainValueTwo"})
+	c.Assert(as.Status.Actions[0].Artifacts["deferPhaseOutput"].KeyValue, DeepEquals, map[string]string{"op": "deferValue"})
 }
 
 // TestDeferPhaseCoreErr tests a blueprint with multiple main phases and deferPhase
@@ -738,11 +745,12 @@ func (s *ControllerSuite) TestDeferPhaseCoreErr(c *C) {
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
 	c.Assert(err, IsNil)
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
-	c.Assert(err, IsNil)
 
 	// wait for deferPhase to be completed, because actionset status would be set to failed as soon as a main phase fails
 	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
 	c.Assert(err, IsNil)
 
 	// get the actionset again to have updated status
