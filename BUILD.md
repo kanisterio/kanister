@@ -10,7 +10,7 @@ resources are defined as Kubernetes
 [Custom Resource Definitions](https://docs.kanister.io/architecture.html#custom-resources)
 , following the operator pattern.
 
-![kanister workflow](./graphic/kanister_workflow.png)
+[![kanister workflow](./graphic/kanister_workflow.png)](https://docs.kanister.io/architecture.html)
 
 ## Repository Layout
 
