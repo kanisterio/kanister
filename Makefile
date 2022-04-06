@@ -282,3 +282,6 @@ stop-minishift:
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
+
+check:
+	@./build/check.sh
