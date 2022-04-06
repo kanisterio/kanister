@@ -85,11 +85,10 @@ The definition of a ``BlueprintAction`` is:
   to the ``BlueprintAction``.
 - ``Phases`` is a required list of ``BlueprintPhases``. These phases are invoked
   in order when executing this Action.
-- ``DeferPhase`` is an optional ``BlueprintPhase`` that you want to invoke at
-  the end of the actions. ``DeferPhase`` can easily be used to do some
-  cleanup operations after the actual operation's phases/steps. Since
-  ``DeferPhase`` is used to cleanup the resources it will run even if the
-  actions' main phases are failed.
+- ``DeferPhase`` is an optional ``BlueprintPhase`` invoked after the
+  execution of ``Phases`` defined above. A ``DeferPhase``, when specified,
+  is executed regardless of the statuses of the ``Phases``.
+  A ``DeferPhase`` can be used for cleanup operations at the end of an ``Action``.
 
 .. code-block:: go
   :linenos:

@@ -626,8 +626,7 @@ definition:
     Output  map[string]interface{}
   }
 
-Output artifact can be set as follows, considering the ``DeferPhase`` outputs an artifact
-with key ``key-name``.
+Output artifact can be set as follows:
 
 .. code-block:: go
 

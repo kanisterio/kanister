@@ -443,8 +443,8 @@ ConfigMap.
 If you re-execute this Kanister Action, you'll be able to see the Artifact in the
 ActionSet status.
 
-If you have the use case of ``DeferPhase``, below is how you can set the output artifact
-from the output that is being generated from ``DeferPhase``
+If you use a ``DeferPhase``, below is how you can set the output artifact
+from the output that is being generated from ``DeferPhase`` as shown below.
 
 .. code-block:: yaml
 

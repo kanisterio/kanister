@@ -494,11 +494,12 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	return nil
 }
 
-// executeDeferPhase executes the phase that is provided as deferPhase in the blueprint actions. deferPhase,
-// if provided, must be run eventually for the blueprint action, irrespective of the other phases output.
-// Actionset status.state is going to be `complete` iff all of the phases and deferPhase is run successfully
-// otherwise respective error message would be logged and recorded as event and actionset's status.state
-// would be failed
+// executeDeferPhase executes the phase provided as a deferPhase in the blueprint action.
+// deferPhase, if provided, must be run at the end of the blueprint action, irrespective of the
+// statuses of the other phases. ActionSet `status.state` is going to be `complete` IFF all the
+// phases and deferPhase are run successfully
+// On failure, corresponding error messages are logged and recorded as events and the
+// ActionSet's `status.state` is set to `failed`.
 func (c *Controller) executeDeferPhase(ctx context.Context,
 	deferPhase *kanister.Phase,
 	tp *param.TemplateParams,
