@@ -512,11 +512,7 @@ func UpdatePhaseParams(ctx context.Context, tp *TemplateParams, phaseName string
 }
 
 // UpdateDeferPhaseParams updates the TemplateParams deferPhase output with passed output
-<<<<<<< HEAD
 // This output would be generated/passed by execution of the phase
-=======
-// this output would be generated/passed by execution of the phase
->>>>>>> Support `deferPhase` in blueprint action
 func UpdateDeferPhaseParams(ctx context.Context, tp *TemplateParams, output map[string]interface{}) {
 	tp.DeferPhase.Output = output
 }
