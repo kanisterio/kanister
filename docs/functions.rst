@@ -1221,7 +1221,16 @@ Example:
                 - containerPort: 80
                   name: http
                   protocol: TCP
-
+  - func: KubeOps
+    name: deleteDeploy
+    args:
+      operation: delete
+      objectReference:
+        apiVersion: "{{ .Phases.createDeploy.Output.apiVersion }}"
+        group: "{{ .Phases.createDeploy.Output.group }}"
+        resource: "{{ .Phases.createDeploy.Output.resource }}"
+        name: "{{ .Phases.createDeploy.Output.name }}"
+        namespace: "{{ .Phases.createDeploy.Output.namespace }}"
 
 Wait
 ----
