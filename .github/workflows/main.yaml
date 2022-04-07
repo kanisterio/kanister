@@ -2,11 +2,9 @@ on:
   push:
     branches:
     - master
-    - ci-*
   pull_request:
     branches:
     - master
-    - ci-*
 jobs:
   gomod:
     runs-on: ubuntu-20.04
