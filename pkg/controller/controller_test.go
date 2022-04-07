@@ -116,6 +116,8 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 }
 
 func (s *ControllerSuite) TearDownSuite(c *C) {
+	err := os.Unsetenv(kube.PodNSEnvVar)
+	c.Assert(err, IsNil)
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -244,18 +246,10 @@ func newBPWithDeferPhaseAndErrInDeferPhase() *crv1alpha1.Blueprint {
 					},
 				},
 				Phases: []crv1alpha1.BlueprintPhase{
-					backupPhase("backupPhaseOne", "mainValue"),
-					backupPhase("backupPhaseTwo", "mainValueTwo"),
+					*phaseWithNameAndCMD("backupPhaseOne", []string{"kando", "output", "value", "mainValue"}),
+					*phaseWithNameAndCMD("backupPhaseTwo", []string{"kando", "output", "value", "mainValueTwo"}),
 				},
-				DeferPhase: &crv1alpha1.BlueprintPhase{
-					Name: "deferPhase",
-					Func: function.KubeTaskFuncName,
-					Args: map[string]interface{}{
-						"image":     mysqlSidecarImage,
-						"namespace": "default",
-						"command":   []string{"exit", "1"},
-					},
-				},
+				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"exit", "1"}),
 			},
 		},
 	}
@@ -281,43 +275,24 @@ func newBPWithDeferPhaseAndErrInCorePhase() *crv1alpha1.Blueprint {
 					},
 				},
 				Phases: []crv1alpha1.BlueprintPhase{
-					backupPhase("backupPhaseOne", "mainValue"),
-					{
-						Name: "backupPhaseTwo",
-						Func: function.KubeTaskFuncName,
-						Args: map[string]interface{}{
-							"image":     mysqlSidecarImage,
-							"namespace": "default",
-							"command":   []string{"exit", "1"},
-						},
-					},
+					*phaseWithNameAndCMD("backupPhaseOne", []string{"kando", "output", "value", "mainValue"}),
+					*phaseWithNameAndCMD("backupPhaseTwo", []string{"exit", "1"}),
 				},
-				DeferPhase: deferPhase(),
+				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"kando", "output", "value", "deferValue"}),
 			},
 		},
 	}
 }
 
-func backupPhase(name, outputArtValue string) crv1alpha1.BlueprintPhase {
-	return crv1alpha1.BlueprintPhase{
+// phaseWithNameAndCMD returns a phase that runs KubeTask function, with provided command
+func phaseWithNameAndCMD(name string, command []string) *crv1alpha1.BlueprintPhase {
+	return &crv1alpha1.BlueprintPhase{
 		Name: name,
 		Func: function.KubeTaskFuncName,
 		Args: map[string]interface{}{
 			"image":     mysqlSidecarImage,
 			"namespace": "default",
-			"command":   []string{"kando", "output", "value", outputArtValue},
-		},
-	}
-}
-
-func deferPhase() *crv1alpha1.BlueprintPhase {
-	return &crv1alpha1.BlueprintPhase{
-		Name: "deferPhase",
-		Func: function.KubeTaskFuncName,
-		Args: map[string]interface{}{
-			"image":     mysqlSidecarImage,
-			"namespace": "default",
-			"command":   []string{"kando", "output", "value", "deferValue"},
+			"command":   command,
 		},
 	}
 }
@@ -348,10 +323,10 @@ func newBPWithDeferPhase() *crv1alpha1.Blueprint {
 					},
 				},
 				Phases: []crv1alpha1.BlueprintPhase{
-					backupPhase("backupPhaseOne", "mainValue"),
-					backupPhase("backupPhaseTwo", "mainValueTwo"),
+					*phaseWithNameAndCMD("backupPhaseOne", []string{"kando", "output", "value", "mainValue"}),
+					*phaseWithNameAndCMD("backupPhaseTwo", []string{"kando", "output", "value", "mainValueTwo"}),
 				},
-				DeferPhase: deferPhase(),
+				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"kando", "output", "value", "deferValue"}),
 			},
 			"restore": {
 				InputArtifactNames: []string{
@@ -360,16 +335,9 @@ func newBPWithDeferPhase() *crv1alpha1.Blueprint {
 					"deferPhaseOutput",
 				},
 				Phases: []crv1alpha1.BlueprintPhase{
-					{
-						Name: "restorePhase",
-						Func: function.KubeTaskFuncName,
-						Args: map[string]interface{}{
-							"image":     mysqlSidecarImage,
-							"namespace": "default",
-							// this will try to render the output artifact that was set from all the phases of backup action
-							"command": []string{"echo", "{{ .ArtifactsIn.deferPhaseOutput.KeyValue.op }}", "{{ .ArtifactsIn.mainPhaseOutputOne.KeyValue.op }}", "{{ .ArtifactsIn.mainPhaseOutputTwo.KeyValue.op }}"},
-						},
-					},
+					// this will try to render the output artifact that was set from all the phases of backup action
+					*phaseWithNameAndCMD("restorePhase",
+						[]string{"echo", "{{ .ArtifactsIn.deferPhaseOutput.KeyValue.op }}", "{{ .ArtifactsIn.mainPhaseOutputOne.KeyValue.op }}", "{{ .ArtifactsIn.mainPhaseOutputTwo.KeyValue.op }}"}),
 				},
 			},
 		},
@@ -707,7 +675,6 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
 	c.Assert(err, IsNil)
 
-	// get the actionset
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
@@ -765,6 +732,7 @@ func (s *ControllerSuite) TestDeferPhaseCoreErr(c *C) {
 	// since we just have backup action, we are using 0th index here
 	c.Assert(as.Status.Actions[0].Phases[0].State, Equals, crv1alpha1.StateComplete)
 	c.Assert(as.Status.Actions[0].Phases[1].State, Equals, crv1alpha1.StateFailed)
+	c.Assert(as.Status.Actions[0].DeferPhase.State, Equals, crv1alpha1.StateComplete)
 
 	// check the artifacts are set correctly
 	c.Assert(as.Status.Actions[0].Artifacts["opArtDeferPhase"].KeyValue, DeepEquals, map[string]string{"op": "deferValue"})
@@ -796,12 +764,13 @@ func (s *ControllerSuite) TestDeferPhaseDeferErr(c *C) {
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 
-	// // make sure the phases that errored have state to be se as failed in actionset status
-	// // since we just have backup action, we are using 0th index here
+	// make sure the phases that errored have state set as failed in actionset status
+	// since we just have backup action, we are using 0th index here
 	c.Assert(as.Status.Actions[0].Phases[0].State, Equals, crv1alpha1.StateComplete)
 	c.Assert(as.Status.Actions[0].Phases[1].State, Equals, crv1alpha1.StateComplete)
+	c.Assert(as.Status.Actions[0].DeferPhase.State, Equals, crv1alpha1.StateFailed)
 
-	// // check the artifacts are set correctly
+	// check the artifacts are set correctly
 	c.Assert(as.Status.Actions[0].Artifacts["opArtPhaseOne"].KeyValue, DeepEquals, map[string]string{"op": "mainValue"})
 	c.Assert(as.Status.Actions[0].Artifacts["opArtPhaseTwo"].KeyValue, DeepEquals, map[string]string{"op": "mainValueTwo"})
 }
