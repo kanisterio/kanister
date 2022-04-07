@@ -1,0 +1,45 @@
+{{- if .Values.bpValidatingWebhook.enabled -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "kanister-operator.fullname" . }}-admission-patch
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+{{- if .Capabilities.APIVersions.Has "batch/v1alpha1" }}
+  # Alpha feature since k8s 1.12
+  ttlSecondsAfterFinished: 0
+{{- end }}
+  template:
+    metadata:
+      name: {{ include "kanister-operator.fullname" . }}-admission-patch
+    spec:
+      containers:
+        - name: patch
+          {{- with .Values.bpValidatingWebhook.image }}
+          image: "{{ .repository }}/{{ .image }}:{{ .tag }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.bpValidatingWebhook.image.pullPolicy }}
+          args:
+            - patch
+            - --webhook-name=blueprints.cr.kanister.io
+            - --namespace=$(POD_NAMESPACE)
+            - --patch-mutating=false
+            - --secret-name={{ include "kanister-operator.fullname" . }}-admission
+            - --patch-failure-policy={{ .Values.bpValidatingWebhook.failurePolicy }}
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          securityContext:
+            allowPrivilegeEscalation: false
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "kanister-operator.fullname" . }}-admission
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.bpValidatingWebhook.runAsUser }}
+        fsGroup: {{ .Values.bpValidatingWebhook.fsGroup }}
+  {{- end }}

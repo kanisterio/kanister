@@ -19,7 +19,7 @@ spec:
       volumes:
         - name: webhook-certs
           secret:
-            secretName: kanister-webhook-certs
+            secretName: {{ include "kanister-operator.fullname" . }}-admission
 {{- end }}
       containers:
       - name: {{ template "kanister-operator.fullname" . }}

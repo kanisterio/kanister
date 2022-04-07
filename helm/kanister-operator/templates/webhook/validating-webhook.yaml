@@ -1,0 +1,23 @@
+{{- if .Values.bpValidatingWebhook.enabled -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: "blueprints.cr.kanister.io"
+webhooks:
+- name: "blueprints.cr.kanister.io"
+  rules:
+  - apiGroups:   ["cr.kanister.io"]
+    apiVersions: ["v1alpha1"]
+    operations:  ["CREATE", "UPDATE"]
+    resources:   ["blueprints"]
+    scope:       "Namespaced"
+  clientConfig:
+    service:
+      namespace: {{ .Release.Namespace }}
+      name: {{ template "kanister-operator.fullname" . }}
+      path: "/validate/v1alpha1/blueprint"
+      port: {{ .Values.controller.service.port }}
+  admissionReviewVersions: ["v1", "v1beta1"]
+  sideEffects: None
+  timeoutSeconds: 5
+{{- end -}}

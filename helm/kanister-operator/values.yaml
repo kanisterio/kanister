@@ -20,6 +20,14 @@ controller:
   updateCRDs: true
 bpValidatingWebhook:
   enabled: true
+  failurePolicy: Fail
+  image:
+    repository: k8s.gcr.io/ingress-nginx
+    image: kube-webhook-certgen
+    tag: v1.1.1
+    pullPolicy: IfNotPresent
+    runAsUser: 2000
+    fsGroup: 2000
 resources:
 # We usually recommend not to specify default resources and to leave this as a conscious
 # choice for the user. This also increases chances charts run on environments with little
