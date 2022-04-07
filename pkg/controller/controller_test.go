@@ -145,7 +145,7 @@ func (s *ControllerSuite) TestWatch(c *C) {
 
 // nolint:unparam
 func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
 	err := poll.Wait(ctx, func(context.Context) (bool, error) {
 		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
@@ -701,6 +701,10 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
 	c.Assert(err, IsNil)
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	// make sure deferPhase is also run successfully
+	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
 	c.Assert(err, IsNil)
 
 	// get the actionset
