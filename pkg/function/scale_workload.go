@@ -99,6 +99,7 @@ func (*scaleWorkloadFunc) Arguments() []string {
 
 func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, kind, name string, replicas int32, waitForReady bool, err error) {
 	var rep interface{}
+	waitForReady = true
 	err = Arg(args, ScaleWorkloadReplicas, &rep)
 	if err != nil {
 		return namespace, kind, name, replicas, waitForReady, err
@@ -141,7 +142,7 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, k
 			return namespace, kind, name, replicas, waitForReady, errors.New("Workload information not available via defaults or namespace/name/kind parameters")
 		}
 	}
-	waitForReady = true
+
 	err = OptArg(args, ScaleWorkloadNamespaceArg, &namespace, namespace)
 	if err != nil {
 		return namespace, kind, name, replicas, waitForReady, err

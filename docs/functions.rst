@@ -178,12 +178,7 @@ to stop a database process before restoring files.
    `name`, No, `string`, name of the workload to scale
    `kind`, No, `string`, `deployment` or `statefulset`
    `replicas`, Yes, `int`,  The desired number of replicas
-   `waitForReady`, No, `bool`, Whether to wait for the workload to be ready before executing next steps
-
-.. note::
-   ``waitForReady`` argument is optional and if the argument is not specified
-   in the function, default value is ``true`` which means ``ScaleWorkload``
-   function will always wait for the workload to be in ``Ready`` state by default
+   `waitForReady`, No, `bool`, Whether to wait for the workload to be ready before executing next steps. Default Value is ``true``
 
 Example of scaling down:
 
