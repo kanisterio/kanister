@@ -3,7 +3,7 @@
 # Kanister
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/kanisterio/kanister)](https://goreportcard.com/report/github.com/kanisterio/kanister)
-[![GitHub Actions](https://github.com/kanisterio/actions/kanister/workflows/main.yaml/badge.svg)](https://github.com/kanisterio/kanister/actions)
+[![GitHub Actions](https://github.com/kanisterio/kanister/actions/workflows/main.yaml/badge.svg)](https://github.com/kanisterio/kanister/actions)
 [![Build Status](https://travis-ci.com/kanisterio/kanister.svg?branch=master)](https://travis-ci.com/kanisterio/kanister)
 
 A framework for data management in Kubernetes.  It allows domain experts to
