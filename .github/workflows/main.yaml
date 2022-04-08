@@ -1,0 +1,89 @@
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+jobs:
+  gomod:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+    - run: make gomod
+    - run: make go-mod-download
+    - run: tar -cvf ./src.tar.gz ./ # preserve file permissions
+    - uses: actions/upload-artifact@v3
+      with:
+        name: src
+        path: ./src.tar.gz
+  lint:
+    runs-on: ubuntu-20.04
+    needs: gomod
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: src
+    - run: tar -xvf ./src.tar.gz
+    - run: make golint
+  test:
+    runs-on: ubuntu-20.04
+    needs: [gomod, lint]
+    strategy:
+      fail-fast: false
+      matrix:
+        testSuite: [test, integration-test, helm-test]
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: src
+    - uses: AbsaOSS/k3d-action@v2
+      with:
+        cluster-name: "kanister-run-${{ matrix.testSuite }}"
+        args: >-
+          --agents 3
+          --no-lb
+          --k3s-arg "--no-deploy=traefik,servicelb@server:*"
+    - run: tar -xvf ./src.tar.gz
+    - run: |
+        make install-csi-hostpath-driver
+        make install-minio
+      if: matrix.testSuite == 'integration-test' || matrix.testSuite == 'helm-test'
+    - run: make ${{ matrix.testSuite }}
+  build:
+    runs-on: ubuntu-20.04
+    needs: [gomod, lint, test]
+    strategy:
+      matrix:
+        bin: [controller, kanctl, kando]
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: src
+    - run: tar -xvf ./src.tar.gz
+    - run: make build BIN=${{ matrix.bin }}
+  docs:
+    runs-on: ubuntu-20.04
+    needs: gomod
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: src
+    - run: tar -xvf ./src.tar.gz
+    - run: make docs
+  release:
+    runs-on: ubuntu-20.04
+    needs: [test, build]
+    if: github.ref_name == 'master' || startsWith(github.ref, 'refs/tags')
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: src
+    - uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    - run: tar -xvf ./src.tar.gz
+    - run: make release-snapshot
+    - run: ./build/push_images.sh

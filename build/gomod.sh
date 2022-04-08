@@ -1,6 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 
 # Copyright 2019 The Kanister Authors.
+#
+# Copyright 2016 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,15 +19,9 @@
 set -o errexit
 set -o nounset
 
-SKIP_DIR_REGEX="pkg/client"
-TIMEOUT="10m"
-
-echo "Running golangci-lint..."
-
-golangci-lint run --timeout ${TIMEOUT} --skip-dirs ${SKIP_DIR_REGEX} -E maligned,whitespace,gocognit,unparam -e '`ctx` is unused'
-
-echo "PASS"
-echo
-
-echo "PASS"
-echo
+go mod tidy
+status=`git status --porcelain go.mod go.sum`
+if [ ! -z "$status" ]; then
+  echo 'stale go.mod and go.sum: please run `go mod tidy`'
+  exit 1
+fi
