@@ -17,6 +17,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -35,6 +36,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -57,6 +59,11 @@ type ControllerSuite struct {
 }
 
 var _ = Suite(&ControllerSuite{})
+
+const (
+	testAction        = "myAction"
+	mysqlSidecarImage = "ghcr.io/kanisterio/mysql-sidecar:0.74.0"
+)
 
 func (s *ControllerSuite) SetUpSuite(c *C) {
 	config, err := kube.LoadConfig()
@@ -109,6 +116,8 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 }
 
 func (s *ControllerSuite) TearDownSuite(c *C) {
+	err := os.Unsetenv(kube.PodNSEnvVar)
+	c.Assert(err, IsNil)
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
@@ -138,7 +147,7 @@ func (s *ControllerSuite) TestWatch(c *C) {
 
 // nolint:unparam
 func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
 	err := poll.Wait(ctx, func(context.Context) (bool, error) {
 		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
@@ -156,6 +165,35 @@ func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, s
 			return false, nil
 		}
 		return false, errors.New(fmt.Sprintf("Unexpected state: %s", as.Status.State))
+	})
+	if err == nil {
+		return nil
+	}
+	return errors.Wrapf(err, "State '%s' never reached", state)
+}
+
+// nolint:unparam
+func (s *ControllerSuite) waitOnDeferPhaseState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		if as.Status == nil {
+			return false, nil
+		}
+
+		if as.Status.Actions[0].DeferPhase.State == state {
+			return true, nil
+		}
+		// These are non-terminal states.
+		if as.Status.Actions[0].DeferPhase.State == crv1alpha1.StatePending || as.Status.Actions[0].DeferPhase.State == crv1alpha1.StateRunning {
+			return false, nil
+		}
+		return false, errors.New(fmt.Sprintf("Unexpected state: %s", as.Status.Actions[0].DeferPhase.State))
 	})
 	if err == nil {
 		return nil
@@ -183,6 +221,124 @@ func newBPWithOutputArtifact() *crv1alpha1.Blueprint {
 						Name: "myPhase0",
 						Func: testutil.OutputFuncName,
 					},
+				},
+			},
+		},
+	}
+}
+
+func newBPWithDeferPhaseAndErrInDeferPhase() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-blueprint-defer-defererr-",
+		},
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"backup": {
+				OutputArtifacts: map[string]crv1alpha1.Artifact{
+					"opArtPhaseOne": {
+						KeyValue: map[string]string{
+							"op": "{{ .Phases.backupPhaseOne.Output.value }}",
+						},
+					},
+					"opArtPhaseTwo": {
+						KeyValue: map[string]string{
+							"op": "{{ .Phases.backupPhaseTwo.Output.value }}",
+						},
+					},
+				},
+				Phases: []crv1alpha1.BlueprintPhase{
+					*phaseWithNameAndCMD("backupPhaseOne", []string{"kando", "output", "value", "mainValue"}),
+					*phaseWithNameAndCMD("backupPhaseTwo", []string{"kando", "output", "value", "mainValueTwo"}),
+				},
+				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"exit", "1"}),
+			},
+		},
+	}
+}
+
+func newBPWithDeferPhaseAndErrInCorePhase() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-blueprint-defer-coreerr-",
+		},
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"backup": {
+				OutputArtifacts: map[string]crv1alpha1.Artifact{
+					"opArtPhaesOne": {
+						KeyValue: map[string]string{
+							"op": "{{ .Phases.backupPhaseOne.Output.value }}",
+						},
+					},
+					"opArtDeferPhase": {
+						KeyValue: map[string]string{
+							"op": "{{ .DeferPhase.Output.value }}",
+						},
+					},
+				},
+				Phases: []crv1alpha1.BlueprintPhase{
+					*phaseWithNameAndCMD("backupPhaseOne", []string{"kando", "output", "value", "mainValue"}),
+					*phaseWithNameAndCMD("backupPhaseTwo", []string{"exit", "1"}),
+				},
+				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"kando", "output", "value", "deferValue"}),
+			},
+		},
+	}
+}
+
+// phaseWithNameAndCMD returns a phase that runs KubeTask function, with provided command
+func phaseWithNameAndCMD(name string, command []string) *crv1alpha1.BlueprintPhase {
+	return &crv1alpha1.BlueprintPhase{
+		Name: name,
+		Func: function.KubeTaskFuncName,
+		Args: map[string]interface{}{
+			"image":     mysqlSidecarImage,
+			"namespace": "default",
+			"command":   command,
+		},
+	}
+}
+
+func newBPWithDeferPhase() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-blueprint-defer-",
+		},
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"backup": {
+				// set output artifacts from main phases as well as deferPhase
+				OutputArtifacts: map[string]crv1alpha1.Artifact{
+					"mainPhaseOutputOne": {
+						KeyValue: map[string]string{
+							"op": "{{ .Phases.backupPhaseOne.Output.value }}",
+						},
+					},
+					"mainPhaseOutputTwo": {
+						KeyValue: map[string]string{
+							"op": "{{ .Phases.backupPhaseTwo.Output.value }}",
+						},
+					},
+					"deferPhaseOutput": {
+						KeyValue: map[string]string{
+							"op": "{{ .DeferPhase.Output.value }}",
+						},
+					},
+				},
+				Phases: []crv1alpha1.BlueprintPhase{
+					*phaseWithNameAndCMD("backupPhaseOne", []string{"kando", "output", "value", "mainValue"}),
+					*phaseWithNameAndCMD("backupPhaseTwo", []string{"kando", "output", "value", "mainValueTwo"}),
+				},
+				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"kando", "output", "value", "deferValue"}),
+			},
+			"restore": {
+				InputArtifactNames: []string{
+					"mainPhaseOutputOne",
+					"mainPhaseOutputTwo",
+					"deferPhaseOutput",
+				},
+				Phases: []crv1alpha1.BlueprintPhase{
+					// this will try to render the output artifact that was set from all the phases of backup action
+					*phaseWithNameAndCMD("restorePhase",
+						[]string{"echo", "{{ .ArtifactsIn.deferPhaseOutput.KeyValue.op }}", "{{ .ArtifactsIn.mainPhaseOutputOne.KeyValue.op }}", "{{ .ArtifactsIn.mainPhaseOutputTwo.KeyValue.op }}"}),
 				},
 			},
 		},
@@ -385,7 +541,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			}
 
 			// Add an actionset that references that blueprint.
-			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace, tc.version)
+			as := testutil.NewTestActionSet(s.namespace, bp.GetName(), pok, n, s.namespace, tc.version, testAction)
 			as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 			as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
@@ -498,6 +654,128 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 	c.Assert(len(events.Items), Equals, 0)
 }
 
+func (s *ControllerSuite) TestDeferPhase(c *C) {
+	os.Setenv(kube.PodNSEnvVar, "test")
+
+	ctx := context.Background()
+	bp := newBPWithDeferPhase()
+
+	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// create backup actionset and wait for it to be completed
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	// make sure deferPhase is also run successfully
+	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	// create restore actionset and wait for it to be completed
+	// if it's completed, simply means artifacts are rendered correctly
+	ras := testutil.NewTestRestoreActionSet(s.namespace, bp.GetName(), s.deployment.GetName(), as.Status.Actions[0].Artifacts)
+	ras, err = s.crCli.ActionSets(s.namespace).Create(ctx, ras, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitOnActionSetState(c, ras, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+	err = s.waitOnActionSetState(c, ras, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	c.Assert(as.Status.Actions[0].Artifacts["mainPhaseOutputOne"].KeyValue, DeepEquals, map[string]string{"op": "mainValue"})
+	c.Assert(as.Status.Actions[0].Artifacts["mainPhaseOutputTwo"].KeyValue, DeepEquals, map[string]string{"op": "mainValueTwo"})
+	c.Assert(as.Status.Actions[0].Artifacts["deferPhaseOutput"].KeyValue, DeepEquals, map[string]string{"op": "deferValue"})
+}
+
+// TestDeferPhaseCoreErr tests a blueprint with multiple main phases and deferPhase
+// since one of the main phases is returning error, we will have to make sure that
+// 1. Actionset status is `failed`
+// 2. DeferPhase is run successfully and status is complete
+// 3. Phases have correct state in actionset status
+// 4. output artifacts are set correctly
+func (s *ControllerSuite) TestDeferPhaseCoreErr(c *C) {
+	os.Setenv(kube.PodNSEnvVar, "test")
+	ctx := context.Background()
+
+	bp := newBPWithDeferPhaseAndErrInCorePhase()
+	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+
+	// wait for deferPhase to be completed, because actionset status would be set to failed as soon as a main phase fails
+	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
+	c.Assert(err, IsNil)
+
+	// get the actionset again to have updated status
+	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	// make sure the phases that errored have state to be se as failed in actionset status
+	// since we just have backup action, we are using 0th index here
+	c.Assert(as.Status.Actions[0].Phases[0].State, Equals, crv1alpha1.StateComplete)
+	c.Assert(as.Status.Actions[0].Phases[1].State, Equals, crv1alpha1.StateFailed)
+	c.Assert(as.Status.Actions[0].DeferPhase.State, Equals, crv1alpha1.StateComplete)
+
+	// check the artifacts are set correctly
+	c.Assert(as.Status.Actions[0].Artifacts["opArtDeferPhase"].KeyValue, DeepEquals, map[string]string{"op": "deferValue"})
+	c.Assert(as.Status.Actions[0].Artifacts["opArtPhaesOne"].KeyValue, DeepEquals, map[string]string{"op": "mainValue"})
+}
+
+func (s *ControllerSuite) TestDeferPhaseDeferErr(c *C) {
+	os.Setenv(kube.PodNSEnvVar, "test")
+	ctx := context.Background()
+
+	bp := newBPWithDeferPhaseAndErrInDeferPhase()
+	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
+	c.Assert(err, IsNil)
+
+	// wait for deferPhase to be completed, because actionset status would be set to failed as soon as a main phase fails
+	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateFailed)
+	c.Assert(err, IsNil)
+
+	// get the actionset again to have updated status
+	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
+	c.Assert(err, IsNil)
+
+	// make sure the phases that errored have state set as failed in actionset status
+	// since we just have backup action, we are using 0th index here
+	c.Assert(as.Status.Actions[0].Phases[0].State, Equals, crv1alpha1.StateComplete)
+	c.Assert(as.Status.Actions[0].Phases[1].State, Equals, crv1alpha1.StateComplete)
+	c.Assert(as.Status.Actions[0].DeferPhase.State, Equals, crv1alpha1.StateFailed)
+
+	// check the artifacts are set correctly
+	c.Assert(as.Status.Actions[0].Artifacts["opArtPhaseOne"].KeyValue, DeepEquals, map[string]string{"op": "mainValue"})
+	c.Assert(as.Status.Actions[0].Artifacts["opArtPhaseTwo"].KeyValue, DeepEquals, map[string]string{"op": "mainValueTwo"})
+}
+
 func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	ctx := context.Background()
 	// Create a blueprint that uses func output as artifact
@@ -507,7 +785,7 @@ func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
-	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, testAction)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
@@ -539,7 +817,7 @@ func (s *ControllerSuite) TestPhaseOutputAsKopiaSnapshot(c *C) {
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
-	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, testAction)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
@@ -621,7 +899,7 @@ func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
 	c.Assert(err, IsNil)
 
 	// Add an actionset that references that blueprint.
-	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion)
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, testAction)
 	as = testutil.ActionSetWithConfigMap(as, s.confimap.GetName())
 	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)

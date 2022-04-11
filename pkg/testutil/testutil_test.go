@@ -101,7 +101,7 @@ func testCRs(c *C, ctx context.Context, cli crclientv1alpha1.CrV1alpha1Interface
 		c.Assert(err, IsNil)
 	}()
 
-	as := NewTestActionSet(namespace, bp.GetName(), poKind, poName, namespace, kanister.DefaultVersion)
+	as := NewTestActionSet(namespace, bp.GetName(), poKind, poName, namespace, kanister.DefaultVersion, actionName)
 	as = ActionSetWithConfigMap(as, "")
 	as, err = cli.ActionSets(namespace).Create(ctx, as, metav1.CreateOptions{})
 	c.Assert(err, IsNil)

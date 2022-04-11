@@ -35,6 +35,14 @@ type testFunc struct {
 	err    error
 }
 
+type anotherFunc struct {
+	testFunc
+}
+
+func (a *anotherFunc) Name() string {
+	return "anotherTestFunc"
+}
+
 func (*testFunc) Name() string {
 	return "mock"
 }
@@ -126,5 +134,71 @@ func (s *PhaseSuite) TestCheckSupportedArgs(c *C) {
 			c.Assert(err.Error(), Equals, tc.expErr)
 		}
 		c.Assert(err, tc.err)
+	}
+}
+
+func (s *PhaseSuite) TestRegFuncVersion(c *C) {
+	for _, tc := range []struct {
+		regWithVersion  string
+		expectedVersion string
+		queryVersion    string
+		f               Func
+	}{
+		{
+			f:               &testFunc{},
+			expectedVersion: "v0.0.0",
+			queryVersion:    "v0.0.0",
+		},
+		{
+			f:               &testFunc{},
+			regWithVersion:  "v0.0.1",
+			expectedVersion: "v0.0.1",
+			queryVersion:    "v0.0.1",
+		},
+		{
+			f:               &anotherFunc{},
+			expectedVersion: "v0.0.0",
+			queryVersion:    "v0.0.0",
+		},
+		{
+			f:               &anotherFunc{},
+			regWithVersion:  "v1.2.3",
+			expectedVersion: "v1.2.3",
+			queryVersion:    "v1.2.3",
+		},
+		{
+			f:               &anotherFunc{},
+			regWithVersion:  "v4.5.6",
+			expectedVersion: "v4.5.6",
+			queryVersion:    "v4.5.6",
+		},
+		{
+			f:               &anotherFunc{},
+			regWithVersion:  "v0.9.9",
+			expectedVersion: "v0.0.0",
+			// even though we are registering function version v0.9.9 we are querying the same function that is registered with version
+			// v0.0.0 that is the reason we have v0.0.0 as expectedVersion
+			queryVersion: "v0.0.0",
+		},
+		{
+			f:               &anotherFunc{},
+			regWithVersion:  "v0.1.1",
+			expectedVersion: "v0.0.0",
+			// since function anotherFunc is not registered with version v11.11.11, we will default to defaultFuncVersion (i.e., v0.0.0)
+			// that is the reason the expected version hereis v0.0.0
+			queryVersion: "v11.11.11",
+		},
+	} {
+		if tc.regWithVersion == "" {
+			err := Register(tc.f)
+			c.Assert(err, IsNil)
+		} else {
+			err := RegisterVersion(tc.f, tc.regWithVersion)
+			c.Assert(err, IsNil)
+		}
+
+		semVer, err := regFuncVersion(tc.f.Name(), tc.queryVersion)
+		c.Assert(err, IsNil)
+		c.Assert(semVer.Original(), Equals, tc.expectedVersion)
 	}
 }
