@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"io"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/kanisterio/kanister/pkg/format"
@@ -56,28 +55,26 @@ func Exec(cli kubernetes.Interface, namespace, pod, container string, command []
 	return ExecWithOptions(cli, opts)
 }
 
-// ExecAsync is similar to Exec, except that inbound outputs are written to
-// stdout and stderr immediately. Unlike Exec, the outputs are not returned to
-// the caller.
-func ExecAsync(cli kubernetes.Interface, namespace, pod, container string, command []string, stdin io.Reader) error {
-	stdout := &format.Writer{
-		W:         os.Stdout,
-		Pod:       pod,
-		Container: container,
-	}
-	stderr := &format.Writer{
-		W:         os.Stderr,
-		Pod:       pod,
-		Container: container,
-	}
+// ExecOutput is similar to Exec, except that inbound outputs are written to the
+// provided stdout and stderr. Unlike Exec, the outputs are not returned to the
+// caller.
+func ExecOutput(cli kubernetes.Interface, namespace, pod, container string, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	opts := ExecOptions{
 		Command:       command,
 		Namespace:     namespace,
 		PodName:       pod,
 		ContainerName: container,
 		Stdin:         stdin,
-		Stdout:        stdout,
-		Stderr:        stderr,
+		Stdout: &format.Writer{
+			W:         stdout,
+			Pod:       pod,
+			Container: container,
+		},
+		Stderr: &format.Writer{
+			W:         stderr,
+			Pod:       pod,
+			Container: container,
+		},
 	}
 
 	_, _, err := ExecWithOptions(cli, opts)

@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"os"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -90,7 +91,7 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = Arg(args, KubeExecCommandArg, &cmd); err != nil {
 		return nil, err
 	}
-	if err := kube.ExecAsync(cli, namespace, pod, container, cmd, nil); err != nil {
+	if err := kube.ExecOutput(cli, namespace, pod, container, cmd, nil, os.Stdout, os.Stderr); err != nil {
 		return nil, err
 	}
 
