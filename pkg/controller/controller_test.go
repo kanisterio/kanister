@@ -172,6 +172,7 @@ func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, s
 	return errors.Wrapf(err, "State '%s' never reached", state)
 }
 
+// nolint:unparam
 func (s *ControllerSuite) waitOnDeferPhaseState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
