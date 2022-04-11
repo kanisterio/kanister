@@ -30,6 +30,8 @@ jobs:
       before_script:
       - docker pull kindest/node:v1.21.1
       - make start-kind
+      # We don't really need CSI for `make test` but we do need some CRDs to be present for CRDSuite to pass
+      - make install-csi-hostpath-driver
       script:
       - make build
       # Enable codegen test once we upgrade k8s.io/client-go to work with go1.14
@@ -51,7 +53,6 @@ jobs:
       - make install-minio
       script:
       - make integration-test
-      - make helm-test
       before_cache:
       - sudo chown -R travis:travis ./.go
       after_script:
