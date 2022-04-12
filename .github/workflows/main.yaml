@@ -82,8 +82,8 @@ jobs:
     - uses: docker/login-action@v1
       with:
         registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ github.token }}
+        username: ${{ secrets.GH_USERNAME }}
+        password: ${{ secrets.GH_TOKEN }}
     - run: tar -xvf ./src.tar.gz
     - run: make release-snapshot
     - run: ./build/push_images.sh
