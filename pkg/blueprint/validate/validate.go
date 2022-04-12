@@ -41,6 +41,22 @@ func Do(bp *crv1alpha1.Blueprint, funcVersion string) error {
 			return errors.Wrapf(err, "%s action %s", BPValidationErr, name)
 		}
 
+		// validate deferPhase's argument
+		deferPhase, err := kanister.GetDeferPhase(*bp, name, funcVersion, param.TemplateParams{})
+		if err != nil {
+			utils.PrintStage(fmt.Sprintf("validation of action %s", name), utils.Fail)
+			return errors.Wrapf(err, "%s action %s", BPValidationErr, name)
+		}
+
+		if deferPhase != nil {
+			if err := deferPhase.Validate(action.DeferPhase.Args); err != nil {
+				utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", deferPhase.Name(), name), utils.Fail)
+				return errors.Wrapf(err, "%s phase %s in action %s", BPValidationErr, deferPhase.Name(), name)
+			}
+			utils.PrintStage(fmt.Sprintf("validation of phase %s in action %s", deferPhase.Name(), name), utils.Pass)
+		}
+
+		// validate main phases' arguments
 		for i, phase := range phases {
 			// validate function's mandatory arguments
 			if err := phase.Validate(action.Phases[i].Args); err != nil {
