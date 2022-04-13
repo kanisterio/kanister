@@ -102,7 +102,7 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, k
 	waitForReady = true
 	err = Arg(args, ScaleWorkloadReplicas, &rep)
 	if err != nil {
-		return namespace, kind, name, replicas, waitForReady, err
+		return
 	}
 
 	switch val := rep.(type) {
@@ -145,19 +145,19 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, k
 
 	err = OptArg(args, ScaleWorkloadNamespaceArg, &namespace, namespace)
 	if err != nil {
-		return namespace, kind, name, replicas, waitForReady, err
+		return
 	}
 	err = OptArg(args, ScaleWorkloadNameArg, &name, name)
 	if err != nil {
-		return namespace, kind, name, replicas, waitForReady, err
+		return
 	}
 	err = OptArg(args, ScaleWorkloadKindArg, &kind, kind)
 	if err != nil {
-		return namespace, kind, name, replicas, waitForReady, err
+		return
 	}
 	err = OptArg(args, ScaleWorkloadWaitArg, &waitForReady, waitForReady)
 	if err != nil {
-		return namespace, kind, name, replicas, waitForReady, err
+		return
 	}
-	return namespace, kind, name, replicas, waitForReady, err
+	return
 }
