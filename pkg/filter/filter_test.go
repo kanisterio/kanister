@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -337,12 +337,12 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 					Group:   "mygroup",
 					Version: "yourversion",
 				},
+			},
+			exclude: []schema.GroupVersionResource{
 				{
 					Group:   "yourgroup",
 					Version: "myversion",
 				},
-			},
-			exclude: []schema.GroupVersionResource{
 				{
 					Group:   "yourgroup",
 					Version: "yourversion",
