@@ -178,6 +178,7 @@ to stop a database process before restoring files.
    `name`, No, `string`, name of the workload to scale
    `kind`, No, `string`, `deployment` or `statefulset`
    `replicas`, Yes, `int`,  The desired number of replicas
+   `waitForReady`, No, `bool`, Whether to wait for the workload to be ready before executing next steps. Default Value is ``true``
 
 Example of scaling down:
 
@@ -202,6 +203,8 @@ Example of scaling up:
       namespace: "{{ .Deployment.Namespace }}"
       kind: deployment
       replicas: 1
+      waitForReady: false
+
 
 PrepareData
 -----------
