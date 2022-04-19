@@ -71,6 +71,7 @@ The definition of a ``BlueprintAction`` is:
       InputArtifactNames []string            `json:"inputArtifactNames"`
       OutputArtifacts    map[string]Artifact `json:"outputArtifacts"`
       Phases             []BlueprintPhase    `json:"phases"`
+      DeferPhase         *BlueprintPhase     `json:"deferPhase,omitempty"`
   }
 
 - ``Kind`` represents the type of Kubernetes object this BlueprintAction is written for.
@@ -84,6 +85,10 @@ The definition of a ``BlueprintAction`` is:
   to the ``BlueprintAction``.
 - ``Phases`` is a required list of ``BlueprintPhases``. These phases are invoked
   in order when executing this Action.
+- ``DeferPhase`` is an optional ``BlueprintPhase`` invoked after the
+  execution of ``Phases`` defined above. A ``DeferPhase``, when specified,
+  is executed regardless of the statuses of the ``Phases``.
+  A ``DeferPhase`` can be used for cleanup operations at the end of an ``Action``.
 
 .. code-block:: go
   :linenos:

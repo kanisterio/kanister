@@ -722,6 +722,9 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 	err = InitPhaseParams(ctx, s.cli, tp, "backup", nil)
 	c.Assert(err, IsNil)
 	UpdatePhaseParams(ctx, tp, "backup", map[string]interface{}{"version": "0.75.0"})
+	UpdateDeferPhaseParams(ctx, tp, map[string]interface{}{"version": "0.75.0"})
+	// make sure output artifact is set in DeferPhase
+	c.Assert(tp.DeferPhase.Output, DeepEquals, map[string]interface{}{"version": "0.75.0"})
 	c.Assert(tp.Phases, HasLen, 1)
 	c.Assert(tp.Phases["backup"], NotNil)
 	c.Assert(tp.Secrets, HasLen, 1)

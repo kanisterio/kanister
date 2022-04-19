@@ -100,6 +100,7 @@ bin/$(ARCH)/$(BIN):
 		GOARCH=$(ARCH)       \
 		VERSION=$(VERSION) \
 		PKG=$(PKG)         \
+		BIN=$(BIN) \
 		./build/build.sh   \
 	"'
 # Example: make shell CMD="-c 'date > datefile'"
@@ -282,3 +283,9 @@ stop-minishift:
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
+
+check:
+	@./build/check.sh
+
+gomod:
+	@$(MAKE) run CMD='-c "./build/gomod.sh"'

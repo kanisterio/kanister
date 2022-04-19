@@ -35,6 +35,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 		phases      []crv1alpha1.BlueprintPhase
 		err         Checker
 		errContains string
+		deferPhase  *crv1alpha1.BlueprintPhase
 	}{
 		{
 			phases: []crv1alpha1.BlueprintPhase{
@@ -140,9 +141,80 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 			errContains: "Required arg missing: command",
 			err:         NotNil,
 		},
+		{
+			phases: []crv1alpha1.BlueprintPhase{
+				{
+					Func: "PrepareData",
+					Name: "50",
+					Args: map[string]interface{}{
+						"namespace": "",
+						"image":     "",
+					},
+				},
+			},
+			errContains: "Required arg missing: command",
+			err:         NotNil,
+			deferPhase: &crv1alpha1.BlueprintPhase{
+				Func: "PrepareData",
+				Name: "51",
+				Args: map[string]interface{}{
+					"namespace": "",
+					"image":     "",
+				},
+			},
+		},
+		{
+			phases: []crv1alpha1.BlueprintPhase{
+				{
+					Func: "PrepareData",
+					Name: "60",
+					Args: map[string]interface{}{
+						"namespace": "",
+						"image":     "",
+						"command":   "",
+					},
+				},
+			},
+			errContains: "Required arg missing: command",
+			err:         NotNil,
+			deferPhase: &crv1alpha1.BlueprintPhase{
+				Func: "PrepareData",
+				Name: "61",
+				Args: map[string]interface{}{
+					"namespace": "",
+					"image":     "",
+				},
+			},
+		},
+		{
+			phases: []crv1alpha1.BlueprintPhase{
+				{
+					Func: "PrepareData",
+					Name: "70",
+					Args: map[string]interface{}{
+						"namespace": "",
+						"image":     "",
+						"command":   "",
+					},
+				},
+			},
+			err: IsNil,
+			deferPhase: &crv1alpha1.BlueprintPhase{
+				Func: "PrepareData",
+				Name: "71",
+				Args: map[string]interface{}{
+					"namespace": "",
+					"image":     "",
+					"command":   "",
+				},
+			},
+		},
 	} {
 		bp := blueprint()
 		bp.Actions["backup"].Phases = tc.phases
+		if tc.deferPhase != nil {
+			bp.Actions["backup"].DeferPhase = tc.deferPhase
+		}
 		err := Do(bp, kanister.DefaultVersion)
 		if err != nil {
 			c.Assert(strings.Contains(err.Error(), tc.errContains), Equals, true)

@@ -225,8 +225,37 @@ func NewProfile(location crv1alpha1.Location) *crv1alpha1.Profile {
 	}
 }
 
+// NewTestRestoreActionSet returns a pointer to a restore actionset, that is used in deferPhase blueprint
+func NewTestRestoreActionSet(namespace, blueprintName, poName string, arts map[string]crv1alpha1.Artifact) *crv1alpha1.ActionSet {
+	return &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-restore-actionset-",
+			Namespace:    namespace,
+		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				{
+					Artifacts: arts,
+					Blueprint: blueprintName,
+					Name:      "restore",
+					Object: crv1alpha1.ObjectReference{
+						Kind:      "Deployment",
+						Name:      poName,
+						Namespace: namespace,
+					},
+					Profile: &crv1alpha1.ObjectReference{
+						Kind:      consts.ProfileResourceName,
+						Name:      TestProfileName,
+						Namespace: namespace,
+					},
+				},
+			},
+		},
+	}
+}
+
 // NewTestActionSet function returns a pointer to a new ActionSet test object
-func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace, version string) *crv1alpha1.ActionSet {
+func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace, version, action string) *crv1alpha1.ActionSet {
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-actionset-",
@@ -234,9 +263,9 @@ func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace, ver
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Blueprint: blueprintName,
-					Name:      "myAction",
+					Name:      action,
 					Object: crv1alpha1.ObjectReference{
 						Kind:      poKind,
 						Name:      poName,

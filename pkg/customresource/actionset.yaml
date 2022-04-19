@@ -219,6 +219,16 @@ spec:
                           description: Resource name of the referent.
                           type: string
                       type: object
+                    deferPhase:
+                      properties:
+                        name:
+                          type: string
+                        output:
+                          x-kubernetes-preserve-unknown-fields: true
+                          type: object
+                        state:
+                          type: string
+                      type: object
                     phases:
                       description: Phases are sub-actions an are executed sequentially.
                       items:
