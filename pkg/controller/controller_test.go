@@ -702,7 +702,7 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 // 1. Actionset status is `failed`
 // 2. DeferPhase is run successfully and status is complete
 // 3. Phases have correct state in actionset status
-// 4. output artifacts are set correctly
+// 4. We don't render output artifacts if any of the phases failed
 func (s *ControllerSuite) TestDeferPhaseCoreErr(c *C) {
 	os.Setenv(kube.PodNSEnvVar, "test")
 	ctx := context.Background()
@@ -735,9 +735,7 @@ func (s *ControllerSuite) TestDeferPhaseCoreErr(c *C) {
 	c.Assert(as.Status.Actions[0].Phases[1].State, Equals, crv1alpha1.StateFailed)
 	c.Assert(as.Status.Actions[0].DeferPhase.State, Equals, crv1alpha1.StateComplete)
 
-	// check the artifacts are set correctly
-	c.Assert(as.Status.Actions[0].Artifacts["opArtDeferPhase"].KeyValue, DeepEquals, map[string]string{"op": "deferValue"})
-	c.Assert(as.Status.Actions[0].Artifacts["opArtPhaesOne"].KeyValue, DeepEquals, map[string]string{"op": "mainValue"})
+	// we don't render template if any of the core phases or defer phases failed
 }
 
 func (s *ControllerSuite) TestDeferPhaseDeferErr(c *C) {
@@ -771,10 +769,6 @@ func (s *ControllerSuite) TestDeferPhaseDeferErr(c *C) {
 	c.Assert(as.Status.Actions[0].Phases[0].State, Equals, crv1alpha1.StateComplete)
 	c.Assert(as.Status.Actions[0].Phases[1].State, Equals, crv1alpha1.StateComplete)
 	c.Assert(as.Status.Actions[0].DeferPhase.State, Equals, crv1alpha1.StateFailed)
-
-	// check the artifacts are set correctly
-	c.Assert(as.Status.Actions[0].Artifacts["opArtPhaseOne"].KeyValue, DeepEquals, map[string]string{"op": "mainValue"})
-	c.Assert(as.Status.Actions[0].Artifacts["opArtPhaseTwo"].KeyValue, DeepEquals, map[string]string{"op": "mainValueTwo"})
 }
 
 func (s *ControllerSuite) TestPhaseOutputAsArtifact(c *C) {
