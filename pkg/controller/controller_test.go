@@ -61,8 +61,7 @@ type ControllerSuite struct {
 var _ = Suite(&ControllerSuite{})
 
 const (
-	testAction        = "myAction"
-	mysqlSidecarImage = "ghcr.io/kanisterio/mysql-sidecar:0.74.0"
+	testAction = "myAction"
 )
 
 func (s *ControllerSuite) SetUpSuite(c *C) {
@@ -291,7 +290,7 @@ func phaseWithNameAndCMD(name string, command []string) *crv1alpha1.BlueprintPha
 		Name: name,
 		Func: function.KubeTaskFuncName,
 		Args: map[string]interface{}{
-			"image":     mysqlSidecarImage,
+			"image":     consts.LatestKanisterToolsImage,
 			"namespace": "default",
 			"command":   command,
 		},
@@ -669,11 +668,12 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 	c.Assert(err, IsNil)
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
 	c.Assert(err, IsNil)
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
-	c.Assert(err, IsNil)
 
 	// make sure deferPhase is also run successfully
 	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
+	c.Assert(err, IsNil)
+
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
 	c.Assert(err, IsNil)
 
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
@@ -754,11 +754,12 @@ func (s *ControllerSuite) TestDeferPhaseDeferErr(c *C) {
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
 	c.Assert(err, IsNil)
-	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
+
+	// wait for deferPhase to fail
+	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateFailed)
 	c.Assert(err, IsNil)
 
-	// wait for deferPhase to be completed, because actionset status would be set to failed as soon as a main phase fails
-	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateFailed)
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
 	c.Assert(err, IsNil)
 
 	// get the actionset again to have updated status
