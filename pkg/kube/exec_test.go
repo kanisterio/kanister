@@ -27,8 +27,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/kanisterio/kanister/pkg/consts"
 )
 
 type ExecSuite struct {
@@ -123,7 +121,7 @@ func (s *ExecSuite) TestKopiaCommand(c *C) {
 			Containers: []v1.Container{
 				v1.Container{
 					Name:  "kanister-sidecar",
-					Image: consts.LatestKanisterToolsImage,
+					Image: "ghcr.io/kanisterio/kanister-tools:0.37.0",
 				},
 			},
 		},
