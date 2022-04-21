@@ -28,14 +28,19 @@ type ResourceTypeRequirement struct {
 	Resource string `json:"resource,omitempty"`
 }
 
-// Matches returns true if group, version and resource values match or are all empty
-// Group must match exactly because K8s core group is ""
-// Version and resource requirement values of "" match any value
+// K8sCoreGroupExactMatch is sentinel value that only matches K8s core group of ""
+const K8sCoreGroupExactMatch = "core"
+
+// Matches returns true if group, version and resource values match or are empty
+// Group value of K8sCoreGroupExactMatch only matches K8s core group of ""
 func (r ResourceTypeRequirement) Matches(gvr schema.GroupVersionResource) bool {
-	if r.Empty() {
-		return true
+	var groupMatch bool
+	if r.Group == K8sCoreGroupExactMatch {
+		groupMatch = gvr.Group == ""
+	} else {
+		groupMatch = matches(r.Group, gvr.Group)
 	}
-	return r.Group == gvr.Group && matches(r.Version, gvr.Version) && matches(r.Resource, gvr.Resource)
+	return groupMatch && matches(r.Version, gvr.Version) && matches(r.Resource, gvr.Resource)
 }
 
 // Empty returns true if ResourceTypeRequirement has no fields set

@@ -337,15 +337,77 @@ func (s *FilterSuite) TestGroupVersionResourceIncludeExclude(c *C) {
 					Group:   "mygroup",
 					Version: "yourversion",
 				},
-			},
-			exclude: []schema.GroupVersionResource{
 				{
 					Group:   "yourgroup",
 					Version: "myversion",
 				},
+			},
+			exclude: []schema.GroupVersionResource{
 				{
 					Group:   "yourgroup",
 					Version: "yourversion",
+				},
+			},
+		},
+		{
+			m: ResourceTypeMatcher{
+				ResourceTypeRequirement{
+					Group:    "core",
+					Resource: "myresource",
+				},
+			},
+			gvrs: []schema.GroupVersionResource{
+				{
+					Group:    "",
+					Resource: "myresource",
+				},
+				{
+					Group:    "core",
+					Resource: "myresource",
+				},
+				{
+					Group:    "mygroup",
+					Resource: "myresource",
+				},
+				{
+					Group:    "",
+					Resource: "yourresource",
+				},
+				{
+					Group:    "core",
+					Resource: "yourresource",
+				},
+				{
+					Group:    "mygroup",
+					Resource: "yourresource",
+				},
+			},
+			include: []schema.GroupVersionResource{
+				{
+					Group:    "",
+					Resource: "myresource",
+				},
+			},
+			exclude: []schema.GroupVersionResource{
+				{
+					Group:    "core",
+					Resource: "myresource",
+				},
+				{
+					Group:    "mygroup",
+					Resource: "myresource",
+				},
+				{
+					Group:    "",
+					Resource: "yourresource",
+				},
+				{
+					Group:    "core",
+					Resource: "yourresource",
+				},
+				{
+					Group:    "mygroup",
+					Resource: "yourresource",
 				},
 			},
 		},
