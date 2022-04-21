@@ -1232,6 +1232,7 @@ Example:
         name: "{{ .Phases.createDeploy.Output.name }}"
         namespace: "{{ .Phases.createDeploy.Output.namespace }}"
 
+
 Wait
 ----
 
