@@ -2,30 +2,51 @@ on:
   issues:
     types:
     - opened
+    - reopened
+  pull_request:
+    types:
+    - opened
+    - reopened
 jobs:
-  triage:
+  issues:
+    if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
-    - id: get_issue_number
-      run: echo "::set-output name=output::${{ github.event.issue.number }}"
     - uses: andymckay/labeler@1.0.2
       with:
         add-labels: "triage"
         repo-token: ${{ secrets.GITHUB_TOKEN }}
     - uses: peter-evans/create-or-update-comment@v2
+      if: github.event.action == 'opened'
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        issue-number: ${{ steps.get_issue_number.outputs.output }}
+        issue-number: ${{ github.event.issue.number }}
         body: |
-          Thanks for opening this issue :+1:. The team will review it soon and get back to you.
+          Thanks for opening this issue :+1:. The team will review it shortly.
 
-          If this is a bug report, make sure to include clear instructions how on to reproduce the issue with [minimal reproducible examples](https://stackoverflow.com/help/minimal-reproducible-example), where possible. If this is a security report, please review our security policy as outlined in [SECURITY.md](https://github.com/ihcsim/kanister/blob/master/SECURITY.md).
+          If this is a bug report, make sure to include clear instructions how on to reproduce the problem with [minimal reproducible examples](https://stackoverflow.com/help/minimal-reproducible-example), where possible. If this is a security report, please review our security policy as outlined in [SECURITY.md](https://github.com/kanisterio/kanister/blob/master/SECURITY.md).
 
-          Also, take a look at our project [Code of Conduct](https://github.com/ihcsim/kanister/blob/master/CODE_OF_CONDUCT.md) document, if you haven't already.
-
-          Finally, consider giving Kanister a :star:!
+          If you haven't already, please take a moment to review our project's [Code of Conduct](https://github.com/kanisterio/kanister/blob/master/CODE_OF_CONDUCT.md) document.
     - uses: alex-page/github-project-automation-plus@v0.8.1
       with:
         repo-token: ${{ secrets.GH_TOKEN }} # must use a PAT here
         project: Kanister
         column: To Be Triaged
+  pull_requests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: peter-evans/create-or-update-comment@v2
+      if: github.event.action == 'opened'
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        issue-number: ${{ github.event.number }}
+        body: |
+          Thanks for submitting this pull request :tada:. The team will review it soon and get back to you.
+
+          If you haven't already, please take a moment to review our project [contributing guideline](https://github.com/kanisterio/kanister/blob/master/CONTRIBUTING.md) and [Code of Conduct](https://github.com/kanisterio/kanister/blob/master/CODE_OF_CONDUCT.md) document.
+    - uses: alex-page/github-project-automation-plus@v0.8.1
+      with:
+        repo-token: ${{ secrets.GH_TOKEN }}
+        project: Kanister
+        column: In Progress
