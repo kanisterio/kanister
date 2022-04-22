@@ -372,5 +372,5 @@ func (nd *nonDefaultVersionFunc) Exec(context.Context, param.TemplateParams, map
 var _ kanister.Func = (*nonDefaultVersionFunc)(nil)
 
 func init() {
-	kanister.RegisterVersion(&nonDefaultVersionFunc{}, nonDefaultFuncVersion)
+	_ = kanister.RegisterVersion(&nonDefaultVersionFunc{}, nonDefaultFuncVersion)
 }
