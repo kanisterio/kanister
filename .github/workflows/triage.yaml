@@ -11,9 +11,10 @@ jobs:
     - uses: andymckay/labeler@1.0.2
       with:
         add-labels: "triage"
-        repo-token: ${{ secrets.GH_TOKEN }}
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
     - uses: peter-evans/create-or-update-comment@v2
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}
         issue-number: ${{ steps.get_issue_number.outputs.output }}
         body: |
           Thanks for opening this issue :+1:. The team will review it soon and get back to you.
@@ -25,6 +26,6 @@ jobs:
           Finally, consider giving Kanister a :star:!
     - uses: alex-page/github-project-automation-plus@v0.8.1
       with:
-        repo-token: ${{ secrets.GH_TOKEN }}
+        repo-token: ${{ secrets.GH_TOKEN }} # must use a PAT here
         project: Kanister
         column: To Be Triaged
