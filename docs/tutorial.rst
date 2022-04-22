@@ -480,17 +480,18 @@ from the output that is being generated from ``DeferPhase`` as shown below.
               - |
                 echo "Main Phase"
       deferPhase:
-        func: KubeTask
+        func: KubeExec
         name: saveBackupTime
         args:
-          image: ghcr.io/kanisterio/mysql-sidecar:0.74.0
           namespace: "{{ .Deployment.Namespace }}"
+          pod: "{{ index .Deployment.Pods 0 }}"
+          container: test-container
           command:
-          - sh
-          - -c
-          - |
-            echo "DeferPhase"
-            kando output bkpCompletedTime "10Minutes"
+            - sh
+            - -c
+            - |
+              echo "DeferPhase"
+              kando output bkpCompletedTime "10Minutes"
   EOF
 
 
