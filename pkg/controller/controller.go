@@ -434,7 +434,10 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			if deferPhase != nil {
 				deferErr = c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as)
 			}
-			c.renderActionsetArtifacts(ctx, as, aIDX, ns, name, action.Name, bp, tp, coreErr, deferErr)
+			// render artifacts only if all the phases are run successfully
+			if deferErr == nil && coreErr == nil {
+				c.renderActionsetArtifacts(ctx, as, aIDX, ns, name, action.Name, bp, tp, coreErr, deferErr)
+			}
 		}()
 
 		for i, p := range phases {

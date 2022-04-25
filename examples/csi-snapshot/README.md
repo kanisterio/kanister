@@ -8,7 +8,7 @@ This example demonstrates Kanister's ability to protect an application called Ti
 
 - Helm 3 installed
 - Kubernetes 1.16+ with Beta APIs enabled
-- Kanister controller version 0.76.0 installed in the cluster, let's assume in namespace `kanister`
+- Kanister controller version 0.78.0 installed in the cluster, let's assume in namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 - VolumeSnapshot CRDs, Snapshot Controller & a CSI Driver
 
