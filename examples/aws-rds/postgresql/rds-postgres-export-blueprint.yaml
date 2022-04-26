@@ -1,0 +1,66 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: rds-postgres-export-bp
+actions:
+  backup:
+    outputArtifacts:
+      backupInfo:
+        keyValue:
+          snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
+          instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
+          securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+    phases:
+    - func: CreateRDSSnapshot
+      name: createSnapshot
+      args:
+        instanceID: '{{ index .Object.data "postgres.instanceid" }}'
+
+  export:
+    inputArtifactNames:
+    - backupInfo
+    outputArtifacts:
+      exportInfo:
+        keyValue:
+          backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
+          instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
+          securityGroupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
+    phases:
+    - func: ExportRDSSnapshotToLocation
+      name: exportSnapshot
+      objects:
+        dbsecret:
+          kind: Secret
+          name: '{{ index .Object.data "postgres.secret" }}'
+          namespace: "{{ .Object.metadata.namespace }}"
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        instanceID: "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
+        securityGroupID: "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
+        username: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "username" | toString }}'
+        password: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password" | toString }}'
+        dbEngine: "PostgreSQL"
+        databases: '{{ index .Object.data "postgres.databases" }}'
+        snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
+        backupArtifactPrefix: test-postgresql-instance/postgres
+
+  restore:
+    inputArtifactNames:
+    - exportInfo
+    phases:
+    - func: RestoreRDSSnapshot
+      name: restoreSnapshots
+      objects:
+        dbsecret:
+          kind: Secret
+          name: '{{ index .Object.data "postgres.secret" }}'
+          namespace: "{{ .Object.metadata.namespace }}"
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        backupArtifactPrefix: test-postgresql-instance/postgres
+        instanceID:  "{{ .ArtifactsIn.exportInfo.KeyValue.instanceID }}"
+        backupID:  "{{ .ArtifactsIn.exportInfo.KeyValue.backupID }}"
+        securityGroupID:  "{{ .ArtifactsIn.exportInfo.KeyValue.securityGroupID }}"
+        username: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "username" | toString }}'
+        password: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "password" | toString }}'
+        dbEngine: "PostgreSQL"
