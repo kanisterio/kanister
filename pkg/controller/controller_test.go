@@ -182,17 +182,14 @@ func (s *ControllerSuite) waitOnDeferPhaseState(c *C, as *crv1alpha1.ActionSet, 
 		}
 
 		if as.Status == nil {
-			return false, nil
+			return false, fmt.Errorf("unexpected error: actionset status shouldn't be nil")
 		}
 
 		if as.Status.Actions[0].DeferPhase.State == state {
 			return true, nil
 		}
-		// These are non-terminal states.
-		if as.Status.Actions[0].DeferPhase.State == crv1alpha1.StatePending || as.Status.Actions[0].DeferPhase.State == crv1alpha1.StateRunning {
-			return false, nil
-		}
-		return false, errors.New(fmt.Sprintf("Unexpected state: %s", as.Status.Actions[0].DeferPhase.State))
+
+		return false, nil
 	})
 	if err == nil {
 		return nil
