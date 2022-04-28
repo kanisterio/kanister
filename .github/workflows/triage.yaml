@@ -10,6 +10,8 @@ on:
 jobs:
   issues:
     if: github.event_name == 'issues'
+    permissions:
+      issues: write
     runs-on: ubuntu-latest
     steps:
     - uses: andymckay/labeler@1.0.2
@@ -32,8 +34,10 @@ jobs:
         repo-token: ${{ secrets.GH_TOKEN }} # must use a PAT here
         project: Kanister
         column: To Be Triaged
-  pull_requests:
+  pull-requests:
     if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
     - uses: peter-evans/create-or-update-comment@v2
