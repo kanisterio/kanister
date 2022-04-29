@@ -214,6 +214,7 @@ func (in *ActionStatus) DeepCopyInto(out *ActionStatus) {
 			(*out)[key] = *val.DeepCopy()
 		}
 	}
+	in.DeferPhase.DeepCopyInto(&out.DeferPhase)
 	return
 }
 
@@ -322,6 +323,10 @@ func (in *BlueprintAction) DeepCopyInto(out *BlueprintAction) {
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
+	}
+	if in.DeferPhase != nil {
+		in, out := &in.DeferPhase, &out.DeferPhase
+		*out = (*in).DeepCopy()
 	}
 	return
 }

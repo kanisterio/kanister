@@ -100,6 +100,7 @@ bin/$(ARCH)/$(BIN):
 		GOARCH=$(ARCH)       \
 		VERSION=$(VERSION) \
 		PKG=$(PKG)         \
+		BIN=$(BIN) \
 		./build/build.sh   \
 	"'
 # Example: make shell CMD="-c 'date > datefile'"
@@ -285,3 +286,6 @@ stop-kind:
 
 check:
 	@./build/check.sh
+
+gomod:
+	@$(MAKE) run CMD='-c "./build/gomod.sh"'

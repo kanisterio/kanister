@@ -15,7 +15,7 @@
 package filter
 
 import (
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -28,9 +28,24 @@ type ResourceTypeRequirement struct {
 	Resource string `json:"resource,omitempty"`
 }
 
+// K8sCoreGroupExactMatch is sentinel value that only matches K8s core group of ""
+const K8sCoreGroupExactMatch = "core"
+
 // Matches returns true if group, version and resource values match or are empty
+// Group value of K8sCoreGroupExactMatch only matches K8s core group of ""
 func (r ResourceTypeRequirement) Matches(gvr schema.GroupVersionResource) bool {
-	return matches(r.Group, gvr.Group) && matches(r.Version, gvr.Version) && matches(r.Resource, gvr.Resource)
+	var groupMatch bool
+	if r.Group == K8sCoreGroupExactMatch {
+		groupMatch = gvr.Group == ""
+	} else {
+		groupMatch = matches(r.Group, gvr.Group)
+	}
+	return groupMatch && matches(r.Version, gvr.Version) && matches(r.Resource, gvr.Resource)
+}
+
+// Empty returns true if ResourceTypeRequirement has no fields set
+func (rtr ResourceTypeRequirement) Empty() bool {
+	return rtr.Group == "" && rtr.Version == "" && rtr.Resource == ""
 }
 
 func matches(sel, val string) bool {

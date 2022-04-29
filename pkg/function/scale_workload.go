@@ -35,6 +35,7 @@ const (
 	ScaleWorkloadNameArg      = "name"
 	ScaleWorkloadKindArg      = "kind"
 	ScaleWorkloadReplicas     = "replicas"
+	ScaleWorkloadWaitArg      = "waitForReady"
 )
 
 func init() {
@@ -54,7 +55,7 @@ func (*scaleWorkloadFunc) Name() string {
 func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
 	var namespace, kind, name string
 	var replicas int32
-	namespace, kind, name, replicas, err := getArgs(tp, args)
+	namespace, kind, name, replicas, waitForReady, err := getArgs(tp, args)
 	if err != nil {
 		return nil, err
 	}
@@ -69,15 +70,15 @@ func (*scaleWorkloadFunc) Exec(ctx context.Context, tp param.TemplateParams, arg
 	}
 	switch strings.ToLower(kind) {
 	case param.StatefulSetKind:
-		return nil, kube.ScaleStatefulSet(ctx, cli, namespace, name, replicas)
+		return nil, kube.ScaleStatefulSet(ctx, cli, namespace, name, replicas, waitForReady)
 	case param.DeploymentKind:
-		return nil, kube.ScaleDeployment(ctx, cli, namespace, name, replicas)
+		return nil, kube.ScaleDeployment(ctx, cli, namespace, name, replicas, waitForReady)
 	case param.DeploymentConfigKind:
 		osCli, err := osversioned.NewForConfig(cfg)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to create OpenShift client")
 		}
-		return nil, kube.ScaleDeploymentConfig(ctx, cli, osCli, namespace, name, replicas)
+		return nil, kube.ScaleDeploymentConfig(ctx, cli, osCli, namespace, name, replicas, waitForReady)
 	}
 	return nil, errors.New("Workload type not supported " + kind)
 }
@@ -92,14 +93,16 @@ func (*scaleWorkloadFunc) Arguments() []string {
 		ScaleWorkloadNamespaceArg,
 		ScaleWorkloadNameArg,
 		ScaleWorkloadKindArg,
+		ScaleWorkloadWaitArg,
 	}
 }
 
-func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, kind, name string, replicas int32, err error) {
+func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, kind, name string, replicas int32, waitForReady bool, err error) {
 	var rep interface{}
+	waitForReady = true
 	err = Arg(args, ScaleWorkloadReplicas, &rep)
 	if err != nil {
-		return namespace, kind, name, replicas, err
+		return
 	}
 
 	switch val := rep.(type) {
@@ -136,21 +139,25 @@ func getArgs(tp param.TemplateParams, args map[string]interface{}) (namespace, k
 		namespace = tp.DeploymentConfig.Namespace
 	default:
 		if !ArgExists(args, ScaleWorkloadNamespaceArg) || !ArgExists(args, ScaleWorkloadNameArg) || !ArgExists(args, ScaleWorkloadKindArg) {
-			return namespace, kind, name, replicas, errors.New("Workload information not available via defaults or namespace/name/kind parameters")
+			return namespace, kind, name, replicas, waitForReady, errors.New("Workload information not available via defaults or namespace/name/kind parameters")
 		}
 	}
 
 	err = OptArg(args, ScaleWorkloadNamespaceArg, &namespace, namespace)
 	if err != nil {
-		return namespace, kind, name, replicas, err
+		return
 	}
 	err = OptArg(args, ScaleWorkloadNameArg, &name, name)
 	if err != nil {
-		return namespace, kind, name, replicas, err
+		return
 	}
 	err = OptArg(args, ScaleWorkloadKindArg, &kind, kind)
 	if err != nil {
-		return namespace, kind, name, replicas, err
+		return
 	}
-	return namespace, kind, name, replicas, err
+	err = OptArg(args, ScaleWorkloadWaitArg, &waitForReady, waitForReady)
+	if err != nil {
+		return
+	}
+	return
 }

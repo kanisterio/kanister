@@ -238,13 +238,14 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 
 func (s *ScaleSuite) TestGetArgs(c *C) {
 	for _, tc := range []struct {
-		tp            param.TemplateParams
-		args          map[string]interface{}
-		wantNamespace string
-		wantKind      string
-		wantName      string
-		wantReplicas  int32
-		check         Checker
+		tp               param.TemplateParams
+		args             map[string]interface{}
+		wantNamespace    string
+		wantKind         string
+		wantName         string
+		wantReplicas     int32
+		wantWaitForReady bool
+		check            Checker
 	}{
 		{
 			tp:    param.TemplateParams{},
@@ -258,12 +259,14 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 				ScaleWorkloadNamespaceArg: "foo",
 				ScaleWorkloadNameArg:      "app",
 				ScaleWorkloadKindArg:      param.StatefulSetKind,
+				ScaleWorkloadWaitArg:      false,
 			},
-			wantKind:      param.StatefulSetKind,
-			wantName:      "app",
-			wantNamespace: "foo",
-			wantReplicas:  int32(2),
-			check:         IsNil,
+			wantKind:         param.StatefulSetKind,
+			wantName:         "app",
+			wantNamespace:    "foo",
+			wantReplicas:     int32(2),
+			wantWaitForReady: false,
+			check:            IsNil,
 		},
 		{
 			tp: param.TemplateParams{
@@ -275,11 +278,12 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 			args: map[string]interface{}{
 				ScaleWorkloadReplicas: 2,
 			},
-			wantKind:      param.StatefulSetKind,
-			wantName:      "app",
-			wantNamespace: "foo",
-			wantReplicas:  int32(2),
-			check:         IsNil,
+			wantKind:         param.StatefulSetKind,
+			wantName:         "app",
+			wantNamespace:    "foo",
+			wantReplicas:     int32(2),
+			wantWaitForReady: true,
+			check:            IsNil,
 		},
 		{
 			tp: param.TemplateParams{
@@ -291,11 +295,12 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 			args: map[string]interface{}{
 				ScaleWorkloadReplicas: int64(2),
 			},
-			wantKind:      param.DeploymentKind,
-			wantName:      "app",
-			wantNamespace: "foo",
-			wantReplicas:  int32(2),
-			check:         IsNil,
+			wantKind:         param.DeploymentKind,
+			wantName:         "app",
+			wantNamespace:    "foo",
+			wantReplicas:     int32(2),
+			wantWaitForReady: true,
+			check:            IsNil,
 		},
 		{
 			tp: param.TemplateParams{
@@ -310,14 +315,15 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 				ScaleWorkloadNameArg:      "notapp",
 				ScaleWorkloadKindArg:      param.DeploymentKind,
 			},
-			wantKind:      param.DeploymentKind,
-			wantName:      "notapp",
-			wantNamespace: "notfoo",
-			wantReplicas:  int32(2),
-			check:         IsNil,
+			wantKind:         param.DeploymentKind,
+			wantName:         "notapp",
+			wantNamespace:    "notfoo",
+			wantReplicas:     int32(2),
+			wantWaitForReady: true,
+			check:            IsNil,
 		},
 	} {
-		namespace, kind, name, replicas, err := getArgs(tc.tp, tc.args)
+		namespace, kind, name, replicas, waitForReady, err := getArgs(tc.tp, tc.args)
 		c.Assert(err, tc.check)
 		if err != nil {
 			continue
@@ -326,5 +332,6 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 		c.Assert(name, Equals, tc.wantName)
 		c.Assert(kind, Equals, tc.wantKind)
 		c.Assert(replicas, Equals, tc.wantReplicas)
+		c.Assert(waitForReady, Equals, tc.wantWaitForReady)
 	}
 }

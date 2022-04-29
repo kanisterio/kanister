@@ -50,9 +50,9 @@ func (s *WorkloadSuite) TestScaleDeploymentConfig(c *C) {
 	dc, err = osCli.AppsV1().DeploymentConfigs(ns.GetName()).Create(ctx, dc, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
-	err = ScaleDeploymentConfig(ctx, cli, osCli, dc.GetNamespace(), dc.GetName(), 0)
+	err = ScaleDeploymentConfig(ctx, cli, osCli, dc.GetNamespace(), dc.GetName(), 0, true)
 	c.Assert(err, IsNil)
-	err = ScaleDeploymentConfig(ctx, cli, osCli, dc.GetNamespace(), dc.GetName(), 1)
+	err = ScaleDeploymentConfig(ctx, cli, osCli, dc.GetNamespace(), dc.GetName(), 1, true)
 	c.Assert(err, IsNil)
 }
 

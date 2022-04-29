@@ -20,3 +20,5 @@ const (
 	ProfileResourceName         = "profile"
 	ProfileResourceNamePlural   = "profiles"
 )
+
+const LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"

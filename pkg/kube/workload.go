@@ -357,7 +357,7 @@ func FetchPods(cli kubernetes.Interface, namespace string, uid types.UID) (runni
 	return runningPods, notRunningPods, nil
 }
 
-func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
+func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32, waitForReady bool) error {
 	ss, err := kubeCli.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not get Statefulset{Namespace %s, Name: %s}", namespace, name)
@@ -367,10 +367,13 @@ func ScaleStatefulSet(ctx context.Context, kubeCli kubernetes.Interface, namespa
 	if err != nil {
 		return errors.Wrapf(err, "Could not update Statefulset{Namespace %s, Name: %s}", namespace, name)
 	}
+	if !waitForReady {
+		return nil
+	}
 	return WaitOnStatefulSetReady(ctx, kubeCli, namespace, name)
 }
 
-func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32) error {
+func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespace string, name string, replicas int32, waitForReady bool) error {
 	d, err := kubeCli.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not get Deployment{Namespace %s, Name: %s}", namespace, name)
@@ -380,10 +383,13 @@ func ScaleDeployment(ctx context.Context, kubeCli kubernetes.Interface, namespac
 	if err != nil {
 		return errors.Wrapf(err, "Could not update Deployment{Namespace %s, Name: %s}", namespace, name)
 	}
+	if !waitForReady {
+		return nil
+	}
 	return WaitOnDeploymentReady(ctx, kubeCli, namespace, name)
 }
 
-func ScaleDeploymentConfig(ctx context.Context, kubeCli kubernetes.Interface, osCli osversioned.Interface, namespace string, name string, replicas int32) error {
+func ScaleDeploymentConfig(ctx context.Context, kubeCli kubernetes.Interface, osCli osversioned.Interface, namespace string, name string, replicas int32, waitForReady bool) error {
 	dc, err := osCli.AppsV1().DeploymentConfigs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not get DeploymentConfig{Namespace %s, Name: %s}", namespace, name)
@@ -392,6 +398,9 @@ func ScaleDeploymentConfig(ctx context.Context, kubeCli kubernetes.Interface, os
 	_, err = osCli.AppsV1().DeploymentConfigs(namespace).Update(ctx, dc, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Could not update DeploymentConfig{Namespace %s, Name: %s}", namespace, name)
+	}
+	if !waitForReady {
+		return nil
 	}
 	return WaitOnDeploymentConfigReady(ctx, osCli, kubeCli, namespace, name)
 }

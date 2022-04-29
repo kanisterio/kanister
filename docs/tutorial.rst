@@ -443,6 +443,61 @@ ConfigMap.
 If you re-execute this Kanister Action, you'll be able to see the Artifact in the
 ActionSet status.
 
+If you use a ``DeferPhase``, below is how you can set the output artifact
+from the output that is being generated from ``DeferPhase`` as shown below.
+
+.. code-block:: yaml
+
+  cat <<EOF | kubectl apply -f -
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: Blueprint
+  metadata:
+    name: time-log-bp
+    namespace: kanister
+  actions:
+    backup:
+      configMapNames:
+      - location
+      secretNames:
+      - aws
+      outputArtifacts:
+        timeLog:
+          keyValue:
+            path: '{{ .ConfigMaps.location.Data.path }}/time-log/'
+        deferPhaseArt:
+          keyValue:
+            time: "{{ .DeferPhase.Output.bkpCompletedTime }}"
+      phases:
+        - func: KubeExec
+          name: backupToS3
+          args:
+            namespace: "{{ .Deployment.Namespace }}"
+            pod: "{{ index .Deployment.Pods 0 }}"
+            container: test-container
+            command:
+              - sh
+              - -c
+              - |
+                echo "Main Phase"
+      deferPhase:
+        func: KubeExec
+        name: saveBackupTime
+        args:
+          namespace: "{{ .Deployment.Namespace }}"
+          pod: "{{ index .Deployment.Pods 0 }}"
+          container: test-container
+          command:
+            - sh
+            - -c
+            - |
+              echo "DeferPhase"
+              kando output bkpCompletedTime "10Minutes"
+  EOF
+
+
+Output from the previous phases can also be used in the ``DeferPhase`` like it
+is used in normal scenarios.
+
 Input Artifacts
 ---------------
 

@@ -73,6 +73,7 @@ install_csi_hostpath_driver() {
     cd /tmp
     git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
     cd csi-driver-host-path
+    sed -i 's/mountPropagation: Bidirectional/\#mountPropagation: Bidirectional/g' deploy/kubernetes-1.21/hostpath/csi-hostpath-plugin.yaml
     ./deploy/kubernetes-1.21/deploy.sh
 
     # Create StorageClass
