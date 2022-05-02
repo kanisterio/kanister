@@ -14,15 +14,14 @@ jobs:
       issues: write
     runs-on: ubuntu-latest
     steps:
-    - uses: andymckay/labeler@1.0.2
+    - uses: actions-ecosystem/action-add-labels@v1.1.0
       with:
-        add-labels: "triage"
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-    - uses: peter-evans/create-or-update-comment@v2
+        labels: "triage"
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions-ecosystem/action-create-comment@v1.0.0
       if: github.event.action == 'opened'
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        issue-number: ${{ github.event.issue.number }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           Thanks for opening this issue :+1:. The team will review it shortly.
 
@@ -40,11 +39,10 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-    - uses: peter-evans/create-or-update-comment@v2
+    - uses: actions-ecosystem/action-create-comment@v1.0.0
       if: github.event.action == 'opened'
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        issue-number: ${{ github.event.number }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           Thanks for submitting this pull request :tada:. The team will review it soon and get back to you.
 
