@@ -15,11 +15,11 @@
 package function
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"os"
 	"regexp"
-
-	"github.com/pkg/errors"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -91,11 +91,16 @@ func (kef *kubeExecFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = Arg(args, KubeExecCommandArg, &cmd); err != nil {
 		return nil, err
 	}
-	if err := kube.ExecOutput(cli, namespace, pod, container, cmd, nil, os.Stdout, os.Stderr); err != nil {
+
+	var (
+		bufStdout  = &bytes.Buffer{}
+		outWriters = io.MultiWriter(os.Stdout, bufStdout)
+	)
+	if err := kube.ExecOutput(cli, namespace, pod, container, cmd, nil, outWriters, os.Stderr); err != nil {
 		return nil, err
 	}
 
-	return nil, errors.Wrap(err, "Failed to generate output")
+	return parseLogAndCreateOutput(bufStdout.String())
 }
 
 func (*kubeExecFunc) RequiredArgs() []string {

@@ -128,7 +128,10 @@ func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options
 
 	errCh := make(chan error, 1)
 	go func() {
-		err := execute("POST", req.URL(), config,
+		err := execute(
+			"POST",
+			req.URL(),
+			config,
 			options.Stdin,
 			options.Stdout,
 			options.Stderr,
