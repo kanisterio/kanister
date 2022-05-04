@@ -31,6 +31,23 @@ func Log(podName string, containerName string, output string) {
 	LogWithCtx(context.Background(), podName, containerName, output)
 }
 
+// LogTo prints output to w. The specified pod and container are added to the
+// log line as fields.
+func LogTo(w io.Writer, pod string, container string, output string) {
+	if output != "" {
+		for _, line := range regex.Split(output, -1) {
+			if line != "" {
+				fields := field.M{
+					"Pod":       pod,
+					"Container": container,
+					"Out":       line,
+				}
+				log.PrintTo(w, "action update", fields)
+			}
+		}
+	}
+}
+
 func LogStream(podName string, containerName string, output io.ReadCloser) chan string {
 	logCh := make(chan string, 100)
 	s := bufio.NewScanner(output)
