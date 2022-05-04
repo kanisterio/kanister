@@ -2,7 +2,12 @@ queue_rules:
   - name: default
     conditions:
       - "#approved-reviews-by>=1"
-      - status-success=Travis CI - Pull Request
+      - check-success=gomod
+      - check-success=lint
+      - check-success=test
+      - check-success=build
+      - check-success=docs
+      - check-success=release
       - label=kueue
       - label!="hold off merging"
 
@@ -11,7 +16,12 @@ pull_request_rules:
     conditions:
       - base=master
       - "#approved-reviews-by>=1"
-      - status-success=Travis CI - Pull Request
+      - check-success=gomod
+      - check-success=lint
+      - check-success=test
+      - check-success=build
+      - check-success=docs
+      - check-success=release
       - label=kueue
       - label!="hold off merging"
     actions:
