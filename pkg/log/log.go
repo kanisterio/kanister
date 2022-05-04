@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -167,6 +168,12 @@ func Print(msg string, fields ...field.M) {
 	Info().Print(msg, fields...)
 }
 
+// PrintTo works just like Print. It allows caller to specify the writer to use
+// to output the log.
+func PrintTo(w io.Writer, msg string, fields ...field.M) {
+	Info().PrintTo(w, msg, fields...)
+}
+
 func WithContext(ctx context.Context) Logger {
 	return Info().WithContext(ctx)
 }
@@ -176,6 +183,17 @@ func WithError(err error) Logger {
 }
 
 func (l *logger) Print(msg string, fields ...field.M) {
+	entry := l.entry(fields...)
+	entry.Logln(logrus.Level(l.level), msg)
+}
+
+func (l *logger) PrintTo(w io.Writer, msg string, fields ...field.M) {
+	entry := l.entry(fields...)
+	entry.Logger.SetOutput(w)
+	entry.Logln(logrus.Level(l.level), msg)
+}
+
+func (l *logger) entry(fields ...field.M) *logrus.Entry {
 	logFields := make(logrus.Fields)
 
 	if envVarFields != nil {
@@ -205,7 +223,7 @@ func (l *logger) Print(msg string, fields ...field.M) {
 	if l.err != nil {
 		entry = entry.WithError(l.err)
 	}
-	entry.Logln(logrus.Level(l.level), msg)
+	return entry
 }
 
 func (l *logger) WithContext(ctx context.Context) Logger {
