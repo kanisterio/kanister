@@ -23,6 +23,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	pkgout "github.com/kanisterio/kanister/pkg/output"
 )
 
 var regex = regexp.MustCompile("[\r\n]")
@@ -36,6 +37,10 @@ func Log(podName string, containerName string, output string) {
 func LogTo(w io.Writer, pod string, container string, output string) {
 	if output != "" {
 		for _, line := range regex.Split(output, -1) {
+			if strings.Contains(line, pkgout.PhaseOpString) {
+				continue
+			}
+
 			if line != "" {
 				fields := field.M{
 					"Pod":       pod,
