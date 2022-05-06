@@ -81,17 +81,7 @@ func fPrintOutput(w io.Writer, key, value string) error {
 	return nil
 }
 
-// reStr looks for phase output patterns from log lines.
-// it matches these patterns:
-//   case1: some-prefix###Phase-output###: {"foo":"bar"}
-//   case2: ###Phase-output###: {"foo":"bar","baz":"bazz"}some-suffix
-//   case3: ###Phase-output###: {"foo":"bar","baz":"bazz"}
-//   case4: ###Phase-output###: foo
-// See unit tests.
-// {.*?} ensures non-greedy evaluation so that the matching will stop at the
-// first curly bracket.
-// The Parse function return case4 as errors to the caller.
-const reStr = `(.*)` + PhaseOpString + `( *)({.*?}|.*)`
+const reStr = PhaseOpString + `(.*)$`
 
 var logRE = regexp.MustCompile(reStr)
 
@@ -101,12 +91,9 @@ func Parse(l string) (*Output, error) {
 	if len(match) == 0 {
 		return nil, nil
 	}
-
-	stripped := strings.Replace(match[0][3], "\\", "", -1)
-	op, err := UnmarshalOutput(stripped)
+	op, err := UnmarshalOutput(match[0][1])
 	if err != nil {
 		return nil, err
 	}
-
 	return op, nil
 }
