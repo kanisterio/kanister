@@ -1,19 +1,37 @@
 queue_rules:
   - name: default
     conditions:
-      - "#approved-reviews-by>=1"
-      - status-success=Travis CI - Pull Request
-      - label=kueue
-      - label!="hold off merging"
+      - and:
+        - "#approved-reviews-by>=1"
+        - check-success=gomod
+        - check-success=lint
+        - check-success=test (test)
+        - check-success=test (integration-test)
+        - check-success=test (helm-test)
+        - check-success=build (controller)
+        - check-success=build (kanctl)
+        - check-success=build (kando)
+        - check-success=docs
+        - label=kueue
+        - label!="hold off merging"
 
 pull_request_rules:
   - name: Automatic merge
     conditions:
-      - base=master
-      - "#approved-reviews-by>=1"
-      - status-success=Travis CI - Pull Request
-      - label=kueue
-      - label!="hold off merging"
+      - and:
+        - base=master
+        - "#approved-reviews-by>=1"
+        - check-success=gomod
+        - check-success=lint
+        - check-success=test (test)
+        - check-success=test (integration-test)
+        - check-success=test (helm-test)
+        - check-success=build (controller)
+        - check-success=build (kanctl)
+        - check-success=build (kando)
+        - check-success=docs
+        - label=kueue
+        - label!="hold off merging"
     actions:
       queue:
         name: default
