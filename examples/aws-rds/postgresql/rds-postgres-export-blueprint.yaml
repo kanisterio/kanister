@@ -4,63 +4,125 @@ metadata:
   name: rds-postgres-export-bp
 actions:
   backup:
+    kind: ""
+    name: ""
     outputArtifacts:
       backupInfo:
         keyValue:
-          snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
-          instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
-          securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+          allocatedStorage: '{{ .Phases.createSnapshot.Output.allocatedStorage }}'
+          instanceID: '{{ .Phases.createSnapshot.Output.instanceID }}'
+          securityGroupID: '{{ .Phases.createSnapshot.Output.securityGroupID }}'
+          snapshotID: '{{ .Phases.createSnapshot.Output.snapshotID }}'
     phases:
-    - func: CreateRDSSnapshot
+    - args:
+        instanceID: '{{ index .Object.data "postgres.instanceid"}}'
+      func: CreateRDSSnapshot
       name: createSnapshot
-      args:
-        instanceID: '{{ index .Object.data "postgres.instanceid" }}'
-
+  delete:
+    inputArtifactNames:
+    - backupInfo
+    kind: ""
+    name: ""
+    phases:
+    - args:
+        snapshotID: '{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}'
+      func: DeleteRDSSnapshot
+      name: deleteSnapshot
+  deleteFromExport:
+    inputArtifactNames:
+    - exportInfo
+    kind: ""
+    name: ""
+    phases:
+    - args:
+        command:
+        - bash
+        - -o
+        - pipefail
+        - -o
+        - errexit
+        - -c
+        - s3path='test-postgresql-instance/postgres/{{ .ArtifactsIn.exportInfo.KeyValue.backupID
+          }}' && kando location delete --profile '{{ toJson .Profile }}' --path ${s3path}
+        image: ghcr.io/kanisterio/kanister-tools:0.78.0
+        namespace: '{{ .Namespace.Name }}'
+      func: KubeTask
+      name: deleteBackup
   export:
     inputArtifactNames:
     - backupInfo
+    kind: ""
+    name: ""
     outputArtifacts:
       exportInfo:
         keyValue:
-          backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
-          instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
-          securityGroupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
+          backupID: '{{ .Phases.exportSnapshot.Output.backupID }}'
+          instanceID: '{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}'
+          securityGroupID: '{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}'
     phases:
-    - func: ExportRDSSnapshotToLocation
+    - args:
+        backupArtifactPrefix: test-postgresql-instance/postgres
+        databases: '{{ index .Object.data "postgres.databases" }}'
+        dbEngine: PostgreSQL
+        instanceID: '{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}'
+        namespace: '{{ .Object.metadata.namespace }}'
+        password: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password"
+          | toString }}'
+        securityGroupID: '{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}'
+        snapshotID: '{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}'
+        username: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "username"
+          | toString }}'
+      func: ExportRDSSnapshotToLocation
       name: exportSnapshot
       objects:
         dbsecret:
+          apiVersion: ""
+          group: ""
           kind: Secret
           name: '{{ index .Object.data "postgres.secret" }}'
-          namespace: "{{ .Object.metadata.namespace }}"
-      args:
-        namespace: "{{ .Object.metadata.namespace }}"
-        instanceID: "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
-        securityGroupID: "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
-        username: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "username" | toString }}'
-        password: '{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password" | toString }}'
-        dbEngine: "PostgreSQL"
-        databases: '{{ index .Object.data "postgres.databases" }}'
-        snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
-        backupArtifactPrefix: test-postgresql-instance/postgres
-
+          namespace: '{{ .Object.metadata.namespace }}'
+          resource: ""
   restore:
     inputArtifactNames:
-    - exportInfo
+    - backupInfo
+    kind: ""
+    name: ""
     phases:
-    - func: RestoreRDSSnapshot
+    - args:
+        instanceID: '{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}'
+        securityGroupID: '{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}'
+        snapshotID: '{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}'
+      func: RestoreRDSSnapshot
       name: restoreSnapshots
+  restorefromexport:
+    inputArtifactNames:
+    - exportInfo
+    kind: ""
+    name: ""
+    phases:
+    - func: KubeTask
+      name: exportSnapshot
       objects:
         dbsecret:
+          apiVersion: ""
+          group: ""
           kind: Secret
           name: '{{ index .Object.data "postgres.secret" }}'
-          namespace: "{{ .Object.metadata.namespace }}"
+          namespace: '{{ .Object.metadata.namespace }}'
+          resource: ""
       args:
-        namespace: "{{ .Object.metadata.namespace }}"
-        backupArtifactPrefix: test-postgresql-instance/postgres
-        instanceID:  "{{ .ArtifactsIn.exportInfo.KeyValue.instanceID }}"
-        backupID:  "{{ .ArtifactsIn.exportInfo.KeyValue.backupID }}"
-        securityGroupID:  "{{ .ArtifactsIn.exportInfo.KeyValue.securityGroupID }}"
-        username: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "username" | toString }}'
-        password: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "password" | toString }}'
-        dbEngine: "PostgreSQL"
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.78.0
+        namespace: '{{ .Object.metadata.namespace }}'
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          export PGHOST='{{ index .Object.data "export.host" }}'
+          export PGUSER='{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "username" | toString }}'
+          export PGPASSWORD='{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password" | toString }}'
+          export backup_file_path='test-postgresql-instance/postgres/{{ .ArtifactsIn.exportInfo.KeyValue.backupID}}'
+          kando location pull --profile '{{ toJson .Profile }}' --path ${backup_file_path} - | gunzip -c -f | psql -q -U "${PGUSER}" postgres
