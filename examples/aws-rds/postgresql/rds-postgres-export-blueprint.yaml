@@ -126,3 +126,19 @@ actions:
           export PGPASSWORD='{{ index .Phases.exportSnapshot.Secrets.dbsecret.Data "password" | toString }}'
           export backup_file_path='test-postgresql-instance/postgres/{{ .ArtifactsIn.exportInfo.KeyValue.backupID}}'
           kando location pull --profile '{{ toJson .Profile }}' --path ${backup_file_path} - | gunzip -c -f | psql -q -U "${PGUSER}" postgres
+
+
+
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: dbconfig
+#   namespace: rds-app
+# data:
+#   postgres.instanceid:       # instanceid of of the database created in RDS
+#   postgres.host:             # Endpoint of RDS Instance
+#   postgres.databases: |       # databases to take backup of
+#     - postgres
+#   postgres.secret: dbcreds    # name of K8s secret in the same namespace
+#   export.host: # hostname where database needs to be restored
+#   export.port: # port 
