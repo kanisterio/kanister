@@ -28,7 +28,7 @@ actions:
         snapshotID: '{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}'
       func: DeleteRDSSnapshot
       name: deleteSnapshot
-  deleteFromExport:
+  deletefromexport:
     inputArtifactNames:
     - exportInfo
     kind: ""
@@ -45,7 +45,7 @@ actions:
         - s3path='test-postgresql-instance/postgres/{{ .ArtifactsIn.exportInfo.KeyValue.backupID
           }}' && kando location delete --profile '{{ toJson .Profile }}' --path ${s3path}
         image: ghcr.io/kanisterio/kanister-tools:0.78.0
-        namespace: '{{ .Namespace.Name }}'
+        namespace: '{{ .Object.metadata.namespace }}'
       func: KubeTask
       name: deleteBackup
   export:
