@@ -37,11 +37,16 @@ func Log(podName string, containerName string, output string) {
 func LogTo(w io.Writer, pod string, container string, output string) {
 	if output != "" {
 		for _, line := range regex.Split(output, -1) {
+			// retain the original format of phase outputs for ease
+			// of processing later.
 			if strings.Contains(line, pkgout.PhaseOpString) {
+				if _, err := w.Write([]byte(line + "\n")); err != nil {
+					log.PrintTo(w, err.Error())
+				}
 				continue
 			}
 
-			if line != "" {
+			if strings.TrimSpace(line) != "" {
 				fields := field.M{
 					"Pod":       pod,
 					"Container": container,
