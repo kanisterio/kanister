@@ -24,9 +24,9 @@ import (
 	"strings"
 	"time"
 
+	uuid "github.com/gofrs/uuid"
 	"github.com/jpillora/backoff"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -108,8 +108,9 @@ func (s *GpdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 	}
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
 
+	id, _ := uuid.NewV1()
 	createDisk := &compute.Disk{
-		Name:   fmt.Sprintf(volumeNameFmt, uuid.NewV1().String()),
+		Name:   fmt.Sprintf(volumeNameFmt, id.String()),
 		SizeGb: blockstorage.SizeInGi(volume.SizeInBytes),
 		Type:   volume.VolumeType,
 		Labels: tags,
@@ -179,8 +180,9 @@ func (s *GpdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage
 
 // SnapshotCreate is part of blockstorage.Provider
 func (s *GpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
+	rbId, _ := uuid.NewV1()
 	rb := &compute.Snapshot{
-		Name:   fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String()),
+		Name:   fmt.Sprintf(snapshotNameFmt, rbId.String()),
 		Labels: blockstorage.SanitizeTags(ktags.GetTags(tags)),
 	}
 	var err error
@@ -369,8 +371,9 @@ func (s *GpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 			tags[tag.Key] = tag.Value
 		}
 	}
+	createDiskId, _ := uuid.NewV1()
 	createDisk := &compute.Disk{
-		Name:           fmt.Sprintf(volumeNameFmt, uuid.NewV1().String()),
+		Name:           fmt.Sprintf(volumeNameFmt, createDiskId.String()),
 		SizeGb:         blockstorage.SizeInGi(snapshot.Volume.SizeInBytes),
 		Type:           snapshot.Volume.VolumeType,
 		Labels:         blockstorage.SanitizeTags(ktags.GetTags(tags)),

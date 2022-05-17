@@ -24,8 +24,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/backup"
 	awsefs "github.com/aws/aws-sdk-go/service/efs"
 	"github.com/aws/aws-sdk-go/service/sts"
+	uuid "github.com/gofrs/uuid"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 	"k8s.io/apimachinery/pkg/util/rand"
 
 	awsconfig "github.com/kanisterio/kanister/pkg/aws"
@@ -112,7 +112,8 @@ func (e *Efs) Type() blockstorage.Type {
 // volume info that is sent back from the AWS EFS.
 func (e *Efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
 	req := &awsefs.CreateFileSystemInput{}
-	req.SetCreationToken(uuid.NewV4().String())
+	reqId, _ := uuid.NewV4()
+	req.SetCreationToken(reqId.String())
 	req.SetPerformanceMode(defaultPerformanceMode)
 	req.SetThroughputMode(defaultThroughputMode)
 	req.SetTags(convertToEFSTags(blockstorage.KeyValueToMap(volume.Tags)))

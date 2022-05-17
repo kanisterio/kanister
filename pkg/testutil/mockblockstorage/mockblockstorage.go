@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	uuid "github.com/gofrs/uuid"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/kanisterio/kanister/pkg/blockstorage/getter"
@@ -63,9 +63,10 @@ func (*mockGetter) Get(storageType blockstorage.Type, config map[string]string) 
 
 // Get returns a mock storage provider
 func Get(storageType blockstorage.Type) *Provider {
+	volumeUUID, _ := uuid.NewV1()
 	volume := blockstorage.Volume{
 		Type:        storageType,
-		ID:          fmt.Sprintf("vol-%s", uuid.NewV1().String()),
+		ID:          fmt.Sprintf("vol-%s", volumeUUID.String()),
 		Az:          "AZ",
 		Encrypted:   false,
 		VolumeType:  "ssd",
@@ -78,9 +79,10 @@ func Get(storageType blockstorage.Type) *Provider {
 		CreationTime: blockstorage.TimeStamp(time.Time{}),
 	}
 	snapVol := volume
+	snapUUID, _ := uuid.NewV1()
 	snapshot := blockstorage.Snapshot{
 		Type:        storageType,
-		ID:          fmt.Sprintf("snap-%s", uuid.NewV1().String()),
+		ID:          fmt.Sprintf("snap-%s", snapUUID.String()),
 		SizeInBytes: 1024,
 		Tags: []*blockstorage.KeyValue{
 			{Key: "kanister.io/jobid", Value: "unittest"},
@@ -112,9 +114,10 @@ func (p *Provider) VolumeCreate(context.Context, blockstorage.Volume) (*blocksto
 
 // VolumeCreateFromSnapshot mock
 func (p *Provider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blockstorage.Snapshot, tags map[string]string) (*blockstorage.Volume, error) {
+	volUUID, _ := uuid.NewV1()
 	vol := blockstorage.Volume{
 		Type:        snapshot.Type,
-		ID:          fmt.Sprintf("vol-%s", uuid.NewV1().String()),
+		ID:          fmt.Sprintf("vol-%s", volUUID.String()),
 		Az:          "AZ",
 		Encrypted:   false,
 		VolumeType:  "ssd",

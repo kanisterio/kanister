@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
+	uuid "github.com/gofrs/uuid"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 	"github.com/vmware/govmomi/cns"
 	"github.com/vmware/govmomi/vapi/rest"
 	vapitags "github.com/vmware/govmomi/vapi/tags"
@@ -170,8 +170,8 @@ func (p *FcdProvider) VolumeCreateFromSnapshot(ctx context.Context, snapshot blo
 		return nil, errors.Wrap(err, "Failed to split snapshot full ID")
 	}
 	log.Debug().Print("CreateDiskFromSnapshot foo", field.M{"VolumeID": volID, "SnapshotID": snapshotID})
-	uid := uuid.NewV1().String()
-	task, err := p.Gom.CreateDiskFromSnapshot(ctx, vimID(volID), vimID(snapshotID), uid, nil, nil, "")
+	uid, _ := uuid.NewV1()
+	task, err := p.Gom.CreateDiskFromSnapshot(ctx, vimID(volID), vimID(snapshotID), uid.String(), nil, nil, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create disk from snapshot")
 	}
