@@ -183,8 +183,8 @@ func (s *GpdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage
 
 // SnapshotCreate is part of blockstorage.Provider
 func (s *GpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	rbId, err := uuid.NewV1()
-	if err != nil {
+	rbId, uerr := uuid.NewV1()
+	if uerr != nil {
 		return nil, errors.Wrap(err, "Failed to create UUID")
 	}
 	rb := &compute.Snapshot{
