@@ -112,7 +112,10 @@ func (e *Efs) Type() blockstorage.Type {
 // volume info that is sent back from the AWS EFS.
 func (e *Efs) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
 	req := &awsefs.CreateFileSystemInput{}
-	reqId, _ := uuid.NewV4()
+	reqId, err := uuid.NewV4()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
 	req.SetCreationToken(reqId.String())
 	req.SetPerformanceMode(defaultPerformanceMode)
 	req.SetThroughputMode(defaultThroughputMode)

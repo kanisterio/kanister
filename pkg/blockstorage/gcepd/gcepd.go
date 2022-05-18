@@ -108,7 +108,10 @@ func (s *GpdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 	}
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
 
-	id, _ := uuid.NewV1()
+	id, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
 	createDisk := &compute.Disk{
 		Name:   fmt.Sprintf(volumeNameFmt, id.String()),
 		SizeGb: blockstorage.SizeInGi(volume.SizeInBytes),
@@ -180,7 +183,10 @@ func (s *GpdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage
 
 // SnapshotCreate is part of blockstorage.Provider
 func (s *GpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	rbId, _ := uuid.NewV1()
+	rbId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
 	rb := &compute.Snapshot{
 		Name:   fmt.Sprintf(snapshotNameFmt, rbId.String()),
 		Labels: blockstorage.SanitizeTags(ktags.GetTags(tags)),
@@ -371,7 +377,10 @@ func (s *GpdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot bloc
 			tags[tag.Key] = tag.Value
 		}
 	}
-	createDiskId, _ := uuid.NewV1()
+	createDiskId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
 	createDisk := &compute.Disk{
 		Name:           fmt.Sprintf(volumeNameFmt, createDiskId.String()),
 		SizeGb:         blockstorage.SizeInGi(snapshot.Volume.SizeInBytes),

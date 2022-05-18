@@ -68,7 +68,10 @@ func (s *AdStorage) VolumeGet(ctx context.Context, id string, zone string) (*blo
 
 func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
 	tags := blockstorage.SanitizeTags(blockstorage.KeyValueToMap(volume.Tags))
-	diskId, _ := uuid.NewV1()
+	diskId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
 	diskName := fmt.Sprintf(volumeNameFmt, diskId.String())
 	diskProperties := &azcompute.DiskProperties{
 		DiskSizeGB: azto.Int32Ptr(int32(blockstorage.SizeInGi(volume.SizeInBytes))),
@@ -207,7 +210,10 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	}
 	blobURI := blob.GetURL()
 
-	snapId, _ := uuid.NewV1()
+	snapId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
 	snapName := fmt.Sprintf(snapshotNameFmt, snapId.String())
 	var tags = make(map[string]string)
 	for _, tag := range from.Volume.Tags {
@@ -270,7 +276,10 @@ func deleteBlob(blob *storage.Blob, blobName string) {
 }
 
 func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	snapId, _ := uuid.NewV1()
+	snapId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
 	snapName := fmt.Sprintf(snapshotNameFmt, snapId.String())
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
 	region, _, err := getLocationInfo(volume.Az)
@@ -485,7 +494,10 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		return nil, err
 	}
 
-	diskId, _ := uuid.NewV1()
+	diskId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
 	diskName := fmt.Sprintf(volumeNameFmt, diskId.String())
 	tags = blockstorage.SanitizeTags(tags)
 	createDisk := azcompute.Disk{
