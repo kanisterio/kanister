@@ -29,6 +29,7 @@ type MockSuite struct{}
 var _ = Suite(&MockSuite{})
 
 func (s *MockSuite) TestMockStorage(c *C) {
-	mock := Get(blockstorage.TypeEBS)
+	mock, err := Get(blockstorage.TypeEBS)
+	c.Assert(err, IsNil)
 	c.Assert(mock.Type(), Equals, blockstorage.TypeEBS)
 }

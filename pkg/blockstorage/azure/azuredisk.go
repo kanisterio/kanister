@@ -132,10 +132,11 @@ func (s *AdStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot
 // SnapshotCopyWithArgs func: args map should contain non-empty StorageAccountName(AZURE_MIGRATE_STORAGE_ACCOUNT_NAME)
 // and StorageKey(AZURE_MIGRATE_STORAGE_ACCOUNT_KEY)
 // A destination ResourceGroup (AZURE_MIGRATE_RESOURCE_GROUP) can be provided. The created snapshot will belong to this.
-func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot,
+	to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
 	migrateStorageAccount := args[blockstorage.AzureMigrateStorageAccount]
 	migrateStorageKey := args[blockstorage.AzureMigrateStorageKey]
-	if migrateStorageAccount == "" || migrateStorageKey == "" {
+	if isMigrateStorageAccountorKey(migrateStorageAccount, migrateStorageKey) {
 		return nil, errors.Errorf("Required args %s and %s  for snapshot copy not available", blockstorage.AzureMigrateStorageAccount, blockstorage.AzureMigrateStorageKey)
 	}
 
@@ -259,6 +260,10 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	}
 	*snap.Volume = *from.Volume
 	return snap, nil
+}
+
+func isMigrateStorageAccountorKey(migrateStorageAccount, migrateStorageKey string) bool {
+	return migrateStorageAccount == "" || migrateStorageKey == ""
 }
 
 func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, ID string) {

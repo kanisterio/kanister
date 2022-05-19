@@ -185,7 +185,7 @@ func (s *GpdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage
 func (s *GpdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	rbId, uerr := uuid.NewV1()
 	if uerr != nil {
-		return nil, errors.Wrap(err, "Failed to create UUID")
+		return nil, errors.Wrap(uerr, "Failed to create UUID")
 	}
 	rb := &compute.Snapshot{
 		Name:   fmt.Sprintf(snapshotNameFmt, rbId.String()),
