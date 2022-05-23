@@ -12,8 +12,8 @@ import (
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	azto "github.com/Azure/go-autorest/autorest/to"
+	uuid "github.com/gofrs/uuid"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
@@ -68,7 +68,11 @@ func (s *AdStorage) VolumeGet(ctx context.Context, id string, zone string) (*blo
 
 func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
 	tags := blockstorage.SanitizeTags(blockstorage.KeyValueToMap(volume.Tags))
-	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
+	diskId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
+	diskName := fmt.Sprintf(volumeNameFmt, diskId.String())
 	diskProperties := &azcompute.DiskProperties{
 		DiskSizeGB: azto.Int32Ptr(int32(blockstorage.SizeInGi(volume.SizeInBytes))),
 		CreationData: &azcompute.CreationData{
@@ -128,10 +132,11 @@ func (s *AdStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot
 // SnapshotCopyWithArgs func: args map should contain non-empty StorageAccountName(AZURE_MIGRATE_STORAGE_ACCOUNT_NAME)
 // and StorageKey(AZURE_MIGRATE_STORAGE_ACCOUNT_KEY)
 // A destination ResourceGroup (AZURE_MIGRATE_RESOURCE_GROUP) can be provided. The created snapshot will belong to this.
-func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot,
+	to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
 	migrateStorageAccount := args[blockstorage.AzureMigrateStorageAccount]
 	migrateStorageKey := args[blockstorage.AzureMigrateStorageKey]
-	if migrateStorageAccount == "" || migrateStorageKey == "" {
+	if isMigrateStorageAccountorKey(migrateStorageAccount, migrateStorageKey) {
 		return nil, errors.Errorf("Required args %s and %s  for snapshot copy not available", blockstorage.AzureMigrateStorageAccount, blockstorage.AzureMigrateStorageKey)
 	}
 
@@ -206,7 +211,11 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	}
 	blobURI := blob.GetURL()
 
-	snapName := fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String())
+	snapId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
+	snapName := fmt.Sprintf(snapshotNameFmt, snapId.String())
 	var tags = make(map[string]string)
 	for _, tag := range from.Volume.Tags {
 		if _, found := tags[tag.Key]; !found {
@@ -253,6 +262,10 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	return snap, nil
 }
 
+func isMigrateStorageAccountorKey(migrateStorageAccount, migrateStorageKey string) bool {
+	return migrateStorageAccount == "" || migrateStorageKey == ""
+}
+
 func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
 	_, err := s.azCli.SnapshotsClient.RevokeAccess(ctx, rg, name)
 	if err != nil {
@@ -268,7 +281,11 @@ func deleteBlob(blob *storage.Blob, blobName string) {
 }
 
 func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	snapName := fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String())
+	snapId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
+	snapName := fmt.Sprintf(snapshotNameFmt, snapId.String())
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
 	region, _, err := getLocationInfo(volume.Az)
 	if err != nil {
@@ -482,7 +499,11 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		return nil, err
 	}
 
-	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
+	diskId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
+	diskName := fmt.Sprintf(volumeNameFmt, diskId.String())
 	tags = blockstorage.SanitizeTags(tags)
 	createDisk := azcompute.Disk{
 		Name:     azto.StringPtr(diskName),
