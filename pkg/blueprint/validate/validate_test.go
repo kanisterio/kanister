@@ -311,7 +311,7 @@ func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 			phases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "PrepareData",
-					Name: "11",
+					Name: "30",
 					Args: map[string]interface{}{
 						"namespace": "",
 						"image":     "",
@@ -320,7 +320,7 @@ func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 				},
 				{
 					Func: "PrepareData",
-					Name: "11",
+					Name: "31",
 					Args: map[string]interface{}{
 						"namespace": "",
 						"image":     "",
