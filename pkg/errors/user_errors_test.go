@@ -52,5 +52,5 @@ func (u *UserErrorSuite) TestUserMessagesInErrorWithoutUserError(c *C) {
 }
 
 func (u *UserErrorSuite) TestUserMessagesInErrorNilError(c *C) {
-	c.Assert(UserMessagesInError(nil), Equals, nil)
+	c.Assert(UserMessagesInError(nil), IsNil)
 }
