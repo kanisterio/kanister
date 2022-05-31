@@ -34,7 +34,9 @@ func (ue *UserError) UserMessage() string {
 	return ue.msg
 }
 
-func (ue *UserError) Unwrap() error { return ue.error }
+func (ue *UserError) Unwrap() error {
+	return ue.error
+}
 
 // UserErrorWithMessage initializes the UserError with given error and a message.
 // Needs to accept error if we want to initialize the UserError in between the
@@ -49,7 +51,7 @@ func UserErrorWithMessage(err error, msg string) UserMessenger {
 // UserMessagesInError gets us messages of all the `UserError`s that are wrapped
 // in the passed error's chain
 func UserMessagesInError(err error) []string {
-	userMessages := []string{}
+	var userMessages []string
 	if err == nil {
 		return nil
 	}
