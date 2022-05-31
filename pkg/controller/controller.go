@@ -460,6 +460,9 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 						Message: err.Error(),
 					}
 					ras.Status.Actions[aIDX].Phases[i].State = crv1alpha1.StateFailed
+					if output != nil {
+						ras.Status.Actions[aIDX].Phases[i].Output = output
+					}
 					return nil
 				}
 			} else {

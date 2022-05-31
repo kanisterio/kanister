@@ -18,6 +18,7 @@
 package kube
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -293,6 +294,44 @@ func (s *PodSuite) TestGetPodLogs(c *C) {
 	logs, err := GetPodLogs(ctx, s.cli, s.namespace, pod.Name)
 	c.Assert(err, IsNil)
 	c.Assert(strings.Contains(logs, "hello"), Equals, true)
+	c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
+}
+
+func (s *PodSuite) TestGetRecentPodLogs(c *C) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	pod, err := CreatePod(context.Background(), s.cli, &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command: []string{"sh", "-c", `for i in $(seq 0 20)
+do
+	echo "hello"
+done`},
+	})
+	c.Assert(err, IsNil)
+	c.Assert(WaitForPodCompletion(ctx, s.cli, s.namespace, pod.Name), IsNil)
+
+	var testCases = []struct {
+		tailSize int64
+		expected int
+	}{
+		{tailSize: 5, expected: 5},
+		{tailSize: 0, expected: TaskLogsTailSizeDefault},
+		{tailSize: -1, expected: TaskLogsTailSizeDefault},
+	}
+
+	for _, tc := range testCases {
+		r, err := GetRecentPodLogs(ctx, s.cli, s.namespace, pod.Name, tc.tailSize)
+		c.Assert(err, IsNil)
+
+		buf := &bytes.Buffer{}
+		_, err = buf.ReadFrom(r)
+		c.Assert(err, IsNil)
+
+		c.Assert(strings.Count(buf.String(), "hello"), Equals, tc.expected)
+	}
 	c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
 }
 

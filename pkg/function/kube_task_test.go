@@ -61,6 +61,24 @@ func (s *KubeTaskSuite) TearDownSuite(c *C) {
 	}
 }
 
+func errPhase(namespace string) crv1alpha1.BlueprintPhase {
+	return crv1alpha1.BlueprintPhase{
+		Name: "testOutput",
+		Func: KubeTaskFuncName,
+		Args: map[string]interface{}{
+			KubeTaskNamespaceArg: namespace,
+			KubeTaskImageArg:     consts.LatestKanisterToolsImage,
+			KubeTaskCommandArg: []string{
+				"sh",
+				"-c",
+				`echo "test string 1"
+echo "test string 2"
+exit 1`,
+			},
+		},
+	}
+}
+
 func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "testOutput",
@@ -159,5 +177,33 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
 			c.Assert(out, DeepEquals, tc.outs[i])
 		}
+	}
+}
+
+func (s *KubeTaskSuite) TestKubeTaskWithErrors(c *C) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	params := param.TemplateParams{
+		StatefulSet: &param.StatefulSetParams{
+			Namespace: s.namespace,
+		},
+	}
+
+	blueprint := newTaskBlueprint(errPhase(s.namespace))
+	expected := map[string]interface{}{
+		"recentLogs": `test string 1
+test string 2
+`,
+	}
+
+	action := "test"
+	phases, err := kanister.GetPhases(*blueprint, action, kanister.DefaultVersion, params)
+	c.Assert(err, IsNil)
+
+	for _, p := range phases {
+		actual, err := p.Exec(ctx, *blueprint, action, params)
+		c.Assert(err, NotNil)
+		c.Assert(actual[kubeTaskLogsOutputKey], DeepEquals, expected[kubeTaskLogsOutputKey])
 	}
 }

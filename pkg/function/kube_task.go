@@ -15,7 +15,10 @@
 package function
 
 import (
+	"bytes"
 	"context"
+	"os"
+	"strconv"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -31,7 +34,10 @@ import (
 )
 
 const (
-	jobPrefix = "kanister-job-"
+	jobPrefix               = "kanister-job-"
+	kubeTaskLogsOutputKey   = "recentLogs"
+	kubeTaskLogsTailSizeEnv = "KANISTER_TASK_LOGS_TAIL_SIZE"
+
 	// KubeTaskFuncName gives the function name
 	KubeTaskFuncName       = "KubeTask"
 	KubeTaskNamespaceArg   = "namespace"
@@ -83,10 +89,53 @@ func kubeTaskPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1
 		}
 		// Wait for pod completion
 		if err := kube.WaitForPodCompletion(ctx, cli, pod.Namespace, pod.Name); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
+			logs, logerr := recentLogsAsOutput(ctx, cli, pod.Namespace, pod.Name, kubeTaskLogsOutputKey)
+			if logerr != nil {
+				return nil, logerr
+			}
+
+			return map[string]interface{}{
+				logs.Key: logs.Value,
+			}, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
 		}
 		return out, err
 	}
+}
+
+// recentLogsAsOutput creates an artifact output containing the recent logs of
+// a pod. The output maps 'key' to the log string.
+// The number of log lines to retrieve is determined by either the value of the
+// TaskLogsTailSizeEnv environment variable, or the default
+// kube.TaskLogsTailSizeDefault.
+func recentLogsAsOutput(ctx context.Context, cli kubernetes.Interface, namespace, pod, key string) (*output.Output, error) {
+	var tailSize int64
+	tailSizeEnv, exists := os.LookupEnv(kubeTaskLogsTailSizeEnv)
+	if exists {
+		parsed, err := strconv.ParseInt(tailSizeEnv, 10, 0)
+		if err != nil {
+			return nil, err
+		}
+		tailSize = parsed
+	}
+
+	if tailSize == 0 {
+		tailSize = kube.TaskLogsTailSizeDefault
+	}
+
+	logs, err := kube.GetRecentPodLogs(ctx, cli, namespace, pod, tailSize)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := &bytes.Buffer{}
+	if _, err := buf.ReadFrom(logs); err != nil {
+		return nil, err
+	}
+
+	return &output.Output{
+		Key:   key,
+		Value: buf.String(),
+	}, nil
 }
 
 func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {

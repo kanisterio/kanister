@@ -15,6 +15,7 @@
 package kube
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"io/ioutil"
@@ -45,6 +46,8 @@ const (
 	PodReadyWaitTimeoutEnv = "KANISTER_POD_READY_WAIT_TIMEOUT"
 	errAccessingNode       = "Failed to get node"
 	defaultContainerName   = "container"
+
+	TaskLogsTailSizeDefault = 15
 )
 
 // PodOptions specifies options for `CreatePod`
@@ -170,6 +173,19 @@ func StreamPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, nam
 	return cli.CoreV1().Pods(namespace).GetLogs(name, plo).Stream(ctx)
 }
 
+// TailPodLogs can retrieve the recent logs of the default container in a pod.
+// It works like `kubectl logs --tail`.
+func TailPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, pod string, tail int64) (io.ReadCloser, error) {
+	if tail <= 0 {
+		tail = TaskLogsTailSizeDefault
+	}
+
+	plo := &v1.PodLogOptions{
+		TailLines: &tail,
+	}
+	return cli.CoreV1().Pods(namespace).GetLogs(pod, plo).Stream(ctx)
+}
+
 // GetPodLogs fetches the logs from the given pod
 func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name string) (string, error) {
 	reader, err := cli.CoreV1().Pods(namespace).GetLogs(name, &v1.PodLogOptions{}).Stream(ctx)
@@ -182,6 +198,22 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 		return "", err
 	}
 	return string(bytes), nil
+}
+
+// GetRecentPodLogs let us retrieve the most recent logs from a pod. The number
+// of log lines to retrieve is determined by the value of tailSize.
+func GetRecentPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, pod string, tailSize int64) (io.Reader, error) {
+	r, err := TailPodLogs(ctx, cli, namespace, pod, tailSize)
+	if err != nil {
+		return nil, err
+	}
+
+	logBuf := &bytes.Buffer{}
+	if _, err := logBuf.ReadFrom(r); err != nil {
+		return nil, err
+	}
+
+	return logBuf, nil
 }
 
 // WaitForPodReady waits for a pod to exit the pending state
