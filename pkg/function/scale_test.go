@@ -224,16 +224,8 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		c.Assert(ok, Equals, true)
 	}
 
-	pods, err := s.cli.CoreV1().Pods(s.namespace).List(ctx, metav1.ListOptions{})
+	_, err = s.cli.CoreV1().Pods(s.namespace).List(ctx, metav1.ListOptions{})
 	c.Assert(err, IsNil)
-
-	// This check can flake on underprovisioned clusters so we exit early.
-	c.SucceedNow()
-	for _, pod := range pods.Items {
-		for _, cs := range pod.Status.ContainerStatuses {
-			c.Assert(cs.State.Terminated, NotNil)
-		}
-	}
 }
 
 func (s *ScaleSuite) TestGetArgs(c *C) {
