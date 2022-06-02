@@ -1,6 +1,6 @@
 # K8ssandra
 
-[K8ssandra](https://k8ssandra.io/) is a cloud-native distribution of Apache Cassandra® (Cassandra) designed to run on Kubernetes. K8ssandra follows the K8s operator pattern to automate operational tasks. This includes metric, data anti-entropy services, and backup/restore tooling. More details can be found [here](https://docs.k8ssandra.io).
+[K8ssandra](https://k8ssandra.io/) is a cloud-native distribution of Apache Cassandra (Cassandra) designed to run on Kubernetes. K8ssandra follows the K8s operator pattern to automate operational tasks. This includes metric, data anti-entropy services, and backup/restore tooling. More details can be found [here](https://docs.k8ssandra.io).
 
 K8ssandra operator uses Medusa to backup and restore Cassandra data. Kanister can make use of Medusa operator APIs to perform backup and restore of Cassandra data.
 
@@ -8,13 +8,13 @@ K8ssandra operator uses Medusa to backup and restore Cassandra data. Kanister ca
 
 * Kubernetes 1.17+
 * PV support on the underlying infrastructure
-* Kanister controller version 0.78.0 installed in your cluster
+* Kanister controller version 0.79.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 * K8ssandra needs at least 4 cores and 8GB of RAM available to Docker and appropriate heap sizes for Cassandra and Stargate. If you don’t have those resources available, you can avoid deploying features such as monitoring, Reaper and Medusa, and also reduce the number of Cassandra nodes.
 
 ## Chart Details
 
-We will be using [K8ssandra](https://github.com/k8ssandra/k8ssandra/tree/main/charts/k8ssandra) official helm charts to deploy K8ssandra stack on [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+We will be using [K8ssandra](https://github.com/k8ssandra/k8ssandra/tree/main/charts/k8ssandra) official Helm charts to deploy K8ssandra stack on [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
 ## Installing the K8ssandra
 
@@ -32,6 +32,7 @@ Medusa supports different types of object stores including GCS, S3, and S3-compa
 For the scope of this example, we will just focus on S3 bucket. But you can choose any object store of your choice.
 
 Create a secret using the following template to enable S3 integration with Medusa. Replace `my_access_key` and `my_secret_key` with actual keys before creating the secret.
+
 ```
 apiVersion: v1
 kind: Secret
@@ -47,13 +48,12 @@ stringData:
 ```
 
 ### Create K8ssandra cluster
-Create a helm configuration file e.g values.yaml with the following configuration so that K8ssandra installation works on the limited resources we have locally.
+Create a Helm configuration file e.g values.yaml with the following configuration so that K8ssandra installation works on the limited resources we have locally.
 
 ```
 cassandra:
   version: "3.11.10"
   cassandraLibDirVolume:
-    storageClass: STORAGECLASS
     size: 5Gi
   allowMultipleNodesPerWorker: true
   heap:
@@ -85,48 +85,50 @@ stargate:
   cpuLimMillicores: 1000
 medusa:
   enabled: true
-  bucketName: TEST_BUCKET
   storageSecret: medusa-bucket-key
   storage: s3
-  storage_properties:
-    region: REGION
 ```
 
-Where,
-
-- `STORAGECLASS` is the storageclass with `WaitForFirstConsumer` VolumeBindingMode.
-- `TEST_BUCKET` is the S3 bucket that will be used for backup by Medusa.
-- `REGION` is the AWS region bucket exists.
-
-Pass the values.yaml file to `helm install` command to overwrite the default helm chart configuration
+Pass the values.yaml file to `helm install` command to overwrite the default Helm chart configuration
 
 ```bash
 # Create namespace
 $ kubectl create namespace k8ssandra
 
-# Add k8ssandra helm repo
+# Add k8ssandra Helm repo
 $ helm repo add k8ssandra https://helm.k8ssandra.io/stable
 $ helm repo update
 
 # Install K8ssandra operator
-$ helm install k8ssandra k8ssandra/k8ssandra -n k8ssandra -f ./values.yaml
+$ helm install k8ssandra k8ssandra/k8ssandra -n k8ssandra --create-namespace -f ./values.yaml \
+    --set cassandra.cassandraLibDirVolume.storageClass=<storage_class> \
+    --set medusa.bucketName=<aws_s3_bucket_name> \
+    --set medusa.storage_properties.region=<aws_bucket_region>
 ```
 
-Installing the helm chart will create a few components like `cass-operator`, `medusa-operator` and `dc` pods. The actual Cassandra node name from the running pod listing is `k8ssandra-dc1-rack-a-sts-0` which we’ll use throughout the following example.
+Where,
+
+- `storage_class` is the storageclass with `WaitForFirstConsumer` VolumeBindingMode.
+- `aws_s3_bucket_name` is the S3 bucket that will be used for backup by Medusa.
+- `aws_bucket_region` is the AWS region bucket exists.
+
+Installing the Helm chart will create a few components like `cass-operator`, `medusa-operator` and `dc` pods. The actual Cassandra node name from the running pod listing is `k8ssandra-dc1-rack-a-sts-0` which we’ll use throughout the following example.
 
 
 **NOTE:**
 
 Kanister operator role needs to be updated in order to access custom resources.
-For testing purpose, we can give cluster-admin role to kanister-operator service account with -
+Create required ClusterRole and ClusterRoleBinding with the following command.
 
-`$ kubectl create -f kanister-clusteradmin-binding.yaml`
+```bash
+$ kubectl auth reconcile -f kanister-k8ssandra-rbac.yaml
+```
 
 You may have to update the service account name in the specs if you have deployed Kanister with another name
 
 ## Integrating with Kanister
 
-If you have deployed the K8ssandra operator with other name than `k8ssandra` and namespace other than `k8ssandra`, you need to modify the commands used below to use the correct name and namespace
+If you have deployed the K8ssandra operator with other name than `k8ssandra` and namespace other than `k8ssandra`, you need to modify the commands used below to use the correct name and namespace.
 
 ### Create Blueprint
 
@@ -186,7 +188,7 @@ $ kubectl describe actionset backup-swxnq -n kanister
 
 ### Disaster strikes!
 
-Let's say someone with accidentally deleted the bucket using the following command in K8ssandra cluster pod.
+Let's say someone accidentally deleted the bucket using the following command in K8ssandra cluster pod.
 
 ```bash
 # Connect to cassandra pod
@@ -246,7 +248,7 @@ If you run into any issues with the above commands, you can check the logs of th
 $ kubectl --namespace <kanister-operator-namespace> logs -l app=kanister-operator
 ```
 
-you can also check events of the ActionSet
+You can also check events of the ActionSet with the following command.
 
 ```bash
 $ kubectl describe actionset <actionset-name> -n <kanister-operator-namespace>
