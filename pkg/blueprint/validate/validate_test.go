@@ -15,6 +15,7 @@
 package validate
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -22,21 +23,28 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/param"
 )
 
 func Test(t *testing.T) { TestingT(t) }
+
+type BlueprintTest struct {
+	phases      []crv1alpha1.BlueprintPhase
+	err         Checker
+	errContains string
+	deferPhase  *crv1alpha1.BlueprintPhase
+}
+
+const (
+	nonDefaultFuncVersion = "v0.0.1"
+)
 
 type ValidateBlueprint struct{}
 
 var _ = Suite(&ValidateBlueprint{})
 
 func (v *ValidateBlueprint) TestValidate(c *C) {
-	for _, tc := range []struct {
-		phases      []crv1alpha1.BlueprintPhase
-		err         Checker
-		errContains string
-		deferPhase  *crv1alpha1.BlueprintPhase
-	}{
+	for _, tc := range []BlueprintTest{
 		{
 			phases: []crv1alpha1.BlueprintPhase{
 				{
@@ -223,6 +231,116 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 	}
 }
 
+func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
+	for _, tc := range []BlueprintTest{
+		{
+			phases: []crv1alpha1.BlueprintPhase{
+				{
+					Func: "NonDefaultVersionFunc",
+					Name: "00",
+					Args: map[string]interface{}{
+						"ndVersionArg0": "",
+						"ndVersionArg1": "",
+						"ndVersionArg2": "",
+					},
+				},
+				{
+					Func: "PrepareData",
+					Name: "01",
+					Args: map[string]interface{}{
+						"namespace": "",
+						"image":     "",
+						"command":   "",
+					},
+				},
+			},
+			err: IsNil,
+		},
+		{
+			// blueprint with one function that is registered with default version and
+			// one function with non default version
+			phases: []crv1alpha1.BlueprintPhase{
+				{
+					Func: "NonDefaultVersionFunc",
+					Name: "10",
+					Args: map[string]interface{}{
+						"ndVersionArg0":  "",
+						"ndVersionArg1":  "",
+						"ndVersionArg23": "",
+					},
+				},
+				{
+					Func: "PrepareData",
+					Name: "11",
+					Args: map[string]interface{}{
+						"namespace": "",
+						"image":     "",
+						"command":   "",
+					},
+				},
+			},
+			err:         NotNil,
+			errContains: "argument ndVersionArg23 is not supported",
+		},
+		{
+			// blueprint where both the functions are registered with non default version
+			phases: []crv1alpha1.BlueprintPhase{
+				{
+					Func: "NonDefaultVersionFunc",
+					Name: "20",
+					Args: map[string]interface{}{
+						"ndVersionArg0": "",
+						"ndVersionArg1": "",
+						"ndVersionArg2": "",
+					},
+				},
+				{
+					Func: "NonDefaultVersionFunc",
+					Name: "21",
+					Args: map[string]interface{}{
+						"ndVersionArg0": "",
+						"ndVersionArg1": "",
+					},
+				},
+			},
+			err:         NotNil,
+			errContains: "Required arg missing: ndVersionArg2",
+		},
+		{
+			// blueprint where both the functions are registered with default version
+			phases: []crv1alpha1.BlueprintPhase{
+				{
+					Func: "PrepareData",
+					Name: "30",
+					Args: map[string]interface{}{
+						"namespace": "",
+						"image":     "",
+						"command":   "",
+					},
+				},
+				{
+					Func: "PrepareData",
+					Name: "31",
+					Args: map[string]interface{}{
+						"namespace": "",
+						"image":     "",
+						"command":   "",
+					},
+				},
+			},
+			err: IsNil,
+		},
+	} {
+		bp := blueprint()
+		bp.Actions["backup"].Phases = tc.phases
+		err := Do(bp, nonDefaultFuncVersion)
+		if err != nil {
+			c.Assert(strings.Contains(err.Error(), tc.errContains), Equals, true)
+		}
+		c.Assert(err, tc.err)
+	}
+}
+
 func blueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
@@ -231,4 +349,28 @@ func blueprint() *crv1alpha1.Blueprint {
 			},
 		},
 	}
+}
+
+type nonDefaultVersionFunc struct{}
+
+func (nd *nonDefaultVersionFunc) Name() string {
+	return "NonDefaultVersionFunc"
+}
+
+func (nd *nonDefaultVersionFunc) RequiredArgs() []string {
+	return []string{"ndVersionArg0", "ndVersionArg1", "ndVersionArg2"}
+}
+
+func (nd *nonDefaultVersionFunc) Arguments() []string {
+	return []string{"ndVersionArg0", "ndVersionArg1", "ndVersionArg2", "ndVersionArg3"}
+}
+
+func (nd *nonDefaultVersionFunc) Exec(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+var _ kanister.Func = (*nonDefaultVersionFunc)(nil)
+
+func init() {
+	_ = kanister.RegisterVersion(&nonDefaultVersionFunc{}, nonDefaultFuncVersion)
 }
