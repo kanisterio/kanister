@@ -8,8 +8,8 @@ Kanister: Application-Specific Data Management
 
 .. image:: https://goreportcard.com/badge/github.com/kanisterio/kanister
    :target: https://goreportcard.com/report/github.com/kanisterio/kanister
-.. image:: https://travis-ci.org/kanisterio/kanister.svg?branch=master
-   :target: https://travis-ci.org/kanisterio/kanister
+.. image:: https://github.com/kanisterio/kanister/actions/workflows/main.yaml/badge.svg?branch=master
+   :target: https://github.com/kanisterio/kanister/actions
 
 Kanister allows domain experts to capture application-specific data management
 tasks in Blueprints which can be easily shared and extended. The framework takes

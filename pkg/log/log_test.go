@@ -99,6 +99,22 @@ func (s *LogSuite) TestLogWithContextFieldsAndError(c *C) {
 	c.Assert(entry["key"], Equals, "value")
 }
 
+func (s *LogSuite) TestLogPrintTo(c *C) {
+	buf := &bytes.Buffer{}
+	msg := "test log message"
+	fields := map[string]interface{}{
+		"field1": "value1",
+		"field2": "value2",
+	}
+	PrintTo(buf, msg, fields)
+
+	entry := map[string]interface{}{}
+	err := json.Unmarshal(buf.Bytes(), &entry)
+	c.Assert(err, IsNil)
+	c.Assert(entry, NotNil)
+	c.Assert(entry["msg"], Equals, msg)
+}
+
 func testLogMessage(c *C, msg string, print func(string, ...field.M), fields ...field.M) map[string]interface{} {
 	log.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339Nano})
 	var memLog bytes.Buffer
