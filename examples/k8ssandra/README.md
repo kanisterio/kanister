@@ -92,9 +92,6 @@ medusa:
 Pass the values.yaml file to `helm install` command to overwrite the default Helm chart configuration
 
 ```bash
-# Create namespace
-$ kubectl create namespace k8ssandra
-
 # Add k8ssandra Helm repo
 $ helm repo add k8ssandra https://helm.k8ssandra.io/stable
 $ helm repo update
