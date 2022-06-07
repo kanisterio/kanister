@@ -41,7 +41,7 @@ For example,
 ```yaml
 status:
   progress:
-    percentCompleted: 50 # 1 out of 2 phases are completed
+    percentCompleted: 50.00 # 1 out of 2 actions are completed
     lastTransitionTime: 2022-04-06 14:23:34
   actions:
   - blueprint: my-blueprint
@@ -50,19 +50,19 @@ status:
     - name: echo
       state: completed
       progress:
-        percentCompleted: 100
+        percentCompleted: 100.00
         lastTransitionTime: 2022-04-06 14:13:00
     - name: echo
       state: completed
       progress:
-        percentCompleted: 100
+        percentCompleted: 100.00
         lastTransitionTime: 2022-04-06 14:23:34
     name: action-01
     phases:
     - name: echo
       state: pending
       progress:
-        percentCompleted: 30
+        percentCompleted: 30.00
         lastTransitionTime: 2022-04-06 14:30:31
   state: pending
 ```
@@ -85,10 +85,10 @@ which normally are used to invoke long-running operations:
 #### Blueprint Progress
 
 Initially, the blueprint overall progress is computed by checking the number of
-completed phases against the total number of phases:
+completed actions against the total number of actions:
 
 ```
-blueprint_progress_percent = num_completed_phases / total_num_phases * 100
+blueprint_progress_percent = num_completed_actions / total_num_actions * 100
 ```
 
 In subsequent implementation, the computation alogrithm can be updated to assign
@@ -96,12 +96,12 @@ more weight to phases with long-running operations. It's also possible to post
 periodic progress updates using an exponential backoff mechanism as long as the
 underlying phases are still alive.
 
-When the first phase of the blueprint is started, the blueprint progress will be
+When the first action of the blueprint is started, the blueprint progress will be
 updated to 10%, instead of keeping it at 0%. This will help to distinguish
-between in-progress first phase from an inactive first phase.
+between in-progress first action from an inactive first action.
 
-The blueprint progress will only be set to 100% after all the phases completed
-without failures. The blueprint progress should not exceed 100%.
+The blueprint progress will only be set to 100% after all the actions completed
+without failures. The blueprint progress should never exceed 100%.
 
 #### Phase Progress
 
@@ -115,7 +115,8 @@ Some example trackers include ones that can track progress by:
 * checking the number of uploaded bytes against estimated total bytes
 * checking the duration elapsed against the estimated duration to complete the
 operation
-* parsing the log outputs for milestones indicator
+* parsing the log outputs for milestone events to indicate the 25%, 50%, 75% and
+100% markers
 
 ✍️ Currently, Kanister Functions do not utilize Kopia to perform their
 underlying work. Once the work to integrate Kopia into Kanister is completed,
@@ -205,7 +206,7 @@ out := io.MultiWriter(os.Stdout, progressTracker)
 kube.ExecOutput(cli, namespace, pod, container, command, in, out, errw)
 ```
 
-Here's an sample tracker that computes progress status based on the amount of i
+Here's an sample tracker that computes progress status based on the amount of
 data uploaded vs. the total amount of data:
 
 ```go
