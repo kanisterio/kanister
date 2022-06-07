@@ -44,9 +44,14 @@ func IsOSRouteGroupAvailable(ctx context.Context, cli discovery.DiscoveryInterfa
 
 // IsResAvailableInGroupVersion takes a resource and checks if that exists in the passed group and version
 func IsResAvailableInGroupVersion(ctx context.Context, cli discovery.DiscoveryInterface, groupName, version, resource string) (bool, error) {
+	// This call is going to fail with error type `*discovery.ErrGroupDiscoveryFailed` if there are
+	// some api-resources that are served by aggregated API server and the aggregated API server is not ready.
+	// So if this utility is being called for those api-resources, `false` would be returned
 	resList, err := cli.ServerPreferredResources()
 	if err != nil {
-		return false, err
+		if _, ok := err.(*discovery.ErrGroupDiscoveryFailed); !ok {
+			return false, err
+		}
 	}
 
 	gv := fmt.Sprintf(groupVersionFormat, groupName, version)
