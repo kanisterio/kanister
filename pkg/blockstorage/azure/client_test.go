@@ -165,7 +165,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			errChecker: NotNil,
 		},
 	} {
-		ccc, err := getCredConfig(tc.env, tc.config)
+		ccc, err := GetCredConfig(tc.env, tc.config)
 		c.Assert(err, tc.errChecker)
 		if err == nil {
 			c.Assert(ccc.ClientID, Equals, tc.expCCC.ClientID)

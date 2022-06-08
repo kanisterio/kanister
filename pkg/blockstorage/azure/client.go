@@ -67,12 +67,12 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		cloudEnvironment = azure.PublicCloud.Name
 	}
 
-	env, err := azure.EnvironmentFromName(cloudEnvironment)
+	env, err := GetEnvironment(cloudEnvironment)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch the cloud environment.")
+		return nil, err
 	}
 
-	authorizer, err := getAuthorizer(env, config)
+	authorizer, err := getAuthorizer(*env, config)
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +98,17 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	}, nil
 }
 
+func GetEnvironment(cloudEnvironment string) (*azure.Environment, error) {
+	env, err := azure.EnvironmentFromName(cloudEnvironment)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch the cloud environment.")
+	}
+	return &env, err
+}
+
 // nolint:unparam
 func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
-	credConfig, err := getCredConfig(env, config)
+	credConfig, err := GetCredConfig(env, config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get Azure ClientCredentialsConfig")
 	}
@@ -116,7 +124,7 @@ func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.B
 	return ba, nil
 }
 
-func getCredConfig(env azure.Environment, config map[string]string) (auth.ClientCredentialsConfig, error) {
+func GetCredConfig(env azure.Environment, config map[string]string) (auth.ClientCredentialsConfig, error) {
 	tenantID, ok := config[blockstorage.AzureTenantID]
 	if !ok {
 		return auth.ClientCredentialsConfig{}, errors.New("Cannot get tenantID from config")
