@@ -65,6 +65,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 
 	if cloudEnvironment, ok = config[blockstorage.AzureCloudEnviornmentID]; !ok || cloudEnvironment == "" {
 		cloudEnvironment = azure.PublicCloud.Name
+		config[blockstorage.AzureCloudEnviornmentID] = cloudEnvironment
 	}
 
 	env, err := azure.EnvironmentFromName(cloudEnvironment)
@@ -80,6 +81,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	baseURI, ok = config[blockstorage.AzureResurceMgrEndpoint]
 	if !ok {
 		baseURI = env.ResourceManagerEndpoint
+		config[blockstorage.AzureResurceMgrEndpoint] = baseURI
 	}
 
 	disksClient := compute.NewDisksClientWithBaseURI(baseURI, subscriptionID)
@@ -135,10 +137,12 @@ func getCredConfig(env azure.Environment, config map[string]string) (auth.Client
 	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
 	if credConfig.AADEndpoint, ok = config[blockstorage.AzureActiveDirEndpoint]; !ok || credConfig.AADEndpoint == "" {
 		credConfig.AADEndpoint = env.ActiveDirectoryEndpoint
+		config[blockstorage.AzureActiveDirEndpoint] = credConfig.AADEndpoint
 	}
 
 	if credConfig.Resource, ok = config[blockstorage.AzureActiveDirResourceID]; !ok || credConfig.Resource == "" {
 		credConfig.Resource = env.ResourceManagerEndpoint
+		config[blockstorage.AzureActiveDirResourceID] = credConfig.Resource
 	}
 
 	return credConfig, nil
