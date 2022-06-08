@@ -19,7 +19,7 @@ phase of an action).
 ### Summary
 
 The `ActionSet` CRD's  `status` subresource will be updated with new fields to
-communicate the blueprint and phases' progress status to the user. The
+communicate the progress of the action and its phases to the user. The
 `kube.ExecOutput()` and `kube.Task()` interfaces will be updated to accept a new
 progress I/O writer.
 
@@ -32,9 +32,9 @@ accuracy of its result, or skipped entirely in the event of resource contention.
 
 ### Changes To API
 
-The blueprint's overall progress will be reported under the new
-`status.progress` field. The progress of each phase will be included in the
-phase's subsection as `status.actions[*].phases[*].progess`.
+An action overall progress will be reported under the new `status.progress`
+field of the `ActionSet` resource. The progress of each phase will be included
+in the phase's subsection as `status.actions[*].phases[*].progress`.
 
 For example,
 
@@ -52,6 +52,11 @@ status:
       progress:
         percentCompleted: 100.00
         lastTransitionTime: 2022-04-06 14:13:00
+        extraStats:
+          transferredBytes: 20KiB
+          processedBytes: 15KiB
+          readBytes: 120KiB
+          totalBytes: 120KiB
     - name: echo
       state: completed
       progress:
@@ -82,13 +87,13 @@ which normally are used to invoke long-running operations:
 * `ExportRDSSnapshotToLocation`
 * `RestoreRDSSnapshot`
 
-#### Blueprint Progress
+#### Action Progress
 
-Initially, the blueprint overall progress is computed by checking the number of
-completed actions against the total number of actions:
+Initially, the progress of an action is computed by checking the number of
+completed phases against the total number of phases within the action:
 
 ```
-blueprint_progress_percent = num_completed_actions / total_num_actions * 100
+action_progress_percent = num_completed_phases / total_num_phases * 100
 ```
 
 In subsequent implementation, the computation alogrithm can be updated to assign
@@ -96,12 +101,12 @@ more weight to phases with long-running operations. It's also possible to post
 periodic progress updates using an exponential backoff mechanism as long as the
 underlying phases are still alive.
 
-When the first action of the blueprint is started, the blueprint progress will be
-updated to 10%, instead of keeping it at 0%. This will help to distinguish
-between in-progress first action from an inactive first action.
+When an action starts, its progress will be updated to 10%, instead of keeping
+it at 0%. This will help to distinguish between in-progress action from an
+inactive one.
 
-The blueprint progress will only be set to 100% after all the actions completed
-without failures. The blueprint progress should never exceed 100%.
+The action's progress will only be set to 100% after all its phases completed
+without failures. The action's progress should never exceed 100%.
 
 #### Phase Progress
 
