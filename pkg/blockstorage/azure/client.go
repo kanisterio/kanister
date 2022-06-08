@@ -40,7 +40,6 @@ type Client struct {
 func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	var resourceGroup string
 	var subscriptionID string
-	var cloudEnvironment string
 	var baseURI string
 	var ok bool
 	var err error
@@ -63,11 +62,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		}
 	}
 
-	if cloudEnvironment, ok = config[blockstorage.AzureCloudEnviornmentID]; !ok || cloudEnvironment == "" {
-		cloudEnvironment = azure.PublicCloud.Name
-	}
-
-	env, err := GetEnvironment(cloudEnvironment)
+	env, _, err := GetEnvironment(config)
 	if err != nil {
 		return nil, err
 	}
@@ -98,12 +93,19 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	}, nil
 }
 
-func GetEnvironment(cloudEnvironment string) (*azure.Environment, error) {
+func GetEnvironment(config map[string]string) (*azure.Environment, string, error) {
+	var cloudEnvironment string
+	var ok bool
+
+	if cloudEnvironment, ok = config[blockstorage.AzureCloudEnviornmentID]; !ok || cloudEnvironment == "" {
+		cloudEnvironment = azure.PublicCloud.Name
+	}
+
 	env, err := azure.EnvironmentFromName(cloudEnvironment)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch the cloud environment.")
+		return nil, "", errors.Wrap(err, "Failed to fetch the cloud environment.")
 	}
-	return &env, err
+	return &env, cloudEnvironment, err
 }
 
 // nolint:unparam
