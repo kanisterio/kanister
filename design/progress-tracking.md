@@ -1,5 +1,18 @@
 # Blueprint And Phase Progress Tracking
 
+<!-- toc -->
+- [Problem Statement](#problem-statement)
+- [Proposed Solution](#proposed-solution)
+  - [Summary](#summary)
+  - [Assumptions And Constraints](#assumptions-and-constraints)
+  - [Changes To API](#changes-to-api)
+  - [Progress Tracking](#progress-tracking)
+    - [Action Progress](#action-progress)
+    - [Phase Progress](#phase-progress)
+    - [Error Handling](#error-handling)
+- [Test Cases](#test-cases)
+<!-- /toc -->
+
 ## Problem Statement
 
 When an actionset triggers a long-running task like the `CopyVolumeData`
