@@ -53,6 +53,13 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 	return &AdStorage{azCli: azCli}, nil
 }
 
+func GetBaseURI(s *AdStorage) (string, error) {
+	if s == nil || s.azCli == nil {
+		return "", errors.New("Azure storage provider or client is empty")
+	}
+	return s.azCli.BaseURI, nil
+}
+
 func (s *AdStorage) VolumeGet(ctx context.Context, id string, zone string) (*blockstorage.Volume, error) {
 	_, rg, name, err := parseDiskID(id)
 	if err != nil {
