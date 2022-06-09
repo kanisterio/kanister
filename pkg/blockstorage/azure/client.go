@@ -61,7 +61,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		}
 	}
 
-	if _, ok = config[blockstorage.AzureCloudEnviornmentID]; !ok || config[blockstorage.AzureCloudEnviornmentID] == "" {
+	if id, ok = config[blockstorage.AzureCloudEnviornmentID]; !ok || id == "" {
 		config[blockstorage.AzureCloudEnviornmentID] = azure.PublicCloud.Name
 	}
 
