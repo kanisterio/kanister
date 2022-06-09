@@ -253,7 +253,7 @@ reported progress will be retained in the actionset's `status` subresource.
 ## Test Cases
 
 New unit tests to be added to the new `progress` package to cover blueprint
-progress, and phase progress calculated with a dummy tracker:
+progress, and phase progress calculated with a sample tracker:
 
 * Blueprint with single phase:
   * Completed successfully - assert that blueprint and phase progress are at 100%
