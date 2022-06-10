@@ -121,7 +121,7 @@ s3-profile-drnw9   2m
 
 # Create Actionset
 # Please make sure the value of profile and blueprint matches with the names of profile and blueprint that we have created already
-$ kanctl create actionset --action backup --namespace kanister --blueprint mysql-blueprint --statefulset mysql-test/mysql-release-master --profile mysql-test/s3-profile-drnw9 --secrets mysql=mysql-test/mysql-release
+$ kanctl create actionset --action backup --namespace kanister --blueprint mysql-blueprint --statefulset mysql-test/mysql-release --profile mysql-test/s3-profile-drnw9 --secrets mysql=mysql-test/mysql-release
 actionset backup-rslmb created
 
 $ kubectl --namespace kanister get actionsets.cr.kanister.io

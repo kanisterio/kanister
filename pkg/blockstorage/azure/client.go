@@ -40,8 +40,6 @@ type Client struct {
 func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	var resourceGroup string
 	var subscriptionID string
-	var cloudEnvironment string
-	var baseURI string
 	var ok bool
 	var err error
 
@@ -63,11 +61,11 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		}
 	}
 
-	if cloudEnvironment, ok = config[blockstorage.AzureCloudEnviornmentID]; !ok || cloudEnvironment == "" {
-		cloudEnvironment = azure.PublicCloud.Name
+	if id, ok := config[blockstorage.AzureCloudEnviornmentID]; !ok || id == "" {
+		config[blockstorage.AzureCloudEnviornmentID] = azure.PublicCloud.Name
 	}
 
-	env, err := azure.EnvironmentFromName(cloudEnvironment)
+	env, err := azure.EnvironmentFromName(config[blockstorage.AzureCloudEnviornmentID])
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch the cloud environment.")
 	}
@@ -77,19 +75,19 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		return nil, err
 	}
 
-	baseURI, ok = config[blockstorage.AzureResurceMgrEndpoint]
+	_, ok = config[blockstorage.AzureResurceMgrEndpoint]
 	if !ok {
-		baseURI = env.ResourceManagerEndpoint
+		config[blockstorage.AzureResurceMgrEndpoint] = env.ResourceManagerEndpoint
 	}
 
-	disksClient := compute.NewDisksClientWithBaseURI(baseURI, subscriptionID)
+	disksClient := compute.NewDisksClientWithBaseURI(config[blockstorage.AzureResurceMgrEndpoint], subscriptionID)
 	disksClient.Authorizer = authorizer
 
-	snapshotsClient := compute.NewSnapshotsClientWithBaseURI(baseURI, subscriptionID)
+	snapshotsClient := compute.NewSnapshotsClientWithBaseURI(config[blockstorage.AzureResurceMgrEndpoint], subscriptionID)
 	snapshotsClient.Authorizer = authorizer
 
 	return &Client{
-		BaseURI:         baseURI,
+		BaseURI:         config[blockstorage.AzureResurceMgrEndpoint],
 		SubscriptionID:  subscriptionID,
 		Authorizer:      authorizer,
 		DisksClient:     &disksClient,
@@ -135,10 +133,12 @@ func getCredConfig(env azure.Environment, config map[string]string) (auth.Client
 	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
 	if credConfig.AADEndpoint, ok = config[blockstorage.AzureActiveDirEndpoint]; !ok || credConfig.AADEndpoint == "" {
 		credConfig.AADEndpoint = env.ActiveDirectoryEndpoint
+		config[blockstorage.AzureActiveDirEndpoint] = credConfig.AADEndpoint
 	}
 
 	if credConfig.Resource, ok = config[blockstorage.AzureActiveDirResourceID]; !ok || credConfig.Resource == "" {
 		credConfig.Resource = env.ResourceManagerEndpoint
+		config[blockstorage.AzureActiveDirResourceID] = credConfig.Resource
 	}
 
 	return credConfig, nil
