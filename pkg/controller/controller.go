@@ -28,6 +28,7 @@ import (
 	"sync"
 
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/pkg/errors"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -375,6 +376,14 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 			ctx = field.Context(ctx, key, value)
 		}
 	}
+
+	go func() {
+		// progress update is computed on a best-effort basis.
+		// if it exits with error, we will just log it.
+		if err := progress.TrackActionsProgress(ctx, c.crClient, as.GetName(), as.GetNamespace()); err != nil {
+			log.Error().WithError(err)
+		}
+	}()
 
 	for i := range as.Status.Actions {
 		if err = c.runAction(ctx, as, i); err != nil {

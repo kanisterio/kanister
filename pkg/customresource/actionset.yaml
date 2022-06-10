@@ -172,6 +172,14 @@ spec:
             description: ActionSetStatus is the status for the actionset. This should
               only be updated by the controller.
             properties:
+              progress:
+                properties:
+                  percentCompleted:
+                    type: string
+                  lastTransitionTime:
+                    type: string
+                    format: date-time
+                type: object
               actions:
                 items:
                   properties:
