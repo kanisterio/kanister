@@ -371,7 +371,7 @@ func (v *ValidateBlueprint) TestValidatePhaseNames(c *C) {
 				{Name: "phasefive"},
 			},
 			err:         NotNil,
-			errContains: "Phase name phaseone is duplicated",
+			errContains: "Duplicated phase name is not allowed. Violating phase 'phaseone'",
 			deferPhase: &crv1alpha1.BlueprintPhase{
 				Name: "phasesix",
 			},
@@ -388,7 +388,7 @@ func (v *ValidateBlueprint) TestValidatePhaseNames(c *C) {
 				{Name: "phasefive"},
 			},
 			err:         NotNil,
-			errContains: "Phase name phaseone is duplicated",
+			errContains: "Duplicated phase name is not allowed. Violating phase 'phaseone'",
 			deferPhase: &crv1alpha1.BlueprintPhase{
 				Name: "phasesix",
 			},
@@ -405,7 +405,7 @@ func (v *ValidateBlueprint) TestValidatePhaseNames(c *C) {
 				{Name: "phasefive"},
 			},
 			err:         NotNil,
-			errContains: "Phase name phaseone is duplicated",
+			errContains: "Duplicated phase name is not allowed. Violating phase 'phaseone'",
 			deferPhase: &crv1alpha1.BlueprintPhase{
 				Name: "phaseone",
 			},

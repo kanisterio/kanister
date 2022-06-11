@@ -80,7 +80,7 @@ func validatePhaseNames(bp *crv1alpha1.Blueprint) error {
 
 		for _, phase := range allPhases {
 			if val := phasesCount[phase.Name]; val >= 1 {
-				return fmt.Errorf("%s: Duplicated phase name is not allowed. Violating phase %s", BPValidationErr, phase.Name)
+				return fmt.Errorf("%s: Duplicated phase name is not allowed. Violating phase '%s'", BPValidationErr, phase.Name)
 			}
 			phasesCount[phase.Name] = 1
 		}
