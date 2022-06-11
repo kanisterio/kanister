@@ -29,10 +29,11 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type BlueprintTest struct {
-	phases      []crv1alpha1.BlueprintPhase
-	err         Checker
-	errContains string
-	deferPhase  *crv1alpha1.BlueprintPhase
+	backupPhases  []crv1alpha1.BlueprintPhase
+	err           Checker
+	errContains   string
+	deferPhase    *crv1alpha1.BlueprintPhase
+	restorePhases []crv1alpha1.BlueprintPhase
 }
 
 const (
@@ -46,7 +47,7 @@ var _ = Suite(&ValidateBlueprint{})
 func (v *ValidateBlueprint) TestValidate(c *C) {
 	for _, tc := range []BlueprintTest{
 		{
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "KubeTask",
 					Name: "00",
@@ -76,7 +77,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 			err:         NotNil,
 		},
 		{
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "KubeTask",
 					Name: "10",
@@ -99,7 +100,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 		},
 		{
 			// function name is incorrect
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "KubeTasks",
 					Name: "20",
@@ -122,7 +123,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 			err:         NotNil,
 		},
 		{
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "PrepareData",
 					Name: "30",
@@ -136,7 +137,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 			err: IsNil,
 		},
 		{
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "PrepareData",
 					Name: "40",
@@ -150,7 +151,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 			err:         NotNil,
 		},
 		{
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "PrepareData",
 					Name: "50",
@@ -172,7 +173,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 			},
 		},
 		{
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "PrepareData",
 					Name: "60",
@@ -195,7 +196,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 			},
 		},
 		{
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "PrepareData",
 					Name: "70",
@@ -219,7 +220,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 		},
 	} {
 		bp := blueprint()
-		bp.Actions["backup"].Phases = tc.phases
+		bp.Actions["backup"].Phases = tc.backupPhases
 		if tc.deferPhase != nil {
 			bp.Actions["backup"].DeferPhase = tc.deferPhase
 		}
@@ -234,7 +235,7 @@ func (v *ValidateBlueprint) TestValidate(c *C) {
 func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 	for _, tc := range []BlueprintTest{
 		{
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "NonDefaultVersionFunc",
 					Name: "00",
@@ -259,7 +260,7 @@ func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 		{
 			// blueprint with one function that is registered with default version and
 			// one function with non default version
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "NonDefaultVersionFunc",
 					Name: "10",
@@ -284,7 +285,7 @@ func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 		},
 		{
 			// blueprint where both the functions are registered with non default version
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "NonDefaultVersionFunc",
 					Name: "20",
@@ -308,7 +309,7 @@ func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 		},
 		{
 			// blueprint where both the functions are registered with default version
-			phases: []crv1alpha1.BlueprintPhase{
+			backupPhases: []crv1alpha1.BlueprintPhase{
 				{
 					Func: "PrepareData",
 					Name: "30",
@@ -332,8 +333,91 @@ func (v *ValidateBlueprint) TestValidateNonDefaultVersion(c *C) {
 		},
 	} {
 		bp := blueprint()
-		bp.Actions["backup"].Phases = tc.phases
+		bp.Actions["backup"].Phases = tc.backupPhases
 		err := Do(bp, nonDefaultFuncVersion)
+		if err != nil {
+			c.Assert(strings.Contains(err.Error(), tc.errContains), Equals, true)
+		}
+		c.Assert(err, tc.err)
+	}
+}
+
+func (v *ValidateBlueprint) TestValidatePhaseNames(c *C) {
+	for _, tc := range []BlueprintTest{
+		{
+			backupPhases: []crv1alpha1.BlueprintPhase{
+				{Name: "phaseone"},
+				{Name: "phasetwo"},
+				{Name: "phasethree"},
+			},
+			restorePhases: []crv1alpha1.BlueprintPhase{
+				{Name: "phasefour"},
+				{Name: "phasefive"},
+			},
+			err: IsNil,
+			deferPhase: &crv1alpha1.BlueprintPhase{
+				Name: "phasesix",
+			},
+		},
+		// duplicate phase names in the same action
+		{
+			backupPhases: []crv1alpha1.BlueprintPhase{
+				{Name: "phaseone"},
+				{Name: "phaseone"},
+				{Name: "phasethree"},
+			},
+			restorePhases: []crv1alpha1.BlueprintPhase{
+				{Name: "phasefour"},
+				{Name: "phasefive"},
+			},
+			err:         NotNil,
+			errContains: "Duplicated phase name is not allowed. Violating phase 'phaseone'",
+			deferPhase: &crv1alpha1.BlueprintPhase{
+				Name: "phasesix",
+			},
+		},
+		// duplicate phase names in different actions
+		{
+			backupPhases: []crv1alpha1.BlueprintPhase{
+				{Name: "phaseone"},
+				{Name: "phasetwo"},
+				{Name: "phasethree"},
+			},
+			restorePhases: []crv1alpha1.BlueprintPhase{
+				{Name: "phaseone"},
+				{Name: "phasefive"},
+			},
+			err:         NotNil,
+			errContains: "Duplicated phase name is not allowed. Violating phase 'phaseone'",
+			deferPhase: &crv1alpha1.BlueprintPhase{
+				Name: "phasesix",
+			},
+		},
+		// duplicate phase names in main phase and deferPhase
+		{
+			backupPhases: []crv1alpha1.BlueprintPhase{
+				{Name: "phaseone"},
+				{Name: "phasetwo"},
+				{Name: "phasethree"},
+			},
+			restorePhases: []crv1alpha1.BlueprintPhase{
+				{Name: "phasefour"},
+				{Name: "phasefive"},
+			},
+			err:         NotNil,
+			errContains: "Duplicated phase name is not allowed. Violating phase 'phaseone'",
+			deferPhase: &crv1alpha1.BlueprintPhase{
+				Name: "phaseone",
+			},
+		},
+	} {
+		bp := blueprint()
+		bp.Actions["backup"].Phases = tc.backupPhases
+		bp.Actions["restore"].Phases = tc.restorePhases
+		if tc.deferPhase != nil {
+			bp.Actions["backup"].DeferPhase = tc.deferPhase
+		}
+		err := validatePhaseNames(bp)
 		if err != nil {
 			c.Assert(strings.Contains(err.Error(), tc.errContains), Equals, true)
 		}
@@ -345,6 +429,9 @@ func blueprint() *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"backup": {
+				Phases: []crv1alpha1.BlueprintPhase{},
+			},
+			"restore": {
 				Phases: []crv1alpha1.BlueprintPhase{},
 			},
 		},

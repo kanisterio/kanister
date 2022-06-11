@@ -67,5 +67,23 @@ func Do(bp *crv1alpha1.Blueprint, funcVersion string) error {
 		}
 	}
 
+	return validatePhaseNames(bp)
+}
+
+func validatePhaseNames(bp *crv1alpha1.Blueprint) error {
+	phasesCount := make(map[string]int)
+	for _, action := range bp.Actions {
+		allPhases := action.Phases
+		if action.DeferPhase != nil {
+			allPhases = append(action.Phases, *action.DeferPhase)
+		}
+
+		for _, phase := range allPhases {
+			if val := phasesCount[phase.Name]; val >= 1 {
+				return fmt.Errorf("%s: Duplicated phase name is not allowed. Violating phase '%s'", BPValidationErr, phase.Name)
+			}
+			phasesCount[phase.Name] = 1
+		}
+	}
 	return nil
 }
