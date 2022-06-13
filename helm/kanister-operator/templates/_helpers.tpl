@@ -49,3 +49,27 @@ Create the name of the service account to use
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Figure out the target port of service, this depends
+on the value of bpValidatingWebhook.enabled
+*/}}
+{{- define "kanister-operator.targetPort" -}}
+{{- if .Values.bpValidatingWebhook.enabled -}}
+    {{ 9443 }}
+{{- else -}}
+    {{ 8000 }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Figure out the port of service, this depends
+on the value of bpValidatingWebhook.enabled
+*/}}
+{{- define "kanister-operator.servicePort" -}}
+{{- if .Values.bpValidatingWebhook.enabled -}}
+    {{ .Values.controller.service.port }}
+{{- else -}}
+    {{ 8000 }}
+{{- end -}}
+{{- end -}}
