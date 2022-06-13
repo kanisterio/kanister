@@ -439,7 +439,7 @@ type PostgreSQLDepConfig4_10 struct {
 var _ = Suite(&PostgreSQLDepConfig4_10{
 	IntegrationSuite{
 		name:      "postgresdepconf",
-		namespace: "postgresdepconf4-5-test",
+		namespace: "postgresdepconf4-10-test",
 		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_10, app.EphemeralStorage),
 		bp:        app.NewBlueprint("postgres-dep-config", "", true),
 		profile:   newSecretProfile(),
