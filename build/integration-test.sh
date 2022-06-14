@@ -56,7 +56,7 @@ Where app-type is one of [short|all]:
   all: Runs e2e integration tests for all apps
   OR
   You can also provide regex to match apps you want to run.
-  openshift ocp_version=<ocp_version>: Runs e2e integration tests for specific version of OpenShift apps, OCP version can be provided using ocp_version argument. Currently supported versions are 3.11, 4.4 and 4.5.
+  openshift ocp_version=<ocp_version>: Runs e2e integration tests for specific version of OpenShift apps, OCP version can be provided using ocp_version argument. Currently supported versions are 3.11, 4.4, 4.5 and 4.10.
 
 EOM
     exit 1
