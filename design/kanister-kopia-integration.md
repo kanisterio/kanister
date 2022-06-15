@@ -9,7 +9,7 @@ It provides fast, incremental backups, secure, client-side end-to-end encryption
 It is one of the fastest backup/restore tool in the field and with a pluggable backend engine, it allows user to decide which storage the backups should go to.
 It is a lock-free system that, unlike other similar tools, allows for concurrent multi-client operations including garbage collection.
 
-To learn more about Kopia and it's features, visit kopia.io
+To learn more about Kopia and it's features, visit https://kopia.io/
 
 ## Goal
 
