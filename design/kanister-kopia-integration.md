@@ -38,10 +38,10 @@ The motive, arguments and usage for each function stays intact as defined on Kan
 
 ### Kanister Functions that use Kopia API Server 
 
-We should also create Kanister functions same as above, but leverage the use of [Kopia in it's server mode](https://kopia.io/docs/repository-server/).
-These Kanister functions would act like Kopia clients trying to securely proxy access to the repository storage without exposing sensitive storage credentials.
+We should also create Kanister functions that leverage the use of [Kopia in it's server mode](https://kopia.io/docs/repository-server/).
+These Kanister functions would act like Kopia clients that securely proxy access repository storage without exposing sensitive storage credentials.
 
-Following are the names of a few that could be implemented;
+Following is a list of few such functions;
 
 1. BackupDataToServer - To perform backup via the KopiaAPIserver
 2. RestoreDataFromServer - To restore from the KopiaAPIServer
@@ -53,4 +53,4 @@ We can make use of the application namespace ID to generate usernames and a rand
 These would be stored in a secret for later use. But;
 - How should we store the server username and server password securely?
 - At which point in Kanister, should Kopia API Server be started?
-- How could this Kopia API Server be disabled in case downstream Kanister users bring their own Kopia API Server?
+- How could this Kopia API Server be disabled in case downstream Kanister consumers bring their own Kopia API Server?
