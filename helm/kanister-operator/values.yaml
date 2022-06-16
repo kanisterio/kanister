@@ -13,7 +13,10 @@ serviceAccount:
   annotations:
 controller:
   service:
+    # port is used as the secured service port if the validating
+    # webhook is enabled. Otherwise, insecuredPort is used.
     port: 443
+    insecuredPort: 8000
   # updateCRDs specifies if kanister controller should create/update the CRDs
   # false : CRDs would be created by helm
   # true : CRDs would be created by kanister controller

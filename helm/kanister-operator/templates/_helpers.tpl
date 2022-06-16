@@ -70,6 +70,6 @@ on the value of bpValidatingWebhook.enabled
 {{- if .Values.bpValidatingWebhook.enabled -}}
     {{ .Values.controller.service.port }}
 {{- else -}}
-    {{ 8000 }}
+    {{ .Values.controller.service.insecuredPort }}
 {{- end -}}
 {{- end -}}
