@@ -11,7 +11,7 @@ replace (
 
 // Direct and indirect dependencies are grouped together
 require (
-	github.com/Azure/azure-sdk-for-go v64.0.0+incompatible
+	github.com/Azure/azure-sdk-for-go v65.0.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.27
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
 	github.com/Azure/go-autorest/autorest/to v0.4.0
@@ -19,7 +19,7 @@ require (
 	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
 	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/aws/aws-sdk-go v1.44.32
+	github.com/aws/aws-sdk-go v1.44.36
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/strfmt v0.21.2
 	github.com/go-sql-driver/mysql v1.6.0
