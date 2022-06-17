@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 image:
   repository: ghcr.io/kanisterio/controller
-  tag: 0.79.0
+  tag: 0.80.0
   pullPolicy: IfNotPresent
 rbac:
   create: true
@@ -13,7 +13,10 @@ serviceAccount:
   annotations:
 controller:
   service:
+    # port is used as the secured service port if the validating
+    # webhook is enabled. Otherwise, insecuredPort is used.
     port: 443
+    insecuredPort: 8000
   # updateCRDs specifies if kanister controller should create/update the CRDs
   # false : CRDs would be created by helm
   # true : CRDs would be created by kanister controller
