@@ -1,15 +1,13 @@
 # Integrating Kopia with Kanister
 
-This document proposes all the changes required within Kanister to encourage the use of Kopia backup/restore tool.
+This document proposes all the changes required within Kanister to better support the use of Kopia backup/restore tool.
 
 ## Introducing Kopia
 
-Kopia is a simple, cross-platform tool for managing encrypted backups in the cloud.
-It provides fast, incremental backups, secure, client-side end-to-end encryption, compression and data deduplication.
-It is one of the fastest backup/restore tool in the field and with a pluggable backend engine, it allows user to decide which storage the backups should go to.
-It is a lock-free system that, unlike other similar tools, allows for concurrent multi-client operations including garbage collection.
-
-To learn more about Kopia and it's features, visit https://kopia.io/
+[Kopia](https://kopia.io/) is a powerful, cross-platform tool for managing encrypted backups in the cloud.
+It provides fast and secure backups, using compression, data deduplication and client-side end-to-end encryption.
+It supports a variety of backup storage targets, including object stores, which allows users to choose the storage provider that better addresses their needs.
+It is a lock-free system that allows for concurrent multi-client operations including garbage collection.
 
 ## Goal
 
@@ -20,7 +18,7 @@ While, Kanister takes care of executing these functions from it's application-ce
 
 ### Kanister Functions 
 
-We already have a rich repository of Kanister functions present on path `pkg/function` that enable application-level data protection in various use-cases.
+We already have a rich repository of Kanister functions present on path `pkg/function` that enable application-level data protection in various use cases.
 Few of these functions need to be re-worked to use Kopia. For starters, these functions are;
 
 1. BackupData
@@ -48,7 +46,7 @@ Following is a list of few such functions;
 
 ### Limitations to using Kopia API Server
 
-Before starting Kopia API Server, it demands a list of usernames and passwords that are allowed access.
+Before starting Kopia API Server, it requires the creation of users that are allowed access.
 We can make use of the application namespace ID to generate usernames and a random alphanumeric encryption key to create passwords.
 These would be stored in a secret for later use. But;
 - How should we store the server username and server password securely?
