@@ -38,8 +38,8 @@ software versions:
 * Promtail 2.5.0
 
 Let's begin by installing Loki. Loki is a datastore optimized for holding log
-data. It indexes log data via streams made up of logs associated with unique sets
-of labels.
+data. It indexes log data via streams made up of logs, where each stream is
+associated with an unique set of labels.
 
 .. code-block:: bash
 
@@ -61,13 +61,13 @@ Confirm that the Loki StatefulSet is successfully rolled out:
   statefulset rolling update complete 1 pods at revision loki-6d7b88b95c...
 
 .. note::
-  The configuration used in this installation is meant for demonstration
+  The Loki configuration used in this installation is meant for demonstration
   purposes only. The Helm chart deploys a non-HA single instance of Loki,
   managed by a StatefulSet workload. See the `Loki installation documentation`_
   for other installation methods that may be more suitable for your
   requirements.
 
-Use Helm to install Grafana:
+Use Helm to install Grafana with a pre-configured Loki data source:
 
 .. code-block:: bash
 
@@ -105,8 +105,9 @@ Use a web browser to navigate to ``localhost:3000``:
 
 .. image:: img/logs-grafana-login.png
 
-The default login username is ``admin``. The login password can be retrieved
-using the following command:
+The default login username is ``admin``.
+
+The login password can be retrieved using the following command:
 
 .. code-block:: bash
 
@@ -120,7 +121,7 @@ Grafana installation:
 
 .. image:: img/logs-grafana-data-source.png
 
-Open up the ``Loki`` data source configuration page.
+Access the ``Loki`` data source configuration page.
 
 Use the ``Test`` button near the bottom of the page to test the connectivity
 between Grafana and Loki:
@@ -151,8 +152,8 @@ Confirm that the Promtail DaemonSet is successfully rolled out:
 Logs Segregation
 ================
 
-To simulate a steady stream of log lines, the next step is to define a blueprint
-that uses flog_ to generate Apache common and error logs:
+To simulate a steady stream of log lines, the next step defines a blueprint that
+uses flog_ to generate Apache common and error logs:
 
 .. code-block:: bash
 
@@ -180,7 +181,7 @@ that uses flog_ to generate Apache common and error logs:
           - 0.5s
   EOF
 
-Create the following actionset to invoke the ``taskApacheLogs`` action in the
+Create the following actionset to invoke the ``flogTask`` action in the
 blueprint:
 
 .. code-block:: bash
@@ -200,7 +201,7 @@ blueprint:
         name: default
   EOF
 
-Head over to the *Explore* pane on Grafana.
+Head over to the *Explore* pane in the Grafana UI.
 
 Ensures that the ``Loki`` data source is selected.
 
@@ -211,12 +212,12 @@ all Kanister logs:
 
   {namespace="kanister"}
 
-The log outputs should look similar this:
+The log outputs should look similar to this:
 
 .. image:: img/logs-kanister-all-logs.png
 
-Use the next query to select only the datapath logs are selected, replacing
-``${actionset}`` with the name of the recently created actionset:
+Use the next query to select only the datapath logs, replacing ``${actionset}``
+with the name of the recently created actionset:
 
 .. code-block:: bash
 
@@ -236,8 +237,8 @@ Wrap Up
 =======
 
 As seen in this documentation, Kanister's consistent structured log lines allow
-one to easily integrate Kanister with more advanced log aggregation and storage
-solutions to improve the data protection workflows observability.
+one to easily integrate Kanister with more advanced log aggregation solutions to
+improve ensure better observability within the data protection workflows.
 
 To remove Loki, Grafana and Promtail, use the following ``helm`` commands:
 
