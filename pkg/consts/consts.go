@@ -1,10 +1,14 @@
 package consts
 
 const (
-	ActionsetNameKey         = "ActionSet"
-	PodNameKey               = "Pod"
-	ContainerNameKey         = "Container"
-	PhaseNameKey             = "Phase"
+	ActionsetNameKey = "ActionSet"
+	PodNameKey       = "Pod"
+	ContainerNameKey = "Container"
+	PhaseNameKey     = "Phase"
+	LogKindKey       = "LogKind"
+	LogKindSystem    = "system"
+	LogKindDatapath  = "datapath"
+
 	GoogleCloudCredsFilePath = "/tmp/creds.txt"
 	LabelKeyCreatedBy        = "createdBy"
 	LabelValueKanister       = "kanister"

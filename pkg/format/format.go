@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	pkgout "github.com/kanisterio/kanister/pkg/output"
@@ -48,9 +49,10 @@ func LogTo(w io.Writer, pod string, container string, output string) {
 
 			if strings.TrimSpace(line) != "" {
 				fields := field.M{
-					"Pod":       pod,
-					"Container": container,
-					"Out":       line,
+					"Pod":             pod,
+					"Container":       container,
+					"Out":             line,
+					consts.LogKindKey: consts.LogKindDatapath,
 				}
 				log.PrintTo(w, "action update", fields)
 			}
