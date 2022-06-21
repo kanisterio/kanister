@@ -11,8 +11,8 @@ It is a lock-free system that allows for concurrent multi-client operations incl
 
 ## Goal
 
-Kopia can focus on its core data transformation as part of various Kanister functions.
-While, Kanister takes care of executing these functions from it's application-centric data protection workflows called Blueprints.
+Kopia can focus on its core data export and transformation as part of various Kanister functions.
+While, Kanister continues to execute these functions from it's application-centric data protection workflows called Blueprints.
 
 ##  Proposed Work
 
