@@ -82,7 +82,7 @@ func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
 	log.Print("Adding repo.", field.M{"app": mdb.name})
 	err = cli.AddRepo(ctx, mdb.chart.RepoName, mdb.chart.RepoURL)
 	if err != nil {
-		return errors.Wrapf(err, "Error helm repo for app %s.", mdb.name)
+		return errors.Wrapf(err, "Error adding helm repo for app %s.", mdb.name)
 	}
 
 	log.Print("Installing mysql instance using helm.", field.M{"app": mdb.name})
