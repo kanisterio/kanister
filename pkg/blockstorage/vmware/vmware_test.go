@@ -1,17 +1,24 @@
 package vmware
 
 import (
+	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"sort"
 	"testing"
 	"time"
 
-	"github.com/kanisterio/kanister/pkg/blockstorage"
+	"github.com/pkg/errors"
+	govmomitask "github.com/vmware/govmomi/task"
 	vapitags "github.com/vmware/govmomi/vapi/tags"
+	"github.com/vmware/govmomi/vim25/soap"
+	"github.com/vmware/govmomi/vim25/types"
+	"github.com/vmware/govmomi/vim25/xml"
+	vslmtypes "github.com/vmware/govmomi/vslm/types"
 	. "gopkg.in/check.v1"
+
+	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -390,6 +397,124 @@ func (s *VMWareSuite) TestGetSnapshotTags(c *C) {
 			c.Assert(len(tags), Equals, tc.expNumTags)
 		}
 	}
+}
+
+// An XML trace from `govc disk.snapshot.ls` with the VslmSyncFault
+var (
+	vslmSyncFaultReason = "Change tracking invalid or disk in use: api = DiskLib_BlockTrackGetEpoch, path->CValue() = /vmfs/volumes/vsan:52731cd109496ced-173f8e8aec7c6828/dc6d0c61-ec84-381f-2fa3-000c29e75b7f/4e1e7c4619a34919ae1f28fbb53fcd70-000008.vmdk"
+
+	vslmSyncFaultReasonEsc = "Change tracking invalid or disk in use: api = DiskLib_BlockTrackGetEpoch, path-&gt;CValue() = /vmfs/volumes/vsan:52731cd109496ced-173f8e8aec7c6828/dc6d0c61-ec84-381f-2fa3-000c29e75b7f/4e1e7c4619a34919ae1f28fbb53fcd70-000008.vmdk"
+
+	vslmSyncFaultString    = "A general system error occurred: " + vslmSyncFaultReason
+	vslmSyncFaultStringEsc = "A general system error occurred: " + vslmSyncFaultReasonEsc
+
+	vslmSyncFaultXML = `<Fault xmlns="http://schemas.xmlsoap.org/soap/envelope/">
+	<faultcode>ServerFaultCode</faultcode>
+	<faultstring>` + vslmSyncFaultStringEsc + `</faultstring>
+	<detail>
+	  <Fault xmlns:XMLSchema-instance="http://www.w3.org/2001/XMLSchema-instance" XMLSchema-instance:type="SystemError">
+		<reason>` + vslmSyncFaultReasonEsc + `</reason>
+	  </Fault>
+	</detail>
+	</Fault>`
+
+	vslmSyncFaultXMLEnv = `<?xml version="1.0" encoding="UTF-8"?>
+	<soapenv:Envelope xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+	 xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+	 xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<soapenv:Body>` + vslmSyncFaultXML + `</soapenv:Body>
+	</soapenv:Envelope>`
+)
+
+func (s *VMWareSuite) TestFormatGovmomiError(c *C) {
+	// basic soap fault
+	fault := &soap.Fault{
+		Code:   "soap-fault",
+		String: "fault string",
+	}
+	soapFaultErr := soap.WrapSoapFault(fault)
+	c.Assert(govmomiError{soapFaultErr}.Format(), Equals, "soap-fault: fault string")
+	c.Assert(govmomiError{errors.Wrap(soapFaultErr, "outer wrapper")}.Format(), Equals, "outer wrapper: soap-fault: fault string")
+
+	// Experiment with a real fault XML to figure out how to decode an error.
+	// (adapted from govmomi/vim25/methods/fault_test.go)
+	type TestBody struct {
+		Fault *soap.Fault `xml:"http://schemas.xmlsoap.org/soap/envelope/ Fault,omitempty"`
+	}
+	body := TestBody{}
+	env := soap.Envelope{Body: &body}
+	dec := xml.NewDecoder(bytes.NewReader([]byte(vslmSyncFaultXMLEnv)))
+	dec.TypeFunc = types.TypeFunc()
+	err := dec.Decode(&env)
+	c.Assert(err, IsNil)
+	c.Assert(body.Fault, NotNil)
+
+	err = soap.WrapSoapFault(body.Fault)
+	c.Assert(soap.IsSoapFault(err), Equals, true)
+	c.Assert(err.Error(), Equals, "ServerFaultCode: "+vslmSyncFaultString) // details present
+
+	vimFault := &types.VimFault{
+		MethodFault: types.MethodFault{
+			FaultCause: &types.LocalizedMethodFault{
+				LocalizedMessage: err.Error(),
+			},
+		},
+	}
+	err = soap.WrapVimFault(vimFault)
+	c.Assert(soap.IsVimFault(err), Equals, true)
+	c.Assert(err.Error(), Equals, "VimFault") // lost the details
+
+	// A vslmFault fault with details such as that returned by gom.SnapshotCreate when
+	// a volume CTK file is moved. (Note: govc succeeds in this case but list will fail)
+	vslmFaultValue := "(vmodl.fault.SystemError) {\n   faultCause = null,\n   faultMessage = null,\n   reason = " + vslmSyncFaultReason + "}"
+	vslmFault := &vslmtypes.VslmSyncFault{
+		VslmFault: vslmtypes.VslmFault{
+			MethodFault: types.MethodFault{
+				FaultMessage: []types.LocalizableMessage{
+					{
+						Key: "com.vmware.pbm.pbmFault.locale",
+						Arg: []types.KeyAnyValue{
+							{
+								Key:   "summary",
+								Value: vslmFaultValue,
+							},
+						},
+					},
+				},
+			},
+		},
+		Id: &types.ID{},
+	}
+	c.Assert(vslmFault.GetMethodFault(), NotNil)
+	c.Assert(vslmFault.GetMethodFault().FaultMessage, DeepEquals, vslmFault.FaultMessage)
+
+	err = soap.WrapVimFault(vslmFault)
+	c.Assert(err.Error(), Equals, "VslmSyncFault")
+	c.Assert(govmomiError{err}.Format(), Equals, "["+err.Error()+"; "+vslmFaultValue+"]")
+	c.Assert(govmomiError{errors.Wrap(err, "outer wrapper")}.Format(), Equals, "[outer wrapper: "+err.Error()+"; "+vslmFaultValue+"]")
+
+	c.Assert(govmomiError{err}.Matches(reVslmSyncFaultFatal), Equals, true)
+
+	// task errors
+	te := govmomitask.Error{
+		LocalizedMethodFault: &types.LocalizedMethodFault{
+			Fault: vslmFault,
+		},
+		Description: &types.LocalizableMessage{
+			Message: "description message",
+		},
+	}
+	c.Assert(err.Error(), Equals, "VslmSyncFault")
+	c.Assert(govmomiError{te}.Format(), Equals, "[description message; "+vslmFaultValue+"]")
+	c.Assert(govmomiError{errors.Wrap(te, "outer wrapper")}.Format(), Equals, "[outer wrapper: ; description message; "+vslmFaultValue+"]")
+
+	// normal error
+	testError := errors.New("test-error")
+	c.Assert(govmomiError{testError}.Format(), Equals, testError.Error())
+
+	// nil
+	c.Assert(govmomiError{nil}.Format(), Equals, "")
 }
 
 type fakeTagManager struct {
