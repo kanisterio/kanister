@@ -299,7 +299,7 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		}
 		switch p.Status.Phase {
 		case v1.PodFailed:
-			return false, errors.Errorf("Pod %s failed. Pod Status details (%s)", name, log.SafeDumpPodStatusObject(p.Status))
+			return false, errors.Errorf("Pod %s failed. Pod Status details (%s)", name, log.SafeDumpPodStatusObject(p))
 		}
 		return p.Status.Phase == v1.PodSucceeded, nil
 	})

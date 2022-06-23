@@ -258,7 +258,10 @@ func entryToJSON(entry *logrus.Entry) []byte {
 	return bytes
 }
 
-// SafeDumpPodStatusObject converts Pod status object into string and returns it
-func SafeDumpPodStatusObject(status v1.PodStatus) string {
-	return status.String()
+// SafeDumpPodObject converts Pod Status object into string and returns it
+func SafeDumpPodStatusObject(pod *v1.Pod) string {
+	if pod == nil {
+		return ""
+	}
+	return pod.Status.String()
 }

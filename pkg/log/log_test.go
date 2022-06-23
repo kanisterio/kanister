@@ -158,7 +158,7 @@ func (s *LogSuite) TestLogLevel(c *C) {
 	c.Assert(entry["msg"], Equals, "Testing debug level")
 }
 
-func (s *LogSuite) TestSafeDumpPodObject(c *C) {
+func (s *LogSuite) TestSafeDumpPodStatusObject(c *C) {
 	for _, tc := range []struct {
 		pod        *corev1.Pod
 		expCommand string
@@ -238,7 +238,7 @@ func (s *LogSuite) TestSafeDumpPodObject(c *C) {
 			expCommand: redactString,
 		},
 	} {
-		s := SafeDumpPodStatusObject(tc.pod.Status)
+		s := SafeDumpPodStatusObject(tc.pod)
 		if tc.pod == nil {
 			c.Assert(s, Equals, "")
 			continue
