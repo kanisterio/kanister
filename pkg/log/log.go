@@ -258,19 +258,7 @@ func entryToJSON(entry *logrus.Entry) []byte {
 	return bytes
 }
 
-// SafeDumpPodObject redacts commands and args in Pod manifest to hide sensitive info,
-// converts Pod object into string and returns it
-func SafeDumpPodObject(pod *v1.Pod) string {
-	if pod == nil {
-		return ""
-	}
-	for i := range pod.Spec.Containers {
-		if pod.Spec.Containers[i].Command != nil {
-			pod.Spec.Containers[i].Command = []string{redactString}
-		}
-		if pod.Spec.Containers[i].Args != nil {
-			pod.Spec.Containers[i].Args = []string{redactString}
-		}
-	}
-	return pod.String()
+// SafeDumpPodStatusObject converts Pod status object into string and returns it
+func SafeDumpPodStatusObject(status v1.PodStatus) string {
+	return status.String()
 }

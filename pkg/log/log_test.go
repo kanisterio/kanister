@@ -238,12 +238,13 @@ func (s *LogSuite) TestSafeDumpPodObject(c *C) {
 			expCommand: redactString,
 		},
 	} {
-		s := SafeDumpPodObject(tc.pod)
+		s := SafeDumpPodStatusObject(tc.pod.Status)
 		if tc.pod == nil {
 			c.Assert(s, Equals, "")
 			continue
 		}
-		c.Assert(strings.Contains(s, fmt.Sprintf("Command:[%s]", tc.expCommand)), Equals, true)
-		c.Assert(strings.Contains(s, fmt.Sprintf("Args:[%s]", tc.expArgs)), Equals, true)
+		c.Assert(strings.Contains(s, fmt.Sprintf("Command:[%s]", tc.expCommand)), Equals, false)
+		c.Assert(strings.Contains(s, fmt.Sprintf("Args:[%s]", tc.expArgs)), Equals, false)
+		c.Assert(strings.Contains(s, "PodStatus"), Equals, true)
 	}
 }
