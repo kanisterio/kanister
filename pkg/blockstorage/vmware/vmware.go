@@ -677,7 +677,6 @@ func (ge govmomiError) Format() string {
 		return msgs[0]
 	}
 	return fmt.Sprintf("[%s]", strings.Join(msgs, "; "))
-
 }
 
 func (ge govmomiError) ExtractMessages() []string {
