@@ -252,6 +252,21 @@ var reVslmSyncFaultFatal = regexp.MustCompile("Change tracking invalid or disk i
 func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	var res types.AnyType
 	err := wait.PollImmediate(time.Second, defaultRetryLimit, func() (bool, error) {
+		// attempt to fetch the existing snapshots to reduce the chance of leaking
+		// a snapshot in case of a VslmSyncFault
+		log.Debug().Print("RetrieveSnapshotInfo:" + volume.ID)
+		_, err := p.Gom.RetrieveSnapshotInfo(ctx, vimID(volume.ID))
+		if err != nil {
+			if soap.IsVimFault(err) {
+				switch soap.ToVimFault(err).(type) {
+				case *types.InvalidState:
+					log.Error().WithError(err).Print("There is some conflicting operation in progress. Will retry", field.M{"VolumeID": volume.ID})
+					return false, nil
+				}
+			}
+			log.Error().WithError(err).Print("Failed to get volume snapshot info: aborting snapshot creation operation", field.M{"VolumeID": volume.ID})
+			return false, errors.Wrap(err, "Failed to get snapshot info")
+		}
 		log.Debug().Print("CreateSnapshot", field.M{"VolumeID": volume.ID})
 		task, lerr := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), noDescription)
 		if lerr != nil {
