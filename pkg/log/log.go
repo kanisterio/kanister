@@ -30,8 +30,6 @@ const (
 	// LevelVarName is the environment variable that controls
 	// init log levels
 	LevelEnvName = "LOG_LEVEL"
-
-	redactString = "<*****>"
 )
 
 // OutputSink describes the current output sink.
