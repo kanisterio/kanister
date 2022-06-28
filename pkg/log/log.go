@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/caller"
 	"github.com/kanisterio/kanister/pkg/config"
@@ -256,12 +255,4 @@ func entryToJSON(entry *logrus.Entry) []byte {
 	bytes = append(bytes, n...)
 
 	return bytes
-}
-
-// SafeDumpPodObject converts Pod Status object into string and returns it
-func SafeDumpPodStatusObject(pod *v1.Pod) string {
-	if pod == nil {
-		return ""
-	}
-	return pod.Status.String()
 }
