@@ -103,6 +103,7 @@ func CreatePVC(ctx context.Context, kubeCli kubernetes.Interface, ns string, nam
 // 'Namespace' is the namespace of the VolumeSnapshot. The PVC will be restored to the same namepsace.
 // 'RestoreSize' will override existing restore size from snapshot content if provided.
 // 'Labels' will be added to the PVC.
+// 'Annotations' will be added to the PVC.
 type CreatePVCFromSnapshotArgs struct {
 	KubeCli          kubernetes.Interface
 	DynCli           dynamic.Interface
@@ -112,6 +113,7 @@ type CreatePVCFromSnapshotArgs struct {
 	SnapshotName     string
 	RestoreSize      string
 	Labels           map[string]string
+	Annotations      map[string]string
 	VolumeMode       *v1.PersistentVolumeMode
 	AccessModes      []v1.PersistentVolumeAccessMode
 }
@@ -131,7 +133,8 @@ func CreatePVCFromSnapshot(ctx context.Context, args *CreatePVCFromSnapshotArgs)
 	snapshotAPIGroup := "snapshot.storage.k8s.io"
 	pvc := &v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: args.Labels,
+			Labels:      args.Labels,
+			Annotations: args.Annotations,
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: args.AccessModes,
