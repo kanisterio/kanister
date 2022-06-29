@@ -70,6 +70,8 @@ func (s *TestVolSuite) TestCreatePVC(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(pvc2.Spec.AccessModes) >= 1, Equals, true)
 	c.Assert(*pvc2.Spec.VolumeMode, Equals, v1.PersistentVolumeBlock)
+	c.Assert(pvc2.GetAnnotations(), NotNil)
+	c.Assert(pvc2.GetAnnotations()["a1"], Equals, "foo")
 }
 
 func (s *TestVolSuite) TestGetPVCRestoreSize(c *C) {
