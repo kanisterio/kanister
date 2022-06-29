@@ -26,6 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
@@ -63,7 +64,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: test-deployment-2
+  name: %s
   namespace: %s
 spec:
   ports:
@@ -158,13 +159,13 @@ func deletePhase(gvr schema.GroupVersionResource, name, namespace string) crv1al
 	}
 }
 
-func createInSpecsNsPhase(namespace string) crv1alpha1.BlueprintPhase {
+func createInSpecsNsPhase(name, namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "create-in-def-ns",
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
-			KubeOpsSpecArg:      fmt.Sprintf(serviceSpec, namespace),
+			KubeOpsSpecArg:      fmt.Sprintf(serviceSpec, name, namespace),
 		},
 	}
 }
@@ -205,7 +206,7 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 		expResource resourceRef
 	}{
 		{
-			bp: newCreateResourceBlueprint(createInSpecsNsPhase(s.namespace)),
+			bp: newCreateResourceBlueprint(createInSpecsNsPhase("test-deployment-2", s.namespace)),
 			expResource: resourceRef{
 				gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
 				name:      "test-deployment-2",
@@ -251,8 +252,8 @@ func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
 	tp := param.TemplateParams{}
 	action := "test"
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
-	serviceName := "test-deployment-2"
-	spec := fmt.Sprintf(serviceSpec, s.namespace)
+	serviceName := rand.String(8)
+	spec := fmt.Sprintf(serviceSpec, serviceName, s.namespace)
 
 	bp := newCreateResourceBlueprint(createPhase(s.namespace, spec),
 		deletePhase(gvr, serviceName, s.namespace))
