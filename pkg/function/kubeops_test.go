@@ -83,6 +83,8 @@ metadata:
 spec:
   deploymentName: example-foo
   replicas: 1`
+
+	testServiceName = "test-service"
 )
 
 var _ = Suite(&KubeOpsSuite{})
@@ -206,10 +208,10 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 		expResource resourceRef
 	}{
 		{
-			bp: newCreateResourceBlueprint(createInSpecsNsPhase("test-deployment-2", s.namespace)),
+			bp: newCreateResourceBlueprint(createInSpecsNsPhase(testServiceName, s.namespace)),
 			expResource: resourceRef{
 				gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
-				name:      "test-deployment-2",
+				name:      testServiceName,
 				namespace: s.namespace,
 			},
 		},
@@ -241,8 +243,7 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 		}
 	}
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
-	serviceName := "test-deployment-2"
-	err := s.dynCli.Resource(gvr).Namespace(s.namespace).Delete(ctx, serviceName, metav1.DeleteOptions{})
+	err := s.dynCli.Resource(gvr).Namespace(s.namespace).Delete(ctx, testServiceName, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }
 
@@ -252,7 +253,7 @@ func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
 	tp := param.TemplateParams{}
 	action := "test"
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
-	serviceName := rand.String(8)
+	serviceName := fmt.Sprintf("%s-%s", testServiceName, rand.String(8))
 	spec := fmt.Sprintf(serviceSpec, serviceName, s.namespace)
 
 	bp := newCreateResourceBlueprint(createPhase(s.namespace, spec),
