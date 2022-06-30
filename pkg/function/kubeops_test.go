@@ -78,7 +78,7 @@ spec:
 	fooCRSpec = `apiVersion: samplecontroller.k8s.io/v1alpha1
 kind: Foo
 metadata:
-  name: example-foo
+  name: %s
   namespace: %s
 spec:
   deploymentName: example-foo
@@ -161,24 +161,13 @@ func deletePhase(gvr schema.GroupVersionResource, name, namespace string) crv1al
 	}
 }
 
-func createInSpecsNsPhase(name, namespace string) crv1alpha1.BlueprintPhase {
+func createInSpecsNsPhase(spec, name, namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "create-in-def-ns",
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
-			KubeOpsSpecArg:      fmt.Sprintf(serviceSpec, name, namespace),
-		},
-	}
-}
-
-func createCRPhase(namespace string) crv1alpha1.BlueprintPhase {
-	return crv1alpha1.BlueprintPhase{
-		Name: "create-crd-cr",
-		Func: KubeOpsFuncName,
-		Args: map[string]interface{}{
-			KubeOpsOperationArg: "create",
-			KubeOpsSpecArg:      fmt.Sprintf(fooCRSpec, namespace),
+			KubeOpsSpecArg:      fmt.Sprintf(spec, name, namespace),
 		},
 	}
 }
@@ -198,55 +187,41 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 	defer cancel()
 	tp := param.TemplateParams{}
 	action := "test"
-	serviceName := fmt.Sprintf("%s-%s", testServiceName, rand.String(8))
 	type resourceRef struct {
 		gvr       schema.GroupVersionResource
 		namespace string
 	}
 	for _, tc := range []struct {
 		name        string
-		bp          crv1alpha1.Blueprint
+		spec        string
 		expResource resourceRef
-		errChecker  Checker
 	}{
 		{
-			// Do not expect the resource to be created with the provided name
 			name: fmt.Sprintf("%s-%s", testServiceName, rand.String(8)),
-			bp:   newCreateResourceBlueprint(createInSpecsNsPhase(serviceName, s.namespace)),
+			spec: serviceSpec,
 			expResource: resourceRef{
 				gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
 				namespace: s.namespace,
 			},
-			errChecker: NotNil,
 		},
 		{
-			// Expect the resource to be created with the provided name
-			name: "const-service-name",
-			bp:   newCreateResourceBlueprint(createInSpecsNsPhase("const-service-name", s.namespace)),
-			expResource: resourceRef{
-				gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
-				namespace: s.namespace,
-			},
-			errChecker: IsNil,
-		},
-		{
-			// Expect the resource to be created with the provided custome resource
-			name: "example-foo",
-			bp:   newCreateResourceBlueprint(createCRPhase(s.namespace)),
+			name: fmt.Sprintf("%s-%s", "example-foo", rand.String(8)),
+			spec: fooCRSpec,
 			expResource: resourceRef{
 				gvr:       schema.GroupVersionResource{Group: "samplecontroller.k8s.io", Version: "v1alpha1", Resource: "foos"},
 				namespace: s.namespace,
 			},
-			errChecker: IsNil,
 		},
 	} {
-		phases, err := kanister.GetPhases(tc.bp, action, kanister.DefaultVersion, tp)
+		bp := newCreateResourceBlueprint(createInSpecsNsPhase(tc.spec, tc.name, s.namespace))
+		phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			out, err := p.Exec(ctx, tc.bp, action, tp)
+			out, err := p.Exec(ctx, bp, action, tp)
 			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
+			c.Log(out)
 			_, err = s.dynCli.Resource(tc.expResource.gvr).Namespace(tc.expResource.namespace).Get(context.TODO(), tc.name, metav1.GetOptions{})
-			c.Assert(err, tc.errChecker)
+			c.Assert(err, IsNil)
 			expOut := map[string]interface{}{
 				"apiVersion": tc.expResource.gvr.Version,
 				"group":      tc.expResource.gvr.Group,
@@ -255,12 +230,9 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 				"name":       tc.name,
 				"namespace":  tc.expResource.namespace,
 			}
-			if err == nil {
-				// only verify resource if they are present
-				c.Assert(out, DeepEquals, expOut)
-			}
+			c.Assert(out, DeepEquals, expOut)
 			err = s.dynCli.Resource(tc.expResource.gvr).Namespace(s.namespace).Delete(ctx, tc.name, metav1.DeleteOptions{})
-			c.Assert(err, tc.errChecker)
+			c.Assert(err, IsNil)
 		}
 	}
 }
