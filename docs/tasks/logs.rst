@@ -12,10 +12,10 @@ System logs are logs emitted by the Kanister to track important controller
 events like interactions with the Kubernetes APIs, CRUD operations on
 blueprints and actionsets etc.
 
-Datapath logs, on the other hand, are logs emitted by data mover task pods
-created by Kanister. These logs are streamed to the Kanister controller before
-the task pods are terminated to ensure they are not lost inadvertently. Datapath
-log lines usually include the ``LogKind`` field, with its value set to
+Datapath logs, on the other hand, are logs emitted by task pods created by
+Kanister. These logs are streamed to the Kanister controller before the task
+pods are terminated to ensure they are not lost inadvertently. Datapath log
+lines usually include the ``LogKind`` field, with its value set to
 ``datapath``.
 
 The rest of this documentation provides instructions on how to segregate
