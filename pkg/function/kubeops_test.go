@@ -198,6 +198,7 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 	defer cancel()
 	tp := param.TemplateParams{}
 	action := "test"
+	serviceName := fmt.Sprintf("%s-%s", testServiceName, rand.String(8))
 	type resourceRef struct {
 		gvr       schema.GroupVersionResource
 		name      string
@@ -208,10 +209,10 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 		expResource resourceRef
 	}{
 		{
-			bp: newCreateResourceBlueprint(createInSpecsNsPhase(testServiceName, s.namespace)),
+			bp: newCreateResourceBlueprint(createInSpecsNsPhase(serviceName, s.namespace)),
 			expResource: resourceRef{
 				gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
-				name:      testServiceName,
+				name:      serviceName,
 				namespace: s.namespace,
 			},
 		},
@@ -243,7 +244,7 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 		}
 	}
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
-	err := s.dynCli.Resource(gvr).Namespace(s.namespace).Delete(ctx, testServiceName, metav1.DeleteOptions{})
+	err := s.dynCli.Resource(gvr).Namespace(s.namespace).Delete(ctx, serviceName, metav1.DeleteOptions{})
 	c.Assert(err, IsNil)
 }
 
