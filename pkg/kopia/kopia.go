@@ -146,35 +146,35 @@ const (
 	// Filters
 	manifestTypeSnapshotFilter = "type:snapshot"
 
-	// DefaultK10DataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
-	DefaultK10DataStoreGeneralContentCacheSizeMB = 0
-	// K10DataStoreGeneralContentCacheSizeMBVarName is the name of the environment variable that controls
+	// DefaultDataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
+	DefaultDataStoreGeneralContentCacheSizeMB = 0
+	// DataStoreGeneralContentCacheSizeMBVarName is the name of the environment variable that controls
 	// kopia content cache size for general command workloads
-	K10DataStoreGeneralContentCacheSizeMBVarName = "K10_DATA_STORE_GENERAL_CONTENT_CACHE_SIZE_MB"
+	DataStoreGeneralContentCacheSizeMBVarName = "DATA_STORE_GENERAL_CONTENT_CACHE_SIZE_MB"
 
-	// DefaultK10DataStoreGeneralMetadataCacheSizeMB is the default metadata cache size for general command workloads
-	DefaultK10DataStoreGeneralMetadataCacheSizeMB = 500
-	// K10DataStoreGeneralMetadataCacheSizeMBVarName is the name of the environment variable that controls
+	// DefaultDataStoreGeneralMetadataCacheSizeMB is the default metadata cache size for general command workloads
+	DefaultDataStoreGeneralMetadataCacheSizeMB = 500
+	// DataStoreGeneralMetadataCacheSizeMBVarName is the name of the environment variable that controls
 	// kopia metadata cache size for general command workloads
-	K10DataStoreGeneralMetadataCacheSizeMBVarName = "K10_DATA_STORE_GENERAL_METADATA_CACHE_SIZE_MB"
+	DataStoreGeneralMetadataCacheSizeMBVarName = "DATA_STORE_GENERAL_METADATA_CACHE_SIZE_MB"
 
-	// DefaultK10DataStoreRestoreContentCacheSizeMB is the default content cache size for restore workloads
-	DefaultK10DataStoreRestoreContentCacheSizeMB = 500
-	// K10DataStoreRestoreContentCacheSizeMBVarName is the name of the environment variable that controls
+	// DefaultDataStoreRestoreContentCacheSizeMB is the default content cache size for restore workloads
+	DefaultDataStoreRestoreContentCacheSizeMB = 500
+	// DataStoreRestoreContentCacheSizeMBVarName is the name of the environment variable that controls
 	// kopia content cache size for restore workloads
-	K10DataStoreRestoreContentCacheSizeMBVarName = "K10_DATA_STORE_RESTORE_CONTENT_CACHE_SIZE_MB"
+	DataStoreRestoreContentCacheSizeMBVarName = "DATA_STORE_RESTORE_CONTENT_CACHE_SIZE_MB"
 
-	// DefaultK10DataStoreRestoreMetadataCacheSizeMB is the default metadata cache size for restore workloads
-	DefaultK10DataStoreRestoreMetadataCacheSizeMB = 500
-	// K10DataStoreRestoreMetadataCacheSizeMBVarName is the name of the environment variable that controls
+	// DefaultDataStoreRestoreMetadataCacheSizeMB is the default metadata cache size for restore workloads
+	DefaultDataStoreRestoreMetadataCacheSizeMB = 500
+	// DataStoreRestoreMetadataCacheSizeMBVarName is the name of the environment variable that controls
 	// kopia metadata cache size for restore workloads
-	K10DataStoreRestoreMetadataCacheSizeMBVarName = "K10_DATA_STORE_RESTORE_METADATA_CACHE_SIZE_MB"
+	DataStoreRestoreMetadataCacheSizeMBVarName = "DATA_STORE_RESTORE_METADATA_CACHE_SIZE_MB"
 
-	// DefaultK10DataStoreParallelUpload is the default value for data store parallelism
-	DefaultK10DataStoreParallelUpload = 8
-	// K10DataStoreParallelUploadVarName is the name of the environment variable that controls
+	// DefaultDataStoreParallelUpload is the default value for data store parallelism
+	DefaultDataStoreParallelUpload = 8
+	// DataStoreParallelUploadVarName is the name of the environment variable that controls
 	// kopia parallelism during snapshot create commands
-	K10DataStoreParallelUploadVarName = "K10_DATA_STORE_PARALLEL_UPLOAD"
+	DataStoreParallelUploadVarName = "DATA_STORE_PARALLEL_UPLOAD"
 )
 
 func bashCommand(args logsafe.Cmd) []string {
@@ -222,15 +222,15 @@ func kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string, contentCacheMB, met
 // for initializing repositories that will be performing general command workloads that benefit from
 // cacheing metadata only.
 func GetCacheSizeSettingsForSnapshot() (contentCacheMB, metadataCacheMB int) {
-	return utils.GetEnvAsIntOrDefault(K10DataStoreGeneralContentCacheSizeMBVarName, DefaultK10DataStoreGeneralContentCacheSizeMB),
-		utils.GetEnvAsIntOrDefault(K10DataStoreGeneralMetadataCacheSizeMBVarName, DefaultK10DataStoreGeneralMetadataCacheSizeMB)
+	return utils.GetEnvAsIntOrDefault(DataStoreGeneralContentCacheSizeMBVarName, DefaultDataStoreGeneralContentCacheSizeMB),
+		utils.GetEnvAsIntOrDefault(DataStoreGeneralMetadataCacheSizeMBVarName, DefaultDataStoreGeneralMetadataCacheSizeMB)
 }
 
 // GetCacheSizeSettingsForRestore returns the feature setting cache size values to be used
 // for initializing repositories that will be performing restore workloads
 func GetCacheSizeSettingsForRestore() (contentCacheMB, metadataCacheMB int) {
-	return utils.GetEnvAsIntOrDefault(K10DataStoreRestoreContentCacheSizeMBVarName, DefaultK10DataStoreRestoreContentCacheSizeMB),
-		utils.GetEnvAsIntOrDefault(K10DataStoreRestoreMetadataCacheSizeMBVarName, DefaultK10DataStoreRestoreMetadataCacheSizeMB)
+	return utils.GetEnvAsIntOrDefault(DataStoreRestoreContentCacheSizeMBVarName, DefaultDataStoreRestoreContentCacheSizeMB),
+		utils.GetEnvAsIntOrDefault(DataStoreRestoreMetadataCacheSizeMBVarName, DefaultDataStoreRestoreMetadataCacheSizeMB)
 }
 
 // SnapshotCreateCommand returns the kopia command for creation of a snapshot
@@ -248,7 +248,7 @@ func snapshotCreateCommand(encryptionKey, pathToBackup, configFilePath, logDirec
 		requireLogLevelInfo = true
 	)
 
-	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(K10DataStoreParallelUploadVarName, DefaultK10DataStoreParallelUpload))
+	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(DataStoreParallelUploadVarName, DefaultDataStoreParallelUpload))
 	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, pathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
