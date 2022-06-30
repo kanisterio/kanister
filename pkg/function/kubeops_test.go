@@ -201,28 +201,43 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 	serviceName := fmt.Sprintf("%s-%s", testServiceName, rand.String(8))
 	type resourceRef struct {
 		gvr       schema.GroupVersionResource
-		name      string
 		namespace string
 	}
 	for _, tc := range []struct {
+		name        string
 		bp          crv1alpha1.Blueprint
 		expResource resourceRef
+		errChecker  Checker
 	}{
 		{
-			bp: newCreateResourceBlueprint(createInSpecsNsPhase(serviceName, s.namespace)),
+			// Do not expect the resource to be created with the provided name
+			name: fmt.Sprintf("%s-%s", testServiceName, rand.String(8)),
+			bp:   newCreateResourceBlueprint(createInSpecsNsPhase(serviceName, s.namespace)),
 			expResource: resourceRef{
 				gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
-				name:      serviceName,
 				namespace: s.namespace,
 			},
+			errChecker: NotNil,
 		},
 		{
-			bp: newCreateResourceBlueprint(createCRPhase(s.namespace)),
+			// Expect the resource to be created with the provided name
+			name: "const-service-name",
+			bp:   newCreateResourceBlueprint(createInSpecsNsPhase("const-service-name", s.namespace)),
 			expResource: resourceRef{
-				gvr:       schema.GroupVersionResource{Group: "samplecontroller.k8s.io", Version: "v1alpha1", Resource: "foos"},
-				name:      "example-foo",
+				gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
 				namespace: s.namespace,
 			},
+			errChecker: IsNil,
+		},
+		{
+			// Expect the resource to be created with the provided custome resource
+			name: "example-foo",
+			bp:   newCreateResourceBlueprint(createCRPhase(s.namespace)),
+			expResource: resourceRef{
+				gvr:       schema.GroupVersionResource{Group: "samplecontroller.k8s.io", Version: "v1alpha1", Resource: "foos"},
+				namespace: s.namespace,
+			},
+			errChecker: IsNil,
 		},
 	} {
 		phases, err := kanister.GetPhases(tc.bp, action, kanister.DefaultVersion, tp)
@@ -230,22 +245,24 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 		for _, p := range phases {
 			out, err := p.Exec(ctx, tc.bp, action, tp)
 			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
-			_, err = s.dynCli.Resource(tc.expResource.gvr).Namespace(tc.expResource.namespace).Get(context.TODO(), tc.expResource.name, metav1.GetOptions{})
-			c.Assert(err, IsNil)
+			_, err = s.dynCli.Resource(tc.expResource.gvr).Namespace(tc.expResource.namespace).Get(context.TODO(), tc.name, metav1.GetOptions{})
+			c.Assert(err, tc.errChecker)
 			expOut := map[string]interface{}{
 				"apiVersion": tc.expResource.gvr.Version,
 				"group":      tc.expResource.gvr.Group,
 				"resource":   tc.expResource.gvr.Resource,
 				"kind":       "",
-				"name":       tc.expResource.name,
+				"name":       tc.name,
 				"namespace":  tc.expResource.namespace,
 			}
-			c.Assert(out, DeepEquals, expOut)
+			if err == nil {
+				// only verify resource if they are present
+				c.Assert(out, DeepEquals, expOut)
+			}
+			err = s.dynCli.Resource(tc.expResource.gvr).Namespace(s.namespace).Delete(ctx, tc.name, metav1.DeleteOptions{})
+			c.Assert(err, tc.errChecker)
 		}
 	}
-	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
-	err := s.dynCli.Resource(gvr).Namespace(s.namespace).Delete(ctx, serviceName, metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
 }
 
 func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
