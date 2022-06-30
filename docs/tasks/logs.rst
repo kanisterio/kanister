@@ -58,10 +58,6 @@ Confirm that the Loki StatefulSet is successfully rolled out:
 
   kubectl -n loki rollout status sts/loki
 
-.. code-block:: bash
-
-  statefulset rolling update complete 1 pods at revision loki-6d7b88b95c...
-
 .. note::
   The Loki configuration used in this installation is meant for demonstration
   purposes only. The Helm chart deploys a non-HA single instance of Loki,
@@ -92,10 +88,6 @@ Confirm that the Grafana Deployment is successfully rolled out:
 .. code-block:: bash
 
   kubectl -n grafana rollout status deploy/grafana
-
-.. code-block:: bash
-
-  deployment "grafana" successfully rolled out
 
 Set up port-forward to access the Grafana UI:
 
@@ -146,10 +138,6 @@ Confirm that the Promtail DaemonSet is successfully rolled out:
 .. code-block:: bash
 
   kubectl -n loki rollout status ds/promtail
-
-.. code-block:: bash
-
-  daemon set "promtail" successfully rolled out
 
 Logs Segregation
 ================
