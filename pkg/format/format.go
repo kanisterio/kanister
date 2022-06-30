@@ -94,6 +94,11 @@ func LogWithCtx(ctx context.Context, podName string, containerName string, outpu
 
 func infoWithCtx(ctx context.Context, podName string, containerName string, l string) {
 	if strings.TrimSpace(l) != "" {
-		log.WithContext(ctx).Print("Pod Update", field.M{"Pod": podName, "Container": containerName, "Out": l})
+		log.WithContext(ctx).Print("Pod Update", field.M{
+			"Pod":             podName,
+			"Container":       containerName,
+			"Out":             l,
+			consts.LogKindKey: consts.LogKindDatapath,
+		})
 	}
 }
