@@ -11,19 +11,19 @@ Kanister: Application-Specific Data Management
 .. image:: https://github.com/kanisterio/kanister/actions/workflows/main.yaml/badge.svg?branch=master
    :target: https://github.com/kanisterio/kanister/actions
 
-Kanister allows domain experts to capture application-specific data management
-tasks in Blueprints which can be easily shared and extended. The framework takes
-care of the tedious details around execution on Kubernetes and presents a
-homogeneous operational experience across applications at scale.
+Kanister is a data protection workflows management tool. It provides a set of
+cohesive APIs for defining and curating data operations by abstracting away
+tedious details around executing data operations on Kubernetes. It's extensible
+and easy to install, operate and scale.
 
 .. toctree::
    :maxdepth: 2
 
    overview
-   usage
+   install
+   tutorial
    architecture
    tooling
-   helm
    functions
    templates
    troubleshooting

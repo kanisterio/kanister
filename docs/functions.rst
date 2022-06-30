@@ -1,7 +1,7 @@
 .. _functions:
 
-Kanister Functions
-******************
+Functions
+*********
 
 Kanister Functions are written in go and are compiled when building the
 controller. They are referenced by Blueprints phases. A Kanister Function

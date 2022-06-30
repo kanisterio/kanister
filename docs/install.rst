@@ -1,91 +1,82 @@
 .. _install:
 
-Installing Kanister
-*******************
+Installation
+************
 
-.. contents:: Installation Overview
+.. contents:: Installation
   :local:
 
+Kanister can be easily installed and managed with `Helm <https://helm.sh>`_. You
+will need to configure your ``kubectl`` CLI tool to target the Kubernetes
+cluster you want to install Kanister on.
 
-Prerequisites
-=============
-
-* Kubernetes ``1.16`` or higher. For cluster version lower than ``1.16``,
-  we recommend installing Kanister version ``0.62.0`` or lower.
-
-* `kubectl <https://kubernetes.io/docs/tasks/tools/install-kubectl/>`_ installed
-  and setup
-
-* `helm <https://helm.sh>`_ installed
-
-* :ref:`kanctl <tooling>` installed
-
-* Access to an S3 compatible bucket and credentials.
-
-* Docker (for source-based installs only)
-
-
-Deploying via Helm
-==================
-
-This will install the Kanister controller in the ``kanister`` namespace
+Start by adding the Kanister repository to your local setup:
 
 .. substitution-code-block:: bash
 
-   # Add Kanister charts
-   $ helm repo add kanister https://charts.kanister.io/
+  helm repo add kanister https://charts.kanister.io/
 
-   # Install the Kanister operator controller using helm
-   $ helm install myrelease --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=|version|
+Use the ``helm install`` command to install Kanister in the ``kanister``
+namespace:
 
-   # Create an S3 Compliant Kanister profile using kanctl
-   $ kanctl create profile s3compliant --bucket <bucket> --access-key ${AWS_ACCESS_KEY_ID} \
-                                       --secret-key ${AWS_SECRET_ACCESS_KEY}               \
-                                       --region <region>                                   \
-                                       --namespace kanister
+.. substitution-code-block:: bash
+
+  helm -n kanister upgrade --install kanister --create-namespace kanister/kanister-operator
+
+Confirm that the Kanister workloads are ready:
+
+.. substitution-code-block:: bash
+
+  kubectl -n kanister get po
+
+You should see the operator pod in the ``Running`` state:
+
+.. substitution-code-block:: bash
+
+  NAME                                          READY   STATUS    RESTARTS        AGE
+  kanister-kanister-operator-85c747bfb8-dmqnj   1/1     Running   0               15s
+
+.. note::
+  Kanister is guaranteed to work with the 3 most-recent versions of Kubernetes.
+  For example, if the latest version of Kubernetes is 1.24, Kanister will work
+  with 1.24, 1.23 and 1.22. Support for older versions are determined on a
+  best-effort basis. If you are using an older version of Kubernetes, please
+  consider upgrading to a newer version.
+
+Configuring Kanister
+====================
+
+Use the ``helm show values`` command to list the configurable options:
+
+.. substitution-code-block:: bash
+
+  helm show values kanister/kanister-operator
+
+For example, you can use the ``image.tag`` value to specify the Kanister version
+to install.
+
+The source of the ``values.yaml`` file can be found on
+`GitHub <https://github.com/kanisterio/kanister/blob/master/helm/kanister-operator/values.yaml>`_.
 
 
-Kanister Custom Resource Definitions (CRDs)
+Managing Custom Resource Definitions (CRDs)
 ===========================================
 
-Kanister defines a few `Custom Resource Definitions (CRDs) <https://docs.kanister.io/architecture.html#custom-resources>`_
-to express and execute data protection workflows. By default, these CRDs are
-managed (created/updated) by the Kanister controller.
+The default RBAC settings in the Helm chart permits Kanister to manage and
+auto-update its own custom resource definitions, to ease user's operation
+burden. If your setup requires the removal of these settings, you will have to
+install Kanister with the ``--set controller.updateCRDs=false`` option:
 
-If the Kanister controller doesn't have the permissions to create or
-update CRDs, you can disable that using the ``controller.updateCRDs`` Helm
-flag. If set to ``false``, Helm will manage the CRDs instead of the Kanister
-controller.
+.. substitution-code-block:: bash
 
+  helm -n kanister upgade --install kanister --create-namespace kanister/kanister-operator \
+    --set controller.updateCRDs=false
+
+This option let Helm manage the CRD resources.
 
 Building and Deploying from Source
 ==================================
 
-Use the following commands to build, package, and deploy the controller to your
-Kubernetes cluster. It will push the controller docker image to your docker repo
-``<MY REGISTRY>`` and the controller will be deployed in the default namespace.
-
-.. code-block:: bash
-
-   # Build controller binary
-   $ make build
-
-   # Package the binary in a docker image and push it to your image registry
-   $ make release-controller REGISTRY=<MY REGISTRY>
-
-   # Deploy the controller to your Kubernetes repo
-   $ make deploy REGISTRY=<MY REGISTRY>
-
-
-Deploy a Released Version
--------------------------
-
-To deploy a released version of the controller, issue the command below. Modify
-the namespace fields in ``bundle.yaml.in`` to deploy in a namespace of your
-choice. By default, the controller will be deployed into the ``default``
-namespace.
-
-.. substitution-code-block:: bash
-
-   # Deploy controller version |version| to Kubernetes
-   $ make deploy VERSION="|version|"
+Follow the instructions in the ``BUILD.md`` file in the
+`Kanister GitHub repository <https://github.com/kanisterio/kanister/blob/master/BUILD.md>`_
+to build Kanister from source.

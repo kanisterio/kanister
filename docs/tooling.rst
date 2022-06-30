@@ -1,9 +1,9 @@
 .. _tooling:
 
-Kanister Tooling
-****************
+Tooling
+*******
 
-.. contents:: Kanister Tooling
+.. contents:: Tooling
   :local:
 
 There are two command-line tools that are built within the Kanister repository.
