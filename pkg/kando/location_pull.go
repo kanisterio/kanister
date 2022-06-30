@@ -24,6 +24,8 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -93,9 +95,9 @@ func locationPull(ctx context.Context, p *param.Profile, path string, target io.
 func kopiaLocationPull(ctx context.Context, backupID, path, targetPath, password string) error {
 	switch targetPath {
 	case usePipeParam:
-		return kopia.Read(ctx, os.Stdout, backupID, path, password)
+		return snapshot.Read(ctx, os.Stdout, backupID, path, password)
 	default:
-		return kopia.ReadFile(ctx, backupID, targetPath, password)
+		return snapshot.ReadFile(ctx, backupID, targetPath, password)
 	}
 }
 
@@ -103,7 +105,7 @@ func kopiaLocationPull(ctx context.Context, backupID, path, targetPath, password
 func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 	contentCacheSize := kopia.GetDataStoreGeneralContentCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
 	metadataCacheSize := kopia.GetDataStoreGeneralMetadataCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
-	return kopia.ConnectToAPIServer(
+	return repository.ConnectToAPIServer(
 		ctx,
 		kp.Credential.KopiaServerSecret.Cert,
 		kp.Credential.KopiaServerSecret.Password,

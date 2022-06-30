@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kopia
+package snapshot
 
 import (
 	"context"
@@ -28,6 +28,9 @@ import (
 	"github.com/kopia/kopia/snapshot/restore"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
 	"github.com/pkg/errors"
+
+	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
 )
 
 const (
@@ -67,7 +70,7 @@ func (si *SnapshotInfo) Validate() error {
 // A virtual directory tree rooted at filepath.Dir(path) is created with
 // a kopia streaming file with filepath.Base(path) as name
 func Write(ctx context.Context, source io.Reader, path, password string) (*SnapshotInfo, error) {
-	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pushRepoPurpose)
+	rep, err := repository.OpenRepository(ctx, kopia.DefaultConfigFilePath, password, pushRepoPurpose)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to open kopia repository")
 	}
@@ -113,7 +116,7 @@ func Write(ctx context.Context, source io.Reader, path, password string) (*Snaps
 
 // WriteFile creates a kopia snapshot from the given source file
 func WriteFile(ctx context.Context, path, sourcePath, password string) (*SnapshotInfo, error) {
-	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pushRepoPurpose)
+	rep, err := repository.OpenRepository(ctx, kopia.DefaultConfigFilePath, password, pushRepoPurpose)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to open kopia repository")
 	}
@@ -181,13 +184,13 @@ func resolveSymlink(path string) (string, error) {
 
 // Read reads a kopia snapshot with the given ID and copies it to the given target
 func Read(ctx context.Context, target io.Writer, backupID, path, password string) error {
-	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose)
+	rep, err := repository.OpenRepository(ctx, kopia.DefaultConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
 
 	// Get the kopia object ID belonging to the streaming file
-	oid, err := getStreamingFileObjectIDFromSnapshot(ctx, rep, path, backupID)
+	oid, err := kopia.GetStreamingFileObjectIDFromSnapshot(ctx, rep, path, backupID)
 	if err != nil {
 		return err
 	}
@@ -207,7 +210,7 @@ func Read(ctx context.Context, target io.Writer, backupID, path, password string
 
 // ReadFile restores a kopia snapshot with the given ID to the given target
 func ReadFile(ctx context.Context, backupID, target, password string) error {
-	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose)
+	rep, err := repository.OpenRepository(ctx, kopia.DefaultConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
