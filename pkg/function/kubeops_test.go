@@ -219,7 +219,6 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 		for _, p := range phases {
 			out, err := p.Exec(ctx, bp, action, tp)
 			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
-			c.Log(out)
 			_, err = s.dynCli.Resource(tc.expResource.gvr).Namespace(tc.expResource.namespace).Get(context.TODO(), tc.name, metav1.GetOptions{})
 			c.Assert(err, IsNil)
 			expOut := map[string]interface{}{
