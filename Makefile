@@ -285,7 +285,7 @@ stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
 
 check:
-	@./build/check.sh
+	@$(MAKE) run CMD='-c "./build/check.sh"'
 
 gomod:
 	@$(MAKE) run CMD='-c "./build/gomod.sh"'
