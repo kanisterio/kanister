@@ -36,7 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/field"
-	snapshot2 "github.com/kanisterio/kanister/pkg/kopia/snapshot"
+	snap "github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -192,7 +192,7 @@ func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
 }
 
 // MarshalKopiaSnapshot encodes kopia SnapshotInfo struct into a string
-func MarshalKopiaSnapshot(snapInfo *snapshot2.SnapshotInfo) (string, error) {
+func MarshalKopiaSnapshot(snapInfo *snap.SnapshotInfo) (string, error) {
 	if err := snapInfo.Validate(); err != nil {
 		return "", err
 	}
@@ -205,8 +205,8 @@ func MarshalKopiaSnapshot(snapInfo *snapshot2.SnapshotInfo) (string, error) {
 }
 
 // UnmarshalKopiaSnapshot decodes a kopia snapshot JSON string into SnapshotInfo struct
-func UnmarshalKopiaSnapshot(snapInfoJSON string) (snapshot2.SnapshotInfo, error) {
-	snap := snapshot2.SnapshotInfo{}
+func UnmarshalKopiaSnapshot(snapInfoJSON string) (snap.SnapshotInfo, error) {
+	snap := snap.SnapshotInfo{}
 	if err := json.Unmarshal([]byte(snapInfoJSON), &snap); err != nil {
 		return snap, errors.Wrap(err, "failed to unmarshal kopia snapshot information")
 	}
