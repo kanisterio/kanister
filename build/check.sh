@@ -25,20 +25,10 @@ function output() {
 }
 
 function check_version_go() {
-  local expected=$(cat go.mod | grep "go [0-9]\.[0-9]*" | cut -d" " -f2)
   local result=""
-  local msg=""
 
   if command -v ${GO_BIN} > /dev/null 2>&1 ; then
-    local installed=$(go version | cut -d" " -f3)
-    installed=${installed:2}
-
-    if [ "${expected}" != "${installed}" ]; then
-      result="${warning}"
-      msg="version mismatched - got ${installed}, need ${expected}"
-    else
-      result="${ok}"
-    fi
+    result="${ok}"
   else
     result="${failed}"
     msg="${GO_BIN^} not installed"
