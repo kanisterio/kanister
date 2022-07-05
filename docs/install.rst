@@ -72,11 +72,11 @@ install Kanister with the ``--set controller.updateCRDs=false`` option:
   helm -n kanister upgade --install kanister --create-namespace kanister/kanister-operator \
     --set controller.updateCRDs=false
 
-This option let Helm manage the CRD resources.
+This option lets Helm manage the CRD resources.
 
 Building and Deploying from Source
 ==================================
 
 Follow the instructions in the ``BUILD.md`` file in the
 `Kanister GitHub repository <https://github.com/kanisterio/kanister/blob/master/BUILD.md>`_
-to build Kanister from source.
+to build Kanister from source code.
