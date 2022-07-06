@@ -37,8 +37,6 @@ software versions:
 * Grafana 8.5.3
 * Promtail 2.5.0
 
-.. image:: img/logs-kanister-loki-grafana.png
-
 Let's begin by installing Loki. Loki is a datastore optimized for holding log
 data. It indexes log data via streams made up of logs, where each stream is
 associated with an unique set of labels.
