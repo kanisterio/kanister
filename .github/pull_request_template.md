@@ -13,7 +13,7 @@ Please check the type of change your PR introduces:
 - [ ] :world_map: Documentation
 - [ ] :robot: Test
 
-## Issues (in the format `fixes #<issue-number>`)
+## Issues <!-- to auto-close the issue, add the "fixes" keyword -->
 
 - fixes #issue-number
 
