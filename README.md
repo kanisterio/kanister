@@ -55,7 +55,7 @@ curate and run your first data protection workflow using Kanister blueprints,
 actionsets and profiles.
 
 The [`examples`](./examples) directory contains many sample blueprints that you
-can use to define data operations for :
+can use to define data operations for:
 
 - [AWS RDS](./examples/aws-rds)
 - [Cassandra](./examples/cassandra)
@@ -69,7 +69,6 @@ can use to define data operations for :
 - [MySQL](./examples/mysql)
 - [MySQL on OpenShift using DeploymentConfig](./examples/mysql-deploymentconfig)
 - [PostgreSQL](./examples/postgresql)
-- [PostgreSQL with Point In Time Recovery (PITR)](./examples/postgresql-wale)
 - [PostgreSQL on OpenShift using DeploymentConfig](./examples/postgresql-deploymentconfig)
 
 The Kanister architecture is documented
@@ -103,6 +102,7 @@ minutes to review our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 - [CNCF - Kanister: Application-Level Data Protection on Kubneretes](https://youtu.be/GSgFwAHLziA)
 - [CNCF - Integrating Backup Into Your GitOps CI/CD Pipeline](https://www.youtube.com/watch?v=2zik5jDjVvM)
+- [DoK - Kanister & Kopia: An Open-Source Data Protection Match Made in Heaven](https://www.youtube.com/watch?v=hN8sn3A_oEs)
 - [DoK - Kanister: Application-Level Data Operations on Kubernetes](https://www.youtube.com/watch?v=ooJFt0bid1I&t=791s)
 - [Kanister Overview 2021 ](https://www.youtube.com/watch?v=wFD42Zpbfts&t=1s)
 - [SIG Apps Demo](https://youtu.be/uzIp-CjsX1c?t=82)
