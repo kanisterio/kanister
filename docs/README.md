@@ -18,10 +18,10 @@ The `docs` target uses the `ghcr.io/kanisterio/docker-sphinx` public image to
 generate the HTML documents and store them in your local `/docs/_build/html`
 folder.
 
-## Language, Grammar and Tone
+## Language, Grammar, and Tone
 
 When updating the documentation content, please follow these guidelines on the
-language, grammar and tone style:
+language, grammar, and tone style:
 
 * Documentation should be written in English.
 * Prefer an active voice and present tense when possible.

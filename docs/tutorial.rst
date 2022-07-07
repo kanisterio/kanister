@@ -627,11 +627,11 @@ create action sets, see :ref:`architecture` .
 Next Step
 =========
 
-Congratulation! You have reached the end of this long tutorial! 🎉🎉🥳🥳
+Congratulations! You have reached the end of this long tutorial! 🎉🎉🥳🥳
 
 Don't stop here. There are many more example blueprints on the Kanister GitHub
 `repository <https://github.com/kanisterio/kanister/tree/master/examples>`_
 to explore. Use them to help you define your next blueprint.
 
-You would love to hear from you. If you have any feedback or questions, find us
+We would love to hear from you. If you have any feedback or questions, find us
 on Slack at `kanisterio.slack.com <https://kanisterio.slack.com>`_.

@@ -37,9 +37,9 @@ You should see the operator pod in the ``Running`` state:
   kanister-kanister-operator-85c747bfb8-dmqnj   1/1     Running   0               15s
 
 .. note::
-  Kanister is guaranteed to work with the 3 most-recent versions of Kubernetes.
+  Kanister is guaranteed to work with the 3 most recent versions of Kubernetes.
   For example, if the latest version of Kubernetes is 1.24, Kanister will work
-  with 1.24, 1.23 and 1.22. Support for older versions are determined on a
+  with 1.24, 1.23, and 1.22. Support for older versions is provided on a
   best-effort basis. If you are using an older version of Kubernetes, please
   consider upgrading to a newer version.
 
@@ -62,8 +62,8 @@ The source of the ``values.yaml`` file can be found on
 Managing Custom Resource Definitions (CRDs)
 ===========================================
 
-The default RBAC settings in the Helm chart permits Kanister to manage and
-auto-update its own custom resource definitions, to ease user's operation
+The default RBAC settings in the Helm chart permit Kanister to manage and
+auto-update its own custom resource definitions, to ease the user's operation
 burden. If your setup requires the removal of these settings, you will have to
 install Kanister with the ``--set controller.updateCRDs=false`` option:
 
