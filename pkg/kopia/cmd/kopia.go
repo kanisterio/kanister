@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kopia
+package cmd
 
 import (
 	"fmt"
@@ -24,157 +24,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/logsafe"
 	"github.com/kanisterio/kanister/pkg/utils"
-)
-
-const (
-	blobSubCommand        = "blob"
-	connectSubCommand     = "connect"
-	createSubCommand      = "create"
-	deleteSubCommand      = "delete"
-	expireSubCommand      = "expire"
-	gcSubCommand          = "gc"
-	infoSubCommand        = "info"
-	kopiaCommand          = "kopia"
-	listSubCommand        = "list"
-	maintenanceSubCommand = "maintenance"
-	manifestSubCommand    = "manifest"
-	policySubCommand      = "policy"
-	repositorySubCommand  = "repository"
-	restoreSubCommand     = "restore"
-	runSubCommand         = "run"
-	setSubCommand         = "set"
-	snapshotSubCommand    = "snapshot"
-	statsSubCommand       = "stats"
-
-	allFlag                    = "--all"
-	bucketFlag                 = "--bucket"
-	cacheDirectoryFlag         = "--cache-directory"
-	configFileFlag             = "--config-file"
-	contentCacheSizeMBFlag     = "--content-cache-size-mb"
-	deleteFlag                 = "--delete"
-	deltaFlag                  = "--delta"
-	endpointFlag               = "--endpoint"
-	filterFlag                 = "--filter"
-	globalFlag                 = "--global"
-	jsonFlag                   = "--json"
-	logDirectoryFlag           = "--log-dir"
-	logLevelErrorFlag          = "--log-level=error"
-	logLevelInfoFlag           = "--log-level=info"
-	metadataCacheSizeMBFlag    = "--metadata-cache-size-mb"
-	noCheckForUpdatesFlag      = "--no-check-for-updates"
-	noGrpcFlag                 = "--no-grpc"
-	noProgressFlag             = "--no-progress"
-	overrideHostnameFlag       = "--override-hostname"
-	overrideUsernameFlag       = "--override-username"
-	parallelFlag               = "--parallel"
-	passwordFlag               = "--password"
-	pointInTimeConnectionFlag  = "--point-in-time"
-	prefixFlag                 = "--prefix"
-	progressUpdateIntervalFlag = "--progress-update-interval"
-	rawFlag                    = "--raw"
-	showIdenticalFlag          = "--show-identical"
-	unsafeIgnoreSourceFlag     = "--unsafe-ignore-source"
-	ownerFlag                  = "--owner"
-	sparseFlag                 = "--sparse"
-
-	// S3 specific
-	s3SubCommand         = "s3"
-	accessKeyFlag        = "--access-key"
-	disableTLSFlag       = "--disable-tls"
-	disableTLSVerifyFlag = "--disable-tls-verification"
-	secretAccessKeyFlag  = "--secret-access-key"
-	sessionTokenFlag     = "--session-token"
-	regionFlag           = "--region"
-
-	// Azure specific
-	azureSubCommand    = "azure"
-	containerFlag      = "--container"
-	storageAccountFlag = "--storage-account"
-	storageKeyFlag     = "--storage-key"
-	storageDomainFlag  = "--storage-domain"
-
-	// Google specific
-	googleSubCommand    = "gcs"
-	credentialsFileFlag = "--credentials-file"
-
-	// Server specific
-	addSubCommand             = "add"
-	refreshSubCommand         = "refresh"
-	serverSubCommand          = "server"
-	startSubCommand           = "start"
-	statusSubCommand          = "status"
-	userSubCommand            = "user"
-	addressFlag               = "--address"
-	redirectToDevNull         = "> /dev/null 2>&1"
-	runInBackground           = "&"
-	serverControlPasswordFlag = "--server-control-password"
-	serverControlUsernameFlag = "--server-control-username"
-	serverPasswordFlag        = "--server-password"
-	serverUsernameFlag        = "--server-username"
-	serverCertFingerprint     = "--server-cert-fingerprint"
-	tlsCertFilePath           = "--tls-cert-file"
-	tlsGenerateCertFlag       = "--tls-generate-cert"
-	tlsKeyFilePath            = "--tls-key-file"
-	urlFlag                   = "--url"
-	userPasswordFlag          = "--user-password"
-
-	// Filesystem specific
-	filesystemSubCommand = "filesystem"
-	pathFlag             = "--path"
-
-	// DefaultCacheDirectory is the directory where kopia content cache is created
-	DefaultCacheDirectory = "/tmp/kopia-cache"
-
-	// DefaultConfigFilePath is the file which contains kopia repo config
-	DefaultConfigFilePath = "/tmp/kopia-repository.config"
-
-	// DefaultConfigDirectory is the directory which contains custom kopia repo config
-	DefaultConfigDirectory = "/tmp/kopia-repository"
-
-	// DefaultLogDirectory is the directory where kopia log file is created
-	DefaultLogDirectory = "/tmp/kopia-log"
-
-	// DefaultSparseRestore is the default option for whether to do a sparse restore
-	DefaultSparseRestore = false
-
-	// DefaultFSMountPath is the mount path for the file store PVC on Kopia API server
-	DefaultFSMountPath = "/mnt/data"
-
-	// Filters
-	manifestTypeSnapshotFilter = "type:snapshot"
-
-	// DefaultDataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
-	DefaultDataStoreGeneralContentCacheSizeMB = 0
-	// DataStoreGeneralContentCacheSizeMBVarName is the name of the environment variable that controls
-	// kopia content cache size for general command workloads
-	DataStoreGeneralContentCacheSizeMBVarName = "DATA_STORE_GENERAL_CONTENT_CACHE_SIZE_MB"
-
-	// DefaultDataStoreGeneralMetadataCacheSizeMB is the default metadata cache size for general command workloads
-	DefaultDataStoreGeneralMetadataCacheSizeMB = 500
-	// DataStoreGeneralMetadataCacheSizeMBVarName is the name of the environment variable that controls
-	// kopia metadata cache size for general command workloads
-	DataStoreGeneralMetadataCacheSizeMBVarName = "DATA_STORE_GENERAL_METADATA_CACHE_SIZE_MB"
-
-	// DefaultDataStoreRestoreContentCacheSizeMB is the default content cache size for restore workloads
-	DefaultDataStoreRestoreContentCacheSizeMB = 500
-	// DataStoreRestoreContentCacheSizeMBVarName is the name of the environment variable that controls
-	// kopia content cache size for restore workloads
-	DataStoreRestoreContentCacheSizeMBVarName = "DATA_STORE_RESTORE_CONTENT_CACHE_SIZE_MB"
-
-	// DefaultDataStoreRestoreMetadataCacheSizeMB is the default metadata cache size for restore workloads
-	DefaultDataStoreRestoreMetadataCacheSizeMB = 500
-	// DataStoreRestoreMetadataCacheSizeMBVarName is the name of the environment variable that controls
-	// kopia metadata cache size for restore workloads
-	DataStoreRestoreMetadataCacheSizeMBVarName = "DATA_STORE_RESTORE_METADATA_CACHE_SIZE_MB"
-
-	// DefaultDataStoreParallelUpload is the default value for data store parallelism
-	DefaultDataStoreParallelUpload = 8
-	// DataStoreParallelUploadVarName is the name of the environment variable that controls
-	// kopia parallelism during snapshot create commands
-	DataStoreParallelUploadVarName = "DATA_STORE_PARALLEL_UPLOAD"
 )
 
 func bashCommand(args logsafe.Cmd) []string {
@@ -222,15 +75,15 @@ func kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string, contentCacheMB, met
 // for initializing repositories that will be performing general command workloads that benefit from
 // cacheing metadata only.
 func GetCacheSizeSettingsForSnapshot() (contentCacheMB, metadataCacheMB int) {
-	return utils.GetEnvAsIntOrDefault(DataStoreGeneralContentCacheSizeMBVarName, DefaultDataStoreGeneralContentCacheSizeMB),
-		utils.GetEnvAsIntOrDefault(DataStoreGeneralMetadataCacheSizeMBVarName, DefaultDataStoreGeneralMetadataCacheSizeMB)
+	return utils.GetEnvAsIntOrDefault(kopia.DataStoreGeneralContentCacheSizeMBVarName, kopia.DefaultDataStoreGeneralContentCacheSizeMB),
+		utils.GetEnvAsIntOrDefault(kopia.DataStoreGeneralMetadataCacheSizeMBVarName, kopia.DefaultDataStoreGeneralMetadataCacheSizeMB)
 }
 
 // GetCacheSizeSettingsForRestore returns the feature setting cache size values to be used
 // for initializing repositories that will be performing restore workloads
 func GetCacheSizeSettingsForRestore() (contentCacheMB, metadataCacheMB int) {
-	return utils.GetEnvAsIntOrDefault(DataStoreRestoreContentCacheSizeMBVarName, DefaultDataStoreRestoreContentCacheSizeMB),
-		utils.GetEnvAsIntOrDefault(DataStoreRestoreMetadataCacheSizeMBVarName, DefaultDataStoreRestoreMetadataCacheSizeMB)
+	return utils.GetEnvAsIntOrDefault(kopia.DataStoreRestoreContentCacheSizeMBVarName, kopia.DefaultDataStoreRestoreContentCacheSizeMB),
+		utils.GetEnvAsIntOrDefault(kopia.DataStoreRestoreMetadataCacheSizeMBVarName, kopia.DefaultDataStoreRestoreMetadataCacheSizeMB)
 }
 
 // SnapshotCreateCommand returns the kopia command for creation of a snapshot
@@ -248,7 +101,7 @@ func snapshotCreateCommand(encryptionKey, pathToBackup, configFilePath, logDirec
 		requireLogLevelInfo = true
 	)
 
-	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(DataStoreParallelUploadVarName, DefaultDataStoreParallelUpload))
+	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(kopia.DataStoreParallelUploadVarName, kopia.DefaultDataStoreParallelUpload))
 	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, pathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
@@ -270,7 +123,7 @@ type SnapshotCreateInfo struct {
 // if the stats were unable to be parsed. The root ID and snapshot ID are fetched from
 // structured stdout and stats are parsed from stderr output.
 func ParseSnapshotCreateOutput(snapCreateStdoutOutput, snapCreateStderrOutput string) (*SnapshotCreateInfo, error) {
-	snapID, rootID, err := SnapshotInfoFromSnapshotCreateOutput(snapCreateStdoutOutput)
+	snapID, rootID, err := kopia.SnapshotInfoFromSnapshotCreateOutput(snapCreateStdoutOutput)
 	if err != nil {
 		return nil, err
 	}
@@ -578,12 +431,12 @@ func SnapListAllWithSnapIDs(encryptionKey, configFilePath, logDirectory string) 
 func snapListAllWithSnapIDs(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
 	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
-	args = args.AppendLoggableKV(filterFlag, manifestTypeSnapshotFilter)
+	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
 
 	return args
 }
 
-// ServerCommand returns the kopia command for starting the Kopia API Server
+// ServerStartCommand returns the kopia command for starting the Kopia API Server
 func ServerStartCommand(
 	configFilePath,
 	logDirectory,
