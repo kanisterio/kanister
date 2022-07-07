@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kopia
+package snapshot
 
 import (
 	"context"
@@ -27,6 +27,9 @@ import (
 	"github.com/kopia/kopia/snapshot/policy"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
 	"github.com/pkg/errors"
+
+	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
 )
 
 // SnapshotSource creates and uploads a kopia snapshot to the given repository
@@ -101,7 +104,7 @@ func reportSnapshotStatus(ctx context.Context, snapshotStartTime time.Time, mani
 
 // DeleteSnapshot deletes Kopia snapshot with given manifest ID
 func DeleteSnapshot(ctx context.Context, backupID, path, password string) error {
-	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose)
+	rep, err := repository.OpenRepository(ctx, kopia.defaultConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}

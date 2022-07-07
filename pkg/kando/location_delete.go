@@ -22,6 +22,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -66,7 +67,7 @@ func runLocationDelete(cmd *cobra.Command) error {
 
 // kopiaLocationDelete deletes the kopia snapshot with given backupID
 func kopiaLocationDelete(ctx context.Context, backupID, path, password string) error {
-	return kopia.DeleteSnapshot(ctx, backupID, path, password)
+	return snapshot.DeleteSnapshot(ctx, backupID, path, password)
 }
 
 func locationDelete(ctx context.Context, p *param.Profile, path string) error {
