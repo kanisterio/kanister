@@ -5,82 +5,107 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kanisterio/kanister)](https://goreportcard.com/report/github.com/kanisterio/kanister)
 [![GitHub Actions](https://github.com/kanisterio/kanister/actions/workflows/main.yaml/badge.svg)](https://github.com/kanisterio/kanister/actions)
 
-A framework for data management in Kubernetes.  It allows domain experts to
-define application-specific data management workflows through Kubernetes API
-extensions. Kanister makes it easy to integrate your application's data with
-your storage infrastructure.
+Kanister is a data protection workflow management tool. It provides a set of
+cohesive APIs for defining and curating data operations by abstracting away
+tedious details around executing data operations on Kubernetes. It's extensible
+and easy to install, operate and scale.
 
-## Features
+## Highlights
 
-- **Tasks Execute Anywhere:** Exec into running containers or spin up new ones.
-- **Object Storage:** Efficiently and securely transfer data between your app and
-  Object Storage  using Restic.
-- **Block Storage:** Backup, restore, and copy data using your storage's APIs.
-- **Kubernetes Workload Integration:** Easily perform common workload operations
-  like scaling up/down, acting on all mounted PVCs and many more.
-- **Application Centric:** A single Blueprint handles workflows for every
-  instance of your app.
-- **Kubernetes Native APIs:** APIs built using CRDs that play nicely with the
-  Kubernetes ecosystem.
-- **Secured by RBAC:** Prevent unauthorized access to your workflows using RBAC.
-- **Reporting:** Watching, logging and eventing let you know the impact of your
-  workflows.
+_Kubernetes centric_ - Kanister's APIs are implemented as [Custom Resource
+Definitions](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/)
+that conforms to Kubernetes' declarative management, security and distribution
+models.
 
-## Community Applications
+_Storage agnostic_ - Kanister allows you to efficiently and securely transfer
+backup data between your services and the object storage of your choice.
 
-Stable Helm charts that have been updated with Kanister support.
-- **[Cassandra](./examples/cassandra)**
-- **[Couchbase](./examples/couchbase)**
-- **[Elasticsearch](./examples/elasticsearch)**
-- **[FoundationDB](./examples/foundationdb)**
-- **[MongoDB on OpenShift using DeploymentConfig](./examples/mongodb-deploymentconfig)**
-- **[MongoDB](./examples/mongodb)**
-- **[MySQL on OpenShift using DeploymentConfig](./examples/mysql-deploymentconfig)**
-- **[MySQL](./examples/mysql)**
-- **[PostgreSQL with Point In Time Recovery (PITR)](./examples/postgresql-wale)**
-- **[ETCD](./examples/etcd/etcd-in-cluster)**
-- **[PostgreSQL on OpenShift using DeploymentConfig](./examples/postgresql-deploymentconfig)**
-- **[PostgreSQL](./examples/postgresql)**
+_Integration with storage providers_ - Use Kanister to backup, restore, and copy
+your data using your storage's APIs, and Kanister won't get in the way.
 
+_Asynchronous or synchronous task execution_ - Kanister can schedule your data
+operation to run asynchronously in dedicated job pods, or synchronously via
+Kubernetes apimachinery `ExecStream` framework.
 
-## Kanister in action for MySQL Database
+_Re-usable workflow artifacts_ -  A Kanister blueprint can be re-used across
+multiple workflows to protect different environment deployments.
 
-[![asciicast](https://asciinema.org/a/303478.svg)](https://asciinema.org/a/303478?speed=1.5)
+_Extensible, atomic data operation functions_ - Kanister provides a collection
+of easy-to-use
+[data operation functions](https://docs.kanister.io/functions.html) that you can
+add to your blueprint to express detailed backup and restore operation steps,
+including pre-backup scaling down of replicas, working with all mounted volumes
+in a pod etc.
 
+_Secured via RBAC_ - Prevent unauthorized access to your workflows via Kubernetes
+[role-based access control](https://kubernetes.io/docs/reference/access-authn-authz/rbac/)
+model.
 
-## Community Meetings
+_Observability_ - Kanister exposes logs, events and metrics to popular
+observability tools like Prometheus, Grafana and Loki to provide you with
+operational insights into your data protection workflows.
 
-We hold public community meetings, for roadmap and other design discussions, once every two weeks on Thursday at 06:00 PM CET.
+## Quickstart
 
-- Agenda and meeting notes can be found in [this document](https://docs.google.com/document/d/17LiqwVkeK0MVyfvGwsHPKhaz-nvoaafyAsd7I1R6K3Y/edit?usp=sharing).
-- To get yourself added into the regular Community meetings invite, please drop a mail to vivek@kasten.io.
-- Meeting joining details can be found in the meeting invite itself.
+Follow the instructions in
+[the installation documentation](https://docs.kanister.io/install.html), to
+install Kanister on your Kubernetes cluster.
+
+Walk through the [tutorial](https://docs.kanister.io/tutorial.html) to define,
+curate and run your first data protection workflow using Kanister blueprints,
+actionsets and profiles.
+
+The [`examples`](./examples) directory contains many sample blueprints that you
+can use to define data operations for :
+
+- [AWS RDS](./examples/aws-rds)
+- [Cassandra](./examples/cassandra)
+- [Couchbase](./examples/couchbase)
+- [Elasticsearch](./examples/elasticsearch)
+- [etcd](./examples/etcd/etcd-in-cluster)
+- [FoundationDB](./examples/foundationdb)
+- [K8ssandra](./examples/k8ssandra)
+- [MongoDB](./examples/mongodb)
+- [MongoDB on OpenShift using DeploymentConfig](./examples/mongodb-deploymentconfig)
+- [MySQL](./examples/mysql)
+- [MySQL on OpenShift using DeploymentConfig](./examples/mysql-deploymentconfig)
+- [PostgreSQL](./examples/postgresql)
+- [PostgreSQL with Point In Time Recovery (PITR)](./examples/postgresql-wale)
+- [PostgreSQL on OpenShift using DeploymentConfig](./examples/postgresql-deploymentconfig)
+
+The Kanister architecture is documented
+[here](https://docs.kanister.io/architecture.html).
+
+## Getting Help
+
+If you have any questions or run into issues, feel free to reach out to us on
+[Slack](https://kanisterio.slack.com).
+
+If you discovered any security issues, refer to our [`SECURITY.md`](SECURITY.md)
+documentation for our security policy, including steps on how to report
+vulnerabilities.
+
+## Community
+
+The Kanister community meetings happen once every two weeks on Thursday, 16:00
+UTC, where we discuss ongoing interesting features, issues, and pull requests.
+Come join us! Everyone is welcome! 🙌
+
+If you are currently using Kanister, we would love to hear about it! Feel free
+to add your organization to the [`ADOPTERS.md`](adopters.md) by submitting a
+pull request.
 
 ## Code of Conduct
 
 Kanister is for everyone. We ask that our users and contributors take a few
 minutes to review our [Code of Conduct](CODE_OF_CONDUCT.md).
 
-## Security
-
-See [SECURITY.md](SECURITY.md) for our security policy, including how to report
-vulnerabilities.
-
 ## Resources
 
-To get started or to better understand kanister, see the
-[documentation](https://docs.kanister.io/).
-
-For troubleshooting help, you can email the [mailing
-list](https://groups.google.com/forum/#!forum/kanisterio), reach out to us on
-[Slack](https://join.slack.com/t/kanisterio/shared_invite/enQtNzg2MDc4NzA0ODY4LTU1NDU2NDZhYjk3YmE5MWNlZWMwYzk1NjNjOGQ3NjAyMjcxMTIyNTE1YzZlMzgwYmIwNWFkNjU0NGFlMzNjNTk), or file a [Github
-issue](https://github.com/kanisterio/kanister/issues).
-
-## Presentations
-
-- [DoK - Kanister: Application Level Data Operations on Kubernetes](https://www.youtube.com/watch?v=ooJFt0bid1I&t=791s)
+- [CNCF - Kanister: Application-Level Data Protection on Kubneretes](https://youtu.be/GSgFwAHLziA)
+- [DoK - Kanister: Application-Level Data Operations on Kubernetes](https://www.youtube.com/watch?v=ooJFt0bid1I&t=791s)
 - [Kanister Overview 2021 ](https://www.youtube.com/watch?v=wFD42Zpbfts&t=1s)
-- [CNCF Webinar - Integrating Backup Into Your GitOps CI/CD Pipeline](https://www.youtube.com/watch?v=2zik5jDjVvM)
+- [CNCF - Integrating Backup Into Your GitOps CI/CD Pipeline](https://www.youtube.com/watch?v=2zik5jDjVvM)
 - [SIG Apps Demo](https://youtu.be/uzIp-CjsX1c?t=82)
 - [Percona Live 2018](https://www.youtube.com/watch?v=dS0kv0k8D_E)
 
