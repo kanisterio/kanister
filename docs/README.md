@@ -5,7 +5,7 @@ https://docs.kanister.io
 
 ## Building The Source
 
-The content are written in the
+The contents are written in the
 [reStructuredText](https://docutils.sourceforge.io/rst.html) format.
 
 To rebuild the documentation, run this command from the project root folder:
