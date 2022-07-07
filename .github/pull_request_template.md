@@ -13,9 +13,9 @@ Please check the type of change your PR introduces:
 - [ ] :world_map: Documentation
 - [ ] :robot: Test
 
-## Issues
+## Issues (in the format `fixes #<issue-number>`)
 
-- #XXX
+- fixes #issue-number
 
 ## Test Plan
 
