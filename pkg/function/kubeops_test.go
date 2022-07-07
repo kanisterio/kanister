@@ -26,6 +26,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
@@ -63,7 +64,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: test-deployment-2
+  name: %s
   namespace: %s
 spec:
   ports:
@@ -77,11 +78,13 @@ spec:
 	fooCRSpec = `apiVersion: samplecontroller.k8s.io/v1alpha1
 kind: Foo
 metadata:
-  name: example-foo
+  name: %s
   namespace: %s
 spec:
   deploymentName: example-foo
   replicas: 1`
+
+	testServiceName = "test-service"
 )
 
 var _ = Suite(&KubeOpsSuite{})
@@ -158,24 +161,13 @@ func deletePhase(gvr schema.GroupVersionResource, name, namespace string) crv1al
 	}
 }
 
-func createInSpecsNsPhase(namespace string) crv1alpha1.BlueprintPhase {
+func createInSpecsNsPhase(spec, name, namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
 		Name: "create-in-def-ns",
 		Func: KubeOpsFuncName,
 		Args: map[string]interface{}{
 			KubeOpsOperationArg: "create",
-			KubeOpsSpecArg:      fmt.Sprintf(serviceSpec, namespace),
-		},
-	}
-}
-
-func createCRPhase(namespace string) crv1alpha1.BlueprintPhase {
-	return crv1alpha1.BlueprintPhase{
-		Name: "create-crd-cr",
-		Func: KubeOpsFuncName,
-		Args: map[string]interface{}{
-			KubeOpsOperationArg: "create",
-			KubeOpsSpecArg:      fmt.Sprintf(fooCRSpec, namespace),
+			KubeOpsSpecArg:      fmt.Sprintf(spec, name, namespace),
 		},
 	}
 }
@@ -197,52 +189,51 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 	action := "test"
 	type resourceRef struct {
 		gvr       schema.GroupVersionResource
-		name      string
 		namespace string
 	}
 	for _, tc := range []struct {
-		bp          crv1alpha1.Blueprint
+		name        string
+		spec        string
 		expResource resourceRef
 	}{
 		{
-			bp: newCreateResourceBlueprint(createInSpecsNsPhase(s.namespace)),
+			name: fmt.Sprintf("%s-%s", testServiceName, rand.String(8)),
+			spec: serviceSpec,
 			expResource: resourceRef{
 				gvr:       schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"},
-				name:      "test-deployment-2",
 				namespace: s.namespace,
 			},
 		},
 		{
-			bp: newCreateResourceBlueprint(createCRPhase(s.namespace)),
+			name: fmt.Sprintf("%s-%s", "example-foo", rand.String(8)),
+			spec: fooCRSpec,
 			expResource: resourceRef{
 				gvr:       schema.GroupVersionResource{Group: "samplecontroller.k8s.io", Version: "v1alpha1", Resource: "foos"},
-				name:      "example-foo",
 				namespace: s.namespace,
 			},
 		},
 	} {
-		phases, err := kanister.GetPhases(tc.bp, action, kanister.DefaultVersion, tp)
+		bp := newCreateResourceBlueprint(createInSpecsNsPhase(tc.spec, tc.name, s.namespace))
+		phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			out, err := p.Exec(ctx, tc.bp, action, tp)
+			out, err := p.Exec(ctx, bp, action, tp)
 			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
-			_, err = s.dynCli.Resource(tc.expResource.gvr).Namespace(tc.expResource.namespace).Get(context.TODO(), tc.expResource.name, metav1.GetOptions{})
+			_, err = s.dynCli.Resource(tc.expResource.gvr).Namespace(tc.expResource.namespace).Get(context.TODO(), tc.name, metav1.GetOptions{})
 			c.Assert(err, IsNil)
 			expOut := map[string]interface{}{
 				"apiVersion": tc.expResource.gvr.Version,
 				"group":      tc.expResource.gvr.Group,
 				"resource":   tc.expResource.gvr.Resource,
 				"kind":       "",
-				"name":       tc.expResource.name,
+				"name":       tc.name,
 				"namespace":  tc.expResource.namespace,
 			}
 			c.Assert(out, DeepEquals, expOut)
+			err = s.dynCli.Resource(tc.expResource.gvr).Namespace(s.namespace).Delete(ctx, tc.name, metav1.DeleteOptions{})
+			c.Assert(err, IsNil)
 		}
 	}
-	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
-	serviceName := "test-deployment-2"
-	err := s.dynCli.Resource(gvr).Namespace(s.namespace).Delete(ctx, serviceName, metav1.DeleteOptions{})
-	c.Assert(err, IsNil)
 }
 
 func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
@@ -251,8 +242,8 @@ func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
 	tp := param.TemplateParams{}
 	action := "test"
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
-	serviceName := "test-deployment-2"
-	spec := fmt.Sprintf(serviceSpec, s.namespace)
+	serviceName := fmt.Sprintf("%s-%s", testServiceName, rand.String(8))
+	spec := fmt.Sprintf(serviceSpec, serviceName, s.namespace)
 
 	bp := newCreateResourceBlueprint(createPhase(s.namespace, spec),
 		deletePhase(gvr, serviceName, s.namespace))
