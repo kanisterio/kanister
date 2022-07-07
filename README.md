@@ -12,36 +12,35 @@ and easy to install, operate and scale.
 
 ## Highlights
 
-_Kubernetes centric_ - Kanister's APIs are implemented as [Custom Resource
+✅ _Kubernetes centric_ - Kanister's APIs are implemented as [Custom Resource
 Definitions](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/)
 that conforms to Kubernetes' declarative management, security and distribution
 models.
 
-_Storage agnostic_ - Kanister allows you to efficiently and securely transfer
-backup data between your services and the object storage of your choice.
+✅ _Storage agnostic_ - Kanister allows you to efficiently and securely transfer
+backup data between your services and the object storage service of your choice.
+Use Kanister to backup, restore, and copy your data using your storage's APIs,
+and Kanister won't get in the way.
 
-_Integration with storage providers_ - Use Kanister to backup, restore, and copy
-your data using your storage's APIs, and Kanister won't get in the way.
-
-_Asynchronous or synchronous task execution_ - Kanister can schedule your data
+✅ _Asynchronous or synchronous task execution_ - Kanister can schedule your data
 operation to run asynchronously in dedicated job pods, or synchronously via
 Kubernetes apimachinery `ExecStream` framework.
 
-_Re-usable workflow artifacts_ -  A Kanister blueprint can be re-used across
+✅ _Re-usable workflow artifacts_ -  A Kanister blueprint can be re-used across
 multiple workflows to protect different environment deployments.
 
-_Extensible, atomic data operation functions_ - Kanister provides a collection
+✅ _Extensible, atomic data operation functions_ - Kanister provides a collection
 of easy-to-use
 [data operation functions](https://docs.kanister.io/functions.html) that you can
 add to your blueprint to express detailed backup and restore operation steps,
 including pre-backup scaling down of replicas, working with all mounted volumes
 in a pod etc.
 
-_Secured via RBAC_ - Prevent unauthorized access to your workflows via Kubernetes
+✅ _Secured via RBAC_ - Prevent unauthorized access to your workflows via Kubernetes
 [role-based access control](https://kubernetes.io/docs/reference/access-authn-authz/rbac/)
 model.
 
-_Observability_ - Kanister exposes logs, events and metrics to popular
+✅ _Observability_ - Kanister exposes logs, events and metrics to popular
 observability tools like Prometheus, Grafana and Loki to provide you with
 operational insights into your data protection workflows.
 
@@ -89,7 +88,7 @@ vulnerabilities.
 
 The Kanister community meetings happen once every two weeks on Thursday, 16:00
 UTC, where we discuss ongoing interesting features, issues, and pull requests.
-Come join us! Everyone is welcome! 🙌
+Come join us! Everyone is welcome! 🙌 (Zoom link is pinned on Slack)
 
 If you are currently using Kanister, we would love to hear about it! Feel free
 to add your organization to the [`ADOPTERS.md`](adopters.md) by submitting a
@@ -103,9 +102,9 @@ minutes to review our [Code of Conduct](CODE_OF_CONDUCT.md).
 ## Resources
 
 - [CNCF - Kanister: Application-Level Data Protection on Kubneretes](https://youtu.be/GSgFwAHLziA)
+- [CNCF - Integrating Backup Into Your GitOps CI/CD Pipeline](https://www.youtube.com/watch?v=2zik5jDjVvM)
 - [DoK - Kanister: Application-Level Data Operations on Kubernetes](https://www.youtube.com/watch?v=ooJFt0bid1I&t=791s)
 - [Kanister Overview 2021 ](https://www.youtube.com/watch?v=wFD42Zpbfts&t=1s)
-- [CNCF - Integrating Backup Into Your GitOps CI/CD Pipeline](https://www.youtube.com/watch?v=2zik5jDjVvM)
 - [SIG Apps Demo](https://youtu.be/uzIp-CjsX1c?t=82)
 - [Percona Live 2018](https://www.youtube.com/watch?v=dS0kv0k8D_E)
 
