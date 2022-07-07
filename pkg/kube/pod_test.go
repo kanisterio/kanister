@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -237,9 +238,10 @@ func (s *PodSuite) createServiceAccount(name, ns string) error {
 
 func (s *PodSuite) TestPodWithVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
+	pvcName := "prometheus-ibm-monitoring-prometheus-db-prometheus-ibm-monitoring-prometheus-0"
 	pvc := &v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "pvc-test",
+			Name: pvcName,
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
@@ -259,6 +261,9 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 		fmt.Println("found pod")
 		ca := action.(testing.CreateAction)
 		p = ca.GetObject().(*v1.Pod)
+		if len(p.Spec.Volumes[0].Name) > 63 {
+			return true, nil, errors.New("spec.volumes[0].name must be no more than 63 characters")
+		}
 		return false, nil, nil
 	})
 	cli.PrependReactor("get", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
@@ -275,7 +280,7 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), IsNil)
 	c.Assert(pod.Spec.Volumes, HasLen, 1)
-	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, "pvc-test")
+	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, pvcName)
 	c.Assert(pod.Spec.Containers[0].VolumeMounts[0].MountPath, Equals, "/mnt/data1")
 }
 
