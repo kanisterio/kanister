@@ -109,4 +109,20 @@ const (
 	// Filesystem specific
 	filesystemSubCommand = "filesystem"
 	pathFlag             = "--path"
+
+	snapshotTypeField = "type:snapshot"
+
+	// List of possible modifications to a policy, expressed as the kopia flag that will modify it
+	// Retention
+	keepLatest  = "--keep-latest"
+	keepHourly  = "--keep-hourly"
+	keepDaily   = "--keep-daily"
+	keepWeekly  = "--keep-weekly"
+	keepMonthly = "--keep-monthly"
+	keepAnnual  = "--keep-annual"
+	// Compression
+	compressionAlgorithm = "--compression"
+
+	// List of kopia-supported compression algorithms recognized by the kopia "--compression" flag
+	s2DefaultComprAlgo = "s2-default"
 )
