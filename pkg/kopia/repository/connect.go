@@ -93,10 +93,10 @@ func ConnectToAPIServer(
 	return errors.Wrap(err, "Failed connecting to the Kopia API Server")
 }
 
-// OpenRepository connects to the kopia repository based on the config stored in the config file
+// Open connects to the kopia repository based on the config stored in the config file
 // NOTE: This assumes that `kopia repository connect` has been already run on the machine
 // OR the above Connect function has been used to connect to the repository server
-func OpenRepository(ctx context.Context, configFile, password, purpose string) (repo.RepositoryWriter, error) {
+func Open(ctx context.Context, configFile, password, purpose string) (repo.RepositoryWriter, error) {
 	repoConfig := repositoryConfigFileName(configFile)
 	if _, err := os.Stat(repoConfig); os.IsNotExist(err) {
 		return nil, errors.New("Failed find kopia configuration file")

@@ -79,10 +79,10 @@ func SnapshotSource(
 		return "", 0, errors.Wrap(ferr, "Failed to flush kopia repository")
 	}
 
-	return reportSnapshotStatus(ctx, snapshotStartTime, manifest)
+	return reportStatus(ctx, snapshotStartTime, manifest)
 }
 
-func reportSnapshotStatus(ctx context.Context, snapshotStartTime time.Time, manifest *snapshot.Manifest) (string, int64, error) {
+func reportStatus(ctx context.Context, snapshotStartTime time.Time, manifest *snapshot.Manifest) (string, int64, error) {
 	manifestID := manifest.ID
 	snapSize := manifest.Stats.TotalFileSize
 
@@ -102,9 +102,9 @@ func reportSnapshotStatus(ctx context.Context, snapshotStartTime time.Time, mani
 	return string(manifestID), snapSize, nil
 }
 
-// DeleteSnapshot deletes Kopia snapshot with given manifest ID
-func DeleteSnapshot(ctx context.Context, backupID, path, password string) error {
-	rep, err := repository.OpenRepository(ctx, kopia.defaultConfigFilePath, password, pullRepoPurpose)
+// Delete deletes Kopia snapshot with given manifest ID
+func Delete(ctx context.Context, backupID, path, password string) error {
+	rep, err := repository.Open(ctx, kopia.defaultConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
