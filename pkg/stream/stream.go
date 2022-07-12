@@ -35,7 +35,7 @@ const (
 
 // Push streams data to object store by reading it from the given endpoint into an in-memory filesystem
 func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEndpoint string) error {
-	rep, err := repository.OpenRepository(ctx, configFile, password, "kanister stream push")
+	rep, err := repository.Open(ctx, configFile, password, "kanister stream push")
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
