@@ -184,13 +184,13 @@ func resolveSymlink(path string) (string, error) {
 
 // Read reads a kopia snapshot with the given ID and copies it to the given target
 func Read(ctx context.Context, target io.Writer, backupID, path, password string) error {
-	rep, err := repository.Open(ctx, kopia.defaultConfigFilePath, password, pullRepoPurpose)
+	rep, err := repository.Open(ctx, kopia.DefaultConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
 
 	// Get the kopia object ID belonging to the streaming file
-	oid, err := kopia.getStreamingFileObjectIDFromSnapshot(ctx, rep, path, backupID)
+	oid, err := kopia.GetStreamingFileObjectIDFromSnapshot(ctx, rep, path, backupID)
 	if err != nil {
 		return err
 	}
@@ -210,7 +210,7 @@ func Read(ctx context.Context, target io.Writer, backupID, path, password string
 
 // ReadFile restores a kopia snapshot with the given ID to the given target
 func ReadFile(ctx context.Context, backupID, target, password string) error {
-	rep, err := repository.Open(ctx, kopia.defaultConfigFilePath, password, pullRepoPurpose)
+	rep, err := repository.Open(ctx, kopia.DefaultConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
