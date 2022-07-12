@@ -70,7 +70,7 @@ func (si *SnapshotInfo) Validate() error {
 // A virtual directory tree rooted at filepath.Dir(path) is created with
 // a kopia streaming file with filepath.Base(path) as name
 func Write(ctx context.Context, source io.Reader, path, password string) (*SnapshotInfo, error) {
-	rep, err := repository.Open(ctx, kopia.defaultConfigFilePath, password, pushRepoPurpose)
+	rep, err := repository.Open(ctx, kopia.DefaultConfigFilePath, password, pushRepoPurpose)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to open kopia repository")
 	}
@@ -116,7 +116,7 @@ func Write(ctx context.Context, source io.Reader, path, password string) (*Snaps
 
 // WriteFile creates a kopia snapshot from the given source file
 func WriteFile(ctx context.Context, path, sourcePath, password string) (*SnapshotInfo, error) {
-	rep, err := repository.Open(ctx, kopia.defaultConfigFilePath, password, pushRepoPurpose)
+	rep, err := repository.Open(ctx, kopia.DefaultConfigFilePath, password, pushRepoPurpose)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to open kopia repository")
 	}
