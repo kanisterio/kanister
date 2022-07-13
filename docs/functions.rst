@@ -77,9 +77,9 @@ KubeExecAll
 -----------
 
 KubeExecAll is similar to running KubeExec on specified containers of
-given pods (all specified containers on given pods) in parallel. In below
-example, the command is going to be executed in both the containers of
-given pods.
+given pods (all specified containers on given pods) in parallel. In the
+below example, the command is going to be executed in both the containers
+of the given pods.
 
 .. csv-table::
    :header: "Argument", "Required", "Type", "Description"
