@@ -87,8 +87,8 @@ given pods.
    :widths: 5,5,5,15
 
    `namespace`, Yes, `string`, namespace in which to execute
-   `pods`, Yes, `[]string`, list of names of pods in which to execute
-   `containers`, Yes, `[]string`, list of names of the containers in which to execute
+   `pods`, Yes, `string`, space separated list of names of pods in which to execute
+   `containers`, Yes, `string`, space separated list of names of the containers in which to execute
    `command`, Yes, `[]string`,  command list to execute
 
 Example:
