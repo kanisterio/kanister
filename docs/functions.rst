@@ -76,8 +76,10 @@ Example:
 KubeExecAll
 -----------
 
-KubeExecAll is similar to running KubeExec on multiple containers on
-multiple pods (all specified containers on all pods) in parallel.
+KubeExecAll is similar to running KubeExec on specified containers of
+given pods (all specified containers on given pods) in parallel. In below
+example, the command is going to be executed in both the containers of
+given pods.
 
 .. csv-table::
    :header: "Argument", "Required", "Type", "Description"
@@ -98,12 +100,8 @@ Example:
     name: examplePhase
     args:
       namespace: "{{ .Deployment.Namespace }}"
-      pods:
-        - "{{ index .Deployment.Pods 0 }}"
-        - "{{ index .Deployment.Pods 1 }}"
-      containers:
-        - kanister-sidecar1
-        - kanister-sidecar2
+      pods: "{{ index .Deployment.Pods 0 }} {{ index .Deployment.Pods 1 }}"
+      containers: "container1 container2"
       command:
         - sh
         - -c
