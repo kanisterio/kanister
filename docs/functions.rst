@@ -1416,7 +1416,7 @@ Arguments:
    `pvc`, Yes, `string`, name of the new PVC
    `namespace`, Yes, `string`, namespace of the VolumeSnapshot and resultant PersistentVolumeClaim
    `storageClass`, Yes, `string`, name of the StorageClass
-   `restoreSize`, Yes, `string`, required memory size to restore PVC
+   `restoreSize`, Yes, `string`, required memory size to restore PVC. Must be greater than zero.
    `accessModes`, No, `[]string`, access modes for the underlying PV (Default is ``[]{"ReadWriteOnce"}```)
    `volumeMode`, No, `string`, mode of volume (Default is ``"Filesystem"```)
    `labels`, No, `map[string]string`, optional labels for the PersistentVolumeClaim
