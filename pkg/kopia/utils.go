@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/kopia/kopia/repo"
@@ -211,6 +212,61 @@ func UnmarshalKopiaSnapshot(snapInfoJSON string) (snap.SnapshotInfo, error) {
 		return snap, errors.Wrap(err, "failed to unmarshal kopia snapshot information")
 	}
 	return snap, snap.Validate()
+}
+
+const (
+	pathKey       = "path"
+	typeKey       = "type"
+	snapshotValue = "snapshot"
+)
+
+// SnapshotIDsFromSnapshot extracts root ID of a snapshot from the logs
+func SnapshotIDsFromSnapshot(output string) (snapID, rootID string, err error) {
+	if output == "" {
+		return snapID, rootID, errors.New("Received empty output")
+	}
+
+	logs := regexp.MustCompile("[\r\n]").Split(output, -1)
+	pattern := regexp.MustCompile(`Created snapshot with root ([^\s]+) and ID ([^\s]+).*$`)
+	for _, l := range logs {
+		// Log should contain "Created snapshot with root ABC and ID XYZ..."
+		match := pattern.FindAllStringSubmatch(l, 1)
+		if len(match) > 0 && len(match[0]) > 2 {
+			snapID = match[0][2]
+			rootID = match[0][1]
+			return
+		}
+	}
+	return snapID, rootID, errors.New("Failed to find Root ID from output")
+}
+
+// LatestSnapshotInfoFromManifestList returns snapshot ID and backup path of the latest snapshot from `manifests list` output
+func LatestSnapshotInfoFromManifestList(output string) (string, string, error) {
+	manifestList := []manifest.EntryMetadata{}
+	snapID := ""
+	backupPath := ""
+
+	err := json.Unmarshal([]byte(output), &manifestList)
+	if err != nil {
+		return snapID, backupPath, errors.Wrap(err, "Failed to unmarshal manifest list")
+	}
+	for _, manifest := range manifestList {
+		for key, value := range manifest.Labels {
+			if key == pathKey {
+				backupPath = value
+			}
+			if key == typeKey && value == snapshotValue {
+				snapID = string(manifest.ID)
+			}
+		}
+	}
+	if snapID == "" {
+		return "", "", errors.New("Failed to get latest snapshot ID from manifest list")
+	}
+	if backupPath == "" {
+		return "", "", errors.New("Failed to get latest snapshot backup path from manifest list")
+	}
+	return snapID, backupPath, nil
 }
 
 // SnapshotInfoFromSnapshotCreateOutput returns snapshot ID and root ID from snapshot create output
