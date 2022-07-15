@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/kopia/kopia/repo"
@@ -36,7 +37,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/format"
+	"github.com/kanisterio/kanister/pkg/kopia/cmd"
 	snap "github.com/kanisterio/kanister/pkg/kopia/snapshot"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -213,6 +217,61 @@ func UnmarshalKopiaSnapshot(snapInfoJSON string) (snap.SnapshotInfo, error) {
 	return snap, snap.Validate()
 }
 
+const (
+	pathKey       = "path"
+	typeKey       = "type"
+	snapshotValue = "snapshot"
+)
+
+// SnapshotIDsFromSnapshot extracts root ID of a snapshot from the logs
+func SnapshotIDsFromSnapshot(output string) (snapID, rootID string, err error) {
+	if output == "" {
+		return snapID, rootID, errors.New("Received empty output")
+	}
+
+	logs := regexp.MustCompile("[\r\n]").Split(output, -1)
+	pattern := regexp.MustCompile(`Created snapshot with root ([^\s]+) and ID ([^\s]+).*$`)
+	for _, l := range logs {
+		// Log should contain "Created snapshot with root ABC and ID XYZ..."
+		match := pattern.FindAllStringSubmatch(l, 1)
+		if len(match) > 0 && len(match[0]) > 2 {
+			snapID = match[0][2]
+			rootID = match[0][1]
+			return
+		}
+	}
+	return snapID, rootID, errors.New("Failed to find Root ID from output")
+}
+
+// LatestSnapshotInfoFromManifestList returns snapshot ID and backup path of the latest snapshot from `manifests list` output
+func LatestSnapshotInfoFromManifestList(output string) (string, string, error) {
+	manifestList := []manifest.EntryMetadata{}
+	snapID := ""
+	backupPath := ""
+
+	err := json.Unmarshal([]byte(output), &manifestList)
+	if err != nil {
+		return snapID, backupPath, errors.Wrap(err, "Failed to unmarshal manifest list")
+	}
+	for _, manifest := range manifestList {
+		for key, value := range manifest.Labels {
+			if key == pathKey {
+				backupPath = value
+			}
+			if key == typeKey && value == snapshotValue {
+				snapID = string(manifest.ID)
+			}
+		}
+	}
+	if snapID == "" {
+		return "", "", errors.New("Failed to get latest snapshot ID from manifest list")
+	}
+	if backupPath == "" {
+		return "", "", errors.New("Failed to get latest snapshot backup path from manifest list")
+	}
+	return snapID, backupPath, nil
+}
+
 // SnapshotInfoFromSnapshotCreateOutput returns snapshot ID and root ID from snapshot create output
 func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error) {
 	snapID := ""
@@ -285,4 +344,51 @@ func parseSnapshotManifestList(output string) ([]*snapshot.Manifest, error) {
 	}
 
 	return snapInfoList, nil
+}
+
+// Duplicate of struct for Kopia user profiles since Profile struct is in internal/user package and could not be imported
+type KopiaUserProfile struct {
+	ManifestID manifest.ID `json:"-"`
+
+	Username            string `json:"username"`
+	PasswordHashVersion int    `json:"passwordHashVersion"`
+	PasswordHash        []byte `json:"passwordHash"`
+}
+
+// GetMaintenanceOwnerForConnectedRepository executes maintenance info command, parses output
+// and returns maintenance owner
+func GetMaintenanceOwnerForConnectedRepository(
+	cli kubernetes.Interface,
+	namespace,
+	pod,
+	container,
+	encryptionKey,
+	configFilePath,
+	logDirectory string,
+) (string, error) {
+	cmd := cmd.MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory, false)
+	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
+	format.Log(pod, container, stdout)
+	format.Log(pod, container, stderr)
+	if err != nil {
+		return "", err
+	}
+	parsedOwner := parseOutput(stdout)
+	if parsedOwner == "" {
+		return "", errors.New("Failed parsing maintenance info output to get owner")
+	}
+	return parsedOwner, nil
+}
+
+func parseOutput(output string) string {
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "Owner") {
+			arr := strings.Split(line, ":")
+			if len(arr) == 2 {
+				return strings.TrimSpace(arr[1])
+			}
+		}
+	}
+	return ""
 }
