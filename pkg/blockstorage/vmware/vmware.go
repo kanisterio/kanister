@@ -583,14 +583,14 @@ func (p *FcdProvider) getSnapshotTags(ctx context.Context, fullSnapshotID string
 
 // SnapshotsList is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
-	var volumeIds []string
+	var volumeIDs []string
 	var descriptionTags = map[string]string{}
 	for name, value := range tags {
 		if strings.HasPrefix(name, DescriptionTag) {
 			descriptionTags[name] = value
 		}
 		if name == VolumeIdTag {
-			volumeIds = strings.Split(value, ",")
+			volumeIDs = strings.Split(value, ",")
 		}
 	}
 
@@ -598,7 +598,7 @@ func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string)
 		return p.snapshotsListByTag(ctx, tags)
 	}
 
-	if len(volumeIds) == 0 {
+	if len(volumeIDs) == 0 {
 		log.Debug().Print("vSphere can't list by description without list of volumes. Cannot list snapshots")
 		return nil, nil
 	}
@@ -606,7 +606,7 @@ func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string)
 	var result []*blockstorage.Snapshot
 
 	filterStr := generateDescription(descriptionTags)
-	for _, volID := range volumeIds {
+	for _, volID := range volumeIDs {
 		snapshots, _ := p.Gom.RetrieveSnapshotInfo(ctx, vimID(volID))
 		for _, snapshot := range snapshots {
 			if snapshot.Description == filterStr {
