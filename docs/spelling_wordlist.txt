@@ -34,6 +34,7 @@ pre
 prepopulated
 Quickstart
 repo
+rollout
 runtime
 schemas
 stateful
@@ -41,5 +42,6 @@ stdout
 subcommand
 templating
 Walkthrough
+walkthrough
 Workflow
 webhook
