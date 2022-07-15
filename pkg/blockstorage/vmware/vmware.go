@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	uuid "github.com/gofrs/uuid"
+	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"github.com/vmware/govmomi/cns"
 	govmomitask "github.com/vmware/govmomi/task"
@@ -51,11 +51,13 @@ const (
 	// Note: it is up to the creator of the provider to determine if a para-virtualized environment exists.
 	VSphereIsParaVirtualizedKey = "VSphereIsParaVirtualizedKey"
 
-	noDescription     = ""
 	defaultWaitTime   = 60 * time.Minute
 	defaultRetryLimit = 30 * time.Minute
 
 	vmWareTimeoutMinEnv = "VMWARE_GOM_TIMEOUT_MIN"
+
+	DescriptionTag = "kanister-8d6b8dc9ceb74bb4b47b3c0a408658c4"
+	VolumeIdTag    = "kanister-volume-8d6b8dc9ceb74bb4b47b3c0a408658c4"
 )
 
 var (
@@ -253,7 +255,8 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	var res types.AnyType
 	err := wait.PollImmediate(time.Second, defaultRetryLimit, func() (bool, error) {
 		log.Debug().Print("CreateSnapshot", field.M{"VolumeID": volume.ID})
-		task, lerr := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), noDescription)
+		description := generateDescription(tags)
+		task, lerr := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), description)
 		if lerr != nil {
 			return false, errors.Wrap(lerr, "CreateSnapshot task creation failure")
 		}
@@ -308,6 +311,16 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	}
 
 	return snap, nil
+}
+
+func generateDescription(tags map[string]string) string {
+	var tagsAsStr []string
+	for name, value := range tags {
+		if strings.HasPrefix(name, DescriptionTag) {
+			tagsAsStr = append(tagsAsStr, fmt.Sprintf("%s:%s", name, value))
+		}
+	}
+	return strings.Join(tagsAsStr, ",")
 }
 
 // SnapshotCreateWaitForCompletion is part of blockstorage.Provider
@@ -570,6 +583,46 @@ func (p *FcdProvider) getSnapshotTags(ctx context.Context, fullSnapshotID string
 
 // SnapshotsList is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
+	var volumeIds []string
+	var descriptionTags = map[string]string{}
+	for name, value := range tags {
+		if strings.HasPrefix(name, DescriptionTag) {
+			descriptionTags[name] = value
+		}
+		if name == VolumeIdTag {
+			volumeIds = strings.Split(value, ",")
+		}
+	}
+
+	if len(descriptionTags) == 0 {
+		return p.snapshotsListByTag(ctx, tags)
+	}
+
+	if len(volumeIds) == 0 {
+		log.Debug().Print("vSphere can't list by description without list of volumes. Cannot list snapshots")
+		return nil, nil
+	}
+
+	var result []*blockstorage.Snapshot
+
+	filterStr := generateDescription(descriptionTags)
+	for _, volID := range volumeIds {
+		snapshots, _ := p.Gom.RetrieveSnapshotInfo(ctx, vimID(volID))
+		for _, snapshot := range snapshots {
+			if snapshot.Description == filterStr {
+				sn, err := convertFromObjectToSnapshot(&snapshot, volID)
+				if err != nil {
+					return nil, errors.Wrap(err, "Failed to convert object to snapshot")
+				}
+				result = append(result, sn)
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func (p *FcdProvider) snapshotsListByTag(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	if p.categoryID == "" {
 		log.Debug().Print("vSphere snapshot tagging is disabled (categoryID not set). Cannot list snapshots")
 		return nil, nil
