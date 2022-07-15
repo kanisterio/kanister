@@ -173,13 +173,16 @@ func maintenanceRunCommand(encryptionKey, configFilePath, logDirectory string) l
 }
 
 // MaintenanceInfoCommand returns the kopia command to get maintenance info
-func MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory string) []string {
-	return stringSliceCommand(maintenanceInfoCommand(encryptionKey, configFilePath, logDirectory))
+func MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory string, getJsonOutput bool) []string {
+	return stringSliceCommand(maintenanceInfoCommand(encryptionKey, configFilePath, logDirectory, getJsonOutput))
 }
 
-func maintenanceInfoCommand(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
+func maintenanceInfoCommand(encryptionKey, configFilePath, logDirectory string, getJsonOutput bool) logsafe.Cmd {
 	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, infoSubCommand)
+	if getJsonOutput {
+		args = args.AppendLoggable(jsonFlag)
+	}
 
 	return args
 }
