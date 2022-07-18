@@ -30,7 +30,12 @@ import (
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
-type policyChanges map[string]string
+// AWSAssumeRoleDuration gets the duration to be used for generating session tokens from AWS
+// See time.ParseDuration for the format of the value stored in the env var.
+// Examples: 1.5h, 90m, 2h45m
+func AWSAssumeRoleDuration() string {
+	return utils.GetEnvAsStringOrDefault(kopia.AWSAssumeRoleDurationVarName, kopia.DefaultAWSAssumeRoleDuration)
+}
 
 func kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string, contentCacheMB, metadataCacheMB int) logsafe.Cmd {
 	args = args.AppendLoggableKV(cacheDirectoryFlag, cacheDirectory)

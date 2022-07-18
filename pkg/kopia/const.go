@@ -33,6 +33,11 @@ const (
 	// DefaultFSMountPath is the mount path for the file store PVC on Kopia API server
 	DefaultFSMountPath = "/mnt/data"
 
+	// DefaultAWSAssumeRoleDuration is the default for Assume Role Duration (in minutes)
+	DefaultAWSAssumeRoleDuration = "60m"
+	// AWSAssumeRoleDurationVarName is the environment variable that controls AWS Assume Role Duration.
+	AWSAssumeRoleDurationVarName = "AWS_ASSUME_ROLE_DURATION"
+
 	// DefaultDataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
 	DefaultDataStoreGeneralContentCacheSizeMB = 0
 	// DataStoreGeneralContentCacheSizeMBVarName is the name of the environment variable that controls
@@ -65,4 +70,18 @@ const (
 	DataStoreParallelUploadVarName = "DATA_STORE_PARALLEL_UPLOAD"
 
 	ManifestTypeSnapshotFilter = "type:snapshot"
+
+	// List of possible modifications to a policy, expressed as the kopia flag that will modify it
+	// Retention
+	keepLatest  = "--keep-latest"
+	keepHourly  = "--keep-hourly"
+	keepDaily   = "--keep-daily"
+	keepWeekly  = "--keep-weekly"
+	keepMonthly = "--keep-monthly"
+	keepAnnual  = "--keep-annual"
+	// Compression
+	compressionAlgorithm = "--compression"
+
+	// List of kopia-supported compression algorithms recognized by the kopia "--compression" flag
+	s2DefaultComprAlgo = "s2-default"
 )

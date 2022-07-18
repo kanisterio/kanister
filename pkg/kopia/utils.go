@@ -25,6 +25,7 @@ import (
 	"encoding/pem"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/kopia/kopia/repo"
@@ -38,7 +39,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
-	"github.com/kanisterio/kanister/pkg/kopia/cmd"
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/cmd"
 	snap "github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -67,6 +68,28 @@ const (
 	// DataStoreGeneralMetadataCacheSizeMBKey is the key to pass metadata cache size for general command workloads
 	DataStoreGeneralMetadataCacheSizeMBKey = "dataStoreGeneralMetadataCacheSize"
 )
+
+type PolicyChanges map[string]string
+
+// PolicySetGlobalCommand creates the command for setting the global policy to the desired settings.
+func PolicySetGlobalCommand(encryptionKey, configFilePath, logDirectory string) []string {
+	const maxInt32 = 1<<31 - 1
+
+	pc := PolicyChanges{
+		// Retention changes
+		keepLatest:  strconv.Itoa(maxInt32),
+		keepHourly:  strconv.Itoa(0),
+		keepDaily:   strconv.Itoa(0),
+		keepWeekly:  strconv.Itoa(0),
+		keepMonthly: strconv.Itoa(0),
+		keepAnnual:  strconv.Itoa(0),
+
+		// Compression changes
+		compressionAlgorithm: s2DefaultComprAlgo,
+	}
+
+	return kopiacmd.PolicySetGlobal(encryptionKey, configFilePath, logDirectory, pc)
+}
 
 // ExtractFingerprintFromCertSecret extracts the fingerprint from the given certificate secret
 func ExtractFingerprintFromCertSecret(ctx context.Context, cli kubernetes.Interface, secretName, secretNamespace string) (string, error) {
@@ -346,7 +369,7 @@ func parseSnapshotManifestList(output string) ([]*snapshot.Manifest, error) {
 	return snapInfoList, nil
 }
 
-// Duplicate of struct for Kopia user profiles since Profile struct is in internal/user package and could not be imported
+// KopiaUserProfile is a duplicate of struct for Kopia user profiles since Profile struct is in internal/user package and could not be imported
 type KopiaUserProfile struct {
 	ManifestID manifest.ID `json:"-"`
 
@@ -366,7 +389,7 @@ func GetMaintenanceOwnerForConnectedRepository(
 	configFilePath,
 	logDirectory string,
 ) (string, error) {
-	cmd := cmd.MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory, false)
+	cmd := kopiacmd.MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory, false)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
