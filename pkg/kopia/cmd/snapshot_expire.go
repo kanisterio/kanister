@@ -22,7 +22,7 @@ func SnapshotExpire(encryptionKey, rootID, configFilePath, logDirectory string, 
 }
 
 func snapshotExpire(encryptionKey, rootID, configFilePath, logDirectory string, mustDelete bool) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, expireSubCommand, rootID)
 	if mustDelete {
 		args = args.AppendLoggable(deleteFlag)

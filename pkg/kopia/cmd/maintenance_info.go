@@ -22,7 +22,7 @@ func MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory string, 
 }
 
 func maintenanceInfoCommand(encryptionKey, configFilePath, logDirectory string, getJsonOutput bool) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, infoSubCommand)
 	if getJsonOutput {
 		args = args.AppendLoggable(jsonFlag)

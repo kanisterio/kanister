@@ -52,7 +52,7 @@ func serverStart(
 	autoGenerateCert,
 	background bool,
 ) logsafe.Cmd {
-	args := kopiaArgs("", configFilePath, logDirectory, false)
+	args := commonArgs("", configFilePath, logDirectory, false)
 
 	if autoGenerateCert {
 		args = args.AppendLoggable(serverSubCommand, startSubCommand, tlsGenerateCertFlag)

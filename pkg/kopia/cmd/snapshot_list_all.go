@@ -22,7 +22,7 @@ func SnapListAll(encryptionKey, configFilePath, logDirectory string) []string {
 }
 
 func snapListAll(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(
 		snapshotSubCommand,
 		listSubCommand,

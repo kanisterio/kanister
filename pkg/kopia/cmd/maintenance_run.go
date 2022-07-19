@@ -22,7 +22,7 @@ func MaintenanceRunCommand(encryptionKey, configFilePath, logDirectory string) [
 }
 
 func maintenanceRunCommand(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand)
 
 	return args

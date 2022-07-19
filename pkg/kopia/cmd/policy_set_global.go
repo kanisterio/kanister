@@ -22,7 +22,7 @@ func policySetGlobal(encryptionKey, configFilePath, logDirectory string, modific
 }
 
 func policySetGlobalSetup(encryptionKey, configFilePath, logDirectory string, modifications policyChanges) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(policySubCommand, setSubCommand, globalFlag)
 	for field, val := range modifications {
 		args = args.AppendLoggableKV(field, val)

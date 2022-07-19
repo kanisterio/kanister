@@ -22,7 +22,7 @@ func SnapshotRestore(encryptionKey, snapID, targetPath, configFilePath, logDirec
 }
 
 func snapshotRestore(encryptionKey, snapID, targetPath, configFilePath, logDirectory string, sparseRestore bool) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, snapID, targetPath)
 	if sparseRestore {
 		args = args.AppendLoggable(sparseFlag)

@@ -40,7 +40,7 @@ func serverSetUser(
 	newUsername,
 	userPassword string,
 ) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, newUsername)
 	args = args.AppendRedactedKV(userPasswordFlag, userPassword)
 

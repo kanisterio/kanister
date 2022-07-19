@@ -22,7 +22,7 @@ func MaintenanceSetOwner(encryptionKey, configFilePath, logDirectory, customOwne
 }
 
 func maintenanceSetOwner(encryptionKey, configFilePath, logDirectory, customOwner string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, setSubCommand)
 	args = args.AppendLoggableKV(ownerFlag, customOwner)
 	return args

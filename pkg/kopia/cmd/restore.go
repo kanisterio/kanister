@@ -22,7 +22,7 @@ func Restore(encryptionKey, rootID, targetPath, configFilePath, logDirectory str
 }
 
 func restore(encryptionKey, rootID, targetPath, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(restoreSubCommand, rootID, targetPath)
 
 	return args

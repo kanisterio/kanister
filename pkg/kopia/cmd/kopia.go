@@ -30,7 +30,7 @@ func stringSliceCommand(args logsafe.Cmd) []string {
 	return args.StringSliceCMD()
 }
 
-func kopiaArgs(password, configFilePath, logDirectory string, requireInfoLevel bool) logsafe.Cmd {
+func commonArgs(password, configFilePath, logDirectory string, requireInfoLevel bool) logsafe.Cmd {
 	c := logsafe.NewLoggable(kopiaCommand)
 	if requireInfoLevel {
 		c = c.AppendLoggable(logLevelInfoFlag)
@@ -51,5 +51,5 @@ func kopiaArgs(password, configFilePath, logDirectory string, requireInfoLevel b
 
 // ExecKopiaArgs returns the basic Argv for executing kopia with the given config file path.
 func ExecKopiaArgs(configFilePath string) []string {
-	return kopiaArgs("", configFilePath, "", false).StringSliceCMD()
+	return commonArgs("", configFilePath, "", false).StringSliceCMD()
 }
