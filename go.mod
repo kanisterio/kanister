@@ -4,14 +4,14 @@ go 1.17
 
 replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
-	github.com/graymeta/stow => github.com/kastenhq/stow v0.2.6-kasten.1.0.20220316223048-5edb8da3bdb3
+	github.com/graymeta/stow => github.com/kastenhq/stow v0.2.6-kasten.1.0.20220719172801-c11a0e5f2e09
 	github.com/rook/operator-kit => github.com/kastenhq/operator-kit v0.0.0-20180316185208-859e831cc18d
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
 
 // Direct and indirect dependencies are grouped together
 require (
-	github.com/Azure/azure-sdk-for-go v65.0.0+incompatible
+	github.com/Azure/azure-sdk-for-go v66.0.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.27
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
 	github.com/Azure/go-autorest/autorest/to v0.4.0
