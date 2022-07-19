@@ -22,7 +22,7 @@ func BlobStats(encryptionKey, configFilePath, logDirectory string) []string {
 }
 
 func blobStats(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(blobSubCommand, statsSubCommand, rawFlag)
 
 	return args

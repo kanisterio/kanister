@@ -22,7 +22,7 @@ func SnapshotDelete(encryptionKey, snapID, configFilePath, logDirectory string) 
 }
 
 func snapshotDelete(encryptionKey, snapID, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, deleteSubCommand, snapID, unsafeIgnoreSourceFlag)
 
 	return args

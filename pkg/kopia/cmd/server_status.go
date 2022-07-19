@@ -43,7 +43,7 @@ func serverStatus(
 	serverPassword,
 	fingerprint string,
 ) logsafe.Cmd {
-	args := kopiaArgs("", configFilePath, logDirectory, false)
+	args := commonArgs("", configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, statusSubCommand)
 	args = args.AppendLoggableKV(addressFlag, serverAddress)
 	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)

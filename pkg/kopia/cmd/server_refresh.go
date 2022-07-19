@@ -47,7 +47,7 @@ func serverRefresh(
 	serverPassword,
 	fingerprint string,
 ) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, refreshSubCommand)
 	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
 	args = args.AppendLoggableKV(addressFlag, serverAddress)

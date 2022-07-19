@@ -38,7 +38,7 @@ func snapshotCreate(encryptionKey, pathToBackup, configFilePath, logDirectory st
 	)
 
 	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(kopia.DataStoreParallelUploadVarName, kopia.DefaultDataStoreParallelUpload))
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, requireLogLevelInfo)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, pathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
