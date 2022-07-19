@@ -104,7 +104,7 @@ func reportStatus(ctx context.Context, snapshotStartTime time.Time, manifest *sn
 
 // Delete deletes Kopia snapshot with given manifest ID
 func Delete(ctx context.Context, backupID, path, password string) error {
-	rep, err := repository.Open(ctx, kopia.DefaultConfigFilePath, password, pullRepoPurpose)
+	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
