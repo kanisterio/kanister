@@ -15,11 +15,11 @@
 package kopia
 
 const (
-	// DefaultCacheDirectory is the directory where kopia content cache is created
-	DefaultCacheDirectory = "/tmp/kopia-cache"
+	// DefaultClientConfigFilePath is the file which contains kopia repo config
+	DefaultClientConfigFilePath = "/tmp/kopia-repository.config"
 
-	// DefaultConfigFilePath is the file which contains kopia repo config
-	DefaultConfigFilePath = "/tmp/kopia-repository.config"
+	// DefaultClientCacheDirectory is the directory where kopia content cache is created
+	DefaultClientCacheDirectory = "/tmp/kopia-cache"
 
 	// DefaultConfigDirectory is the directory which contains custom kopia repo config
 	DefaultConfigDirectory = "/tmp/kopia-repository"
