@@ -37,11 +37,11 @@ import (
 )
 
 const (
-	// DefaultConfigFilePath is the file which contains kopia repo config
-	DefaultConfigFilePath = "/tmp/kopia-repository.config"
+	// DefaultClientConfigFilePath is the file which contains kopia repo config
+	DefaultClientConfigFilePath = "/tmp/kopia-repository.config"
 
-	// DefaultCacheDirectory is the directory where kopia content cache is created
-	DefaultCacheDirectory = "/tmp/kopia-cache"
+	// DefaultClientCacheDirectory is the directory where kopia content cache is created
+	DefaultClientCacheDirectory = "/tmp/kopia-cache"
 
 	// defaultDataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
 	defaultDataStoreGeneralContentCacheSizeMB = 0

@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
-	kankopia "github.com/kanisterio/kanister/pkg/kopia/snapshot"
+	kansnapshot "github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/virtualfs"
 )
 
@@ -65,6 +65,6 @@ func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEn
 	}
 
 	// Create a kopia snapshot
-	_, _, err = kankopia.SnapshotSource(ctx, rep, u, sourceInfo, root, snapshotDescription)
+	_, _, err = kansnapshot.SnapshotSource(ctx, rep, u, sourceInfo, root, snapshotDescription)
 	return errors.Wrap(err, "Failed to create kopia snapshot")
 }

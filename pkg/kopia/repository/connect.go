@@ -62,7 +62,7 @@ func ConnectToAPIServer(
 
 	opts := &repo.ConnectOptions{
 		CachingOptions: content.CachingOptions{
-			CacheDirectory:            kopia.DefaultCacheDirectory,
+			CacheDirectory:            kopia.DefaultClientCacheDirectory,
 			MaxCacheSizeBytes:         int64(contentCacheMB << 20),
 			MaxMetadataCacheSizeBytes: int64(metadataCacheMB << 20),
 			MaxListCacheDuration:      content.DurationSeconds(defaultConnectMaxListCacheDuration.Seconds()),
@@ -80,7 +80,7 @@ func ConnectToAPIServer(
 		Max:    15 * time.Second,
 	}, func(c context.Context) (bool, error) {
 		// TODO(@pavan): Modify this to use custom config file path, if required
-		err := repo.ConnectAPIServer(ctx, kopia.DefaultConfigFilePath, serverInfo, userPassphrase, opts)
+		err := repo.ConnectAPIServer(ctx, kopia.DefaultClientConfigFilePath, serverInfo, userPassphrase, opts)
 		switch {
 		case isGetRepoParametersError(err):
 			log.Debug().WithError(err).Print("Connecting to the Kopia API Server")
