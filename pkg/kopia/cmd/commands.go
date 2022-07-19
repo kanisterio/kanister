@@ -34,7 +34,7 @@ func stringSliceCommand(args logsafe.Cmd) []string {
 	return args.StringSliceCMD()
 }
 
-func kopiaArgs(password, configFilePath, logDirectory string, requireInfoLevel bool) logsafe.Cmd {
+func commonArgs(password, configFilePath, logDirectory string, requireInfoLevel bool) logsafe.Cmd {
 	c := logsafe.NewLoggable(kopiaCommand)
 	if requireInfoLevel {
 		c = c.AppendLoggable(logLevelInfoFlag)
@@ -55,7 +55,7 @@ func kopiaArgs(password, configFilePath, logDirectory string, requireInfoLevel b
 
 // ExecKopiaArgs returns the basic Argv for executing kopia with the given config file path.
 func ExecKopiaArgs(configFilePath string) []string {
-	return kopiaArgs("", configFilePath, "", false).StringSliceCMD()
+	return commonArgs("", configFilePath, "", false).StringSliceCMD()
 }
 
 // SnapshotCreateCommand returns the kopia command for creation of a snapshot
@@ -74,7 +74,7 @@ func snapshotCreateCommand(encryptionKey, pathToBackup, configFilePath, logDirec
 	)
 
 	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(kopia.DataStoreParallelUploadVarName, kopia.DefaultDataStoreParallelUpload))
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, requireLogLevelInfo)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, pathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
@@ -88,7 +88,7 @@ func SnapshotExpireCommand(encryptionKey, rootID, configFilePath, logDirectory s
 }
 
 func snapshotExpireCommand(encryptionKey, rootID, configFilePath, logDirectory string, mustDelete bool) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, expireSubCommand, rootID)
 	if mustDelete {
 		args = args.AppendLoggable(deleteFlag)
@@ -103,7 +103,7 @@ func SnapshotRestoreCommand(encryptionKey, snapID, targetPath, configFilePath, l
 }
 
 func snapshotRestoreCommand(encryptionKey, snapID, targetPath, configFilePath, logDirectory string, sparseRestore bool) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, snapID, targetPath)
 	if sparseRestore {
 		args = args.AppendLoggable(sparseFlag)
@@ -118,7 +118,7 @@ func RestoreCommand(encryptionKey, rootID, targetPath, configFilePath, logDirect
 }
 
 func restoreCommand(encryptionKey, rootID, targetPath, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(restoreSubCommand, rootID, targetPath)
 
 	return args
@@ -130,7 +130,7 @@ func DeleteCommand(encryptionKey, snapID, configFilePath, logDirectory string) [
 }
 
 func deleteCommand(encryptionKey, snapID, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, deleteSubCommand, snapID, unsafeIgnoreSourceFlag)
 
 	return args
@@ -142,7 +142,7 @@ func SnapshotGCCommand(encryptionKey, configFilePath, logDirectory string) []str
 }
 
 func snapshotGCCommand(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, gcSubCommand, deleteFlag)
 
 	return args
@@ -154,7 +154,7 @@ func MaintenanceSetCommandWithOwner(encryptionKey, configFilePath, logDirectory,
 }
 
 func maintenanceSetOwner(encryptionKey, configFilePath, logDirectory, customOwner string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, setSubCommand)
 	args = args.AppendLoggableKV(ownerFlag, customOwner)
 	return args
@@ -166,7 +166,7 @@ func MaintenanceRunCommand(encryptionKey, configFilePath, logDirectory string) [
 }
 
 func maintenanceRunCommand(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand)
 
 	return args
@@ -178,7 +178,7 @@ func MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory string, 
 }
 
 func maintenanceInfoCommand(encryptionKey, configFilePath, logDirectory string, getJsonOutput bool) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, infoSubCommand)
 	if getJsonOutput {
 		args = args.AppendLoggable(jsonFlag)
@@ -193,7 +193,7 @@ func BlobList(encryptionKey, configFilePath, logDirectory string) []string {
 }
 
 func blobList(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(blobSubCommand, listSubCommand)
 
 	return args
@@ -205,7 +205,7 @@ func BlobStats(encryptionKey, configFilePath, logDirectory string) []string {
 }
 
 func blobStats(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(blobSubCommand, statsSubCommand, rawFlag)
 
 	return args
@@ -217,7 +217,7 @@ func SnapListAll(encryptionKey, configFilePath, logDirectory string) []string {
 }
 
 func snapListAll(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(
 		snapshotSubCommand,
 		listSubCommand,
@@ -236,7 +236,7 @@ func SnapListAllWithSnapIDs(encryptionKey, configFilePath, logDirectory string) 
 }
 
 func snapListAllWithSnapIDs(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
 	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
 
@@ -279,7 +279,7 @@ func serverStartCommand(
 	autoGenerateCert,
 	background bool,
 ) logsafe.Cmd {
-	args := kopiaArgs("", configFilePath, logDirectory, false)
+	args := commonArgs("", configFilePath, logDirectory, false)
 
 	if autoGenerateCert {
 		args = args.AppendLoggable(serverSubCommand, startSubCommand, tlsGenerateCertFlag)
@@ -333,7 +333,7 @@ func serverStatusCommand(
 	serverPassword,
 	fingerprint string,
 ) logsafe.Cmd {
-	args := kopiaArgs("", configFilePath, logDirectory, false)
+	args := commonArgs("", configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, statusSubCommand)
 	args = args.AppendLoggableKV(addressFlag, serverAddress)
 	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
@@ -367,7 +367,7 @@ func serverAddUserCommand(
 	newUsername,
 	userPassword string,
 ) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, newUsername)
 	args = args.AppendRedactedKV(userPasswordFlag, userPassword)
 
@@ -398,7 +398,7 @@ func serverSetUserCommand(
 	newUsername,
 	userPassword string,
 ) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, newUsername)
 	args = args.AppendRedactedKV(userPasswordFlag, userPassword)
 
@@ -423,7 +423,7 @@ func serverListUserCommand(
 	configFilePath,
 	logDirectory string,
 ) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, listSubCommand, jsonFlag)
 
 	return args
@@ -460,7 +460,7 @@ func serverRefreshCommand(
 	serverPassword,
 	fingerprint string,
 ) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, refreshSubCommand)
 	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
 	args = args.AppendLoggableKV(addressFlag, serverAddress)
@@ -476,7 +476,7 @@ func policySetGlobalCommand(encryptionKey, configFilePath, logDirectory string, 
 }
 
 func policySetGlobalCommandSetup(encryptionKey, configFilePath, logDirectory string, modifications policyChanges) logsafe.Cmd {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(policySubCommand, setSubCommand, globalFlag)
 	for field, val := range modifications {
 		args = args.AppendLoggableKV(field, val)
