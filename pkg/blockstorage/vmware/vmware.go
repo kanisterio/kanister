@@ -253,9 +253,9 @@ var reVslmSyncFaultFatal = regexp.MustCompile("Change tracking invalid or disk i
 // SnapshotCreate is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	var res types.AnyType
+	description := generateDescription(tags)
 	err := wait.PollImmediate(time.Second, defaultRetryLimit, func() (bool, error) {
 		log.Debug().Print("CreateSnapshot", field.M{"VolumeID": volume.ID})
-		description := generateDescription(tags)
 		task, lerr := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), description)
 		if lerr != nil {
 			res := p.getCreatedSnapshot(ctx, tags, volume.ID, time.Now().Add(-1*vmWareTimeout))
