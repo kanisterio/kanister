@@ -263,6 +263,12 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 		log.Debug().Print("Started CreateSnapshot task", field.M{"VolumeID": volume.ID})
 		res, lerr = task.Wait(ctx, vmWareTimeout)
 		if lerr != nil {
+			res := p.getCreatedSnapshot(ctx, tags, volume.ID, time.Now().Add(-1*vmWareTimeout))
+			if res != nil {
+				log.Error().WithError(lerr).Print("Wait failed but snapshot was created")
+				return true, nil
+			}
+			// check if snapshot was created
 			if soap.IsVimFault(lerr) {
 				switch soap.ToVimFault(lerr).(type) {
 				case *types.InvalidState:
@@ -311,6 +317,30 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	}
 
 	return snap, nil
+}
+
+func (p *FcdProvider) getCreatedSnapshot(ctx context.Context, tags map[string]string, volID string, notEarlierThan time.Time) interface{} {
+	tagsForFilter := make(map[string]string)
+	for name, value := range tags {
+		if strings.HasPrefix(name, DescriptionTag) {
+			tagsForFilter[name] = value
+		}
+	}
+	if len(tagsForFilter) == 0 {
+		return nil
+	}
+	tagsForFilter[VolumeIdTag] = volID
+	sns, err := p.SnapshotsList(ctx, tagsForFilter)
+	if len(sns) == 1 && err == nil {
+		return sns[0]
+	}
+	if err != nil {
+		log.Error().WithError(err).Print("Failed to list when checking failed creation")
+	}
+	if len(sns) > 1 {
+		log.Error().Print("More than one snapshot was found")
+	}
+	return nil
 }
 
 func generateDescription(tags map[string]string) string {
