@@ -258,6 +258,11 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 		description := generateDescription(tags)
 		task, lerr := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), description)
 		if lerr != nil {
+			res := p.getCreatedSnapshot(ctx, tags, volume.ID, time.Now().Add(-1*vmWareTimeout))
+			if res != nil {
+				log.Error().WithError(lerr).Print("Wait failed but snapshot was created")
+				return true, nil
+			}
 			return false, errors.Wrap(lerr, "CreateSnapshot task creation failure")
 		}
 		log.Debug().Print("Started CreateSnapshot task", field.M{"VolumeID": volume.ID})
