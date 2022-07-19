@@ -70,7 +70,7 @@ func (si *SnapshotInfo) Validate() error {
 // A virtual directory tree rooted at filepath.Dir(path) is created with
 // a kopia streaming file with filepath.Base(path) as name
 func Write(ctx context.Context, source io.Reader, path, password string) (*SnapshotInfo, error) {
-	rep, err := repository.Open(ctx, kopia.DefaultConfigFilePath, password, pushRepoPurpose)
+	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pushRepoPurpose)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to open kopia repository")
 	}
@@ -116,7 +116,7 @@ func Write(ctx context.Context, source io.Reader, path, password string) (*Snaps
 
 // WriteFile creates a kopia snapshot from the given source file
 func WriteFile(ctx context.Context, path, sourcePath, password string) (*SnapshotInfo, error) {
-	rep, err := repository.Open(ctx, kopia.DefaultConfigFilePath, password, pushRepoPurpose)
+	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pushRepoPurpose)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to open kopia repository")
 	}
@@ -184,7 +184,7 @@ func resolveSymlink(path string) (string, error) {
 
 // Read reads a kopia snapshot with the given ID and copies it to the given target
 func Read(ctx context.Context, target io.Writer, backupID, path, password string) error {
-	rep, err := repository.Open(ctx, kopia.DefaultConfigFilePath, password, pullRepoPurpose)
+	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
@@ -210,7 +210,7 @@ func Read(ctx context.Context, target io.Writer, backupID, path, password string
 
 // ReadFile restores a kopia snapshot with the given ID to the given target
 func ReadFile(ctx context.Context, backupID, target, password string) error {
-	rep, err := repository.Open(ctx, kopia.DefaultConfigFilePath, password, pullRepoPurpose)
+	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
