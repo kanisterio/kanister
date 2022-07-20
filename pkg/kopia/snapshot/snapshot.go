@@ -16,6 +16,7 @@ package snapshot
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -147,4 +148,26 @@ func findPreviousSnapshotManifest(ctx context.Context, rep repo.Repository, sour
 	}
 
 	return result, nil
+}
+
+// MarshalKopiaSnapshot encodes kopia SnapshotInfo struct into a string
+func MarshalKopiaSnapshot(snapInfo *SnapshotInfo) (string, error) {
+	if err := snapInfo.Validate(); err != nil {
+		return "", err
+	}
+	snap, err := json.Marshal(snapInfo)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal kopia snapshot information")
+	}
+
+	return string(snap), nil
+}
+
+// UnmarshalKopiaSnapshot decodes a kopia snapshot JSON string into SnapshotInfo struct
+func UnmarshalKopiaSnapshot(snapInfoJSON string) (SnapshotInfo, error) {
+	snap := SnapshotInfo{}
+	if err := json.Unmarshal([]byte(snapInfoJSON), &snap); err != nil {
+		return snap, errors.Wrap(err, "failed to unmarshal kopia snapshot information")
+	}
+	return snap, snap.Validate()
 }
