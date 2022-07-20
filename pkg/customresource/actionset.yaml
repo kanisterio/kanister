@@ -261,6 +261,20 @@ spec:
                 type: string
             type: object
         type: object
+    additionalPrinterColumns:
+    - name: Progress
+      type: string
+      description: Progress of completion in percentage
+      jsonPath: .status.progress.percentCompleted
+    - name: Last Transition Time
+      type: string
+      format: date-time
+      description: Progress last transition time
+      jsonPath: .status.progress.lastTransitionTime
+    - name: State
+      type: string
+      description: State of the actionset
+      jsonPath: .status.state
 status:
   acceptedNames:
     kind: ""
