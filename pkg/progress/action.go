@@ -9,6 +9,7 @@ import (
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/field"
+	fn "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/reconcile"
 	"github.com/kanisterio/kanister/pkg/validate"
@@ -25,14 +26,15 @@ const (
 )
 
 var longRunningFuncs = []string{
-	"BackupData",
-	"BackupDataAll",
-	"RestoreData",
-	"RestoreDataAll",
-	"CopyVolumeData",
-	"CreateRDSSnapshot",
-	"ExportRDSSnapshotToLocation",
-	"RestoreRDSSnapshot"}
+	fn.BackupDataFuncName,
+	fn.BackupDataAllFuncName,
+	fn.RestoreDataFuncName,
+	fn.RestoreDataAllFuncName,
+	fn.CopyVolumeDataFuncName,
+	fn.CreateRDSSnapshotFuncName,
+	fn.ExportRDSSnapshotToLocFuncName,
+	fn.RestoreRDSSnapshotFuncName,
+}
 
 // TrackActionsProgress tries to assess the progress of an actionSet by
 // watching the states of all the phases in its actions. It starts an infinite
@@ -46,7 +48,8 @@ func TrackActionsProgress(
 	ctx context.Context,
 	client versioned.Interface,
 	actionSetName string,
-	namespace string) error {
+	namespace string,
+) error {
 	ticker := time.NewTicker(pollDuration)
 	defer ticker.Stop()
 
@@ -89,7 +92,8 @@ func TrackActionsProgress(
 func calculatePhaseWeights(
 	ctx context.Context,
 	actionSet *crv1alpha1.ActionSet,
-	client versioned.Interface) (map[string]float64, float64, error) {
+	client versioned.Interface,
+) (map[string]float64, float64, error) {
 	var (
 		phaseWeights = map[string]float64{}
 		totalWeight  = 0.0
@@ -127,7 +131,8 @@ func updateActionsProgress(
 	actionSet *crv1alpha1.ActionSet,
 	phaseWeights map[string]float64,
 	totalWeight float64,
-	now time.Time) error {
+	now time.Time,
+) error {
 	if err := validate.ActionSet(actionSet); err != nil {
 		return err
 	}
@@ -181,7 +186,8 @@ func updateActionSet(
 	client versioned.Interface,
 	actionSet *crv1alpha1.ActionSet,
 	progressPercent string,
-	lastTransitionTime time.Time) error {
+	lastTransitionTime time.Time,
+) error {
 	updateFunc := func(actionSet *crv1alpha1.ActionSet) error {
 		actionSet.Status.Progress.PercentCompleted = progressPercent
 		actionSet.Status.Progress.LastTransitionTime = metav1.NewTime(lastTransitionTime)

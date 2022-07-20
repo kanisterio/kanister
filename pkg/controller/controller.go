@@ -28,7 +28,6 @@ import (
 	"sync"
 
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
-	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/pkg/errors"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -50,6 +49,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/reconcile"
 	"github.com/kanisterio/kanister/pkg/validate"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
