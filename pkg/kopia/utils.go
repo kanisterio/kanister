@@ -40,7 +40,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/cmd"
-	snap "github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 )
@@ -216,28 +215,6 @@ func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
 		return metadataCacheSize
 	}
 	return defaultDataStoreGeneralMetadataCacheSizeMB
-}
-
-// MarshalKopiaSnapshot encodes kopia SnapshotInfo struct into a string
-func MarshalKopiaSnapshot(snapInfo *snap.SnapshotInfo) (string, error) {
-	if err := snapInfo.Validate(); err != nil {
-		return "", err
-	}
-	snap, err := json.Marshal(snapInfo)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal kopia snapshot information")
-	}
-
-	return string(snap), nil
-}
-
-// UnmarshalKopiaSnapshot decodes a kopia snapshot JSON string into SnapshotInfo struct
-func UnmarshalKopiaSnapshot(snapInfoJSON string) (snap.SnapshotInfo, error) {
-	snap := snap.SnapshotInfo{}
-	if err := json.Unmarshal([]byte(snapInfoJSON), &snap); err != nil {
-		return snap, errors.Wrap(err, "failed to unmarshal kopia snapshot information")
-	}
-	return snap, snap.Validate()
 }
 
 const (
