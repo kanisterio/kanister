@@ -64,7 +64,7 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 		if snapJSON == "" {
 			return errors.New("kopia snapshot information is required to pull data using kopia")
 		}
-		kopiaSnap, err := kopia.UnmarshalKopiaSnapshot(snapJSON)
+		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(snapJSON)
 		if err != nil {
 			return err
 		}
