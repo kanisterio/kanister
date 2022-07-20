@@ -47,28 +47,30 @@ func TrackActionsProgress(
 	client versioned.Interface,
 	actionSetName string,
 	namespace string) error {
-	var err error
-
 	ticker := time.NewTicker(pollDuration)
 	defer ticker.Stop()
 
-LOOP:
+	actionSet, err := client.CrV1alpha1().ActionSets(namespace).Get(ctx, actionSetName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	phaseWeights, totalWeight, err := calculatePhaseWeights(ctx, actionSet, client)
+	if err != nil {
+		return err
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 
 		case <-ticker.C:
-			actionSet, err := client.CrV1alpha1().ActionSets(namespace).Get(ctx, actionSetName, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-
 			if actionSet.Status == nil {
 				continue
 			}
 
-			if err := updateActionsProgress(ctx, client, actionSet, time.Now()); err != nil {
+			if err := updateActionsProgress(ctx, client, actionSet, phaseWeights, totalWeight, time.Now()); err != nil {
 				fields := field.M{
 					"actionSet":      actionSet.Name,
 					"nextUpdateTime": time.Now().Add(pollDuration),
@@ -78,50 +80,35 @@ LOOP:
 			}
 
 			if completedOrFailed(actionSet) {
-				break LOOP
+				return nil
 			}
 		}
 	}
-
-	return err
 }
 
-func completedOrFailed(actionSet *crv1alpha1.ActionSet) bool {
-	return actionSet.Status.State == crv1alpha1.StateFailed ||
-		actionSet.Status.State == crv1alpha1.StateComplete
-}
-
-func updateActionsProgress(
+func calculatePhaseWeights(
 	ctx context.Context,
-	client versioned.Interface,
 	actionSet *crv1alpha1.ActionSet,
-	now time.Time) error {
-	if err := validate.ActionSet(actionSet); err != nil {
-		return err
-	}
-
+	client versioned.Interface) (map[string]float64, float64, error) {
 	var (
-		phaseWeights  = map[string]float64{}
-		totalWeight   = 0.0
-		currentWeight = 0.0
-		namespace     = actionSet.GetNamespace()
+		phaseWeights = map[string]float64{}
+		totalWeight  = 0.0
 	)
 
-	// calculate the total weights of the phases in all the actions
 	for _, action := range actionSet.Spec.Actions {
 		blueprintName := action.Blueprint
-		blueprint, err := client.CrV1alpha1().Blueprints(namespace).Get(ctx, blueprintName, metav1.GetOptions{})
+		blueprint, err := client.CrV1alpha1().Blueprints(actionSet.GetNamespace()).Get(ctx, blueprintName, metav1.GetOptions{})
 		if err != nil {
-			return err
+			return nil, 0.0, err
 		}
 
 		if err := validate.Blueprint(blueprint); err != nil {
-			return err
+			return nil, 0.0, err
 		}
 
 		blueprintAction, exists := blueprint.Actions[action.Name]
 		if !exists {
-			return fmt.Errorf("missing blueprint action: %s", action.Name)
+			return nil, 0.0, fmt.Errorf("missing blueprint action: %s", action.Name)
 		}
 
 		for _, phase := range blueprintAction.Phases {
@@ -131,7 +118,22 @@ func updateActionsProgress(
 		}
 	}
 
+	return phaseWeights, totalWeight, nil
+}
+
+func updateActionsProgress(
+	ctx context.Context,
+	client versioned.Interface,
+	actionSet *crv1alpha1.ActionSet,
+	phaseWeights map[string]float64,
+	totalWeight float64,
+	now time.Time) error {
+	if err := validate.ActionSet(actionSet); err != nil {
+		return err
+	}
+
 	// assess the state of the phases in all the actions to determine progress
+	currentWeight := 0.0
 	for _, action := range actionSet.Status.Actions {
 		for _, phase := range action.Phases {
 			if phase.State != crv1alpha1.StateComplete {
@@ -191,4 +193,9 @@ func updateActionSet(
 	}
 
 	return nil
+}
+
+func completedOrFailed(actionSet *crv1alpha1.ActionSet) bool {
+	return actionSet.Status.State == crv1alpha1.StateFailed ||
+		actionSet.Status.State == crv1alpha1.StateComplete
 }
