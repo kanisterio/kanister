@@ -41,8 +41,10 @@ func (s *VmwareManSuite) TestCreateAndListSnapshots(c *C) {
 	c.Assert(len(foundAllSnapshots), Equals, 2)
 	c.Assert(snapshot2.ID, Equals, foundSnapshotsByID[0].ID)
 
-	provider.SnapshotDelete(ctx, snapshot2)
-	provider.SnapshotDelete(ctx, snapshot1)
+	err := provider.SnapshotDelete(ctx, snapshot2)
+	c.Assert(err, check.IsNil)
+	err = provider.SnapshotDelete(ctx, snapshot1)
+	c.Assert(err, check.IsNil)
 
 	foundAllSnapshots, _ = provider.SnapshotsList(ctx, map[string]string{"manifest": "manifest1"})
 	c.Assert(len(foundAllSnapshots), Equals, 0)

@@ -255,48 +255,52 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	var res types.AnyType
 	description := generateDescription(tags)
 	err := wait.PollImmediate(time.Second, defaultRetryLimit, func() (bool, error) {
-		log.Debug().Print("CreateSnapshot", field.M{"VolumeID": volume.ID})
-		task, lerr := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), description)
-		if lerr != nil {
-			res := p.getCreatedSnapshot(ctx, tags, volume.ID, time.Now().Add(-1*vmWareTimeout))
-			if res != nil {
-				log.Error().WithError(lerr).Print("Wait failed but snapshot was created")
-				return true, nil
+		createErr := func() error {
+			log.Debug().Print("CreateSnapshot", field.M{"VolumeID": volume.ID})
+			task, lerr := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), description)
+			if lerr != nil {
+				return errors.Wrap(lerr, "CreateSnapshot task creation failure")
 			}
-			return false, errors.Wrap(lerr, "CreateSnapshot task creation failure")
+			log.Debug().Print("Started CreateSnapshot task", field.M{"VolumeID": volume.ID})
+			res, lerr = task.Wait(ctx, vmWareTimeout)
+			if lerr != nil {
+				return lerr
+			}
+			return nil
+		}()
+
+		if createErr == nil {
+			return true, nil
 		}
-		log.Debug().Print("Started CreateSnapshot task", field.M{"VolumeID": volume.ID})
-		res, lerr = task.Wait(ctx, vmWareTimeout)
-		if lerr != nil {
-			res := p.getCreatedSnapshot(ctx, tags, volume.ID, time.Now().Add(-1*vmWareTimeout))
-			if res != nil {
-				log.Error().WithError(lerr).Print("Wait failed but snapshot was created")
-				return true, nil
-			}
-			// check if snapshot was created
-			if soap.IsVimFault(lerr) {
-				switch soap.ToVimFault(lerr).(type) {
-				case *types.InvalidState:
-					log.Error().WithError(lerr).Print("There is some operation, other than this CreateSnapshot invocation, on the VM attached still being protected by its VM state. Will retry", field.M{"VolumeID": volume.ID})
-					return false, nil
-				case *vslmtypes.VslmSyncFault: // potentially can leak snapshots
-					if vFault, ok := soap.ToVimFault(lerr).(*vslmtypes.VslmSyncFault); ok {
-						log.Error().Print(fmt.Sprintf("VslmSyncFault: %#v", vFault))
-					}
-					if !(govmomiError{lerr}).Matches(reVslmSyncFaultFatal) {
-						log.Error().Print(fmt.Sprintf("CreateSnapshot failed with VslmSyncFault. Will retry: %s", (govmomiError{lerr}).Format()), field.M{"VolumeID": volume.ID})
-						return false, nil
-					}
-					return false, errors.Wrap(lerr, "CreateSnapshot failed with VslmSyncFault. A snapshot may have been created by this failed operation")
-				case *types.NotFound:
-					log.Error().WithError(lerr).Print("CreateSnapshot failed with NotFound error. Will retry", field.M{"VolumeID": volume.ID})
+
+		// it's possible that snapshot was created despite of SOAP errors
+		res = p.getCreatedSnapshot(ctx, tags, volume.ID, time.Now().Add(-1*vmWareTimeout))
+		if res != nil {
+			log.Error().WithError(createErr).Print("snapshot created with errors")
+			return true, nil
+		}
+
+		// snapshot wasn't created, handle the different SOAP errors then retry
+		if soap.IsVimFault(createErr) {
+			switch soap.ToVimFault(createErr).(type) {
+			case *types.InvalidState:
+				log.Error().WithError(createErr).Print("There is some operation, other than this CreateSnapshot invocation, on the VM attached still being protected by its VM state. Will retry", field.M{"VolumeID": volume.ID})
+				return false, nil
+			case *vslmtypes.VslmSyncFault: // potentially can leak snapshots
+				if vFault, ok := soap.ToVimFault(createErr).(*vslmtypes.VslmSyncFault); ok {
+					log.Error().Print(fmt.Sprintf("VslmSyncFault: %#v", vFault))
+				}
+				if !(govmomiError{createErr}).Matches(reVslmSyncFaultFatal) {
+					log.Error().Print(fmt.Sprintf("CreateSnapshot failed with VslmSyncFault. Will retry: %s", (govmomiError{createErr}).Format()), field.M{"VolumeID": volume.ID})
 					return false, nil
 				}
+				return false, errors.Wrap(createErr, "CreateSnapshot failed with VslmSyncFault. A snapshot may have been created by this failed operation")
+			case *types.NotFound:
+				log.Error().WithError(createErr).Print("CreateSnapshot failed with NotFound error. Will retry", field.M{"VolumeID": volume.ID})
+				return false, nil
 			}
-			return false, errors.Wrap(lerr, "Failed to wait on task")
 		}
-		log.Debug().Print("CreateSnapshot task complete", field.M{"VolumeID": volume.ID})
-		return true, nil
+		return false, errors.Wrap(createErr, "Failed to wait on task")
 	})
 	if err != nil {
 		log.Error().WithError(err).Print(fmt.Sprintf("Failed to create snapshot for FCD %s: %s", volume.ID, govmomiError{err}.Format()))
@@ -335,14 +339,21 @@ func (p *FcdProvider) getCreatedSnapshot(ctx context.Context, tags map[string]st
 		return nil
 	}
 	tagsForFilter[VolumeIdTag] = volID
+	var filteredSns []blockstorage.Snapshot
 	sns, err := p.SnapshotsList(ctx, tagsForFilter)
-	if len(sns) == 1 && err == nil {
-		return sns[0]
+	for _, sn := range sns {
+		if notEarlierThan.Before((time.Time)(sn.CreationTime)) {
+			filteredSns = append(filteredSns, *sn)
+		}
+	}
+
+	if len(filteredSns) == 1 && err == nil {
+		return filteredSns[0]
 	}
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to list when checking failed creation")
 	}
-	if len(sns) > 1 {
+	if len(filteredSns) > 1 {
 		log.Error().Print("More than one snapshot was found")
 	}
 	return nil
@@ -618,21 +629,12 @@ func (p *FcdProvider) getSnapshotTags(ctx context.Context, fullSnapshotID string
 
 // SnapshotsList is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
-	var volumeIDs []string
-	var descriptionTags = map[string]string{}
-	for name, value := range tags {
-		if strings.HasPrefix(name, DescriptionTag) {
-			descriptionTags[name] = value
-		}
-		if name == VolumeIdTag {
-			volumeIDs = strings.Split(value, ",")
-		}
-	}
-
-	if len(descriptionTags) == 0 {
+	filterStr := generateDescription(tags)
+	if filterStr == "" {
 		return p.snapshotsListByTag(ctx, tags)
 	}
 
+	volumeIDs := strings.Split(tags[VolumeIdTag], ",")
 	if len(volumeIDs) == 0 {
 		log.Debug().Print("vSphere can't list by description without list of volumes. Cannot list snapshots")
 		return nil, nil
@@ -640,7 +642,6 @@ func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string)
 
 	var result []*blockstorage.Snapshot
 
-	filterStr := generateDescription(descriptionTags)
 	for _, volID := range volumeIDs {
 		snapshots, _ := p.Gom.RetrieveSnapshotInfo(ctx, vimID(volID))
 		for _, snapshot := range snapshots {
