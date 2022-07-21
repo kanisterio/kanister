@@ -53,12 +53,7 @@ func TrackActionsProgress(
 	ticker := time.NewTicker(pollDuration)
 	defer ticker.Stop()
 
-	actionSet, err := client.CrV1alpha1().ActionSets(namespace).Get(ctx, actionSetName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	phaseWeights, totalWeight, err := calculatePhaseWeights(ctx, actionSet, client)
+	phaseWeights, totalWeight, err := calculatePhaseWeights(ctx, actionSetName, namespace, client)
 	if err != nil {
 		return err
 	}
@@ -69,6 +64,11 @@ func TrackActionsProgress(
 			return ctx.Err()
 
 		case <-ticker.C:
+			actionSet, err := client.CrV1alpha1().ActionSets(namespace).Get(ctx, actionSetName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+
 			if actionSet.Status == nil {
 				continue
 			}
@@ -91,13 +91,19 @@ func TrackActionsProgress(
 
 func calculatePhaseWeights(
 	ctx context.Context,
-	actionSet *crv1alpha1.ActionSet,
+	actionSetName string,
+	namespace string,
 	client versioned.Interface,
 ) (map[string]float64, float64, error) {
 	var (
 		phaseWeights = map[string]float64{}
 		totalWeight  = 0.0
 	)
+
+	actionSet, err := client.CrV1alpha1().ActionSets(namespace).Get(ctx, actionSetName, metav1.GetOptions{})
+	if err != nil {
+		return nil, 0.0, err
+	}
 
 	for _, action := range actionSet.Spec.Actions {
 		blueprintName := action.Blueprint

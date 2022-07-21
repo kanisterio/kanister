@@ -183,7 +183,10 @@ func assertActionProgress(
 	c.Assert(err, IsNil)
 
 	// calculate and update the progress so that it reflects the state change
-	updateErr := updateActionsProgress(context.Background(), clientset, updated, now)
+	phaseWeights, totalWeight, err := calculatePhaseWeights(context.Background(), actionSet.GetName(), actionSet.GetNamespace(), clientset)
+	c.Assert(err, IsNil)
+
+	updateErr := updateActionsProgress(context.Background(), clientset, updated, phaseWeights, totalWeight, now)
 	c.Assert(updateErr, IsNil)
 
 	// retrieve the latest actionSet resource to confirm its progress data
