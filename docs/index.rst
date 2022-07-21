@@ -23,6 +23,7 @@ and easy to install, operate and scale.
    install
    tutorial
    architecture
+   tasks
    tooling
    functions
    templates
