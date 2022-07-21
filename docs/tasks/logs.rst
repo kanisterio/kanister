@@ -24,7 +24,7 @@ Kanister's system logs from datapath logs using Loki_ and Grafana_.
 To run the provided commands, access to a Kubernetes cluster using the
 ``kubectl`` and ``helm`` command-line tools is required.
 
-Follow the instructions in the :ref:`helm` page to deploy Kanister on the
+Follow the instructions in the installation_ page to deploy Kanister on the
 cluster.
 
 Deployments Setup
@@ -243,3 +243,4 @@ To remove Loki, Grafana and Promtail, use the following ``helm`` commands:
 .. _flog: https://github.com/mingrammer/flog
 .. _Loki installation documentation: https://grafana.com/docs/loki/latest/installation/
 .. _LogQL: https://grafana.com/docs/loki/latest/logql/
+.. _installation: ../install.html
