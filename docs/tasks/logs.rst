@@ -39,7 +39,7 @@ software versions:
 
 Let's begin by installing Loki. Loki is a datastore optimized for holding log
 data. It indexes log data via streams made up of logs, where each stream is
-associated with an unique set of labels.
+associated with a unique set of labels.
 
 .. code-block:: bash
 
@@ -108,7 +108,7 @@ The login password can be retrieved using the following command:
 Navigate to the data sources configuration under ``Configuration`` >
 ``Data Sources`` using the left-hand panel.
 
-Confirm that the ``Loki`` data source have already been added as part of the
+Confirm that the ``Loki`` data source has already been added as part of the
 Grafana installation:
 
 .. image:: img/logs-grafana-data-source.png
@@ -191,7 +191,7 @@ blueprint:
 
 Head over to the *Explore* pane in the Grafana UI.
 
-Ensures that the ``Loki`` data source is selected.
+Ensure that the ``Loki`` data source is selected.
 
 Enter the following LogQL_ query in the *Log Browser* input box to retrieve
 all Kanister logs:
