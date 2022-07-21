@@ -42,7 +42,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/vmware/govmomi v0.28.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/oauth2 v0.0.0-20220608161450-d0670ef3b1eb
