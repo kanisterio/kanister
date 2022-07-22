@@ -14,8 +14,6 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // ServerSetUser returns the kopia command setting password for existing user for the Kopia API Server
 func ServerSetUser(
 	encryptionKey,
@@ -24,25 +22,9 @@ func ServerSetUser(
 	newUsername,
 	userPassword string,
 ) []string {
-	return stringSliceCommand(serverSetUser(
-		encryptionKey,
-		configFilePath,
-		logDirectory,
-		newUsername,
-		userPassword,
-	))
-}
-
-func serverSetUser(
-	encryptionKey,
-	configFilePath,
-	logDirectory,
-	newUsername,
-	userPassword string,
-) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, newUsername)
 	args = args.AppendRedactedKV(userPasswordFlag, userPassword)
 
-	return args
+	return stringSliceCommand(args)
 }

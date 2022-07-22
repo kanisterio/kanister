@@ -14,8 +14,6 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // ServerStart returns the kopia command for starting the Kopia API Server
 func ServerStart(
 	configFilePath,
@@ -28,30 +26,6 @@ func ServerStart(
 	autoGenerateCert,
 	background bool,
 ) []string {
-	return bashCommand(serverStart(
-		configFilePath,
-		logDirectory,
-		serverAddress,
-		tlsCertFile,
-		tlsKeyFile,
-		serverUsername,
-		serverPassword,
-		autoGenerateCert,
-		background,
-	))
-}
-
-func serverStart(
-	configFilePath,
-	logDirectory,
-	serverAddress,
-	tlsCertFile,
-	tlsKeyFile,
-	serverUsername,
-	serverPassword string,
-	autoGenerateCert,
-	background bool,
-) logsafe.Cmd {
 	args := commonArgs("", configFilePath, logDirectory, false)
 
 	if autoGenerateCert {
@@ -76,5 +50,5 @@ func serverStart(
 		args = args.AppendLoggable(redirectToDevNull, runInBackground)
 	}
 
-	return args
+	return bashCommand(args)
 }

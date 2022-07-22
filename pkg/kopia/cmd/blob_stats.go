@@ -14,16 +14,10 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // BlobStats returns the kopia command to get the blob stats
 func BlobStats(encryptionKey, configFilePath, logDirectory string) []string {
-	return stringSliceCommand(blobStats(encryptionKey, configFilePath, logDirectory))
-}
-
-func blobStats(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(blobSubCommand, statsSubCommand, rawFlag)
 
-	return args
+	return stringSliceCommand(args)
 }

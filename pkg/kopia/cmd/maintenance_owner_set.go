@@ -14,16 +14,10 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // MaintenanceSetOwner returns the kopia command for setting custom maintenance owner
 func MaintenanceSetOwner(encryptionKey, configFilePath, logDirectory, customOwner string) []string {
-	return stringSliceCommand(maintenanceSetOwner(encryptionKey, configFilePath, logDirectory, customOwner))
-}
-
-func maintenanceSetOwner(encryptionKey, configFilePath, logDirectory, customOwner string) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, setSubCommand)
 	args = args.AppendLoggableKV(ownerFlag, customOwner)
-	return args
+	return stringSliceCommand(args)
 }

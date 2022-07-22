@@ -14,19 +14,13 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // SnapshotRestore returns kopia command restoring snapshots with given snap ID
 func SnapshotRestore(encryptionKey, snapID, targetPath, configFilePath, logDirectory string, sparseRestore bool) []string {
-	return stringSliceCommand(snapshotRestore(encryptionKey, snapID, targetPath, configFilePath, logDirectory, sparseRestore))
-}
-
-func snapshotRestore(encryptionKey, snapID, targetPath, configFilePath, logDirectory string, sparseRestore bool) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, snapID, targetPath)
 	if sparseRestore {
 		args = args.AppendLoggable(sparseFlag)
 	}
 
-	return args
+	return stringSliceCommand(args)
 }

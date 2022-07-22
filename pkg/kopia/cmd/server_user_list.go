@@ -14,28 +14,14 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // ServerListUser returns the kopia command to list users from the Kopia API Server
 func ServerListUser(
 	encryptionKey,
 	configFilePath,
 	logDirectory string,
 ) []string {
-	return stringSliceCommand(serverListUser(
-		encryptionKey,
-		configFilePath,
-		logDirectory,
-	))
-}
-
-func serverListUser(
-	encryptionKey,
-	configFilePath,
-	logDirectory string,
-) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, listSubCommand, jsonFlag)
 
-	return args
+	return stringSliceCommand(args)
 }
