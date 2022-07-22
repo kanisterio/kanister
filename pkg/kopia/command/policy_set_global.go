@@ -14,12 +14,8 @@
 
 package command
 
-import (
-	"github.com/kanisterio/kanister/pkg/kopia"
-)
-
 // PolicySetGlobal returns the kopia command for modifying the global policy
-func PolicySetGlobal(encryptionKey, configFilePath, logDirectory string, modifications kopia.PolicyChanges) []string {
+func PolicySetGlobal(encryptionKey, configFilePath, logDirectory string, modifications policyChanges) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(policySubCommand, setSubCommand, globalFlag)
 	for field, val := range modifications {
