@@ -21,7 +21,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
-	"github.com/kanisterio/kanister/pkg/logsafe"
 )
 
 // RepositoryConnect returns the kopia command for connecting to an existing blob-store repo
@@ -38,40 +37,7 @@ func RepositoryConnect(
 	metadataCacheMB int,
 	pointInTimeConnection strfmt.DateTime,
 ) ([]string, error) {
-	cmd, err := repositoryConnect(
-		prof,
-		artifactPrefix,
-		encryptionKey,
-		hostname,
-		username,
-		cacheDirectory,
-		configFilePath,
-		logDirectory,
-		contentCacheMB,
-		metadataCacheMB,
-		pointInTimeConnection,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return stringSliceCommand(cmd), nil
-}
-
-func repositoryConnect(
-	prof kopia.Profile,
-	artifactPrefix,
-	encryptionKey,
-	hostname,
-	username,
-	cacheDirectory,
-	configFilePath,
-	logDirectory string,
-	contentCacheMB,
-	metadataCacheMB int,
-	pointInTimeConnection strfmt.DateTime,
-) (logsafe.Cmd, error) {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, noCheckForUpdatesFlag)
 
 	args = kopiaCacheArgs(args, cacheDirectory, contentCacheMB, metadataCacheMB)
@@ -93,5 +59,5 @@ func repositoryConnect(
 		bsArgs = bsArgs.AppendLoggableKV(pointInTimeConnectionFlag, pointInTimeConnection.String())
 	}
 
-	return args.Combine(bsArgs), nil
+	return stringSliceCommand(args.Combine(bsArgs)), nil
 }

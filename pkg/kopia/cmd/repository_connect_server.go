@@ -14,8 +14,6 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // RepositoryConnectServer returns the kopia command for connecting to a remote repository on Kopia API server
 func RepositoryConnectServer(
 	cacheDirectory,
@@ -29,33 +27,7 @@ func RepositoryConnectServer(
 	contentCacheMB,
 	metadataCacheMB int,
 ) []string {
-	return stringSliceCommand(repositoryConnectServer(
-		cacheDirectory,
-		configFilePath,
-		hostname,
-		logDirectory,
-		serverURL,
-		fingerprint,
-		username,
-		userPassword,
-		contentCacheMB,
-		metadataCacheMB,
-	))
-}
-
-func repositoryConnectServer(
-	cacheDirectory,
-	configFilePath,
-	hostname,
-	logDirectory,
-	serverURL,
-	fingerprint,
-	username,
-	userPassword string,
-	contentCacheMB,
-	metadataCacheMB int,
-) logsafe.Cmd {
-	args := kopiaArgs(userPassword, configFilePath, logDirectory, false)
+	args := commonArgs(userPassword, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, serverSubCommand, noCheckForUpdatesFlag, noGrpcFlag)
 
 	args = kopiaCacheArgs(args, cacheDirectory, contentCacheMB, metadataCacheMB)
@@ -71,5 +43,5 @@ func repositoryConnectServer(
 
 	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
 
-	return args
+	return stringSliceCommand(args)
 }

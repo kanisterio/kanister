@@ -18,7 +18,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
-	"github.com/kanisterio/kanister/pkg/logsafe"
 )
 
 // RepositoryCreate returns the kopia command for creation of a blob-store repo
@@ -35,38 +34,7 @@ func RepositoryCreate(
 	contentCacheMB,
 	metadataCacheMB int,
 ) ([]string, error) {
-	cmd, err := repositoryCreate(
-		prof,
-		artifactPrefix,
-		encryptionKey,
-		hostname,
-		username,
-		cacheDirectory,
-		configFilePath,
-		logDirectory,
-		contentCacheMB,
-		metadataCacheMB,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return stringSliceCommand(cmd), nil
-}
-
-func repositoryCreate(
-	prof kopia.Profile,
-	artifactPrefix,
-	encryptionKey,
-	hostname,
-	username,
-	cacheDirectory,
-	configFilePath,
-	logDirectory string,
-	contentCacheMB,
-	metadataCacheMB int,
-) (logsafe.Cmd, error) {
-	args := kopiaArgs(encryptionKey, configFilePath, logDirectory, false)
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
 
 	args = kopiaCacheArgs(args, cacheDirectory, contentCacheMB, metadataCacheMB)
@@ -84,5 +52,5 @@ func repositoryCreate(
 		return nil, errors.Wrap(err, "Failed to generate blob store args")
 	}
 
-	return args.Combine(bsArgs), nil
+	return stringSliceCommand(args.Combine(bsArgs)), nil
 }
