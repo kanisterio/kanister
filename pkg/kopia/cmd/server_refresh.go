@@ -14,8 +14,6 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // ServerRefresh returns the kopia command for refreshing the Kopia API Server
 // This helps allow new users to be able to connect to the Server instead of waiting for auto-refresh
 func ServerRefresh(
@@ -27,26 +25,6 @@ func ServerRefresh(
 	serverPassword,
 	fingerprint string,
 ) []string {
-	return stringSliceCommand(serverRefresh(
-		encryptionKey,
-		configFilePath,
-		logDirectory,
-		serverAddress,
-		serverUsername,
-		serverPassword,
-		fingerprint,
-	))
-}
-
-func serverRefresh(
-	encryptionKey,
-	configFilePath,
-	logDirectory,
-	serverAddress,
-	serverUsername,
-	serverPassword,
-	fingerprint string,
-) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, refreshSubCommand)
 	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
@@ -54,5 +32,5 @@ func serverRefresh(
 	args = args.AppendLoggableKV(serverUsernameFlag, serverUsername)
 	args = args.AppendRedactedKV(serverPasswordFlag, serverPassword)
 
-	return args
+	return stringSliceCommand(args)
 }

@@ -14,19 +14,13 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // SnapshotExpire returns the kopia command for removing snapshots with given root ID
 func SnapshotExpire(encryptionKey, rootID, configFilePath, logDirectory string, mustDelete bool) []string {
-	return stringSliceCommand(snapshotExpire(encryptionKey, rootID, configFilePath, logDirectory, mustDelete))
-}
-
-func snapshotExpire(encryptionKey, rootID, configFilePath, logDirectory string, mustDelete bool) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, expireSubCommand, rootID)
 	if mustDelete {
 		args = args.AppendLoggable(deleteFlag)
 	}
 
-	return args
+	return stringSliceCommand(args)
 }

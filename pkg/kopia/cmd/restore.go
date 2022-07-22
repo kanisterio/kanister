@@ -14,16 +14,10 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // Restore returns the kopia command for restoring root of a snapshot with given root ID
 func Restore(encryptionKey, rootID, targetPath, configFilePath, logDirectory string) []string {
-	return stringSliceCommand(restore(encryptionKey, rootID, targetPath, configFilePath, logDirectory))
-}
-
-func restore(encryptionKey, rootID, targetPath, configFilePath, logDirectory string) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(restoreSubCommand, rootID, targetPath)
 
-	return args
+	return stringSliceCommand(args)
 }

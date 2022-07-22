@@ -14,16 +14,10 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // BlobList returns the kopia command for listing blobs in the repository with their sizes
 func BlobList(encryptionKey, configFilePath, logDirectory string) []string {
-	return stringSliceCommand(blobList(encryptionKey, configFilePath, logDirectory))
-}
-
-func blobList(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(blobSubCommand, listSubCommand)
 
-	return args
+	return stringSliceCommand(args)
 }

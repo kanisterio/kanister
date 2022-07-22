@@ -16,18 +16,13 @@ package cmd
 
 import (
 	"github.com/kanisterio/kanister/pkg/kopia"
-	"github.com/kanisterio/kanister/pkg/logsafe"
 )
 
 // SnapListAllWithSnapIDs returns the kopia command for listing all snapshots in the repository with snapshotIDs
 func SnapListAllWithSnapIDs(encryptionKey, configFilePath, logDirectory string) []string {
-	return stringSliceCommand(snapListAllWithSnapIDs(encryptionKey, configFilePath, logDirectory))
-}
-
-func snapListAllWithSnapIDs(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
 	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
 
-	return args
+	return stringSliceCommand(args)
 }

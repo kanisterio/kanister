@@ -14,16 +14,10 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // SnapshotGC returns the kopia command for issuing kopia snapshot gc
 func SnapshotGC(encryptionKey, configFilePath, logDirectory string) []string {
-	return stringSliceCommand(snapshotGC(encryptionKey, configFilePath, logDirectory))
-}
-
-func snapshotGC(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, gcSubCommand, deleteFlag)
 
-	return args
+	return stringSliceCommand(args)
 }

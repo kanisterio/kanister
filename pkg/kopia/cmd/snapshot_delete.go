@@ -14,16 +14,10 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // SnapshotDelete returns the kopia command for deleting a snapshot with given snapshot ID
 func SnapshotDelete(encryptionKey, snapID, configFilePath, logDirectory string) []string {
-	return stringSliceCommand(snapshotDelete(encryptionKey, snapID, configFilePath, logDirectory))
-}
-
-func snapshotDelete(encryptionKey, snapID, configFilePath, logDirectory string) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, deleteSubCommand, snapID, unsafeIgnoreSourceFlag)
 
-	return args
+	return stringSliceCommand(args)
 }

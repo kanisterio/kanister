@@ -14,14 +14,8 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // SnapListAll returns the kopia command for listing all snapshots in the repository with their sizes
 func SnapListAll(encryptionKey, configFilePath, logDirectory string) []string {
-	return stringSliceCommand(snapListAll(encryptionKey, configFilePath, logDirectory))
-}
-
-func snapListAll(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(
 		snapshotSubCommand,
@@ -32,5 +26,5 @@ func snapListAll(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd
 		jsonFlag,
 	)
 
-	return args
+	return stringSliceCommand(args)
 }

@@ -14,19 +14,17 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
+import (
+	"github.com/kanisterio/kanister/pkg/kopia"
+)
 
-// policySetGlobal returns the kopia command for modifying the global policy
-func policySetGlobal(encryptionKey, configFilePath, logDirectory string, modifications policyChanges) []string {
-	return stringSliceCommand(policySetGlobalSetup(encryptionKey, configFilePath, logDirectory, modifications))
-}
-
-func policySetGlobalSetup(encryptionKey, configFilePath, logDirectory string, modifications policyChanges) logsafe.Cmd {
+// PolicySetGlobal returns the kopia command for modifying the global policy
+func PolicySetGlobal(encryptionKey, configFilePath, logDirectory string, modifications kopia.PolicyChanges) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(policySubCommand, setSubCommand, globalFlag)
 	for field, val := range modifications {
 		args = args.AppendLoggableKV(field, val)
 	}
 
-	return args
+	return stringSliceCommand(args)
 }

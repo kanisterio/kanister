@@ -14,8 +14,6 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // ServerStatus returns the kopia command for checking status of the Kopia API Server
 func ServerStatus(
 	configFilePath,
@@ -25,24 +23,6 @@ func ServerStatus(
 	serverPassword,
 	fingerprint string,
 ) []string {
-	return stringSliceCommand(serverStatus(
-		configFilePath,
-		logDirectory,
-		serverAddress,
-		serverUsername,
-		serverPassword,
-		fingerprint,
-	))
-}
-
-func serverStatus(
-	configFilePath,
-	logDirectory,
-	serverAddress,
-	serverUsername,
-	serverPassword,
-	fingerprint string,
-) logsafe.Cmd {
 	args := commonArgs("", configFilePath, logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, statusSubCommand)
 	args = args.AppendLoggableKV(addressFlag, serverAddress)
@@ -50,5 +30,5 @@ func serverStatus(
 	args = args.AppendLoggableKV(serverUsernameFlag, serverUsername)
 	args = args.AppendRedactedKV(serverPasswordFlag, serverPassword)
 
-	return args
+	return stringSliceCommand(args)
 }

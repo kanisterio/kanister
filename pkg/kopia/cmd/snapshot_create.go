@@ -18,30 +18,25 @@ import (
 	"strconv"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
-	"github.com/kanisterio/kanister/pkg/logsafe"
 	"github.com/kanisterio/kanister/pkg/utils"
+)
+
+const (
+	// kube.Exec might timeout after 4h if there is no output from the command
+	// Setting it to 1h instead of 1000000h so that kopia logs progress once every hour
+	longUpdateInterval = "1h"
+
+	requireLogLevelInfo = true
 )
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
 // TODO: Have better mechanism to apply global flags
 func SnapshotCreate(encryptionKey, pathToBackup, configFilePath, logDirectory string) []string {
-	return stringSliceCommand(snapshotCreate(encryptionKey, pathToBackup, configFilePath, logDirectory))
-}
-
-func snapshotCreate(encryptionKey, pathToBackup, configFilePath, logDirectory string) logsafe.Cmd {
-	const (
-		// kube.Exec might timeout after 4h if there is no output from the command
-		// Setting it to 1h instead of 1000000h so that kopia logs progress once every hour
-		longUpdateInterval = "1h"
-
-		requireLogLevelInfo = true
-	)
-
 	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(kopia.DataStoreParallelUploadVarName, kopia.DefaultDataStoreParallelUpload))
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, pathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
 
-	return args
+	return stringSliceCommand(args)
 }

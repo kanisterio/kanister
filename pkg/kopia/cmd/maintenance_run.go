@@ -14,16 +14,10 @@
 
 package cmd
 
-import "github.com/kanisterio/kanister/pkg/logsafe"
-
 // MaintenanceRunCommand returns the kopia command to run manual maintenance
 func MaintenanceRunCommand(encryptionKey, configFilePath, logDirectory string) []string {
-	return stringSliceCommand(maintenanceRunCommand(encryptionKey, configFilePath, logDirectory))
-}
-
-func maintenanceRunCommand(encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand)
 
-	return args
+	return stringSliceCommand(args)
 }
