@@ -12,19 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// ServerAddUser returns the kopia command adding a new user to the Kopia API Server
-func ServerAddUser(
-	encryptionKey,
-	configFilePath,
-	logDirectory,
-	newUsername,
-	userPassword string,
-) []string {
+// SnapshotRestore returns kopia command restoring snapshots with given snap ID
+func SnapshotRestore(encryptionKey, snapID, targetPath, configFilePath, logDirectory string, sparseRestore bool) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, newUsername)
-	args = args.AppendRedactedKV(userPasswordFlag, userPassword)
+	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, snapID, targetPath)
+	if sparseRestore {
+		args = args.AppendLoggable(sparseFlag)
+	}
 
 	return stringSliceCommand(args)
 }

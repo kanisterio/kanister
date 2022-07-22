@@ -12,17 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-import (
-	"github.com/kanisterio/kanister/pkg/kopia"
-)
-
-// SnapListAllWithSnapIDs returns the kopia command for listing all snapshots in the repository with snapshotIDs
-func SnapListAllWithSnapIDs(encryptionKey, configFilePath, logDirectory string) []string {
+// SnapshotExpire returns the kopia command for removing snapshots with given root ID
+func SnapshotExpire(encryptionKey, rootID, configFilePath, logDirectory string, mustDelete bool) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
-	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
+	args = args.AppendLoggable(snapshotSubCommand, expireSubCommand, rootID)
+	if mustDelete {
+		args = args.AppendLoggable(deleteFlag)
+	}
 
 	return stringSliceCommand(args)
 }

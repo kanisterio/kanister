@@ -12,19 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-import (
-	"github.com/kanisterio/kanister/pkg/kopia"
-)
-
-// PolicySetGlobal returns the kopia command for modifying the global policy
-func PolicySetGlobal(encryptionKey, configFilePath, logDirectory string, modifications kopia.PolicyChanges) []string {
+// MaintenanceRunCommand returns the kopia command to run manual maintenance
+func MaintenanceRunCommand(encryptionKey, configFilePath, logDirectory string) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(policySubCommand, setSubCommand, globalFlag)
-	for field, val := range modifications {
-		args = args.AppendLoggableKV(field, val)
-	}
+	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand)
 
 	return stringSliceCommand(args)
 }

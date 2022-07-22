@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
 // ServerStart returns the kopia command for starting the Kopia API Server
 func ServerStart(

@@ -38,7 +38,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
-	"github.com/kanisterio/kanister/pkg/kopia/cmd"
+	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 )
@@ -343,7 +343,7 @@ func GetMaintenanceOwnerForConnectedRepository(
 	configFilePath,
 	logDirectory string,
 ) (string, error) {
-	cmd := cmd.MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory, false)
+	cmd := command.MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory, false)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)

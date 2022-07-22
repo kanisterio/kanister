@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
 // ServerListUser returns the kopia command to list users from the Kopia API Server
 func ServerListUser(
