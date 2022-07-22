@@ -12,25 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// ServerRefresh returns the kopia command for refreshing the Kopia API Server
-// This helps allow new users to be able to connect to the Server instead of waiting for auto-refresh
-func ServerRefresh(
-	encryptionKey,
-	configFilePath,
-	logDirectory,
-	serverAddress,
-	serverUsername,
-	serverPassword,
-	fingerprint string,
-) []string {
+// MaintenanceSetOwner returns the kopia command for setting custom maintenance owner
+func MaintenanceSetOwner(encryptionKey, configFilePath, logDirectory, customOwner string) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(serverSubCommand, refreshSubCommand)
-	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
-	args = args.AppendLoggableKV(addressFlag, serverAddress)
-	args = args.AppendLoggableKV(serverUsernameFlag, serverUsername)
-	args = args.AppendRedactedKV(serverPasswordFlag, serverPassword)
-
+	args = args.AppendLoggable(maintenanceSubCommand, setSubCommand)
+	args = args.AppendLoggableKV(ownerFlag, customOwner)
 	return stringSliceCommand(args)
 }

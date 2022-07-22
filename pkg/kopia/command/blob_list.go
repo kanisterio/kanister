@@ -12,15 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// SnapshotExpire returns the kopia command for removing snapshots with given root ID
-func SnapshotExpire(encryptionKey, rootID, configFilePath, logDirectory string, mustDelete bool) []string {
+// BlobList returns the kopia command for listing blobs in the repository with their sizes
+func BlobList(encryptionKey, configFilePath, logDirectory string) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(snapshotSubCommand, expireSubCommand, rootID)
-	if mustDelete {
-		args = args.AppendLoggable(deleteFlag)
-	}
+	args = args.AppendLoggable(blobSubCommand, listSubCommand)
 
 	return stringSliceCommand(args)
 }

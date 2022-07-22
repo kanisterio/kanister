@@ -12,12 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// BlobStats returns the kopia command to get the blob stats
-func BlobStats(encryptionKey, configFilePath, logDirectory string) []string {
+// ServerRefresh returns the kopia command for refreshing the Kopia API Server
+// This helps allow new users to be able to connect to the Server instead of waiting for auto-refresh
+func ServerRefresh(
+	encryptionKey,
+	configFilePath,
+	logDirectory,
+	serverAddress,
+	serverUsername,
+	serverPassword,
+	fingerprint string,
+) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(blobSubCommand, statsSubCommand, rawFlag)
+	args = args.AppendLoggable(serverSubCommand, refreshSubCommand)
+	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
+	args = args.AppendLoggableKV(addressFlag, serverAddress)
+	args = args.AppendLoggableKV(serverUsernameFlag, serverUsername)
+	args = args.AppendRedactedKV(serverPasswordFlag, serverPassword)
 
 	return stringSliceCommand(args)
 }

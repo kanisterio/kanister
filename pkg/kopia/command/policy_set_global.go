@@ -12,12 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// BlobList returns the kopia command for listing blobs in the repository with their sizes
-func BlobList(encryptionKey, configFilePath, logDirectory string) []string {
+import (
+	"github.com/kanisterio/kanister/pkg/kopia"
+)
+
+// PolicySetGlobal returns the kopia command for modifying the global policy
+func PolicySetGlobal(encryptionKey, configFilePath, logDirectory string, modifications kopia.PolicyChanges) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(blobSubCommand, listSubCommand)
+	args = args.AppendLoggable(policySubCommand, setSubCommand, globalFlag)
+	for field, val := range modifications {
+		args = args.AppendLoggableKV(field, val)
+	}
 
 	return stringSliceCommand(args)
 }

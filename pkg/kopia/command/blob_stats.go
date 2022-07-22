@@ -12,23 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// ServerStatus returns the kopia command for checking status of the Kopia API Server
-func ServerStatus(
-	configFilePath,
-	logDirectory,
-	serverAddress,
-	serverUsername,
-	serverPassword,
-	fingerprint string,
-) []string {
-	args := commonArgs("", configFilePath, logDirectory, false)
-	args = args.AppendLoggable(serverSubCommand, statusSubCommand)
-	args = args.AppendLoggableKV(addressFlag, serverAddress)
-	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
-	args = args.AppendLoggableKV(serverUsernameFlag, serverUsername)
-	args = args.AppendRedactedKV(serverPasswordFlag, serverPassword)
+// BlobStats returns the kopia command to get the blob stats
+func BlobStats(encryptionKey, configFilePath, logDirectory string) []string {
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+	args = args.AppendLoggable(blobSubCommand, statsSubCommand, rawFlag)
 
 	return stringSliceCommand(args)
 }

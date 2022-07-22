@@ -12,15 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// MaintenanceInfoCommand returns the kopia command to get maintenance info
-func MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory string, getJsonOutput bool) []string {
+// Restore returns the kopia command for restoring root of a snapshot with given root ID
+func Restore(encryptionKey, rootID, targetPath, configFilePath, logDirectory string) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(maintenanceSubCommand, infoSubCommand)
-	if getJsonOutput {
-		args = args.AppendLoggable(jsonFlag)
-	}
+	args = args.AppendLoggable(restoreSubCommand, rootID, targetPath)
 
 	return stringSliceCommand(args)
 }

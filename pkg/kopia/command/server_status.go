@@ -12,12 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// MaintenanceSetOwner returns the kopia command for setting custom maintenance owner
-func MaintenanceSetOwner(encryptionKey, configFilePath, logDirectory, customOwner string) []string {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(maintenanceSubCommand, setSubCommand)
-	args = args.AppendLoggableKV(ownerFlag, customOwner)
+// ServerStatus returns the kopia command for checking status of the Kopia API Server
+func ServerStatus(
+	configFilePath,
+	logDirectory,
+	serverAddress,
+	serverUsername,
+	serverPassword,
+	fingerprint string,
+) []string {
+	args := commonArgs("", configFilePath, logDirectory, false)
+	args = args.AppendLoggable(serverSubCommand, statusSubCommand)
+	args = args.AppendLoggableKV(addressFlag, serverAddress)
+	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
+	args = args.AppendLoggableKV(serverUsernameFlag, serverUsername)
+	args = args.AppendRedactedKV(serverPasswordFlag, serverPassword)
+
 	return stringSliceCommand(args)
 }

@@ -12,12 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// SnapshotGC returns the kopia command for issuing kopia snapshot gc
-func SnapshotGC(encryptionKey, configFilePath, logDirectory string) []string {
+import (
+	"github.com/kanisterio/kanister/pkg/kopia"
+)
+
+// SnapListAllWithSnapIDs returns the kopia command for listing all snapshots in the repository with snapshotIDs
+func SnapListAllWithSnapIDs(encryptionKey, configFilePath, logDirectory string) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(snapshotSubCommand, gcSubCommand, deleteFlag)
+	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
+	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
 
 	return stringSliceCommand(args)
 }

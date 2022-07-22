@@ -12,19 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// SnapListAll returns the kopia command for listing all snapshots in the repository with their sizes
-func SnapListAll(encryptionKey, configFilePath, logDirectory string) []string {
+// MaintenanceInfoCommand returns the kopia command to get maintenance info
+func MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory string, getJsonOutput bool) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(
-		snapshotSubCommand,
-		listSubCommand,
-		allFlag,
-		deltaFlag,
-		showIdenticalFlag,
-		jsonFlag,
-	)
+	args = args.AppendLoggable(maintenanceSubCommand, infoSubCommand)
+	if getJsonOutput {
+		args = args.AppendLoggable(jsonFlag)
+	}
 
 	return stringSliceCommand(args)
 }

@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// ServerSetUser returns the kopia command setting password for existing user for the Kopia API Server
-func ServerSetUser(
-	encryptionKey,
-	configFilePath,
-	logDirectory,
-	newUsername,
-	userPassword string,
-) []string {
+// SnapListAll returns the kopia command for listing all snapshots in the repository with their sizes
+func SnapListAll(encryptionKey, configFilePath, logDirectory string) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, newUsername)
-	args = args.AppendRedactedKV(userPasswordFlag, userPassword)
+	args = args.AppendLoggable(
+		snapshotSubCommand,
+		listSubCommand,
+		allFlag,
+		deltaFlag,
+		showIdenticalFlag,
+		jsonFlag,
+	)
 
 	return stringSliceCommand(args)
 }

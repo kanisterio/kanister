@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// Restore returns the kopia command for restoring root of a snapshot with given root ID
-func Restore(encryptionKey, rootID, targetPath, configFilePath, logDirectory string) []string {
+// SnapshotGC returns the kopia command for issuing kopia snapshot gc
+func SnapshotGC(encryptionKey, configFilePath, logDirectory string) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(restoreSubCommand, rootID, targetPath)
+	args = args.AppendLoggable(snapshotSubCommand, gcSubCommand, deleteFlag)
 
 	return stringSliceCommand(args)
 }

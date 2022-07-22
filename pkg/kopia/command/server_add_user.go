@@ -12,12 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package command
 
-// SnapshotDelete returns the kopia command for deleting a snapshot with given snapshot ID
-func SnapshotDelete(encryptionKey, snapID, configFilePath, logDirectory string) []string {
+// ServerAddUser returns the kopia command adding a new user to the Kopia API Server
+func ServerAddUser(
+	encryptionKey,
+	configFilePath,
+	logDirectory,
+	newUsername,
+	userPassword string,
+) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(snapshotSubCommand, deleteSubCommand, snapID, unsafeIgnoreSourceFlag)
+	args = args.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, newUsername)
+	args = args.AppendRedactedKV(userPasswordFlag, userPassword)
 
 	return stringSliceCommand(args)
 }
