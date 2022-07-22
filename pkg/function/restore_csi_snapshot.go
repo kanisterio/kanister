@@ -17,6 +17,7 @@ package function
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -112,6 +113,9 @@ func (*restoreCSISnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	size, err := resource.ParseQuantity(restoreSize)
 	if err != nil {
 		return nil, err
+	}
+	if size.IsZero() {
+		return nil, fmt.Errorf("Failed to restore CSI snapshot. restoreSize argument cannot be zero")
 	}
 	restoreArgs.RestoreSize = &size
 
