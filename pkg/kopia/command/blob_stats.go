@@ -20,7 +20,7 @@ type BlobStatsCommandCommandArgs struct {
 
 // BlobStats returns the kopia command to get the blob stats
 func BlobStats(blobStatsArgs BlobStatsCommandCommandArgs) []string {
-	args := commonArgs(blobStatsArgs.encryptionKey, blobStatsArgs.configFilePath, blobStatsArgs.logDirectory, false)
+	args := commonArgs(blobStatsArgs.EncryptionKey, blobStatsArgs.ConfigFilePath, blobStatsArgs.LogDirectory, false)
 	args = args.AppendLoggable(blobSubCommand, statsSubCommand, rawFlag)
 
 	return stringSliceCommand(args)

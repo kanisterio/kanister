@@ -31,15 +31,15 @@ const (
 
 type SnapshotCreateCommandArgs struct {
 	*CommandArgs
-	pathToBackup string
+	PathToBackup string
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
 // TODO: Have better mechanism to apply global flags
 func SnapshotCreate(snapshotCreateArgs SnapshotCreateCommandArgs) []string {
 	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(kopia.DataStoreParallelUploadVarName, kopia.DefaultDataStoreParallelUpload))
-	args := commonArgs(snapshotCreateArgs.encryptionKey, snapshotCreateArgs.configFilePath, snapshotCreateArgs.logDirectory, requireLogLevelInfo)
-	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, snapshotCreateArgs.pathToBackup, jsonFlag)
+	args := commonArgs(snapshotCreateArgs.EncryptionKey, snapshotCreateArgs.ConfigFilePath, snapshotCreateArgs.LogDirectory, requireLogLevelInfo)
+	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, snapshotCreateArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
 

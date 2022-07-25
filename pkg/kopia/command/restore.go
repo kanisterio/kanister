@@ -16,14 +16,14 @@ package command
 
 type RestoreCommandArgs struct {
 	*CommandArgs
-	rootID     string
-	targetPath string
+	RootID     string
+	TargetPath string
 }
 
 // Restore returns the kopia command for restoring root of a snapshot with given root ID
 func Restore(restoreArgs RestoreCommandArgs) []string {
-	args := commonArgs(restoreArgs.encryptionKey, restoreArgs.configFilePath, restoreArgs.logDirectory, false)
-	args = args.AppendLoggable(restoreSubCommand, restoreArgs.rootID, restoreArgs.targetPath)
+	args := commonArgs(restoreArgs.EncryptionKey, restoreArgs.ConfigFilePath, restoreArgs.LogDirectory, false)
+	args = args.AppendLoggable(restoreSubCommand, restoreArgs.RootID, restoreArgs.TargetPath)
 
 	return stringSliceCommand(args)
 }

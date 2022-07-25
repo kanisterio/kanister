@@ -21,9 +21,9 @@ import (
 )
 
 type CommandArgs struct {
-	encryptionKey  string
-	configFilePath string
-	logDirectory   string
+	EncryptionKey  string
+	ConfigFilePath string
+	LogDirectory   string
 }
 
 func bashCommand(args logsafe.Cmd) []string {

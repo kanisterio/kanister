@@ -16,14 +16,14 @@ package command
 
 type PolicySetGlobalCommandArgs struct {
 	*CommandArgs
-	modifications policyChanges
+	Modifications policyChanges
 }
 
 // PolicySetGlobal returns the kopia command for modifying the global policy
 func PolicySetGlobal(policySetGlobalArgs PolicySetGlobalCommandArgs) []string {
-	args := commonArgs(policySetGlobalArgs.encryptionKey, policySetGlobalArgs.configFilePath, policySetGlobalArgs.logDirectory, false)
+	args := commonArgs(policySetGlobalArgs.EncryptionKey, policySetGlobalArgs.ConfigFilePath, policySetGlobalArgs.LogDirectory, false)
 	args = args.AppendLoggable(policySubCommand, setSubCommand, globalFlag)
-	for field, val := range policySetGlobalArgs.modifications {
+	for field, val := range policySetGlobalArgs.Modifications {
 		args = args.AppendLoggableKV(field, val)
 	}
 

@@ -16,16 +16,16 @@ package command
 
 type SnapshotRestoreCommandArgs struct {
 	*CommandArgs
-	snapID        string
-	targetPath    string
-	sparseRestore bool
+	SnapID        string
+	TargetPath    string
+	SparseRestore bool
 }
 
 // SnapshotRestore returns kopia command restoring snapshots with given snap ID
 func SnapshotRestore(snapshotRestoreArgs SnapshotRestoreCommandArgs) []string {
-	args := commonArgs(snapshotRestoreArgs.encryptionKey, snapshotRestoreArgs.configFilePath, snapshotRestoreArgs.logDirectory, false)
-	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, snapshotRestoreArgs.snapID, snapshotRestoreArgs.targetPath)
-	if snapshotRestoreArgs.sparseRestore {
+	args := commonArgs(snapshotRestoreArgs.EncryptionKey, snapshotRestoreArgs.ConfigFilePath, snapshotRestoreArgs.LogDirectory, false)
+	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, snapshotRestoreArgs.SnapID, snapshotRestoreArgs.TargetPath)
+	if snapshotRestoreArgs.SparseRestore {
 		args = args.AppendLoggable(sparseFlag)
 	}
 

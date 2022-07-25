@@ -20,7 +20,7 @@ type SnapListAllCommandArgs struct {
 
 // SnapListAll returns the kopia command for listing all snapshots in the repository with their sizes
 func SnapListAll(snapListAllArgs SnapListAllCommandArgs) []string {
-	args := commonArgs(snapListAllArgs.encryptionKey, snapListAllArgs.configFilePath, snapListAllArgs.logDirectory, false)
+	args := commonArgs(snapListAllArgs.EncryptionKey, snapListAllArgs.ConfigFilePath, snapListAllArgs.LogDirectory, false)
 	args = args.AppendLoggable(
 		snapshotSubCommand,
 		listSubCommand,

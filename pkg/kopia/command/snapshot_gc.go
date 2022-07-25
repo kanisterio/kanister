@@ -20,7 +20,7 @@ type SnapshotGCCommandArgs struct {
 
 // SnapshotGC returns the kopia command for issuing kopia snapshot gc
 func SnapshotGC(snapshotGCArgs SnapshotGCCommandArgs) []string {
-	args := commonArgs(snapshotGCArgs.encryptionKey, snapshotGCArgs.configFilePath, snapshotGCArgs.logDirectory, false)
+	args := commonArgs(snapshotGCArgs.EncryptionKey, snapshotGCArgs.ConfigFilePath, snapshotGCArgs.LogDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, gcSubCommand, deleteFlag)
 
 	return stringSliceCommand(args)

@@ -20,7 +20,7 @@ type MaintenanceRunCommandCommandArgs struct {
 
 // MaintenanceRunCommand returns the kopia command to run manual maintenance
 func MaintenanceRunCommand(maintenanceRunArgs MaintenanceRunCommandCommandArgs) []string {
-	args := commonArgs(maintenanceRunArgs.encryptionKey, maintenanceRunArgs.configFilePath, maintenanceRunArgs.logDirectory, false)
+	args := commonArgs(maintenanceRunArgs.EncryptionKey, maintenanceRunArgs.ConfigFilePath, maintenanceRunArgs.LogDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand)
 
 	return stringSliceCommand(args)

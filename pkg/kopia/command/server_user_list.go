@@ -20,7 +20,7 @@ type ServerListUserCommmandArgs struct {
 
 // ServerListUser returns the kopia command to list users from the Kopia API Server
 func ServerListUser(serverListUserArgs ServerListUserCommmandArgs) []string {
-	args := commonArgs(serverListUserArgs.encryptionKey, serverListUserArgs.configFilePath, serverListUserArgs.logDirectory, false)
+	args := commonArgs(serverListUserArgs.EncryptionKey, serverListUserArgs.ConfigFilePath, serverListUserArgs.LogDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, listSubCommand, jsonFlag)
 
 	return stringSliceCommand(args)
