@@ -25,7 +25,6 @@ import (
 	"encoding/pem"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/kopia/kopia/repo"
@@ -64,36 +63,6 @@ const (
 	// DataStoreGeneralMetadataCacheSizeMBKey is the key to pass metadata cache size for general command workloads
 	DataStoreGeneralMetadataCacheSizeMBKey = "dataStoreGeneralMetadataCacheSize"
 )
-
-type PolicyChanges map[string]string
-
-// PolicySetGlobalCommand creates the command for setting the global policy to the desired settings.
-func PolicySetGlobalCommand(encryptionKey, configFilePath, logDirectory string) []string {
-	const maxInt32 = 1<<31 - 1
-
-	pc := PolicyChanges{
-		// Retention changes
-		keepLatest:  strconv.Itoa(maxInt32),
-		keepHourly:  strconv.Itoa(0),
-		keepDaily:   strconv.Itoa(0),
-		keepWeekly:  strconv.Itoa(0),
-		keepMonthly: strconv.Itoa(0),
-		keepAnnual:  strconv.Itoa(0),
-
-		// Compression changes
-		compressionAlgorithm: s2DefaultComprAlgo,
-	}
-
-	args := kopiacmd.PolicySetGlobalCommandArgs{
-		CommandArgs: &kopiacmd.CommandArgs{
-			EncryptionKey:  encryptionKey,
-			ConfigFilePath: configFilePath,
-			LogDirectory:   logDirectory,
-		},
-		Modifications: pc,
-	}
-	return kopiacmd.PolicySetGlobal(args)
-}
 
 // ExtractFingerprintFromCertSecret extracts the fingerprint from the given certificate secret
 func ExtractFingerprintFromCertSecret(ctx context.Context, cli kubernetes.Interface, secretName, secretNamespace string) (string, error) {

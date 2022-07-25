@@ -73,15 +73,15 @@ const (
 
 	// List of possible modifications to a policy, expressed as the kopia flag that will modify it
 	// Retention
-	keepLatest  = "--keep-latest"
-	keepHourly  = "--keep-hourly"
-	keepDaily   = "--keep-daily"
-	keepWeekly  = "--keep-weekly"
-	keepMonthly = "--keep-monthly"
-	keepAnnual  = "--keep-annual"
+	KeepLatest  = "--keep-latest"
+	KeepHourly  = "--keep-hourly"
+	KeepDaily   = "--keep-daily"
+	KeepWeekly  = "--keep-weekly"
+	KeepMonthly = "--keep-monthly"
+	KeepAnnual  = "--keep-annual"
 	// Compression
-	compressionAlgorithm = "--compression"
+	CompressionAlgorithm = "--compression"
 
 	// List of kopia-supported compression algorithms recognized by the kopia "--compression" flag
-	s2DefaultComprAlgo = "s2-default"
+	S2DefaultComprAlgo = "s2-default"
 )

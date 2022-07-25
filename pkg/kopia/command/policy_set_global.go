@@ -14,11 +14,11 @@
 
 package command
 
-import "github.com/kanisterio/kanister/pkg/kopia"
+type PolicyChangesArg map[string]string
 
 type PolicySetGlobalCommandArgs struct {
 	*CommandArgs
-	Modifications kopia.PolicyChanges
+	Modifications PolicyChangesArg
 }
 
 // PolicySetGlobal returns the kopia command for modifying the global policy
