@@ -22,33 +22,32 @@ import (
 
 type RepositoryCreateCommandArgs struct {
 	*CommandArgs
-	prof            kopia.Profile
-	artifactPrefix  string
-	encryptionKey   string
-	hostname        string
-	username        string
-	cacheDirectory  string
-	contentCacheMB  int
-	metadataCacheMB int
+	Prof            kopia.Profile
+	ArtifactPrefix  string
+	Hostname        string
+	Username        string
+	CacheDirectory  string
+	ContentCacheMB  int
+	MetadataCacheMB int
 }
 
 // RepositoryCreate returns the kopia command for creation of a blob-store repo
 // TODO: Consolidate all the repository options into a struct and pass
 func RepositoryCreate(repositoryCreateArgs RepositoryCreateCommandArgs) ([]string, error) {
-	args := commonArgs(repositoryCreateArgs.encryptionKey, repositoryCreateArgs.configFilePath, repositoryCreateArgs.logDirectory, false)
+	args := commonArgs(repositoryCreateArgs.EncryptionKey, repositoryCreateArgs.ConfigFilePath, repositoryCreateArgs.LogDirectory, false)
 	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
 
-	args = kopiaCacheArgs(args, repositoryCreateArgs.cacheDirectory, repositoryCreateArgs.contentCacheMB, repositoryCreateArgs.metadataCacheMB)
+	args = kopiaCacheArgs(args, repositoryCreateArgs.CacheDirectory, repositoryCreateArgs.ContentCacheMB, repositoryCreateArgs.MetadataCacheMB)
 
-	if repositoryCreateArgs.hostname != "" {
-		args = args.AppendLoggableKV(overrideHostnameFlag, repositoryCreateArgs.hostname)
+	if repositoryCreateArgs.Hostname != "" {
+		args = args.AppendLoggableKV(overrideHostnameFlag, repositoryCreateArgs.Hostname)
 	}
 
-	if repositoryCreateArgs.username != "" {
-		args = args.AppendLoggableKV(overrideUsernameFlag, repositoryCreateArgs.username)
+	if repositoryCreateArgs.Username != "" {
+		args = args.AppendLoggableKV(overrideUsernameFlag, repositoryCreateArgs.Username)
 	}
 
-	bsArgs, err := kopiaBlobStoreArgs(repositoryCreateArgs.prof, repositoryCreateArgs.artifactPrefix)
+	bsArgs, err := kopiaBlobStoreArgs(repositoryCreateArgs.Prof, repositoryCreateArgs.ArtifactPrefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to generate blob store args")
 	}

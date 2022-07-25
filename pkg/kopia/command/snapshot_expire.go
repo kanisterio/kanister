@@ -16,15 +16,15 @@ package command
 
 type SnapshotExpireCommandArgs struct {
 	*CommandArgs
-	rootID     string
-	mustDelete bool
+	RootID     string
+	MustDelete bool
 }
 
 // SnapshotExpire returns the kopia command for removing snapshots with given root ID
 func SnapshotExpire(snapshotExpireArgs SnapshotExpireCommandArgs) []string {
-	args := commonArgs(snapshotExpireArgs.encryptionKey, snapshotExpireArgs.configFilePath, snapshotExpireArgs.logDirectory, false)
-	args = args.AppendLoggable(snapshotSubCommand, expireSubCommand, snapshotExpireArgs.rootID)
-	if snapshotExpireArgs.mustDelete {
+	args := commonArgs(snapshotExpireArgs.EncryptionKey, snapshotExpireArgs.ConfigFilePath, snapshotExpireArgs.LogDirectory, false)
+	args = args.AppendLoggable(snapshotSubCommand, expireSubCommand, snapshotExpireArgs.RootID)
+	if snapshotExpireArgs.MustDelete {
 		args = args.AppendLoggable(deleteFlag)
 	}
 

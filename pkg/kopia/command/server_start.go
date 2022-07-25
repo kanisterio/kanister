@@ -16,37 +16,37 @@ package command
 
 type ServerStartCommandArgs struct {
 	*CommandArgs
-	serverAddress    string
-	tlsCertFile      string
-	tlsKeyFile       string
-	serverUsername   string
-	serverPassword   string
-	autoGenerateCert bool
-	background       bool
+	ServerAddress    string
+	TLSCertFile      string
+	TLSKeyFile       string
+	ServerUsername   string
+	ServerPassword   string
+	AutoGenerateCert bool
+	Background       bool
 }
 
 // ServerStart returns the kopia command for starting the Kopia API Server
 func ServerStart(serverStartArgs ServerStartCommandArgs) []string {
-	args := commonArgs("", serverStartArgs.configFilePath, serverStartArgs.logDirectory, false)
+	args := commonArgs("", serverStartArgs.ConfigFilePath, serverStartArgs.LogDirectory, false)
 
-	if serverStartArgs.autoGenerateCert {
+	if serverStartArgs.AutoGenerateCert {
 		args = args.AppendLoggable(serverSubCommand, startSubCommand, tlsGenerateCertFlag)
 	} else {
 		args = args.AppendLoggable(serverSubCommand, startSubCommand)
 	}
-	args = args.AppendLoggableKV(addressFlag, serverStartArgs.serverAddress)
-	args = args.AppendLoggableKV(tlsCertFilePath, serverStartArgs.tlsCertFile)
-	args = args.AppendLoggableKV(tlsKeyFilePath, serverStartArgs.tlsKeyFile)
-	args = args.AppendLoggableKV(serverUsernameFlag, serverStartArgs.serverUsername)
-	args = args.AppendRedactedKV(serverPasswordFlag, serverStartArgs.serverPassword)
+	args = args.AppendLoggableKV(addressFlag, serverStartArgs.ServerAddress)
+	args = args.AppendLoggableKV(tlsCertFilePath, serverStartArgs.TLSCertFile)
+	args = args.AppendLoggableKV(tlsKeyFilePath, serverStartArgs.TLSKeyFile)
+	args = args.AppendLoggableKV(serverUsernameFlag, serverStartArgs.ServerUsername)
+	args = args.AppendRedactedKV(serverPasswordFlag, serverStartArgs.ServerPassword)
 
-	args = args.AppendLoggableKV(serverControlUsernameFlag, serverStartArgs.serverUsername)
-	args = args.AppendRedactedKV(serverControlPasswordFlag, serverStartArgs.serverPassword)
+	args = args.AppendLoggableKV(serverControlUsernameFlag, serverStartArgs.ServerUsername)
+	args = args.AppendRedactedKV(serverControlPasswordFlag, serverStartArgs.ServerPassword)
 
 	// TODO: Remove when GRPC support is added
 	args = args.AppendLoggable(noGrpcFlag)
 
-	if serverStartArgs.background {
+	if serverStartArgs.Background {
 		// To start the server and run in the background
 		args = args.AppendLoggable(redirectToDevNull, runInBackground)
 	}

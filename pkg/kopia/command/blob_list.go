@@ -20,7 +20,7 @@ type BlobListCommandCommandArgs struct {
 
 // BlobList returns the kopia command for listing blobs in the repository with their sizes
 func BlobList(blobListArgs BlobListCommandCommandArgs) []string {
-	args := commonArgs(blobListArgs.encryptionKey, blobListArgs.configFilePath, blobListArgs.logDirectory, false)
+	args := commonArgs(blobListArgs.EncryptionKey, blobListArgs.ConfigFilePath, blobListArgs.LogDirectory, false)
 	args = args.AppendLoggable(blobSubCommand, listSubCommand)
 
 	return stringSliceCommand(args)

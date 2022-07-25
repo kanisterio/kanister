@@ -16,33 +16,33 @@ package command
 
 type RepositoryConnectServerCommandArgs struct {
 	*CommandArgs
-	cacheDirectory  string
-	hostname        string
-	serverURL       string
-	fingerprint     string
-	username        string
-	userPassword    string
-	contentCacheMB  int
-	metadataCacheMB int
+	CacheDirectory  string
+	Hostname        string
+	ServerURL       string
+	Fingerprint     string
+	Username        string
+	UserPassword    string
+	ContentCacheMB  int
+	MetadataCacheMB int
 }
 
 // RepositoryConnectServer returns the kopia command for connecting to a remote repository on Kopia API server
 func RepositoryConnectServer(repositoryConnectServerArgs RepositoryConnectServerCommandArgs) []string {
-	args := commonArgs(repositoryConnectServerArgs.userPassword, repositoryConnectServerArgs.configFilePath, repositoryConnectServerArgs.logDirectory, false)
+	args := commonArgs(repositoryConnectServerArgs.UserPassword, repositoryConnectServerArgs.ConfigFilePath, repositoryConnectServerArgs.LogDirectory, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, serverSubCommand, noCheckForUpdatesFlag, noGrpcFlag)
 
-	args = kopiaCacheArgs(args, repositoryConnectServerArgs.cacheDirectory, repositoryConnectServerArgs.contentCacheMB, repositoryConnectServerArgs.metadataCacheMB)
+	args = kopiaCacheArgs(args, repositoryConnectServerArgs.CacheDirectory, repositoryConnectServerArgs.ContentCacheMB, repositoryConnectServerArgs.MetadataCacheMB)
 
-	if repositoryConnectServerArgs.hostname != "" {
-		args = args.AppendLoggableKV(overrideHostnameFlag, repositoryConnectServerArgs.hostname)
+	if repositoryConnectServerArgs.Hostname != "" {
+		args = args.AppendLoggableKV(overrideHostnameFlag, repositoryConnectServerArgs.Hostname)
 	}
 
-	if repositoryConnectServerArgs.username != "" {
-		args = args.AppendLoggableKV(overrideUsernameFlag, repositoryConnectServerArgs.username)
+	if repositoryConnectServerArgs.Username != "" {
+		args = args.AppendLoggableKV(overrideUsernameFlag, repositoryConnectServerArgs.Username)
 	}
-	args = args.AppendLoggableKV(urlFlag, repositoryConnectServerArgs.serverURL)
+	args = args.AppendLoggableKV(urlFlag, repositoryConnectServerArgs.ServerURL)
 
-	args = args.AppendRedactedKV(serverCertFingerprint, repositoryConnectServerArgs.fingerprint)
+	args = args.AppendRedactedKV(serverCertFingerprint, repositoryConnectServerArgs.Fingerprint)
 
 	return stringSliceCommand(args)
 }

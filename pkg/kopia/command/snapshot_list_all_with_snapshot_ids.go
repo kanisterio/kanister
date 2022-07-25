@@ -24,7 +24,7 @@ type SnapListAllWithSnapIDsCommandArgs struct {
 
 // SnapListAllWithSnapIDs returns the kopia command for listing all snapshots in the repository with snapshotIDs
 func SnapListAllWithSnapIDs(snapListAllWithSnapIDsArgs SnapListAllWithSnapIDsCommandArgs) []string {
-	args := commonArgs(snapListAllWithSnapIDsArgs.encryptionKey, snapListAllWithSnapIDsArgs.configFilePath, snapListAllWithSnapIDsArgs.logDirectory, false)
+	args := commonArgs(snapListAllWithSnapIDsArgs.EncryptionKey, snapListAllWithSnapIDsArgs.ConfigFilePath, snapListAllWithSnapIDsArgs.LogDirectory, false)
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
 	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
 

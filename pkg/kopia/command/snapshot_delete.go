@@ -16,13 +16,13 @@ package command
 
 type SnapshotDeleteCommandArgs struct {
 	*CommandArgs
-	snapID string
+	SnapID string
 }
 
 // SnapshotDelete returns the kopia command for deleting a snapshot with given snapshot ID
 func SnapshotDelete(snapshotDeleteArgs SnapshotDeleteCommandArgs) []string {
-	args := commonArgs(snapshotDeleteArgs.encryptionKey, snapshotDeleteArgs.configFilePath, snapshotDeleteArgs.logDirectory, false)
-	args = args.AppendLoggable(snapshotSubCommand, deleteSubCommand, snapshotDeleteArgs.snapID, unsafeIgnoreSourceFlag)
+	args := commonArgs(snapshotDeleteArgs.EncryptionKey, snapshotDeleteArgs.ConfigFilePath, snapshotDeleteArgs.LogDirectory, false)
+	args = args.AppendLoggable(snapshotSubCommand, deleteSubCommand, snapshotDeleteArgs.SnapID, unsafeIgnoreSourceFlag)
 
 	return stringSliceCommand(args)
 }

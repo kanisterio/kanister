@@ -24,7 +24,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia"
-	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/cmd"
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	kanutils "github.com/kanisterio/kanister/pkg/utils"
@@ -53,18 +53,21 @@ func CreateKopiaRepository(
 	metadataCacheMB int,
 	prof kopia.Profile,
 ) error {
-	cmd, err := kopiacmd.RepositoryCreate(
-		prof,
-		artifactPrefix,
-		encryptionKey,
-		hostname,
-		username,
-		cacheDirectory,
-		configFilePath,
-		logDirectory,
-		contentCacheMB,
-		metadataCacheMB,
-	)
+	args := kopiacmd.RepositoryCreateCommandArgs{
+		CommandArgs: &kopiacmd.CommandArgs{
+			EncryptionKey:  encryptionKey,
+			ConfigFilePath: configFilePath,
+			LogDirectory:   logDirectory,
+		},
+		Prof:            prof,
+		ArtifactPrefix:  artifactPrefix,
+		Hostname:        hostname,
+		Username:        username,
+		CacheDirectory:  cacheDirectory,
+		ContentCacheMB:  contentCacheMB,
+		MetadataCacheMB: metadataCacheMB,
+	}
+	cmd, err := kopiacmd.RepositoryCreate(args)
 	if err != nil {
 		return errors.Wrap(err, "Failed to generate repository create command")
 	}
@@ -142,7 +145,15 @@ func setCustomMaintenanceOwner(
 		return errors.Wrap(err, "Failed to get namespace UID")
 	}
 	newOwner := fmt.Sprintf(MaintenanceOwnerFormat, username, nsUID)
-	cmd := kopiacmd.MaintenanceSetOwner(encryptionKey, configFilePath, logDirectory, newOwner)
+	args := kopiacmd.MaintenanceSetOwnerCommandArgs{
+		CommandArgs: &kopiacmd.CommandArgs{
+			EncryptionKey:  encryptionKey,
+			ConfigFilePath: configFilePath,
+			LogDirectory:   logDirectory,
+		},
+		CustomOwner: newOwner,
+	}
+	cmd := kopiacmd.MaintenanceSetOwner(args)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)

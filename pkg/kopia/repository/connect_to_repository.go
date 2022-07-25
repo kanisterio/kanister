@@ -23,7 +23,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia"
-	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/cmd"
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
@@ -45,19 +45,22 @@ func ConnectToKopiaRepository(
 	prof kopia.Profile,
 	pointInTimeConnection strfmt.DateTime,
 ) error {
-	cmd, err := kopiacmd.RepositoryConnect(
-		prof,
-		artifactPrefix,
-		encryptionKey,
-		hostname,
-		username,
-		cacheDirectory,
-		configFilePath,
-		logDirectory,
-		contentCacheMB,
-		metadataCacheMB,
-		pointInTimeConnection,
-	)
+	args := kopiacmd.RepositoryConnectCommandArgs{
+		CommandArgs: &kopiacmd.CommandArgs{
+			EncryptionKey:  encryptionKey,
+			ConfigFilePath: configFilePath,
+			LogDirectory:   logDirectory,
+		},
+		Prof:                  prof,
+		ArtifactPrefix:        artifactPrefix,
+		Hostname:              hostname,
+		Username:              username,
+		CacheDirectory:        cacheDirectory,
+		ContentCacheMB:        contentCacheMB,
+		MetadataCacheMB:       metadataCacheMB,
+		PointInTimeConnection: pointInTimeConnection,
+	}
+	cmd, err := kopiacmd.RepositoryConnect(args)
 	if err != nil {
 		return errors.Wrap(err, "Failed to generate repository connect command")
 	}

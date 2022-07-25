@@ -87,7 +87,15 @@ func PolicySetGlobalCommand(encryptionKey, configFilePath, logDirectory string) 
 		compressionAlgorithm: s2DefaultComprAlgo,
 	}
 
-	return kopiacmd.PolicySetGlobal(encryptionKey, configFilePath, logDirectory, pc)
+	args := kopiacmd.PolicySetGlobalCommandArgs{
+		CommandArgs: &kopiacmd.CommandArgs{
+			EncryptionKey:  encryptionKey,
+			ConfigFilePath: configFilePath,
+			LogDirectory:   logDirectory,
+		},
+		Modifications: pc,
+	}
+	return kopiacmd.PolicySetGlobal(args)
 }
 
 // ExtractFingerprintFromCertSecret extracts the fingerprint from the given certificate secret
@@ -366,7 +374,15 @@ func GetMaintenanceOwnerForConnectedRepository(
 	configFilePath,
 	logDirectory string,
 ) (string, error) {
-	cmd := kopiacmd.MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory, false)
+	args := kopiacmd.MaintenanceInfoCommandArgs{
+		CommandArgs: &kopiacmd.CommandArgs{
+			EncryptionKey:  encryptionKey,
+			ConfigFilePath: configFilePath,
+			LogDirectory:   logDirectory,
+		},
+		GetJsonOutput: false,
+	}
+	cmd := kopiacmd.MaintenanceInfo(args)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
