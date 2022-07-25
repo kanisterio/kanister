@@ -32,6 +32,12 @@ import (
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
+type CommonArgs struct {
+	encryptionKey  string
+	configFilePath string
+	logDirectory   string
+}
+
 func bashCommand(args logsafe.Cmd) []string {
 	log.Info().Print("Kopia Command", field.M{"Command": args.String()})
 	return []string{"bash", "-o", "errexit", "-c", args.PlainText()}

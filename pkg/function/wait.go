@@ -31,6 +31,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/jsonpath"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -114,7 +115,7 @@ func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond Wa
 			result, evalErr = evaluateCondition(ctx, dynCli, cond)
 			if evalErr != nil {
 				// TODO: Fail early if the error is due to jsonpath syntax
-				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition")
+				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition", field.M{"result": result})
 				return false, nil
 			}
 			if result {
@@ -125,14 +126,15 @@ func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond Wa
 			result, evalErr = evaluateCondition(ctx, dynCli, cond)
 			if evalErr != nil {
 				// TODO: Fail early if the error is due to jsonpath syntax
-				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition")
+				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition", field.M{"result": result})
 				return false, nil
 			}
+			// Retry if any condition fails
 			if !result {
 				return false, nil
 			}
 		}
-		return false, nil
+		return result, nil
 	})
 	err = errors.Wrap(err, "Failed to wait for the condition to be met")
 	if evalErr != nil {
@@ -160,6 +162,7 @@ func evaluateCondition(ctx context.Context, dynCli dynamic.Interface, cond Condi
 	if err = t.Execute(buf, nil); err != nil {
 		return false, errors.WithStack(err)
 	}
+	log.Debug().Print(fmt.Sprintf("Condition evaluation result: %s", strings.TrimSpace(buf.String())))
 	return strings.TrimSpace(buf.String()) == "true", nil
 }
 
