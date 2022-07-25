@@ -163,8 +163,8 @@ github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:l
 github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef h1:46PFijGLmAjMPwCCCo7Jf0W6f9slllCkkv7vyc1yOSg=
 github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
 github.com/aws/aws-sdk-go v1.23.4/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
-github.com/aws/aws-sdk-go v1.44.49 h1:6+xYbAqqbY55hPZ+dwDZ/JolN6lzZPRvVvCcAa8y6iw=
-github.com/aws/aws-sdk-go v1.44.49/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
+github.com/aws/aws-sdk-go v1.44.51 h1:jO9hoLynZOrMM4dj0KjeKIK+c6PA+HQbKoHOkAEye2Y=
+github.com/aws/aws-sdk-go v1.44.51/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
 github.com/benbjohnson/clock v1.0.3/go.mod h1:bGMdMPoPVvcYyt1gHDf4J2KE153Yf9BuiUKYMaxlTDM=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
@@ -541,8 +541,8 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ9nd5KChnAgFOWakTHQ9ZADjs6DQ=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
-github.com/kastenhq/kopia v0.0.0-20220722162715-c2f33406eed7 h1:a1FUiLbL7sZXFq811BJl3gyqhICi0mnV4vUN/WqvoTU=
-github.com/kastenhq/kopia v0.0.0-20220722162715-c2f33406eed7/go.mod h1:FwrZnJ6Ap7d+7vgqwzGekGzgLRtPeaWb8hPHGhuhph4=
+github.com/kastenhq/kopia v0.0.0-20220725040357-122ff606ff45 h1:nTYNY7bTTj9tnJ5KcNkBErcp4uUygwIXeVaLeCGbpq0=
+github.com/kastenhq/kopia v0.0.0-20220725040357-122ff606ff45/go.mod h1:8XNihoIMqOn/ov6TS/543Ham5/PSD1yol/SadYJS9dc=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20220719172801-c11a0e5f2e09 h1:E5PMnpRjRwhBdLiVkVKNxYmLg4RemY5IJEZVBO+jrgc=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20220719172801-c11a0e5f2e09/go.mod h1:6+N3Bn9Whpb+bnRFQ2A2kAyAUiYvYM0+N5bArNd4K8s=
 github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
