@@ -23,14 +23,14 @@ import (
 // RepositoryCreate returns the kopia command for creation of a blob-store repo
 // TODO: Consolidate all the repository options into a struct and pass
 func RepositoryCreate(
+	configFilePath,
+	logDirectory string,
 	prof kopia.Profile,
 	artifactPrefix,
 	encryptionKey,
 	hostname,
 	username,
-	cacheDirectory,
-	configFilePath,
-	logDirectory string,
+	cacheDirectory string,
 	contentCacheMB,
 	metadataCacheMB int,
 ) ([]string, error) {

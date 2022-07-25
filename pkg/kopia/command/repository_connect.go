@@ -25,14 +25,14 @@ import (
 
 // RepositoryConnect returns the kopia command for connecting to an existing blob-store repo
 func RepositoryConnect(
-	prof kopia.Profile,
-	artifactPrefix,
 	encryptionKey,
-	hostname,
-	username,
-	cacheDirectory,
 	configFilePath,
 	logDirectory string,
+	prof kopia.Profile,
+	artifactPrefix,
+	hostname,
+	username,
+	cacheDirectory string,
 	contentCacheMB,
 	metadataCacheMB int,
 	pointInTimeConnection strfmt.DateTime,

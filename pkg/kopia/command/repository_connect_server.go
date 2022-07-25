@@ -16,10 +16,10 @@ package command
 
 // RepositoryConnectServer returns the kopia command for connecting to a remote repository on Kopia API server
 func RepositoryConnectServer(
-	cacheDirectory,
 	configFilePath,
-	hostname,
 	logDirectory,
+	cacheDirectory,
+	hostname,
 	serverURL,
 	fingerprint,
 	username,
