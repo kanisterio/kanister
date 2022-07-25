@@ -14,9 +14,13 @@
 
 package command
 
+type MaintenanceRunCommandCommandArgs struct {
+	*CommandArgs
+}
+
 // MaintenanceRunCommand returns the kopia command to run manual maintenance
-func MaintenanceRunCommand(encryptionKey, configFilePath, logDirectory string) []string {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+func MaintenanceRunCommand(maintenanceRunArgs MaintenanceRunCommandCommandArgs) []string {
+	args := commonArgs(maintenanceRunArgs.encryptionKey, maintenanceRunArgs.configFilePath, maintenanceRunArgs.logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand)
 
 	return stringSliceCommand(args)

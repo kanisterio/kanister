@@ -20,7 +20,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/logsafe"
 )
 
-type CommonArgs struct {
+type CommandArgs struct {
 	encryptionKey  string
 	configFilePath string
 	logDirectory   string

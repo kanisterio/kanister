@@ -14,17 +14,18 @@
 
 package command
 
+type ServerSetUserCommandArgs struct {
+	*CommandArgs
+	newUsername  string
+	userPassword string
+}
+
 // ServerSetUser returns the kopia command setting password for existing user for the Kopia API Server
 func ServerSetUser(
-	encryptionKey,
-	configFilePath,
-	logDirectory,
-	newUsername,
-	userPassword string,
-) []string {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, newUsername)
-	args = args.AppendRedactedKV(userPasswordFlag, userPassword)
+	serverSetUserArgs ServerSetUserCommandArgs) []string {
+	args := commonArgs(serverSetUserArgs.encryptionKey, serverSetUserArgs.configFilePath, serverSetUserArgs.logDirectory, false)
+	args = args.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, serverSetUserArgs.newUsername)
+	args = args.AppendRedactedKV(userPasswordFlag, serverSetUserArgs.userPassword)
 
 	return stringSliceCommand(args)
 }

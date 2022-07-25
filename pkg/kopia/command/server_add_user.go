@@ -14,17 +14,17 @@
 
 package command
 
+type ServerAddUserCommandArgs struct {
+	*CommandArgs
+	newUsername  string
+	userPassword string
+}
+
 // ServerAddUser returns the kopia command adding a new user to the Kopia API Server
-func ServerAddUser(
-	encryptionKey,
-	configFilePath,
-	logDirectory,
-	newUsername,
-	userPassword string,
-) []string {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, newUsername)
-	args = args.AppendRedactedKV(userPasswordFlag, userPassword)
+func ServerAddUser(serverAddUserArgs ServerAddUserCommandArgs) []string {
+	args := commonArgs(serverAddUserArgs.encryptionKey, serverAddUserArgs.configFilePath, serverAddUserArgs.logDirectory, false)
+	args = args.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, serverAddUserArgs.newUsername)
+	args = args.AppendRedactedKV(userPasswordFlag, serverAddUserArgs.userPassword)
 
 	return stringSliceCommand(args)
 }

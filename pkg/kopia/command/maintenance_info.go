@@ -14,11 +14,16 @@
 
 package command
 
-// MaintenanceInfoCommand returns the kopia command to get maintenance info
-func MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory string, getJsonOutput bool) []string {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+type MaintenanceInfoCommandArgs struct {
+	*CommandArgs
+	getJsonOutput bool
+}
+
+// MaintenanceInfo returns the kopia command to get maintenance info
+func MaintenanceInfo(maintenanceInfoArgs MaintenanceInfoCommandArgs) []string {
+	args := commonArgs(maintenanceInfoArgs.encryptionKey, maintenanceInfoArgs.configFilePath, maintenanceInfoArgs.logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, infoSubCommand)
-	if getJsonOutput {
+	if maintenanceInfoArgs.getJsonOutput {
 		args = args.AppendLoggable(jsonFlag)
 	}
 
