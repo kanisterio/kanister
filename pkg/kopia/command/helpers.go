@@ -72,7 +72,7 @@ type SnapshotCreateInfo struct {
 // if the stats were unable to be parsed. The root ID and snapshot ID are fetched from
 // structured stdout and stats are parsed from stderr output.
 func ParseSnapshotCreateOutput(snapCreateStdoutOutput, snapCreateStderrOutput string) (*SnapshotCreateInfo, error) {
-	snapID, rootID, err := kopia.SnapshotInfoFromSnapshotCreateOutput(snapCreateStdoutOutput)
+	snapID, rootID, err := SnapshotInfoFromSnapshotCreateOutput(snapCreateStdoutOutput)
 	if err != nil {
 		return nil, err
 	}
