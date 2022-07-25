@@ -32,9 +32,10 @@ import (
 var _ = Suite(&WaitSuite{})
 
 type WaitSuite struct {
-	cli       kubernetes.Interface
-	namespace string
-	deploy    string
+	cli         kubernetes.Interface
+	namespace   string
+	deploy      string
+	statefulset string
 }
 
 func (s *WaitSuite) SetUpSuite(c *C) {
@@ -49,11 +50,13 @@ func (s *WaitSuite) SetUpSuite(c *C) {
 	}
 	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-
 	d, err := s.cli.AppsV1().Deployments(cns.Name).Create(context.TODO(), testutil.NewTestDeployment(int32(1)), metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	sts, err := s.cli.AppsV1().StatefulSets(cns.Name).Create(context.TODO(), testutil.NewTestStatefulSet(int32(1)), metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 	s.deploy = d.Name
+	s.statefulset = sts.Name
 }
 
 func (s *WaitSuite) TearDownSuite(c *C) {
@@ -152,6 +155,48 @@ func waitDeployPhase(namespace, deploy string) crv1alpha1.BlueprintPhase {
 	}
 }
 
+func waitStatefulSetPhase(namespace, sts string) crv1alpha1.BlueprintPhase {
+	return crv1alpha1.BlueprintPhase{
+		Name: "waitStsReady",
+		Func: WaitFuncName,
+		Args: map[string]interface{}{
+			WaitTimeoutArg: "1m",
+			WaitConditionsArg: map[string]interface{}{
+				"allOf": []interface{}{
+					map[string]interface{}{
+						"condition": `{{ if (eq {$.spec.replicas} {$.status.availableReplicas})}}
+									true
+								{{ else }}
+									false
+								{{ end }}`,
+						"objectReference": map[string]interface{}{
+							"apiVersion": "v1",
+							"group":      "apps",
+							"resource":   "statefulsets",
+							"name":       sts,
+							"namespace":  namespace,
+						},
+					},
+					map[string]interface{}{
+						"condition": `{{ if (eq {$.spec.replicas} {$.status.readyReplicas})}}
+									true
+								{{ else }}
+									false
+								{{ end }}`,
+						"objectReference": map[string]interface{}{
+							"apiVersion": "v1",
+							"group":      "apps",
+							"resource":   "statefulsets",
+							"name":       sts,
+							"namespace":  namespace,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func newWaitBlueprint(phases ...crv1alpha1.BlueprintPhase) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
@@ -171,6 +216,10 @@ func (s *WaitSuite) TestWait(c *C) {
 	}{
 		{
 			bp:      newWaitBlueprint(waitDeployPhase(s.namespace, s.deploy)),
+			checker: IsNil,
+		},
+		{
+			bp:      newWaitBlueprint(waitStatefulSetPhase(s.namespace, s.statefulset)),
 			checker: IsNil,
 		},
 		{
