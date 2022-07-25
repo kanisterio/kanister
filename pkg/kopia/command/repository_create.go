@@ -20,34 +20,35 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia"
 )
 
+type RepositoryCreateCommandArgs struct {
+	*CommandArgs
+	prof            kopia.Profile
+	artifactPrefix  string
+	encryptionKey   string
+	hostname        string
+	username        string
+	cacheDirectory  string
+	contentCacheMB  int
+	metadataCacheMB int
+}
+
 // RepositoryCreate returns the kopia command for creation of a blob-store repo
 // TODO: Consolidate all the repository options into a struct and pass
-func RepositoryCreate(
-	configFilePath,
-	logDirectory string,
-	prof kopia.Profile,
-	artifactPrefix,
-	encryptionKey,
-	hostname,
-	username,
-	cacheDirectory string,
-	contentCacheMB,
-	metadataCacheMB int,
-) ([]string, error) {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+func RepositoryCreate(repositoryCreateArgs RepositoryCreateCommandArgs) ([]string, error) {
+	args := commonArgs(repositoryCreateArgs.encryptionKey, repositoryCreateArgs.configFilePath, repositoryCreateArgs.logDirectory, false)
 	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
 
-	args = kopiaCacheArgs(args, cacheDirectory, contentCacheMB, metadataCacheMB)
+	args = kopiaCacheArgs(args, repositoryCreateArgs.cacheDirectory, repositoryCreateArgs.contentCacheMB, repositoryCreateArgs.metadataCacheMB)
 
-	if hostname != "" {
-		args = args.AppendLoggableKV(overrideHostnameFlag, hostname)
+	if repositoryCreateArgs.hostname != "" {
+		args = args.AppendLoggableKV(overrideHostnameFlag, repositoryCreateArgs.hostname)
 	}
 
-	if username != "" {
-		args = args.AppendLoggableKV(overrideUsernameFlag, username)
+	if repositoryCreateArgs.username != "" {
+		args = args.AppendLoggableKV(overrideUsernameFlag, repositoryCreateArgs.username)
 	}
 
-	bsArgs, err := kopiaBlobStoreArgs(prof, artifactPrefix)
+	bsArgs, err := kopiaBlobStoreArgs(repositoryCreateArgs.prof, repositoryCreateArgs.artifactPrefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to generate blob store args")
 	}

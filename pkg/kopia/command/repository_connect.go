@@ -23,40 +23,40 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia"
 )
 
+type RepositoryConnectCommandArgs struct {
+	*CommandArgs
+	prof                  kopia.Profile
+	artifactPrefix        string
+	hostname              string
+	username              string
+	cacheDirectory        string
+	contentCacheMB        int
+	metadataCacheMB       int
+	pointInTimeConnection strfmt.DateTime
+}
+
 // RepositoryConnect returns the kopia command for connecting to an existing blob-store repo
-func RepositoryConnect(
-	encryptionKey,
-	configFilePath,
-	logDirectory string,
-	prof kopia.Profile,
-	artifactPrefix,
-	hostname,
-	username,
-	cacheDirectory string,
-	contentCacheMB,
-	metadataCacheMB int,
-	pointInTimeConnection strfmt.DateTime,
-) ([]string, error) {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+func RepositoryConnect(repositoryConnectArgs RepositoryConnectCommandArgs) ([]string, error) {
+	args := commonArgs(repositoryConnectArgs.encryptionKey, repositoryConnectArgs.configFilePath, repositoryConnectArgs.logDirectory, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, noCheckForUpdatesFlag)
 
-	args = kopiaCacheArgs(args, cacheDirectory, contentCacheMB, metadataCacheMB)
+	args = kopiaCacheArgs(args, repositoryConnectArgs.cacheDirectory, repositoryConnectArgs.contentCacheMB, repositoryConnectArgs.metadataCacheMB)
 
-	if hostname != "" {
-		args = args.AppendLoggableKV(overrideHostnameFlag, hostname)
+	if repositoryConnectArgs.hostname != "" {
+		args = args.AppendLoggableKV(overrideHostnameFlag, repositoryConnectArgs.hostname)
 	}
 
-	if username != "" {
-		args = args.AppendLoggableKV(overrideUsernameFlag, username)
+	if repositoryConnectArgs.username != "" {
+		args = args.AppendLoggableKV(overrideUsernameFlag, repositoryConnectArgs.username)
 	}
 
-	bsArgs, err := kopiaBlobStoreArgs(prof, artifactPrefix)
+	bsArgs, err := kopiaBlobStoreArgs(repositoryConnectArgs.prof, repositoryConnectArgs.artifactPrefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to generate blob store args")
 	}
 
-	if !time.Time(pointInTimeConnection).IsZero() {
-		bsArgs = bsArgs.AppendLoggableKV(pointInTimeConnectionFlag, pointInTimeConnection.String())
+	if !time.Time(repositoryConnectArgs.pointInTimeConnection).IsZero() {
+		bsArgs = bsArgs.AppendLoggableKV(pointInTimeConnectionFlag, repositoryConnectArgs.pointInTimeConnection.String())
 	}
 
 	return stringSliceCommand(args.Combine(bsArgs)), nil

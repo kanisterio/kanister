@@ -14,34 +14,35 @@
 
 package command
 
+type RepositoryConnectServerCommandArgs struct {
+	*CommandArgs
+	cacheDirectory  string
+	hostname        string
+	serverURL       string
+	fingerprint     string
+	username        string
+	userPassword    string
+	contentCacheMB  int
+	metadataCacheMB int
+}
+
 // RepositoryConnectServer returns the kopia command for connecting to a remote repository on Kopia API server
-func RepositoryConnectServer(
-	configFilePath,
-	logDirectory,
-	cacheDirectory,
-	hostname,
-	serverURL,
-	fingerprint,
-	username,
-	userPassword string,
-	contentCacheMB,
-	metadataCacheMB int,
-) []string {
-	args := commonArgs(userPassword, configFilePath, logDirectory, false)
+func RepositoryConnectServer(repositoryConnectServerArgs RepositoryConnectServerCommandArgs) []string {
+	args := commonArgs(repositoryConnectServerArgs.userPassword, repositoryConnectServerArgs.configFilePath, repositoryConnectServerArgs.logDirectory, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, serverSubCommand, noCheckForUpdatesFlag, noGrpcFlag)
 
-	args = kopiaCacheArgs(args, cacheDirectory, contentCacheMB, metadataCacheMB)
+	args = kopiaCacheArgs(args, repositoryConnectServerArgs.cacheDirectory, repositoryConnectServerArgs.contentCacheMB, repositoryConnectServerArgs.metadataCacheMB)
 
-	if hostname != "" {
-		args = args.AppendLoggableKV(overrideHostnameFlag, hostname)
+	if repositoryConnectServerArgs.hostname != "" {
+		args = args.AppendLoggableKV(overrideHostnameFlag, repositoryConnectServerArgs.hostname)
 	}
 
-	if username != "" {
-		args = args.AppendLoggableKV(overrideUsernameFlag, username)
+	if repositoryConnectServerArgs.username != "" {
+		args = args.AppendLoggableKV(overrideUsernameFlag, repositoryConnectServerArgs.username)
 	}
-	args = args.AppendLoggableKV(urlFlag, serverURL)
+	args = args.AppendLoggableKV(urlFlag, repositoryConnectServerArgs.serverURL)
 
-	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
+	args = args.AppendRedactedKV(serverCertFingerprint, repositoryConnectServerArgs.fingerprint)
 
 	return stringSliceCommand(args)
 }
