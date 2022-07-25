@@ -15,7 +15,7 @@
 package command
 
 // Restore returns the kopia command for restoring root of a snapshot with given root ID
-func Restore(encryptionKey, rootID, targetPath, configFilePath, logDirectory string) []string {
+func Restore(encryptionKey, configFilePath, logDirectory, rootID, targetPath string) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(restoreSubCommand, rootID, targetPath)
 

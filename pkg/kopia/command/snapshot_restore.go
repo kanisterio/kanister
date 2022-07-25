@@ -15,7 +15,7 @@
 package command
 
 // SnapshotRestore returns kopia command restoring snapshots with given snap ID
-func SnapshotRestore(encryptionKey, snapID, targetPath, configFilePath, logDirectory string, sparseRestore bool) []string {
+func SnapshotRestore(encryptionKey, configFilePath, logDirectory, snapID, targetPath string, sparseRestore bool) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, snapID, targetPath)
 	if sparseRestore {

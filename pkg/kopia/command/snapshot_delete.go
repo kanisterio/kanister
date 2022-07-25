@@ -15,7 +15,7 @@
 package command
 
 // SnapshotDelete returns the kopia command for deleting a snapshot with given snapshot ID
-func SnapshotDelete(encryptionKey, snapID, configFilePath, logDirectory string) []string {
+func SnapshotDelete(encryptionKey, configFilePath, logDirectory, snapID string) []string {
 	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, deleteSubCommand, snapID, unsafeIgnoreSourceFlag)
 
