@@ -14,21 +14,22 @@
 
 package command
 
+type ServerStatusCommandArgs struct {
+	*CommandArgs
+	serverAddress  string
+	serverUsername string
+	serverPassword string
+	fingerprint    string
+}
+
 // ServerStatus returns the kopia command for checking status of the Kopia API Server
-func ServerStatus(
-	configFilePath,
-	logDirectory,
-	serverAddress,
-	serverUsername,
-	serverPassword,
-	fingerprint string,
-) []string {
-	args := commonArgs("", configFilePath, logDirectory, false)
+func ServerStatus(serverStatusArgs ServerStatusCommandArgs) []string {
+	args := commonArgs("", serverStatusArgs.configFilePath, serverStatusArgs.logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, statusSubCommand)
-	args = args.AppendLoggableKV(addressFlag, serverAddress)
-	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
-	args = args.AppendLoggableKV(serverUsernameFlag, serverUsername)
-	args = args.AppendRedactedKV(serverPasswordFlag, serverPassword)
+	args = args.AppendLoggableKV(addressFlag, serverStatusArgs.serverAddress)
+	args = args.AppendRedactedKV(serverCertFingerprint, serverStatusArgs.fingerprint)
+	args = args.AppendLoggableKV(serverUsernameFlag, serverStatusArgs.serverUsername)
+	args = args.AppendRedactedKV(serverPasswordFlag, serverStatusArgs.serverPassword)
 
 	return stringSliceCommand(args)
 }

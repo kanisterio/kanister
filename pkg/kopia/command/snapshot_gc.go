@@ -14,9 +14,13 @@
 
 package command
 
+type SnapshotGCCommandArgs struct {
+	*CommandArgs
+}
+
 // SnapshotGC returns the kopia command for issuing kopia snapshot gc
-func SnapshotGC(encryptionKey, configFilePath, logDirectory string) []string {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+func SnapshotGC(snapshotGCArgs SnapshotGCCommandArgs) []string {
+	args := commonArgs(snapshotGCArgs.encryptionKey, snapshotGCArgs.configFilePath, snapshotGCArgs.logDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, gcSubCommand, deleteFlag)
 
 	return stringSliceCommand(args)

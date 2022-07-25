@@ -14,11 +14,18 @@
 
 package command
 
+type SnapshotRestoreCommandArgs struct {
+	*CommandArgs
+	snapID        string
+	targetPath    string
+	sparseRestore bool
+}
+
 // SnapshotRestore returns kopia command restoring snapshots with given snap ID
-func SnapshotRestore(encryptionKey, configFilePath, logDirectory, snapID, targetPath string, sparseRestore bool) []string {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
-	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, snapID, targetPath)
-	if sparseRestore {
+func SnapshotRestore(snapshotRestoreArgs SnapshotRestoreCommandArgs) []string {
+	args := commonArgs(snapshotRestoreArgs.encryptionKey, snapshotRestoreArgs.configFilePath, snapshotRestoreArgs.logDirectory, false)
+	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, snapshotRestoreArgs.snapID, snapshotRestoreArgs.targetPath)
+	if snapshotRestoreArgs.sparseRestore {
 		args = args.AppendLoggable(sparseFlag)
 	}
 

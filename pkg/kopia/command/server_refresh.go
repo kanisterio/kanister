@@ -14,23 +14,23 @@
 
 package command
 
+type ServerRefreshCommandArgs struct {
+	*CommandArgs
+	serverAddress  string
+	serverUsername string
+	serverPassword string
+	fingerprint    string
+}
+
 // ServerRefresh returns the kopia command for refreshing the Kopia API Server
 // This helps allow new users to be able to connect to the Server instead of waiting for auto-refresh
-func ServerRefresh(
-	encryptionKey,
-	configFilePath,
-	logDirectory,
-	serverAddress,
-	serverUsername,
-	serverPassword,
-	fingerprint string,
-) []string {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+func ServerRefresh(serverRefreshArgs ServerRefreshCommandArgs) []string {
+	args := commonArgs(serverRefreshArgs.encryptionKey, serverRefreshArgs.configFilePath, serverRefreshArgs.logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, refreshSubCommand)
-	args = args.AppendRedactedKV(serverCertFingerprint, fingerprint)
-	args = args.AppendLoggableKV(addressFlag, serverAddress)
-	args = args.AppendLoggableKV(serverUsernameFlag, serverUsername)
-	args = args.AppendRedactedKV(serverPasswordFlag, serverPassword)
+	args = args.AppendRedactedKV(serverCertFingerprint, serverRefreshArgs.fingerprint)
+	args = args.AppendLoggableKV(addressFlag, serverRefreshArgs.serverAddress)
+	args = args.AppendLoggableKV(serverUsernameFlag, serverRefreshArgs.serverUsername)
+	args = args.AppendRedactedKV(serverPasswordFlag, serverRefreshArgs.serverPassword)
 
 	return stringSliceCommand(args)
 }

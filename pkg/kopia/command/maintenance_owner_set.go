@@ -14,10 +14,15 @@
 
 package command
 
+type MaintenanceSetOwnerCommandArgs struct {
+	*CommandArgs
+	customOwner string
+}
+
 // MaintenanceSetOwner returns the kopia command for setting custom maintenance owner
-func MaintenanceSetOwner(encryptionKey, configFilePath, logDirectory, customOwner string) []string {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+func MaintenanceSetOwner(maintenanceSetOwnerArgs MaintenanceSetOwnerCommandArgs) []string {
+	args := commonArgs(maintenanceSetOwnerArgs.encryptionKey, maintenanceSetOwnerArgs.configFilePath, maintenanceSetOwnerArgs.logDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, setSubCommand)
-	args = args.AppendLoggableKV(ownerFlag, customOwner)
+	args = args.AppendLoggableKV(ownerFlag, maintenanceSetOwnerArgs.customOwner)
 	return stringSliceCommand(args)
 }

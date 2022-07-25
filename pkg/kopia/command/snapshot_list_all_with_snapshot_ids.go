@@ -18,9 +18,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia"
 )
 
+type SnapListAllWithSnapIDsCommandArgs struct {
+	*CommandArgs
+}
+
 // SnapListAllWithSnapIDs returns the kopia command for listing all snapshots in the repository with snapshotIDs
-func SnapListAllWithSnapIDs(encryptionKey, configFilePath, logDirectory string) []string {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+func SnapListAllWithSnapIDs(snapListAllWithSnapIDsArgs SnapListAllWithSnapIDsCommandArgs) []string {
+	args := commonArgs(snapListAllWithSnapIDsArgs.encryptionKey, snapListAllWithSnapIDsArgs.configFilePath, snapListAllWithSnapIDsArgs.logDirectory, false)
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
 	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
 

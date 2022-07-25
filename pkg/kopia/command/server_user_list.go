@@ -14,13 +14,13 @@
 
 package command
 
+type ServerListUserCommmandArgs struct {
+	*CommandArgs
+}
+
 // ServerListUser returns the kopia command to list users from the Kopia API Server
-func ServerListUser(
-	encryptionKey,
-	configFilePath,
-	logDirectory string,
-) []string {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+func ServerListUser(serverListUserArgs ServerListUserCommmandArgs) []string {
+	args := commonArgs(serverListUserArgs.encryptionKey, serverListUserArgs.configFilePath, serverListUserArgs.logDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, listSubCommand, jsonFlag)
 
 	return stringSliceCommand(args)
