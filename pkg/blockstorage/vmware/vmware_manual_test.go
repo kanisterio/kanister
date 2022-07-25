@@ -3,6 +3,7 @@ package vmware
 import (
 	"context"
 
+	"github.com/gofrs/uuid"
 	"gopkg.in/check.v1"
 	. "gopkg.in/check.v1"
 )
@@ -24,18 +25,20 @@ func (s *VmwareManSuite) TestCreateAndListSnapshots(c *C) {
 	ftpProvider.SetCategoryID("K10:0c66728a-dd0d-11ec-9939-ca6a7623d809")
 	ctx := context.Background()
 
+	guid1, _ := uuid.NewV1()
+	guid2, _ := uuid.NewV1()
 	tags := map[string]string{
-		DescriptionTag: "manifest1",
-		"manifest":     "manifest1",
-		VolumeIdTag:    volumeID,
+		DescriptionTag:  guid1.String(),
+		"manifest":      guid1.String(),
+		VolumeIdListTag: volumeID,
 	}
 
 	volume, _ := provider.VolumeGet(ctx, volumeID, "")
-	snapshot1, _ := provider.SnapshotCreate(ctx, *volume, map[string]string{"manifest": "manifest1"})
+	snapshot1, _ := provider.SnapshotCreate(ctx, *volume, map[string]string{"manifest": guid1.String(), DescriptionTag: guid2.String()})
 	snapshot2, _ := provider.SnapshotCreate(ctx, *volume, tags)
 
 	foundSnapshotsByID, _ := provider.SnapshotsList(ctx, tags)
-	foundAllSnapshots, _ := provider.SnapshotsList(ctx, map[string]string{"manifest": "manifest1"})
+	foundAllSnapshots, _ := provider.SnapshotsList(ctx, map[string]string{"manifest": guid1.String()})
 
 	c.Assert(len(foundSnapshotsByID), Equals, 1)
 	c.Assert(len(foundAllSnapshots), Equals, 2)
@@ -46,6 +49,6 @@ func (s *VmwareManSuite) TestCreateAndListSnapshots(c *C) {
 	err = provider.SnapshotDelete(ctx, snapshot1)
 	c.Assert(err, check.IsNil)
 
-	foundAllSnapshots, _ = provider.SnapshotsList(ctx, map[string]string{"manifest": "manifest1"})
+	foundAllSnapshots, _ = provider.SnapshotsList(ctx, map[string]string{"manifest": guid1.String()})
 	c.Assert(len(foundAllSnapshots), Equals, 0)
 }
