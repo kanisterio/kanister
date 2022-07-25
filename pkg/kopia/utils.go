@@ -37,9 +37,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/field"
-	"github.com/kanisterio/kanister/pkg/format"
-	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
-	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
@@ -321,59 +318,4 @@ func parseSnapshotManifestList(output string) ([]*snapshot.Manifest, error) {
 	}
 
 	return snapInfoList, nil
-}
-
-// KopiaUserProfile is a duplicate of struct for Kopia user profiles since Profile struct is in internal/user package and could not be imported
-type KopiaUserProfile struct {
-	ManifestID manifest.ID `json:"-"`
-
-	Username            string `json:"username"`
-	PasswordHashVersion int    `json:"passwordHashVersion"`
-	PasswordHash        []byte `json:"passwordHash"`
-}
-
-// GetMaintenanceOwnerForConnectedRepository executes maintenance info command, parses output
-// and returns maintenance owner
-func GetMaintenanceOwnerForConnectedRepository(
-	cli kubernetes.Interface,
-	namespace,
-	pod,
-	container,
-	encryptionKey,
-	configFilePath,
-	logDirectory string,
-) (string, error) {
-	args := kopiacmd.MaintenanceInfoCommandArgs{
-		CommandArgs: &kopiacmd.CommandArgs{
-			EncryptionKey:  encryptionKey,
-			ConfigFilePath: configFilePath,
-			LogDirectory:   logDirectory,
-		},
-		GetJsonOutput: false,
-	}
-	cmd := kopiacmd.MaintenanceInfo(args)
-	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
-	if err != nil {
-		return "", err
-	}
-	parsedOwner := parseOutput(stdout)
-	if parsedOwner == "" {
-		return "", errors.New("Failed parsing maintenance info output to get owner")
-	}
-	return parsedOwner, nil
-}
-
-func parseOutput(output string) string {
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "Owner") {
-			arr := strings.Split(line, ":")
-			if len(arr) == 2 {
-				return strings.TrimSpace(arr[1])
-			}
-		}
-	}
-	return ""
 }
