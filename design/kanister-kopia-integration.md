@@ -1,20 +1,22 @@
 # Integrating Kopia with Kanister
 
-This document proposes all the changes required within Kanister to better support the use of Kopia backup/restore tool.
+This document proposes all the changes required within Kanister to use [Kopia](https://kopia.io/) as the primary backup and restore tool.
 
 ## Introducing Kopia
 
-[Kopia](https://kopia.io/) is a powerful, cross-platform tool for managing encrypted backups in the cloud.
+Kopia is a powerful, cross-platform tool for managing encrypted backups in the cloud.
 It provides fast and secure backups, using compression, data deduplication and client-side end-to-end encryption.
 It supports a variety of backup storage targets, including object stores, which allows users to choose the storage provider that better addresses their needs.
 It is a lock-free system that allows for concurrent multi-client operations including garbage collection.
+
+To explore other features of Kopia, see its [documentation](https://kopia.io/docs/features/).
 
 ## Goal
 
 Kopia can focus on its core data export and transformation as part of various Kanister functions.
 While, Kanister continues to execute these functions from it's application-centric data protection workflows called Blueprints.
 
-##  Proposed Work
+##  Scope
 
 ### Kanister Functions 
 
