@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -72,7 +73,10 @@ func NewJob(clientset kubernetes.Interface, jobName string, namespace string, se
 // Create creates the Job in Kubernetes.
 func (job *Job) Create() error {
 	falseVal := false
-	volumeMounts, podVolumes := createVolumeSpecs(job.vols)
+	volumeMounts, podVolumes, err := createVolumeSpecs(job.vols)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create volume spec for job %s", job.name)
+	}
 	k8sJob := &batch.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: job.name,
@@ -121,10 +125,14 @@ func (job *Job) Create() error {
 	return nil
 }
 
-func createVolumeSpecs(vols map[string]string) (volumeMounts []v1.VolumeMount, podVolumes []v1.Volume) {
+func createVolumeSpecs(vols map[string]string) (volumeMounts []v1.VolumeMount, podVolumes []v1.Volume, error error) {
 	// Build volume specs
 	for pvc, mountPath := range vols {
-		podVolName := fmt.Sprintf("vol-%s", pvc)
+		id, err := uuid.NewV1()
+		if err != nil {
+			return nil, nil, err
+		}
+		podVolName := fmt.Sprintf("vol-%s", id.String())
 		volumeMounts = append(volumeMounts, v1.VolumeMount{Name: podVolName, MountPath: mountPath})
 		podVolumes = append(podVolumes,
 			v1.Volume{
@@ -137,7 +145,7 @@ func createVolumeSpecs(vols map[string]string) (volumeMounts []v1.VolumeMount, p
 			},
 		)
 	}
-	return volumeMounts, podVolumes
+	return volumeMounts, podVolumes, nil
 }
 
 // WaitForCompletion waits for the job to run to completion.

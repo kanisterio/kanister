@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	uuid "github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"github.com/vmware/govmomi/cns"
+	govmomitask "github.com/vmware/govmomi/task"
 	"github.com/vmware/govmomi/vapi/rest"
 	vapitags "github.com/vmware/govmomi/vapi/tags"
 	"github.com/vmware/govmomi/vim25"
@@ -244,6 +246,8 @@ func (p *FcdProvider) SnapshotCopyWithArgs(ctx context.Context, from blockstorag
 	return nil, errors.New("Copy Snapshot with Args not implemented")
 }
 
+var reVslmSyncFaultFatal = regexp.MustCompile("Change tracking invalid or disk in use")
+
 // SnapshotCreate is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	var res types.AnyType
@@ -251,7 +255,7 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 		log.Debug().Print("CreateSnapshot", field.M{"VolumeID": volume.ID})
 		task, lerr := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), noDescription)
 		if lerr != nil {
-			return false, errors.Wrap(lerr, "Failed to create snapshot")
+			return false, errors.Wrap(lerr, "CreateSnapshot task creation failure")
 		}
 		log.Debug().Print("Started CreateSnapshot task", field.M{"VolumeID": volume.ID})
 		res, lerr = task.Wait(ctx, vmWareTimeout)
@@ -259,13 +263,19 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 			if soap.IsVimFault(lerr) {
 				switch soap.ToVimFault(lerr).(type) {
 				case *types.InvalidState:
-					log.Error().WithError(lerr).Print("There is some operation, other than this CreateSnapshot invocation, on the VM attached still being protected by its VM state. Will retry")
+					log.Error().WithError(lerr).Print("There is some operation, other than this CreateSnapshot invocation, on the VM attached still being protected by its VM state. Will retry", field.M{"VolumeID": volume.ID})
 					return false, nil
-				case *vslmtypes.VslmSyncFault:
-					log.Error().WithError(lerr).Print("CreateSnapshot failed with VslmSyncFault error possibly due to race between concurrent DeleteSnapshot invocation. Will retry")
-					return false, nil
+				case *vslmtypes.VslmSyncFault: // potentially can leak snapshots
+					if vFault, ok := soap.ToVimFault(lerr).(*vslmtypes.VslmSyncFault); ok {
+						log.Error().Print(fmt.Sprintf("VslmSyncFault: %#v", vFault))
+					}
+					if !(govmomiError{lerr}).Matches(reVslmSyncFaultFatal) {
+						log.Error().Print(fmt.Sprintf("CreateSnapshot failed with VslmSyncFault. Will retry: %s", (govmomiError{lerr}).Format()), field.M{"VolumeID": volume.ID})
+						return false, nil
+					}
+					return false, errors.Wrap(lerr, "CreateSnapshot failed with VslmSyncFault. A snapshot may have been created by this failed operation")
 				case *types.NotFound:
-					log.Error().WithError(lerr).Print("CreateSnapshot failed with NotFound error. Will retry")
+					log.Error().WithError(lerr).Print("CreateSnapshot failed with NotFound error. Will retry", field.M{"VolumeID": volume.ID})
 					return false, nil
 				}
 			}
@@ -275,15 +285,16 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 		return true, nil
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create snapshot")
+		log.Error().WithError(err).Print(fmt.Sprintf("Failed to create snapshot for FCD %s: %s", volume.ID, govmomiError{err}.Format()))
+		return nil, errors.Wrap(err, fmt.Sprintf("Failed to create snapshot for FCD %s", volume.ID))
 	}
 	id, ok := res.(types.ID)
 	if !ok {
-		return nil, errors.New("Unexpected type")
+		return nil, errors.New(fmt.Sprintf("Unexpected type returned for FCD %s", volume.ID))
 	}
 	snap, err := p.SnapshotGet(ctx, SnapshotFullID(volume.ID, id.Id))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, fmt.Sprintf("Failed to get snapshot %s:%s", volume.ID, snap.ID))
 	}
 	log.Debug().Print("SnapshotCreate complete", field.M{"VolumeID": volume.ID, "SnapshotID": snap.ID})
 	// We don't get size information from `SnapshotGet` - so set this to the volume size for now
@@ -293,7 +304,7 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	snap.Volume = &volume
 
 	if err = p.SetTags(ctx, snap, tags); err != nil {
-		return nil, errors.Wrap(err, "Failed to set tags")
+		return nil, errors.Wrap(err, fmt.Sprintf("Failed to set tags for snapshot %s:%s", volume.ID, snap.ID))
 	}
 
 	return snap, nil
@@ -650,4 +661,92 @@ type tagManager interface {
 	CreateTag(ctx context.Context, tag *vapitags.Tag) (string, error)
 	GetTagsForCategory(ctx context.Context, id string) ([]vapitags.Tag, error)
 	DeleteTag(ctx context.Context, tag *vapitags.Tag) error
+}
+
+// Helper to parse an error code returned by the govmomi repo.
+type govmomiError struct {
+	err error
+}
+
+func (ge govmomiError) Format() string {
+	msgs := ge.ExtractMessages()
+	switch len(msgs) {
+	case 0:
+		return ""
+	case 1:
+		return msgs[0]
+	}
+	return fmt.Sprintf("[%s]", strings.Join(msgs, "; "))
+}
+
+func (ge govmomiError) ExtractMessages() []string {
+	err := ge.err
+
+	if err == nil {
+		return nil
+	}
+
+	msgs := []string{}
+	if reason := err.Error(); reason != "" {
+		msgs = append(msgs, reason)
+	}
+
+	// unwrap to a type handled
+	foundHandledErrorType := false
+	for err != nil && !foundHandledErrorType {
+		switch err.(type) {
+		case govmomitask.Error:
+			foundHandledErrorType = true
+		default:
+			if soap.IsSoapFault(err) {
+				foundHandledErrorType = true
+			} else if soap.IsVimFault(err) {
+				foundHandledErrorType = true
+			} else {
+				err = errors.Unwrap(err)
+			}
+		}
+	}
+
+	if err != nil {
+		var faultMsgs []types.LocalizableMessage
+		switch e := err.(type) {
+		case govmomitask.Error:
+			if e.Description != nil {
+				msgs = append(msgs, e.Description.Message)
+			}
+			faultMsgs = e.LocalizedMethodFault.Fault.GetMethodFault().FaultMessage
+		default:
+			if soap.IsSoapFault(err) {
+				detail := soap.ToSoapFault(err).Detail.Fault
+				if f, ok := detail.(types.BaseMethodFault); ok {
+					faultMsgs = f.GetMethodFault().FaultMessage
+				}
+			} else if soap.IsVimFault(err) {
+				f := soap.ToVimFault(err)
+				faultMsgs = f.GetMethodFault().FaultMessage
+			}
+		}
+
+		for _, m := range faultMsgs {
+			if m.Message != "" && !strings.HasPrefix(m.Message, "[context]") {
+				msgs = append(msgs, fmt.Sprintf("%s (%s)", m.Message, m.Key))
+			}
+			for _, a := range m.Arg {
+				msgs = append(msgs, fmt.Sprintf("%s", a.Value))
+			}
+		}
+	}
+
+	return msgs
+}
+
+func (ge govmomiError) Matches(pat *regexp.Regexp) bool {
+	for _, m := range ge.ExtractMessages() {
+		if pat.MatchString(m) {
+			return true
+		}
+	}
+
+	return false
 }

@@ -56,7 +56,7 @@ func Execute() {
 	}
 
 	// Run HTTPS webhook server if webhook certificates are mounted in the pod
-	//otherwise normal HTTP server for health and prom endpoints
+	// otherwise normal HTTP server for health and prom endpoints
 	if isCACertMounted() {
 		go func(config *rest.Config) {
 			err := handler.RunWebhookServer(config)

@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/caller"
 	"github.com/kanisterio/kanister/pkg/config"
@@ -31,8 +30,6 @@ const (
 	// LevelVarName is the environment variable that controls
 	// init log levels
 	LevelEnvName = "LOG_LEVEL"
-
-	redactString = "<*****>"
 )
 
 // OutputSink describes the current output sink.
@@ -195,7 +192,6 @@ func (l *logger) PrintTo(w io.Writer, msg string, fields ...field.M) {
 
 func (l *logger) entry(fields ...field.M) *logrus.Entry {
 	logFields := make(logrus.Fields)
-
 	if envVarFields != nil {
 		for _, f := range envVarFields.Fields() {
 			logFields[f.Key()] = f.Value()
@@ -219,7 +215,10 @@ func (l *logger) entry(fields ...field.M) *logrus.Entry {
 		}
 	}
 
-	entry := log.WithFields(logFields)
+	// use a cloned logger for this entry, so that any changes to this clone
+	// (e.g., via SetOutput()) will not affect the global logger.
+	cloned := cloneGlobalLogger()
+	entry := cloned.WithFields(logFields)
 	if l.err != nil {
 		entry = entry.WithError(l.err)
 	}
@@ -258,19 +257,18 @@ func entryToJSON(entry *logrus.Entry) []byte {
 	return bytes
 }
 
-// SafeDumpPodObject redacts commands and args in Pod manifest to hide sensitive info,
-// converts Pod object into string and returns it
-func SafeDumpPodObject(pod *v1.Pod) string {
-	if pod == nil {
-		return ""
-	}
-	for i := range pod.Spec.Containers {
-		if pod.Spec.Containers[i].Command != nil {
-			pod.Spec.Containers[i].Command = []string{redactString}
-		}
-		if pod.Spec.Containers[i].Args != nil {
-			pod.Spec.Containers[i].Args = []string{redactString}
+func cloneGlobalLogger() *logrus.Logger {
+	cloned := logrus.New()
+	cloned.SetFormatter(log.Formatter)
+	cloned.SetReportCaller(log.ReportCaller)
+	cloned.SetLevel(log.Level)
+	cloned.SetOutput(log.Out)
+	cloned.ExitFunc = log.ExitFunc
+	for _, hooks := range log.Hooks {
+		for _, hook := range hooks {
+			cloned.Hooks.Add(hook)
 		}
 	}
-	return pod.String()
+
+	return cloned
 }

@@ -90,7 +90,10 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		opts.RestartPolicy = v1.RestartPolicyNever
 	}
 
-	volumeMounts, podVolumes := createVolumeSpecs(opts.Volumes)
+	volumeMounts, podVolumes, err := createVolumeSpecs(opts.Volumes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create volume spec")
+	}
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
 			{
@@ -299,7 +302,7 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		}
 		switch p.Status.Phase {
 		case v1.PodFailed:
-			return false, errors.Errorf("Pod %s failed. Pod details (%s)", name, log.SafeDumpPodObject(p))
+			return false, errors.Errorf("Pod %s failed. Pod status: %s", name, p.Status.String())
 		}
 		return p.Status.Phase == v1.PodSucceeded, nil
 	})
