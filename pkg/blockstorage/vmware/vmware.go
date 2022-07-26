@@ -56,7 +56,10 @@ const (
 
 	vmWareTimeoutMinEnv = "VMWARE_GOM_TIMEOUT_MIN"
 
-	DescriptionTag  = "kanister.fcd.description"
+	// DescriptionTag is the prefix of the tags that should be placed in the snapshot description.
+	// This constant must be used by clients, so changing this field may make already created snapshots inaccessible.
+	DescriptionTag = "kanister.fcd.description"
+	// VolumeIdListTag is the predefined name of the tag which contains volume ids separated by comma
 	VolumeIdListTag = "kanister.fcd.volume-id"
 )
 
