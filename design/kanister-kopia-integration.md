@@ -2,6 +2,26 @@
 
 This document proposes all the changes required within Kanister to use [Kopia](https://kopia.io/) as the primary backup and restore tool.
 
+## Problems
+
+Kanister offers an in-house capability to perform backup and restore using some operation-specific Functions like BackupData, RestoreData, etc.
+Although, they are much easier to use and significantly improve the user experience of Blueprint authors, these Functions have a lot of issues.
+
+Few of those problems are;
+1. They do not encrypt in-flight data during transfer
+2. The backup data at-rest on the cloud stores are not secure
+3. Operations are slow compared to other tools in the market
+
+Therefore, they are not ideally recommended to be used for protecting application data.
+
+Instead, we make use of v2 Blueprints whose phases call a `kando` utility to perform data snapshots.
+This tool internally executes `Kopia` commands to manage backups in the cloud.
+
+This approach is again not a robust solution because;
+1. We have to create a separate kopia profile and use it within kando command to pass necessary kopia server info
+2. We have to follow the correct kando command syntax in the Blueprint while backing up and mention `--output-name` in the Action outputArtifacts
+3. Kopia errors are not logged when kando commands fail in the acion phase  
+
 ## Introducing Kopia
 
 Kopia is a powerful, cross-platform tool for managing encrypted backups in the cloud.
@@ -11,10 +31,11 @@ It is a lock-free system that allows for concurrent multi-client operations incl
 
 To explore other features of Kopia, see its [documentation](https://kopia.io/docs/features/).
 
-## Goal
+## Goals
 
-Kopia can focus on its core data export and transformation as part of various Kanister functions.
-While, Kanister continues to execute these functions from it's application-centric data protection workflows called Blueprints.
+To solve existing problems;
+1. We should replace the entire existing functionality in operation-specific Kanister Functions like BackupData, RestoreData, CopyVolumeData, etc. with  Kopia workflows/
+2. We should leverage the use of Kopia Repository Server within these Functions since server operations allow access to only resgistered users and effectively hide the cloud storage credentials. 
 
 ##  Scope
 
