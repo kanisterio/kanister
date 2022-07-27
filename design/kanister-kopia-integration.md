@@ -31,18 +31,21 @@ It is a lock-free system that allows for concurrent multi-client operations incl
 
 To explore other features of Kopia, see its [documentation](https://kopia.io/docs/features/).
 
-## Goals
+## Scope
 
-To solve existing problems;
-1. We should replace the entire existing functionality in operation-specific Kanister Functions like BackupData, RestoreData, CopyVolumeData, etc. with  Kopia workflows/
-2. We should leverage the use of Kopia Repository Server within these Functions since server operations allow access to only resgistered users and effectively hide the cloud storage credentials. 
+1. Design the usage of [Kopia Repository Server](https://kopia.io/docs/repository-server/) as an separate on-demand workload
+   - In order to make use of user access control and cloud storage credential abstraction offered in the server-based operations 
+2. Re-work Kanister Functions like BackupData, RestoreData, CopyVolumeData, etc. with  Kopia workflows
+   - And leverage the use of Kopia Repository Server workload within these Functions
 
-##  Scope
+### Design the usage of Kopia Repository Server
 
-### Kanister Functions 
 
-We already have a rich repository of Kanister functions present on path `pkg/function` that enable application-level data protection in various use cases.
-Few of these functions need to be re-worked to use Kopia. For starters, these functions are;
+
+### Re-work Kanister Functions 
+
+We already have a rich repository of Kanister Functions present on path `pkg/function` that enable application-level data protection in various use cases.
+Some of these functions need to be re-worked to follow the Kopia Repository Server workflow. For starters, these functions are;
 
 1. BackupData
 2. BackupDataAll
@@ -56,16 +59,6 @@ Few of these functions need to be re-worked to use Kopia. For starters, these fu
 Please note that the functions stated above will only be **refactored** to use Kopia underneath.
 There should not be any changes with respect to the objective of these functions.
 The motive, arguments and usage for each function stays intact as defined on Kanister docs https://docs.kanister.io/functions.html#existing-functions
-
-### Kanister Functions that use Kopia API Server 
-
-We should also create Kanister functions that leverage the use of [Kopia in it's server mode](https://kopia.io/docs/repository-server/).
-These Kanister functions would act like Kopia clients that securely proxy access repository storage without exposing sensitive storage credentials.
-
-Following is a list of few such functions;
-
-1. BackupDataToServer - To perform backup via the KopiaAPIserver
-2. RestoreDataFromServer - To restore from the KopiaAPIServer
 
 ### Limitations to using Kopia API Server
 
