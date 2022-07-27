@@ -623,3 +623,15 @@ and manually updating the action set to use artifacts created by the
 previous action set can be cumbersome. In situations like this, it is
 useful to instead use ``kanctl``. To learn how to leverage ``kanctl`` to
 create action sets, see :ref:`architecture` .
+
+Next Step
+=========
+
+Congratulations! You have reached the end of this long tutorial! 🎉🎉🥳🥳
+
+Don't stop here. There are many more example blueprints on the Kanister GitHub
+`repository <https://github.com/kanisterio/kanister/tree/master/examples>`_
+to explore. Use them to help you define your next blueprint.
+
+We would love to hear from you. If you have any feedback or questions, find us
+on Slack at `kanisterio.slack.com <https://kanisterio.slack.com>`_.

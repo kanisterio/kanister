@@ -402,45 +402,45 @@ var _ = Suite(&Kafka{
 })
 
 // Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
-type MysqlDBDepConfig4_9 struct {
+type MysqlDBDepConfig4_10 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MysqlDBDepConfig4_9{
+var _ = Suite(&MysqlDBDepConfig4_10{
 	IntegrationSuite{
 		name:      "mysqldc",
-		namespace: "mysqldc4-9-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_9, app.EphemeralStorage, "8.0"),
+		namespace: "mysqldc4-10-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_10, app.EphemeralStorage, "8.0"),
 		bp:        app.NewBlueprint("mysql-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
 
 // MongoDB deployed on openshift cluster
-type MongoDBDepConfig4_9 struct {
+type MongoDBDepConfig4_10 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MongoDBDepConfig4_9{
+var _ = Suite(&MongoDBDepConfig4_10{
 	IntegrationSuite{
 		name:      "mongodb",
-		namespace: "mongodb4-9-test",
-		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_9, app.EphemeralStorage),
+		namespace: "mongodb4-10-test",
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_10, app.EphemeralStorage),
 		bp:        app.NewBlueprint("mongo-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
 
 // PostgreSQL deployed on openshift cluster
-type PostgreSQLDepConfig4_9 struct {
+type PostgreSQLDepConfig4_10 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQLDepConfig4_9{
+var _ = Suite(&PostgreSQLDepConfig4_10{
 	IntegrationSuite{
 		name:      "postgresdepconf",
-		namespace: "postgresdepconf4-5-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_9, app.EphemeralStorage),
+		namespace: "postgresdepconf4-10-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_10, app.EphemeralStorage),
 		bp:        app.NewBlueprint("postgres-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},

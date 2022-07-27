@@ -1,4 +1,5 @@
 actionset
+actionsets
 args
 aws
 backend
@@ -7,9 +8,13 @@ backupID
 backupInfo
 backupTag
 boolean
+datapath
+datastore
 defaultProfile
+DaemonSet
 Dockerfile
 Elasticsearch
+grafana
 gcs
 gibibytes
 GiB
@@ -22,9 +27,11 @@ kanister
 kubectl
 Kubernetes
 lifecycle
+loki
 metadata
 namespace
 objectstore
+observability
 outputArtifact
 param
 params
@@ -32,8 +39,10 @@ PersistentVolumeClaim
 pluggable
 pre
 prepopulated
+promtail
 Quickstart
 repo
+rollout
 runtime
 schemas
 stateful
@@ -41,5 +50,6 @@ stdout
 subcommand
 templating
 Walkthrough
+walkthrough
 Workflow
 webhook

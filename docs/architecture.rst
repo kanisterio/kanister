@@ -1,9 +1,9 @@
 .. _architecture:
 
-Kanister Architecture Overview
-******************************
+Architecture
+************
 
-.. contents:: Kanister Architecture Overview
+.. contents:: Architecture
   :local:
 
 The design of Kanister follows the operator pattern. This means

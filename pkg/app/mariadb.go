@@ -83,7 +83,7 @@ func (m *MariaDB) Install(ctx context.Context, namespace string) error {
 	log.Print("Adding repo.", field.M{"app": m.name})
 	err = cli.AddRepo(ctx, m.chart.RepoName, m.chart.RepoURL)
 	if err != nil {
-		return errors.Wrapf(err, "Error helm repo for app %s.", m.name)
+		return errors.Wrapf(err, "Error adding helm repo for app %s.", m.name)
 	}
 
 	log.Print("Installing maria instance using helm.", field.M{"app": m.name})
