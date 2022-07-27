@@ -60,7 +60,35 @@ Please note that the functions stated above will only be **refactored** to use K
 There should not be any changes with respect to the objective of these functions.
 The motive, arguments and usage for each function stays intact as defined on Kanister docs https://docs.kanister.io/functions.html#existing-functions
 
-### Limitations to using Kopia API Server
+## Backward Compatibility
+
+### Kanister Functions
+
+- Kanister offers the facility to register Functions on multiple versions
+- We intend to make use of this functionality to maintain two separate version groups of Kanister Functions
+- `v0.0.0` is the current default version where all the existing Kanister Functions are registered
+- Proposed version `v1.0.0-alpha` would consist of all the new re-worked Kanister Functions
+- Users can either continue with `v0.0.0` to use the existing Kanister Functions or they can switch to `v1.0.0-alpha` for Kopia-based Kanister Functions
+
+Proper steps to toggle between the versions of Kanister Functions will be documented here later. By default, the version would be `v0.0.0`.
+
+### Kopia Repository Server
+
+- For users wanting to work with Kanister Functions in `v0.0.0`, it is important that Kopia Repository Server workload is never created
+- Therefore, we plan to introduce a feature flag during Kanister installation that will decide if the Kopia Repository Server workload is supported or not
+
+Proper steps to toggle between the Kopia Server workload support will be documented here later. By default, the feature flag would be disabled.
+
+## User Experience
+
+- Existing users and downstream consumers can continue to make use of previous functionality as per the above 'Backward Compatibility' section
+- Which means upgrading the Kanister controller version wouldn't need any changes in existing blueprint workflows. 
+- However, the user experience for new Kanister Functions is expected to change based on the design decisions for Kopia Repository Server workload usage
+- Mainly, the user might have to perform CRUD on the Repository Server workload which would be an added prerequisite to work with Kopia-based Kanister Functions
+- In case, the users switch off the feature flag for server workload and wish to create a server by themselves, 
+  we aim to provide them with detailed steps to create a server workload as part of "bring-your-own-server" BYOS model
+
+## Limitations to using Kopia API Server
 
 Before starting Kopia API Server, it requires the creation of users that are allowed access.
 We can make use of the application namespace ID to generate usernames and a random alphanumeric encryption key to create passwords.
