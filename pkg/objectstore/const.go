@@ -15,6 +15,7 @@
 package objectstore
 
 const googleGCSHost = "https://storage.googleapis.com"
+const REGIONAL = "REGIONAL"
 
 // ProviderType enum for different providers
 type ProviderType string
