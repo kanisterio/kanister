@@ -1,6 +1,6 @@
 # Integrating Kopia with Kanister
 
-This document proposes all the changes required within Kanister to use [Kopia](https://kopia.io/) as the primary backup and restore tool.
+This document proposes all the high-level changes required within Kanister to use [Kopia](https://kopia.io/) as the primary backup and restore tool.
 
 ## Problems
 
