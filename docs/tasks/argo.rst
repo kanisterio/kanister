@@ -23,7 +23,7 @@ Prerequisites
 Architecture
 ===============
 
-.. image:: img/argo-cron-wrokflow-architecture.png
+.. image:: img/argo-cron-architecture.png
 
 Steps -
 ===============
