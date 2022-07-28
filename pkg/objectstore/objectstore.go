@@ -145,20 +145,15 @@ func s3Config(ctx context.Context, config ProviderConfig, secret *Secret) (stowK
 	return stows3.Kind, cm, nil
 }
 
-func gcsConfig(ctx context.Context, config ProviderConfig, secret *Secret) (stowKind string, stowConfig stow.Config, err error) {
+func gcsConfig(ctx context.Context, secret *Secret) (stowKind string, stowConfig stow.Config, err error) {
 	var configJSON string
 	var projectID string
-	cm := stow.ConfigMap{}
 	if secret != nil {
 		if secret.Type != SecretTypeGcpServiceAccountKey {
 			return "", nil, errors.Errorf("invalid secret type %s", secret.Type)
 		}
 		configJSON = secret.Gcp.ServiceKey
 		projectID = secret.Gcp.ProjectID
-		if config.Region != "" {
-			cm[stowgcs.ConfigLocation] = config.Region
-			cm[stowgcs.ConfigStorageClass] = REGIONAL
-		}
 	} else {
 		creds, err := google.FindDefaultCredentials(ctx, compute.ComputeScope)
 		if err != nil {
@@ -167,10 +162,11 @@ func gcsConfig(ctx context.Context, config ProviderConfig, secret *Secret) (stow
 		configJSON = string(creds.JSON)
 		projectID = creds.ProjectID
 	}
-	cm[stowgcs.ConfigJSON] = configJSON
-	cm[stowgcs.ConfigProjectId] = projectID
-	cm[stowgcs.ConfigScopes] = ""
-	return stowgcs.Kind, cm, nil
+	return stowgcs.Kind, stow.ConfigMap{
+		stowgcs.ConfigJSON:      configJSON,
+		stowgcs.ConfigProjectId: projectID,
+		stowgcs.ConfigScopes:    "",
+	}, nil
 }
 
 func azureConfig(ctx context.Context, secret *Secret) (stowKind string, stowConfig stow.Config, err error) {
@@ -207,7 +203,7 @@ func getConfig(ctx context.Context, config ProviderConfig, secret *Secret) (stow
 	case ProviderTypeS3:
 		return s3Config(ctx, config, secret)
 	case ProviderTypeGCS:
-		return gcsConfig(ctx, config, secret)
+		return gcsConfig(ctx, secret)
 	case ProviderTypeAzure:
 		return azureConfig(ctx, secret)
 	default:
