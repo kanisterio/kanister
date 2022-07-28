@@ -39,12 +39,12 @@ type CommandArgs struct {
 }
 
 func bashCommand(args logsafe.Cmd) []string {
-	log.Info().Print("Kopia Command", field.M{"Command": args.String()})
+	log.Debug().Print("Kopia Command", field.M{"Command": args.String()})
 	return []string{"bash", "-o", "errexit", "-c", args.PlainText()}
 }
 
 func stringSliceCommand(args logsafe.Cmd) []string {
-	log.Info().Print("Kopia Command", field.M{"Command": args.String()})
+	log.Debug().Print("Kopia Command", field.M{"Command": args.String()})
 	return args.StringSliceCMD()
 }
 

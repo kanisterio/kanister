@@ -94,11 +94,12 @@ func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error)
 		if err != nil {
 			continue
 		}
-		if snapManifest != nil {
-			snapID = string(snapManifest.ID)
-			if snapManifest.RootEntry != nil {
-				rootID = string(snapManifest.RootEntry.ObjectID)
-			}
+		if snapManifest == nil {
+			continue
+		}
+		snapID = string(snapManifest.ID)
+		if snapManifest.RootEntry != nil {
+			rootID = string(snapManifest.RootEntry.ObjectID)
 		}
 	}
 	if snapID == "" {
