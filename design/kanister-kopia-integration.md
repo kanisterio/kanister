@@ -2,25 +2,28 @@
 
 This document proposes all the high-level changes required within Kanister to use [Kopia](https://kopia.io/) as the primary backup and restore tool.
 
-## Problems
+## Motivation
 
-Kanister offers an in-house capability to perform backup and restore using some operation-specific Functions like BackupData, RestoreData, etc.
-Although, they are much easier to use and significantly improve the user experience of Blueprint authors, these Functions have a lot of issues.
+Kanister offers an in-house capability to perform backup and restore to and from object stores using some operation-specific Functions like BackupData, RestoreData, etc.
+Although they are useful and simple to use, these Functions can be significantly improved to provide better reliability, security, and performance.
 
-Few of those problems are;
-1. They do not encrypt in-flight data during transfer
-2. The backup data at-rest on the cloud stores are not secure
-3. Operations are slow compared to other tools in the market
+The improvements would include:
+1. Encryption of data during transfers and at rest
+2. Efficient content-based data deduplication
+3. Configurable data compression
+4. Reduced memory consumption
+5. Increased variety of backend storage target for backups
 
-Therefore, they are not ideally recommended to be used for protecting application data.
+These improvements can be achieved by using `Kopia` as the primary data movement tool in these Kanister Functions.
 
-Instead, we make use of v2 Blueprints whose phases call a `kando` utility to perform data snapshots.
-This tool internally executes `Kopia` commands to manage backups in the cloud.
-
-This approach is again not a robust solution because;
-1. We have to create a separate kopia profile and use it within kando command to pass necessary kopia server info
-2. We have to follow the correct kando command syntax in the Blueprint while backing up and mention `--output-name` in the Action outputArtifacts
-3. Kopia errors are not logged when kando commands fail in the acion phase  
+Kanister also provides a command line utility `kando` that can be used to move data to and from object stores.
+This tool internally executes `Kopia` commands to move the backup data.
+The v2 version of the example Kanister Blueprints supports this. However, there are a few caveats to using these Blueprints.
+1. `kando` uses `Kopia` only when a Kanister Profile of type `Kopia` is provided
+2. A Kanister Profile of type `Kopia` requires a [Kopia Repository Server](https://kopia.io/docs/repository-server/) running in the same namespace as the Kanister controller
+3. A Repository Server requires a [Kopia Repository](https://kopia.io/docs/repositories/) to be initialized on a backend storage target
+   
+Kanister currently lacks documentation and automation to use these features.
 
 ## Introducing Kopia
 
