@@ -6,10 +6,10 @@ Argo Cron Workflows will be used to automate the creation of ActionSets to
 backup an application at regular intervals.
 
 To summarize, ActionSets are CRDs that are used to backup or restore an application.
-The controller present in the Kanister namespace looks for ActionSets to
-execute in the given namespace.
+The controller present in the Kanister namespace looks for ActionSets and
+executes them using the provided Blueprint or other ActionSet.
 
-In this tutorial you will schedule the creation of a backup actionset using
+In this tutorial you will schedule the creation of a backup ActionSet using
 Argo Cron Workflows.
 
 
@@ -54,7 +54,8 @@ In this tutorial, the minimal manifest will be used as it is.
 
   kubectl apply -f quick-start-minimal.yaml -n argo
 
-Port-forward to view the Argo UI:
+Use ``port-forward`` to forward a local port to the argo-server pod's port to view
+the Argo UI:
 
 .. code-block:: bash
 
@@ -80,7 +81,7 @@ steps are completed.
 Step 3 - Creating a Cron Workflow
 ````````````````````````````````````````````
 
-Now a Cron Workflow will be created that will automate the creation of an actionset
+Now a Cron Workflow will be created that will automate the creation of an ActionSet
 to backup our MySQL application. You will need to modify the names of the blueprint,
 stateful set, profile and secrets as per the ones you have created.
 Modify the last line of the following yaml file as follows.
@@ -117,8 +118,10 @@ Then execute -
                 kanctl create actionset --action backup --namespace kanister --blueprint mysql-blueprint --statefulset mysql-test/mysql-release --profile mysql-test/s3-profile-gd4kx --secrets mysql=mysql-test/mysql-release
   EOF
 
-Note - Here, the cron-job is scheduled to run every 5 minutes. You may schedule
-it to run as per your requirements.
+.. note::
+  Here, the cron-job is scheduled to run every 5 minutes. Which means that an
+  ActionSet will be created every 5 minutes for performing a backup operation.
+  You may schedule it to run as per your requirements.
 
 Step 4 - Granting RBAC permissions.
 ````````````````````````````````````````````
@@ -148,7 +151,7 @@ Execute the following -
 Step 5 - Launching the Cron Workflow
 ````````````````````````````````````````````
 
-Lets launch the workflow in the ``argo`` namespace by running -
+Let's launch the workflow in the ``argo`` namespace by running -
 
 .. code-block:: bash
 
@@ -160,13 +163,36 @@ Check if the workflow was created by running -
 
   argo cron list -n argo
 
-When the workflow runs, check if the ActionSet was created in the ``kanister`` namespace -
+When the workflow runs, check if the ActionSet was created in the ``kanister`` namespace.
 
 .. code-block:: bash
 
   kubectl get actionsets.cr.kanister.io -n kanister
 
-.. image:: img/argo-cron-created.png
+The output will be as follows.
+
+.. code-block:: bash
+
+  $ argo cron create mysql-cron-wf.yaml -n argo
+  > Name:                   mysql-cron-wf
+    Namespace:              argo
+    Created:                Fri Jul 22 10:23:09 -0400 (now)
+    Schedule:               */5 * * * *
+    Suspended:              false
+    ConcurrencyPolicy:      Replace
+    NextScheduledTime:      Fri Jul 22 10:25:00 -0400 (1 minute from now) (assumes workflow-controller is in UTC)
+
+  $ argo cron list -n argo
+  > NAME            AGE    LAST RUN    NEXT RUN      SCHEDULE      TIMEZONE        SUSPENDED
+    mysql-cron-wf   12s    N/A         1m            */5 * * * *                   false
+
+  $ argo cron list -n argo
+  > NAME            AGE    LAST RUN    NEXT RUN      SCHEDULE      TIMEZONE        SUSPENDED
+    mysql-cron-wf   4m     2m          2m            */5 * * * *                   false
+
+  $ kubectl get actionsets.cr.kanister.io -n kanister
+  > NAME            AGE
+    backup-478lk    2m28s
 
 Here, the workflow was created and scheduled to run in 1 minute. After it ran
 successfully, the `last run` field was updated with the timestamp of the last run.
@@ -178,11 +204,11 @@ Submit the Cron Workflow by running -
 
   argo submit mysql-cron-wf.yaml
 
-You should see the following on the Argo UI -
+You should see the submitted workflow on the Argo UI -
 
 .. image:: img/argo-cron-created-ui-list.png
 
-On clicking on it -
+On clicking on the workflow name, you will see its status -
 
 .. image:: img/argo-cron-created-ui-desc.png
 
