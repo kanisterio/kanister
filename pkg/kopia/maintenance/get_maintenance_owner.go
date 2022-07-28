@@ -26,7 +26,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
-// Duplicate of struct for Kopia user profiles since Profile struct is in internal/user package and could not be imported
+// KopiaUserProfile is a duplicate of struct for Kopia user profiles since Profile struct is in internal/user package and could not be imported
 type KopiaUserProfile struct {
 	ManifestID manifest.ID `json:"-"`
 
@@ -46,7 +46,15 @@ func GetMaintenanceOwnerForConnectedRepository(
 	configFilePath,
 	logDirectory string,
 ) (string, error) {
-	cmd := command.MaintenanceInfoCommand(encryptionKey, configFilePath, logDirectory, false)
+	args := command.MaintenanceInfoCommandArgs{
+		CommandArgs: &command.CommandArgs{
+			EncryptionKey:  encryptionKey,
+			ConfigFilePath: configFilePath,
+			LogDirectory:   logDirectory,
+		},
+		GetJsonOutput: false,
+	}
+	cmd := command.MaintenanceInfo(args)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
