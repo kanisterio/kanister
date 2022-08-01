@@ -74,12 +74,12 @@ func ExecKopiaArgs(configFilePath string) []string {
 
 func ResolveS3Endpoint(endpoint string) string {
 	if strings.HasSuffix(endpoint, "/") {
-		log.Debug().Print("Removing trailing slashes from the endpoint")
+		log.Debug().Print(fmt.Sprintf("Removing trailing slashes from the endpoint %s", endpoint))
 		endpoint = strings.TrimRight(endpoint, "/")
 	}
 	sp := strings.SplitN(endpoint, "://", 2)
 	if len(sp) > 1 {
-		log.Debug().Print("Removing leading protocol from the endpoint")
+		log.Debug().Print(fmt.Sprintf("Removing leading protocol from the endpoint %s", endpoint))
 	}
 	return sp[len(sp)-1]
 }
