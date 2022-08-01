@@ -29,7 +29,7 @@ func (s *VmwareManSuite) TestCreateAndListSnapshots(c *check.C) {
 	tags := map[string]string{
 		DescriptionTag:  guid1.String(),
 		"manifest":      guid1.String(),
-		VolumeIdListTag: volumeID,
+		VolumeIDListTag: volumeID,
 	}
 
 	volume, _ := provider.VolumeGet(ctx, volumeID, "")

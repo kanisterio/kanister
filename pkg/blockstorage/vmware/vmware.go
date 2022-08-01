@@ -59,8 +59,8 @@ const (
 	// DescriptionTag is the prefix of the tags that should be placed in the snapshot description.
 	// This constant must be used by clients, so changing this field may make already created snapshots inaccessible.
 	DescriptionTag = "kanister.fcd.description"
-	// VolumeIdListTag is the predefined name of the tag which contains volume ids separated by comma
-	VolumeIdListTag = "kanister.fcd.volume-id"
+	// VolumeIDListTag is the predefined name of the tag which contains volume ids separated by comma
+	VolumeIDListTag = "kanister.fcd.volume-id"
 )
 
 var (
@@ -481,7 +481,7 @@ func (p *FcdProvider) GetCategoryID(ctx context.Context, categoryName string) (s
 // SnapshotsList is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	if filterStr := generateSnapshotDescription(tags); filterStr != "" {
-		volumeIDs := strings.Split(tags[VolumeIdListTag], ",")
+		volumeIDs := strings.Split(tags[VolumeIDListTag], ",")
 		if len(volumeIDs) == 0 {
 			return nil, errors.New("vSphere can't list by description without list of volumes. Cannot list snapshots")
 		}
