@@ -5,16 +5,15 @@ import (
 
 	"github.com/gofrs/uuid"
 	"gopkg.in/check.v1"
-	. "gopkg.in/check.v1"
 )
 
 type VmwareManSuite struct{}
 
 var _ = check.Suite(&VmwareManSuite{})
 
-func (s *VmwareManSuite) TestCreateAndListSnapshots(c *C) {
-	c.Skip("manual testing")
-	volumeID := "b12b3f3d-43e8-46ac-b5ba-70ee634139da"
+func (s *VmwareManSuite) TestCreateAndListSnapshots(c *check.C) {
+	// c.Skip("manual testing")
+	volumeID := "55c3e39b-95b0-40d1-aaed-ea11be829fa6"
 	provider, _ := NewProvider(map[string]string{
 		VSphereEndpointKey: "",
 		VSphereUsernameKey: "",
@@ -40,9 +39,9 @@ func (s *VmwareManSuite) TestCreateAndListSnapshots(c *C) {
 	foundSnapshotsByID, _ := provider.SnapshotsList(ctx, tags)
 	foundAllSnapshots, _ := provider.SnapshotsList(ctx, map[string]string{"manifest": guid1.String()})
 
-	c.Assert(len(foundSnapshotsByID), Equals, 1)
-	c.Assert(len(foundAllSnapshots), Equals, 2)
-	c.Assert(snapshot2.ID, Equals, foundSnapshotsByID[0].ID)
+	c.Assert(len(foundSnapshotsByID), check.Equals, 1)
+	c.Assert(len(foundAllSnapshots), check.Equals, 2)
+	c.Assert(snapshot2.ID, check.Equals, foundSnapshotsByID[0].ID)
 
 	err := provider.SnapshotDelete(ctx, snapshot2)
 	c.Assert(err, check.IsNil)
@@ -50,5 +49,5 @@ func (s *VmwareManSuite) TestCreateAndListSnapshots(c *C) {
 	c.Assert(err, check.IsNil)
 
 	foundAllSnapshots, _ = provider.SnapshotsList(ctx, map[string]string{"manifest": guid1.String()})
-	c.Assert(len(foundAllSnapshots), Equals, 0)
+	c.Assert(len(foundAllSnapshots), check.Equals, 0)
 }
