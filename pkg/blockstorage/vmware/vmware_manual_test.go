@@ -12,7 +12,7 @@ type VmwareManSuite struct{}
 var _ = check.Suite(&VmwareManSuite{})
 
 func (s *VmwareManSuite) TestCreateAndListSnapshots(c *check.C) {
-	// c.Skip("manual testing")
+	c.Skip("manual testing")
 	volumeID := "55c3e39b-95b0-40d1-aaed-ea11be829fa6"
 	provider, _ := NewProvider(map[string]string{
 		VSphereEndpointKey: "",

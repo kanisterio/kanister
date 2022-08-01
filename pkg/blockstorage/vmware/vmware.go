@@ -294,7 +294,6 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 			return false, nil
 		default:
 			return false, errors.Wrap(createErr, "Failed to wait on task")
-
 		}
 	})
 	if err != nil {
