@@ -16,7 +16,7 @@ Argo Cron Workflows.
 Prerequisites
 ===============
 - Kubernetes 1.16+
-- Kanister controller version 0.80.0 installed in your cluster, let's assume in
+- Kanister controller installed in your cluster, let's assume in
   Namespace kanister
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
@@ -71,7 +71,7 @@ Step 2 - Setup a sample application to backup.
 Here, you will reference the MySQL_ example from Kanister.
 Install the Chart and setup MySQL in the ``mysql-test`` namespace.
 Make sure that the application is integrated with Kanister and the following
-steps are completed.
+steps are completed from the MySQL example.
 
 1. A Profile CR is created for the ``mysql-test`` namespace.
 2. A MySQL blueprint is created in the ``kanister`` namespace.
@@ -88,7 +88,7 @@ Modify the last line of the following yaml file as follows.
 
 .. code-block:: bash
 
-  kanctl create actionset --action backup --namespace kanister --blueprint [YOUR_BLUEPRINT_NAME] --statefulset [YOUR_STATEFULSET] --profile [YOUR_PROFILE_NAME] --secrets [YOUR_SECRETS_NAME]
+  kanctl create actionset --action backup --namespace kanister --blueprint [BLUEPRINT_NAME] --statefulset [NAMESPACE/STATEFULSET] --profile [NAMESPACE/PROFILE_NAME] --secrets [NAMESPACE/SECRETS_NAME]
 
 Then execute -
 
@@ -194,7 +194,8 @@ The output will be as follows.
   > NAME            AGE
     backup-478lk    2m28s
 
-Here, the workflow was created and scheduled to run in 1 minute. After it ran
+Here, the workflow was created and scheduled to run in 1 minute.
+The time can be anywhere between the first 5 minutes for you. After it ran
 successfully, the `last run` field was updated with the timestamp of the last run.
 A backup ActionSet was created. The age of this ActionSet is seen as recently created.
 
@@ -253,7 +254,7 @@ Delete workflow -
 
 .. code-block:: bash
 
-  argo cron delete mysql-cron-wf
+  argo cron delete mysql-cron-wf -n argo
 
 Deleting the Argo CRs.
 
