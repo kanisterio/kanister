@@ -265,7 +265,9 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 			return true, nil
 		}
 
-		// it's possible that snapshot was created despite of SOAP errors
+		// it's possible that snapshot was created despite of SOAP errors,
+		// we're trying to find snapshot created in the current iteration(using timeOfCreateSnapshotCall)
+		// so we won't reuse snapshots created in previous runs
 		foundSnapId := p.getCreatedSnapshotID(ctx, description, volume.ID, timeOfCreateSnapshotCall)
 		if foundSnapId != nil {
 			res = *foundSnapId
@@ -502,14 +504,15 @@ func (p *FcdProvider) createSnapshotAndWaitForCompletion(volume blockstorage.Vol
 func (p *FcdProvider) getCreatedSnapshotID(ctx context.Context, description string, volID string, notEarlierThan time.Time) *types.ID {
 	var filteredSns []*blockstorage.Snapshot
 	sns, err := p.snapshotsListByDescription(ctx, []string{volID}, description)
+	if err != nil {
+		log.Error().WithError(err).Print("Failed to list when checking failed creation")
+		return nil
+	}
+
 	for _, sn := range sns {
 		if notEarlierThan.Before((time.Time)(sn.CreationTime)) {
 			filteredSns = append(filteredSns, sn)
 		}
-	}
-	if err != nil {
-		log.Error().WithError(err).Print("Failed to list when checking failed creation")
-		return nil
 	}
 
 	if len(filteredSns) == 1 {
