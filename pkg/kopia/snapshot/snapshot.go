@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kopia
+package snapshot
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -27,6 +28,9 @@ import (
 	"github.com/kopia/kopia/snapshot/policy"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
 	"github.com/pkg/errors"
+
+	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
 )
 
 // SnapshotSource creates and uploads a kopia snapshot to the given repository
@@ -76,10 +80,10 @@ func SnapshotSource(
 		return "", 0, errors.Wrap(ferr, "Failed to flush kopia repository")
 	}
 
-	return reportSnapshotStatus(ctx, snapshotStartTime, manifest)
+	return reportStatus(ctx, snapshotStartTime, manifest)
 }
 
-func reportSnapshotStatus(ctx context.Context, snapshotStartTime time.Time, manifest *snapshot.Manifest) (string, int64, error) {
+func reportStatus(ctx context.Context, snapshotStartTime time.Time, manifest *snapshot.Manifest) (string, int64, error) {
 	manifestID := manifest.ID
 	snapSize := manifest.Stats.TotalFileSize
 
@@ -99,9 +103,9 @@ func reportSnapshotStatus(ctx context.Context, snapshotStartTime time.Time, mani
 	return string(manifestID), snapSize, nil
 }
 
-// DeleteSnapshot deletes Kopia snapshot with given manifest ID
-func DeleteSnapshot(ctx context.Context, backupID, path, password string) error {
-	rep, err := OpenRepository(ctx, defaultConfigFilePath, password, pullRepoPurpose)
+// Delete deletes Kopia snapshot with given manifest ID
+func Delete(ctx context.Context, backupID, path, password string) error {
+	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
@@ -144,4 +148,26 @@ func findPreviousSnapshotManifest(ctx context.Context, rep repo.Repository, sour
 	}
 
 	return result, nil
+}
+
+// MarshalKopiaSnapshot encodes kopia SnapshotInfo struct into a string
+func MarshalKopiaSnapshot(snapInfo *SnapshotInfo) (string, error) {
+	if err := snapInfo.Validate(); err != nil {
+		return "", err
+	}
+	snap, err := json.Marshal(snapInfo)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal kopia snapshot information")
+	}
+
+	return string(snap), nil
+}
+
+// UnmarshalKopiaSnapshot decodes a kopia snapshot JSON string into SnapshotInfo struct
+func UnmarshalKopiaSnapshot(snapInfoJSON string) (SnapshotInfo, error) {
+	snap := SnapshotInfo{}
+	if err := json.Unmarshal([]byte(snapInfoJSON), &snap); err != nil {
+		return snap, errors.Wrap(err, "failed to unmarshal kopia snapshot information")
+	}
+	return snap, snap.Validate()
 }

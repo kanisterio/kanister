@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -52,7 +52,7 @@ func runLocationDelete(cmd *cobra.Command) error {
 		if snapJSON == "" {
 			return errors.New("kopia snapshot information is required to delete data using kopia")
 		}
-		kopiaSnap, err := kopia.UnmarshalKopiaSnapshot(snapJSON)
+		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(snapJSON)
 		if err != nil {
 			return err
 		}
@@ -66,7 +66,7 @@ func runLocationDelete(cmd *cobra.Command) error {
 
 // kopiaLocationDelete deletes the kopia snapshot with given backupID
 func kopiaLocationDelete(ctx context.Context, backupID, path, password string) error {
-	return kopia.DeleteSnapshot(ctx, backupID, path, password)
+	return snapshot.Delete(ctx, backupID, path, password)
 }
 
 func locationDelete(ctx context.Context, p *param.Profile, path string) error {

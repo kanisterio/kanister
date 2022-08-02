@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -95,19 +95,19 @@ func locationPush(ctx context.Context, p *param.Profile, path string, source io.
 
 // kopiaLocationPush pushes the data from the source using a kopia snapshot
 func kopiaLocationPush(ctx context.Context, path, outputName, sourcePath, password string) error {
-	var snapInfo *kopia.SnapshotInfo
+	var snapInfo *snapshot.SnapshotInfo
 	var err error
 	switch sourcePath {
 	case usePipeParam:
-		snapInfo, err = kopia.Write(ctx, os.Stdin, path, password)
+		snapInfo, err = snapshot.Write(ctx, os.Stdin, path, password)
 	default:
-		snapInfo, err = kopia.WriteFile(ctx, path, sourcePath, password)
+		snapInfo, err = snapshot.WriteFile(ctx, path, sourcePath, password)
 	}
 	if err != nil {
 		return errors.Wrap(err, "Failed to push data using kopia")
 	}
 
-	snapInfoJSON, err := kopia.MarshalKopiaSnapshot(snapInfo)
+	snapInfoJSON, err := snapshot.MarshalKopiaSnapshot(snapInfo)
 	if err != nil {
 		return err
 	}
