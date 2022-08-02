@@ -35,11 +35,11 @@ import (
 )
 
 const (
-	// defaultConfigFilePath is the file which contains kopia repo config
-	defaultConfigFilePath = "/tmp/kopia-repository.config"
+	// DefaultClientConfigFilePath is the file which contains kopia repo config
+	DefaultClientConfigFilePath = "/tmp/kopia-repository.config"
 
-	// defaultCacheDirectory is the directory where kopia content cache is created
-	defaultCacheDirectory = "/tmp/kopia-cache"
+	// DefaultClientCacheDirectory is the directory where kopia content cache is created
+	DefaultClientCacheDirectory = "/tmp/kopia-cache"
 
 	// defaultDataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
 	defaultDataStoreGeneralContentCacheSizeMB = 0
@@ -140,8 +140,8 @@ func ExtractFingerprintFromCertificate(cert string) (string, error) {
 	return fingerprint, nil
 }
 
-// getStreamingFileObjectIDFromSnapshot returns the kopia object ID of the fs.StreamingFile object from the repository
-func getStreamingFileObjectIDFromSnapshot(ctx context.Context, rep repo.Repository, path, backupID string) (object.ID, error) {
+// GetStreamingFileObjectIDFromSnapshot returns the kopia object ID of the fs.StreamingFile object from the repository
+func GetStreamingFileObjectIDFromSnapshot(ctx context.Context, rep repo.Repository, path, backupID string) (object.ID, error) {
 	// Example: if the path from the blueprint is `/mysql-backups/1/2/mysqldump.sql`, the given backupID
 	// belongs to the root entry `/mysql-backups/1/2` with `mysqldump.sql` as a nested entry.
 	// The goal here is to find the nested entry and extract the object ID
@@ -190,26 +190,4 @@ func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
 		return metadataCacheSize
 	}
 	return defaultDataStoreGeneralMetadataCacheSizeMB
-}
-
-// MarshalKopiaSnapshot encodes kopia SnapshotInfo struct into a string
-func MarshalKopiaSnapshot(snapInfo *SnapshotInfo) (string, error) {
-	if err := snapInfo.Validate(); err != nil {
-		return "", err
-	}
-	snap, err := json.Marshal(snapInfo)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal kopia snapshot information")
-	}
-
-	return string(snap), nil
-}
-
-// UnmarshalKopiaSnapshot decodes a kopia snapshot JSON string into SnapshotInfo struct
-func UnmarshalKopiaSnapshot(snapInfoJSON string) (SnapshotInfo, error) {
-	snap := SnapshotInfo{}
-	if err := json.Unmarshal([]byte(snapInfoJSON), &snap); err != nil {
-		return snap, errors.Wrap(err, "failed to unmarshal kopia snapshot information")
-	}
-	return snap, snap.Validate()
 }
