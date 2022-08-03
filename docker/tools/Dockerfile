@@ -9,8 +9,8 @@ LABEL name="kanister-tools" \
     description="Kanister tools for application-specific data management"
 
 COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
-# kastenhq/kopia alpine-sha-41c0049 image
-COPY --from=ghcr.io/kastenhq/kopia@sha256:b6018f24208dec4ef8de53fb33ef87fb5d2038526962357e523b9f86393b8b9d \
+# kastenhq/kopia alpine-sha-7664c8c image
+COPY --from=ghcr.io/kastenhq/kopia@sha256:540e05631dc48428725dc938ce62d7e4c1e698ba1fc6956ad36dd349ad076a20 \
   /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
 

@@ -61,11 +61,11 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 		}
 	}
 
-	if id, ok := config[blockstorage.AzureCloudEnviornmentID]; !ok || id == "" {
-		config[blockstorage.AzureCloudEnviornmentID] = azure.PublicCloud.Name
+	if id, ok := config[blockstorage.AzureCloudEnvironmentID]; !ok || id == "" {
+		config[blockstorage.AzureCloudEnvironmentID] = azure.PublicCloud.Name
 	}
 
-	env, err := azure.EnvironmentFromName(config[blockstorage.AzureCloudEnviornmentID])
+	env, err := azure.EnvironmentFromName(config[blockstorage.AzureCloudEnvironmentID])
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch the cloud environment.")
 	}
