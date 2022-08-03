@@ -397,11 +397,11 @@ func (p *FcdProvider) SnapshotGet(ctx context.Context, id string) (*blockstorage
 			}
 			log.Debug().Print("RetrieveMetadata done: " + volID + "," + snapshotID)
 			tags := convertKeyValueToTags(kvs)
-			additonalTags, err := p.getSnapshotTags(ctx, id)
+			additionalTags, err := p.getSnapshotTags(ctx, id)
 			if err != nil {
 				return nil, errors.Wrap(err, "Failed to get snapshot tags")
 			}
-			tags = append(tags, additonalTags...)
+			tags = append(tags, additionalTags...)
 			snapshot.Tags = tags
 			return snapshot, nil
 		}

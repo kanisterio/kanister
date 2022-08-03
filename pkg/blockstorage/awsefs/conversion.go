@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	securityGroupSeperator = "+"
+	securityGroupSeparator = "+"
 	mountTargetKeyPrefix   = "kasten.io/aws-mount-target/"
 )
 
@@ -190,7 +190,7 @@ func mergeSecurityGroups(securityGroups []*string) string {
 	for _, d := range securityGroups {
 		dereferenced = append(dereferenced, *d)
 	}
-	return strings.Join(dereferenced, securityGroupSeperator)
+	return strings.Join(dereferenced, securityGroupSeparator)
 }
 
 func mountTargetKey(mountTargetID string) string {
@@ -198,5 +198,5 @@ func mountTargetKey(mountTargetID string) string {
 }
 
 func mountTargetValue(subnetID string, securityGroups []*string) string {
-	return subnetID + securityGroupSeperator + mergeSecurityGroups(securityGroups)
+	return subnetID + securityGroupSeparator + mergeSecurityGroups(securityGroups)
 }
