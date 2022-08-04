@@ -131,12 +131,10 @@ in the ``kanister`` and ``mysql-test`` namespace. This is required to create CRs
 the Secrets and StatefulSets that you provided in our previous step.
 You may read more about RBAC authorization here - RBAC_.
 
-1. Create a ClusterRole named ``cron-wf-manager`` having the permissions in
-   ``cluster-admin``.
-2. Grant these permissions to the default ServiceAccount named
-   ``default`` in the ``argo`` namespace.
-3. This will be done by creating a RoleBinding in the ``kanister``
-   and ``mysql-test`` namespaces.
+1. Create a RoleBinding named ``cron-wf-manager`` in the ``kanister`` and
+   ``mysql-test`` namespaces.
+2. Grant the permissions in ClusterRole ``cluster-admin`` to the
+   default ServiceAccount named ``default`` in the ``argo`` namespace.
 
 Execute the following -
 
@@ -147,6 +145,11 @@ Execute the following -
 .. code-block:: bash
 
   kubectl create rolebinding cron-wf-manager --clusterrole=cluster-admin --serviceaccount=argo:default -n mysql-test
+
+.. note::
+  It is not recommended to grant the ``cluster-admin`` privileges to the ``default``
+  ServiceAccount in production. You must create a more defined RBAC to grant access for
+  allowing creation of Custom Resources (ActionSets) in the ``Kanister`` namespace.
 
 Step 5 - Launching the Cron Workflow
 ````````````````````````````````````````````
