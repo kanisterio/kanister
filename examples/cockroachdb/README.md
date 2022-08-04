@@ -1,0 +1,248 @@
+# CockroachDB
+
+[CockroachDB](https://www.cockroachlabs.com/) is one of the database servers based on SQL.
+
+## Introduction
+
+This chart bootstraps a three node Cockroachdb deployment on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+
+## Prerequisites
+
+- Kubernetes 1.16+ with Beta APIs enabled
+- PV provisioner support in the underlying infrastructure
+- Kanister controller version 0.80.0 installed in your cluster, let's assume in Namespace `kanister`
+- Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
+
+## Installing the Chart
+
+To install the CockroachDB database using the `cockroachdb` chart with the release name `cockroachdb-release`:
+
+```bash
+# Add cockroachdb in your local chart repository
+$ helm repo add cockroachdb https://charts.cockroachdb.com/
+
+# Update your local chart repository
+$ helm repo update
+
+# Install the cockroachdb in cockroachdb namespace
+$ helm install cockroachdb-release --namespace cockroachdb --create-namespace cockroachdb/cockroachdb
+
+# Install the secure cockroachdb client
+$ curl -OOOOOOOOO https://raw.githubusercontent.com/cockroachdb/helm-charts/master/examples/client-secure.yaml
+
+# Edit Fields in client-secure.yaml
+spec.serviceAccountName: cockroachdb-release
+spec.image: cockroachdb/cockroach:<VERSION>
+spec.volumes[0].project.sources[0].secret.name: cockroachdb-release-client-secret
+
+$ kubectl create -f ./client-secure.yaml -n cockroachdb
+
+
+```
+> **Note** : 
+cockroachdb/cockroachdb version in spec.image as mentioned in following chart [values.yaml](https://github.com/cockroachdb/helm-charts/blob/master/cockroachdb/values.yaml)
+
+The command deploys a CockroachDB instance in the `cockroachdb` namespace.
+
+> **Tip**: List all releases using `helm list --all-namespaces`, using Helm Version 3.
+
+## Integrating with Kanister
+
+If you have deployed CockroachDB application with name other than `cockroachdb-release` and namespace other than `cockroachdb`, you need to modify the commands(backup, restore and delete) used below to use the correct release name and namespace
+
+### Create Secret and Configmaps
+Create Secret and Configmap if not created already and Edit the values accordingly
+
+```bash
+$ kubectl create -f ./secret.yaml
+$ kubectl create -f ./configmap.yaml
+```
+
+### Create Blueprint
+
+Create Blueprint in the same namespace as the Kanister controller
+
+```bash
+$ kubectl create -f ./cockroachdb-blueprint.yaml
+```
+
+Once CockroachDB is running, you can populate it with some data. Let's add a table called "accounts" to a bank database:
+
+```bash
+# Connect to Secure Client Shell by running a shell inside cockroachdb-client-secure pod
+$ kubectl exec -it -n cockroachdb cockroachdb-client-secure -- ./cockroach sql --certs-dir=./cockroach-certs --host=cockroachdb-release-public
+
+# From inside the shell, use the CLI to insert some data into the bank database
+# Create "bank" db
+> CREATE DATABASE bank;
+
+# Create "accounts" table
+> CREATE TABLE bank.accounts (id INT PRIMARY KEY, balance DECIMAL);
+
+# Insert row to the table
+> INSERT INTO bank.accounts VALUES (1, 1000.50);
+> INSERT INTO bank.accounts VALUES (2, 2000.70);
+
+# View data in "accounts" table
+> SELECT * FROM bank.accounts;
+
+  id | balance
++----+---------+
+   1 | 1000.50
+   2 | 2000.70
+(2 rows)
+
+```
+
+## Protect the Application
+
+You can now take a backup of the MySQL data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
+
+```bash
+# Create Actionset
+# Please make sure the value of blueprint matches with the name of blueprint that we have created already
+$ kanctl create actionset --action backup --namespace kanister --blueprint cockroachdb-blueprint --statefulset cockroachdb/cockroachdb-release --secrets aws=kanister/aws --config-maps location=kanister/location
+actionset backup-rslmb created
+
+$ kubectl --namespace kanister get actionsets.cr.kanister.io
+NAME                 AGE
+backup-rslmb         1m
+
+# View the status of the actionset
+# Please make sure the name of the actionset here matches with name of the name of actionset that we have created already
+$ kubectl --namespace kanister describe actionset backup-rslmb
+```
+
+### Disaster strikes!
+
+Let's say someone accidentally deleted the test database using the following command:
+```bash
+# Connect to Secure Client Shell by running a shell inside cockroachdb-client-secure pod
+$ kubectl exec -it -n cockroachdb cockroachdb-client-secure -- ./cockroach sql --certs-dir=./cockroach-certs --host=cockroachdb-release-public
+
+# Drop the test database
+> SHOW DATABASES;
+  database_name | owner | primary_region | regions | survival_goal
+----------------+-------+----------------+---------+----------------
+  bank          | root  | NULL           | {}      | NULL
+  defaultdb     | root  | NULL           | {}      | NULL
+  postgres      | root  | NULL           | {}      | NULL
+  system        | node  | NULL           | {}      | NULL
+(4 rows)
+
+> DROP DATABASE bank CASCADE;
+Query OK, 1 row affected (0.03 sec)
+
+> SHOW DATABASES;
+  database_name | owner | primary_region | regions | survival_goal
+----------------+-------+----------------+---------+----------------
+  defaultdb     | root  | NULL           | {}      | NULL
+  postgres      | root  | NULL           | {}      | NULL
+  system        | node  | NULL           | {}      | NULL
+(3 rows)
+
+```
+
+### Restore the Application
+
+To restore the missing data, you should use the backup that you created before. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
+> **Note** : In order to perform Full Cluster Restore, One must wait out the Default Garbage Collection Run After Time i.e. 90,000 Seconds or 25 Hours. 
+> In Order to reduce the Garbage Collection Time, run the following command, Wait for some time to cockroachdb to automatic collect garbage and then restore
+```bash
+$ ALTER RANGE default CONFIGURE ZONE USING gc.ttlseconds = 60;
+```
+```bash
+# Make sure to use correct backup actionset name here
+$ kanctl --namespace kanister create actionset --action restore --from "backup-rslmb"
+actionset restore-backup-62vxm-2hdsz created
+
+# View the status of the ActionSet
+# Make sure to use correct restore actionset name here
+$ kubectl --namespace kanister describe actionset restore-backup-62vxm-2hdsz
+```
+
+Once the ActionSet status is set to "complete", you can see that the data has been successfully restored to MySQL
+
+```bash
+> SHOW DATABASES;
+  database_name | owner | primary_region | regions | survival_goal
+----------------+-------+----------------+---------+----------------
+  bank          | root  | NULL           | {}      | NULL
+  defaultdb     | root  | NULL           | {}      | NULL
+  postgres      | root  | NULL           | {}      | NULL
+  system        | node  | NULL           | {}      | NULL
+(4 rows)
+
+> USE bank;
+
+Database changed
+> SHOW TABLES;
++----------------+
+| Tables         |
++----------------+
+| accounts       |
++----------------+
+1 row in set (0.00 sec)
+
+> SELECT * FROM bank.accounts;
+  id | balance
++----+---------+
+   1 | 1000.50
+   2 | 2000.70
+```
+
+### Delete the Artifacts
+
+The artifacts created by the backup action can be cleaned up using the following command:
+
+```bash
+$ kanctl --namespace kanister create actionset --action delete --from backup-rslmb --namespacetargets kanister
+actionset delete-backup-glptq-cq6bw created
+
+# View the status of the ActionSet
+$ kubectl --namespace kanister describe actionset delete-backup-glptq-cq6bw
+```
+
+
+## Troubleshooting
+
+If you run into any issues with the above commands, you can check the logs of the controller using:
+
+```bash
+$ kubectl --namespace kanister logs -l app=kanister-operator
+```
+
+you can also check events of the actionset
+
+```bash
+$ kubectl describe actionset restore-backup-62vxm-2hdsz -n kanister
+```
+
+
+## Cleanup
+
+### Uninstalling the Chart
+
+To uninstall/delete the `cockroachdb-release` deployment:
+
+```bash
+# Helm Version 3
+$ helm delete cockroachdb-release -n cockroachdb
+```
+
+The command removes all the Kubernetes components associated with the chart and deletes the release.
+
+### Delete CR
+Remove Blueprint
+
+```bash
+$ kubectl delete blueprints.cr.kanister.io cockroachdb-blueprint -n kanister
+```
+
+### Delete configmaps and secrets
+
+```bash
+$ kubectl delete configmaps database -n kanister
+$ kubectl delete configmaps location -n kanister
+$ kubectl delete secrets aws -n kanister
+```
