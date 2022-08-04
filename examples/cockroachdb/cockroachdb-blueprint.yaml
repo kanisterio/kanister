@@ -1,0 +1,82 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: cockroachdb-blueprint
+  namespace: kanister
+actions:
+  backup:
+    outputArtifacts:
+      cockroachDBCloudDump:
+        keyValue:
+          s3path: '/cockroachdb-backups/{{ .StatefulSet.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}'
+    phases:
+      - func: KubeExec
+        name: backupToS3
+        args:
+          namespace: "{{ .StatefulSet.Namespace }}"
+          pod: "cockroachdb-client-secure"
+          command:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - xtrace
+            - -o
+            - pipefail
+            - -c
+            - |
+              aws_access_key_id='{{ toJson .Profile.Credential.KeyPair.ID | toString }}'
+              aws_access_key_id=`echo $aws_access_key_id | sed 's/.\(.*\)/\1/' | sed 's/\(.*\)./\1/'`
+              aws_access_key_secret='{{ toJson .Profile.Credential.KeyPair.Secret | toString }}'
+              aws_access_key_secret=`echo $aws_access_key_secret | sed 's/.\(.*\)/\1/' | sed 's/\(.*\)./\1/'`
+              bucket='{{ toJson .Profile.Location.Bucket | toString }}'
+              bucket=`echo $bucket | sed 's/.\(.*\)/\1/' | sed 's/\(.*\)./\1/'`
+              s3path='s3://'${bucket}'/cockroachdb-backups/{{ .StatefulSet.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}' 
+              cmd="BACKUP INTO '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}' AS OF SYSTEM TIME '-10s';"
+              cockroach sql --certs-dir=/cockroach/cockroach-certs --host=cockroachdb-release-public -e "${cmd}"
+
+  restore:
+    inputArtifactNames:
+      - cockroachDBCloudDump
+    phases:
+      - func: KubeExec
+        name: restoreFromS3
+        args:
+          namespace: "{{ .StatefulSet.Namespace }}"
+          pod: "cockroachdb-client-secure"
+          command:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - pipefail
+            - -c
+            - |
+              aws_access_key_id='{{ toJson .Profile.Credential.KeyPair.ID | toString }}'
+              aws_access_key_id=`echo $aws_access_key_id | sed 's/.\(.*\)/\1/' | sed 's/\(.*\)./\1/'`
+              aws_access_key_secret='{{ toJson .Profile.Credential.KeyPair.Secret | toString }}'
+              aws_access_key_secret=`echo $aws_access_key_secret | sed 's/.\(.*\)/\1/' | sed 's/\(.*\)./\1/'`
+              bucket='{{ toJson .Profile.Location.Bucket | toString }}'
+              bucket=`echo $bucket | sed 's/.\(.*\)/\1/' | sed 's/\(.*\)./\1/'`
+              s3path='s3://'${bucket}'{{ .ArtifactsIn.cockroachDBCloudDump.KeyValue.s3path }}'
+              cmd="RESTORE FROM LATEST IN '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}';"
+              cockroach sql --certs-dir=/cockroach/cockroach-certs --host=cockroachdb-release-public -e "${cmd}"
+
+  delete:
+    inputArtifactNames:
+      - cockroachDBCloudDump
+    phases:
+      - func: KubeTask
+        name: deleteFromS3Store
+        args:
+          image: ghcr.io/kanisterio/postgres-kanister-tools:0.81.0
+          namespace: "{{ .Namespace.Name }}"
+          command:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - pipefail
+            - -c
+            - |
+              kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cockroachDBCloudDump.KeyValue.s3path }}'
