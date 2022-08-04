@@ -7,3 +7,7 @@
 /bin
 /dist
 **/*.swp
+
+# IDE Generated Files
+.code
+.idea
