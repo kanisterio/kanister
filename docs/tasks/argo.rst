@@ -1,36 +1,36 @@
-Leveraging ActionSet Creation using Argo Cron Workflows
-------------------------------------------------------------
+Automating ActionSet Creation using Argo Cron Workflows
+**********************************************************
 
 Argo Workflows enable us to schedule operations. In the Kanister project,
 Argo Cron Workflows will be used to automate the creation of ActionSets to
-backup an application at regular intervals.
+execute Blueprint actions at regular intervals.
 
-To summarize, ActionSets are CRDs that are used to backup or restore an application.
-The controller present in the Kanister namespace looks for ActionSets and
-executes them using the provided Blueprint or other ActionSet.
+To summarize, ActionSets are CRDs that are used to execute actions
+from Blueprint CRDs. The Kanister controller watches for the creation
+of ActionSets and executes the specified action.
 
-In this tutorial you will schedule the creation of a backup ActionSet using
+In this tutorial, you will schedule the creation of a backup ActionSet using
 Argo Cron Workflows.
 
 
 Prerequisites
-===============
-- Kubernetes 1.16+
-- Kanister controller installed in your cluster, let's assume in
-  Namespace kanister
-- Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
+=============
+
+* Kubernetes ``1.20`` or higher.
+* A running Kanister controller in the ``Kanister`` namespace. See :ref:`install`
+* ``kanctl`` CLI installed. See Tools_.
 
 Architecture
-===============
+============
 
 .. image:: img/argo-cron-architecture.png
 
-Steps -
-===============
+Steps
+=====
 
 
 Step 1 - Setup Argo
-``````````````````````
+--------------------
 
 Download the Argo CLI from their Releases_ page.
 
@@ -65,8 +65,8 @@ Open a web browser and navigate to ``localhost:2746``
 
 .. image:: img/argo-default-ui.png
 
-Step 2 - Setup a sample application to backup.
-``````````````````````````````````````````````````
+Step 2 - Setup a sample application to backup
+---------------------------------------------
 
 Here, you will reference the MySQL_ example from Kanister.
 Install the Chart and setup MySQL in the ``mysql-test`` namespace.
@@ -79,7 +79,7 @@ steps are completed from the MySQL example.
    secrets for you application for the next step.
 
 Step 3 - Creating a Cron Workflow
-````````````````````````````````````````````
+---------------------------------
 
 Now a Cron Workflow will be created that will automate the creation of an ActionSet
 to backup our MySQL application. You will need to modify the names of the blueprint,
@@ -123,8 +123,8 @@ Then execute -
   ActionSet will be created every 5 minutes for performing a backup operation.
   You may schedule it to run as per your requirements.
 
-Step 4 - Granting RBAC permissions.
-````````````````````````````````````````````
+Step 4 - Granting RBAC permissions
+----------------------------------
 
 Next, you will grant the Service Account in our ``argo`` namespace to access resources
 in the ``kanister`` and ``mysql-test`` namespace. This is required to create CRs based on
@@ -152,7 +152,7 @@ Execute the following -
   allowing creation of Custom Resources (ActionSets) in the ``Kanister`` namespace.
 
 Step 5 - Launching the Cron Workflow
-````````````````````````````````````````````
+------------------------------------
 
 Let's launch the workflow in the ``argo`` namespace by running -
 
@@ -242,7 +242,7 @@ and namespaces.
   kubectl get serviceaccounts -n argo
 
 Cleanup
-===============
+=======
 
 Delete the cron workflow by running the following. Verify the name of your
 workflow before deleting it.
@@ -274,7 +274,7 @@ Deleting the Argo namespace -
   kubectl delete namespace argo
 
 
-
+.. _Tools: https://docs.kanister.io/tooling.html#install-the-tools
 .. _Releases: https://github.com/argoproj/argo-workflows/releases/latest
 .. _Examples: https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-minimal.yaml
 .. _ManagedNamespaces: https://argoproj.github.io/argo-workflows/managed-namespace/
