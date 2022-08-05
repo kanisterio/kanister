@@ -294,7 +294,7 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	}
 	snap, err := p.SnapshotGet(ctx, SnapshotFullID(volume.ID, id.Id))
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("Failed to get snapshot %s:%s", volume.ID, snap.ID))
+		return nil, errors.Wrap(err, fmt.Sprintf("Failed to get snapshot %s:%s", volume.ID, id.Id))
 	}
 	log.Debug().Print("SnapshotCreate complete", field.M{"VolumeID": volume.ID, "SnapshotID": snap.ID})
 	// We don't get size information from `SnapshotGet` - so set this to the volume size for now
