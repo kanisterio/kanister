@@ -1,7 +1,7 @@
 Automating ActionSet Creation using Argo Cron Workflows
 **********************************************************
 
-Argo Workflows enable us to schedule operations. In the Kanister project,
+Argo Workflows enables us to schedule operations. In the Kanister project,
 Argo Cron Workflows will be used to automate the creation of ActionSets to
 execute Blueprint actions at regular intervals.
 
@@ -20,17 +20,18 @@ Prerequisites
 * A running Kanister controller in the ``Kanister`` namespace. See :ref:`install`
 * ``kanctl`` CLI installed. See Tools_.
 
+
 Architecture
 ============
 
 .. image:: img/argo-cron-architecture.png
 
+
 Steps
 =====
 
-
-Step 1 - Setup Argo
---------------------
+Step 1 - Setting up Argo
+-------------------------
 
 Download the Argo CLI from their Releases_ page.
 
@@ -40,19 +41,17 @@ Create a separate namespace for the Workflows.
 
   kubectl create ns argo
 
-For this tutorial, the minimal manifest file will be used to download
-Argo CRDs and setup their resources.
-Download the minimal manifest file from their Examples_ page.
-
-On downloading this yaml file, you may configure the managed namespaces
-as per your use case.
-You may read more about managed namespaces here - ManagedNamespaces_
-
-In this tutorial, the minimal manifest will be used as it is.
+In this tutorial, the Argo Workflows CRDs and other resources will be
+deployed on the Kubernetes cluster using the minimal manifest file.
 
 .. code-block:: bash
 
-  kubectl apply -f quick-start-minimal.yaml -n argo
+  kubectl apply -f https://raw.githubusercontent.com/argoproj/argo-workflows/master/manifests/quick-start-minimal.yaml -n argo
+
+You can install Argo in either cluster scoped or namespace scope configurations.
+To deploy Argo with custom configuration, download the minimal manifest file
+and apply the necessary changes.
+For more information, see ManagedNamespaces_.
 
 Use ``port-forward`` to forward a local port to the argo-server pod's port to view
 the Argo UI:
@@ -65,36 +64,36 @@ Open a web browser and navigate to ``localhost:2746``
 
 .. image:: img/argo-default-ui.png
 
+
 Step 2 - Setup a sample application to backup
 ---------------------------------------------
 
 Here, you will reference the MySQL_ example from Kanister.
-Install the Chart and setup MySQL in the ``mysql-test`` namespace.
-Make sure that the application is integrated with Kanister and the following
-steps are completed from the MySQL example.
 
-1. A Profile CR is created for the ``mysql-test`` namespace.
-2. A MySQL blueprint is created in the ``kanister`` namespace.
-3. Check the name of the blueprint, stateful set, profile and
-   secrets for you application for the next step.
+1. Install the chart and set up MySQL in the ``mysql-test`` namespace.
+2. Integrate it with Kanister by creating a Profile CR in the ``mysql-test``
+   namespace and a Blueprint in the ``kanister`` namespace.
+3. Copy and save the names of the MySQL StatefulSet, secrets, Kanister Blueprint,
+   and the Profile CR for the next step.
+
 
 Step 3 - Creating a Cron Workflow
 ---------------------------------
 
-Now a Cron Workflow will be created that will automate the creation of an ActionSet
-to backup our MySQL application. You will need to modify the names of the blueprint,
-stateful set, profile and secrets as per the ones you have created.
-Modify the last line of the following yaml file as follows.
+Now, create a Cron Workflow to automate the creation of an ActionSet to backup
+the MySQL application. The workflow will use ``kanctl`` to achieve this.
+Modify the ``kanctl`` command in the YAML below to specify the names of the
+Blueprint, Profile, MySQL StatefulSet, and secrets created in the previous step.
 
 .. code-block:: bash
 
-  kanctl create actionset --action backup --namespace kanister --blueprint [BLUEPRINT_NAME] --statefulset [NAMESPACE/STATEFULSET] --profile [NAMESPACE/PROFILE_NAME] --secrets [NAMESPACE/SECRETS_NAME]
+  kanctl create actionset --action backup --namespace kanister --blueprint <BLUEPRINT_NAME> --statefulset <NAMESPACE/STATEFULSET> --profile <NAMESPACE/PROFILE_NAME> --secrets <NAMESPACE/SECRETS_NAME>
 
-Then execute -
+Then execute:
 
-.. code-block:: bash
+.. code-block:: yaml
 
-  cat<<EOF >> mysql-cron-wf.yaml
+  cat <<EOF >> mysql-cron-wf.yaml
   apiVersion: argoproj.io/v1alpha1
   kind: CronWorkflow
   metadata:
@@ -107,28 +106,30 @@ Then execute -
       templates:
         - name: automate-actionset
           container:
-            image: ghcr.io/kanisterio/kanister-tools:v9.99.9-dev
+            image: ghcr.io/kanisterio/kanister-tools:0.81.0
             command:
               - /bin/bash
               - -c
               - |
                 microdnf install tar
-                curl -LO https://github.com/kanisterio/kanister/releases/download/0.80.0/kanister_0.80.0_linux_amd64.tar.gz
-                tar -C /usr/local/bin -xvf kanister_0.80.0_linux_amd64.tar.gz
+                curl -LO https://github.com/kanisterio/kanister/releases/download/0.81.0/kanister_0.81.0_linux_amd64.tar.gz
+                tar -C /usr/local/bin -xvf kanister_0.81.0_linux_amd64.tar.gz
                 kanctl create actionset --action backup --namespace kanister --blueprint mysql-blueprint --statefulset mysql-test/mysql-release --profile mysql-test/s3-profile-gd4kx --secrets mysql=mysql-test/mysql-release
   EOF
 
 .. note::
-  Here, the cron-job is scheduled to run every 5 minutes. Which means that an
-  ActionSet will be created every 5 minutes for performing a backup operation.
+  Here, the cron job is scheduled to run every 5 minutes. This means that an
+  ActionSet is created every 5 minutes to perform a backup operation.
   You may schedule it to run as per your requirements.
+
 
 Step 4 - Granting RBAC permissions
 ----------------------------------
 
-Next, you will grant the Service Account in our ``argo`` namespace to access resources
-in the ``kanister`` and ``mysql-test`` namespace. This is required to create CRs based on
-the Secrets and StatefulSets that you provided in our previous step.
+Next, you will grant the required permissions to the Service Account in the ``argo``
+namespace to access resources in the ``kanister`` and ``mysql-test`` namespaces.
+This is required to create CRs based on the Secrets and StatefulSet that you
+provided in the previous step.
 You may read more about RBAC authorization here - RBAC_.
 
 1. Create a RoleBinding named ``cron-wf-manager`` in the ``kanister`` and
@@ -136,7 +137,7 @@ You may read more about RBAC authorization here - RBAC_.
 2. Grant the permissions in ClusterRole ``cluster-admin`` to the
    default ServiceAccount named ``default`` in the ``argo`` namespace.
 
-Execute the following -
+Execute the following command:
 
 .. code-block:: bash
 
@@ -148,31 +149,33 @@ Execute the following -
 
 .. note::
   It is not recommended to grant the ``cluster-admin`` privileges to the ``default``
-  ServiceAccount in production. You must create a more defined RBAC to grant access for
-  allowing creation of Custom Resources (ActionSets) in the ``Kanister`` namespace.
+  ServiceAccount in production. You must create a separate Role or a ClusterRole to
+  grant specific access for allowing the creation of Custom Resources (ActionSets)
+  in the ``kanister`` namespace.
 
-Step 5 - Launching the Cron Workflow
-------------------------------------
 
-Let's launch the workflow in the ``argo`` namespace by running -
+Step 5 - Launching and Submitting the Cron Workflow
+----------------------------------------------------
+
+Launch the workflow in the ``argo`` namespace by running the following command:
 
 .. code-block:: bash
 
   argo cron create mysql-cron-wf.yaml -n argo
 
-Check if the workflow was created by running -
+Check if the workflow was created by running:
 
 .. code-block:: bash
 
   argo cron list -n argo
 
-When the workflow runs, check if the ActionSet was created in the ``kanister`` namespace.
+When the workflow runs, check if the ActionSet was created in the ``kanister`` namespace:
 
 .. code-block:: bash
 
   kubectl get actionsets.cr.kanister.io -n kanister
 
-The output will be as follows.
+The output should be similar to the sample output below.
 
 .. code-block:: bash
 
@@ -197,24 +200,26 @@ The output will be as follows.
   > NAME            AGE
     backup-478lk    2m28s
 
-Here, the workflow was created and scheduled to run in 1 minute.
-The time can be anywhere between the first 5 minutes for you. After it ran
-successfully, the `last run` field was updated with the timestamp of the last run.
-A backup ActionSet was created. The age of this ActionSet is seen as recently created.
+In the above example, the workflow was created and scheduled to run
+in 1 minute. This scheduled time can be anywhere between 1 to 5 minutes for you.
+Once the workflow runs successfully, the ``LAST RUN`` field is updated with the
+timestamp of the last run. Along with this, a backup ActionSet must be created.
+The creation time of the ActionSet is indicated by the ``AGE`` field as seen above.
 
-Submit the Cron Workflow by running -
+Submit the Cron Workflow by running:
 
 .. code-block:: bash
 
   argo submit mysql-cron-wf.yaml
 
-You should see the submitted workflow on the Argo UI -
+You should see the submitted workflow on the Argo UI.
 
 .. image:: img/argo-cron-created-ui-list.png
 
-On clicking on the workflow name, you will see its status -
+On clicking on the workflow name, you will see its status.
 
 .. image:: img/argo-cron-created-ui-desc.png
+
 
 Troubleshooting
 ===============
@@ -224,22 +229,23 @@ created in the ``argo`` namespace. Examine the logs of this pod.
 
 .. code-block:: bash
 
-  kubectl logs [NAME_OF_MYSQL_CRON_WORKFLOW_POD] -n argo
+  kubectl logs <NAME_OF_MYSQL_CRON_WORKFLOW_POD> -n argo
 
 If this pod was not created, examine the logs of the Argo Workflow Controller
 in the ``argo`` namespace.
 
 .. code-block:: bash
 
-  kubectl logs [NAME_OF_WORKFLOW_CONTROLLER] -n argo
+  kubectl logs <NAME_OF_WORKFLOW_CONTROLLER> -n argo
 
 If the logs mention that you have not granted the right permissions to the
-ServiceAccounts, circle back to Step 4 and check the names of your ServiceAccounts
-and namespaces.
+ServiceAccounts, circle back to Step 4 and verify your RBAC configuration.
+Your ServiceAccount should have access to the requested resources.
 
 .. code-block:: bash
 
   kubectl get serviceaccounts -n argo
+
 
 Cleanup
 =======
@@ -247,27 +253,25 @@ Cleanup
 Delete the cron workflow by running the following. Verify the name of your
 workflow before deleting it.
 
-Verify workflow name -
+Verify workflow name:
 
 .. code-block:: bash
 
   argo cron list -n argo
 
-Delete workflow -
+Delete workflow:
 
 .. code-block:: bash
 
   argo cron delete mysql-cron-wf -n argo
 
-Deleting the Argo CRs.
-
-Run -
+Deleting the Argo CRDs and other resources:
 
 .. code-block:: bash
 
   kubectl delete -f quick-start-minimal.yaml
 
-Deleting the Argo namespace -
+Deleting the Argo namespace:
 
 .. code-block:: bash
 
