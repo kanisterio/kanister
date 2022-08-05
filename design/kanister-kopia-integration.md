@@ -77,15 +77,18 @@ Proper steps to toggle between the versions of Kanister Functions will be docume
 
 ### Kopia Repository Server
 
-- For users wanting to work with Kanister Functions in `v0.0.0`, it is important that Kopia Repository Server workload is never created
-- Therefore, we plan to introduce a feature flag during Kanister installation that will decide if the Kopia Repository Server workload is supported or not
+- We plan to introduce a feature flag during Kanister installation to enable or disable Kopia Repository Server workload
+- Kanister Functions in `v1.0.0-alpha` would only work when this feature flag is enabled 
+- To use Kanister Functions in `v0.0.0`, users may or may not disable Kopia Repository Server workload
 
 Proper steps to toggle between the Kopia Server workload support will be documented here later. By default, the feature flag would be disabled.
+
+PS: Maybe instead of a new feature flag we can directly use the Kanister Function Version to enable or disable Kopia Repository Server workload
 
 ## User Experience
 
 - Existing users and downstream consumers can continue to make use of previous functionality as per the above 'Backward Compatibility' section
-- Which means upgrading the Kanister controller version wouldn't need any changes in existing blueprint workflows. 
+- Which means upgrading the Kanister controller version wouldn't need any changes in existing blueprint workflows
 - However, the user experience for new Kanister Functions is expected to change based on the design decisions for Kopia Repository Server workload usage
 - Mainly, the user might have to perform CRUD on the Repository Server workload which would be an added prerequisite to work with Kopia-based Kanister Functions
 - In case, the users switch off the feature flag for server workload and wish to create a server by themselves, 
