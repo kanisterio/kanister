@@ -83,7 +83,7 @@ Proper steps to toggle between the versions of Kanister Functions will be docume
 
 Proper steps to toggle between the Kopia Server workload support will be documented here later. By default, the feature flag would be disabled.
 
-PS: Maybe instead of a new feature flag we can directly use the Kanister Function Version to enable or disable Kopia Repository Server workload
+Q: Instead of a new feature flag could we use the Kanister Function Version itself to enable or disable Kopia Repository Server workload/CR?
 
 ## User Experience
 
