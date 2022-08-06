@@ -65,8 +65,9 @@ Open a web browser and navigate to ``localhost:2746``
 .. image:: img/argo-default-ui.png
 
 
-Step 2 - Setup a sample application to backup
----------------------------------------------
+
+Step 2 - Setting up a sample application to backup
+--------------------------------------------------
 
 Here, you will reference the MySQL_ example from Kanister.
 
