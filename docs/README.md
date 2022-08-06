@@ -35,6 +35,17 @@ language, grammar, and tone style:
 * If using an abbreviation, spell it out the first time it is used in the document unless it is commonly known. (example: TCP/IP)
 * When referring to a Kubernetes Group (SIG, WG, or UG) do not use the hyphenated form unless it is for a specific purpose such as a file-name or URI.
 
+## reStructured Text Styling Guide
+
+* Use `*` for bullet points.
+* Section headers are created using underlines with text. Underlining hierarchy is:
+    * `*` for chapters
+    * `=` for sections
+    * `-` for subsections
+    * `^` for subsubsections
+    * `"` for paragraphs
+* In code blocks, a requires argument is represented by `<required>` and optional arguments are represented as `[optional]`.
+
 These guidelines are derived from the
 [cheatsheet](https://github.com/kubernetes/community/blob/master/contributors/guide/style-guide.md#cheatsheet-content-design-formatting-and-language)
 in the Kubernetes community style guide. Take a look at some of their examples
