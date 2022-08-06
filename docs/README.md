@@ -44,7 +44,7 @@ language, grammar, and tone style:
     * `-` for subsections
     * `^` for subsubsections
     * `"` for paragraphs
-* In code blocks, a requires argument is represented by `<required>` and optional arguments are represented as `[optional]`.
+* In code blocks, a required argument is represented by `<required>` and optional arguments are represented as `[optional]`.
 
 These guidelines are derived from the
 [cheatsheet](https://github.com/kubernetes/community/blob/master/contributors/guide/style-guide.md#cheatsheet-content-design-formatting-and-language)
