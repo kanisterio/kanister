@@ -136,7 +136,7 @@ type ActionStatus struct {
 type ActionProgress struct {
 	// PercentCompleted is computed by assessing the number of completed phases
 	// against the the total number of phases.
-	PercentCompleted string `json:"percentCompleted"`
+	PercentCompleted string `json:"percentCompleted,omitempty"`
 	// LastTransitionTime represents the last date time when the progress status
 	// was received.
 	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`

@@ -193,5 +193,6 @@ func assertActionProgress(
 	actual, err := clientset.CrV1alpha1().ActionSets(actionSet.GetNamespace()).Get(context.Background(), updated.GetName(), metav1.GetOptions{})
 	c.Assert(err, IsNil, Commentf("test case #: %d", testCaseID))
 	c.Assert(actual.Status.Progress.PercentCompleted, Equals, expectedPercentCompleted, Commentf("test case #: %d", testCaseID))
+	c.Assert(actual.Status.Progress.LastTransitionTime, NotNil)
 	c.Assert(actual.Status.Progress.LastTransitionTime.Time, Equals, now, Commentf("test case #: %d", testCaseID))
 }
