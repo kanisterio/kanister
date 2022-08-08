@@ -49,6 +49,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/reconcile"
 	"github.com/kanisterio/kanister/pkg/validate"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
@@ -375,6 +376,14 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 			ctx = field.Context(ctx, key, value)
 		}
 	}
+
+	go func() {
+		// progress update is computed on a best-effort basis.
+		// if it exits with error, we will just log it.
+		if err := progress.TrackActionsProgress(ctx, c.crClient, as.GetName(), as.GetNamespace()); err != nil {
+			log.Error().WithError(err)
+		}
+	}()
 
 	for i := range as.Status.Actions {
 		if err = c.runAction(ctx, as, i); err != nil {
