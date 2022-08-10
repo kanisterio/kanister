@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This chart bootstraps a three node Cockroachdb deployment on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+This chart bootstraps a three node CockroachDB deployment on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
 ## Prerequisites
 
@@ -28,9 +28,10 @@ $ helm repo update
 $ helm install cockroachdb-release --namespace cockroachdb --create-namespace cockroachdb/cockroachdb
 
 # Install the secure cockroachdb client
-$ curl -OOOOOOOOO https://raw.githubusercontent.com/cockroachdb/helm-charts/master/examples/client-secure.yaml
+# Download latest secure client manifest 
+$ curl -O https://raw.githubusercontent.com/cockroachdb/helm-charts/master/examples/client-secure.yaml
 
-# Edit Fields in client-secure.yaml
+# Edit Fields in client-secure.yaml. A sample manifest file is being included for reference.
 spec.serviceAccountName: cockroachdb-release
 spec.image: cockroachdb/cockroach:<VERSION>
 spec.volumes[0].project.sources[0].secret.name: cockroachdb-release-client-secret
@@ -39,8 +40,6 @@ $ kubectl create -f ./client-secure.yaml -n cockroachdb
 
 
 ```
-> **Note** : 
-cockroachdb/cockroachdb version in spec.image as mentioned in following chart [values.yaml](https://github.com/cockroachdb/helm-charts/blob/master/cockroachdb/values.yaml)
 
 The command deploys a CockroachDB instance in the `cockroachdb` namespace.
 
@@ -51,7 +50,7 @@ The command deploys a CockroachDB instance in the `cockroachdb` namespace.
 If you have deployed CockroachDB application with name other than `cockroachdb-release` and namespace other than `cockroachdb`, you need to modify the commands(backup, restore and delete) used below to use the correct release name and namespace
 
 ### Create Profile
-Create Profile if not created already and Edit the values accordingly
+Create Profile if not created already, and set the values accordingly
 
 ```bash
 $ kanctl create profile s3compliant --access-key <aws-access-key-id> \
@@ -75,7 +74,7 @@ can be shared between Kanister-enabled application instances.
 Create Blueprint in the same namespace as the Kanister controller
 
 ```bash
-$ kubectl create -f ./cockroachdb-blueprint.yaml
+$ kubectl create -f ./cockroachdb-blueprint.yaml -n kanister
 ```
 
 Once CockroachDB is running, you can populate it with some data. Let's add a table called "accounts" to a bank database:
@@ -116,9 +115,17 @@ $ kubectl get profile -n kanister
 NAME               AGE
 s3-profile-drnw9   2m
 
+# Find client secret name
+$ kubectl get secrets -n cockroachdb
+NAME                                        TYPE                 DATA   AGE
+cockroachdb-release-ca-secret               Opaque               2      6h38m
+cockroachdb-release-client-secret           kubernetes.io/tls    3      6h38m       <<---
+cockroachdb-release-node-secret             kubernetes.io/tls    3      6h38m
+sh.helm.release.v1.cockroachdb-release.v1   helm.sh/release.v1   1      6h38m
+
 # Create Actionset
 # Please make sure the value of blueprint matches with the name of blueprint that we have created already
-$ kanctl create actionset --action backup --namespace kanister --blueprint cockroachdb-blueprint --statefulset cockroachdb/cockroachdb-release --profile kanister/s3-profile-drnw9
+$ kanctl create actionset --action backup --namespace kanister --blueprint cockroachdb-blueprint --statefulset cockroachdb/cockroachdb-release --profile kanister/s3-profile-drnw9 --secrets cockroachSecret=cockroachdb/cockroachdb-release-client-secret
 actionset backup-rslmb created
 
 $ kubectl --namespace kanister get actionsets.cr.kanister.io
