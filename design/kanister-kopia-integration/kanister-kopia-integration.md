@@ -22,83 +22,70 @@ The v2 version of the example Kanister Blueprints supports this. However, there 
 1. `kando` uses `Kopia` only when a Kanister Profile of type `Kopia` is provided
 2. A Kanister Profile of type `Kopia` requires a [Kopia Repository Server](https://kopia.io/docs/repository-server/) running in the same namespace as the Kanister controller
 3. A Repository Server requires a [Kopia Repository](https://kopia.io/docs/repositories/) to be initialized on a backend storage target
-   
+
 Kanister currently lacks documentation and automation to use these features.
 
 ## Introducing Kopia
 
 Kopia is a powerful, cross-platform tool for managing encrypted backups in the cloud.
-It provides fast and secure backups, using compression, data deduplication and client-side end-to-end encryption.
-It supports a variety of backup storage targets, including object stores, which allows users to choose the storage provider that better addresses their needs.
-It is a lock-free system that allows for concurrent multi-client operations including garbage collection.
+It provides fast and secure backups, using compression, data deduplication, and client-side end-to-end encryption.
+It supports a variety of backup storage targets, including object stores, which allows users to choose the storage provider that better addresses their needs. In Kopia, these storage locations are called repositories.
+It is a lock-free system that allows concurrent multi-client operations including garbage collection.
 
 To explore other features of Kopia, see its [documentation](https://kopia.io/docs/features/).
 
 ## Scope
 
-1. Design the usage of [Kopia Repository Server](https://kopia.io/docs/repository-server/) as an separate on-demand workload
-   - In order to make use of user access control and cloud storage credential abstraction offered in the server-based operations 
-2. Re-work Kanister Functions like BackupData, RestoreData, CopyVolumeData, etc. with  Kopia workflows
-   - And leverage the use of Kopia Repository Server workload within these Functions
-
-### Design the usage of Kopia Repository Server
-
-
-
-### Re-work Kanister Functions 
-
-We already have a rich repository of Kanister Functions present on path `pkg/function` that enable application-level data protection in various use cases.
-Some of these functions need to be re-worked to follow the Kopia Repository Server workflow. For starters, these functions are;
-
-1. BackupData
-2. BackupDataAll
-3. BackupDataStats
-4. CopyVolumeData
-5. DeleteData
-6. DeleteDataAll
-7. RestoreData
-8. RestoreDataAll
-
-Please note that the functions stated above will only be **refactored** to use Kopia underneath.
-There should not be any changes with respect to the objective of these functions.
-The motive, arguments and usage for each function stays intact as defined on Kanister docs https://docs.kanister.io/functions.html#existing-functions
-
-## Backward Compatibility
-
-### Kanister Functions
-
-- Kanister offers the facility to register Functions on multiple versions
-- We intend to make use of this functionality to maintain two separate version groups of Kanister Functions
-- `v0.0.0` is the current default version where all the existing Kanister Functions are registered
-- Proposed version `v1.0.0-alpha` would consist of all the new re-worked Kanister Functions
-- Users can either continue with `v0.0.0` to use the existing Kanister Functions or they can switch to `v1.0.0-alpha` for Kopia-based Kanister Functions
-
-Proper steps to toggle between the versions of Kanister Functions will be documented here later. By default, the version would be `v0.0.0`.
-
-### Kopia Repository Server
-
-- We plan to introduce a feature flag during Kanister installation to enable or disable Kopia Repository Server workload
-- Kanister Functions in `v1.0.0-alpha` would only work when this feature flag is enabled 
-- To use Kanister Functions in `v0.0.0`, users may or may not disable Kopia Repository Server workload
-
-Proper steps to toggle between the Kopia Server workload support will be documented here later. By default, the feature flag would be disabled.
-
-Q: Instead of a new feature flag could we use the Kanister Function Version itself to enable or disable Kopia Repository Server workload/CR?
+1. Automate the initialization of a Kopia Repository for an application backed up by Kanister.
+2. Design and automate the lifecycle of the required Kopia Repository Server.
+3. Add new versions of Kanister Data Functions like BackupData, RestoreData, etc. with Kopia as the primary data mover tool.
 
 ## User Experience
 
-- Existing users and downstream consumers can continue to make use of previous functionality as per the above 'Backward Compatibility' section
-- Which means upgrading the Kanister controller version wouldn't need any changes in existing blueprint workflows
-- However, the user experience for new Kanister Functions is expected to change based on the design decisions for Kopia Repository Server workload usage
-- Mainly, the user might have to perform CRUD on the Repository Server workload which would be an added prerequisite to work with Kopia-based Kanister Functions
-- In case, the users switch off the feature flag for server workload and wish to create a server by themselves, 
-  we aim to provide them with detailed steps to create a server workload as part of "bring-your-own-server" BYOS model
+- All the new features mentioned in this document will be opt-in only. Existing users will not see any changes in the Kanister controller's behavior.
+- Users will be able to continue using their current Blueprints, switch to the v2 version of the example Blueprints, or use Blueprints with the new version of the Kanister Data Functions.
+- Users opting to use the v2 Blueprints and Blueprints with Kopia-based Kanister Data Functions will be required to follow instructions to set up the required Kopia Repository Server before executing the actions.
+- After setting up the Repository Server, users can follow the normal workflow to execute actions from the v2 Blueprints. To use the new versions of the Kanister Data Functions, users must specify the version of the function via the ActionSet Action's `preferredVersion` field.
 
-## Limitations to using Kopia API Server
+## Detailed Design
 
-Before starting Kopia API Server, it requires the creation of users that are allowed access.
-We can make use of the application namespace ID to generate usernames and a random alphanumeric encryption key to create passwords.
-These would be stored in a secret for later use. But;
-- How should we store the server username and server password securely?
-- At which point in Kanister, should Kopia API Server be started?
-- How could this Kopia API Server be disabled in case downstream Kanister consumers bring their own Kopia API Server?
+### Kopia Repository
+
+- As mentioned above, the backup storage location is called a "Repository" in Kopia.
+- A separate repository will be used for each application protected by Kopia-based Blueprints in Kanister.
+- The repository will be initialized when the Repository Server is created the first time. Once initialized, it will continue to exist at the location until cleaned up manually.
+- Accessing the repository requires location and credential information similar to a Kanister Profile CR and a unique password used by Kopia during [encryption](https://kopia.io/docs/features/#end-to-end-zero-knowledge-encryption).
+- In the first iteration, this password will be auto-generated by the Kanister controller. Future iterations will allow users to use a Key Management Service of choice.
+- Only a single repository can exist at a particular backend storage location. To address this, the Kanister controller will generate the repository path using the location information and the UUID of the application namespace. For example, the repository path for `mysql` namespace and S3 bucket called `test-bucket` will be of the form `test-bucket/<UUID of mysql namespace>`.
+
+### Kopia Repository Server
+
+- A Kopia Repository Server allows Kopia clients proxy access to the backend storage location through it.
+- A separate server will be used for each repository initialized in Kanister.
+- In Kanister, the server will comprise a Kubernetes Pod, Service and a NetworkPolicy.
+- The pod will execute the Kopia server process exposed to the application via the Kubernetes service and the network policy.
+- Accessing the server requires the service address, a server username, and a password without any knowledge of the backend storage location.
+- To authorize access, a list of server usernames and passwords must be added prior to starting the server.
+- The server also uses TLS certificates to secure incoming connections to it.
+- In the first iteration, the usernames and passwords will be auto-generated by the Kanister controller, and the TLS certificates will be generated by helm during installation of the controller.
+- A future release of Kanister will allow users to specify usernames, passwords and use a cert-manager to manage the TLS certificates.
+
+NOTE: A more detailed document describing the creation of the Kopia Repository Server in Kanister will be submitted shortly.
+
+### Kanister Data Functions
+
+- Kanister allows mutliple versions of Functions to be registered with the controller.
+- Existing Functions are registered with the default `v0.0.0` version. Find more information [here](https://docs.kanister.io/functions.html#existing-functions).
+- The following Data Functions will be registered with a second version `v1.0.0-alpha`:
+
+   1. BackupData
+   2. BackupDataAll
+   3. BackupDataStats
+   4. CopyVolumeData
+   5. DeleteData
+   6. DeleteDataAll
+   7. RestoreData
+   8. RestoreDataAll
+
+- The purpose, signature and output of these functions will remain intact i.e. their usage in Blueprints will remain unchanged. However, their internal implementation will leverage Kopia to connect to the Repository Server to perform the required data operations.
+- As noted above, users will execute these functions by specifying `v1.0.0-alpha` as the `preferredVersion` during the creation of an ActionSet.
