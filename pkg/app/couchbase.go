@@ -34,7 +34,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
-const cbReadyTimeout = 5 * time.Minute
+const (
+	cbReadyTimeout = 5 * time.Minute
+	numPings       = 1
+)
 
 // Regex to extract result from cb query response
 var countResp = regexp.MustCompile(`(?m){"\$1":([\d]+)},`)
@@ -48,7 +51,7 @@ type CouchbaseDB struct {
 	chart     helm.ChartInfo
 }
 
-// Last tested woking version "2.1.0"
+// Last tested woking version "2.3.0"
 func NewCouchbaseDB(name string) App {
 	return &CouchbaseDB{
 		name: name,
@@ -129,7 +132,7 @@ func (cb *CouchbaseDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		APIVersion: "v2",
 		Group:      "couchbase.com",
-		Name:       fmt.Sprintf("%s-couchbase-cluster", cb.chart.Release),
+		Name:       fmt.Sprintf("%s", cb.chart.Release),
 		Namespace:  cb.namespace,
 		Resource:   "couchbaseclusters",
 	}
@@ -138,7 +141,7 @@ func (cb *CouchbaseDB) Object() crv1alpha1.ObjectReference {
 // Ping makes and tests DB connection
 func (cb *CouchbaseDB) Ping(ctx context.Context) error {
 	log.Info().Print("Pinging database.", field.M{"app": cb.name})
-	cmd := fmt.Sprintf("cbc-ping -u %s -P %s", cb.username, cb.password)
+	cmd := fmt.Sprintf("cbc-ping -u %s -P %s -c %d", cb.username, cb.password, numPings)
 	_, stderr, err := cb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to ping couchbase DB. %s", stderr)
@@ -264,7 +267,7 @@ func (cb CouchbaseDB) execCommand(ctx context.Context, command []string) (string
 
 // getRunningCBPod name of running couchbase cluster pod if its in ready state
 func (cb CouchbaseDB) getRunningCBPod() (string, error) {
-	podName := fmt.Sprintf("%s-couchbase-cluster-0000", cb.chart.Release)
+	podName := fmt.Sprintf("%s-0000", cb.chart.Release)
 	pod, err := cb.cli.CoreV1().Pods(cb.namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
