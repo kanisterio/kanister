@@ -42,8 +42,6 @@ const (
 // Regex to extract result from cb query response
 var countResp = regexp.MustCompile(`(?m){"\$1":([\d]+)},`)
 
-const numPings = 1
-
 type CouchbaseDB struct {
 	name      string
 	namespace string
