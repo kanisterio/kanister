@@ -262,7 +262,7 @@ func parseMountTargetValue(value string) (*mountTarget, error) {
 	// After that "+" separates security groups
 	// Example value:
 	// subnet-123+securityGroup-1+securityGroup-2
-	tokens := strings.Split(value, securityGroupSeperator)
+	tokens := strings.Split(value, securityGroupSeparator)
 	if len(tokens) < 1 {
 		return nil, errors.New("Malformed string for mount target values")
 	}
