@@ -187,6 +187,7 @@ Example of scaling down:
     name: examplePhase
     args:
       namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
       kind: deployment
       replicas: 0
 
@@ -199,6 +200,7 @@ Example of scaling up:
     name: examplePhase
     args:
       namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
       kind: deployment
       replicas: 1
       waitForReady: false
