@@ -48,6 +48,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/eventer"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/kanisterio/kanister/pkg/metrics"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/progress"
 	"github.com/kanisterio/kanister/pkg/reconcile"
@@ -148,6 +149,9 @@ func (c *Controller) onAdd(obj interface{}) {
 	case *crv1alpha1.ActionSet:
 		if err := c.onAddActionSet(v); err != nil {
 			log.Error().WithError(err).Print("Callback onAddActionSet() failed")
+		} else {
+			//ideally a function such a getStatus() should return the labels corresponding to the current status of the system. These labels will be passed to a function in the metrics package
+			metrics.IncrementCounterVec(metrics.NewActionSetBackupCreated())
 		}
 	case *crv1alpha1.Blueprint:
 		c.onAddBlueprint(v)
