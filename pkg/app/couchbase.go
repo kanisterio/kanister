@@ -132,7 +132,7 @@ func (cb *CouchbaseDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		APIVersion: "v2",
 		Group:      "couchbase.com",
-		Name:       fmt.Sprintf("%s", cb.chart.Release),
+		Name:       cb.chart.Release,
 		Namespace:  cb.namespace,
 		Resource:   "couchbaseclusters",
 	}
