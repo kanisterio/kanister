@@ -90,7 +90,10 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		opts.RestartPolicy = v1.RestartPolicyNever
 	}
 
-	volumeMounts, podVolumes := createVolumeSpecs(opts.Volumes)
+	volumeMounts, podVolumes, err := createVolumeSpecs(opts.Volumes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create volume spec")
+	}
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
 			{

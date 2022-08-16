@@ -3,6 +3,7 @@
 apk add --update bash
 apk add --update nodejs
 apk add --update npm
+apk add --update curl
 
 npm install -g npm yo grunt-cli bower express
 
