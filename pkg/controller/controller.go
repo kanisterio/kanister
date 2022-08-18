@@ -29,6 +29,7 @@ import (
 
 	customresource "github.com/kanisterio/kanister/pkg/customresource"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,6 +62,7 @@ type Controller struct {
 	config           *rest.Config
 	crClient         versioned.Interface
 	clientset        kubernetes.Interface
+	counterVecs      map[metrics.MetricType]*prometheus.CounterVec
 	dynClient        dynamic.Interface
 	osClient         osversioned.Interface
 	recorder         record.EventRecorder
@@ -70,7 +72,8 @@ type Controller struct {
 // New create controller for watching kanister custom resources created
 func New(c *rest.Config) *Controller {
 	return &Controller{
-		config: c,
+		config:      c,
+		counterVecs: metrics.InitAllCounterVecs(prometheus.DefaultRegisterer),
 	}
 }
 
@@ -150,8 +153,11 @@ func (c *Controller) onAdd(obj interface{}) {
 		if err := c.onAddActionSet(v); err != nil {
 			log.Error().WithError(err).Print("Callback onAddActionSet() failed")
 		} else {
-			//ideally a function such a getStatus() should return the labels corresponding to the current status of the system. These labels will be passed to a function in the metrics package
-			metrics.IncrementCounterVec(metrics.NewActionSetBackupCreated())
+			// Ideally a function such a getStatus() should return the labels corresponding to the current status of the system.
+			// These labels will be passed to a function in the metrics package
+			if err := metrics.IncrementCounterVec(metrics.NewActionSetBackupCreated()); err != nil {
+				log.Error().WithError(err).Print("Metrics Incrementation failed")
+			}
 		}
 	case *crv1alpha1.Blueprint:
 		c.onAddBlueprint(v)

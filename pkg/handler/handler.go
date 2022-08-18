@@ -24,11 +24,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/kanisterio/kanister/pkg/metrics"
 	"github.com/kanisterio/kanister/pkg/validatingwebhook"
 	"github.com/kanisterio/kanister/pkg/version"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -85,7 +83,6 @@ func RunWebhookServer(c *rest.Config) error {
 }
 
 func NewServer() *http.Server {
-	metrics.InitAllCounterVecs(prometheus.DefaultRegisterer)
 	m := &http.ServeMux{}
 	m.Handle(healthCheckPath, &healthCheckHandler{})
 	m.Handle(metricsPath, promhttp.Handler())

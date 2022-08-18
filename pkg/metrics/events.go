@@ -147,19 +147,3 @@ func NewActionSetTotalCompleted(actionType string, namespace string, state strin
 		},
 	}
 }
-
-// func RecordMetrics() {
-// 	go func() {
-// 		for {
-// 			opsProcessed.Inc()
-// 			time.Sleep(2 * time.Second)
-// 		}
-// 	}()
-// }
-
-// var (
-// 	opsProcessed = promauto.NewCounter(prometheus.CounterOpts{
-// 		Name: "kanister_processed_ops_total",
-// 		Help: "Total number of processed events",
-// 	})
-// )
