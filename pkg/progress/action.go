@@ -195,8 +195,10 @@ func updateActionSet(
 	lastTransitionTime time.Time,
 ) error {
 	updateFunc := func(actionSet *crv1alpha1.ActionSet) error {
+		metav1Time := metav1.NewTime(lastTransitionTime)
+
 		actionSet.Status.Progress.PercentCompleted = progressPercent
-		actionSet.Status.Progress.LastTransitionTime = metav1.NewTime(lastTransitionTime)
+		actionSet.Status.Progress.LastTransitionTime = &metav1Time
 		return nil
 	}
 
