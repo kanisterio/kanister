@@ -11,7 +11,7 @@ actions:
     - func: KubeTask
       name: takeSnapshot
       args:
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.80.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
         command:
           - sh
           - -o
@@ -34,7 +34,7 @@ actions:
     - func: KubeTask
       name: uploadSnapshot
       args:
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.80.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
         command:
           - sh
           - -o
@@ -50,7 +50,7 @@ actions:
     - func: KubeTask
       name: removeSnapshot
       args:
-        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.80.0
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
         command:
           - sh
           - -o
@@ -61,13 +61,19 @@ actions:
           - |
             kubectl exec -it -n {{ .Phases.takeSnapshot.Output.etcdNS }} "{{ .Phases.takeSnapshot.Output.etcdPod }}" -c etcd -- sh -c "rm -rf  /tmp/etcd-backup.db"
   restore:
+    # This phase is not actualy performing restore of the etc backup but is used 
+    # to copy backup data. It spins a pod on a master node having label `etcd-backup`. 
+    # The pod is used to download the backup data from the object store 
+    # and copy it to the /mnt/data location of the pv mapped to pvc `pvc-claim-etcd`.
+    # The pv created mounts to the host path /mnt/data on master node where the cluster-ocp-restore 
+    # script would be executed. 
     inputArtifactNames:
     - etcdBackup
     phases:
     - func: PrepareData
       name: restoreFromObjectStore
       args:
-        image: "ghcr.io/kanisterio/kanister-tools:0.80.0"
+        image: "ghcr.io/kanisterio/kanister-tools:0.81.0"
         namespace: "{{ .Object.metadata.namespace }}"
         podOverride:
           nodeSelector:
@@ -81,7 +87,7 @@ actions:
             securityContext:    
               privileged: true
         volumes:
-          pvc-claim-2: "/mnt/data"
+          pvc-claim-etcd: "/mnt/data"
         command:
         - bash
         - -o
@@ -102,7 +108,7 @@ actions:
       name: deleteFromObjectStore
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: "ghcr.io/kanisterio/kanister-tools:0.80.0"
+        image: "ghcr.io/kanisterio/kanister-tools:0.81.0"
         command:
         - bash
         - -o
