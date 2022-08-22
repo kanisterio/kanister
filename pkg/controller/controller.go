@@ -152,13 +152,6 @@ func (c *Controller) onAdd(obj interface{}) {
 	case *crv1alpha1.ActionSet:
 		if err := c.onAddActionSet(v); err != nil {
 			log.Error().WithError(err).Print("Callback onAddActionSet() failed")
-		} else {
-			// Ideally a function such a getStatus() should return the labels corresponding to the current status of the system.
-			// These labels will be passed to a function in the metrics package
-			// Also, a list of events to update metrics should be created and incremented.
-			if err := metrics.IncrementCounterVec(metrics.NewActionSetBackupCreated()); err != nil {
-				log.Error().WithError(err).Print("Metrics Incrementation failed")
-			}
 		}
 	case *crv1alpha1.Blueprint:
 		c.onAddBlueprint(v)
@@ -219,6 +212,15 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 	}
 	if err := validate.ActionSet(as); err != nil {
 		return err
+	}
+	// ActionSet created
+	// Ideally a function such a getStatus() should return the labels corresponding to the current status of the system.
+	// These labels will be passed to a function in the metrics package
+	// Also, a list of events to update metrics should be created and incremented.
+	for _, a := range as.Spec.Actions {
+		if err := metrics.IncrementCounterVec(metrics.NewActionSetTotalCreated(a.Name, as.GetNamespace())); err != nil {
+			log.Error().WithError(err).Print("Metrics Incrementation failed")
+		}
 	}
 	return c.handleActionSet(as)
 }
