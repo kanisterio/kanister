@@ -483,8 +483,9 @@ func (s *ObjectStoreProviderSuite) TestGCSRegions(c *C) {
 		bucketName := s.createBucketName(c)
 		_, err := s.provider.CreateBucket(ctx, bucketName)
 		c.Check(err, IsNil)
-		actualRegion, err := s.provider.GetBucketRegion(ctx, bucketName)
-		s.provider.DeleteBucket(ctx, bucketName)
+		actualRegion, getErr := s.provider.GetBucketRegion(ctx, bucketName)
+		err = s.provider.DeleteBucket(ctx, bucketName)
+		c.Check(getErr, IsNil)
 		c.Check(err, IsNil)
 		c.Check(actualRegion, Equals, region)
 	}
