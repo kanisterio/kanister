@@ -27,6 +27,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
+	stowgcs "github.com/graymeta/stow/google"
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/field"
@@ -69,6 +70,15 @@ func newBucket(cfg ProviderConfig, c stow.Container, l stow.Location) *bucket {
 	return bucket
 }
 
+func getBucketRegion(cfg ProviderConfig, c stow.Container) string {
+	if IsGCSContainer(c) {
+		if gc, ok := c.(*stowgcs.Container); ok {
+			return gc.Location()
+		}
+	}
+	return cfg.Region // hope for the best
+}
+
 // CreateBucket creates the bucket. Bucket naming rules are provider dependent.
 func (p *provider) CreateBucket(ctx context.Context, bucketName string) (Bucket, error) {
 	cfg, err := p.bucketConfig(ctx, bucketName)
@@ -102,6 +112,22 @@ func (p *provider) GetBucket(ctx context.Context, bucketName string) (Bucket, er
 		return nil, errors.Wrapf(err, "failed to get bucket %s", bucketName)
 	}
 	return newBucket(cfg, c, l), nil
+}
+
+func (p *provider) GetBucketRegion(ctx context.Context, bucketName string) (string, error) {
+	cfg, err := p.bucketConfig(ctx, bucketName)
+	if err != nil {
+		return "", err
+	}
+	l, err := getStowLocation(ctx, cfg, p.secret)
+	if err != nil {
+		return "", err
+	}
+	c, err := l.Container(bucketName)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get bucket %s", bucketName)
+	}
+	return getBucketRegion(cfg, c), nil
 }
 
 // ListBuckets gets the handles of all the buckets.

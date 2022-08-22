@@ -14,7 +14,11 @@
 
 package objectstore
 
-import "context"
+import (
+	"context"
+	"github.com/graymeta/stow"
+	"github.com/graymeta/stow/google"
+)
 
 // GetOrCreateBucket is a helper function to access the package level getOrCreateBucket
 func GetOrCreateBucket(ctx context.Context, p Provider, bucketName string) (Directory, error) {
@@ -28,3 +32,12 @@ func IsS3Provider(p Provider) bool {
 	}
 	return false
 }
+
+// IsGCSProvider is a helper function to find out if a provider is an gcsProvider
+func IsGCSContainer(c stow.Container) bool {
+	if _, ok := c.(*google.Container); ok {
+		return true
+	}
+	return false
+}
+

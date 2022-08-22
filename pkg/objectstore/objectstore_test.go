@@ -471,6 +471,25 @@ func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
 	c.Assert(err, IsNil)
 }
 
+func (s *ObjectStoreProviderSuite) TestGCSRegions(c *C) {
+	if s.osType != ProviderTypeGCS {
+		c.Skip("Test only applicable to GCS")
+	}
+	// GCS returns in UPPERCASE and checkv1.Equals is case sensitive
+	gcsRegions := []string{"US-WEST1", "EUROPE-WEST8", "ASIA-SOUTH2"}
+	ctx := context.Background()
+	for _, region := range gcsRegions {
+		s.initProvider(c, region)
+		bucketName := s.createBucketName(c)
+		_, err := s.provider.CreateBucket(ctx, bucketName)
+		c.Check(err, IsNil)
+		actualRegion, err := s.provider.GetBucketRegion(ctx, bucketName)
+		s.provider.DeleteBucket(ctx, bucketName)
+		c.Check(err, IsNil)
+		c.Check(actualRegion, Equals, region)
+	}
+}
+
 func (s *ObjectStoreProviderSuite) TestBucketWrongRegion(c *C) {
 	ctx := context.Background()
 	for _, region := range []string{"us-east-1", "us-east-2", "us-west-1"} {

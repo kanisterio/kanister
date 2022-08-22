@@ -37,6 +37,8 @@ type Provider interface {
 	// GetBucket access a specific bucket
 	GetBucket(context.Context, string) (Bucket, error)
 
+	GetBucketRegion(context.Context, string) (string, error)
+
 	// DeleteBucket deletes the bucket
 	DeleteBucket(context.Context, string) error
 
