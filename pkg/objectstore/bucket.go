@@ -19,6 +19,7 @@ package objectstore
 import (
 	"context"
 	"fmt"
+	"github.com/graymeta/stow/google"
 	"path"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -63,10 +64,23 @@ func newBucket(cfg ProviderConfig, c stow.Container, l stow.Location) *bucket {
 		container:    c,
 		location:     l,
 		hostEndPoint: bucketEndpoint(cfg, c.ID()),
-		region:       cfg.Region,
+		region:       getBucketRegion(cfg, c),
 	}
 	dir.bucket = bucket
 	return bucket
+}
+
+func (b *bucket) GetRegion() string {
+	return b.region
+}
+
+func getBucketRegion(cfg ProviderConfig, c stow.Container) string {
+	if IsGCSContainer(c) {
+		if gc, ok := c.(*google.Container); ok {
+			return gc.Location()
+		}
+	}
+	return cfg.Region // hope for the best
 }
 
 // CreateBucket creates the bucket. Bucket naming rules are provider dependent.

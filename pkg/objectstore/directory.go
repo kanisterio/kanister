@@ -55,6 +55,10 @@ func (d *directory) CreateDirectory(ctx context.Context, dir string) (Directory,
 	}, nil
 }
 
+func (d *directory) GetRegion() string {
+	return d.bucket.GetRegion()
+}
+
 // GetDirectory gets the directory object
 func (d *directory) GetDirectory(ctx context.Context, dir string) (Directory, error) {
 	if dir == "" {

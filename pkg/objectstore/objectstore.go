@@ -50,6 +50,7 @@ type Provider interface {
 // Bucket abstracts the object store of different cloud providers
 type Bucket interface {
 	Directory
+	GetRegion() string
 }
 
 // Directory operations
@@ -90,6 +91,8 @@ type Directory interface {
 
 	// Serialize directory
 	String() string
+
+	GetRegion() string
 }
 
 // NewProvider creates a new Provider
