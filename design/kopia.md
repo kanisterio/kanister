@@ -46,6 +46,7 @@ spec:
     # required
     secretName: repository-monitoring-location
   server:
+    replicas: 1
     # optional - use Kopia's default if omitted
     adminSecretName: repository-monitoring-server-admin
     # optional - no TLS if omitted
@@ -140,6 +141,10 @@ The `spec.server.accessSecretNames` provides a list of access credentials used
 by data mover clients to authenticate with the Kopia server. This is discussed
 in more details in the
 [Server Access Users Management](#server-access-users-management) section.
+
+The `spec.server.replicas` policy determines how many replicas of the Kopia
+servers should be running. If set to `0`, then the repository will be
+inaccessible.
 
 The `spec.policy` property can be used to change the snapshot settings of the
 respository at the global, user or directory levels. It maps to the
@@ -284,14 +289,18 @@ stringData:
     password: <redacted>
 ```
 
-When the Kopia server starts, it add these users to its list of access users
-with the equivalent of this command:
+This secret is mounted to the Kopia server via the pod's `spec.volumes` API.
+When the Kopia server starts, these users are added to the server with the
+equivalent of this command:
 
 ```sh
 kopia server user add <username>@<namespace>.<workload-identifier> \
   --user-password=<password> \
   --password=<repo-password>
 ```
+
+Changing the credentials in this secret will require server to rebuild its
+access user list. This is achieved by restarting the server.
 
 ### Dynamic Users List
 
@@ -379,6 +388,7 @@ spec:
     # required
     secretName: repository-global
   server:
+    replicas: 1
     # optional - use Kopia's default if omitted
     adminSecretName: repository-global-server-admin
     # optional - no TLS if omitted
