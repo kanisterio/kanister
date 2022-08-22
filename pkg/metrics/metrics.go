@@ -39,6 +39,7 @@ func initCounterVec(r prometheus.Registerer, t MetricType) (*prometheus.CounterV
 }
 
 // Initialize a Prometheus GaugeVec for one metric and register it
+// nolint:all   // Function is for expanding on metrics to introduce Gauges
 func initGaugeVec(r prometheus.Registerer, t MetricType) (*prometheus.GaugeVec, error) {
 	metricTypeOpts, ok := MetricTypeOpts[t]
 
