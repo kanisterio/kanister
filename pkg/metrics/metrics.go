@@ -38,35 +38,6 @@ func initCounterVec(r prometheus.Registerer, t MetricType) (*prometheus.CounterV
 	return counterVec, nil
 }
 
-// Initialize a Prometheus GaugeVec for one metric and register it
-// nolint:all   // Function is for expanding on metrics to introduce Gauges
-func initGaugeVec(r prometheus.Registerer, t MetricType) (*prometheus.GaugeVec, error) {
-	metricTypeOpts, ok := MetricTypeOpts[t]
-
-	if !ok {
-		panic(fmt.Sprintf("Event type %s is not defined", t))
-	}
-
-	opts := prometheus.GaugeOpts{
-		Name: string(t),
-		Help: metricTypeOpts.Help,
-	}
-	gaugeVec := prometheus.NewGaugeVec(opts, metricTypeOpts.LabelNames)
-
-	err := r.Register(gaugeVec)
-	if err != nil {
-		return nil, fmt.Errorf("%s not registered: %s ", t, err)
-	}
-	var alreadyRegisteredErr prometheus.AlreadyRegisteredError
-	if errors.As(err, &alreadyRegisteredErr) {
-		gaugeVec = alreadyRegisteredErr.ExistingCollector.(*prometheus.GaugeVec)
-	} else if err != nil {
-		panic(err)
-	}
-
-	return gaugeVec, nil
-}
-
 // Initialize all the Counter Vecs and save it in a map
 func InitAllCounterVecs(r prometheus.Registerer) map[MetricType]*prometheus.CounterVec {
 	for metricType := range MetricTypeOpts {
@@ -85,9 +56,10 @@ func IncrementCounterVec(e Event) error {
 	if counterVecs[e.eventType] == nil {
 		return fmt.Errorf("%s Event Type not found", e.eventType)
 	}
-	if counterVecs[e.eventType].With(e.labels) == nil {
+	cv := counterVecs[e.eventType].With(e.labels)
+	if cv == nil {
 		return fmt.Errorf("%s Labels for %s Event Type not found", e.labels, e.eventType)
 	}
-	counterVecs[e.eventType].With(e.labels).Inc()
+	cv.Inc()
 	return nil
 }
