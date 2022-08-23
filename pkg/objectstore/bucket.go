@@ -69,10 +69,6 @@ func newBucket(cfg ProviderConfig, c stow.Container, l stow.Location) *bucket {
 	return bucket
 }
 
-func (b *bucket) GetRegion() string {
-	return b.region
-}
-
 func getBucketRegion(cfg ProviderConfig, c stow.Container) string {
 	if IsGCSContainer(c) {
 		if gc, ok := c.(*google.Container); ok {
