@@ -16,6 +16,7 @@ package objectstore
 
 import (
 	"context"
+
 	"github.com/graymeta/stow"
 	"github.com/graymeta/stow/google"
 )
@@ -40,4 +41,3 @@ func IsGCSContainer(c stow.Container) bool {
 	}
 	return false
 }
-

@@ -28,10 +28,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
 	stowgcs "github.com/graymeta/stow/google"
-	"github.com/pkg/errors"
-
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/pkg/errors"
 )
 
 var _ Provider = (*provider)(nil)
