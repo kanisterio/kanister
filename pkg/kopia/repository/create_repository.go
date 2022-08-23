@@ -42,7 +42,7 @@ func CreateKopiaRepository(
 	namespace,
 	pod,
 	container,
-	artifactPrefix,
+	repoPathPrefix,
 	encryptionKey,
 	hostname,
 	username,
@@ -60,7 +60,7 @@ func CreateKopiaRepository(
 			LogDirectory:   logDirectory,
 		},
 		Prof:            prof,
-		ArtifactPrefix:  artifactPrefix,
+		ArtifactPrefix:  repoPathPrefix,
 		Hostname:        hostname,
 		Username:        username,
 		CacheDirectory:  cacheDirectory,
@@ -91,7 +91,7 @@ func CreateKopiaRepository(
 		namespace,
 		pod,
 		container,
-		artifactPrefix,
+		repoPathPrefix,
 		encryptionKey,
 		configFilePath,
 		logDirectory,
@@ -105,7 +105,7 @@ func CreateKopiaRepository(
 		namespace,
 		pod,
 		container,
-		artifactPrefix,
+		repoPathPrefix,
 		encryptionKey,
 		hostname,
 		username,
@@ -119,7 +119,7 @@ func CreateKopiaRepository(
 
 // setGlobalPolicy sets the global policy of the kopia repo to keep max-int32 latest
 // snapshots and zeros all other time-based retention fields
-func setGlobalPolicy(cli kubernetes.Interface, namespace, pod, container, artifactPrefix, encryptionKey, configFilePath, logDirectory string) error {
+func setGlobalPolicy(cli kubernetes.Interface, namespace, pod, container, repoPathPrefix, encryptionKey, configFilePath, logDirectory string) error {
 	cmd := kopia.PolicySetGlobalCommand(encryptionKey, configFilePath, logDirectory)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
@@ -133,7 +133,7 @@ func setCustomMaintenanceOwner(
 	namespace,
 	pod,
 	container,
-	artifactPrefix,
+	repoPathPrefix,
 	encryptionKey,
 	hostname,
 	username,
