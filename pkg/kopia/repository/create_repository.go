@@ -25,6 +25,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/policy"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	kanutils "github.com/kanisterio/kanister/pkg/utils"
@@ -120,7 +121,7 @@ func CreateKopiaRepository(
 // setGlobalPolicy sets the global policy of the kopia repo to keep max-int32 latest
 // snapshots and zeros all other time-based retention fields
 func setGlobalPolicy(cli kubernetes.Interface, namespace, pod, container, repoPathPrefix, encryptionKey, configFilePath, logDirectory string) error {
-	cmd := kopia.PolicySetGlobalCommand(encryptionKey, configFilePath, logDirectory)
+	cmd := policy.SetGlobalCommand(encryptionKey, configFilePath, logDirectory)
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)

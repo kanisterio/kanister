@@ -21,8 +21,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 )
 
-// PolicySetGlobalCommand creates the command for setting the global policy to the desired settings.
-func PolicySetGlobalCommand(encryptionKey, configFilePath, logDirectory string) []string {
+// SetGlobalCommand creates the command for setting the global policy to the desired settings.
+func SetGlobalCommand(encryptionKey, configFilePath, logDirectory string) []string {
 	const maxInt32 = 1<<31 - 1
 
 	pc := command.PolicyChangesArg{
