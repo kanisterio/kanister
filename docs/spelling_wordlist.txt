@@ -1,5 +1,6 @@
 actionset
 actionsets
+argo
 args
 aws
 backend
@@ -8,6 +9,8 @@ backupID
 backupInfo
 backupTag
 boolean
+cron
+Cron
 datapath
 datastore
 defaultProfile
@@ -29,7 +32,9 @@ Kubernetes
 lifecycle
 loki
 metadata
+mysql
 namespace
+namespaces
 objectstore
 observability
 outputArtifact
