@@ -29,3 +29,28 @@ func MaintenanceInfo(maintenanceInfoArgs MaintenanceInfoCommandArgs) []string {
 
 	return stringSliceCommand(args)
 }
+
+type MaintenanceSetOwnerCommandArgs struct {
+	*CommandArgs
+	CustomOwner string
+}
+
+// MaintenanceSetOwner returns the kopia command for setting custom maintenance owner
+func MaintenanceSetOwner(maintenanceSetOwnerArgs MaintenanceSetOwnerCommandArgs) []string {
+	args := commonArgs(maintenanceSetOwnerArgs.EncryptionKey, maintenanceSetOwnerArgs.ConfigFilePath, maintenanceSetOwnerArgs.LogDirectory, false)
+	args = args.AppendLoggable(maintenanceSubCommand, setSubCommand)
+	args = args.AppendLoggableKV(ownerFlag, maintenanceSetOwnerArgs.CustomOwner)
+	return stringSliceCommand(args)
+}
+
+type MaintenanceRunCommandCommandArgs struct {
+	*CommandArgs
+}
+
+// MaintenanceRunCommand returns the kopia command to run manual maintenance
+func MaintenanceRunCommand(maintenanceRunArgs MaintenanceRunCommandCommandArgs) []string {
+	args := commonArgs(maintenanceRunArgs.EncryptionKey, maintenanceRunArgs.ConfigFilePath, maintenanceRunArgs.LogDirectory, false)
+	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand)
+
+	return stringSliceCommand(args)
+}
