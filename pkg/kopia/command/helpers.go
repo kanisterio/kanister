@@ -30,6 +30,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
+const (
+	SnapshotCreateOutputRegEx = `\*.+[^\d](\d+) hashed \(([^\)]+)\), (\d+) cached \(([^\)]+)\), uploaded ([^\)]+),.+`
+)
+
 type policyChanges map[string]string
 
 func kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string, contentCacheMB, metadataCacheMB int) logsafe.Cmd {
@@ -110,7 +114,7 @@ func SnapshotStatsFromSnapshotCreate(snapCreateStderrOutput string) (stats *Snap
 	// 		sizeCachedB: 40000,
 	// 		sizeUploadedB: 6700000000,
 	// }, nil
-	pattern := regexp.MustCompile(`\*.+[^\d](\d+) hashed \(([^\)]+)\), (\d+) cached \(([^\)]+)\), uploaded ([^\)]+),.+`)
+	pattern := regexp.MustCompile(SnapshotCreateOutputRegEx)
 	for _, l := range logs {
 		match := pattern.FindStringSubmatch(l)
 		if match != nil && len(match) >= 6 {
