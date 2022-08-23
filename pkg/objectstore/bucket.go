@@ -19,7 +19,6 @@ package objectstore
 import (
 	"context"
 	"fmt"
-	"github.com/graymeta/stow/google"
 	"path"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -28,10 +27,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
-	"github.com/pkg/errors"
-
+	"github.com/graymeta/stow/google"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	"github.com/pkg/errors"
 )
 
 var _ Provider = (*provider)(nil)
