@@ -14,42 +14,6 @@
 
 package command
 
-type ServerAddUserCommandArgs struct {
-	*CommandArgs
-	NewUsername  string
-	UserPassword string
-}
-
-// ServerAddUser returns the kopia command adding a new user to the Kopia API Server
-func ServerAddUser(serverAddUserArgs ServerAddUserCommandArgs) []string {
-	args := commonArgs(serverAddUserArgs.EncryptionKey, serverAddUserArgs.ConfigFilePath, serverAddUserArgs.LogDirectory, false)
-	args = args.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, serverAddUserArgs.NewUsername)
-	args = args.AppendRedactedKV(userPasswordFlag, serverAddUserArgs.UserPassword)
-
-	return stringSliceCommand(args)
-}
-
-type ServerRefreshCommandArgs struct {
-	*CommandArgs
-	ServerAddress  string
-	ServerUsername string
-	ServerPassword string
-	Fingerprint    string
-}
-
-// ServerRefresh returns the kopia command for refreshing the Kopia API Server
-// This helps allow new users to be able to connect to the Server instead of waiting for auto-refresh
-func ServerRefresh(serverRefreshArgs ServerRefreshCommandArgs) []string {
-	args := commonArgs(serverRefreshArgs.EncryptionKey, serverRefreshArgs.ConfigFilePath, serverRefreshArgs.LogDirectory, false)
-	args = args.AppendLoggable(serverSubCommand, refreshSubCommand)
-	args = args.AppendRedactedKV(serverCertFingerprint, serverRefreshArgs.Fingerprint)
-	args = args.AppendLoggableKV(addressFlag, serverRefreshArgs.ServerAddress)
-	args = args.AppendLoggableKV(serverUsernameFlag, serverRefreshArgs.ServerUsername)
-	args = args.AppendRedactedKV(serverPasswordFlag, serverRefreshArgs.ServerPassword)
-
-	return stringSliceCommand(args)
-}
-
 type ServerStartCommandArgs struct {
 	*CommandArgs
 	ServerAddress    string
@@ -88,6 +52,27 @@ func ServerStart(serverStartArgs ServerStartCommandArgs) []string {
 	}
 
 	return bashCommand(args)
+}
+
+type ServerRefreshCommandArgs struct {
+	*CommandArgs
+	ServerAddress  string
+	ServerUsername string
+	ServerPassword string
+	Fingerprint    string
+}
+
+// ServerRefresh returns the kopia command for refreshing the Kopia API Server
+// This helps allow new users to be able to connect to the Server instead of waiting for auto-refresh
+func ServerRefresh(serverRefreshArgs ServerRefreshCommandArgs) []string {
+	args := commonArgs(serverRefreshArgs.EncryptionKey, serverRefreshArgs.ConfigFilePath, serverRefreshArgs.LogDirectory, false)
+	args = args.AppendLoggable(serverSubCommand, refreshSubCommand)
+	args = args.AppendRedactedKV(serverCertFingerprint, serverRefreshArgs.Fingerprint)
+	args = args.AppendLoggableKV(addressFlag, serverRefreshArgs.ServerAddress)
+	args = args.AppendLoggableKV(serverUsernameFlag, serverRefreshArgs.ServerUsername)
+	args = args.AppendRedactedKV(serverPasswordFlag, serverRefreshArgs.ServerPassword)
+
+	return stringSliceCommand(args)
 }
 
 type ServerStatusCommandArgs struct {
@@ -134,6 +119,21 @@ func ServerSetUser(
 	args := commonArgs(serverSetUserArgs.EncryptionKey, serverSetUserArgs.ConfigFilePath, serverSetUserArgs.LogDirectory, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, serverSetUserArgs.NewUsername)
 	args = args.AppendRedactedKV(userPasswordFlag, serverSetUserArgs.UserPassword)
+
+	return stringSliceCommand(args)
+}
+
+type ServerAddUserCommandArgs struct {
+	*CommandArgs
+	NewUsername  string
+	UserPassword string
+}
+
+// ServerAddUser returns the kopia command adding a new user to the Kopia API Server
+func ServerAddUser(serverAddUserArgs ServerAddUserCommandArgs) []string {
+	args := commonArgs(serverAddUserArgs.EncryptionKey, serverAddUserArgs.ConfigFilePath, serverAddUserArgs.LogDirectory, false)
+	args = args.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, serverAddUserArgs.NewUsername)
+	args = args.AppendRedactedKV(userPasswordFlag, serverAddUserArgs.UserPassword)
 
 	return stringSliceCommand(args)
 }
