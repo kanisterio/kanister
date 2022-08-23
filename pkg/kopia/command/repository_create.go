@@ -32,7 +32,6 @@ type RepositoryCreateCommandArgs struct {
 }
 
 // RepositoryCreate returns the kopia command for creation of a blob-store repo
-// TODO: Consolidate all the repository options into a struct and pass
 func RepositoryCreate(repositoryCreateArgs RepositoryCreateCommandArgs) ([]string, error) {
 	args := commonArgs(repositoryCreateArgs.EncryptionKey, repositoryCreateArgs.ConfigFilePath, repositoryCreateArgs.LogDirectory, false)
 	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)

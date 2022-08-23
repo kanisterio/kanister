@@ -91,15 +91,15 @@ func HttpInsecureEndpoint(endpoint string) bool {
 // GenerateFullRepoPath defines the manner in which a location-specific prefix
 // string is joined with a repository-specific prefix to generate the full path
 // for a kopia repository.
-func GenerateFullRepoPath(locPrefix string, artifactPrefix string) string {
+func GenerateFullRepoPath(locPrefix string, repoPathPrefix string) string {
 	if locPrefix != "" {
-		return path.Join(locPrefix, artifactPrefix) + "/"
+		return path.Join(locPrefix, repoPathPrefix) + "/"
 	}
 
-	return artifactPrefix
+	return repoPathPrefix
 }
 
-func kopiaS3Args(prof kopia.Profile, artifactPrefix string) (logsafe.Cmd, error) {
+func kopiaS3Args(prof kopia.Profile, repoPathPrefix string) (logsafe.Cmd, error) {
 	args := logsafe.NewLoggable(s3SubCommand)
 	args = args.AppendLoggableKV(bucketFlag, prof.BucketName())
 
@@ -113,7 +113,7 @@ func kopiaS3Args(prof kopia.Profile, artifactPrefix string) (logsafe.Cmd, error)
 		}
 	}
 
-	artifactPrefix = GenerateFullRepoPath(prof.Prefix(), artifactPrefix)
+	repoPathPrefix = GenerateFullRepoPath(prof.Prefix(), repoPathPrefix)
 
 	credArgs, err := kopiaS3CredentialArgs(prof)
 	if err != nil {
@@ -121,7 +121,7 @@ func kopiaS3Args(prof kopia.Profile, artifactPrefix string) (logsafe.Cmd, error)
 	}
 
 	args = args.Combine(credArgs)
-	args = args.AppendLoggableKV(prefixFlag, artifactPrefix)
+	args = args.AppendLoggableKV(prefixFlag, repoPathPrefix)
 
 	if prof.SkipSSLVerification() {
 		args = args.AppendLoggable(disableTLSVerifyFlag)
@@ -170,12 +170,12 @@ func kopiaS3CredentialArgs(prof kopia.Profile) (logsafe.Cmd, error) {
 	}
 }
 
-func kopiaAzureArgs(prof kopia.Profile, artifactPrefix string) (logsafe.Cmd, error) {
-	artifactPrefix = GenerateFullRepoPath(prof.Prefix(), artifactPrefix)
+func kopiaAzureArgs(prof kopia.Profile, repoPathPrefix string) (logsafe.Cmd, error) {
+	repoPathPrefix = GenerateFullRepoPath(prof.Prefix(), repoPathPrefix)
 
 	args := logsafe.NewLoggable(azureSubCommand)
 	args = args.AppendLoggableKV(containerFlag, prof.BucketName())
-	args = args.AppendLoggableKV(prefixFlag, artifactPrefix)
+	args = args.AppendLoggableKV(prefixFlag, repoPathPrefix)
 
 	credArgs, err := kopiaAzureCredentialArgs(prof)
 	if err != nil {
@@ -222,36 +222,36 @@ func kopiaAzureCredentialArgs(prof kopia.Profile) (logsafe.Cmd, error) {
 	return args, nil
 }
 
-func kopiaGCSArgs(prof kopia.Profile, artifactPrefix string) logsafe.Cmd {
-	artifactPrefix = GenerateFullRepoPath(prof.Prefix(), artifactPrefix)
+func kopiaGCSArgs(prof kopia.Profile, repoPathPrefix string) logsafe.Cmd {
+	repoPathPrefix = GenerateFullRepoPath(prof.Prefix(), repoPathPrefix)
 
 	args := logsafe.NewLoggable(googleSubCommand)
 	args = args.AppendLoggableKV(bucketFlag, prof.BucketName())
 	args = args.AppendLoggableKV(credentialsFileFlag, consts.GoogleCloudCredsFilePath)
-	return args.AppendLoggableKV(prefixFlag, artifactPrefix)
+	return args.AppendLoggableKV(prefixFlag, repoPathPrefix)
 }
 
-func filesystemArgs(prof kopia.Profile, artifactPrefix string) logsafe.Cmd {
-	artifactPrefix = GenerateFullRepoPath(prof.Prefix(), artifactPrefix)
+func filesystemArgs(prof kopia.Profile, repoPathPrefix string) logsafe.Cmd {
+	repoPathPrefix = GenerateFullRepoPath(prof.Prefix(), repoPathPrefix)
 
 	args := logsafe.NewLoggable(filesystemSubCommand)
-	return args.AppendLoggableKV(pathFlag, kopia.DefaultFSMountPath+"/"+artifactPrefix)
+	return args.AppendLoggableKV(pathFlag, kopia.DefaultFSMountPath+"/"+repoPathPrefix)
 }
 
-func kopiaBlobStoreArgs(prof kopia.Profile, artifactPrefix string) (logsafe.Cmd, error) {
+func kopiaBlobStoreArgs(prof kopia.Profile, repoPathPrefix string) (logsafe.Cmd, error) {
 	locType, err := prof.LocationType()
 	if err != nil {
 		return nil, err
 	}
 	switch locType {
 	//case LocationTypeFileStore:
-	//	return filesystemArgs(prof, artifactPrefix), nil
+	//	return filesystemArgs(prof, repoPathPrefix), nil
 	case kopia.LocationTypeS3:
-		return kopiaS3Args(prof, artifactPrefix)
+		return kopiaS3Args(prof, repoPathPrefix)
 	case kopia.LocationTypeGCS:
-		return kopiaGCSArgs(prof, artifactPrefix), nil
+		return kopiaGCSArgs(prof, repoPathPrefix), nil
 	case kopia.LocationTypeAzure:
-		return kopiaAzureArgs(prof, artifactPrefix)
+		return kopiaAzureArgs(prof, repoPathPrefix)
 	default:
 		return nil, errors.New(fmt.Sprintf("Unsupported type for the location %s", locType))
 	}
