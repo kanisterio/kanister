@@ -213,15 +213,6 @@ func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
 	if err := validate.ActionSet(as); err != nil {
 		return err
 	}
-	// ActionSet created
-	// Ideally a function such a getStatus() should return the labels corresponding to the current status of the system.
-	// These labels will be passed to a function in the metrics package
-	// Also, a list of events to update metrics should be created and incremented.
-	for _, a := range as.Spec.Actions {
-		if err := metrics.IncrementCounterVec(metrics.NewActionSetTotalCreated(a.Name, as.GetNamespace())); err != nil {
-			log.Error().WithError(err).Print("Metrics Incrementation failed")
-		}
-	}
 	return c.handleActionSet(as)
 }
 
@@ -377,6 +368,17 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	if as.Status.State != crv1alpha1.StatePending {
 		return nil
 	}
+
+	// ActionSet created
+	// Ideally a function such a getStatus() should return the labels corresponding to the current status of the system.
+	// These labels will be passed to a function in the metrics package
+	// Also, a list of events to update metrics should be created and incremented.
+	for _, a := range as.Spec.Actions {
+		if err := metrics.IncrementCounterVec(metrics.NewActionSetTotalCreated(a.Name, as.GetNamespace())); err != nil {
+			log.Error().WithError(err).Print("Metrics Incrementation failed")
+		}
+	}
+
 	as.Status.State = crv1alpha1.StateRunning
 	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.TODO(), as, v1.UpdateOptions{}); err != nil {
 		return errors.WithStack(err)

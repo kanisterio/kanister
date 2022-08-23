@@ -1,6 +1,10 @@
 package metrics
 
-// MetricType will represent the type of the Prometheus metric.
+// This file contains wrapper functions that will map a Prometheus metric names to its
+// label field, help field and an associated Event.
+
+// MetricType will represent a Prometheus metric.
+// A variable of type MetricType will hold the name of the Prometheus metric as reported.
 type MetricType string
 
 const (
@@ -16,14 +20,18 @@ const (
 	ActionSetTotalCompletedType MetricType = "actionset_total_completed_count"
 )
 
-//MetricTypeOpt is a struct for a Prometheus metric
+// MetricTypeOpt is a struct for a Prometheus metric.
+// Help and LabelNames are passed directly to the Prometheus predefined functions.
+// EventFunc holds the constructor of the linked Event of a given MetricType.
 type MetricTypeOpt struct {
 	EventFunc  interface{}
 	Help       string
 	LabelNames []string
 }
 
-// Mapping a Prometheus metric name to the metric MetricTypeOpt struct
+// Mapping a Prometheus MetricType to the metric MetricTypeOpt struct.
+// Basically, a metric name is mapped to its associated Help and LabelName fields.
+// The linked event function (EventFunc) is also mapped to this metric name as a part of MetricTypeOpt.
 var MetricTypeOpts = map[MetricType]MetricTypeOpt{
 	SampleCountType: {
 		EventFunc:  NewSampleCount,
@@ -64,6 +72,8 @@ var MetricTypeOpts = map[MetricType]MetricTypeOpt{
 }
 
 // Event describes an individual event.
+// eventType is the MetricType with which the individial Event is associated.
+// Labels are the metric labels that will be passed to Prometheus.
 //
 // Note: The type and labels are private in order to force the use of the
 // event constructors below. This helps to prevent an event from being
