@@ -23,7 +23,7 @@ import (
 type RepositoryCreateCommandArgs struct {
 	*CommandArgs
 	Prof            kopia.Profile
-	ArtifactPrefix  string
+	RepoPathPrefix  string
 	Hostname        string
 	Username        string
 	CacheDirectory  string
@@ -46,7 +46,7 @@ func RepositoryCreate(repositoryCreateArgs RepositoryCreateCommandArgs) ([]strin
 		args = args.AppendLoggableKV(overrideUsernameFlag, repositoryCreateArgs.Username)
 	}
 
-	bsArgs, err := kopiaBlobStoreArgs(repositoryCreateArgs.Prof, repositoryCreateArgs.ArtifactPrefix)
+	bsArgs, err := kopiaBlobStoreArgs(repositoryCreateArgs.Prof, repositoryCreateArgs.RepoPathPrefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to generate blob store args")
 	}

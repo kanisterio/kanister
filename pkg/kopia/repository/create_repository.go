@@ -60,7 +60,7 @@ func CreateKopiaRepository(
 			LogDirectory:   logDirectory,
 		},
 		Prof:            prof,
-		ArtifactPrefix:  repoPathPrefix,
+		RepoPathPrefix:  repoPathPrefix,
 		Hostname:        hostname,
 		Username:        username,
 		CacheDirectory:  cacheDirectory,
