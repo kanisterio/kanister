@@ -46,13 +46,24 @@ const (
 )
 
 func Execute() {
+	execute(nil)
+}
+
+func ExecuteWithCustomConfig(config *rest.Config) {
+	execute(config)
+}
+
+func execute(config *rest.Config) {
 	ctx := context.Background()
 	// Initialize the clients.
 	log.Print("Getting kubernetes context")
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		log.WithError(err).Print("Failed to get k8s config")
-		return
+	if config == nil {
+		var err error
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			log.WithError(err).Print("Failed to get k8s config")
+			return
+		}
 	}
 
 	// Run HTTPS webhook server if webhook certificates are mounted in the pod
