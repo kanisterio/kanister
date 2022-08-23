@@ -51,7 +51,6 @@ const (
 	metadataCacheSizeMBFlag    = "--metadata-cache-size-mb"
 	noCheckForUpdatesFlag      = "--no-check-for-updates"
 	noGrpcFlag                 = "--no-grpc"
-	noProgressFlag             = "--no-progress"
 	overrideHostnameFlag       = "--override-hostname"
 	overrideUsernameFlag       = "--override-username"
 	parallelFlag               = "--parallel"
@@ -105,8 +104,4 @@ const (
 	tlsKeyFilePath            = "--tls-key-file"
 	urlFlag                   = "--url"
 	userPasswordFlag          = "--user-password"
-
-	// Filesystem specific
-	filesystemSubCommand = "filesystem"
-	pathFlag             = "--path"
 )

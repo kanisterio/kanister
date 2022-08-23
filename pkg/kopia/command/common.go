@@ -231,21 +231,12 @@ func kopiaGCSArgs(prof kopia.Profile, repoPathPrefix string) logsafe.Cmd {
 	return args.AppendLoggableKV(prefixFlag, repoPathPrefix)
 }
 
-func filesystemArgs(prof kopia.Profile, repoPathPrefix string) logsafe.Cmd {
-	repoPathPrefix = GenerateFullRepoPath(prof.Prefix(), repoPathPrefix)
-
-	args := logsafe.NewLoggable(filesystemSubCommand)
-	return args.AppendLoggableKV(pathFlag, kopia.DefaultFSMountPath+"/"+repoPathPrefix)
-}
-
 func kopiaBlobStoreArgs(prof kopia.Profile, repoPathPrefix string) (logsafe.Cmd, error) {
 	locType, err := prof.LocationType()
 	if err != nil {
 		return nil, err
 	}
 	switch locType {
-	//case LocationTypeFileStore:
-	//	return filesystemArgs(prof, repoPathPrefix), nil
 	case kopia.LocationTypeS3:
 		return kopiaS3Args(prof, repoPathPrefix)
 	case kopia.LocationTypeGCS:
