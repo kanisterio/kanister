@@ -70,6 +70,21 @@ var _ = Suite(&MySQL{
 	},
 })
 
+// cockroachdb app
+type CockroachDB struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&CockroachDB{
+	IntegrationSuite{
+		name:      "cockroachdb",
+		namespace: "cockroachdb-test",
+		app:       app.NewCockroachDB("cockroachdb"),
+		bp:        app.NewBlueprint("cockroachdb", "", false),
+		profile:   newSecretProfile(),
+	},
+})
+
 // time-log app for csi volumesnapshot
 type TimeLogCSI struct {
 	IntegrationSuite
