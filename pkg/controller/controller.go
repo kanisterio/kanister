@@ -374,7 +374,7 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 	// These labels will be passed to a function in the metrics package
 	// Also, a list of events to update metrics should be created and incremented.
 	for _, a := range as.Spec.Actions {
-		if err := metrics.IncrementCounterVec(metrics.NewActionSetTotalCreated(a.Name, as.GetNamespace())); err != nil {
+		if err := metrics.IncrementCounterVec(metrics.NewActionSetCreatedTotal(a.Name, as.GetNamespace())); err != nil {
 			log.Error().WithError(err).Print("Metrics Incrementation failed")
 		}
 	}

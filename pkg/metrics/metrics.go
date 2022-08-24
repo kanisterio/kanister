@@ -12,10 +12,10 @@ var counterVecs = make(map[MetricType]*prometheus.CounterVec)
 
 // Initialize a Prometheus CounterVec for one metric and register it
 func initCounterVec(r prometheus.Registerer, t MetricType) (*prometheus.CounterVec, error) {
-	metricTypeOpts, ok := MetricTypeOpts[t]
+	metricTypeOpts, ok := MetricCounterOpts[t]
 
 	if !ok {
-		panic(fmt.Sprintf("Event type %s is not defined", t))
+		return nil, fmt.Errorf("Event type %s is not defined", t)
 	}
 
 	opts := prometheus.CounterOpts{
@@ -32,7 +32,7 @@ func initCounterVec(r prometheus.Registerer, t MetricType) (*prometheus.CounterV
 	if errors.As(err, &alreadyRegisteredErr) {
 		counterVec = alreadyRegisteredErr.ExistingCollector.(*prometheus.CounterVec)
 	} else if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("Error registering Counter Vecs : %s ", err)
 	}
 
 	return counterVec, nil
@@ -40,7 +40,7 @@ func initCounterVec(r prometheus.Registerer, t MetricType) (*prometheus.CounterV
 
 // Initialize all the Counter Vecs and save it in a map
 func InitAllCounterVecs(r prometheus.Registerer) map[MetricType]*prometheus.CounterVec {
-	for metricType := range MetricTypeOpts {
+	for metricType := range MetricCounterOpts {
 		cv, err := initCounterVec(r, metricType)
 		if err != nil {
 			log.WithError(err).Print("Failed to register metric %s")

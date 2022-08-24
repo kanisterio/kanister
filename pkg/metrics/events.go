@@ -8,16 +8,9 @@ package metrics
 type MetricType string
 
 const (
-	SampleCountType MetricType = "sample_count"
-
-	ActionSetBackupCreatedType   MetricType = "actionset_backup_created_count"
-	ActionSetBackupCompletedType MetricType = "actionset_backup_completed_count"
-
-	ActionSetRestoreCreatedType   MetricType = "actionset_restore_created_count"
-	ActionSetRestoreCompletedType MetricType = "actionset_restore_completed_count"
-
-	ActionSetTotalCreatedType   MetricType = "actionset_total_created_count"
-	ActionSetTotalCompletedType MetricType = "actionset_total_completed_count"
+	ActionSetCreatedTotalType   MetricType = "kanister_actionset_created_total"
+	ActionSetCompletedTotalType MetricType = "kanister_actionset_completed_total"
+	ActionSetFailedTotalType    MetricType = "kanister_actionset_failed_total"
 )
 
 // MetricTypeOpt is a struct for a Prometheus metric.
@@ -32,42 +25,21 @@ type MetricTypeOpt struct {
 // Mapping a Prometheus MetricType to the metric MetricTypeOpt struct.
 // Basically, a metric name is mapped to its associated Help and LabelName fields.
 // The linked event function (EventFunc) is also mapped to this metric name as a part of MetricTypeOpt.
-var MetricTypeOpts = map[MetricType]MetricTypeOpt{
-	SampleCountType: {
-		EventFunc:  NewSampleCount,
-		Help:       "Sample counter to remove later",
-		LabelNames: []string{"sample"},
-	},
-
-	ActionSetBackupCreatedType: {
-		EventFunc: NewActionSetBackupCreated,
-		Help:      "The count of backup ActionSets created",
-	},
-	ActionSetBackupCompletedType: {
-		EventFunc:  NewActionSetBackupCompleted,
-		Help:       "The count of backup ActionSets completed",
-		LabelNames: []string{"state"},
-	},
-
-	ActionSetRestoreCreatedType: {
-		EventFunc: NewActionSetRestoreCreated,
-		Help:      "The count of restore ActionSets created",
-	},
-	ActionSetRestoreCompletedType: {
-		EventFunc:  NewActionSetRestoreCompleted,
-		Help:       "The count of restore ActionSets completed",
-		LabelNames: []string{"state"},
-	},
-
-	ActionSetTotalCreatedType: {
-		EventFunc:  NewActionSetTotalCreated,
+var MetricCounterOpts = map[MetricType]MetricTypeOpt{
+	ActionSetCreatedTotalType: {
+		EventFunc:  NewActionSetCreatedTotal,
 		Help:       "The count of total ActionSets created",
 		LabelNames: []string{"actionType", "namespace"},
 	},
-	ActionSetTotalCompletedType: {
-		EventFunc:  NewActionSetTotalCompleted,
+	ActionSetCompletedTotalType: {
+		EventFunc:  NewActionSetCompletedTotal,
 		Help:       "The count of total ActionSets completed",
-		LabelNames: []string{"actionType", "namespace", "state"},
+		LabelNames: []string{"actionName", "actionType", "blueprint", "namespace", "state"},
+	},
+	ActionSetFailedTotalType: {
+		EventFunc:  NewActionSetFailedTotal,
+		Help:       "The count of total ActionSets failed",
+		LabelNames: []string{"actionName", "actionType", "blueprint", "namespace", "state"},
 	},
 }
 
@@ -98,48 +70,9 @@ func (e *Event) Labels() map[string]string {
 	return labels
 }
 
-func NewSampleCount(sample string) Event {
+func NewActionSetCreatedTotal(actionType string, namespace string) Event {
 	return Event{
-		eventType: SampleCountType,
-		labels: map[string]string{
-			"sample": sample,
-		},
-	}
-}
-
-func NewActionSetBackupCreated() Event {
-	return Event{
-		eventType: ActionSetBackupCreatedType,
-	}
-}
-
-func NewActionSetBackupCompleted(state string) Event {
-	return Event{
-		eventType: ActionSetBackupCompletedType,
-		labels: map[string]string{
-			"state": state,
-		},
-	}
-}
-
-func NewActionSetRestoreCreated() Event {
-	return Event{
-		eventType: ActionSetRestoreCreatedType,
-	}
-}
-
-func NewActionSetRestoreCompleted(state string) Event {
-	return Event{
-		eventType: ActionSetRestoreCompletedType,
-		labels: map[string]string{
-			"state": state,
-		},
-	}
-}
-
-func NewActionSetTotalCreated(actionType string, namespace string) Event {
-	return Event{
-		eventType: ActionSetTotalCreatedType,
+		eventType: ActionSetCreatedTotalType,
 		labels: map[string]string{
 			"actionType": actionType,
 			"namespace":  namespace,
@@ -147,11 +80,26 @@ func NewActionSetTotalCreated(actionType string, namespace string) Event {
 	}
 }
 
-func NewActionSetTotalCompleted(actionType string, namespace string, state string) Event {
+func NewActionSetCompletedTotal(actionName string, actionType string, blueprint string, namespace string, state string) Event {
 	return Event{
-		eventType: ActionSetTotalCompletedType,
+		eventType: ActionSetCompletedTotalType,
 		labels: map[string]string{
+			"actionName": actionName,
 			"actionType": actionType,
+			"blueprint":  blueprint,
+			"namespace":  namespace,
+			"state":      state,
+		},
+	}
+}
+
+func NewActionSetFailedTotal(actionName string, actionType string, blueprint string, namespace string, state string) Event {
+	return Event{
+		eventType: ActionSetFailedTotalType,
+		labels: map[string]string{
+			"actionName": actionName,
+			"actionType": actionType,
+			"blueprint":  blueprint,
 			"namespace":  namespace,
 			"state":      state,
 		},
