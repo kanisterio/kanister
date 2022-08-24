@@ -245,14 +245,14 @@ func (c *CockroachDB) Reset(ctx context.Context) error {
 		return errors.Wrapf(err, "Error waiting for application %s to be ready to reset it", c.name)
 	}
 
-	log.Print("Resetting the mysql instance.", field.M{"app": "mysql"})
+	log.Print("Resetting the cockroachdb instance.", field.M{"app": "cockroachdb"})
 
 	// delete all the data from the table
 	deleteFromTableCMD := "./cockroach sql --certs-dir=/cockroach/cockroach-client-certs -e 'DROP DATABASE IF EXISTS bank;'"
 	deleteFromTable := []string{"sh", "-c", deleteFromTableCMD}
 	_, stderr, err := c.execCommand(ctx, deleteFromTable)
 	if err != nil {
-		return errors.Wrapf(err, "Error while dropping the mysql table: %s", stderr)
+		return errors.Wrapf(err, "Error while dropping the table: %s", stderr)
 	}
 
 	log.Print("Reset of the application was successful.", field.M{"app": c.name})
