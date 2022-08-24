@@ -7,7 +7,6 @@
   - [Client-Side Setup](#client-side-setup)
 - [Server Access Users Management](#server-access-users-management)
   - [Predefined Users List](#predefined-users-list)
-  - [Dynamic Users List](#dynamic-users-list)
 - [Integration Modes](#integration-modes)
   - [Global Mode](#global-mode)
   - [Namespace Mode](#namespace-mode)
@@ -37,6 +36,8 @@ kind: Repository
 metadata:
   name: repository-monitoring
   namespace: kanister
+  annotations:
+    repo.kanister.io/repo-scope: namespace
   labels:
     repo.kanister.io/target-namespace: monitoring
 spec:
@@ -46,12 +47,13 @@ spec:
     # required
     secretName: repository-monitoring-location
   server:
+    # number of server replicas  - default to 1, can be zero
     replicas: 1
     # optional - use Kopia's default if omitted
     adminSecretName: repository-monitoring-server-admin
     # optional - no TLS if omitted
     tlsSecretName: repository-monitoring-server-tls
-    # optional - use Kopia's default if omitted
+    # required - at least one
     accessSecretNames:
     - repository-monitoring-server-access
   policy:
@@ -78,11 +80,11 @@ status:
     type: ServerReady
 ```
 
-The repository contains only snapshots of workloads running in the namespace
-specified by the immutable `spec.targetNamespace` property.
+The repository contains only snapshots of workloads in the namespace specified
+by the immutable `spec.targetNamespace` property.
 
-The `spec.location.secretName` refers to a `Secret` resource storing location-related
-sensitive data:
+The required `spec.location.secretName` refers to a `Secret` resource storing
+location-related sensitive data. This secret is provided by the user. E.g.,
 
 ```yaml
 apiVersion: v1
@@ -106,7 +108,7 @@ data:
 ```
 
 The server admin, control access and TLS sensitive data are stored in the
-`Secret` resources referenced by the `spec.server.adminSecretName` and
+`Secret` resources referenced by the optional `spec.server.adminSecretName` and
 `spec.server.tlsSecretName` properties. E.g.,
 
 ```yaml
@@ -137,14 +139,14 @@ data:
     <redacted>
 ```
 
-The `spec.server.accessSecretNames` provides a list of access credentials used
-by data mover clients to authenticate with the Kopia server. This is discussed
-in more details in the
+The optional `spec.server.accessSecretNames` property provides a list of access
+credentials used by data mover clients to authenticate with the Kopia server.
+This is discussed in more details in the
 [Server Access Users Management](#server-access-users-management) section.
 
 The `spec.server.replicas` policy determines how many replicas of the Kopia
-servers should be running. If set to `0`, then the repository will be
-inaccessible.
+servers should be running. If set to `0`, then no servers will be available to
+front the repository. (The repository is still reachable using the Kopia CLI.)
 
 The `spec.policy` property can be used to change the snapshot settings of the
 respository at the global, user or directory levels. It maps to the
@@ -177,8 +179,8 @@ kopia repository create s3 \
 ### Server-Side Setup
 
 Once the repository is ready, the controller will schedule a Kopia server
-instance to run in the `kanister` namespace, as a `Deployment` workload. The
-server is started using the equivalent of this command:
+instance to run in the `kanister` namespace, as a `Pod` workload. The server is
+started using the equivalent of this command:
 
 ```sh
 kopia server start --address=0.0.0.0:51515 \
@@ -191,13 +193,13 @@ kopia server start --address=0.0.0.0:51515 \
   --server-control-password=<redacted> \
 ```
 
-The `/run/kopia/repo.config` configuration file is generated from the data found
-in the secret referenced by the repository's `spec.location.secretName` property.
-See the [Kopia documentation][3] and [GitHub source code][4] for more
-information on the configuration file format, and supported configuration.
+The `/run/kopia/repo.config` configuration file is generated from the secret
+referenced by the `spec.location.secretName` property. See the
+[Kopia documentation][3] and [GitHub source code][4] for more information on the
+configuration file format, and supported configuration.
 
 The `/run/kopia/tls.crt` and `/run/kopia/tls.key` files contain the TLS x509
-certificate and private key read from the secret referenced by the repository's
+certificate and private key read from the secret referenced by the
 `spec.server.tlsSecretName` property.
 
 The credentials for the `--server-username`, `--server-password`,
@@ -218,10 +220,10 @@ kopia repository connect server \
 ```
 
 The `<service-name>` is the Kopia server's `Service` resource name. By
-convention, it includes the repository's `targetedNamespace`. E.g., the
-`Service` fronting the Kopia server of a repository serving the
-`monitoring` namespace can be `repo-monitoring`. Then its FQDN is
-`repo-monitoring.kanister.svc.cluster.local`.
+convention, this auto-generated name includes the repository's
+`targetedNamespace`. E.g., the `Service` fronting the Kopia server of a
+repository serving the `monitoring` namespace can be `repo-monitoring`. Then its
+FQDN is `repo-monitoring-svr-0.kanister.svc.cluster.local`.
 
 The access username used to authenticate with the Kopia server is added to the
 `/run/kopia/repo.config` configuration file, following the
@@ -238,16 +240,21 @@ of `kopia snapshot` subcommands to manage snapshots.
 
 In order for a data mover client to connect to the Kopia server, it needs to
 provide [an access username and password][6] for authentication purposes. This
-section describes two approaches to add these access credentials to the Kopia
+section describes the approach to add these access credentials to the Kopia
 server.
 
 ### Predefined Users List
 
 When a Kopia server starts, it registers the set of users defined in the
 `spec.server.accessSecretNames` property of the `Repository` resource. This
-property refers to a list of `Secret` resources containing credentials for the
-[server access users][6]. The permissions of these users are governed by the
-Kopia server [access rules][7].
+property refers to a list of pre-created `Secret` resources containing
+credentials for the [server access users][6].
+
+>🔒 Users are responsible for the safekeeping of these secrets. If lost,
+> Kanister won't be able to retrieve them.
+
+The permissions of these access users are governed by the Kopia server
+[access rules][7].
 
 This configuration is most suitable for setup models that have their own
 workload credential-generation reconcilers.
@@ -299,56 +306,13 @@ kopia server user add <username>@<namespace>.<workload-identifier> \
   --password=<repo-password>
 ```
 
-Changing the credentials in this secret will require server to rebuild its
-access user list. This is achieved by restarting the server.
+Updating the `spec.server.accessSecretNames` property will cause the server to
+rebuild its access user list, via `PUT` requests to the server's `/refresh`
+endpoint.
 
-### Dynamic Users List
-
-To support use cases without predefined users list, the controller can
-auto-generate access credentials for workloads which are labeled with the
-`repo.kanister.io/authn-mode: service-account` label.
-
-This label selection opt-in mechanism ensures that credentials are created only
-for selected stateful workloads, instead of all workloads within the namespace,
-many of which may not require data protection.
-
-The username is comprised of the workload's service account name, namespace and
-the workload identifier. The password is generated by invoking the K8s
-[`TokenRequest` API][8] to issue an API token bound to the workload's
-service account.
-
-E.g., given the following `StatefulSet` workload:
-
-```yaml
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: mysql
-  namespace: data-farm
-  labels:
-    repo.kanister.io/authn-mode: service-account
-spec:
-  template:
-    spec:
-      serviceAccountName: mysql-sa
-```
-
-the `RepositoryController` controller then issues a `TokenRequest` request for
-an API token bound to the `mysql-sa` service account.
-
-The auto-generated access username is:
-
-```sh
-mysql-sa@data-farm.mysql
-```
-
-The trust boundary established by this service-account-based approach implies
-that all workloads sharing the same service accounts trust each other, and can
-access each other's snapshots.
-
-The controller continues to watch for `CREATE`, `UPDATE` and `DELETE` events
-of labeled workloads in the cluster, in order to reconcile the server's list of
-access credentials accordingly.
+The server also establishes a watch on its access users file. When this file is
+updated (due to changes to the underlying secret), the server will also rebuild
+its access user list.
 
 ## Integration Modes
 
@@ -383,17 +347,20 @@ kind: Repository
 metadata:
   name: repository-global
   namespace: kanister
+  annotations:
+    repo.kanister.io/repo-scope: global
 spec:
   location:
     # required
     secretName: repository-global
   server:
+    # number of server replicas  - default to 1, can be zero
     replicas: 1
     # optional - use Kopia's default if omitted
     adminSecretName: repository-global-server-admin
     # optional - no TLS if omitted
     tlsSecretName: repository-global-server-tls
-    # optional - use Kopia's default if omitted
+    # required - only one
     accessSecretNames:
     - repository-global-access
   policy:
@@ -424,7 +391,7 @@ There will only be a single
 [server access credential](#server-access-users-management) generated from the
 service account of the `RepositoryController` controller.
 
-The controller running in this mode is annotated with the
+The controller and the `Repository` resource running are annotated with the
 `repo.kanister.io/repo-scope: global` annotation.
 
 ### Namespace Mode
@@ -436,8 +403,8 @@ different backend storage target.
 
 In this mode, the global repository will not be created.
 
-The controller running in this mode is annotated with the
-`repo.kanister.io/repo-scope: namespace` annotation.
+The controller and the `Repository` resource running are annotated with the
+`repo.kanister.io/repo-scope: global` annotation.
 
 ### Migration Between Modes
 
