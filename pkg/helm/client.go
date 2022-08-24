@@ -47,6 +47,10 @@ const (
 	KafkaOperatorRepoName = "strimzi"
 	KafkaOperatorRepoURL  = "https://strimzi.io/charts"
 
+	// Add cockroachdb chart
+	CockroachDBRepoName = "cockroachdb"
+	CockroachDBRepoURL  = "https://charts.cockroachdb.com/"
+
 	// HelmVersion to differentiate between helm2 and helm3 commands
 	V2 HelmVersion = "helmv2"
 	V3 HelmVersion = "helmv3"
@@ -134,9 +138,9 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 
 	var cmd []string
 	if h.version == V3 {
-		cmd = []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait", "--create-namespace"}
+		cmd = []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--create-namespace"}
 	} else {
-		cmd = []string{"install", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
+		cmd = []string{"install", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals}
 	}
 
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
