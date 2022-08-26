@@ -255,7 +255,12 @@ func (c *CockroachDB) Reset(ctx context.Context) error {
 		return errors.Wrapf(err, "Error while dropping the table: %s", stderr)
 	}
 
+	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		err := c.waitForGC(ctx)
+		return err == nil, nil
+	})
 	log.Print("Reset of the application was successful.", field.M{"app": c.name})
+
 	return nil
 }
 
@@ -279,4 +284,20 @@ func (c *CockroachDB) execCommand(ctx context.Context, command []string) (string
 		return "", "", errors.Wrapf(err, "Error  getting pod and container name %s.", c.name)
 	}
 	return kube.Exec(c.cli, c.namespace, podName, containerName, command, nil)
+}
+
+func (c *CockroachDB) waitForGC(ctx context.Context) error {
+	log.Info().Print("Getting Data from descriptor table", field.M{"app": c.name})
+	getDescriptorCMD := "./cockroach sql --certs-dir=/cockroach/cockroach-client-certs -e 'SELECT * FROM system.descriptor;'"
+	getDescriptor := []string{"sh", "-c", getDescriptorCMD}
+	stdout, stderr, err := c.execCommand(ctx, getDescriptor)
+	if err != nil {
+		return errors.Wrapf(err, "Error while getiing descriptor table data: %s", stderr)
+	}
+	bankInDescriptor := strings.Contains(stdout, "bank") || strings.Contains(stdout, "account")
+	log.Info().Print("bankInDescriptor:  ", field.M{"value": bankInDescriptor})
+	if bankInDescriptor {
+		return errors.New("Bank Database exists. Waiting for garbage collection to remove")
+	}
+	return nil
 }
