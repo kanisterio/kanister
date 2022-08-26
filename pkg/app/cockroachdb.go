@@ -103,7 +103,7 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 		c.tlskey = string(secret.Data["tls.key"])
 	}
 
-	createCrtDirCmd := fmt.Sprintf("mkdir -p /cockroach/cockroach-client-certs")
+	createCrtDirCmd := "mkdir -p /cockroach/cockroach-client-certs"
 	createCrtDir := []string{"sh", "-c", createCrtDirCmd}
 	_, stderr, err := c.execCommand(ctx, createCrtDir)
 	if err != nil {
@@ -256,7 +256,7 @@ func (c *CockroachDB) Reset(ctx context.Context) error {
 	}
 
 	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
-		err := c.waitForGC(ctx)
+		err = c.waitForGC(ctx)
 		return err == nil, nil
 	})
 	log.Print("Reset of the application was successful.", field.M{"app": c.name})
