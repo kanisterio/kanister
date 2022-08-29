@@ -138,9 +138,9 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 
 	var cmd []string
 	if h.version == V3 {
-		cmd = []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--create-namespace"}
+		cmd = []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait", "--create-namespace", "--wait"}
 	} else {
-		cmd = []string{"install", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals}
+		cmd = []string{"install", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
 	}
 
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
