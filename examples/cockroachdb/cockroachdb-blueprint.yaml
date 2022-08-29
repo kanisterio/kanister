@@ -72,7 +72,7 @@ actions:
                 then
                   cmd="BACKUP INTO '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}&AWS_REGION=${aws_region}' AS OF SYSTEM TIME '-10s';"
                 else
-                  cmd="BACKUP INTO '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}&AWS_ENDPOINT=${aws_endpoint}&AWS_REGION=${aws_region}' AS OF SYSTEM TIME '-1s';"
+                  cmd="BACKUP INTO '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}&AWS_ENDPOINT=${aws_endpoint}&AWS_REGION=${aws_region}';"
                 fi
               fi
               cockroach sql --certs-dir=/cockroach/cockroach-certs --host="${host}" -e "${cmd}"
