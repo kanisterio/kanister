@@ -61,11 +61,11 @@ actions:
           - |
             kubectl exec -it -n {{ .Phases.takeSnapshot.Output.etcdNS }} "{{ .Phases.takeSnapshot.Output.etcdPod }}" -c etcd -- sh -c "rm -rf  /tmp/etcd-backup.db"
   restore:
-    # This phase is not actualy performing restore of the etc backup but is used 
-    # to copy backup data. It spins a pod on a master node having label `etcd-backup`. 
-    # The pod is used to download the backup data from the object store 
-    # and copy it to the /mnt/data location of the pv mapped to pvc `pvc-claim-etcd`.
-    # The pv created mounts to the host path /mnt/data on master node where the cluster-ocp-restore 
+    # This phase is not actualy performing restore of the etc backup but is used
+    # to copy backup data. It spins a pod on a master node having label `etcd-restore`.
+    # The pod is used to download the backup file from the object store
+    # and copy it to the /mnt/data location of the PV mapped to PVC `pvc-etcd`.
+    # The PV's mount path is /mnt/data on master node where the cluster-ocp-restore.sh
     # script would be executed. 
     inputArtifactNames:
     - etcdBackup
@@ -87,7 +87,7 @@ actions:
             securityContext:    
               privileged: true
         volumes:
-          pvc-claim-etcd: "/mnt/data"
+          pvc-etcd: "/mnt/data"
         command:
         - bash
         - -o

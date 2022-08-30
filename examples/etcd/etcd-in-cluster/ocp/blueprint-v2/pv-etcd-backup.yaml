@@ -1,12 +1,13 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: pv-volume-etcd
+  name: pv-etcd
   labels:
     type: local
 spec:
   storageClassName: default
   capacity:
+    # storage should be changed based on the size of etcd snapshot
     storage: 10Gi
   accessModes:
     - ReadWriteOnce
