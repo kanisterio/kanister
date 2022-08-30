@@ -71,7 +71,7 @@ actions:
     - etcdBackup
     phases:
     - func: PrepareData
-      name: restoreFromObjectStore
+      name: copyFromObjectStore
       args:
         image: "ghcr.io/kanisterio/kanister-tools:0.81.0"
         namespace: "{{ .Object.metadata.namespace }}"
