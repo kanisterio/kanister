@@ -86,7 +86,7 @@ func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
 	}
 
 	log.Print("Installing mysql instance using helm.", field.M{"app": mdb.name})
-	err = cli.Install(ctx, mdb.chart.RepoName+"/"+mdb.chart.Chart, mdb.chart.Version, mdb.chart.Release, mdb.namespace, mdb.chart.Values)
+	err = cli.Install(ctx, mdb.chart.RepoName+"/"+mdb.chart.Chart, mdb.chart.Version, mdb.chart.Release, mdb.namespace, mdb.chart.Values, true)
 	if err != nil {
 		return errors.Wrapf(err, "Error intalling application %s through helm.", mdb.name)
 	}
