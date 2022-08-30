@@ -77,7 +77,7 @@ actions:
         namespace: "{{ .Object.metadata.namespace }}"
         podOverride:
           nodeSelector:
-            etcd-backup: "true"
+            etcd-restore: "true"
           tolerations:
           - key: "node-role.kubernetes.io/master"
             operator: "Exists"
