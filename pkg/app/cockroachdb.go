@@ -297,7 +297,7 @@ func (c *CockroachDB) waitForGC(ctx context.Context) error {
 	bankInDescriptor := strings.Contains(stdout, "bank") || strings.Contains(stdout, "account")
 	log.Info().Print("bankInDescriptor:  ", field.M{"value": bankInDescriptor})
 	if bankInDescriptor {
-		return errors.New("Bank Database exists. Waiting for garbage collection to remove")
+		return errors.New("Bank Database exists. Waiting for garbage collector to run and remove the database")
 	}
 	return nil
 }
