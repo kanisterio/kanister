@@ -26,7 +26,7 @@ type Client interface {
 	// RemoveRepo removes helm repo
 	RemoveRepo(ctx context.Context, name string) error
 	// Install installs helm chart with given release name in the namespace
-	Install(ctx context.Context, chart, version, release, namespace string, values map[string]string) error
+	Install(ctx context.Context, chart, version, release, namespace string, values map[string]string, wait bool) error
 	// Uninstall deletes helm release from the given namespace
 	Uninstall(ctx context.Context, release, namespace string) error
 	// Upgrade upgrades an installed helm release
