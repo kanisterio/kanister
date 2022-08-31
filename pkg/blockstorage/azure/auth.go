@@ -34,7 +34,8 @@ func isCredTypeSupported(credType string) bool {
 	return availableCredsType.Has(credType)
 }
 
-func isClientCredsAvailable(config map[string]string) bool {
+// determine if the combination of creds are client secret creds
+func IsClientCredsAvailable(config map[string]string) bool {
 	if config[blockstorage.AzureTenantID] != "" &&
 		config[blockstorage.AzureCientID] != "" &&
 		config[blockstorage.AzureClentSecret] != "" {
@@ -44,7 +45,8 @@ func isClientCredsAvailable(config map[string]string) bool {
 	}
 }
 
-func isMSICredsAvailable(config map[string]string) bool {
+// determine if the combination of creds are MSI creds
+func IsMSICredsAvailable(config map[string]string) bool {
 	if config[blockstorage.AzureTenantID] == "" &&
 		config[blockstorage.AzureCientID] != "" &&
 		config[blockstorage.AzureClentSecret] == "" {
