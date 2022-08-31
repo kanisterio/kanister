@@ -83,8 +83,8 @@ func (m *msiAuthenticator) authenticate(creds map[string]string) (CredsValidity,
 	return CredsPassedAuthentication, nil
 }
 
+// return the authenticator based on credentials type
 func getAuthenticator(credType string) authenticator {
-	// base on cred type: authenticate
 	switch credType {
 	case CredTypeManagedIdentity:
 		return &msiAuthenticator{}

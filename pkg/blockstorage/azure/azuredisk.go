@@ -51,6 +51,9 @@ func (s *AdStorage) Authenticate(ctx context.Context, credType string, creds map
 		return CredsTypeNotSupported, errors.New("Credential type is not supported")
 	}
 	auth := getAuthenticator(credType)
+	if auth == nil {
+		return CredValidityUnknown, errors.New("Fail to get an authenticator")
+	}
 	return auth.authenticate(creds)
 }
 
