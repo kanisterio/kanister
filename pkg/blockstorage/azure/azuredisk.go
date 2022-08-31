@@ -44,6 +44,16 @@ func (s *AdStorage) Type() blockstorage.Type {
 	return blockstorage.TypeAD
 }
 
+// Authenticate check Azure creds if the credType is supported
+func (s *AdStorage) Authenticate(ctx context.Context, credType string, creds map[string]string) (CredsValidity, error) {
+	// check if credType is supported
+	if !isCredTypeSupported(credType) {
+		return CredsTypeNotSupported, errors.New("Credential type is not supported")
+	}
+	auth := getAuthenticator(credType)
+	return auth.authenticate(creds)
+}
+
 // NewProvider returns a provider for the Azure blockstorage type
 func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Provider, error) {
 	azCli, err := NewClient(ctx, config)
