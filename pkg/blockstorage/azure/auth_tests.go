@@ -44,15 +44,15 @@ func (s *AuthSuite) TestIsClientCredsvailable(c *C) {
 		blockstorage.AzureCientID:     "some-client-id",
 		blockstorage.AzureClentSecret: "someclient-secret",
 	}
-	c.Assert(isClientCredsAvailable(config), Equals, true)
+	c.Assert(IsClientCredsAvailable(config), Equals, true)
 
 	// remove tenantID
 	delete(config, blockstorage.AzureTenantID)
-	c.Assert(isClientCredsAvailable(config), Equals, false)
+	c.Assert(IsClientCredsAvailable(config), Equals, false)
 
 	// remove client secret, only client ID left
 	delete(config, blockstorage.AzureClentSecret)
-	c.Assert(isClientCredsAvailable(config), Equals, false)
+	c.Assert(IsClientCredsAvailable(config), Equals, false)
 }
 
 func (s *AuthSuite) TestIsMSICredsAvailable(c *C) {
@@ -62,13 +62,13 @@ func (s *AuthSuite) TestIsMSICredsAvailable(c *C) {
 		blockstorage.AzureCientID:     "some-client-id",
 		blockstorage.AzureClentSecret: "someclient-secret",
 	}
-	c.Assert(isMSICredsAvailable(config), Equals, false)
+	c.Assert(IsMSICredsAvailable(config), Equals, false)
 
 	// remove tenantID
 	delete(config, blockstorage.AzureTenantID)
-	c.Assert(isMSICredsAvailable(config), Equals, false)
+	c.Assert(IsMSICredsAvailable(config), Equals, false)
 
 	// remove client secret, only client ID left
 	delete(config, blockstorage.AzureClentSecret)
-	c.Assert(isMSICredsAvailable(config), Equals, true)
+	c.Assert(IsMSICredsAvailable(config), Equals, true)
 }

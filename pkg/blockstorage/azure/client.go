@@ -99,10 +99,10 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 
 // nolint:unparam
 func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
-	if isClientCredsAvailable(config) {
+	if IsClientCredsAvailable(config) {
 		fmt.Println("Using Client Creds")
 		return getClientCredsAuthorizer(env, config)
-	} else if isMSICredsAvailable(config) {
+	} else if IsMSICredsAvailable(config) {
 		fmt.Println("Using MSI Creds")
 		return getMSIsAuthorizer(config)
 	}
