@@ -98,15 +98,37 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 
 // nolint:unparam
 func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
+	if isClientCredsAvailable(config) {
+		return getClientCredsAuthorizer(env, config)
+	} else if isMSICredsAvailable(config) {
+		return getMSIsAuthorizer(config)
+	}
+	return &autorest.BearerAuthorizer{}, errors.New("Missing credentials, or credential type not supported")
+}
+
+func getClientCredsAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
 	credConfig, err := getCredConfig(env, config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get Azure ClientCredentialsConfig")
+		return nil, errors.Wrap(err, "Failed to get Azure Client Credentials Config")
 	}
 	a, err := credConfig.Authorizer()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get Azure authorizer")
+		return nil, errors.Wrap(err, "Failed to get Azure Client Credentials authorizer")
 	}
+	ba, ok := a.(*autorest.BearerAuthorizer)
+	if !ok {
+		return nil, errors.New("Failed to get Azure authorizer")
+	}
+	return ba, nil
+}
 
+func getMSIsAuthorizer(config map[string]string) (*autorest.BearerAuthorizer, error) {
+	msiConfig := auth.NewMSIConfig()
+	msiConfig.ClientID = config[blockstorage.AzureTenantID]
+	a, err := msiConfig.Authorizer()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get Azure MSI authorizer")
+	}
 	ba, ok := a.(*autorest.BearerAuthorizer)
 	if !ok {
 		return nil, errors.New("Failed to get Azure authorizer")
