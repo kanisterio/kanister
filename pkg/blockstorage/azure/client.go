@@ -16,6 +16,7 @@ package azure
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/Azure/go-autorest/autorest"
@@ -99,8 +100,10 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 // nolint:unparam
 func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
 	if isClientCredsAvailable(config) {
+		fmt.Println("Using Client Creds")
 		return getClientCredsAuthorizer(env, config)
 	} else if isMSICredsAvailable(config) {
+		fmt.Println("Using MSI Creds")
 		return getMSIsAuthorizer(config)
 	}
 	return &autorest.BearerAuthorizer{}, errors.New("Missing credentials, or credential type not supported")

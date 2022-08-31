@@ -2,6 +2,7 @@ package azure
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -63,6 +64,7 @@ type authenticator interface {
 type msiAuthenticator struct{}
 
 func (m *msiAuthenticator) authenticate(creds map[string]string) (CredsValidity, error) {
+	fmt.Println("msiAuthenticator.authenticate")
 	// check if MSI endpoint is available
 	if !adal.MSIAvailable(context.Background(), nil) {
 		return CredsTypeNotSupported, errors.New("MSI endpoint is not supported")
@@ -70,6 +72,7 @@ func (m *msiAuthenticator) authenticate(creds map[string]string) (CredsValidity,
 	// create a service principal token
 	msiConfig := auth.NewMSIConfig()
 	msiConfig.ClientID = creds[blockstorage.AzureTenantID]
+	fmt.Println("msiAuthenticator client id: ", msiConfig.ClientID)
 	spt, err := msiConfig.ServicePrincipalToken()
 	if err != nil {
 		return CredsFailedAuthentication, errors.Wrap(err, "Failed to create a service principal token")
@@ -85,6 +88,7 @@ func (m *msiAuthenticator) authenticate(creds map[string]string) (CredsValidity,
 
 // return the authenticator based on credentials type
 func getAuthenticator(credType string) authenticator {
+	fmt.Println("credType in getAuthenticator: ", credType)
 	switch credType {
 	case CredTypeManagedIdentity:
 		return &msiAuthenticator{}

@@ -46,6 +46,7 @@ func (s *AdStorage) Type() blockstorage.Type {
 
 // Authenticate check Azure creds if the credType is supported
 func (s *AdStorage) Authenticate(ctx context.Context, credType string, creds map[string]string) (CredsValidity, error) {
+	fmt.Println("credType: ", credType)
 	// check if credType is supported
 	if !isCredTypeSupported(credType) {
 		return CredsTypeNotSupported, errors.New("Credential type is not supported")
@@ -54,6 +55,8 @@ func (s *AdStorage) Authenticate(ctx context.Context, credType string, creds map
 	if auth == nil {
 		return CredValidityUnknown, errors.New("Fail to get an authenticator")
 	}
+	_, ok := auth.(*msiAuthenticator)
+	fmt.Println("got msiAuthenticator?: ", ok)
 	return auth.authenticate(creds)
 }
 
