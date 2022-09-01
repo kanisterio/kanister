@@ -73,6 +73,7 @@ func (m *msiAuthenticator) authenticate(creds map[string]string) (CredsValidity,
 	// network call to check for token
 	err = spt.Refresh()
 	if err != nil {
+		fmt.Println("Failed to refresh token for msiAuthenticator", err)
 		return CredsFailedAuthentication, errors.Wrap(err, "Failed to refresh token")
 	}
 	// creds passed authentication
@@ -82,6 +83,7 @@ func (m *msiAuthenticator) authenticate(creds map[string]string) (CredsValidity,
 type clientSecretAuthenticator struct{}
 
 func (c *clientSecretAuthenticator) authenticate(creds map[string]string) (CredsValidity, error) {
+	fmt.Println("clientSecretAuthenticator.authenticate")
 	credConfig, err := getCredConfigForAuth(creds)
 	if err != nil {
 		return CredsFailedAuthentication, errors.Wrap(err, "Failed to get Client Secret config")
@@ -94,6 +96,7 @@ func (c *clientSecretAuthenticator) authenticate(creds map[string]string) (Creds
 	// network call to check for token
 	err = spt.Refresh()
 	if err != nil {
+		fmt.Println("Failed to refresh token for clientSecretAuthenticator", err)
 		return CredsFailedAuthentication, errors.Wrap(err, "Failed to refresh token")
 	}
 	// creds passed authentication
@@ -130,5 +133,7 @@ func getCredConfigForAuth(config map[string]string) (auth.ClientCredentialsConfi
 	}
 
 	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
+
+	fmt.Println("Finished getCredConfigForAuth", credConfig)
 	return credConfig, nil
 }
