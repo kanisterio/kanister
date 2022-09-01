@@ -120,12 +120,12 @@ func getCredConfig(env azure.Environment, config map[string]string) (auth.Client
 		return auth.ClientCredentialsConfig{}, errors.New("Cannot get tenantID from config")
 	}
 
-	clientID, ok := config[blockstorage.AzureCientID]
+	clientID, ok := config[blockstorage.AzureClientID]
 	if !ok {
 		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientID from config")
 	}
 
-	clientSecret, ok := config[blockstorage.AzureClentSecret]
+	clientSecret, ok := config[blockstorage.AzureClientSecret]
 	if !ok {
 		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientSecret from config")
 	}
