@@ -3,18 +3,20 @@ package app
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
-	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const cReadyTimeout = 10 * time.Minute
@@ -59,26 +61,21 @@ func (c *CockroachDB) Install(ctx context.Context, namespace string) error {
 	log.Info().Print("Installing cockroachdb cluster helm chart.", field.M{"app": c.name})
 	c.namespace = namespace
 
-	// Create the helm client
 	cli, err := helm.NewCliClient()
 	if err != nil {
 		return errors.Wrap(err, "failed to create helm client")
 	}
 
-	// Add helm repo and fetch charts
 	if err = cli.AddRepo(ctx, c.chart.RepoName, c.chart.RepoURL); err != nil {
 		return errors.Wrapf(err, "Failed to install helm repo. app=%s repo=%s", c.name, c.chart.RepoName)
 	}
 
-	// Install c operator, admission controller and cluster
 	err = cli.Install(ctx, fmt.Sprintf("%s/%s", c.chart.RepoName, c.chart.Chart), c.chart.Version, c.chart.Release, c.namespace, c.chart.Values)
-	//time.Sleep(5 * time.Minute)
 	return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", c.name, c.chart.Chart, c.chart.Release)
 }
 
 func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 	log.Info().Print("Waiting for cockroachdb cluster to be ready.", field.M{"app": c.name, "namespace": c.namespace, "release": c.chart.Release})
-	// Add timeout to context
 	ctx, cancel := context.WithTimeout(ctx, cReadyTimeout)
 	defer cancel()
 	err := kube.WaitOnStatefulSetReady(ctx, c.cli, c.namespace, c.chart.Release)
@@ -86,7 +83,7 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 		log.WithError(err).Print("Error Occurred --> ", field.M{"error": err.Error()})
 		return false, err
 	}
-	log.Print("Application instance is ready.", field.M{"app": c.name})
+	log.Info().Print("Application instance is ready.", field.M{"app": c.name})
 
 	// Read cluster creds from Secret
 	secret, err := c.cli.CoreV1().Secrets(c.namespace).Get(ctx, fmt.Sprintf("%s-client-secret", c.chart.Release), metav1.GetOptions{})
@@ -145,7 +142,6 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 		return false, errors.Wrapf(err, "Error while setting up Garbage Collection time %s", stderr)
 	}
 
-	//time.Sleep(30 * time.Minute)
 	return err == nil, err
 }
 
@@ -179,11 +175,11 @@ func (c *CockroachDB) GetClusterScopedResources(context.Context) []crv1alpha1.Ob
 func (c *CockroachDB) Ping(ctx context.Context) error {
 	log.Print("Pinging the cockroachdb database.", field.M{"app": c.name})
 
-	loginCockroachCmd := fmt.Sprintf("./cockroach sql --certs-dir=/cockroach/cockroach-client-certs --host=%s-public", c.chart.Release)
-	loginCockroach := []string{"sh", "-c", loginCockroachCmd}
-	_, stderr, err := c.execCommand(ctx, loginCockroach)
+	loginCmd := fmt.Sprintf("./cockroach sql --certs-dir=/cockroach/cockroach-client-certs --host=%s-public", c.chart.Release)
+	login := []string{"sh", "-c", loginCmd}
+	_, stderr, err := c.execCommand(ctx, login)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Creating tls.key %s", stderr)
+		return errors.Wrapf(err, "Error while pinging database %s", stderr)
 	}
 
 	log.Print("Ping to the application was success.", field.M{"app": c.name})
@@ -196,7 +192,7 @@ func (c *CockroachDB) Initialize(ctx context.Context) error {
 	createDatabase := []string{"sh", "-c", createDatabaseCMD}
 	_, stderr, err := c.execCommand(ctx, createDatabase)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting the data into database: %s", stderr)
+		return errors.Wrapf(err, "Error while initializing: %s", stderr)
 	}
 	return nil
 }
