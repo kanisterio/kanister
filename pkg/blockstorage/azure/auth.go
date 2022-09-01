@@ -36,24 +36,16 @@ func isCredTypeSupported(credType string) bool {
 
 // determine if the combination of creds are client secret creds
 func IsClientCredsAvailable(config map[string]string) bool {
-	if config[blockstorage.AzureTenantID] != "" &&
+	return (config[blockstorage.AzureTenantID] != "" &&
 		config[blockstorage.AzureCientID] != "" &&
-		config[blockstorage.AzureClentSecret] != "" {
-		return true
-	} else {
-		return false
-	}
+		config[blockstorage.AzureClentSecret] != "")
 }
 
 // determine if the combination of creds are MSI creds
 func IsMSICredsAvailable(config map[string]string) bool {
-	if config[blockstorage.AzureTenantID] == "" &&
+	return (config[blockstorage.AzureTenantID] == "" &&
 		config[blockstorage.AzureCientID] != "" &&
-		config[blockstorage.AzureClentSecret] == "" {
-		return true
-	} else {
-		return false
-	}
+		config[blockstorage.AzureClentSecret] == "")
 }
 
 // internal interface to authenticate with different Azure credentials type
@@ -72,7 +64,7 @@ func (m *msiAuthenticator) authenticate(creds map[string]string) (CredsValidity,
 	}
 	// create a service principal token
 	msiConfig := auth.NewMSIConfig()
-	msiConfig.ClientID = creds[blockstorage.AzureTenantID]
+	msiConfig.ClientID = creds[blockstorage.AzureCientID]
 	fmt.Println("msiAuthenticator client id: ", msiConfig.ClientID)
 	spt, err := msiConfig.ServicePrincipalToken()
 	if err != nil {
