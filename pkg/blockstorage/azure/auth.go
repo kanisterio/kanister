@@ -24,7 +24,7 @@ var availableCredsType = sets.NewString(CredTypeManagedIdentity, CredTypeClientS
 type CredsValidity int
 
 const (
-	CredValidityUnknown CredsValidity = 0
+	CredValidityUnknown CredsValidity = iota
 	CredsTypeNotSupported
 	CredsFailedAuthentication
 	CredsPassedAuthentication
