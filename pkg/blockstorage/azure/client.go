@@ -98,9 +98,9 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 
 // nolint:unparam
 func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
-	if isClientCredsAvailable(config) {
+	if IsClientCredsAvailable(config) {
 		return getClientCredsAuthorizer(env, config)
-	} else if isMSICredsAvailable(config) {
+	} else if IsMSICredsAvailable(config) {
 		return getMSIsAuthorizer(config)
 	}
 	return nil, errors.New("Missing credentials, or credential type not supported")

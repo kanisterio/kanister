@@ -20,15 +20,6 @@ const (
 
 var availableCredsType = sets.NewString(CredTypeManagedIdentity, CredTypeClientSecret)
 
-type CredsValidity int
-
-const (
-	CredValidityUnknown CredsValidity = 0
-	CredsTypeNotSupported
-	CredsFailedAuthentication
-	CredsPassedAuthentication
-)
-
 func isCredTypeSupported(credType string) bool {
 	return availableCredsType.Has(credType)
 }
@@ -49,52 +40,52 @@ func IsMSICredsAvailable(config map[string]string) bool {
 
 // internal interface to authenticate with different Azure credentials type
 type authenticator interface {
-	authenticate(creds map[string]string) (CredsValidity, error)
+	authenticate(creds map[string]string) error
 }
 
 // authenticate with MSI creds
 type msiAuthenticator struct{}
 
-func (m *msiAuthenticator) authenticate(creds map[string]string) (CredsValidity, error) {
+func (m *msiAuthenticator) authenticate(creds map[string]string) error {
 	// check if MSI endpoint is available
 	if !adal.MSIAvailable(context.Background(), nil) {
-		return CredsTypeNotSupported, errors.New("MSI endpoint is not supported")
+		return errors.New("MSI endpoint is not supported")
 	}
 	// create a service principal token
 	msiConfig := auth.NewMSIConfig()
-	msiConfig.ClientID = creds[blockstorage.AzureTenantID]
+	msiConfig.ClientID = creds[blockstorage.AzureCientID]
 	spt, err := msiConfig.ServicePrincipalToken()
 	if err != nil {
-		return CredsFailedAuthentication, errors.Wrap(err, "Failed to create a service principal token")
+		return errors.Wrap(err, "Failed to create a service principal token")
 	}
 	// network call to check for token
 	err = spt.Refresh()
 	if err != nil {
-		return CredsFailedAuthentication, errors.Wrap(err, "Failed to refresh token")
+		return errors.Wrap(err, "Failed to refresh token")
 	}
 	// creds passed authentication
-	return CredsPassedAuthentication, nil
+	return nil
 }
 
 type clientSecretAuthenticator struct{}
 
-func (c *clientSecretAuthenticator) authenticate(creds map[string]string) (CredsValidity, error) {
+func (c *clientSecretAuthenticator) authenticate(creds map[string]string) error {
 	credConfig, err := getCredConfigForAuth(creds)
 	if err != nil {
-		return CredsFailedAuthentication, errors.Wrap(err, "Failed to get Client Secret config")
+		return errors.Wrap(err, "Failed to get Client Secret config")
 	}
 	// create a service principal token
 	spt, err := credConfig.ServicePrincipalToken()
 	if err != nil {
-		return CredsFailedAuthentication, errors.Wrap(err, "Failed to create a service principal token")
+		return errors.Wrap(err, "Failed to create a service principal token")
 	}
 	// network call to check for token
 	err = spt.Refresh()
 	if err != nil {
-		return CredsFailedAuthentication, errors.Wrap(err, "Failed to refresh token")
+		return errors.Wrap(err, "Failed to refresh token")
 	}
 	// creds passed authentication
-	return CredsPassedAuthentication, nil
+	return nil
 }
 
 // return the authenticator based on credentials type
