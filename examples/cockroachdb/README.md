@@ -15,7 +15,7 @@ This chart bootstraps a three node CockroachDB deployment on a [Kubernetes](http
 
 ## Installing the Chart
 
-To install the CockroachDB database using the `cockroachdb` chart with the release name `cockroachdb-release`:
+The commands mentioned below could be run to install the CockroachDB database using the `cockroachdb` chart with the release name `cockroachdb-release`:
 
 ```bash
 # Add cockroachdb in your local chart repository
@@ -32,23 +32,21 @@ $ helm install cockroachdb-release --namespace cockroachdb --create-namespace co
 $ curl -O https://raw.githubusercontent.com/cockroachdb/helm-charts/master/examples/client-secure.yaml
 
 # Edit Fields in client-secure.yaml. A sample manifest file is being included for reference.
+# Value of spec.serviceAccountName should be same as your release name
 spec.serviceAccountName: cockroachdb-release
+# Find the latest tag of image cockroachdb/cockroach from https://github.com/cockroachdb/helm-charts/blob/master/cockroachdb/values.yaml
 spec.image: cockroachdb/cockroach:<VERSION>
+# Value of spec.volumes[0].project.sources[0].secret.name should be <release-name>-client-secret
 spec.volumes[0].project.sources[0].secret.name: cockroachdb-release-client-secret
 
 $ kubectl create -f ./client-secure.yaml -n cockroachdb
-
-
 ```
-
-The command deploys a CockroachDB instance in the `cockroachdb` namespace.
 
 > **Tip**: List all releases using `helm list --all-namespaces`, using Helm Version 3.
 
 ## Integrating with Kanister
 
-If you have deployed CockroachDB application with name other than `cockroachdb-release` and namespace other than `cockroachdb`, you need to modify the commands(backup, restore and delete) used below to use the correct release name and namespace
-
+If you have deployed CockroachDB application with name other than `cockroachdb-release` and namespace other than `cockroachdb`, you need to modify the commands (backup, restore and delete) used below to use the correct release name and namespace
 ### Create Profile
 Create Profile if not created already, and set the values accordingly
 
@@ -170,8 +168,9 @@ Query OK, 1 row affected (0.03 sec)
 ### Restore the Application
 
 To restore the missing data, you should use the backup that you created before. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
-> **Note** : In order to perform Full Cluster Restore, One must wait out the Default Garbage Collection Run After Time i.e. 90,000 Seconds or 25 Hours. 
-> In Order to reduce the Garbage Collection Time, run the following command, Wait for some time to cockroachdb to automatic collect garbage and then restore
+> **Note** : CockroachDB uses [Garbage Collection](https://www.cockroachlabs.com/docs/stable/architecture/storage-layer.html#garbage-collection), So in order to perform Full Cluster Restore on same cluster, one must wait out the Default Garbage Collection Run After Time i.e. 90,000 Seconds or 25 Hours.
+> On the other hand the following step is Not Required if one is restoring data on a new fresh cluster.
+> In Order to reduce the Garbage Collection Time, run the following command, Wait for a minute and let cockroachdb to automatic collect garbage, and then restore
 ```bash
 $ ALTER RANGE default CONFIGURE ZONE USING gc.ttlseconds = 60;
 ```
