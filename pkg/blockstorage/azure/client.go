@@ -103,7 +103,7 @@ func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.B
 	} else if isMSICredsAvailable(config) {
 		return getMSIsAuthorizer(config)
 	}
-	return &autorest.BearerAuthorizer{}, errors.New("Missing credentials, or credential type not supported")
+	return nil, errors.New("Missing credentials, or credential type not supported")
 }
 
 func getClientCredsAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
@@ -124,7 +124,7 @@ func getClientCredsAuthorizer(env azure.Environment, config map[string]string) (
 
 func getMSIsAuthorizer(config map[string]string) (*autorest.BearerAuthorizer, error) {
 	msiConfig := auth.NewMSIConfig()
-	msiConfig.ClientID = config[blockstorage.AzureTenantID]
+	msiConfig.ClientID = config[blockstorage.AzureCientID]
 	a, err := msiConfig.Authorizer()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get Azure MSI authorizer")
