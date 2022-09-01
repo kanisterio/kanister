@@ -26,6 +26,7 @@ type Client interface {
 	// RemoveRepo removes helm repo
 	RemoveRepo(ctx context.Context, name string) error
 	// Install installs helm chart with given release name in the namespace
+	// wait argument enables/disables --wait flag in 'helm install' command
 	Install(ctx context.Context, chart, version, release, namespace string, values map[string]string, wait bool) error
 	// Uninstall deletes helm release from the given namespace
 	Uninstall(ctx context.Context, release, namespace string) error
