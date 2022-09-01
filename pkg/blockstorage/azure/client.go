@@ -140,22 +140,11 @@ func getMSIsAuthorizer(config map[string]string) (*autorest.BearerAuthorizer, er
 }
 
 func getCredConfig(env azure.Environment, config map[string]string) (auth.ClientCredentialsConfig, error) {
-	tenantID, ok := config[blockstorage.AzureTenantID]
-	if !ok {
-		return auth.ClientCredentialsConfig{}, errors.New("Cannot get tenantID from config")
+	credConfig, err := getCredConfigForAuth(config)
+	if err != nil {
+		return auth.ClientCredentialsConfig{}, err
 	}
-
-	clientID, ok := config[blockstorage.AzureCientID]
-	if !ok {
-		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientID from config")
-	}
-
-	clientSecret, ok := config[blockstorage.AzureClentSecret]
-	if !ok {
-		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientSecret from config")
-	}
-
-	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
+	var ok bool
 	if credConfig.AADEndpoint, ok = config[blockstorage.AzureActiveDirEndpoint]; !ok || credConfig.AADEndpoint == "" {
 		credConfig.AADEndpoint = env.ActiveDirectoryEndpoint
 		config[blockstorage.AzureActiveDirEndpoint] = credConfig.AADEndpoint
