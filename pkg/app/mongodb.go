@@ -94,7 +94,7 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	}
 
 	log.Print("Installing application using helm.", field.M{"app": mongo.name})
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.chart.Release, mongo.namespace, mongo.chart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.chart.Release, mongo.namespace, mongo.chart.Values, true)
 	if err != nil {
 		return err
 	}
