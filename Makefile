@@ -45,8 +45,6 @@ vm-driver ?= "kvm"
 COMMIT_ID ?= "317cc36"
 
 KOPIA_REPO ?= "kopia"
-
-KOPIA_IMAGE_TAG ?= ""
 # Default OCP version in which the OpenShift apps are going to run
 ocp_version ?= "4.10"
 ###
@@ -265,9 +263,6 @@ release-snapshot:
 
 update-kopia-image:
 	@/bin/bash ./build/update_kopia_image.sh $(COMMIT_ID) $(KOPIA_REPO)
-
-update-image-reference:
-	@/bin/bash ./build/update_kopia_image_ref.sh ${KOPIA_IMAGE_TAG}
 
 go-mod-download:
 	@$(MAKE) run CMD='-c "go mod download"'
