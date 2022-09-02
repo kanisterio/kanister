@@ -20,10 +20,10 @@ type MaintenanceInfoCommandArgs struct {
 }
 
 // MaintenanceInfo returns the kopia command to get maintenance info
-func MaintenanceInfo(maintenanceInfoArgs MaintenanceInfoCommandArgs) []string {
-	args := commonArgs(maintenanceInfoArgs.EncryptionKey, maintenanceInfoArgs.ConfigFilePath, maintenanceInfoArgs.LogDirectory, false)
+func MaintenanceInfo(cmdArgs MaintenanceInfoCommandArgs) []string {
+	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, infoSubCommand)
-	if maintenanceInfoArgs.GetJsonOutput {
+	if cmdArgs.GetJsonOutput {
 		args = args.AppendLoggable(jsonFlag)
 	}
 
@@ -36,20 +36,20 @@ type MaintenanceSetOwnerCommandArgs struct {
 }
 
 // MaintenanceSetOwner returns the kopia command for setting custom maintenance owner
-func MaintenanceSetOwner(maintenanceSetOwnerArgs MaintenanceSetOwnerCommandArgs) []string {
-	args := commonArgs(maintenanceSetOwnerArgs.EncryptionKey, maintenanceSetOwnerArgs.ConfigFilePath, maintenanceSetOwnerArgs.LogDirectory, false)
+func MaintenanceSetOwner(cmdArgs MaintenanceSetOwnerCommandArgs) []string {
+	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, setSubCommand)
-	args = args.AppendLoggableKV(ownerFlag, maintenanceSetOwnerArgs.CustomOwner)
+	args = args.AppendLoggableKV(ownerFlag, cmdArgs.CustomOwner)
 	return stringSliceCommand(args)
 }
 
-type MaintenanceRunCommandCommandArgs struct {
+type MaintenanceRunCommandArgs struct {
 	*CommandArgs
 }
 
 // MaintenanceRunCommand returns the kopia command to run manual maintenance
-func MaintenanceRunCommand(maintenanceRunArgs MaintenanceRunCommandCommandArgs) []string {
-	args := commonArgs(maintenanceRunArgs.EncryptionKey, maintenanceRunArgs.ConfigFilePath, maintenanceRunArgs.LogDirectory, false)
+func MaintenanceRunCommand(cmdArgs MaintenanceRunCommandArgs) []string {
+	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand)
 
 	return stringSliceCommand(args)

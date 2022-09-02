@@ -14,25 +14,25 @@
 
 package command
 
-type BlobListCommandCommandArgs struct {
+type BlobListCommandArgs struct {
 	*CommandArgs
 }
 
 // BlobList returns the kopia command for listing blobs in the repository with their sizes
-func BlobList(blobListArgs BlobListCommandCommandArgs) []string {
-	args := commonArgs(blobListArgs.EncryptionKey, blobListArgs.ConfigFilePath, blobListArgs.LogDirectory, false)
+func BlobList(cmdArgs BlobListCommandArgs) []string {
+	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(blobSubCommand, listSubCommand)
 
 	return stringSliceCommand(args)
 }
 
-type BlobStatsCommandCommandArgs struct {
+type BlobStatsCommandArgs struct {
 	*CommandArgs
 }
 
 // BlobStats returns the kopia command to get the blob stats
-func BlobStats(blobStatsArgs BlobStatsCommandCommandArgs) []string {
-	args := commonArgs(blobStatsArgs.EncryptionKey, blobStatsArgs.ConfigFilePath, blobStatsArgs.LogDirectory, false)
+func BlobStats(cmdArgs BlobStatsCommandArgs) []string {
+	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(blobSubCommand, statsSubCommand, rawFlag)
 
 	return stringSliceCommand(args)
