@@ -15,7 +15,10 @@
 package command
 
 import (
+	"strconv"
+
 	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/logsafe"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
@@ -24,6 +27,13 @@ import (
 // Examples: 1.5h, 90m, 2h45m
 func AWSAssumeRoleDuration() string {
 	return utils.GetEnvAsStringOrDefault(kopia.AWSAssumeRoleDurationVarName, kopia.DefaultAWSAssumeRoleDuration)
+}
+
+func kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string, contentCacheMB, metadataCacheMB int) logsafe.Cmd {
+	args = args.AppendLoggableKV(cacheDirectoryFlag, cacheDirectory)
+	args = args.AppendLoggableKV(contentCacheSizeMBFlag, strconv.Itoa(contentCacheMB))
+	args = args.AppendLoggableKV(metadataCacheSizeMBFlag, strconv.Itoa(metadataCacheMB))
+	return args
 }
 
 // GetCacheSizeSettingsForSnapshot returns the feature setting cache size values to be used
