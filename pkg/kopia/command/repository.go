@@ -70,27 +70,27 @@ type RepositoryConnectCommandArgs struct {
 }
 
 // RepositoryConnect returns the kopia command for connecting to an existing blob-store repo
-func RepositoryConnect(repositoryConnectArgs RepositoryConnectCommandArgs) ([]string, error) {
-	args := commonArgs(repositoryConnectArgs.EncryptionKey, repositoryConnectArgs.ConfigFilePath, repositoryConnectArgs.LogDirectory, false)
+func RepositoryConnect(cmdArgs RepositoryConnectCommandArgs) ([]string, error) {
+	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, noCheckForUpdatesFlag)
 
-	args = kopiaCacheArgs(args, repositoryConnectArgs.CacheDirectory, repositoryConnectArgs.ContentCacheMB, repositoryConnectArgs.MetadataCacheMB)
+	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
 
-	if repositoryConnectArgs.Hostname != "" {
-		args = args.AppendLoggableKV(overrideHostnameFlag, repositoryConnectArgs.Hostname)
+	if cmdArgs.Hostname != "" {
+		args = args.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
 	}
 
-	if repositoryConnectArgs.Username != "" {
-		args = args.AppendLoggableKV(overrideUsernameFlag, repositoryConnectArgs.Username)
+	if cmdArgs.Username != "" {
+		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
 
-	bsArgs, err := kopiaBlobStoreArgs(repositoryConnectArgs.Prof, repositoryConnectArgs.RepoPathPrefix)
+	bsArgs, err := kopiaBlobStoreArgs(cmdArgs.Prof, cmdArgs.RepoPathPrefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to generate blob store args")
 	}
 
-	if !time.Time(repositoryConnectArgs.PointInTimeConnection).IsZero() {
-		bsArgs = bsArgs.AppendLoggableKV(pointInTimeConnectionFlag, repositoryConnectArgs.PointInTimeConnection.String())
+	if !time.Time(cmdArgs.PointInTimeConnection).IsZero() {
+		bsArgs = bsArgs.AppendLoggableKV(pointInTimeConnectionFlag, cmdArgs.PointInTimeConnection.String())
 	}
 
 	return stringSliceCommand(args.Combine(bsArgs)), nil
@@ -109,22 +109,22 @@ type RepositoryConnectServerCommandArgs struct {
 }
 
 // RepositoryConnectServer returns the kopia command for connecting to a remote repository on Kopia API server
-func RepositoryConnectServer(repositoryConnectServerArgs RepositoryConnectServerCommandArgs) []string {
-	args := commonArgs(repositoryConnectServerArgs.UserPassword, repositoryConnectServerArgs.ConfigFilePath, repositoryConnectServerArgs.LogDirectory, false)
+func RepositoryConnectServer(cmdArgs RepositoryConnectServerCommandArgs) []string {
+	args := commonArgs(cmdArgs.UserPassword, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, serverSubCommand, noCheckForUpdatesFlag, noGrpcFlag)
 
-	args = kopiaCacheArgs(args, repositoryConnectServerArgs.CacheDirectory, repositoryConnectServerArgs.ContentCacheMB, repositoryConnectServerArgs.MetadataCacheMB)
+	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
 
-	if repositoryConnectServerArgs.Hostname != "" {
-		args = args.AppendLoggableKV(overrideHostnameFlag, repositoryConnectServerArgs.Hostname)
+	if cmdArgs.Hostname != "" {
+		args = args.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
 	}
 
-	if repositoryConnectServerArgs.Username != "" {
-		args = args.AppendLoggableKV(overrideUsernameFlag, repositoryConnectServerArgs.Username)
+	if cmdArgs.Username != "" {
+		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
-	args = args.AppendLoggableKV(urlFlag, repositoryConnectServerArgs.ServerURL)
+	args = args.AppendLoggableKV(urlFlag, cmdArgs.ServerURL)
 
-	args = args.AppendRedactedKV(serverCertFingerprint, repositoryConnectServerArgs.Fingerprint)
+	args = args.AppendRedactedKV(serverCertFingerprint, cmdArgs.Fingerprint)
 
 	return stringSliceCommand(args)
 }
