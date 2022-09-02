@@ -132,11 +132,9 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 		setVals += fmt.Sprintf("%s=%s,", k, v)
 	}
 
-	var cmd []string
+	cmd := []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--create-namespace"}
 	if wait {
-		cmd = []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait", "--create-namespace"}
-	} else {
-		cmd = []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--create-namespace"}
+		cmd = append(cmd, "--wait")
 	}
 
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
