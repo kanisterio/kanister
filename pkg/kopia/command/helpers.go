@@ -15,21 +15,11 @@
 package command
 
 import (
-	"strconv"
-
 	"github.com/kanisterio/kanister/pkg/kopia"
-	"github.com/kanisterio/kanister/pkg/logsafe"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 type policyChanges map[string]string
-
-func kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string, contentCacheMB, metadataCacheMB int) logsafe.Cmd {
-	args = args.AppendLoggableKV(cacheDirectoryFlag, cacheDirectory)
-	args = args.AppendLoggableKV(contentCacheSizeMBFlag, strconv.Itoa(contentCacheMB))
-	args = args.AppendLoggableKV(metadataCacheSizeMBFlag, strconv.Itoa(metadataCacheMB))
-	return args
-}
 
 // GetCacheSizeSettingsForSnapshot returns the feature setting cache size values to be used
 // for initializing repositories that will be performing general command workloads that benefit from
