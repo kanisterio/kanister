@@ -92,12 +92,18 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 	}
 	if _, exist := secret.Data["ca.crt"]; exist {
 		c.cacrt = string(secret.Data["ca.crt"])
+	} else {
+		return false, errors.Errorf("Error: ca.crt not found in the cluster credential %s-client-secret", c.chart.Release)
 	}
 	if _, exist := secret.Data["tls.crt"]; exist {
 		c.tlscrt = string(secret.Data["tls.crt"])
+	} else {
+		return false, errors.Errorf("Error: tls.crt not found in the cluster credential %s-client-secret", c.chart.Release)
 	}
 	if _, exist := secret.Data["tls.key"]; exist {
 		c.tlskey = string(secret.Data["tls.key"])
+	} else {
+		return false, errors.Errorf("Error: tls.key not found in the cluster credential %s-client-secret", c.chart.Release)
 	}
 
 	createCrtDirCmd := "mkdir -p /cockroach/cockroach-client-certs"
