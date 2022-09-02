@@ -16,7 +16,6 @@ package command
 
 const (
 	blobSubCommand        = "blob"
-	connectSubCommand     = "connect"
 	createSubCommand      = "create"
 	deleteSubCommand      = "delete"
 	expireSubCommand      = "expire"
@@ -27,7 +26,6 @@ const (
 	maintenanceSubCommand = "maintenance"
 	manifestSubCommand    = "manifest"
 	policySubCommand      = "policy"
-	repositorySubCommand  = "repository"
 	restoreSubCommand     = "restore"
 	runSubCommand         = "run"
 	setSubCommand         = "set"
@@ -35,55 +33,24 @@ const (
 	statsSubCommand       = "stats"
 
 	allFlag                    = "--all"
-	bucketFlag                 = "--bucket"
-	cacheDirectoryFlag         = "--cache-directory"
 	configFileFlag             = "--config-file"
-	contentCacheSizeMBFlag     = "--content-cache-size-mb"
 	deleteFlag                 = "--delete"
 	deltaFlag                  = "--delta"
-	endpointFlag               = "--endpoint"
 	filterFlag                 = "--filter"
 	globalFlag                 = "--global"
 	jsonFlag                   = "--json"
 	logDirectoryFlag           = "--log-dir"
 	logLevelErrorFlag          = "--log-level=error"
 	logLevelInfoFlag           = "--log-level=info"
-	metadataCacheSizeMBFlag    = "--metadata-cache-size-mb"
-	noCheckForUpdatesFlag      = "--no-check-for-updates"
 	noGrpcFlag                 = "--no-grpc"
-	noProgressFlag             = "--no-progress"
-	overrideHostnameFlag       = "--override-hostname"
-	overrideUsernameFlag       = "--override-username"
 	parallelFlag               = "--parallel"
 	passwordFlag               = "--password"
-	pointInTimeConnectionFlag  = "--point-in-time"
-	prefixFlag                 = "--prefix"
 	progressUpdateIntervalFlag = "--progress-update-interval"
 	rawFlag                    = "--raw"
 	showIdenticalFlag          = "--show-identical"
 	unsafeIgnoreSourceFlag     = "--unsafe-ignore-source"
 	ownerFlag                  = "--owner"
 	sparseFlag                 = "--sparse"
-
-	// S3 specific
-	s3SubCommand         = "s3"
-	accessKeyFlag        = "--access-key"
-	disableTLSFlag       = "--disable-tls"
-	disableTLSVerifyFlag = "--disable-tls-verification"
-	secretAccessKeyFlag  = "--secret-access-key"
-	sessionTokenFlag     = "--session-token"
-	regionFlag           = "--region"
-
-	// Azure specific
-	azureSubCommand    = "azure"
-	containerFlag      = "--container"
-	storageAccountFlag = "--storage-account"
-	storageKeyFlag     = "--storage-key"
-	storageDomainFlag  = "--storage-domain"
-
-	// Google specific
-	googleSubCommand    = "gcs"
-	credentialsFileFlag = "--credentials-file"
 
 	// Server specific
 	addSubCommand             = "add"
@@ -103,26 +70,5 @@ const (
 	tlsCertFilePath           = "--tls-cert-file"
 	tlsGenerateCertFlag       = "--tls-generate-cert"
 	tlsKeyFilePath            = "--tls-key-file"
-	urlFlag                   = "--url"
 	userPasswordFlag          = "--user-password"
-
-	// Filesystem specific
-	filesystemSubCommand = "filesystem"
-	pathFlag             = "--path"
-
-	snapshotTypeField = "type:snapshot"
-
-	// List of possible modifications to a policy, expressed as the kopia flag that will modify it
-	// Retention
-	keepLatest  = "--keep-latest"
-	keepHourly  = "--keep-hourly"
-	keepDaily   = "--keep-daily"
-	keepWeekly  = "--keep-weekly"
-	keepMonthly = "--keep-monthly"
-	keepAnnual  = "--keep-annual"
-	// Compression
-	compressionAlgorithm = "--compression"
-
-	// List of kopia-supported compression algorithms recognized by the kopia "--compression" flag
-	s2DefaultComprAlgo = "s2-default"
 )
