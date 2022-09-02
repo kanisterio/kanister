@@ -18,20 +18,10 @@ set -o errexit
 set -o nounset
 set -o xtrace
 
-IMAGE_REGISTRY="ghcr.io/kanisterio"
+kopia_image=${1:?"Kopia image tag needs to be specified"}
 
-readonly COMMIT_ID=${1:?"Commit id to build kopia image not specified"}
-readonly KOPIA_REPO_ORG=${2-:"kopia"}
-readonly IMAGE_TYPE=alpine
-readonly IMAGE_BUILD_VERSION="${COMMIT_ID}"
-readonly GH_PACKAGE_TARGET="${IMAGE_REGISTRY}/kopia"
-readonly TAG="${IMAGE_TYPE}-${IMAGE_BUILD_VERSION}"
+new_sha256=$(docker inspect --format='{{index .RepoDigests 0}}' ${kopia_image} | cut -d: -f 2)
 
+echo "NEW SHA256: ${new_sha256}"
 
-docker build \
-    --tag "${GH_PACKAGE_TARGET}:${TAG}" \
-    --build-arg "kopiaBuildCommit=${COMMIT_ID}" \
-    --build-arg "kopiaRepoOrg=${KOPIA_REPO_ORG}" \
-    --file ./docker/kopia-build/Dockerfile .
-
-docker push ${GH_PACKAGE_TARGET}:$TAG
+sed -i "s/ghcr\.io\/kanisterio\/kopia@sha256:[[:alnum:]]*/ghcr\.io\/kanisterio\/kopia@sha256:${new_sha256}/g" docker/tools/Dockerfile
