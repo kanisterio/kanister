@@ -133,7 +133,7 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 		return errors.Wrapf(err, "Error adding helm repo for app %s.", kc.name)
 	}
 	log.Print("Installing kafka operator using helm.", field.M{"app": kc.name})
-	err = cli.Install(ctx, kc.chart.RepoName+"/"+kc.chart.Chart, kc.chart.Version, kc.chart.Release, kc.namespace, kc.chart.Values)
+	err = cli.Install(ctx, kc.chart.RepoName+"/"+kc.chart.Chart, kc.chart.Version, kc.chart.Release, kc.namespace, kc.chart.Values, true)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing operator %s through helm.", kc.name)
 	}

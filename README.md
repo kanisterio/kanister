@@ -79,6 +79,12 @@ The Kanister architecture is documented
 If you have any questions or run into issues, feel free to reach out to us on
 [Slack](https://kanisterio.slack.com).
 
+GitHub issues or pull requests that have been inactive for more than 60 days
+will be labeled as stale. If they remained inactive for another 30 days, they
+will be automatically closed. To be exempted from the issue lifecycle, discuss
+with a maintainer the reasons behind the exemption, and add the `frozen` label
+to the issue or pull request.
+
 If you discovered any security issues, refer to our [`SECURITY.md`](SECURITY.md)
 documentation for our security policy, including steps on how to report
 vulnerabilities.

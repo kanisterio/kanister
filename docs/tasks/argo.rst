@@ -5,8 +5,8 @@ Argo Workflows enables us to schedule operations. In the Kanister project,
 Argo Cron Workflows will be used to automate the creation of ActionSets to
 execute Blueprint actions at regular intervals.
 
-To summarize, ActionSets are CRDs that are used to execute actions
-from Blueprint CRDs. The Kanister controller watches for the creation
+To summarize, ActionSets are CRs that are used to execute actions
+from Blueprint CRs. The Kanister controller watches for the creation
 of ActionSets and executes the specified action.
 
 In this tutorial, you will schedule the creation of a backup ActionSet using
@@ -155,7 +155,7 @@ Execute the following command:
   in the ``kanister`` namespace.
 
 
-Step 5 - Launching and Submitting the Cron Workflow
+Step 5 - Launching the Cron Workflow
 ----------------------------------------------------
 
 Launch the workflow in the ``argo`` namespace by running the following command:
@@ -207,13 +207,7 @@ Once the workflow runs successfully, the ``LAST RUN`` field is updated with the
 timestamp of the last run. Along with this, a backup ActionSet must be created.
 The creation time of the ActionSet is indicated by the ``AGE`` field as seen above.
 
-Submit the Cron Workflow by running:
-
-.. code-block:: bash
-
-  argo submit mysql-cron-wf.yaml
-
-You should see the submitted workflow on the Argo UI.
+You should see the workflow on the Argo UI under the Cron Workflows tab.
 
 .. image:: img/argo-cron-created-ui-list.png
 
