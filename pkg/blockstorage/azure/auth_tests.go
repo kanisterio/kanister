@@ -26,17 +26,6 @@ var _ = Suite(&AuthSuite{})
 func (s *AuthSuite) SetUpSuite(c *C) {
 }
 
-func (s *AuthSuite) TestIsCredTypeSupported(c *C) {
-	credType := CredTypeManagedIdentity
-	c.Assert(isCredTypeSupported(credType), Equals, true)
-
-	credType = CredTypeClientSecret
-	c.Assert(isCredTypeSupported(credType), Equals, true)
-
-	credType = "some-random-type"
-	c.Assert(isCredTypeSupported(credType), Equals, false)
-}
-
 func (s *AuthSuite) TestIsClientCredsvailable(c *C) {
 	// success
 	config := map[string]string{
@@ -44,15 +33,15 @@ func (s *AuthSuite) TestIsClientCredsvailable(c *C) {
 		blockstorage.AzureCientID:     "some-client-id",
 		blockstorage.AzureClentSecret: "someclient-secret",
 	}
-	c.Assert(IsClientCredsAvailable(config), Equals, true)
+	c.Assert(isClientCredsAvailable(config), Equals, true)
 
 	// remove tenantID
 	delete(config, blockstorage.AzureTenantID)
-	c.Assert(IsClientCredsAvailable(config), Equals, false)
+	c.Assert(isClientCredsAvailable(config), Equals, false)
 
 	// remove client secret, only client ID left
 	delete(config, blockstorage.AzureClentSecret)
-	c.Assert(IsClientCredsAvailable(config), Equals, false)
+	c.Assert(isClientCredsAvailable(config), Equals, false)
 }
 
 func (s *AuthSuite) TestIsMSICredsAvailable(c *C) {
@@ -62,13 +51,44 @@ func (s *AuthSuite) TestIsMSICredsAvailable(c *C) {
 		blockstorage.AzureCientID:     "some-client-id",
 		blockstorage.AzureClentSecret: "someclient-secret",
 	}
-	c.Assert(IsMSICredsAvailable(config), Equals, false)
+	c.Assert(isMSICredsAvailable(config), Equals, false)
 
 	// remove tenantID
 	delete(config, blockstorage.AzureTenantID)
-	c.Assert(IsMSICredsAvailable(config), Equals, false)
+	c.Assert(isMSICredsAvailable(config), Equals, false)
 
 	// remove client secret, only client ID left
 	delete(config, blockstorage.AzureClentSecret)
-	c.Assert(IsMSICredsAvailable(config), Equals, true)
+	c.Assert(isMSICredsAvailable(config), Equals, true)
+}
+
+func (s *AuthSuite) TestNewAzureAutheticator(c *C) {
+	// successful with client secret creds
+	config := map[string]string{
+		blockstorage.AzureTenantID:    "some-tenant-id",
+		blockstorage.AzureCientID:     "some-client-id",
+		blockstorage.AzureClentSecret: "some-client-secret",
+	}
+	authenticator, err := NewAzureAutheticator(config)
+	c.Assert(err, IsNil)
+	_, ok := authenticator.(*clientSecretAuthenticator)
+	c.Assert(ok, Equals, true)
+
+	// successful with msi creds
+	config = map[string]string{
+		blockstorage.AzureCientID: "some-client-id",
+	}
+	authenticator, err = NewAzureAutheticator(config)
+	c.Assert(err, IsNil)
+	_, ok = authenticator.(*msiAuthenticator)
+	c.Assert(ok, Equals, true)
+
+	// unsuccessful with an undefined combo of creds
+	config = map[string]string{
+		blockstorage.AzureCientID:     "some-client-id",
+		blockstorage.AzureClentSecret: "some-client-secret",
+	}
+	authenticator, err = NewAzureAutheticator(config)
+	c.Assert(err, NotNil)
+	c.Assert(authenticator, IsNil)
 }

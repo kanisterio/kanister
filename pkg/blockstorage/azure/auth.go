@@ -7,46 +7,44 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // currently avaialble types: https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization
 // to be available with azidentity: https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azidentity#readme-credential-types
-// to faciliate future migration, only the common ones between two SDKs are listed
-const (
-	CredTypeManagedIdentity string = "cred-type-msi"
-	CredTypeClientSecret    string = "cred-type-client-secret"
-)
-
-var availableCredsType = sets.NewString(CredTypeManagedIdentity, CredTypeClientSecret)
-
-func isCredTypeSupported(credType string) bool {
-	return availableCredsType.Has(credType)
-}
-
 // determine if the combination of creds are client secret creds
-func IsClientCredsAvailable(config map[string]string) bool {
+func isClientCredsAvailable(config map[string]string) bool {
 	return (config[blockstorage.AzureTenantID] != "" &&
 		config[blockstorage.AzureCientID] != "" &&
 		config[blockstorage.AzureClentSecret] != "")
 }
 
 // determine if the combination of creds are MSI creds
-func IsMSICredsAvailable(config map[string]string) bool {
+func isMSICredsAvailable(config map[string]string) bool {
 	return (config[blockstorage.AzureTenantID] == "" &&
 		config[blockstorage.AzureCientID] != "" &&
 		config[blockstorage.AzureClentSecret] == "")
 }
 
-// internal interface to authenticate with different Azure credentials type
-type authenticator interface {
-	authenticate(creds map[string]string) error
+// Public interface to authenticate with different Azure credentials type
+type AzureAuthenticator interface {
+	Authenticate(creds map[string]string) error
+}
+
+func NewAzureAutheticator(config map[string]string) (AzureAuthenticator, error) {
+	switch {
+	case isMSICredsAvailable(config):
+		return &msiAuthenticator{}, nil
+	case isClientCredsAvailable(config):
+		return &clientSecretAuthenticator{}, nil
+	default:
+		return nil, errors.New("Fail to get an authenticator for provided creds combination")
+	}
 }
 
 // authenticate with MSI creds
 type msiAuthenticator struct{}
 
-func (m *msiAuthenticator) authenticate(creds map[string]string) error {
+func (m *msiAuthenticator) Authenticate(creds map[string]string) error {
 	// check if MSI endpoint is available
 	if !adal.MSIAvailable(context.Background(), nil) {
 		return errors.New("MSI endpoint is not supported")
@@ -67,9 +65,10 @@ func (m *msiAuthenticator) authenticate(creds map[string]string) error {
 	return nil
 }
 
+// authenticate with client secret creds
 type clientSecretAuthenticator struct{}
 
-func (c *clientSecretAuthenticator) authenticate(creds map[string]string) error {
+func (c *clientSecretAuthenticator) Authenticate(creds map[string]string) error {
 	credConfig, err := getCredConfigForAuth(creds)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get Client Secret config")
@@ -86,18 +85,6 @@ func (c *clientSecretAuthenticator) authenticate(creds map[string]string) error 
 	}
 	// creds passed authentication
 	return nil
-}
-
-// return the authenticator based on credentials type
-func getAuthenticator(credType string) authenticator {
-	switch credType {
-	case CredTypeManagedIdentity:
-		return &msiAuthenticator{}
-	case CredTypeClientSecret:
-		return &clientSecretAuthenticator{}
-	default:
-		return nil
-	}
 }
 
 func getCredConfigForAuth(config map[string]string) (auth.ClientCredentialsConfig, error) {
