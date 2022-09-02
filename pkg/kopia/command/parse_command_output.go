@@ -225,7 +225,7 @@ func SnapshotStatsFromSnapshotCreate(snapCreateStderrOutput string) (stats *Snap
 	pattern := regexp.MustCompile(snapshotCreateOutputRegEx)
 	for _, l := range logs {
 		match := pattern.FindStringSubmatch(l)
-		if match != nil && len(match) >= 6 {
+		if len(match) >= 6 {
 			numHashedStr := match[1]
 			hashedSizeHumanized := match[2]
 			numCachedStr := match[3]
@@ -295,14 +295,14 @@ func RepoSizeStatsFromBlobStatsRaw(blobStats string) (phySizeTotal int64, blobCo
 	for _, l := range strings.Split(blobStats, "\n") {
 		if countStr == "" {
 			countMatch := countPattern.FindStringSubmatch(l)
-			if countMatch != nil && len(countMatch) >= 2 {
+			if len(countMatch) >= 2 {
 				countStr = countMatch[1]
 			}
 		}
 
 		if sizeStr == "" {
 			sizeMatch := sizePattern.FindStringSubmatch(l)
-			if sizeMatch != nil && len(sizeMatch) >= 2 {
+			if len(sizeMatch) >= 2 {
 				sizeStr = sizeMatch[1]
 			}
 		}
