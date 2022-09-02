@@ -1,6 +1,5 @@
 FROM golang:1.17-alpine3.14 AS builder
 
-ARG timestamp="unknown"
 ARG kopiaBuildCommit
 ARG kopiaRepoOrg
 
@@ -15,7 +14,7 @@ RUN git checkout ${kopiaBuildCommit}
 
 # Build static executable
 RUN GO111MODULE=on CGO_ENABLED=0 GO_EXTLINK_ENABLED=0 go build \
-  -ldflags="-s -w -X github.com/kopia/kopia/repo.BuildVersion=${kopiaBuildCommit} -X github.com/kopia/kopia/repo.BuildInfo=${timestamp}-$(git describe --long --candidates=1 --always HEAD)" \
+  -ldflags="-s -w -X github.com/kopia/kopia/repo.BuildVersion=${kopiaBuildCommit}" \
   .
 
 RUN adduser -D kopia && addgroup kopia kopia

@@ -26,17 +26,15 @@ set -o xtrace
 readonly COMMIT_ID=${1:?"Commit id to build kopia image not specified"}
 readonly KOPIA_REPO_ORG=${2-:"kopia"}
 readonly IMAGE_TYPE=alpine
-readonly TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 readonly IMAGE_BUILD_VERSION="${COMMIT_ID}"
-readonly GH_PACKAGE_TARGET="ghcr.io/kanisterio/kopia"
+readonly GH_PACKAGE_TARGET="${IMAGE_REGISTRY}/kopia"
 readonly TAG="${IMAGE_TYPE}-${IMAGE_BUILD_VERSION}"
 
 
 docker build \
     --tag "${GH_PACKAGE_TARGET}:${TAG}" \
     --build-arg "kopiaBuildCommit=${COMMIT_ID}" \
-    --build-arg "timestamp=$(date +%Y%m%d-%H%M%S)" \
     --build-arg "kopiaRepoOrg=${KOPIA_REPO_ORG}" \
     --file ./docker/kopia-build/Dockerfile .
 
-docker push $IMAGE_REGISTRY/kopia:$TAG
+docker push ${GH_PACKAGE_TARGET}:$TAG
