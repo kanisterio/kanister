@@ -27,11 +27,11 @@ func (s *AuthSuite) SetUpSuite(c *C) {
 }
 
 func (s *AuthSuite) TestIsCredTypeSupported(c *C) {
-	credType := "cred-type-msi"
+	credType := CredTypeManagedIdentity
 	c.Assert(isCredTypeSupported(credType), Equals, true)
 
-	credType = "cred-type-client-credentials"
-	c.Assert(isCredTypeSupported(credType), Equals, false)
+	credType = CredTypeClientSecret
+	c.Assert(isCredTypeSupported(credType), Equals, true)
 
 	credType = "some-random-type"
 	c.Assert(isCredTypeSupported(credType), Equals, false)
