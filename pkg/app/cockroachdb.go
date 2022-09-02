@@ -70,7 +70,7 @@ func (c *CockroachDB) Install(ctx context.Context, namespace string) error {
 		return errors.Wrapf(err, "Failed to install helm repo. app=%s repo=%s", c.name, c.chart.RepoName)
 	}
 
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", c.chart.RepoName, c.chart.Chart), c.chart.Version, c.chart.Release, c.namespace, c.chart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", c.chart.RepoName, c.chart.Chart), c.chart.Version, c.chart.Release, c.namespace, c.chart.Values, false)
 	return errors.Wrapf(err, "Failed to install helm chart. app=%s chart=%s release=%s", c.name, c.chart.Chart, c.chart.Release)
 }
 
