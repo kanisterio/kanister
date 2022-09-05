@@ -39,3 +39,13 @@ These guidelines are derived from the
 [cheatsheet](https://github.com/kubernetes/community/blob/master/contributors/guide/style-guide.md#cheatsheet-content-design-formatting-and-language)
 in the Kubernetes community style guide. Take a look at some of their examples
 [here](https://github.com/kubernetes/community/blob/master/contributors/guide/style-guide.md#language-grammar-and-tone).
+
+## reStructured Text Styling Guide
+
+* Use `*` for bullet points.
+* Section headers are created using underlines with text. Underlining hierarchy is:
+    * `*` for chapters
+    * `=` for sections
+    * `-` for subsections
+    * `^` for subsubsections
+    * `"` for paragraphs
