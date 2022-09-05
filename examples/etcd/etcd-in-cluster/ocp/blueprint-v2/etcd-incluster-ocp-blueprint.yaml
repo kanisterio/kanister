@@ -1,0 +1,122 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: etcd-blueprint
+actions:
+  backup:
+    outputArtifacts:
+      etcdBackup:
+        kopiaSnapshot: "{{ .Phases.uploadSnapshot.Output.kopiaOutput }}"
+    phases:
+    - func: KubeTask
+      name: takeSnapshot
+      args:
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
+        command:
+          - sh
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            export endpoints="{{ index .Object.data "endpoints" | toString | b64dec }}"
+            export labels="{{ index .Object.data "labels" | toString | b64dec }}"
+            export etcdns="{{ index .Object.data "etcdns" | toString | b64dec }}"
+            # Get a member of etcd cluster
+            ETCD_POD=$(kubectl get pods -n $etcdns -l $labels -ojsonpath='{.items[0].metadata.name}')
+            # exec the snapshot save command
+            kubectl exec -it -n $etcdns $ETCD_POD -c etcd -- sh -c "ETCDCTL_ENDPOINTS=$endpoints etcdctl snapshot save /tmp/etcd-backup.db"
+            # this pod name will be used to copy and remove the snapshot
+            kando output etcdPod $ETCD_POD
+            kando output etcdNS $etcdns
+
+    - func: KubeTask
+      name: uploadSnapshot
+      args:
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
+        command:
+          - sh
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            BACKUP_LOCATION='etcd-backup.db.gz'
+            kubectl cp -c etcd {{ .Phases.takeSnapshot.Output.etcdNS }}/{{ .Phases.takeSnapshot.Output.etcdPod }}:/tmp/etcd-backup.db /tmp/etcd-backup.db
+            gzip -c /tmp/etcd-backup.db  | kando location push --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" --output-name "kopiaOutput" -
+
+    - func: KubeTask
+      name: removeSnapshot
+      args:
+        image: ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0
+        command:
+          - sh
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            kubectl exec -it -n {{ .Phases.takeSnapshot.Output.etcdNS }} "{{ .Phases.takeSnapshot.Output.etcdPod }}" -c etcd -- sh -c "rm -rf  /tmp/etcd-backup.db"
+  restore:
+    # This phase is not actualy performing restore of the etcd data store but is used
+    # to copy backup data to one of the leader nodes. It spins a pod on a leader node
+    # having label `etcd-restore`. The pod is used to download the backup file from the
+    # object store and copy it to the /mnt/data location of the PV mapped to PVC `pvc-etcd`.
+    # The PV's mount path is /mnt/data on leader node where the cluster-ocp-restore.sh
+    # script would be executed. 
+    inputArtifactNames:
+    - etcdBackup
+    phases:
+    - func: PrepareData
+      name: copyFromObjectStore
+      args:
+        image: "ghcr.io/kanisterio/kanister-tools:0.81.0"
+        namespace: "{{ .Object.metadata.namespace }}"
+        podOverride:
+          nodeSelector:
+            etcd-restore: "true"
+          tolerations:
+          - key: "node-role.kubernetes.io/master"
+            operator: "Exists"
+            effect: "NoSchedule"
+          containers:
+          - name: container
+            securityContext:    
+              privileged: true
+        volumes:
+          pvc-etcd: "/mnt/data"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          BACKUP_LOCATION='etcd-backup.db.gz'
+          kopia_snap='{{ .ArtifactsIn.etcdBackup.KopiaSnapshot }}'
+          kando location pull --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" --kopia-snapshot "${kopia_snap}" - | gzip -d >> /tmp/etcd-backup.db
+          cp /tmp/etcd-backup.db /mnt/data
+  delete:
+    inputArtifactNames:
+    - etcdBackup
+    phases:
+    - func: KubeTask
+      name: deleteFromObjectStore
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        image: "ghcr.io/kanisterio/kanister-tools:0.81.0"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+           backup_file_path='etcd-backup.db.gz'
+           kopia_snap='{{ .ArtifactsIn.etcdBackup.KopiaSnapshot }}'
+           kando location delete --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}"
