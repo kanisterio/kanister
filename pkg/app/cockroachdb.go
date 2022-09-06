@@ -85,31 +85,37 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 	}
 	log.Info().Print("Application instance is ready.", field.M{"app": c.name})
 
-	// Read cluster creds from Secret
+	//Get the secret that gets installed with Cockroach DB installation and read the client certs from that secret.
+	//These client certs are then stored in a directory in client pod so that we can use them later to communicate with cockroach DB cluster,
+	//and executing queries like Creating Database and Table, Inserting Data, Setting up Garbage Collection Time, Delete Database etc
+
 	secret, err := c.cli.CoreV1().Secrets(c.namespace).Get(ctx, fmt.Sprintf("%s-client-secret", c.chart.Release), metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
+
 	if _, exist := secret.Data["ca.crt"]; !exist {
 		return false, errors.Errorf("Error: ca.crt not found in the cluster credential %s-client-secret", c.chart.Release)
 	}
 	c.cacrt = string(secret.Data["ca.crt"])
+
 	if _, exist := secret.Data["tls.crt"]; !exist {
 		return false, errors.Errorf("Error: tls.crt not found in the cluster credential %s-client-secret", c.chart.Release)
 	}
 	c.tlscrt = string(secret.Data["tls.crt"])
+
 	if _, exist := secret.Data["tls.key"]; !exist {
 		return false, errors.Errorf("Error: tls.key not found in the cluster credential %s-client-secret", c.chart.Release)
 	}
 	c.tlskey = string(secret.Data["tls.key"])
-	// Creating directory to host certificates
+
 	createCrtDirCmd := "mkdir -p /cockroach/cockroach-client-certs"
 	createCrtDir := []string{"sh", "-c", createCrtDirCmd}
 	_, stderr, err := c.execCommand(ctx, createCrtDir)
 	if err != nil {
 		return false, errors.Wrapf(err, "Error while Creating Cert Directory %s", stderr)
 	}
-	// Creating certificates
+
 	createCaCrtCmd := fmt.Sprintf("echo '%s' >> /cockroach/cockroach-client-certs/ca.crt", c.cacrt)
 	createCaCrt := []string{"sh", "-c", createCaCrtCmd}
 	_, stderr, err = c.execCommand(ctx, createCaCrt)
@@ -130,14 +136,14 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, errors.Wrapf(err, "Error while Creating tls.key %s", stderr)
 	}
-	// Changing file permissions for the certificates
+
 	changeFilePermCmd := "cd /cockroach/cockroach-client-certs/ && chmod 0600 *"
 	changeFilePerm := []string{"sh", "-c", changeFilePermCmd}
 	_, stderr, err = c.execCommand(ctx, changeFilePerm)
 	if err != nil {
 		return false, errors.Wrapf(err, "Error while changing certificate file permissions %s", stderr)
 	}
-	// Setting up Garbage Collection time to 10 seconds
+
 	changeDefaultGCTimeCmd := "./cockroach sql --certs-dir=/cockroach/cockroach-client-certs -e 'ALTER RANGE default CONFIGURE ZONE USING gc.ttlseconds = 10;'"
 	changeDefaultGCTime := []string{"sh", "-c", changeDefaultGCTimeCmd}
 	_, stderr, err = c.execCommand(ctx, changeDefaultGCTime)
