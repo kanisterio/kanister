@@ -14,11 +14,11 @@ ENV GITHUB_REPOSITORY=https://github.com/${kopiaRepoOrg}/kopia
 WORKDIR /kopia
 
 # Build kopia binary from specific commit
-RUN git checkout ${kopiaBuildCommit} && \
-  wget https://github.com/goreleaser/goreleaser/releases/download/v1.11.2/goreleaser_1.11.2_x86_64.apk && \
-  apk add ./goreleaser_1.11.2_x86_64.apk --allow-untrusted && \
-  rm -f goreleaser_1.11.2_x86_64.apk && \
-  goreleaser build --output=. --rm-dist --single-target
+RUN git checkout ${kopiaBuildCommit}
+# Refers to goreleaser/goreleaser:v1.11.2
+COPY --from=docker.io/goreleaser/goreleaser@sha256:b13418f20019fffb29797aff3d03f5e9ca84cea93634f4169a7ed603a95ab198 \
+  /usr/bin/goreleaser /usr/bin/goreleaser
+RUN goreleaser build --output=. --rm-dist --single-target
 
 RUN adduser -D kopia && addgroup kopia kopia
 USER kopia:kopia
