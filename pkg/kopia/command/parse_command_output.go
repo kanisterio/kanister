@@ -36,7 +36,7 @@ const (
 	typeKey       = "type"
 	snapshotValue = "snapshot"
 
-	snapshotCreateOutputRegEx       = `\*.+[^\d](\d+) hashed \(([^\)]+)\), (\d+) cached \(([^\)]+)\), uploaded ([^\)]+),.+`
+	snapshotCreateOutputRegEx       = `(?P<spinner>[|/\-\\\*]).+[^\d](?P<numHashed>\d+) hashed \((?P<hashedSize>[^\)]+)\), (?P<numCached>\d+) cached \((?P<cachedSize>[^\)]+)\), uploaded (?P<uploadedSize>[^\)]+), (?:estimating...|estimated (?P<estimatedSize>[^\)]+) \((?P<estimatedProgress>[^\)]+)\%\).+)`
 	extractSnapshotIDRegEx          = `Created snapshot with root ([^\s]+) and ID ([^\s]+).*$`
 	repoTotalSizeFromBlobStatsRegEx = `Total: (\d+)$`
 	repoCountFromBlobStatsRegEx     = `Count: (\d+)$`
@@ -111,10 +111,10 @@ func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error)
 		}
 	}
 	if snapID == "" {
-		return "", "", errors.New("Failed to get snapshot ID from create snapshot output")
+		return "", "", errors.New(fmt.Sprintf("Failed to get snapshot ID from create snapshot output %s", output))
 	}
 	if rootID == "" {
-		return "", "", errors.New("Failed to get root ID from create snapshot output")
+		return "", "", errors.New(fmt.Sprintf("Failed to get root ID from create snapshot output %s", output))
 	}
 	return snapID, rootID, nil
 }
@@ -187,23 +187,27 @@ func ParseSnapshotCreateOutput(snapCreateStdoutOutput, snapCreateStderrOutput st
 	return &SnapshotCreateInfo{
 		SnapshotID: snapID,
 		RootID:     rootID,
-		Stats:      SnapshotStatsFromSnapshotCreate(snapCreateStderrOutput),
+		Stats:      SnapshotStatsFromSnapshotCreate(snapCreateStderrOutput, true),
 	}, nil
 }
 
 // SnapshotCreateStats is a container for stats parsed from the output of a `kopia
 // snapshot create` command.
 type SnapshotCreateStats struct {
-	FilesHashed   int64
-	SizeHashedB   int64
-	FilesCached   int64
-	SizeCachedB   int64
-	SizeUploadedB int64
+	FilesHashed     int64
+	SizeHashedB     int64
+	FilesCached     int64
+	SizeCachedB     int64
+	SizeUploadedB   int64
+	SizeEstimatedB  int64
+	ProgressPercent int64
 }
+
+var kopiaProgressPattern = regexp.MustCompile(snapshotCreateOutputRegEx) //nolint:lll
 
 // SnapshotStatsFromSnapshotCreate parses the output of a kopia snapshot
 // create execution for a log of the stats for that execution.
-func SnapshotStatsFromSnapshotCreate(snapCreateStderrOutput string) (stats *SnapshotCreateStats) {
+func SnapshotStatsFromSnapshotCreate(snapCreateStderrOutput string, matchOnlyFinished bool) (stats *SnapshotCreateStats) {
 	if snapCreateStderrOutput == "" {
 		return nil
 	}
@@ -221,62 +225,97 @@ func SnapshotStatsFromSnapshotCreate(snapCreateStderrOutput string) (stats *Snap
 	// 		filesCached:  3,
 	// 		sizeCachedB: 40000,
 	// 		sizeUploadedB: 6700000000,
+	// 		sizeEstimatedB: 1092000000,
+	// 		progressPercent: 100,
 	// }, nil
-	pattern := regexp.MustCompile(snapshotCreateOutputRegEx)
+
 	for _, l := range logs {
-		match := pattern.FindStringSubmatch(l)
-		if len(match) >= 6 {
-			numHashedStr := match[1]
-			hashedSizeHumanized := match[2]
-			numCachedStr := match[3]
-			cachedSizeHumanized := match[4]
-			uploadedSizeHumanized := match[5]
-
-			numHashed, err := strconv.Atoi(numHashedStr)
-			if err != nil {
-				log.WithError(err).Print("Skipping entry due to inability to parse number of hashed files", field.M{"numHashedStr": numHashedStr})
-				continue
-			}
-
-			numCached, err := strconv.Atoi(numCachedStr)
-			if err != nil {
-				log.WithError(err).Print("Skipping entry due to inability to parse number of cached files", field.M{"numCachedStr": numCachedStr})
-				continue
-			}
-
-			hashedSizeBytes, err := humanize.ParseBytes(hashedSizeHumanized)
-			if err != nil {
-				log.WithError(err).Print("Skipping entry due to inability to parse hashed size string", field.M{"hashedSizeHumanized": hashedSizeHumanized})
-				continue
-			}
-
-			cachedSizeBytes, err := humanize.ParseBytes(cachedSizeHumanized)
-			if err != nil {
-				log.WithError(err).Print("Skipping entry due to inability to parse cached size string", field.M{"cachedSizeHumanized": cachedSizeHumanized})
-				continue
-			}
-
-			uploadedSizeBytes, err := humanize.ParseBytes(uploadedSizeHumanized)
-			if err != nil {
-				log.WithError(err).Print("Skipping entry due to inability to parse uploaded size string", field.M{"uploadedSizeHumanized": uploadedSizeHumanized})
-				continue
-			}
-
-			stats = &SnapshotCreateStats{
-				FilesHashed:   int64(numHashed),
-				SizeHashedB:   int64(hashedSizeBytes),
-				FilesCached:   int64(numCached),
-				SizeCachedB:   int64(cachedSizeBytes),
-				SizeUploadedB: int64(uploadedSizeBytes),
-			}
+		lineStats := parseKopiaProgressLine(l, matchOnlyFinished)
+		if lineStats != nil {
+			stats = lineStats
 		}
 	}
 
-	if stats == nil {
-		log.Error().Print("could not find well-formed stats in snapshot create output")
+	return stats
+}
+
+func parseKopiaProgressLine(line string, matchOnlyFinished bool) (stats *SnapshotCreateStats) {
+	match := kopiaProgressPattern.FindStringSubmatch(line)
+	if len(match) < 9 {
+		return nil
 	}
 
-	return stats
+	groups := make(map[string]string)
+	for i, name := range kopiaProgressPattern.SubexpNames() {
+		if i != 0 && name != "" {
+			groups[name] = match[i]
+		}
+	}
+
+	isFinalResult := groups["spinner"] == "*"
+	if matchOnlyFinished && !isFinalResult {
+		return nil
+	}
+
+	numHashed, err := strconv.Atoi(groups["numHashed"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse number of hashed files", field.M{"numHashed": groups["numHashed"]})
+		return nil
+	}
+
+	numCached, err := strconv.Atoi(groups["numCached"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse number of cached files", field.M{"numCached": groups["numCached"]})
+		return nil
+	}
+
+	hashedSizeBytes, err := humanize.ParseBytes(groups["hashedSize"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse hashed size string", field.M{"hashedSize": groups["hashedSize"]})
+		return nil
+	}
+
+	cachedSizeBytes, err := humanize.ParseBytes(groups["cachedSize"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse cached size string", field.M{"cachedSize": groups["cachedSize"]})
+		return nil
+	}
+
+	uploadedSizeBytes, err := humanize.ParseBytes(groups["uploadedSize"])
+	if err != nil {
+		log.WithError(err).Print("Skipping entry due to inability to parse uploaded size string", field.M{"uploadedSize": groups["uploadedSize"]})
+		return nil
+	}
+
+	var estimatedSizeBytes uint64
+	var progressPercent float64
+	stillEstimating := len(groups["estimatedSize"]) == 0 && len(groups["estimatedProgress"]) == 0
+
+	if !stillEstimating { // Estimation completed
+		estimatedSizeBytes, err = humanize.ParseBytes(groups["estimatedSize"])
+		if err != nil {
+			log.WithError(err).Print("Skipping entry due to inability to parse estimated size string", field.M{"estimatedSize": groups["estimatedSize"]})
+			return nil
+		}
+
+		progressPercent, err = strconv.ParseFloat(groups["estimatedProgress"], 64)
+		if err != nil {
+			log.WithError(err).Print("Skipping entry due to inability to parse progress percent string", field.M{"estimatedProgress": groups["estimatedProgress"]})
+			return nil
+		}
+	} else if isFinalResult { // It may happen that kopia will complete its job before estimation will be done
+		progressPercent = 100
+	}
+
+	return &SnapshotCreateStats{
+		FilesHashed:     int64(numHashed),
+		SizeHashedB:     int64(hashedSizeBytes),
+		FilesCached:     int64(numCached),
+		SizeCachedB:     int64(cachedSizeBytes),
+		SizeUploadedB:   int64(uploadedSizeBytes),
+		SizeEstimatedB:  int64(estimatedSizeBytes),
+		ProgressPercent: int64(progressPercent),
+	}
 }
 
 // RepoSizeStatsFromBlobStatsRaw takes a string as input, interprets it as a kopia blob stats
