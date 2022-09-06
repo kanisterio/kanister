@@ -27,7 +27,7 @@ $ helm repo update
 # Install the cockroachdb in cockroachdb namespace
 $ helm install cockroachdb-release --namespace cockroachdb --create-namespace cockroachdb/cockroachdb
 
-# Install the secure cockroachdb client
+# In order to interact with the CockroachDB Cluster, install the secure cockroachdb client
 # Download latest secure client manifest 
 $ curl -O https://raw.githubusercontent.com/cockroachdb/helm-charts/master/examples/client-secure.yaml
 
