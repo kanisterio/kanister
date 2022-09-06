@@ -19,10 +19,6 @@ set -o nounset
 
 IMAGE_REGISTRY="ghcr.io/kanisterio"
 
-set -o errexit
-set -o nounset
-set -o xtrace
-
 readonly COMMIT_ID=${1:?"Commit id to build kopia image not specified"}
 readonly KOPIA_REPO_ORG=${2-:"kopia"}
 readonly IMAGE_TYPE=alpine
