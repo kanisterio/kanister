@@ -67,3 +67,5 @@ func (e dirEntry) Device() fs.DeviceInfo {
 func (e dirEntry) LocalFilesystemPath() string {
 	return ""
 }
+
+func (e dirEntry) Close() {}
