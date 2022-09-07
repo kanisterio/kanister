@@ -92,7 +92,6 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 	// cluster, and executing queries like Creating Database and Table,
 	// Inserting Data, Setting up Garbage Collection Time,
 	// Delete Database etc
-
 	secret, err := c.cli.CoreV1().Secrets(c.namespace).Get(ctx, fmt.Sprintf("%s-client-secret", c.chart.Release), metav1.GetOptions{})
 	if err != nil {
 		return false, err
@@ -233,6 +232,7 @@ func (c *CockroachDB) Count(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error while counting the data of the database: %s", stderr)
 	}
+	// output returned from above query is "count\n3"
 	// get the returned count and convert it to int, to return
 	rowsReturned, err := strconv.Atoi(strings.Split(stdout, "\n")[1])
 	if err != nil {
@@ -263,7 +263,10 @@ func (c *CockroachDB) Reset(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error while dropping the table: %s", stderr)
 	}
-
+	// Even though the table is deleted from the database, it's present in the
+	// descriptor table. We will have to wait for it to be deleted from there  as
+	// well (using garbage collection), so that we can restore the snapshot in
+	// the same DB cluster.
 	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		err = c.waitForGC(ctx)
 		return err == nil, nil
