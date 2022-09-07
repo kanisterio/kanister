@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine3.14 AS builder
+FROM golang:1.19.1-alpine3.16 AS builder
 
 ARG kopiaBuildCommit
 ARG kopiaRepoOrg
@@ -25,7 +25,7 @@ USER kopia:kopia
 
 COPY --chown=kopia . /kopia
 
-FROM alpine:3.14
+FROM alpine:3.16
 
 WORKDIR /kopia
 
