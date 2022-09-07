@@ -12,6 +12,7 @@ serviceAccount:
   name:
   annotations:
 controller:
+  logLevel: info
   service:
     # port is used as the secured service port if the validating
     # webhook is enabled. Otherwise, insecuredPort is used.
