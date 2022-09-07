@@ -16,34 +16,46 @@ package command
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/logsafe"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
 	// kube.Exec might timeout after 4h if there is no output from the command
 	// Setting it to 1h instead of 1000000h so that kopia logs progress once every hour
-	longUpdateInterval = "1h"
+	logUpdateInterval = "1h"
 
 	requireLogLevelInfo = true
 )
 
 type SnapshotCreateCommandArgs struct {
 	*CommandArgs
-	PathToBackup string
+	PathToBackup           string
+	ProgressUpdateInterval time.Duration
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
-// TODO: Have better mechanism to apply global flags
 func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
+	return stringSliceCommand(snapshotCreateCommand(cmdArgs))
+}
+
+func snapshotCreateCommand(cmdArgs SnapshotCreateCommandArgs) logsafe.Cmd {
 	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(kopia.DataStoreParallelUploadVarName, kopia.DefaultDataStoreParallelUpload))
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
-	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
 
-	return stringSliceCommand(args)
+	// In some cases, the update interval is set by the caller
+	duration := logUpdateInterval
+	if cmdArgs.ProgressUpdateInterval > 0 {
+		duration = utils.DurationToString(utils.RoundUpDuration(cmdArgs.ProgressUpdateInterval))
+	}
+	args = args.AppendLoggableKV(progressUpdateIntervalFlag, duration)
+
+	return args
 }
 
 type SnapshotRestoreCommandArgs struct {
