@@ -85,9 +85,11 @@ func (c *CockroachDB) IsReady(ctx context.Context) (bool, error) {
 	}
 	log.Info().Print("Application instance is ready.", field.M{"app": c.name})
 
-	//Get the secret that gets installed with Cockroach DB installation and read the client certs from that secret.
-	//These client certs are then stored in a directory in client pod so that we can use them later to communicate with cockroach DB cluster,
-	//and executing queries like Creating Database and Table, Inserting Data, Setting up Garbage Collection Time, Delete Database etc
+	/*
+		Get the secret that gets installed with Cockroach DB installation and read the client certs from that secret.
+		These client certs are then stored in a directory in client pod so that we can use them later to communicate with cockroach DB cluster,
+		and executing queries like Creating Database and Table, Inserting Data, Setting up Garbage Collection Time, Delete Database etc
+	*/
 
 	secret, err := c.cli.CoreV1().Secrets(c.namespace).Get(ctx, fmt.Sprintf("%s-client-secret", c.chart.Release), metav1.GetOptions{})
 	if err != nil {
