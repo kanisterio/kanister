@@ -21,9 +21,6 @@ const (
 	// DefaultClientCacheDirectory is the directory where kopia content cache is created
 	DefaultClientCacheDirectory = "/tmp/kopia-cache"
 
-	// DefaultFSMountPath is the mount path for the file store PVC on Kopia API server
-	DefaultFSMountPath = "/mnt/data"
-
 	// DefaultAWSAssumeRoleDuration is the default for Assume Role Duration (in minutes)
 	DefaultAWSAssumeRoleDuration = "60m"
 	// AWSAssumeRoleDurationVarName is the environment variable that controls AWS Assume Role Duration.
