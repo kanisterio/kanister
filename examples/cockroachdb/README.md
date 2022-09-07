@@ -46,7 +46,7 @@ $ kubectl create -f ./client-secure.yaml -n cockroachdb
 
 ## Integrating with Kanister
 
-If you have deployed CockroachDB application with name other than `cockroachdb-release` and namespace other than `cockroachdb`, you need to modify the commands (backup, restore and delete) used below to use the correct release name and namespace
+If you have deployed CockroachDB application with name other than `cockroachdb-release` and namespace other than `cockroachdb`, you need to modify the commands (backup, restore and delete) used below to use the correct release name and namespace.
 ### Create Profile
 Create Profile if not created already, and set the values accordingly
 
@@ -169,8 +169,8 @@ Query OK, 1 row affected (0.03 sec)
 
 To restore the missing data, you should use the backup that you created before. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
 > **Note** : CockroachDB uses [Garbage Collection](https://www.cockroachlabs.com/docs/stable/architecture/storage-layer.html#garbage-collection), So in order to perform Full Cluster Restore on same cluster, one must wait out the Default Garbage Collection Run After Time i.e. 90,000 Seconds or 25 Hours.
-> On the other hand the following step is Not Required if one is restoring data on a new fresh cluster.
-> In Order to reduce the Garbage Collection Time, run the following command, Wait for a minute and let cockroachdb to automatic collect garbage, and then restore
+> On the other hand the following step is Not Required if snapshot is being restored on a new DB cluster.
+> In Order to reduce the Garbage Collection time, run the following command, wait for a minute and let cockroachdb to automatic garbage collection. And then use kanctl to create restore action.
 ```bash
 $ ALTER RANGE default CONFIGURE ZONE USING gc.ttlseconds = 60;
 ```
