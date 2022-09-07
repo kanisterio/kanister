@@ -35,12 +35,6 @@ import (
 )
 
 const (
-	// DefaultClientConfigFilePath is the file which contains kopia repo config
-	DefaultClientConfigFilePath = "/tmp/kopia-repository.config"
-
-	// DefaultClientCacheDirectory is the directory where kopia content cache is created
-	DefaultClientCacheDirectory = "/tmp/kopia-cache"
-
 	// defaultDataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
 	defaultDataStoreGeneralContentCacheSizeMB = 0
 
@@ -58,7 +52,6 @@ const (
 	// use when describing repo
 	ObjectStorePathOption = "objectStorePath"
 
-	// Kopia profile option keys
 	// DataStoreGeneralContentCacheSizeMBKey is the key to pass content cache size for general command workloads
 	DataStoreGeneralContentCacheSizeMBKey = "dataStoreGeneralContentCacheSize"
 	// DataStoreGeneralMetadataCacheSizeMBKey is the key to pass metadata cache size for general command workloads
