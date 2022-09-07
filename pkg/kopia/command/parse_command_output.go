@@ -107,7 +107,7 @@ func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error)
 		}
 		snapID = string(snapManifest.ID)
 		if snapManifest.RootEntry != nil {
-			rootID = string(snapManifest.RootEntry.ObjectID)
+			rootID = snapManifest.RootEntry.ObjectID.String()
 		}
 	}
 	if snapID == "" {
