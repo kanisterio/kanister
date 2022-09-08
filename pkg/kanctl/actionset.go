@@ -38,6 +38,7 @@ import (
 
 const (
 	actionFlagName           = "action"
+	actionSetFlagName        = "action-set"
 	blueprintFlagName        = "blueprint"
 	configMapsFlagName       = "config-maps"
 	deploymentFlagName       = "deployment"
@@ -55,17 +56,22 @@ const (
 	objectsFlagName          = "objects"
 )
 
+var (
+	errMissingFieldActionName = fmt.Errorf("missing action name. use the --action flag to specify the action name")
+)
+
 type PerformParams struct {
-	Namespace  string
-	ActionName string
-	ParentName string
-	Blueprint  string
-	DryRun     bool
-	Objects    []crv1alpha1.ObjectReference
-	Options    map[string]string
-	Profile    *crv1alpha1.ObjectReference
-	Secrets    map[string]crv1alpha1.ObjectReference
-	ConfigMaps map[string]crv1alpha1.ObjectReference
+	Namespace     string
+	ActionName    string
+	ActionSetName string
+	ParentName    string
+	Blueprint     string
+	DryRun        bool
+	Objects       []crv1alpha1.ObjectReference
+	Options       map[string]string
+	Profile       *crv1alpha1.ObjectReference
+	Secrets       map[string]crv1alpha1.ObjectReference
+	ConfigMaps    map[string]crv1alpha1.ObjectReference
 }
 
 func newActionSetCmd() *cobra.Command {
@@ -80,6 +86,7 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().StringP(sourceFlagName, "f", "", "specify name of the action set")
 
 	cmd.Flags().StringP(actionFlagName, "a", "", "action for the action set (required if creating a new action set)")
+	cmd.Flags().StringP(actionSetFlagName, "A", "", "name of the new actionset (optional. if not specified, kanctl will generate one based on the action name")
 	cmd.Flags().StringP(blueprintFlagName, "b", "", "blueprint for the action set (required if creating a new action set)")
 	cmd.Flags().StringSliceP(configMapsFlagName, "c", []string{}, "config maps for the action set, comma separated ref=namespace/name pairs (eg: --config-maps ref1=namespace1/name1,ref2=namespace2/name2)")
 	cmd.Flags().StringSliceP(deploymentFlagName, "d", []string{}, "deployment for the action set, comma separated namespace/name pairs (eg: --deployment namespace1/name1,namespace2/name2)")
@@ -162,7 +169,12 @@ func newActionSet(params *PerformParams) (*crv1alpha1.ActionSet, error) {
 			Options:    params.Options,
 		})
 	}
-	name := fmt.Sprintf("%s-", params.ActionName)
+
+	name, err := generateActionSetName(params)
+	if err != nil {
+		return nil, err
+	}
+
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: name,
@@ -217,14 +229,15 @@ func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1a
 			actions = append(actions, as)
 		}
 	}
+
+	name, err := generateActionSetName(params)
+	if err != nil {
+		return nil, err
+	}
+
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: func() string {
-				if params.ActionName != "" {
-					return fmt.Sprintf("%s-%s-", params.ActionName, parent.GetName())
-				}
-				return fmt.Sprintf("%s-", parent.GetName())
-			}(),
+			GenerateName: name,
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: actions,
@@ -262,6 +275,7 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 		return nil, err
 	}
 	actionName, _ := cmd.Flags().GetString(actionFlagName)
+	actionSetName, _ := cmd.Flags().GetString(actionSetFlagName)
 	parentName, _ := cmd.Flags().GetString(sourceFlagName)
 	blueprint, _ := cmd.Flags().GetString(blueprintFlagName)
 	dryRun, _ := cmd.Flags().GetBool(dryRunFlag)
@@ -286,16 +300,17 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 		return nil, err
 	}
 	return &PerformParams{
-		Namespace:  ns,
-		ActionName: actionName,
-		ParentName: parentName,
-		Blueprint:  blueprint,
-		DryRun:     dryRun,
-		Objects:    objects,
-		Options:    options,
-		Secrets:    secrets,
-		ConfigMaps: cms,
-		Profile:    profile,
+		Namespace:     ns,
+		ActionName:    actionName,
+		ActionSetName: actionSetName,
+		ParentName:    parentName,
+		Blueprint:     blueprint,
+		DryRun:        dryRun,
+		Objects:       objects,
+		Options:       options,
+		Secrets:       secrets,
+		ConfigMaps:    cms,
+		Profile:       profile,
 	}, nil
 }
 
@@ -691,4 +706,24 @@ func max(x, y int) int {
 		return x
 	}
 	return y
+}
+
+func generateActionSetName(p *PerformParams) (string, error) {
+	if p.ActionSetName != "" {
+		return fmt.Sprintf("%s-", p.ActionSetName), nil
+	}
+
+	if p.ActionName != "" {
+		if p.ParentName != "" {
+			return fmt.Sprintf("%s-%s-", p.ActionName, p.ParentName), nil
+		}
+
+		return fmt.Sprintf("%s-", p.ActionName), nil
+	}
+
+	if p.ParentName != "" {
+		return fmt.Sprintf("%s-", p.ParentName), nil
+	}
+
+	return "", errMissingFieldActionName
 }
