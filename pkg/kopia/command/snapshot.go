@@ -67,13 +67,16 @@ type SnapshotRestoreCommandArgs struct {
 
 // SnapshotRestore returns kopia command restoring snapshots with given snap ID
 func SnapshotRestore(cmdArgs SnapshotRestoreCommandArgs) []string {
+	return stringSliceCommand(snapshotRestoreCommand(cmdArgs))
+}
+
+func snapshotRestoreCommand(cmdArgs SnapshotRestoreCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, cmdArgs.SnapID, cmdArgs.TargetPath)
 	if cmdArgs.SparseRestore {
 		args = args.AppendLoggable(sparseFlag)
 	}
-
-	return stringSliceCommand(args)
+	return args
 }
 
 type SnapshotDeleteCommandArgs struct {
@@ -83,10 +86,13 @@ type SnapshotDeleteCommandArgs struct {
 
 // SnapshotDelete returns the kopia command for deleting a snapshot with given snapshot ID
 func SnapshotDelete(cmdArgs SnapshotDeleteCommandArgs) []string {
+	return stringSliceCommand(snapshotDeleteCommand(cmdArgs))
+}
+
+func snapshotDeleteCommand(cmdArgs SnapshotDeleteCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, deleteSubCommand, cmdArgs.SnapID, unsafeIgnoreSourceFlag)
-
-	return stringSliceCommand(args)
+	return args
 }
 
 type SnapshotExpireCommandArgs struct {
@@ -97,13 +103,16 @@ type SnapshotExpireCommandArgs struct {
 
 // SnapshotExpire returns the kopia command for removing snapshots with given root ID
 func SnapshotExpire(cmdArgs SnapshotExpireCommandArgs) []string {
+	return stringSliceCommand(snapshotExpireCommand(cmdArgs))
+}
+
+func snapshotExpireCommand(cmdArgs SnapshotExpireCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, expireSubCommand, cmdArgs.RootID)
 	if cmdArgs.MustDelete {
 		args = args.AppendLoggable(deleteFlag)
 	}
-
-	return stringSliceCommand(args)
+	return args
 }
 
 type SnapshotGCCommandArgs struct {
@@ -112,10 +121,13 @@ type SnapshotGCCommandArgs struct {
 
 // SnapshotGC returns the kopia command for issuing kopia snapshot gc
 func SnapshotGC(cmdArgs SnapshotGCCommandArgs) []string {
+	return stringSliceCommand(snapshotGCCommand(cmdArgs))
+}
+
+func snapshotGCCommand(cmdArgs SnapshotGCCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(snapshotSubCommand, gcSubCommand, deleteFlag)
-
-	return stringSliceCommand(args)
+	return args
 }
 
 type SnapListAllCommandArgs struct {
@@ -124,6 +136,10 @@ type SnapListAllCommandArgs struct {
 
 // SnapListAll returns the kopia command for listing all snapshots in the repository with their sizes
 func SnapListAll(cmdArgs SnapListAllCommandArgs) []string {
+	return stringSliceCommand(snapListAllCommand(cmdArgs))
+}
+
+func snapListAllCommand(cmdArgs SnapListAllCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(
 		snapshotSubCommand,
@@ -133,8 +149,7 @@ func SnapListAll(cmdArgs SnapListAllCommandArgs) []string {
 		showIdenticalFlag,
 		jsonFlag,
 	)
-
-	return stringSliceCommand(args)
+	return args
 }
 
 type SnapListAllWithSnapIDsCommandArgs struct {
@@ -143,9 +158,12 @@ type SnapListAllWithSnapIDsCommandArgs struct {
 
 // SnapListAllWithSnapIDs returns the kopia command for listing all snapshots in the repository with snapshotIDs
 func SnapListAllWithSnapIDs(cmdArgs SnapListAllWithSnapIDsCommandArgs) []string {
+	return stringSliceCommand(snapListAllWithSnapIDsCommand(cmdArgs))
+}
+
+func snapListAllWithSnapIDsCommand(cmdArgs SnapListAllWithSnapIDsCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
 	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
-
-	return stringSliceCommand(args)
+	return args
 }

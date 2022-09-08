@@ -14,6 +14,8 @@
 
 package command
 
+import "github.com/kanisterio/kanister/pkg/logsafe"
+
 type RestoreCommandArgs struct {
 	*CommandArgs
 	RootID     string
@@ -22,8 +24,11 @@ type RestoreCommandArgs struct {
 
 // Restore returns the kopia command for restoring root of a snapshot with given root ID
 func Restore(cmdArgs RestoreCommandArgs) []string {
+	return stringSliceCommand(restoreCommand(cmdArgs))
+}
+
+func restoreCommand(cmdArgs RestoreCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(restoreSubCommand, cmdArgs.RootID, cmdArgs.TargetPath)
-
-	return stringSliceCommand(args)
+	return args
 }
