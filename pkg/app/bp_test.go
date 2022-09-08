@@ -155,7 +155,7 @@ func validateImageTags(c *C, bp *crv1alpha1.Blueprint) {
 			}
 			// Verify if image with prefix "ghcr.io/kanisterio" is tagged "v9.99.9-dev"
 			c.Log(fmt.Sprintf("phase:%s, image:%s", phase.Name, image.(string)))
-			if strings.HasPrefix(image.(string), ImagePrefix) {
+			if strings.HasPrefix(image.(string), imagePrefix) {
 				c.Assert(strings.Split(image.(string), ":")[1], Equals, "v9.99.9-dev")
 			}
 			c.Assert(phase.Args["podOverride"], DeepEquals, podOverride)
