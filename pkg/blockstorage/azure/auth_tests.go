@@ -69,7 +69,7 @@ func (s *AuthSuite) TestNewAzureAutheticator(c *C) {
 		blockstorage.AzureCientID:     "some-client-id",
 		blockstorage.AzureClentSecret: "some-client-secret",
 	}
-	authenticator, err := NewAzureAutheticator(config)
+	authenticator, err := NewAzureAuthenticator(config)
 	c.Assert(err, IsNil)
 	_, ok := authenticator.(*ClientSecretAuthenticator)
 	c.Assert(ok, Equals, true)
@@ -78,7 +78,7 @@ func (s *AuthSuite) TestNewAzureAutheticator(c *C) {
 	config = map[string]string{
 		blockstorage.AzureCientID: "some-client-id",
 	}
-	authenticator, err = NewAzureAutheticator(config)
+	authenticator, err = NewAzureAuthenticator(config)
 	c.Assert(err, IsNil)
 	_, ok = authenticator.(*MsiAuthenticator)
 	c.Assert(ok, Equals, true)
@@ -88,7 +88,7 @@ func (s *AuthSuite) TestNewAzureAutheticator(c *C) {
 		blockstorage.AzureCientID:     "some-client-id",
 		blockstorage.AzureClentSecret: "some-client-secret",
 	}
-	authenticator, err = NewAzureAutheticator(config)
+	authenticator, err = NewAzureAuthenticator(config)
 	c.Assert(err, NotNil)
 	c.Assert(authenticator, IsNil)
 }

@@ -30,7 +30,7 @@ type AzureAuthenticator interface {
 	Authenticate(creds map[string]string) error
 }
 
-func NewAzureAutheticator(config map[string]string) (AzureAuthenticator, error) {
+func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error) {
 	switch {
 	case isMSICredsAvailable(config):
 		return &MsiAuthenticator{}, nil
