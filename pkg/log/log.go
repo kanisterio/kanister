@@ -3,7 +3,6 @@ package log
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -136,7 +135,6 @@ func initLogLevel() {
 		level = logrus.InfoLevel
 	}
 	SetLevel(Level(level))
-	Print(fmt.Sprintf("Controller log level: %s", level))
 }
 
 // SetLevel sets the current log level.
