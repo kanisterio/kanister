@@ -71,7 +71,7 @@ func (s *AuthSuite) TestNewAzureAutheticator(c *C) {
 	}
 	authenticator, err := NewAzureAutheticator(config)
 	c.Assert(err, IsNil)
-	_, ok := authenticator.(*clientSecretAuthenticator)
+	_, ok := authenticator.(*ClientSecretAuthenticator)
 	c.Assert(ok, Equals, true)
 
 	// successful with msi creds
@@ -80,7 +80,7 @@ func (s *AuthSuite) TestNewAzureAutheticator(c *C) {
 	}
 	authenticator, err = NewAzureAutheticator(config)
 	c.Assert(err, IsNil)
-	_, ok = authenticator.(*msiAuthenticator)
+	_, ok = authenticator.(*MsiAuthenticator)
 	c.Assert(ok, Equals, true)
 
 	// unsuccessful with an undefined combo of creds

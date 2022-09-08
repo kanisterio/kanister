@@ -33,18 +33,18 @@ type AzureAuthenticator interface {
 func NewAzureAutheticator(config map[string]string) (AzureAuthenticator, error) {
 	switch {
 	case isMSICredsAvailable(config):
-		return &msiAuthenticator{}, nil
+		return &MsiAuthenticator{}, nil
 	case isClientCredsAvailable(config):
-		return &clientSecretAuthenticator{}, nil
+		return &ClientSecretAuthenticator{}, nil
 	default:
 		return nil, errors.New("Fail to get an authenticator for provided creds combination")
 	}
 }
 
 // authenticate with MSI creds
-type msiAuthenticator struct{}
+type MsiAuthenticator struct{}
 
-func (m *msiAuthenticator) Authenticate(creds map[string]string) error {
+func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
 	// check if MSI endpoint is available
 	if !adal.MSIAvailable(context.Background(), nil) {
 		return errors.New("MSI endpoint is not supported")
@@ -66,9 +66,9 @@ func (m *msiAuthenticator) Authenticate(creds map[string]string) error {
 }
 
 // authenticate with client secret creds
-type clientSecretAuthenticator struct{}
+type ClientSecretAuthenticator struct{}
 
-func (c *clientSecretAuthenticator) Authenticate(creds map[string]string) error {
+func (c *ClientSecretAuthenticator) Authenticate(creds map[string]string) error {
 	credConfig, err := getCredConfigForAuth(creds)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get Client Secret config")
