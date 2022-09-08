@@ -8,7 +8,7 @@ K8ssandra operator uses Medusa to backup and restore Cassandra data. Kanister ca
 
 * Kubernetes 1.17+
 * PV support on the underlying infrastructure
-* Kanister controller version 0.81.0 installed in your cluster
+* Kanister controller version 0.82.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 * K8ssandra needs at least 4 cores and 8GB of RAM available to Docker and appropriate heap sizes for Cassandra and Stargate. If you don’t have those resources available, you can avoid deploying features such as monitoring, Reaper and Medusa, and also reduce the number of Cassandra nodes.
 
