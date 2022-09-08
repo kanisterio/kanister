@@ -28,6 +28,7 @@ import (
 
 const (
 	blueprintsRepo = "./blueprints"
+	ImagePrefix    = "ghcr.io/kanisterio"
 )
 
 // Blueprint implements Blueprint() to return Blueprint specs for the app
@@ -87,7 +88,7 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 				continue
 			}
 
-			if strings.HasPrefix(imageStr, "ghcr.io/kanisterio") {
+			if strings.HasPrefix(imageStr, ImagePrefix) {
 				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
 				phase.Args["image"] = fmt.Sprintf("%s:v9.99.9-dev", strings.Split(imageStr, ":")[0])
 			}
