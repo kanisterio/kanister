@@ -42,8 +42,8 @@ func (s *ClientSuite) TestClient(c *C) {
 	config := make(map[string]string)
 	config[blockstorage.AzureSubscriptionID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureSubscriptionID)
 	config[blockstorage.AzureTenantID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureTenantID)
-	config[blockstorage.AzureCientID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCientID)
-	config[blockstorage.AzureClentSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClentSecret)
+	config[blockstorage.AzureClientID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClientID)
+	config[blockstorage.AzureClientSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClientSecret)
 	config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
 	config[blockstorage.AzureCloudEnvironmentID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCloudEnvironmentID)
 	azCli, err := NewClient(context.Background(), config)
@@ -62,8 +62,8 @@ func (s ClientSuite) TestGetRegions(c *C) {
 	config := map[string]string{}
 	config[blockstorage.AzureSubscriptionID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureSubscriptionID)
 	config[blockstorage.AzureTenantID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureTenantID)
-	config[blockstorage.AzureCientID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCientID)
-	config[blockstorage.AzureClentSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClentSecret)
+	config[blockstorage.AzureClientID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClientID)
+	config[blockstorage.AzureClientSecret] = envconfig.GetEnvOrSkip(c, blockstorage.AzureClientSecret)
 	config[blockstorage.AzureResurceGroup] = envconfig.GetEnvOrSkip(c, blockstorage.AzureResurceGroup)
 	// config[blockstorage.AzureCloudEnviornmentID] = envconfig.GetEnvOrSkip(c, blockstorage.AzureCloudEnviornmentID)
 
@@ -96,8 +96,8 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			env: azure.PublicCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID:            "atid",
-				blockstorage.AzureCientID:             "acid",
-				blockstorage.AzureClentSecret:         "acs",
+				blockstorage.AzureClientID:            "acid",
+				blockstorage.AzureClientSecret:        "acs",
 				blockstorage.AzureActiveDirEndpoint:   "aade",
 				blockstorage.AzureActiveDirResourceID: "aadrid",
 			},
@@ -113,9 +113,9 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 		{
 			env: azure.PublicCloud,
 			config: map[string]string{
-				blockstorage.AzureTenantID:    "atid",
-				blockstorage.AzureCientID:     "acid",
-				blockstorage.AzureClentSecret: "acs",
+				blockstorage.AzureTenantID:     "atid",
+				blockstorage.AzureClientID:     "acid",
+				blockstorage.AzureClientSecret: "acs",
 			},
 			expCCC: auth.ClientCredentialsConfig{
 				ClientID:     "acid",
@@ -130,8 +130,8 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			env: azure.USGovernmentCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID:            "atid",
-				blockstorage.AzureCientID:             "acid",
-				blockstorage.AzureClentSecret:         "acs",
+				blockstorage.AzureClientID:            "acid",
+				blockstorage.AzureClientSecret:        "acs",
 				blockstorage.AzureActiveDirEndpoint:   "",
 				blockstorage.AzureActiveDirResourceID: "",
 			},
@@ -148,7 +148,7 @@ func (s *ClientSuite) TestGetCredConfig(c *C) {
 			env: azure.USGovernmentCloud,
 			config: map[string]string{
 				blockstorage.AzureTenantID: "atid",
-				blockstorage.AzureCientID:  "acid",
+				blockstorage.AzureClientID: "acid",
 			},
 			errChecker: NotNil,
 		},
