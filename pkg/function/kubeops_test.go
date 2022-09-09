@@ -276,7 +276,9 @@ func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
 func (s *KubeOpsSuite) TestKubeOpsCreateWaitDelete(c *C) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
-	tp := param.TemplateParams{}
+	tp := param.TemplateParams{
+		Time: time.Now().String(),
+	}
 	action := "test"
 	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
 	deployName := "test-deployment"

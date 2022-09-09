@@ -134,13 +134,7 @@ func waitDeployPhase(namespace, deploy string) crv1alpha1.BlueprintPhase {
 			WaitConditionsArg: map[string]interface{}{
 				"anyOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if and (eq "{$.spec.replicas}" "{$.status.availableReplicas}" )
-						(eq "{$.status.conditions[?(@.type == \"Available\")].type}" "Available")
-						(eq "{$.status.conditions[?(@.type == \"Available\")].status}" "True") }}
-						true
-						{{ else }}
-						false
-						{{ end }}`,
+						"condition": `{{ if and (eq "{$.spec.replicas}" "{$.status.availableReplicas}" ) (eq "{$.status.conditions[?(@.type == \"Available\")].type}" "Available") (eq "{$.status.conditions[?(@.type == \"Available\")].status}" "True") }}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"group":      "apps",
