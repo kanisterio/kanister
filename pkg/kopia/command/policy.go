@@ -14,6 +14,8 @@
 
 package command
 
+import "github.com/kanisterio/kanister/pkg/logsafe"
+
 type PolicyChangesArg map[string]string
 
 type PolicySetGlobalCommandArgs struct {
@@ -23,11 +25,14 @@ type PolicySetGlobalCommandArgs struct {
 
 // PolicySetGlobal returns the kopia command for modifying the global policy
 func PolicySetGlobal(cmdArgs PolicySetGlobalCommandArgs) []string {
+	return stringSliceCommand(policySetGlobalCommand(cmdArgs))
+}
+
+func policySetGlobalCommand(cmdArgs PolicySetGlobalCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(policySubCommand, setSubCommand, globalFlag)
 	for field, val := range cmdArgs.Modifications {
 		args = args.AppendLoggableKV(field, val)
 	}
-
-	return stringSliceCommand(args)
+	return args
 }
