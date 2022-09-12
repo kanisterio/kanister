@@ -14,15 +14,15 @@ import (
 // determine if the combination of creds are client secret creds
 func isClientCredsAvailable(config map[string]string) bool {
 	return (config[blockstorage.AzureTenantID] != "" &&
-		config[blockstorage.AzureCientID] != "" &&
-		config[blockstorage.AzureClentSecret] != "")
+		config[blockstorage.AzureClientID] != "" &&
+		config[blockstorage.AzureClientSecret] != "")
 }
 
 // determine if the combination of creds are MSI creds
 func isMSICredsAvailable(config map[string]string) bool {
 	return (config[blockstorage.AzureTenantID] == "" &&
-		config[blockstorage.AzureCientID] != "" &&
-		config[blockstorage.AzureClentSecret] == "")
+		config[blockstorage.AzureClientID] != "" &&
+		config[blockstorage.AzureClientSecret] == "")
 }
 
 // Public interface to authenticate with different Azure credentials type
@@ -51,7 +51,7 @@ func (m *msiAuthenticator) Authenticate(creds map[string]string) error {
 	}
 	// create a service principal token
 	msiConfig := auth.NewMSIConfig()
-	msiConfig.ClientID = creds[blockstorage.AzureCientID]
+	msiConfig.ClientID = creds[blockstorage.AzureClientID]
 	spt, err := msiConfig.ServicePrincipalToken()
 	if err != nil {
 		return errors.Wrap(err, "Failed to create a service principal token")
@@ -93,12 +93,12 @@ func getCredConfigForAuth(config map[string]string) (auth.ClientCredentialsConfi
 		return auth.ClientCredentialsConfig{}, errors.New("Cannot get tenantID from config")
 	}
 
-	clientID, ok := config[blockstorage.AzureCientID]
+	clientID, ok := config[blockstorage.AzureClientID]
 	if !ok {
 		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientID from config")
 	}
 
-	clientSecret, ok := config[blockstorage.AzureClentSecret]
+	clientSecret, ok := config[blockstorage.AzureClientSecret]
 	if !ok {
 		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientSecret from config")
 	}
