@@ -28,6 +28,9 @@ import (
 
 const (
 	blueprintsRepo = "./blueprints"
+	// imagePrefix specifies the prefix an image is going to have if it's being consumed from
+	// kanister's ghcr registry
+	imagePrefix = "ghcr.io/kanisterio"
 )
 
 // Blueprint implements Blueprint() to return Blueprint specs for the app
@@ -87,8 +90,10 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 				continue
 			}
 
-			// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
-			phase.Args["image"] = fmt.Sprintf("%s:v9.99.9-dev", strings.Split(imageStr, ":")[0])
+			if strings.HasPrefix(imageStr, imagePrefix) {
+				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
+				phase.Args["image"] = fmt.Sprintf("%s:v9.99.9-dev", strings.Split(imageStr, ":")[0])
+			}
 
 			// Change imagePullPolicy to Always using podOverride config
 			phase.Args["podOverride"] = crv1alpha1.JSONMap{

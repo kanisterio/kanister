@@ -124,7 +124,7 @@ func getClientCredsAuthorizer(env azure.Environment, config map[string]string) (
 
 func getMSIsAuthorizer(config map[string]string) (*autorest.BearerAuthorizer, error) {
 	msiConfig := auth.NewMSIConfig()
-	msiConfig.ClientID = config[blockstorage.AzureCientID]
+	msiConfig.ClientID = config[blockstorage.AzureClientID]
 	a, err := msiConfig.Authorizer()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get Azure MSI authorizer")
