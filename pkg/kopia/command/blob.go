@@ -14,16 +14,21 @@
 
 package command
 
+import "github.com/kanisterio/kanister/pkg/logsafe"
+
 type BlobListCommandArgs struct {
 	*CommandArgs
 }
 
 // BlobList returns the kopia command for listing blobs in the repository with their sizes
 func BlobList(cmdArgs BlobListCommandArgs) []string {
+	return stringSliceCommand(blobListCommand(cmdArgs))
+}
+
+func blobListCommand(cmdArgs BlobListCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(blobSubCommand, listSubCommand)
-
-	return stringSliceCommand(args)
+	return args
 }
 
 type BlobStatsCommandArgs struct {
@@ -32,8 +37,11 @@ type BlobStatsCommandArgs struct {
 
 // BlobStats returns the kopia command to get the blob stats
 func BlobStats(cmdArgs BlobStatsCommandArgs) []string {
+	return stringSliceCommand(blobStatsCommand(cmdArgs))
+}
+
+func blobStatsCommand(cmdArgs BlobStatsCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(blobSubCommand, statsSubCommand, rawFlag)
-
-	return stringSliceCommand(args)
+	return args
 }
