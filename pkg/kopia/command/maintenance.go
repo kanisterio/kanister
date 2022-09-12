@@ -14,6 +14,8 @@
 
 package command
 
+import "github.com/kanisterio/kanister/pkg/logsafe"
+
 type MaintenanceInfoCommandArgs struct {
 	*CommandArgs
 	GetJsonOutput bool
@@ -21,13 +23,16 @@ type MaintenanceInfoCommandArgs struct {
 
 // MaintenanceInfo returns the kopia command to get maintenance info
 func MaintenanceInfo(cmdArgs MaintenanceInfoCommandArgs) []string {
+	return stringSliceCommand(maintenanceInfoCommand(cmdArgs))
+}
+
+func maintenanceInfoCommand(cmdArgs MaintenanceInfoCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, infoSubCommand)
 	if cmdArgs.GetJsonOutput {
 		args = args.AppendLoggable(jsonFlag)
 	}
-
-	return stringSliceCommand(args)
+	return args
 }
 
 type MaintenanceSetOwnerCommandArgs struct {
@@ -37,20 +42,27 @@ type MaintenanceSetOwnerCommandArgs struct {
 
 // MaintenanceSetOwner returns the kopia command for setting custom maintenance owner
 func MaintenanceSetOwner(cmdArgs MaintenanceSetOwnerCommandArgs) []string {
+	return stringSliceCommand(maintenanceSetOwnerCommand(cmdArgs))
+}
+
+func maintenanceSetOwnerCommand(cmdArgs MaintenanceSetOwnerCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, setSubCommand)
 	args = args.AppendLoggableKV(ownerFlag, cmdArgs.CustomOwner)
-	return stringSliceCommand(args)
+	return args
 }
 
 type MaintenanceRunCommandArgs struct {
 	*CommandArgs
 }
 
-// MaintenanceRunCommand returns the kopia command to run manual maintenance
-func MaintenanceRunCommand(cmdArgs MaintenanceRunCommandArgs) []string {
+// MaintenanceRun returns the kopia command to run manual maintenance
+func MaintenanceRun(cmdArgs MaintenanceRunCommandArgs) []string {
+	return stringSliceCommand(maintenanceRunCommand(cmdArgs))
+}
+
+func maintenanceRunCommand(cmdArgs MaintenanceRunCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
 	args = args.AppendLoggable(maintenanceSubCommand, runSubCommand)
-
-	return stringSliceCommand(args)
+	return args
 }
