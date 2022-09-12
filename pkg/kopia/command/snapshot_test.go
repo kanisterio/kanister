@@ -109,21 +109,6 @@ func TestSnapshotCommandsLogging(t *testing.T) {
 		},
 		{
 			f: func() logsafe.Cmd {
-				args := RestoreCommandArgs{
-					CommandArgs: &CommandArgs{
-						EncryptionKey:  "encr-key",
-						ConfigFilePath: "path/kopia.config",
-						LogDirectory:   "cache/log",
-					},
-					RootID:     "snapshot-id",
-					TargetPath: "target/path",
-				}
-				return restoreCommand(args)
-			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> restore snapshot-id target/path",
-		},
-		{
-			f: func() logsafe.Cmd {
 				args := SnapshotDeleteCommandArgs{
 					CommandArgs: &CommandArgs{
 						EncryptionKey:  "encr-key",
