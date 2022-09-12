@@ -247,3 +247,44 @@ func kopiaBlobStoreArgs(prof kopia.Profile, repoPathPrefix string) (logsafe.Cmd,
 		return nil, errors.New(fmt.Sprintf("Unsupported type for the location %s", locType))
 	}
 }
+
+type KopiaCommandParams struct {
+	SubCommands      []string
+	LoggableFlag     []string
+	LoggableKV       map[string]string
+	RedactedKV       map[string]string
+	OutputFileSuffix string
+}
+
+// GeneralCommand returns the kopia command from KopiaCommandParams which
+// contains subcommands, loggable flags, loggable key value pairs and
+// redacted key value pairs
+func GeneralCommand(params KopiaCommandParams, encryptionKey, configFilePath, logDirectory string) logsafe.Cmd {
+	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+	for _, subCmd := range params.SubCommands {
+		args = args.AppendLoggable(subCmd)
+	}
+	for _, flag := range params.LoggableFlag {
+		args = args.AppendLoggable(flag)
+	}
+	for k, v := range params.LoggableKV {
+		args = args.AppendLoggableKV(k, v)
+	}
+	for k, v := range params.RedactedKV {
+		args = args.AppendRedactedKV(k, v)
+	}
+	return args
+}
+
+func IsEqualSnapshotCreateStats(a, b *SnapshotCreateStats) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.FilesHashed == b.FilesHashed &&
+		a.SizeHashedB == b.SizeHashedB &&
+		a.FilesCached == b.FilesCached &&
+		a.SizeCachedB == b.SizeCachedB &&
+		a.SizeUploadedB == b.SizeUploadedB &&
+		a.SizeEstimatedB == b.SizeEstimatedB &&
+		a.ProgressPercent == b.ProgressPercent
+}
