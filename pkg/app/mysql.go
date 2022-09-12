@@ -44,9 +44,9 @@ type MysqlDB struct {
 
 type MysqlDBOptions func(*MysqlDB)
 
-func MysqlDBWithChart(chart map[string]string) MysqlDBOptions {
+func MysqlDBChartValues(values map[string]string) MysqlDBOptions {
 	return func(db *MysqlDB) {
-		for k, v := range chart {
+		for k, v := range values {
 			db.chart.Values[k] = v
 		}
 	}
