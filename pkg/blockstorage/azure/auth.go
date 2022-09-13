@@ -20,8 +20,8 @@ func isClientCredsAvailable(config map[string]string) bool {
 
 // determine if the combination of creds are MSI creds
 func isMSICredsAvailable(config map[string]string) bool {
-	return (config[blockstorage.AzureTenantID] == "" &&
-		config[blockstorage.AzureClientID] != "" &&
+	_, clientIDok := config[blockstorage.AzureClientID]
+	return (clientIDok && config[blockstorage.AzureTenantID] == "" &&
 		config[blockstorage.AzureClientSecret] == "")
 }
 
@@ -44,6 +44,7 @@ func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error)
 // authenticate with MSI creds
 type MsiAuthenticator struct{}
 
+// default-id: empty but existing clientID ?
 func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
 	// check if MSI endpoint is available
 	if !adal.MSIAvailable(context.Background(), nil) {
@@ -51,7 +52,9 @@ func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
 	}
 	// create a service principal token
 	msiConfig := auth.NewMSIConfig()
-	msiConfig.ClientID = creds[blockstorage.AzureClientID]
+	if clientID, ok := creds[blockstorage.AzureClientID]; ok && clientID != "" {
+		msiConfig.ClientID = creds[blockstorage.AzureClientID]
+	}
 	spt, err := msiConfig.ServicePrincipalToken()
 	if err != nil {
 		return errors.Wrap(err, "Failed to create a service principal token")
