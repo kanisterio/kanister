@@ -75,7 +75,7 @@ func waitNsPhase(namespace string) crv1alpha1.BlueprintPhase {
 			WaitConditionsArg: map[string]interface{}{
 				"anyOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if (eq "{ $.status.phase }" "Invalid")}}true{{ else }}false{{ end }}`,
+						"condition": `{{ if (eq .status.phase "Invalid")}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"resource":   "namespaces",
@@ -83,7 +83,7 @@ func waitNsPhase(namespace string) crv1alpha1.BlueprintPhase {
 						},
 					},
 					map[string]interface{}{
-						"condition": `{{ if (eq "{ $.status.phase }" "Active")}}true{{ else }}false{{ end }}`,
+						"condition": `{{ if (eq .status.phase "Active")}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"resource":   "namespaces",
@@ -105,7 +105,7 @@ func waitNsTimeoutPhase(namespace string) crv1alpha1.BlueprintPhase {
 			WaitConditionsArg: map[string]interface{}{
 				"allOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if (eq "{$.status.phase}" "Inactive")}}true{{ else }}false{{ end }}`,
+						"condition": `{{ if (eq .status.phase "Inactive")}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"resource":   "namespaces",
@@ -113,7 +113,7 @@ func waitNsTimeoutPhase(namespace string) crv1alpha1.BlueprintPhase {
 						},
 					},
 					map[string]interface{}{
-						"condition": `{{ if (eq "{$.status.phase}" "Invalid")}}true{{ else }}false{{ end }}`,
+						"condition": `{{ if (eq .status.phase "Invalid")}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"resource":   "namespaces",
@@ -135,13 +135,7 @@ func waitDeployPhase(namespace, deploy string) crv1alpha1.BlueprintPhase {
 			WaitConditionsArg: map[string]interface{}{
 				"anyOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if and (eq "{$.spec.replicas}" "{$.status.availableReplicas}" )
-							(eq "{$.status.conditions[?(@.type == 'Available')].type}" "Available")
-							(eq "{$.status.conditions[?(@.type == 'Available')].status}" "True") }}
-							true
-							{{ else }}
-							false
-							{{ end }}`,
+						"condition": `{{ $available := false }}{{ range $condition := $.status.conditions }}{{ if and (eq .type "Available") (eq .status "True") }}{{ $available = true }}{{ end }}{{ end }}{{ $available }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"group":      "apps",
@@ -165,11 +159,7 @@ func waitStatefulSetPhase(namespace, sts string) crv1alpha1.BlueprintPhase {
 			WaitConditionsArg: map[string]interface{}{
 				"allOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if (eq "{$.spec.replicas}" "{$.status.availableReplicas}" )}}
-									true
-								{{ else }}
-									false
-								{{ end }}`,
+						"condition": `{{ if (eq .spec.replicas .status.availableReplicas )}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"group":      "apps",
@@ -179,11 +169,7 @@ func waitStatefulSetPhase(namespace, sts string) crv1alpha1.BlueprintPhase {
 						},
 					},
 					map[string]interface{}{
-						"condition": `{{ if (eq "{$.spec.replicas}" "{$.status.readyReplicas}" )}}
-									true
-								{{ else }}
-									false
-								{{ end }}`,
+						"condition": `{{ if (eq .spec.replicas .status.readyReplicas )}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"group":      "apps",
