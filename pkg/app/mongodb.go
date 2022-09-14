@@ -49,9 +49,19 @@ type MongoDB struct {
 	chart     helm.ChartInfo
 }
 
+type MongoDBOptions func(*MongoDB)
+
+func MongoDBChartValues(values map[string]string) MongoDBOptions {
+	return func(db *MongoDB) {
+		for k, v := range values {
+			db.chart.Values[k] = v
+		}
+	}
+}
+
 // Last tested working version "9.0.0"
-func NewMongoDB(name string) App {
-	return &MongoDB{
+func NewMongoDB(name string, opts ...MongoDBOptions) App {
+	m := MongoDB{
 		username: "root",
 		name:     name,
 		chart: helm.ChartInfo{
@@ -68,6 +78,10 @@ func NewMongoDB(name string) App {
 			},
 		},
 	}
+	for _, opt := range opts {
+		opt(&m)
+	}
+	return &m
 }
 
 func (mongo *MongoDB) Init(ctx context.Context) error {
