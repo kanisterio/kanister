@@ -5,5 +5,6 @@ Tasks
 .. toctree::
    :maxdepth: 1
 
-   tasks/logs.rst
    tasks/argo.rst
+   tasks/logs_level.rst
+   tasks/logs.rst

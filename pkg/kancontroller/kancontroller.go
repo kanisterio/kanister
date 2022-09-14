@@ -47,6 +47,10 @@ const (
 
 func Execute() {
 	ctx := context.Background()
+	logLevel, exists := os.LookupEnv(log.LevelEnvName)
+	if exists {
+		log.Print(fmt.Sprintf("Controller log level: %s", logLevel))
+	}
 	// Initialize the clients.
 	log.Print("Getting kubernetes context")
 	config, err := rest.InClusterConfig()
