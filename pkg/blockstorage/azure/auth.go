@@ -44,7 +44,6 @@ func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error)
 // authenticate with MSI creds
 type MsiAuthenticator struct{}
 
-// default-id: empty but existing clientID ?
 func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
 	// check if MSI endpoint is available
 	if !adal.MSIAvailable(context.Background(), nil) {
@@ -53,7 +52,7 @@ func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
 	// create a service principal token
 	msiConfig := auth.NewMSIConfig()
 	if clientID, ok := creds[blockstorage.AzureClientID]; ok && clientID != "" {
-		msiConfig.ClientID = creds[blockstorage.AzureClientID]
+		msiConfig.ClientID = clientID
 	}
 	spt, err := msiConfig.ServicePrincipalToken()
 	if err != nil {
