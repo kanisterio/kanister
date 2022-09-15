@@ -1,6 +1,16 @@
 # Kanister Functions Version Management
 
 <!-- toc -->
+- [Problem Statement](#problem-statement)
+- [Proposed Solution](#proposed-solution)
+  - [Summary](#summary)
+  - [Assumptions And Constraints](#assumptions-and-constraints)
+  - [Function Versioning](#function-versioning)
+  - [Function Registration And Discovery](#function-registration-and-discovery)
+  - [User Experience](#user-experience)
+  - [Version Promotion And Deprecation](#version-promotion-and-deprecation)
+  - [Versions Discovery](#versions-discovery)
+- [Test Cases](#test-cases)
 <!-- /toc -->
 
 ## Problem Statement
@@ -11,7 +21,7 @@ Functions][0] will be updated with breaking changes, deprecated or even
 removed entirely.
 
 The lack of a proper strategy to manage and rollout such changes in a
-responsible backward compatible manner can lead to costly operational overhead
+responsible backwards compatible manner can lead to costly operational overhead
 for Kanister users. In addition, it also becomes difficult for Kanister
 maintainers to assess the blast radius of the change, determine the rollout
 timing, provide timely support etc.
@@ -339,13 +349,17 @@ out of support. Any usage of this version will cause the controller to return an
 error and halt the execution. The version number will still be preserved for
 posterity.
 
-### Pinning Stable Version
+### Versions Discovery
 
-The stable versions of all Kanister Functions can be stored in a version YAML
-file that maps the Function name to the stable version. This file can be
-[embedded][4] in the Kanister controller binary during build. The controller
-uses this file to determine the stable version of each Function, whenever it
-needs that information.
+The versions of all Kanister Functions can be stored in a version YAML file
+that maps the Function name to the supported versions. Special annotation will
+be used to denote all stable versions. This file can be [embedded][4] in
+the Kanister controller binary during build. The controller uses this file to
+determine the stable version of each Function, whenever it needs that
+information.
+
+To facilitate easy version discovery, the controller exposes an endpoint that
+publishes its supported Kanister Functions versions.
 
 ## Test Cases
 
