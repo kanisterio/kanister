@@ -42,19 +42,11 @@ type MysqlDB struct {
 	chart     helm.ChartInfo
 }
 
-type MysqlDBOptions func(*MysqlDB)
-
-func MysqlDBChartValues(values map[string]string) MysqlDBOptions {
-	return func(db *MysqlDB) {
-		for k, v := range values {
-			db.chart.Values[k] = v
-		}
-	}
-}
+var _ HelmApp = &MysqlDB{}
 
 // Last tested working version "6.14.11"
-func NewMysqlDB(name string, opts ...MysqlDBOptions) App {
-	m := MysqlDB{
+func NewMysqlDB(name string) HelmApp {
+	return &MysqlDB{
 		name: name,
 		chart: helm.ChartInfo{
 			Release:  appendRandString(name),
@@ -67,10 +59,14 @@ func NewMysqlDB(name string, opts ...MysqlDBOptions) App {
 			},
 		},
 	}
-	for _, opt := range opts {
-		opt(&m)
-	}
-	return &m
+}
+
+func (mdb *MysqlDB) Chart() *helm.ChartInfo {
+	return &mdb.chart
+}
+
+func (mdb *MysqlDB) SetChart(chart helm.ChartInfo) {
+	mdb.chart = chart
 }
 
 func (mdb *MysqlDB) Init(ctx context.Context) error {
