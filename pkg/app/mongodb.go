@@ -41,6 +41,8 @@ type IsMasterOutput struct {
 	Ismaster bool `json:"ismaster"`
 }
 
+var _ HelmApp = &MongoDB{}
+
 type MongoDB struct {
 	cli       kubernetes.Interface
 	namespace string
@@ -49,19 +51,9 @@ type MongoDB struct {
 	chart     helm.ChartInfo
 }
 
-type MongoDBOptions func(*MongoDB)
-
-func MongoDBChartValues(values map[string]string) MongoDBOptions {
-	return func(db *MongoDB) {
-		for k, v := range values {
-			db.chart.Values[k] = v
-		}
-	}
-}
-
 // Last tested working version "9.0.0"
-func NewMongoDB(name string, opts ...MongoDBOptions) App {
-	m := MongoDB{
+func NewMongoDB(name string) HelmApp {
+	return &MongoDB{
 		username: "root",
 		name:     name,
 		chart: helm.ChartInfo{
@@ -78,10 +70,14 @@ func NewMongoDB(name string, opts ...MongoDBOptions) App {
 			},
 		},
 	}
-	for _, opt := range opts {
-		opt(&m)
-	}
-	return &m
+}
+
+func (mongo *MongoDB) Chart() *helm.ChartInfo {
+	return &mongo.chart
+}
+
+func (mongo *MongoDB) SetChart(chart helm.ChartInfo) {
+	mongo.chart = chart
 }
 
 func (mongo *MongoDB) Init(ctx context.Context) error {
