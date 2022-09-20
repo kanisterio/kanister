@@ -20,8 +20,8 @@ func isClientCredsAvailable(config map[string]string) bool {
 
 // determine if the combination of creds are MSI creds
 func isMSICredsAvailable(config map[string]string) bool {
-	return (config[blockstorage.AzureTenantID] == "" &&
-		config[blockstorage.AzureClientID] != "" &&
+	_, clientIDok := config[blockstorage.AzureClientID]
+	return (clientIDok && config[blockstorage.AzureTenantID] == "" &&
 		config[blockstorage.AzureClientSecret] == "")
 }
 
@@ -30,28 +30,30 @@ type AzureAuthenticator interface {
 	Authenticate(creds map[string]string) error
 }
 
-func NewAzureAutheticator(config map[string]string) (AzureAuthenticator, error) {
+func NewAzureAuthenticator(config map[string]string) (AzureAuthenticator, error) {
 	switch {
 	case isMSICredsAvailable(config):
-		return &msiAuthenticator{}, nil
+		return &MsiAuthenticator{}, nil
 	case isClientCredsAvailable(config):
-		return &clientSecretAuthenticator{}, nil
+		return &ClientSecretAuthenticator{}, nil
 	default:
 		return nil, errors.New("Fail to get an authenticator for provided creds combination")
 	}
 }
 
 // authenticate with MSI creds
-type msiAuthenticator struct{}
+type MsiAuthenticator struct{}
 
-func (m *msiAuthenticator) Authenticate(creds map[string]string) error {
+func (m *MsiAuthenticator) Authenticate(creds map[string]string) error {
 	// check if MSI endpoint is available
 	if !adal.MSIAvailable(context.Background(), nil) {
 		return errors.New("MSI endpoint is not supported")
 	}
 	// create a service principal token
 	msiConfig := auth.NewMSIConfig()
-	msiConfig.ClientID = creds[blockstorage.AzureClientID]
+	if clientID, ok := creds[blockstorage.AzureClientID]; ok && clientID != "" {
+		msiConfig.ClientID = clientID
+	}
 	spt, err := msiConfig.ServicePrincipalToken()
 	if err != nil {
 		return errors.Wrap(err, "Failed to create a service principal token")
@@ -66,9 +68,9 @@ func (m *msiAuthenticator) Authenticate(creds map[string]string) error {
 }
 
 // authenticate with client secret creds
-type clientSecretAuthenticator struct{}
+type ClientSecretAuthenticator struct{}
 
-func (c *clientSecretAuthenticator) Authenticate(creds map[string]string) error {
+func (c *ClientSecretAuthenticator) Authenticate(creds map[string]string) error {
 	credConfig, err := getCredConfigForAuth(creds)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get Client Secret config")
