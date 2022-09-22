@@ -106,6 +106,7 @@ minutes to review our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Resources
 
+- [CNCF - Enhancing data protection workflows with Kanister and Argo workflows](https://youtu.be/nqfP1e9jeU4)
 - [CNCF - Kanister: Application-Level Data Protection on Kubneretes](https://youtu.be/GSgFwAHLziA)
 - [CNCF - Integrating Backup Into Your GitOps CI/CD Pipeline](https://www.youtube.com/watch?v=2zik5jDjVvM)
 - [DoK - Kanister & Kopia: An Open-Source Data Protection Match Made in Heaven](https://www.youtube.com/watch?v=hN8sn3A_oEs)
