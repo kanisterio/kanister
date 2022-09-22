@@ -1,0 +1,19 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: RepositoryServer
+metadata:
+  name: kopia-repo-server-1
+spec:
+  location:
+    locationSecretName: s3-location
+    credentialSecretName: s3-creds
+  repository:
+    rootPath: /repo/path/
+    passwordSecretName: repo-pass
+  server:
+    adminSecretName: repository-admin-user
+    tlsSecretName: repository-server-tls-cert
+    userAccessSecretName: repository-server-user-access
+    labelSelector:
+      matchLabels:
+        application: mysql
+        repo: gcs
