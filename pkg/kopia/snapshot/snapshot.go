@@ -30,7 +30,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
-	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	reposerverclient "github.com/kanisterio/kanister/pkg/kopia/repository/client"
 )
 
 // SnapshotSource creates and uploads a kopia snapshot to the given repository
@@ -105,7 +105,7 @@ func reportStatus(ctx context.Context, snapshotStartTime time.Time, manifest *sn
 
 // Delete deletes Kopia snapshot with given manifest ID
 func Delete(ctx context.Context, backupID, path, password string) error {
-	rep, err := repository.Open(ctx, kopia.DefaultClientConfigFilePath, password, pullRepoPurpose)
+	rep, err := reposerverclient.Open(ctx, kopia.DefaultClientConfigFilePath, password, pullRepoPurpose)
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}

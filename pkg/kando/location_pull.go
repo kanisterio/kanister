@@ -24,7 +24,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
-	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	reposerverclient "github.com/kanisterio/kanister/pkg/kopia/repository/client"
 	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -105,7 +105,7 @@ func kopiaLocationPull(ctx context.Context, backupID, path, targetPath, password
 func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 	contentCacheSize := kopia.GetDataStoreGeneralContentCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
 	metadataCacheSize := kopia.GetDataStoreGeneralMetadataCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
-	return repository.ConnectToAPIServer(
+	return reposerverclient.ConnectToAPIServer(
 		ctx,
 		kp.Credential.KopiaServerSecret.Cert,
 		kp.Credential.KopiaServerSecret.Password,
