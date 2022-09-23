@@ -1,7 +1,6 @@
-package repository
+package storage
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -18,7 +17,7 @@ type StorageCommandParams struct {
 	ArtifactPrefix     string
 }
 
-func kopiaBlobStoreArgs(params *StorageCommandParams) (logsafe.Cmd, error) {
+func KopiaBlobStoreArgs(params *StorageCommandParams) (logsafe.Cmd, error) {
 	locType := locationType(params.LocationSecret)
 	switch locationType(params.LocationSecret) {
 	case locTypeFilestore:
@@ -30,6 +29,6 @@ func kopiaBlobStoreArgs(params *StorageCommandParams) (logsafe.Cmd, error) {
 	case locTypeAzure:
 		return kopiaAzureArgs(params.LocationSecret, params.LocationCredSecret, params.ArtifactPrefix)
 	default:
-		return nil, errors.New(fmt.Sprintf("Unsupported type for the location: %s", locType))
+		return nil, fmt.Errorf("unsupported type for the location: %s", locType)
 	}
 }
