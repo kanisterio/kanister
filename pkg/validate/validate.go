@@ -195,6 +195,11 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 		Type:   pType,
 		Region: p.Location.Region,
 	}
+
+	if p.Location.Endpoint != "" {
+		pc.Endpoint = p.Location.Endpoint
+	}
+
 	secret, err := osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
