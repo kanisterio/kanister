@@ -1,0 +1,56 @@
+// Copyright 2022 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package repositoryserver
+
+import (
+	"time"
+
+	"github.com/pkg/errors"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/customresource"
+)
+
+// CreateRepositoryServerResource creates the RepositoryServer resource and waits for it to initialize
+func CreateRepositoryServerResource(config *rest.Config) error {
+	crCTX, err := newOpKitContext(config)
+	if err != nil {
+		return err
+	}
+	resources := []customresource.CustomResource{
+		crv1alpha1.RepositoryServerResource,
+	}
+	return customresource.CreateCustomResources(*crCTX, resources)
+}
+
+func newOpKitContext(config *rest.Config) (*customresource.Context, error) {
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get k8s client.")
+	}
+	apiExtClientset, err := apiextensionsclient.NewForConfig(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create k8s API extension clientset")
+	}
+	return &customresource.Context{
+		Clientset:             clientset,
+		APIExtensionClientset: apiExtClientset,
+		Interval:              500 * time.Millisecond,
+		Timeout:               60 * time.Second,
+	}, nil
+}
