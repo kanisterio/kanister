@@ -399,22 +399,22 @@ type RepositoryServerSpec struct {
 // Storage references the backend store where a repository already exists
 // and the credential necessary to connect to the backend store
 type Storage struct {
-	SecretRef           corev1.SecretReference `json:"secretRef,omitempty"`
-	CredentialSecretRef corev1.SecretReference `json:"credentialSecretRef,omitempty"`
+	Secret           corev1.SecretReference `json:"secret,omitempty"`
+	CredentialSecret corev1.SecretReference `json:"credentialSecret,omitempty"`
 }
 
 // Repository details for the purpose of establishing a connection
 type Repository struct {
-	RootPath          string                 `json:"rootPath,omitempty"`
-	PasswordSecretRef corev1.SecretReference `json:"passwordSecretRef,omitempty"`
+	RootPath       string                 `json:"rootPath,omitempty"`
+	PasswordSecret corev1.SecretReference `json:"passwordSecret,omitempty"`
 }
 
 // Server details required for starting the repository proxy server and initializing the repository client users
 type Server struct {
-	AdminSecretRef      corev1.SecretReference `json:"adminSecretRef,omitempty"`
-	TLSSecretRef        corev1.SecretReference `json:"tlsSecretRef,omitempty"`
-	UserAccessSecretRef corev1.SecretReference `json:"userAccessSecretRef,omitempty"`
-	LabelSelector       metav1.LabelSelector   `json:"labelSelector,omitempty"`
+	AdminSecret      corev1.SecretReference `json:"adminSecret,omitempty"`
+	TLSSecret        corev1.SecretReference `json:"tlsSecret,omitempty"`
+	UserAccessSecret corev1.SecretReference `json:"userAccessSecret,omitempty"`
+	LabelSelector    metav1.LabelSelector   `json:"labelSelector,omitempty"`
 }
 
 // RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller.
