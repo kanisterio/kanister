@@ -102,6 +102,18 @@ func (c *FakeRepositoryServers) Update(ctx context.Context, repositoryServer *v1
 	return obj.(*v1alpha1.RepositoryServer), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeRepositoryServers) UpdateStatus(ctx context.Context, repositoryServer *v1alpha1.RepositoryServer, opts v1.UpdateOptions) (*v1alpha1.RepositoryServer, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(repositoryserversResource, "status", c.ns, repositoryServer), &v1alpha1.RepositoryServer{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.RepositoryServer), err
+}
+
 // Delete takes name of the repositoryServer and deletes it. Returns an error if one occurs.
 func (c *FakeRepositoryServers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
