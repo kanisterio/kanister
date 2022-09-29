@@ -25,7 +25,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/strfmt v0.21.3
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/gofrs/uuid v4.2.0+incompatible
+	github.com/gofrs/uuid v4.3.0+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/graymeta/stow v0.0.0-00010101000000-000000000000
