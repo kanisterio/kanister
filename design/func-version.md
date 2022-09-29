@@ -87,10 +87,14 @@ func init() {
 var  _ kanister.VersionedFunc = (*kubeExecFunc)(nil)
 
 func (*kubeExecFunc) StableVersion() string {
+  // to be real from functions.yaml config file
+  // hard-coded for prototype purposes
   return "v0.1.0"
 }
 
-func (*kubeExecFunc) Versions() map[string]kanister.Func {
+func (*kubeExecFunc) Versions() (map[string]kanister.Func, error) {
+  // to be real from functions.yaml config file
+  // hard-coded for prototype purposes
   return map[string]kanister.Func{
     kanister.DefaultVersion: &kubeExecFunc{},
     "v0.1.0": &kubeExecFuncV010{
@@ -351,15 +355,41 @@ posterity.
 
 ### Versions Discovery
 
-The versions of all Kanister Functions can be stored in a version YAML file
-that maps the Function name to the supported versions. Special annotation will
-be used to denote all stable versions. This file can be [embedded][4] in
-the Kanister controller binary during build. The controller uses this file to
-determine the stable version of each Function, whenever it needs that
-information.
+The versions of all Kanister Functions can be stored in a YAML file that maps
+the Function name to the supported versions, allowing users and maintainers to
+easily browse the code repository to determine all supported function versions
+of a particular release.
 
-To facilitate easy version discovery, the controller exposes an endpoint that
-publishes its supported Kanister Functions versions.
+Special annotations will be used to denote available, stable and deprecated
+versions of all functions. This file can be [embedded][4] in the Kanister
+controller binary during build. Each Function reads its version information
+from this file during the initial Functions registration process, and the later
+runtime phase execution.
+
+This is an example of what the version YAML file can look like:
+
+```yaml
+functions:
+  kubeExec:
+    versions:
+      served:
+      - 0.1.0
+      - 0.2.0
+      stable: 0.1.0
+      deprecated:
+      - 0.0.0
+  kubeTask:
+    versions:
+      served:
+      - 0.0.0
+      - 0.1.0
+      - 0.1.1
+      - 0.1.2
+      stable: 0.1.2
+```
+
+To facilitate easy version discovery, the controller can expose an HTTP endpoint
+that publishes its supported Kanister Functions versions.
 
 ## Test Cases
 
