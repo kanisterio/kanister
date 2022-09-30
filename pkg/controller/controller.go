@@ -75,8 +75,6 @@ func New(c *rest.Config) *Controller {
 
 // StartWatch watches for instances of ActionSets and Blueprints acts on them.
 func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
-	log.Info().Print(fmt.Sprintf("Config QPS is %v", c.config.QPS))
-
 	crClient, err := versioned.NewForConfig(c.config)
 	if err != nil {
 		return errors.Wrap(err, "failed to get a CustomResource client")
@@ -304,7 +302,17 @@ func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.Act
 	actions := make([]crv1alpha1.ActionStatus, 0, len(as.Spec.Actions))
 	var err error
 	for _, a := range as.Spec.Actions {
-		actionStatus, err := c.initialActionStatus(a, bps)
+		if a.Blueprint == "" {
+			// TODO: If no blueprint is specified, we should consider a default.
+			err = errors.New("Blueprint not specified")
+			break
+		}
+		bp := bps.Get(a.Blueprint)
+		if bp == nil {
+			err = errors.New("Failed to retrieve blueprint " + a.Blueprint)
+			break
+		}
+		actionStatus, err := c.initialActionStatus(a, bp)
 		if err != nil {
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", a.Name)
 			c.logAndErrorEvent(ctx, "Could not get initial action:", reason, err, as, bps.Get(a.Blueprint))
@@ -326,15 +334,7 @@ func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.Act
 	}
 }
 
-func (c *Controller) initialActionStatus(a crv1alpha1.ActionSpec, bps *bpCache) (*crv1alpha1.ActionStatus, error) {
-	if a.Blueprint == "" {
-		// TODO: If no blueprint is specified, we should consider a default.
-		return nil, errors.New("Blueprint not specified")
-	}
-	bp := bps.Get(a.Blueprint)
-	if bp == nil {
-		return nil, errors.New("Failed to retrieve blueprint " + a.Blueprint)
-	}
+func (c *Controller) initialActionStatus(a crv1alpha1.ActionSpec, bp *crv1alpha1.Blueprint) (*crv1alpha1.ActionStatus, error) {
 	bpa, ok := bp.Actions[a.Name]
 	if !ok {
 		return nil, errors.Errorf("Action %s for object kind %s not found in blueprint %s", a.Name, a.Object.Kind, a.Blueprint)
