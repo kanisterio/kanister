@@ -8,7 +8,7 @@ If you are interested in contributing, start by reading this document. Please
 also take a look at our [code of conduct](CODE_OF_CONDUCT.md).
 
 If you have any questions at all, do not hesitate to reach out to us on
-[Slack](kanisterio.slack.com).
+[Slack](https://kanisterio.slack.com).
 
 We look forward to working together! 🎈
 
@@ -121,5 +121,5 @@ Congratulations! Your pull request has been successfully merged! 👏
 Thank you for reading through our contributing guide to ensure your
 contributions are high quality and easy for our community to review and accept. 🤝
 
-Please don't hesitate to reach out to us on [Slack](kanisterio.slack.com) if you
+Please don't hesitate to reach out to us on [Slack](https://kanisterio.slack.com) if you
 have any questions about contributing!
