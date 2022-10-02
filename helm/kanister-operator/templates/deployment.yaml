@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "kanister-operator.fullname" . }}
+  namespace: {{ template "kanister-operator.namespace" . }}
   labels:
 {{ include "kanister-operator.helmLabels" . | indent 4 }}
 spec:
@@ -15,6 +16,7 @@ spec:
 {{ include "kanister-operator.helmLabels" . | indent 8}}
     spec:
       serviceAccountName: {{ template "kanister-operator.serviceAccountName" . }}
+      automountServiceAccountToken: false
 {{- if .Values.bpValidatingWebhook.enabled }}
       volumes:
         - name: webhook-certs

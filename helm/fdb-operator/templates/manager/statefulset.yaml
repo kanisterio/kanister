@@ -24,6 +24,7 @@ spec:
           secret:
             secretName: {{ .Values.secret.name }}
       serviceAccountName: default
+      automountServiceAccountToken: false
       containers:
       - command:
         - /manager
