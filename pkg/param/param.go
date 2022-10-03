@@ -513,7 +513,7 @@ func UpdatePhaseParams(ctx context.Context, tp *TemplateParams, phaseName string
 
 // UpdateDeferPhaseParams updates the TemplateParams deferPhase output with passed output
 // This output would be generated/passed by execution of the phase
-func UpdateDeferPhaseParams(tp *TemplateParams, output map[string]interface{}) {
+func UpdateDeferPhaseParams(ctx context.Context, tp *TemplateParams, output map[string]interface{}) {
 	tp.DeferPhase.Output = output
 }
 

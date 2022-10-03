@@ -568,7 +568,7 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 	}
 
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Completed deferPhase %s", as.Status.Actions[aIDX].DeferPhase.Name), "Ended deferPhase", as)
-	param.UpdateDeferPhaseParams(tp, output)
+	param.UpdateDeferPhaseParams(ctx, tp, output)
 	return nil
 }
 
