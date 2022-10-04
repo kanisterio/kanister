@@ -19,16 +19,24 @@ set -o nounset
 
 IMAGE_REGISTRY="ghcr.io/kanisterio"
 
-readonly COMMIT_ID=${1:?"Commit id to build kopia image not specified"}
-readonly KOPIA_REPO_ORG=${2-:"kopia"}
+while getopts c:r:b: flag
+do
+    case "${flag}" in
+        c) commitID=${OPTARG};;
+        r) repo=${OPTARG};;
+        b) boring=${OPTARG};;
+    esac
+done
+
+readonly COMMIT_ID=${commitID:?"Commit id to build kopia image not specified"}
+readonly KOPIA_REPO_ORG=${repo:-"kopia"}
 readonly IMAGE_TYPE=alpine
 readonly IMAGE_BUILD_VERSION="${COMMIT_ID}"
 readonly GH_PACKAGE_TARGET="${IMAGE_REGISTRY}/kopia"
 readonly TAG="${IMAGE_TYPE}-${IMAGE_BUILD_VERSION}"
-readonly KOPIA_BORING=$3
 
 KOPIA_IMAGE="kopia"
-if [[ -n KOPIA_BORING ]]; then
+if [[ -n $boring ]]; then
     KOPIA_IMAGE="kopia_boring"
 fi
 
