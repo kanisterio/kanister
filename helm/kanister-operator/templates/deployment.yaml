@@ -16,7 +16,6 @@ spec:
 {{ include "kanister-operator.helmLabels" . | indent 8}}
     spec:
       serviceAccountName: {{ template "kanister-operator.serviceAccountName" . }}
-      automountServiceAccountToken: false
 {{- if .Values.bpValidatingWebhook.enabled }}
       volumes:
         - name: webhook-certs
