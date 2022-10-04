@@ -304,12 +304,14 @@ func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.Act
 	for _, a := range as.Spec.Actions {
 		if a.Blueprint == "" {
 			// TODO: If no blueprint is specified, we should consider a default.
-			err = errors.New("Blueprint not specified")
+			err = errors.New("Blueprint is not specified for action")
+			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Blueprint not specified", err, as)
 			break
 		}
 		bp := bps.Get(a.Blueprint)
 		if bp == nil {
-			err = errors.New("Failed to retrieve blueprint " + a.Blueprint)
+			err = errors.Errorf("Failed to retrieve blueprint %s", a.Blueprint)
+			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Blueprint not found", err, as)
 			break
 		}
 		actionStatus, err := c.initialActionStatus(a, bp)
