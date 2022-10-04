@@ -33,11 +33,12 @@ readonly KOPIA_REPO_ORG=${repo:-"kopia"}
 readonly IMAGE_TYPE=alpine
 readonly IMAGE_BUILD_VERSION="${COMMIT_ID}"
 readonly GH_PACKAGE_TARGET="${IMAGE_REGISTRY}/kopia"
-readonly TAG="${IMAGE_TYPE}-${IMAGE_BUILD_VERSION}"
+TAG="${IMAGE_TYPE}-${IMAGE_BUILD_VERSION}"
 
 KOPIA_IMAGE="kopia"
 if [[ -n $boring ]]; then
     KOPIA_IMAGE="kopia_boring"
+    TAG="${IMAGE_TYPE}-${IMAGE_BUILD_VERSION}-boring"
 fi
 
 
