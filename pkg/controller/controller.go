@@ -418,10 +418,10 @@ func (c *Controller) LoadOrStoreTomb(ctx context.Context, asName string) (*tomb.
 	var t *tomb.Tomb
 	if v, ok := c.actionSetTombMap.Load(asName); ok {
 		t = v.(*tomb.Tomb)
-	} else {
-		t, ctx = tomb.WithContext(ctx)
-		c.actionSetTombMap.Store(asName, t)
+		return t, ctx
 	}
+	t, ctx = tomb.WithContext(ctx)
+	c.actionSetTombMap.Store(asName, t)
 	return t, ctx
 }
 
