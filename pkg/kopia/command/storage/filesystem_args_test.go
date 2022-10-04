@@ -8,7 +8,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-func (s *RepositoryUtilsSuite) TestFilesystemArgsUtil(c *check.C) {
+func (s *StorageUtilsSuite) TestFilesystemArgsUtil(c *check.C) {
 	for _, tc := range []struct {
 		prefix         string
 		artifactPrefix string

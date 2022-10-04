@@ -8,7 +8,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-func (s *RepositoryUtilsSuite) TestStorageArgsUtil(c *check.C) {
+func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 	for _, tc := range []struct {
 		params *StorageCommandParams
 		check.Checker

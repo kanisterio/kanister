@@ -19,81 +19,69 @@ const (
 	pointInTimeConnectionFlag = "--point-in-time"
 )
 
+type RepositoryCommandArgs struct {
+	*CommandArgs
+	LocationSecret  *v1.Secret
+	CredsSecret     *v1.Secret
+	CacheDirectory  string
+	Hostname        string
+	ContentCacheMB  int
+	MetadataCacheMB int
+	Username        string
+	ArtifactPrefix  string
+	PITFlag         strfmt.DateTime
+}
+
 // RepositoryConnectCommand returns the kopia command for connecting to an existing blob-store repo
-func RepositoryConnectCommand(
-	locationSecret,
-	locationCredSecret *v1.Secret,
-	artifactPrefix,
-	repoPassword,
-	hostname,
-	username,
-	cacheDirectory,
-	configFilePath,
-	logDirectory string,
-	contentCacheMB,
-	metadataCacheMB int,
-	pointInTimeConnection strfmt.DateTime,
-) ([]string, error) {
-	args := commonArgs(repoPassword, configFilePath, logDirectory, false)
+func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, noCheckForUpdatesFlag)
 
-	args = kopiaCacheArgs(args, cacheDirectory, contentCacheMB, metadataCacheMB)
+	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
 
-	if hostname != "" {
-		args = args.AppendLoggableKV(overrideHostnameFlag, hostname)
+	if cmdArgs.Hostname != "" {
+		args = args.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
 	}
 
-	if username != "" {
-		args = args.AppendLoggableKV(overrideUsernameFlag, username)
+	if cmdArgs.Username != "" {
+		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
 
 	bsArgs, err := storage.KopiaBlobStoreArgs(&storage.StorageCommandParams{
-		LocationSecret:     locationSecret,
-		LocationCredSecret: locationCredSecret,
-		ArtifactPrefix:     artifactPrefix,
+		LocationSecret:     cmdArgs.LocationSecret,
+		LocationCredSecret: cmdArgs.CredsSecret,
+		ArtifactPrefix:     cmdArgs.ArtifactPrefix,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to generate blob store args")
 	}
 
-	if !time.Time(pointInTimeConnection).IsZero() {
-		bsArgs = bsArgs.AppendLoggableKV(pointInTimeConnectionFlag, pointInTimeConnection.String())
+	if !time.Time(cmdArgs.PITFlag).IsZero() {
+		bsArgs = bsArgs.AppendLoggableKV(pointInTimeConnectionFlag, cmdArgs.PITFlag.String())
 	}
 
 	return stringSliceCommand(args.Combine(bsArgs)), nil
 }
 
 // RepositoryCreateCommand returns the kopia command for creation of a blob-store repo
-func RepositoryCreateCommand(
-	locationSecret,
-	locationCredSecret *v1.Secret,
-	artifactPrefix,
-	encryptionKey,
-	hostname,
-	username,
-	cacheDirectory,
-	configFilePath,
-	logDirectory string,
-	contentCacheMB,
-	metadataCacheMB int,
-) ([]string, error) {
-	args := commonArgs(encryptionKey, configFilePath, logDirectory, false)
+func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
 
-	args = kopiaCacheArgs(args, cacheDirectory, contentCacheMB, metadataCacheMB)
+	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
 
-	if hostname != "" {
-		args = args.AppendLoggableKV(overrideHostnameFlag, hostname)
+	if cmdArgs.Hostname != "" {
+		args = args.AppendLoggableKV(overrideHostnameFlag, cmdArgs.Hostname)
 	}
 
-	if username != "" {
-		args = args.AppendLoggableKV(overrideUsernameFlag, username)
+	if cmdArgs.Username != "" {
+		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
 
 	bsArgs, err := storage.KopiaBlobStoreArgs(&storage.StorageCommandParams{
-		LocationSecret:     locationSecret,
-		LocationCredSecret: locationCredSecret,
-		ArtifactPrefix:     artifactPrefix,
+		LocationSecret:     cmdArgs.LocationSecret,
+		LocationCredSecret: cmdArgs.CredsSecret,
+		ArtifactPrefix:     cmdArgs.ArtifactPrefix,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to generate blob store args")

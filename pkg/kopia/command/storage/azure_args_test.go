@@ -9,7 +9,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
-func (s *RepositoryUtilsSuite) TestAzureArgsUtil(c *check.C) {
+func (s *StorageUtilsSuite) TestAzureArgsUtil(c *check.C) {
 	artifactPrefix := "dir/sub-dir"
 	for _, tc := range []struct {
 		locSec  *v1.Secret

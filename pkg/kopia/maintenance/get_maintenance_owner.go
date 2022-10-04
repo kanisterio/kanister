@@ -42,13 +42,13 @@ func GetMaintenanceOwnerForConnectedRepository(
 	namespace,
 	pod,
 	container,
-	encryptionKey,
+	repoPassword,
 	configFilePath,
 	logDirectory string,
 ) (string, error) {
 	args := command.MaintenanceInfoCommandArgs{
 		CommandArgs: &command.CommandArgs{
-			EncryptionKey:  encryptionKey,
+			RepoPassword:   repoPassword,
 			ConfigFilePath: configFilePath,
 			LogDirectory:   logDirectory,
 		},

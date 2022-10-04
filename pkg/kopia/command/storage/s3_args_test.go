@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kanisterio/kanister/pkg/secrets"
 	"gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
-func (s *RepositoryUtilsSuite) TestS3ArgsUtil(c *check.C) {
+func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 	artifactPrefix := "dir/sub-dir"
 	for _, tc := range []struct {
 		locSec  *v1.Secret

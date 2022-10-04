@@ -7,7 +7,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-func (s *RepositoryUtilsSuite) TestGCSArgsUtil(c *check.C) {
+func (s *StorageUtilsSuite) TestGCSArgsUtil(c *check.C) {
 	locSecret := &v1.Secret{
 		StringData: map[string]string{
 			prefixKey: "test-prefix",

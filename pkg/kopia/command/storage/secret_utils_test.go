@@ -10,11 +10,11 @@ import (
 
 func Test(t *testing.T) { check.TestingT(t) }
 
-type RepositoryUtilsSuite struct{}
+type StorageUtilsSuite struct{}
 
-var _ = check.Suite(&RepositoryUtilsSuite{})
+var _ = check.Suite(&StorageUtilsSuite{})
 
-func (s *RepositoryUtilsSuite) TestBucketNameUtil(c *check.C) {
+func (s *StorageUtilsSuite) TestBucketNameUtil(c *check.C) {
 	sec := &v1.Secret{
 		StringData: map[string]string{
 			bucketKey:        "test-key",
