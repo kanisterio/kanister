@@ -66,6 +66,8 @@ type Controller struct {
 	actionSetTombMap sync.Map
 }
 
+type bpCache map[string]*crv1alpha1.Blueprint
+
 // New create controller for watching kanister custom resources created
 func New(c *rest.Config) *Controller {
 	return &Controller{
@@ -196,6 +198,20 @@ func (c *Controller) onDelete(obj interface{}) {
 	}
 }
 
+func (c *Controller) createBpCache(ctx context.Context, ns string) (bpCache, error) {
+	bps, err := c.crClient.CrV1alpha1().Blueprints(ns).List(ctx, v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	bpMap := make(bpCache)
+	for _, bp := range bps.Items {
+		bpMap[bp.Name] = bp
+	}
+
+	return bpMap, nil
+}
+
 func (c *Controller) onAddActionSet(ctx context.Context, t *tomb.Tomb, as *crv1alpha1.ActionSet) error {
 	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), v1.GetOptions{})
 	if err != nil {
@@ -204,7 +220,7 @@ func (c *Controller) onAddActionSet(ctx context.Context, t *tomb.Tomb, as *crv1a
 	if err := validate.ActionSet(as); err != nil {
 		return err
 	}
-	bps, err := initBpCache(ctx, c.crClient, as.GetNamespace())
+	bps, err := c.createBpCache(ctx, as.GetNamespace())
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -292,7 +308,7 @@ func (c *Controller) onDeleteBlueprint(bp *crv1alpha1.Blueprint) {
 	log.Print("Deleted Blueprint ", field.M{"BlueprintName": bp.GetName()})
 }
 
-func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.ActionSet, bps *bpCache) {
+func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.ActionSet, bps bpCache) {
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	if as.Spec == nil {
 		log.Error().WithContext(ctx).Print("Cannot initialize an ActionSet without a spec.")
@@ -308,8 +324,8 @@ func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.Act
 			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Blueprint not specified", err, as)
 			break
 		}
-		bp := bps.Get(a.Blueprint)
-		if bp == nil {
+		bp, ok := bps[a.Blueprint]
+		if !ok {
 			err = errors.Errorf("Failed to retrieve blueprint %s", a.Blueprint)
 			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Blueprint not found", err, as)
 			break
@@ -317,7 +333,7 @@ func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.Act
 		actionStatus, err := c.initialActionStatus(a, bp)
 		if err != nil {
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", a.Name)
-			c.logAndErrorEvent(ctx, "Could not get initial action:", reason, err, as, bps.Get(a.Blueprint))
+			c.logAndErrorEvent(ctx, "Could not get initial action:", reason, err, as, bp)
 			break
 		}
 		actions = append(actions, *actionStatus)
@@ -367,7 +383,7 @@ func (c *Controller) initialActionStatus(a crv1alpha1.ActionSpec, bp *crv1alpha1
 	return actionStatus, nil
 }
 
-func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1alpha1.ActionSet, bps *bpCache) (err error) {
+func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1alpha1.ActionSet, bps bpCache) (err error) {
 	if as.Status == nil {
 		return errors.New("ActionSet was not initialized")
 	}
@@ -395,7 +411,7 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 	}()
 
 	for i := range as.Status.Actions {
-		bp := bps.Get(as.Spec.Actions[i].Blueprint)
+		bp := bps[as.Spec.Actions[i].Blueprint]
 		if err = c.runAction(ctx, t, as, i, bp); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
@@ -680,26 +696,4 @@ func setObjectKind(obj runtime.Object) {
 		gvk.Kind = reflect.TypeOf(obj).Elem().Name()
 	}
 	ok.SetGroupVersionKind(gvk)
-}
-
-type bpCache struct {
-	bpMap map[string]*crv1alpha1.Blueprint
-}
-
-func initBpCache(ctx context.Context, cli versioned.Interface, ns string) (*bpCache, error) {
-	bps, err := cli.CrV1alpha1().Blueprints(ns).List(ctx, v1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	bpMap := make(map[string]*crv1alpha1.Blueprint)
-	for _, bp := range bps.Items {
-		bpMap[bp.Name] = bp
-	}
-
-	return &bpCache{bpMap: bpMap}, nil
-}
-
-func (c *bpCache) Get(bpName string) *crv1alpha1.Blueprint {
-	return c.bpMap[bpName]
 }
