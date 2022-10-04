@@ -2,8 +2,9 @@ FROM golang:1.19.1-alpine3.16 AS builder
 
 ARG kopiaBuildCommit
 ARG kopiaRepoOrg
+ARG kopiaImage
 
-RUN apk add git
+RUN apk add git build-base
 
 WORKDIR /
 
@@ -19,6 +20,8 @@ RUN git checkout ${kopiaBuildCommit}
 COPY --from=docker.io/goreleaser/goreleaser@sha256:b13418f20019fffb29797aff3d03f5e9ca84cea93634f4169a7ed603a95ab198 \
   /usr/bin/goreleaser /usr/bin/goreleaser
 RUN goreleaser build --output=. --rm-dist --single-target
+
+RUN cp /kopia/dist/${kopiaImage}_linux_amd64_v1/${kopiaImage} /kopia/kopia
 
 RUN adduser -D kopia && addgroup kopia kopia
 USER kopia:kopia

@@ -25,12 +25,19 @@ readonly IMAGE_TYPE=alpine
 readonly IMAGE_BUILD_VERSION="${COMMIT_ID}"
 readonly GH_PACKAGE_TARGET="${IMAGE_REGISTRY}/kopia"
 readonly TAG="${IMAGE_TYPE}-${IMAGE_BUILD_VERSION}"
+readonly KOPIA_BORING=$3
+
+KOPIA_IMAGE="kopia"
+if [[ -n KOPIA_BORING ]]; then
+    KOPIA_IMAGE="kopia_boring"
+fi
 
 
 docker build \
     --tag "${GH_PACKAGE_TARGET}:${TAG}" \
     --build-arg "kopiaBuildCommit=${COMMIT_ID}" \
     --build-arg "kopiaRepoOrg=${KOPIA_REPO_ORG}" \
+    --build-arg "kopiaImage=${KOPIA_IMAGE}" \
     --file ./docker/kopia-build/Dockerfile .
 
 docker push ${GH_PACKAGE_TARGET}:$TAG
