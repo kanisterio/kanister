@@ -66,8 +66,6 @@ type Controller struct {
 	actionSetTombMap sync.Map
 }
 
-type bpCache map[string]*crv1alpha1.Blueprint
-
 // New create controller for watching kanister custom resources created
 func New(c *rest.Config) *Controller {
 	return &Controller{
@@ -198,13 +196,13 @@ func (c *Controller) onDelete(obj interface{}) {
 	}
 }
 
-func (c *Controller) createBpCache(ctx context.Context, ns string) (bpCache, error) {
+func (c *Controller) createBpCache(ctx context.Context, ns string) (map[string]*crv1alpha1.Blueprint, error) {
 	bps, err := c.crClient.CrV1alpha1().Blueprints(ns).List(ctx, v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	bpMap := make(bpCache)
+	bpMap := make(map[string]*crv1alpha1.Blueprint)
 	for _, bp := range bps.Items {
 		bpMap[bp.Name] = bp
 	}
@@ -308,7 +306,7 @@ func (c *Controller) onDeleteBlueprint(bp *crv1alpha1.Blueprint) {
 	log.Print("Deleted Blueprint ", field.M{"BlueprintName": bp.GetName()})
 }
 
-func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.ActionSet, bps bpCache) {
+func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.ActionSet, bps map[string]*crv1alpha1.Blueprint) {
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	if as.Spec == nil {
 		log.Error().WithContext(ctx).Print("Cannot initialize an ActionSet without a spec.")
@@ -383,7 +381,7 @@ func (c *Controller) initialActionStatus(a crv1alpha1.ActionSpec, bp *crv1alpha1
 	return actionStatus, nil
 }
 
-func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1alpha1.ActionSet, bps bpCache) (err error) {
+func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1alpha1.ActionSet, bps map[string]*crv1alpha1.Blueprint) (err error) {
 	if as.Status == nil {
 		return errors.New("ActionSet was not initialized")
 	}
@@ -411,7 +409,12 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 	}()
 
 	for i := range as.Status.Actions {
-		bp := bps[as.Spec.Actions[i].Blueprint]
+		bp, ok := bps[as.Spec.Actions[i].Blueprint]
+		if !ok {
+			err = errors.Errorf("Failed to retrieve blueprint %s", as.Spec.Actions[i].Blueprint)
+			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Blueprint not found", err, as)
+			return err
+		}
 		if err = c.runAction(ctx, t, as, i, bp); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
