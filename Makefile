@@ -265,7 +265,7 @@ release-snapshot:
 	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot"'
 
 update-kopia-image:
-	@/bin/bash ./build/update_kopia_image.sh $(KOPIA_COMMIT_ID) $(KOPIA_REPO)
+	@/bin/bash ./build/update_kopia_image.sh $(KOPIA_COMMIT_ID) $(KOPIA_REPO) $(KOPIA_BORING)
 
 go-mod-download:
 	@$(MAKE) run CMD='-c "go mod download"'
