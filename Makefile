@@ -46,6 +46,8 @@ vm-driver ?= "kvm"
 KOPIA_COMMIT_ID ?= "317cc36"
 
 KOPIA_REPO ?= "kopia"
+
+KOPIA_BORING ?= ""
 # Default OCP version in which the OpenShift apps are going to run
 ocp_version ?= "4.10"
 ###
