@@ -81,7 +81,8 @@ type Snapshotter interface {
 	// 'cloneName' is name of the clone.
 	// 'cloneNamespace' is the namespace where the clone will be created.
 	// 'waitForReady' will make the function blocks until the clone's status is ready to use.
-	Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool) error
+	// 'labels' is the labels to set on the created VSC
+	Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool, labels map[string]string) error
 	// GetSource will return the CSI source that backs the volume snapshot.
 	//
 	// 'snapshotName' is the name of the Volumesnapshot.
@@ -93,7 +94,8 @@ type Snapshotter interface {
 	// 'snapshotName' is the name of the snapshot that will be created.
 	// 'namespace' is the namespace of the snapshot.
 	// 'waitForReady' blocks the caller until snapshot is ready to use or context is cancelled.
-	CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool) error
+	// 'labels' is the labels to set on the created VSC
+	CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool, labels map[string]string) error
 	// CreateContentFromSource will create a 'VolumesnaphotContent' for the underlying snapshot source.
 	//
 	// 'source' contains information about CSI snapshot.
