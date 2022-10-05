@@ -64,4 +64,3 @@ spec:
           name: webhook-server
           protocol: TCP
       terminationGracePeriodSeconds: 10
-      
