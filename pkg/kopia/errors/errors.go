@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kopia
+package errors
 
-import (
-	"errors"
-)
-
-var (
-	ErrInvalidPassword = errors.New("invalid repository password")
-	ErrOutOfMemory     = errors.New("kanister-tools container ran out of memory")
-	ErrAccessDenied    = errors.New("Access Denied")
-	ErrRepoNotFound    = errors.New("repository not found")
+const (
+	ErrInvalidPasswordStr        = "invalid repository password"
+	ErrOutOfMemoryStr            = "kanister-tools container ran out of memory"
+	ErrAccessDeniedStr           = "access denied"
+	ErrRepoNotFoundStr           = "repository not found"
+	ErrRepoNotInitializedStr     = "repository not initialized in the provided storage"
+	ErrFilesystemRepoNotFoundStr = "no such file or directory"
+	ErrCodeOutOfMemoryStr        = "command terminated with exit code 137"
+	ErrBucketDoesNotExistStr     = "bucket doesn't exist"
+	ErrUnableToListFromBucketStr = "unable to list from the bucket"
 )
