@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "kanister-operator.fullname" . }}
-  namespace: {{ template "kanister-operator.namespace" . }}
   labels:
 {{ include "kanister-operator.helmLabels" . | indent 4 }}
 spec:
