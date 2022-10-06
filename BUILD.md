@@ -32,6 +32,9 @@ The [Makefile](Makefile) provides a set of targets to help simplify the build
 tasks. To ensure cross-platform consistency, many of these targets use Docker
 to spawn build containers based on the `ghcr.io/kanisterio/build` public image.
 
+For `make test` to succeed, a valid `kubeconfig` file must be found at 
+`$HOME/.kube/config`. See the Docker command that runs `make test` [here](https://github.com/kanisterio/kanister/blob/fa04d77eb6f5c92521d1413ddded385168f39f42/Makefile#L219).
+
 Use the `check` target to ensure your development environment has the necessary
 development tools:
 
