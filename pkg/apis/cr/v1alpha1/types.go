@@ -323,33 +323,42 @@ type RepositoryServer struct {
 
 // RepositoryServerSpec is the specification for the RepositoryServer
 type RepositoryServerSpec struct {
-	Storage    Storage    `json:"storage,omitempty"`
-	Repository Repository `json:"repository,omitempty"`
-	Server     Server     `json:"server,omitempty"`
+	Storage    Storage    `json:"storage"`
+	Repository Repository `json:"repository"`
+	Server     Server     `json:"server"`
 }
 
 // Storage references the backend store where a repository already exists
 // and the credential necessary to connect to the backend store
 type Storage struct {
-	Secret           corev1.SecretReference `json:"secret,omitempty"`
-	CredentialSecret corev1.SecretReference `json:"credentialSecret,omitempty"`
+	SecretRef           corev1.SecretReference `json:"secretRef"`
+	CredentialSecretRef corev1.SecretReference `json:"credentialSecretRef"`
 }
 
 // Repository details for the purpose of establishing a connection
 type Repository struct {
-	RootPath       string                 `json:"rootPath,omitempty"`
-	PasswordSecret corev1.SecretReference `json:"passwordSecret,omitempty"`
+	RootPath          string                 `json:"rootPath"`
+	Username          string                 `json:"username"`
+	Hostname          string                 `json:"hostname"`
+	PasswordSecretRef corev1.SecretReference `json:"passwordSecretRef"`
 }
 
 // Server details required for starting the repository proxy server and initializing the repository client users
 type Server struct {
-	AdminSecret      corev1.SecretReference `json:"adminSecret,omitempty"`
-	TLSSecret        corev1.SecretReference `json:"tlsSecret,omitempty"`
-	UserAccessSecret corev1.SecretReference `json:"userAccessSecret,omitempty"`
-	LabelSelector    metav1.LabelSelector   `json:"labelSelector,omitempty"`
+	UserAccessSecretRef      corev1.SecretReference   `json:"userAccessSecretRef"`
+	AdminSecretRef           corev1.SecretReference   `json:"adminSecretRef"`
+	TLSSecretRef             corev1.SecretReference   `json:"tlsSecretRef"`
+	NetworkPolicyIngressRule NetworkPolicyIngressRule `json:"networkPolicyIngressRule"`
 }
 
-// RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller.
+// NetworkPolicyIngressRule defines the pod and namespace labels for the NetworkPolicy's ingress rule
+// Only the traffic from selected pods in selected namespaces will be allowed to communicate with the server
+type NetworkPolicyIngressRule struct {
+	PodSelector       metav1.LabelSelector `json:"podSelector,omitempty"`
+	NamespaceSelector metav1.LabelSelector `json:"namespaceSelector,omitempty"`
+}
+
+// RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller
 type RepositoryServerStatus struct {
 	Conditions []Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 	ServerInfo ServerInfo  `json:"serverInfo,omitempty"`
@@ -381,13 +390,16 @@ const (
 
 	// ServerReady represents the ready state of the repository server and the pod which runs the proxy server
 	ServerReady RepositoryServerConditionType = "ServerReady"
+
+	// ServerStopped represents the terminated state of the repository server pod due to any unforeseen errors
+	ServerStopped RepositoryServerConditionType = "ServerStopped"
 )
 
 // ServerInfo describes all the information required by the client users to connect to the repository server
 type ServerInfo struct {
 	PodName           string `json:"podName,omitempty"`
-	NetworkPolicyName string `json:"networkPolicyName,omitempty"`
 	ServiceName       string `json:"serviceName,omitempty"`
+	NetworkPolicyName string `json:"networkPolicyName,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
