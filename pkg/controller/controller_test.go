@@ -542,9 +542,6 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
 
-			err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
-
 			final := crv1alpha1.StateComplete
 			cancel := false
 		Loop:
@@ -561,6 +558,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				case testutil.OutputFuncName:
 					c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
 				case testutil.CancelFuncName:
+					testutil.CancelFuncStarted()
 					err = s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
 					c.Assert(err, IsNil)
 					c.Assert(testutil.CancelFuncOut().Error(), DeepEquals, "context canceled")
