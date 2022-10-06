@@ -89,8 +89,8 @@ func StartController() {
 
 	// Create and start the watcher.
 	ctx, cancel := context.WithCancel(ctx)
-	c := NewController(config)
-	err = c.StartWatch(ctx, ns)
+	c := NewController(ctx, config)
+	err = c.StartWatch(ns)
 	if err != nil {
 		log.WithError(err).Print("Failed to start controller.")
 		cancel()

@@ -18,8 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
@@ -38,28 +38,29 @@ import (
 
 // Controller represents a controller object for RepositoryServer resource
 type Controller struct {
+	ctx       context.Context
 	config    *rest.Config
 	crClient  versioned.Interface
 	clientset kubernetes.Interface
 	dynClient dynamic.Interface
-	osClient  osversioned.Interface
 	recorder  record.EventRecorder
 }
 
 // NewController create controller for watching RepositoryServer resource created
-func NewController(c *rest.Config) *Controller {
+func NewController(ctx context.Context, config *rest.Config) *Controller {
 	return &Controller{
-		config: c,
+		ctx:    ctx,
+		config: config,
 	}
 }
 
 // StartWatch watches for instances of RepositoryServer and acts on them.
-func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
+func (c *Controller) StartWatch(namespace string) error {
 	crClient, err := versioned.NewForConfig(c.config)
 	if err != nil {
 		return errors.Wrap(err, "failed to get a CustomResource client")
 	}
-	if err := checkRepositoryServersAccess(ctx, crClient, namespace); err != nil {
+	if err := checkRepositoryServersAccess(c.ctx, crClient, namespace); err != nil {
 		return err
 	}
 	clientset, err := kubernetes.NewForConfig(c.config)
@@ -71,15 +72,9 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 		return errors.Wrap(err, "failed to get a k8s dynamic client")
 	}
 
-	osClient, err := osversioned.NewForConfig(c.config)
-	if err != nil {
-		return errors.Wrap(err, "failed to get a openshift client")
-	}
-
 	c.crClient = crClient
 	c.clientset = clientset
 	c.dynClient = dynClient
-	c.osClient = osClient
 	c.recorder = eventer.NewEventRecorder(c.clientset, "RepositoryServer Controller")
 
 	resourceHandlers := cache.ResourceEventHandlerFuncs{
@@ -89,7 +84,7 @@ func (c *Controller) StartWatch(ctx context.Context, namespace string) error {
 	watcher := customresource.NewWatcher(crv1alpha1.RepositoryServerResource, namespace, resourceHandlers, crClient.CrV1alpha1().RESTClient())
 	chTmp := make(chan struct{})
 	go func() {
-		<-ctx.Done()
+		<-c.ctx.Done()
 		close(chTmp)
 	}()
 	go watcher.Watch(&crv1alpha1.RepositoryServer{}, chTmp)
@@ -135,56 +130,32 @@ func (c *Controller) onDelete(obj interface{}) {
 	}
 }
 
+func (c *Controller) newRepositoryServerHandler(repositoryServer *crv1alpha1.RepositoryServer) Handler {
+	repoServerCROwnerRef := metav1.OwnerReference{
+		APIVersion: fmt.Sprintf("%s/%s", crv1alpha1.ResourceGroup, crv1alpha1.SchemeVersion),
+		Kind:       "RepositoryServer",
+		Name:       repositoryServer.Name,
+		UID:        repositoryServer.UID,
+	}
+	return Handler{
+		Ctx:              c.ctx,
+		KubeCli:          c.clientset,
+		CrCli:            c.crClient,
+		RepositoryServer: repositoryServer,
+		OwnerReference:   repoServerCROwnerRef,
+	}
+}
+
 func (c *Controller) onAddRepositoryServer(rs *crv1alpha1.RepositoryServer) error {
 	log.Info().Print("Successfully created RepositoryServer CR named " + rs.Name)
+	handler := c.newRepositoryServerHandler(rs)
+	if err := handler.RunRepositoryProxyServer(); err != nil {
+		return errors.Wrap(err, "Failed to run RepositoryServer pod")
+	}
 	return nil
 }
 
 func (c *Controller) onDeleteRepositoryServer(rs *crv1alpha1.RepositoryServer) error {
 	log.Info().Print("Successfully deleted RepositoryServer CR named " + rs.Name)
 	return nil
-}
-
-func (c *Controller) startRepositoryServerPod() {
-
-}
-
-func (c *Controller) createService() {
-
-}
-
-func (c *Controller) createNetworkPolicy() {
-
-}
-
-func (c *Controller) addTLSCertConfigurationInPodOverride() {
-
-}
-
-func (c *Controller) createRepoServerPod() {
-
-}
-
-func (c *Controller) waitForPodReady() {
-
-}
-
-func (c *Controller) connectToRepository() {
-
-}
-
-func (c *Controller) startRepoProxyServer() {
-
-}
-
-func (c *Controller) waitForServerToStart() {
-
-}
-
-func (c *Controller) addClientUsersToServer() {
-
-}
-
-func (c *Controller) refreshServer() {
-
 }
