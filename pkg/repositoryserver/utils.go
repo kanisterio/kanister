@@ -77,7 +77,10 @@ func repoServerPodService(namespace string, repoServerCROwnerRef metav1.OwnerRef
 func repoServerNetworkPolicy(
 	namespace string,
 	svc *corev1.Service,
-	repoServerCROwnerRef metav1.OwnerReference) *networkingv1.NetworkPolicy {
+	repoServerCROwnerRef metav1.OwnerReference,
+	podSelector *metav1.LabelSelector,
+	namespaceSelector *metav1.LabelSelector,
+) *networkingv1.NetworkPolicy {
 	protocolTCP := corev1.ProtocolTCP
 	port := intstr.FromInt(repoServerServicePort)
 	return &networkingv1.NetworkPolicy{
@@ -93,7 +96,12 @@ func repoServerNetworkPolicy(
 			},
 			Ingress: []networkingv1.NetworkPolicyIngressRule{
 				{
-					From: []networkingv1.NetworkPolicyPeer{},
+					From: []networkingv1.NetworkPolicyPeer{
+						{
+							PodSelector:       podSelector,
+							NamespaceSelector: namespaceSelector,
+						},
+					},
 					Ports: []networkingv1.NetworkPolicyPort{
 						{
 							Protocol: &protocolTCP,

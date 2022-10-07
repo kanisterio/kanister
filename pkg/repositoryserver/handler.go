@@ -102,7 +102,9 @@ func (h *Handler) createService() (*corev1.Service, error) {
 
 func (h *Handler) createNetworkPolicy(svc *corev1.Service) error {
 	namespace := h.RepositoryServer.GetNamespace()
-	np := repoServerNetworkPolicy(namespace, svc, h.OwnerReference)
+	podSelector := h.RepositoryServer.Spec.Server.NetworkPolicyIngressRule.PodSelector
+	namespaceSelector := h.RepositoryServer.Spec.Server.NetworkPolicyIngressRule.NamespaceSelector
+	np := repoServerNetworkPolicy(namespace, svc, h.OwnerReference, podSelector, namespaceSelector)
 	np, err := h.KubeCli.NetworkingV1().NetworkPolicies(namespace).Create(h.Ctx, np, metav1.CreateOptions{})
 	if err != nil {
 		return err
