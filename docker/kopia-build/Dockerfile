@@ -1,10 +1,10 @@
-FROM golang:1.19.1-alpine3.16 AS builder
+FROM golang:1.19.2-buster AS builder
 
 ARG kopiaBuildCommit
 ARG kopiaRepoOrg
 ARG kopiaImage
 
-RUN apk add git build-base
+RUN apt-get install git
 
 WORKDIR /
 
@@ -23,19 +23,19 @@ RUN goreleaser build --output=. --rm-dist --single-target
 
 RUN cp /kopia/dist/${kopiaImage}_linux_amd64_v1/${kopiaImage} /kopia/kopia
 
-RUN adduser -D kopia && addgroup kopia kopia
+RUN adduser kopia && addgroup kopia kopia
 USER kopia:kopia
 
 COPY --chown=kopia . /kopia
 
-FROM alpine:3.16
+FROM debian:buster
 
 WORKDIR /kopia
 
 # Add CA certs
-RUN apk add --no-cache --verbose ca-certificates && \
+RUN apt-get update && apt-get -y install ca-certificates && \
   rm -rf /var/cache/apk/* && \
-  adduser -D kopia && addgroup kopia kopia && \
+  adduser kopia && addgroup kopia kopia && \
   chown kopia /kopia
 
 USER kopia:kopia
