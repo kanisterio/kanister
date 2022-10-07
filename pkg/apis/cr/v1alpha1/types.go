@@ -354,8 +354,8 @@ type Server struct {
 // NetworkPolicyIngressRule defines the pod and namespace labels for the NetworkPolicy's ingress rule
 // Only the traffic from selected pods in selected namespaces will be allowed to communicate with the server
 type NetworkPolicyIngressRule struct {
-	PodSelector       metav1.LabelSelector `json:"podSelector,omitempty"`
-	NamespaceSelector metav1.LabelSelector `json:"namespaceSelector,omitempty"`
+	PodSelector       *metav1.LabelSelector `json:"podSelector,omitempty"`
+	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
 }
 
 // RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller
