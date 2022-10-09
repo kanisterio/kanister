@@ -39,6 +39,12 @@ var (
 	Verbose bool
 )
 
+type Clients struct {
+	KubeClient kubernetes.Interface
+	CrdClient  versioned.Interface
+	OsClient   osversioned.Interface
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
@@ -73,24 +79,30 @@ func resolveNamespace(cmd *cobra.Command) (string, error) {
 	return kube.ConfigNamespace()
 }
 
-func initializeClients() (kubernetes.Interface, versioned.Interface, osversioned.Interface, error) {
+func initializeClients() (*Clients, error) {
+	nilClient := Clients{}
 	config, err := kube.LoadConfig()
 	if err != nil {
-		return nil, nil, nil, err
+		return &nilClient, err
 	}
 	cli, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "could not get the kubernetes client")
+		return &nilClient, errors.Wrap(err, "could not get the kubernetes client")
 	}
 
 	osCli, err := osversioned.NewForConfig(config)
 	if err != nil {
-		return nil, nil, nil, errors.Wrapf(err, "could not get openshift client")
+		return &nilClient, errors.Wrapf(err, "could not get openshift client")
 	}
 
 	crCli, err := versioned.NewForConfig(config)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "could not get the CRD client")
+		return &nilClient, errors.Wrap(err, "could not get the CRD client")
 	}
-	return cli, crCli, osCli, nil
+	clients := Clients{
+		KubeClient: cli,
+		CrdClient:  crCli,
+		OsClient:   osCli,
+	}
+	return &clients, nil
 }

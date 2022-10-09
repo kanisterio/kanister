@@ -105,11 +105,11 @@ func newActionSetCmd() *cobra.Command {
 }
 
 func initializeAndPerform(cmd *cobra.Command, args []string) error {
-	cli, crCli, osCli, err := initializeClients()
+	clients, err := initializeClients()
 	if err != nil {
 		return err
 	}
-	params, err := extractPerformParams(cmd, args, cli, osCli)
+	params, err := extractPerformParams(cmd, args, clients.KubeClient, clients.OsClient)
 	if err != nil {
 		return err
 	}
@@ -117,12 +117,12 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	valFlag, _ := cmd.Flags().GetBool(skipValidationFlag)
 	if !valFlag {
-		err = verifyParams(ctx, params, cli, crCli, osCli)
+		err = verifyParams(ctx, params, clients)
 		if err != nil {
 			return err
 		}
 	}
-	return perform(ctx, crCli, params)
+	return perform(ctx, clients.CrdClient, params)
 }
 
 func perform(ctx context.Context, crCli versioned.Interface, params *PerformParams) error {
@@ -603,7 +603,7 @@ func parseName(k string, r string) (namespace, name string, err error) {
 	return m[1], m[2], nil
 }
 
-func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface) error {
+func verifyParams(ctx context.Context, p *PerformParams, cli *Clients) error {
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
@@ -613,7 +613,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		if p.Blueprint != "" {
-			_, err := crCli.CrV1alpha1().Blueprints(p.Namespace).Get(ctx, p.Blueprint, metav1.GetOptions{})
+			_, err := cli.CrdClient.CrV1alpha1().Blueprints(p.Namespace).Get(ctx, p.Blueprint, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "blueprint", p.Blueprint, p.Namespace)
 			}
@@ -624,7 +624,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		if p.Profile != nil {
-			_, err := crCli.CrV1alpha1().Profiles(p.Profile.Namespace).Get(ctx, p.Profile.Name, metav1.GetOptions{})
+			_, err := cli.CrdClient.CrV1alpha1().Profiles(p.Profile.Namespace).Get(ctx, p.Profile.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "profile", p.Profile.Name, p.Profile.Namespace)
 			}
@@ -638,16 +638,16 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 		for _, obj := range p.Objects {
 			switch obj.Kind {
 			case param.DeploymentKind:
-				_, err = cli.AppsV1().Deployments(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+				_, err = cli.KubeClient.AppsV1().Deployments(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.StatefulSetKind:
-				_, err = cli.AppsV1().StatefulSets(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+				_, err = cli.KubeClient.AppsV1().StatefulSets(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.DeploymentConfigKind:
 				// use open shift client to get the deployment config resource
-				_, err = osCli.AppsV1().DeploymentConfigs(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+				_, err = cli.OsClient.AppsV1().DeploymentConfigs(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.PVCKind:
-				_, err = cli.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+				_, err = cli.KubeClient.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.NamespaceKind:
-				_, err = cli.CoreV1().Namespaces().Get(ctx, obj.Name, metav1.GetOptions{})
+				_, err = cli.KubeClient.CoreV1().Namespaces().Get(ctx, obj.Name, metav1.GetOptions{})
 			default:
 				gvr := schema.GroupVersionResource{
 					Group:    obj.Group,
@@ -666,7 +666,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		for _, cm := range p.ConfigMaps {
-			_, err := cli.CoreV1().ConfigMaps(cm.Namespace).Get(ctx, cm.Name, metav1.GetOptions{})
+			_, err := cli.KubeClient.CoreV1().ConfigMaps(cm.Namespace).Get(ctx, cm.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "config map", cm.Name, cm.Namespace)
 			}
@@ -677,7 +677,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		for _, secret := range p.Secrets {
-			_, err := cli.CoreV1().Secrets(secret.Namespace).Get(ctx, secret.Name, metav1.GetOptions{})
+			_, err := cli.KubeClient.CoreV1().Secrets(secret.Namespace).Get(ctx, secret.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "secret", secret.Name, secret.Namespace)
 			}
