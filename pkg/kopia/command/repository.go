@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 )
@@ -14,8 +13,8 @@ import (
 // creating or connecting to a Kopia repository
 type RepositoryCommandArgs struct {
 	*CommandArgs
-	LocationSecret  *v1.Secret
-	CredsSecret     *v1.Secret
+	Location        map[string]string
+	Credentials     map[string]string
 	CacheDirectory  string
 	Hostname        string
 	ContentCacheMB  int
@@ -42,9 +41,9 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 	}
 
 	bsArgs, err := storage.KopiaBlobStoreArgs(&storage.StorageCommandParams{
-		LocationSecret:     cmdArgs.LocationSecret,
-		LocationCredSecret: cmdArgs.CredsSecret,
-		RepoPathPrefix:     cmdArgs.RepoPathPrefix,
+		Location:       cmdArgs.Location,
+		Credentials:    cmdArgs.Credentials,
+		RepoPathPrefix: cmdArgs.RepoPathPrefix,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to generate storage args")
@@ -73,9 +72,9 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 	}
 
 	bsArgs, err := storage.KopiaBlobStoreArgs(&storage.StorageCommandParams{
-		LocationSecret:     cmdArgs.LocationSecret,
-		LocationCredSecret: cmdArgs.CredsSecret,
-		RepoPathPrefix:     cmdArgs.RepoPathPrefix,
+		Location:       cmdArgs.Location,
+		Credentials:    cmdArgs.Credentials,
+		RepoPathPrefix: cmdArgs.RepoPathPrefix,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to generate storage args")

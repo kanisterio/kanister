@@ -5,10 +5,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/logsafe"
 	"github.com/kanisterio/kanister/pkg/secrets"
-	v1 "k8s.io/api/core/v1"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -24,11 +27,11 @@ const (
 	s3RegionFlag           = "--region"
 )
 
-func kopiaS3Args(locationSecret, locationCredSecret *v1.Secret, assumeRoleDuration time.Duration, artifactPrefix string) (logsafe.Cmd, error) {
+func kopiaS3Args(location, credentials map[string]string, assumeRoleDuration time.Duration, artifactPrefix string) (logsafe.Cmd, error) {
 	args := logsafe.NewLoggable(s3SubCommand)
-	args = args.AppendLoggableKV(s3BucketFlag, bucketName(locationSecret))
+	args = args.AppendLoggableKV(s3BucketFlag, bucketName(location))
 
-	e := endpoint(locationSecret)
+	e := endpoint(location)
 	if e != "" {
 		s3Endpoint := ResolveS3Endpoint(e)
 		args = args.AppendLoggableKV(s3EndpointFlag, s3Endpoint)
@@ -38,9 +41,9 @@ func kopiaS3Args(locationSecret, locationCredSecret *v1.Secret, assumeRoleDurati
 		}
 	}
 
-	artifactPrefix = GenerateFullRepoPath(prefix(locationSecret), artifactPrefix)
+	artifactPrefix = GenerateFullRepoPath(prefix(location), artifactPrefix)
 
-	credArgs, err := kopiaS3CredentialArgs(locationCredSecret, assumeRoleDuration)
+	credArgs, err := kopiaS3CredentialArgs(credentials, assumeRoleDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +51,11 @@ func kopiaS3Args(locationSecret, locationCredSecret *v1.Secret, assumeRoleDurati
 	args = args.Combine(credArgs)
 	args = args.AppendLoggableKV(s3PrefixFlag, artifactPrefix)
 
-	if skipSSLVerify(locationSecret) {
+	if skipSSLVerify(location) {
 		args = args.AppendLoggable(s3DisableTLSVerifyFlag)
 	}
 
-	region := region(locationSecret)
+	region := region(location)
 	if region != "" {
 		args = args.AppendLoggableKV(s3RegionFlag, region)
 	}
@@ -60,8 +63,8 @@ func kopiaS3Args(locationSecret, locationCredSecret *v1.Secret, assumeRoleDurati
 	return args, nil
 }
 
-func kopiaS3CredentialArgs(locationCredSecret *v1.Secret, assumeRoleDuration time.Duration) (logsafe.Cmd, error) {
-	s3Creds, err := secrets.ExtractAWSCredentials(context.TODO(), locationCredSecret, assumeRoleDuration)
+func kopiaS3CredentialArgs(credentials map[string]string, assumeRoleDuration time.Duration) (logsafe.Cmd, error) {
+	s3Creds, err := extractAWSCredentials(context.TODO(), credentials, assumeRoleDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -91,4 +94,46 @@ func ResolveS3Endpoint(endpoint string) string {
 
 func HttpInsecureEndpoint(endpoint string) bool {
 	return strings.HasPrefix(endpoint, "http:")
+}
+
+func extractAWSCredentials(ctx context.Context, credsMap map[string]string, assumeRoleDuration time.Duration) (*credentials.Value, error) {
+	if err := validateAWSCredentials(credsMap); err != nil {
+		return nil, err
+	}
+	config := map[string]string{
+		aws.AccessKeyID:        string(credsMap[secrets.AWSAccessKeyID]),
+		aws.SecretAccessKey:    string(credsMap[secrets.AWSSecretAccessKey]),
+		aws.ConfigRole:         string(credsMap[secrets.ConfigRole]),
+		aws.AssumeRoleDuration: assumeRoleDuration.String(),
+	}
+	creds, err := aws.GetCredentials(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	val, err := creds.Get()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get AWS credentials")
+	}
+	exp, err := creds.ExpiresAt()
+	if err == nil {
+		log.Debug().Print("Credential expiration", field.M{"expirationTime": exp})
+	}
+	return &val, nil
+}
+
+func validateAWSCredentials(creds map[string]string) error {
+	count := 0
+	if _, ok := creds[secrets.AWSAccessKeyID]; ok {
+		count++
+	}
+	if _, ok := creds[secrets.AWSSecretAccessKey]; ok {
+		count++
+	}
+	if _, ok := creds[secrets.ConfigRole]; ok {
+		count++
+	}
+	if len(creds) > count {
+		return errors.New("Secret has an unknown field")
+	}
+	return nil
 }

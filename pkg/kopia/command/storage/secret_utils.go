@@ -1,9 +1,5 @@
 package storage
 
-import (
-	corev1 "k8s.io/api/core/v1"
-)
-
 type locType string
 
 const (
@@ -22,27 +18,31 @@ const (
 	typeKey          = "type"
 )
 
-func bucketName(s *corev1.Secret) string {
-	return s.StringData["bucket"]
+func bucketName(m map[string]string) string {
+	return m[bucketKey]
 }
 
-func endpoint(s *corev1.Secret) string {
-	return s.StringData["endpoint"]
+func endpoint(m map[string]string) string {
+	return m[endpointKey]
 }
 
-func prefix(s *corev1.Secret) string {
-	return s.StringData["prefix"]
+func prefix(m map[string]string) string {
+	return m[prefixKey]
 }
 
-func region(s *corev1.Secret) string {
-	return s.StringData["region"]
+func region(m map[string]string) string {
+	return m[regionKey]
 }
 
-func skipSSLVerify(s *corev1.Secret) bool {
-	v := s.StringData["skipSSLVerify"]
+func skipSSLVerify(m map[string]string) bool {
+	v := m[skipSSLVerifyKey]
 	return v == "true"
 }
 
-func locationType(s *corev1.Secret) locType {
-	return locType(s.StringData["type"])
+func locationType(m map[string]string) locType {
+	return locType(m[typeKey])
+}
+
+func SkipCredentialSecretMount(m map[string]string) bool {
+	return locType(m[typeKey]) == locTypeFilestore
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
@@ -26,6 +27,12 @@ func CreateKopiaRepository(
 	container string,
 	cmdArgs command.RepositoryCommandArgs,
 ) error {
+	loc, creds, err := getLocationAndCredsFromMountPath(cli, namespace, pod, container)
+	if err != nil {
+		return errors.Wrap(err, "Failed to create Kopia repository")
+	}
+	cmdArgs.Location = loc
+	cmdArgs.Credentials = creds
 	cmd, err := command.RepositoryCreateCommand(cmdArgs)
 	if err != nil {
 		return errors.Wrap(err, "Failed to generate repository create command")
@@ -106,4 +113,25 @@ func setCustomMaintenanceOwner(
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	return err
+}
+
+func getLocationAndCredsFromMountPath(
+	cli kubernetes.Interface,
+	namespace,
+	pod,
+	container string,
+) (map[string]string, map[string]string, error) {
+	fr := kube.NewPodFileReader(cli, pod, namespace, container)
+	loc, err := fr.ReadDir(context.Background(), LocationSecretMountPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	if storage.SkipCredentialSecretMount(loc) {
+		return loc, nil, err
+	}
+	creds, err := fr.ReadDir(context.Background(), CredsSecretMountPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	return loc, creds, nil
 }

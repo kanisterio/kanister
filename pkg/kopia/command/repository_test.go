@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	"gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
 )
 
 func Test(t *testing.T) { check.TestingT(t) }
@@ -29,8 +28,8 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
-				LocationSecret:  &v1.Secret{},
-				CredsSecret:     &v1.Secret{},
+				Location:        map[string]string{},
+				Credentials:     map[string]string{},
 				CacheDirectory:  "/tmp/cache.dir",
 				Hostname:        "test-hostname",
 				ContentCacheMB:  0,
@@ -48,13 +47,11 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
-				LocationSecret: &v1.Secret{
-					StringData: map[string]string{
-						"prefix": "test-prefix",
-						"type":   "filestore",
-					},
+				Location: map[string]string{
+					"prefix": "test-prefix",
+					"type":   "filestore",
 				},
-				CredsSecret:     &v1.Secret{},
+				Credentials:     map[string]string{},
 				CacheDirectory:  "/tmp/cache.dir",
 				Hostname:        "test-hostname",
 				ContentCacheMB:  0,
@@ -106,8 +103,8 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
-				LocationSecret:  &v1.Secret{},
-				CredsSecret:     &v1.Secret{},
+				Location:        map[string]string{},
+				Credentials:     map[string]string{},
 				CacheDirectory:  "/tmp/cache.dir",
 				Hostname:        "test-hostname",
 				ContentCacheMB:  0,
@@ -125,13 +122,11 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
-				LocationSecret: &v1.Secret{
-					StringData: map[string]string{
-						"prefix": "test-prefix",
-						"type":   "filestore",
-					},
+				Location: map[string]string{
+					"prefix": "test-prefix",
+					"type":   "filestore",
 				},
-				CredsSecret:     &v1.Secret{},
+				Credentials:     map[string]string{},
 				CacheDirectory:  "/tmp/cache.dir",
 				ContentCacheMB:  0,
 				MetadataCacheMB: 0,

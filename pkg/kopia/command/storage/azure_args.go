@@ -3,9 +3,9 @@ package storage
 import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/kanisterio/kanister/pkg/logsafe"
+	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -17,14 +17,14 @@ const (
 	azureStorageDomainFlag  = "--storage-domain"
 )
 
-func kopiaAzureArgs(locationSecret, locationCredSecret *v1.Secret, artifactPrefix string) (logsafe.Cmd, error) {
-	artifactPrefix = GenerateFullRepoPath(prefix(locationSecret), artifactPrefix)
+func kopiaAzureArgs(location map[string]string, credentials map[string]string, artifactPrefix string) (logsafe.Cmd, error) {
+	artifactPrefix = GenerateFullRepoPath(prefix(location), artifactPrefix)
 
 	args := logsafe.NewLoggable(azureSubCommand)
-	args = args.AppendLoggableKV(azureContainerFlag, bucketName(locationSecret))
+	args = args.AppendLoggableKV(azureContainerFlag, bucketName(location))
 	args = args.AppendLoggableKV(azurePrefixFlag, artifactPrefix)
 
-	credArgs, err := kopiaAzureCredentialArgs(locationCredSecret)
+	credArgs, err := kopiaAzureCredentialArgs(credentials)
 	if err != nil {
 		return nil, err
 	}
@@ -32,8 +32,8 @@ func kopiaAzureArgs(locationSecret, locationCredSecret *v1.Secret, artifactPrefi
 	return args.Combine(credArgs), nil
 }
 
-func kopiaAzureCredentialArgs(locationSecret *v1.Secret) (logsafe.Cmd, error) {
-	azureSecret, err := secrets.ExtractAzureCredentials(locationSecret)
+func kopiaAzureCredentialArgs(credentials map[string]string) (logsafe.Cmd, error) {
+	azureSecret, err := extractAzureCredentials(credentials)
 	if err != nil {
 		return nil, err
 	}
@@ -52,4 +52,41 @@ func kopiaAzureCredentialArgs(locationSecret *v1.Secret) (logsafe.Cmd, error) {
 		args = args.AppendLoggableKV(azureStorageDomainFlag, blobDomain)
 	}
 	return args, nil
+}
+
+func extractAzureCredentials(credentials map[string]string) (*objectstore.SecretAzure, error) {
+	if err := validateAzureCredentials(credentials); err != nil {
+		return nil, err
+	}
+	azSecret := &objectstore.SecretAzure{}
+	if saID, ok := credentials[secrets.AzureStorageAccountID]; ok {
+		azSecret.StorageAccount = string(saID)
+	}
+	if saKey, ok := credentials[secrets.AzureStorageAccountKey]; ok {
+		azSecret.StorageKey = string(saKey)
+	}
+	if envName, ok := credentials[secrets.AzureStorageEnvironment]; ok {
+		azSecret.EnvironmentName = string(envName)
+	}
+	if azSecret.StorageAccount == "" || azSecret.StorageKey == "" {
+		return nil, errors.New("Azure secret is missing storage account ID or storage key")
+	}
+	return azSecret, nil
+}
+
+func validateAzureCredentials(credentials map[string]string) error {
+	count := 0
+	if _, ok := credentials[secrets.AzureStorageAccountID]; ok {
+		count++
+	}
+	if _, ok := credentials[secrets.AzureStorageAccountKey]; ok {
+		count++
+	}
+	if _, ok := credentials[secrets.AzureStorageEnvironment]; ok {
+		count++
+	}
+	if len(credentials) > count {
+		return errors.New("Secret has an unknown field")
+	}
+	return nil
 }

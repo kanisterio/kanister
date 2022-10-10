@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"gopkg.in/check.v1"
-
-	v1 "k8s.io/api/core/v1"
 )
 
 func (s *StorageUtilsSuite) TestFilesystemArgsUtil(c *check.C) {
@@ -25,10 +23,8 @@ func (s *StorageUtilsSuite) TestFilesystemArgsUtil(c *check.C) {
 			expectedPath:   fmt.Sprintf("%s/test-prefix/dir1/subdir/", DefaultFSMountPath),
 		},
 	} {
-		sec := &v1.Secret{
-			StringData: map[string]string{
-				prefixKey: tc.prefix,
-			},
+		sec := map[string]string{
+			prefixKey: tc.prefix,
 		}
 		args := filesystemArgs(sec, tc.artifactPrefix)
 		expectedValue := fmt.Sprintf("filesystem --path=%s", tc.expectedPath)
