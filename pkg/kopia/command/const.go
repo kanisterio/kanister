@@ -81,3 +81,20 @@ const (
 	pointInTimeConnectionFlag = "--point-in-time"
 	urlFlag                   = "--url"
 )
+
+// List of possible modifications to a policy, expressed as the kopia flag that will modify it
+const (
+	// Retention
+	keepLatest  = "--keep-latest"
+	keepHourly  = "--keep-hourly"
+	keepDaily   = "--keep-daily"
+	keepWeekly  = "--keep-weekly"
+	keepMonthly = "--keep-monthly"
+	keepAnnual  = "--keep-annual"
+
+	// Compression
+	compressionAlgorithm = "--compression"
+
+	// Compression Algorithms recognized by Kopia
+	s2DefaultComprAlgo = "s2-default"
+)

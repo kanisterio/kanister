@@ -17,7 +17,7 @@ package errors
 const (
 	ErrInvalidPasswordStr        = "invalid repository password"
 	ErrOutOfMemoryStr            = "kanister-tools container ran out of memory"
-	ErrAccessDeniedStr           = "access denied"
+	ErrAccessDeniedStr           = "Access Denied"
 	ErrRepoNotFoundStr           = "repository not found"
 	ErrRepoNotInitializedStr     = "repository not initialized in the provided storage"
 	ErrFilesystemRepoNotFoundStr = "no such file or directory"

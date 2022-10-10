@@ -33,11 +33,11 @@ func ConnectToKopiaRepository(
 	}
 
 	switch {
-	case strings.Contains(stderr, errInvalidPassword):
+	case strings.Contains(stderr, kerrors.ErrInvalidPasswordStr):
 		err = errors.WithMessage(err, kerrors.ErrInvalidPasswordStr)
-	case err != nil && strings.Contains(err.Error(), errCodeOutOfMemory):
+	case err != nil && strings.Contains(err.Error(), kerrors.ErrCodeOutOfMemoryStr):
 		err = errors.WithMessage(err, kerrors.ErrOutOfMemoryStr)
-	case strings.Contains(stderr, errAccessDenied):
+	case strings.Contains(stderr, kerrors.ErrAccessDeniedStr):
 		err = errors.WithMessage(err, kerrors.ErrAccessDeniedStr)
 	case kerrors.RepoNotInitialized(stderr):
 		err = errors.WithMessage(err, kerrors.ErrRepoNotFoundStr)
