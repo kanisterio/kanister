@@ -90,6 +90,7 @@ func (s *FuncSuite) TestCancelFunc(c *C) {
 		c.Assert(strings.Contains(err.Error(), "context canceled"), Equals, true)
 		close(done)
 	}()
+	c.Assert(CancelFuncStarted(), NotNil)
 	select {
 	case <-done:
 		c.FailNow()
