@@ -27,7 +27,7 @@ type ServerStartCommandArgs struct {
 
 // ServerStart returns the kopia command for starting the Kopia API Server
 func ServerStart(cmdArgs ServerStartCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(&CommandArgs{ConfigFilePath: cmdArgs.ConfigFilePath, LogDirectory: cmdArgs.LogDirectory}, false)
 
 	if cmdArgs.AutoGenerateCert {
 		args = args.AppendLoggable(serverSubCommand, startSubCommand, tlsGenerateCertFlag)
@@ -85,7 +85,7 @@ type ServerStatusCommandArgs struct {
 
 // ServerStatus returns the kopia command for checking status of the Kopia API Server
 func ServerStatus(cmdArgs ServerStatusCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(&CommandArgs{ConfigFilePath: cmdArgs.ConfigFilePath, LogDirectory: cmdArgs.LogDirectory}, false)
 	args = args.AppendLoggable(serverSubCommand, statusSubCommand)
 	args = args.AppendLoggableKV(addressFlag, cmdArgs.ServerAddress)
 	args = args.AppendRedactedKV(serverCertFingerprint, cmdArgs.Fingerprint)

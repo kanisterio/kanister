@@ -38,21 +38,21 @@ func stringSliceCommand(args logsafe.Cmd) []string {
 	return args.StringSliceCMD()
 }
 
-func commonArgs(args *CommandArgs, requireInfoLevel bool) logsafe.Cmd {
+func commonArgs(cmdArgs *CommandArgs, requireInfoLevel bool) logsafe.Cmd {
 	c := logsafe.NewLoggable(kopiaCommand)
 	if requireInfoLevel {
 		c = c.AppendLoggable(logLevelInfoFlag)
 	} else {
 		c = c.AppendLoggable(logLevelErrorFlag)
 	}
-	if args.ConfigFilePath != "" {
-		c = c.AppendLoggableKV(configFileFlag, args.ConfigFilePath)
+	if cmdArgs.ConfigFilePath != "" {
+		c = c.AppendLoggableKV(configFileFlag, cmdArgs.ConfigFilePath)
 	}
-	if args.LogDirectory != "" {
-		c = c.AppendLoggableKV(logDirectoryFlag, args.LogDirectory)
+	if cmdArgs.LogDirectory != "" {
+		c = c.AppendLoggableKV(logDirectoryFlag, cmdArgs.LogDirectory)
 	}
-	if args.RepoPassword != "" {
-		c = c.AppendRedactedKV(passwordFlag, args.RepoPassword)
+	if cmdArgs.RepoPassword != "" {
+		c = c.AppendRedactedKV(passwordFlag, cmdArgs.RepoPassword)
 	}
 	return c
 }
