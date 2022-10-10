@@ -14,20 +14,20 @@ type StorageCommandParams struct {
 	// Common params
 	LocationSecret     *v1.Secret
 	LocationCredSecret *v1.Secret
-	ArtifactPrefix     string
+	RepoPathPrefix     string
 }
 
 func KopiaBlobStoreArgs(params *StorageCommandParams) (logsafe.Cmd, error) {
 	locType := locationType(params.LocationSecret)
 	switch locationType(params.LocationSecret) {
 	case locTypeFilestore:
-		return filesystemArgs(params.LocationSecret, params.ArtifactPrefix), nil
+		return filesystemArgs(params.LocationSecret, params.RepoPathPrefix), nil
 	case locTypeS3:
-		return kopiaS3Args(params.LocationSecret, params.LocationCredSecret, params.AssumeRoleDuration, params.ArtifactPrefix)
+		return kopiaS3Args(params.LocationSecret, params.LocationCredSecret, params.AssumeRoleDuration, params.RepoPathPrefix)
 	case locTypeGCS:
-		return kopiaGCSArgs(params.LocationSecret, params.ArtifactPrefix), nil
+		return kopiaGCSArgs(params.LocationSecret, params.RepoPathPrefix), nil
 	case locTypeAzure:
-		return kopiaAzureArgs(params.LocationSecret, params.LocationCredSecret, params.ArtifactPrefix)
+		return kopiaAzureArgs(params.LocationSecret, params.LocationCredSecret, params.RepoPathPrefix)
 	default:
 		return nil, fmt.Errorf("unsupported type for the location: %s", locType)
 	}
