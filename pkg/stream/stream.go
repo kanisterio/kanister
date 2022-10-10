@@ -23,7 +23,7 @@ import (
 	"github.com/kopia/kopia/snapshot/snapshotfs"
 	"github.com/pkg/errors"
 
-	reposerverclient "github.com/kanisterio/kanister/pkg/kopia/repository/client"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	kansnapshot "github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/virtualfs"
 )
@@ -35,7 +35,7 @@ const (
 
 // Push streams data to object store by reading it from the given endpoint into an in-memory filesystem
 func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEndpoint string) error {
-	rep, err := reposerverclient.Open(ctx, configFile, password, "kanister stream push")
+	rep, err := repository.Open(ctx, configFile, password, "kanister stream push")
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
