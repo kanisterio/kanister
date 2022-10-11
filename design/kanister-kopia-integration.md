@@ -89,7 +89,10 @@ To explore other features of Kopia, see its
 - After setting up the repository and the repository server, users can follow
    the normal workflow to execute actions from the v2 Blueprints. To use the
    new versions of the Kanister Data Functions, users must specify the version
-   of the function via the ActionSet Action's `preferredVersion` field.
+   of the function via the ActionSet Action's `preferredVersion` field. This
+   field in an Action is applied to all the Phases in it. If a particular
+   Kanister function is not registered with this version, Kanister will fall
+   back to the default version of the function.
 
 ## Detailed Design
 
@@ -126,25 +129,26 @@ To explore other features of Kopia, see its
 
 - As mentioned above, the backup storage location is called a "Repository"
    in Kopia.
-- The responsibility of maintaining the repository will be on the
-   Kanister users.
+- It is important to note that the Kanister users are responsible for the
+   lifecycle management of the repository, i.e., the creation, deletion,
+   upgrades, garbage collection, etc. The Kanister controller will not override
+   any user configuration or policies set on the repository. Such direct
+   changes might impact Kanister's ability to interact with the repository.
 - Kanister documentation will provide instructions for initializing a new
-   repository. Once initialized, it will continue to exist at the location
-   until cleaned up manually.
-- Based on their needs, Kanister users have a choice of using separate
-   repositories for each application protected by Kopia-based Blueprints OR use
-   a single repository for all the applications.
+   repository.
+- Kanister users can initialize repositories with boundaries defined based on
+   their needs. The repository domain can include a single workload, groups of
+   workloads, namespaces, or groups of namespaces, etc.
 - Only a single repository can exist at a particular path in the backend
-   storage location. Users opting to use separate repositories for separate
-   applications are recommended to use unique path prefixes for each
-   repository. For example, the repository for `mysql-deploy` deployment in
-   `mysql` namespace on S3 storage bucket called `test-bucket` could be created
-   at the location `s3://test-bucket/<UUID of mysql namespace>/mysql-deploy/`.
-- Accessing the repository requires location and credential information similar
-   to a Kanister Profile CR and a unique password used by Kopia during
-   encryption along with a unique path prefix as mentioned above.
+   storage location. Users opting to use separate repositories are recommended
+   to use unique path prefixes for each repository. For example, a repository
+   for a namespace called `monitoring` on S3 storage bucket called
+   `test-bucket` could be created at the location
+   `s3://test-bucket/<UUID of monitoring namespace>/repo/`.
+- Accessing the repository requires the storage location and credential
+   information similar to a Kanister Profile CR and a unique password used by
+   Kopia during encryption, along with a unique path prefix mentioned above.
    [See](https://kopia.io/docs/features/#end-to-end-zero-knowledge-encryption).
-
 - In the first iteration, users will be required to provide the location and
    repository information to the controller during the creation of the
    repository server in the form of Kubernetes Secrets. Future iterations will
@@ -165,19 +169,18 @@ To explore other features of Kopia, see its
 - To authorize access, a list of server usernames and passwords must be added
    prior to starting the server.
 - The server also uses TLS certificates to secure incoming connections to it.
-- Kanister users can configure a repository via a newly added Custom Resource
-   called `RepositoryServer` as described in the following section.
+- Kanister users can configure a repository server via a newly added Custom
+   Resource called `RepositoryServer` as described in the following section.
 
 #### Custom Resource Definition
 
 This design proposes a new Custom Resource Definition (CRD) named
 `RepositoryServer`, to represent a Kopia repository server.
-It is a namespace-scoped resource, owned and managed by a new
-`RepositoryServerController` controller in the `kanister` namespace.
-As mentioned above, the CRD offers a set of parameters to configure a Kopia
-repository server.
+It is a namespace-scoped resource, owned and managed by the controller in the
+`kanister` namespace. As mentioned above, the CRD offers a set of parameters to
+configure a Kopia repository server.
 
-To limit the new controller's RBAC scope, all the `RepositoryServer` resources
+To limit the controller's RBAC scope, all the `RepositoryServer` resources
 are created in the `kanister` namespace.
 
 A sample `RepositoryServer` resource created to interact with the Kopia
@@ -192,13 +195,14 @@ metadata:
    labels:
       repo.kanister.io/target-namespace: monitoring
 spec:
-   location:
+   storage:
       # required: storage location info
-      secret:
+      secretRef:
          name: location
          namespace: kanister
       # required: creds to access the location
-      credentialSecret:
+      # optional when using location type file-store
+      credentialSecretRef:
          name: loc-creds
          namespace: kanister
    repository:
@@ -207,32 +211,37 @@ spec:
       # within the path prefix specified in the location
       rootPath: /repo/monitoring/
       # required: password to access the repository
-      passwordSecret:
+      passwordSecretRef:
          name: repository-monitoring-password
          namespace: kanister
-      # required: these values will be used by the repository server controller
-      # for the connection from the server to the repository. Kopia will use
-      # these values to track and control operations
+      # optional: if specified, these values will be used by the controller to
+      # override default username and hostname when connecting to the
+      # repository from the server.
+      # if not specified, the controller will use generated defaults
       username: kanisterAdmin
-      hostname: monitoring.app
+      hostname: monitoring
    server:
       # required: server admin details
-      adminSecret:
+      adminSecretRef:
          name: repository-monitoring-server-admin
          namespace: kanister
       # required: TLS certificate required for secure communication between the Kopia client and server
-      tlsSecret:
+      tlsSecretRef:
          name: repository-monitoring-server-tls
          namespace: kanister
       # required: repository users list
-      userAccessSecret:
+      userAccessSecretRef:
          name: repository-monitoring-server-access
          namespace: kanister
       # required: selector for network policy required to enable cross-namespace access to the server
-      labelSelector:
-         matchLabels:
-         - key1: value1
-         - key2: value2
+      networkPolicy:
+         namespaceSelector:
+            matchLabels:
+               app: monitoring
+         podSelector:
+            matchLabels:
+               pod: kopia-client
+               app: monitoring
 status:
    conditions:
    - lastTransitionTime: "2022-08-20T09:48:36Z"
@@ -243,9 +252,10 @@ status:
       podName: "repository-monitoring-pod-a1b2c3"
       networkPolicyName: "repository-monitoring-np-d4e5f6"
       serviceName: "repository-monitoring-svc-g7h8i9"
+      tlsFingerprint: "48537CCE585FED39FB26C639EB8EF38143592BA4B4E7677A84A31916398D40F7"
 ```
 
-The required `spec.location.secret` refers to a `Secret` resource storing
+The required `spec.storage.secretRef` refers to a `Secret` resource storing
 location-related sensitive data. This secret is provided by the user.
 For example,
 
@@ -259,7 +269,8 @@ metadata:
       repo.kanister.io/target-namespace: monitoring
 type: Opaque
 data:
-   # required: supported values are s3, gcs, and azure
+   # required: specify the type of the store
+   # supported values are s3, gcs, azure, and file-store
    type: s3
    # required
    bucket: my-bucket
@@ -272,10 +283,13 @@ data:
    # optional: if set to true, do not verify SSL cert.
    # Default, when omitted, is false
    skipSSLVerify: false
+   # required: if type is `file-store`
+   # optional, otherwise
+   claimName: store-pvc
 ```
 
 The credentials required to access the location above are provided by the user
-in a separate secret referenced by `spec.location.credentialSecret`.
+in a separate secret referenced by `spec.location.credentialSecretRef`.
 The example below shows the credentials required to access AWS S3 and
 S3-compatible locations.
 
@@ -298,6 +312,7 @@ data:
 ```
 
 The credentials secret will follow a different format for different providers.
+This secret is optional when using a file store location.
 Example secrets for Google Cloud Storage (GCS) and Azure Blob Storage will be
 as follows:
 
@@ -342,8 +357,18 @@ data:
    azure_storage_environment: <redacted>
 ```
 
+Kopia identifies users by `username@hostname` and uses the values specified
+when establishing connection to the repository to identify backups created in
+the session. If the username and hostname values are specified in the
+repository section, Kanister controller will override defaults when
+establishing connection to the repository from the repository server. Users
+will be required to specify the same values when they need to restore or delete
+the backups created.
+By default, the controller will use generated defaults when connecting to the
+repository.
+
 The password used while creating the Kopia repository is provided by the user
-in the `Secret` resource referenced by `spec.repository.passwordSecret`.
+in the `Secret` resource referenced by `spec.repository.passwordSecretRef`.
 
 ```yaml
 apiVersion: v1
@@ -359,8 +384,8 @@ data:
 ```
 
 The server admin credentials, and TLS sensitive data are stored in the `Secret`
-resources referenced by the `spec.server.adminSecret` and
-`spec.server.tlsSecret` properties. For example,
+resources referenced by the `spec.server.adminSecretRef` and
+`spec.server.tlsSecretRef` properties. For example,
 
 ```yaml
 apiVersion: v1
@@ -390,15 +415,16 @@ data:
       <redacted>
 ```
 
-The `spec.server.accessSecret` property provides a list of access credentials
-used by data mover clients to authenticate with the Kopia repository server.
-This is discussed in more detail in the
+The `spec.server.accessSecretRef` property provides a list of access
+credentials used by data mover clients to authenticate with the Kopia
+repository server. This is discussed in more detail in the
 [Server Access Users Management](#server-access-users-management) section.
 
 The Kopia repository server `Pod` resource can be accessed through a K8s
-`Service`. The `spec.server.labelSelector` property is used to determine the
-labels used in the `podSelector` of the `NetworkPolicy` resource that controls
-the ingress traffic to the repository server.
+`Service`. The `spec.server.networkPolicy` property is used to determine the
+selector used in the `namespaceSelector` or `podSelector` of the
+`NetworkPolicy` resource that controls the ingress traffic to the repository
+server from a namespace other than the `kanister` namespace.
 
 The `status` subresource provides conditions and status information to ensure
 that the controller does not attempt to re-create the repository server during
@@ -406,9 +432,8 @@ restart.
 
 #### Repository Server Lifecycle
 
-When a `RepositoryServer` resource is created, the `RepositoryController`
-controller responds by creating a `Pod`, `Service`, and a `NetworkPolicy` as
-mentioned above.
+When a `RepositoryServer` resource is created, the controller responds by
+creating a `Pod`, `Service`, and a `NetworkPolicy` as mentioned above.
 These resources are cleaned up when the `RepositoryServer` resource is deleted.
 
 #### Server-side Setup
@@ -418,7 +443,8 @@ follows.
 
 > 📝 The examples in this section use S3 for illustration purposes.
 
-- Establish a connection to the Kopia repository
+- Establish a connection to the Kopia repository. This is equivalent to running
+   the following command:
 
 ```sh
 kopia repository connect s3 \
@@ -434,11 +460,11 @@ kopia repository connect s3 \
 ```
 
 The bucket, endpoint, and region are read from the secret referenced by the
-`spec.location.secret` property while the access-key and secret-access-key are
-read from the secret referenced by `spec.location.credentialSecret`.
+`spec.storage.secret` property while the access-key and secret-access-key are
+read from the secret referenced by `spec.location.credentialSecretRef`.
 The prefix, username, and hostname values are read from the `spec.repository`
 section, and the repository password is derived from the secret referenced by
-the `spec.repository.passwordSecret` property.
+the `spec.repository.passwordSecretRef` property.
 
 - Start the Kopia repository server as a background process
 
@@ -456,7 +482,7 @@ kopia server start --address=0.0.0.0:51515 \
 ```
 
 The `/run/kopia/repo.config` configuration file is generated from the secret
-referenced by the `spec.location.secret` and `spec.repository` properties.
+referenced by the `spec.storage.secretRef` and `spec.repository` properties.
 See [this](https://kopia.io/docs/reference/command-line/#configuration-file)
 documentation and GitHub source
 [code](https://github.com/kopia/kopia/blob/ff1653c4d6ee6f729ef16eeb800c98d1b8669b19/repo/local_config.go#L87-L98)
@@ -465,11 +491,11 @@ configuration.
 
 The `/run/kopia/tls.crt` and `/run/kopia/tls.key` files contain the TLS x509
 certificate and private key read from the secret referenced by
-the `spec.server.tlsSecret` property.
+the `spec.server.tlsSecretRef` property.
 
 The credentials for the `--server-username`, `--server-password`,
 `--server-control-username` and `--server-control-password` options are read
-from the secret referenced by the `spec.server.adminSecret` property.
+from the secret referenced by the `spec.server.adminSecretRef` property.
 
 - Register the set of users that have access to the server
 
@@ -478,7 +504,7 @@ kopia server user add <username>@<hostname> --user-password=<redacted>
 ```
 
 The username, hostname, and password will be picked up from the
-`spec.server.accessSecret` property.
+`spec.server.accessSecretRef` property.
 
 - Refresh the server process to enable the newly added users
 
@@ -511,13 +537,10 @@ The `<service-name>` is the Kopia server's `Service` resource name.
 This will be auto-generated by the repository controller and provided via the
 `status` subresource of the `RepositoryServer` resource.
 The `server-cert-fingerprint` is derived from the TLS certificates provided
-during the creation of the server resource.
+during the creation of the server resource and provided via the `status`
+subresource.
 The username, hostname, and password must match one of the users registered
-with the server through the `spec.server.accessSecret` property.
-
-The content of the server certificate fingerprint, and the access password are
-exported to the remote data mover clients via the `KubeExec` functionality
-over TLS.
+with the server through the `spec.server.accessSecretRef` property.
 
 Once connected to the server, the data mover clients can utilize the family of
 `kopia snapshot` subcommands to manage snapshots.
@@ -530,13 +553,13 @@ for authentication purposes. This section describes the approach to add these
 access credentials to the Kopia server.
 
 As mentioned above, when a Kopia server starts, it registers the set of users
-defined in the `spec.server.accessSecret` property of the `RepositoryServer`
+defined in the `spec.server.accessSecretRef` property of the `RepositoryServer`
 resource.
 
 The permissions of these access users are governed by the Kopia server
 [access rules](https://kopia.io/docs/repository-server/#server-access-control-acl).
 
-The secret referenced by the `spec.server.accessSecret` property must contain
+The secret referenced by the `spec.server.accessSecretRef` property must contain
 at least one username/password pair. This secret is mounted to the Kopia server
 via the pod's `spec.volumes` API.
 The following YAML shows an example of user access credentials that can be used
@@ -562,10 +585,10 @@ its access user list.
 
 ### Secrets Management
 
-Instead of resuming full responsibility over the management of the different
-level of Kopia credentials, this design proposes the adoption of a shared
-responsibility model, where users are responsible for the long-term safekeeping
-of their credentials. This model ensures Kanister remains free from a hard
-dependency on any crypto packages, and vault-like functionalities.
+Instead of assuming full responsibility over the management of different
+Kopia credentials, this design proposes the adoption of a shared responsibility
+model, where users are responsible for the long-term safekeeping of their
+credentials. This model ensures Kanister remains free from a hard dependency on
+any crypto packages, and vault-like functionalities.
 
 If misplaced, Kanister will not be able to recover these credentials.
