@@ -47,7 +47,8 @@ KOPIA_COMMIT_ID ?= "317cc36"
 
 KOPIA_REPO ?= "kopia"
 
-KOPIA_BORING ?= ""
+# Build using GOEXPERIMENT=boringcrypto; set it to "boringcrypto" to use.
+GO_BORING ?= ""
 # Default OCP version in which the OpenShift apps are going to run
 ocp_version ?= "4.10"
 ###
@@ -104,6 +105,7 @@ build-controller:
 bin/$(ARCH)/$(BIN):
 	@echo "building: $@"
 	@$(MAKE) run CMD='-c " \
+		GOEXPERIMENT=$(GO_BORING) \
 		GOARCH=$(ARCH)       \
 		VERSION=$(VERSION) \
 		PKG=$(PKG)         \
@@ -265,7 +267,7 @@ release-snapshot:
 	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot"'
 
 update-kopia-image:
-	@/bin/bash ./build/update_kopia_image.sh -c $(KOPIA_COMMIT_ID) -r $(KOPIA_REPO) -b $(KOPIA_BORING)
+	@/bin/bash ./build/update_kopia_image.sh -c $(KOPIA_COMMIT_ID) -r $(KOPIA_REPO) -b $(GO_BORING)
 
 go-mod-download:
 	@$(MAKE) run CMD='-c "go mod download"'

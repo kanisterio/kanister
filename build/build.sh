@@ -29,6 +29,13 @@ if [ -z "${VERSION}" ]; then
 fi
 
 export CGO_ENABLED=0
+
+if [ "${GOEXPERIMENT}" == "boringcrypto" ]; then
+    export CC=gcc
+    export CXX=g++
+    export CGO_ENABLED=1
+fi
+
 go build -v                                                      \
     -installsuffix "static"                                        \
     -ldflags "-X ${PKG}/pkg/version.VERSION=${VERSION}"            \
