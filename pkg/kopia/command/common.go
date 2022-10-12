@@ -55,6 +55,14 @@ func commonArgs(password, configFilePath, logDirectory string, requireInfoLevel 
 	return c
 }
 
+func addTags(tags []string, args logsafe.Cmd) logsafe.Cmd {
+	// kopia required tags in name:value format, but all checks are performed on kopia side
+	for _, tag := range tags {
+		args = args.AppendLoggable(tagsFlag, tag)
+	}
+	return args
+}
+
 // ExecKopiaArgs returns the basic Argv for executing kopia with the given config file path.
 func ExecKopiaArgs(configFilePath string) []string {
 	return commonArgs("", configFilePath, "", false).StringSliceCMD()
