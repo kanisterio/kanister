@@ -19,34 +19,18 @@ set -o nounset
 
 IMAGE_REGISTRY="ghcr.io/kanisterio"
 
-while getopts c:r:b: flag
-do
-    case "${flag}" in
-        c) commitID=${OPTARG};;
-        r) repo=${OPTARG};;
-        b) boring=${OPTARG};;
-    esac
-done
-
-readonly COMMIT_ID=${commitID:?"Commit id to build kopia image not specified"}
-readonly KOPIA_REPO_ORG=${repo:-"kopia"}
+readonly COMMIT_ID=${1:?"Commit id to build kopia image not specified"}
+readonly KOPIA_REPO_ORG=${2-:"kopia"}
 readonly IMAGE_TYPE=alpine
 readonly IMAGE_BUILD_VERSION="${COMMIT_ID}"
 readonly GH_PACKAGE_TARGET="${IMAGE_REGISTRY}/kopia"
-TAG="${IMAGE_TYPE}-${IMAGE_BUILD_VERSION}"
-
-KOPIA_IMAGE="kopia"
-if [[ -n $boring ]]; then
-    KOPIA_IMAGE="kopia_boring"
-    TAG="${IMAGE_TYPE}-${IMAGE_BUILD_VERSION}-boring"
-fi
+readonly TAG="${IMAGE_TYPE}-${IMAGE_BUILD_VERSION}"
 
 
 docker build \
     --tag "${GH_PACKAGE_TARGET}:${TAG}" \
     --build-arg "kopiaBuildCommit=${COMMIT_ID}" \
     --build-arg "kopiaRepoOrg=${KOPIA_REPO_ORG}" \
-    --build-arg "kopiaImage=${KOPIA_IMAGE}" \
     --file ./docker/kopia-build/Dockerfile .
 
 docker push ${GH_PACKAGE_TARGET}:$TAG

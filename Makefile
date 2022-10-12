@@ -1,4 +1,3 @@
-
 # Copyright 2019 The Kanister Authors.
 #
 # Copyright 2016 The Kubernetes Authors.
@@ -47,7 +46,6 @@ vm-driver ?= "kvm"
 KOPIA_COMMIT_ID ?= "317cc36"
 
 KOPIA_REPO ?= "kopia"
-
 # Default OCP version in which the OpenShift apps are going to run
 ocp_version ?= "4.10"
 ###

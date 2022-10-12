@@ -2,7 +2,6 @@ FROM golang:1.19.2-buster AS builder
 
 ARG kopiaBuildCommit
 ARG kopiaRepoOrg
-ARG kopiaImage
 
 RUN apt-get install git
 
