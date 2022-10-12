@@ -32,6 +32,7 @@ const (
 type SnapshotCreateCommandArgs struct {
 	*CommandArgs
 	PathToBackup string
+	Tags         []string
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
@@ -42,7 +43,7 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
-
+	args = addTags(cmdArgs.Tags, args)
 	return stringSliceCommand(args)
 }
 
