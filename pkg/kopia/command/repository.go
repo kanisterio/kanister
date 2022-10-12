@@ -14,7 +14,6 @@ import (
 type RepositoryCommandArgs struct {
 	*CommandArgs
 	Location        map[string]string
-	Credentials     map[string]string
 	CacheDirectory  string
 	Hostname        string
 	ContentCacheMB  int
@@ -42,7 +41,6 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 
 	bsArgs, err := storage.KopiaBlobStoreArgs(&storage.StorageCommandParams{
 		Location:       cmdArgs.Location,
-		Credentials:    cmdArgs.Credentials,
 		RepoPathPrefix: cmdArgs.RepoPathPrefix,
 	})
 	if err != nil {
@@ -73,7 +71,6 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 
 	bsArgs, err := storage.KopiaBlobStoreArgs(&storage.StorageCommandParams{
 		Location:       cmdArgs.Location,
-		Credentials:    cmdArgs.Credentials,
 		RepoPathPrefix: cmdArgs.RepoPathPrefix,
 	})
 	if err != nil {

@@ -3,7 +3,6 @@ package storage
 import (
 	"time"
 
-	"github.com/kanisterio/kanister/pkg/secrets"
 	"gopkg.in/check.v1"
 )
 
@@ -21,10 +20,6 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 					regionKey:        "test-region",
 					skipSSLVerifyKey: "true",
 					typeKey:          "s3",
-				},
-				Credentials: map[string]string{
-					secrets.AWSAccessKeyID:     "test-access-key-id",
-					secrets.AWSSecretAccessKey: "test-secret-access-key",
 				},
 				AssumeRoleDuration: time.Duration(30 * time.Minute),
 				RepoPathPrefix:     "dir/subdir/",
@@ -61,11 +56,6 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 					bucketKey: "test-bucket",
 					prefixKey: "test-prefix",
 					typeKey:   "azure",
-				},
-				Credentials: map[string]string{
-					secrets.AzureStorageAccountID:   "test-storage-account-id",
-					secrets.AzureStorageAccountKey:  "test-storage-account-key",
-					secrets.AzureStorageEnvironment: "AZURECLOUD",
 				},
 				RepoPathPrefix: "dir/subdir",
 			},
