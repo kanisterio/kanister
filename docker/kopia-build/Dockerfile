@@ -16,7 +16,7 @@ WORKDIR /kopia
 # Build kopia binary from specific commit
 RUN git checkout ${kopiaBuildCommit}
 RUN GO111MODULE=on GO_EXTLINK_ENABLED=0 GOOS=linux GOARCH=amd64 CGO_ENABLED=1 GOEXPERIMENT=boringcrypto go build -o kopia \
-  -ldflags="-s -X github.com/kopia/kopia/repo.BuildVersion=$(git show --no-patch --format='%cs-%h') \
+  -ldflags="-X github.com/kopia/kopia/repo.BuildVersion=$(git show --no-patch --format='%cs-%h') \
             -X github.com/kopia/kopia/repo.BuildInfo=$(git show --no-patch --format='%cI-%H')-${kopiaBuildCommit} \
             -X github.com/kopia/kopia/repo.BuildGitHubRepo=${kopiaRepoOrg}" .
 
