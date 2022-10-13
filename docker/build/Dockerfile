@@ -1,12 +1,10 @@
-FROM alpine:3.10.5
+FROM golang:1.19.2-buster
 
 LABEL maintainer="Tom Manville<tom@kasten.io>"
 
-RUN apk add --update --no-cache ca-certificates bash git docker curl jq \
+RUN apt-get update && apt-get -y install ca-certificates bash git docker curl jq wget \
     && update-ca-certificates \
-    && rm -rf /var/cache/apk/*
-
-COPY --from=golang:1.17.6-alpine3.15 /usr/local/go/ /usr/local/go/
+    && apt-get clean
 
 COPY --from=bitnami/kubectl:1.17 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
 
