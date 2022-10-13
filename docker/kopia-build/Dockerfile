@@ -1,9 +1,9 @@
-FROM golang:1.19.2-buster AS builder
+FROM golang:1.19.1-alpine3.16 AS builder
 
 ARG kopiaBuildCommit
 ARG kopiaRepoOrg
 
-RUN apt-get install git
+RUN apk add git
 
 WORKDIR /
 
@@ -15,24 +15,24 @@ WORKDIR /kopia
 
 # Build kopia binary from specific commit
 RUN git checkout ${kopiaBuildCommit}
-RUN GO111MODULE=on GO_EXTLINK_ENABLED=0 GOOS=linux GOARCH=amd64 CGO_ENABLED=1 GOEXPERIMENT=boringcrypto go build -o kopia \
-  -ldflags="-X github.com/kopia/kopia/repo.BuildVersion=$(git show --no-patch --format='%cs-%h') \
-            -X github.com/kopia/kopia/repo.BuildInfo=$(git show --no-patch --format='%cI-%H')-${kopiaBuildCommit} \
-            -X github.com/kopia/kopia/repo.BuildGitHubRepo=${kopiaRepoOrg}" .
+# Refers to goreleaser/goreleaser:v1.11.2
+COPY --from=docker.io/goreleaser/goreleaser@sha256:b13418f20019fffb29797aff3d03f5e9ca84cea93634f4169a7ed603a95ab198 \
+  /usr/bin/goreleaser /usr/bin/goreleaser
+RUN goreleaser build --output=. --rm-dist --single-target
 
-RUN adduser kopia && addgroup kopia kopia
+RUN adduser -D kopia && addgroup kopia kopia
 USER kopia:kopia
 
 COPY --chown=kopia . /kopia
 
-FROM debian:buster
+FROM alpine:3.16
 
 WORKDIR /kopia
 
 # Add CA certs
-RUN apt-get update && apt-get -y install ca-certificates && \
+RUN apk add --no-cache --verbose ca-certificates && \
   rm -rf /var/cache/apk/* && \
-  adduser kopia && addgroup kopia kopia && \
+  adduser -D kopia && addgroup kopia kopia && \
   chown kopia /kopia
 
 USER kopia:kopia
