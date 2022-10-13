@@ -39,7 +39,7 @@ type SnapshotCreateCommandArgs struct {
 // TODO: Have better mechanism to apply global flags
 func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(kopia.DataStoreParallelUploadVarName, kopia.DefaultDataStoreParallelUpload))
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, requireLogLevelInfo)
+	args := commonArgs(cmdArgs.CommandArgs, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
@@ -56,7 +56,7 @@ type SnapshotRestoreCommandArgs struct {
 
 // SnapshotRestore returns kopia command restoring snapshots with given snap ID
 func SnapshotRestore(cmdArgs SnapshotRestoreCommandArgs) []string {
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, cmdArgs.SnapID, cmdArgs.TargetPath)
 	if cmdArgs.SparseRestore {
 		args = args.AppendLoggable(sparseFlag)
@@ -72,7 +72,7 @@ type SnapshotDeleteCommandArgs struct {
 
 // SnapshotDelete returns the kopia command for deleting a snapshot with given snapshot ID
 func SnapshotDelete(cmdArgs SnapshotDeleteCommandArgs) []string {
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(snapshotSubCommand, deleteSubCommand, cmdArgs.SnapID, unsafeIgnoreSourceFlag)
 
 	return stringSliceCommand(args)
@@ -86,7 +86,7 @@ type SnapshotExpireCommandArgs struct {
 
 // SnapshotExpire returns the kopia command for removing snapshots with given root ID
 func SnapshotExpire(cmdArgs SnapshotExpireCommandArgs) []string {
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(snapshotSubCommand, expireSubCommand, cmdArgs.RootID)
 	if cmdArgs.MustDelete {
 		args = args.AppendLoggable(deleteFlag)
@@ -101,7 +101,7 @@ type SnapshotGCCommandArgs struct {
 
 // SnapshotGC returns the kopia command for issuing kopia snapshot gc
 func SnapshotGC(cmdArgs SnapshotGCCommandArgs) []string {
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(snapshotSubCommand, gcSubCommand, deleteFlag)
 
 	return stringSliceCommand(args)
@@ -113,7 +113,7 @@ type SnapListAllCommandArgs struct {
 
 // SnapListAll returns the kopia command for listing all snapshots in the repository with their sizes
 func SnapListAll(cmdArgs SnapListAllCommandArgs) []string {
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(
 		snapshotSubCommand,
 		listSubCommand,
@@ -132,7 +132,7 @@ type SnapListAllWithSnapIDsCommandArgs struct {
 
 // SnapListAllWithSnapIDs returns the kopia command for listing all snapshots in the repository with snapshotIDs
 func SnapListAllWithSnapIDs(cmdArgs SnapListAllWithSnapIDsCommandArgs) []string {
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
 	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
 

@@ -3,7 +3,8 @@ FROM golang:1.19.2-buster
 LABEL maintainer="Tom Manville<tom@kasten.io>"
 
 RUN apt-get update && apt-get -y install ca-certificates bash git docker curl jq wget \
-    && update-ca-certificates
+    && update-ca-certificates \
+    && apt-get clean
 
 COPY --from=bitnami/kubectl:1.17 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
 

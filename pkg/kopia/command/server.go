@@ -27,7 +27,7 @@ type ServerStartCommandArgs struct {
 
 // ServerStart returns the kopia command for starting the Kopia API Server
 func ServerStart(cmdArgs ServerStartCommandArgs) []string {
-	args := commonArgs("", cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(&CommandArgs{ConfigFilePath: cmdArgs.ConfigFilePath, LogDirectory: cmdArgs.LogDirectory}, false)
 
 	if cmdArgs.AutoGenerateCert {
 		args = args.AppendLoggable(serverSubCommand, startSubCommand, tlsGenerateCertFlag)
@@ -65,7 +65,7 @@ type ServerRefreshCommandArgs struct {
 // ServerRefresh returns the kopia command for refreshing the Kopia API Server
 // This helps allow new users to be able to connect to the Server instead of waiting for auto-refresh
 func ServerRefresh(cmdArgs ServerRefreshCommandArgs) []string {
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(serverSubCommand, refreshSubCommand)
 	args = args.AppendRedactedKV(serverCertFingerprint, cmdArgs.Fingerprint)
 	args = args.AppendLoggableKV(addressFlag, cmdArgs.ServerAddress)
@@ -85,7 +85,7 @@ type ServerStatusCommandArgs struct {
 
 // ServerStatus returns the kopia command for checking status of the Kopia API Server
 func ServerStatus(cmdArgs ServerStatusCommandArgs) []string {
-	args := commonArgs("", cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(&CommandArgs{ConfigFilePath: cmdArgs.ConfigFilePath, LogDirectory: cmdArgs.LogDirectory}, false)
 	args = args.AppendLoggable(serverSubCommand, statusSubCommand)
 	args = args.AppendLoggableKV(addressFlag, cmdArgs.ServerAddress)
 	args = args.AppendRedactedKV(serverCertFingerprint, cmdArgs.Fingerprint)
@@ -101,7 +101,7 @@ type ServerListUserCommmandArgs struct {
 
 // ServerListUser returns the kopia command to list users from the Kopia API Server
 func ServerListUser(cmdArgs ServerListUserCommmandArgs) []string {
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, listSubCommand, jsonFlag)
 
 	return stringSliceCommand(args)
@@ -115,7 +115,7 @@ type ServerSetUserCommandArgs struct {
 
 // ServerSetUser returns the kopia command setting password for existing user for the Kopia API Server
 func ServerSetUser(cmdArgs ServerSetUserCommandArgs) []string {
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, setSubCommand, cmdArgs.NewUsername)
 	args = args.AppendRedactedKV(userPasswordFlag, cmdArgs.UserPassword)
 
@@ -130,7 +130,7 @@ type ServerAddUserCommandArgs struct {
 
 // ServerAddUser returns the kopia command adding a new user to the Kopia API Server
 func ServerAddUser(cmdArgs ServerAddUserCommandArgs) []string {
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(serverSubCommand, userSubCommand, addSubCommand, cmdArgs.NewUsername)
 	args = args.AppendRedactedKV(userPasswordFlag, cmdArgs.UserPassword)
 
