@@ -47,7 +47,7 @@ KOPIA_COMMIT_ID ?= "317cc36"
 
 KOPIA_REPO ?= "kopia"
 # Default OCP version in which the OpenShift apps are going to run
-ocp_version ?= "4.10"
+ocp_version ?= "4.11"
 ###
 ### These variables should not need tweaking.
 ###
