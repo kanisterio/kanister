@@ -57,6 +57,8 @@ type PodOptions struct {
 	Namespace          string
 	ServiceAccountName string
 	Volumes            map[string]string
+	PodSecurity        *v1.PodSecurityContext
+	ContainerSecurity  *v1.SecurityContext
 	PodOverride        crv1alpha1.JSONMap
 	Resources          v1.ResourceRequirements
 	RestartPolicy      v1.RestartPolicy
@@ -144,6 +146,14 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 
 	if opts.OwnerReferences != nil {
 		pod.SetOwnerReferences(opts.OwnerReferences)
+	}
+
+	if opts.PodSecurity != nil {
+		pod.Spec.SecurityContext = opts.PodSecurity
+	}
+
+	if opts.ContainerSecurity != nil {
+		pod.Spec.Containers[0].SecurityContext = opts.ContainerSecurity
 	}
 
 	for key, value := range opts.Labels {
