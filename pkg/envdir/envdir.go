@@ -34,9 +34,6 @@ func EnvDir(dir string) ([]string, error) {
 	}
 	e := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to read info from entry:"+entry.Name())
-		}
 		if entry.IsDir() || entry.Type()&os.ModeSymlink == os.ModeSymlink {
 			continue
 		}
