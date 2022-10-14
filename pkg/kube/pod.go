@@ -48,21 +48,21 @@ const (
 
 // PodOptions specifies options for `CreatePod`
 type PodOptions struct {
-	Annotations        map[string]string
-	Command            []string
-	ContainerName      string
-	GenerateName       string
-	Image              string
-	Labels             map[string]string
-	Namespace          string
-	ServiceAccountName string
-	Volumes            map[string]string
-	PodSecurity        *v1.PodSecurityContext
-	ContainerSecurity  *v1.SecurityContext
-	PodOverride        crv1alpha1.JSONMap
-	Resources          v1.ResourceRequirements
-	RestartPolicy      v1.RestartPolicy
-	OwnerReferences    []metav1.OwnerReference
+	Annotations              map[string]string
+	Command                  []string
+	ContainerName            string
+	GenerateName             string
+	Image                    string
+	Labels                   map[string]string
+	Namespace                string
+	ServiceAccountName       string
+	Volumes                  map[string]string
+	PodSecurityContext       *v1.PodSecurityContext
+	ContainerSecurityContext *v1.SecurityContext
+	PodOverride              crv1alpha1.JSONMap
+	Resources                v1.ResourceRequirements
+	RestartPolicy            v1.RestartPolicy
+	OwnerReferences          []metav1.OwnerReference
 }
 
 // CreatePod creates a pod with a single container based on the specified image
@@ -148,12 +148,12 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		pod.SetOwnerReferences(opts.OwnerReferences)
 	}
 
-	if opts.PodSecurity != nil {
-		pod.Spec.SecurityContext = opts.PodSecurity
+	if opts.PodSecurityContext != nil {
+		pod.Spec.SecurityContext = opts.PodSecurityContext
 	}
 
-	if opts.ContainerSecurity != nil {
-		pod.Spec.Containers[0].SecurityContext = opts.ContainerSecurity
+	if opts.ContainerSecurityContext != nil {
+		pod.Spec.Containers[0].SecurityContext = opts.ContainerSecurityContext
 	}
 
 	for key, value := range opts.Labels {
