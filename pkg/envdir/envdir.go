@@ -17,7 +17,6 @@ package envdir
 import (
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -33,20 +32,15 @@ func EnvDir(dir string) ([]string, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read env from dir:"+dir)
 	}
-	fis := make([]fs.FileInfo, 0, len(entries))
+	e := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		fi, err := entry.Info()
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read info from entry:"+entry.Name())
 		}
-		fis = append(fis, fi)
-	}
-	e := make([]string, 0, len(fis))
-	for _, fi := range fis {
-		if fi.IsDir() || fi.Mode()&os.ModeSymlink == os.ModeSymlink {
+		if entry.IsDir() || entry.Type()&os.ModeSymlink == os.ModeSymlink {
 			continue
 		}
-		p := filepath.Join(dir, fi.Name())
+		p := filepath.Join(dir, entry.Name())
 		f, err := os.Open(p)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read env from dir:"+dir)
@@ -55,7 +49,7 @@ func EnvDir(dir string) ([]string, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read env from dir:"+dir)
 		}
-		e = append(e, fmt.Sprintf("%s=%s", fi.Name(), c))
+		e = append(e, fmt.Sprintf("%s=%s", entry.Name(), c))
 	}
 	return e, nil
 }
