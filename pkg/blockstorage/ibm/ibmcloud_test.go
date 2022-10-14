@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/IBM/ibmcloud-storage-volume-lib/config"
 	ibmprov "github.com/IBM/ibmcloud-storage-volume-lib/lib/provider"
 	"github.com/luci/go-render/render"
 	. "gopkg.in/check.v1"
@@ -44,7 +45,7 @@ type TestIBMCloud struct {
 	volAtts       map[string]string
 }
 
-//These are not executed as part of Pipeline, but usefull for development
+// These are not executed as part of Pipeline, but usefull for development
 var softlayerVolAtts = map[string]string{
 	ProviderTypeAttName: string(ibmprov.VolumeProviderType("endurance")),
 	TierAttName:         "2",
@@ -141,4 +142,62 @@ func (s TestIBMCloud) TestVolRestore(c *C) {
 	c.Assert(cVol, NotNil)
 	err = s.provider.VolumeDelete(context.Background(), resVol)
 	c.Assert(err, IsNil)
+}
+
+type TestIBMCloudLocal struct{}
+
+var _ = Suite(&TestIBMCloudLocal{})
+
+func (s TestIBMCloudLocal) TestVolParse(c *C) {
+	ctx := context.Background()
+	capInt := 1
+	for _, tc := range []struct {
+		vol *ibmprov.Volume
+		err Checker
+	}{
+		{
+			vol: &ibmprov.Volume{
+				LunID:                  "lun",
+				IscsiTargetIPAddresses: []string{"target"},
+				Attributes: map[string]string{
+					"key": "value",
+				},
+				Capacity: &capInt,
+			},
+			err: IsNil,
+		},
+		{
+			vol: &ibmprov.Volume{
+				LunID:                  "lun",
+				IscsiTargetIPAddresses: []string{},
+				Attributes: map[string]string{
+					"key": "value",
+				},
+				Capacity: &capInt,
+			},
+			err: NotNil,
+		},
+		{
+			vol: &ibmprov.Volume{
+				LunID:                  "",
+				Provider:               "slbpname",
+				IscsiTargetIPAddresses: []string{},
+				Attributes: map[string]string{
+					"key": "value",
+				},
+				Capacity: &capInt,
+			},
+			err: NotNil,
+		},
+	} {
+		ic := &ibmCloud{
+			cli: &client{
+				SLCfg: config.SoftlayerConfig{
+					SoftlayerBlockProviderName: "slbpname",
+				},
+			},
+		}
+		_, err := ic.volumeParse(ctx, tc.vol)
+		c.Assert(err, tc.err)
+	}
 }
