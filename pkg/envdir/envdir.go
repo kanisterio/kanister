@@ -16,7 +16,8 @@ package envdir
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -28,9 +29,17 @@ func EnvDir(dir string) ([]string, error) {
 	if fi, err := os.Stat(dir); os.IsNotExist(err) || !fi.IsDir() {
 		return nil, nil
 	}
-	fis, err := ioutil.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read env from dir:"+dir)
+	}
+	fis := make([]fs.FileInfo, 0, len(entries))
+	for _, entry := range entries {
+		fi, err := entry.Info()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read info from entry:"+entry.Name())
+		}
+		fis = append(fis, fi)
 	}
 	e := make([]string, 0, len(fis))
 	for _, fi := range fis {
@@ -42,7 +51,7 @@ func EnvDir(dir string) ([]string, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read env from dir:"+dir)
 		}
-		c, err := ioutil.ReadAll(f)
+		c, err := io.ReadAll(f)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read env from dir:"+dir)
 		}

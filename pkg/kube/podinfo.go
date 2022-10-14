@@ -16,7 +16,6 @@ package kube
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 
 	"k8s.io/client-go/kubernetes"
@@ -32,13 +31,13 @@ const (
 	podNameEnvVar = "POD_NAME"
 )
 
-//GetControllerNamespace returns controller namespace
+// GetControllerNamespace returns controller namespace
 func GetControllerNamespace() (string, error) {
 	if ns, ok := os.LookupEnv(PodNSEnvVar); ok {
 		return ns, nil
 	}
 
-	ns, err := ioutil.ReadFile(nsFile)
+	ns, err := os.ReadFile(nsFile)
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to read namespace form k8s mounted file")
 	}
@@ -46,7 +45,7 @@ func GetControllerNamespace() (string, error) {
 	return string(ns), nil
 }
 
-//GetControllerServiceAccount returns controller ServiceAccount
+// GetControllerServiceAccount returns controller ServiceAccount
 func GetControllerServiceAccount(k8sclient kubernetes.Interface) (string, error) {
 	if ns, ok := os.LookupEnv(PodSAEnvVar); ok {
 		return ns, nil
@@ -68,7 +67,7 @@ func GetControllerServiceAccount(k8sclient kubernetes.Interface) (string, error)
 	return pod.Spec.ServiceAccountName, nil
 }
 
-//GetControllerPodName returns controller pod name
+// GetControllerPodName returns controller pod name
 func GetControllerPodName() (string, error) {
 	if podName, ok := os.LookupEnv(podNameEnvVar); ok {
 		return podName, nil
