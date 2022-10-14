@@ -48,19 +48,20 @@ const (
 
 // PodOptions specifies options for `CreatePod`
 type PodOptions struct {
-	Annotations        map[string]string
-	Command            []string
-	ContainerName      string
-	GenerateName       string
-	Image              string
-	Labels             map[string]string
-	Namespace          string
-	ServiceAccountName string
-	Volumes            map[string]string
-	PodOverride        crv1alpha1.JSONMap
-	Resources          v1.ResourceRequirements
-	RestartPolicy      v1.RestartPolicy
-	OwnerReferences    []metav1.OwnerReference
+	Annotations          map[string]string
+	Command              []string
+	ContainerName        string
+	GenerateName         string
+	Image                string
+	Labels               map[string]string
+	Namespace            string
+	ServiceAccountName   string
+	Volumes              map[string]string
+	PodOverride          crv1alpha1.JSONMap
+	Resources            v1.ResourceRequirements
+	RestartPolicy        v1.RestartPolicy
+	OwnerReferences      []metav1.OwnerReference
+	EnvironmentVariables []v1.EnvVar
 }
 
 // CreatePod creates a pod with a single container based on the specified image
@@ -102,6 +103,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 				VolumeMounts:    volumeMounts,
 				Resources:       opts.Resources,
+				Env:             opts.EnvironmentVariables,
 			},
 		},
 		// RestartPolicy dictates when the containers of the pod should be
