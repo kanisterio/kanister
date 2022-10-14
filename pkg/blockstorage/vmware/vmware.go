@@ -791,7 +791,7 @@ func (ge govmomiError) Format() string {
 	return fmt.Sprintf("[%s]", strings.Join(msgs, "; "))
 }
 
-// nolint:gocognit
+//nolint:gocognit
 func (ge govmomiError) ExtractMessages() []string {
 	err := ge.err
 

@@ -312,7 +312,7 @@ func CheckIfRepoIsReachable(profile *param.Profile, artifactPrefix string, encry
 	return nil
 }
 
-// nolint:unparam
+//nolint:unparam
 func getLatestSnapshots(profile *param.Profile, artifactPrefix string, encryptionKey string, cli kubernetes.Interface, namespace string, pod string, container string) (string, string, error) {
 	// Use the latest snapshots command to check if the repository exists
 	cmd, err := LatestSnapshotsCommand(profile, artifactPrefix, encryptionKey)
@@ -471,7 +471,8 @@ func SnapshotIDsFromSnapshotCommand(output string) ([]string, error) {
 // SpaceFreedFromPruneLog gets the space freed from the prune log output
 // For reference, here is the logging command from restic codebase:
 // Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
-//		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
+//
+//	len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
 func SpaceFreedFromPruneLog(output string) string {
 	var spaceFreed string
 	logs := regexp.MustCompile("[\n]").Split(output, -1)
