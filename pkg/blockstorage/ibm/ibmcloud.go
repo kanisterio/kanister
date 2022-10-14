@@ -124,7 +124,7 @@ func (s *ibmCloud) volumeParse(ctx context.Context, vol *ibmprov.Volume) (*block
 	}
 	attribs[LunIDAttName] = vol.LunID
 
-	if len(vol.IscsiTargetIPAddresses) < 0 {
+	if len(vol.IscsiTargetIPAddresses) == 0 {
 		return nil, errors.New("IscsiTargetIPAddresses are missing from Volume info")
 	}
 	if len(vol.Attributes) > 0 {
