@@ -68,13 +68,13 @@ var (
 	}
 )
 
-//client is a wrapper for Library client
+// client is a wrapper for Library client
 type client struct {
 	Service ibmprov.Session
 	SLCfg   ibmcfg.SoftlayerConfig
 }
 
-//newClient returns a Client struct
+// newClient returns a Client struct
 func newClient(ctx context.Context, args map[string]string) (*client, error) {
 	return handleClientPanic(func() (*client, error) {
 		return newClientUnsafe(ctx, args)
@@ -99,7 +99,7 @@ func handleClientPanic(f func() (*client, error)) (c *client, err error) {
 // newClientUnsafe may panic. See https://github.com/IBM/ibmcloud-storage-volume-lib/issues/79
 func newClientUnsafe(ctx context.Context, args map[string]string) (*client, error) {
 	zaplog, _ := zap.NewProduction()
-	defer zaplog.Sync() // nolint: errcheck
+	defer zaplog.Sync() //nolint: errcheck
 
 	cfg, err := findDefaultConfig(ctx, args, zaplog)
 	if err != nil || cfg.Softlayer == nil {

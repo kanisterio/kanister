@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	. "gopkg.in/check.v1"
 	"k8s.io/client-go/rest"
@@ -80,7 +79,7 @@ func (s *LogReaderSuite) TestLogReader(c *C) {
 		},
 	} {
 		lr := newLogReader(tc.rw)
-		out, err := ioutil.ReadAll(lr)
+		out, err := io.ReadAll(lr)
 		c.Assert(err, Equals, tc.err)
 		c.Assert(string(out), Equals, tc.out)
 	}

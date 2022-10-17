@@ -37,7 +37,7 @@ const (
 	IBMSLApiUsernameEnv = "IBM_SL_API_USERNAME"
 )
 
-//These are not executed as part of Pipeline, but usefull for development
+// These are not executed as part of Pipeline, but usefull for development
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
 

@@ -15,7 +15,6 @@
 package envdir
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,7 +32,7 @@ var _ = Suite(&EnvDirSuite{})
 func (s *EnvDirSuite) TestEnvDir(c *C) {
 	d := c.MkDir()
 	p := filepath.Join(d, "FOO")
-	err := ioutil.WriteFile(p, []byte("BAR"), os.ModePerm)
+	err := os.WriteFile(p, []byte("BAR"), os.ModePerm)
 	c.Assert(err, IsNil)
 	e, err := EnvDir(d)
 	c.Assert(err, IsNil)

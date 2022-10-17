@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 
@@ -223,7 +222,7 @@ func (d *directory) GetBytes(ctx context.Context, name string) ([]byte, map[stri
 	}
 	defer r.Close()
 
-	data, err := ioutil.ReadAll(r)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, nil, err
 	}
