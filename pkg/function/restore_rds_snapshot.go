@@ -199,7 +199,7 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 	}, nil
 }
 
-// nolint:unparam
+//nolint:unparam
 func postgresRestoreCommand(pgHost, username, password string, dbList []string, backupArtifactPrefix, backupID string, profile []byte, dbEngineVersion string) ([]string, error) {
 	replaceCommand := ""
 	if len(dbList) == 0 {
