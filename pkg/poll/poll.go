@@ -42,10 +42,11 @@ func IsNeverRetryable(error) bool {
 
 // Wait calls WaitWithBackoff with default backoff parameters. The defaults are
 // handled by the "github.com/jpillora/backoff" and are:
-//   min = 100 * time.Millisecond
-//   max = 10 * time.Second
-//   factor = 2
-//   jitter = false
+//
+//	min = 100 * time.Millisecond
+//	max = 10 * time.Second
+//	factor = 2
+//	jitter = false
 func Wait(ctx context.Context, f Func) error {
 	return WaitWithBackoff(ctx, backoff.Backoff{}, f)
 }

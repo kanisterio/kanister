@@ -16,7 +16,7 @@ package azure
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -112,5 +112,5 @@ func (i *InstanceMetadata) queryMetadataBytes(path, format string) ([]byte, erro
 		return nil, errors.Errorf("Failed to get instance metadata with statusCode: %d, Path: %s", resp.StatusCode, path)
 	}
 	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }

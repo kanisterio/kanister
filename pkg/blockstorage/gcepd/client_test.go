@@ -17,7 +17,6 @@ package gcepd
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -39,7 +38,7 @@ func (s *ClientSuite) SetUpSuite(c *C) {}
 func (s *ClientSuite) TestClient(c *C) {
 	var zone string
 	filename := s.GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	c.Assert(err, IsNil)
 	gCli, err := NewClient(context.Background(), string(b))
 	c.Assert(err, IsNil)
