@@ -26,6 +26,14 @@ type CommandArgs struct {
 	LogDirectory   string
 }
 
+type KopiaCommandParams struct {
+	SubCommands      []string
+	LoggableFlag     []string
+	LoggableKV       map[string]string
+	RedactedKV       map[string]string
+	OutputFileSuffix string
+}
+
 func bashCommand(args logsafe.Cmd) []string {
 	log.Debug().Print("Kopia Command", field.M{"Command": args.String()})
 	return []string{"bash", "-o", "errexit", "-c", args.PlainText()}

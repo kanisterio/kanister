@@ -16,6 +16,7 @@ package command
 
 import (
 	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/logsafe"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
@@ -34,4 +35,29 @@ func GetCacheSizeSettingsForSnapshot() (contentCacheMB, metadataCacheMB int) {
 func GetCacheSizeSettingsForRestore() (contentCacheMB, metadataCacheMB int) {
 	return utils.GetEnvAsIntOrDefault(kopia.DataStoreRestoreContentCacheSizeMBVarName, kopia.DefaultDataStoreRestoreContentCacheSizeMB),
 		utils.GetEnvAsIntOrDefault(kopia.DataStoreRestoreMetadataCacheSizeMBVarName, kopia.DefaultDataStoreRestoreMetadataCacheSizeMB)
+}
+
+type GeneralCommandArgs struct {
+	*KopiaCommandParams
+	*CommandArgs
+}
+
+// GeneralCommand returns the kopia command from KopiaCommandParams which
+// contains subcommands, loggable flags, loggable key value pairs and
+// redacted key value pairs
+func GeneralCommand(cmdArgs GeneralCommandArgs) logsafe.Cmd {
+	args := commonArgs(cmdArgs.CommandArgs, false)
+	for _, subCmd := range cmdArgs.KopiaCommandParams.SubCommands {
+		args = args.AppendLoggable(subCmd)
+	}
+	for _, flag := range cmdArgs.KopiaCommandParams.LoggableFlag {
+		args = args.AppendLoggable(flag)
+	}
+	for k, v := range cmdArgs.KopiaCommandParams.LoggableKV {
+		args = args.AppendLoggableKV(k, v)
+	}
+	for k, v := range cmdArgs.KopiaCommandParams.RedactedKV {
+		args = args.AppendRedactedKV(k, v)
+	}
+	return args
 }
