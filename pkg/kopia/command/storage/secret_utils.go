@@ -59,6 +59,8 @@ func SkipCredentialSecretMount(m map[string]string) bool {
 	return locType(m[typeKey]) == locTypeFilestore
 }
 
+// GenerateEnvSpecFromCredentialSecret parses the secret and returns
+// list of EnvVar based on secret type
 func GenerateEnvSpecFromCredentialSecret(s *v1.Secret) ([]v1.EnvVar, error) {
 	if s == nil {
 		return nil, errors.New("Secret cannot be nil")

@@ -120,7 +120,7 @@ func getLocationAndCredsFromMountPath(
 	container string,
 ) (map[string]string, error) {
 	fr := kube.NewPodFileReader(cli, pod, namespace, container)
-	loc, err := fr.ReadDir(context.Background(), LocationSecretMountPath)
+	loc, err := fr.ReadDir(context.Background(), kube.LocationSecretMountPath)
 	if err != nil {
 		return nil, err
 	}

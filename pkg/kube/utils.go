@@ -154,3 +154,9 @@ func IsNodeReady(node *v1.Node) bool {
 	}
 	return false
 }
+
+// GetSecretMapFromLocSecret returns map of secret-type to secret name
+// to be passed as PodOptions.SecretMounts
+func GetSecretMapFromLocSecret(sec *v1.Secret) map[string]string {
+	return map[string]string{locationSecretNameKey: sec.Name}
+}

@@ -207,3 +207,26 @@ func (job *Job) Delete() error {
 
 	return nil
 }
+
+func createSecretMountSpec(secretMount map[string]string, volMounts []v1.VolumeMount, vols []v1.Volume) ([]v1.VolumeMount, []v1.Volume, error) {
+	if secretName, ok := secretMount[locationSecretNameKey]; ok {
+		if secretName == "" {
+			return nil, nil, errors.New("Secret name cannot be empty")
+		}
+		volMount := v1.VolumeMount{
+			Name:      LocationSecretVolumeMountName,
+			MountPath: LocationSecretMountPath,
+		}
+		vol := v1.Volume{
+			Name: LocationSecretVolumeMountName,
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: secretName,
+				},
+			},
+		}
+		volMounts = append(volMounts, volMount)
+		vols = append(vols, vol)
+	}
+	return volMounts, vols, nil
+}

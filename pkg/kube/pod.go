@@ -45,6 +45,12 @@ const (
 	PodReadyWaitTimeoutEnv = "KANISTER_POD_READY_WAIT_TIMEOUT"
 	errAccessingNode       = "Failed to get node"
 	defaultContainerName   = "container"
+
+	LocationSecretVolumeMountName = "location-secret"
+	LocationSecretMountPath       = "/mnt/secrets/location"
+	CredsSecretVolumeMountName    = "credentials-secret"
+	CredsSecretMountPath          = "/mnt/secrets/credentials"
+	locationSecretNameKey         = "location"
 )
 
 // PodOptions specifies options for `CreatePod`
@@ -63,6 +69,7 @@ type PodOptions struct {
 	RestartPolicy        v1.RestartPolicy
 	OwnerReferences      []metav1.OwnerReference
 	EnvironmentVariables []v1.EnvVar
+	SecretMounts         map[string]string
 }
 
 // CreatePod creates a pod with a single container based on the specified image
@@ -95,6 +102,11 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create volume spec")
 	}
+	volumeMounts, podVolumes, err = createSecretMountSpec(opts.SecretMounts, volumeMounts, podVolumes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create secret volume spec")
+	}
+
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
 			{
