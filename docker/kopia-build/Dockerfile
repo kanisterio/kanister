@@ -2,7 +2,8 @@ FROM golang:1.19.2-buster AS builder
 
 ARG kopiaBuildCommit
 ARG kopiaRepoOrg
-
+ARG cgoFlag goExpFlag goExtFlag
+ENV CGO_ENABLED=$cgoFlag GOEXPERIMENT=$goExpFlag GO_EXTLINK_ENABLED=$goExtFlag
 RUN apt-get install git
 
 WORKDIR /
@@ -15,7 +16,7 @@ WORKDIR /kopia
 
 # Build kopia binary from specific commit
 RUN git checkout ${kopiaBuildCommit}
-RUN GO111MODULE=on GO_EXTLINK_ENABLED=0 GOOS=linux GOARCH=amd64 CGO_ENABLED=1 GOEXPERIMENT=boringcrypto go build -o kopia \
+RUN GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kopia \
   -ldflags="-X github.com/kopia/kopia/repo.BuildVersion=$(git show --no-patch --format='%cs-%h') \
             -X github.com/kopia/kopia/repo.BuildInfo=$(git show --no-patch --format='%cI-%H')-${kopiaBuildCommit} \
             -X github.com/kopia/kopia/repo.BuildGitHubRepo=${kopiaRepoOrg}" .

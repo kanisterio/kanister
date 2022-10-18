@@ -71,6 +71,8 @@ DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
 
 GITHUB_TOKEN ?= ""
 
+GOBORING ?= ""
+
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
 # If you want to build AND push all containers, see the 'all-push' rule.
@@ -263,7 +265,7 @@ release-snapshot:
 	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot"'
 
 update-kopia-image:
-	@/bin/bash ./build/update_kopia_image.sh $(KOPIA_COMMIT_ID) $(KOPIA_REPO)
+	@/bin/bash ./build/update_kopia_image.sh -c $(KOPIA_COMMIT_ID) -r $(KOPIA_REPO) -b $(GOBORING)
 
 go-mod-download:
 	@$(MAKE) run CMD='-c "go mod download"'
