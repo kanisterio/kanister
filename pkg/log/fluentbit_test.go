@@ -1,7 +1,7 @@
 package log
 
 import (
-	"io/ioutil"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -85,7 +85,7 @@ Loop:
 		if aerr != nil {
 			continue
 		}
-		bytes, rerr := ioutil.ReadAll(conn)
+		bytes, rerr := io.ReadAll(conn)
 		c.Assert(rerr, IsNil)
 
 		strs := strings.Split(strings.Trim(string(bytes), "\n"), "\n")

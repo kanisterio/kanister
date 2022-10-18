@@ -689,25 +689,6 @@ func (s *EbsStorage) GetRegions(ctx context.Context) ([]string, error) {
 	return regions, nil
 }
 
-func (s *EbsStorage) queryRegionToZones(ctx context.Context, region string) ([]string, error) {
-	ec2Cli, err := newEC2Client(region, s.Ec2Cli.Config.Copy())
-	if err != nil {
-		return nil, errors.Wrapf(err, "Could not get EC2 client")
-	}
-	dazi := &ec2.DescribeAvailabilityZonesInput{}
-	dazo, err := ec2Cli.DescribeAvailabilityZonesWithContext(ctx, dazi)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get AZs for region %s", region)
-	}
-	azs := make([]string, 0, len(dazo.AvailabilityZones))
-	for _, az := range dazo.AvailabilityZones {
-		if az.ZoneName != nil {
-			azs = append(azs, *az.ZoneName)
-		}
-	}
-	return azs, nil
-}
-
 // SnapshotRestoreTargets is part of blockstorage.RestoreTargeter
 func (s *EbsStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blockstorage.Snapshot) (global bool, regionsAndZones map[string][]string, err error) {
 	// A few checks from VolumeCreateFromSnapshot

@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -426,7 +425,7 @@ func (kc *KafkaCluster) Initialize(ctx context.Context) error {
 	return nil
 }
 
-//Message describes the response we get after consuming a topic
+// Message describes the response we get after consuming a topic
 type Message struct {
 	Topic     string `json:"topic"`
 	Key       string `json:"key"`
@@ -502,7 +501,7 @@ func (kc *KafkaCluster) InsertRecord(ctx context.Context, namespace string) erro
 		return errors.New("Error inserting records in topic")
 	}
 	defer resp.Body.Close()
-	bytes, err := ioutil.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -619,7 +618,7 @@ func createConsumerGroup(uri string) error {
 		return errors.New("Error creating consumer")
 	}
 	defer resp.Body.Close()
-	bytes, err := ioutil.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -652,7 +651,7 @@ func subscribe(uri string) error {
 		return errors.New("Error subscribing to the topic")
 	}
 	defer resp.Body.Close()
-	bytes, err := ioutil.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -676,7 +675,7 @@ func consumeMessage(uri string) (int, error) {
 		return 0, err
 	}
 	defer resp.Body.Close()
-	bytes, err := ioutil.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return 0, err
 	}

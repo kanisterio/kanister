@@ -217,7 +217,7 @@ func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) {
 	c.logAndSuccessEvent(context.TODO(), fmt.Sprintf("Added blueprint %s", bp.GetName()), "Added", bp)
 }
 
-// nolint:unparam
+//nolint:unparam
 func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error {
 	ctx := field.Context(context.Background(), consts.ActionsetNameKey, newAS.GetName())
 	// adding labels with prefix "kanister.io/" in the context as field for better logging
@@ -258,12 +258,12 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 	})
 }
 
-// nolint:unparam
+//nolint:unparam
 func (c *Controller) onUpdateBlueprint(oldBP, newBP *crv1alpha1.Blueprint) {
 	log.Print("Updated Blueprint", field.M{"BlueprintName": newBP.Name})
 }
 
-// nolint:unparam
+//nolint:unparam
 func (c *Controller) onDeleteActionSet(as *crv1alpha1.ActionSet) error {
 	asName := as.GetName()
 	log.Print("Deleted ActionSet", field.M{"ActionSetName": asName})
@@ -425,7 +425,7 @@ func (c *Controller) LoadOrStoreTomb(ctx context.Context, asName string) (*tomb.
 	return t, ctx
 }
 
-// nolint:gocognit
+//nolint:gocognit
 func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1.ActionSet, aIDX int, bp *crv1alpha1.Blueprint) error {
 	action := as.Spec.Actions[aIDX]
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing action %s", action.Name), "Started Action", as)

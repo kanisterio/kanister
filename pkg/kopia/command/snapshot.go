@@ -138,3 +138,22 @@ func SnapListAllWithSnapIDs(cmdArgs SnapListAllWithSnapIDsCommandArgs) []string 
 
 	return stringSliceCommand(args)
 }
+
+type SnapListByTagsCommandArgs struct {
+	*CommandArgs
+	Tags []string
+}
+
+func SnapListByTags(cmdArgs SnapListByTagsCommandArgs) []string {
+	args := commonArgs(cmdArgs.CommandArgs, false)
+	args = args.AppendLoggable(
+		snapshotSubCommand,
+		listSubCommand,
+		allFlag,
+		deltaFlag,
+		showIdenticalFlag,
+		jsonFlag,
+	)
+	args = addTags(cmdArgs.Tags, args)
+	return stringSliceCommand(args)
+}

@@ -27,8 +27,9 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1beta1"
 )
 
-//go:generate go run github.com/golang/mock/mockgen -destination=mocks/mock_snapshotter.go -package=mocks . Snapshotter
 // Snapshotter is an interface that describes snapshot operations
+//
+//go:generate go run github.com/golang/mock/mockgen -destination=mocks/mock_snapshotter.go -package=mocks . Snapshotter
 type Snapshotter interface {
 	// GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key
 	//
