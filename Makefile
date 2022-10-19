@@ -71,6 +71,8 @@ DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
 
 GITHUB_TOKEN ?= ""
 
+GOBORING ?= ""
+
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
 # If you want to build AND push all containers, see the 'all-push' rule.
@@ -106,6 +108,7 @@ bin/$(ARCH)/$(BIN):
 		VERSION=$(VERSION) \
 		PKG=$(PKG)         \
 		BIN=$(BIN) \
+		GOBORING=$(GOBORING) \
 		./build/build.sh   \
 	"'
 # Example: make shell CMD="-c 'date > datefile'"
