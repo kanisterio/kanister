@@ -28,7 +28,12 @@ if [ -z "${VERSION}" ]; then
     exit 1
 fi
 
-export CGO_ENABLED=0
+if [ -n "${GOBORING}" ]; then
+    export CGO_ENABLED=1
+    export GO_EXTLINK_ENABLED=0
+    export GOEXPERIMENT=boringcrypto
+fi
+
 go build -v                                                      \
     -installsuffix "static"                                        \
     -ldflags "-X ${PKG}/pkg/version.VERSION=${VERSION}"            \

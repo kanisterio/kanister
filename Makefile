@@ -108,6 +108,7 @@ bin/$(ARCH)/$(BIN):
 		VERSION=$(VERSION) \
 		PKG=$(PKG)         \
 		BIN=$(BIN) \
+		GOBORING=$(GOBORING) \
 		./build/build.sh   \
 	"'
 # Example: make shell CMD="-c 'date > datefile'"
