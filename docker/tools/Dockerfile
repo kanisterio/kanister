@@ -15,7 +15,7 @@ COPY --from=ghcr.io/kanisterio/kopia@sha256:85eea9020ec81bc9cb56e46533e519507468
 COPY LICENSE /licenses/LICENSE
 
 ADD kando /usr/local/bin/
-RUN microdnf update && microdnf install shadow-utils httpd-tools gzip && \
+RUN microdnf update && microdnf install shadow-utils gzip && \
   adduser -U kanister -u 1000 && \
   microdnf remove shadow-utils && \
   microdnf clean all
