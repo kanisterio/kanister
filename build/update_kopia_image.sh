@@ -42,7 +42,7 @@ if [ -n "${boring}" ]; then
     CGO_ENABLED=1
     GOEXPERIMENT=boringcrypto
     GO_EXTLINK_ENABLED=0
-    TAG="${IMAGE_TYPE}-${IMAGE_BUILD_VERSION}-boring"
+    TAG="${TAG}-boring"
 fi
 
 docker build \
