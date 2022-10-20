@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -32,6 +33,12 @@ const (
 	FDRegionLabelName = "failure-domain.beta.kubernetes.io/region"
 	// TopologyRegionLabelName is a known k8s label. used to specify volume region for kubernetes 1.17 onwards
 	TopologyRegionLabelName = "topology.kubernetes.io/region"
+
+	// LocationSecretVolumeMountName is the name of location secret volume mount
+	LocationSecretVolumeMountName = "location-secret"
+	// LocationSecretMountPath is the path where location secret would be mounted
+	LocationSecretMountPath = "/mnt/secrets/location"
+	locationSecretNameKey   = "location"
 )
 
 // GetPodContainerFromDeployment returns a pod and container running the deployment
@@ -153,4 +160,27 @@ func IsNodeReady(node *v1.Node) bool {
 		}
 	}
 	return false
+}
+
+func createSecretMountSpec(secretMount map[string]string, volMounts []v1.VolumeMount, vols []v1.Volume) ([]v1.VolumeMount, []v1.Volume, error) {
+	if secretName, ok := secretMount[locationSecretNameKey]; ok {
+		if secretName == "" {
+			return nil, nil, errors.New("Secret name cannot be empty")
+		}
+		volMount := v1.VolumeMount{
+			Name:      LocationSecretVolumeMountName,
+			MountPath: LocationSecretMountPath,
+		}
+		vol := v1.Volume{
+			Name: LocationSecretVolumeMountName,
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: secretName,
+				},
+			},
+		}
+		volMounts = append(volMounts, volMount)
+		vols = append(vols, vol)
+	}
+	return volMounts, vols, nil
 }
