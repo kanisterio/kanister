@@ -48,16 +48,22 @@ const (
 
 // PodOptions specifies options for `CreatePod`
 type PodOptions struct {
-	Annotations              map[string]string
-	Command                  []string
-	ContainerName            string
-	GenerateName             string
-	Image                    string
-	Labels                   map[string]string
-	Namespace                string
-	ServiceAccountName       string
-	Volumes                  map[string]string
-	PodSecurityContext       *v1.PodSecurityContext
+	Annotations        map[string]string
+	Command            []string
+	ContainerName      string
+	GenerateName       string
+	Image              string
+	Labels             map[string]string
+	Namespace          string
+	ServiceAccountName string
+	Volumes            map[string]string
+	// PodSecurityContext is the important part of the pod spec.
+	//It placed here to avoid possible collisions with podOverride spec.
+	//You can still use podOverride to set the pod security context, but this field will take precedence.
+	PodSecurityContext *v1.PodSecurityContext
+	// ContainerSecurityContext is the important part of the pod spec.
+	//It placed here to avoid possible collisions with podOverride spec.
+	//You can still use podOverride to set the container security context, but this field will take precedence.
 	ContainerSecurityContext *v1.SecurityContext
 	PodOverride              crv1alpha1.JSONMap
 	Resources                v1.ResourceRequirements
