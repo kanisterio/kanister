@@ -12,13 +12,13 @@ import (
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
-type locType string
+type LocType string
 
 const (
-	locTypeS3        locType = "s3"
-	locTypeGCS       locType = "gcs"
-	locTypeAzure     locType = "azure"
-	locTypeFilestore locType = "filestore"
+	LocTypeS3        LocType = "s3"
+	LocTypeGCS       LocType = "gcs"
+	LocTypeAzure     LocType = "azure"
+	LocTypeFilestore LocType = "filestore"
 )
 
 const (
@@ -51,12 +51,8 @@ func skipSSLVerify(m map[string]string) bool {
 	return v == "true"
 }
 
-func locationType(m map[string]string) locType {
-	return locType(m[typeKey])
-}
-
-func SkipCredentialSecretMount(m map[string]string) bool {
-	return locType(m[typeKey]) == locTypeFilestore
+func locationType(m map[string]string) LocType {
+	return LocType(m[typeKey])
 }
 
 // GenerateEnvSpecFromCredentialSecret parses the secret and returns
@@ -146,4 +142,36 @@ func getEnvVar(varName, value string) v1.EnvVar {
 		Name:  varName,
 		Value: value,
 	}
+}
+
+// GetMapForLocationValues return a map with valid keys
+// for different location values
+func GetMapForLocationValues(
+	locType LocType,
+	prefix,
+	region,
+	bucket,
+	endpoint,
+	skipSSLVerify string,
+) map[string]string {
+	m := map[string]string{}
+	if bucket != "" {
+		m[bucketKey] = bucket
+	}
+	if endpoint != "" {
+		m[endpointKey] = endpoint
+	}
+	if prefix != "" {
+		m[prefixKey] = prefix
+	}
+	if region != "" {
+		m[regionKey] = region
+	}
+	if skipSSLVerify != "" {
+		m[skipSSLVerifyKey] = skipSSLVerify
+	}
+	if locType != "" {
+		m[typeKey] = string(locType)
+	}
+	return m
 }

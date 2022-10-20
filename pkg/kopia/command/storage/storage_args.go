@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -17,19 +16,17 @@ type StorageCommandParams struct {
 }
 
 func KopiaBlobStoreArgs(params *StorageCommandParams) (logsafe.Cmd, error) {
-	paramsJson, _ := json.Marshal(params)
-	fmt.Println("PARAMS: ", string(paramsJson))
-	locType := locationType(params.Location)
+	LocType := locationType(params.Location)
 	switch locationType(params.Location) {
-	case locTypeFilestore:
+	case LocTypeFilestore:
 		return filesystemArgs(params.Location, params.RepoPathPrefix), nil
-	case locTypeS3:
+	case LocTypeS3:
 		return kopiaS3Args(params.Location, params.AssumeRoleDuration, params.RepoPathPrefix)
-	case locTypeGCS:
+	case LocTypeGCS:
 		return kopiaGCSArgs(params.Location, params.RepoPathPrefix), nil
-	case locTypeAzure:
+	case LocTypeAzure:
 		return kopiaAzureArgs(params.Location, params.RepoPathPrefix)
 	default:
-		return nil, fmt.Errorf("unsupported type for the location: %s", locType)
+		return nil, fmt.Errorf("unsupported type for the location: %s", LocType)
 	}
 }

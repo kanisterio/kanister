@@ -21,31 +21,31 @@ func (s *StorageUtilsSuite) TestBucketNameUtil(c *check.C) {
 		skipSSLVerifyKey: "true",
 	}
 	for _, tc := range []struct {
-		locType                    string
-		expectedLocType            locType
+		LocType                    string
+		expectedLocType            LocType
 		skipSSLVerify              string
 		expectedSkipSSLVerifyValue bool
 	}{
 		{
-			locType:                    "s3",
-			expectedLocType:            locTypeS3,
+			LocType:                    "s3",
+			expectedLocType:            LocTypeS3,
 			skipSSLVerify:              "true",
 			expectedSkipSSLVerifyValue: true,
 		},
 		{
-			locType:                    "gcs",
-			expectedLocType:            locTypeGCS,
+			LocType:                    "gcs",
+			expectedLocType:            LocTypeGCS,
 			skipSSLVerify:              "false",
 			expectedSkipSSLVerifyValue: false,
 		},
 		{
-			locType:                    "azure",
-			expectedLocType:            locTypeAzure,
+			LocType:                    "azure",
+			expectedLocType:            LocTypeAzure,
 			skipSSLVerify:              "true",
 			expectedSkipSSLVerifyValue: true,
 		},
 	} {
-		loc[typeKey] = tc.locType
+		loc[typeKey] = tc.LocType
 		loc[skipSSLVerifyKey] = tc.skipSSLVerify
 		c.Assert(bucketName(loc), check.Equals, loc[bucketKey])
 		c.Assert(endpoint(loc), check.Equals, loc[endpointKey])

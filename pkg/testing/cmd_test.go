@@ -1,8 +1,26 @@
+//go:build kopia
+// +build kopia
+
+// Copyright 2022 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package testing
 
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"gopkg.in/check.v1"
@@ -11,21 +29,25 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 const (
-	testPodName = "test-kopia-cmd-"
+	testPodName = "kopia-cmd-"
 )
 
 type KopiaCmdSuite struct {
 	cli       kubernetes.Interface
 	namespace string
+	locType   storage.LocType
 }
 
-var _ = check.Suite(&KopiaCmdSuite{})
+var _ = check.Suite(&KopiaCmdSuite{locType: storage.LocTypeS3})
+var _ = check.Suite(&KopiaCmdSuite{locType: storage.LocTypeFilestore})
 
 func (s *KopiaCmdSuite) SetUpSuite(c *check.C) {
 	config, err := kube.LoadConfig()
@@ -41,10 +63,22 @@ func (s *KopiaCmdSuite) SetUpSuite(c *check.C) {
 	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 	s.namespace = cns.GetName()
+	sa := &v1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-sa-",
+			Namespace:    s.namespace,
+		},
+	}
 
+	sa, err = cli.CoreV1().ServiceAccounts(s.namespace).Create(ctx, sa, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+	os.Setenv("POD_NAMESPACE", s.namespace)
+	os.Setenv("POD_SERVICE_ACCOUNT", sa.Name)
 }
 
 func (s *KopiaCmdSuite) TearDownSuite(c *check.C) {
+	os.Unsetenv("POD_NAMESPACE")
+	os.Unsetenv("POD_SERVICE_ACCOUNT")
 	ctx := context.Background()
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(ctx, s.namespace, metav1.DeleteOptions{})
@@ -71,72 +105,88 @@ func (s *KopiaCmdSuite) TestRepositoryCreate(c *check.C) {
 }
 
 func (s *KopiaCmdSuite) startKanisterToolsPod(c *check.C, locSecret, credSecret *v1.Secret) *v1.Pod {
-	volMounts := []v1.VolumeMount{
-		{
-			Name:      repository.LocationSecretVolumeMountName,
-			MountPath: repository.LocationSecretMountPath,
-		},
-	}
-	vols := []v1.Volume{
-		{
-			Name: repository.LocationSecretVolumeMountName,
-			VolumeSource: v1.VolumeSource{
-				Secret: &v1.SecretVolumeSource{
-					SecretName: locSecret.Name,
-				},
-			},
-		},
-	}
+	var (
+		envVars []v1.EnvVar
+		err     error
+	)
 	if credSecret != nil {
-		volMounts = append(volMounts, v1.VolumeMount{
-			Name:      repository.CredsSecretVolumeMountName,
-			MountPath: repository.CredsSecretMountPath,
-		})
-		vols = append(vols, v1.Volume{
-			Name: repository.CredsSecretVolumeMountName,
-			VolumeSource: v1.VolumeSource{
-				Secret: &v1.SecretVolumeSource{
-					SecretName: credSecret.Name,
-				},
-			},
-		})
+		envVars, err = storage.GenerateEnvSpecFromCredentialSecret(credSecret)
+		c.Assert(err, check.IsNil)
 	}
-	pod := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: testPodName,
-			Namespace:    s.namespace,
-		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Name:         "kanister-tools",
-					Image:        "ghcr.io/kanisterio/kanister-tools:0.82.0",
-					Command:      []string{"sh", "-c", "tail -f /dev/null"},
-					VolumeMounts: volMounts,
-				},
-			},
-			Volumes: vols,
-		},
+	options := &kube.PodOptions{
+		Namespace:            s.namespace,
+		GenerateName:         testPodName,
+		Image:                "ghcr.io/kanisterio/kanister-tools:0.83.0",
+		Command:              []string{"bash", "-c", "tail -f /dev/null"},
+		EnvironmentVariables: envVars,
+		SecretMounts:         kube.GetSecretMapFromLocSecret(locSecret),
 	}
-	pod, err := s.cli.CoreV1().Pods(s.namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+	pod, err := kube.CreatePod(context.Background(), s.cli, options)
 	c.Assert(err, check.IsNil)
 	err = kube.WaitForPodReady(context.Background(), s.cli, pod.Namespace, pod.Name)
 	c.Assert(err, check.IsNil)
 	return pod
 }
 
-func (s *KopiaCmdSuite) createLocationAndCredSecrets(c *check.C) (*v1.Secret, *v1.Secret) {
+func (s *KopiaCmdSuite) createLocationAndCredSecrets(c *check.C) (locSecret, credSecret *v1.Secret) {
+	switch s.locType {
+	case storage.LocTypeFilestore:
+		locSecret = s.createFileStoreSecrets(c)
+	case storage.LocTypeS3:
+		locSecret, credSecret = s.createS3Secrets(c)
+	default:
+		c.Log("Unsupported test location type")
+		c.Fail()
+	}
+	return
+}
+
+func (s *KopiaCmdSuite) createFileStoreSecrets(c *check.C) *v1.Secret {
 	ls := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "location-secret-",
 		},
-		StringData: map[string]string{
-			"prefix": "test-prefix",
-			"type":   "filestore",
-		},
+		StringData: storage.GetMapForLocationValues(s.locType, "test-prefix", "", "", "", ""),
 	}
 	locSecret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.Background(), ls, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	return locSecret, nil
+	return locSecret
+}
+
+func (s *KopiaCmdSuite) createS3Secrets(c *check.C) (locSecret, credSecret *v1.Secret) {
+	locSecret = &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "location-secret-",
+		},
+		StringData: storage.GetMapForLocationValues(s.locType, "test-prefix", "us-west-2", "tests.kanister.io", "http://minio.minio.svc.cluster.local:9000", "true"),
+	}
+	var err error
+	locSecret, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.Background(), locSecret, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	accessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
+	if accessKeyID == "" {
+		c.Log("AWS_ACCESS_KEY_ID not set")
+		c.Fail()
+	}
+	secretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	if secretAccessKey == "" {
+		c.Log("AWS_SECRET_ACCESS_KEY not set")
+		c.Fail()
+	}
+	credSecret = &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "creds-secret-",
+		},
+		Type: v1.SecretType(secrets.AWSSecretType),
+		Data: map[string][]byte{
+			secrets.AWSAccessKeyID:     []byte(accessKeyID),
+			secrets.AWSSecretAccessKey: []byte(secretAccessKey),
+		},
+	}
+	credSecret, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.Background(), credSecret, metav1.CreateOptions{})
+	c.Assert(err, check.IsNil)
+
+	return locSecret, credSecret
 }
