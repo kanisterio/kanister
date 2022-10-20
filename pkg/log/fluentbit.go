@@ -27,9 +27,8 @@ type FluentbitHook struct {
 // NewFluentbitHook creates a non-blocking Logrus hook
 // which sends JSON logs to Fluentbit over TCP.
 //
-//   h := NewFluentbithook("X.Y.Z.W:12345")
-//   logrus.AddHook(h)
-//
+//	h := NewFluentbithook("X.Y.Z.W:12345")
+//	logrus.AddHook(h)
 func NewFluentbitHook(endpoint string) *FluentbitHook {
 	ec := make(chan *logrus.Entry, defaultEntryBufferCount)
 
@@ -76,7 +75,7 @@ func handle(msgs []byte, endpoint string) error {
 	if err != nil {
 		return errors.Wrap(err, "Fluentbit connection error")
 	}
-	defer conn.Close() // nolint: errcheck
+	defer conn.Close() //nolint: errcheck
 	_, err = conn.Write(msgs)
 	if err != nil {
 		return errors.Wrap(err, "Fluentbit write error")

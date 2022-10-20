@@ -15,9 +15,9 @@
 package kube
 
 import (
-	. "gopkg.in/check.v1"
-	"io/ioutil"
 	"os"
+
+	. "gopkg.in/check.v1"
 
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -42,7 +42,7 @@ func (s *PodInfoSuite) TestGetControllerNamespaceFromFile(c *C) {
 	if _, err := os.Stat(nsFile); os.IsNotExist(err) {
 		c.Skip("Namespace file is not presented. Skipping")
 	}
-	nsFromFile, err := ioutil.ReadFile(nsFile)
+	nsFromFile, err := os.ReadFile(nsFile)
 	c.Assert(err, IsNil)
 	c.Assert(nsFromFile, NotNil)
 	ns, err := GetControllerNamespace()

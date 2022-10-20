@@ -73,12 +73,11 @@ func GetPodSpecOverride(tp param.TemplateParams, args map[string]interface{}, ar
 // GetYamlList parses yaml formatted list arg and converts it into slice of string.
 // Returns nil error, if arg is not present.
 // The value can be in either of two formats:
-// key: "- val1\n- val2\n- val3"	(string) if you are referencing from configmap or
-// 					from a inputArtifacts
+// key: "- val1\n- val2\n- val3"	(string) if you are referencing from configmap or from a inputArtifacts
 // OR
 // key:
-//    - "val1"
-//    - "val2"		(list of string) Allows users to pass list in blueprint
+//   - "val1"
+//   - "val2"		(list of string) Allows users to pass list in blueprint
 func GetYamlList(args map[string]interface{}, argName string) ([]string, error) {
 	if !ArgExists(args, argName) {
 		return nil, nil
