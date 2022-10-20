@@ -57,13 +57,12 @@ type PodOptions struct {
 	Namespace          string
 	ServiceAccountName string
 	Volumes            map[string]string
-	// PodSecurityContext is the important part of the pod spec.
-	//It placed here to avoid possible collisions with podOverride spec.
-	//You can still use podOverride to set the pod security context, but this field will take precedence.
+	// PodSecurityContext and ContainerSecurityContext can be used to set the security context
+	// at the pod level and container level respectively.
+	// You can still use podOverride to set the pod security context, but these fields will take precedence.
+	// We chose these fields to specify security context instead of just using podOverride because
+	// the merge behaviour of the pods spec is confusing in case of podOverride, and this is more readable.
 	PodSecurityContext *v1.PodSecurityContext
-	// ContainerSecurityContext is the important part of the pod spec.
-	//It placed here to avoid possible collisions with podOverride spec.
-	//You can still use podOverride to set the container security context, but this field will take precedence.
 	ContainerSecurityContext *v1.SecurityContext
 	PodOverride              crv1alpha1.JSONMap
 	Resources                v1.ResourceRequirements
