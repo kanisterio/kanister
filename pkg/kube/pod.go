@@ -51,6 +51,7 @@ type PodOptions struct {
 	Annotations        map[string]string
 	Command            []string
 	ContainerName      string
+	Name               string
 	GenerateName       string
 	Image              string
 	Labels             map[string]string
@@ -121,12 +122,17 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: opts.GenerateName,
 			Labels: map[string]string{
 				consts.LabelKeyCreatedBy: consts.LabelValueKanister,
 			},
 		},
 		Spec: patchedSpecs,
+	}
+
+	if opts.Name != "" {
+		pod.Name = opts.Name
+	} else {
+		pod.GenerateName = opts.GenerateName
 	}
 
 	// Override default container name if applicable
