@@ -104,6 +104,8 @@ type ActionSpec struct {
 	Profile *ObjectReference `json:"profile,omitempty"`
 	// PodOverride is used to specify pod specs that will override the
 	// default pod specs
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
 	PodOverride JSONMap `json:"podOverride,omitempty"`
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
@@ -179,11 +181,18 @@ type Error struct {
 
 // Phase is subcomponent of an action.
 type Phase struct {
+<<<<<<< HEAD
 	// Name represents the name of the Blueprint phase.
 	Name string `json:"name"`
 	// State represents the current state of execution of the Blueprint phase.
 	State State `json:"state"`
 	// Output is the map of output artifacts produced by the Blueprint phase.
+=======
+	Name  string `json:"name"`
+	State State  `json:"state"`
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+>>>>>>> a44589f3 (Added Kubebuilder skeleton code)
 	Output map[string]interface{} `json:"output,omitempty"`
 }
 
@@ -253,7 +262,8 @@ type BlueprintPhase struct {
 	// ObjectRefs represents a map of references to the Kubernetes objects that
 	// can later be used in the `Args` of the function.
 	ObjectRefs map[string]ObjectReference `json:"objects,omitempty"`
-	// Args represents a map of named arguments that the controller will pass to the Kanister function.
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
 	Args map[string]interface{} `json:"args"`
 }
 

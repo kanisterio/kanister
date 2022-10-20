@@ -1,0 +1,12 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: RepositoryServer
+metadata:
+  labels:
+    app.kubernetes.io/name: repositoryserver
+    app.kubernetes.io/instance: repositoryserver-sample
+    app.kubernetes.io/part-of: kanister
+    app.kuberentes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kanister
+  name: repositoryserver-sample
+spec:
+  # TODO(user): Add fields here
