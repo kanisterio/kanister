@@ -62,7 +62,7 @@ type PodOptions struct {
 	// You can still use podOverride to set the pod security context, but these fields will take precedence.
 	// We chose these fields to specify security context instead of just using podOverride because
 	// the merge behaviour of the pods spec is confusing in case of podOverride, and this is more readable.
-	PodSecurityContext *v1.PodSecurityContext
+	PodSecurityContext       *v1.PodSecurityContext
 	ContainerSecurityContext *v1.SecurityContext
 	PodOverride              crv1alpha1.JSONMap
 	Resources                v1.ResourceRequirements
