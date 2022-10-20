@@ -99,6 +99,8 @@ type ActionSpec struct {
 	Profile *ObjectReference `json:"profile,omitempty"`
 	// PodOverride is used to specify pod specs that will override the
 	// default pod specs
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
 	PodOverride JSONMap `json:"podOverride,omitempty"`
 	// Options will be used to specify additional values
 	// to be used in the Blueprint.
@@ -163,8 +165,10 @@ type Error struct {
 
 // Phase is subcomponent of an action.
 type Phase struct {
-	Name   string                 `json:"name"`
-	State  State                  `json:"state"`
+	Name  string `json:"name"`
+	State State  `json:"state"`
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
 	Output map[string]interface{} `json:"output,omitempty"`
 }
 
@@ -217,7 +221,9 @@ type BlueprintPhase struct {
 	Func       string                     `json:"func"`
 	Name       string                     `json:"name"`
 	ObjectRefs map[string]ObjectReference `json:"objects,omitempty"`
-	Args       map[string]interface{}     `json:"args"`
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	Args map[string]interface{} `json:"args"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
