@@ -72,4 +72,13 @@ const (
 	tlsGenerateCertFlag       = "--tls-generate-cert"
 	tlsKeyFilePath            = "--tls-key-file"
 	userPasswordFlag          = "--user-password"
+
+	// Repository specific
+	repositorySubCommand      = "repository"
+	connectSubCommand         = "connect"
+	noCheckForUpdatesFlag     = "--no-check-for-updates"
+	overrideHostnameFlag      = "--override-hostname"
+	overrideUsernameFlag      = "--override-username"
+	pointInTimeConnectionFlag = "--point-in-time"
+	urlFlag                   = "--url"
 )
