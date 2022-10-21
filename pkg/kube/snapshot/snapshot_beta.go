@@ -236,7 +236,7 @@ func (sna *SnapshotBeta) CreateFromSource(ctx context.Context, source *Source, s
 		return errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
-	snap := UnstructuredVolumeSnapshot(v1beta1.VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, labels)
+	snap := UnstructuredVolumeSnapshot(v1beta1.VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, blockstorage.SanitizeTags(labels))
 
 	if err := sna.CreateContentFromSource(ctx, source, contentName, snapshotName, namespace, deletionPolicy); err != nil {
 		return err
