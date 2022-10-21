@@ -17,7 +17,6 @@ package kube
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -194,7 +193,7 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 		return "", err
 	}
 	defer reader.Close()
-	bytes, err := ioutil.ReadAll(reader)
+	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}
@@ -249,9 +248,9 @@ func checkNodesStatus(p *v1.Pod, cli kubernetes.Interface) error {
 }
 
 // checkPVCAndPVStatus does the following:
-//  1. if PVC is present then check the status of PVC
-//     1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
-//  2. if PVC not present then wait for timeout
+//   - if PVC is present then check the status of PVC
+//   - if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
+//   - if PVC not present then wait for timeout
 func getVolStatus(ctx context.Context, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 	for _, vol := range p.Spec.Volumes {
 		if err := checkPVCAndPVStatus(ctx, vol, p, cli, namespace); err != nil {
@@ -262,9 +261,9 @@ func getVolStatus(ctx context.Context, p *v1.Pod, cli kubernetes.Interface, name
 }
 
 // checkPVCAndPVStatus does the following:
-//  1. if PVC is present then check the status of PVC
-//     1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
-//  2. if PVC not present then wait for timeout
+//   - if PVC is present then check the status of PVC
+//   - if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
+//   - if PVC not present then wait for timeout
 func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 	if vol.VolumeSource.PersistentVolumeClaim == nil {
 		// wait for timeout

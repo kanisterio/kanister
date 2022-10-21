@@ -32,6 +32,7 @@ const (
 type SnapshotCreateCommandArgs struct {
 	*CommandArgs
 	PathToBackup string
+	Tags         []string
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
@@ -41,7 +42,7 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
-
+	args = addTags(cmdArgs.Tags, args)
 	return stringSliceCommand(args)
 }
 
@@ -134,5 +135,24 @@ func SnapListAllWithSnapIDs(cmdArgs SnapListAllWithSnapIDsCommandArgs) []string 
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
 	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
 
+	return stringSliceCommand(args)
+}
+
+type SnapListByTagsCommandArgs struct {
+	*CommandArgs
+	Tags []string
+}
+
+func SnapListByTags(cmdArgs SnapListByTagsCommandArgs) []string {
+	args := commonArgs(cmdArgs.CommandArgs, false)
+	args = args.AppendLoggable(
+		snapshotSubCommand,
+		listSubCommand,
+		allFlag,
+		deltaFlag,
+		showIdenticalFlag,
+		jsonFlag,
+	)
+	args = addTags(cmdArgs.Tags, args)
 	return stringSliceCommand(args)
 }

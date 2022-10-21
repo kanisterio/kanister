@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -138,14 +137,14 @@ func pushWithEnv(ctx context.Context, c []string, suffix string, ord int, prof p
 }
 
 func readArtifactPathFile(path string) (string, error) {
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	t := strings.TrimSuffix(string(buf), "\n")
 	return t, errors.Wrap(err, "Could not read artifact path file")
 }
 
 func readProfile(path string) (p param.Profile, ok bool, err error) {
 	var buf []byte
-	buf, err = ioutil.ReadFile(path)
+	buf, err = os.ReadFile(path)
 	switch {
 	case os.IsNotExist(err):
 		err = nil
@@ -167,5 +166,5 @@ func writeProfile(path string, p param.Profile) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to write profile")
 	}
-	return ioutil.WriteFile(path, buf, os.ModePerm)
+	return os.WriteFile(path, buf, os.ModePerm)
 }
