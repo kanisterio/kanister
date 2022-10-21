@@ -87,6 +87,6 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - run: tar -xvf ./src.tar.gz
-    - run: make update-kopia-image
+    - run: make update-kopia-image GOBORING=true
     - run: make release-snapshot
     - run: ./build/push_images.sh
