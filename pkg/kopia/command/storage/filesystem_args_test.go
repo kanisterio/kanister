@@ -1,0 +1,33 @@
+package storage
+
+import (
+	"fmt"
+
+	"gopkg.in/check.v1"
+)
+
+func (s *StorageUtilsSuite) TestFilesystemArgsUtil(c *check.C) {
+	for _, tc := range []struct {
+		prefix         string
+		artifactPrefix string
+		expectedPath   string
+	}{
+		{
+			prefix:         "",
+			artifactPrefix: "dir1/subdir/",
+			expectedPath:   fmt.Sprintf("%s/dir1/subdir/", DefaultFSMountPath),
+		},
+		{
+			prefix:         "test-prefix",
+			artifactPrefix: "dir1/subdir/",
+			expectedPath:   fmt.Sprintf("%s/test-prefix/dir1/subdir/", DefaultFSMountPath),
+		},
+	} {
+		sec := map[string]string{
+			prefixKey: tc.prefix,
+		}
+		args := filesystemArgs(sec, tc.artifactPrefix)
+		expectedValue := fmt.Sprintf("filesystem --path=%s", tc.expectedPath)
+		c.Assert(args.String(), check.Equals, expectedValue)
+	}
+}
