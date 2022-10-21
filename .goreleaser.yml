@@ -7,7 +7,8 @@ builds:
   binary: kanctl
   main: cmd/kanctl/main.go
   ldflags: &ldflags
-  - -X github.com/kanisterio/kanister/pkg/version.VERSION={{.Version}}
+  - -extldflags "-static"
+    -X github.com/kanisterio/kanister/pkg/version.VERSION={{.Version}}
     -X github.com/kanisterio/kanister/pkg/version.GIT_COMMIT={{.Commit}}
     -X github.com/kanisterio/kanister/pkg/version.BUILD_DATE={{.Date}}
   env: &env
