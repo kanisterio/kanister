@@ -326,7 +326,7 @@ func (s *SnapshotTestSuite) TestVolumeSnapshotCloneFake(c *C) {
 		_, err = tc.fakeSs.Get(context.Background(), fakeSnapshotName, defaultNamespace)
 		c.Assert(err, IsNil)
 
-		err = tc.fakeSs.Clone(context.Background(), fakeSnapshotName, defaultNamespace, fakeClone, fakeTargetNamespace, false)
+		err = tc.fakeSs.Clone(context.Background(), fakeSnapshotName, defaultNamespace, fakeClone, fakeTargetNamespace, false, map[string]string{"tag": "value"})
 		c.Assert(err, IsNil)
 
 		clone, err := tc.fakeSs.Get(context.Background(), fakeClone, fakeTargetNamespace)
@@ -441,8 +441,17 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 	snapshotCloneName := snapshotName + "-clone"
 	volumeCloneName := pvc.Name + "-clone"
 	sizeOriginal := "1Gi"
-	err = snapshotter.Clone(ctx, snapshotName, s.sourceNamespace, snapshotCloneName, s.targetNamespace, wait)
+	label = map[string]string{
+		"snapshottest": "testlabel2",
+	}
+	err = snapshotter.Clone(ctx, snapshotName, s.sourceNamespace, snapshotCloneName, s.targetNamespace, wait, label)
 	c.Assert(err, IsNil)
+
+	snapList, err = snapshotter.List(ctx, s.targetNamespace, label)
+	c.Assert(err, IsNil)
+	c.Assert(len(snapList.Items), Equals, 1)
+	c.Assert(snapList.Items[0].Labels, DeepEquals, label)
+
 	args := &volume.CreatePVCFromSnapshotArgs{
 		KubeCli:          s.cli,
 		DynCli:           s.dynCli,
