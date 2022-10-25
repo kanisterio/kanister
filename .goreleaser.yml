@@ -72,8 +72,6 @@ dockers:
   dockerfile: 'docker/kanister-elasticsearch/image/Dockerfile'
   build_flag_templates:
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
-  extra_files:
-  - 'docker/kanister-elasticsearch/image/esdump-setup.sh'
 - ids:
   - kando
   image_templates:
