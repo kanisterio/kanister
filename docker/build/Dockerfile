@@ -11,7 +11,7 @@ RUN apt-get update && apt-get -y install apt-transport-https ca-certificates bas
 
 COPY --from=bitnami/kubectl:1.17 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
 
-COPY --from=goreleaser/goreleaser:v1.2.4 /usr/local/bin/goreleaser /usr/local/bin/
+COPY --from=goreleaser/goreleaser:v1.12.3 /usr/bin/goreleaser /usr/local/bin/
 
 COPY --from=alpine/helm:3.2.0 /usr/bin/helm /usr/local/bin/
 
