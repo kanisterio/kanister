@@ -7,16 +7,18 @@ builds:
   binary: kanctl
   main: cmd/kanctl/main.go
   ldflags: &ldflags
-  - -s -w
+  - -extldflags "-static"
     -X github.com/kanisterio/kanister/pkg/version.VERSION={{.Version}}
     -X github.com/kanisterio/kanister/pkg/version.GIT_COMMIT={{.Commit}}
     -X github.com/kanisterio/kanister/pkg/version.BUILD_DATE={{.Date}}
   env: &env
   - GO111MODULE=on
-  - CGO_ENABLED=0
+  - CGO_ENABLED=1
+  - GOEXPERIMENT=boringcrypto
+  - CC=gcc
+  - CXX=g++
   - GO_EXTLINK_ENABLED=0
   goos:
-  - darwin
   - linux
   goarch: &goarch
   - amd64
