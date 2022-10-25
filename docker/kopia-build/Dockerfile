@@ -1,4 +1,4 @@
-FROM golang:1.19-buster AS builder
+FROM golang:1.19-bullseye AS builder
 
 ARG kopiaBuildCommit
 ARG kopiaRepoOrg
@@ -26,7 +26,7 @@ USER kopia:kopia
 
 COPY --chown=kopia . /kopia
 
-FROM debian:buster
+FROM debian:bullseye
 
 WORKDIR /kopia
 
