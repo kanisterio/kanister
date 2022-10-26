@@ -1,4 +1,4 @@
-FROM postgres:bullseye
+FROM postgres:14-bullseye
 LABEL maintainer="vkamra@kasten.io"
 
 ENV DEBIAN_FRONTEND noninteractive
