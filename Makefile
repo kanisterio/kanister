@@ -42,8 +42,8 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 # Mention the vm-driver that should be used to install OpenShift
 vm-driver ?= "kvm"
 
-# Refers to https://github.com/kopia/kopia/commit/317cc36892707ab9bdc5f6e4dea567d1e638a070
-KOPIA_COMMIT_ID ?= "317cc36"
+# Refers to https://github.com/kopia/kopia/commit/b9be9632a27751860c870732a74b076c2cd9d42a
+KOPIA_COMMIT_ID ?= "b9be963"
 
 KOPIA_REPO ?= "kopia"
 # Default OCP version in which the OpenShift apps are going to run
