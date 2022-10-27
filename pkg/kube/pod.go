@@ -130,7 +130,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		Spec: patchedSpecs,
 	}
 
-	// Add fixed name to a pod
+	// Override `GenerateName` if `Name` option is provided
 	if opts.Name != "" {
 		pod.Name = opts.Name
 	}
