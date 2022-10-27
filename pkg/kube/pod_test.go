@@ -89,6 +89,11 @@ func (s *PodSuite) TestPod(c *C) {
 	sa, err := GetControllerServiceAccount(fake.NewSimpleClientset())
 	c.Assert(err, IsNil)
 
+	testSec := s.createTestSecret(c)
+	defer func() {
+		err = s.cli.CoreV1().Secrets(testSec.Namespace).Delete(context.Background(), testSec.Name, metav1.DeleteOptions{})
+		c.Assert(err, IsNil)
+	}()
 	ctx := context.Background()
 	podOptions := []*PodOptions{
 		{
@@ -164,6 +169,27 @@ func (s *PodSuite) TestPod(c *C) {
 				"run": "pod",
 			},
 		},
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        consts.LatestKanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+			EnvironmentVariables: []v1.EnvVar{
+				{
+					Name:  "test-env",
+					Value: "test-value",
+				},
+			},
+		},
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        consts.LatestKanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+			SecretMounts: map[string]string{
+				locationSecretNameKey: testSec.Name,
+			},
+		},
 	}
 
 	for _, po := range podOptions {
@@ -217,10 +243,49 @@ func (s *PodSuite) TestPod(c *C) {
 			c.Assert(pod.Spec.RestartPolicy, Equals, po.RestartPolicy)
 		}
 
+		if po.EnvironmentVariables != nil && len(po.EnvironmentVariables) > 0 {
+			c.Assert(pod.Spec.Containers[0].Env, DeepEquals, po.EnvironmentVariables)
+		}
+
+		if po.SecretMounts != nil {
+			volMount := pod.Spec.Containers[0].VolumeMounts[0]
+			expectedVolMount := v1.VolumeMount{
+				Name:      LocationSecretVolumeMountName,
+				MountPath: LocationSecretMountPath,
+			}
+			c.Assert(volMount, DeepEquals, expectedVolMount)
+			vol := pod.Spec.Volumes[0]
+			var defaultMode int32 = 420
+			expectedVol := v1.Volume{
+				Name: LocationSecretVolumeMountName,
+				VolumeSource: v1.VolumeSource{
+					Secret: &v1.SecretVolumeSource{
+						SecretName:  po.SecretMounts[locationSecretNameKey],
+						DefaultMode: &defaultMode,
+					},
+				},
+			}
+			c.Assert(vol, DeepEquals, expectedVol)
+		}
+
 		c.Assert(err, IsNil)
 		c.Assert(WaitForPodReady(ctx, s.cli, po.Namespace, pod.Name), IsNil)
 		c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
 	}
+}
+
+func (s *PodSuite) createTestSecret(c *C) *v1.Secret {
+	testSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-secret-",
+		},
+		StringData: map[string]string{
+			"key": "value",
+		},
+	}
+	testSecret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.Background(), testSecret, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	return testSecret
 }
 
 func (s *PodSuite) createServiceAccount(name, ns string) error {
