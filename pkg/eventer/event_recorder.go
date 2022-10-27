@@ -26,7 +26,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
-//NewEventRecorder returns an EventRecorder to records events for the associated runtime object
+// NewEventRecorder returns an EventRecorder to records events for the associated runtime object
 func NewEventRecorder(client kubernetes.Interface, component string) record.EventRecorder {
 	// Event Broadcaster
 	broadcaster := record.NewBroadcaster()

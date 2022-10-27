@@ -102,9 +102,6 @@ func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error)
 		if err != nil {
 			continue
 		}
-		if snapManifest == nil {
-			continue
-		}
 		snapID = string(snapManifest.ID)
 		if snapManifest.RootEntry != nil {
 			rootID = snapManifest.RootEntry.ObjectID.String()
@@ -371,4 +368,17 @@ func RepoSizeStatsFromBlobStatsRaw(blobStats string) (phySizeTotal int64, blobCo
 	}
 
 	return int64(sizeValBytes), countVal, nil
+}
+
+func IsEqualSnapshotCreateStats(a, b *SnapshotCreateStats) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.FilesHashed == b.FilesHashed &&
+		a.SizeHashedB == b.SizeHashedB &&
+		a.FilesCached == b.FilesCached &&
+		a.SizeCachedB == b.SizeCachedB &&
+		a.SizeUploadedB == b.SizeUploadedB &&
+		a.SizeEstimatedB == b.SizeEstimatedB &&
+		a.ProgressPercent == b.ProgressPercent
 }

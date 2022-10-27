@@ -1,0 +1,27 @@
+# permissions for end users to view repositoryservers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: repositoryserver-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kanister
+    app.kubernetes.io/part-of: kanister
+    app.kubernetes.io/managed-by: kustomize
+  name: repositoryserver-viewer-role
+rules:
+- apiGroups:
+  - cr.kanister.io
+  resources:
+  - repositoryservers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cr.kanister.io
+  resources:
+  - repositoryservers/status
+  verbs:
+  - get
