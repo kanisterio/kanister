@@ -1,3 +1,17 @@
+// Copyright 2022 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package storage
 
 import (
@@ -10,8 +24,7 @@ import (
 func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 	artifactPrefix := "dir/sub-dir"
 	for _, tc := range []struct {
-		location map[string]string
-		check.Checker
+		location        map[string]string
 		expectedCommand string
 	}{
 		{
@@ -21,7 +34,6 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 				regionKey:        "test-region",
 				skipSSLVerifyKey: "true",
 			},
-			Checker: check.IsNil,
 			expectedCommand: fmt.Sprint(s3SubCommand,
 				fmt.Sprintf(" %s=%s ", s3BucketFlag, "test-bucket"),
 				fmt.Sprintf("%s=%s ", s3PrefixFlag, fmt.Sprintf("test-prefix/%s/", artifactPrefix)),
@@ -35,7 +47,6 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 				prefixKey:   "test-prefix",
 				endpointKey: "https://test.test:9000/",
 			},
-			Checker: check.IsNil,
 			expectedCommand: fmt.Sprint("s3 ",
 				fmt.Sprintf("%s=%s ", s3BucketFlag, "test-bucket"),
 				fmt.Sprintf("%s=%s ", s3EndpointFlag, "test.test:9000"),
@@ -47,18 +58,13 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 				prefixKey:   "test-prefix",
 				endpointKey: "http://test.test:9000",
 			},
-			Checker: check.IsNil,
 			expectedCommand: fmt.Sprint("s3 ",
 				fmt.Sprintf("%s=%s ", s3BucketFlag, "test-bucket"),
 				fmt.Sprintf("%s=%s --disable-tls ", s3EndpointFlag, "test.test:9000"),
 				fmt.Sprintf("%s=%s", s3PrefixFlag, fmt.Sprintf("test-prefix/%s/", artifactPrefix))),
 		},
 	} {
-		args, err := kopiaS3Args(tc.location, time.Duration(30*time.Minute), artifactPrefix)
-		c.Assert(err, tc.Checker)
-		c.Assert(args, check.Not(check.Equals), tc.Checker)
-		if tc.Checker == check.IsNil {
-			c.Assert(args.String(), check.Equals, tc.expectedCommand)
-		}
+		args := kopiaS3Args(tc.location, time.Duration(30*time.Minute), artifactPrefix)
+		c.Assert(args.String(), check.Equals, tc.expectedCommand)
 	}
 }

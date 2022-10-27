@@ -1,3 +1,17 @@
+// Copyright 2022 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package storage
 
 import (
@@ -21,11 +35,11 @@ const (
 	s3RegionFlag           = "--region"
 )
 
-func kopiaS3Args(location map[string]string, assumeRoleDuration time.Duration, artifactPrefix string) (logsafe.Cmd, error) {
+func kopiaS3Args(location map[string]string, assumeRoleDuration time.Duration, artifactPrefix string) logsafe.Cmd {
 	args := logsafe.NewLoggable(s3SubCommand)
-	args = args.AppendLoggableKV(s3BucketFlag, bucketName(location))
+	args = args.AppendLoggableKV(s3BucketFlag, getBucketNameFromMap(location))
 
-	e := endpoint(location)
+	e := getEndpointFromMap(location)
 	if e != "" {
 		s3Endpoint := ResolveS3Endpoint(e)
 		args = args.AppendLoggableKV(s3EndpointFlag, s3Endpoint)
@@ -35,22 +49,25 @@ func kopiaS3Args(location map[string]string, assumeRoleDuration time.Duration, a
 		}
 	}
 
-	artifactPrefix = GenerateFullRepoPath(prefix(location), artifactPrefix)
+	artifactPrefix = GenerateFullRepoPath(getPrefixFromMap(location), artifactPrefix)
 
 	args = args.AppendLoggableKV(s3PrefixFlag, artifactPrefix)
 
-	if skipSSLVerify(location) {
+	if checkSkipSSLVerifyFromMap(location) {
 		args = args.AppendLoggable(s3DisableTLSVerifyFlag)
 	}
 
-	region := region(location)
+	region := getRegionFromMap(location)
 	if region != "" {
 		args = args.AppendLoggableKV(s3RegionFlag, region)
 	}
 
-	return args, nil
+	return args
 }
 
+// ResolveS3Endpoint removes the trailing slash and
+// protocol from provided endpoint and returns the absolute
+// endpoint string
 func ResolveS3Endpoint(endpoint string) string {
 	if strings.HasSuffix(endpoint, "/") {
 		log.Debug().Print("Removing trailing slashes from the endpoint")
