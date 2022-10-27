@@ -503,6 +503,9 @@ func (s *SnapshotTestSuite) testVolumeSnapshot(c *C, snapshotter snapshot.Snapsh
 
 	_, err = snapshotter.Delete(ctx, snap.Name, snap.Namespace)
 	c.Assert(err, IsNil)
+
+	_, err = snapshotter.Delete(ctx, snapshotCloneName, s.targetNamespace)
+	c.Assert(err, IsNil)
 }
 
 func (s *SnapshotTestSuite) cleanupNamespace(c *C, ns string) {
