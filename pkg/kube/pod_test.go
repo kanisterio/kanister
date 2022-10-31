@@ -164,6 +164,17 @@ func (s *PodSuite) TestPod(c *C) {
 				"run": "pod",
 			},
 		},
+		{
+			Namespace:     s.namespace,
+			Name:          "testpod",
+			GenerateName:  "test-",
+			Image:         consts.LatestKanisterToolsImage,
+			ContainerName: "test-container",
+			Command:       []string{"sh", "-c", "tail -f /dev/null"},
+			Labels: map[string]string{
+				"run": "pod",
+			},
+		},
 	}
 
 	for _, po := range podOptions {
@@ -186,6 +197,10 @@ func (s *PodSuite) TestPod(c *C) {
 		if po.Annotations != nil {
 			c.Check(pod.ObjectMeta.Annotations, NotNil)
 			c.Check(pod.ObjectMeta.Annotations, DeepEquals, po.Annotations)
+		}
+
+		if po.Name != "" {
+			c.Assert(pod.ObjectMeta.Name, Equals, po.Name)
 		}
 
 		c.Check(len(pod.ObjectMeta.Labels), Equals, len(po.Labels)+1)
