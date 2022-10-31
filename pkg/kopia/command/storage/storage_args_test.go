@@ -15,6 +15,7 @@
 package storage
 
 import (
+	"fmt"
 	"time"
 
 	"gopkg.in/check.v1"
@@ -38,8 +39,13 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 				AssumeRoleDuration: time.Duration(30 * time.Minute),
 				RepoPathPrefix:     "dir/subdir/",
 			},
-			Checker:     check.IsNil,
-			expectedCmd: "s3 --bucket=test-bucket --prefix=test-prefix/dir/subdir/ --disable-tls-verification --region=test-region",
+			Checker: check.IsNil,
+			expectedCmd: fmt.Sprint(
+				s3SubCommand,
+				fmt.Sprintf(" %s=test-bucket", s3BucketFlag),
+				fmt.Sprintf(" %s=test-prefix/dir/subdir/ %s", s3PrefixFlag, s3DisableTLSVerifyFlag),
+				fmt.Sprintf(" %s=test-region", s3RegionFlag),
+			),
 		},
 		{
 			params: &StorageCommandParams{
@@ -49,8 +55,11 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 				},
 				RepoPathPrefix: "dir/subdir",
 			},
-			Checker:     check.IsNil,
-			expectedCmd: "filesystem --path=/mnt/data/test-prefix/dir/subdir/",
+			Checker: check.IsNil,
+			expectedCmd: fmt.Sprint(
+				filesystemSubCommand,
+				fmt.Sprintf(" %s=/mnt/data/test-prefix/dir/subdir/", pathFlag),
+			),
 		},
 		{
 			params: &StorageCommandParams{
@@ -61,8 +70,13 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 				},
 				RepoPathPrefix: "dir/subdir",
 			},
-			Checker:     check.IsNil,
-			expectedCmd: "gcs --bucket=test-bucket --credentials-file=/tmp/creds.txt --prefix=test-prefix/dir/subdir/",
+			Checker: check.IsNil,
+			expectedCmd: fmt.Sprint(
+				gcsSubCommand,
+				fmt.Sprintf(" %s=test-bucket", gcsBucketFlag),
+				fmt.Sprintf(" %s=/tmp/creds.txt", credentialsFileFlag),
+				fmt.Sprintf(" %s=test-prefix/dir/subdir/", gcsPrefixFlag),
+			),
 		},
 		{
 			params: &StorageCommandParams{
@@ -73,8 +87,12 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 				},
 				RepoPathPrefix: "dir/subdir",
 			},
-			Checker:     check.IsNil,
-			expectedCmd: "azure --container=test-bucket --prefix=test-prefix/dir/subdir/",
+			Checker: check.IsNil,
+			expectedCmd: fmt.Sprint(
+				azureSubCommand,
+				fmt.Sprintf(" %s=test-bucket", azureContainerFlag),
+				fmt.Sprintf(" %s=test-prefix/dir/subdir/", azurePrefixFlag),
+			),
 		},
 		{
 			params: &StorageCommandParams{

@@ -27,9 +27,10 @@ func (s *StorageUtilsSuite) TestGCSArgsUtil(c *check.C) {
 	}
 	artifactPrefix := "dir/sub-dir"
 	cmd := kopiaGCSArgs(locSecret, artifactPrefix)
-	c.Assert(cmd.String(), check.Equals, fmt.Sprint("gcs --bucket=",
-		locSecret[bucketKey],
-		" --credentials-file=/tmp/creds.txt",
-		" --prefix=", fmt.Sprintf("%s/%s/", locSecret[prefixKey], artifactPrefix),
+	c.Assert(cmd.String(), check.Equals, fmt.Sprint(
+		gcsSubCommand,
+		fmt.Sprintf(" --%s=%s", bucketKey, locSecret[bucketKey]),
+		fmt.Sprintf(" %s=/tmp/creds.txt", credentialsFileFlag),
+		fmt.Sprintf(" --%s=%s/%s/", prefixKey, locSecret[prefixKey], artifactPrefix),
 	))
 }

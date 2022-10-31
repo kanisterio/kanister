@@ -41,7 +41,9 @@ func (s *StorageUtilsSuite) TestFilesystemArgsUtil(c *check.C) {
 			prefixKey: tc.prefix,
 		}
 		args := kopiaFilesystemArgs(sec, tc.artifactPrefix)
-		expectedValue := fmt.Sprintf("filesystem --path=%s", tc.expectedPath)
+		expectedValue := fmt.Sprint(
+			filesystemSubCommand,
+			fmt.Sprintf(" %s=%s", pathFlag, tc.expectedPath))
 		c.Assert(args.String(), check.Equals, expectedValue)
 	}
 }
