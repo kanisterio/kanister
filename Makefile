@@ -359,25 +359,25 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-.PHONY: test-controller
-test-controller: manifests generate fmt vet envtest ## Run tests.
+.PHONY: kubebuilder-test
+kubebuilder-test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build
 
-.PHONY: build-controller
-build-controller: generate fmt vet ## Build manager binary.
+.PHONY: kubebuilder-build
+kubebuilder-build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager ./cmd/reposervercontroller/main.go
 
-.PHONY: run-controller
-run-controller: manifests generate fmt vet ## Run a controller from your host.
+.PHONY: kubebuilder-run
+kubebuilder-run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./cmd/reposervercontroller/main.go
 
 # If you wish built the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64 ). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
-docker-build: test-controller ## Build docker image with the manager.
+docker-build: kubebuilder-test ## Build docker image with the manager.
 	docker build -t ${IMG} docker/repositoryserver-controller
 
 .PHONY: docker-push
@@ -392,7 +392,7 @@ docker-push: ## Push docker image with the manager.
 # To properly provided solutions that supports more than one platform you should use this option.
 PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
 .PHONY: docker-buildx
-docker-buildx: test-controller ## Build and push docker image for the manager for cross-platform support
+docker-buildx: kubebuilder-test ## Build and push docker image for the manager for cross-platform support
 	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.cross, and preserve the original Dockerfile
 	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' docker/repositoryserver-controller/Dockerfile > docker/repositoryserver-controller/Dockerfile.cross
 	- docker buildx create --name project-v3-builder
@@ -415,13 +415,13 @@ install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build pkg/customresource | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
-.PHONY: deploy-controller
-deploy-controller: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+.PHONY: kubebuilder-deploy
+kubebuilder-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
-.PHONY: undeploy-controller
-undeploy-controller: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+.PHONY: kubebuilder-undeploy
+kubebuilder-undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 ##@ Build Dependencies
