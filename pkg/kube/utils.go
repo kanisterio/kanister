@@ -162,6 +162,8 @@ func IsNodeReady(node *v1.Node) bool {
 	return false
 }
 
+// createSecretMountSpec returns updated volume and volume mounts given secret mounts
+// secretMount expects only known keys for secrets with secret name as value
 func createSecretMountSpec(secretMount map[string]string, volMounts []v1.VolumeMount, vols []v1.Volume) ([]v1.VolumeMount, []v1.Volume, error) {
 	if secretName, ok := secretMount[locationSecretNameKey]; ok {
 		if secretName == "" {
