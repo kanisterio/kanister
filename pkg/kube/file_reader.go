@@ -26,6 +26,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
+// PodFileReader specifies Kubernetes Client and the other params needed for reading content of a file
 type PodFileReader struct {
 	cli       kubernetes.Interface
 	podName   string
@@ -33,6 +34,7 @@ type PodFileReader struct {
 	container string
 }
 
+// NewPodFileReader returns a new PodFileReader client for specific pod and container
 func NewPodFileReader(cli kubernetes.Interface, podName, namespace, container string) *PodFileReader {
 	return &PodFileReader{
 		cli:       cli,
@@ -42,6 +44,7 @@ func NewPodFileReader(cli kubernetes.Interface, podName, namespace, container st
 	}
 }
 
+// ReadFile returns file contents from specified path
 func (r *PodFileReader) ReadFile(ctx context.Context, path string) (string, error) {
 	cmd := []string{"sh", "-c", "cat " + path}
 	stdout, stderr, err := Exec(r.cli, r.namespace, r.podName, r.container, cmd, nil)
@@ -49,11 +52,12 @@ func (r *PodFileReader) ReadFile(ctx context.Context, path string) (string, erro
 		if stderr != "" {
 			log.Print("Error executing command", field.M{"stderr": stderr})
 		}
-		return "", errors.Wrap(err, "Failed to write contents to file")
+		return "", errors.Wrap(err, "Failed to read contents of file")
 	}
 	return stdout, nil
 }
 
+// ReadDir returns map of file name and content for the specified directory
 func (r *PodFileReader) ReadDir(ctx context.Context, dirPath string) (map[string]string, error) {
 	cmd := []string{"sh", "-c", "ls -1 " + dirPath}
 	stdout, stderr, err := Exec(r.cli, r.namespace, r.podName, r.container, cmd, nil)
