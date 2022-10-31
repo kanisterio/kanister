@@ -40,21 +40,20 @@ var _ = Suite(&PITRPostgreSQL{
 	},
 })
 
-// TODO: Add back after https://github.com/kanisterio/kanister/pull/1705 merges
-// // postgres app
-// type PostgreSQL struct {
-// 	IntegrationSuite
-// }
+// postgres app
+type PostgreSQL struct {
+	IntegrationSuite
+}
 
-// var _ = Suite(&PostgreSQL{
-// 	IntegrationSuite{
-// 		name:      "postgres",
-// 		namespace: "postgres-test",
-// 		app:       app.NewPostgresDB("postgres", ""),
-// 		bp:        app.NewBlueprint("postgres", "", true),
-// 		profile:   newSecretProfile(),
-// 	},
-// })
+var _ = Suite(&PostgreSQL{
+	IntegrationSuite{
+		name:      "postgres",
+		namespace: "postgres-test",
+		app:       app.NewPostgresDB("postgres", ""),
+		bp:        app.NewBlueprint("postgres", "", true),
+		profile:   newSecretProfile(),
+	},
+})
 
 // mysql app
 type MySQL struct {
@@ -116,21 +115,20 @@ var _ = Suite(&Maria{
 	},
 })
 
-// TODO: Add back after https://github.com/kanisterio/kanister/pull/1705 merges
-// // Elasticsearch app
-// type Elasticsearch struct {
-// 	IntegrationSuite
-// }
+// Elasticsearch app
+type Elasticsearch struct {
+	IntegrationSuite
+}
 
-// var _ = Suite(&Elasticsearch{
-// 	IntegrationSuite{
-// 		name:      "elasticsearch",
-// 		namespace: "es-test",
-// 		app:       app.NewElasticsearchInstance("elasticsearch"),
-// 		bp:        app.NewBlueprint("elasticsearch", "", true),
-// 		profile:   newSecretProfile(),
-// 	},
-// })
+var _ = Suite(&Elasticsearch{
+	IntegrationSuite{
+		name:      "elasticsearch",
+		namespace: "es-test",
+		app:       app.NewElasticsearchInstance("elasticsearch"),
+		bp:        app.NewBlueprint("elasticsearch", "", true),
+		profile:   newSecretProfile(),
+	},
+})
 
 // MongoDB app
 type MongoDB struct {
