@@ -47,7 +47,7 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
 	args = addTags(cmdArgs.Tags, args)
 
-	// K10-7350: kube.Exec might timeout after 4h if there is no output from the command
+	// kube.Exec might timeout after 4h if there is no output from the command
 	// Setting it to 1h by default, instead of 1000000h so that kopia logs progress once every hour
 	// In some cases, the update interval is set by the caller
 	duration := "1h"
