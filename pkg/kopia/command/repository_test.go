@@ -16,7 +16,8 @@ var _ = check.Suite(&RepositoryUtilsSuite{})
 
 func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 	for _, tc := range []struct {
-		cmdArg RepositoryCommandArgs
+		cmdArg   RepositoryCommandArgs
+		location map[string]string
 		check.Checker
 		expectedCmd   []string
 		expectedError string
@@ -28,7 +29,6 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
-				Location:        map[string]string{},
 				CacheDirectory:  "/tmp/cache.dir",
 				Hostname:        "test-hostname",
 				ContentCacheMB:  0,
@@ -36,6 +36,7 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 				Username:        "test-username",
 				RepoPathPrefix:  "test-path/prefix",
 			},
+			location:      map[string]string{},
 			Checker:       check.NotNil,
 			expectedError: "Failed to generate storage args: unsupported type for the location",
 		},
@@ -46,16 +47,16 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
-				Location: map[string]string{
-					"prefix": "test-prefix",
-					"type":   "filestore",
-				},
 				CacheDirectory:  "/tmp/cache.dir",
 				Hostname:        "test-hostname",
 				ContentCacheMB:  0,
 				MetadataCacheMB: 0,
 				Username:        "test-username",
 				RepoPathPrefix:  "test-path/prefix",
+			},
+			location: map[string]string{
+				"prefix": "test-prefix",
+				"type":   "filestore",
 			},
 			Checker: check.IsNil,
 			expectedCmd: []string{"kopia",
@@ -76,7 +77,7 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 			},
 		},
 	} {
-		cmd, err := RepositoryCreateCommand(tc.cmdArg)
+		cmd, err := RepositoryCreateCommand(tc.cmdArg, tc.location)
 		c.Assert(err, tc.Checker)
 		if tc.Checker == check.IsNil {
 			c.Assert(cmd, check.DeepEquals, tc.expectedCmd)
@@ -89,7 +90,8 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 	pit := strfmt.NewDateTime()
 	for _, tc := range []struct {
-		cmdArg RepositoryCommandArgs
+		cmdArg   RepositoryCommandArgs
+		location map[string]string
 		check.Checker
 		expectedCmd   []string
 		expectedError string
@@ -101,7 +103,6 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
-				Location:        map[string]string{},
 				CacheDirectory:  "/tmp/cache.dir",
 				Hostname:        "test-hostname",
 				ContentCacheMB:  0,
@@ -109,6 +110,7 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 				Username:        "test-username",
 				RepoPathPrefix:  "test-path/prefix",
 			},
+			location:      map[string]string{},
 			Checker:       check.NotNil,
 			expectedError: "Failed to generate storage args: unsupported type for the location",
 		},
@@ -119,15 +121,15 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
-				Location: map[string]string{
-					"prefix": "test-prefix",
-					"type":   "filestore",
-				},
 				CacheDirectory:  "/tmp/cache.dir",
 				ContentCacheMB:  0,
 				MetadataCacheMB: 0,
 				RepoPathPrefix:  "test-path/prefix",
 				PITFlag:         pit,
+			},
+			location: map[string]string{
+				"prefix": "test-prefix",
+				"type":   "filestore",
 			},
 			Checker: check.IsNil,
 			expectedCmd: []string{"kopia",
@@ -147,7 +149,7 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 			},
 		},
 	} {
-		cmd, err := RepositoryConnectCommand(tc.cmdArg)
+		cmd, err := RepositoryConnectCommand(tc.cmdArg, tc.location)
 		c.Assert(err, tc.Checker)
 		if tc.Checker == check.IsNil {
 			c.Assert(cmd, check.DeepEquals, tc.expectedCmd)

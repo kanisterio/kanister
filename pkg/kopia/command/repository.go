@@ -27,7 +27,6 @@ import (
 // creating or connecting to a Kopia repository
 type RepositoryCommandArgs struct {
 	*CommandArgs
-	Location        map[string]string
 	CacheDirectory  string
 	Hostname        string
 	ContentCacheMB  int
@@ -39,7 +38,7 @@ type RepositoryCommandArgs struct {
 }
 
 // RepositoryConnectCommand returns the kopia command for connecting to an existing repo
-func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
+func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs, location map[string]string) ([]string, error) {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, noCheckForUpdatesFlag)
 
@@ -53,8 +52,8 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
 
-	bsArgs, err := storage.KopiaBlobStoreArgs(&storage.StorageCommandParams{
-		Location:       cmdArgs.Location,
+	bsArgs, err := storage.KopiaStorageArgs(&storage.StorageCommandParams{
+		Location:       location,
 		RepoPathPrefix: cmdArgs.RepoPathPrefix,
 	})
 	if err != nil {
@@ -69,7 +68,7 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 }
 
 // RepositoryCreateCommand returns the kopia command for creation of a repo
-func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
+func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs, location map[string]string) ([]string, error) {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
 
@@ -83,8 +82,8 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 		args = args.AppendLoggableKV(overrideUsernameFlag, cmdArgs.Username)
 	}
 
-	bsArgs, err := storage.KopiaBlobStoreArgs(&storage.StorageCommandParams{
-		Location:       cmdArgs.Location,
+	bsArgs, err := storage.KopiaStorageArgs(&storage.StorageCommandParams{
+		Location:       location,
 		RepoPathPrefix: cmdArgs.RepoPathPrefix,
 	})
 	if err != nil {
