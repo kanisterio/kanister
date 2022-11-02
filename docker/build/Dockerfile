@@ -1,4 +1,4 @@
-FROM golang:1.19-bullseye
+FROM golang:1.19.3-bullseye
 
 LABEL maintainer="Tom Manville<tom@kasten.io>"
 
