@@ -7,6 +7,34 @@ metadata:
     app.kubernetes.io/part-of: kanister
     app.kuberentes.io/managed-by: kustomize
     app.kubernetes.io/created-by: kanister
-  name: repositoryserver-sample
+  name: kopia-repo-server-1
+  namespace: kanister
 spec:
-  # TODO(user): Add fields here
+  storage:
+    secretRef:
+      name: s3-location
+      namespace: kanister
+    credentialSecretRef:
+      name: s3-creds
+      namespace: kanister
+  repository:
+    rootPath: /repo/path/
+    passwordSecretRef:
+      name: repo-pass
+      namespace: kanister
+    username: kanisterAdmin
+    hostname: mysql.app
+  server:
+    adminSecretRef:
+      name: repository-admin-user
+      namespace: kanister
+    tlsSecretRef:
+      name: repository-server-tls-cert
+      namespace: kanister
+    userAccessSecretRef:
+      name: repository-server-user-access
+      namespace: kanister
+    networkPolicyIngressRule:
+      namespaceSelector:
+        matchLabels:
+          project: mysql
