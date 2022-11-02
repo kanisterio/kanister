@@ -31,7 +31,6 @@ type CrV1alpha1Interface interface {
 	ActionSetsGetter
 	BlueprintsGetter
 	ProfilesGetter
-	RepositoryServersGetter
 }
 
 // CrV1alpha1Client is used to interact with features provided by the cr group.
@@ -49,10 +48,6 @@ func (c *CrV1alpha1Client) Blueprints(namespace string) BlueprintInterface {
 
 func (c *CrV1alpha1Client) Profiles(namespace string) ProfileInterface {
 	return newProfiles(c, namespace)
-}
-
-func (c *CrV1alpha1Client) RepositoryServers(namespace string) RepositoryServerInterface {
-	return newRepositoryServers(c, namespace)
 }
 
 // NewForConfig creates a new CrV1alpha1Client for the given config.

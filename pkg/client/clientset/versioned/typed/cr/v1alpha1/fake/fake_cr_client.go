@@ -40,10 +40,6 @@ func (c *FakeCrV1alpha1) Profiles(namespace string) v1alpha1.ProfileInterface {
 	return &FakeProfiles{c, namespace}
 }
 
-func (c *FakeCrV1alpha1) RepositoryServers(namespace string) v1alpha1.RepositoryServerInterface {
-	return &FakeRepositoryServers{c, namespace}
-}
-
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeCrV1alpha1) RESTClient() rest.Interface {
