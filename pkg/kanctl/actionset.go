@@ -109,7 +109,7 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	params, err := extractPerformParams(cmd, args, clients.KubeClient, clients.OsClient)
+	params, err := extractPerformParams(cmd, args, clients)
 	if err != nil {
 		return err
 	}
@@ -266,7 +266,7 @@ func printActionSet(as *crv1alpha1.ActionSet) error {
 	return nil
 }
 
-func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Interface, osCli osversioned.Interface) (*PerformParams, error) {
+func extractPerformParams(cmd *cobra.Command, args []string, cli *Clients) (*PerformParams, error) {
 	if len(args) != 0 {
 		return nil, newArgsLengthError("expected 0 arguments. got %#v", args)
 	}
@@ -287,7 +287,7 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	if err != nil {
 		return nil, err
 	}
-	objects, err := parseObjects(cmd, cli, osCli)
+	objects, err := parseObjects(cmd, cli.KanisterClient, cli.OSClient)
 	if err != nil {
 		return nil, err
 	}
@@ -638,16 +638,16 @@ func verifyParams(ctx context.Context, p *PerformParams, cli *Clients) error {
 		for _, obj := range p.Objects {
 			switch obj.Kind {
 			case param.DeploymentKind:
-				_, err = cli.KubeClient.AppsV1().Deployments(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+				_, err = cli.KanisterClient.AppsV1().Deployments(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.StatefulSetKind:
-				_, err = cli.KubeClient.AppsV1().StatefulSets(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+				_, err = cli.KanisterClient.AppsV1().StatefulSets(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.DeploymentConfigKind:
 				// use open shift client to get the deployment config resource
-				_, err = cli.OsClient.AppsV1().DeploymentConfigs(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+				_, err = cli.OSClient.AppsV1().DeploymentConfigs(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.PVCKind:
-				_, err = cli.KubeClient.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+				_, err = cli.KanisterClient.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
 			case param.NamespaceKind:
-				_, err = cli.KubeClient.CoreV1().Namespaces().Get(ctx, obj.Name, metav1.GetOptions{})
+				_, err = cli.KanisterClient.CoreV1().Namespaces().Get(ctx, obj.Name, metav1.GetOptions{})
 			default:
 				gvr := schema.GroupVersionResource{
 					Group:    obj.Group,
@@ -666,7 +666,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli *Clients) error {
 	go func() {
 		defer wg.Done()
 		for _, cm := range p.ConfigMaps {
-			_, err := cli.KubeClient.CoreV1().ConfigMaps(cm.Namespace).Get(ctx, cm.Name, metav1.GetOptions{})
+			_, err := cli.KanisterClient.CoreV1().ConfigMaps(cm.Namespace).Get(ctx, cm.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "config map", cm.Name, cm.Namespace)
 			}
@@ -677,7 +677,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli *Clients) error {
 	go func() {
 		defer wg.Done()
 		for _, secret := range p.Secrets {
-			_, err := cli.KubeClient.CoreV1().Secrets(secret.Namespace).Get(ctx, secret.Name, metav1.GetOptions{})
+			_, err := cli.KanisterClient.CoreV1().Secrets(secret.Namespace).Get(ctx, secret.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "secret", secret.Name, secret.Namespace)
 			}
