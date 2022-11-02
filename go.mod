@@ -63,7 +63,12 @@ require (
 	sigs.k8s.io/controller-runtime v0.12.3
 )
 
-require github.com/dustin/go-humanize v1.0.0
+require (
+	github.com/dustin/go-humanize v1.0.0
+	github.com/go-logr/logr v1.2.0
+	github.com/onsi/ginkgo/v2 v2.0.0
+	github.com/onsi/gomega v1.18.1
+)
 
 require (
 	cloud.google.com/go v0.102.1 // indirect
@@ -101,7 +106,7 @@ require (
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
-	github.com/go-logr/logr v1.2.0 // indirect
+	github.com/go-logr/zapr v1.2.0 // indirect
 	github.com/go-openapi/errors v0.20.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
