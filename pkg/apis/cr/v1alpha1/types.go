@@ -368,6 +368,7 @@ type NetworkPolicyIngressRule struct {
 type RepositoryServerStatus struct {
 	Conditions []Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 	ServerInfo ServerInfo  `json:"serverInfo,omitempty"`
+	IsReady    string      `json:"isReady"`
 }
 
 // Condition contains details of the current state of the RepositoryServer resource
