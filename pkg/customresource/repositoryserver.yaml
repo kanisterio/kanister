@@ -231,8 +231,6 @@ spec:
                           secret name must be unique.
                         type: string
                     type: object
-                  isReady:
-                    type: string
                   secretRef:
                     description: SecretReference represents a Secret Reference. It
                       has enough information to retrieve secret in any namespace
@@ -348,6 +346,8 @@ spec:
                   - type
                   type: object
                 type: array
+              isReady:
+                type: string
               serverInfo:
                 description: ServerInfo describes all the information required by
                   the client users to connect to the repository server
