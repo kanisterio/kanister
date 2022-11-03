@@ -181,15 +181,6 @@ func (s *PodSuite) TestPod(c *C) {
 				},
 			},
 		},
-		{
-			Namespace:    s.namespace,
-			GenerateName: "test-",
-			Image:        consts.LatestKanisterToolsImage,
-			Command:      []string{"sh", "-c", "tail -f /dev/null"},
-			SecretMounts: map[string]string{
-				locationSecretNameKey: testSec.Name,
-			},
-		},
 	}
 
 	for _, po := range podOptions {
@@ -245,27 +236,6 @@ func (s *PodSuite) TestPod(c *C) {
 
 		if po.EnvironmentVariables != nil && len(po.EnvironmentVariables) > 0 {
 			c.Assert(pod.Spec.Containers[0].Env, DeepEquals, po.EnvironmentVariables)
-		}
-
-		if po.SecretMounts != nil {
-			volMount := pod.Spec.Containers[0].VolumeMounts[0]
-			expectedVolMount := v1.VolumeMount{
-				Name:      LocationSecretVolumeMountName,
-				MountPath: LocationSecretMountPath,
-			}
-			c.Assert(volMount, DeepEquals, expectedVolMount)
-			vol := pod.Spec.Volumes[0]
-			var defaultMode int32 = 420
-			expectedVol := v1.Volume{
-				Name: LocationSecretVolumeMountName,
-				VolumeSource: v1.VolumeSource{
-					Secret: &v1.SecretVolumeSource{
-						SecretName:  po.SecretMounts[locationSecretNameKey],
-						DefaultMode: &defaultMode,
-					},
-				},
-			}
-			c.Assert(vol, DeepEquals, expectedVol)
 		}
 
 		c.Assert(err, IsNil)
