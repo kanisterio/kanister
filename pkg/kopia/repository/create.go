@@ -40,11 +40,7 @@ func CreateKopiaRepository(
 	container string,
 	cmdArgs command.RepositoryCommandArgs,
 ) error {
-	loc, err := getLocationFromMountPath(cli, namespace, pod, container)
-	if err != nil {
-		return errors.Wrap(err, "Failed to create Kopia repository")
-	}
-	cmd, err := command.RepositoryCreateCommand(cmdArgs, loc)
+	cmd, err := command.RepositoryCreateCommand(cmdArgs)
 	if err != nil {
 		return errors.Wrap(err, "Failed to generate repository create command")
 	}
@@ -124,20 +120,4 @@ func setCustomMaintenanceOwner(
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	return err
-}
-
-// getLocationFromMountPath returns map of file name and content for
-// location mount path from the container
-func getLocationFromMountPath(
-	cli kubernetes.Interface,
-	namespace,
-	pod,
-	container string,
-) (map[string]string, error) {
-	fr := kube.NewPodFileReader(cli, pod, namespace, container)
-	loc, err := fr.ReadDir(context.Background(), kube.LocationSecretMountPath)
-	if err != nil {
-		return nil, err
-	}
-	return loc, nil
 }

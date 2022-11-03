@@ -34,11 +34,12 @@ type RepositoryCommandArgs struct {
 	Username        string
 	RepoPathPrefix  string
 	// PITFlag is only effective if set while repository connect
-	PITFlag strfmt.DateTime
+	PITFlag  strfmt.DateTime
+	Location map[string][]byte
 }
 
 // RepositoryConnectCommand returns the kopia command for connecting to an existing repo
-func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs, location map[string]string) ([]string, error) {
+func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, noCheckForUpdatesFlag)
 
@@ -53,7 +54,7 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs, location map[string
 	}
 
 	bsArgs, err := storage.KopiaStorageArgs(&storage.StorageCommandParams{
-		Location:       location,
+		Location:       cmdArgs.Location,
 		RepoPathPrefix: cmdArgs.RepoPathPrefix,
 	})
 	if err != nil {
@@ -68,7 +69,7 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs, location map[string
 }
 
 // RepositoryCreateCommand returns the kopia command for creation of a repo
-func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs, location map[string]string) ([]string, error) {
+func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
 
@@ -83,7 +84,7 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs, location map[string]
 	}
 
 	bsArgs, err := storage.KopiaStorageArgs(&storage.StorageCommandParams{
-		Location:       location,
+		Location:       cmdArgs.Location,
 		RepoPathPrefix: cmdArgs.RepoPathPrefix,
 	})
 	if err != nil {

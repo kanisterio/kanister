@@ -20,11 +20,7 @@ func ConnectToKopiaRepository(
 	container string,
 	cmdArgs command.RepositoryCommandArgs,
 ) error {
-	loc, err := getLocationFromMountPath(cli, namespace, pod, container)
-	if err != nil {
-		return errors.Wrap(err, "Failed to get location and credentials")
-	}
-	cmd, err := command.RepositoryConnectCommand(cmdArgs, loc)
+	cmd, err := command.RepositoryConnectCommand(cmdArgs)
 	if err != nil {
 		return errors.Wrap(err, "Failed to generate repository connect command")
 	}

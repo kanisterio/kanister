@@ -53,10 +53,10 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 				MetadataCacheMB: 0,
 				Username:        "test-username",
 				RepoPathPrefix:  "test-path/prefix",
-			},
-			location: map[string]string{
-				"prefix": "test-prefix",
-				"type":   "filestore",
+				Location: map[string][]byte{
+					"prefix": []byte("test-prefix"),
+					"type":   []byte("filestore"),
+				},
 			},
 			Checker: check.IsNil,
 			expectedCmd: []string{"kopia",
@@ -77,7 +77,7 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 			},
 		},
 	} {
-		cmd, err := RepositoryCreateCommand(tc.cmdArg, tc.location)
+		cmd, err := RepositoryCreateCommand(tc.cmdArg)
 		c.Assert(err, tc.Checker)
 		if tc.Checker == check.IsNil {
 			c.Assert(cmd, check.DeepEquals, tc.expectedCmd)
@@ -90,8 +90,7 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 	pit := strfmt.NewDateTime()
 	for _, tc := range []struct {
-		cmdArg   RepositoryCommandArgs
-		location map[string]string
+		cmdArg RepositoryCommandArgs
 		check.Checker
 		expectedCmd   []string
 		expectedError string
@@ -109,8 +108,8 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 				MetadataCacheMB: 0,
 				Username:        "test-username",
 				RepoPathPrefix:  "test-path/prefix",
+				Location:        map[string][]byte{},
 			},
-			location:      map[string]string{},
 			Checker:       check.NotNil,
 			expectedError: "Failed to generate storage args: unsupported type for the location",
 		},
@@ -126,10 +125,10 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 				MetadataCacheMB: 0,
 				RepoPathPrefix:  "test-path/prefix",
 				PITFlag:         pit,
-			},
-			location: map[string]string{
-				"prefix": "test-prefix",
-				"type":   "filestore",
+				Location: map[string][]byte{
+					"prefix": []byte("test-prefix"),
+					"type":   []byte("filestore"),
+				},
 			},
 			Checker: check.IsNil,
 			expectedCmd: []string{"kopia",
@@ -149,7 +148,7 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 			},
 		},
 	} {
-		cmd, err := RepositoryConnectCommand(tc.cmdArg, tc.location)
+		cmd, err := RepositoryConnectCommand(tc.cmdArg)
 		c.Assert(err, tc.Checker)
 		if tc.Checker == check.IsNil {
 			c.Assert(cmd, check.DeepEquals, tc.expectedCmd)
