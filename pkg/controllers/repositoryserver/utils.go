@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/rand"
 
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kube"
 )
 
@@ -46,8 +47,6 @@ const (
 	tlsCertDefaultMountPath = "/mnt/secrets/tlscert"
 	tlsKeyPath              = "/mnt/secrets/tlscert/tls.key"
 	tlsCertPath             = "/mnt/secrets/tlscert/tls.crt"
-
-	kanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.82.0"
 )
 
 func repoServerServiceResource(namespace string, repoServerCROwnerRef metav1.OwnerReference) corev1.Service {
@@ -230,7 +229,7 @@ func getPodOptions(
 	return &kube.PodOptions{
 		Namespace:       namespace,
 		GenerateName:    fmt.Sprintf("%s-", repoServerPod),
-		Image:           kanisterToolsImage,
+		Image:           consts.LatestKanisterToolsImage,
 		Command:         []string{"bash", "-c", "tail -f /dev/null"},
 		PodOverride:     podOverride,
 		Labels:          map[string]string{repoServerServiceNameKey: svc.Name},
