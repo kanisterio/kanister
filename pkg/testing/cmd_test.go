@@ -1,6 +1,3 @@
-//go:build kopia
-// +build kopia
-
 // Copyright 2022 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -100,6 +97,7 @@ func (s *KopiaCmdSuite) TestRepositoryCreate(c *check.C) {
 		ContentCacheMB:  0,
 		MetadataCacheMB: 0,
 		CacheDirectory:  "/tmp/cache",
+		Location:        locSecret.Data,
 	})
 	c.Assert(err, check.IsNil)
 }
@@ -119,7 +117,6 @@ func (s *KopiaCmdSuite) startKanisterToolsPod(c *check.C, locSecret, credSecret 
 		Image:                "ghcr.io/kanisterio/kanister-tools:0.83.0",
 		Command:              []string{"bash", "-c", "tail -f /dev/null"},
 		EnvironmentVariables: envVars,
-		SecretMounts:         kube.GetSecretMapFromLocSecret(locSecret),
 	}
 	pod, err := kube.CreatePod(context.Background(), s.cli, options)
 	c.Assert(err, check.IsNil)
@@ -146,7 +143,7 @@ func (s *KopiaCmdSuite) createFileStoreSecrets(c *check.C) *v1.Secret {
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "location-secret-",
 		},
-		StringData: storage.GetMapForLocationValues(s.locType, "test-prefix", "", "", "", ""),
+		Data: storage.GetMapForLocationValues(s.locType, "test-prefix", "", "", "", ""),
 	}
 	locSecret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.Background(), ls, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
@@ -159,7 +156,7 @@ func (s *KopiaCmdSuite) createS3Secrets(c *check.C) (locSecret, credSecret *v1.S
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "location-secret-",
 		},
-		StringData: storage.GetMapForLocationValues(s.locType, "test-prefix", "us-west-2", "tests.kanister.io", "http://minio.minio.svc.cluster.local:9000", "true"),
+		Data: storage.GetMapForLocationValues(s.locType, "test-prefix", "us-west-2", "tests.kanister.io", "http://minio.minio.svc.cluster.local:9000", "true"),
 	}
 	var err error
 	locSecret, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.Background(), locSecret, metav1.CreateOptions{})
