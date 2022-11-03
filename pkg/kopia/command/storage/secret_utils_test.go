@@ -26,13 +26,13 @@ type StorageUtilsSuite struct{}
 
 var _ = check.Suite(&StorageUtilsSuite{})
 
-func (s *StorageUtilsSuite) TestBucketNameUtil(c *check.C) {
-	loc := map[string]string{
-		bucketKey:        "test-key",
-		endpointKey:      "test-endpoint",
-		prefixKey:        "test-prefix",
-		regionKey:        "test-region",
-		skipSSLVerifyKey: "true",
+func (s *StorageUtilsSuite) TestLocationUtils(c *check.C) {
+	loc := map[string][]byte{
+		bucketKey:        []byte("test-key"),
+		endpointKey:      []byte("test-endpoint"),
+		prefixKey:        []byte("test-prefix"),
+		regionKey:        []byte("test-region"),
+		skipSSLVerifyKey: []byte("true"),
 	}
 	for _, tc := range []struct {
 		LocType                    string
@@ -59,13 +59,107 @@ func (s *StorageUtilsSuite) TestBucketNameUtil(c *check.C) {
 			expectedSkipSSLVerifyValue: true,
 		},
 	} {
-		loc[typeKey] = tc.LocType
-		loc[skipSSLVerifyKey] = tc.skipSSLVerify
-		c.Assert(getBucketNameFromMap(loc), check.Equals, loc[bucketKey])
-		c.Assert(getEndpointFromMap(loc), check.Equals, loc[endpointKey])
-		c.Assert(getPrefixFromMap(loc), check.Equals, loc[prefixKey])
-		c.Assert(getRegionFromMap(loc), check.Equals, loc[regionKey])
+		loc[typeKey] = []byte(tc.LocType)
+		loc[skipSSLVerifyKey] = []byte(tc.skipSSLVerify)
+		c.Assert(getBucketNameFromMap(loc), check.Equals, string(loc[bucketKey]))
+		c.Assert(getEndpointFromMap(loc), check.Equals, string(loc[endpointKey]))
+		c.Assert(getPrefixFromMap(loc), check.Equals, string(loc[prefixKey]))
+		c.Assert(getRegionFromMap(loc), check.Equals, string(loc[regionKey]))
 		c.Assert(checkSkipSSLVerifyFromMap(loc), check.Equals, tc.expectedSkipSSLVerifyValue)
 		c.Assert(locationType(loc), check.Equals, tc.expectedLocType)
+	}
+}
+
+func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
+	prefixValue := "test-prefix"
+	regionValue := "test-region"
+	bucketValue := "test-bucket"
+	endpointValue := "test-endpoint"
+	skipSSLVerifyValue := "true"
+	for _, tc := range []struct {
+		locType        LocType
+		prefix         string
+		region         string
+		bucket         string
+		endpoint       string
+		skipSSLVerify  string
+		expectedOutput map[string][]byte
+	}{
+		{
+			locType: LocTypeS3,
+			expectedOutput: map[string][]byte{
+				typeKey: []byte(LocTypeS3),
+			},
+		},
+		{
+			locType: LocTypeS3,
+			prefix:  prefixValue,
+			expectedOutput: map[string][]byte{
+				typeKey:   []byte(LocTypeS3),
+				prefixKey: []byte(prefixValue),
+			},
+		},
+		{
+			locType: LocTypeS3,
+			prefix:  prefixValue,
+			region:  regionValue,
+			expectedOutput: map[string][]byte{
+				typeKey:   []byte(LocTypeS3),
+				prefixKey: []byte(prefixValue),
+				regionKey: []byte(regionValue),
+			},
+		},
+		{
+			locType: LocTypeS3,
+			prefix:  prefixValue,
+			region:  regionValue,
+			bucket:  bucketValue,
+			expectedOutput: map[string][]byte{
+				typeKey:   []byte(LocTypeS3),
+				prefixKey: []byte(prefixValue),
+				regionKey: []byte(regionValue),
+				bucketKey: []byte(bucketValue),
+			},
+		},
+		{
+			locType:  LocTypeS3,
+			prefix:   prefixValue,
+			region:   regionValue,
+			bucket:   bucketValue,
+			endpoint: endpointValue,
+			expectedOutput: map[string][]byte{
+				typeKey:     []byte(LocTypeS3),
+				prefixKey:   []byte(prefixValue),
+				regionKey:   []byte(regionValue),
+				bucketKey:   []byte(bucketValue),
+				endpointKey: []byte(endpointValue),
+			},
+		},
+		{
+			locType:       LocTypeS3,
+			prefix:        prefixValue,
+			region:        regionValue,
+			bucket:        bucketValue,
+			endpoint:      endpointValue,
+			skipSSLVerify: skipSSLVerifyValue,
+			expectedOutput: map[string][]byte{
+				typeKey:          []byte(LocTypeS3),
+				prefixKey:        []byte(prefixValue),
+				regionKey:        []byte(regionValue),
+				bucketKey:        []byte(bucketValue),
+				endpointKey:      []byte(endpointValue),
+				skipSSLVerifyKey: []byte(skipSSLVerifyValue),
+			},
+		},
+	} {
+		op := GetMapForLocationValues(
+			tc.locType,
+			tc.prefix,
+			tc.region,
+			tc.bucket,
+			tc.endpoint,
+			tc.skipSSLVerify,
+		)
+		c.Assert(op, check.DeepEquals, tc.expectedOutput)
 	}
 }

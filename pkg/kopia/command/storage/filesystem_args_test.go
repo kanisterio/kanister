@@ -37,8 +37,8 @@ func (s *StorageUtilsSuite) TestFilesystemArgsUtil(c *check.C) {
 			expectedPath:   fmt.Sprintf("%s/test-prefix/dir1/subdir/", DefaultFSMountPath),
 		},
 	} {
-		sec := map[string]string{
-			prefixKey: tc.prefix,
+		sec := map[string][]byte{
+			prefixKey: []byte(tc.prefix),
 		}
 		args := kopiaFilesystemArgs(sec, tc.artifactPrefix)
 		expectedValue := fmt.Sprint(

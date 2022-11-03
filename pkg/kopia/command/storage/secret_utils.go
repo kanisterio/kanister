@@ -17,42 +17,74 @@ package storage
 type LocType string
 
 const (
-	LocTypeS3        LocType = "s3"
-	LocTypeGCS       LocType = "gcs"
-	LocTypeAzure     LocType = "azure"
-	LocTypeFilestore LocType = "filestore"
-)
-
-const (
+	// Location secret keys
 	bucketKey        = "bucket"
 	endpointKey      = "endpoint"
 	prefixKey        = "prefix"
 	regionKey        = "region"
 	skipSSLVerifyKey = "skipSSLVerify"
 	typeKey          = "type"
+
+	// Location types
+	LocTypeS3        LocType = "s3"
+	LocTypeGCS       LocType = "gcs"
+	LocTypeAzure     LocType = "azure"
+	LocTypeFilestore LocType = "filestore"
 )
 
-func getBucketNameFromMap(m map[string]string) string {
-	return m[bucketKey]
+func getBucketNameFromMap(m map[string][]byte) string {
+	return string(m[bucketKey])
 }
 
-func getEndpointFromMap(m map[string]string) string {
-	return m[endpointKey]
+func getEndpointFromMap(m map[string][]byte) string {
+	return string(m[endpointKey])
 }
 
-func getPrefixFromMap(m map[string]string) string {
-	return m[prefixKey]
+func getPrefixFromMap(m map[string][]byte) string {
+	return string(m[prefixKey])
 }
 
-func getRegionFromMap(m map[string]string) string {
-	return m[regionKey]
+func getRegionFromMap(m map[string][]byte) string {
+	return string(m[regionKey])
 }
 
-func checkSkipSSLVerifyFromMap(m map[string]string) bool {
-	v := m[skipSSLVerifyKey]
+func checkSkipSSLVerifyFromMap(m map[string][]byte) bool {
+	v := string(m[skipSSLVerifyKey])
 	return v == "true"
 }
 
-func locationType(m map[string]string) LocType {
+func locationType(m map[string][]byte) LocType {
 	return LocType(m[typeKey])
+}
+
+// GetMapForLocationValues return a map with valid keys
+// for different location values
+func GetMapForLocationValues(
+	locType LocType,
+	prefix,
+	region,
+	bucket,
+	endpoint,
+	skipSSLVerify string,
+) map[string][]byte {
+	m := map[string][]byte{}
+	if bucket != "" {
+		m[bucketKey] = []byte(bucket)
+	}
+	if endpoint != "" {
+		m[endpointKey] = []byte(endpoint)
+	}
+	if prefix != "" {
+		m[prefixKey] = []byte(prefix)
+	}
+	if region != "" {
+		m[regionKey] = []byte(region)
+	}
+	if skipSSLVerify != "" {
+		m[skipSSLVerifyKey] = []byte(skipSSLVerify)
+	}
+	if locType != "" {
+		m[typeKey] = []byte(locType)
+	}
+	return m
 }

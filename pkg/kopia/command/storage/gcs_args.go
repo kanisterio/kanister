@@ -26,7 +26,7 @@ const (
 	gcsPrefixFlag       = "--prefix"
 )
 
-func kopiaGCSArgs(location map[string]string, artifactPrefix string) logsafe.Cmd {
+func kopiaGCSArgs(location map[string][]byte, artifactPrefix string) logsafe.Cmd {
 	artifactPrefix = GenerateFullRepoPath(getPrefixFromMap(location), artifactPrefix)
 
 	args := logsafe.NewLoggable(gcsSubCommand)

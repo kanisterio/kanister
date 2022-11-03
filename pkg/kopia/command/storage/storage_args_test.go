@@ -29,12 +29,12 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 	}{
 		{
 			params: &StorageCommandParams{
-				Location: map[string]string{
-					bucketKey:        "test-bucket",
-					prefixKey:        "test-prefix",
-					regionKey:        "test-region",
-					skipSSLVerifyKey: "true",
-					typeKey:          "s3",
+				Location: map[string][]byte{
+					bucketKey:        []byte("test-bucket"),
+					prefixKey:        []byte("test-prefix"),
+					regionKey:        []byte("test-region"),
+					skipSSLVerifyKey: []byte("true"),
+					typeKey:          []byte("s3"),
 				},
 				AssumeRoleDuration: time.Duration(30 * time.Minute),
 				RepoPathPrefix:     "dir/subdir/",
@@ -49,9 +49,9 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 		},
 		{
 			params: &StorageCommandParams{
-				Location: map[string]string{
-					prefixKey: "test-prefix",
-					typeKey:   "filestore",
+				Location: map[string][]byte{
+					prefixKey: []byte("test-prefix"),
+					typeKey:   []byte("filestore"),
 				},
 				RepoPathPrefix: "dir/subdir",
 			},
@@ -63,10 +63,10 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 		},
 		{
 			params: &StorageCommandParams{
-				Location: map[string]string{
-					prefixKey: "test-prefix",
-					bucketKey: "test-bucket",
-					typeKey:   "gcs",
+				Location: map[string][]byte{
+					prefixKey: []byte("test-prefix"),
+					bucketKey: []byte("test-bucket"),
+					typeKey:   []byte("gcs"),
 				},
 				RepoPathPrefix: "dir/subdir",
 			},
@@ -80,10 +80,10 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 		},
 		{
 			params: &StorageCommandParams{
-				Location: map[string]string{
-					bucketKey: "test-bucket",
-					prefixKey: "test-prefix",
-					typeKey:   "azure",
+				Location: map[string][]byte{
+					bucketKey: []byte("test-bucket"),
+					prefixKey: []byte("test-prefix"),
+					typeKey:   []byte("azure"),
 				},
 				RepoPathPrefix: "dir/subdir",
 			},
@@ -96,8 +96,8 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 		},
 		{
 			params: &StorageCommandParams{
-				Location: map[string]string{
-					typeKey: "random-type",
+				Location: map[string][]byte{
+					typeKey: []byte("random-type"),
 				},
 			},
 			Checker: check.NotNil,

@@ -23,13 +23,13 @@ import (
 func (s *StorageUtilsSuite) TestAzureArgsUtil(c *check.C) {
 	artifactPrefix := "dir/sub-dir"
 	for _, tc := range []struct {
-		location        map[string]string
+		location        map[string][]byte
 		expectedCommand string
 	}{
 		{
-			location: map[string]string{
-				bucketKey: "test-bucket",
-				prefixKey: "test-prefix",
+			location: map[string][]byte{
+				bucketKey: []byte("test-bucket"),
+				prefixKey: []byte("test-prefix"),
 			},
 			expectedCommand: fmt.Sprint(azureSubCommand,
 				fmt.Sprintf(" %s=%s ", azureContainerFlag, "test-bucket"),

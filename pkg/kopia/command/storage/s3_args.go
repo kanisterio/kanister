@@ -35,7 +35,7 @@ const (
 	s3RegionFlag           = "--region"
 )
 
-func kopiaS3Args(location map[string]string, assumeRoleDuration time.Duration, artifactPrefix string) logsafe.Cmd {
+func kopiaS3Args(location map[string][]byte, assumeRoleDuration time.Duration, artifactPrefix string) logsafe.Cmd {
 	args := logsafe.NewLoggable(s3SubCommand)
 	args = args.AppendLoggableKV(s3BucketFlag, getBucketNameFromMap(location))
 

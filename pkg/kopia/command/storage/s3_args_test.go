@@ -24,15 +24,15 @@ import (
 func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 	artifactPrefix := "dir/sub-dir"
 	for _, tc := range []struct {
-		location        map[string]string
+		location        map[string][]byte
 		expectedCommand string
 	}{
 		{
-			location: map[string]string{
-				bucketKey:        "test-bucket",
-				prefixKey:        "test-prefix",
-				regionKey:        "test-region",
-				skipSSLVerifyKey: "true",
+			location: map[string][]byte{
+				bucketKey:        []byte("test-bucket"),
+				prefixKey:        []byte("test-prefix"),
+				regionKey:        []byte("test-region"),
+				skipSSLVerifyKey: []byte("true"),
 			},
 			expectedCommand: fmt.Sprint(s3SubCommand,
 				fmt.Sprintf(" %s=%s", s3BucketFlag, "test-bucket"),
@@ -42,10 +42,10 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 			),
 		},
 		{
-			location: map[string]string{
-				bucketKey:   "test-bucket",
-				prefixKey:   "test-prefix",
-				endpointKey: "https://test.test:9000/",
+			location: map[string][]byte{
+				bucketKey:   []byte("test-bucket"),
+				prefixKey:   []byte("test-prefix"),
+				endpointKey: []byte("https://test.test:9000/"),
 			},
 			expectedCommand: fmt.Sprint(s3SubCommand,
 				fmt.Sprintf(" %s=%s", s3BucketFlag, "test-bucket"),
@@ -53,10 +53,10 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 				fmt.Sprintf(" %s=%s", s3PrefixFlag, fmt.Sprintf("test-prefix/%s/", artifactPrefix))),
 		},
 		{
-			location: map[string]string{
-				bucketKey:   "test-bucket",
-				prefixKey:   "test-prefix",
-				endpointKey: "http://test.test:9000",
+			location: map[string][]byte{
+				bucketKey:   []byte("test-bucket"),
+				prefixKey:   []byte("test-prefix"),
+				endpointKey: []byte("http://test.test:9000"),
 			},
 			expectedCommand: fmt.Sprint(s3SubCommand,
 				fmt.Sprintf(" %s=%s", s3BucketFlag, "test-bucket"),

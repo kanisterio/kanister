@@ -25,7 +25,7 @@ type StorageCommandParams struct {
 	// S3 specific param
 	AssumeRoleDuration time.Duration
 	// Common params
-	Location       map[string]string
+	Location       map[string][]byte
 	RepoPathPrefix string
 }
 

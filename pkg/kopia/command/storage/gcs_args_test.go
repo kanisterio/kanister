@@ -21,9 +21,9 @@ import (
 )
 
 func (s *StorageUtilsSuite) TestGCSArgsUtil(c *check.C) {
-	locSecret := map[string]string{
-		prefixKey: "test-prefix",
-		bucketKey: "test-bucket",
+	locSecret := map[string][]byte{
+		prefixKey: []byte("test-prefix"),
+		bucketKey: []byte("test-bucket"),
 	}
 	artifactPrefix := "dir/sub-dir"
 	cmd := kopiaGCSArgs(locSecret, artifactPrefix)
