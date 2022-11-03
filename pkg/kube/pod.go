@@ -62,7 +62,6 @@ type PodOptions struct {
 	RestartPolicy        v1.RestartPolicy
 	OwnerReferences      []metav1.OwnerReference
 	EnvironmentVariables []v1.EnvVar
-	SecretMounts         map[string]string
 }
 
 // CreatePod creates a pod with a single container based on the specified image
@@ -94,10 +93,6 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	volumeMounts, podVolumes, err := createVolumeSpecs(opts.Volumes)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create volume spec")
-	}
-	volumeMounts, podVolumes, err = createSecretMountSpec(opts.SecretMounts, volumeMounts, podVolumes)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create secret volume spec")
 	}
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{

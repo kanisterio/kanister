@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -160,29 +159,4 @@ func IsNodeReady(node *v1.Node) bool {
 		}
 	}
 	return false
-}
-
-// createSecretMountSpec returns updated volume and volume mounts given secret mounts
-// secretMount expects only known keys for secrets with secret name as value
-func createSecretMountSpec(secretMount map[string]string, volMounts []v1.VolumeMount, vols []v1.Volume) ([]v1.VolumeMount, []v1.Volume, error) {
-	if secretName, ok := secretMount[locationSecretNameKey]; ok {
-		if secretName == "" {
-			return nil, nil, errors.New("Secret name cannot be empty")
-		}
-		volMount := v1.VolumeMount{
-			Name:      LocationSecretVolumeMountName,
-			MountPath: LocationSecretMountPath,
-		}
-		vol := v1.Volume{
-			Name: LocationSecretVolumeMountName,
-			VolumeSource: v1.VolumeSource{
-				Secret: &v1.SecretVolumeSource{
-					SecretName: secretName,
-				},
-			},
-		}
-		volMounts = append(volMounts, volMount)
-		vols = append(vols, vol)
-	}
-	return volMounts, vols, nil
 }
