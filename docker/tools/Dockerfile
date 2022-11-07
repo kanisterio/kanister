@@ -1,26 +1,25 @@
 # Build Kopia binary
 FROM golang:1.19-bullseye AS builder
 
-# Refers to https://github.com/kopia/kopia/commit/317cc36892707ab9bdc5f6e4dea567d1e638a070
-ARG kopiaBuildCommit=317cc36
-ARG kopiaRepoOrg=kopia
+ARG kopia_build_commit=master
+ARG kopia_repo_org=kopia
 ENV CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GO_EXTLINK_ENABLED=0
 RUN apt-get install git
 
 WORKDIR /
 
-RUN git clone https://github.com/${kopiaRepoOrg}/kopia.git
+RUN git clone https://github.com/${kopia_repo_org}/kopia.git
 
-ENV GITHUB_REPOSITORY=https://github.com/${kopiaRepoOrg}/kopia
+ENV GITHUB_REPOSITORY=https://github.com/${kopia_repo_org}/kopia
 
 WORKDIR /kopia
 
 # Build kopia binary from specific commit
-RUN git checkout ${kopiaBuildCommit}
+RUN git checkout ${kopia_build_commit}
 RUN GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o kopia \
   -ldflags="-X github.com/kopia/kopia/repo.BuildVersion=$(git show --no-patch --format='%cs-%h') \
-            -X github.com/kopia/kopia/repo.BuildInfo=$(git show --no-patch --format='%cI-%H')-${kopiaBuildCommit} \
-            -X github.com/kopia/kopia/repo.BuildGitHubRepo=${kopiaRepoOrg}" .
+            -X github.com/kopia/kopia/repo.BuildInfo=$(git show --no-patch --format='%cI-%H')-${kopia_build_commit} \
+            -X github.com/kopia/kopia/repo.BuildGitHubRepo=${kopia_repo_org}" .
 
 RUN adduser kopia && addgroup kopia kopia
 USER kopia:kopia
@@ -40,9 +39,6 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 ENTRYPOINT [ "/kopia/kopia" ]
-
-LABEL imageVersion="${imageVersion}"
-LABEL kopiaBuildCommit="${kopiaBuildCommit}"
 
 # Build tools image
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6-994
