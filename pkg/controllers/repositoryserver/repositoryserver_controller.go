@@ -18,11 +18,11 @@ package repositoryserver
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -41,6 +41,10 @@ type RepositoryServerReconciler struct {
 //+kubebuilder:rbac:groups=cr.kanister.io,resources=repositoryservers,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cr.kanister.io,resources=repositoryservers/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cr.kanister.io,resources=repositoryservers/finalizers,verbs=update
+//+kubebuilder:rbac:groups=corev1,resources=services,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=networkingv1,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=corev1,resources=pods,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=corev1,resources=pods/status,verbs=get
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -65,25 +69,28 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, errors.Wrap(err, "failed to get a k8s client")
 	}
 
-	logger.Info("Fetch the RepositoryServer CR. If found start the repositoryServer else end reconcile loop....")
+	logger.Info("Fetch RepositoryServer CR. If not found end reconcile loop")
 	repositoryServer := &crkanisteriov1alpha1.RepositoryServer{}
 	if err = r.Get(ctx, req.NamespacedName, repositoryServer); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	logger.Info("Starting the RepositoryServer and it's reconciliation....")
+	logger.Info("Found RepositoryServer CR. Create or update owned resources")
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
-	if err := repoServerHandler.Run(); err != nil {
+	if err := repoServerHandler.CreateOrUpdateOwnedResources(); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *RepositoryServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&crkanisteriov1alpha1.RepositoryServer{}).
+		Owns(&corev1.Service{}).
+		Owns(&networkingv1.NetworkPolicy{}).
+		Owns(&corev1.Pod{}).
 		Complete(r)
 }
 
@@ -94,12 +101,6 @@ func newRepositoryServerHandler(
 	reconciler *RepositoryServerReconciler,
 	kubeCli kubernetes.Interface,
 	repositoryServer *crkanisteriov1alpha1.RepositoryServer) RepoServerHandler {
-	repoServerCROwnerRef := metav1.OwnerReference{
-		APIVersion: repositoryServer.APIVersion,
-		Kind:       repositoryServer.Kind,
-		Name:       repositoryServer.Name,
-		UID:        repositoryServer.UID,
-	}
 	return RepoServerHandler{
 		Ctx:              ctx,
 		Req:              req,
@@ -107,6 +108,5 @@ func newRepositoryServerHandler(
 		Reconciler:       reconciler,
 		KubeCli:          kubeCli,
 		RepositoryServer: repositoryServer,
-		OwnerReference:   repoServerCROwnerRef,
 	}
 }

@@ -49,14 +49,13 @@ const (
 	tlsCertPath             = "/mnt/secrets/tlscert/tls.crt"
 )
 
-func repoServerServiceResource(namespace string, repoServerCROwnerRef metav1.OwnerReference) corev1.Service {
+func getRepoServerService(namespace string) corev1.Service {
 	name := fmt.Sprintf("%s-%s", repoServerService, rand.String(5))
 	return corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Namespace:       namespace,
-			Labels:          map[string]string{repoServerServiceNameKey: name},
-			OwnerReferences: []metav1.OwnerReference{repoServerCROwnerRef},
+			Name:      name,
+			Namespace: namespace,
+			Labels:    map[string]string{repoServerServiceNameKey: name},
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
@@ -72,10 +71,9 @@ func repoServerServiceResource(namespace string, repoServerCROwnerRef metav1.Own
 }
 
 // RepoServerNetworkPolicy returns a network policy with appropriate pod selector
-func repoServerNetworkPolicy(
+func getRepoServerNetworkPolicy(
 	namespace string,
 	svc *corev1.Service,
-	repoServerCROwnerRef metav1.OwnerReference,
 	podSelector *metav1.LabelSelector,
 	namespaceSelector *metav1.LabelSelector,
 ) *networkingv1.NetworkPolicy {
@@ -83,10 +81,9 @@ func repoServerNetworkPolicy(
 	port := intstr.FromInt(repoServerServicePort)
 	return &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    fmt.Sprintf("%s-", repoServerNP),
-			Namespace:       namespace,
-			Labels:          map[string]string{repoServerServiceNameKey: svc.Name},
-			OwnerReferences: []metav1.OwnerReference{repoServerCROwnerRef},
+			GenerateName: fmt.Sprintf("%s-", repoServerNP),
+			Namespace:    namespace,
+			Labels:       map[string]string{repoServerServiceNameKey: svc.Name},
 		},
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
@@ -221,18 +218,13 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 	return nil
 }
 
-func getPodOptions(
-	namespace string,
-	podOverride map[string]interface{},
-	svc *corev1.Service,
-	repoServerCROwnerRef metav1.OwnerReference) *kube.PodOptions {
+func getPodOptions(namespace string, podOverride map[string]interface{}, svc *corev1.Service) *kube.PodOptions {
 	return &kube.PodOptions{
-		Namespace:       namespace,
-		GenerateName:    fmt.Sprintf("%s-", repoServerPod),
-		Image:           consts.LatestKanisterToolsImage,
-		Command:         []string{"bash", "-c", "tail -f /dev/null"},
-		PodOverride:     podOverride,
-		Labels:          map[string]string{repoServerServiceNameKey: svc.Name},
-		OwnerReferences: []metav1.OwnerReference{repoServerCROwnerRef},
+		Namespace:    namespace,
+		GenerateName: fmt.Sprintf("%s-", repoServerPod),
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"bash", "-c", "tail -f /dev/null"},
+		PodOverride:  podOverride,
+		Labels:       map[string]string{repoServerServiceNameKey: svc.Name},
 	}
 }
