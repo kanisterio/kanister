@@ -73,11 +73,11 @@ type PodOptions struct {
 	EnvironmentVariables     []v1.EnvVar
 }
 
-func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, string, error) {
 	// If Namespace is not specified, use the controller Namespace.
 	cns, err := GetControllerNamespace()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get controller namespace")
+		return nil, "", errors.Wrapf(err, "Failed to get controller namespace")
 	}
 	ns := opts.Namespace
 	if ns == "" {
@@ -90,7 +90,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 	if sa == "" && ns == cns {
 		sa, err = GetControllerServiceAccount(cli)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get Controller Service Account")
+			return nil, "", errors.Wrap(err, "Failed to get Controller Service Account")
 		}
 	}
 
@@ -100,7 +100,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 
 	volumeMounts, podVolumes, err := createFilesystemModeVolumeSpecs(opts.Volumes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create volume spec")
+		return nil, "", errors.Wrapf(err, "Failed to create volume spec")
 	}
 	volumeDevices, blockVolumes, err := createBlockModeVolumeSpecs(opts.BlockVolumes)
 	if err != nil {
@@ -135,7 +135,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 	// Patch default Pod Specs if needed
 	patchedSpecs, err := patchDefaultPodSpecs(defaultSpecs, opts.PodOverride)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+		return nil, "", errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 
 	pod := &v1.Pod{
@@ -182,19 +182,32 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		pod.ObjectMeta.Labels[key] = value
 	}
 
+<<<<<<< HEAD
 	pod.Namespace = ns
 
 	return pod, nil
+=======
+	return pod, ns, nil
+>>>>>>> 906a452d (Populate pod object using podOptions in a function separate from CreatePod)
 }
 
 // CreatePod creates a pod with a single container based on the specified image
 func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+<<<<<<< HEAD
 	pod, err := GetPodObjectFromPodOptions(cli, opts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 
 	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+=======
+	pod, ns, err := GetPodObjectFromPodOptions(cli, opts)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", ns, opts.GenerateName)
+	}
+
+	pod, err = cli.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
+>>>>>>> 906a452d (Populate pod object using podOptions in a function separate from CreatePod)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", pod.Namespace, opts.GenerateName)
 	}
