@@ -1,8 +1,9 @@
 # Build Kopia binary
 FROM golang:1.19-bullseye AS builder
 
-ARG kopiaBuildCommit
-ARG kopiaRepoOrg
+# Refers to https://github.com/kopia/kopia/commit/317cc36892707ab9bdc5f6e4dea567d1e638a070
+ARG kopiaBuildCommit=317cc36
+ARG kopiaRepoOrg=kopia
 ENV CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GO_EXTLINK_ENABLED=0
 RUN apt-get install git
 
