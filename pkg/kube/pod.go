@@ -64,12 +64,11 @@ type PodOptions struct {
 	OwnerReferences    []metav1.OwnerReference
 }
 
-// CreatePod creates a pod with a single container based on the specified image
-func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, string, error) {
 	// If Namespace is not specified, use the controller Namespace.
 	cns, err := GetControllerNamespace()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get controller namespace")
+		return nil, "", errors.Wrapf(err, "Failed to get controller namespace")
 	}
 	ns := opts.Namespace
 	if ns == "" {
@@ -82,7 +81,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	if sa == "" && ns == cns {
 		sa, err = GetControllerServiceAccount(cli)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get Controller Service Account")
+			return nil, "", errors.Wrap(err, "Failed to get Controller Service Account")
 		}
 	}
 
@@ -92,7 +91,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 
 	volumeMounts, podVolumes, err := createVolumeSpecs(opts.Volumes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create volume spec")
+		return nil, "", errors.Wrapf(err, "Failed to create volume spec")
 	}
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
@@ -117,7 +116,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 	// Patch default Pod Specs if needed
 	patchedSpecs, err := patchDefaultPodSpecs(defaultSpecs, opts.PodOverride)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+		return nil, "", errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 
 	pod := &v1.Pod{
@@ -154,6 +153,16 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 
 	for key, value := range opts.Labels {
 		pod.ObjectMeta.Labels[key] = value
+	}
+
+	return pod, ns, nil
+}
+
+// CreatePod creates a pod with a single container based on the specified image
+func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+	pod, ns, err := GetPodObjectFromPodOptions(cli, opts)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", ns, opts.GenerateName)
 	}
 
 	pod, err = cli.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
