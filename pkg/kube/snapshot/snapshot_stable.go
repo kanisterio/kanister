@@ -98,7 +98,7 @@ func (sna *SnapshotStable) DeleteContent(ctx context.Context, name string) error
 
 // Clone will clone the VolumeSnapshot to namespace 'cloneNamespace'.
 // Underlying VolumeSnapshotContent will be cloned with a different name.
-func (sna *SnapshotStable) Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool) error {
+func (sna *SnapshotStable) Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool, labels map[string]string) error {
 	_, err := sna.Get(ctx, cloneName, cloneNamespace)
 	if err == nil {
 		return errors.Errorf("Target snapshot already exists in target namespace, Volumesnapshot: %s, Namespace: %s", cloneName, cloneNamespace)
@@ -111,7 +111,7 @@ func (sna *SnapshotStable) Clone(ctx context.Context, name, namespace, cloneName
 	if err != nil {
 		return errors.Errorf("Failed to get source")
 	}
-	return sna.CreateFromSource(ctx, src, cloneName, cloneNamespace, waitForReady)
+	return sna.CreateFromSource(ctx, src, cloneName, cloneNamespace, waitForReady, labels)
 }
 
 // GetSource will return the CSI source that backs the volume snapshot.
@@ -120,13 +120,13 @@ func (sna *SnapshotStable) GetSource(ctx context.Context, snapshotName, namespac
 }
 
 // CreateFromSource will create a 'Volumesnapshot' and 'VolumesnaphotContent' pair for the underlying snapshot source.
-func (sna *SnapshotStable) CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool) error {
+func (sna *SnapshotStable) CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool, labels map[string]string) error {
 	deletionPolicy, err := getDeletionPolicyFromClass(sna.dynCli, VolSnapClassGVR, source.VolumeSnapshotClassName)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
-	snap := UnstructuredVolumeSnapshot(VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, nil)
+	snap := UnstructuredVolumeSnapshot(VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, labels)
 
 	if err := sna.CreateContentFromSource(ctx, source, contentName, snapshotName, namespace, deletionPolicy); err != nil {
 		return err

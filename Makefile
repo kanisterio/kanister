@@ -62,7 +62,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.20
+BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.22
 
 # tag 0.1.0 is, 0.0.1 (latest) + gh + aws + helm binary
 DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
@@ -266,7 +266,7 @@ release-snapshot:
 	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot"'
 
 update-kopia-image:
-	@/bin/bash ./build/update_kopia_image.sh $(KOPIA_COMMIT_ID) $(KOPIA_REPO)
+	@/bin/bash ./build/update_kopia_image.sh -c $(KOPIA_COMMIT_ID) -r $(KOPIA_REPO) -b $(GOBORING)
 
 go-mod-download:
 	@$(MAKE) run CMD='-c "go mod download"'
