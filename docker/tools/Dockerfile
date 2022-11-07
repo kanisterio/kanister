@@ -44,7 +44,7 @@ LABEL imageVersion="${imageVersion}"
 LABEL kopiaBuildCommit="${kopiaBuildCommit}"
 
 # Build tools image
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6-985
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6-994
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \
