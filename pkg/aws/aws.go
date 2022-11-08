@@ -16,7 +16,6 @@ package aws
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"time"
 
@@ -105,7 +104,7 @@ func authenticateAWSCredentials(ctx context.Context, config map[string]string, a
 		}
 		assumedRole = os.Getenv(roleARNEnvKey)
 	default:
-		return nil, "", errors.New(fmt.Sprintf("%s and %s required to initialize AWS credentials", AccessKeyID, SecretAccessKey))
+		return nil, "", errors.Errorf("%s and %s required to initialize AWS credentials", AccessKeyID, SecretAccessKey)
 	}
 	return creds, assumedRole, nil
 }
