@@ -188,8 +188,8 @@ codegen:
 DOCS_CMD = "cd docs && make clean &&          \
                 doc8 --max-line-length 90 --ignore D000 . && \
                 make spelling && make html           \
-	   "
-
+	   "   
+	   
 docs:
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running DOCS_CMD in the containerized build environment"
@@ -200,9 +200,14 @@ ifeq ($(DOCKER_BUILD),"true")
 		-w /repo            \
 		$(DOCS_BUILD_IMAGE) \
 		/bin/bash -c $(DOCS_CMD)
+	@$(MAKE) run CMD='-c "./template/gen-crd-api-reference-docs -config template/example-config.json -api-dir ./pkg/apis/cr/v1alpha1 -out-file API.md"'	
 else
 	@/bin/bash -c $(DOCS_CMD)
+	@$(MAKE) run CMD='-c "./template/gen-crd-api-reference-docs -config template/example-config.json -api-dir ./pkg/apis/cr/v1alpha1 -out-file API.md"'
 endif
+
+# docs2:
+# 	@$(MAKE) run CMD='-c "./template/gen-crd-api-reference-docs -config template/example-config.json -api-dir ./pkg/apis/cr/v1alpha1 -out-file APIs.md"'
 
 build-dirs:
 	@mkdir -p bin/$(ARCH)
