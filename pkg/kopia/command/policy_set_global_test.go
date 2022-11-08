@@ -20,7 +20,7 @@ import (
 	qt "github.com/frankban/quicktest"
 )
 
-func TestPolicyCommandsLogging(t *testing.T) {
+func TestPolicyCommands(t *testing.T) {
 	c := qt.New(t)
 
 	for _, tc := range []struct {
