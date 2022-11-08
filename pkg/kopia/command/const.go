@@ -72,4 +72,16 @@ const (
 	tlsGenerateCertFlag       = "--tls-generate-cert"
 	tlsKeyFilePath            = "--tls-key-file"
 	userPasswordFlag          = "--user-password"
+
+	// DefaultCacheDirectory is the directory where kopia content cache is created
+	DefaultCacheDirectory = "/tmp/kopia-cache"
+
+	// DefaultConfigFilePath is the file which contains kopia repo config
+	DefaultConfigFilePath = "/tmp/kopia-repository.config"
+
+	// DefaultConfigDirectory is the directory which contains custom kopia repo config
+	DefaultConfigDirectory = "/tmp/kopia-repository"
+
+	// DefaultLogDirectory is the directory where kopia log file is created
+	DefaultLogDirectory = "/tmp/kopia-log"
 )
