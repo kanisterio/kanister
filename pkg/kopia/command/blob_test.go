@@ -15,8 +15,9 @@
 package command
 
 import (
-	qt "github.com/frankban/quicktest"
 	"testing"
+
+	qt "github.com/frankban/quicktest"
 )
 
 func TestBlobCommands(t *testing.T) {
