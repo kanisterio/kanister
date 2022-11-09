@@ -64,8 +64,7 @@ type PodOptions struct {
 	OwnerReferences    []metav1.OwnerReference
 }
 
-// CreatePod creates a pod with a single container based on the specified image
-func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
 	// If Namespace is not specified, use the controller Namespace.
 	cns, err := GetControllerNamespace()
 	if err != nil {
@@ -156,9 +155,21 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		pod.ObjectMeta.Labels[key] = value
 	}
 
-	pod, err = cli.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
+	pod.Namespace = ns
+
+	return pod, nil
+}
+
+// CreatePod creates a pod with a single container based on the specified image
+func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+	pod, err := GetPodObjectFromPodOptions(cli, opts)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", ns, opts.GenerateName)
+		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", pod.Namespace, opts.GenerateName)
+	}
+
+	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", pod.Namespace, opts.GenerateName)
 	}
 	return pod, nil
 }
