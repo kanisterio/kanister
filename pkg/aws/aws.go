@@ -65,8 +65,11 @@ const (
 
 var _ stscreds.TokenFetcher = (*staticToken)(nil)
 
+// staticToken implements stscreds.TokenFetcher interface for retrieval of plaintext web
+// identity token
 type staticToken string
 
+// FetchToken returns a plaintext web identity token as is.
 func (f staticToken) FetchToken(ctx credentials.Context) ([]byte, error) {
 	return []byte(f), nil
 }
@@ -79,34 +82,77 @@ func durationFromString(config map[string]string) (time.Duration, error) {
 	return time.ParseDuration(d)
 }
 
-func authenticateAWSCredentials(ctx context.Context, config map[string]string, assumeRoleDuration time.Duration) (*credentials.Credentials, string, error) {
-	var creds *credentials.Credentials
-	var assumedRole string
-
-	switch {
-	case config[AccessKeyID] != "" && config[SecretAccessKey] != "":
-		// If AccessKeys were provided - use those
-		creds = credentials.NewStaticCredentials(config[AccessKeyID], config[SecretAccessKey], "")
-	case config[ConfigWebIdentityToken] != "" && config[ConfigRole] != "":
-		// If Web Identity token and role were provided - use them
-		tokenFetcher := staticToken(config[ConfigWebIdentityToken])
-		var err error
-		if creds, err = getCredentialsWithDuration(config[ConfigRole], tokenFetcher, assumeRoleDuration); err != nil {
-			return nil, "", nil
-		}
-		assumedRole = config[ConfigRole]
-	case os.Getenv(webIdentityTokenFilePathEnvKey) != "" && os.Getenv(roleARNEnvKey) != "":
-		// Otherwise use Web Identity token file and role provided via ENV
-		tokenFetcher := stscreds.FetchTokenPath(os.Getenv(webIdentityTokenFilePathEnvKey))
-		var err error
-		if creds, err = getCredentialsWithDuration(os.Getenv(roleARNEnvKey), tokenFetcher, assumeRoleDuration); err != nil {
-			return nil, "", nil
-		}
-		assumedRole = os.Getenv(roleARNEnvKey)
-	default:
-		return nil, "", errors.Errorf("%s and %s required to initialize AWS credentials", AccessKeyID, SecretAccessKey)
+func authenticateAWSCredentials(
+	config map[string]string,
+	assumeRoleDuration time.Duration,
+) (creds *credentials.Credentials, assumedRole string, err error) {
+	// If AccessKeys were provided - use those
+	if creds = fetchStaticAWSCredentials(config); creds != nil {
+		return
 	}
-	return creds, assumedRole, nil
+
+	// If Web Identity token and role were provided - use them
+	if creds, err = fetchWebIdentityTokenFromConfig(config, assumeRoleDuration); err != nil {
+		return
+	}
+	if creds != nil {
+		assumedRole = config[ConfigRole]
+		return
+	}
+
+	// Otherwise use Web Identity token file and role provided via ENV
+	if creds, err = fetchWebIdentityTokenFromFile(assumeRoleDuration); err != nil {
+		return
+	}
+	if creds != nil {
+		assumedRole = os.Getenv(roleARNEnvKey)
+		return
+	}
+
+	err = errors.New("Missing AWS credentials, please check that either AWS access keys or web identity token are provided")
+	return
+}
+
+func fetchStaticAWSCredentials(config map[string]string) *credentials.Credentials {
+	if config[AccessKeyID] == "" || config[SecretAccessKey] == "" {
+		return nil
+	}
+
+	return credentials.NewStaticCredentials(config[AccessKeyID], config[SecretAccessKey], "")
+}
+
+func fetchWebIdentityTokenFromConfig(config map[string]string, assumeRoleDuration time.Duration) (*credentials.Credentials, error) {
+	if config[ConfigWebIdentityToken] == "" || config[ConfigRole] == "" {
+		return nil, nil
+	}
+
+	creds, err := getCredentialsWithDuration(
+		config[ConfigRole],
+		staticToken(config[ConfigWebIdentityToken]),
+		assumeRoleDuration,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return creds, nil
+}
+
+func fetchWebIdentityTokenFromFile(assumeRoleDuration time.Duration) (*credentials.Credentials, error) {
+	if os.Getenv(webIdentityTokenFilePathEnvKey) == "" || os.Getenv(roleARNEnvKey) == "" {
+		return nil, nil
+	}
+
+	creds, err := getCredentialsWithDuration(
+		os.Getenv(roleARNEnvKey),
+		stscreds.FetchTokenPath(os.Getenv(webIdentityTokenFilePathEnvKey)),
+		assumeRoleDuration,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return creds, nil
 }
 
 // switchAWSRole checks if the caller wants to assume a different role
@@ -136,7 +182,7 @@ func GetCredentials(ctx context.Context, config map[string]string) (*credentials
 	log.Debug().Print("Assume Role Duration setup", field.M{"assumeRoleDuration": assumeRoleDuration})
 
 	// authenticate AWS creds
-	creds, assumedRole, err := authenticateAWSCredentials(ctx, config, assumeRoleDuration)
+	creds, assumedRole, err := authenticateAWSCredentials(config, assumeRoleDuration)
 	if err != nil {
 		return nil, err
 	}
