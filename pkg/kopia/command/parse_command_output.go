@@ -123,7 +123,7 @@ func SnapSizeStatsFromSnapListAll(output string) (totalSizeB int64, numSnapshots
 		return 0, 0, errors.New("Received empty output")
 	}
 
-	snapList, err := ParseSnapshotManifestList(output)
+	snapList, err := parseSnapshotManifestList(output)
 	if err != nil {
 		return 0, 0, errors.Wrap(err, "Parsing snapshot list output as snapshot manifest list")
 	}
@@ -153,7 +153,7 @@ func sumSnapshotSizes(snapList []*snapshot.Manifest) (sum int64) {
 	return sum
 }
 
-func ParseSnapshotManifestList(output string) ([]*snapshot.Manifest, error) {
+func parseSnapshotManifestList(output string) ([]*snapshot.Manifest, error) {
 	snapInfoList := []*snapshot.Manifest{}
 
 	if err := json.Unmarshal([]byte(output), &snapInfoList); err != nil {
