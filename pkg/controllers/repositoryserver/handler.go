@@ -321,11 +321,10 @@ func (h *RepoServerHandler) createPod(
 	svc *corev1.Service,
 	podOverride map[string]interface{}) (*corev1.Pod, error) {
 	podOptions := getPodOptions(repoServerNamespace, podOverride, svc)
-	pod, ns, err := kube.GetPodObjectFromPodOptions(h.KubeCli, podOptions)
+	pod, err := kube.GetPodObjectFromPodOptions(h.KubeCli, podOptions)
 	if err != nil {
 		return nil, err
 	}
-	pod.ObjectMeta.Namespace = ns
 	h.Logger.Info("Set controller reference on Pod to allow reconciliation using this controller")
 	if err := controllerutil.SetControllerReference(h.RepositoryServer, pod, h.Reconciler.Scheme); err != nil {
 		return nil, err
