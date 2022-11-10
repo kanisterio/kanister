@@ -85,32 +85,33 @@ func durationFromString(config map[string]string) (time.Duration, error) {
 func authenticateAWSCredentials(
 	config map[string]string,
 	assumeRoleDuration time.Duration,
-) (creds *credentials.Credentials, assumedRole string, err error) {
+) (*credentials.Credentials, string, error) {
 	// If AccessKeys were provided - use those
-	if creds = fetchStaticAWSCredentials(config); creds != nil {
-		return
+	creds := fetchStaticAWSCredentials(config)
+	if creds != nil {
+		return creds, "", nil
 	}
 
 	// If Web Identity token and role were provided - use them
-	if creds, err = fetchWebIdentityTokenFromConfig(config, assumeRoleDuration); err != nil {
-		return
+	var err error
+	creds, err = fetchWebIdentityTokenFromConfig(config, assumeRoleDuration)
+	if err != nil {
+		return nil, "", err
 	}
 	if creds != nil {
-		assumedRole = config[ConfigRole]
-		return
+		return creds, config[ConfigRole], nil
 	}
 
 	// Otherwise use Web Identity token file and role provided via ENV
-	if creds, err = fetchWebIdentityTokenFromFile(assumeRoleDuration); err != nil {
-		return
+	creds, err = fetchWebIdentityTokenFromFile(assumeRoleDuration)
+	if err != nil {
+		return nil, "", err
 	}
 	if creds != nil {
-		assumedRole = os.Getenv(roleARNEnvKey)
-		return
+		return creds, os.Getenv(roleARNEnvKey), nil
 	}
 
-	err = errors.New("Missing AWS credentials, please check that either AWS access keys or web identity token are provided")
-	return
+	return nil, "", errors.New("Missing AWS credentials, please check that either AWS access keys or web identity token are provided")
 }
 
 func fetchStaticAWSCredentials(config map[string]string) *credentials.Credentials {
