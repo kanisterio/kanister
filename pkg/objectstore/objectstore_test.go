@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"os"
 	"path"
@@ -112,8 +112,8 @@ func (s *ObjectStoreProviderSuite) initProvider(c *C, region string) {
 
 // Verifies bucket operations, create/delete/list
 func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
-	ctx := context.Background()
 	c.Skip("intermittently fails due to rate limits on bucket creation")
+	ctx := context.Background()
 	bucketName := s.createBucketName(c)
 
 	origBuckets, _ := s.provider.ListBuckets(ctx)
@@ -391,7 +391,7 @@ func (s *ObjectStoreProviderSuite) TestObjectsStreaming(c *C) {
 
 	r, _, err := rootDirectory.Get(ctx, obj1)
 	c.Check(err, IsNil)
-	data, err := ioutil.ReadAll(r)
+	data, err := io.ReadAll(r)
 	c.Check(err, IsNil)
 	r.Close()
 	c.Check(data, DeepEquals, data1B)
@@ -400,7 +400,7 @@ func (s *ObjectStoreProviderSuite) TestObjectsStreaming(c *C) {
 	c.Check(err, IsNil)
 	r, ntags, err := rootDirectory.Get(ctx, obj2)
 	c.Check(err, IsNil)
-	data, err = ioutil.ReadAll(r)
+	data, err = io.ReadAll(r)
 	c.Check(err, IsNil)
 	r.Close()
 	c.Check(data, DeepEquals, data2B)

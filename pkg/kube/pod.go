@@ -17,7 +17,6 @@ package kube
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -52,6 +51,7 @@ type PodOptions struct {
 	Annotations        map[string]string
 	Command            []string
 	ContainerName      string
+	Name               string
 	GenerateName       string
 	Image              string
 	Labels             map[string]string
@@ -64,8 +64,7 @@ type PodOptions struct {
 	OwnerReferences    []metav1.OwnerReference
 }
 
-// CreatePod creates a pod with a single container based on the specified image
-func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
 	// If Namespace is not specified, use the controller Namespace.
 	cns, err := GetControllerNamespace()
 	if err != nil {
@@ -130,6 +129,11 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		Spec: patchedSpecs,
 	}
 
+	// Override `GenerateName` if `Name` option is provided
+	if opts.Name != "" {
+		pod.Name = opts.Name
+	}
+
 	// Override default container name if applicable
 	if opts.ContainerName != "" {
 		pod.Spec.Containers[0].Name = opts.ContainerName
@@ -151,9 +155,21 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		pod.ObjectMeta.Labels[key] = value
 	}
 
-	pod, err = cli.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
+	pod.Namespace = ns
+
+	return pod, nil
+}
+
+// CreatePod creates a pod with a single container based on the specified image
+func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+	pod, err := GetPodObjectFromPodOptions(cli, opts)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", ns, opts.GenerateName)
+		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", pod.Namespace, opts.GenerateName)
+	}
+
+	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", pod.Namespace, opts.GenerateName)
 	}
 	return pod, nil
 }
@@ -180,7 +196,7 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 		return "", err
 	}
 	defer reader.Close()
-	bytes, err := ioutil.ReadAll(reader)
+	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}
@@ -235,9 +251,9 @@ func checkNodesStatus(p *v1.Pod, cli kubernetes.Interface) error {
 }
 
 // checkPVCAndPVStatus does the following:
-// 1. if PVC is present then check the status of PVC
-// 	1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
-// 2. if PVC not present then wait for timeout
+//   - if PVC is present then check the status of PVC
+//   - if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
+//   - if PVC not present then wait for timeout
 func getVolStatus(ctx context.Context, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 	for _, vol := range p.Spec.Volumes {
 		if err := checkPVCAndPVStatus(ctx, vol, p, cli, namespace); err != nil {
@@ -248,9 +264,9 @@ func getVolStatus(ctx context.Context, p *v1.Pod, cli kubernetes.Interface, name
 }
 
 // checkPVCAndPVStatus does the following:
-// 1. if PVC is present then check the status of PVC
-// 	1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
-// 2. if PVC not present then wait for timeout
+//   - if PVC is present then check the status of PVC
+//   - if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
+//   - if PVC not present then wait for timeout
 func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 	if vol.VolumeSource.PersistentVolumeClaim == nil {
 		// wait for timeout

@@ -124,7 +124,9 @@ func (s *ibmCloud) volumeParse(ctx context.Context, vol *ibmprov.Volume) (*block
 	}
 	attribs[LunIDAttName] = vol.LunID
 
-	if len(vol.IscsiTargetIPAddresses) < 0 {
+	// TODO: Fix issue where we don't catch the error uf vol.IscsiTargetIPAddresses is empty
+	// Related ticket - https://github.com/kanisterio/kanister/issues/1683
+	if len(vol.IscsiTargetIPAddresses) < 0 { //nolint:staticcheck
 		return nil, errors.New("IscsiTargetIPAddresses are missing from Volume info")
 	}
 	if len(vol.Attributes) > 0 {

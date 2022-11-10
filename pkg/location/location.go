@@ -70,7 +70,7 @@ func Read(ctx context.Context, out io.Writer, profile param.Profile, suffix stri
 	return readData(ctx, osType, profile, out, path)
 }
 
-//Delete data from location specified by `profile` and `suffix`.
+// Delete data from location specified by `profile` and `suffix`.
 func Delete(ctx context.Context, profile param.Profile, suffix string) error {
 	osType, err := getProviderType(profile.Location.Type)
 	if err != nil {

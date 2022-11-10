@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: Switch to using the latest azure sdk and remove nolint.
+// Related Ticket- https://github.com/kanisterio/kanister/issues/168
+//
+//nolint:staticcheck
 package azure
 
 import (
@@ -96,7 +100,7 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	}, nil
 }
 
-// nolint:unparam
+//nolint:unparam
 func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
 	if isClientCredsAvailable(config) {
 		return getClientCredsAuthorizer(env, config)
