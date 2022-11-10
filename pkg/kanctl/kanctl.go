@@ -40,8 +40,8 @@ var (
 )
 
 type Clients struct {
-	KanisterClient kubernetes.Interface
-	CrdClient      versioned.Interface
+	KubeClient     kubernetes.Interface
+	KanisterClient versioned.Interface
 	OSClient       osversioned.Interface
 }
 
@@ -99,8 +99,8 @@ func initializeClients() (*Clients, error) {
 		return nil, errors.Wrap(err, "could not get the CRD client")
 	}
 	clients := Clients{
-		KanisterClient: cli,
-		CrdClient:      crCli,
+		KubeClient:     cli,
+		KanisterClient: crCli,
 		OSClient:       osCli,
 	}
 	return &clients, nil

@@ -178,19 +178,19 @@ func createNewProfile(cmd *cobra.Command, args []string) error {
 		fmt.Println("---")
 		return printProfile(profile)
 	}
-	secret, err = createSecret(ctx, secret, clients.KanisterClient)
+	secret, err = createSecret(ctx, secret, clients.KubeClient)
 	if err != nil {
 		return errors.Wrap(err, "failed to create secret")
 	}
-	err = validateProfile(ctx, profile, clients.KanisterClient, skipValidation, true)
+	err = validateProfile(ctx, profile, clients.KubeClient, skipValidation, true)
 	if err != nil {
 		fmt.Printf("validation failed, deleting secret '%s'\n", secret.GetName())
-		if rmErr := deleteSecret(ctx, secret, clients.KanisterClient); rmErr != nil {
+		if rmErr := deleteSecret(ctx, secret, clients.KubeClient); rmErr != nil {
 			return errors.Wrap(rmErr, "failed to delete secret after validation failed")
 		}
 		return errors.Wrap(err, "profile validation failed")
 	}
-	return createProfile(ctx, profile, clients.CrdClient)
+	return createProfile(ctx, profile, clients.KanisterClient)
 }
 
 func getLocationParams(cmd *cobra.Command) (*locationParams, error) {
@@ -407,12 +407,12 @@ func performProfileValidation(p *validateParams) error {
 	if err != nil {
 		return errors.Wrap(err, "could not initialize clients for validation")
 	}
-	prof, err := getProfileFromCmd(ctx, clients.CrdClient, p)
+	prof, err := getProfileFromCmd(ctx, clients.KanisterClient, p)
 	if err != nil {
 		return err
 	}
 
-	return validateProfile(ctx, prof, clients.KanisterClient, p.schemaValidationOnly, false)
+	return validateProfile(ctx, prof, clients.KubeClient, p.schemaValidationOnly, false)
 }
 
 func validateProfile(ctx context.Context, profile *v1alpha1.Profile, cli kubernetes.Interface, schemaValidationOnly bool, printFailStageOnly bool) error {
