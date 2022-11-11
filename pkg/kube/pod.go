@@ -58,10 +58,17 @@ type PodOptions struct {
 	Namespace          string
 	ServiceAccountName string
 	Volumes            map[string]string
-	PodOverride        crv1alpha1.JSONMap
-	Resources          v1.ResourceRequirements
-	RestartPolicy      v1.RestartPolicy
-	OwnerReferences    []metav1.OwnerReference
+	// PodSecurityContext and ContainerSecurityContext can be used to set the security context
+	// at the pod level and container level respectively.
+	// You can still use podOverride to set the pod security context, but these fields will take precedence.
+	// We chose these fields to specify security context instead of just using podOverride because
+	// the merge behaviour of the pods spec is confusing in case of podOverride, and this is more readable.
+	PodSecurityContext       *v1.PodSecurityContext
+	ContainerSecurityContext *v1.SecurityContext
+	PodOverride              crv1alpha1.JSONMap
+	Resources                v1.ResourceRequirements
+	RestartPolicy            v1.RestartPolicy
+	OwnerReferences          []metav1.OwnerReference
 }
 
 func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
@@ -149,6 +156,14 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 
 	if opts.OwnerReferences != nil {
 		pod.SetOwnerReferences(opts.OwnerReferences)
+	}
+
+	if opts.PodSecurityContext != nil {
+		pod.Spec.SecurityContext = opts.PodSecurityContext
+	}
+
+	if opts.ContainerSecurityContext != nil {
+		pod.Spec.Containers[0].SecurityContext = opts.ContainerSecurityContext
 	}
 
 	for key, value := range opts.Labels {
