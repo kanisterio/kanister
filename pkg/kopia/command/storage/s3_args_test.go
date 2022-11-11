@@ -68,3 +68,38 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 		c.Assert(args.String(), check.Equals, tc.expectedCommand)
 	}
 }
+
+func (s *StorageUtilsSuite) TestResolveS3Endpoint(c *check.C) {
+	for _, tc := range []struct {
+		endpoint       string
+		expectedOutput string
+	}{
+		{
+			endpoint:       "http://example:8000",
+			expectedOutput: "example:8000",
+		},
+		{
+			endpoint:       "http://example:8000/",
+			expectedOutput: "example:8000",
+		},
+		{
+			endpoint:       "https://example:8000",
+			expectedOutput: "example:8000",
+		},
+		{
+			endpoint:       "https://example:8000/",
+			expectedOutput: "example:8000",
+		},
+		{
+			endpoint:       "example:8000",
+			expectedOutput: "example:8000",
+		},
+		{
+			endpoint:       "example",
+			expectedOutput: "example",
+		},
+	} {
+		op := ResolveS3Endpoint(tc.endpoint)
+		c.Assert(op, check.Equals, tc.expectedOutput)
+	}
+}
