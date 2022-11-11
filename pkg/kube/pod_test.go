@@ -175,6 +175,18 @@ func (s *PodSuite) TestPod(c *C) {
 				"run": "pod",
 			},
 		},
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        consts.LatestKanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+			EnvironmentVariables: []v1.EnvVar{
+				{
+					Name:  "test-env",
+					Value: "test-value",
+				},
+			},
+		},
 	}
 
 	for _, po := range podOptions {
@@ -230,6 +242,10 @@ func (s *PodSuite) TestPod(c *C) {
 			c.Assert(pod.Spec.RestartPolicy, Equals, v1.RestartPolicyNever)
 		default:
 			c.Assert(pod.Spec.RestartPolicy, Equals, po.RestartPolicy)
+		}
+
+		if po.EnvironmentVariables != nil && len(po.EnvironmentVariables) > 0 {
+			c.Assert(pod.Spec.Containers[0].Env, DeepEquals, po.EnvironmentVariables)
 		}
 
 		c.Assert(err, IsNil)
