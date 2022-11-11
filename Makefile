@@ -199,10 +199,27 @@ ifeq ($(DOCKER_BUILD),"true")
 		-w /repo            \
 		$(DOCS_BUILD_IMAGE) \
 		/bin/bash -c $(DOCS_CMD)
-	@$(MAKE) run CMD='-c "./template/gen-crd-api-reference-docs -config template/example-config.json -api-dir ./pkg/apis/cr/v1alpha1 -out-file API.md"'	
 else
 	@/bin/bash -c $(DOCS_CMD)
-	@$(MAKE) run CMD='-c "./template/gen-crd-api-reference-docs -config template/example-config.json -api-dir ./pkg/apis/cr/v1alpha1 -out-file API.md"'
+endif
+
+API_DOCS_CMD = "gen-crd-api-reference-docs		\
+				-config /usr/local/bin/example-config.json		\
+				-api-dir ./pkg/apis/cr/v1alpha1	\
+				-out-file API.md				\
+	   "
+crd_docs:
+ifeq ($(DOCKER_BUILD),"true")
+	@echo "running API_DOCS_CMD in the containerized build environment"
+	@docker run             \
+		--entrypoint ''     \
+		--rm                \
+		-v "$(PWD):/repo"   \
+		-w /repo            \
+		$(BUILD_IMAGE) \
+		/bin/bash -c $(API_DOCS_CMD)
+else
+	@/bin/bash -c $(API_DOCS_CMD)
 endif
 
 build-dirs:
