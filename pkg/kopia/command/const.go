@@ -51,7 +51,7 @@ const (
 	tagsFlag                   = "--tags"
 	unsafeIgnoreSourceFlag     = "--unsafe-ignore-source"
 	ownerFlag                  = "--owner"
-	sparseFlag                 = "--sparse"
+	sparseFlag                 = "--write-sparse-files"
 
 	// Server specific
 	addSubCommand             = "add"
