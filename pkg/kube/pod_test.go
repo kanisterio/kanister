@@ -89,11 +89,6 @@ func (s *PodSuite) TestPod(c *C) {
 	sa, err := GetControllerServiceAccount(fake.NewSimpleClientset())
 	c.Assert(err, IsNil)
 
-	testSec := s.createTestSecret(c)
-	defer func() {
-		err = s.cli.CoreV1().Secrets(testSec.Namespace).Delete(context.Background(), testSec.Name, metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
-	}()
 	ctx := context.Background()
 	podOptions := []*PodOptions{
 		{
@@ -257,20 +252,6 @@ func (s *PodSuite) TestPod(c *C) {
 		c.Assert(WaitForPodReady(ctx, s.cli, po.Namespace, pod.Name), IsNil)
 		c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)
 	}
-}
-
-func (s *PodSuite) createTestSecret(c *C) *v1.Secret {
-	testSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "test-secret-",
-		},
-		StringData: map[string]string{
-			"key": "value",
-		},
-	}
-	testSecret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.Background(), testSecret, metav1.CreateOptions{})
-	c.Assert(err, IsNil)
-	return testSecret
 }
 
 func (s *PodSuite) createServiceAccount(name, ns string) error {
