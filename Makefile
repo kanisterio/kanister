@@ -42,10 +42,6 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 # Mention the vm-driver that should be used to install OpenShift
 vm-driver ?= "kvm"
 
-# Refers to https://github.com/kopia/kopia/commit/317cc36892707ab9bdc5f6e4dea567d1e638a070
-KOPIA_COMMIT_ID ?= "317cc36"
-
-KOPIA_REPO ?= "kopia"
 # Default OCP version in which the OpenShift apps are going to run
 ocp_version ?= "4.10"
 ###
@@ -264,9 +260,6 @@ gorelease:
 
 release-snapshot:
 	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot"'
-
-update-kopia-image:
-	@/bin/bash ./build/update_kopia_image.sh -c $(KOPIA_COMMIT_ID) -r $(KOPIA_REPO) -b $(GOBORING)
 
 go-mod-download:
 	@$(MAKE) run CMD='-c "go mod download"'
