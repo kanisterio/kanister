@@ -63,7 +63,10 @@ require (
 	sigs.k8s.io/controller-runtime v0.12.3
 )
 
-require github.com/dustin/go-humanize v1.0.0
+require (
+	github.com/dustin/go-humanize v1.0.0
+	github.com/frankban/quicktest v1.13.1
+)
 
 require (
 	cloud.google.com/go v0.102.1 // indirect
@@ -130,6 +133,8 @@ require (
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.1.0 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
+	github.com/kr/pretty v0.3.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
