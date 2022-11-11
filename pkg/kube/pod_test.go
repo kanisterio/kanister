@@ -735,7 +735,6 @@ func (s *PodSuite) TestSetPodSecurityContext(c *C) {
 	var uidAndGidExpected int64 = 1000
 	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
 	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
-
 }
 
 func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
@@ -765,5 +764,4 @@ func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
 	var uidAndGidExpected int64 = 1000
 	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
 	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
-
 }
