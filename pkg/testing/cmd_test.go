@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
@@ -47,6 +48,7 @@ var _ = check.Suite(&KopiaCmdSuite{locType: storage.LocTypeS3})
 var _ = check.Suite(&KopiaCmdSuite{locType: storage.LocTypeFilestore})
 
 func (s *KopiaCmdSuite) SetUpSuite(c *check.C) {
+	s.skipIfEnvNotSet(c)
 	config, err := kube.LoadConfig()
 	c.Assert(err, check.IsNil)
 	cli, err := kubernetes.NewForConfig(config)
@@ -162,14 +164,14 @@ func (s *KopiaCmdSuite) createS3Secrets(c *check.C) (locSecret, credSecret *v1.S
 	locSecret, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.Background(), locSecret, metav1.CreateOptions{})
 	c.Assert(err, check.IsNil)
 
-	accessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
+	accessKeyID := os.Getenv(aws.AccessKeyID)
 	if accessKeyID == "" {
-		c.Log("AWS_ACCESS_KEY_ID not set")
+		c.Log(aws.AccessKeyID, " not set")
 		c.Fail()
 	}
-	secretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	secretAccessKey := os.Getenv(aws.SecretAccessKey)
 	if secretAccessKey == "" {
-		c.Log("AWS_SECRET_ACCESS_KEY not set")
+		c.Log(aws.SecretAccessKey, " not set")
 		c.Fail()
 	}
 	credSecret = &v1.Secret{
@@ -186,4 +188,18 @@ func (s *KopiaCmdSuite) createS3Secrets(c *check.C) (locSecret, credSecret *v1.S
 	c.Assert(err, check.IsNil)
 
 	return locSecret, credSecret
+}
+
+func (s *KopiaCmdSuite) skipIfEnvNotSet(c *check.C) {
+	switch s.locType {
+	case storage.LocTypeS3:
+		getEnvOrSkip(aws.AccessKeyID, c)
+		getEnvOrSkip(aws.SecretAccessKey, c)
+	}
+}
+
+func getEnvOrSkip(env string, c *check.C) {
+	if os.Getenv(env) == "" {
+		c.Skip(fmt.Sprint("Env not set: ", env))
+	}
 }
