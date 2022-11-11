@@ -22,6 +22,15 @@ COPY --from=golangci/golangci-lint:v1.50 /usr/bin/golangci-lint /usr/local/bin/
 RUN wget -O /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.11.1/kind-linux-amd64 \
     && chmod +x /usr/local/bin/kind
 
+# adding crd documentation tool here, since docs-build does not have golang base to create binary from go file
+RUN wget -O gen-crd-api-reference-docs_linux_amd64.tar.gz https://github.com/ahmetb/gen-crd-api-reference-docs/archive/refs/tags/v0.3.0.tar.gz \
+    && tar xzfv gen-crd-api-reference-docs_linux_amd64.tar.gz  \
+    && mkdir crd_documentation \
+    && cp -r gen-crd-api-reference-docs-0.3.0/* ./crd_documentation \
+    && cd crd_documentation \
+    && go build \
+    && cp -r * /usr/local/bin/
+    
 ENV CGO_ENABLED=0 \
     GO111MODULE="on" \
     GOROOT="/usr/local/go" \
