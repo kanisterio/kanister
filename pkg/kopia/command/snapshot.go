@@ -16,6 +16,7 @@ package command
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/utils"
@@ -31,8 +32,9 @@ const (
 
 type SnapshotCreateCommandArgs struct {
 	*CommandArgs
-	PathToBackup string
-	Tags         []string
+	PathToBackup           string
+	Tags                   []string
+	ProgressUpdateInterval time.Duration
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
@@ -44,6 +46,15 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
 	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
 	args = addTags(cmdArgs.Tags, args)
+
+	// kube.Exec might timeout after 4h if there is no output from the command
+	// Setting it to 1h by default, instead of 1000000h so that kopia logs progress once every hour
+	// In some cases, the update interval is set by the caller
+	duration := "1h"
+	if cmdArgs.ProgressUpdateInterval > 0 {
+		duration = utils.DurationToString(utils.RoundUpDuration(cmdArgs.ProgressUpdateInterval))
+	}
+	args = args.AppendLoggableKV(progressUpdateIntervalFlag, duration)
 	return stringSliceCommand(args)
 }
 

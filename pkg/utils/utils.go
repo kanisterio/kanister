@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,4 +78,30 @@ func GetEnvAsStringOrDefault(envKey string, def string) string {
 	}
 
 	return def
+}
+
+// DurationToString formats the given duration into a short format which eludes trailing zero units in the string.
+func DurationToString(d time.Duration) string {
+	s := d.String()
+
+	if strings.HasSuffix(s, "h0m0s") {
+		return s[:len(s)-4]
+	}
+
+	if strings.HasSuffix(s, "m0s") {
+		return s[:len(s)-2]
+	}
+
+	return s
+}
+
+// RoundUpDuration rounds duration to highest set duration unit
+func RoundUpDuration(t time.Duration) time.Duration {
+	if t < time.Minute {
+		return t.Round(time.Second)
+	}
+	if t < time.Hour {
+		return t.Round(time.Minute)
+	}
+	return t.Round(time.Hour)
 }
