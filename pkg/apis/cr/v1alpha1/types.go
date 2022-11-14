@@ -400,6 +400,9 @@ const (
 
 	// ServerStopped represents the terminated state of the repository server pod due to any unforeseen errors
 	ServerStopped RepositoryServerConditionType = "ServerStopped"
+
+	// ServerPending indicates the pending state of the RepositoryServer CR when Reconcile callback is in progress
+	ServerPending RepositoryServerConditionType = "ServerPending"
 )
 
 // ServerInfo describes all the information required by the client users to connect to the repository server
