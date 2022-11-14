@@ -15,6 +15,7 @@
 package command
 
 import (
+	"strings"
 	"testing"
 	"time"
 

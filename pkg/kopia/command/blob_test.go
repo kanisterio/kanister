@@ -15,6 +15,7 @@
 package command
 
 import (
+	"strings"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
