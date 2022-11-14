@@ -73,6 +73,9 @@ const (
 	tlsKeyFilePath            = "--tls-key-file"
 	userPasswordFlag          = "--user-password"
 
+	// Repository specific
+	repositorySubCommand = "repository"
+
 	// DefaultCacheDirectory is the directory where kopia content cache is created
 	DefaultCacheDirectory = "/tmp/kopia-cache"
 
