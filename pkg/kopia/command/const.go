@@ -72,4 +72,7 @@ const (
 	tlsGenerateCertFlag       = "--tls-generate-cert"
 	tlsKeyFilePath            = "--tls-key-file"
 	userPasswordFlag          = "--user-password"
+
+	// Repository specific
+	repositorySubCommand = "repository"
 )
