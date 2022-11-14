@@ -346,7 +346,7 @@ spec:
                   - type
                   type: object
                 type: array
-              isReady:
+              progress:
                 type: string
               serverInfo:
                 description: ServerInfo describes all the information required by
