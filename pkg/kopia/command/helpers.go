@@ -38,25 +38,29 @@ func GetCacheSizeSettingsForRestore() (contentCacheMB, metadataCacheMB int) {
 }
 
 type GeneralCommandArgs struct {
-	*KopiaCommandParams
 	*CommandArgs
+	SubCommands      []string
+	LoggableFlag     []string
+	LoggableKV       map[string]string
+	RedactedKV       map[string]string
+	OutputFileSuffix string
 }
 
-// GeneralCommand returns the kopia command from KopiaCommandParams which
+// GeneralCommand returns the kopia command
 // contains subcommands, loggable flags, loggable key value pairs and
 // redacted key value pairs
 func GeneralCommand(cmdArgs GeneralCommandArgs) logsafe.Cmd {
 	args := commonArgs(cmdArgs.CommandArgs, false)
-	for _, subCmd := range cmdArgs.KopiaCommandParams.SubCommands {
+	for _, subCmd := range cmdArgs.SubCommands {
 		args = args.AppendLoggable(subCmd)
 	}
-	for _, flag := range cmdArgs.KopiaCommandParams.LoggableFlag {
+	for _, flag := range cmdArgs.LoggableFlag {
 		args = args.AppendLoggable(flag)
 	}
-	for k, v := range cmdArgs.KopiaCommandParams.LoggableKV {
+	for k, v := range cmdArgs.LoggableKV {
 		args = args.AppendLoggableKV(k, v)
 	}
-	for k, v := range cmdArgs.KopiaCommandParams.RedactedKV {
+	for k, v := range cmdArgs.RedactedKV {
 		args = args.AppendRedactedKV(k, v)
 	}
 	return args
