@@ -109,9 +109,10 @@ type ActionSpec struct {
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
 type ActionSetStatus struct {
-	State   State          `json:"state"`
-	Actions []ActionStatus `json:"actions,omitempty"`
-	Error   Error          `json:"error,omitempty"`
+	State    State          `json:"state"`
+	Actions  []ActionStatus `json:"actions,omitempty"`
+	Error    Error          `json:"error,omitempty"`
+	Progress ActionProgress `json:"progress,omitempty"`
 }
 
 // ActionStatus is updated as we execute phases.
@@ -126,6 +127,19 @@ type ActionStatus struct {
 	Phases []Phase `json:"phases,omitempty"`
 	// Artifacts created by this phase.
 	Artifacts map[string]Artifact `json:"artifacts,omitempty"`
+	// DeferPhase is the phase that is executed at the end of an action
+	// irrespective of the status of other phases in the action
+	DeferPhase Phase `json:"deferPhase,omitempty"`
+}
+
+// ActionProgress provides information on the progress of an action.
+type ActionProgress struct {
+	// PercentCompleted is computed by assessing the number of completed phases
+	// against the the total number of phases.
+	PercentCompleted string `json:"percentCompleted,omitempty"`
+	// LastTransitionTime represents the last date time when the progress status
+	// was received.
+	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
 }
 
 // State is the current state of a phase of execution.
@@ -194,6 +208,7 @@ type BlueprintAction struct {
 	InputArtifactNames []string            `json:"inputArtifactNames,omitempty"`
 	OutputArtifacts    map[string]Artifact `json:"outputArtifacts,omitempty"`
 	Phases             []BlueprintPhase    `json:"phases,omitempty"`
+	DeferPhase         *BlueprintPhase     `json:"deferPhase,omitempty"`
 }
 
 // BlueprintPhase is a an individual unit of execution.

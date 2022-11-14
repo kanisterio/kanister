@@ -58,7 +58,13 @@ type RDSPostgresDB struct {
 	securityGroupID   string
 	securityGroupName string
 	sqlDB             *sql.DB
+	configMapName     string
+	secretName        string
 }
+
+const (
+	dbInstanceType = "db.t3.micro"
+)
 
 func NewRDSPostgresDB(name string, customRegion string) App {
 	return &RDSPostgresDB{
@@ -69,6 +75,8 @@ func NewRDSPostgresDB(name string, customRegion string) App {
 		username:          "master",
 		password:          "secret99",
 		region:            customRegion,
+		configMapName:     fmt.Sprintf("%s-config", name),
+		secretName:        fmt.Sprintf("%s-secret", name),
 	}
 }
 
@@ -146,7 +154,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rdsCli.CreateDBInstance(ctx, 20, "db.t2.micro", pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID})
+	_, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID})
 	if err != nil {
 		return err
 	}
@@ -172,14 +180,14 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 			Kind:       "ConfigMap",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "dbconfig",
+			Name: pdb.configMapName,
 		},
 		Data: map[string]string{
 			"postgres.instanceid": pdb.id,
 			"postgres.host":       pdb.host,
 			"postgres.databases":  makeYamlList(pdb.databases),
 			"postgres.user":       pdb.username,
-			"postgres.secret":     "dbsecret",
+			"postgres.secret":     pdb.secretName,
 		},
 	}
 	_, err = pdb.cli.CoreV1().ConfigMaps(ns).Create(ctx, dbconfig, metav1.CreateOptions{})
@@ -194,7 +202,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 			Kind:       "Secret",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "dbsecret",
+			Name: pdb.secretName,
 		},
 		StringData: map[string]string{
 			"password":          pdb.password,
@@ -218,7 +226,7 @@ func (pdb *RDSPostgresDB) IsReady(ctx context.Context) (bool, error) {
 func (pdb *RDSPostgresDB) Object() crv1alpha1.ObjectReference {
 	return crv1alpha1.ObjectReference{
 		APIVersion: "v1",
-		Name:       "dbconfig",
+		Name:       pdb.configMapName,
 		Namespace:  pdb.namespace,
 		Resource:   "configmaps",
 	}
@@ -227,13 +235,13 @@ func (pdb *RDSPostgresDB) Object() crv1alpha1.ObjectReference {
 // Ping makes and tests DB connection
 func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 	// Get connection info from configmap
-	dbconfig, err := pdb.cli.CoreV1().ConfigMaps(pdb.namespace).Get(ctx, "dbconfig", metav1.GetOptions{})
+	dbconfig, err := pdb.cli.CoreV1().ConfigMaps(pdb.namespace).Get(ctx, pdb.configMapName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	// Get secret creds
-	dbsecret, err := pdb.cli.CoreV1().Secrets(pdb.namespace).Get(ctx, "dbsecret", metav1.GetOptions{})
+	dbsecret, err := pdb.cli.CoreV1().Secrets(pdb.namespace).Get(ctx, pdb.secretName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -312,7 +320,7 @@ func (pdb RDSPostgresDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
 		"dbconfig": crv1alpha1.ObjectReference{
 			Kind:      "configmap",
-			Name:      "dbconfig",
+			Name:      pdb.configMapName,
 			Namespace: pdb.namespace,
 		},
 	}
@@ -322,7 +330,7 @@ func (pdb RDSPostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
 		"dbsecret": crv1alpha1.ObjectReference{
 			Kind:      "secret",
-			Name:      "dbsecret",
+			Name:      pdb.secretName,
 			Namespace: pdb.namespace,
 		},
 	}

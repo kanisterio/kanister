@@ -30,8 +30,8 @@ const (
 	AzureStorageKey            = "AZURE_STORAGE_ACCOUNT_KEY"
 	AzureSubscriptionID        = "AZURE_SUBSCRIPTION_ID"
 	AzureTenantID              = "AZURE_TENANT_ID"
-	AzureCientID               = "AZURE_CLIENT_ID"
-	AzureClentSecret           = "AZURE_CLIENT_SECRET"
+	AzureClientID              = "AZURE_CLIENT_ID"
+	AzureClientSecret          = "AZURE_CLIENT_SECRET"
 	AzureResurceGroup          = "AZURE_RESOURCE_GROUP"
 	AzureResurceMgrEndpoint    = "AZURE_RESOURCE_MANAGER_ENDPOINT"
 	AzureMigrateStorageAccount = "AZURE_MIGRATE_STORAGE_ACCOUNT_NAME"
@@ -39,6 +39,7 @@ const (
 	AzureMigrateResourceGroup  = "AZURE_MIGRATE_RESOURCE_GROUP"
 	AzureActiveDirEndpoint     = "AZURE_AD_ENDPOINT"
 	AzureActiveDirResourceID   = "AZURE_AD_RESOURCE"
+	AzureCloudEnvironmentID    = "AZURE_CLOUD_ENV_ID"
 )
 
 // SanitizeTags are used to sanitize the tags

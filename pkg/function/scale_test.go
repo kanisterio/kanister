@@ -57,7 +57,7 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 	s.cli = cli
 	s.crCli = crCli
 	s.osCli = osCli
-
+	ctx := context.Background()
 	err = resource.CreateCustomResources(context.Background(), config)
 	c.Assert(err, IsNil)
 
@@ -66,16 +66,16 @@ func (s *ScaleSuite) SetUpTest(c *C) {
 			GenerateName: "kanister-scale-test-",
 		},
 	}
-	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.Name
 
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), sec, metav1.CreateOptions{})
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), p, metav1.CreateOptions{})
+	_, err = crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 }
 
@@ -135,7 +135,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 	ctx := context.Background()
 	d := testutil.NewTestDeployment(1)
 	d.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-		PreStop: &v1.Handler{
+		PreStop: &v1.LifecycleHandler{
 			Exec: &v1.ExecAction{
 				Command: []string{"sleep", "30"},
 			},
@@ -175,7 +175,7 @@ func (s *ScaleSuite) TestScaleDeployment(c *C) {
 		c.Assert(ok, Equals, true)
 	}
 
-	pods, err := s.cli.CoreV1().Pods(s.namespace).List(context.TODO(), metav1.ListOptions{})
+	pods, err := s.cli.CoreV1().Pods(s.namespace).List(ctx, metav1.ListOptions{})
 	c.Assert(err, IsNil)
 	c.Assert(pods.Items, HasLen, 0)
 }
@@ -184,7 +184,7 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 	ctx := context.Background()
 	ss := testutil.NewTestStatefulSet(1)
 	ss.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-		PreStop: &v1.Handler{
+		PreStop: &v1.LifecycleHandler{
 			Exec: &v1.ExecAction{
 				Command: []string{"sleep", "30"},
 			},
@@ -224,27 +224,20 @@ func (s *ScaleSuite) TestScaleStatefulSet(c *C) {
 		c.Assert(ok, Equals, true)
 	}
 
-	pods, err := s.cli.CoreV1().Pods(s.namespace).List(context.TODO(), metav1.ListOptions{})
+	_, err = s.cli.CoreV1().Pods(s.namespace).List(ctx, metav1.ListOptions{})
 	c.Assert(err, IsNil)
-
-	// This check can flake on underprovisioned clusters so we exit early.
-	c.SucceedNow()
-	for _, pod := range pods.Items {
-		for _, cs := range pod.Status.ContainerStatuses {
-			c.Assert(cs.State.Terminated, NotNil)
-		}
-	}
 }
 
 func (s *ScaleSuite) TestGetArgs(c *C) {
 	for _, tc := range []struct {
-		tp            param.TemplateParams
-		args          map[string]interface{}
-		wantNamespace string
-		wantKind      string
-		wantName      string
-		wantReplicas  int32
-		check         Checker
+		tp               param.TemplateParams
+		args             map[string]interface{}
+		wantNamespace    string
+		wantKind         string
+		wantName         string
+		wantReplicas     int32
+		wantWaitForReady bool
+		check            Checker
 	}{
 		{
 			tp:    param.TemplateParams{},
@@ -258,12 +251,14 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 				ScaleWorkloadNamespaceArg: "foo",
 				ScaleWorkloadNameArg:      "app",
 				ScaleWorkloadKindArg:      param.StatefulSetKind,
+				ScaleWorkloadWaitArg:      false,
 			},
-			wantKind:      param.StatefulSetKind,
-			wantName:      "app",
-			wantNamespace: "foo",
-			wantReplicas:  int32(2),
-			check:         IsNil,
+			wantKind:         param.StatefulSetKind,
+			wantName:         "app",
+			wantNamespace:    "foo",
+			wantReplicas:     int32(2),
+			wantWaitForReady: false,
+			check:            IsNil,
 		},
 		{
 			tp: param.TemplateParams{
@@ -275,11 +270,12 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 			args: map[string]interface{}{
 				ScaleWorkloadReplicas: 2,
 			},
-			wantKind:      param.StatefulSetKind,
-			wantName:      "app",
-			wantNamespace: "foo",
-			wantReplicas:  int32(2),
-			check:         IsNil,
+			wantKind:         param.StatefulSetKind,
+			wantName:         "app",
+			wantNamespace:    "foo",
+			wantReplicas:     int32(2),
+			wantWaitForReady: true,
+			check:            IsNil,
 		},
 		{
 			tp: param.TemplateParams{
@@ -291,11 +287,12 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 			args: map[string]interface{}{
 				ScaleWorkloadReplicas: int64(2),
 			},
-			wantKind:      param.DeploymentKind,
-			wantName:      "app",
-			wantNamespace: "foo",
-			wantReplicas:  int32(2),
-			check:         IsNil,
+			wantKind:         param.DeploymentKind,
+			wantName:         "app",
+			wantNamespace:    "foo",
+			wantReplicas:     int32(2),
+			wantWaitForReady: true,
+			check:            IsNil,
 		},
 		{
 			tp: param.TemplateParams{
@@ -310,14 +307,15 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 				ScaleWorkloadNameArg:      "notapp",
 				ScaleWorkloadKindArg:      param.DeploymentKind,
 			},
-			wantKind:      param.DeploymentKind,
-			wantName:      "notapp",
-			wantNamespace: "notfoo",
-			wantReplicas:  int32(2),
-			check:         IsNil,
+			wantKind:         param.DeploymentKind,
+			wantName:         "notapp",
+			wantNamespace:    "notfoo",
+			wantReplicas:     int32(2),
+			wantWaitForReady: true,
+			check:            IsNil,
 		},
 	} {
-		namespace, kind, name, replicas, err := getArgs(tc.tp, tc.args)
+		namespace, kind, name, replicas, waitForReady, err := getArgs(tc.tp, tc.args)
 		c.Assert(err, tc.check)
 		if err != nil {
 			continue
@@ -326,5 +324,6 @@ func (s *ScaleSuite) TestGetArgs(c *C) {
 		c.Assert(name, Equals, tc.wantName)
 		c.Assert(kind, Equals, tc.wantKind)
 		c.Assert(replicas, Equals, tc.wantReplicas)
+		c.Assert(waitForReady, Equals, tc.wantWaitForReady)
 	}
 }

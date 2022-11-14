@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -25,6 +26,10 @@ const (
 	InfoLevel Level = Level(logrus.InfoLevel)
 	// ErrorLevel log level.
 	ErrorLevel Level = Level(logrus.ErrorLevel)
+
+	// LevelVarName is the environment variable that controls
+	// init log levels
+	LevelEnvName = "LOG_LEVEL"
 )
 
 // OutputSink describes the current output sink.
@@ -119,8 +124,22 @@ func SetFormatter(format OutputFormat) {
 }
 
 func init() {
-	SetFormatter(TextFormat)
+	SetFormatter(JSONFormat)
 	initEnvVarFields()
+	initLogLevel()
+}
+
+func initLogLevel() {
+	level, err := logrus.ParseLevel(os.Getenv(LevelEnvName))
+	if err != nil {
+		level = logrus.InfoLevel
+	}
+	SetLevel(Level(level))
+}
+
+// SetLevel sets the current log level.
+func SetLevel(level Level) {
+	log.SetLevel(logrus.Level(level))
 }
 
 func Info() Logger {
@@ -146,6 +165,12 @@ func Print(msg string, fields ...field.M) {
 	Info().Print(msg, fields...)
 }
 
+// PrintTo works just like Print. It allows caller to specify the writer to use
+// to output the log.
+func PrintTo(w io.Writer, msg string, fields ...field.M) {
+	Info().PrintTo(w, msg, fields...)
+}
+
 func WithContext(ctx context.Context) Logger {
 	return Info().WithContext(ctx)
 }
@@ -155,8 +180,18 @@ func WithError(err error) Logger {
 }
 
 func (l *logger) Print(msg string, fields ...field.M) {
-	logFields := make(logrus.Fields)
+	entry := l.entry(fields...)
+	entry.Logln(logrus.Level(l.level), msg)
+}
 
+func (l *logger) PrintTo(w io.Writer, msg string, fields ...field.M) {
+	entry := l.entry(fields...)
+	entry.Logger.SetOutput(w)
+	entry.Logln(logrus.Level(l.level), msg)
+}
+
+func (l *logger) entry(fields ...field.M) *logrus.Entry {
+	logFields := make(logrus.Fields)
 	if envVarFields != nil {
 		for _, f := range envVarFields.Fields() {
 			logFields[f.Key()] = f.Value()
@@ -180,11 +215,14 @@ func (l *logger) Print(msg string, fields ...field.M) {
 		}
 	}
 
-	entry := log.WithFields(logFields)
+	// use a cloned logger for this entry, so that any changes to this clone
+	// (e.g., via SetOutput()) will not affect the global logger.
+	cloned := cloneGlobalLogger()
+	entry := cloned.WithFields(logFields)
 	if l.err != nil {
 		entry = entry.WithError(l.err)
 	}
-	entry.Logln(logrus.Level(l.level), msg)
+	return entry
 }
 
 func (l *logger) WithContext(ctx context.Context) Logger {
@@ -217,4 +255,20 @@ func entryToJSON(entry *logrus.Entry) []byte {
 	bytes = append(bytes, n...)
 
 	return bytes
+}
+
+func cloneGlobalLogger() *logrus.Logger {
+	cloned := logrus.New()
+	cloned.SetFormatter(log.Formatter)
+	cloned.SetReportCaller(log.ReportCaller)
+	cloned.SetLevel(log.Level)
+	cloned.SetOutput(log.Out)
+	cloned.ExitFunc = log.ExitFunc
+	for _, hooks := range log.Hooks {
+		for _, hook := range hooks {
+			cloned.Hooks.Add(hook)
+		}
+	}
+
+	return cloned
 }

@@ -1,4 +1,6 @@
+//go:build integration
 // +build integration
+
 // Copyright 2019 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -226,7 +228,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 						Func: function.KubeTaskFuncName,
 						Name: "test-kube-task",
 						Args: map[string]interface{}{
-							"image":     "ghcr.io/kanisterio/kanister-tools:0.61.0",
+							"image":     "ghcr.io/kanisterio/kanister-tools:0.84.0",
 							"namespace": "{{ .Deployment.Namespace }}",
 							"command":   []string{"echo", "default specs"},
 							"podOverride": map[string]interface{}{

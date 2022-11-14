@@ -1,7 +1,7 @@
 .. _functions:
 
-Kanister Functions
-******************
+Functions
+*********
 
 Kanister Functions are written in go and are compiled when building the
 controller. They are referenced by Blueprints phases. A Kanister Function
@@ -14,6 +14,7 @@ implements the following go interface:
       Name() string
       Exec(ctx context.Context, args ...string) (map[string]interface{}, error)
       RequiredArgs() []string
+      Arguments() []string
   }
 
 Kanister Functions are registered by the return value of ``Name()``, which must be
@@ -24,7 +25,9 @@ a ``BlueprintPhase`` is used to lookup a Kanister Function.  After
 ``BlueprintPhase.Args`` are rendered, they are passed into the Kanister Function's
 ``Exec()`` method.
 
-The ``RequiredArgs`` method returns the list of argument names that are required.
+The ``RequiredArgs`` method returns the list of argument names that are required. And
+``Arguments`` method returns the list of all the argument names that are supported
+by the function.
 
 Existing Functions
 ==================
@@ -73,8 +76,10 @@ Example:
 KubeExecAll
 -----------
 
-KubeExecAll is similar to running KubeExec on multiple containers on
-multiple pods (all specified containers on all pods) in parallel.
+KubeExecAll is similar to running KubeExec on specified containers of
+given pods (all specified containers on given pods) in parallel. In the
+below example, the command is going to be executed in both the containers
+of the given pods.
 
 .. csv-table::
    :header: "Argument", "Required", "Type", "Description"
@@ -82,8 +87,8 @@ multiple pods (all specified containers on all pods) in parallel.
    :widths: 5,5,5,15
 
    `namespace`, Yes, `string`, namespace in which to execute
-   `pods`, Yes, `[]string`, list of names of pods in which to execute
-   `containers`, Yes, `[]string`, list of names of the containers in which to execute
+   `pods`, Yes, `string`, space separated list of names of pods in which to execute
+   `containers`, Yes, `string`, space separated list of names of the containers in which to execute
    `command`, Yes, `[]string`,  command list to execute
 
 Example:
@@ -95,12 +100,8 @@ Example:
     name: examplePhase
     args:
       namespace: "{{ .Deployment.Namespace }}"
-      pods:
-        - "{{ index .Deployment.Pods 0 }}"
-        - "{{ index .Deployment.Pods 1 }}"
-      containers:
-        - kanister-sidecar1
-        - kanister-sidecar2
+      pods: "{{ index .Deployment.Pods 0 }} {{ index .Deployment.Pods 1 }}"
+      containers: "container1 container2"
       command:
         - sh
         - -c
@@ -118,7 +119,7 @@ This allows you to run a new Pod from a Blueprint.
    :align: left
    :widths: 5,5,5,15
 
-   `namespace`, Yes, `string`, namespace in which to execute
+   `namespace`, No, `string`, namespace in which to execute (the pod will be created in controller's namespace if not specified)
    `image`, Yes, `string`, image to be used for executing the task
    `command`, Yes, `[]string`,  command list to execute
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
@@ -175,6 +176,7 @@ to stop a database process before restoring files.
    `name`, No, `string`, name of the workload to scale
    `kind`, No, `string`, `deployment` or `statefulset`
    `replicas`, Yes, `int`,  The desired number of replicas
+   `waitForReady`, No, `bool`, Whether to wait for the workload to be ready before executing next steps. Default Value is ``true``
 
 Example of scaling down:
 
@@ -185,6 +187,7 @@ Example of scaling down:
     name: examplePhase
     args:
       namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
       kind: deployment
       replicas: 0
 
@@ -197,8 +200,11 @@ Example of scaling up:
     name: examplePhase
     args:
       namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
       kind: deployment
       replicas: 1
+      waitForReady: false
+
 
 PrepareData
 -----------
@@ -249,6 +255,7 @@ Example:
     name: ShutdownApplication
     args:
       namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
       kind: deployment
       replicas: 0
   - func: PrepareData
@@ -309,7 +316,6 @@ Example:
 
   actions:
     backup:
-      type: Deployment
       outputArtifacts:
         backupInfo:
           keyValue:
@@ -367,7 +373,6 @@ Example:
 
   actions:
     backup:
-      type: Deployment
       outputArtifacts:
         params:
           keyValue:
@@ -729,7 +734,6 @@ of this phase is saved to an Artifact named ``backupInfo``, shown below:
 
   actions:
     backup:
-      type: Deployment
       outputArtifacts:
         backupInfo:
           keyValue:
@@ -870,7 +874,6 @@ Example:
 
   actions:
     backupStats:
-      type: Deployment
       outputArtifacts:
         backupStats:
           keyValue:
@@ -925,7 +928,6 @@ Example:
 
   actions:
     backupStats:
-      type: Deployment
       outputArtifacts:
         backupStats:
           keyValue:
@@ -965,6 +967,7 @@ Outputs:
    `snapshotID`,`string`, ID of the RDS snapshot that has been created
    `instanceID`, `string`, ID of the RDS instance
    `securityGroupID`, `[]string`, AWS Security Group IDs associated with the RDS instance
+   `allocatedStorage`, `string`, Specifies the allocated storage size in gibibytes (GiB)
 
 Example:
 
@@ -973,13 +976,13 @@ Example:
 
   actions:
     backup:
-      type: Namespace
       outputArtifacts:
         backupInfo:
           keyValue:
             snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
             instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
             securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
+            allocatedStorage: "{{ .Phases.createSnapshot.Output.allocatedStorage }}"
             backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
       configMapNames:
       - dbconfig
@@ -1037,7 +1040,6 @@ Example:
 
   actions:
     backup:
-      type: Namespace
       outputArtifacts:
         backupInfo:
           keyValue:
@@ -1170,6 +1172,344 @@ Example:
       name: deleteSnapshot
       args:
         snapshotID: "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
+
+
+KubeOps
+-------
+
+This function is used to create or delete Kubernetes resources.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `operation`, Yes, `string`, ``create`` or ``delete`` Kubernetes resource
+   `namespace`, No, `string`, namespace in which the operation is executed
+   `spec`, No, `string`, resource spec that needs to be created
+   `objectReference`, No, `map[string]interface{}`, object reference for delete operation
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: KubeOps
+    name: createDeploy
+    args:
+      operation: create
+      namespace: "{{ .Deployment.Namespace }}"
+      spec: |-
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: "{{ .Deployment.Name }}"
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: example
+          template:
+            metadata:
+              labels:
+                app: example
+            spec:
+              containers:
+              - image: busybox
+                imagePullPolicy: IfNotPresent
+                name: container
+                ports:
+                - containerPort: 80
+                  name: http
+                  protocol: TCP
+  - func: KubeOps
+    name: deleteDeploy
+    args:
+      operation: delete
+      objectReference:
+        apiVersion: "{{ .Phases.createDeploy.Output.apiVersion }}"
+        group: "{{ .Phases.createDeploy.Output.group }}"
+        resource: "{{ .Phases.createDeploy.Output.resource }}"
+        name: "{{ .Phases.createDeploy.Output.name }}"
+        namespace: "{{ .Phases.createDeploy.Output.namespace }}"
+
+
+Wait
+----
+
+This function is used to wait on a Kubernetes resource
+until a desired state is reached.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `timeout`, Yes, `string`, wait timeout
+   `conditions`, Yes, `map[string]interface{}`, keys should be ``allOf`` and/or ``anyOf`` with value as ``[]Condition``
+
+``Condition`` struct:
+
+.. code-block:: yaml
+  :linenos:
+
+  condition: "Go template condition that returns true or false"
+  objectReference:
+    apiVersion: "Kubernetes resource API version"
+    resource: "Type of resource to wait for"
+    name: "Name of the resource"
+
+.. note::
+    We can refer to the object key-value in Go template condition with the help of a ``$`` prefix JSON-path syntax.
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: Wait
+    name: waitNsReady
+    args:
+      timeout: 60s
+      conditions:
+        allOf:
+          - condition: '{{ if (eq "{ $.status.phase }" "Invalid")}}true{{ else }}false{{ end }}'
+            objectReference:
+              apiVersion: v1
+              resource: namespaces
+              name: "{{ .Namespace.Name }}"
+          - condition: '{{ if (eq "{ $.status.phase }" "Active")}}true{{ else }}false{{ end }}'
+            objectReference:
+              apiVersion: v1
+              resource: namespaces
+              name: "{{ .Namespace.Name }}"
+
+
+CreateCSISnapshot
+-----------------
+
+This function is used to create CSI VolumeSnapshot for a PersistentVolumeClaim.
+By default, it waits for the VolumeSnapshot to be ``ReadyToUse``.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, No, `string`, name of the VolumeSnapshot. Default value is ``<pvc>-snapshot-<random-alphanumeric-suffix>``
+   `pvc`, Yes, `string`, name of the PersistentVolumeClaim to be captured
+   `namespace`, Yes, `string`, namespace of the PersistentVolumeClaim and resultant VolumeSnapshot
+   `snapshotClass`, Yes, `string`, name of the VolumeSnapshotClass
+   `labels`, No, `map[string]string`, labels for the VolumeSnapshot
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `name`,`string`, name of the CSI VolumeSnapshot
+   `pvc`,`string`, name of the captured PVC
+   `namespace`, string, namespace of the captured PVC and VolumeSnapshot
+   `restoreSize`, string, required memory size to restore PVC
+   `snapshotContent`, string, name of the VolumeSnapshotContent
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    backup:
+      outputArtifacts:
+        snapshotInfo:
+          keyValue:
+            name: "{{ .Phases.createCSISnapshot.Output.name }}"
+            pvc: "{{ .Phases.createCSISnapshot.Output.pvc }}"
+            namespace: "{{ .Phases.createCSISnapshot.Output.namespace }}"
+            restoreSize: "{{ .Phases.createCSISnapshot.Output.restoreSize }}"
+            snapshotContent: "{{ .Phases.createCSISnapshot.Output.snapshotContent }}"
+      phases:
+      - func: CreateCSISnapshot
+        name: createCSISnapshot
+        args:
+          pvc: "{{ .PVC.Name }}"
+          namespace: "{{ .PVC.Namespace }}"
+          snapshotClass: do-block-storage
+
+
+CreateCSISnapshotStatic
+-----------------------
+
+This function creates a pair of CSI ``VolumeSnapshot`` and
+``VolumeSnapshotContent`` resources, assuming that the underlying *real* storage
+volume snapshot already exists. The deletion behavior is defined by the
+``deletionPolicy`` property (``Retain``, ``Delete``) of the snapshot class.
+
+For more information on pre-provisioned volume snapshots and snapshot deletion
+policy, see the Kubernetes `documentation
+<https://kubernetes.io/docs/concepts/storage/volume-snapshots/>`_.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, Yes, `string`, name of the new CSI ``VolumeSnapshot``
+   `namespace`, Yes, `string`, namespace of the new CSI ``VolumeSnapshot``
+   `driver`, Yes, `string`, name of the CSI driver for the new CSI ``VolumeSnapshotContent``
+   `handle`, Yes, `string`, unique identifier of the volume snapshot created on the storage backend used as the source of the new ``VolumeSnapshotContent``
+   `snapshotClass`, Yes, `string`, name of the ``VolumeSnapshotClass`` to use
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `name`,`string`, name of the new CSI ``VolumeSnapshot``
+   `namespace`, string, namespace of the new CSI ``VolumeSnapshot``
+   `restoreSize`, string, required memory size to restore the volume
+   `snapshotContent`, string, name of the new CSI ``VolumeSnapshotContent``
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    createStaticSnapshot:
+      phases:
+      - func: CreateCSISnapshotStatic
+        name: createCSISnapshotStatic
+        args:
+          name: volume-snapshot
+          namespace: default
+          snapshotClass: csi-hostpath-snapclass
+          driver: hostpath.csi.k8s.io
+          handle: 7bdd0de3-aaeb-11e8-9aae-0242ac110002
+
+
+RestoreCSISnapshot
+------------------
+
+This function restores a new PersistentVolumeClaim using CSI VolumeSnapshot.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, Yes, `string`, name of the VolumeSnapshot
+   `pvc`, Yes, `string`, name of the new PVC
+   `namespace`, Yes, `string`, namespace of the VolumeSnapshot and resultant PersistentVolumeClaim
+   `storageClass`, Yes, `string`, name of the StorageClass
+   `restoreSize`, Yes, `string`, required memory size to restore PVC. Must be greater than zero.
+   `accessModes`, No, `[]string`, access modes for the underlying PV (Default is ``[]{"ReadWriteOnce"}```)
+   `volumeMode`, No, `string`, mode of volume (Default is ``"Filesystem"```)
+   `labels`, No, `map[string]string`, optional labels for the PersistentVolumeClaim
+
+.. note::
+    Output artifact ``snapshotInfo`` from ``CreateCSISnapshot`` function can be used as an input artifact in this function.
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    restore:
+      inputArtifactNames:
+      - snapshotInfo
+      phases:
+      - func: RestoreCSISnapshot
+        name: restoreCSISnapshot
+        args:
+          name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.name }}"
+          pvc: "{{ .ArtifactsIn.snapshotInfo.KeyValue.pvc }}-restored"
+          namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
+          storageClass: do-block-storage
+          restoreSize: "{{ .ArtifactsIn.snapshotInfo.KeyValue.restoreSize }}"
+          accessModes: ["ReadWriteOnce"]
+          volumeMode: "Filesystem"
+
+
+DeleteCSISnapshot
+-----------------
+
+This function deletes a VolumeSnapshot from given namespace.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, Yes, `string`, name of the VolumeSnapshot
+   `namespace`, Yes, `string`, namespace of the VolumeSnapshot
+
+.. note::
+    Output artifact ``snapshotInfo`` from ``CreateCSISnapshot`` function can be used as an input artifact in this function.
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    delete:
+      inputArtifactNames:
+      - snapshotInfo
+      phases:
+      - func: DeleteCSISnapshot
+        name: deleteCSISnapshot
+        args:
+          name: "{{ .ArtifactsIn.snapshotInfo.KeyValue.name }}"
+          namespace: "{{ .ArtifactsIn.snapshotInfo.KeyValue.namespace }}"
+
+
+DeleteCSISnapshotContent
+------------------------
+
+This function deletes an unbounded ``VolumeSnapshotContent`` resource. It has no
+effect on bounded ``VolumeSnapshotContent`` resources, as they would be
+protected by the CSI controller.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `name`, Yes, `string`, name of the ``VolumeSnapshotContent``
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+    deleteVSC:
+      phases:
+      - func: DeleteCSISnapshotContent
+        name: deleteCSISnapshotContent
+        args:
+          name: "test-snapshot-content-content-dfc8fa67-8b11-4fdf-bf94-928589c2eed8"
+
 
 Registering Functions
 ---------------------

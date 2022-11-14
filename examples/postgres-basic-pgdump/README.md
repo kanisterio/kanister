@@ -6,9 +6,9 @@ This is an example of using Kanister to backup and restore PostgreSQL. In this e
 
 Deploy a Postgres instance using the instructions [here](https://github.com/kubernetes/charts/tree/master/incubator/patroni):
 ```bash
-$ helm repo add incubator https://kubernetes-charts-incubator.storage.googleapis.com/
+$ helm repo add incubator https://charts.helm.sh/incubator/
 $ helm dependency update
-$ helm install --namespace kanister --name my-release incubator/patroni
+$ helm install my-release --namespace kanister --create-namespace incubator/patroni
 ```
 
 ### 2. Protect the Application

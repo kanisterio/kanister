@@ -7,16 +7,18 @@ builds:
   binary: kanctl
   main: cmd/kanctl/main.go
   ldflags: &ldflags
-  - -s -w
+  - -extldflags "-static"
     -X github.com/kanisterio/kanister/pkg/version.VERSION={{.Version}}
     -X github.com/kanisterio/kanister/pkg/version.GIT_COMMIT={{.Commit}}
     -X github.com/kanisterio/kanister/pkg/version.BUILD_DATE={{.Date}}
   env: &env
   - GO111MODULE=on
-  - CGO_ENABLED=0
+  - CGO_ENABLED=1
+  - GOEXPERIMENT=boringcrypto
+  - CC=gcc
+  - CXX=g++
   - GO_EXTLINK_ENABLED=0
   goos:
-  - darwin
   - linux
   goarch: &goarch
   - amd64
@@ -36,26 +38,29 @@ builds:
   goos: *goos
   goarch: *goarch
 dockers:
-- binaries:
+- ids:
   - controller
   image_templates:
   - 'ghcr.io/kanisterio/controller:{{ .Tag }}'
   dockerfile: 'docker/controller/Dockerfile'
-- binaries:
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/tools/Dockerfile'
   build_flag_templates:
   - "--build-arg=kan_tools_version={{ .Tag }}"
+# Refers to https://github.com/kopia/kopia/commit/317cc36892707ab9bdc5f6e4dea567d1e638a070
+  - "--build-arg=kopiaBuildCommit=317cc36"
+  - "--build-arg=kopiaRepoOrg=kopia"
   extra_files:
   - 'LICENSE'
-- binaries:
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/postgres-kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
-- binaries:
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/postgres-tools-9.6:{{ .Tag }}'
@@ -63,16 +68,14 @@ dockers:
 - image_templates:
   - 'ghcr.io/kanisterio/postgresql:{{ .Tag }}'
   dockerfile: 'docker/postgresql/Dockerfile'
-- binaries:
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/es-sidecar:{{ .Tag }}'
   dockerfile: 'docker/kanister-elasticsearch/image/Dockerfile'
   build_flag_templates:
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
-  extra_files:
-  - 'docker/kanister-elasticsearch/image/esdump-setup.sh'
-- binaries:
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/mysql-sidecar:{{ .Tag }}'
@@ -84,7 +87,7 @@ dockers:
   dockerfile: 'docker/kanister-kubectl/Dockerfile'
   build_flag_templates:
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
-- binaries:
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/mongo-sidecar:{{ .Tag }}'
@@ -94,22 +97,22 @@ dockers:
   - 'docker/kanister-mongodb-replicaset/image/90forceyes'
   - 'docker/kanister-mongodb-replicaset/image/config'
   - 'docker/kanister-mongodb-replicaset/image/gbl_env.sh'
-- binaries:
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/mongodb:{{ .Tag }}'
   dockerfile: 'docker/mongodb/Dockerfile'
-- binaries:
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/cassandra:{{ .Tag }}'
   dockerfile: 'docker/cassandra/Dockerfile'
-- binaries:
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/couchbase-tools:{{ .Tag }}'
   dockerfile: 'docker/couchbase-tools/Dockerfile'
-- binaries:
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/foundationdb:{{ .Tag }}'
@@ -120,13 +123,18 @@ dockers:
   extra_files:
   - 'docker/kafka-adobes3Connector/image/adobe-monitorsource.sh'
   - 'docker/kafka-adobes3Connector/image/cleans3.py'
-- binaries:
+- ids:
   - kando
   image_templates:
   - 'ghcr.io/kanisterio/kafka-adobe-s3-sink-connector:{{ .Tag }}'
   dockerfile: 'docker/kafka-adobes3Connector/image/adobeSink.Dockerfile'
   extra_files:
   - 'docker/kafka-adobes3Connector/image/adobe-monitorsink.sh'
+- ids:
+    - kando
+  image_templates:
+    - 'ghcr.io/kanisterio/mssql-tools:{{ .Tag }}'
+  dockerfile: 'docker/mssql-tools/Dockerfile'
 snapshot:
   name_template: '{{ .Tag }}'
 checksum:
@@ -137,3 +145,5 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+archives:
+  - allow_different_binary_count: true

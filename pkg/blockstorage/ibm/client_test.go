@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !unit
 // +build !unit
 
 package ibm
@@ -36,7 +37,7 @@ const (
 	IBMSLApiUsernameEnv = "IBM_SL_API_USERNAME"
 )
 
-//These are not executed as part of Pipeline, but usefull for development
+// These are not executed as part of Pipeline, but usefull for development
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
 

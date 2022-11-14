@@ -120,8 +120,24 @@ func (*backupDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 }
 
 func (*backupDataFunc) RequiredArgs() []string {
-	return []string{BackupDataNamespaceArg, BackupDataPodArg, BackupDataContainerArg,
-		BackupDataIncludePathArg, BackupDataBackupArtifactPrefixArg}
+	return []string{
+		BackupDataNamespaceArg,
+		BackupDataPodArg,
+		BackupDataContainerArg,
+		BackupDataIncludePathArg,
+		BackupDataBackupArtifactPrefixArg,
+	}
+}
+
+func (*backupDataFunc) Arguments() []string {
+	return []string{
+		BackupDataNamespaceArg,
+		BackupDataPodArg,
+		BackupDataContainerArg,
+		BackupDataIncludePathArg,
+		BackupDataBackupArtifactPrefixArg,
+		BackupDataEncryptionKeyArg,
+	}
 }
 
 type backupDataParsedOutput struct {
@@ -149,8 +165,8 @@ func backupData(ctx context.Context, cli kubernetes.Interface, namespace, pod, c
 		return backupDataParsedOutput{}, err
 	}
 	stdout, stderr, err := kube.Exec(cli, namespace, pod, container, cmd, nil)
-	format.Log(pod, container, stdout)
-	format.Log(pod, container, stderr)
+	format.LogWithCtx(ctx, pod, container, stdout)
+	format.LogWithCtx(ctx, pod, container, stderr)
 	if err != nil {
 		return backupDataParsedOutput{}, errors.Wrapf(err, "Failed to create and upload backup")
 	}

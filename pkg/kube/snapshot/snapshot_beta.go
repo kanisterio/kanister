@@ -45,12 +45,12 @@ func NewSnapshotBeta(kubeCli kubernetes.Interface, dynCli dynamic.Interface) Sna
 }
 
 // CloneVolumeSnapshotClass creates a copy of the source volume snapshot class
-func (sna *SnapshotBeta) CloneVolumeSnapshotClass(sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
-	return cloneSnapshotClass(sna.dynCli, v1beta1.VolSnapClassGVR, sourceClassName, targetClassName, newDeletionPolicy, excludeAnnotations)
+func (sna *SnapshotBeta) CloneVolumeSnapshotClass(ctx context.Context, sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
+	return cloneSnapshotClass(ctx, sna.dynCli, v1beta1.VolSnapClassGVR, sourceClassName, targetClassName, newDeletionPolicy, excludeAnnotations)
 }
 
-func cloneSnapshotClass(dynCli dynamic.Interface, snapClassGVR schema.GroupVersionResource, sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
-	usSourceSnapClass, err := dynCli.Resource(snapClassGVR).Get(context.TODO(), sourceClassName, metav1.GetOptions{})
+func cloneSnapshotClass(ctx context.Context, dynCli dynamic.Interface, snapClassGVR schema.GroupVersionResource, sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
+	usSourceSnapClass, err := dynCli.Resource(snapClassGVR).Get(ctx, sourceClassName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to find source VolumeSnapshotClass: %s", sourceClassName)
 	}
@@ -63,19 +63,19 @@ func cloneSnapshotClass(dynCli dynamic.Interface, snapClassGVR schema.GroupVersi
 	for _, key := range excludeAnnotations {
 		delete(existingAnnotations, key)
 	}
-	usNew := UnstructuredVolumeSnapshotClass(snapClassGVR, targetClassName, sourceSnapClass.Driver, newDeletionPolicy)
+	usNew := UnstructuredVolumeSnapshotClass(snapClassGVR, targetClassName, sourceSnapClass.Driver, newDeletionPolicy, sourceSnapClass.Parameters)
 	// Set Annotations/Labels
 	usNew.SetAnnotations(existingAnnotations)
 	usNew.SetLabels(map[string]string{CloneVolumeSnapshotClassLabelName: sourceClassName})
-	if _, err = dynCli.Resource(snapClassGVR).Create(context.TODO(), usNew, metav1.CreateOptions{}); !apierrors.IsAlreadyExists(err) {
+	if _, err = dynCli.Resource(snapClassGVR).Create(ctx, usNew, metav1.CreateOptions{}); !apierrors.IsAlreadyExists(err) {
 		return errors.Wrapf(err, "Failed to create VolumeSnapshotClass: %s", targetClassName)
 	}
 	return nil
 }
 
 // GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
-func (sna *SnapshotBeta) GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error) {
-	return GetSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, v1beta1.VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
+func (sna *SnapshotBeta) GetVolumeSnapshotClass(ctx context.Context, annotationKey, annotationValue, storageClassName string) (string, error) {
+	return GetSnapshotClassbyAnnotation(ctx, sna.dynCli, sna.kubeCli, v1beta1.VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
 }
 
 // Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
@@ -182,7 +182,7 @@ func (sna *SnapshotBeta) DeleteContent(ctx context.Context, name string) error {
 
 // Clone will clone the VolumeSnapshot to namespace 'cloneNamespace'.
 // Underlying VolumeSnapshotContent will be cloned with a different name.
-func (sna *SnapshotBeta) Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool) error {
+func (sna *SnapshotBeta) Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool, labels map[string]string) error {
 	_, err := sna.Get(ctx, cloneName, cloneNamespace)
 	if err == nil {
 		return errors.Errorf("Target snapshot already exists in target namespace, Volumesnapshot: %s, Namespace: %s", cloneName, cloneNamespace)
@@ -195,7 +195,7 @@ func (sna *SnapshotBeta) Clone(ctx context.Context, name, namespace, cloneName, 
 	if err != nil {
 		return errors.Errorf("Failed to get source")
 	}
-	return sna.CreateFromSource(ctx, src, cloneName, cloneNamespace, waitForReady)
+	return sna.CreateFromSource(ctx, src, cloneName, cloneNamespace, waitForReady, labels)
 }
 
 // GetSource will return the CSI source that backs the volume snapshot.
@@ -230,13 +230,13 @@ func getSnapshotSource(ctx context.Context, dynCli dynamic.Interface, snapGVR, s
 }
 
 // CreateFromSource will create a 'Volumesnapshot' and 'VolumesnaphotContent' pair for the underlying snapshot source.
-func (sna *SnapshotBeta) CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool) error {
+func (sna *SnapshotBeta) CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool, labels map[string]string) error {
 	deletionPolicy, err := getDeletionPolicyFromClass(sna.dynCli, v1beta1.VolSnapClassGVR, source.VolumeSnapshotClassName)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
-	snap := UnstructuredVolumeSnapshot(v1beta1.VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, nil)
+	snap := UnstructuredVolumeSnapshot(v1beta1.VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, blockstorage.SanitizeTags(labels))
 
 	if err := sna.CreateContentFromSource(ctx, source, contentName, snapshotName, namespace, deletionPolicy); err != nil {
 		return err
@@ -401,16 +401,34 @@ func UnstructuredVolumeSnapshotContent(gvr schema.GroupVersionResource, name, sn
 	}
 }
 
-func UnstructuredVolumeSnapshotClass(gvr schema.GroupVersionResource, name, driver, deletionPolicy string) *unstructured.Unstructured {
-	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
-			"kind":       VolSnapClassKind,
-			"metadata": map[string]interface{}{
-				"name": name,
-			},
-			VolSnapClassBetaDriverKey: driver,
-			"deletionPolicy":          deletionPolicy,
+func UnstructuredVolumeSnapshotClass(gvr schema.GroupVersionResource, name, driver, deletionPolicy string, params map[string]string) *unstructured.Unstructured {
+	obj := map[string]interface{}{
+		"apiVersion": fmt.Sprintf("%s/%s", gvr.Group, gvr.Version),
+		"kind":       VolSnapClassKind,
+		"metadata": map[string]interface{}{
+			"name": name,
 		},
+		VolSnapClassBetaDriverKey: driver,
+		"deletionPolicy":          deletionPolicy,
 	}
+	if params != nil {
+		obj["parameters"] = Mss2msi(params)
+	}
+
+	return &unstructured.Unstructured{
+		Object: obj,
+	}
+}
+
+// Mss2msi takes a map of string:string and returns a string:inteface map.
+// This is useful since the unstructured type take map[string]interface{} as values.
+func Mss2msi(in map[string]string) map[string]interface{} {
+	if in == nil {
+		return nil
+	}
+	paramsMap := map[string]interface{}{}
+	for k, v := range in {
+		paramsMap[k] = v
+	}
+	return paramsMap
 }

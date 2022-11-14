@@ -21,16 +21,15 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver"
+	"github.com/pkg/errors"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/kanisterio/kanister/pkg/consts"
 
 	// importing go check to bypass the testing flags
 	_ "gopkg.in/check.v1"
@@ -114,15 +113,21 @@ func decodeSpecIntoObject(spec []byte, intoObj runtime.Object) error {
 }
 
 func createCRD(context Context, resource CustomResource) error {
-	crd, err := getCRDFromSpec(specFromResName(resource.Name))
+	c, err := rawCRDFromFile(fmt.Sprintf("%s.yaml", resource.Name))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Getting raw CRD from CRD manifests")
 	}
+
+	crd, err := getCRDFromSpec(c)
+	if err != nil {
+		return errors.Wrap(err, "Getting CRD object from CRD bytes")
+	}
+
 	ctx := contextpkg.Background()
 	_, err = context.APIExtensionClientset.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, crd, metav1.CreateOptions{})
 	if err != nil {
-		if !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("failed to create %s CRD. %+v", resource.Name, err)
+		if !apierrors.IsAlreadyExists(err) {
+			return errors.Errorf("Failed to create %s CRD. %+v", resource.Name, err)
 		}
 
 		// if CRD already exists, get the resource version and create the CRD with that resource version
@@ -140,16 +145,9 @@ func createCRD(context Context, resource CustomResource) error {
 	return nil
 }
 
-func specFromResName(name string) []byte {
-	switch name {
-	case consts.ActionSetResourceName:
-		return []byte(actionsetCRD)
-	case consts.BlueprintResourceName:
-		return []byte(blueprintCRD)
-	case consts.ProfileResourceName:
-		return []byte(profileCRD)
-	}
-	return nil
+func rawCRDFromFile(path string) ([]byte, error) {
+	// yamls is the variable that has embeded custom resource manifest. More at `embed.go`
+	return yamls.ReadFile(path)
 }
 
 func waitForCRDInit(context Context, resource CustomResource) error {

@@ -21,13 +21,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -58,7 +59,7 @@ func NewCassandraInstance(name string) App {
 			Values: map[string]string{
 				"image.registry":       "ghcr.io",
 				"image.repository":     "kanisterio/cassandra",
-				"image.tag":            "latest",
+				"image.tag":            "v9.99.9-dev",
 				"image.pullPolicy":     "Always",
 				"cluster.replicaCount": "1",
 			},
@@ -90,7 +91,7 @@ func (cas *CassandraInstance) Install(ctx context.Context, namespace string) err
 	if err != nil {
 		return err
 	}
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cas.chart.RepoName, cas.chart.Chart), cas.chart.Version, cas.chart.Release, cas.namespace, cas.chart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", cas.chart.RepoName, cas.chart.Chart), cas.chart.Version, cas.chart.Release, cas.namespace, cas.chart.Values, true)
 	if err != nil {
 		return err
 	}

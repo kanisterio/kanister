@@ -52,6 +52,7 @@ type TemplateParams struct {
 	Options          map[string]string
 	Object           map[string]interface{}
 	Phases           map[string]*Phase
+	DeferPhase       *Phase
 	PodOverride      crv1alpha1.JSONMap
 }
 
@@ -216,7 +217,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 			Resource: as.Object.Resource,
 		}
 	}
-	u, err := kube.FetchUnstructuredObjectWithCli(dynCli, gvr, namespace, as.Object.Name)
+	u, err := kube.FetchUnstructuredObjectWithCli(ctx, dynCli, gvr, namespace, as.Object.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not fetch object name: %s, namespace: %s, group: %s, version: %s, resource: %s", as.Object.Name, namespace, gvr.Group, gvr.Version, gvr.Resource)
 	}
@@ -510,6 +511,12 @@ func UpdatePhaseParams(ctx context.Context, tp *TemplateParams, phaseName string
 	tp.Phases[phaseName].Output = output
 }
 
+// UpdateDeferPhaseParams updates the TemplateParams deferPhase output with passed output
+// This output would be generated/passed by execution of the phase
+func UpdateDeferPhaseParams(ctx context.Context, tp *TemplateParams, output map[string]interface{}) {
+	tp.DeferPhase.Output = output
+}
+
 // InitPhaseParams initializes the TemplateParams with Phase information
 func InitPhaseParams(ctx context.Context, cli kubernetes.Interface, tp *TemplateParams, phaseName string, objects map[string]crv1alpha1.ObjectReference) error {
 	if tp.Phases == nil {
@@ -522,5 +529,10 @@ func InitPhaseParams(ctx context.Context, cli kubernetes.Interface, tp *Template
 	tp.Phases[phaseName] = &Phase{
 		Secrets: secrets,
 	}
+
+	tp.DeferPhase = &Phase{
+		Secrets: secrets,
+	}
+
 	return nil
 }

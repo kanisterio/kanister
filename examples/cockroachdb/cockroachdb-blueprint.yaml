@@ -1,0 +1,164 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: cockroachdb-blueprint
+actions:
+  backup:
+    secretNames:
+      - cockroachSecret
+    outputArtifacts:
+      cockroachDBCloudDump:
+        keyValue:
+          s3path: '/cockroachdb-backups/{{ .StatefulSet.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}'
+    phases:
+      - func: KubeTask
+        name: backupToS3
+        args:
+          namespace: "{{ .StatefulSet.Namespace }}"
+          image: "cockroachdb/cockroach"
+          podOverride:
+            containers:
+              - name: container
+                volumeMounts:
+                  - mountPath: /cockroach/cockroach-certs/
+                    name: client-certs
+            volumes:
+              - name: client-certs
+                projected:
+                  sources:
+                    - secret:
+                        name: '{{ .Secrets.cockroachSecret.Name }}'
+                        items:
+                          - key: ca.crt
+                            path: ca.crt
+                          - key: tls.crt
+                            path: client.root.crt
+                          - key: tls.key
+                            path: client.root.key
+                  defaultMode: 256
+
+          command:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - xtrace
+            - -o
+            - pipefail
+            - -c
+            - |
+              host='{{ .StatefulSet.Name }}'-public
+              aws_access_key_id='{{ toJson .Profile.Credential.KeyPair.ID | toString }}'
+              aws_access_key_id=`echo $aws_access_key_id | tr -d \"`
+              aws_access_key_secret='{{ toJson .Profile.Credential.KeyPair.Secret | toString }}'
+              aws_access_key_secret=`echo $aws_access_key_secret | tr -d \"`
+              bucket='{{ toJson .Profile.Location.Bucket | toString }}'
+              bucket=`echo $bucket | tr -d \"`
+              aws_endpoint='{{ toJson .Profile.Location.Endpoint | toString }}'
+              aws_endpoint=`echo $aws_endpoint | tr -d \"`
+              aws_region='{{ toJson .Profile.Location.Region | toString }}'
+              aws_region=`echo $aws_region | tr -d \"`
+              s3path='s3://'${bucket}'/cockroachdb-backups/{{ .StatefulSet.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}' 
+              if [ -z "$aws_region" ]
+              then
+                if [ -z "$aws_endpoint" ]
+                then
+                  cmd="BACKUP INTO '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}' AS OF SYSTEM TIME '-10s';"
+                else
+                  cmd="BACKUP INTO '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}&AWS_ENDPOINT=${aws_endpoint}' AS OF SYSTEM TIME '-10s';"
+                fi
+              else
+                if [ -z "$aws_endpoint" ]
+                then
+                  cmd="BACKUP INTO '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}&AWS_REGION=${aws_region}' AS OF SYSTEM TIME '-10s';"
+                else
+                  cmd="BACKUP INTO '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}&AWS_ENDPOINT=${aws_endpoint}&AWS_REGION=${aws_region}';"
+                fi
+              fi
+              cockroach sql --certs-dir=/cockroach/cockroach-certs --host="${host}" -e "${cmd}"
+
+  restore:
+    inputArtifactNames:
+      - cockroachDBCloudDump
+    phases:
+      - func: KubeTask
+        name: restoreFromS3
+        args:
+          namespace: "{{ .StatefulSet.Namespace }}"
+          image: "cockroachdb/cockroach"
+          podOverride:
+            containers:
+              - name: container
+                volumeMounts:
+                  - mountPath: /cockroach/cockroach-certs/
+                    name: client-certs
+            volumes:
+              - name: client-certs
+                projected:
+                  sources:
+                    - secret:
+                        name: '{{ .Secrets.cockroachSecret.Name }}'
+                        items:
+                          - key: ca.crt
+                            path: ca.crt
+                          - key: tls.crt
+                            path: client.root.crt
+                          - key: tls.key
+                            path: client.root.key
+                  defaultMode: 256
+          command:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - pipefail
+            - -c
+            - |
+              host='{{ .StatefulSet.Name }}'-public
+              aws_access_key_id='{{ toJson .Profile.Credential.KeyPair.ID | toString }}'
+              aws_access_key_id=`echo $aws_access_key_id | tr -d \"`
+              aws_access_key_secret='{{ toJson .Profile.Credential.KeyPair.Secret | toString }}'
+              aws_access_key_secret=`echo $aws_access_key_secret | tr -d \"`
+              bucket='{{ toJson .Profile.Location.Bucket | toString }}'
+              bucket=`echo $bucket | tr -d \"`
+              aws_endpoint='{{ toJson .Profile.Location.Endpoint | toString }}'
+              aws_endpoint=`echo $aws_endpoint | tr -d \"`
+              aws_region='{{ toJson .Profile.Location.Region | toString }}'
+              aws_region=`echo $aws_region | tr -d \"`
+              s3path='s3://'${bucket}'{{ .ArtifactsIn.cockroachDBCloudDump.KeyValue.s3path }}'        
+              if [ -z "$aws_region" ]
+              then
+                if [ -z "$aws_endpoint" ]
+                then
+                  cmd="RESTORE FROM LATEST IN '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}';"
+                else
+                  cmd="RESTORE FROM LATEST IN '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}&AWS_ENDPOINT=${aws_endpoint}';"
+                fi
+              else
+                if [ -z "$aws_endpoint" ]
+                then
+                  cmd="RESTORE FROM LATEST IN '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}&AWS_REGION=${aws_region}';"
+                else
+                  cmd="RESTORE FROM LATEST IN '${s3path}?AWS_ACCESS_KEY_ID=${aws_access_key_id}&AWS_SECRET_ACCESS_KEY=${aws_access_key_secret}&AWS_ENDPOINT=${aws_endpoint}&AWS_REGION=${aws_region}';"
+                fi
+              fi
+              cockroach sql --certs-dir=/cockroach/cockroach-certs --host="${host}" -e "${cmd}"
+
+  delete:
+    inputArtifactNames:
+      - cockroachDBCloudDump
+    phases:
+      - func: KubeTask
+        name: deleteFromS3Store
+        args:
+          image: ghcr.io/kanisterio/kanister-tools:0.84.0
+          namespace: "{{ .Namespace.Name }}"
+          command:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - pipefail
+            - -c
+            - |
+              kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cockroachDBCloudDump.KeyValue.s3path }}'

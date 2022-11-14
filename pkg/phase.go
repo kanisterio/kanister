@@ -19,6 +19,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
+	"k8s.io/utils/strings/slices"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -54,7 +55,13 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 			return nil, errors.Errorf("Action {%s} not found in action map", action)
 		}
 		// Render the argument templates for the Phase's function
-		for _, ap := range a.Phases {
+		phases := []crv1alpha1.BlueprintPhase{}
+		phases = append(phases, a.Phases...)
+		if a.DeferPhase != nil {
+			phases = append(phases, *a.DeferPhase)
+		}
+
+		for _, ap := range phases {
 			if ap.Name != p.name {
 				continue
 			}
@@ -65,11 +72,79 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 			if err = checkRequiredArgs(p.f.RequiredArgs(), args); err != nil {
 				return nil, errors.Wrapf(err, "Required args missing for function %s", p.f.Name())
 			}
+
+			if err = checkSupportedArgs(p.f.Arguments(), args); err != nil {
+				return nil, errors.Wrapf(err, "Checking supported args for function %s.", p.f.Name())
+			}
+
 			p.args = args
 		}
 	}
 	// Execute the function
 	return p.f.Exec(ctx, tp, p.args)
+}
+
+func checkSupportedArgs(supportedArgs []string, args map[string]interface{}) error {
+	for a := range args {
+		if !slices.Contains(supportedArgs, a) {
+			return errors.Errorf("argument %s is not supported", a)
+		}
+	}
+	return nil
+}
+
+func GetDeferPhase(bp crv1alpha1.Blueprint, action, version string, tp param.TemplateParams) (*Phase, error) {
+	a, ok := bp.Actions[action]
+	if !ok {
+		return nil, errors.Errorf("Action {%s} not found in blueprint actions", action)
+	}
+
+	if a.DeferPhase == nil {
+		return nil, nil
+	}
+
+	regVersion, err := regFuncVersion(a.DeferPhase.Func, version)
+	if err != nil {
+		return nil, err
+	}
+
+	objs, err := param.RenderObjectRefs(a.DeferPhase.ObjectRefs, tp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Phase{
+		name:    a.DeferPhase.Name,
+		objects: objs,
+		f:       funcs[a.DeferPhase.Func][regVersion],
+	}, nil
+}
+
+func regFuncVersion(f, version string) (semver.Version, error) {
+	funcMu.RLock()
+	defer funcMu.RUnlock()
+
+	defaultVersion, funcVersion, err := getFunctionVersion(version)
+	if err != nil {
+		return semver.Version{}, errors.Wrapf(err, "Failed to get function version")
+	}
+
+	regVersion := *funcVersion
+	if _, ok := funcs[f]; !ok {
+		return semver.Version{}, errors.Errorf("Requested function {%s} has not been registered", f)
+	}
+	if _, ok := funcs[f][regVersion]; !ok {
+		if funcVersion.Equal(defaultVersion) {
+			return semver.Version{}, errors.Errorf("Requested function {%s} has not been registered with version {%s}", f, version)
+		}
+		if _, ok := funcs[f][*defaultVersion]; !ok {
+			return semver.Version{}, errors.Errorf("Requested function {%s} has not been registered with versions {%s} or {%s}", f, version, DefaultVersion)
+		}
+		log.Info().Print("Falling back to default version of the function", field.M{"Function": f, "PreferredVersion": version, "FallbackVersion": DefaultVersion})
+		return *defaultVersion, nil
+	}
+
+	return *funcVersion, nil
 }
 
 // GetPhases renders the returns a list of Phases with pre-rendered arguments.
@@ -78,29 +153,15 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 	if !ok {
 		return nil, errors.Errorf("Action {%s} not found in action map", action)
 	}
-	defaultVersion, funcVersion, err := getFunctionVersion(version)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get function version")
-	}
-	funcMu.RLock()
-	defer funcMu.RUnlock()
+
 	phases := make([]*Phase, 0, len(a.Phases))
 	// Check that all requested phases are registered and render object refs
 	for _, p := range a.Phases {
-		regVersion := *funcVersion
-		if _, ok := funcs[p.Func]; !ok {
-			return nil, errors.Errorf("Requested function {%s} has not been registered", p.Func)
+		regVersion, err := regFuncVersion(p.Func, version)
+		if err != nil {
+			return nil, err
 		}
-		if _, ok := funcs[p.Func][regVersion]; !ok {
-			if funcVersion.Equal(defaultVersion) {
-				return nil, errors.Errorf("Requested function {%s} has not been registered with version {%s}", p.Func, version)
-			}
-			if _, ok := funcs[p.Func][*defaultVersion]; !ok {
-				return nil, errors.Errorf("Requested function {%s} has not been registered with versions {%s} or {%s}", p.Func, version, DefaultVersion)
-			}
-			log.Info().Print("Falling back to default version of the function", field.M{"Function": p.Func, "PreferredVersion": version, "FallbackVersion": DefaultVersion})
-			regVersion = *defaultVersion
-		}
+
 		objs, err := param.RenderObjectRefs(p.ObjectRefs, tp)
 		if err != nil {
 			return nil, err
@@ -112,6 +173,15 @@ func GetPhases(bp crv1alpha1.Blueprint, action, version string, tp param.Templat
 		})
 	}
 	return phases, nil
+}
+
+// Validate gets the provided arguments from a blueprint and verifies that the required arguments are present
+func (p *Phase) Validate(args map[string]interface{}) error {
+	if err := checkSupportedArgs(p.f.Arguments(), args); err != nil {
+		return err
+	}
+
+	return checkRequiredArgs(p.f.RequiredArgs(), args)
 }
 
 func checkRequiredArgs(reqArgs []string, args map[string]interface{}) error {

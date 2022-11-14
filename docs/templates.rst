@@ -25,6 +25,7 @@ The TemplateParam struct is defined as:
     Options          map[string]string
     Object           map[string]interface{}
     Phases           map[string]*Phase
+    DeferPhase       *Phase
     PodOverride      crv1alpha1.JSONMap
   }
 
@@ -271,7 +272,6 @@ For example, with the following snippet from the time-log example Blueprint:
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       configMapNames:
       - location
       secretNames:
@@ -283,7 +283,6 @@ For example, with the following snippet from the time-log example Blueprint:
 
       ...
     restore:
-      type: Deployment
       inputArtifactNames:
         - exampleArtifact
       ...
@@ -611,3 +610,28 @@ Similarly, a phase can use Secrets as arguments:
 .. code-block:: go
 
   "{{ .Phases.phase-name.Secrets.secret-name.Namespace }}"
+
+DeferPhase
+----------
+
+``DeferPhase`` is used to capture information returned from the Blueprint's ``DeferPhase``
+execution. The information is stored in the ``Phase`` struct that has the below
+definition:
+
+.. code-block:: go
+  :linenos:
+
+  type Phase struct {
+    Secrets map[string]v1.Secret
+    Output  map[string]interface{}
+  }
+
+Output artifact can be set as follows:
+
+.. code-block:: go
+
+  "{{ .DeferPhase.Output.key-name }}"
+
+
+Output artifacts that are set using ``DeferPhase`` can be consumed by other actions'
+phases using the same way other output artifacts are consumed.

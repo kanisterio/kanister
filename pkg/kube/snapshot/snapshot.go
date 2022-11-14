@@ -27,8 +27,9 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube/snapshot/apis/v1beta1"
 )
 
-//go:generate go run github.com/golang/mock/mockgen -destination=mocks/mock_snapshotter.go -package=mocks . Snapshotter
 // Snapshotter is an interface that describes snapshot operations
+//
+//go:generate go run github.com/golang/mock/mockgen -destination=mocks/mock_snapshotter.go -package=mocks . Snapshotter
 type Snapshotter interface {
 	// GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key
 	//
@@ -36,7 +37,7 @@ type Snapshotter interface {
 	// 'annotationValue' is the value for annotationKey in VolumeSnapshotClass spec.
 	// 'storageClassName' is the name of the storageClass that shares the same driver as the VolumeSnapshotClass.
 	// This returns error if no VolumeSnapshotClass found.
-	GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error)
+	GetVolumeSnapshotClass(ctx context.Context, annotationKey, annotationValue, storageClassName string) (string, error)
 
 	// CloneVolumeSnapshotClass creates a copy of the source volume snapshot
 	// class with the specified deletion policy and name. If the target
@@ -47,7 +48,7 @@ type Snapshotter interface {
 	// 'newDeletionPolicy' is the deletion policy to set on the target.
 	// 'excludeAnnotations' are the annotations that should not be set on the
 	// target
-	CloneVolumeSnapshotClass(sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error
+	CloneVolumeSnapshotClass(ctx context.Context, sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error
 	// Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
 	//
 	// 'name' is the name of the VolumeSnapshot.
@@ -81,7 +82,8 @@ type Snapshotter interface {
 	// 'cloneName' is name of the clone.
 	// 'cloneNamespace' is the namespace where the clone will be created.
 	// 'waitForReady' will make the function blocks until the clone's status is ready to use.
-	Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool) error
+	// 'labels' is the labels to set on the created VSC
+	Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool, labels map[string]string) error
 	// GetSource will return the CSI source that backs the volume snapshot.
 	//
 	// 'snapshotName' is the name of the Volumesnapshot.
@@ -93,7 +95,8 @@ type Snapshotter interface {
 	// 'snapshotName' is the name of the snapshot that will be created.
 	// 'namespace' is the namespace of the snapshot.
 	// 'waitForReady' blocks the caller until snapshot is ready to use or context is cancelled.
-	CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool) error
+	// 'labels' is the labels to set on the created VSC
+	CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool, labels map[string]string) error
 	// CreateContentFromSource will create a 'VolumesnaphotContent' for the underlying snapshot source.
 	//
 	// 'source' contains information about CSI snapshot.

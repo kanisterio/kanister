@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !unit
 // +build !unit
 
 package kube
@@ -77,6 +78,73 @@ func (s *ExecSuite) TearDownSuite(c *C) {
 	}
 }
 
+func (s *ExecSuite) TestStderr(c *C) {
+	cmd := []string{"sh", "-c", "echo -n hello >&2"}
+	for _, cs := range s.pod.Status.ContainerStatuses {
+		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+		c.Assert(err, IsNil)
+		c.Assert(stdout, Equals, "")
+		c.Assert(stderr, Equals, "hello")
+	}
+
+	cmd = []string{"sh", "-c", "echo -n hello && exit 1"}
+	for _, cs := range s.pod.Status.ContainerStatuses {
+		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+		c.Assert(err, NotNil)
+		c.Assert(stdout, Equals, "hello")
+		c.Assert(stderr, Equals, "")
+	}
+
+	cmd = []string{"sh", "-c", "count=0; while true; do printf $count; let count=$count+1; if [ $count -eq 6 ]; then exit 1; fi; done"}
+	for _, cs := range s.pod.Status.ContainerStatuses {
+		stdout, stderr, err := Exec(s.cli, s.pod.Namespace, s.pod.Name, cs.Name, cmd, nil)
+		c.Assert(err, NotNil)
+		c.Assert(stdout, Equals, "012345")
+		c.Assert(stderr, Equals, "")
+	}
+}
+
+func (s *ExecSuite) TestExecWithWriterOptions(c *C) {
+	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
+	c.Assert(len(s.pod.Status.ContainerStatuses) > 0, Equals, true)
+
+	var testCases = []struct {
+		cmd         []string
+		expectedOut string
+		expectedErr string
+	}{
+		{
+			cmd:         []string{"sh", "-c", "printf 'test'"},
+			expectedOut: "test",
+			expectedErr: "",
+		},
+		{
+			cmd:         []string{"sh", "-c", "printf 'test' >&2"},
+			expectedOut: "",
+			expectedErr: "test",
+		},
+	}
+
+	for _, testCase := range testCases {
+		bufout := &bytes.Buffer{}
+		buferr := &bytes.Buffer{}
+
+		opts := ExecOptions{
+			Command:       testCase.cmd,
+			Namespace:     s.pod.Namespace,
+			PodName:       s.pod.Name,
+			ContainerName: "", // use default container
+			Stdin:         nil,
+			Stdout:        bufout,
+			Stderr:        buferr,
+		}
+		_, _, err := ExecWithOptions(s.cli, opts)
+		c.Assert(err, IsNil)
+		c.Assert(bufout.String(), Equals, testCase.expectedOut)
+		c.Assert(buferr.String(), Equals, testCase.expectedErr)
+	}
+}
+
 func (s *ExecSuite) TestExecEcho(c *C) {
 	cmd := []string{"sh", "-c", "cat -"}
 	c.Assert(s.pod.Status.Phase, Equals, v1.PodRunning)
@@ -127,7 +195,7 @@ func (s *ExecSuite) TestKopiaCommand(c *C) {
 	}
 	p, err := s.cli.CoreV1().Pods(s.namespace).Create(ctx, pod, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	defer s.cli.CoreV1().Pods(s.namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}) // nolint: errcheck
+	defer s.cli.CoreV1().Pods(s.namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}) //nolint: errcheck
 	ctxT, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 	c.Assert(WaitForPodReady(ctxT, s.cli, s.namespace, p.Name), IsNil)

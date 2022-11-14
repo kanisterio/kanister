@@ -15,10 +15,11 @@ export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true
 export KUBECONFIG=$HOME/.kube/config
-export KUBE_VERSION=${KUBE_VERSION:-"v1.18.2"}
-export KIND_VERSION=${KIND_VERSION:-"v0.5.1"}
+export KUBE_VERSION=${KUBE_VERSION:-"v1.21.1"}
+export KIND_VERSION=${KIND_VERSION:-"v0.11.1"}
 export LOCAL_CLUSTER_NAME=${LOCAL_CLUSTER_NAME:-"kanister"}
 export LOCAL_PATH_PROV_VERSION="v0.0.11"
+export SNAPSHOTTER_VERSION="v5.0.0"
 declare -a REQUIRED_BINS=( docker jq go )
 
 if command -v apt-get
@@ -59,6 +60,24 @@ start_localkube() {
     kind get kubeconfig --name="kanister" > "${HOME}/.kube/config"
     wait_for_nodes
     wait_for_pods
+}
+
+install_csi_hostpath_driver() {
+    # Install VolumeSnapshot CRDs
+    kubectl apply -fhttps://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/client/config/crd/snapshot.storage.k8s.io_{volumesnapshots.yaml,volumesnapshotclasses.yaml,volumesnapshotcontents.yaml}
+
+    # Create snapshot controller
+    kubectl apply -fhttps://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_VERSION}/deploy/kubernetes/snapshot-controller/{rbac-snapshot-controller.yaml,setup-snapshot-controller.yaml}
+
+    # Deploy the CSI Hostpath Driver
+    cd /tmp
+    git clone https://github.com/kubernetes-csi/csi-driver-host-path.git
+    cd csi-driver-host-path
+    sed -i 's/mountPropagation: Bidirectional/\#mountPropagation: Bidirectional/g' deploy/kubernetes-latest/hostpath/csi-hostpath-plugin.yaml
+    ./deploy/kubernetes-latest/deploy.sh
+
+    # Create StorageClass
+    kubectl apply -f ./examples/csi-storageclass.yaml
 }
 
 stop_localkube() {
@@ -127,6 +146,7 @@ Where operation is one of the following:
   get_localkube: installs kind
   start_localkube : localkube start
   stop_localkube : localkube stop
+  install_csi_hostpath_driver : installs CSI hostpath driver
 EOM
     exit 1
 }
@@ -137,6 +157,9 @@ case "${1}" in
         # Alphabetically sorted
         get_localkube)
             time -p get_localkube
+            ;;
+        install_csi_hostpath_driver)
+            time -p install_csi_hostpath_driver
             ;;
         start_localkube)
             time -p start_localkube

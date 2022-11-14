@@ -20,13 +20,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -98,7 +99,7 @@ func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string)
 		return err
 	}
 
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.chart.Release, esi.namespace, esi.chart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.chart.Release, esi.namespace, esi.chart.Values, true)
 	if err != nil {
 		return err
 	}

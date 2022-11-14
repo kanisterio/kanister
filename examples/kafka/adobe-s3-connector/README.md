@@ -6,7 +6,7 @@ During restore, topic messages are purged before the restore operation is perfor
 ## Prerequisites
 
 * Kubernetes 1.9+
-* Kanister controller version 0.61.0 installed in the cluster in a namespace <kanister-operator-namespace>. This example uses `kasten-io` namespace
+* Kanister controller version 0.84.0 installed in the cluster in a namespace <kanister-operator-namespace>. This example uses `kanister` namespace
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
 ## Assumption
@@ -35,7 +35,7 @@ $ helm install kafka-release strimzi/strimzi-kafka-operator --namespace kafka-te
 $ kubectl create -f ./kafka-cluster.yaml -n kafka-test
 
 # wait for the pods to be in ready state
-$ kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka-test
+$ kubectl wait kafka-test/my-cluster --for=condition=Ready --timeout=300s -n kafka-test
 
 # setup kafdrop for monitoring the Kafka cluster, this is not mandatory for the blueprint as a part of restore and backup.
 $ kubectl create -f kafdrop.yaml -n kafka-test
@@ -99,14 +99,14 @@ $ kanctl create profile s3compliant --access-key <aws-access-key> \
         --namespace kafka-test
 
 # Blueprint Definition
-$ kubectl create -f ./kafka-blueprint.yaml -n kasten-io
+$ kubectl create -f ./kafka-blueprint.yaml -n kanister
 ```
 
 ## Perform Backup
 To perform backup to S3, an ActionSet is created to run `kafka-connect`.
 ```bash
 # Create an actionset
-$ kanctl create actionset --action backup --namespace kasten-io --blueprint kafka-blueprint --profile kafka/s3-profile-fn64h --objects v1/configmaps/kafka/s3config
+$ kanctl create actionset --action backup --namespace kanister --blueprint kafka-blueprint --profile kafka-test/s3-profile-fn64h --objects v1/configmaps/kafka-test/s3config
 ```
 ## Verify the backup
 We can verify the backup operation by adding some data to the topic configured earlier
@@ -134,7 +134,7 @@ $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafk
 To perform restore, a pre-hook restore operation is performed which will purge all events from the topics in the Kafka cluster whose backups were performed previously.
 ```bash
 
-$ kanctl create actionset --action restore --namespace kasten-io --blueprint kafka-blueprint --profile kafka/s3-profile-fn64h --objects v1/configmaps/kafka/s3config
+$ kanctl create actionset --action restore --from "backup-rslmb" --namespace kanister --blueprint kafka-blueprint --profile kafka-test/s3-profile-fn64h --objects v1/configmaps/kafka-test/s3config
 
 ```
 **NOTE:**
@@ -153,7 +153,7 @@ All the messages restored can be viewed.
 
 ```bash
 # Delete the blueprint
-$ kubectl delete blueprints.cr.kanister.io <blueprint-name> -n kasten-io
+$ kubectl delete blueprints.cr.kanister.io <blueprint-name> -n kanister
 # Get the profile
 $ kubectl get profiles.cr.kanister.io -n kafka-test
 NAME               AGE
@@ -168,11 +168,11 @@ The following debug commands can be used to troubleshoot issues during the backu
 
 Check Kanister controller logs:
 ```bash
-$ kubectl --namespace kasten-io logs -l run=kanister-svc -f
+$ kubectl --namespace kanister logs -l run=kanister-svc -f
 ```
 Check events of the ActionSet:
 ```bash
-$ kubectl describe actionset <actionset-name> -n kasten-io
+$ kubectl describe actionset <actionset-name> -n kanister
 ```
 Check the logs of the Kanister job
 ```bash

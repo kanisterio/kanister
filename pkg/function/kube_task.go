@@ -72,6 +72,7 @@ func kubeTaskPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1
 			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 		}
 		ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
+		ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 		// Fetch logs from the pod
 		r, err := kube.StreamPodLogs(ctx, cli, pod.Namespace, pod.Name)
 		if err != nil {
@@ -115,5 +116,17 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 }
 
 func (*kubeTaskFunc) RequiredArgs() []string {
-	return []string{KubeTaskImageArg, KubeTaskCommandArg}
+	return []string{
+		KubeTaskImageArg,
+		KubeTaskCommandArg,
+	}
+}
+
+func (*kubeTaskFunc) Arguments() []string {
+	return []string{
+		KubeTaskImageArg,
+		KubeTaskCommandArg,
+		KubeTaskNamespaceArg,
+		KubeTaskPodOverrideArg,
+	}
 }

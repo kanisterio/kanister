@@ -2,16 +2,16 @@ FROM confluentinc/cp-kafka-connect:6.1.0
 
 USER root
 
-RUN yum install -y lsof
+RUN microdnf install -y lsof
 
 # copy the jar files
 
-RUN yum install -y \
+RUN microdnf install -y \
    java-1.8.0-openjdk \
    java-1.8.0-openjdk-devel
 
 ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk/
-RUN yum install git -y
+RUN microdnf install git -y
 RUN java -version
 RUN git clone https://github.com/adobe/kafka-connect-s3.git
 RUN cd kafka-connect-s3 && ./gradlew shadowJar

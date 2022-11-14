@@ -40,7 +40,7 @@ type PostgresDB struct {
 	namespace string
 }
 
-// Last tested chart version "10.3.15"
+// Last tested chart version "10.12.3". Also we are using postgres version 13.4
 func NewPostgresDB(name string, subPath string) App {
 	return &PostgresDB{
 		name: name,
@@ -52,7 +52,8 @@ func NewPostgresDB(name string, subPath string) App {
 			Values: map[string]string{
 				"image.registry":                        "ghcr.io",
 				"image.repository":                      "kanisterio/postgresql",
-				"image.tag":                             "latest",
+				"image.tag":                             "v9.99.9-dev",
+				"image.pullPolicy":                      "Always",
 				"postgresqlPassword":                    "test@54321",
 				"postgresqlExtendedConf.archiveCommand": "envdir /bitnami/postgresql/data/env wal-e wal-push %p",
 				"postgresqlExtendedConf.archiveMode":    "true",
@@ -94,7 +95,7 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 	// Install helm chart
-	return cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Version, pdb.chart.Release, pdb.namespace, pdb.chart.Values)
+	return cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Version, pdb.chart.Release, pdb.namespace, pdb.chart.Values, true)
 }
 
 func (pdb *PostgresDB) IsReady(ctx context.Context) (bool, error) {
@@ -142,7 +143,7 @@ func (pdb *PostgresDB) Ping(ctx context.Context) error {
 }
 
 func (pdb PostgresDB) Insert(ctx context.Context) error {
-	cmd := fmt.Sprintf("PGPASSWORD=${POSTGRES_PASSWORD} psql -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\"")
+	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\""
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create db in postgresql. %s", stderr)

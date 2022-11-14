@@ -23,7 +23,8 @@ import (
 	"github.com/kopia/kopia/snapshot/snapshotfs"
 	"github.com/pkg/errors"
 
-	kankopia "github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	kansnapshot "github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/virtualfs"
 )
 
@@ -34,7 +35,7 @@ const (
 
 // Push streams data to object store by reading it from the given endpoint into an in-memory filesystem
 func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEndpoint string) error {
-	rep, err := kankopia.OpenRepository(ctx, configFile, password, "kanister stream push")
+	rep, err := repository.Open(ctx, configFile, password, "kanister stream push")
 	if err != nil {
 		return errors.Wrap(err, "Failed to open kopia repository")
 	}
@@ -53,6 +54,8 @@ func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEn
 
 	// Setup kopia uploader
 	u := snapshotfs.NewUploader(rep)
+	// Fail full snapshot if errors are encountered during upload
+	u.FailFast = true
 
 	// Populate the source info with source path and file
 	sourceInfo := snapshot.SourceInfo{
@@ -62,6 +65,6 @@ func Push(ctx context.Context, configFile, dirPath, filePath, password, sourceEn
 	}
 
 	// Create a kopia snapshot
-	_, _, err = kankopia.SnapshotSource(ctx, rep, u, sourceInfo, root, snapshotDescription)
+	_, _, err = kansnapshot.SnapshotSource(ctx, rep, u, sourceInfo, root, snapshotDescription)
 	return errors.Wrap(err, "Failed to create kopia snapshot")
 }

@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
@@ -194,6 +195,11 @@ func ProfileBucket(ctx context.Context, p *crv1alpha1.Profile, cli kubernetes.In
 		Type:   pType,
 		Region: p.Location.Region,
 	}
+
+	if p.Location.Endpoint != "" {
+		pc.Endpoint = p.Location.Endpoint
+	}
+
 	secret, err := osSecretFromProfile(ctx, pType, p, cli)
 	if err != nil {
 		return err
@@ -291,38 +297,50 @@ func osSecretFromProfile(ctx context.Context, pType objectstore.ProviderType, p 
 	var key, value []byte
 	var ok bool
 	secret := &objectstore.Secret{}
-	switch p.Credential.Type {
-	case crv1alpha1.CredentialTypeKeyPair:
-		kp := p.Credential.KeyPair
-		if kp == nil {
-			return nil, errorf(validateErr, "Invalid credentials kv cannot be nil")
-		}
-		s, err := cli.CoreV1().Secrets(kp.Secret.Namespace).Get(ctx, kp.Secret.Name, metav1.GetOptions{})
-		if err != nil {
-			return nil, errorf(err, "Could not fetch the secret specified in credential")
-		}
-		if key, ok = s.Data[kp.IDField]; !ok {
-			return nil, errorf(validateErr, "Key '%s' not found in secret '%s:%s'", kp.IDField, s.GetNamespace(), s.GetName())
-		}
-		if value, ok = s.Data[kp.SecretField]; !ok {
-			return nil, errorf(validateErr, "Value '%s' not found in secret '%s:%s'", kp.SecretField, s.GetNamespace(), s.GetName())
-		}
-	case crv1alpha1.CredentialTypeSecret:
+
+	// Secret Credential type code path
+	if p.Credential.Type == crv1alpha1.CredentialTypeSecret {
 		s, err := cli.CoreV1().Secrets(p.Credential.Secret.Namespace).Get(ctx, p.Credential.Secret.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, errorf(err, "Could not fetch the secret specified in credential")
 		}
-		creds, err := secrets.ExtractAWSCredentials(ctx, s)
-		if err != nil {
-			return nil, err
-		}
-		secret.Type = objectstore.SecretTypeAwsAccessKey
-		secret.Aws = &objectstore.SecretAws{
-			AccessKeyID:     creds.AccessKeyID,
-			SecretAccessKey: creds.SecretAccessKey,
-			SessionToken:    creds.SessionToken,
+		switch pType {
+		case objectstore.ProviderTypeS3:
+			creds, err := secrets.ExtractAWSCredentials(ctx, s, aws.AssumeRoleDurationDefault)
+			if err != nil {
+				return nil, err
+			}
+			secret.Type = objectstore.SecretTypeAwsAccessKey
+			secret.Aws = &objectstore.SecretAws{
+				AccessKeyID:     creds.AccessKeyID,
+				SecretAccessKey: creds.SecretAccessKey,
+				SessionToken:    creds.SessionToken,
+			}
+		case objectstore.ProviderTypeAzure:
+			azureSecret, err := secrets.ExtractAzureCredentials(s)
+			if err != nil {
+				return nil, err
+			}
+			secret.Type = objectstore.SecretTypeAzStorageAccount
+			secret.Azure = azureSecret
 		}
 		return secret, nil
+	}
+
+	// The following is KeyPair codepath
+	kp := p.Credential.KeyPair
+	if kp == nil {
+		return nil, errorf(validateErr, "Invalid credentials kp cannot be nil")
+	}
+	s, err := cli.CoreV1().Secrets(kp.Secret.Namespace).Get(ctx, kp.Secret.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errorf(err, "Could not fetch the secret specified in credential")
+	}
+	if key, ok = s.Data[kp.IDField]; !ok {
+		return nil, errorf(validateErr, "Key '%s' not found in secret '%s:%s'", kp.IDField, s.GetNamespace(), s.GetName())
+	}
+	if value, ok = s.Data[kp.SecretField]; !ok {
+		return nil, errorf(validateErr, "Value '%s' not found in secret '%s:%s'", kp.SecretField, s.GetNamespace(), s.GetName())
 	}
 
 	switch pType {

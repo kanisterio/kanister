@@ -59,13 +59,13 @@ func NewSnapshotStable(kubeCli kubernetes.Interface, dynCli dynamic.Interface) S
 }
 
 // CloneVolumeSnapshotClass creates a copy of the source volume snapshot class
-func (sna *SnapshotStable) CloneVolumeSnapshotClass(sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
-	return cloneSnapshotClass(sna.dynCli, VolSnapClassGVR, sourceClassName, targetClassName, newDeletionPolicy, excludeAnnotations)
+func (sna *SnapshotStable) CloneVolumeSnapshotClass(ctx context.Context, sourceClassName, targetClassName, newDeletionPolicy string, excludeAnnotations []string) error {
+	return cloneSnapshotClass(ctx, sna.dynCli, VolSnapClassGVR, sourceClassName, targetClassName, newDeletionPolicy, excludeAnnotations)
 }
 
 // GetVolumeSnapshotClass returns VolumeSnapshotClass name which is annotated with given key.
-func (sna *SnapshotStable) GetVolumeSnapshotClass(annotationKey, annotationValue, storageClassName string) (string, error) {
-	return GetSnapshotClassbyAnnotation(sna.dynCli, sna.kubeCli, VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
+func (sna *SnapshotStable) GetVolumeSnapshotClass(ctx context.Context, annotationKey, annotationValue, storageClassName string) (string, error) {
+	return GetSnapshotClassbyAnnotation(ctx, sna.dynCli, sna.kubeCli, VolSnapClassGVR, annotationKey, annotationValue, storageClassName)
 }
 
 // Create creates a VolumeSnapshot and returns it or any error happened meanwhile.
@@ -98,7 +98,7 @@ func (sna *SnapshotStable) DeleteContent(ctx context.Context, name string) error
 
 // Clone will clone the VolumeSnapshot to namespace 'cloneNamespace'.
 // Underlying VolumeSnapshotContent will be cloned with a different name.
-func (sna *SnapshotStable) Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool) error {
+func (sna *SnapshotStable) Clone(ctx context.Context, name, namespace, cloneName, cloneNamespace string, waitForReady bool, labels map[string]string) error {
 	_, err := sna.Get(ctx, cloneName, cloneNamespace)
 	if err == nil {
 		return errors.Errorf("Target snapshot already exists in target namespace, Volumesnapshot: %s, Namespace: %s", cloneName, cloneNamespace)
@@ -111,7 +111,7 @@ func (sna *SnapshotStable) Clone(ctx context.Context, name, namespace, cloneName
 	if err != nil {
 		return errors.Errorf("Failed to get source")
 	}
-	return sna.CreateFromSource(ctx, src, cloneName, cloneNamespace, waitForReady)
+	return sna.CreateFromSource(ctx, src, cloneName, cloneNamespace, waitForReady, labels)
 }
 
 // GetSource will return the CSI source that backs the volume snapshot.
@@ -120,13 +120,13 @@ func (sna *SnapshotStable) GetSource(ctx context.Context, snapshotName, namespac
 }
 
 // CreateFromSource will create a 'Volumesnapshot' and 'VolumesnaphotContent' pair for the underlying snapshot source.
-func (sna *SnapshotStable) CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool) error {
+func (sna *SnapshotStable) CreateFromSource(ctx context.Context, source *Source, snapshotName, namespace string, waitForReady bool, labels map[string]string) error {
 	deletionPolicy, err := getDeletionPolicyFromClass(sna.dynCli, VolSnapClassGVR, source.VolumeSnapshotClassName)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get DeletionPolicy from VolumeSnapshotClass")
 	}
 	contentName := snapshotName + "-content-" + string(uuid.NewUUID())
-	snap := UnstructuredVolumeSnapshot(VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, nil)
+	snap := UnstructuredVolumeSnapshot(VolSnapGVR, snapshotName, namespace, "", contentName, source.VolumeSnapshotClassName, labels)
 
 	if err := sna.CreateContentFromSource(ctx, source, contentName, snapshotName, namespace, deletionPolicy); err != nil {
 		return err

@@ -78,7 +78,7 @@ func deleteData(ctx context.Context, cli kubernetes.Interface, tp param.Template
 	return pr.Run(ctx, podFunc)
 }
 
-// nolint:gocognit
+//nolint:gocognit
 func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclaimSpace bool, namespace, encryptionKey string, targetPaths, deleteTags, deleteIdentifiers []string) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
 		// Wait for pod to reach running state
@@ -99,8 +99,8 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 				return nil, err
 			}
 			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to forget data, could not get snapshotID from tag, Tag: %s", deleteTag)
 			}
@@ -117,8 +117,8 @@ func deleteDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, reclai
 				return nil, err
 			}
 			stdout, stderr, err := kube.Exec(cli, namespace, pod.Name, pod.Spec.Containers[0].Name, cmd, nil)
-			format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
-			format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stdout)
+			format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, stderr)
 			if err != nil {
 				return nil, errors.Wrapf(err, "Failed to forget data")
 			}
@@ -190,5 +190,19 @@ func (*deleteDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args m
 }
 
 func (*deleteDataFunc) RequiredArgs() []string {
-	return []string{DeleteDataNamespaceArg, DeleteDataBackupArtifactPrefixArg}
+	return []string{
+		DeleteDataNamespaceArg,
+		DeleteDataBackupArtifactPrefixArg,
+	}
+}
+
+func (*deleteDataFunc) Arguments() []string {
+	return []string{
+		DeleteDataNamespaceArg,
+		DeleteDataBackupArtifactPrefixArg,
+		DeleteDataBackupIdentifierArg,
+		DeleteDataBackupTagArg,
+		DeleteDataEncryptionKeyArg,
+		DeleteDataReclaimSpace,
+	}
 }

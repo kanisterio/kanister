@@ -1,3 +1,7 @@
+// TODO: Switch to using the latest azure sdk and remove nolint.
+// Related Ticket- https://github.com/kanisterio/kanister/issues/1684
+//
+//nolint:staticcheck
 package azure
 
 import (
@@ -7,11 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/compute/mgmt/skus"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/subscriptions"
 	azcompute "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-03-01/compute"
 	"github.com/Azure/azure-sdk-for-go/storage"
 	azto "github.com/Azure/go-autorest/autorest/to"
+	uuid "github.com/gofrs/uuid"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 	ktags "github.com/kanisterio/kanister/pkg/blockstorage/tags"
@@ -66,7 +72,11 @@ func (s *AdStorage) VolumeGet(ctx context.Context, id string, zone string) (*blo
 
 func (s *AdStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volume) (*blockstorage.Volume, error) {
 	tags := blockstorage.SanitizeTags(blockstorage.KeyValueToMap(volume.Tags))
-	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
+	diskId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
+	diskName := fmt.Sprintf(volumeNameFmt, diskId.String())
 	diskProperties := &azcompute.DiskProperties{
 		DiskSizeGB: azto.Int32Ptr(int32(blockstorage.SizeInGi(volume.SizeInBytes))),
 		CreationData: &azcompute.CreationData{
@@ -126,10 +136,11 @@ func (s *AdStorage) SnapshotCopy(ctx context.Context, from blockstorage.Snapshot
 // SnapshotCopyWithArgs func: args map should contain non-empty StorageAccountName(AZURE_MIGRATE_STORAGE_ACCOUNT_NAME)
 // and StorageKey(AZURE_MIGRATE_STORAGE_ACCOUNT_KEY)
 // A destination ResourceGroup (AZURE_MIGRATE_RESOURCE_GROUP) can be provided. The created snapshot will belong to this.
-func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot, to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
+func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.Snapshot,
+	to blockstorage.Snapshot, args map[string]string) (*blockstorage.Snapshot, error) {
 	migrateStorageAccount := args[blockstorage.AzureMigrateStorageAccount]
 	migrateStorageKey := args[blockstorage.AzureMigrateStorageKey]
-	if migrateStorageAccount == "" || migrateStorageKey == "" {
+	if isMigrateStorageAccountorKey(migrateStorageAccount, migrateStorageKey) {
 		return nil, errors.Errorf("Required args %s and %s  for snapshot copy not available", blockstorage.AzureMigrateStorageAccount, blockstorage.AzureMigrateStorageKey)
 	}
 
@@ -204,7 +215,11 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	}
 	blobURI := blob.GetURL()
 
-	snapName := fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String())
+	snapId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
+	snapName := fmt.Sprintf(snapshotNameFmt, snapId.String())
 	var tags = make(map[string]string)
 	for _, tag := range from.Volume.Tags {
 		if _, found := tags[tag.Key]; !found {
@@ -251,6 +266,10 @@ func (s *AdStorage) SnapshotCopyWithArgs(ctx context.Context, from blockstorage.
 	return snap, nil
 }
 
+func isMigrateStorageAccountorKey(migrateStorageAccount, migrateStorageKey string) bool {
+	return migrateStorageAccount == "" || migrateStorageKey == ""
+}
+
 func (s *AdStorage) revokeAccess(ctx context.Context, rg, name, ID string) {
 	_, err := s.azCli.SnapshotsClient.RevokeAccess(ctx, rg, name)
 	if err != nil {
@@ -266,7 +285,11 @@ func deleteBlob(blob *storage.Blob, blobName string) {
 }
 
 func (s *AdStorage) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
-	snapName := fmt.Sprintf(snapshotNameFmt, uuid.NewV1().String())
+	snapId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
+	snapName := fmt.Sprintf(snapshotNameFmt, snapId.String())
 	tags = blockstorage.SanitizeTags(ktags.GetTags(tags))
 	region, _, err := getLocationInfo(volume.Az)
 	if err != nil {
@@ -316,7 +339,7 @@ const (
 var diskIDRe = regexp.MustCompile(diskIDRegEx)
 var snapIDRe = regexp.MustCompile(snapshotIDRegEx)
 
-// nolint:unparam
+//nolint:unparam
 func parseDiskID(id string) (subscription string, resourceGroup string, name string, err error) {
 	comps := diskIDRe.FindStringSubmatch(id)
 	if len(comps) != 4 {
@@ -325,7 +348,7 @@ func parseDiskID(id string) (subscription string, resourceGroup string, name str
 	return comps[1], comps[2], comps[3], nil
 }
 
-// nolint:unparam
+//nolint:unparam
 func parseSnapshotID(id string) (subscription string, resourceGroup string, name string, err error) {
 	comps := snapIDRe.FindStringSubmatch(id)
 	if len(comps) != 4 {
@@ -480,7 +503,11 @@ func (s *AdStorage) VolumeCreateFromSnapshot(ctx context.Context, snapshot block
 		return nil, err
 	}
 
-	diskName := fmt.Sprintf(volumeNameFmt, uuid.NewV1().String())
+	diskId, err := uuid.NewV1()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create UUID")
+	}
+	diskName := fmt.Sprintf(volumeNameFmt, diskId.String())
 	tags = blockstorage.SanitizeTags(tags)
 	createDisk := azcompute.Disk{
 		Name:     azto.StringPtr(diskName),
@@ -610,7 +637,27 @@ func (s *AdStorage) SetTags(ctx context.Context, resource interface{}, tags map[
 }
 
 func (s *AdStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
-	return staticRegionToZones(region)
+	regionMap, err := s.dynamicRegionMapAzure(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to fetch dynamic region map for region (%s)", region)
+	}
+	zones, ok := regionMap[region]
+	if !ok {
+		return nil, errors.Errorf("Zones for region %s not found", region)
+	}
+	return zones, nil
+}
+
+func (s *AdStorage) GetRegions(ctx context.Context) ([]string, error) {
+	regionMap, err := s.dynamicRegionMapAzure(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch dynamic region map")
+	}
+	regions := []string{}
+	for region := range regionMap {
+		regions = append(regions, region)
+	}
+	return regions, nil
 }
 
 func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blockstorage.Snapshot) (global bool, regionsAndZones map[string][]string, err error) {
@@ -622,145 +669,56 @@ func (s *AdStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *blocks
 		return false, nil, errors.Errorf("Required VolumeType not set")
 	}
 
-	zl, err := staticRegionToZones(snapshot.Region)
+	zl, err := s.FromRegion(ctx, snapshot.Region)
 	if err != nil {
 		return false, nil, err
 	}
 	return false, map[string][]string{snapshot.Region: zl}, nil
 }
 
-func staticRegionToZones(region string) ([]string, error) {
-	switch region {
-	case "asia":
-		return nil, nil
-	case "asiapacific":
-		return nil, nil
-	case "australia":
-		return nil, nil
-	case "australiacentral":
-		return nil, nil
-	case "australiacentral2":
-		return nil, nil
-	case "australiaeast":
-		return []string{"australiaeast-1", "australiaeast-2", "australiaeast-3"}, nil
-	case "australiasoutheast":
-		return nil, nil
-	case "brazil":
-		return nil, nil
-	case "brazilsouth":
-		return []string{"brazilsouth-1", "brazilsouth-2", "brazilsouth-3"}, nil
-	case "brazilsoutheast":
-		return nil, nil
-	case "canada":
-		return nil, nil
-	case "canadacentral":
-		return []string{"canadacentral-1", "canadacentral-2", "canadacentral-3"}, nil
-	case "canadaeast":
-		return nil, nil
-	case "centralindia":
-		return nil, nil
-	case "centralus":
-		return []string{"centralus-1", "centralus-2", "centralus-3"}, nil
-	case "centraluseuap":
-		return []string{"centraluseuap-1"}, nil
-	case "centralusstage":
-		return nil, nil
-	case "eastasia":
-		return nil, nil
-	case "eastasiastage":
-		return nil, nil
-	case "eastus":
-		return []string{"eastus-1", "eastus-2", "eastus-3"}, nil
-	case "eastus2":
-		return []string{"eastus2-1", "eastus2-2", "eastus2-3"}, nil
-	case "eastus2euap":
-		return []string{"eastus2euap-1", "eastus2euap-2", "eastus2euap-3"}, nil
-	case "eastus2stage":
-		return nil, nil
-	case "eastusstage":
-		return nil, nil
-	case "europe":
-		return nil, nil
-	case "francecentral":
-		return []string{"francecentral-1", "francecentral-2", "francecentral-3"}, nil
-	case "francesouth":
-		return nil, nil
-	case "germanynorth":
-		return nil, nil
-	case "germanywestcentral":
-		return []string{"germanywestcentral-1", "germanywestcentral-2", "germanywestcentral-3"}, nil
-	case "global":
-		return nil, nil
-	case "india":
-		return nil, nil
-	case "japan":
-		return nil, nil
-	case "japaneast":
-		return []string{"japaneast-1", "japaneast-2", "japaneast-3"}, nil
-	case "japanwest":
-		return nil, nil
-	case "jioindiawest":
-		return nil, nil
-	case "koreacentral":
-		return nil, nil
-	case "koreasouth":
-		return nil, nil
-	case "northcentralus":
-		return nil, nil
-	case "northcentralusstage":
-		return nil, nil
-	case "northeurope":
-		return []string{"northeurope-1", "northeurope-2", "northeurope-3"}, nil
-	case "norwayeast":
-		return nil, nil
-	case "norwaywest":
-		return nil, nil
-	case "southafricanorth":
-		return nil, nil
-	case "southafricawest":
-		return nil, nil
-	case "southcentralus":
-		return []string{"southcentralus-1", "southcentralus-2", "southcentralus-3"}, nil
-	case "southcentralusstage":
-		return nil, nil
-	case "southeastasia":
-		return []string{"southeastasia-1", "southeastasia-2", "southeastasia-3"}, nil
-	case "southeastasiastage":
-		return nil, nil
-	case "southindia":
-		return nil, nil
-	case "switzerlandnorth":
-		return nil, nil
-	case "switzerlandwest":
-		return nil, nil
-	case "uaecentral":
-		return nil, nil
-	case "uaenorth":
-		return nil, nil
-	case "uk":
-		return nil, nil
-	case "uksouth":
-		return []string{"uksouth-1", "uksouth-2", "uksouth-3"}, nil
-	case "ukwest":
-		return nil, nil
-	case "unitedstates":
-		return nil, nil
-	case "westcentralus":
-		return nil, nil
-	case "westeurope":
-		return []string{"westeurope-1", "westeurope-2", "westeurope-3"}, nil
-	case "westindia":
-		return nil, nil
-	case "westus":
-		return nil, nil
-	case "westus2":
-		return []string{"westus2-1", "westus2-2", "westus2-3"}, nil
-	case "westus2stage":
-		return nil, nil
-	case "westus3":
-		return nil, nil
-	case "westusstage":
-		return nil, nil
+// dynamicRegionMapAzure derives a mapping from Regions to zones for Azure. Depends on subscriptionID
+func (s *AdStorage) dynamicRegionMapAzure(ctx context.Context) (map[string][]string, error) {
+	subscriptionsCLient := subscriptions.NewClientWithBaseURI(s.azCli.BaseURI)
+	subscriptionsCLient.Authorizer = s.azCli.Authorizer
+	llResp, err := subscriptionsCLient.ListLocations(ctx, s.azCli.SubscriptionID, nil)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New(fmt.Sprintf("cannot get availability zones for region %s", region))
+	regionMap := make(map[string]map[string]struct{})
+	for _, location := range *llResp.Value {
+		regionMap[*location.Name] = make(map[string]struct{})
+	}
+
+	skuClient := skus.NewResourceSkusClientWithBaseURI(s.azCli.BaseURI, s.azCli.SubscriptionID)
+	skuClient.Authorizer = s.azCli.Authorizer
+	skuResults, err := skuClient.ListComplete(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for skuResults.Value().Name != nil {
+		if skuResults.Value().ResourceType != nil && *skuResults.Value().ResourceType == "disks" {
+			for _, location := range *skuResults.Value().LocationInfo {
+				if val, ok := regionMap[*location.Location]; ok {
+					for _, zone := range *location.Zones {
+						val[zone] = struct{}{}
+					}
+					regionMap[*location.Location] = val
+				}
+			}
+		}
+		if err = skuResults.NextWithContext(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	// convert to map of []string
+	regionMapResult := make(map[string][]string)
+	for region, zoneSet := range regionMap {
+		var zoneArray []string
+		for zone := range zoneSet {
+			zoneArray = append(zoneArray, region+"-"+zone)
+		}
+		regionMapResult[region] = zoneArray
+	}
+	return regionMapResult, nil
 }

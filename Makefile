@@ -41,8 +41,9 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 
 # Mention the vm-driver that should be used to install OpenShift
 vm-driver ?= "kvm"
+
 # Default OCP version in which the OpenShift apps are going to run
-ocp_version ?= "4.7"
+ocp_version ?= "4.10"
 ###
 ### These variables should not need tweaking.
 ###
@@ -57,7 +58,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.12
+BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.22
 
 # tag 0.1.0 is, 0.0.1 (latest) + gh + aws + helm binary
 DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
@@ -65,6 +66,8 @@ DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
 
 GITHUB_TOKEN ?= ""
+
+GOBORING ?= ""
 
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
@@ -88,12 +91,20 @@ all-push: $(addprefix push-, $(ALL_ARCH))
 
 build: bin/$(ARCH)/$(BIN)
 
+build-controller:
+	@$(MAKE) run CMD='-c " \
+	goreleaser build --id $(BIN) --rm-dist --debug --snapshot \
+	&& cp dist/$(BIN)_linux_$(ARCH)/$(BIN) bin/$(ARCH)/$(BIN) \
+	"'
+
 bin/$(ARCH)/$(BIN):
 	@echo "building: $@"
 	@$(MAKE) run CMD='-c " \
 		GOARCH=$(ARCH)       \
 		VERSION=$(VERSION) \
 		PKG=$(PKG)         \
+		BIN=$(BIN) \
+		GOBORING=$(GOBORING) \
 		./build/build.sh   \
 	"'
 # Example: make shell CMD="-c 'date > datefile'"
@@ -158,6 +169,9 @@ deploy: release-controller .deploy-$(DOTFILE_IMAGE)
 
 test: build-dirs
 	@$(MAKE) run CMD='-c "./build/test.sh $(SRC_DIRS)"'
+
+helm-test: build-dirs
+	@$(MAKE) run CMD='-c "./build/helm-test.sh $(SRC_DIRS)"'
 
 integration-test: build-dirs
 	@$(MAKE) run CMD='-c "./build/integration-test.sh short"'
@@ -245,7 +259,7 @@ gorelease:
 	@$(MAKE) run CMD='-c "./build/gorelease.sh"'
 
 release-snapshot:
-	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=latest goreleaser --debug release --rm-dist --snapshot"'
+	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot"'
 
 go-mod-download:
 	@$(MAKE) run CMD='-c "go mod download"'
@@ -259,6 +273,9 @@ tiller:
 install-minio:
 	@$(MAKE) run CMD='-c "./build/minio.sh install_minio"'
 
+install-csi-hostpath-driver:
+	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh install_csi_hostpath_driver"'
+
 uninstall-minio:
 	@$(MAKE) run CMD='-c "./build/minio.sh uninstall_minio"'
 
@@ -270,3 +287,9 @@ stop-minishift:
 
 stop-kind:
 	@$(MAKE) run CMD='-c "./build/local_kubernetes.sh stop_localkube"'
+
+check:
+	@./build/check.sh
+
+gomod:
+	@$(MAKE) run CMD='-c "./build/gomod.sh"'

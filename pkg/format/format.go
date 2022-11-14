@@ -16,19 +16,46 @@ package format
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"regexp"
 	"strings"
 
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	pkgout "github.com/kanisterio/kanister/pkg/output"
 )
 
+var regex = regexp.MustCompile("[\r\n]")
+
 func Log(podName string, containerName string, output string) {
+	LogWithCtx(context.Background(), podName, containerName, output)
+}
+
+// LogTo prints output to w. The specified pod and container are added to the
+// log line as fields.
+func LogTo(w io.Writer, pod string, container string, output string) {
 	if output != "" {
-		logs := regexp.MustCompile("[\r\n]").Split(output, -1)
-		for _, l := range logs {
-			info(podName, containerName, l)
+		for _, line := range regex.Split(output, -1) {
+			// retain the original format of phase outputs for ease
+			// of processing later.
+			if strings.Contains(line, pkgout.PhaseOpString) {
+				if _, err := w.Write([]byte(line + "\n")); err != nil {
+					log.PrintTo(w, err.Error())
+				}
+				continue
+			}
+
+			if strings.TrimSpace(line) != "" {
+				fields := field.M{
+					"Pod":             pod,
+					"Container":       container,
+					"Out":             line,
+					consts.LogKindKey: consts.LogKindDatapath,
+				}
+				log.PrintTo(w, "action update", fields)
+			}
 		}
 	}
 }
@@ -53,5 +80,25 @@ func LogStream(podName string, containerName string, output io.ReadCloser) chan 
 func info(podName string, containerName string, l string) {
 	if strings.TrimSpace(l) != "" {
 		log.Print("Pod Update", field.M{"Pod": podName, "Container": containerName, "Out": l})
+	}
+}
+
+func LogWithCtx(ctx context.Context, podName string, containerName string, output string) {
+	if output != "" {
+		logs := regex.Split(output, -1)
+		for _, l := range logs {
+			infoWithCtx(ctx, podName, containerName, l)
+		}
+	}
+}
+
+func infoWithCtx(ctx context.Context, podName string, containerName string, l string) {
+	if strings.TrimSpace(l) != "" {
+		log.WithContext(ctx).Print("Pod Update", field.M{
+			"Pod":             podName,
+			"Container":       containerName,
+			"Out":             l,
+			consts.LogKindKey: consts.LogKindDatapath,
+		})
 	}
 }

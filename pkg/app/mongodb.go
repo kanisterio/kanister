@@ -41,6 +41,8 @@ type IsMasterOutput struct {
 	Ismaster bool `json:"ismaster"`
 }
 
+var _ HelmApp = &MongoDB{}
+
 type MongoDB struct {
 	cli       kubernetes.Interface
 	namespace string
@@ -50,7 +52,7 @@ type MongoDB struct {
 }
 
 // Last tested working version "9.0.0"
-func NewMongoDB(name string) App {
+func NewMongoDB(name string) HelmApp {
 	return &MongoDB{
 		username: "root",
 		name:     name,
@@ -63,10 +65,19 @@ func NewMongoDB(name string) App {
 				"architecture":     "replicaset",
 				"image.registry":   "ghcr.io",
 				"image.repository": "kanisterio/mongodb",
-				"image.tag":        "latest",
+				"image.tag":        "v9.99.9-dev",
+				"image.pullPolicy": "Always",
 			},
 		},
 	}
+}
+
+func (mongo *MongoDB) Chart() *helm.ChartInfo {
+	return &mongo.chart
+}
+
+func (mongo *MongoDB) SetChart(chart helm.ChartInfo) {
+	mongo.chart = chart
 }
 
 func (mongo *MongoDB) Init(ctx context.Context) error {
@@ -93,7 +104,7 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	}
 
 	log.Print("Installing application using helm.", field.M{"app": mongo.name})
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.chart.Release, mongo.namespace, mongo.chart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.chart.Release, mongo.namespace, mongo.chart.Values, true)
 	if err != nil {
 		return err
 	}

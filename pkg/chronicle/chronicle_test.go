@@ -17,7 +17,7 @@ package chronicle
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -59,7 +59,7 @@ func (s *ChronicleSuite) TestPushPull(c *C) {
 
 	a := filepath.Join(c.MkDir(), "artifact")
 	ap := rand.String(10)
-	err = ioutil.WriteFile(a, []byte(ap), os.ModePerm)
+	err = os.WriteFile(a, []byte(ap), os.ModePerm)
 	c.Assert(err, IsNil)
 	p := PushParams{
 		ProfilePath:  pp,
@@ -78,7 +78,7 @@ func (s *ChronicleSuite) TestPushPull(c *C) {
 		c.Log("File: ", p.ArtifactFile)
 		err = Pull(ctx, buf, s.profile, ap)
 		c.Assert(err, IsNil)
-		str, err := ioutil.ReadAll(buf)
+		str, err := io.ReadAll(buf)
 		c.Assert(err, IsNil)
 		// Remove additional '\n'
 		t := strings.TrimSuffix(string(str), "\n")
@@ -97,7 +97,7 @@ func (s *ChronicleSuite) TestEnv(c *C) {
 	buf := bytes.NewBuffer(nil)
 	err = Pull(ctx, buf, s.profile, suffix)
 	c.Assert(err, IsNil)
-	str, err := ioutil.ReadAll(buf)
+	str, err := io.ReadAll(buf)
 	c.Assert(err, IsNil)
 	t := strings.TrimSuffix(string(str), "\n")
 	c.Assert(t, Equals, "X: foo")

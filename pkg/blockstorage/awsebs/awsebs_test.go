@@ -16,13 +16,16 @@ package awsebs
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	. "gopkg.in/check.v1"
+
+	kaws "github.com/kanisterio/kanister/pkg/aws"
+	envconfig "github.com/kanisterio/kanister/pkg/config"
 
 	"github.com/kanisterio/kanister/pkg/blockstorage"
 )
@@ -33,18 +36,6 @@ func Test(t *testing.T) { TestingT(t) }
 type AWSEBSSuite struct{}
 
 var _ = Suite(&AWSEBSSuite{})
-
-func (s AWSEBSSuite) TestQueryRegionToZones(c *C) {
-	c.Skip("Only works on AWS")
-	ctx := context.Background()
-	region := "us-east-1"
-	ec2Cli, err := newEC2Client(region, aws.NewConfig().WithCredentials(credentials.NewEnvCredentials()))
-	c.Assert(err, IsNil)
-	provider := &EbsStorage{Ec2Cli: ec2Cli}
-	zs, err := provider.queryRegionToZones(ctx, region)
-	c.Assert(err, IsNil)
-	c.Assert(zs, DeepEquals, []string{"us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1e", "us-east-1f"})
-}
 
 func (s AWSEBSSuite) TestVolumeParse(c *C) {
 	expected := blockstorage.Volume{
@@ -92,4 +83,30 @@ func (s AWSEBSSuite) TestVolumeParse(c *C) {
 	c.Check(volume.Type, Equals, blockstorage.TypeEBS)
 	c.Check(volume.VolumeType, Equals, expected.VolumeType)
 	c.Check(volume.Attributes, DeepEquals, expected.Attributes)
+}
+
+func (s AWSEBSSuite) TestGetRegions(c *C) {
+	ctx := context.Background()
+	config := map[string]string{}
+
+	config[kaws.AccessKeyID] = envconfig.GetEnvOrSkip(c, kaws.AccessKeyID)
+	config[kaws.SecretAccessKey] = envconfig.GetEnvOrSkip(c, kaws.SecretAccessKey)
+
+	// create provider with region
+	config[kaws.ConfigRegion] = "us-west-2"
+	bsp, err := NewProvider(ctx, config)
+	c.Assert(err, IsNil)
+	ebsp := bsp.(*EbsStorage)
+
+	// get zones with other region
+	zones, err := ebsp.FromRegion(ctx, "us-east-1")
+	c.Assert(err, IsNil)
+	for _, zone := range zones {
+		c.Assert(strings.Contains(zone, "us-east-1"), Equals, true)
+		c.Assert(strings.Contains(zone, "us-west-2"), Equals, false)
+	}
+
+	regions, err := ebsp.GetRegions(ctx)
+	c.Assert(err, IsNil)
+	c.Assert(regions, NotNil)
 }

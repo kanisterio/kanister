@@ -13,7 +13,8 @@ of Kanister's features to manage the application's data.
 Prerequisites
 =============
 
-* Kubernetes 1.8 or higher with Beta APIs enabled
+* Kubernetes ``1.16`` or higher. For cluster version lower than ``1.16``,
+  we recommend installing Kanister version ``0.62.0`` or lower.
 
 * `kubectl <https://kubernetes.io/docs/tasks/tools/install-kubectl/>`_ installed
   and setup
@@ -94,7 +95,6 @@ First Blueprint
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       phases:
       - func: KubeExec
         name: backupToS3
@@ -117,6 +117,11 @@ Once we create a Blueprint, we can see its events by using the following command
     Type     Reason    Age   From                 Message
     ----     ------    ----  ----                 -------
     Normal   Added      4m   Kanister Controller  Added blueprint time-log-bp
+
+When a blueprint resource is created, it goes through a
+`validating webhook <https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#validatingadmissionwebhook>`_
+controller that validates the resource. Refer to :ref:`this<kanctlvalidate>`
+documentation for more details.
 
 The next CustomResource we'll deploy is an ActionSet. An ActionSet is created
 each time you want to execute any Kanister actions. The ActionSet contains all
@@ -229,7 +234,6 @@ stdout, but eventually we'll backup the time log to that path.
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       configMapNames:
       - location
       phases:
@@ -330,7 +334,6 @@ For more on this templating, see :ref:`templates`
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       configMapNames:
       - location
       secretNames:
@@ -413,7 +416,6 @@ ConfigMap.
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       configMapNames:
       - location
       secretNames:
@@ -440,6 +442,61 @@ ConfigMap.
 
 If you re-execute this Kanister Action, you'll be able to see the Artifact in the
 ActionSet status.
+
+If you use a ``DeferPhase``, below is how you can set the output artifact
+from the output that is being generated from ``DeferPhase`` as shown below.
+
+.. code-block:: yaml
+
+  cat <<EOF | kubectl apply -f -
+  apiVersion: cr.kanister.io/v1alpha1
+  kind: Blueprint
+  metadata:
+    name: time-log-bp
+    namespace: kanister
+  actions:
+    backup:
+      configMapNames:
+      - location
+      secretNames:
+      - aws
+      outputArtifacts:
+        timeLog:
+          keyValue:
+            path: '{{ .ConfigMaps.location.Data.path }}/time-log/'
+        deferPhaseArt:
+          keyValue:
+            time: "{{ .DeferPhase.Output.bkpCompletedTime }}"
+      phases:
+        - func: KubeExec
+          name: backupToS3
+          args:
+            namespace: "{{ .Deployment.Namespace }}"
+            pod: "{{ index .Deployment.Pods 0 }}"
+            container: test-container
+            command:
+              - sh
+              - -c
+              - |
+                echo "Main Phase"
+      deferPhase:
+        func: KubeExec
+        name: saveBackupTime
+        args:
+          namespace: "{{ .Deployment.Namespace }}"
+          pod: "{{ index .Deployment.Pods 0 }}"
+          container: test-container
+          command:
+            - sh
+            - -c
+            - |
+              echo "DeferPhase"
+              kando output bkpCompletedTime "10Minutes"
+  EOF
+
+
+Output from the previous phases can also be used in the ``DeferPhase`` like it
+is used in normal scenarios.
 
 Input Artifacts
 ---------------
@@ -494,7 +551,6 @@ ConfigMap because the ``inputArtifact`` contains the fully specified path.
     namespace: kanister
   actions:
     backup:
-      type: Deployment
       configMapNames:
       - location
       secretNames:
@@ -518,7 +574,6 @@ ConfigMap because the ``inputArtifact`` contains the fully specified path.
                 AWS_SECRET_ACCESS_KEY={{ .Secrets.aws.Data.aws_secret_access_key | toString }} \
                 aws s3 cp /var/log/time.log {{ .ConfigMaps.location.Data.path }}/time-log/
     restore:
-      type: Deployment
       secretNames:
       - aws
       inputArtifactNames:
@@ -568,3 +623,15 @@ and manually updating the action set to use artifacts created by the
 previous action set can be cumbersome. In situations like this, it is
 useful to instead use ``kanctl``. To learn how to leverage ``kanctl`` to
 create action sets, see :ref:`architecture` .
+
+Next Step
+=========
+
+Congratulations! You have reached the end of this long tutorial! 🎉🎉🥳🥳
+
+Don't stop here. There are many more example blueprints on the Kanister GitHub
+`repository <https://github.com/kanisterio/kanister/tree/master/examples>`_
+to explore. Use them to help you define your next blueprint.
+
+We would love to hear from you. If you have any feedback or questions, find us
+on Slack at `kanisterio.slack.com <https://kanisterio.slack.com>`_.

@@ -1,15 +1,15 @@
 .. _architecture:
 
-Kanister Architecture Overview
-******************************
+Architecture
+************
 
-.. contents:: Kanister Architecture Overview
+.. contents:: Architecture
   :local:
 
 The design of Kanister follows the operator pattern. This means
 Kanister defines its own resources and interacts with those resources
 through a controller. `This blog post
-<https://coreos.com/blog/introducing-operators.html>`_ describes the
+<https://www.redhat.com/en/blog/operators-over-easy-introduction-kubernetes-operators>`_ describes the
 pattern in detail.
 
 In particular, Kanister is composed of three main components: the
@@ -71,6 +71,7 @@ The definition of a ``BlueprintAction`` is:
       InputArtifactNames []string            `json:"inputArtifactNames"`
       OutputArtifacts    map[string]Artifact `json:"outputArtifacts"`
       Phases             []BlueprintPhase    `json:"phases"`
+      DeferPhase         *BlueprintPhase     `json:"deferPhase,omitempty"`
   }
 
 - ``Kind`` represents the type of Kubernetes object this BlueprintAction is written for.
@@ -84,6 +85,10 @@ The definition of a ``BlueprintAction`` is:
   to the ``BlueprintAction``.
 - ``Phases`` is a required list of ``BlueprintPhases``. These phases are invoked
   in order when executing this Action.
+- ``DeferPhase`` is an optional ``BlueprintPhase`` invoked after the
+  execution of ``Phases`` defined above. A ``DeferPhase``, when specified,
+  is executed regardless of the statuses of the ``Phases``.
+  A ``DeferPhase`` can be used for cleanup operations at the end of an ``Action``.
 
 .. code-block:: go
   :linenos:
@@ -115,7 +120,6 @@ As a reference, below is an example of a BlueprintAction.
 
   actions:
     example-action:
-      type: Deployment
       phases:
       - func: KubeExec
         name: examplePhase

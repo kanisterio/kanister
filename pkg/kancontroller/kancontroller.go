@@ -24,13 +24,16 @@ package kancontroller
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"k8s.io/client-go/rest"
 
 	"github.com/kanisterio/kanister/pkg/controller"
+	"github.com/kanisterio/kanister/pkg/field"
 	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/handler"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -38,21 +41,16 @@ import (
 	"github.com/kanisterio/kanister/pkg/resource"
 )
 
+const (
+	createOrUpdateCRDEnvVar = "CREATEORUPDATE_CRDS"
+)
+
 func Execute() {
 	ctx := context.Background()
-
-	s := handler.NewServer()
-	defer func() {
-		if err := s.Shutdown(ctx); err != nil {
-			log.WithError(err).Print("Failed to shutdown health check server")
-		}
-	}()
-	go func() {
-		if err := s.ListenAndServe(); err != nil {
-			log.WithError(err).Print("Failed to start health check server")
-		}
-	}()
-
+	logLevel, exists := os.LookupEnv(log.LevelEnvName)
+	if exists {
+		log.Print(fmt.Sprintf("Controller log level: %s", logLevel))
+	}
 	// Initialize the clients.
 	log.Print("Getting kubernetes context")
 	config, err := rest.InClusterConfig()
@@ -61,10 +59,36 @@ func Execute() {
 		return
 	}
 
-	// Make sure the CRD's exist.
-	if err := resource.CreateCustomResources(ctx, config); err != nil {
-		log.WithError(err).Print("Failed to create CustomResources.")
-		return
+	// Run HTTPS webhook server if webhook certificates are mounted in the pod
+	// otherwise normal HTTP server for health and prom endpoints
+	if isCACertMounted() {
+		go func(config *rest.Config) {
+			err := handler.RunWebhookServer(config)
+			if err != nil {
+				log.WithError(err).Print("Failed to start validating webhook server")
+				return
+			}
+		}(config)
+	} else {
+		s := handler.NewServer()
+		defer func() {
+			if err := s.Shutdown(ctx); err != nil {
+				log.WithError(err).Print("Failed to shutdown health check server")
+			}
+		}()
+		go func() {
+			if err := s.ListenAndServe(); err != nil {
+				log.WithError(err).Print("Failed to start health check server")
+			}
+		}()
+	}
+
+	// CRDs should only be created/updated if the env var CREATEORUPDATE_CRDS is set to true
+	if createOrUpdateCRDs() {
+		if err := resource.CreateCustomResources(ctx, config); err != nil {
+			log.WithError(err).Print("Failed to create CustomResources.")
+			return
+		}
 	}
 
 	ns, err := kube.GetControllerNamespace()
@@ -91,4 +115,27 @@ func Execute() {
 	<-signalChan
 	log.Print("shutdown signal received, exiting...")
 	cancel()
+}
+
+func isCACertMounted() bool {
+	if _, err := os.Stat(fmt.Sprintf("%s/%s", handler.WHCertsDir, "tls.crt")); err != nil {
+		return false
+	}
+
+	return true
+}
+
+func createOrUpdateCRDs() bool {
+	createOrUpdateCRD := os.Getenv(createOrUpdateCRDEnvVar)
+	if createOrUpdateCRD == "" {
+		return true
+	}
+
+	c, err := strconv.ParseBool(createOrUpdateCRD)
+	if err != nil {
+		log.Print("environment variable", field.M{"CREATEORUPDATE_CRDS": createOrUpdateCRD})
+		return true
+	}
+
+	return c
 }

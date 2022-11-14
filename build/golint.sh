@@ -18,11 +18,14 @@ set -o errexit
 set -o nounset
 
 SKIP_DIR_REGEX="pkg/client"
-TIMEOUT="5m"
+TIMEOUT="10m"
 
 echo "Running golangci-lint..."
 
 golangci-lint run --timeout ${TIMEOUT} --skip-dirs ${SKIP_DIR_REGEX} -E maligned,whitespace,gocognit,unparam -e '`ctx` is unused'
+
+echo "PASS"
+echo
 
 echo "PASS"
 echo

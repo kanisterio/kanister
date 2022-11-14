@@ -22,8 +22,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
-	"github.com/kanisterio/kanister/pkg/consts"
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -77,7 +75,21 @@ func (*kubeExecAllFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 }
 
 func (*kubeExecAllFunc) RequiredArgs() []string {
-	return []string{KubeExecAllNamespaceArg, KubeExecAllPodsNameArg, KubeExecAllContainersNameArg, KubeExecAllCommandArg}
+	return []string{
+		KubeExecAllNamespaceArg,
+		KubeExecAllPodsNameArg,
+		KubeExecAllContainersNameArg,
+		KubeExecAllCommandArg,
+	}
+}
+
+func (*kubeExecAllFunc) Arguments() []string {
+	return []string{
+		KubeExecAllNamespaceArg,
+		KubeExecAllPodsNameArg,
+		KubeExecAllContainersNameArg,
+		KubeExecAllCommandArg,
+	}
 }
 
 func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps []string, cs []string, cmd []string) (map[string]interface{}, error) {
@@ -88,11 +100,9 @@ func execAll(ctx context.Context, cli kubernetes.Interface, namespace string, ps
 	for _, p := range ps {
 		for _, c := range cs {
 			go func(p string, c string) {
-				ctx = field.Context(ctx, consts.PodNameKey, p)
-				ctx = field.Context(ctx, consts.ContainerNameKey, c)
 				stdout, stderr, err := kube.Exec(cli, namespace, p, c, cmd, nil)
-				format.Log(p, c, stdout)
-				format.Log(p, c, stderr)
+				format.LogWithCtx(ctx, p, c, stdout)
+				format.LogWithCtx(ctx, p, c, stderr)
 				errChan <- err
 				output = output + "\n" + stdout
 			}(p, c)

@@ -109,7 +109,7 @@ func prepareDataPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod 
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
 		}
-		format.Log(pod.Name, pod.Spec.Containers[0].Name, logs)
+		format.LogWithCtx(ctx, pod.Name, pod.Spec.Containers[0].Name, logs)
 		out, err := parseLogAndCreateOutput(logs)
 		return out, errors.Wrap(err, "Failed to parse phase output")
 	}
@@ -153,5 +153,20 @@ func (*prepareDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args 
 }
 
 func (*prepareDataFunc) RequiredArgs() []string {
-	return []string{PrepareDataNamespaceArg, PrepareDataImageArg, PrepareDataCommandArg}
+	return []string{
+		PrepareDataNamespaceArg,
+		PrepareDataImageArg,
+		PrepareDataCommandArg,
+	}
+}
+
+func (*prepareDataFunc) Arguments() []string {
+	return []string{
+		PrepareDataNamespaceArg,
+		PrepareDataImageArg,
+		PrepareDataCommandArg,
+		PrepareDataVolumes,
+		PrepareDataServiceAccount,
+		PrepareDataPodOverrideArg,
+	}
 }

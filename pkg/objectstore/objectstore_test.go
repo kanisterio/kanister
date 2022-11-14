@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"os"
 	"path"
@@ -112,8 +112,8 @@ func (s *ObjectStoreProviderSuite) initProvider(c *C, region string) {
 
 // Verifies bucket operations, create/delete/list
 func (s *ObjectStoreProviderSuite) TestBuckets(c *C) {
-	ctx := context.Background()
 	c.Skip("intermittently fails due to rate limits on bucket creation")
+	ctx := context.Background()
 	bucketName := s.createBucketName(c)
 
 	origBuckets, _ := s.provider.ListBuckets(ctx)
@@ -391,7 +391,7 @@ func (s *ObjectStoreProviderSuite) TestObjectsStreaming(c *C) {
 
 	r, _, err := rootDirectory.Get(ctx, obj1)
 	c.Check(err, IsNil)
-	data, err := ioutil.ReadAll(r)
+	data, err := io.ReadAll(r)
 	c.Check(err, IsNil)
 	r.Close()
 	c.Check(data, DeepEquals, data1B)
@@ -400,7 +400,7 @@ func (s *ObjectStoreProviderSuite) TestObjectsStreaming(c *C) {
 	c.Check(err, IsNil)
 	r, ntags, err := rootDirectory.Get(ctx, obj2)
 	c.Check(err, IsNil)
-	data, err = ioutil.ReadAll(r)
+	data, err = io.ReadAll(r)
 	c.Check(err, IsNil)
 	r.Close()
 	c.Check(data, DeepEquals, data2B)
@@ -438,15 +438,28 @@ func (s *ObjectStoreProviderSuite) TestBucketGetRegions(c *C) {
 		c.Skip("Test only applicable to S3")
 	}
 	ctx := context.Background()
-	buckets, err := s.provider.ListBuckets(ctx)
+	origBucket, err := s.provider.GetBucket(ctx, testBucketName)
 	c.Assert(err, IsNil)
+	c.Assert(origBucket, NotNil)
+
+	// Creating an object in existing bucket to check it later when we call GetOrCreateBucket,
+	// to see if existing bucket was returned
+	orgBucketObjectName := s.suiteDirPrefix + "GetRegions"
+	err = origBucket.PutBytes(ctx, orgBucketObjectName, []byte("content-getRegions"), nil)
+	c.Assert(err, IsNil)
+	defer func() {
+		err = origBucket.Delete(ctx, orgBucketObjectName)
+		c.Assert(err, IsNil)
+	}()
+
 	b, err := GetOrCreateBucket(ctx, s.provider, testBucketName)
 	c.Assert(err, IsNil)
 	c.Assert(b, NotNil)
-	// Make sure no new bucket was created
-	newBuckets, err := s.provider.ListBuckets(ctx)
+
+	// Checking if same bucket was returned by checking if object
+	// that was created previously exists in newly retrieved bucket
+	_, _, err = b.Get(ctx, orgBucketObjectName)
 	c.Assert(err, IsNil)
-	c.Assert(newBuckets, HasLen, len(buckets))
 
 	l, err := b.ListObjects(ctx)
 	c.Assert(err, IsNil)

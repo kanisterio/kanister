@@ -1,0 +1,91 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: foundationdb-blueprint
+actions:
+  backup:
+    kind: CustomResource
+    outputArtifacts:
+      fdbBackup:
+        # Capture the kopia snapshot information for subsequent actions
+        # The information includes the kopia snapshot ID which is essential for restore and delete to succeed
+        # `kopiaOutput` is the name provided to kando using `--output-name` flag
+        kopiaSnapshot: "{{ .Phases.TakeBackup.Output.kopiaOutput }}"
+    phases:
+    - func: KubeExec
+      name: TakeBackup
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        pod: "{{ .Object.metadata.name }}-2"
+        container: foundationdb
+        command:
+          - bash
+          - -o
+          - pipefail
+          - -o
+          - errexit
+          - -c
+          - |
+            #we are manually starting backup_aegnt here because fdb operator doesnt  have support for
+            # backup and restore right now. But they are planning to have it, going further.
+            # Once they have the support for backup and restore we will change this to accommodate upstream changes
+            /usr/bin/backup_agent -C /var/dynamic-conf/fdb.cluster  &
+            mkdir -p /data/fdbbackup
+            chmod -R 777 /data/fdbbackup
+            fdbbackup start  -d file:///data/fdbbackup -w
+            pkill -9 backup_agent
+            backup_file_path='backup.tgz'
+            tar zcvf - -C /data/ fdbbackup | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
+            rm -rf /data/fdbbackup
+  restore:
+    kind: CustomResource
+    inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `fdbBackup.KopiaSnapshot`
+    - fdbBackup
+    phases:
+    - func: KubeExec
+      name: restoreBackup
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        pod: "{{ .Object.metadata.name }}-2"
+        container: foundationdb
+        command:
+          - bash
+          - -o
+          - pipefail
+          - -o
+          - errexit
+          - -c
+          - |
+            mkdir -p /data/restored
+            backup_file_path='backup.tgz'
+            kopia_snap='{{ .ArtifactsIn.fdbBackup.KopiaSnapshot }}'
+            kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | tar zxvf - -C /data/restored
+            /usr/bin/backup_agent -C /var/dynamic-conf/fdb.cluster  &
+            fdbcli --exec "writemode on; clearrange '' \xFF"
+            backupname=$(ls /data/restored/fdbbackup/)
+            fdbrestore start --dest_cluster_file /var/dynamic-conf/fdb.cluster -r file:///data/restored/fdbbackup/$backupname -w
+            pkill -9 backup_agent
+  delete:
+    inputArtifactNames:
+    # The kopia snapshot info created in backup phase can be used here
+    # Use the `--kopia-snapshot` flag in kando to pass in `fdbBackup.KopiaSnapshot`
+    - fdbBackup
+    phases:
+    - func: KubeTask
+      name: deleteBackup
+      args:
+        namespace: "{{ .Namespace.Name }}"
+        image: ghcr.io/kanisterio/kanister-tools:0.84.0
+        command:
+          - bash
+          - -o
+          - pipefail
+          - -o
+          - errexit
+          - -c
+          - |
+            backup_file_path='backup.tgz'
+            kopia_snap='{{ .ArtifactsIn.fdbBackup.KopiaSnapshot }}'
+            kando location delete --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}"

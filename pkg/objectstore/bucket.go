@@ -21,7 +21,10 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/graymeta/stow"
 	"github.com/pkg/errors"
@@ -190,7 +193,34 @@ func s3BucketRegion(ctx context.Context, cfg ProviderConfig, sec Secret, bucketN
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create session, region = %s", r)
 	}
-	return s3manager.GetBucketRegion(ctx, s, bucketName, cfg.Region)
+	svc := s3.New(s)
+
+	// s3-compatible stores may not support s3manager.GetBucketRegion() API, so
+	// prefer to use the get-bucket-location API instead
+	if cfg.Endpoint != "" {
+		resp, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{
+			Bucket: aws.String(bucketName),
+		})
+		if err == nil {
+			if resp.LocationConstraint == nil { // per the AWS SDK doc a nil location means us-east-1
+				return "us-east-1", nil
+			}
+			return *resp.LocationConstraint, nil
+		}
+		log.Error().
+			WithContext(ctx).
+			WithError(err).
+			Print("GetBucketLocation() failed, falling back to GetBucketRegion()", field.M{"config": c})
+		// fallback to GetBucketRegion() API if we fail (could be due to
+		// access-denied or incorrect policies etc)
+	}
+
+	return s3manager.GetBucketRegionWithClient(ctx, svc, bucketName, func(r *request.Request) {
+		// GetBucketRegionWithClient() uses credentials.AnonymousCredentials by
+		// default which fails the api request in AWS China. We override the
+		// creds with the creds used by the client as a workaround.
+		r.Config.Credentials = svc.Config.Credentials
+	})
 }
 
 func (p *s3Provider) getOrCreateBucket(ctx context.Context, bucketName string) (Bucket, error) {

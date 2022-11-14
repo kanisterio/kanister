@@ -16,6 +16,7 @@ package kube
 
 import (
 	"bytes"
+	"context"
 	. "gopkg.in/check.v1"
 	"text/template"
 
@@ -32,12 +33,13 @@ type Param struct {
 }
 
 func (s *UnstructuredSuite) TestFetch(c *C) {
+	ctx := context.Background()
 	gvr := schema.GroupVersionResource{
 		Group:    "",
 		Version:  "v1",
 		Resource: "serviceaccounts",
 	}
-	u, err := FetchUnstructuredObject(gvr, "default", "default")
+	u, err := FetchUnstructuredObject(ctx, gvr, "default", "default")
 	c.Assert(err, IsNil)
 
 	buf := bytes.NewBuffer(nil)

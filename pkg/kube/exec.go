@@ -20,7 +20,9 @@ import (
 	"net/url"
 	"strings"
 
-	"k8s.io/api/core/v1"
+	"github.com/kanisterio/kanister/pkg/format"
+	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	restclient "k8s.io/client-go/rest"
@@ -35,9 +37,9 @@ type ExecOptions struct {
 	PodName       string
 	ContainerName string
 
-	Stdin         io.Reader
-	CaptureStdout bool
-	CaptureStderr bool
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
 // Exec is our version of the call to `kubectl exec` that does not depend on
@@ -49,16 +51,61 @@ func Exec(cli kubernetes.Interface, namespace, pod, container string, command []
 		PodName:       pod,
 		ContainerName: container,
 		Stdin:         stdin,
-		CaptureStdout: true,
-		CaptureStderr: true,
 	}
 	return ExecWithOptions(cli, opts)
+}
+
+// ExecOutput is similar to Exec, except that inbound outputs are written to the
+// provided stdout and stderr. Unlike Exec, the outputs are not returned to the
+// caller.
+func ExecOutput(cli kubernetes.Interface, namespace, pod, container string, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
+	opts := ExecOptions{
+		Command:       command,
+		Namespace:     namespace,
+		PodName:       pod,
+		ContainerName: container,
+		Stdin:         stdin,
+		Stdout: &format.Writer{
+			W:         stdout,
+			Pod:       pod,
+			Container: container,
+		},
+		Stderr: &format.Writer{
+			W:         stderr,
+			Pod:       pod,
+			Container: container,
+		},
+	}
+
+	_, _, err := ExecWithOptions(cli, opts)
+	return err
 }
 
 // ExecWithOptions executes a command in the specified container,
 // returning stdout, stderr and error. `options` allowed for
 // additional parameters to be passed.
 func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string, string, error) {
+	config, err := LoadConfig()
+	if err != nil {
+		return "", "", err
+	}
+
+	outbuf := &bytes.Buffer{}
+	if options.Stdout == nil {
+		options.Stdout = outbuf
+	}
+
+	errbuf := &bytes.Buffer{}
+	if options.Stderr == nil {
+		options.Stderr = errbuf
+	}
+
+	errCh := execStream(kubeCli, config, options)
+	err = <-errCh
+	return strings.TrimSpace(outbuf.String()), strings.TrimSpace(errbuf.String()), errors.Wrap(err, "Failed to exec command in pod")
+}
+
+func execStream(kubeCli kubernetes.Interface, config *restclient.Config, options ExecOptions) chan error {
 	const tty = false
 	req := kubeCli.CoreV1().RESTClient().Post().
 		Resource("pods").
@@ -66,7 +113,6 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 		Namespace(options.Namespace).
 		SubResource("exec")
 
-	// Add container name if passed
 	if len(options.ContainerName) != 0 {
 		req.Param("container", options.ContainerName)
 	}
@@ -75,19 +121,25 @@ func ExecWithOptions(kubeCli kubernetes.Interface, options ExecOptions) (string,
 		Container: options.ContainerName,
 		Command:   options.Command,
 		Stdin:     options.Stdin != nil,
-		Stdout:    options.CaptureStdout,
-		Stderr:    options.CaptureStderr,
+		Stdout:    options.Stdout != nil,
+		Stderr:    options.Stderr != nil,
 		TTY:       tty,
 	}, scheme.ParameterCodec)
 
-	config, err := LoadConfig()
-	if err != nil {
-		return "", "", err
-	}
+	errCh := make(chan error, 1)
+	go func() {
+		err := execute(
+			"POST",
+			req.URL(),
+			config,
+			options.Stdin,
+			options.Stdout,
+			options.Stderr,
+			tty)
+		errCh <- err
+	}()
 
-	var stdout, stderr bytes.Buffer
-	err = execute("POST", req.URL(), config, options.Stdin, &stdout, &stderr, tty)
-	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
+	return errCh
 }
 
 func execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {

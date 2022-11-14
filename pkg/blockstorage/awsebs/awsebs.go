@@ -45,6 +45,7 @@ var _ zone.Mapper = (*EbsStorage)(nil)
 type EbsStorage struct {
 	Ec2Cli *EC2
 	Role   string
+	config *aws.Config
 }
 
 // EC2 is kasten's wrapper around ec2.EC2 structs
@@ -72,7 +73,7 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
-	return &EbsStorage{Ec2Cli: ec2Cli, Role: config[awsconfig.ConfigRole]}, nil
+	return &EbsStorage{Ec2Cli: ec2Cli, Role: config[awsconfig.ConfigRole], config: awsConfig}, nil
 }
 
 // newEC2Client returns ec2 client struct.
@@ -82,7 +83,7 @@ func newEC2Client(awsRegion string, config *aws.Config) (*EC2, error) {
 	}
 	s, err := session.NewSession(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create session for EFS")
+		return nil, errors.Wrap(err, "Failed to create session for EBS")
 	}
 	conf := config.WithMaxRetries(maxRetries).WithRegion(awsRegion).WithCredentials(config.Credentials)
 	return &EC2{EC2: ec2.New(s, conf)}, nil
@@ -112,6 +113,40 @@ func (s *EbsStorage) VolumeCreate(ctx context.Context, volume blockstorage.Volum
 	}
 
 	return s.VolumeGet(ctx, volID, volume.Az)
+}
+
+// CheckVolumeCreate checks if client as permission to create volumes
+func (s *EbsStorage) CheckVolumeCreate(ctx context.Context) (bool, error) {
+	var zoneName *string
+	var err error
+	var size int64 = 1
+	var dryRun bool = true
+
+	ec2Cli, err := newEC2Client(*s.config.Region, s.config)
+	if err != nil {
+		return false, errors.Wrap(err, "Could not get EC2 client")
+	}
+	dai := &ec2.DescribeAvailabilityZonesInput{}
+	az, err := ec2Cli.DescribeAvailabilityZones(dai)
+	if err != nil {
+		return false, errors.New("Fail to get available zone for EC2 client")
+	}
+	if az != nil {
+		zoneName = az.AvailabilityZones[1].ZoneName
+	} else {
+		return false, errors.New("No available zone for EC2 client")
+	}
+
+	cvi := &ec2.CreateVolumeInput{
+		AvailabilityZone: zoneName,
+		Size:             &size,
+		DryRun:           &dryRun,
+	}
+	_, err = s.Ec2Cli.CreateVolume(cvi)
+	if !isDryRunErr(err) {
+		return false, errors.Wrap(err, "Could not create volume with EC2 client")
+	}
+	return true, nil
 }
 
 // VolumeGet is part of blockstorage.Provider
@@ -618,27 +653,40 @@ func GetRegionFromEC2Metadata() (string, error) {
 
 // FromRegion is part of zone.Mapper
 func (s *EbsStorage) FromRegion(ctx context.Context, region string) ([]string, error) {
-	// Fall back to using a static map.
-	return staticRegionToZones(region)
+	ec2Cli, err := newEC2Client(region, s.config)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not get EC2 client while fetching zones FromRegion (%s)", region)
+	}
+	trueBool := true
+	filterKey := "region-name"
+	zones, err := ec2Cli.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{
+		AllAvailabilityZones: &trueBool,
+		Filters: []*ec2.Filter{
+			{Name: &filterKey, Values: []*string{&region}},
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get availability zones for region %s", region)
+	}
+	zoneList := []string{}
+	for _, zone := range zones.AvailabilityZones {
+		zoneList = append(zoneList, *zone.ZoneName)
+	}
+	return zoneList, nil
 }
 
-func (s *EbsStorage) queryRegionToZones(ctx context.Context, region string) ([]string, error) {
-	ec2Cli, err := newEC2Client(region, s.Ec2Cli.Config.Copy())
+func (s *EbsStorage) GetRegions(ctx context.Context) ([]string, error) {
+	trueBool := true
+	result, err := s.Ec2Cli.DescribeRegions(&ec2.DescribeRegionsInput{AllRegions: &trueBool})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not get EC2 client")
+		return nil, errors.Wrap(err, "Failed to describe regions")
 	}
-	dazi := &ec2.DescribeAvailabilityZonesInput{}
-	dazo, err := ec2Cli.DescribeAvailabilityZonesWithContext(ctx, dazi)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get AZs for region %s", region)
+	regions := []string{}
+
+	for _, region := range result.Regions {
+		regions = append(regions, *region.RegionName)
 	}
-	azs := make([]string, 0, len(dazo.AvailabilityZones))
-	for _, az := range dazo.AvailabilityZones {
-		if az.ZoneName != nil {
-			azs = append(azs, *az.ZoneName)
-		}
-	}
-	return azs, nil
+	return regions, nil
 }
 
 // SnapshotRestoreTargets is part of blockstorage.RestoreTargeter
@@ -651,164 +699,9 @@ func (s *EbsStorage) SnapshotRestoreTargets(ctx context.Context, snapshot *block
 		return false, nil, errors.Errorf("Required volume fields not available, volumeType: %s, Az: %s, VolumeTags: %v", snapshot.Volume.VolumeType, snapshot.Volume.Az, snapshot.Volume.Tags)
 	}
 	// EBS snapshots can only be restored in their region
-	zl, err := staticRegionToZones(snapshot.Region)
+	zl, err := s.FromRegion(ctx, snapshot.Region)
 	if err != nil {
 		return false, nil, err
 	}
 	return false, map[string][]string{snapshot.Region: zl}, nil
-}
-
-func staticRegionToZones(region string) ([]string, error) {
-	switch region {
-	case "ap-south-1":
-		return []string{
-			"ap-south-1a",
-			"ap-south-1b",
-			"ap-south-1c",
-		}, nil
-	case "eu-west-3":
-		return []string{
-			"eu-west-3a",
-			"eu-west-3b",
-			"eu-west-3c",
-		}, nil
-	case "eu-north-1":
-		return []string{
-			"eu-north-1a",
-			"eu-north-1b",
-			"eu-north-1c",
-		}, nil
-	case "eu-west-2":
-		return []string{
-			"eu-west-2-wl1-lon-wlz-1",
-			"eu-west-2a",
-			"eu-west-2b",
-			"eu-west-2c",
-		}, nil
-	case "eu-west-1":
-		return []string{
-			"eu-west-1a",
-			"eu-west-1b",
-			"eu-west-1c",
-		}, nil
-	case "ap-northeast-2":
-		return []string{
-			"ap-northeast-2-wl1-cjj-wlz-1",
-			"ap-northeast-2a",
-			"ap-northeast-2b",
-			"ap-northeast-2c",
-			"ap-northeast-2d",
-		}, nil
-	case "ap-northeast-1":
-		return []string{
-			"ap-northeast-1-wl1-nrt-wlz-1",
-			"ap-northeast-1-wl1-kix-wlz-1",
-			"ap-northeast-1a",
-			"ap-northeast-1c",
-			"ap-northeast-1d",
-		}, nil
-	case "sa-east-1":
-		return []string{
-			"sa-east-1a",
-			"sa-east-1b",
-			"sa-east-1c",
-		}, nil
-	case "ca-central-1":
-		return []string{
-			"ca-central-1a",
-			"ca-central-1b",
-			"ca-central-1d",
-		}, nil
-	case "ap-southeast-1":
-		return []string{
-			"ap-southeast-1a",
-			"ap-southeast-1b",
-			"ap-southeast-1c",
-		}, nil
-	case "ap-southeast-2":
-		return []string{
-			"ap-southeast-2a",
-			"ap-southeast-2b",
-			"ap-southeast-2c",
-		}, nil
-	case "eu-central-1":
-		return []string{
-			"eu-central-1a",
-			"eu-central-1b",
-			"eu-central-1c",
-		}, nil
-	case "us-east-1":
-		return []string{
-			"us-east-1a",
-			"us-east-1b",
-			"us-east-1c",
-			"us-east-1d",
-			"us-east-1e",
-			"us-east-1f",
-			"us-east-1-bos-1a",
-			"us-east-1-iah-1a",
-			"us-east-1-mia-1a",
-			"us-east-1-wl1-atl-wlz-1",
-			"us-east-1-wl1-bos-wlz-1",
-			"us-east-1-wl1-dfw-wlz-1",
-			"us-east-1-wl1-mia-wlz-1",
-			"us-east-1-wl1-nyc-wlz-1",
-			"us-east-1-wl1-was-wlz-1",
-		}, nil
-	case "us-east-2":
-		return []string{
-			"us-east-2a",
-			"us-east-2b",
-			"us-east-2c",
-		}, nil
-	case "us-west-1":
-		return []string{
-			"us-west-1a",
-			"us-west-1b",
-		}, nil
-	case "us-west-2":
-		return []string{
-			"us-west-2a",
-			"us-west-2b",
-			"us-west-2c",
-			"us-west-2d",
-			"us-west-2-lax-1a",
-			"us-west-2-lax-1b",
-			"us-west-2-wl1-den-wlz-1",
-			"us-west-2-wl1-las-wlz-1",
-			"us-west-2-wl1-sea-wlz-1",
-			"us-west-2-wl1-sfo-wlz-1",
-		}, nil
-	case "ap-east-1":
-		return []string{
-			"ap-east-1a",
-			"ap-east-1b",
-			"ap-east-1c",
-		}, nil
-	case "me-south-1":
-		return []string{
-			"me-south-1a",
-			"me-south-1b",
-			"me-south-1c",
-		}, nil
-	case "eu-south-1":
-		return []string{
-			"eu-south-1a",
-			"eu-south-1b",
-			"eu-south-1c",
-		}, nil
-	case "af-south-1":
-		return []string{
-			"af-south-1a",
-			"af-south-1b",
-			"af-south-1c",
-		}, nil
-	case "ap-northeast-3":
-		return []string{
-			"ap-northeast-3a",
-			"ap-northeast-3b",
-			"ap-northeast-3c",
-		}, nil
-	}
-	return nil, errors.New("cannot get availability zones for region")
 }

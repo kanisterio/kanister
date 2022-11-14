@@ -47,6 +47,10 @@ const (
 	KafkaOperatorRepoName = "strimzi"
 	KafkaOperatorRepoURL  = "https://strimzi.io/charts"
 
+	// Add cockroachdb chart
+	CockroachDBRepoName = "cockroachdb"
+	CockroachDBRepoURL  = "https://charts.cockroachdb.com/"
+
 	// HelmVersion to differentiate between helm2 and helm3 commands
 	V2 HelmVersion = "helmv2"
 	V3 HelmVersion = "helmv3"
@@ -125,8 +129,29 @@ func (h CliClient) UpdateRepo(ctx context.Context) error {
 }
 
 // Install installs helm chart with given release name
-func (h CliClient) Install(ctx context.Context, chart, version, release, namespace string, values map[string]string) error {
+func (h CliClient) Install(ctx context.Context, chart, version, release, namespace string, values map[string]string, wait bool) error {
 	log.Debug().Print("Installing helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
+	var setVals string
+	for k, v := range values {
+		setVals += fmt.Sprintf("%s=%s,", k, v)
+	}
+
+	cmd := []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--create-namespace"}
+	if wait {
+		cmd = append(cmd, "--wait")
+	}
+
+	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
+	if err != nil {
+		log.Error().Print("Error installing helm chart", field.M{"output": out})
+		return err
+	}
+	log.Debug().Print("Result", field.M{"output": out})
+	return nil
+}
+
+func (h CliClient) Upgrade(ctx context.Context, chart, version, release, namespace string, values map[string]string) error {
+	log.Debug().Print("Upgrading helm chart", field.M{"chart": chart, "version": version, "release": release, "namespace": namespace})
 	var setVals string
 	for k, v := range values {
 		setVals += fmt.Sprintf("%s=%s,", k, v)
@@ -134,14 +159,14 @@ func (h CliClient) Install(ctx context.Context, chart, version, release, namespa
 
 	var cmd []string
 	if h.version == V3 {
-		cmd = []string{"install", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
+		cmd = []string{"upgrade", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
 	} else {
-		cmd = []string{"install", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
+		cmd = []string{"upgrade", "--name", release, "--version", version, "--namespace", namespace, chart, "--set", setVals, "--wait"}
 	}
 
 	out, err := RunCmdWithTimeout(ctx, h.helmBin, cmd)
 	if err != nil {
-		log.Error().Print("Error installing helm chart", field.M{"output": out})
+		log.Error().Print("Error upgrading helm chart", field.M{"output": out})
 		return err
 	}
 	log.Debug().Print("Result", field.M{"output": out})

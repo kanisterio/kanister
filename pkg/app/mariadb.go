@@ -21,14 +21,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/helm"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
-	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -82,11 +83,11 @@ func (m *MariaDB) Install(ctx context.Context, namespace string) error {
 	log.Print("Adding repo.", field.M{"app": m.name})
 	err = cli.AddRepo(ctx, m.chart.RepoName, m.chart.RepoURL)
 	if err != nil {
-		return errors.Wrapf(err, "Error helm repo for app %s.", m.name)
+		return errors.Wrapf(err, "Error adding helm repo for app %s.", m.name)
 	}
 
 	log.Print("Installing maria instance using helm.", field.M{"app": m.name})
-	err = cli.Install(ctx, m.chart.RepoName+"/"+m.chart.Chart, m.chart.Version, m.chart.Release, m.namespace, m.chart.Values)
+	err = cli.Install(ctx, m.chart.RepoName+"/"+m.chart.Chart, m.chart.Version, m.chart.Release, m.namespace, m.chart.Values, true)
 	if err != nil {
 		return errors.Wrapf(err, "Error intalling application %s through helm.", m.name)
 	}

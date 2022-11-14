@@ -26,6 +26,7 @@ import (
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -66,11 +67,11 @@ func outputPhase(namespace string) crv1alpha1.BlueprintPhase {
 		Func: KubeTaskFuncName,
 		Args: map[string]interface{}{
 			KubeTaskNamespaceArg: namespace,
-			KubeTaskImageArg:     "ghcr.io/kanisterio/kanister-tools:0.20.0",
+			KubeTaskImageArg:     consts.LatestKanisterToolsImage,
 			KubeTaskCommandArg: []string{
 				"sh",
 				"-c",
-				"kando output version 0.61.0",
+				"kando output version 0.84.0",
 			},
 		},
 	}
@@ -143,7 +144,7 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 			bp: newTaskBlueprint(outputPhase(s.namespace), sleepPhase(s.namespace), tickPhase(s.namespace)),
 			outs: []map[string]interface{}{
 				{
-					"version": "0.61.0",
+					"version": "0.84.0",
 				},
 				{},
 				{},

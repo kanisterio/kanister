@@ -1,4 +1,6 @@
+//go:build integration
 // +build integration
+
 // Copyright 2019 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,6 +66,36 @@ var _ = Suite(&MySQL{
 		namespace: "mysql-test",
 		app:       app.NewMysqlDB("mysql"),
 		bp:        app.NewBlueprint("mysql", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+// cockroachdb app
+type CockroachDB struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&CockroachDB{
+	IntegrationSuite{
+		name:      "cockroachdb",
+		namespace: "cockroachdb-test",
+		app:       app.NewCockroachDB("cockroachdb"),
+		bp:        app.NewBlueprint("cockroachdb", "", false),
+		profile:   newSecretProfile(),
+	},
+})
+
+// time-log app for csi volumesnapshot
+type TimeLogCSI struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&TimeLogCSI{
+	IntegrationSuite{
+		name:      "time-logger",
+		namespace: "time-log",
+		app:       app.NewTimeLogCSI("time-logger"),
+		bp:        app.NewBlueprint("csi-snapshot", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -213,6 +245,20 @@ var _ = Suite(&RDSPostgreSQLSnap{
 		namespace: "rds-postgres-snap-test",
 		app:       app.NewRDSPostgresDB("rds-postgres-snap", ""),
 		bp:        app.NewBlueprint("rds-postgres-snap", "", true),
+		profile:   newSecretProfile(),
+	},
+})
+
+type MSSQL struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&MSSQL{
+	IntegrationSuite{
+		name:      "mssql",
+		namespace: "mssql-test",
+		app:       app.NewMssqlDB("mssql"),
+		bp:        app.NewBlueprint("mssql", "", true),
 		profile:   newSecretProfile(),
 	},
 })
@@ -370,47 +416,46 @@ var _ = Suite(&Kafka{
 	},
 })
 
-// OpenShift apps for version 4.7
 // Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
-type MysqlDBDepConfig4_7 struct {
+type MysqlDBDepConfig4_10 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MysqlDBDepConfig4_7{
+var _ = Suite(&MysqlDBDepConfig4_10{
 	IntegrationSuite{
 		name:      "mysqldc",
-		namespace: "mysqldc4-7-test",
-		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_7, app.EphemeralStorage, "8.0"),
+		namespace: "mysqldc4-10-test",
+		app:       app.NewMysqlDepConfig("mysqldeploymentconfig", app.TemplateVersionOCP4_10, app.EphemeralStorage, "8.0"),
 		bp:        app.NewBlueprint("mysql-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
 
 // MongoDB deployed on openshift cluster
-type MongoDBDepConfig4_7 struct {
+type MongoDBDepConfig4_10 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&MongoDBDepConfig4_7{
+var _ = Suite(&MongoDBDepConfig4_10{
 	IntegrationSuite{
 		name:      "mongodb",
-		namespace: "mongodb4-7-test",
-		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_7, app.EphemeralStorage),
+		namespace: "mongodb4-10-test",
+		app:       app.NewMongoDBDepConfig("mongodeploymentconfig", app.TemplateVersionOCP4_10, app.EphemeralStorage),
 		bp:        app.NewBlueprint("mongo-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},
 })
 
 // PostgreSQL deployed on openshift cluster
-type PostgreSQLDepConfig4_7 struct {
+type PostgreSQLDepConfig4_10 struct {
 	IntegrationSuite
 }
 
-var _ = Suite(&PostgreSQLDepConfig4_7{
+var _ = Suite(&PostgreSQLDepConfig4_10{
 	IntegrationSuite{
 		name:      "postgresdepconf",
-		namespace: "postgresdepconf4-5-test",
-		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_7, app.EphemeralStorage),
+		namespace: "postgresdepconf4-10-test",
+		app:       app.NewPostgreSQLDepConfig("postgresdepconf", app.TemplateVersionOCP4_10, app.EphemeralStorage),
 		bp:        app.NewBlueprint("postgres-dep-config", "", true),
 		profile:   newSecretProfile(),
 	},

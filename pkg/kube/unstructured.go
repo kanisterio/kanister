@@ -24,21 +24,21 @@ import (
 )
 
 // FetchUnstructuredObject returns the referenced API object as a map[string]interface{}
-func FetchUnstructuredObject(resource schema.GroupVersionResource, namespace, name string) (runtime.Unstructured, error) {
+func FetchUnstructuredObject(ctx context.Context, resource schema.GroupVersionResource, namespace, name string) (runtime.Unstructured, error) {
 	cli, err := client()
 	if err != nil {
 		return nil, err
 	}
-	return FetchUnstructuredObjectWithCli(cli, resource, namespace, name)
+	return FetchUnstructuredObjectWithCli(ctx, cli, resource, namespace, name)
 }
 
 // FetchUnstructuredObjectWithCli returns the referenced API object as a map[string]interface{} using the specified CLI
 // TODO: deprecate `FetchUnstructuredObject`
-func FetchUnstructuredObjectWithCli(cli dynamic.Interface, resource schema.GroupVersionResource, namespace, name string) (runtime.Unstructured, error) {
+func FetchUnstructuredObjectWithCli(ctx context.Context, cli dynamic.Interface, resource schema.GroupVersionResource, namespace, name string) (runtime.Unstructured, error) {
 	if namespace == "" {
-		_, _ = cli.Resource(resource).Get(context.TODO(), name, metav1.GetOptions{})
+		_, _ = cli.Resource(resource).Get(ctx, name, metav1.GetOptions{})
 	}
-	return cli.Resource(resource).Namespace(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	return cli.Resource(resource).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 }
 
 // ListUnstructuredObject returns the referenced API objects as a map[string]interface{}
@@ -53,10 +53,11 @@ func ListUnstructuredObject(resource schema.GroupVersionResource, namespace stri
 // ListUnstructuredObjectWithCli returns the referenced API objects as a map[string]interface{} using the specified CLI
 // TODO: deprecate `ListUnstructuredObject`
 func ListUnstructuredObjectWithCli(cli dynamic.Interface, resource schema.GroupVersionResource, namespace string) (runtime.Unstructured, error) {
+	ctx := context.Background()
 	if namespace == "" {
-		return cli.Resource(resource).List(context.TODO(), metav1.ListOptions{})
+		return cli.Resource(resource).List(ctx, metav1.ListOptions{})
 	}
-	return cli.Resource(resource).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	return cli.Resource(resource).Namespace(namespace).List(ctx, metav1.ListOptions{})
 }
 
 func client() (dynamic.Interface, error) {

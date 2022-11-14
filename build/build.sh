@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Copyright 2019 The Kanister Authors.
-# 
+#
 # Copyright 2016 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,8 +28,13 @@ if [ -z "${VERSION}" ]; then
     exit 1
 fi
 
-export CGO_ENABLED=0
-go install -v                                                      \
+if [ -n "${GOBORING}" ]; then
+    export CGO_ENABLED=1
+    export GO_EXTLINK_ENABLED=0
+    export GOEXPERIMENT=boringcrypto
+fi
+
+go build -v                                                      \
     -installsuffix "static"                                        \
     -ldflags "-X ${PKG}/pkg/version.VERSION=${VERSION}"            \
-    ./cmd/...
+    ./cmd/${BIN}/...

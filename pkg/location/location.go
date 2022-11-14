@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/objectstore"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/secrets"
@@ -69,7 +70,7 @@ func Read(ctx context.Context, out io.Writer, profile param.Profile, suffix stri
 	return readData(ctx, osType, profile, out, path)
 }
 
-//Delete data from location specified by `profile` and `suffix`.
+// Delete data from location specified by `profile` and `suffix`.
 func Delete(ctx context.Context, profile param.Profile, suffix string) error {
 	osType, err := getProviderType(profile.Location.Type)
 	if err != nil {
@@ -206,15 +207,32 @@ func getOSSecret(ctx context.Context, pType objectstore.ProviderType, cred param
 			ServiceKey: cred.KeyPair.Secret,
 		}
 	case objectstore.ProviderTypeAzure:
-		secret.Type = objectstore.SecretTypeAzStorageAccount
-		secret.Azure = &objectstore.SecretAzure{
-			StorageAccount: cred.KeyPair.ID,
-			StorageKey:     cred.KeyPair.Secret,
-		}
+		return getAzureSecret(cred)
 	default:
 		return nil, errors.Errorf("unknown or unsupported provider type '%s'", pType)
 	}
 	return secret, nil
+}
+
+func getAzureSecret(cred param.Credential) (*objectstore.Secret, error) {
+	os := &objectstore.Secret{
+		Type: objectstore.SecretTypeAzStorageAccount,
+	}
+	switch cred.Type {
+	case param.CredentialTypeKeyPair:
+		os.Azure = &objectstore.SecretAzure{
+			StorageAccount: cred.KeyPair.ID,
+			StorageKey:     cred.KeyPair.Secret,
+		}
+
+	case param.CredentialTypeSecret:
+		azSecret, err := secrets.ExtractAzureCredentials(cred.Secret)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to extract azure credentials")
+		}
+		os.Azure = azSecret
+	}
+	return os, nil
 }
 
 func getAWSSecret(ctx context.Context, cred param.Credential) (*objectstore.Secret, error) {
@@ -229,7 +247,7 @@ func getAWSSecret(ctx context.Context, cred param.Credential) (*objectstore.Secr
 		}
 		return os, nil
 	case param.CredentialTypeSecret:
-		creds, err := secrets.ExtractAWSCredentials(ctx, cred.Secret)
+		creds, err := secrets.ExtractAWSCredentials(ctx, cred.Secret, aws.AssumeRoleDurationDefault)
 		if err != nil {
 			return nil, err
 		}

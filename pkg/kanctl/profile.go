@@ -17,7 +17,6 @@ package kanctl
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 
@@ -34,6 +33,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/secrets"
+	"github.com/kanisterio/kanister/pkg/utils"
 	"github.com/kanisterio/kanister/pkg/validate"
 )
 
@@ -49,10 +49,8 @@ const (
 	gcpServiceKeyFlag       = "service-key"
 	AzureStorageAccountFlag = "storage-account"
 	AzureStorageKeyFlag     = "storage-key"
+	AzureStorageEnvFlag     = "storage-env"
 
-	idField           = secrets.AWSAccessKeyID
-	secretField       = secrets.AWSSecretAccessKey
-	roleField         = secrets.ConfigRole // required only for AWS IAM role
 	skipSSLVerifyFlag = "skip-SSL-verification"
 
 	schemaValidation      = "Validate Profile schema"
@@ -141,6 +139,7 @@ func newAzureProfileCmd() *cobra.Command {
 
 	cmd.Flags().StringP(AzureStorageAccountFlag, "a", "", "Storage account name of the azure storage")
 	cmd.Flags().StringP(AzureStorageKeyFlag, "s", "", "Storage account key of the azure storage")
+	cmd.Flags().String(AzureStorageEnvFlag, "", "The Azure cloud environment")
 
 	_ = cmd.MarkFlagRequired(AzureStorageAccountFlag)
 	_ = cmd.MarkFlagRequired(AzureStorageKeyFlag)
@@ -167,7 +166,7 @@ func createNewProfile(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	profile := constructProfile(lP, secret, string(secret.StringData[roleField]))
+	profile := constructProfile(lP, secret)
 	if dryRun {
 		// Just perform schema validation and print YAML
 		if err := validate.ProfileSchema(profile); err != nil {
@@ -233,26 +232,59 @@ func getLocationParams(cmd *cobra.Command) (*locationParams, error) {
 	}, nil
 }
 
-func constructProfile(lP *locationParams, secret *v1.Secret, role string) *v1alpha1.Profile {
+func constructProfile(lP *locationParams, secret *v1.Secret) *v1alpha1.Profile {
 	var creds v1alpha1.Credential
-	if role == "" {
+	switch {
+	case lP.locationType == v1alpha1.LocationTypeS3Compliant && string(secret.StringData[secrets.ConfigRole]) != "": // aws case with role
+		creds = v1alpha1.Credential{
+			Type: v1alpha1.CredentialTypeSecret,
+			Secret: &v1alpha1.ObjectReference{
+				Name:      secret.GetName(),
+				Namespace: secret.GetNamespace(),
+			},
+		}
+	case lP.locationType == v1alpha1.LocationTypeAzure && string(secret.StringData[secrets.AzureStorageEnvironment]) != "": // azure case with env
+		creds = v1alpha1.Credential{
+			Type: v1alpha1.CredentialTypeSecret,
+			Secret: &v1alpha1.ObjectReference{
+				Name:      secret.GetName(),
+				Namespace: secret.GetNamespace(),
+			},
+		}
+	case lP.locationType == v1alpha1.LocationTypeAzure && string(secret.StringData[secrets.AzureStorageEnvironment]) == "": // azure case without env (type keypair)
 		creds = v1alpha1.Credential{
 			Type: v1alpha1.CredentialTypeKeyPair,
 			KeyPair: &v1alpha1.KeyPair{
-				IDField:     idField,
-				SecretField: secretField,
+				IDField:     secrets.AzureStorageAccountID,
+				SecretField: secrets.AzureStorageAccountKey,
 				Secret: v1alpha1.ObjectReference{
 					Name:      secret.GetName(),
 					Namespace: secret.GetNamespace(),
 				},
 			},
 		}
-	} else {
+	case lP.locationType == v1alpha1.LocationTypeGCS: //GCP
 		creds = v1alpha1.Credential{
-			Type: v1alpha1.CredentialTypeSecret,
-			Secret: &v1alpha1.ObjectReference{
-				Name:      secret.GetName(),
-				Namespace: secret.GetNamespace(),
+			Type: v1alpha1.CredentialTypeKeyPair,
+			KeyPair: &v1alpha1.KeyPair{
+				IDField:     secrets.GCPProjectID,
+				SecretField: secrets.GCPServiceKey,
+				Secret: v1alpha1.ObjectReference{
+					Name:      secret.GetName(),
+					Namespace: secret.GetNamespace(),
+				},
+			},
+		}
+	default: // All others fall into the AWS key pair format
+		creds = v1alpha1.Credential{
+			Type: v1alpha1.CredentialTypeKeyPair,
+			KeyPair: &v1alpha1.KeyPair{
+				IDField:     secrets.AWSAccessKeyID,
+				SecretField: secrets.AWSSecretAccessKey,
+				Secret: v1alpha1.ObjectReference{
+					Name:      secret.GetName(),
+					Namespace: secret.GetNamespace(),
+				},
 			},
 		}
 	}
@@ -282,9 +314,9 @@ func constructSecret(ctx context.Context, lP *locationParams, cmd *cobra.Command
 		accessKey, _ := cmd.Flags().GetString(awsAccessKeyFlag)
 		secretKey, _ := cmd.Flags().GetString(awsSecretKeyFlag)
 		roleKey, _ = cmd.Flags().GetString(awsRoleFlag)
-		data[idField] = accessKey
-		data[secretField] = secretKey
-		data[roleField] = roleKey
+		data[secrets.AWSAccessKeyID] = accessKey
+		data[secrets.AWSSecretAccessKey] = secretKey
+		data[secrets.ConfigRole] = roleKey
 		secretname = "s3"
 	case v1alpha1.LocationTypeGCS:
 		projectID, _ := cmd.Flags().GetString(gcpProjectIDFlag)
@@ -293,14 +325,16 @@ func constructSecret(ctx context.Context, lP *locationParams, cmd *cobra.Command
 		if err != nil {
 			return nil, err
 		}
-		data[idField] = projectID
-		data[secretField] = serviceKey
+		data[secrets.GCPProjectID] = projectID
+		data[secrets.GCPServiceKey] = serviceKey
 		secretname = "gcp"
 	case v1alpha1.LocationTypeAzure:
 		storageAccount, _ := cmd.Flags().GetString(AzureStorageAccountFlag)
 		storageKey, _ := cmd.Flags().GetString(AzureStorageKeyFlag)
-		data[idField] = storageAccount
-		data[secretField] = storageKey
+		storageEnv, _ := cmd.Flags().GetString(AzureStorageEnvFlag)
+		data[secrets.AzureStorageAccountID] = storageAccount
+		data[secrets.AzureStorageAccountKey] = storageKey
+		data[secrets.AzureStorageEnvironment] = storageEnv
 		secretname = "azure"
 	}
 	secret := &v1.Secret{
@@ -384,18 +418,18 @@ func performProfileValidation(p *validateParams) error {
 func validateProfile(ctx context.Context, profile *v1alpha1.Profile, cli kubernetes.Interface, schemaValidationOnly bool, printFailStageOnly bool) error {
 	var err error
 	if err = validate.ProfileSchema(profile); err != nil {
-		printStage(schemaValidation, fail)
+		utils.PrintStage(schemaValidation, utils.Fail)
 		return err
 	}
 	if !printFailStageOnly {
-		printStage(schemaValidation, pass)
+		utils.PrintStage(schemaValidation, utils.Pass)
 	}
 
 	if profile.Location.Bucket != "" {
 		for _, d := range []string{regionValidation, readAccessValidation, writeAccessValidation} {
 			if schemaValidationOnly {
 				if !printFailStageOnly {
-					printStage(d, skip)
+					utils.PrintStage(d, utils.Skip)
 				}
 				continue
 			}
@@ -408,16 +442,16 @@ func validateProfile(ctx context.Context, profile *v1alpha1.Profile, cli kuberne
 				err = validate.WriteAccess(ctx, profile, cli)
 			}
 			if err != nil {
-				printStage(d, fail)
+				utils.PrintStage(d, utils.Fail)
 				return err
 			}
 			if !printFailStageOnly {
-				printStage(d, pass)
+				utils.PrintStage(d, utils.Pass)
 			}
 		}
 	}
 	if !printFailStageOnly {
-		printStage(fmt.Sprintf("All checks passed.. %s\n", pass), "")
+		utils.PrintStage(fmt.Sprintf("All checks passed.. %s\n", utils.Pass), "")
 	}
 	return nil
 }
@@ -452,7 +486,7 @@ func getProfileFromFile(ctx context.Context, filename string) (*v1alpha1.Profile
 }
 
 func getServiceKey(ctx context.Context, filename string) (string, error) {
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err
 	}

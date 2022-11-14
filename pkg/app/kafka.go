@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -28,6 +27,8 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
@@ -70,6 +71,7 @@ const (
 
 type KafkaCluster struct {
 	cli                kubernetes.Interface
+	dynClient          dynamic.Interface
 	name               string
 	namespace          string
 	s3SinkConfigPath   string
@@ -108,7 +110,14 @@ func (kc *KafkaCluster) Init(context.Context) error {
 		return err
 	}
 	kc.cli, err = kubernetes.NewForConfig(cfg)
-	return err
+	if err != nil {
+		return errors.Wrap(err, "failed to get a k8s client")
+	}
+	kc.dynClient, err = dynamic.NewForConfig(cfg)
+	if err != nil {
+		return errors.Wrap(err, "failed to get a k8s dynamic client")
+	}
+	return nil
 }
 
 func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
@@ -120,10 +129,10 @@ func (kc *KafkaCluster) Install(ctx context.Context, namespace string) error {
 	log.Print("Adding repo.", field.M{"app": kc.name})
 	err = cli.AddRepo(ctx, kc.chart.RepoName, kc.chart.RepoURL)
 	if err != nil {
-		return errors.Wrapf(err, "Error helm repo for app %s.", kc.name)
+		return errors.Wrapf(err, "Error adding helm repo for app %s.", kc.name)
 	}
 	log.Print("Installing kafka operator using helm.", field.M{"app": kc.name})
-	err = cli.Install(ctx, kc.chart.RepoName+"/"+kc.chart.Chart, kc.chart.Version, kc.chart.Release, kc.namespace, kc.chart.Values)
+	err = cli.Install(ctx, kc.chart.RepoName+"/"+kc.chart.Chart, kc.chart.Version, kc.chart.Release, kc.namespace, kc.chart.Values, true)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing operator %s through helm.", kc.name)
 	}
@@ -245,12 +254,6 @@ func (kc *KafkaCluster) GetClusterScopedResources(ctx context.Context) []crv1alp
 		{
 			APIVersion: "v1",
 			Group:      "apiextensions.k8s.io",
-			Name:       "kafkaconnects2is.kafka.strimzi.io",
-			Resource:   "customresourcedefinitions",
-		},
-		{
-			APIVersion: "v1",
-			Group:      "apiextensions.k8s.io",
 			Name:       "kafkamirrormaker2s.kafka.strimzi.io",
 			Resource:   "customresourcedefinitions",
 		},
@@ -321,23 +324,16 @@ func (kc *KafkaCluster) Uninstall(ctx context.Context) error {
 		return err
 	}
 
-	deleteCRD := []string{
-		"delete",
-		"crd",
-		"kafkabridges.kafka.strimzi.io",
-		"kafkaconnectors.kafka.strimzi.io",
-		"kafkaconnects.kafka.strimzi.io",
-		"kafkaconnects2is.kafka.strimzi.io",
-		"kafkamirrormaker2s.kafka.strimzi.io",
-		"kafkamirrormakers.kafka.strimzi.io",
-		"kafkarebalances.kafka.strimzi.io",
-		"kafkas.kafka.strimzi.io",
-		"kafkatopics.kafka.strimzi.io",
-		"kafkausers.kafka.strimzi.io",
-	}
-	out, error := helm.RunCmdWithTimeout(ctx, "kubectl", deleteCRD)
-	if error != nil {
-		return errors.Wrapf(error, "Error deleting kafka CRD %s, %s", kc.name, out)
+	var gvr schema.GroupVersionResource
+	ClusterLevelResources := kc.GetClusterScopedResources(ctx)
+	// delete ClusterScopedResources if present
+	for _, clr := range ClusterLevelResources {
+		gvr = schema.GroupVersionResource{Group: clr.Group, Version: clr.APIVersion, Resource: clr.Resource}
+		err = kc.dynClient.Resource(gvr).Delete(ctx, clr.Name, metav1.DeleteOptions{})
+		if err != nil && !apierrors.IsNotFound(err) {
+			log.WithError(err).Print("Failed to delete cluster resource", field.M{"app": kc.name})
+			return err
+		}
 	}
 
 	log.Print("Application deleted successfully.", field.M{"app": kc.name})
@@ -429,7 +425,7 @@ func (kc *KafkaCluster) Initialize(ctx context.Context) error {
 	return nil
 }
 
-//Message describes the response we get after consuming a topic
+// Message describes the response we get after consuming a topic
 type Message struct {
 	Topic     string `json:"topic"`
 	Key       string `json:"key"`
@@ -505,7 +501,7 @@ func (kc *KafkaCluster) InsertRecord(ctx context.Context, namespace string) erro
 		return errors.New("Error inserting records in topic")
 	}
 	defer resp.Body.Close()
-	bytes, err := ioutil.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -622,7 +618,7 @@ func createConsumerGroup(uri string) error {
 		return errors.New("Error creating consumer")
 	}
 	defer resp.Body.Close()
-	bytes, err := ioutil.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -655,7 +651,7 @@ func subscribe(uri string) error {
 		return errors.New("Error subscribing to the topic")
 	}
 	defer resp.Body.Close()
-	bytes, err := ioutil.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -679,7 +675,7 @@ func consumeMessage(uri string) (int, error) {
 		return 0, err
 	}
 	defer resp.Body.Close()
-	bytes, err := ioutil.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return 0, err
 	}

@@ -16,7 +16,6 @@ package function
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -91,7 +90,7 @@ func (s *VolumeSnapshotTestSuite) SetUpTest(c *C) {
 	volToPvc := kube.StatefulSetVolumes(s.cli, ss, &pods[0])
 	pvc := volToPvc[pods[0].Spec.Containers[0].VolumeMounts[0].Name]
 	c.Assert(len(pvc) > 0, Equals, true)
-	id, secret, locationType, err := s.getCreds(c, s.cli, s.namespace, pvc)
+	id, secret, locationType, err := s.getCreds(c, ctx, s.cli, s.namespace, pvc)
 	c.Assert(err, IsNil)
 	if id == "" || secret == "" {
 		c.Skip("Skipping the test since storage type not supported")
@@ -331,13 +330,13 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 	}
 }
 
-func (s *VolumeSnapshotTestSuite) getCreds(c *C, cli kubernetes.Interface, namespace string, pvcname string) (string, string, crv1alpha1.LocationType, error) {
-	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(context.TODO(), pvcname, metav1.GetOptions{})
+func (s *VolumeSnapshotTestSuite) getCreds(c *C, ctx context.Context, cli kubernetes.Interface, namespace string, pvcname string) (string, string, crv1alpha1.LocationType, error) {
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvcname, metav1.GetOptions{})
 	if err != nil {
 		return "", "", "", err
 	}
 	pvName := pvc.Spec.VolumeName
-	pv, err := cli.CoreV1().PersistentVolumes().Get(context.TODO(), pvName, metav1.GetOptions{})
+	pv, err := cli.CoreV1().PersistentVolumes().Get(ctx, pvName, metav1.GetOptions{})
 	if err != nil {
 		return "", "", "", err
 	}
@@ -358,7 +357,7 @@ func (s *VolumeSnapshotTestSuite) getCreds(c *C, cli kubernetes.Interface, names
 
 func getServiceKey(c *C) (string, error) {
 	filename := GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err
 	}

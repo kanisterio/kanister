@@ -24,6 +24,8 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -51,10 +53,6 @@ func kopiaSnapshotFlag(cmd *cobra.Command) string {
 }
 
 func runLocationPull(cmd *cobra.Command, args []string) error {
-	target, err := targetWriter(args[0])
-	if err != nil {
-		return err
-	}
 	p, err := unmarshalProfileFlag(cmd)
 	if err != nil {
 		return err
@@ -66,14 +64,18 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 		if snapJSON == "" {
 			return errors.New("kopia snapshot information is required to pull data using kopia")
 		}
-		kopiaSnap, err := kopia.UnmarshalKopiaSnapshot(snapJSON)
+		kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(snapJSON)
 		if err != nil {
 			return err
 		}
 		if err = connectToKopiaServer(ctx, p); err != nil {
 			return err
 		}
-		return kopiaLocationPull(ctx, kopiaSnap.ID, s, target)
+		return kopiaLocationPull(ctx, kopiaSnap.ID, s, args[0], p.Credential.KopiaServerSecret.Password)
+	}
+	target, err := targetWriter(args[0])
+	if err != nil {
+		return err
 	}
 	return locationPull(ctx, p, s, target)
 }
@@ -90,15 +92,20 @@ func locationPull(ctx context.Context, p *param.Profile, path string, target io.
 }
 
 // kopiaLocationPull pulls the data from a kopia snapshot into the given target
-func kopiaLocationPull(ctx context.Context, backupID, path string, target io.Writer) error {
-	return kopia.Read(ctx, backupID, path, target)
+func kopiaLocationPull(ctx context.Context, backupID, path, targetPath, password string) error {
+	switch targetPath {
+	case usePipeParam:
+		return snapshot.Read(ctx, os.Stdout, backupID, path, password)
+	default:
+		return snapshot.ReadFile(ctx, backupID, targetPath, password)
+	}
 }
 
 // connectToKopiaServer connects to the kopia server with given creds
 func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 	contentCacheSize := kopia.GetDataStoreGeneralContentCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
 	metadataCacheSize := kopia.GetDataStoreGeneralMetadataCacheSize(kp.Credential.KopiaServerSecret.ConnectOptions)
-	return kopia.ConnectToAPIServer(
+	return repository.ConnectToAPIServer(
 		ctx,
 		kp.Credential.KopiaServerSecret.Cert,
 		kp.Credential.KopiaServerSecret.Password,

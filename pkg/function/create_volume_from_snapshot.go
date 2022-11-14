@@ -114,7 +114,7 @@ func createVolumeFromSnapshot(ctx context.Context, cli kubernetes.Interface, nam
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to create PV for volume %v", *vol)
 		}
-		log.Print("Restore/Create volume from snapshot completed", field.M{"PVC": pvc, "Volume": pv})
+		log.WithContext(ctx).Print("Restore/Create volume from snapshot completed", field.M{"PVC": pvc, "Volume": pv})
 		providerList[pvcInfo.PVCName] = provider
 	}
 	return providerList, nil
@@ -141,5 +141,16 @@ func (kef *createVolumeFromSnapshotFunc) Exec(ctx context.Context, tp param.Temp
 }
 
 func (*createVolumeFromSnapshotFunc) RequiredArgs() []string {
-	return []string{CreateVolumeFromSnapshotNamespaceArg, CreateVolumeFromSnapshotManifestArg}
+	return []string{
+		CreateVolumeFromSnapshotNamespaceArg,
+		CreateVolumeFromSnapshotManifestArg,
+	}
+}
+
+func (*createVolumeFromSnapshotFunc) Arguments() []string {
+	return []string{
+		CreateVolumeFromSnapshotNamespaceArg,
+		CreateVolumeFromSnapshotManifestArg,
+		CreateVolumeFromSnapshotPVCNamesArg,
+	}
 }

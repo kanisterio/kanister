@@ -73,19 +73,20 @@ func (s *DataSuite) SetUpSuite(c *C) {
 	s.crCli = crCli
 	s.osCli = osCli
 
+	ctx := context.Background()
 	ns := testutil.NewTestNamespace()
 	ns.GenerateName = "kanister-datatest-"
 
-	cns, err := s.cli.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
+	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.namespace = cns.GetName()
 
 	sec := testutil.NewTestProfileSecret()
-	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(context.TODO(), sec, metav1.CreateOptions{})
+	sec, err = s.cli.CoreV1().Secrets(s.namespace).Create(ctx, sec, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	p := testutil.NewTestProfile(s.namespace, sec.GetName())
-	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(context.TODO(), p, metav1.CreateOptions{})
+	_, err = s.crCli.CrV1alpha1().Profiles(s.namespace).Create(ctx, p, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	var location crv1alpha1.Location
@@ -134,7 +135,7 @@ func newRestoreDataBlueprint(pvc, identifierArg, identifierVal string) *crv1alph
 						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.61.0",
+							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.84.0",
 							RestoreDataBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataRestorePathArg:          "/mnt/data",
 							RestoreDataEncryptionKeyArg:        "{{ .Secrets.backupKey.Data.password | toString }}",
@@ -266,7 +267,7 @@ func newRestoreDataAllBlueprint() *crv1alpha1.Blueprint {
 						Func: RestoreDataAllFuncName,
 						Args: map[string]interface{}{
 							RestoreDataAllNamespaceArg:            "{{ .StatefulSet.Namespace }}",
-							RestoreDataAllImageArg:                "ghcr.io/kanisterio/kanister-tools:0.61.0",
+							RestoreDataAllImageArg:                "ghcr.io/kanisterio/kanister-tools:0.84.0",
 							RestoreDataAllBackupArtifactPrefixArg: "{{ .Profile.Location.Bucket }}/{{ .Profile.Location.Prefix }}",
 							RestoreDataAllBackupInfo:              fmt.Sprintf("{{ .Options.%s }}", BackupDataAllOutput),
 							RestoreDataAllRestorePathArg:          "/mnt/data",
@@ -477,7 +478,7 @@ func newCopyDataTestBlueprint() crv1alpha1.Blueprint {
 						Func: RestoreDataFuncName,
 						Args: map[string]interface{}{
 							RestoreDataNamespaceArg:            "{{ .PVC.Namespace }}",
-							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.61.0",
+							RestoreDataImageArg:                "ghcr.io/kanisterio/kanister-tools:0.84.0",
 							RestoreDataBackupArtifactPrefixArg: fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupArtifactLocation),
 							RestoreDataBackupTagArg:            fmt.Sprintf("{{ .Options.%s }}", CopyVolumeDataOutputBackupTag),
 							RestoreDataVolsArg: map[string]string{

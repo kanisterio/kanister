@@ -7,6 +7,7 @@ import (
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 
+	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/config"
 )
 
@@ -75,9 +76,9 @@ func (s *AWSSecretSuite) TestExtractAWSCredentials(c *C) {
 			errChecker: NotNil,
 		},
 	}
-	for _, tc := range tcs {
-		creds, err := ExtractAWSCredentials(context.Background(), tc.secret)
-		c.Check(creds, DeepEquals, tc.expected)
+	for testNum, tc := range tcs {
+		creds, err := ExtractAWSCredentials(context.Background(), tc.secret, aws.AssumeRoleDurationDefault)
+		c.Check(creds, DeepEquals, tc.expected, Commentf("test number: %d", testNum))
 		c.Check(err, tc.errChecker)
 	}
 }
@@ -110,7 +111,7 @@ func (s *AWSSecretSuite) TestExtractAWSCredentialsWithSessionToken(c *C) {
 			output: NotNil,
 		},
 	} {
-		_, err := ExtractAWSCredentials(context.Background(), tc.secret)
+		_, err := ExtractAWSCredentials(context.Background(), tc.secret, aws.AssumeRoleDurationDefault)
 		c.Check(err, tc.output)
 	}
 }

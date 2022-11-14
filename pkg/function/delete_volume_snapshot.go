@@ -54,7 +54,7 @@ func (*deleteVolumeSnapshotFunc) Name() string {
 	return DeleteVolumeSnapshotFuncName
 }
 
-// nolint:unparam
+//nolint:unparam
 func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespace, snapshotinfo string, profile *param.Profile, getter getter.Getter) (map[string]blockstorage.Provider, error) {
 	PVCData := []VolumeSnapshotInfo{}
 	err := json.Unmarshal([]byte(snapshotinfo), &PVCData)
@@ -79,7 +79,7 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 		snapshot, err := provider.SnapshotGet(ctx, pvcInfo.SnapshotID)
 		if err != nil {
 			if strings.Contains(err.Error(), SnapshotDoesNotExistError) {
-				log.Debug().Print("Snapshot already deleted", field.M{"SnapshotID": pvcInfo.SnapshotID})
+				log.WithContext(ctx).Print("Snapshot already deleted", field.M{"SnapshotID": pvcInfo.SnapshotID})
 			} else {
 				return nil, errors.Wrapf(err, "Failed to get Snapshot from Provider")
 			}
@@ -87,7 +87,7 @@ func deleteVolumeSnapshot(ctx context.Context, cli kubernetes.Interface, namespa
 		if err = provider.SnapshotDelete(ctx, snapshot); err != nil {
 			return nil, err
 		}
-		log.Print("Successfully deleted snapshot", field.M{"SnapshotID": pvcInfo.SnapshotID})
+		log.WithContext(ctx).Print("Successfully deleted snapshot", field.M{"SnapshotID": pvcInfo.SnapshotID})
 		providerList[pvcInfo.PVCName] = provider
 	}
 	return providerList, nil
@@ -110,5 +110,15 @@ func (kef *deleteVolumeSnapshotFunc) Exec(ctx context.Context, tp param.Template
 }
 
 func (*deleteVolumeSnapshotFunc) RequiredArgs() []string {
-	return []string{DeleteVolumeSnapshotNamespaceArg, DeleteVolumeSnapshotManifestArg}
+	return []string{
+		DeleteVolumeSnapshotNamespaceArg,
+		DeleteVolumeSnapshotManifestArg,
+	}
+}
+
+func (*deleteVolumeSnapshotFunc) Arguments() []string {
+	return []string{
+		DeleteVolumeSnapshotNamespaceArg,
+		DeleteVolumeSnapshotManifestArg,
+	}
 }

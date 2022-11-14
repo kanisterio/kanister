@@ -23,10 +23,14 @@ import (
 	bp "github.com/kanisterio/kanister/pkg/blueprint"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 const (
 	blueprintsRepo = "./blueprints"
+	// imagePrefix specifies the prefix an image is going to have if it's being consumed from
+	// kanister's ghcr registry
+	imagePrefix = "ghcr.io/kanisterio"
 )
 
 // Blueprint implements Blueprint() to return Blueprint specs for the app
@@ -59,6 +63,12 @@ func (b AppBlueprint) Blueprint() *crv1alpha1.Blueprint {
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to read Blueprint", field.M{"app": b.App})
 	}
+
+	// set the name to a dynamically generated value
+	// so that the name wont conflict with the same application
+	// installed using other ways
+	bpr.ObjectMeta.Name = fmt.Sprintf("%s-%s", bpr.ObjectMeta.Name, rand.String(5))
+
 	if b.UseDevImages {
 		updateImageTags(bpr)
 	}
@@ -80,8 +90,10 @@ func updateImageTags(bp *crv1alpha1.Blueprint) {
 				continue
 			}
 
-			// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:latest
-			phase.Args["image"] = fmt.Sprintf("%s:latest", strings.Split(imageStr, ":")[0])
+			if strings.HasPrefix(imageStr, imagePrefix) {
+				// ghcr.io/kanisterio/tools:v0.xx.x => ghcr.io/kanisterio/tools:v9.99.9-dev
+				phase.Args["image"] = fmt.Sprintf("%s:v9.99.9-dev", strings.Split(imageStr, ":")[0])
+			}
 
 			// Change imagePullPolicy to Always using podOverride config
 			phase.Args["podOverride"] = crv1alpha1.JSONMap{

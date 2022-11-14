@@ -32,6 +32,10 @@ import (
 	"github.com/kanisterio/kanister/pkg/consts"
 )
 
+const (
+	testBPArg = "key"
+)
+
 // NewTestPVC function returns a pointer to a new PVC test object
 func NewTestPVC() *v1.PersistentVolumeClaim {
 	return &v1.PersistentVolumeClaim{
@@ -98,7 +102,7 @@ func newTestPodTemplateSpec() v1.PodTemplateSpec {
 			Containers: []v1.Container{
 				v1.Container{
 					Name:    "test-container",
-					Image:   "ghcr.io/kanisterio/kanister-tools:latest",
+					Image:   consts.LatestKanisterToolsImage,
 					Command: []string{"tail"},
 					Args:    []string{"-f", "/dev/null"},
 				},
@@ -172,7 +176,7 @@ func NewSecretProfileFromLocation(location crv1alpha1.Location) (*v1.Secret, *cr
 		key = os.Getenv(awsconfig.AccessKeyID)
 		val = os.Getenv(awsconfig.SecretAccessKey)
 		if role := os.Getenv(awsconfig.ConfigRole); role != "" {
-			data["role"] = role
+			data[awsconfig.ConfigRole] = role
 		}
 	case crv1alpha1.LocationTypeGCS:
 		os.Getenv(blockstorage.GoogleCloudCreds)
@@ -221,8 +225,37 @@ func NewProfile(location crv1alpha1.Location) *crv1alpha1.Profile {
 	}
 }
 
+// NewTestRestoreActionSet returns a pointer to a restore actionset, that is used in deferPhase blueprint
+func NewTestRestoreActionSet(namespace, blueprintName, poName string, arts map[string]crv1alpha1.Artifact) *crv1alpha1.ActionSet {
+	return &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-restore-actionset-",
+			Namespace:    namespace,
+		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				{
+					Artifacts: arts,
+					Blueprint: blueprintName,
+					Name:      "restore",
+					Object: crv1alpha1.ObjectReference{
+						Kind:      "Deployment",
+						Name:      poName,
+						Namespace: namespace,
+					},
+					Profile: &crv1alpha1.ObjectReference{
+						Kind:      consts.ProfileResourceName,
+						Name:      TestProfileName,
+						Namespace: namespace,
+					},
+				},
+			},
+		},
+	}
+}
+
 // NewTestActionSet function returns a pointer to a new ActionSet test object
-func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace, version string) *crv1alpha1.ActionSet {
+func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace, version, action string) *crv1alpha1.ActionSet {
 	return &crv1alpha1.ActionSet{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-actionset-",
@@ -230,9 +263,9 @@ func NewTestActionSet(namespace, blueprintName, poKind, poName, poNamespace, ver
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Blueprint: blueprintName,
-					Name:      "myAction",
+					Name:      action,
 					Object: crv1alpha1.ObjectReference{
 						Kind:      poKind,
 						Name:      poName,
@@ -300,7 +333,7 @@ func ActionSetWithConfigMap(as *crv1alpha1.ActionSet, name string) *crv1alpha1.A
 
 // BlueprintWithConfigMap function returns a pointer to a new Blueprint test object with CongigMap
 func BlueprintWithConfigMap(bp *crv1alpha1.Blueprint) *crv1alpha1.Blueprint {
-	cmArgs := map[string]interface{}{"key": "{{ .ConfigMaps.myCM.Data.myKey  }}"}
+	cmArgs := map[string]interface{}{testBPArg: "{{ .ConfigMaps.myCM.Data.myKey  }}"}
 	for i := range bp.Actions[actionName].Phases {
 		bp.Actions[actionName].Phases[i].Args = cmArgs
 	}
