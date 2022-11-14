@@ -129,7 +129,7 @@ func TestSnapshotCommands(t *testing.T) {
 			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> snapshot list --all --delta --show-identical --json --tags tag1:val1 --tags tag2:val2",
 		},
 	} {
-		cmd := tc.f()
+		cmd := strings.Join(tc.f(), " ")
 		c.Check(cmd, qt.Equals, tc.expectedLog)
 	}
 }

@@ -15,6 +15,7 @@
 package command
 
 import (
+	"strings"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -41,7 +42,7 @@ func TestRepositoryStatusCommand(t *testing.T) {
 			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log repository status",
 		},
 	} {
-		cmd := tc.f()
+		cmd := strings.Join(tc.f(), " ")
 		c.Check(cmd, qt.Equals, tc.expectedLog)
 	}
 }

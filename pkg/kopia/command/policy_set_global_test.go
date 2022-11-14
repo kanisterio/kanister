@@ -15,6 +15,7 @@
 package command
 
 import (
+	"strings"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -42,7 +43,7 @@ func TestPolicyCommands(t *testing.T) {
 			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> policy set --global asdf=bsdf",
 		},
 	} {
-		cmd := tc.f()
+		cmd := strings.Join(tc.f(), " ")
 		c.Check(cmd, qt.Equals, tc.expectedLog)
 	}
 }

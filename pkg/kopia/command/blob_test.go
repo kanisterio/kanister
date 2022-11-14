@@ -52,7 +52,7 @@ func TestBlobCommands(t *testing.T) {
 			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> blob stats --raw",
 		},
 	} {
-		cmd := tc.f()
+		cmd := strings.Join(tc.f(), " ")
 		c.Check(cmd, qt.Equals, tc.expectedLog)
 	}
 }
