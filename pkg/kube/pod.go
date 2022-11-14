@@ -69,6 +69,7 @@ type PodOptions struct {
 	Resources                v1.ResourceRequirements
 	RestartPolicy            v1.RestartPolicy
 	OwnerReferences          []metav1.OwnerReference
+	EnvironmentVariables     []v1.EnvVar
 }
 
 func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
@@ -109,6 +110,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 				VolumeMounts:    volumeMounts,
 				Resources:       opts.Resources,
+				Env:             opts.EnvironmentVariables,
 			},
 		},
 		// RestartPolicy dictates when the containers of the pod should be
