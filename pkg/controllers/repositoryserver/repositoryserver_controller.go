@@ -75,23 +75,19 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	logger.Info("Setting the CR status as 'ServerPending' since a create or update event is in progress")
+	repositoryServer.Status.IsReady = string(crkanisteriov1alpha1.ServerPending)
+
 	logger.Info("Found RepositoryServer CR. Create or update owned resources")
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(); err != nil {
+		logger.Info("Setting the CR status as 'ServerStopped' since an error occurred in create/update event")
+		repositoryServer.Status.IsReady = string(crkanisteriov1alpha1.ServerStopped)
 		return ctrl.Result{}, err
 	}
-
+	logger.Info("Setting the CR status as 'ServerReady' since create/update event has been completed successfully")
+	repositoryServer.Status.IsReady = string(crkanisteriov1alpha1.ServerReady)
 	return ctrl.Result{}, nil
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *RepositoryServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&crkanisteriov1alpha1.RepositoryServer{}).
-		Owns(&corev1.Service{}).
-		Owns(&networkingv1.NetworkPolicy{}).
-		Owns(&corev1.Pod{}).
-		Complete(r)
 }
 
 func newRepositoryServerHandler(
@@ -109,4 +105,14 @@ func newRepositoryServerHandler(
 		KubeCli:          kubeCli,
 		RepositoryServer: repositoryServer,
 	}
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *RepositoryServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&crkanisteriov1alpha1.RepositoryServer{}).
+		Owns(&corev1.Service{}).
+		Owns(&networkingv1.NetworkPolicy{}).
+		Owns(&corev1.Pod{}).
+		Complete(r)
 }
