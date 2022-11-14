@@ -438,9 +438,9 @@ type NetworkPolicyIngressRule struct {
 
 // RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller
 type RepositoryServerStatus struct {
-	Conditions []Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
-	ServerInfo ServerInfo  `json:"serverInfo,omitempty"`
-	IsReady    string      `json:"isReady"`
+	Conditions []Condition              `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	ServerInfo ServerInfo               `json:"serverInfo,omitempty"`
+	Progress   RepositoryServerProgress `json:"progress"`
 }
 
 // Condition contains details of the current state of the RepositoryServer resource
@@ -466,15 +466,20 @@ const (
 
 	// ServerRefreshed denotes the refreshed condition of the repository server in order to register client users
 	ServerRefreshed RepositoryServerConditionType = "ServerRefreshed"
+)
 
+// RepositoryServerProgress is the field users would check to know the state of RepositoryServer
+type RepositoryServerProgress string
+
+const (
 	// ServerReady represents the ready state of the repository server and the pod which runs the proxy server
-	ServerReady RepositoryServerConditionType = "ServerReady"
+	ServerReady RepositoryServerProgress = "ServerReady"
 
 	// ServerStopped represents the terminated state of the repository server pod due to any unforeseen errors
-	ServerStopped RepositoryServerConditionType = "ServerStopped"
+	ServerStopped RepositoryServerProgress = "ServerStopped"
 
 	// ServerPending indicates the pending state of the RepositoryServer CR when Reconcile callback is in progress
-	ServerPending RepositoryServerConditionType = "ServerPending"
+	ServerPending RepositoryServerProgress = "ServerPending"
 )
 
 // ServerInfo describes all the information required by the client users to connect to the repository server
