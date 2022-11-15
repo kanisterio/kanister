@@ -1,0 +1,91 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata: 
+  name: psmdb-bp  
+actions:
+  backup:
+    outputArtifacts:
+      cloudObjects:
+        keyValue:
+          psmdbbackup: 'backup-{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02t15-04-05z07-00" }}'
+          namespace: "{{ .Object.metadata.namespace }}"          
+    phases:   
+    - func: KubeOps
+      name: createBackupCR
+      args:
+        operation: create
+        namespace: "{{ .Object.metadata.namespace }}"
+        spec: |-
+          apiVersion: psmdb.percona.com/v1
+          kind: PerconaServerMongoDBBackup
+          metadata:
+            finalizers:
+            - delete-backup
+            name: backup-{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02t15-04-05z07-00" }}
+          spec:
+            clusterName: {{ .Object.metadata.name }}
+            storageName: my-s3-storage
+    - func: Wait
+      name: waitBackupReady
+      args:
+        timeout: 360s
+        conditions:
+          anyOf:
+            - condition: '{{ if  eq "{ $.status.state }" "ready" }}true{{ else }}false{{ end }}'            
+              objectReference:
+                apiVersion: v1
+                group: psmdb.percona.com
+                resource: perconaservermongodbbackups
+                name: 'backup-{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02t15-04-05z07-00" }}'
+                namespace: "{{ .Object.metadata.namespace}}" 
+  delete:
+    inputArtifactNames:     
+    - cloudObjects  
+    phases:   
+    - func: KubeOps
+      name: deleteBackupCR
+      args:
+        operation: delete        
+        objectReference:
+          apiVersion: v1
+          group: psmdb.percona.com
+          resource: perconaservermongodbbackups
+          name: '{{ .ArtifactsIn.cloudObjects.KeyValue.psmdbbackup }}'
+          namespace: '{{ .ArtifactsIn.cloudObjects.KeyValue.namespace }}'
+  restore:
+    inputArtifactNames:     
+    - cloudObjects  
+    phases:   
+    - func: KubeOps
+      name: createRestoreFromBackup
+      args:
+        operation: create
+        namespace: "{{ .Object.metadata.namespace }}"
+        spec: |-
+          apiVersion: psmdb.percona.com/v1
+          kind: PerconaServerMongoDBRestore
+          metadata:
+            name: restore-{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02t15-04-05z07-00" }}
+          spec:
+            clusterName: {{ .Object.metadata.name }}
+            backupName: {{ .ArtifactsIn.cloudObjects.KeyValue.psmdbbackup }}
+            {{- if .Options }}
+            {{- if .Options.pitr }}
+            pitr:
+              type: date
+              date: {{ .Options.pitr }}
+            {{- end }}
+            {{- end }}
+    - func: Wait
+      name: waitRestoreReady
+      args:
+        timeout: 720s
+        conditions:
+          anyOf:
+            - condition: '{{ if  eq "{ $.status.state }" "ready" }}true{{ else }}false{{ end }}'            
+              objectReference:
+                apiVersion: v1
+                group: psmdb.percona.com
+                resource: perconaservermongodbrestores
+                name: 'restore-{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02t15-04-05z07-00" }}'
+                namespace: "{{ .Object.metadata.namespace}}"
