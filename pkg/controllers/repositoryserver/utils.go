@@ -130,11 +130,11 @@ func getPodOverride(ctx context.Context, reconciler *RepositoryServerReconciler,
 	if pod.Spec.Tolerations != nil {
 		podOverride["tolerations"] = pod.Spec.Tolerations
 	}
-	podOverrideSpecForTLSCertificate(pod.Spec, podOverride)
+	podOverrideSpecForCACertificate(pod.Spec, podOverride)
 	return podOverride, nil
 }
 
-func podOverrideSpecForTLSCertificate(podSpec corev1.PodSpec, podOverride map[string]interface{}) {
+func podOverrideSpecForCACertificate(podSpec corev1.PodSpec, podOverride map[string]interface{}) {
 	if volName, proceed := volumeMountSpecForName(podSpec, podOverride, customCACertName); proceed {
 		volumeSpecForName(podSpec, podOverride, volName)
 	}
