@@ -32,7 +32,6 @@ func TestRepositoryStatusCommand(t *testing.T) {
 			f: func() []string {
 				args := RepositoryStatusCommandArgs{
 					CommandArgs: &CommandArgs{
-						RepoPassword:   "encr-key",
 						ConfigFilePath: "path/kopia.config",
 						LogDirectory:   "cache/log",
 					},

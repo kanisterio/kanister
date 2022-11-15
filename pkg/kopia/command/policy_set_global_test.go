@@ -40,7 +40,7 @@ func TestPolicyCommands(t *testing.T) {
 				}
 				return PolicySetGlobal(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> policy set --global asdf=bsdf",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key policy set --global asdf=bsdf",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")

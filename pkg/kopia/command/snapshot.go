@@ -23,10 +23,6 @@ import (
 )
 
 const (
-	// kube.Exec might timeout after 4h if there is no output from the command
-	// Setting it to 1h instead of 1000000h so that kopia logs progress once every hour
-	longUpdateInterval = "1h"
-
 	requireLogLevelInfo = true
 )
 
@@ -44,7 +40,6 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
-	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
 	args = addTags(cmdArgs.Tags, args)
 
 	// kube.Exec might timeout after 4h if there is no output from the command

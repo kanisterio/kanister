@@ -41,7 +41,7 @@ func TestBlobCommands(t *testing.T) {
 				}
 				return BlobList(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> blob list",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key blob list",
 		},
 		{
 			f: func() []string {
@@ -50,7 +50,7 @@ func TestBlobCommands(t *testing.T) {
 				}
 				return BlobStats(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> blob stats --raw",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key blob stats --raw",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")

@@ -42,7 +42,7 @@ func TestMaintenanceCommands(t *testing.T) {
 				}
 				return MaintenanceInfo(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> maintenance info",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key maintenance info",
 		},
 		{
 			f: func() []string {
@@ -52,7 +52,7 @@ func TestMaintenanceCommands(t *testing.T) {
 				}
 				return MaintenanceInfo(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> maintenance info --json",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key maintenance info --json",
 		},
 		{
 			f: func() []string {
@@ -62,7 +62,7 @@ func TestMaintenanceCommands(t *testing.T) {
 				}
 				return MaintenanceSetOwner(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> maintenance set --owner=username@hostname",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key maintenance set --owner=username@hostname",
 		},
 		{
 			f: func() []string {
@@ -71,7 +71,7 @@ func TestMaintenanceCommands(t *testing.T) {
 				}
 				return MaintenanceRunCommand(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> maintenance run",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key maintenance run",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")

@@ -48,7 +48,7 @@ func TestServerCommands(t *testing.T) {
 				}
 				return ServerStart(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=<****> --server-control-username=a-username@a-hostname --server-control-password=<****> --no-grpc > /dev/null 2>&1 &",
+			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=a-user-password --server-control-username=a-username@a-hostname --server-control-password=a-user-password --no-grpc > /dev/null 2>&1 &",
 		},
 		{
 			f: func() []string {
@@ -64,7 +64,7 @@ func TestServerCommands(t *testing.T) {
 				}
 				return ServerStart(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=<****> --server-control-username=a-username@a-hostname --server-control-password=<****> --no-grpc",
+			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --tls-generate-cert --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=a-user-password --server-control-username=a-username@a-hostname --server-control-password=a-user-password --no-grpc",
 		},
 		{
 			f: func() []string {
@@ -80,7 +80,7 @@ func TestServerCommands(t *testing.T) {
 				}
 				return ServerStart(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=<****> --server-control-username=a-username@a-hostname --server-control-password=<****> --no-grpc > /dev/null 2>&1 &",
+			expectedLog: "bash -o errexit -c kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server start --address=a-server-address --tls-cert-file=/path/to/cert/tls.crt --tls-key-file=/path/to/key/tls.key --server-username=a-username@a-hostname --server-password=a-user-password --server-control-username=a-username@a-hostname --server-control-password=a-user-password --no-grpc > /dev/null 2>&1 &",
 		},
 		{
 			f: func() []string {
@@ -93,7 +93,7 @@ func TestServerCommands(t *testing.T) {
 				}
 				return ServerStatus(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server status --address=a-server-address --server-cert-fingerprint=<****> --server-username=a-username@a-hostname --server-password=<****>",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server status --address=a-server-address --server-cert-fingerprint=a-fingerprint --server-username=a-username@a-hostname --server-password=a-user-password",
 		},
 		{
 			f: func() []string {
@@ -104,7 +104,7 @@ func TestServerCommands(t *testing.T) {
 				}
 				return ServerAddUser(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> server user add a-username@a-hostname --user-password=<****>",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user add a-username@a-hostname --user-password=a-user-password",
 		},
 		{
 			f: func() []string {
@@ -115,7 +115,7 @@ func TestServerCommands(t *testing.T) {
 				}
 				return ServerSetUser(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> server user set a-username@a-hostname --user-password=<****>",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user set a-username@a-hostname --user-password=a-user-password",
 		},
 		{
 			f: func() []string {
@@ -124,7 +124,7 @@ func TestServerCommands(t *testing.T) {
 				}
 				return ServerListUser(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> server user list --json",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user list --json",
 		},
 		{
 			f: func() []string {
@@ -137,7 +137,7 @@ func TestServerCommands(t *testing.T) {
 				}
 				return ServerRefresh(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> server refresh --server-cert-fingerprint=<****> --address=a-server-address --server-username=a-username@a-hostname --server-password=<****>",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server refresh --server-cert-fingerprint=a-fingerprint --address=a-server-address --server-username=a-username@a-hostname --server-password=a-user-password",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")

@@ -44,7 +44,7 @@ func TestSnapshotCommands(t *testing.T) {
 				}
 				return SnapshotCreate(args)
 			},
-			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=<****> snapshot create path/to/backup --json --parallel=8 --progress-update-interval=1h",
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=8 --progress-update-interval=1h",
 		},
 		{
 			f: func() []string {
@@ -55,7 +55,7 @@ func TestSnapshotCommands(t *testing.T) {
 				}
 				return SnapshotCreate(args)
 			},
-			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=<****> snapshot create path/to/backup --json --parallel=8 --progress-update-interval=2m",
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot create path/to/backup --json --parallel=8 --progress-update-interval=2m",
 		},
 		{
 			f: func() []string {
@@ -66,7 +66,7 @@ func TestSnapshotCommands(t *testing.T) {
 				}
 				return SnapshotExpire(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> snapshot expire root-id --delete",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot expire root-id --delete",
 		},
 		{
 			f: func() []string {
@@ -78,7 +78,7 @@ func TestSnapshotCommands(t *testing.T) {
 				}
 				return SnapshotRestore(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> snapshot restore snapshot-id target/path",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path",
 		},
 		{
 			f: func() []string {
@@ -90,7 +90,7 @@ func TestSnapshotCommands(t *testing.T) {
 				}
 				return SnapshotRestore(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> snapshot restore snapshot-id target/path --sparse",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --write-sparse-files",
 		},
 		{
 			f: func() []string {
@@ -104,7 +104,7 @@ func TestSnapshotCommands(t *testing.T) {
 				}
 				return SnapshotDelete(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> snapshot delete snapshot-id --unsafe-ignore-source",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot delete snapshot-id --unsafe-ignore-source",
 		},
 		{
 			f: func() []string {
@@ -117,7 +117,7 @@ func TestSnapshotCommands(t *testing.T) {
 				}
 				return SnapListAllWithSnapIDs(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> manifest list --json --filter=type:snapshot",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key manifest list --json --filter=type:snapshot",
 		},
 		{
 			f: func() []string {
@@ -127,7 +127,7 @@ func TestSnapshotCommands(t *testing.T) {
 				}
 				return SnapListByTags(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> snapshot list --all --delta --show-identical --json --tags tag1:val1 --tags tag2:val2",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot list --all --delta --show-identical --json --tags tag1:val1 --tags tag2:val2",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")

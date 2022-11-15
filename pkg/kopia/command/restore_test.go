@@ -41,7 +41,7 @@ func TestRestoreCommands(t *testing.T) {
 				}
 				return Restore(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=<****> restore snapshot-id target/path",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key restore snapshot-id target/path",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
