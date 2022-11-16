@@ -22,6 +22,8 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/aws/aws-sdk-go v1.44.137
+	github.com/dustin/go-humanize v1.0.0
+	github.com/frankban/quicktest v1.13.1
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/strfmt v0.21.3
 	github.com/go-sql-driver/mysql v1.6.0
@@ -61,11 +63,6 @@ require (
 	k8s.io/kubectl v0.24.4
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	sigs.k8s.io/controller-runtime v0.12.3
-)
-
-require (
-	github.com/dustin/go-humanize v1.0.0
-	github.com/frankban/quicktest v1.13.1
 )
 
 require (
