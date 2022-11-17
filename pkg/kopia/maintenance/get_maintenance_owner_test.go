@@ -15,14 +15,19 @@
 package maintenance
 
 import (
-	"gopkg.in/check.v1"
+	"testing"
+
+	. "gopkg.in/check.v1"
 )
 
-type KopiaUtilsTestSuite struct{}
+// Hook up gocheck into the "go test" runner.
+func TestKopiaMaintenanceWrappers(t *testing.T) { TestingT(t) }
 
-var _ = check.Suite(&KopiaUtilsTestSuite{})
+type KopiaMaintenanceOwnerTestSuite struct{}
 
-func (s *KopiaUtilsTestSuite) TestParseMaintenanceOwnerOutput(c *check.C) {
+var _ = Suite(&KopiaMaintenanceOwnerTestSuite{})
+
+func (kMaintenanceOwner *KopiaMaintenanceOwnerTestSuite) TestParseMaintenanceOwnerOutput(c *C) {
 	for _, tc := range []struct {
 		output        string
 		expectedOwner string
@@ -45,6 +50,6 @@ func (s *KopiaUtilsTestSuite) TestParseMaintenanceOwnerOutput(c *check.C) {
 		},
 	} {
 		owner := parseOutput(tc.output)
-		c.Assert(owner, check.Equals, tc.expectedOwner)
+		c.Assert(owner, Equals, tc.expectedOwner)
 	}
 }

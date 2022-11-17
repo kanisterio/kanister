@@ -18,12 +18,17 @@ import (
 	"strings"
 	"testing"
 
-	qt "github.com/frankban/quicktest"
+	. "gopkg.in/check.v1"
 )
 
-func TestBlobCommands(t *testing.T) {
-	c := qt.New(t)
+// Hook up gocheck into the "go test" runner.
+func TestKopiaCommandWrappers(t *testing.T) { TestingT(t) }
 
+type KopiaBlobTestSuite struct{}
+
+var _ = Suite(&KopiaBlobTestSuite{})
+
+func (kBlob *KopiaBlobTestSuite) TestBlobCommands(c *C) {
 	commandArgs := &CommandArgs{
 		RepoPassword:   "encr-key",
 		ConfigFilePath: "path/kopia.config",
@@ -54,6 +59,6 @@ func TestBlobCommands(t *testing.T) {
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
-		c.Check(cmd, qt.Equals, tc.expectedLog)
+		c.Assert(cmd, Equals, tc.expectedLog)
 	}
 }

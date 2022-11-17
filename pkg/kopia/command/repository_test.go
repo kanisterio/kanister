@@ -16,14 +16,15 @@ package command
 
 import (
 	"strings"
-	"testing"
 
-	qt "github.com/frankban/quicktest"
+	. "gopkg.in/check.v1"
 )
 
-func TestRepositoryStatusCommand(t *testing.T) {
-	c := qt.New(t)
+type KopiaRepoStatusTestSuite struct{}
 
+var _ = Suite(&KopiaRepoStatusTestSuite{})
+
+func (kRepoStatus *KopiaRepoStatusTestSuite) TestRepositoryStatusCommand(c *C) {
 	for _, tc := range []struct {
 		f           func() []string
 		expectedLog string
@@ -42,6 +43,6 @@ func TestRepositoryStatusCommand(t *testing.T) {
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
-		c.Check(cmd, qt.Equals, tc.expectedLog)
+		c.Check(cmd, Equals, tc.expectedLog)
 	}
 }

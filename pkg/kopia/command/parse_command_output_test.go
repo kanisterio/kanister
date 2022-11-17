@@ -17,59 +17,57 @@ package command
 import (
 	"encoding/json"
 	"reflect"
-	"testing"
 
-	qt "github.com/frankban/quicktest"
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/snapshot"
-	"gopkg.in/check.v1"
+	. "gopkg.in/check.v1"
 )
 
 type KopiaParseUtilsTestSuite struct{}
 
-var _ = check.Suite(&KopiaParseUtilsTestSuite{})
+var _ = Suite(&KopiaParseUtilsTestSuite{})
 
-func (s *KopiaParseUtilsTestSuite) TestSnapshotIDsFromSnapshot(c *check.C) {
+func (kParse *KopiaParseUtilsTestSuite) TestSnapshotIDsFromSnapshot(c *C) {
 	for _, tc := range []struct {
 		log            string
 		expectedSnapID string
 		expectedRootID string
-		errChecker     check.Checker
+		errChecker     Checker
 	}{
-		{"Created snapshot with root k23cf6d7ff418a0110636399da458abb5 and ID beda41fb4ba7478025778fdc8312355c in 10.8362ms", "beda41fb4ba7478025778fdc8312355c", "k23cf6d7ff418a0110636399da458abb5", check.IsNil},
-		{"Created snapshot with root rootID and ID snapID", "snapID", "rootID", check.IsNil},
-		{" Created snapshot snapID (root rootID)", "", "", check.NotNil},
-		{"root 123abcd", "", "", check.NotNil},
-		{"Invalid message", "", "", check.NotNil},
-		{"Created snapshot with root abc123\n in 5.5001ms", "", "", check.NotNil},
-		{"", "", "", check.NotNil},
-		{"Created snapshot", "", "", check.NotNil},
-		{"Created snapshot ", "", "", check.NotNil},
-		{"Created snapshot with root", "", "", check.NotNil},
-		{"Created snapshot with root rootID", "", "", check.NotNil},
-		{"Created snapshot with root rootID and ID\n snapID in 10ms", "", "", check.NotNil},
-		{"Created snapshot with root rootID in 10ms", "", "", check.NotNil},
-		{"Created snapshot and ID snapID in 10ms", "", "", check.NotNil},
-		{"Created snapshot with ID snapID in 10ms", "", "", check.NotNil},
-		{"Created snapshot snapID\n(root rootID) in 10.8362ms", "", "", check.NotNil},
-		{"Created snapshot snapID in 10.8362ms", "", "", check.NotNil},
-		{"Created snapshot (root rootID) in 10.8362ms", "", "", check.NotNil},
-		{"Created snapshot root rootID in 10.8362ms", "", "", check.NotNil},
-		{"Created snapshot root rootID and ID snapID in 10.8362ms", "", "", check.NotNil},
-		{" root rootID and ID snapID in 10.8362ms", "", "", check.NotNil},
-		{"uploaded snapshot beda41fb4ba7478025778fdc8312355c (root k23cf6d7ff418a0110636399da458abb5) in 10.8362ms", "", "", check.NotNil},
+		{"Created snapshot with root k23cf6d7ff418a0110636399da458abb5 and ID beda41fb4ba7478025778fdc8312355c in 10.8362ms", "beda41fb4ba7478025778fdc8312355c", "k23cf6d7ff418a0110636399da458abb5", IsNil},
+		{"Created snapshot with root rootID and ID snapID", "snapID", "rootID", IsNil},
+		{" Created snapshot snapID (root rootID)", "", "", NotNil},
+		{"root 123abcd", "", "", NotNil},
+		{"Invalid message", "", "", NotNil},
+		{"Created snapshot with root abc123\n in 5.5001ms", "", "", NotNil},
+		{"", "", "", NotNil},
+		{"Created snapshot", "", "", NotNil},
+		{"Created snapshot ", "", "", NotNil},
+		{"Created snapshot with root", "", "", NotNil},
+		{"Created snapshot with root rootID", "", "", NotNil},
+		{"Created snapshot with root rootID and ID\n snapID in 10ms", "", "", NotNil},
+		{"Created snapshot with root rootID in 10ms", "", "", NotNil},
+		{"Created snapshot and ID snapID in 10ms", "", "", NotNil},
+		{"Created snapshot with ID snapID in 10ms", "", "", NotNil},
+		{"Created snapshot snapID\n(root rootID) in 10.8362ms", "", "", NotNil},
+		{"Created snapshot snapID in 10.8362ms", "", "", NotNil},
+		{"Created snapshot (root rootID) in 10.8362ms", "", "", NotNil},
+		{"Created snapshot root rootID in 10.8362ms", "", "", NotNil},
+		{"Created snapshot root rootID and ID snapID in 10.8362ms", "", "", NotNil},
+		{" root rootID and ID snapID in 10.8362ms", "", "", NotNil},
+		{"uploaded snapshot beda41fb4ba7478025778fdc8312355c (root k23cf6d7ff418a0110636399da458abb5) in 10.8362ms", "", "", NotNil},
 	} {
 		snapID, rootID, err := SnapshotIDsFromSnapshot(tc.log)
-		c.Check(snapID, check.Equals, tc.expectedSnapID, check.Commentf("Failed for log: %s", tc.log))
-		c.Check(rootID, check.Equals, tc.expectedRootID, check.Commentf("Failed for log: %s", tc.log))
-		c.Check(err, tc.errChecker, check.Commentf("Failed for log: %s", tc.log))
+		c.Check(snapID, Equals, tc.expectedSnapID, Commentf("Failed for log: %s", tc.log))
+		c.Check(rootID, Equals, tc.expectedRootID, Commentf("Failed for log: %s", tc.log))
+		c.Check(err, tc.errChecker, Commentf("Failed for log: %s", tc.log))
 	}
 }
 
-func (s *KopiaParseUtilsTestSuite) TestLatestSnapshotInfoFromManifestList(c *check.C) {
+func (kParse *KopiaParseUtilsTestSuite) TestLatestSnapshotInfoFromManifestList(c *C) {
 	for _, tc := range []struct {
 		output             string
-		checker            check.Checker
+		checker            Checker
 		expectedSnapID     string
 		expectedBackupPath string
 	}{
@@ -81,13 +79,13 @@ func (s *KopiaParseUtilsTestSuite) TestLatestSnapshotInfoFromManifestList(c *che
 			   ]`,
 			expectedSnapID:     "00000000000000000000003",
 			expectedBackupPath: "/tmp/aaa3",
-			checker:            check.IsNil,
+			checker:            IsNil,
 		},
 		{
 			output:             "",
 			expectedSnapID:     "",
 			expectedBackupPath: "",
-			checker:            check.NotNil,
+			checker:            NotNil,
 		},
 		{
 			output: `[
@@ -95,7 +93,7 @@ func (s *KopiaParseUtilsTestSuite) TestLatestSnapshotInfoFromManifestList(c *che
 			   ]`,
 			expectedSnapID:     "",
 			expectedBackupPath: "",
-			checker:            check.NotNil,
+			checker:            NotNil,
 		},
 		{
 			output: `[
@@ -103,20 +101,20 @@ func (s *KopiaParseUtilsTestSuite) TestLatestSnapshotInfoFromManifestList(c *che
 			   ]`,
 			expectedSnapID:     "",
 			expectedBackupPath: "",
-			checker:            check.NotNil,
+			checker:            NotNil,
 		},
 	} {
 		snapID, backupPath, err := LatestSnapshotInfoFromManifestList(tc.output)
 		c.Assert(err, tc.checker)
-		c.Assert(snapID, check.Equals, tc.expectedSnapID)
-		c.Assert(backupPath, check.Equals, tc.expectedBackupPath)
+		c.Assert(snapID, Equals, tc.expectedSnapID)
+		c.Assert(backupPath, Equals, tc.expectedBackupPath)
 	}
 }
 
-func (s *KopiaParseUtilsTestSuite) TestSnapshotInfoFromSnapshotCreateOutput(c *check.C) {
+func (kParse *KopiaParseUtilsTestSuite) TestSnapshotInfoFromSnapshotCreateOutput(c *C) {
 	for _, tc := range []struct {
 		output         string
-		checker        check.Checker
+		checker        Checker
 		expectedSnapID string
 		expectedRootID string
 	}{
@@ -125,7 +123,7 @@ func (s *KopiaParseUtilsTestSuite) TestSnapshotInfoFromSnapshotCreateOutput(c *c
 			* 0 hashing, 1 hashed (2 B), 3 cached (4 B), uploaded 5 KB, estimating...
 		   {"id":"00000000000000000000001","source":{"host":"h2","userName":"u2","path":"/tmp/aaa1"},"description":"","startTime":"2021-05-26T05:29:07.206854927Z","endTime":"2021-05-26T05:29:07.207328392Z","rootEntry":{"name":"aaa1","type":"d","mode":"0755","mtime":"2021-05-19T15:45:34.448853232Z","obj":"ka68ba7abe0818b24a2b0647aeeb02f29","summ":{"size":0,"files":1,"symlinks":0,"dirs":1,"maxTime":"2021-05-19T15:45:34.448853232Z","numFailed":0}}}
 		   `,
-			checker:        check.IsNil,
+			checker:        IsNil,
 			expectedSnapID: "00000000000000000000001",
 			expectedRootID: "ka68ba7abe0818b24a2b0647aeeb02f29",
 		},
@@ -133,33 +131,33 @@ func (s *KopiaParseUtilsTestSuite) TestSnapshotInfoFromSnapshotCreateOutput(c *c
 			output: `Snapshotting u2@h2:/tmp/aaa1 ...
 			* 0 hashing, 1 hashed (2 B), 3 cached (4 B), uploaded 5 KB, estimating...
 		   `,
-			checker:        check.NotNil,
+			checker:        NotNil,
 			expectedSnapID: "",
 			expectedRootID: "",
 		},
 		{
 			output: `ERROR: unable to get local filesystem entry: resolveSymlink: stat: lstat /tmp/aaa2: no such file or directory
 			`,
-			checker:        check.NotNil,
+			checker:        NotNil,
 			expectedSnapID: "",
 			expectedRootID: "",
 		},
 	} {
 		snapID, rootID, err := SnapshotInfoFromSnapshotCreateOutput(tc.output)
 		c.Assert(err, tc.checker)
-		c.Assert(snapID, check.Equals, tc.expectedSnapID)
-		c.Assert(rootID, check.Equals, tc.expectedRootID)
+		c.Assert(snapID, Equals, tc.expectedSnapID)
+		c.Assert(rootID, Equals, tc.expectedRootID)
 	}
 }
 
-func TestSnapSizeStatsFromSnapListAll(t *testing.T) {
+func (kParse *KopiaParseUtilsTestSuite) TestSnapSizeStatsFromSnapListAll(c *C) {
 	for _, tc := range []struct {
 		description     string
-		outputGenFunc   func(*qt.C, []*snapshot.Manifest) string
+		outputGenFunc   func(*C, []*snapshot.Manifest) string
 		expManifestList []*snapshot.Manifest
 		expCount        int
 		expSize         int64
-		errChecker      qt.Checker
+		errChecker      Checker
 	}{
 		{
 			description:     "empty manifest list",
@@ -167,7 +165,7 @@ func TestSnapSizeStatsFromSnapListAll(t *testing.T) {
 			expManifestList: []*snapshot.Manifest{},
 			expCount:        0,
 			expSize:         0,
-			errChecker:      qt.IsNil,
+			errChecker:      IsNil,
 		},
 		{
 			description:   "basic manifest list",
@@ -183,7 +181,7 @@ func TestSnapSizeStatsFromSnapListAll(t *testing.T) {
 			},
 			expCount:   1,
 			expSize:    1,
-			errChecker: qt.IsNil,
+			errChecker: IsNil,
 		},
 		{
 			description:   "manifest list with multiple snapshots",
@@ -220,7 +218,7 @@ func TestSnapSizeStatsFromSnapListAll(t *testing.T) {
 			},
 			expCount:   4,
 			expSize:    1111,
-			errChecker: qt.IsNil,
+			errChecker: IsNil,
 		},
 		{
 			description:   "error: snapshot with no directory summary, size is treated as zero",
@@ -232,7 +230,7 @@ func TestSnapSizeStatsFromSnapListAll(t *testing.T) {
 			},
 			expCount:   1,
 			expSize:    0,
-			errChecker: qt.IsNil,
+			errChecker: IsNil,
 		},
 		{
 			description:   "error: snapshot with no root entry, size is treated as zero",
@@ -242,40 +240,37 @@ func TestSnapSizeStatsFromSnapListAll(t *testing.T) {
 			},
 			expCount:   1,
 			expSize:    0,
-			errChecker: qt.IsNil,
+			errChecker: IsNil,
 		},
 		{
 			description: "error: parse empty output",
-			outputGenFunc: func(c *qt.C, manifestList []*snapshot.Manifest) string {
+			outputGenFunc: func(c *C, manifestList []*snapshot.Manifest) string {
 				return ""
 			},
 			expCount:   0,
 			expSize:    0,
-			errChecker: qt.IsNotNil,
+			errChecker: NotNil,
 		},
 		{
 			description: "error: unmarshal fails",
-			outputGenFunc: func(c *qt.C, manifestList []*snapshot.Manifest) string {
+			outputGenFunc: func(c *C, manifestList []*snapshot.Manifest) string {
 				return "asdf"
 			},
 			expCount:   0,
 			expSize:    0,
-			errChecker: qt.IsNotNil,
+			errChecker: NotNil,
 		},
 	} {
-		t.Run(tc.description, func(t *testing.T) {
-			c := qt.New(t)
-			outputToParse := tc.outputGenFunc(c, tc.expManifestList)
-			gotTotSizeB, gotNumSnapshots, err := SnapSizeStatsFromSnapListAll(outputToParse)
-			c.Check(err, tc.errChecker, qt.Commentf("Failed for output: %q", outputToParse))
-			c.Check(gotTotSizeB, qt.Equals, tc.expSize)
-			c.Check(gotNumSnapshots, qt.Equals, tc.expCount)
-			c.Log(err)
-		})
+		outputToParse := tc.outputGenFunc(c, tc.expManifestList)
+		gotTotSizeB, gotNumSnapshots, err := SnapSizeStatsFromSnapListAll(outputToParse)
+		c.Check(err, tc.errChecker, Commentf("Failed for output: %q", outputToParse))
+		c.Check(gotTotSizeB, Equals, tc.expSize)
+		c.Check(gotNumSnapshots, Equals, tc.expCount)
+		c.Log(err)
 	}
 }
 
-func TestSnapshotStatsFromSnapshotCreate(t *testing.T) {
+func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *C) {
 	type args struct {
 		snapCreateOutput  string
 		matchOnlyFinished bool
@@ -371,89 +366,84 @@ func TestSnapshotStatsFromSnapshotCreate(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := qt.New(t)
-			if gotStats := SnapshotStatsFromSnapshotCreate(tt.args.snapCreateOutput, tt.args.matchOnlyFinished); !reflect.DeepEqual(gotStats, tt.wantStats) {
-				c.Errorf("SnapshotStatsFromSnapshotCreate() = %v, want %v", gotStats, tt.wantStats)
-			}
-		})
+		if gotStats := SnapshotStatsFromSnapshotCreate(tt.args.snapCreateOutput, tt.args.matchOnlyFinished); !reflect.DeepEqual(gotStats, tt.wantStats) {
+			c.Errorf("SnapshotStatsFromSnapshotCreate() = %v, want %v", gotStats, tt.wantStats)
+		}
 	}
 }
 
-func TestPhysicalSizeFromBlobStatsRaw(t *testing.T) {
-	c := qt.New(t)
-
+func (kParse *KopiaParseUtilsTestSuite) TestPhysicalSizeFromBlobStatsRaw(c *C) {
 	for _, tc := range []struct {
 		blobStatsOutput string
 		expSizeVal      int64
 		expCount        int
-		errChecker      qt.Checker
+		errChecker      Checker
 	}{
 		{
 			"Count: 813\nTotal: 11235\n",
 			11235,
 			813,
-			qt.IsNil,
+			IsNil,
 		},
 		{
 			"Total: 11235\nCount: 813\n",
 			11235,
 			813,
-			qt.IsNil,
+			IsNil,
 		},
 		{
 			"Count: 0\nTotal: 0\n",
 			0,
 			0,
-			qt.IsNil,
+			IsNil,
 		},
 		{
 			"Count: 5\nTotal: 0.0\n",
 			0,
 			0,
-			qt.IsNotNil,
+			NotNil,
 		},
 		{
 			"Count: 5\nTotal: asdf\n",
 			0,
 			0,
-			qt.IsNotNil,
+			NotNil,
 		},
 		{
 			"Count: 5\nTotal: 11235,\n",
 			0,
 			0,
-			qt.IsNotNil,
+			NotNil,
 		},
 		{
 			"Total: -11235\n",
 			0,
 			0,
-			qt.IsNotNil,
+			NotNil,
 		},
 		{
 			"Total: 11235",
 			0,
 			0,
-			qt.IsNotNil,
+			NotNil,
 		},
 		{
 			"Count: 11235",
 			0,
 			0,
-			qt.IsNotNil,
+			NotNil,
 		},
 		{
 			"Other-field: 11235",
 			0,
 			0,
-			qt.IsNotNil,
+			NotNil,
 		},
 		{
 			"random input that doesn't comply with expected format",
 			0,
 			0,
-			qt.IsNotNil,
+			NotNil,
 		},
 		{
 			`
@@ -472,17 +462,17 @@ Histogram:
 		0 between 10000000 and 100000000 (total 0)`,
 			65628,
 			26,
-			qt.IsNil,
+			IsNil,
 		},
 	} {
 		gotSize, gotCount, err := RepoSizeStatsFromBlobStatsRaw(tc.blobStatsOutput)
-		c.Check(err, tc.errChecker, qt.Commentf("Failed for log: %s", tc.blobStatsOutput))
-		c.Check(gotSize, qt.Equals, tc.expSizeVal)
-		c.Check(gotCount, qt.Equals, tc.expCount)
+		c.Check(err, tc.errChecker, Commentf("Failed for log: %s", tc.blobStatsOutput))
+		c.Check(gotSize, Equals, tc.expSizeVal)
+		c.Check(gotCount, Equals, tc.expCount)
 	}
 }
 
-func TestIsEqualSnapshotCreateStats(t *testing.T) {
+func (kParse *KopiaParseUtilsTestSuite) TestIsEqualSnapshotCreateStats(c *C) {
 	for _, tc := range []struct {
 		description string
 		a           *SnapshotCreateStats
@@ -568,19 +558,16 @@ func TestIsEqualSnapshotCreateStats(t *testing.T) {
 			false,
 		},
 	} {
-		t.Run(tc.description, func(t *testing.T) {
-			c := qt.New(t)
-			result := IsEqualSnapshotCreateStats(tc.a, tc.b)
-			c.Check(result, qt.Equals, tc.expResult)
-		})
+		result := IsEqualSnapshotCreateStats(tc.a, tc.b)
+		c.Check(result, Equals, tc.expResult)
 	}
 }
 
-func marshalManifestList(c *qt.C, manifestList []*snapshot.Manifest) string {
-	c.Assert(manifestList, qt.IsNotNil)
+func marshalManifestList(c *C, manifestList []*snapshot.Manifest) string {
+	c.Assert(manifestList, NotNil)
 
 	b, err := json.Marshal(manifestList)
-	c.Assert(err, qt.IsNil)
+	c.Assert(err, IsNil)
 
 	return string(b)
 }

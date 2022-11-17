@@ -16,15 +16,16 @@ package command
 
 import (
 	"strings"
-	"testing"
 	"time"
 
-	qt "github.com/frankban/quicktest"
+	. "gopkg.in/check.v1"
 )
 
-func TestSnapshotCommands(t *testing.T) {
-	c := qt.New(t)
+type KopiaSnapshotTestSuite struct{}
 
+var _ = Suite(&KopiaSnapshotTestSuite{})
+
+func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 	commandArgs := &CommandArgs{
 		RepoPassword:   "encr-key",
 		ConfigFilePath: "path/kopia.config",
@@ -131,6 +132,6 @@ func TestSnapshotCommands(t *testing.T) {
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
-		c.Check(cmd, qt.Equals, tc.expectedLog)
+		c.Check(cmd, Equals, tc.expectedLog)
 	}
 }
