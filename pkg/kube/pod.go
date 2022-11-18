@@ -69,6 +69,7 @@ type PodOptions struct {
 	Resources                v1.ResourceRequirements
 	RestartPolicy            v1.RestartPolicy
 	OwnerReferences          []metav1.OwnerReference
+	EnvironmentVariables     []v1.EnvVar
 }
 
 func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
@@ -118,6 +119,10 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		RestartPolicy:      opts.RestartPolicy,
 		Volumes:            podVolumes,
 		ServiceAccountName: sa,
+	}
+
+	if opts.EnvironmentVariables != nil && len(opts.EnvironmentVariables) > 0 {
+		defaultSpecs.Containers[0].Env = opts.EnvironmentVariables
 	}
 
 	// Patch default Pod Specs if needed
