@@ -473,8 +473,8 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734 h1:qulsCaCv+O2y9/sQ9nd5KChnAgFOWakTHQ9ZADjs6DQ=
 github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734/go.mod h1:rdqSnvOJuKCPFW/h2rVLuXOAkRnHHdp9PZcKx4HCoDM=
-github.com/kastenhq/kopia v0.0.0-20221116163943-927342038b4c h1:e9Pnho/0VBZzVGcUtMqkN2JNGM8IxdiExwbO+Kck5Ts=
-github.com/kastenhq/kopia v0.0.0-20221116163943-927342038b4c/go.mod h1:0RDvMGLctMF+GaqxJJMbpqSFafNzWQyYalQlP0IaJx4=
+github.com/kastenhq/kopia v0.0.0-20221121160821-97d299c3dd4f h1:nZ1fETWV3LJ7eyAaHiNfKMOqMFdNFF9mmPu8ea9AaDw=
+github.com/kastenhq/kopia v0.0.0-20221121160821-97d299c3dd4f/go.mod h1:0RDvMGLctMF+GaqxJJMbpqSFafNzWQyYalQlP0IaJx4=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20220726203146-8a90401257d4 h1:MuAfIUYqmW0bIxyltt4EIAgKSV3GxvEwZzlqBqGLQko=
 github.com/kastenhq/stow v0.2.6-kasten.1.0.20220726203146-8a90401257d4/go.mod h1:6+N3Bn9Whpb+bnRFQ2A2kAyAUiYvYM0+N5bArNd4K8s=
 github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
