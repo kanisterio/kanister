@@ -42,10 +42,6 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 # Mention the vm-driver that should be used to install OpenShift
 vm-driver ?= "kvm"
 
-# Refers to https://github.com/kopia/kopia/commit/317cc36892707ab9bdc5f6e4dea567d1e638a070
-KOPIA_COMMIT_ID ?= "317cc36"
-
-KOPIA_REPO ?= "kopia"
 # Default OCP version in which the OpenShift apps are going to run
 ocp_version ?= "4.11"
 ###
@@ -62,7 +58,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.18
+BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.22
 
 # tag 0.1.0 is, 0.0.1 (latest) + gh + aws + helm binary
 DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
@@ -70,6 +66,8 @@ DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
 
 GITHUB_TOKEN ?= ""
+
+GOBORING ?= ""
 
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
@@ -106,6 +104,7 @@ bin/$(ARCH)/$(BIN):
 		VERSION=$(VERSION) \
 		PKG=$(PKG)         \
 		BIN=$(BIN) \
+		GOBORING=$(GOBORING) \
 		./build/build.sh   \
 	"'
 # Example: make shell CMD="-c 'date > datefile'"
@@ -261,9 +260,6 @@ gorelease:
 
 release-snapshot:
 	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot"'
-
-update-kopia-image:
-	@/bin/bash ./build/update_kopia_image.sh $(KOPIA_COMMIT_ID) $(KOPIA_REPO)
 
 go-mod-download:
 	@$(MAKE) run CMD='-c "go mod download"'

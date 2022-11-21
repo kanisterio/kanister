@@ -155,7 +155,7 @@ func (pgres *PostgreSQLDepConfig) Ping(ctx context.Context) error {
 }
 
 func (pgres *PostgreSQLDepConfig) Insert(ctx context.Context) error {
-	cmd := fmt.Sprintf("psql -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\"")
+	cmd := "psql -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\""
 	_, stderr, err := pgres.execCommand(ctx, []string{"bash", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create db in postgresql deployment config. %s", stderr)

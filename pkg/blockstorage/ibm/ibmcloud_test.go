@@ -44,7 +44,7 @@ type TestIBMCloud struct {
 	volAtts       map[string]string
 }
 
-//These are not executed as part of Pipeline, but usefull for development
+// These are not executed as part of Pipeline, but usefull for development
 var softlayerVolAtts = map[string]string{
 	ProviderTypeAttName: string(ibmprov.VolumeProviderType("endurance")),
 	TierAttName:         "2",
@@ -131,7 +131,7 @@ func (s TestIBMCloud) TestVolRestore(c *C) {
 	c.Assert(err, IsNil)
 	snapTTags := map[string]string{"ibmblock_unit_test_snap": fmt.Sprintf("test-snap-%d", time.Now().Unix())}
 	bsSnap, err := s.provider.SnapshotCreate(context.Background(), *bsVol, snapTTags)
-	defer s.provider.SnapshotDelete(context.Background(), bsSnap) // nolint: errcheck
+	defer s.provider.SnapshotDelete(context.Background(), bsSnap) //nolint: errcheck
 	c.Assert(err, IsNil)
 	tTags := map[string]string{"ibmblock_unit_test_restore_vol": fmt.Sprintf("test-vol-%d", time.Now().Unix())}
 	resVol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), *bsSnap, tTags)

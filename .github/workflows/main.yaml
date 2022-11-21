@@ -61,7 +61,7 @@ jobs:
       with:
         name: src
     - run: tar -xvf ./src.tar.gz
-    - run: make build BIN=${{ matrix.bin }}
+    - run: make build BIN=${{ matrix.bin }} GOBORING=true
   docs:
     runs-on: ubuntu-20.04
     needs: gomod
@@ -87,6 +87,5 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - run: tar -xvf ./src.tar.gz
-    - run: make update-kopia-image
     - run: make release-snapshot
     - run: ./build/push_images.sh
