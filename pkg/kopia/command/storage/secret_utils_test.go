@@ -16,6 +16,7 @@ package storage
 
 import (
 	"testing"
+	"time"
 
 	"gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
@@ -180,7 +181,7 @@ func (s *StorageUtilsSuite) TestGenerateEnvSpecFromCredentialSecret(c *check.C) 
 			expectedEnvVars: nil,
 		},
 	} {
-		envVars, err := GenerateEnvSpecFromCredentialSecret(tc.secret)
+		envVars, err := GenerateEnvSpecFromCredentialSecret(tc.secret, time.Duration(0))
 		c.Assert(err, tc.Checker)
 		c.Assert(envVars, check.DeepEquals, tc.expectedEnvVars)
 	}
