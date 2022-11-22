@@ -76,14 +76,14 @@ func locationType(m map[string][]byte) LocType {
 
 // GenerateEnvSpecFromCredentialSecret parses the secret and returns
 // list of EnvVar based on secret type
-func GenerateEnvSpecFromCredentialSecret(s *v1.Secret) ([]v1.EnvVar, error) {
+func GenerateEnvSpecFromCredentialSecret(s *v1.Secret, assumeRoleDurationS3 time.Duration) ([]v1.EnvVar, error) {
 	if s == nil {
 		return nil, errors.New("Secret cannot be nil")
 	}
 	secType := string(s.Type)
 	switch secType {
 	case secrets.AWSSecretType:
-		return getEnvSpecForAWSCredentialSecret(s)
+		return getEnvSpecForAWSCredentialSecret(s, assumeRoleDurationS3)
 	case secrets.AzureSecretType:
 		return getEnvSpecForAzureCredentialSecret(s)
 	}
@@ -92,8 +92,7 @@ func GenerateEnvSpecFromCredentialSecret(s *v1.Secret) ([]v1.EnvVar, error) {
 	return nil, nil
 }
 
-func getEnvSpecForAWSCredentialSecret(s *v1.Secret) ([]v1.EnvVar, error) {
-	var duration time.Duration
+func getEnvSpecForAWSCredentialSecret(s *v1.Secret, assumeRoleDuration time.Duration) ([]v1.EnvVar, error) {
 	var err error
 	envVars := []v1.EnvVar{}
 	envVars = append(
@@ -101,18 +100,12 @@ func getEnvSpecForAWSCredentialSecret(s *v1.Secret) ([]v1.EnvVar, error) {
 		getEnvVarWithSecretRef(aws.AccessKeyID, s.Name, secrets.AWSAccessKeyID),
 		getEnvVarWithSecretRef(aws.SecretAccessKey, s.Name, secrets.AWSSecretAccessKey),
 	)
-	if val, ok := s.Data["assume_duration"]; ok {
-		duration, err = time.ParseDuration(string(val))
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed to parse AWS Assume Role duration")
-		}
-	}
-	creds, err := secrets.ExtractAWSCredentials(context.Background(), s, duration)
+	creds, err := secrets.ExtractAWSCredentials(context.Background(), s, assumeRoleDuration)
 	if err != nil {
 		return nil, err
 	}
 	if creds.SessionToken != "" {
-		envVars = append(envVars, getEnvVarWithSecretRef(aws.SessionToken, s.Name, secrets.AWSSessionToken))
+		envVars = append(envVars, getEnvVar(aws.SessionToken, creds.SessionToken))
 	}
 	return envVars, nil
 }
