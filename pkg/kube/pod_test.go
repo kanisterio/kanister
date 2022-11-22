@@ -267,7 +267,7 @@ func (s *PodSuite) createServiceAccount(name, ns string) error {
 	return nil
 }
 
-func (s *PodSuite) TestPodWithVolumes(c *C) {
+func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
 	pvcName := "prometheus-ibm-monitoring-prometheus-db-prometheus-ibm-monitoring-prometheus-0"
 	pvc := &v1.PersistentVolumeClaim{
@@ -313,6 +313,58 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 	c.Assert(pod.Spec.Volumes, HasLen, 1)
 	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, pvcName)
 	c.Assert(pod.Spec.Containers[0].VolumeMounts[0].MountPath, Equals, "/mnt/data1")
+	c.Assert(len(pod.Spec.Containers[0].VolumeDevices), Equals, 0)
+}
+
+func (s *PodSuite) TestPodWithBlockModeVolumes(c *C) {
+	cli := fake.NewSimpleClientset()
+	pvcName := "block-mode-volume"
+	blockMode := v1.PersistentVolumeBlock
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: pvcName,
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			VolumeMode:  &blockMode,
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceName(v1.ResourceStorage): resource.MustParse("1Gi"),
+				},
+			},
+		},
+	}
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	vols := map[string]string{pvc.Name: "/mnt/data1"}
+	ctx := context.Background()
+	var p *v1.Pod
+	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		fmt.Println("found pod")
+		ca := action.(testing.CreateAction)
+		p = ca.GetObject().(*v1.Pod)
+		if len(p.Spec.Volumes[0].Name) > 63 {
+			return true, nil, errors.New("spec.volumes[0].name must be no more than 63 characters")
+		}
+		return false, nil, nil
+	})
+	cli.PrependReactor("get", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		p.Status.Phase = v1.PodRunning
+		return true, p, nil
+	})
+	pod, err := CreatePod(ctx, cli, &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		BlockVolumes: vols,
+	})
+	c.Assert(err, IsNil)
+	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), IsNil)
+	c.Assert(pod.Spec.Volumes, HasLen, 1)
+	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, pvcName)
+	c.Assert(len(pod.Spec.Containers[0].VolumeMounts), Equals, 0)
+	c.Assert(pod.Spec.Containers[0].VolumeDevices[0].DevicePath, Equals, "/mnt/data1")
 }
 
 func (s *PodSuite) TestGetPodLogs(c *C) {
