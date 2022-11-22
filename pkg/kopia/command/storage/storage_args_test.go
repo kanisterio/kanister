@@ -16,7 +16,6 @@ package storage
 
 import (
 	"fmt"
-	"time"
 
 	"gopkg.in/check.v1"
 )
@@ -36,8 +35,7 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 					skipSSLVerifyKey: []byte("true"),
 					typeKey:          []byte("s3"),
 				},
-				AssumeRoleDuration: time.Duration(30 * time.Minute),
-				RepoPathPrefix:     "dir/subdir/",
+				RepoPathPrefix: "dir/subdir/",
 			},
 			Checker: check.IsNil,
 			expectedCmd: fmt.Sprint(
