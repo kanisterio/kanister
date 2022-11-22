@@ -110,7 +110,7 @@ func (s *KopiaCmdSuite) startKanisterToolsPod(c *check.C, locSecret, credSecret 
 		err     error
 	)
 	if credSecret != nil {
-		envVars, err = storage.GenerateEnvSpecFromCredentialSecret(credSecret)
+		envVars, err = storage.GenerateEnvSpecFromCredentialSecret(credSecret, time.Duration(30*time.Minute))
 		c.Assert(err, check.IsNil)
 	}
 	options := &kube.PodOptions{
