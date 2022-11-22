@@ -15,7 +15,7 @@ We will be using [percona operator for Mongodb](https://docs.percona.com/percona
 
 ## Limitations 
 
-We can't use a profiles.cr.kanister.io to define the backup target because the operator force the definition of the backup target in the PerconaServerMongoDB object itself and in a secret for the AWS_ACCESS_KEY_ID and in the AWS_SECRET_ACCESS_KEY: 
+For simplicity we did not patch the PerconaServerMongoDB object with the profiles.cr.kanister.io to define the backup target, you have to define it and the secret reference a secret that must define the AWS_ACCESS_KEY_ID and in the AWS_SECRET_ACCESS_KEY keys: 
 ```
     storages:
       my-s3-storage:
@@ -248,9 +248,7 @@ $ kubectl --namespace kasten-io describe actionset delete-backup-vvskw-xh29t
 
 **NOTE:**
 
-To have the delete action working properly we need the operator up and running.
-
-
+To have the delete action working  we need the operator up and running.
 
 ### Troubleshooting
 
@@ -266,7 +264,7 @@ you can also check events of the actionset
 $ kubectl describe actionset restore-backup-vvskw-sfpm6 -n kasten-io
 ```
 
-## Uninstalling the Chart
+## Uninstalling the operator and the blueprint
 
 To uninstall/delete the mongodb cluster and the operator:
 

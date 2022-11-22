@@ -55,7 +55,20 @@ actions:
   restore:
     inputArtifactNames:     
     - cloudObjects  
-    phases:   
+    phases: 
+    - func: Wait
+      name: waitMongoDBClusterReady
+      args:
+        timeout: 300s
+        conditions:
+          anyOf:
+            - condition: '{{ if  eq "{ $.status.state }" "ready" }}true{{ else }}false{{ end }}'            
+              objectReference:
+                apiVersion: v1
+                group: psmdb.percona.com
+                resource: perconaservermongodbs
+                name: "{{ .Object.metadata.name}}"
+                namespace: "{{ .Object.metadata.namespace}}"  
     - func: KubeOps
       name: createRestoreFromBackup
       args:
