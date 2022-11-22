@@ -16,14 +16,11 @@ package storage
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/kanisterio/kanister/pkg/logsafe"
 )
 
 type StorageCommandParams struct {
-	// S3 specific param
-	AssumeRoleDuration time.Duration
 	// Common params
 	Location       map[string][]byte
 	RepoPathPrefix string
@@ -36,7 +33,7 @@ func KopiaStorageArgs(params *StorageCommandParams) (logsafe.Cmd, error) {
 	case LocTypeFilestore:
 		return kopiaFilesystemArgs(params.Location, params.RepoPathPrefix), nil
 	case LocTypeS3:
-		return kopiaS3Args(params.Location, params.AssumeRoleDuration, params.RepoPathPrefix), nil
+		return kopiaS3Args(params.Location, params.RepoPathPrefix), nil
 	case LocTypeGCS:
 		return kopiaGCSArgs(params.Location, params.RepoPathPrefix), nil
 	case LocTypeAzure:

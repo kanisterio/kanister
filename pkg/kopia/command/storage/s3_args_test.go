@@ -16,7 +16,6 @@ package storage
 
 import (
 	"fmt"
-	"time"
 
 	"gopkg.in/check.v1"
 )
@@ -64,7 +63,7 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 				fmt.Sprintf(" %s=test-prefix/%s/", s3PrefixFlag, artifactPrefix)),
 		},
 	} {
-		args := kopiaS3Args(tc.location, time.Duration(30*time.Minute), artifactPrefix)
+		args := kopiaS3Args(tc.location, artifactPrefix)
 		c.Assert(args.String(), check.Equals, tc.expectedCommand)
 	}
 }
