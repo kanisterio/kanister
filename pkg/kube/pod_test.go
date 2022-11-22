@@ -730,3 +730,54 @@ func (s *PodSuite) TestGetPodReadyWaitTimeout(c *C) {
 	// Check without ENV set
 	c.Assert(GetPodReadyWaitTimeout(), Equals, DefaultPodReadyWaitTimeout)
 }
+
+func (s *PodSuite) TestSetPodSecurityContext(c *C) {
+	po := &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		PodSecurityContext: &v1.PodSecurityContext{
+			RunAsUser:    &[]int64{1000}[0],
+			RunAsGroup:   &[]int64{1000}[0],
+			RunAsNonRoot: &[]bool{true}[0],
+		},
+	}
+
+	pod, err := CreatePod(context.Background(), s.cli, po)
+	c.Assert(err, IsNil)
+	runAsNonRootExpected := true
+	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, DeepEquals, &runAsNonRootExpected)
+	var uidAndGidExpected int64 = 1000
+	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
+}
+
+func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
+	po := &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		PodSecurityContext: &v1.PodSecurityContext{
+			RunAsUser:    &[]int64{1000}[0],
+			RunAsGroup:   &[]int64{1000}[0],
+			RunAsNonRoot: &[]bool{true}[0],
+		},
+		PodOverride: crv1alpha1.JSONMap{
+			"securityContext": map[string]interface{}{
+				"runAsUser":    2000,
+				"runAsGroup":   2000,
+				"runAsNonRoot": false,
+			},
+		},
+	}
+
+	pod, err := CreatePod(context.Background(), s.cli, po)
+	c.Assert(err, IsNil)
+	runAsNonRootExpected := true
+	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, DeepEquals, &runAsNonRootExpected)
+	var uidAndGidExpected int64 = 1000
+	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
+}
