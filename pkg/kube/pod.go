@@ -110,7 +110,6 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 				VolumeMounts:    volumeMounts,
 				Resources:       opts.Resources,
-				Env:             opts.EnvironmentVariables,
 			},
 		},
 		// RestartPolicy dictates when the containers of the pod should be
@@ -120,6 +119,10 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		RestartPolicy:      opts.RestartPolicy,
 		Volumes:            podVolumes,
 		ServiceAccountName: sa,
+	}
+
+	if opts.EnvironmentVariables != nil && len(opts.EnvironmentVariables) > 0 {
+		defaultSpecs.Containers[0].Env = opts.EnvironmentVariables
 	}
 
 	// Patch default Pod Specs if needed
