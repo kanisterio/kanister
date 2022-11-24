@@ -141,7 +141,7 @@ type RepositoryStatusCommandArgs struct {
 
 // RepositoryStatusCommand returns the kopia command for checking status of the Kopia repository
 func RepositoryStatusCommand(cmdArgs RepositoryStatusCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
+	args := commonArgs(cmdArgs.CommandArgs, true)
 	args = args.AppendLoggable(repositorySubCommand, statusSubCommand)
 	return stringSliceCommand(args)
 }

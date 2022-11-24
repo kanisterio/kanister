@@ -204,3 +204,26 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectServerUtil(c *check.C) {
 		"--server-cert-fingerprint=test-fingerprint",
 	})
 }
+
+func (kRepoStatus *RepositoryUtilsSuite) TestRepositoryStatusCommand(c *check.C) {
+	for _, tc := range []struct {
+		f           func() []string
+		expectedLog string
+	}{
+		{
+			f: func() []string {
+				args := RepositoryStatusCommandArgs{
+					CommandArgs: &CommandArgs{
+						ConfigFilePath: "path/kopia.config",
+						LogDirectory:   "cache/log",
+					},
+				}
+				return RepositoryStatusCommand(args)
+			},
+			expectedLog: "kopia --log-level=info --config-file=path/kopia.config --log-dir=cache/log repository status",
+		},
+	} {
+		cmd := strings.Join(tc.f(), " ")
+		c.Check(cmd, check.Equals, tc.expectedLog)
+	}
+}
