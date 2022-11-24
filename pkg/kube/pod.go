@@ -58,6 +58,7 @@ type PodOptions struct {
 	Namespace          string
 	ServiceAccountName string
 	Volumes            map[string]string
+	BlockVolumes       map[string]string
 	// PodSecurityContext and ContainerSecurityContext can be used to set the security context
 	// at the pod level and container level respectively.
 	// You can still use podOverride to set the pod security context, but these fields will take precedence.
@@ -97,10 +98,15 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		opts.RestartPolicy = v1.RestartPolicyNever
 	}
 
-	volumeMounts, podVolumes, err := createVolumeSpecs(opts.Volumes)
+	volumeMounts, podVolumes, err := createFilesystemModeVolumeSpecs(opts.Volumes)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create volume spec")
 	}
+	volumeDevices, blockVolumes, err := createBlockModeVolumeSpecs(opts.BlockVolumes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create raw block volume spec")
+	}
+	podVolumes = append(podVolumes, blockVolumes...)
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
 			{
@@ -109,6 +115,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 				Command:         opts.Command,
 				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 				VolumeMounts:    volumeMounts,
+				VolumeDevices:   volumeDevices,
 				Resources:       opts.Resources,
 			},
 		},
@@ -184,7 +191,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
 	pod, err := GetPodObjectFromPodOptions(cli, opts)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", pod.Namespace, opts.GenerateName)
+		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 
 	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
