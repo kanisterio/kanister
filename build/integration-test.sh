@@ -34,6 +34,7 @@ OC_APPS4_5="MysqlDBDepConfig4_5|MongoDBDepConfig4_5|PostgreSQLDepConfig4_5"
 # MongoDB is not provided as external DB template in release 4.9 anymore
 # https://github.com/openshift/origin/commit/4ea9e6c5961eb815c200df933eee30c48a5c9166
 OC_APPS4_10="MysqlDBDepConfig4_10|PostgreSQLDepConfig4_10"
+OC_APPS4_11="MysqlDBDepConfig4_11|PostgreSQLDepConfig4_11"
 
 check_dependencies() {
     # Check if minio is already deployed
@@ -57,7 +58,7 @@ Where app-type is one of [short|all]:
   all: Runs e2e integration tests for all apps
   OR
   You can also provide regex to match apps you want to run.
-  openshift ocp_version=<ocp_version>: Runs e2e integration tests for specific version of OpenShift apps, OCP version can be provided using ocp_version argument. Currently supported versions are 3.11, 4.4, 4.5 and 4.10.
+  openshift ocp_version=<ocp_version>: Runs e2e integration tests for specific version of OpenShift apps, OCP version can be provided using ocp_version argument. Currently supported versions are 3.11, 4.4, 4.5, 4.10, 4.11.
 
 EOM
     exit 1
@@ -90,6 +91,9 @@ case "${1}" in
                 ;;
             "4.10")
                 TEST_APPS=${OC_APPS4_10}
+                ;;
+            "4.11")
+                TEST_APPS=${OC_APPS4_11}
                 ;;
             *)
                 usage
