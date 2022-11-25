@@ -75,11 +75,13 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	logger.Info("Check if the RepositoryServer CR status is already ServerReady. End if ServerReady.")
+	if repositoryServer.Status.Progress == crkanisteriov1alpha1.ServerReady {
+		return ctrl.Result{}, nil
+	}
+
 	logger.Info("Setting the CR status as 'ServerPending' since a create or update event is in progress")
 	repositoryServer.Status.Progress = crkanisteriov1alpha1.ServerPending
-	if err = r.Status().Update(ctx, repositoryServer); err != nil {
-		return ctrl.Result{}, err
-	}
 
 	logger.Info("Found RepositoryServer CR. Create or update owned resources")
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
@@ -118,6 +120,8 @@ func newRepositoryServerHandler(
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *RepositoryServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// The 'Owns' function allows the controller to set owner refs on
+	// child resources and run the same reconcile loop for all events on child resources
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&crkanisteriov1alpha1.RepositoryServer{}).
 		Owns(&corev1.Service{}).
