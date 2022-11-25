@@ -125,6 +125,13 @@ To explore other features of Kopia, see its
 - The version management scheme for these functions is out of scope of this
    document and will be discussed separately.
 
+**Please note an important update here**
+- The design for implementing these Kanister Functions
+is still a work in-progress.
+- The above-mentioned versioning of Kanister Functions may not be the
+final design.
+- We plan to submit a new Pull Request stating a more detailed design of these Kanister Functions, shortly.
+
 ### Kopia Repository
 
 - As mentioned above, the backup storage location is called a "Repository"
