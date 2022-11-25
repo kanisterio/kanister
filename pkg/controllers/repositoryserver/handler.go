@@ -15,7 +15,9 @@
 package repositoryserver
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -31,18 +33,21 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
+
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 type RepoServerHandler struct {
-	Ctx              context.Context
-	Req              ctrl.Request
-	Logger           logr.Logger
-	Reconciler       *RepositoryServerReconciler
-	KubeCli          kubernetes.Interface
-	RepositoryServer *crv1alpha1.RepositoryServer
+	Ctx                     context.Context
+	Req                     ctrl.Request
+	Logger                  logr.Logger
+	Reconciler              *RepositoryServerReconciler
+	KubeCli                 kubernetes.Interface
+	RepositoryServer        *crv1alpha1.RepositoryServer
+	RepositoryServerSecrets repositoryServerSecrets
 }
 
 func (h *RepoServerHandler) CreateOrUpdateOwnedResources() error {
@@ -53,11 +58,10 @@ func (h *RepoServerHandler) CreateOrUpdateOwnedResources() error {
 	if err := h.reconcileNetworkPolicy(svc); err != nil {
 		return err
 	}
-	podOverride, err := h.preparePodOverride()
-	if err != nil {
+	if err = h.getSecretsFromCR(); err != nil {
 		return err
 	}
-	pod, err := h.reconcilePod(podOverride, svc)
+	pod, err := h.reconcilePod(svc)
 	if err != nil {
 		return err
 	}
@@ -250,20 +254,7 @@ func (h *RepoServerHandler) createNetworkPolicy(
 	return np, nil
 }
 
-func (h *RepoServerHandler) preparePodOverride() (map[string]interface{}, error) {
-	namespace := h.RepositoryServer.GetNamespace()
-	podOverride, err := getPodOverride(h.Ctx, h.Reconciler, namespace)
-	if err != nil {
-		return nil, err
-	}
-	if err := addTLSCertConfigurationInPodOverride(
-		&podOverride, h.RepositoryServer.Spec.Server.TLSSecretRef.Name); err != nil {
-		return nil, errors.Wrap(err, "Failed to attach TLS Certificate configuration")
-	}
-	return podOverride, nil
-}
-
-func (h *RepoServerHandler) reconcilePod(podOverride map[string]interface{}, svc *corev1.Service) (*corev1.Pod, error) {
+func (h *RepoServerHandler) reconcilePod(svc *corev1.Service) (*corev1.Pod, error) {
 	repoServerNamespace := h.RepositoryServer.Namespace
 	podName := h.RepositoryServer.Status.ServerInfo.PodName
 	pod := &corev1.Pod{}
@@ -276,7 +267,7 @@ func (h *RepoServerHandler) reconcilePod(podOverride map[string]interface{}, svc
 		return nil, err
 	}
 	h.Logger.Info("Pod resource not found. Creating new Pod")
-	pod, err = h.createPod(repoServerNamespace, svc, podOverride)
+	pod, err = h.createPod(repoServerNamespace, svc)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +288,9 @@ func (h *RepoServerHandler) updatePod(pod *corev1.Pod, svc *corev1.Service) (*co
 	if err != nil {
 		return nil, err
 	}
-	// TODO: Reconcile all SecretRefs in CR with Secrets Mounts in Pod here, before updating the pod below
+	// TODO: Override the updated pod spec with expected pod spec here
+	//  using the data from all Secrets in CR as either EnvVars or Volume Mounts
+	// 	before updating it below
 	if err := h.Reconciler.Update(h.Ctx, pod); err != nil {
 		return nil, err
 	}
@@ -316,12 +309,13 @@ func (h *RepoServerHandler) updateServiceNameInPodLabels(pod *corev1.Pod, svc *c
 	return pod, nil
 }
 
-func (h *RepoServerHandler) createPod(
-	repoServerNamespace string,
-	svc *corev1.Service,
-	podOverride map[string]interface{}) (*corev1.Pod, error) {
+func (h *RepoServerHandler) createPod(repoServerNamespace string, svc *corev1.Service) (*corev1.Pod, error) {
+	podOverride, err := h.preparePodOverride()
+	if err != nil {
+		return nil, err
+	}
 	podOptions := getPodOptions(repoServerNamespace, podOverride, svc)
-	pod, err := kube.GetPodObjectFromPodOptions(h.KubeCli, podOptions)
+	pod, err := h.setCredDataFromSecretInPod(podOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -333,6 +327,48 @@ func (h *RepoServerHandler) createPod(
 		return nil, errors.Wrap(err, "Failed to create RepositoryServer pod")
 	}
 	return pod, nil
+}
+
+func (h *RepoServerHandler) setCredDataFromSecretInPod(podOptions *kube.PodOptions) (*corev1.Pod, error) {
+	h.Logger.Info("Setting credentials data from secret as either env variables or files in pod")
+	namespace := h.RepositoryServer.Namespace
+	storageCredSecret := h.RepositoryServerSecrets.storageCredentials
+	envVars, err := storage.GenerateEnvSpecFromCredentialSecret(&storageCredSecret)
+	if err != nil {
+		return nil, err
+	}
+	var pod *corev1.Pod
+	if envVars != nil {
+		podOptions.EnvironmentVariables = envVars
+	}
+	pod, err = kube.GetPodObjectFromPodOptions(h.KubeCli, podOptions)
+	if err != nil {
+		return nil, err
+	}
+	if envVars == nil {
+		if val, ok := storageCredSecret.Data[googleCloudServiceAccFileName]; ok {
+			val, err = base64.StdEncoding.DecodeString(string(val))
+			gcloudCredsFilePath := fmt.Sprintf("%s/%s", googleCloudCredsDirPath, googleCloudServiceAccFileName)
+			pw := kube.NewPodWriter(h.KubeCli, gcloudCredsFilePath, bytes.NewBufferString(string(val)))
+			if err := pw.Write(h.Ctx, namespace, pod.Name, repoServerPodContainerName); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return pod, nil
+}
+
+func (h *RepoServerHandler) preparePodOverride() (map[string]interface{}, error) {
+	namespace := h.RepositoryServer.GetNamespace()
+	podOverride, err := getPodOverride(h.Ctx, h.Reconciler, namespace)
+	if err != nil {
+		return nil, err
+	}
+	if err := addTLSCertConfigurationInPodOverride(
+		&podOverride, h.RepositoryServerSecrets.serverTLS.Name); err != nil {
+		return nil, errors.Wrap(err, "Failed to attach TLS Certificate configuration")
+	}
+	return podOverride, nil
 }
 
 func (h *RepoServerHandler) updateServerInfoInCRStatus(info crv1alpha1.ServerInfo) error {

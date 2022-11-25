@@ -41,6 +41,10 @@ const (
 	repoServerServiceProtocol = "TCP"
 	repoServerServicePort     = 51515
 
+	repoServerPodContainerName    = "repo-server-container"
+	googleCloudCredsDirPath       = "/mnt/secrets/creds/gcloud"
+	googleCloudServiceAccFileName = "service-account.json"
+
 	// CustomCACertName is the name of the custom root CA certificate
 	customCACertName        = "custom-ca-bundle.pem"
 	tlsCertVolumeName       = "kopia-cert"
@@ -220,11 +224,12 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 
 func getPodOptions(namespace string, podOverride map[string]interface{}, svc *corev1.Service) *kube.PodOptions {
 	return &kube.PodOptions{
-		Namespace:    namespace,
-		GenerateName: fmt.Sprintf("%s-", repoServerPod),
-		Image:        consts.LatestKanisterToolsImage,
-		Command:      []string{"bash", "-c", "tail -f /dev/null"},
-		PodOverride:  podOverride,
-		Labels:       map[string]string{repoServerServiceNameKey: svc.Name},
+		Namespace:     namespace,
+		GenerateName:  fmt.Sprintf("%s-", repoServerPod),
+		Image:         consts.LatestKanisterToolsImage,
+		ContainerName: repoServerPodContainerName,
+		Command:       []string{"bash", "-c", "tail -f /dev/null"},
+		PodOverride:   podOverride,
+		Labels:        map[string]string{repoServerServiceNameKey: svc.Name},
 	}
 }
