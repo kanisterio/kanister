@@ -95,7 +95,7 @@ func (pdb *PostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 	// Install helm chart
-	return cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Version, pdb.chart.Release, pdb.namespace, pdb.chart.Values)
+	return cli.Install(ctx, fmt.Sprintf("%s/%s", pdb.chart.RepoName, pdb.chart.Chart), pdb.chart.Version, pdb.chart.Release, pdb.namespace, pdb.chart.Values, true)
 }
 
 func (pdb *PostgresDB) IsReady(ctx context.Context) (bool, error) {
@@ -143,7 +143,7 @@ func (pdb *PostgresDB) Ping(ctx context.Context) error {
 }
 
 func (pdb PostgresDB) Insert(ctx context.Context) error {
-	cmd := fmt.Sprintf("PGPASSWORD=${POSTGRES_PASSWORD} psql -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\"")
+	cmd := "PGPASSWORD=${POSTGRES_PASSWORD} psql -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\""
 	_, stderr, err := pdb.execCommand(ctx, []string{"sh", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create db in postgresql. %s", stderr)

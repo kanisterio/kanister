@@ -92,7 +92,7 @@ func Write(ctx context.Context, source io.Reader, path, password string) (*Snaps
 
 	// This creates a virtual directory tree rooted at a static directory
 	// with path as `parentPath` and a kopia fs.StreamingFile as the single child entry
-	rootDir := virtualfs.NewStaticDirectory(sourceInfo.Path, fs.Entries{
+	rootDir := virtualfs.NewStaticDirectory(sourceInfo.Path, []fs.Entry{
 		virtualfs.StreamingFileFromReader(filepath.Base(path), source),
 	})
 
@@ -178,7 +178,7 @@ func resolveSymlink(path string) (string, error) {
 		return path, nil
 	}
 
-	// nolint:wrapcheck
+	//nolint:wrapcheck
 	return filepath.EvalSymlinks(path)
 }
 

@@ -7,16 +7,18 @@ builds:
   binary: kanctl
   main: cmd/kanctl/main.go
   ldflags: &ldflags
-  - -s -w
+  - -extldflags "-static"
     -X github.com/kanisterio/kanister/pkg/version.VERSION={{.Version}}
     -X github.com/kanisterio/kanister/pkg/version.GIT_COMMIT={{.Commit}}
     -X github.com/kanisterio/kanister/pkg/version.BUILD_DATE={{.Date}}
   env: &env
   - GO111MODULE=on
-  - CGO_ENABLED=0
+  - CGO_ENABLED=1
+  - GOEXPERIMENT=boringcrypto
+  - CC=gcc
+  - CXX=g++
   - GO_EXTLINK_ENABLED=0
   goos:
-  - darwin
   - linux
   goarch: &goarch
   - amd64
@@ -48,6 +50,9 @@ dockers:
   dockerfile: 'docker/tools/Dockerfile'
   build_flag_templates:
   - "--build-arg=kan_tools_version={{ .Tag }}"
+# Refers to https://github.com/kopia/kopia/commit/317cc36892707ab9bdc5f6e4dea567d1e638a070
+  - "--build-arg=kopiaBuildCommit=317cc36"
+  - "--build-arg=kopiaRepoOrg=kopia"
   extra_files:
   - 'LICENSE'
 - ids:
@@ -70,8 +75,6 @@ dockers:
   dockerfile: 'docker/kanister-elasticsearch/image/Dockerfile'
   build_flag_templates:
   - "--build-arg=TOOLS_IMAGE=ghcr.io/kanisterio/kanister-tools:{{ .Tag }}"
-  extra_files:
-  - 'docker/kanister-elasticsearch/image/esdump-setup.sh'
 - ids:
   - kando
   image_templates:

@@ -79,6 +79,12 @@ The Kanister architecture is documented
 If you have any questions or run into issues, feel free to reach out to us on
 [Slack](https://kanisterio.slack.com).
 
+GitHub issues or pull requests that have been inactive for more than 60 days
+will be labeled as stale. If they remained inactive for another 30 days, they
+will be automatically closed. To be exempted from the issue lifecycle, discuss
+with a maintainer the reasons behind the exemption, and add the `frozen` label
+to the issue or pull request.
+
 If you discovered any security issues, refer to our [`SECURITY.md`](SECURITY.md)
 documentation for our security policy, including steps on how to report
 vulnerabilities.
@@ -100,6 +106,7 @@ minutes to review our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Resources
 
+- [CNCF - Enhancing data protection workflows with Kanister and Argo workflows](https://youtu.be/nqfP1e9jeU4)
 - [CNCF - Kanister: Application-Level Data Protection on Kubneretes](https://youtu.be/GSgFwAHLziA)
 - [CNCF - Integrating Backup Into Your GitOps CI/CD Pipeline](https://www.youtube.com/watch?v=2zik5jDjVvM)
 - [DoK - Kanister & Kopia: An Open-Source Data Protection Match Made in Heaven](https://www.youtube.com/watch?v=hN8sn3A_oEs)
