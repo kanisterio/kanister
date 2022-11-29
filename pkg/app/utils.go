@@ -23,7 +23,7 @@ import (
 const (
 	dbTemplateURI = "https://raw.githubusercontent.com/openshift/origin/%s/examples/db-templates/%s-%s-template.json"
 	// PersistentStorage can be used if we want to deploy database with Persistent Volumes
-	PersistentStorage storage = "persistent" // nolint:varcheck
+	PersistentStorage storage = "persistent" //nolint:varcheck
 
 	// EphemeralStorage can be used if we don't want to deploy database with Persistent
 	EphemeralStorage storage = "ephemeral"
@@ -35,6 +35,8 @@ const (
 	TemplateVersionOCP4_5 DBTemplate = "release-4.5"
 	// TemplateVersionOCP4_10 stores version of db template 4.10
 	TemplateVersionOCP4_10 DBTemplate = "release-4.10"
+	// TemplateVersionOCP4_11 stores version of db template 4.11
+	TemplateVersionOCP4_11 DBTemplate = "release-4.11"
 )
 
 type storage string

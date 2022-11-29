@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	uuid "github.com/gofrs/uuid"
+	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 	"github.com/vmware/govmomi/cns"
 	govmomitask "github.com/vmware/govmomi/task"
@@ -51,11 +51,16 @@ const (
 	// Note: it is up to the creator of the provider to determine if a para-virtualized environment exists.
 	VSphereIsParaVirtualizedKey = "VSphereIsParaVirtualizedKey"
 
-	noDescription     = ""
 	defaultWaitTime   = 60 * time.Minute
 	defaultRetryLimit = 30 * time.Minute
 
 	vmWareTimeoutMinEnv = "VMWARE_GOM_TIMEOUT_MIN"
+
+	// DescriptionTag is the prefix of the tags that should be placed in the snapshot description.
+	// This constant must be used by clients, so changing this field may make already created snapshots inaccessible.
+	DescriptionTag = "kanister.fcd.description"
+	// VolumeIDListTag is the predefined name of the tag which contains volume ids separated by comma
+	VolumeIDListTag = "kanister.fcd.volume-id"
 )
 
 var (
@@ -251,38 +256,47 @@ var reVslmSyncFaultFatal = regexp.MustCompile("Change tracking invalid or disk i
 // SnapshotCreate is part of blockstorage.Provider
 func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Volume, tags map[string]string) (*blockstorage.Snapshot, error) {
 	var res types.AnyType
+	description := generateSnapshotDescription(tags)
 	err := wait.PollImmediate(time.Second, defaultRetryLimit, func() (bool, error) {
-		log.Debug().Print("CreateSnapshot", field.M{"VolumeID": volume.ID})
-		task, lerr := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), noDescription)
-		if lerr != nil {
-			return false, errors.Wrap(lerr, "CreateSnapshot task creation failure")
+		timeOfCreateSnapshotCall := time.Now()
+		var createErr error
+		res, createErr = p.createSnapshotAndWaitForCompletion(volume, ctx, description)
+		if createErr == nil {
+			return true, nil
 		}
-		log.Debug().Print("Started CreateSnapshot task", field.M{"VolumeID": volume.ID})
-		res, lerr = task.Wait(ctx, vmWareTimeout)
-		if lerr != nil {
-			if soap.IsVimFault(lerr) {
-				switch soap.ToVimFault(lerr).(type) {
-				case *types.InvalidState:
-					log.Error().WithError(lerr).Print("There is some operation, other than this CreateSnapshot invocation, on the VM attached still being protected by its VM state. Will retry", field.M{"VolumeID": volume.ID})
-					return false, nil
-				case *vslmtypes.VslmSyncFault: // potentially can leak snapshots
-					if vFault, ok := soap.ToVimFault(lerr).(*vslmtypes.VslmSyncFault); ok {
-						log.Error().Print(fmt.Sprintf("VslmSyncFault: %#v", vFault))
-					}
-					if !(govmomiError{lerr}).Matches(reVslmSyncFaultFatal) {
-						log.Error().Print(fmt.Sprintf("CreateSnapshot failed with VslmSyncFault. Will retry: %s", (govmomiError{lerr}).Format()), field.M{"VolumeID": volume.ID})
-						return false, nil
-					}
-					return false, errors.Wrap(lerr, "CreateSnapshot failed with VslmSyncFault. A snapshot may have been created by this failed operation")
-				case *types.NotFound:
-					log.Error().WithError(lerr).Print("CreateSnapshot failed with NotFound error. Will retry", field.M{"VolumeID": volume.ID})
-					return false, nil
-				}
+
+		// it's possible that snapshot was created despite of SOAP errors,
+		// we're trying to find snapshot created in the current iteration(using timeOfCreateSnapshotCall)
+		// so we won't reuse snapshots created in previous runs
+		foundSnapId := p.getCreatedSnapshotID(ctx, description, volume.ID, timeOfCreateSnapshotCall)
+		if foundSnapId != nil {
+			res = *foundSnapId
+			log.Error().WithError(createErr).Print("snapshot created with errors")
+			return true, nil
+		}
+
+		if !soap.IsVimFault(createErr) {
+			return false, errors.Wrap(createErr, "Failed to wait on task")
+		}
+
+		// snapshot wasn't created, handle the different SOAP errors then retry
+		switch t := soap.ToVimFault(createErr).(type) {
+		case *types.InvalidState:
+			log.Error().WithError(createErr).Print("There is some operation, other than this CreateSnapshot invocation, on the VM attached still being protected by its VM state. Will retry", field.M{"VolumeID": volume.ID})
+			return false, nil
+		case *vslmtypes.VslmSyncFault: // potentially can leak snapshots
+			log.Error().Print(fmt.Sprintf("VslmSyncFault: %#v", t))
+			if !(govmomiError{createErr}).Matches(reVslmSyncFaultFatal) {
+				log.Error().Print(fmt.Sprintf("CreateSnapshot failed with VslmSyncFault. Will retry: %s", (govmomiError{createErr}).Format()), field.M{"VolumeID": volume.ID})
+				return false, nil
 			}
-			return false, errors.Wrap(lerr, "Failed to wait on task")
+			return false, errors.Wrap(createErr, "CreateSnapshot failed with VslmSyncFault. A snapshot may have been created by this failed operation")
+		case *types.NotFound:
+			log.Error().WithError(createErr).Print("CreateSnapshot failed with NotFound error. Will retry", field.M{"VolumeID": volume.ID})
+			return false, nil
+		default:
+			return false, errors.Wrap(createErr, "Failed to wait on task")
 		}
-		log.Debug().Print("CreateSnapshot task complete", field.M{"VolumeID": volume.ID})
-		return true, nil
 	})
 	if err != nil {
 		log.Error().WithError(err).Print(fmt.Sprintf("Failed to create snapshot for FCD %s: %s", volume.ID, govmomiError{err}.Format()))
@@ -303,7 +317,7 @@ func (p *FcdProvider) SnapshotCreate(ctx context.Context, volume blockstorage.Vo
 	}
 	snap.Volume = &volume
 
-	if err = p.SetTags(ctx, snap, tags); err != nil {
+	if err = p.SetTags(ctx, snap, getTagsWithoutDescription(tags)); err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("Failed to set tags for snapshot %s:%s", volume.ID, snap.ID))
 	}
 
@@ -465,6 +479,87 @@ func (p *FcdProvider) GetCategoryID(ctx context.Context, categoryName string) (s
 	return cat.ID, nil
 }
 
+// SnapshotsList is part of blockstorage.Provider
+func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
+	if filterStr := generateSnapshotDescription(tags); filterStr != "" {
+		volumeIDs := strings.Split(tags[VolumeIDListTag], ",")
+		if len(volumeIDs) == 0 {
+			return nil, errors.New("vSphere can't list by description without list of volumes. Cannot list snapshots")
+		}
+		return p.snapshotsListByDescription(ctx, volumeIDs, filterStr)
+	}
+	return p.snapshotsListByTag(ctx, tags)
+}
+
+func (p *FcdProvider) createSnapshotAndWaitForCompletion(volume blockstorage.Volume, ctx context.Context, description string) (types.AnyType, error) {
+	log.Debug().Print("CreateSnapshot", field.M{"VolumeID": volume.ID})
+	task, err := p.Gom.CreateSnapshot(ctx, vimID(volume.ID), description)
+	if err != nil {
+		return nil, errors.Wrap(err, "CreateSnapshot task creation failure")
+	}
+	log.Debug().Print("Started CreateSnapshot task", field.M{"VolumeID": volume.ID})
+	return task.Wait(ctx, vmWareTimeout)
+}
+
+func (p *FcdProvider) getCreatedSnapshotID(ctx context.Context, description string, volID string, notEarlierThan time.Time) *types.ID {
+	var filteredSns []*blockstorage.Snapshot
+	sns, err := p.snapshotsListByDescription(ctx, []string{volID}, description)
+	if err != nil {
+		log.Error().WithError(err).Print("Failed to list when checking failed creation")
+		return nil
+	}
+
+	for _, sn := range sns {
+		if notEarlierThan.Before((time.Time)(sn.CreationTime)) {
+			filteredSns = append(filteredSns, sn)
+		}
+	}
+
+	if len(filteredSns) == 1 {
+		_, snapID, err := SplitSnapshotFullID(filteredSns[0].ID)
+		if err != nil {
+			log.Error().WithError(err)
+			return nil
+		}
+		return &types.ID{
+			Id: snapID,
+		}
+	}
+
+	if len(filteredSns) > 1 {
+		log.Error().Print(fmt.Sprintf("More than one snapshot was found, IDs: %s", strings.Join(getSnapshotsIDs(filteredSns), ",")))
+	}
+	return nil
+}
+
+func generateSnapshotDescription(tags map[string]string) string {
+	var tagsAsStr []string
+	for name, value := range tags {
+		if strings.HasPrefix(name, DescriptionTag) {
+			tagsAsStr = append(tagsAsStr, fmt.Sprintf("%s:%s", name, value))
+		}
+	}
+	return strings.Join(tagsAsStr, ",")
+}
+
+func getTagsWithoutDescription(tags map[string]string) map[string]string {
+	result := make(map[string]string, len(tags))
+	for name, value := range tags {
+		if !strings.HasPrefix(name, DescriptionTag) {
+			result[name] = value
+		}
+	}
+	return result
+}
+
+func getSnapshotsIDs(snapshots []*blockstorage.Snapshot) []string {
+	result := make([]string, 0, len(snapshots))
+	for _, snapshot := range snapshots {
+		result = append(result, snapshot.ID)
+	}
+	return result
+}
+
 // snapshotTag is the struct that will be used to create vmware tags
 // the tags are of the form volid:snapid:tag:value
 // these tags are assigned to a predefined category that is initialized by the FcdProvider
@@ -568,8 +663,25 @@ func (p *FcdProvider) getSnapshotTags(ctx context.Context, fullSnapshotID string
 	return p.getTagsFromSnapshotID(categoryTags, fullSnapshotID)
 }
 
-// SnapshotsList is part of blockstorage.Provider
-func (p *FcdProvider) SnapshotsList(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
+func (p *FcdProvider) snapshotsListByDescription(ctx context.Context, volumeIDs []string, filterStr string) ([]*blockstorage.Snapshot, error) {
+	var result []*blockstorage.Snapshot
+	for _, volID := range volumeIDs {
+		snapshots, _ := p.Gom.RetrieveSnapshotInfo(ctx, vimID(volID))
+		for _, snapshot := range snapshots {
+			if snapshot.Description == filterStr {
+				sn, err := convertFromObjectToSnapshot(&snapshot, volID)
+				if err != nil {
+					return nil, errors.Wrap(err, "Failed to convert object to snapshot")
+				}
+				result = append(result, sn)
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func (p *FcdProvider) snapshotsListByTag(ctx context.Context, tags map[string]string) ([]*blockstorage.Snapshot, error) {
 	if p.categoryID == "" {
 		log.Debug().Print("vSphere snapshot tagging is disabled (categoryID not set). Cannot list snapshots")
 		return nil, nil
@@ -679,6 +791,7 @@ func (ge govmomiError) Format() string {
 	return fmt.Sprintf("[%s]", strings.Join(msgs, "; "))
 }
 
+//nolint:gocognit
 func (ge govmomiError) ExtractMessages() []string {
 	err := ge.err
 

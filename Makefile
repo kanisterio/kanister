@@ -41,8 +41,9 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 
 # Mention the vm-driver that should be used to install OpenShift
 vm-driver ?= "kvm"
+
 # Default OCP version in which the OpenShift apps are going to run
-ocp_version ?= "4.10"
+ocp_version ?= "4.11"
 ###
 ### These variables should not need tweaking.
 ###
@@ -57,7 +58,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.18
+BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.22
 
 # tag 0.1.0 is, 0.0.1 (latest) + gh + aws + helm binary
 DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
@@ -65,6 +66,8 @@ DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
 DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
 
 GITHUB_TOKEN ?= ""
+
+GOBORING ?= ""
 
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
@@ -101,6 +104,7 @@ bin/$(ARCH)/$(BIN):
 		VERSION=$(VERSION) \
 		PKG=$(PKG)         \
 		BIN=$(BIN) \
+		GOBORING=$(GOBORING) \
 		./build/build.sh   \
 	"'
 # Example: make shell CMD="-c 'date > datefile'"

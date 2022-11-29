@@ -42,8 +42,10 @@ type MysqlDB struct {
 	chart     helm.ChartInfo
 }
 
+var _ HelmApp = &MysqlDB{}
+
 // Last tested working version "6.14.11"
-func NewMysqlDB(name string) App {
+func NewMysqlDB(name string) HelmApp {
 	return &MysqlDB{
 		name: name,
 		chart: helm.ChartInfo{
@@ -57,6 +59,14 @@ func NewMysqlDB(name string) App {
 			},
 		},
 	}
+}
+
+func (mdb *MysqlDB) Chart() *helm.ChartInfo {
+	return &mdb.chart
+}
+
+func (mdb *MysqlDB) SetChart(chart helm.ChartInfo) {
+	mdb.chart = chart
 }
 
 func (mdb *MysqlDB) Init(ctx context.Context) error {
@@ -86,7 +96,7 @@ func (mdb *MysqlDB) Install(ctx context.Context, namespace string) error {
 	}
 
 	log.Print("Installing mysql instance using helm.", field.M{"app": mdb.name})
-	err = cli.Install(ctx, mdb.chart.RepoName+"/"+mdb.chart.Chart, mdb.chart.Version, mdb.chart.Release, mdb.namespace, mdb.chart.Values)
+	err = cli.Install(ctx, mdb.chart.RepoName+"/"+mdb.chart.Chart, mdb.chart.Version, mdb.chart.Release, mdb.namespace, mdb.chart.Values, true)
 	if err != nil {
 		return errors.Wrapf(err, "Error intalling application %s through helm.", mdb.name)
 	}

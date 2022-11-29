@@ -25,7 +25,7 @@ package blueprint
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 
 	"k8s.io/apimachinery/pkg/util/yaml"
 
@@ -34,7 +34,7 @@ import (
 
 // ReadFromFile parsed and returns Blueprint specs placed at blueprints/{app}-blueprint.yaml
 func ReadFromFile(path string) (*crv1alpha1.Blueprint, error) {
-	bpRaw, err := ioutil.ReadFile(path)
+	bpRaw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

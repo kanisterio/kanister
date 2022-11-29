@@ -55,7 +55,7 @@ type ElasticsearchInstance struct {
 	elasticsearchURL string
 }
 
-// Last tested on 7.10.1
+// Last tested on 8.5.1
 func NewElasticsearchInstance(name string) App {
 	return &ElasticsearchInstance{
 		name:      name,
@@ -71,7 +71,7 @@ func NewElasticsearchInstance(name string) App {
 				"replicas":     "1",
 			},
 		},
-		elasticsearchURL: "localhost:9200",
+		elasticsearchURL: "https://localhost:9200",
 	}
 }
 
@@ -99,7 +99,7 @@ func (esi *ElasticsearchInstance) Install(ctx context.Context, namespace string)
 		return err
 	}
 
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.chart.Release, esi.namespace, esi.chart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", esi.chart.RepoName, esi.chart.Chart), esi.chart.Version, esi.chart.Release, esi.namespace, esi.chart.Values, true)
 	if err != nil {
 		return err
 	}
@@ -144,6 +144,16 @@ func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
 	return nil
 }
 
+func (esi *ElasticsearchInstance) Secrets() map[string]crv1alpha1.ObjectReference {
+	return map[string]crv1alpha1.ObjectReference{
+		"elasticsearch": crv1alpha1.ObjectReference{
+			Kind:      "Secret",
+			Name:      esi.chart.Chart + "-master-credentials",
+			Namespace: esi.namespace,
+		},
+	}
+}
+
 func (esi *ElasticsearchInstance) GetClusterScopedResources(ctx context.Context) []crv1alpha1.ObjectReference {
 	return nil
 }
@@ -151,7 +161,7 @@ func (esi *ElasticsearchInstance) GetClusterScopedResources(ctx context.Context)
 func (esi *ElasticsearchInstance) Ping(ctx context.Context) error {
 	log.Print("Pinging the application to check if its accessible.", field.M{"app": esi.name})
 
-	pingCMD := []string{"sh", "-c", fmt.Sprintf("curl %s", esi.elasticsearchURL)}
+	pingCMD := []string{"sh", "-c", esi.curlCommand("GET", "")}
 	_, stderr, err := esi.execCommand(ctx, pingCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to ping the application. Error:%s", stderr)
@@ -161,7 +171,7 @@ func (esi *ElasticsearchInstance) Ping(ctx context.Context) error {
 	return nil
 }
 func (esi *ElasticsearchInstance) Insert(ctx context.Context) error {
-	addDocumentToIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X POST %s/%s/_doc/?refresh=true -H 'Content-Type: application/json' -d'{\"appname\": \"kanister\" }'", esi.elasticsearchURL, esi.indexname)}
+	addDocumentToIndexCMD := []string{"sh", "-c", esi.curlCommandWithPayload("POST", esi.indexname+"/_doc/?refresh=true", "'{\"appname\": \"kanister\" }'")}
 	_, stderr, err := esi.execCommand(ctx, addDocumentToIndexCMD)
 	if err != nil {
 		// even one insert failed we will have to return becasue
@@ -174,7 +184,7 @@ func (esi *ElasticsearchInstance) Insert(ctx context.Context) error {
 }
 
 func (esi *ElasticsearchInstance) Count(ctx context.Context) (int, error) {
-	documentCountCMD := []string{"sh", "-c", fmt.Sprintf("curl %s/%s/_search?pretty", esi.elasticsearchURL, esi.indexname)}
+	documentCountCMD := []string{"sh", "-c", esi.curlCommand("GET", esi.indexname+"/_search?pretty")}
 	stdout, stderr, err := esi.execCommand(ctx, documentCountCMD)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error %s Counting the documents in an index.", stderr)
@@ -195,7 +205,7 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 	log.Print("Resetting the application.", field.M{"app": esi.name})
 
 	// delete the index and then create it, in order to reset the es application
-	deleteIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X DELETE %s/%s?pretty", esi.elasticsearchURL, esi.indexname)}
+	deleteIndexCMD := []string{"sh", "-c", esi.curlCommand("DELETE", esi.indexname+"/?pretty")}
 	_, stderr, err := esi.execCommand(ctx, deleteIndexCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s while deleting the index %s to reset the application.", stderr, esi.indexname)
@@ -207,7 +217,7 @@ func (esi *ElasticsearchInstance) Reset(ctx context.Context) error {
 // Initialize is used to initialize the database or create schema
 func (esi *ElasticsearchInstance) Initialize(ctx context.Context) error {
 	// create the index
-	createIndexCMD := []string{"sh", "-c", fmt.Sprintf("curl -X PUT %s/%s?pretty", esi.elasticsearchURL, esi.indexname)}
+	createIndexCMD := []string{"sh", "-c", esi.curlCommand("PUT", esi.indexname+"/?pretty")}
 	_, stderr, err := esi.execCommand(ctx, createIndexCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s: Resetting the application.", stderr)
@@ -221,4 +231,12 @@ func (esi *ElasticsearchInstance) execCommand(ctx context.Context, command []str
 		return "", "", errors.Wrapf(err, "Error getting the pod and container name %s.", esi.name)
 	}
 	return kube.Exec(esi.cli, esi.namespace, podname, containername, command, nil)
+}
+
+func (esi *ElasticsearchInstance) curlCommand(method, path string) string {
+	return fmt.Sprintf("curl -k -X %s -H 'Content-Type: application/json' -u elastic:${ELASTIC_PASSWORD} %s/%s", method, esi.elasticsearchURL, path)
+}
+
+func (esi *ElasticsearchInstance) curlCommandWithPayload(method, path, data string) string {
+	return fmt.Sprintf("%s -d %s", esi.curlCommand(method, path), data)
 }

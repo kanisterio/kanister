@@ -29,7 +29,7 @@ import (
 type Directory struct {
 	dirEntry
 
-	children fs.Entries
+	children []fs.Entry
 }
 
 var _ (fs.Directory) = (*Directory)(nil)
@@ -67,12 +67,7 @@ func (d *Directory) AddAllDirs(pathname string, permissions os.FileMode) (subdir
 
 // Child gets the named child of a directory
 func (d *Directory) Child(ctx context.Context, name string) (fs.Entry, error) {
-	return fs.ReadDirAndFindChild(ctx, d, name)
-}
-
-// Readdir gets the contents of a directory
-func (d *Directory) Readdir(ctx context.Context) (fs.Entries, error) {
-	return append(fs.Entries(nil), d.children...), nil
+	return fs.IterateEntriesAndFindChild(ctx, d, name)
 }
 
 // Remove removes directory dirEntry with the given name
@@ -92,7 +87,7 @@ func (d *Directory) Remove(name string) {
 func (d *Directory) Subdir(name string) (*Directory, error) {
 	curr := d
 
-	subdir := curr.children.FindByName(name)
+	subdir := fs.FindByName(curr.children, name)
 	if subdir == nil {
 		return nil, errors.New(fmt.Sprintf("'%s' not found in '%s'", name, curr.Name()))
 	}
@@ -114,13 +109,13 @@ func (d *Directory) addChild(e fs.Entry) error {
 		return errors.New("Failed to add child entry: name cannot contain '/'")
 	}
 
-	child := d.children.FindByName(e.Name())
+	child := fs.FindByName(d.children, e.Name())
 	if child != nil {
 		return errors.New("Failed to add child entry: already exists")
 	}
 
 	d.children = append(d.children, e)
-	d.children.Sort()
+	fs.Sort(d.children)
 	return nil
 }
 
@@ -133,7 +128,7 @@ func (d *Directory) resolveDirs(pathname string) (parent *Directory, missing []s
 	p := d
 	parts := strings.Split(path.Clean(pathname), "/")
 	for i, n := range parts {
-		i2 := p.children.FindByName(n)
+		i2 := fs.FindByName(p.children, n)
 		if i2 == nil {
 			return p, parts[i:], nil
 		}
@@ -145,6 +140,23 @@ func (d *Directory) resolveDirs(pathname string) (parent *Directory, missing []s
 
 	return p, nil, nil
 }
+
+func (d *Directory) IterateEntries(ctx context.Context, cb func(context.Context, fs.Entry) error) error {
+	entries := append([]fs.Entry{}, d.children...)
+	for _, e := range entries {
+		if err := cb(ctx, e); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (d *Directory) SupportsMultipleIterations() bool {
+	return true
+}
+
+func (d *Directory) Close() {}
 
 // AddFileWithStreamSource adds a virtual file with the specified name, permissions and source
 func AddFileWithStreamSource(d *Directory, filePath, sourceEndpoint string, dirPermissions, filePermissions os.FileMode) (*file, error) {
