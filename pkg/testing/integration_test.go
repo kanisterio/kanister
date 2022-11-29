@@ -322,7 +322,7 @@ func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectRef
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Name:      "backup",
 					Object:    object,
 					Blueprint: bpName,
@@ -358,7 +358,7 @@ func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[st
 		// Validate BP action ConfigMapNames with the app.ConfigMaps references
 		for _, bpc := range action.ConfigMapNames {
 			validConfig := false
-			for appc, _ := range configMaps {
+			for appc := range configMaps {
 				if appc == bpc {
 					validConfig = true
 				}
@@ -368,7 +368,7 @@ func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[st
 		// Validate BP action SecretNames with the app.Secrets reference
 		for _, bps := range action.SecretNames {
 			validSecret := false
-			for apps, _ := range secrets {
+			for apps := range secrets {
 				if apps == bps {
 					validSecret = true
 				}

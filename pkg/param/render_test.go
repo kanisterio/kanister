@@ -144,7 +144,7 @@ func (s *RenderSuite) TestRenderObjects(c *C) {
 		},
 	}
 	in := map[string]crv1alpha1.ObjectReference{
-		"authSecret": crv1alpha1.ObjectReference{
+		"authSecret": {
 			Kind: SecretKind,
 			Name: "{{ .Object.spec.authSecret }}",
 		},
@@ -157,7 +157,7 @@ func (s *RenderSuite) TestRenderObjects(c *C) {
 func (s *RenderSuite) TestRenderArtifacts(c *C) {
 	tp := TemplateParams{
 		Phases: map[string]*Phase{
-			"myPhase": &Phase{
+			"myPhase": {
 				Output: map[string]interface{}{
 					"kopiaSnapshot": "a-snapshot-id",
 				},
@@ -173,13 +173,13 @@ func (s *RenderSuite) TestRenderArtifacts(c *C) {
 	}{
 		{
 			art: map[string]crv1alpha1.Artifact{
-				"myArt": crv1alpha1.Artifact{
+				"myArt": {
 					KopiaSnapshot: "{{ .Phases.myPhase.Output.kopiaSnapshot }}",
 				},
 			},
 			tp: tp,
 			out: map[string]crv1alpha1.Artifact{
-				"myArt": crv1alpha1.Artifact{
+				"myArt": {
 					KopiaSnapshot: "a-snapshot-id",
 				},
 			},
@@ -188,7 +188,7 @@ func (s *RenderSuite) TestRenderArtifacts(c *C) {
 
 		{
 			art: map[string]crv1alpha1.Artifact{
-				"myArt": crv1alpha1.Artifact{
+				"myArt": {
 					KeyValue: map[string]string{
 						"key": "{{ .Phases.myPhase.Output.kopiaSnapshot }}",
 					},
@@ -196,7 +196,7 @@ func (s *RenderSuite) TestRenderArtifacts(c *C) {
 			},
 			tp: tp,
 			out: map[string]crv1alpha1.Artifact{
-				"myArt": crv1alpha1.Artifact{
+				"myArt": {
 					KeyValue: map[string]string{
 						"key": "a-snapshot-id",
 					},
