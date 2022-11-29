@@ -442,6 +442,21 @@ Once the pod is running, the controller executes a set of Kopia CLI commands as
 follows.
 
 > 📝 The examples in this section use S3 for illustration purposes.
+- Create a Kopia repository if it doesnt already exists. Example command to
+create repository is as follows:
+
+```sh
+kopia repository create s3 \
+        --bucket=my-bucket \
+        --access-key=<redacted> \
+        --secret-access-key=<redacted> \
+       [--endpoint=https://foo.example.com \]
+       [--prefix=my-prefix \]
+       [--region=us-west-1 \]
+       --password=<redacted> \
+       --override-hostname=<hostname> \
+       --override-username=<username> \
+```
 
 - Establish a connection to the Kopia repository. This is equivalent to running
    the following command:
