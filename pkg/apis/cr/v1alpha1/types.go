@@ -51,9 +51,9 @@ var _ runtime.Object = (*ActionSet)(nil)
 type ActionSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	// Spec is the spec field present in the ActionSet.
+	// Spec defines the specification for ActionSet
 	Spec *ActionSetSpec `json:"spec,omitempty"`
-	// Status refers to the current status of the kanister actions.
+	// Status refers to the current status of the Kanister actions.
 	Status *ActionSetStatus `json:"status,omitempty"`
 }
 
@@ -78,7 +78,7 @@ type ObjectReference struct {
 
 // ActionSetSpec is the specification for the actionset.
 type ActionSetSpec struct {
-	// Actions are the array of specifications for the actionsset.
+	// List of Actions that need to be performed by the ActionSet.
 	Actions []ActionSpec `json:"actions,omitempty"`
 }
 
@@ -112,13 +112,13 @@ type ActionSpec struct {
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
 type ActionSetStatus struct {
-	// State is the state of the actionset.
+	// State represents the current state of the ActionSet.
 	State State `json:"state"`
-	// Actions is the array consisting of the status of the actions.
+	// Represents the latest available observations of an ActionSet's current state.
 	Actions []ActionStatus `json:"actions,omitempty"`
-	// Error is used to show if any error has occured in the status of the actionset.
+	// Error details for the failed ActionSet.
 	Error Error `json:"error,omitempty"`
-	// Progress is used to show the progress of the actionset.
+	// Progress provides information about the progress of an action.
 	Progress ActionProgress `json:"progress,omitempty"`
 }
 
@@ -173,9 +173,9 @@ type Error struct {
 type Phase struct {
 	// Name of the phase.
 	Name string `json:"name"`
-	// State is the current state of the phase.
+	// Represents the current state of the phase.
 	State State `json:"state"`
-	// Output is the output of the phase.
+	// Output is the map of output artifacts produced by the phase.
 	Output map[string]interface{} `json:"output,omitempty"`
 }
 
@@ -183,7 +183,7 @@ type Phase struct {
 
 // Artifact tracks objects produced by an action.
 type Artifact struct {
-	// KeyValue is a pair of keys and values produced by an action.
+	// KeyValue represents key-value pair artifacts produced by the action.
 	KeyValue map[string]string `json:"keyValue,omitempty"`
 	// KopiaSnapshot captures the kopia snapshot information
 	// produced as a JSON string by kando command in phases of an action.
@@ -196,7 +196,7 @@ type Artifact struct {
 type ActionSetList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	// Items is the array consisting of ActionSet.
+	// Items is the list ActionSets.
 	Items []*ActionSet `json:"items"`
 }
 
@@ -210,39 +210,41 @@ var _ runtime.Object = (*Blueprint)(nil)
 type Blueprint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	// Actions is the map of kanister actions described by the Blueprint.
+	// Actions is the list of actions constructing the Blueprint.
 	Actions map[string]*BlueprintAction `json:"actions,omitempty"`
 }
 
 // BlueprintAction describes the set of phases that constitute an action.
 type BlueprintAction struct {
-	// Name is set of phases of an action.
+	// Name of the action.
 	Name string `json:"name"`
-	// Kind is the type of Resource for BlueprintAction.
+	// Represents the type of Kubernetes object this BlueprintAction is written for.
 	Kind string `json:"kind"`
-	// ConfigMapNames is the array of maps present in BlueprintAction.
+	// List of Kubernetes ConfigMap names referred to in the action phases.
 	ConfigMapNames []string `json:"configMapNames,omitempty"`
-	// SecretNames is the array of secrets used in BlueprintAction.
+	// List of Kubernetes secret names used in action phases.
 	SecretNames []string `json:"secretNames,omitempty"`
-	// InputArtifactNames is the array of artifacts used in BlueprintAction.
+	// InputArtifactNames is the list of Artifact names used in action phases.
 	InputArtifactNames []string `json:"inputArtifactNames,omitempty"`
-	// OutputArtifacts is the map of artifacts which is received from BlueprintAction.
+	// OutputArtifacts is the map of rendered parameters made available to the BlueprintAction.
 	OutputArtifacts map[string]Artifact `json:"outputArtifacts,omitempty"`
-	// Phases is the array of phases that constitute BlueprintAction.
+	// Phases is the list of BlueprintPhases which are invoked in order when executing this Action.
 	Phases []BlueprintPhase `json:"phases,omitempty"`
-	// DeferPhase is the phase which is present in the Blueprint.
+	// DeferPhase invoked after the execution of Phases defined above.
+	// A DeferPhase, when specified, is executed regardless of the statuses of the Phases.
+	// A DeferPhase can be used for cleanup operations at the end of an Action.
 	DeferPhase *BlueprintPhase `json:"deferPhase,omitempty"`
 }
 
 // BlueprintPhase is a an individual unit of execution.
 type BlueprintPhase struct {
-	// Func is the function present in the BluePrintPhase.
+	// Func is the name of a registered Kanister function.
 	Func string `json:"func"`
-	// Name is the name of BlueprintPhase.
+	// Name of the phase.
 	Name string `json:"name"`
-	// ObjectRefs is the object referent.
+	// A map of references to the Kubernetes objects on which the action will be performed.
 	ObjectRefs map[string]ObjectReference `json:"objects,omitempty"`
-	// Args are the arguments used in the BlueprintPhase
+	// A map of named arguments that the controller will pass to the Kanister function.
 	Args map[string]interface{} `json:"args"`
 }
 
@@ -252,22 +254,26 @@ type BlueprintPhase struct {
 type BlueprintList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	Items           []*Blueprint `json:"items"`
+	// Items is the list of Blueprints.
+	Items []*Blueprint `json:"items"`
 }
 
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Profile
+// Profile captures information about a location for data operation artifacts and
+// corresponding credentials that will be made available to a Blueprint.
 type Profile struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	// Location represents the location of the profile being used.
+	// Specifies the location that the Blueprint can use.
 	Location Location `json:"location"`
-	// Credential is the credentials being used for the profile.
+	// Represents the credentials associated with the Location.
 	Credential Credential `json:"credential"`
-	// SkipSSLVerify is used to represent if the SSLVerificatio is to be skipped or not.
+	// SkipSSLVerify is boolean and specifies whether skipping SkipSSLVerify verification
+	// is allowed when operating with the Location.
+	// If omitted from a CR definition it default to false
 	SkipSSLVerify bool `json:"skipSSLVerify"`
 }
 
@@ -287,15 +293,15 @@ const (
 
 // Location
 type Location struct {
-	//Type of the Location being used.
+	// Type of the Location being used.
 	Type LocationType `json:"type"`
-	// Bucket is used to represent the bucked being used for the Location.
+	// Represents the bucket being used for the current Location.
 	Bucket string `json:"bucket"`
-	// Endpoint consists of endpoints being used by the Location.
+	// Represents the endpoints being used by the current Location.
 	Endpoint string `json:"endpoint"`
 	// Prefix is the string used in the beginning of the Location.
 	Prefix string `json:"prefix"`
-	// Region of the current location.
+	// Represents the region of the current location.
 	Region string `json:"region"`
 }
 
@@ -303,11 +309,11 @@ type Location struct {
 type CredentialType string
 
 const (
-	// Key and value pair used in credentials.
+	// Represents the Credential being used is of Type key pair.
 	CredentialTypeKeyPair CredentialType = "keyPair"
-	// Secret used in credentials.
+	// Represents the Credential being used is of Type Secret.
 	CredentialTypeSecret CredentialType = "secret"
-	// Credential type of kopia.
+	// Represents the Credential being used is of Type Kopia.
 	CredentialTypeKopia CredentialType = "kopia"
 )
 
@@ -315,35 +321,37 @@ const (
 type Credential struct {
 	// Type of the credential being used.
 	Type CredentialType `json:"type"`
-	// KeyPair is the set of key and value being used for the Credential.
+	// KeyPair represnets the pair of Keys being used for the Credential of Type KeyPair.
 	KeyPair *KeyPair `json:"keyPair,omitempty"`
-	// Secret used for the Credential.
+	// Represents the Kubernetes Secret Object used for the Credential of Type Secret.
 	Secret *ObjectReference `json:"secret,omitempty"`
-	// KopiaServerSecret represents the secret being used by Kopia Server in Credentials.
+	// KopiaServerSecret represents the secret being used by Credential of Type Kopia.
 	KopiaServerSecret *KopiaServerSecret `json:"kopiaServerSecret,omitempty"`
 }
 
 // KeyPair
 type KeyPair struct {
-	// IDField is the field which contains the IDs of the KeyPair.
+	// IDField represents the IDs of corresponding keys in the Secret under which KeyPair
+	// Credentials are stored.
 	IDField string `json:"idField"`
-	// SecretField is the field which contains the secrets in the KeyPair.
+	// SecretField specifies the corresponding keys in the Secret under which KeyPair
+	// Credentials are stored.
 	SecretField string `json:"secretField"`
-	// Secret is object referent of the secret which is used in KeyPair.
+	// Secret represents a Kubernetes Secret object storing the KeyPair credentials..
 	Secret ObjectReference `json:"secret"`
 }
 
 // KopiaServerSecret contains credentials to connect to Kopia server
 type KopiaServerSecret struct {
-	// Username is the UserName used to connect to the Kopia Server.
+	// Represents the UserName used to connect to the Kopia Server.
 	Username string `json:"username,omitempty"`
-	// Hostname is the name of the host used to connect to the Kopia Server.
+	// Rpresents the Hostname used to connect to the Kopia Server.
 	Hostname string `json:"hostname,omitempty"`
 	// UserPassphrase is the user password used to connect to the Kopia Server.
 	UserPassphrase *KopiaServerSecretRef `json:"userPassphrase,omitempty"`
 	// TLSCert is the certificate used to connect to the Kopia Server.
 	TLSCert *KopiaServerSecretRef `json:"tlsCert,omitempty"`
-	// ConnectOptions represents the options which can be used to connect to the Kopia Server.
+	// ConnectOptions represents a map of options which can be used to connect to the Kopia Server.
 	ConnectOptions map[string]int `json:"connectOptions,omitempty"`
 }
 
@@ -361,6 +369,6 @@ type KopiaServerSecretRef struct {
 type ProfileList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	// Items contains array of Profiles.
+	// Items represnets a list of Profiles.
 	Items []*Profile `json:"items"`
 }
