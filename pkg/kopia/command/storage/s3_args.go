@@ -48,9 +48,10 @@ func s3Args(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
 		}
 	}
 
-	repoPathPrefix = GenerateFullRepoPath(getPrefixFromMap(location), repoPathPrefix)
+	// Append prefix from the location to the repository path prefix, if specified
+	fullRepoPathPrefix := GenerateFullRepoPath(getPrefixFromMap(location), repoPathPrefix)
 
-	args = args.AppendLoggableKV(s3PrefixFlag, repoPathPrefix)
+	args = args.AppendLoggableKV(s3PrefixFlag, fullRepoPathPrefix)
 
 	if checkSkipSSLVerifyFromMap(location) {
 		args = args.AppendLoggable(s3DisableTLSVerifyFlag)

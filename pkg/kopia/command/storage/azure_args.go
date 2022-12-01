@@ -28,11 +28,12 @@ const (
 )
 
 func azureArgs(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
-	repoPathPrefix = GenerateFullRepoPath(getPrefixFromMap(location), repoPathPrefix)
+	// Append prefix from the location to the repository path prefix, if specified
+	fullRepoPathPrefix := GenerateFullRepoPath(getPrefixFromMap(location), repoPathPrefix)
 
 	args := logsafe.NewLoggable(azureSubCommand)
 	args = args.AppendLoggableKV(azureContainerFlag, getBucketNameFromMap(location))
-	args = args.AppendLoggableKV(azurePrefixFlag, repoPathPrefix)
+	args = args.AppendLoggableKV(azurePrefixFlag, fullRepoPathPrefix)
 
 	return args
 }
