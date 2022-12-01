@@ -33,7 +33,7 @@ func (s *StorageUtilsSuite) TestAzureArgsUtil(c *check.C) {
 			},
 			expectedCommand: fmt.Sprint(azureSubCommand,
 				fmt.Sprintf(" %s=%s ", azureContainerFlag, "test-bucket"),
-				fmt.Sprintf("%s=%s", azurePrefixFlag, fmt.Sprintf("test-prefix/%s/", repoPathPrefix)),
+				fmt.Sprintf("%s=%s", prefixFlag, fmt.Sprintf("test-prefix/%s/", repoPathPrefix)),
 			),
 		},
 	} {

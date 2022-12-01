@@ -19,12 +19,8 @@ import (
 )
 
 const (
-	azureSubCommand         = "azure"
-	azureContainerFlag      = "--container"
-	azurePrefixFlag         = "--prefix"
-	azureStorageAccountFlag = "--storage-account"
-	azureStorageKeyFlag     = "--storage-key"
-	azureStorageDomainFlag  = "--storage-domain"
+	azureSubCommand    = "azure"
+	azureContainerFlag = "--container"
 )
 
 func azureArgs(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
@@ -33,7 +29,7 @@ func azureArgs(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
 
 	args := logsafe.NewLoggable(azureSubCommand)
 	args = args.AppendLoggableKV(azureContainerFlag, getBucketNameFromMap(location))
-	args = args.AppendLoggableKV(azurePrefixFlag, fullRepoPathPrefix)
+	args = args.AppendLoggableKV(prefixFlag, fullRepoPathPrefix)
 
 	return args
 }

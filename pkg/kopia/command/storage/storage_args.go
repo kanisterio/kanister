@@ -20,6 +20,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/logsafe"
 )
 
+const (
+	prefixFlag = "--prefix"
+	bucketFlag = "--bucket"
+)
+
 type StorageCommandParams struct {
 	// Common params
 	Location       map[string][]byte

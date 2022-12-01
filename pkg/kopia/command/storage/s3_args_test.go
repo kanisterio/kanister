@@ -34,8 +34,8 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 				skipSSLVerifyKey: []byte("true"),
 			},
 			expectedCommand: fmt.Sprint(s3SubCommand,
-				fmt.Sprintf(" %s=%s", s3BucketFlag, "test-bucket"),
-				fmt.Sprintf(" %s=%s ", s3PrefixFlag, fmt.Sprintf("test-prefix/%s/", repoPathPrefix)),
+				fmt.Sprintf(" %s=%s", bucketFlag, "test-bucket"),
+				fmt.Sprintf(" %s=%s ", prefixFlag, fmt.Sprintf("test-prefix/%s/", repoPathPrefix)),
 				s3DisableTLSVerifyFlag,
 				fmt.Sprintf(" %s=test-region", s3RegionFlag),
 			),
@@ -47,9 +47,9 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 				endpointKey: []byte("https://test.test:9000/"),
 			},
 			expectedCommand: fmt.Sprint(s3SubCommand,
-				fmt.Sprintf(" %s=%s", s3BucketFlag, "test-bucket"),
+				fmt.Sprintf(" %s=%s", bucketFlag, "test-bucket"),
 				fmt.Sprintf(" %s=%s", s3EndpointFlag, "test.test:9000"),
-				fmt.Sprintf(" %s=%s", s3PrefixFlag, fmt.Sprintf("test-prefix/%s/", repoPathPrefix))),
+				fmt.Sprintf(" %s=%s", prefixFlag, fmt.Sprintf("test-prefix/%s/", repoPathPrefix))),
 		},
 		{
 			location: map[string][]byte{
@@ -58,9 +58,9 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 				endpointKey: []byte("http://test.test:9000"),
 			},
 			expectedCommand: fmt.Sprint(s3SubCommand,
-				fmt.Sprintf(" %s=%s", s3BucketFlag, "test-bucket"),
+				fmt.Sprintf(" %s=%s", bucketFlag, "test-bucket"),
 				fmt.Sprintf(" %s=test.test:9000 %s", s3EndpointFlag, s3DisableTLSFlag),
-				fmt.Sprintf(" %s=test-prefix/%s/", s3PrefixFlag, repoPathPrefix)),
+				fmt.Sprintf(" %s=test-prefix/%s/", prefixFlag, repoPathPrefix)),
 		},
 	} {
 		args := s3Args(tc.location, repoPathPrefix)

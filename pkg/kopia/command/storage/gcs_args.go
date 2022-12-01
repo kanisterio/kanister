@@ -22,8 +22,6 @@ import (
 const (
 	gcsSubCommand       = "gcs"
 	credentialsFileFlag = "--credentials-file"
-	gcsBucketFlag       = "--bucket"
-	gcsPrefixFlag       = "--prefix"
 )
 
 func gcsArgs(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
@@ -31,7 +29,7 @@ func gcsArgs(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
 	fullRepoPathPrefix := GenerateFullRepoPath(getPrefixFromMap(location), repoPathPrefix)
 
 	args := logsafe.NewLoggable(gcsSubCommand)
-	args = args.AppendLoggableKV(gcsBucketFlag, getBucketNameFromMap(location))
+	args = args.AppendLoggableKV(bucketFlag, getBucketNameFromMap(location))
 	args = args.AppendLoggableKV(credentialsFileFlag, consts.GoogleCloudCredsFilePath)
-	return args.AppendLoggableKV(gcsPrefixFlag, fullRepoPathPrefix)
+	return args.AppendLoggableKV(prefixFlag, fullRepoPathPrefix)
 }
