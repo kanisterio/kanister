@@ -1,10 +1,10 @@
 # Postgres-RDS
 
-[PostgreSQL](https://www.postgresql.org/) is an object-relational database management system (ORDBMS) with an emphasis on extensibility and on standards-compliance.
+[PostgreSQL](https://www.postgresql.org/) is an object-relational database management system (ORDBMS) with an emphasis on extensibility and standards compliance.
 
 ## Introduction
 
-This example is to demonstrate how Kanister can be used to import data in AWS RDS instance from On-prem postgres using Kanister functions
+This example is to demonstrate how Kanister can be used to import data in AWS RDS instance from On-prem Postgres using Kanister functions
 
 ## Prerequisites
 
@@ -15,21 +15,21 @@ This example is to demonstrate how Kanister can be used to import data in AWS RD
 
 ## Create RDS instance on AWS
 
-We need to have a postgres RDS instance where we would restore the data.
+We need to have a Postgres RDS instance where we would restore the data.
 
 > You can skip this step if you already have an RDS instance created
 
-RDS instance needs to be reachable from outside world. So make sure that you have VPC with security group having rule to allow ingress traffic on 5432 TCP port.
+RDS instance needs to be reachable from the outside world. So make sure that you have VPC with the security group having the rule to allow ingress traffic on 5432 TCP port.
 
 
-You can create security group and add rules to defaul VPC using following commands
+You can create a security group and add rules to the default VPC using the following commands
 
 ```bash
 aws ec2 create-security-group --group-name pgtest-sg --description "pgtest security group"
 aws ec2 authorize-security-group-ingress --group-name pgtest-sg --protocol tcp --port 5432 --cidr 0.0.0.0/0
 ```
 
-Now create a RDS instance with postgresql engine
+Now create an RDS instance with the PostgreSQL engine
 
 ```bash
 aws rds create-db-instance \
@@ -46,7 +46,7 @@ aws rds wait db-instance-available --db-instance-identifier=test-postgresql-inst
 
 ## Create configmap
 
-Create a configmap which contains information to connect to the RDS DB instance
+Create a configmap that contains information to connect to the RDS DB instance
 
 ```
 apiVersion: v1
@@ -59,7 +59,7 @@ data:
 
 ## Create secret
 
-Create a secret which contains credentials to connect to the RDS DB instance
+Create a secret that contains credentials to connect to the RDS DB instance
 
 ```
 apiVersion: v1
@@ -71,7 +71,7 @@ stringData:
   postgres_password: secret99 
 ```
 
-## Installing the postgresql Chart
+## Installing the PostgreSQL Chart
 To install the chart with the release name `my-release`:
 
 ```bash
@@ -86,7 +86,7 @@ The command deploys PostgreSQL on the Kubernetes cluster in the default configur
 
 > **Tip**: List all releases using `helm list`
 
-In case, if you don't have `Kanister` installed already, you can use following commands to do that.
+In case, if you don't have `Kanister` installed already, you can use the following commands to do that.
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
@@ -95,7 +95,7 @@ $ helm install kanister --namespace kanister --create-namespace kanister/kaniste
 
 ## Integrating with Kanister
 
-If you have deployed postgresql application with name other than `my-release` and namespace other than `postgres-test`, you need to modify the commands used below to use the correct name and namespace
+If you have deployed a PostgreSQL application with a name other than `my-release` and a namespace other than `postgres-test`, you need to modify the commands used below to use the correct name and namespace
 
 ### Create Profile
 
@@ -117,7 +117,7 @@ requires a Profile reference to complete the action. This CR (`profiles.cr.kanis
 can be shared between Kanister-enabled application instances.
 
 ### Create Blueprint
-Create Blueprint in the same namespace as the controller
+Create a Blueprint in the same namespace as the controller
 
 ```bash
 $ kubectl create -f ./rds-postgres-blueprint.yaml -n kanister
@@ -125,10 +125,10 @@ $ kubectl create -f ./rds-postgres-blueprint.yaml -n kanister
 
 Once Postgres is running, you can populate it with some data. Let's add a table called "company" to a "test" database:
 ```
-## Log in into postgresql container and get shell access
+## Login to PostgreSQL container and get shell access
 $ kubectl exec -ti my-release-postgresql-0 -n postgres-test -- bash
 
-## use psql cli to add entries in postgresql database
+## use psql CLI to add entries in the PostgreSQL database
 $ PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres
 psql (14.0)
 Type "help" for help.
@@ -204,9 +204,9 @@ backup-glptq   38s
 $ kubectl --namespace kanister describe actionset backup-glptq
 ```
 
-### Restore the Application into RDS Database instance
+### Restore the Application to RDS Database instance
 
-To restore the data into RDS postgres instance, you should use the backup that you created before. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets. Apaart from this we also need to pass RDS instance details to the blueprint, the secret and configmap resource containing these details can be passed to kanctl:
+To restore the data into RDS Postgres instance, you should use the backup that you created before. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets. Apart from this we also need to pass RDS instance details to the blueprint, the secret and configmap resource containing these details can be passed to kanctl:
 
 ```bash
 $ kanctl --namespace kanister create actionset --action restore --from backup-glptq --config-maps dbconfig=postgres-test/dbconfig --secrets dbsecret=postgres-test/dbsecret
@@ -216,9 +216,9 @@ actionset restore-backup-glptq-6jzt4 created
 $ kubectl --namespace kanister describe actionset restore-backup-glptq-6jzt4
 ```
 
-Once the ActionSet status is set to "complete", you can see that the data has been successfully restored to RDS PostgreSQL database instance
+Once the ActionSet status is set to "complete", you can see that the data has been successfully restored to the RDS PostgreSQL database instance
 
-To verify, Connect to RDS PostgreSQL database instance using `psql`
+To verify, Connect to the RDS PostgreSQL database instance using `psql`
 
 PGPASSWORD="secret99" psql --host akanksha-rds-test.cjbctojw4ahh.us-west-2.rds.amazonaws.com -U master -d postgres -p 5432
 
@@ -266,7 +266,7 @@ If you run into any issues with the above commands, you can check the logs of th
 $ kubectl --namespace kanister logs -l app=kanister-operator
 ```
 
-you can also check events of the actionset
+you can also check the events of the actionset
 
 ```bash
 $ kubectl describe actionset <actionset-name> -n kanister
