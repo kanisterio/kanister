@@ -25,9 +25,9 @@ const (
 	DefaultFSMountPath = "/mnt/data"
 )
 
-func kopiaFilesystemArgs(location map[string][]byte, artifactPrefix string) logsafe.Cmd {
-	artifactPrefix = GenerateFullRepoPath(getPrefixFromMap(location), artifactPrefix)
+func filesystemArgs(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
+	repoPathPrefix = GenerateFullRepoPath(getPrefixFromMap(location), repoPathPrefix)
 
 	args := logsafe.NewLoggable(filesystemSubCommand)
-	return args.AppendLoggableKV(pathFlag, DefaultFSMountPath+"/"+artifactPrefix)
+	return args.AppendLoggableKV(pathFlag, DefaultFSMountPath+"/"+repoPathPrefix)
 }

@@ -34,7 +34,7 @@ const (
 	s3RegionFlag           = "--region"
 )
 
-func kopiaS3Args(location map[string][]byte, artifactPrefix string) logsafe.Cmd {
+func s3Args(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
 	args := logsafe.NewLoggable(s3SubCommand)
 	args = args.AppendLoggableKV(s3BucketFlag, getBucketNameFromMap(location))
 
@@ -48,9 +48,9 @@ func kopiaS3Args(location map[string][]byte, artifactPrefix string) logsafe.Cmd 
 		}
 	}
 
-	artifactPrefix = GenerateFullRepoPath(getPrefixFromMap(location), artifactPrefix)
+	repoPathPrefix = GenerateFullRepoPath(getPrefixFromMap(location), repoPathPrefix)
 
-	args = args.AppendLoggableKV(s3PrefixFlag, artifactPrefix)
+	args = args.AppendLoggableKV(s3PrefixFlag, repoPathPrefix)
 
 	if checkSkipSSLVerifyFromMap(location) {
 		args = args.AppendLoggable(s3DisableTLSVerifyFlag)

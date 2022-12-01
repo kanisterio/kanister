@@ -26,11 +26,11 @@ const (
 	gcsPrefixFlag       = "--prefix"
 )
 
-func kopiaGCSArgs(location map[string][]byte, artifactPrefix string) logsafe.Cmd {
-	artifactPrefix = GenerateFullRepoPath(getPrefixFromMap(location), artifactPrefix)
+func gcsArgs(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
+	repoPathPrefix = GenerateFullRepoPath(getPrefixFromMap(location), repoPathPrefix)
 
 	args := logsafe.NewLoggable(gcsSubCommand)
 	args = args.AppendLoggableKV(gcsBucketFlag, getBucketNameFromMap(location))
 	args = args.AppendLoggableKV(credentialsFileFlag, consts.GoogleCloudCredsFilePath)
-	return args.AppendLoggableKV(gcsPrefixFlag, artifactPrefix)
+	return args.AppendLoggableKV(gcsPrefixFlag, repoPathPrefix)
 }

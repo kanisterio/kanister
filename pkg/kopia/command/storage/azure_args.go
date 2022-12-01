@@ -27,12 +27,12 @@ const (
 	azureStorageDomainFlag  = "--storage-domain"
 )
 
-func kopiaAzureArgs(location map[string][]byte, artifactPrefix string) logsafe.Cmd {
-	artifactPrefix = GenerateFullRepoPath(getPrefixFromMap(location), artifactPrefix)
+func azureArgs(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
+	repoPathPrefix = GenerateFullRepoPath(getPrefixFromMap(location), repoPathPrefix)
 
 	args := logsafe.NewLoggable(azureSubCommand)
 	args = args.AppendLoggableKV(azureContainerFlag, getBucketNameFromMap(location))
-	args = args.AppendLoggableKV(azurePrefixFlag, artifactPrefix)
+	args = args.AppendLoggableKV(azurePrefixFlag, repoPathPrefix)
 
 	return args
 }

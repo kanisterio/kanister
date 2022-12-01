@@ -21,7 +21,7 @@ import (
 )
 
 func (s *StorageUtilsSuite) TestAzureArgsUtil(c *check.C) {
-	artifactPrefix := "dir/sub-dir"
+	repoPathPrefix := "dir/sub-dir"
 	for _, tc := range []struct {
 		location        map[string][]byte
 		expectedCommand string
@@ -33,11 +33,11 @@ func (s *StorageUtilsSuite) TestAzureArgsUtil(c *check.C) {
 			},
 			expectedCommand: fmt.Sprint(azureSubCommand,
 				fmt.Sprintf(" %s=%s ", azureContainerFlag, "test-bucket"),
-				fmt.Sprintf("%s=%s", azurePrefixFlag, fmt.Sprintf("test-prefix/%s/", artifactPrefix)),
+				fmt.Sprintf("%s=%s", azurePrefixFlag, fmt.Sprintf("test-prefix/%s/", repoPathPrefix)),
 			),
 		},
 	} {
-		cmd := kopiaAzureArgs(tc.location, artifactPrefix)
+		cmd := azureArgs(tc.location, repoPathPrefix)
 		c.Assert(cmd.String(), check.Equals, tc.expectedCommand)
 	}
 }

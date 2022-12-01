@@ -21,7 +21,7 @@ import (
 )
 
 func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
-	artifactPrefix := "dir/sub-dir"
+	repoPathPrefix := "dir/sub-dir"
 	for _, tc := range []struct {
 		location        map[string][]byte
 		expectedCommand string
@@ -35,7 +35,7 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 			},
 			expectedCommand: fmt.Sprint(s3SubCommand,
 				fmt.Sprintf(" %s=%s", s3BucketFlag, "test-bucket"),
-				fmt.Sprintf(" %s=%s ", s3PrefixFlag, fmt.Sprintf("test-prefix/%s/", artifactPrefix)),
+				fmt.Sprintf(" %s=%s ", s3PrefixFlag, fmt.Sprintf("test-prefix/%s/", repoPathPrefix)),
 				s3DisableTLSVerifyFlag,
 				fmt.Sprintf(" %s=test-region", s3RegionFlag),
 			),
@@ -49,7 +49,7 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 			expectedCommand: fmt.Sprint(s3SubCommand,
 				fmt.Sprintf(" %s=%s", s3BucketFlag, "test-bucket"),
 				fmt.Sprintf(" %s=%s", s3EndpointFlag, "test.test:9000"),
-				fmt.Sprintf(" %s=%s", s3PrefixFlag, fmt.Sprintf("test-prefix/%s/", artifactPrefix))),
+				fmt.Sprintf(" %s=%s", s3PrefixFlag, fmt.Sprintf("test-prefix/%s/", repoPathPrefix))),
 		},
 		{
 			location: map[string][]byte{
@@ -60,10 +60,10 @@ func (s *StorageUtilsSuite) TestS3ArgsUtil(c *check.C) {
 			expectedCommand: fmt.Sprint(s3SubCommand,
 				fmt.Sprintf(" %s=%s", s3BucketFlag, "test-bucket"),
 				fmt.Sprintf(" %s=test.test:9000 %s", s3EndpointFlag, s3DisableTLSFlag),
-				fmt.Sprintf(" %s=test-prefix/%s/", s3PrefixFlag, artifactPrefix)),
+				fmt.Sprintf(" %s=test-prefix/%s/", s3PrefixFlag, repoPathPrefix)),
 		},
 	} {
-		args := kopiaS3Args(tc.location, artifactPrefix)
+		args := s3Args(tc.location, repoPathPrefix)
 		c.Assert(args.String(), check.Equals, tc.expectedCommand)
 	}
 }
