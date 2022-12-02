@@ -39,7 +39,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&createVolumeSnapshotFunc{})
+	_ = kanister.Register(&createVolumeSnapshotFunc{NewBaseFunction()})
 }
 
 var (
@@ -54,7 +54,7 @@ const (
 	CreateVolumeSnapshotSkipWaitArg  = "skipWait"
 )
 
-type createVolumeSnapshotFunc struct{}
+type createVolumeSnapshotFunc struct{ *BaseFunction }
 
 func (*createVolumeSnapshotFunc) Name() string {
 	return CreateVolumeSnapshotFuncName

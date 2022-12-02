@@ -33,7 +33,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&deleteVolumeSnapshotFunc{})
+	_ = kanister.Register(&deleteVolumeSnapshotFunc{NewBaseFunction()})
 }
 
 var (
@@ -48,7 +48,7 @@ const (
 	SnapshotDoesNotExistError        = "does not exist"
 )
 
-type deleteVolumeSnapshotFunc struct{}
+type deleteVolumeSnapshotFunc struct{ *BaseFunction }
 
 func (*deleteVolumeSnapshotFunc) Name() string {
 	return DeleteVolumeSnapshotFuncName

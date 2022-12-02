@@ -48,12 +48,12 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&DescribeBackupsFunc{})
+	_ = kanister.Register(&DescribeBackupsFunc{NewBaseFunction()})
 }
 
 var _ kanister.Func = (*DescribeBackupsFunc)(nil)
 
-type DescribeBackupsFunc struct{}
+type DescribeBackupsFunc struct{ *BaseFunction }
 
 func (*DescribeBackupsFunc) Name() string {
 	return DescribeBackupsFuncName

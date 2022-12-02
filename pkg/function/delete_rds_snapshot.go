@@ -29,7 +29,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&deleteRDSSnapshotFunc{})
+	_ = kanister.Register(&deleteRDSSnapshotFunc{NewBaseFunction()})
 }
 
 var (
@@ -42,7 +42,7 @@ const (
 	DeleteRDSSnapshotSnapshotIDArg = "snapshotID"
 )
 
-type deleteRDSSnapshotFunc struct{}
+type deleteRDSSnapshotFunc struct{ *BaseFunction }
 
 func (*deleteRDSSnapshotFunc) Name() string {
 	return DeleteRDSSnapshotFuncName

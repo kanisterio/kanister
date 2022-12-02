@@ -32,7 +32,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&restoreRDSSnapshotFunc{})
+	_ = kanister.Register(&restoreRDSSnapshotFunc{NewBaseFunction()})
 }
 
 var (
@@ -73,7 +73,7 @@ const (
 	RDSPostgresDBInstanceEngineVersion = "13.0"
 )
 
-type restoreRDSSnapshotFunc struct{}
+type restoreRDSSnapshotFunc struct{ *BaseFunction }
 
 func (*restoreRDSSnapshotFunc) Name() string {
 	return RestoreRDSSnapshotFuncName

@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&kubeExecAllFunc{})
+	_ = kanister.Register(&kubeExecAllFunc{NewBaseFunction()})
 }
 
 var (
@@ -44,7 +44,7 @@ const (
 	KubeExecAllCommandArg        = "command"
 )
 
-type kubeExecAllFunc struct{}
+type kubeExecAllFunc struct{ *BaseFunction }
 
 func (*kubeExecAllFunc) Name() string {
 	return KubeExecAllFuncName

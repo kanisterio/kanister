@@ -52,12 +52,12 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&restoreDataAllFunc{})
+	_ = kanister.Register(&restoreDataAllFunc{NewBaseFunction()})
 }
 
 var _ kanister.Func = (*restoreDataAllFunc)(nil)
 
-type restoreDataAllFunc struct{}
+type restoreDataAllFunc struct{ *BaseFunction }
 
 func (*restoreDataAllFunc) Name() string {
 	return RestoreDataAllFuncName

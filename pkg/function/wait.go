@@ -57,12 +57,12 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&waitFunc{})
+	_ = kanister.Register(&waitFunc{NewBaseFunction()})
 }
 
 var _ kanister.Func = (*waitFunc)(nil)
 
-type waitFunc struct{}
+type waitFunc struct{ *BaseFunction }
 
 func (*waitFunc) Name() string {
 	return WaitFuncName

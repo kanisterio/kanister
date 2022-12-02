@@ -52,12 +52,12 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&copyVolumeDataFunc{})
+	_ = kanister.Register(&copyVolumeDataFunc{NewBaseFunction()})
 }
 
 var _ kanister.Func = (*copyVolumeDataFunc)(nil)
 
-type copyVolumeDataFunc struct{}
+type copyVolumeDataFunc struct{ *BaseFunction }
 
 func (*copyVolumeDataFunc) Name() string {
 	return CopyVolumeDataFuncName

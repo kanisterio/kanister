@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&waitForSnapshotCompletionFunc{})
+	_ = kanister.Register(&waitForSnapshotCompletionFunc{NewBaseFunction()})
 }
 
 var (
@@ -41,7 +41,7 @@ const (
 	WaitForSnapshotCompletionSnapshotsArg = "snapshots"
 )
 
-type waitForSnapshotCompletionFunc struct{}
+type waitForSnapshotCompletionFunc struct{ *BaseFunction }
 
 func (*waitForSnapshotCompletionFunc) Name() string {
 	return WaitForSnapshotCompletionFuncName

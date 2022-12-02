@@ -30,12 +30,12 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&CheckRepositoryFunc{})
+	_ = kanister.Register(&CheckRepositoryFunc{NewBaseFunction()})
 }
 
 var _ kanister.Func = (*CheckRepositoryFunc)(nil)
 
-type CheckRepositoryFunc struct{}
+type CheckRepositoryFunc struct{ *BaseFunction }
 
 func (*CheckRepositoryFunc) Name() string {
 	return CheckRepositoryFuncName

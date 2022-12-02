@@ -35,7 +35,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&exportRDSSnapshotToLocationFunc{})
+	_ = kanister.Register(&exportRDSSnapshotToLocationFunc{NewBaseFunction()})
 }
 
 var (
@@ -64,7 +64,7 @@ const (
 	postgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.90.0"
 )
 
-type exportRDSSnapshotToLocationFunc struct{}
+type exportRDSSnapshotToLocationFunc struct{ *BaseFunction }
 
 // RDSDBEngine for RDS Engine types
 type RDSDBEngine string

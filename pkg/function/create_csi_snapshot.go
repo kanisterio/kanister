@@ -29,7 +29,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&createCSISnapshotFunc{})
+	_ = kanister.Register(&createCSISnapshotFunc{NewBaseFunction()})
 }
 
 var (
@@ -55,7 +55,7 @@ const (
 	CreateCSISnapshotSnapshotContentNameArg = "snapshotContent"
 )
 
-type createCSISnapshotFunc struct{}
+type createCSISnapshotFunc struct{ *BaseFunction }
 
 func (*createCSISnapshotFunc) Name() string {
 	return CreateCSISnapshotFuncName

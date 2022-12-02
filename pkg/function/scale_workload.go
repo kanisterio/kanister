@@ -39,14 +39,14 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&scaleWorkloadFunc{})
+	_ = kanister.Register(&scaleWorkloadFunc{NewBaseFunction()})
 }
 
 var (
 	_ kanister.Func = (*scaleWorkloadFunc)(nil)
 )
 
-type scaleWorkloadFunc struct{}
+type scaleWorkloadFunc struct{ *BaseFunction }
 
 func (*scaleWorkloadFunc) Name() string {
 	return ScaleWorkloadFuncName

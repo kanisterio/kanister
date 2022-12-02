@@ -21,6 +21,7 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -33,20 +34,13 @@ var (
 	funcs  = make(map[string]map[semver.Version]Func)
 )
 
-type Progress struct {
-	ProgressPercent      int64
-	SizeUploadedB        int64
-	EstimatedTimeSeconds int64
-	EstimatedUploadSizeB int64
-}
-
 // Func allows custom actions to be executed.
 type Func interface {
 	Name() string
 	RequiredArgs() []string
 	Arguments() []string
 	Exec(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error)
-	ExecProgress() (Progress, error)
+	ExecProgress() (crv1alpha1.PhaseProgress, error)
 }
 
 // Register allows Funcs to be referenced by User Defined YAMLs

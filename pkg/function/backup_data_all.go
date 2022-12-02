@@ -57,12 +57,12 @@ type BackupInfo struct {
 }
 
 func init() {
-	_ = kanister.Register(&backupDataAllFunc{})
+	_ = kanister.Register(&backupDataAllFunc{NewBaseFunction()})
 }
 
 var _ kanister.Func = (*backupDataAllFunc)(nil)
 
-type backupDataAllFunc struct{}
+type backupDataAllFunc struct{ *BaseFunction }
 
 func (*backupDataAllFunc) Name() string {
 	return BackupDataAllFuncName

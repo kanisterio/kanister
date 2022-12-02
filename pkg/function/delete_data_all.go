@@ -46,12 +46,12 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&deleteDataAllFunc{})
+	_ = kanister.Register(&deleteDataAllFunc{NewBaseFunction()})
 }
 
 var _ kanister.Func = (*deleteDataAllFunc)(nil)
 
-type deleteDataAllFunc struct{}
+type deleteDataAllFunc struct{ *BaseFunction }
 
 func (*deleteDataAllFunc) Name() string {
 	return DeleteDataAllFuncName

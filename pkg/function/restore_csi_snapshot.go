@@ -30,7 +30,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&restoreCSISnapshotFunc{})
+	_ = kanister.Register(&restoreCSISnapshotFunc{NewBaseFunction()})
 }
 
 var (
@@ -60,7 +60,7 @@ const (
 	RestoreCSISnapshotVolumeModeArg = "volumeMode"
 )
 
-type restoreCSISnapshotFunc struct{}
+type restoreCSISnapshotFunc struct{ *BaseFunction }
 
 type restoreCSISnapshotArgs struct {
 	Name         string

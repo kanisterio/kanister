@@ -31,7 +31,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&kubeops{})
+	_ = kanister.Register(&kubeops{NewBaseFunction()})
 }
 
 var (
@@ -51,7 +51,7 @@ const (
 	KubeOpsOperationArg = "operation"
 )
 
-type kubeops struct{}
+type kubeops struct{ *BaseFunction }
 
 func (*kubeops) Name() string {
 	return KubeOpsFuncName

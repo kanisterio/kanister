@@ -44,12 +44,12 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&prepareDataFunc{})
+	_ = kanister.Register(&prepareDataFunc{NewBaseFunction()})
 }
 
 var _ kanister.Func = (*prepareDataFunc)(nil)
 
-type prepareDataFunc struct{}
+type prepareDataFunc struct{ *BaseFunction }
 
 func (*prepareDataFunc) Name() string {
 	return PrepareDataFuncName

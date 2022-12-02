@@ -41,12 +41,12 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&kubeTaskFunc{})
+	_ = kanister.Register(&kubeTaskFunc{NewBaseFunction()})
 }
 
 var _ kanister.Func = (*kubeTaskFunc)(nil)
 
-type kubeTaskFunc struct{}
+type kubeTaskFunc struct{ *BaseFunction }
 
 func (*kubeTaskFunc) Name() string {
 	return KubeTaskFuncName

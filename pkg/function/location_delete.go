@@ -33,12 +33,12 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&locationDeleteFunc{})
+	_ = kanister.Register(&locationDeleteFunc{NewBaseFunction()})
 }
 
 var _ kanister.Func = (*locationDeleteFunc)(nil)
 
-type locationDeleteFunc struct{}
+type locationDeleteFunc struct{ *BaseFunction }
 
 func (*locationDeleteFunc) Name() string {
 	return LocationDeleteFuncName

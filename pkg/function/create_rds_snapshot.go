@@ -31,7 +31,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&createRDSSnapshotFunc{})
+	_ = kanister.Register(&createRDSSnapshotFunc{NewBaseFunction()})
 }
 
 var (
@@ -61,7 +61,7 @@ const (
 	DBEngineAuroraPostgreSQL RDSDBEngine = "aurora-postgresql"
 )
 
-type createRDSSnapshotFunc struct{}
+type createRDSSnapshotFunc struct{ *BaseFunction }
 
 func (*createRDSSnapshotFunc) Name() string {
 	return CreateRDSSnapshotFuncName

@@ -24,7 +24,7 @@ import (
 )
 
 func init() {
-	_ = kanister.Register(&deleteCSISnapshotContentFunc{})
+	_ = kanister.Register(&deleteCSISnapshotContentFunc{NewBaseFunction()})
 }
 
 var (
@@ -39,7 +39,7 @@ const (
 	DeleteCSISnapshotContentNameArg = "name"
 )
 
-type deleteCSISnapshotContentFunc struct{}
+type deleteCSISnapshotContentFunc struct{ *BaseFunction }
 
 func (*deleteCSISnapshotContentFunc) Name() string {
 	return DeleteCSISnapshotContentFuncName

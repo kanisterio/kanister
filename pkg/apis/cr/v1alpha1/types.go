@@ -191,7 +191,14 @@ type Phase struct {
 	State State `json:"state"`
 	// Output is the map of output artifacts produced by the Blueprint phase.
 	Output   map[string]interface{} `json:"output,omitempty"`
-	Progress ActionProgress         `json:"progress,omitempty"`
+	Progress PhaseProgress          `json:"progress,omitempty"`
+}
+
+type PhaseProgress struct {
+	ProgressPercent      int64
+	SizeUploadedB        int64
+	EstimatedTimeSeconds int64
+	EstimatedUploadSizeB int64
 }
 
 // k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
