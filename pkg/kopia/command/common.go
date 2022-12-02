@@ -15,6 +15,8 @@
 package command
 
 import (
+	"strconv"
+
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/logsafe"
@@ -66,4 +68,17 @@ func addTags(tags []string, args logsafe.Cmd) logsafe.Cmd {
 // ExecKopiaArgs returns the basic Argv for executing kopia with the given config file path.
 func ExecKopiaArgs(configFilePath string) []string {
 	return commonArgs(&CommandArgs{ConfigFilePath: configFilePath}, false).StringSliceCMD()
+}
+
+const (
+	cacheDirectoryFlag      = "--cache-directory"
+	contentCacheSizeMBFlag  = "--content-cache-size-mb"
+	metadataCacheSizeMBFlag = "--metadata-cache-size-mb"
+)
+
+func kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string, contentCacheMB, metadataCacheMB int) logsafe.Cmd {
+	args = args.AppendLoggableKV(cacheDirectoryFlag, cacheDirectory)
+	args = args.AppendLoggableKV(contentCacheSizeMBFlag, strconv.Itoa(contentCacheMB))
+	args = args.AppendLoggableKV(metadataCacheSizeMBFlag, strconv.Itoa(metadataCacheMB))
+	return args
 }
