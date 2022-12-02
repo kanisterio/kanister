@@ -19,20 +19,17 @@ import (
 )
 
 const (
-	azureSubCommand         = "azure"
-	azureContainerFlag      = "--container"
-	azurePrefixFlag         = "--prefix"
-	azureStorageAccountFlag = "--storage-account"
-	azureStorageKeyFlag     = "--storage-key"
-	azureStorageDomainFlag  = "--storage-domain"
+	azureSubCommand    = "azure"
+	azureContainerFlag = "--container"
 )
 
-func kopiaAzureArgs(location map[string][]byte, artifactPrefix string) logsafe.Cmd {
-	artifactPrefix = GenerateFullRepoPath(getPrefixFromMap(location), artifactPrefix)
+func azureArgs(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
+	// Append prefix from the location to the repository path prefix, if specified
+	fullRepoPathPrefix := GenerateFullRepoPath(getPrefixFromMap(location), repoPathPrefix)
 
 	args := logsafe.NewLoggable(azureSubCommand)
 	args = args.AppendLoggableKV(azureContainerFlag, getBucketNameFromMap(location))
-	args = args.AppendLoggableKV(azurePrefixFlag, artifactPrefix)
+	args = args.AppendLoggableKV(prefixFlag, fullRepoPathPrefix)
 
 	return args
 }

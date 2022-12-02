@@ -23,20 +23,15 @@ import (
 
 const (
 	s3SubCommand           = "s3"
-	s3AccessKeyFlag        = "--access-key"
 	s3DisableTLSFlag       = "--disable-tls"
 	s3DisableTLSVerifyFlag = "--disable-tls-verification"
-	s3SecretAccessKeyFlag  = "--secret-access-key"
-	s3SessionTokenFlag     = "--session-token"
-	s3BucketFlag           = "--bucket"
 	s3EndpointFlag         = "--endpoint"
-	s3PrefixFlag           = "--prefix"
 	s3RegionFlag           = "--region"
 )
 
-func kopiaS3Args(location map[string][]byte, artifactPrefix string) logsafe.Cmd {
+func s3Args(location map[string][]byte, repoPathPrefix string) logsafe.Cmd {
 	args := logsafe.NewLoggable(s3SubCommand)
-	args = args.AppendLoggableKV(s3BucketFlag, getBucketNameFromMap(location))
+	args = args.AppendLoggableKV(bucketFlag, getBucketNameFromMap(location))
 
 	e := getEndpointFromMap(location)
 	if e != "" {
@@ -48,9 +43,10 @@ func kopiaS3Args(location map[string][]byte, artifactPrefix string) logsafe.Cmd 
 		}
 	}
 
-	artifactPrefix = GenerateFullRepoPath(getPrefixFromMap(location), artifactPrefix)
+	// Append prefix from the location to the repository path prefix, if specified
+	fullRepoPathPrefix := GenerateFullRepoPath(getPrefixFromMap(location), repoPathPrefix)
 
-	args = args.AppendLoggableKV(s3PrefixFlag, artifactPrefix)
+	args = args.AppendLoggableKV(prefixFlag, fullRepoPathPrefix)
 
 	if checkSkipSSLVerifyFromMap(location) {
 		args = args.AppendLoggable(s3DisableTLSVerifyFlag)
