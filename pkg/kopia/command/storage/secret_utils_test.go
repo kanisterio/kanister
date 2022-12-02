@@ -16,8 +16,14 @@ package storage
 
 import (
 	"testing"
+	"time"
 
 	"gopkg.in/check.v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 func Test(t *testing.T) { check.TestingT(t) }
@@ -67,6 +73,117 @@ func (s *StorageUtilsSuite) TestLocationUtils(c *check.C) {
 		c.Assert(getRegionFromMap(loc), check.Equals, string(loc[regionKey]))
 		c.Assert(checkSkipSSLVerifyFromMap(loc), check.Equals, tc.expectedSkipSSLVerifyValue)
 		c.Assert(locationType(loc), check.Equals, tc.expectedLocType)
+	}
+}
+
+func (s *StorageUtilsSuite) TestGenerateEnvSpecFromCredentialSecret(c *check.C) {
+	awsAccessKeyId := "access-key-id"
+	awsSecretAccessKey := "secret-access-key"
+
+	azureStorageAccountID := "azure-storage-account-id"
+	azureStorageAccountKey := "azure-storage-account-key"
+	azureStorageEnvironment := "AZURECLOUD"
+
+	locSecretName := "test-secret"
+	for _, tc := range []struct {
+		secret          *v1.Secret
+		expectedEnvVars []v1.EnvVar
+		check.Checker
+	}{
+		{
+			secret: &v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: locSecretName,
+				},
+				Type: v1.SecretType(secrets.AWSSecretType),
+				Data: map[string][]byte{
+					secrets.AWSAccessKeyID:     []byte(awsAccessKeyId),
+					secrets.AWSSecretAccessKey: []byte(awsSecretAccessKey),
+				},
+			},
+			expectedEnvVars: []v1.EnvVar{
+				{
+					Name: aws.AccessKeyID,
+					ValueFrom: &v1.EnvVarSource{
+						SecretKeyRef: &v1.SecretKeySelector{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: locSecretName,
+							},
+							Key: secrets.AWSAccessKeyID,
+						},
+					},
+				},
+				{
+					Name: aws.SecretAccessKey,
+					ValueFrom: &v1.EnvVarSource{
+						SecretKeyRef: &v1.SecretKeySelector{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: locSecretName,
+							},
+							Key: secrets.AWSSecretAccessKey,
+						},
+					},
+				},
+			},
+			Checker: check.IsNil,
+		},
+		{
+			secret: &v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: locSecretName,
+				},
+				Type: v1.SecretType(secrets.AzureSecretType),
+				Data: map[string][]byte{
+					secrets.AzureStorageAccountID:   []byte(azureStorageAccountID),
+					secrets.AzureStorageAccountKey:  []byte(azureStorageAccountKey),
+					secrets.AzureStorageEnvironment: []byte(azureStorageEnvironment),
+				},
+			},
+			expectedEnvVars: []v1.EnvVar{
+				{
+					Name: azureStorageAccountEnv,
+					ValueFrom: &v1.EnvVarSource{
+						SecretKeyRef: &v1.SecretKeySelector{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: locSecretName,
+							},
+							Key: secrets.AzureStorageAccountID,
+						},
+					},
+				},
+				{
+					Name: azureStorageKeyEnv,
+					ValueFrom: &v1.EnvVarSource{
+						SecretKeyRef: &v1.SecretKeySelector{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: locSecretName,
+							},
+							Key: secrets.AzureStorageAccountKey,
+						},
+					},
+				},
+				{
+					Name:  azureStorageDomainEnv,
+					Value: "blob.core.windows.net",
+				},
+			},
+			Checker: check.IsNil,
+		},
+		{
+			secret:  nil,
+			Checker: check.NotNil,
+		},
+		{
+			secret: &v1.Secret{
+				Type: "Opaque",
+			},
+			Checker:         check.IsNil,
+			expectedEnvVars: nil,
+		},
+	} {
+		envVars, err := GenerateEnvSpecFromCredentialSecret(tc.secret, time.Duration(0))
+		c.Assert(err, tc.Checker)
+		c.Assert(envVars, check.DeepEquals, tc.expectedEnvVars)
 	}
 }
 
