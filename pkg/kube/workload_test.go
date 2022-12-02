@@ -74,7 +74,7 @@ func newDeploymentConfig() *osapps.DeploymentConfig {
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
-						v1.Container{
+						{
 							Image:   "alpine",
 							Name:    "container",
 							Command: []string{"tail", "-f", "/dev/null"},

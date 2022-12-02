@@ -36,15 +36,15 @@ var _ = Suite(&BlueprintSuite{})
 func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
 	for _, bp := range []*crv1alpha1.Blueprint{
 		// BP with no phase with image arg
-		&crv1alpha1.Blueprint{
+		{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "test-blueprint-",
 			},
 			Actions: map[string]*crv1alpha1.BlueprintAction{
-				"test": &crv1alpha1.BlueprintAction{
+				"test": {
 					Kind: "Deployment",
 					Phases: []crv1alpha1.BlueprintPhase{
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.KubeExecFuncName,
 							Name: "test-kube-exec",
 							Args: map[string]interface{}{
@@ -60,15 +60,15 @@ func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
 		},
 
 		// BP with multiple phases with image arg
-		&crv1alpha1.Blueprint{
+		{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "test-blueprint-",
 			},
 			Actions: map[string]*crv1alpha1.BlueprintAction{
-				"test": &crv1alpha1.BlueprintAction{
+				"test": {
 					Kind: "Deployment",
 					Phases: []crv1alpha1.BlueprintPhase{
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.KubeTaskFuncName,
 							Name: "test-kube-task",
 							Args: map[string]interface{}{
@@ -77,7 +77,7 @@ func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
 								"command":   []string{"echo", "hello"},
 							},
 						},
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.KubeTaskFuncName,
 							Name: "test-kube-task2",
 							Args: map[string]interface{}{
@@ -91,15 +91,15 @@ func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
 		},
 
 		// BP with multiple actions
-		&crv1alpha1.Blueprint{
+		{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "test-blueprint-",
 			},
 			Actions: map[string]*crv1alpha1.BlueprintAction{
-				"test": &crv1alpha1.BlueprintAction{
+				"test": {
 					Kind: "Deployment",
 					Phases: []crv1alpha1.BlueprintPhase{
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.KubeTaskFuncName,
 							Name: "test-kube-task",
 							Args: map[string]interface{}{
@@ -108,7 +108,7 @@ func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
 								"command":   []string{"echo", "hello"},
 							},
 						},
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.KubeTaskFuncName,
 							Name: "test-kube-task2",
 							Args: map[string]interface{}{
@@ -118,9 +118,9 @@ func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
 						},
 					},
 				},
-				"test2": &crv1alpha1.BlueprintAction{
+				"test2": {
 					Phases: []crv1alpha1.BlueprintPhase{
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.PrepareDataFuncName,
 							Name: "test-prepare-data",
 							Args: map[string]interface{}{

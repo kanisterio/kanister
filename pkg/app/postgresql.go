@@ -123,7 +123,7 @@ func (pdb PostgresDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 
 func (pdb PostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
-		"postgresql": crv1alpha1.ObjectReference{
+		"postgresql": {
 			Kind:      "secret",
 			Name:      pdb.getStatefulSetName(),
 			Namespace: pdb.namespace,
