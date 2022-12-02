@@ -33,12 +33,20 @@ var (
 	funcs  = make(map[string]map[semver.Version]Func)
 )
 
+type Progress struct {
+	ProgressPercent      int64
+	SizeUploadedB        int64
+	EstimatedTimeSeconds int64
+	EstimatedUploadSizeB int64
+}
+
 // Func allows custom actions to be executed.
 type Func interface {
 	Name() string
 	RequiredArgs() []string
 	Arguments() []string
 	Exec(context.Context, param.TemplateParams, map[string]interface{}) (map[string]interface{}, error)
+	ExecProgress() (Progress, error)
 }
 
 // Register allows Funcs to be referenced by User Defined YAMLs

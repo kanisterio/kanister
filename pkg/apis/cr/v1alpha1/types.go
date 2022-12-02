@@ -148,6 +148,7 @@ type ActionStatus struct {
 }
 
 // ActionProgress provides information on the progress of an action.
+// Combined progress of all the phases.
 type ActionProgress struct {
 	// RunningPhase represents which phase of the action is being run
 	RunningPhase string `json:"runningPhase,omitempty"`
@@ -157,6 +158,9 @@ type ActionProgress struct {
 	// LastTransitionTime represents the last date time when the progress status
 	// was received.
 	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
+	// Inform about how many phases are completed out of total
+	TotalPhases     int
+	CompletedPhases int
 }
 
 // State is the current state of a phase of execution.
@@ -186,7 +190,8 @@ type Phase struct {
 	// State represents the current state of execution of the Blueprint phase.
 	State State `json:"state"`
 	// Output is the map of output artifacts produced by the Blueprint phase.
-	Output map[string]interface{} `json:"output,omitempty"`
+	Output   map[string]interface{} `json:"output,omitempty"`
+	Progress ActionProgress         `json:"progress,omitempty"`
 }
 
 // k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
