@@ -23,24 +23,24 @@ import (
 func (s *StorageUtilsSuite) TestFilesystemArgsUtil(c *check.C) {
 	for _, tc := range []struct {
 		prefix         string
-		artifactPrefix string
+		repoPathPrefix string
 		expectedPath   string
 	}{
 		{
 			prefix:         "",
-			artifactPrefix: "dir1/subdir/",
+			repoPathPrefix: "dir1/subdir/",
 			expectedPath:   fmt.Sprintf("%s/dir1/subdir/", DefaultFSMountPath),
 		},
 		{
 			prefix:         "test-prefix",
-			artifactPrefix: "dir1/subdir/",
+			repoPathPrefix: "dir1/subdir/",
 			expectedPath:   fmt.Sprintf("%s/test-prefix/dir1/subdir/", DefaultFSMountPath),
 		},
 	} {
 		sec := map[string][]byte{
 			prefixKey: []byte(tc.prefix),
 		}
-		args := kopiaFilesystemArgs(sec, tc.artifactPrefix)
+		args := filesystemArgs(sec, tc.repoPathPrefix)
 		expectedValue := fmt.Sprint(
 			filesystemSubCommand,
 			fmt.Sprintf(" %s=%s", pathFlag, tc.expectedPath))

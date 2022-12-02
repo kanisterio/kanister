@@ -92,7 +92,7 @@ func (s *PodSuite) TestPod(c *C) {
 	testSec := s.createTestSecret(c)
 	defer func() {
 		err = s.cli.CoreV1().Secrets(testSec.Namespace).Delete(context.Background(), testSec.Name, metav1.DeleteOptions{})
-		c.Assert(err, IsNil)
+		c.Log("Failed to delete test secret: ", testSec.Name)
 	}()
 	ctx := context.Background()
 	podOptions := []*PodOptions{
