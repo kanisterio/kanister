@@ -45,7 +45,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -59,7 +59,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -73,7 +73,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -88,7 +88,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "False",
 					Type:   "Ready",
 				},
@@ -105,7 +105,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionGCP(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -136,7 +136,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -150,7 +150,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -164,7 +164,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -179,7 +179,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "False",
 					Type:   "Ready",
 				},
@@ -196,7 +196,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionEBS(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -227,7 +227,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -241,7 +241,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -255,7 +255,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -270,7 +270,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -285,7 +285,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "False",
 					Type:   "Ready",
 				},
@@ -302,7 +302,7 @@ func (s ZoneSuite) TestNodeZoneAndRegionAD(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -435,7 +435,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -449,7 +449,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -463,7 +463,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -478,7 +478,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -493,7 +493,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -508,7 +508,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -523,7 +523,7 @@ func (s ZoneSuite) TestFromSourceRegionZone(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -679,7 +679,7 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -696,7 +696,7 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "True",
 					Type:   "Ready",
 				},
@@ -710,7 +710,7 @@ func (s ZoneSuite) TestGetReadySchedulableNodes(c *C) {
 		},
 		Status: v1.NodeStatus{
 			Conditions: []v1.NodeCondition{
-				v1.NodeCondition{
+				{
 					Status: "False",
 					Type:   "Ready",
 				},
@@ -737,15 +737,15 @@ func (s ZoneSuite) TestConsistentZones(c *C) {
 	c.Assert(z, Equals, "")
 
 	az1 := map[string]struct{}{
-		"a": struct{}{},
-		"b": struct{}{},
-		"c": struct{}{},
+		"a": {},
+		"b": {},
+		"c": {},
 	}
 
 	az2 := map[string]struct{}{
-		"c": struct{}{},
-		"a": struct{}{},
-		"b": struct{}{},
+		"c": {},
+		"a": {},
+		"b": {},
 	}
 
 	z1 := consistentZone("x", az1)

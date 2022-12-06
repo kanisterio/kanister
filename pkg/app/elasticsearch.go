@@ -146,7 +146,7 @@ func (esi *ElasticsearchInstance) Uninstall(ctx context.Context) error {
 
 func (esi *ElasticsearchInstance) Secrets() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
-		"elasticsearch": crv1alpha1.ObjectReference{
+		"elasticsearch": {
 			Kind:      "Secret",
 			Name:      esi.chart.Chart + "-master-credentials",
 			Namespace: esi.namespace,

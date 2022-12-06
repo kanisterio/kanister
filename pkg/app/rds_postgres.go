@@ -318,7 +318,7 @@ func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 
 func (pdb RDSPostgresDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
-		"dbconfig": crv1alpha1.ObjectReference{
+		"dbconfig": {
 			Kind:      "configmap",
 			Name:      pdb.configMapName,
 			Namespace: pdb.namespace,
@@ -328,7 +328,7 @@ func (pdb RDSPostgresDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 
 func (pdb RDSPostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
-		"dbsecret": crv1alpha1.ObjectReference{
+		"dbsecret": {
 			Kind:      "secret",
 			Name:      pdb.secretName,
 			Namespace: pdb.namespace,
