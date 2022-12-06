@@ -53,12 +53,15 @@ actions:
         - -c
         - |
           # Set the region
-          REGION=us-east-1
+          export REGION="{{ .ConfigMaps.dbconfig.Data.region | toString }}"
+
+          export INSTANCE_NAME="{{ .ConfigMaps.dbconfig.Data.instance_name | toString }}"
+
           # get the pod IP
           POD_IP=$(hostname -i)
 
-          export accessKeyId="{{ .Secrets.awsSecret.Data.accessKeyId | toString }}"
-          export secretAccessKey='{{ .Secrets.awsSecret.Data.secretAccessKey | toString }}'
+          export accessKeyId="{{ .Secrets.dbsecret.Data.accessKeyId | toString }}"
+          export secretAccessKey='{{ .Secrets.dbsecret.Data.secretAccessKey | toString }}'
 
           ####Configure AWS
           aws configure set aws_access_key_id $accessKeyId
@@ -69,52 +72,64 @@ actions:
 
           # Set the default output format
           aws configure set default.output json
-
+          
+          # SG creation
           SG_NAME=rds-security-group
-          SG_DESC=rds-Security-group
+          SG_DESC="rds-Security-group-from-Blueprint"
 
           # Create the security group in the default VPC
-          SG_ID=$(aws ec2 create-security-group \
-              --group-name $SG_NAME \
-              --description $SG_DESC \
-              --output text \
-              --query "GroupId")
+          SG_ID=$(aws ec2 create-security-group --group-name $SG_NAME --description $SG_DESC --output text --query "GroupId")
 
           aws ec2 authorize-security-group-ingress \
               --group-id $SG_ID \
               --protocol tcp \
               --port 5432 \
-              --cidr $POD_IP/32
+              --cidr 0.0.0.0/0
 
-          # Set the name and password for the database
-          DB_PASSWORD=mydbpassword
+          export PGUSER="{{ .Secrets.dbsecret.Data.postgres_username | toString }}"
+          export PGPASSWORD='{{ .Secrets.dbsecret.Data.postgres_password | toString }}'
 
           # Create the RDS instance
           aws rds create-db-instance \
-              --db-instance-identifier akanksha-rds-instance \
-              --db-instance-class db.t2.micro \
+              --db-instance-identifier $INSTANCE_NAME \
+              --db-instance-class db.t3.micro \
               --engine postgres \
-              --engine-version 14.0 \
-              --master-username postgres \
-              --master-user-password $DB_PASSWORD \
+              --engine-version 14.1 \
+              --master-username $PGUSER \
+              --master-user-password $PGPASSWORD \
               --allocated-storage 20 \
               --vpc-security-group-ids $SG_ID \
               --region $REGION
 
           # Wait for the instance to be created
           aws rds wait db-instance-available \
-              --db-instance-identifier akanksha-rds-instance \
+              --db-instance-identifier $INSTANCE_NAME \
               --region $REGION
 
-          # Get the endpoint for the RDS instance
           ENDPOINT=$(aws rds describe-db-instances \
-              --db-instance-identifier mydb-instance \
+              --db-instance-identifier $INSTANCE_NAME \
               --region $REGION \
               --query "DBInstances[0].Endpoint.Address" \
               --output text)
 
           export PGHOST=$ENDPOINT
-          export PGUSER=postgres
-          export PGPASSWORD=$DB_PASSWORD
           BACKUP_LOCATION={{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}
-          kando location pull --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" - | gunzip -c -f | sed 's/LOCALE/LC_COLLATE/' | psql -q -U admin        
+          kando location pull --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" - | gunzip -c -f | sed 's/LOCALE/LC_COLLATE/' | psql -q -U "${PGUSER}"         
+  delete:
+    inputArtifactNames:
+      - cloudObject
+    phases:
+    - func: KubeTask
+      name: deleteDump
+      args:
+        image: ghcr.io/kanisterio/postgres-kanister-tools:0.84.0
+        namespace: "{{ .Namespace.Name }}"
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}'
