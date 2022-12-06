@@ -53,7 +53,7 @@ func (p *PodWriteSuite) SetUpSuite(c *C) {
 		ObjectMeta: metav1.ObjectMeta{Name: "testpod"},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name:    "testcontainer",
 					Image:   "busybox",
 					Command: []string{"sh", "-c", "tail -f /dev/null"},

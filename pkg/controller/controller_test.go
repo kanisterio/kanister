@@ -203,9 +203,9 @@ func newBPWithOutputArtifact() *crv1alpha1.Blueprint {
 			GenerateName: "test-blueprint-",
 		},
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"myAction": &crv1alpha1.BlueprintAction{
+			"myAction": {
 				OutputArtifacts: map[string]crv1alpha1.Artifact{
-					"myArt": crv1alpha1.Artifact{
+					"myArt": {
 						KeyValue: map[string]string{
 							"key": "{{ .Phases.myPhase0.Output.key }}",
 						},
@@ -347,9 +347,9 @@ func newBPWithFakeOutputArtifact() *crv1alpha1.Blueprint {
 			GenerateName: "test-blueprint-",
 		},
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"myAction": &crv1alpha1.BlueprintAction{
+			"myAction": {
 				OutputArtifacts: map[string]crv1alpha1.Artifact{
-					"myArt": crv1alpha1.Artifact{
+					"myArt": {
 						KeyValue: map[string]string{
 							"key": "{{ .Phases.myPhase0.Output.myKey }}",
 						},
@@ -375,7 +375,7 @@ func newBPWithKopiaSnapshotOutputArtifact() *crv1alpha1.Blueprint {
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"myAction": {
 				OutputArtifacts: map[string]crv1alpha1.Artifact{
-					"myArt": crv1alpha1.Artifact{
+					"myArt": {
 						KopiaSnapshot: "{{ .Phases.myPhase0.Output.key }}",
 					},
 				},
@@ -418,7 +418,7 @@ func (s *ControllerSuite) TestSynchronousFailure(c *C) {
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Object: crv1alpha1.ObjectReference{
 						Name: "foo",
 						Kind: param.NamespaceKind,
@@ -595,7 +595,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Blueprint: "NONEXISTANT_BLUEPRINT",
 				},
 			},
@@ -846,7 +846,7 @@ func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Blueprint: bp.GetName(),
 					Name:      "myAction",
 					Object: crv1alpha1.ObjectReference{
