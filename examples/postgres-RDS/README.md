@@ -13,6 +13,40 @@ This example is to demonstrate how Kanister can be used to provision AWS RDS Ins
 - Kanister controller version 0.84.0 installed in your cluster
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
 
+## Create RDS instance on AWS
+
+We need to have a Postgres RDS instance where we would restore the data.
+
+> You can skip this step if you already have an RDS instance created
+
+RDS instance needs to be reachable from the outside world. So make sure that you have VPC with the security group having the rule to allow ingress traffic on 5432 TCP port.
+
+
+You can create a security group and add rules to the default VPC using the following commands
+
+**NOTE**
+
+This is highly insecure. Its good only for testing and shouldn't be use in a production environment.
+
+```bash
+aws ec2 create-security-group --group-name pgtest-sg --description "pgtest security group"
+aws ec2 authorize-security-group-ingress --group-name pgtest-sg --protocol tcp --port 5432 --cidr 0.0.0.0/0
+```
+
+Now create an RDS instance with the PostgreSQL engine
+
+```bash
+aws rds create-db-instance \
+    --publicly-accessible \
+    --allocated-storage 20 --db-instance-class db.t3.micro \
+    --db-instance-identifier test-postgresql-instance \
+    --engine postgres \
+    --master-username master \
+    --vpc-security-group-id sg-xxxxyyyyzzz \ # Sec group with TCP 5432 inbound rule
+    --master-user-password secret99
+
+aws rds wait db-instance-available --db-instance-identifier=test-postgresql-instance
+```
 ## Create configmap
 
 Create a configmap that contains information to connect to the RDS DB instance
@@ -24,7 +58,7 @@ metadata:
   name: dbconfig
 data:
   region: us-west-2 #Region in which instance is to be created
-  instance_name: akanksha-rds-test  # name of the RDS Instance that would be provisioned
+  instance_name: test-postgresql-instance  # name of the RDS Instance that would be provisioned
 ```
 
 ## Create secret
@@ -39,7 +73,10 @@ metadata:
 stringData:
   ########## AWS Key CREDS
   accessKeyId: 
-  secretAccessKey: 
+  secretAccessKey:
+  ########## Database instance creds
+  postgres_username: master
+  postgres_password: secret99 
 ```
 
 **NOTE**
@@ -95,7 +132,7 @@ can be shared between Kanister-enabled application instances.
 Create a Blueprint in the same namespace as the controller
 
 ```bash
-$ kubectl create -f ./provision-rds-blueprint.yaml -n kanister
+$ kubectl create -f ./rds-restore-blueprint.yaml -n kanister
 ```
 
 Once Postgres is running, you can populate it with some data. Let's add a table called "company" to a "test" database:
@@ -195,7 +232,7 @@ Once the ActionSet status is set to "complete", you can see that the data has be
 
 To verify, Connect to the RDS PostgreSQL database instance using `psql`
 
-PGPASSWORD="secret99" psql --host akanksha-rds-test.cjbctojw4ahh.us-west-2.rds.amazonaws.com -U master -d postgres -p 5432
+PGPASSWORD="secret99" psql --host test-postgresql-instance.cjbctojw4ahh.us-west-2.rds.amazonaws.com -U master -d postgres -p 5432
 
 ```bash
 postgres=# \l
