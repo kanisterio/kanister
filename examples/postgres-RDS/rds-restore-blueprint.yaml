@@ -4,7 +4,6 @@ metadata:
   name: rds-postgres-bp
 actions:
   backup:
-    kind: StatefulSet
     outputArtifacts:
       cloudObject:
         keyValue:
@@ -35,7 +34,6 @@ actions:
           pg_dumpall --clean -U $PGUSER | gzip -c | kando location push --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" -
           kando output backupLocation "${BACKUP_LOCATION}"
   restore:
-    kind: StatefulSet
     inputArtifactNames:
     - cloudObject
     phases:
