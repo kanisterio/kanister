@@ -50,7 +50,6 @@ actions:
         - pipefail
         - -c
         - |
-          # Set the region
           export REGION="{{ .ConfigMaps.dbconfig.Data.region | toString }}"
 
           export INSTANCE_NAME="{{ .ConfigMaps.dbconfig.Data.instance_name | toString }}"
@@ -62,10 +61,8 @@ actions:
           aws configure set aws_access_key_id $accessKeyId
           aws configure set aws_secret_access_key $secretAccessKey
 
-          # Set the default region
           aws configure set default.region $REGION
 
-          # Set the default output format
           aws configure set default.output json
           
           export PGUSER="{{ .Secrets.dbsecret.Data.postgres_username | toString }}"
