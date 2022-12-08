@@ -97,9 +97,8 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 // RepositoryServerCommandArgs contains fields required for connecting
 // to Kopia Repository API server
 type RepositoryServerCommandArgs struct {
+	CommandArgs
 	UserPassword    string
-	ConfigFilePath  string
-	LogDirectory    string
 	CacheDirectory  string
 	Hostname        string
 	ServerURL       string
@@ -113,10 +112,10 @@ type RepositoryServerCommandArgs struct {
 // repository on Kopia Repository API server
 func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []string {
 	args := commonArgs(&CommandArgs{
-		RepoPassword:   cmdArgs.UserPassword,
 		ConfigFilePath: cmdArgs.ConfigFilePath,
 		LogDirectory:   cmdArgs.LogDirectory,
 	}, false)
+	args = args.AppendRedactedKV(passwordFlag, cmdArgs.UserPassword)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, serverSubCommand, noCheckForUpdatesFlag, noGrpcFlag)
 
 	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)

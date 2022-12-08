@@ -114,3 +114,15 @@ const (
 	// DefaultLogDirectory is the directory where kopia log file is created
 	DefaultLogDirectory = "/tmp/kopia-log"
 )
+
+// Constants for RepositoryServer secrets
+const (
+	// RepoPassordKey is the key for repository password in repo password secret
+	RepoPassordKey = "repo-password"
+)
+
+// Constants for Kopia supported Environment variables
+const (
+	// KopiaPasswordEnv is the env for kopia repository password
+	KopiaRepoPasswordEnv = "KOPIA_PASSWORD"
+)

@@ -48,7 +48,6 @@ func GetMaintenanceOwnerForConnectedRepository(
 ) (string, error) {
 	args := command.MaintenanceInfoCommandArgs{
 		CommandArgs: &command.CommandArgs{
-			RepoPassword:   repoPassword,
 			ConfigFilePath: configFilePath,
 			LogDirectory:   logDirectory,
 		},

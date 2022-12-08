@@ -15,7 +15,13 @@
 package command
 
 import (
+	"fmt"
+
+	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/kanisterio/kanister/pkg/kopia"
+	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/logsafe"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
@@ -64,4 +70,20 @@ func GeneralCommand(cmdArgs GeneralCommandArgs) logsafe.Cmd {
 		args = args.AppendRedactedKV(k, v)
 	}
 	return args
+}
+
+// GenerateEnvSpecFromRepoPasswordSecret returns envvar generated
+// for repository password secret
+func GenerateEnvSpecFromRepoPasswordSecret(s *v1.Secret) (*v1.EnvVar, error) {
+	if s == nil {
+		return nil, errors.New("Secret cannot be nil")
+	}
+	if s.Data == nil {
+		return nil, errors.New("Secret data cannot be nil")
+	}
+	if _, ok := s.Data[RepoPassordKey]; !ok {
+		return nil, errors.New(fmt.Sprint("Repository password key not set: ", RepoPassordKey))
+	}
+	envVar := storage.GetEnvVarWithSecretRef(RepoPassordKey, s.Name, KopiaRepoPasswordEnv)
+	return &envVar, nil
 }

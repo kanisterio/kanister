@@ -97,8 +97,8 @@ func getEnvSpecForAWSCredentialSecret(s *v1.Secret, assumeRoleDuration time.Dura
 	envVars := []v1.EnvVar{}
 	envVars = append(
 		envVars,
-		getEnvVarWithSecretRef(aws.AccessKeyID, s.Name, secrets.AWSAccessKeyID),
-		getEnvVarWithSecretRef(aws.SecretAccessKey, s.Name, secrets.AWSSecretAccessKey),
+		GetEnvVarWithSecretRef(aws.AccessKeyID, s.Name, secrets.AWSAccessKeyID),
+		GetEnvVarWithSecretRef(aws.SecretAccessKey, s.Name, secrets.AWSSecretAccessKey),
 	)
 	creds, err := secrets.ExtractAWSCredentials(context.Background(), s, assumeRoleDuration)
 	if err != nil {
@@ -114,8 +114,8 @@ func getEnvSpecForAzureCredentialSecret(s *v1.Secret) ([]v1.EnvVar, error) {
 	envVars := []v1.EnvVar{}
 	envVars = append(
 		envVars,
-		getEnvVarWithSecretRef(azureStorageAccountEnv, s.Name, secrets.AzureStorageAccountID),
-		getEnvVarWithSecretRef(azureStorageKeyEnv, s.Name, secrets.AzureStorageAccountKey),
+		GetEnvVarWithSecretRef(azureStorageAccountEnv, s.Name, secrets.AzureStorageAccountID),
+		GetEnvVarWithSecretRef(azureStorageKeyEnv, s.Name, secrets.AzureStorageAccountKey),
 	)
 	azureSecret, err := secrets.ExtractAzureCredentials(s)
 	if err != nil {
@@ -134,7 +134,7 @@ func getEnvSpecForAzureCredentialSecret(s *v1.Secret) ([]v1.EnvVar, error) {
 	return envVars, nil
 }
 
-func getEnvVarWithSecretRef(varName, secretName, secretKey string) v1.EnvVar {
+func GetEnvVarWithSecretRef(varName, secretName, secretKey string) v1.EnvVar {
 	return v1.EnvVar{
 		Name: varName,
 		ValueFrom: &v1.EnvVarSource{

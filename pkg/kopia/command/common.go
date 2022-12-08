@@ -23,7 +23,6 @@ import (
 )
 
 type CommandArgs struct {
-	RepoPassword   string
 	ConfigFilePath string
 	LogDirectory   string
 }
@@ -50,9 +49,6 @@ func commonArgs(cmdArgs *CommandArgs, requireInfoLevel bool) logsafe.Cmd {
 	}
 	if cmdArgs.LogDirectory != "" {
 		c = c.AppendLoggableKV(logDirectoryFlag, cmdArgs.LogDirectory)
-	}
-	if cmdArgs.RepoPassword != "" {
-		c = c.AppendRedactedKV(passwordFlag, cmdArgs.RepoPassword)
 	}
 	return c
 }

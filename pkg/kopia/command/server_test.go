@@ -26,7 +26,6 @@ var _ = Suite(&KopiaServerTestSuite{})
 
 func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 	commandArgs := &CommandArgs{
-		RepoPassword:   "encr-key",
 		ConfigFilePath: "path/kopia.config",
 		LogDirectory:   "cache/log",
 	}
@@ -105,7 +104,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 				}
 				return ServerAddUser(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user add a-username@a-hostname --user-password=a-user-password",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server user add a-username@a-hostname --user-password=a-user-password",
 		},
 		{
 			f: func() []string {
@@ -116,7 +115,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 				}
 				return ServerSetUser(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user set a-username@a-hostname --user-password=a-user-password",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server user set a-username@a-hostname --user-password=a-user-password",
 		},
 		{
 			f: func() []string {
@@ -125,7 +124,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 				}
 				return ServerListUser(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server user list --json",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server user list --json",
 		},
 		{
 			f: func() []string {
@@ -138,7 +137,7 @@ func (kServer *KopiaServerTestSuite) TestServerCommands(c *C) {
 				}
 				return ServerRefresh(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key server refresh --server-cert-fingerprint=a-fingerprint --address=a-server-address --server-username=a-username@a-hostname --server-password=a-user-password",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log server refresh --server-cert-fingerprint=a-fingerprint --address=a-server-address --server-username=a-username@a-hostname --server-password=a-user-password",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")

@@ -39,7 +39,6 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 		{
 			cmdArg: RepositoryCommandArgs{
 				CommandArgs: &CommandArgs{
-					RepoPassword:   "pass123",
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
@@ -57,7 +56,6 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 		{
 			cmdArg: RepositoryCommandArgs{
 				CommandArgs: &CommandArgs{
-					RepoPassword:   "pass123",
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
@@ -77,7 +75,6 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 				"--log-level=error",
 				"--config-file=/tmp/config.file",
 				"--log-dir=/tmp/log.dir",
-				"--password=pass123",
 				"repository",
 				"create",
 				"--no-check-for-updates",
@@ -112,7 +109,6 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 		{
 			cmdArg: RepositoryCommandArgs{
 				CommandArgs: &CommandArgs{
-					RepoPassword:   "pass123",
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
@@ -130,7 +126,6 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 		{
 			cmdArg: RepositoryCommandArgs{
 				CommandArgs: &CommandArgs{
-					RepoPassword:   "pass123",
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
@@ -149,7 +144,6 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 				"--log-level=error",
 				"--config-file=/tmp/config.file",
 				"--log-dir=/tmp/log.dir",
-				"--password=pass123",
 				"repository",
 				"connect",
 				"--no-check-for-updates",
@@ -174,9 +168,11 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 
 func (s *RepositoryUtilsSuite) TestRepositoryConnectServerUtil(c *check.C) {
 	cmd := RepositoryConnectServerCommand(RepositoryServerCommandArgs{
-		UserPassword:    "testpass123",
-		ConfigFilePath:  "/tmp/config.file",
-		LogDirectory:    "/tmp/log.dir",
+		UserPassword: "testpass123",
+		CommandArgs: CommandArgs{
+			ConfigFilePath: "/tmp/config.file",
+			LogDirectory:   "/tmp/log.dir",
+		},
 		CacheDirectory:  "/tmp/cache.dir",
 		Hostname:        "test-hostname",
 		Username:        "test-username",
