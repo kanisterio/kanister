@@ -423,17 +423,9 @@ type Repository struct {
 
 // Server details required for starting the repository proxy server and initializing the repository client users
 type Server struct {
-	UserAccessSecretRef      corev1.SecretReference   `json:"userAccessSecretRef"`
-	AdminSecretRef           corev1.SecretReference   `json:"adminSecretRef"`
-	TLSSecretRef             corev1.SecretReference   `json:"tlsSecretRef"`
-	NetworkPolicyIngressRule NetworkPolicyIngressRule `json:"networkPolicyIngressRule"`
-}
-
-// NetworkPolicyIngressRule defines the pod and namespace labels for the NetworkPolicy's ingress rule
-// Only the traffic from selected pods in selected namespaces will be allowed to communicate with the server
-type NetworkPolicyIngressRule struct {
-	PodSelector       *metav1.LabelSelector `json:"podSelector,omitempty"`
-	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
+	UserAccessSecretRef corev1.SecretReference `json:"userAccessSecretRef"`
+	AdminSecretRef      corev1.SecretReference `json:"adminSecretRef"`
+	TLSSecretRef        corev1.SecretReference `json:"tlsSecretRef"`
 }
 
 // RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller
@@ -484,9 +476,8 @@ const (
 
 // ServerInfo describes all the information required by the client users to connect to the repository server
 type ServerInfo struct {
-	PodName           string `json:"podName,omitempty"`
-	ServiceName       string `json:"serviceName,omitempty"`
-	NetworkPolicyName string `json:"networkPolicyName,omitempty"`
+	PodName     string `json:"podName,omitempty"`
+	ServiceName string `json:"serviceName,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
