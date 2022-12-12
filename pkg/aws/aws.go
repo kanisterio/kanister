@@ -55,8 +55,8 @@ const (
 	Region = "AWS_REGION"
 
 	// From AWS SDK "aws/session/env_config.go"
-	webIdentityTokenFilePathEnvKey = "AWS_WEB_IDENTITY_TOKEN_FILE"
-	roleARNEnvKey                  = "AWS_ROLE_ARN"
+	WebIdentityTokenFilePathEnvKey = "AWS_WEB_IDENTITY_TOKEN_FILE"
+	RoleARNEnvKey                  = "AWS_ROLE_ARN"
 
 	// TODO: Make this configurable via `config`
 	AssumeRoleDurationDefault = 60 * time.Minute
@@ -108,7 +108,7 @@ func authenticateAWSCredentials(
 		return nil, "", err
 	}
 	if creds != nil {
-		return creds, os.Getenv(roleARNEnvKey), nil
+		return creds, os.Getenv(RoleARNEnvKey), nil
 	}
 
 	return nil, "", errors.New("Missing AWS credentials, please check that either AWS access keys or web identity token are provided")
@@ -140,13 +140,13 @@ func fetchWebIdentityTokenFromConfig(config map[string]string, assumeRoleDuratio
 }
 
 func fetchWebIdentityTokenFromFile(assumeRoleDuration time.Duration) (*credentials.Credentials, error) {
-	if os.Getenv(webIdentityTokenFilePathEnvKey) == "" || os.Getenv(roleARNEnvKey) == "" {
+	if os.Getenv(WebIdentityTokenFilePathEnvKey) == "" || os.Getenv(RoleARNEnvKey) == "" {
 		return nil, nil
 	}
 
 	creds, err := getCredentialsWithDuration(
-		os.Getenv(roleARNEnvKey),
-		stscreds.FetchTokenPath(os.Getenv(webIdentityTokenFilePathEnvKey)),
+		os.Getenv(RoleARNEnvKey),
+		stscreds.FetchTokenPath(os.Getenv(WebIdentityTokenFilePathEnvKey)),
 		assumeRoleDuration,
 	)
 	if err != nil {
