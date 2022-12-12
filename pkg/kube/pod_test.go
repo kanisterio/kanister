@@ -89,6 +89,11 @@ func (s *PodSuite) TestPod(c *C) {
 	sa, err := GetControllerServiceAccount(fake.NewSimpleClientset())
 	c.Assert(err, IsNil)
 
+	testSec := s.createTestSecret(c)
+	defer func() {
+		err = s.cli.CoreV1().Secrets(testSec.Namespace).Delete(context.Background(), testSec.Name, metav1.DeleteOptions{})
+		c.Log("Failed to delete test secret: ", testSec.Name)
+	}()
 	ctx := context.Background()
 	podOptions := []*PodOptions{
 		{
@@ -254,6 +259,20 @@ func (s *PodSuite) TestPod(c *C) {
 	}
 }
 
+func (s *PodSuite) createTestSecret(c *C) *v1.Secret {
+	testSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-secret-",
+		},
+		StringData: map[string]string{
+			"key": "value",
+		},
+	}
+	testSecret, err := s.cli.CoreV1().Secrets(s.namespace).Create(context.Background(), testSecret, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	return testSecret
+}
+
 func (s *PodSuite) createServiceAccount(name, ns string) error {
 	sa := v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
@@ -267,7 +286,7 @@ func (s *PodSuite) createServiceAccount(name, ns string) error {
 	return nil
 }
 
-func (s *PodSuite) TestPodWithVolumes(c *C) {
+func (s *PodSuite) TestPodWithFilesystemModeVolumes(c *C) {
 	cli := fake.NewSimpleClientset()
 	pvcName := "prometheus-ibm-monitoring-prometheus-db-prometheus-ibm-monitoring-prometheus-0"
 	pvc := &v1.PersistentVolumeClaim{
@@ -313,6 +332,58 @@ func (s *PodSuite) TestPodWithVolumes(c *C) {
 	c.Assert(pod.Spec.Volumes, HasLen, 1)
 	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, pvcName)
 	c.Assert(pod.Spec.Containers[0].VolumeMounts[0].MountPath, Equals, "/mnt/data1")
+	c.Assert(len(pod.Spec.Containers[0].VolumeDevices), Equals, 0)
+}
+
+func (s *PodSuite) TestPodWithBlockModeVolumes(c *C) {
+	cli := fake.NewSimpleClientset()
+	pvcName := "block-mode-volume"
+	blockMode := v1.PersistentVolumeBlock
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: pvcName,
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			VolumeMode:  &blockMode,
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceName(v1.ResourceStorage): resource.MustParse("1Gi"),
+				},
+			},
+		},
+	}
+	pvc, err := cli.CoreV1().PersistentVolumeClaims(s.namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	vols := map[string]string{pvc.Name: "/mnt/data1"}
+	ctx := context.Background()
+	var p *v1.Pod
+	cli.PrependReactor("create", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		fmt.Println("found pod")
+		ca := action.(testing.CreateAction)
+		p = ca.GetObject().(*v1.Pod)
+		if len(p.Spec.Volumes[0].Name) > 63 {
+			return true, nil, errors.New("spec.volumes[0].name must be no more than 63 characters")
+		}
+		return false, nil, nil
+	})
+	cli.PrependReactor("get", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		p.Status.Phase = v1.PodRunning
+		return true, p, nil
+	})
+	pod, err := CreatePod(ctx, cli, &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		BlockVolumes: vols,
+	})
+	c.Assert(err, IsNil)
+	c.Assert(WaitForPodReady(ctx, cli, s.namespace, pod.Name), IsNil)
+	c.Assert(pod.Spec.Volumes, HasLen, 1)
+	c.Assert(pod.Spec.Volumes[0].VolumeSource.PersistentVolumeClaim.ClaimName, Equals, pvcName)
+	c.Assert(len(pod.Spec.Containers[0].VolumeMounts), Equals, 0)
+	c.Assert(pod.Spec.Containers[0].VolumeDevices[0].DevicePath, Equals, "/mnt/data1")
 }
 
 func (s *PodSuite) TestGetPodLogs(c *C) {
@@ -729,4 +800,55 @@ func (s *PodSuite) TestGetPodReadyWaitTimeout(c *C) {
 
 	// Check without ENV set
 	c.Assert(GetPodReadyWaitTimeout(), Equals, DefaultPodReadyWaitTimeout)
+}
+
+func (s *PodSuite) TestSetPodSecurityContext(c *C) {
+	po := &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		PodSecurityContext: &v1.PodSecurityContext{
+			RunAsUser:    &[]int64{1000}[0],
+			RunAsGroup:   &[]int64{1000}[0],
+			RunAsNonRoot: &[]bool{true}[0],
+		},
+	}
+
+	pod, err := CreatePod(context.Background(), s.cli, po)
+	c.Assert(err, IsNil)
+	runAsNonRootExpected := true
+	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, DeepEquals, &runAsNonRootExpected)
+	var uidAndGidExpected int64 = 1000
+	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
+}
+
+func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
+	po := &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		PodSecurityContext: &v1.PodSecurityContext{
+			RunAsUser:    &[]int64{1000}[0],
+			RunAsGroup:   &[]int64{1000}[0],
+			RunAsNonRoot: &[]bool{true}[0],
+		},
+		PodOverride: crv1alpha1.JSONMap{
+			"securityContext": map[string]interface{}{
+				"runAsUser":    2000,
+				"runAsGroup":   2000,
+				"runAsNonRoot": false,
+			},
+		},
+	}
+
+	pod, err := CreatePod(context.Background(), s.cli, po)
+	c.Assert(err, IsNil)
+	runAsNonRootExpected := true
+	c.Assert(pod.Spec.SecurityContext.RunAsNonRoot, DeepEquals, &runAsNonRootExpected)
+	var uidAndGidExpected int64 = 1000
+	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
+	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
 }
