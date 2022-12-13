@@ -3,9 +3,9 @@ package progress
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
+	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	progressPercentCompleted  = "100.00"
-	progressPercentStarted    = "10.00"
-	progressPercentNotStarted = "0.00"
+	progressPercentCompleted  = 100.00
+	progressPercentStarted    = 10.00
+	progressPercentNotStarted = 0
 	weightNormal              = 1.0
 	weightHeavy               = 2.0
 	pollDuration              = time.Second * 2
@@ -49,6 +49,7 @@ func TrackActionsProgress(
 	client versioned.Interface,
 	actionSetName string,
 	namespace string,
+	p *kanister.Phase,
 ) error {
 	ticker := time.NewTicker(pollDuration)
 	defer ticker.Stop()
@@ -73,7 +74,7 @@ func TrackActionsProgress(
 				continue
 			}
 
-			if err := updateActionsProgress(ctx, client, actionSet, phaseWeights, totalWeight, time.Now()); err != nil {
+			if err := updateActionsProgress(ctx, client, actionSet, phaseWeights, totalWeight, time.Now(), p); err != nil {
 				fields := field.M{
 					"actionSet":      actionSet.Name,
 					"nextUpdateTime": time.Now().Add(pollDuration),
@@ -138,24 +139,31 @@ func updateActionsProgress(
 	phaseWeights map[string]float64,
 	totalWeight float64,
 	now time.Time,
+	p *kanister.Phase,
 ) error {
 	if err := validate.ActionSet(actionSet); err != nil {
 		return err
 	}
 
 	// assess the state of the phases in all the actions to determine progress
-	currentWeight := 0.0
-	for _, action := range actionSet.Status.Actions {
-		for _, phase := range action.Phases {
-			if phase.State != crv1alpha1.StateComplete {
-				continue
-			}
-			currentWeight += phaseWeights[phase.Name]
-		}
-	}
+	//currentWeight := 0.0
+	//for _, action := range actionSet.Status.Actions {
+	//	for _, phase := range action.Phases {
+	//		if phase.State != crv1alpha1.StateComplete {
+	//			continue
+	//		}
+	//		currentWeight += phaseWeights[phase.Name]
+	//	}
+	//}
 
-	percent := (currentWeight / totalWeight) * 100.0
-	progressPercent := strconv.FormatFloat(percent, 'f', 2, 64)
+	//percent := (currentWeight / totalWeight) * 100.0
+	//progressPercent := strconv.FormatFloat(percent, 'f', 2, 64)
+	phaseProgress, err := p.Progress()
+	progressPercent := phaseProgress.ProgressPercent
+	if err != nil {
+		log.Error().WithError(err).Print("Failed to get progress")
+		return err
+	}
 	if progressPercent == progressPercentNotStarted {
 		progressPercent = progressPercentStarted
 	}
@@ -165,7 +173,7 @@ func updateActionsProgress(
 		"namespace": actionSet.GetNamespace(),
 		"progress":  progressPercent,
 	}
-	log.Debug().Print("updating action progress", fields)
+	log.Info().Print("updating action progress", fields)
 
 	return updateActionSet(ctx, client, actionSet, progressPercent, now)
 }
@@ -191,13 +199,13 @@ func updateActionSet(
 	ctx context.Context,
 	client versioned.Interface,
 	actionSet *crv1alpha1.ActionSet,
-	progressPercent string,
+	progressPercent int64,
 	lastTransitionTime time.Time,
 ) error {
 	updateFunc := func(actionSet *crv1alpha1.ActionSet) error {
 		metav1Time := metav1.NewTime(lastTransitionTime)
 
-		actionSet.Status.Progress.PercentCompleted = progressPercent
+		actionSet.Status.Progress.PercentCompleted = string(progressPercent)
 		actionSet.Status.Progress.LastTransitionTime = &metav1Time
 		return nil
 	}

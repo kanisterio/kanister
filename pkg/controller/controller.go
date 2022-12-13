@@ -380,14 +380,6 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 		}
 	}
 
-	go func() {
-		// progress update is computed on a best-effort basis.
-		// if it exits with error, we will just log it.
-		if err := progress.TrackActionsProgress(ctx, c.crClient, as.GetName(), as.GetNamespace()); err != nil {
-			log.Error().WithError(err)
-		}
-	}()
-
 	for i, a := range as.Status.Actions {
 		var bp *crv1alpha1.Blueprint
 		if bp, err = c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, v1.GetOptions{}); err != nil {
@@ -475,6 +467,15 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			} else {
 				msg = fmt.Sprintf("Failed to init phase params: %#v:", as.Status.Actions[aIDX].Phases[i])
 			}
+
+			go func() {
+				// progress update is computed on a best-effort basis.
+				// if it exits with error, we will just log it.
+				if err := progress.TrackActionsProgress(ctx, c.crClient, as.GetName(), as.GetNamespace(), p); err != nil {
+					log.Error().WithError(err)
+				}
+			}()
+
 			var rf func(*crv1alpha1.ActionSet) error
 			if err != nil {
 				coreErr = err
