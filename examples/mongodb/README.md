@@ -7,7 +7,7 @@
 * Kubernetes 1.20+
 * Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
 * PV support on the underlying infrastructure
-* Kanister controller version 0.84.0 installed in your cluster
+* Kanister controller version 0.85.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## Chart Details
