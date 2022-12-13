@@ -69,8 +69,8 @@ actions:
           export PGPASSWORD='{{ .Secrets.dbsecret.Data.postgres_password | toString }}'
 
           export PGHOST=$(aws rds describe-db-instances \
-              --db-instance-identifier $INSTANCE_NAME \
               --region $REGION \
+              --db-instance-identifier $INSTANCE_NAME \
               --query "DBInstances[0].Endpoint.Address" \
               --output text)
 

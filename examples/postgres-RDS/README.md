@@ -15,22 +15,23 @@ This example is to demonstrate how Kanister can be used to provision AWS RDS Ins
 
 ## Create RDS instance on AWS
 
-We need to have a Postgres RDS instance where we would restore the data.
+We need to have a Postgres RDS instance where we will restore the data.
 
 > You can skip this step if you already have an RDS instance created
 
-RDS instance needs to be reachable from the outside world. So make sure that you have VPC with the security group having the rule to allow ingress traffic on 5432 TCP port.
+RDS instance needs to be reachable from the Kubernetes cluster performing the restore operation. So make sure that you have VPC with the security group having the rule to allow ingress traffic on 5432 TCP port.
 
 
 You can create a security group and add rules to the default VPC using the following commands
 
 **NOTE**
 
-This is highly insecure. Its good only for testing and shouldn't be use in a production environment.
+This is highly insecure. Its good only for testing and should not be use in a production environment.
+For production, make sure to restrict the source (CIDR or otherwise) to only the elements that need to access the DB.
 
 ```bash
-aws ec2 create-security-group --group-name pgtest-sg --description "pgtest security group"
-aws ec2 authorize-security-group-ingress --group-name pgtest-sg --protocol tcp --port 5432 --cidr 0.0.0.0/0
+aws ec2 create-security-group --group-name <security-group-name> --description "pgtest security group"
+aws ec2 authorize-security-group-ingress --group-name <security-group-name> --protocol tcp --port 5432 --cidr 0.0.0.0/0
 ```
 
 Now create an RDS instance with the PostgreSQL engine
@@ -39,13 +40,13 @@ Now create an RDS instance with the PostgreSQL engine
 aws rds create-db-instance \
     --publicly-accessible \
     --allocated-storage 20 --db-instance-class db.t3.micro \
-    --db-instance-identifier test-postgresql-instance \
+    --db-instance-identifier <instance-name> \
     --engine postgres \
-    --master-username master \
+    --master-username <master-username> \
     --vpc-security-group-id sg-xxxxyyyyzzz \ # Sec group with TCP 5432 inbound rule
-    --master-user-password secret99
+    --master-user-password <db-password>
 
-aws rds wait db-instance-available --db-instance-identifier=test-postgresql-instance
+aws rds wait db-instance-available --db-instance-identifier=<instance-name>
 ```
 ## Create configmap
 
@@ -57,8 +58,8 @@ kind: ConfigMap
 metadata:
   name: dbconfig
 data:
-  region: us-west-2 #Region in which instance is to be created
-  instance_name: test-postgresql-instance  # name of the RDS Instance that would be provisioned
+  region: <region-name> #Region in which instance is to be created
+  instance_name: <instance-name>  # name of the RDS Instance that would be provisioned
 ```
 
 ## Create secret
@@ -75,13 +76,13 @@ stringData:
   accessKeyId: 
   secretAccessKey:
   ########## Database instance creds
-  postgres_username: master
-  postgres_password: secret99 
+  postgres_username: <master-username>
+  postgres_password: <db-password> 
 ```
 
 **NOTE**
 
-The creds must have proper permissions to perform operation on RDS
+The AWS credentials must have proper permissions to perform operations on RDS
 
 ## Installing the PostgreSQL Chart
 To install the chart with the release name `my-release`:
@@ -232,7 +233,7 @@ Once the ActionSet status is set to "complete", you can see that the data has be
 
 To verify, Connect to the RDS PostgreSQL database instance using `psql`
 
-PGPASSWORD="secret99" psql --host test-postgresql-instance.cjbctojw4ahh.us-west-2.rds.amazonaws.com -U master -d postgres -p 5432
+PGPASSWORD="<db-password>" psql --host <instance-name> -U <master-username> -d postgres -p 5432
 
 ```bash
 postgres=# \l
