@@ -34,7 +34,3 @@ spec:
     userAccessSecretRef:
       name: repository-server-user-access
       namespace: kanister
-    networkPolicyIngressRule:
-      namespaceSelector:
-        matchLabels:
-          project: mysql

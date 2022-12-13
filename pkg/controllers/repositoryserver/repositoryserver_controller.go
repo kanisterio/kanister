@@ -75,29 +75,30 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	logger.Info("Check if the RepositoryServer CR status is already ServerReady. End if ServerReady.")
-	if repositoryServer.Status.Progress == crkanisteriov1alpha1.ServerReady {
-		return ctrl.Result{}, nil
-	}
-
 	logger.Info("Setting the CR status as 'ServerPending' since a create or update event is in progress")
 	repositoryServer.Status.Progress = crkanisteriov1alpha1.ServerPending
 
 	logger.Info("Found RepositoryServer CR. Create or update owned resources")
 	repoServerHandler := newRepositoryServerHandler(ctx, req, logger, r, kubeCli, repositoryServer)
+	repoServerHandler.RepositoryServer = repositoryServer
+
+	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
+		return ctrl.Result{}, err
+	}
 	if err := repoServerHandler.CreateOrUpdateOwnedResources(); err != nil {
 		logger.Info("Setting the CR status as 'ServerStopped' since an error occurred in create/update event")
-		repositoryServer.Status.Progress = crkanisteriov1alpha1.ServerStopped
-		if err = r.Status().Update(ctx, repositoryServer); err != nil {
+		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.ServerStopped
+		if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, err
 	}
 	logger.Info("Setting the CR status as 'ServerReady' after completing the create/update event\n\n\n\n")
-	repositoryServer.Status.Progress = crkanisteriov1alpha1.ServerReady
-	if err = r.Status().Update(ctx, repositoryServer); err != nil {
+	repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.ServerReady
+	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
 		return ctrl.Result{}, err
 	}
+
 	return ctrl.Result{}, nil
 }
 

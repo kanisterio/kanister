@@ -63,10 +63,17 @@ func (h *RepoServerHandler) CreateOrUpdateOwnedResources() error {
 	if err := h.waitForPodReady(pod); err != nil {
 		return err
 	}
-	h.connectToRepository()
-	h.startRepoProxyServer()
-	h.waitForServerToStart()
-	h.createOrUpdateClientUsers()
+	if err := h.createOrConnectKopiaRepository(); err != nil {
+		return err
+	}
+
+	if err := h.startRepoProxyServer(h.Ctx); err != nil {
+		return err
+	}
+
+	if err := h.createOrUpdateClientUsers(h.Ctx); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -291,24 +298,4 @@ func (h *RepoServerHandler) waitForPodReady(pod *corev1.Pod) error {
 		return errors.Wrap(err, fmt.Sprintf("Failed while waiting for Pod %s to be ready", pod.Name))
 	}
 	return nil
-}
-
-func (h *RepoServerHandler) connectToRepository() {
-
-}
-
-func (h *RepoServerHandler) startRepoProxyServer() {
-
-}
-
-func (h *RepoServerHandler) waitForServerToStart() {
-
-}
-
-func (h *RepoServerHandler) createOrUpdateClientUsers() {
-	h.refreshServer()
-}
-
-func (h *RepoServerHandler) refreshServer() {
-
 }

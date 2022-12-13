@@ -19,7 +19,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/jpillora/backoff"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -27,9 +29,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/kanisterio/kanister/pkg/consts"
+	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
@@ -40,6 +45,7 @@ const (
 	repoServerServiceNameKey  = "name"
 	repoServerServiceProtocol = "TCP"
 	repoServerServicePort     = 51515
+	repoServerAddressFormat   = "https://%s:%d"
 
 	repoServerPodContainerName    = "repo-server-container"
 	googleCloudCredsDirPath       = "/mnt/secrets/creds/gcloud"
@@ -232,4 +238,31 @@ func getPodOptions(namespace string, podOverride map[string]interface{}, svc *co
 		PodOverride:   podOverride,
 		Labels:        map[string]string{repoServerServiceNameKey: svc.Name},
 	}
+}
+
+func GetPodAddress(ctx context.Context, cli kubernetes.Interface, namespace, podName string) (string, error) {
+	p, err := cli.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to get pod")
+	}
+	return fmt.Sprintf(repoServerAddressFormat, p.Status.PodIP, repoServerServicePort), nil
+}
+
+// WaitTillCommandSucceed returns error if the Command fails to pass without error before default timeout
+func WaitTillCommandSucceed(ctx context.Context, cli kubernetes.Interface, cmd []string, namespace, podName, container string) error {
+	err := poll.WaitWithBackoff(ctx, backoff.Backoff{
+		Factor: 2,
+		Jitter: false,
+		Min:    100 * time.Millisecond,
+		Max:    180 * time.Second,
+	}, func(context.Context) (bool, error) {
+		stdout, stderr, exErr := kube.Exec(cli, namespace, podName, container, cmd, nil)
+		format.Log(podName, container, stdout)
+		format.Log(podName, container, stderr)
+		if exErr != nil {
+			return false, nil
+		}
+		return true, nil
+	})
+	return err
 }
