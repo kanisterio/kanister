@@ -54,38 +54,49 @@ func TrackActionsProgress(
 	ticker := time.NewTicker(pollDuration)
 	defer ticker.Stop()
 
-	phaseWeights, totalWeight, err := calculatePhaseWeights(ctx, actionSetName, namespace, client)
-	if err != nil {
-		return err
-	}
+	//phaseWeights, totalWeight, err := calculatePhaseWeights(ctx, actionSetName, namespace, client)
+	//if err != nil {
+	//	return err
+	//}
 
+	fmt.Println("::::Starting tracker::::", time.Now())
 	for {
 		select {
 		case <-ctx.Done():
+			fmt.Println("::::Context done called!!::::", time.Now())
 			return ctx.Err()
 
-		case <-ticker.C:
-			actionSet, err := client.CrV1alpha1().ActionSets(namespace).Get(ctx, actionSetName, metav1.GetOptions{})
+		case t := <-ticker.C:
+			fmt.Println(":::: Calcultating phase progress ::::", t)
+			phaseProgress, err := p.Progress()
+			fmt.Println("::: Phase Progress :::", phaseProgress)
 			if err != nil {
+				log.Error().WithError(err).Print("Failed to get progress")
 				return err
 			}
 
-			if actionSet.Status == nil {
-				continue
-			}
+			//actionSet, err := client.CrV1alpha1().ActionSets(namespace).Get(ctx, actionSetName, metav1.GetOptions{})
+			//if err != nil {
+			//	log.Error().WithError(err).Print("Failed to get actionset")
+			//	return err
+			//}
 
-			if err := updateActionsProgress(ctx, client, actionSet, phaseWeights, totalWeight, time.Now(), p); err != nil {
-				fields := field.M{
-					"actionSet":      actionSet.Name,
-					"nextUpdateTime": time.Now().Add(pollDuration),
-				}
-				log.Error().WithError(err).Print("failed to update phase progress", fields)
-				continue
-			}
+			//if actionSet.Status == nil {
+			//	continue
+			//}
 
-			if completedOrFailed(actionSet) {
-				return nil
-			}
+			//if err := updateActionsProgress(ctx, client, actionSet, time.Now(), p); err != nil {
+			//	fields := field.M{
+			//		"actionSet":      actionSet.Name,
+			//		"nextUpdateTime": time.Now().Add(pollDuration),
+			//	}
+			//	log.Error().WithError(err).Print("failed to update phase progress", fields)
+			//	continue
+			//}
+
+			//if completedOrFailed(actionSet) {
+			//	return nil
+			//}
 		}
 	}
 }
@@ -136,14 +147,12 @@ func updateActionsProgress(
 	ctx context.Context,
 	client versioned.Interface,
 	actionSet *crv1alpha1.ActionSet,
-	phaseWeights map[string]float64,
-	totalWeight float64,
 	now time.Time,
 	p *kanister.Phase,
 ) error {
-	if err := validate.ActionSet(actionSet); err != nil {
-		return err
-	}
+	//if err := validate.ActionSet(actionSet); err != nil {
+	//	return err
+	//}
 
 	// assess the state of the phases in all the actions to determine progress
 	//currentWeight := 0.0
@@ -159,6 +168,7 @@ func updateActionsProgress(
 	//percent := (currentWeight / totalWeight) * 100.0
 	//progressPercent := strconv.FormatFloat(percent, 'f', 2, 64)
 	phaseProgress, err := p.Progress()
+	fmt.Println("::::: Phase Progress::::", phaseProgress)
 	progressPercent := phaseProgress.ProgressPercent
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to get progress")
