@@ -17,7 +17,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.84.0
+        image: <Custom docker image> ## THIS NEED TO BE UPDATED WITH THE CUSTOM DOCKER IMAGE
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -40,7 +40,7 @@ actions:
     - func: KubeTask
       name: pgRestore
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.84.0
+        image: <Custom docker image> ## THIS NEED TO BE UPDATED WITH THE CUSTOM DOCKER IMAGE
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -83,7 +83,7 @@ actions:
     - func: KubeTask
       name: deleteDump
       args:
-        image: ghcr.io/kanisterio/postgres-kanister-tools:0.84.0
+        image: <Custom docker image> ## THIS NEED TO BE UPDATED WITH THE CUSTOM DOCKER IMAGE
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash

@@ -129,8 +129,19 @@ data operations such as backup should go. This is stored as a `profiles.cr.kanis
 requires a Profile reference to complete the action. This CR (`profiles.cr.kanister.io`)
 can be shared between Kanister-enabled application instances.
 
+## Create Docker Image to be used in the Blueprint
+Create the docker image which include awscli, postgresclient and kando (https://docs.kanister.io/tooling.html#kando) . We would provide the image to the blueprint.
+
+```bash
+$ docker build -t <image-registry>/<image-repo>:<tag> .
+$ docker push <image-registry>/<image-repo>:<tag>
+```
+
 ### Create Blueprint
-Create a Blueprint in the same namespace as the controller
+
+Modify the `rds-restore-blueprint.yaml` file and update the `image` field of the `Phases` to use the docker image build from the previous step.  
+
+Create a Blueprint in the same namespace as the controller. 
 
 ```bash
 $ kubectl create -f ./rds-restore-blueprint.yaml -n kanister
