@@ -463,18 +463,17 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			var msg string
 			if err == nil {
 				c.updateActionSetRunningPhase(ctx, as, p.Name())
+				go func() {
+					// progress update is computed on a best-effort basis.
+					// if it exits with error, we will just log it.
+					if err := progress.TrackActionsProgress(ctx, c.crClient, as.GetName(), as.GetNamespace(), p); err != nil {
+						log.Error().WithError(err)
+					}
+				}()
 				output, err = p.Exec(ctx, *bp, action.Name, *tp)
 			} else {
 				msg = fmt.Sprintf("Failed to init phase params: %#v:", as.Status.Actions[aIDX].Phases[i])
 			}
-
-			go func() {
-				// progress update is computed on a best-effort basis.
-				// if it exits with error, we will just log it.
-				if err := progress.TrackActionsProgress(ctx, c.crClient, as.GetName(), as.GetNamespace(), p); err != nil {
-					log.Error().WithError(err)
-				}
-			}()
 
 			var rf func(*crv1alpha1.ActionSet) error
 			if err != nil {
