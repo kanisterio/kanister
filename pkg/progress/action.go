@@ -3,6 +3,7 @@ package progress
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -54,49 +55,34 @@ func TrackActionsProgress(
 	ticker := time.NewTicker(pollDuration)
 	defer ticker.Stop()
 
-	//phaseWeights, totalWeight, err := calculatePhaseWeights(ctx, actionSetName, namespace, client)
-	//if err != nil {
-	//	return err
-	//}
-
-	fmt.Println("::::Starting tracker::::", time.Now())
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("::::Context done called!!::::", time.Now())
 			return ctx.Err()
 
-		case t := <-ticker.C:
-			fmt.Println(":::: Calcultating phase progress ::::", t)
-			phaseProgress, err := p.Progress()
-			fmt.Println("::: Phase Progress :::", phaseProgress)
+		case <-ticker.C:
+			actionSet, err := client.CrV1alpha1().ActionSets(namespace).Get(ctx, actionSetName, metav1.GetOptions{})
 			if err != nil {
-				log.Error().WithError(err).Print("Failed to get progress")
+				log.Error().WithError(err).Print("Failed to get actionset")
 				return err
 			}
 
-			//actionSet, err := client.CrV1alpha1().ActionSets(namespace).Get(ctx, actionSetName, metav1.GetOptions{})
-			//if err != nil {
-			//	log.Error().WithError(err).Print("Failed to get actionset")
-			//	return err
-			//}
+			if actionSet.Status == nil {
+				continue
+			}
 
-			//if actionSet.Status == nil {
-			//	continue
-			//}
+			if err := updateActionsProgress(ctx, client, actionSet, time.Now(), p); err != nil {
+				fields := field.M{
+					"actionSet":      actionSet.Name,
+					"nextUpdateTime": time.Now().Add(pollDuration),
+				}
+				log.Error().WithError(err).Print("failed to update phase progress", fields)
+				continue
+			}
 
-			//if err := updateActionsProgress(ctx, client, actionSet, time.Now(), p); err != nil {
-			//	fields := field.M{
-			//		"actionSet":      actionSet.Name,
-			//		"nextUpdateTime": time.Now().Add(pollDuration),
-			//	}
-			//	log.Error().WithError(err).Print("failed to update phase progress", fields)
-			//	continue
-			//}
-
-			//if completedOrFailed(actionSet) {
-			//	return nil
-			//}
+			if completedOrFailed(actionSet) {
+				return nil
+			}
 		}
 	}
 }
@@ -150,42 +136,16 @@ func updateActionsProgress(
 	now time.Time,
 	p *kanister.Phase,
 ) error {
-	//if err := validate.ActionSet(actionSet); err != nil {
-	//	return err
-	//}
+	if err := validate.ActionSet(actionSet); err != nil {
+		return err
+	}
 
-	// assess the state of the phases in all the actions to determine progress
-	//currentWeight := 0.0
-	//for _, action := range actionSet.Status.Actions {
-	//	for _, phase := range action.Phases {
-	//		if phase.State != crv1alpha1.StateComplete {
-	//			continue
-	//		}
-	//		currentWeight += phaseWeights[phase.Name]
-	//	}
-	//}
-
-	//percent := (currentWeight / totalWeight) * 100.0
-	//progressPercent := strconv.FormatFloat(percent, 'f', 2, 64)
 	phaseProgress, err := p.Progress()
-	fmt.Println("::::: Phase Progress::::", phaseProgress)
-	progressPercent := phaseProgress.ProgressPercent
 	if err != nil {
 		log.Error().WithError(err).Print("Failed to get progress")
 		return err
 	}
-	if progressPercent == progressPercentNotStarted {
-		progressPercent = progressPercentStarted
-	}
-
-	fields := field.M{
-		"actionSet": actionSet.GetName(),
-		"namespace": actionSet.GetNamespace(),
-		"progress":  progressPercent,
-	}
-	log.Info().Print("updating action progress", fields)
-
-	return updateActionSet(ctx, client, actionSet, progressPercent, now)
+	return updateActionSet(ctx, client, actionSet, p.Name(), phaseProgress, now)
 }
 
 func weight(phase *crv1alpha1.BlueprintPhase) float64 {
@@ -209,13 +169,31 @@ func updateActionSet(
 	ctx context.Context,
 	client versioned.Interface,
 	actionSet *crv1alpha1.ActionSet,
-	progressPercent int64,
+	phaseName string,
+	phaseProgress crv1alpha1.PhaseProgress,
 	lastTransitionTime time.Time,
 ) error {
+
+	fields := field.M{
+		"actionSet": actionSet.GetName(),
+		"namespace": actionSet.GetNamespace(),
+		"phase":     phaseName,
+		"progress":  phaseProgress.ProgressPercent,
+	}
+	log.Info().Print("updating phase progress", fields)
+
 	updateFunc := func(actionSet *crv1alpha1.ActionSet) error {
+		// Update or create phase status in ActionSet status
+		actionProgress := 0
+		for i := 0; i < len(actionSet.Status.Actions[0].Phases); i++ {
+			if actionSet.Status.Actions[0].Phases[i].Name == phaseName {
+				actionSet.Status.Actions[0].Phases[i].Progress.ProgressPercent = phaseProgress.ProgressPercent
+			}
+			actionProgress += (actionSet.Status.Actions[0].Phases[i].Progress.ProgressPercent / len(actionSet.Status.Actions[0].Phases))
+		}
 		metav1Time := metav1.NewTime(lastTransitionTime)
 
-		actionSet.Status.Progress.PercentCompleted = string(progressPercent)
+		actionSet.Status.Progress.PercentCompleted = strconv.Itoa(actionProgress)
 		actionSet.Status.Progress.LastTransitionTime = &metav1Time
 		return nil
 	}

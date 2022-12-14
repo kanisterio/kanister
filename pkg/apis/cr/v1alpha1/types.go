@@ -195,7 +195,7 @@ type Phase struct {
 }
 
 type PhaseProgress struct {
-	ProgressPercent      int64
+	ProgressPercent      int
 	SizeUploadedB        int64
 	EstimatedTimeSeconds int64
 	EstimatedUploadSizeB int64

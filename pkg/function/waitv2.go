@@ -38,12 +38,14 @@ const (
 )
 
 func init() {
-	_ = kanister.Register(&waitV2Func{})
+	_ = kanister.Register(&waitV2Func{NewBaseFunction()})
 }
 
 var _ kanister.Func = (*waitV2Func)(nil)
 
-type waitV2Func struct{}
+type waitV2Func struct {
+	*BaseFunction
+}
 
 func (*waitV2Func) Name() string {
 	return WaitV2FuncName
