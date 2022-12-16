@@ -218,7 +218,7 @@ func postgresRestoreCommand(pgHost, username, password string, dbList []string, 
 	}
 	// Verify Constraints
 	if constraints.Check(v1) {
-		replaceCommand = " sed 's/LOCALE/LC_COLLATE/' |"
+		replaceCommand = ` sed 's/"LOCALE"/"LC_COLLATE"/' |`
 	}
 
 	return []string{
