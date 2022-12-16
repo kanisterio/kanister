@@ -34,6 +34,11 @@ aws ec2 create-security-group --group-name <security-group-name> --description "
 aws ec2 authorize-security-group-ingress --group-name <security-group-name> --protocol tcp --port 5432 --cidr 0.0.0.0/0
 ```
 
+Fetch the Security Group ID
+```
+aws ec2 describe-security-groups --filters "Name=group-name,Values=<security-group-name>" --query "SecurityGroups[*].GroupId"
+```
+
 Now create an RDS instance with the PostgreSQL engine
 
 ```bash
@@ -42,8 +47,9 @@ aws rds create-db-instance \
     --allocated-storage 20 --db-instance-class db.t3.micro \
     --db-instance-identifier <instance-name> \
     --engine postgres \
+    --engine-version 14.5
     --master-username <master-username> \
-    --vpc-security-group-id sg-xxxxyyyyzzz \ # Sec group with TCP 5432 inbound rule
+    --vpc-security-group-ids <security-group-id> \ # Sec group with TCP 5432 inbound rule
     --master-user-password <db-password>
 
 aws rds wait db-instance-available --db-instance-identifier=<instance-name>
@@ -91,8 +97,7 @@ To install the chart with the release name `my-release`:
 $ helm repo add bitnami https://charts.bitnami.com/bitnami
 $ helm repo update
 
-$ kubectl create ns postgres-test
-$ helm install my-release --namespace postgres-test bitnami/postgresql
+$ helm install my-release --create-namespace --namespace postgres-test bitnami/postgresql
 ```
 
 The command deploys PostgreSQL on the Kubernetes cluster in the default configuration.
@@ -103,7 +108,7 @@ In case, if you don't have `Kanister` installed already, you can use the followi
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
-$ helm install kanister --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=0.84.0
+$ helm install kanister --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=0.85.0
 ```
 
 ## Integrating with Kanister
