@@ -134,6 +134,8 @@ type ActionStatus struct {
 
 // ActionProgress provides information on the progress of an action.
 type ActionProgress struct {
+	// OnPhae represents which phase of the action is being run
+	OnPhase string `json:"onPhase,omitempty"`
 	// PercentCompleted is computed by assessing the number of completed phases
 	// against the the total number of phases.
 	PercentCompleted string `json:"percentCompleted,omitempty"`

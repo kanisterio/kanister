@@ -466,7 +466,7 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			var output map[string]interface{}
 			var msg string
 			if err == nil {
-				output, err = p.Exec(ctx, *bp, action.Name, *tp)
+				output, err = p.Exec(ctx, c.crClient.CrV1alpha1(), as, *bp, action.Name, *tp)
 			} else {
 				msg = fmt.Sprintf("Failed to init phase params: %#v:", as.Status.Actions[aIDX].Phases[i])
 			}
@@ -534,7 +534,7 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 	ctx = field.Context(ctx, consts.PhaseNameKey, as.Status.Actions[aIDX].DeferPhase.Name)
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing deferPhase %s", as.Status.Actions[aIDX].DeferPhase.Name), "Started deferPhase", as)
 
-	output, err := deferPhase.Exec(ctx, *bp, actionName, *tp)
+	output, err := deferPhase.Exec(ctx, c.crClient.CrV1alpha1(), as, *bp, actionName, *tp)
 	var rf func(*crv1alpha1.ActionSet) error
 	if err != nil {
 		rf = func(as *crv1alpha1.ActionSet) error {
