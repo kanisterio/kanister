@@ -26,6 +26,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
@@ -664,12 +665,31 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
 	c.Assert(err, IsNil)
 
+	onPhases := sets.NewString()
+	go func() {
+		// get actionset and store the onPhase fields to a set
+		for {
+			a, err := s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
+			c.Assert(err, IsNil)
+			if a.Status.Progress.OnPhase != "" {
+				onPhases.Insert(a.Status.Progress.OnPhase)
+			}
+		}
+	}()
+
 	// make sure deferPhase is also run successfully
 	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
 	c.Assert(err, IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
 	c.Assert(err, IsNil)
+
+	// once actionset is completed make sure all the phases are in onPhases
+	// that would confirm that the actionset's status.progress.onPhase was set
+	// to those phases
+	op := sets.NewString()
+	op.Insert("backupPhaseOne").Insert("backupPhaseTwo").Insert("deferPhase") // these phases are from blueprint that we create above
+	c.Assert(onPhases.Equal(op), Equals, true)
 
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
