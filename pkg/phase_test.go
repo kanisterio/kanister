@@ -90,7 +90,7 @@ func (s *PhaseSuite) TestExec(c *C) {
 		args, err := param.RenderArgs(rawArgs, tp)
 		c.Assert(err, IsNil)
 		p := Phase{args: args, f: tf}
-		_, err = p.Exec(context.Background(), crv1alpha1.Blueprint{}, "", tp)
+		_, err = p.Exec(context.Background(), nil, nil, crv1alpha1.Blueprint{}, "", tp)
 		c.Assert(err, IsNil)
 		c.Assert(output, Equals, tc.expected)
 	}

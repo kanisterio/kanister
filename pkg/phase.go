@@ -51,11 +51,13 @@ func (p *Phase) Objects() map[string]crv1alpha1.ObjectReference {
 // those arguments.
 func (p *Phase) Exec(ctx context.Context, cli crclientv1alpha1.CrV1alpha1Interface, as *crv1alpha1.ActionSet, bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) (map[string]interface{}, error) {
 	// Update actionset status with currently running phase
-	if err := reconcile.ActionSet(ctx, cli, as.Namespace, as.Name, func(as *crv1alpha1.ActionSet) error {
-		as.Status.Progress.OnPhase = p.name
-		return nil
-	}); err != nil {
-		return nil, errors.Wrapf(err, "Failed updating actionset status with currently running phase %s", p.name)
+	if as != nil {
+		if err := reconcile.ActionSet(ctx, cli, as.Namespace, as.Name, func(as *crv1alpha1.ActionSet) error {
+			as.Status.Progress.OnPhase = p.name
+			return nil
+		}); err != nil {
+			return nil, errors.Wrapf(err, "Failed updating actionset status with currently running phase %s", p.name)
+		}
 	}
 
 	if p.args == nil {

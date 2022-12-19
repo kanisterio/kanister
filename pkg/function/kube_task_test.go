@@ -155,7 +155,7 @@ func (s *KubeTaskSuite) TestKubeTask(c *C) {
 		c.Assert(err, IsNil)
 		c.Assert(phases, HasLen, len(tc.outs))
 		for i, p := range phases {
-			out, err := p.Exec(ctx, *tc.bp, action, tp)
+			out, err := p.Exec(ctx, nil, nil, *tc.bp, action, tp)
 			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
 			c.Assert(out, DeepEquals, tc.outs[i])
 		}

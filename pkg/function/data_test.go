@@ -563,7 +563,7 @@ func runAction(c *C, bp crv1alpha1.Blueprint, action string, tp *param.TemplateP
 	c.Assert(err, IsNil)
 	out := make(map[string]interface{})
 	for _, p := range phases {
-		o, err := p.Exec(context.Background(), bp, action, *tp)
+		o, err := p.Exec(context.Background(), nil, nil, bp, action, *tp)
 		c.Assert(err, IsNil)
 		for k, v := range o {
 			out[k] = v

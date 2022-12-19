@@ -315,7 +315,7 @@ func (s *VolumeSnapshotTestSuite) TestVolumeSnapshot(c *C) {
 		c.Assert(err, IsNil)
 		for _, p := range phases {
 			c.Assert(param.InitPhaseParams(ctx, s.cli, s.tp, p.Name(), p.Objects()), IsNil)
-			output, err := p.Exec(ctx, *bp, action, *s.tp)
+			output, err := p.Exec(ctx, nil, nil, *bp, action, *s.tp)
 			if err != nil && strings.Contains(err.Error(), skipTestErrorMsg) {
 				c.Skip("Skipping the test since storage type not supported")
 			}
