@@ -39,8 +39,7 @@ spec:
                   hostname:
                     type: string
                   passwordSecretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                    description: The secret stores password to connect to a kopia repository
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -66,8 +65,8 @@ spec:
                   server and initializing the repository client users
                 properties:
                   adminSecretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                    description: This secret stores admin credentials to connect
+                      to repository server
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -80,8 +79,8 @@ spec:
                     type: object
 
                   tlsSecretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                    description: This secrets stores TLS certificate required for secure communication
+                      between the Kopia client and server
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -93,8 +92,8 @@ spec:
                         type: string
                     type: object
                   userAccessSecretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                    description: This secret has a list of user credentials that a kopia client
+                      needs to connect to kopia server
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -116,8 +115,8 @@ spec:
                   store
                 properties:
                   credentialSecretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                    description: This secret stores credentials to connect to storage
+                      location
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -129,8 +128,7 @@ spec:
                         type: string
                     type: object
                   secretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                    description: This secret stores storage location information
                     properties:
                       name:
                         description: name is unique within a namespace to reference
