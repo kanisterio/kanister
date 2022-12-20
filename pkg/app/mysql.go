@@ -229,7 +229,7 @@ func (mdb *MysqlDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 
 func (mdb *MysqlDB) Secrets() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
-		"mysql": crv1alpha1.ObjectReference{
+		"mysql": {
 			Kind:      "Secret",
 			Name:      mdb.chart.Release,
 			Namespace: mdb.namespace,

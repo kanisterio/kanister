@@ -54,7 +54,7 @@ func (s *ExecSuite) SetUpSuite(c *C) {
 		ObjectMeta: metav1.ObjectMeta{Name: "testpod"},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name:    "testcontainer",
 					Image:   "busybox",
 					Command: []string{"sh", "-c", "tail -f /dev/null"},
@@ -186,7 +186,7 @@ func (s *ExecSuite) TestKopiaCommand(c *C) {
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name:  "kanister-sidecar",
 					Image: "ghcr.io/kanisterio/kanister-tools:0.37.0",
 				},

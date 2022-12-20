@@ -14,6 +14,8 @@
 
 package command
 
+import "strconv"
+
 type PolicySetGlobalCommandArgs struct {
 	*CommandArgs
 	Modifications policyChanges
@@ -28,4 +30,22 @@ func PolicySetGlobal(cmdArgs PolicySetGlobalCommandArgs) []string {
 	}
 
 	return stringSliceCommand(args)
+}
+
+func GetPolicyModifications() map[string]string {
+	const maxInt32 = 1<<31 - 1
+
+	pc := map[string]string{
+		// Retention changes
+		keepLatest:  strconv.Itoa(maxInt32),
+		keepHourly:  strconv.Itoa(0),
+		keepDaily:   strconv.Itoa(0),
+		keepWeekly:  strconv.Itoa(0),
+		keepMonthly: strconv.Itoa(0),
+		keepAnnual:  strconv.Itoa(0),
+
+		// Compression changes
+		compressionAlgorithm: s2DefaultComprAlgo,
+	}
+	return pc
 }

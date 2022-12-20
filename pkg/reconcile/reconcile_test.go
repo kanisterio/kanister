@@ -71,7 +71,7 @@ func (s *ReconcileSuite) SetUpSuite(c *C) {
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Object: crv1alpha1.ObjectReference{
 						Name: "foo",
 						Kind: param.StatefulSetKind,
@@ -81,12 +81,12 @@ func (s *ReconcileSuite) SetUpSuite(c *C) {
 		},
 		Status: &crv1alpha1.ActionSetStatus{
 			Actions: []crv1alpha1.ActionStatus{
-				crv1alpha1.ActionStatus{
+				{
 					Phases: []crv1alpha1.Phase{
-						crv1alpha1.Phase{
+						{
 							State: crv1alpha1.StatePending,
 						},
-						crv1alpha1.Phase{
+						{
 							State: crv1alpha1.StatePending,
 						},
 					},

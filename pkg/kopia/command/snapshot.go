@@ -34,7 +34,6 @@ type SnapshotCreateCommandArgs struct {
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
-// TODO: Have better mechanism to apply global flags
 func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(kopia.DataStoreParallelUploadVarName, kopia.DefaultDataStoreParallelUpload))
 	args := commonArgs(cmdArgs.CommandArgs, requireLogLevelInfo)
