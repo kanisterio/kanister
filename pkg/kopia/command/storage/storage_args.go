@@ -20,6 +20,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/logsafe"
 )
 
+const (
+	prefixFlag = "--prefix"
+	bucketFlag = "--bucket"
+)
+
 type StorageCommandParams struct {
 	// Common params
 	Location       map[string][]byte
@@ -31,13 +36,13 @@ func KopiaStorageArgs(params *StorageCommandParams) (logsafe.Cmd, error) {
 	LocType := locationType(params.Location)
 	switch locationType(params.Location) {
 	case LocTypeFilestore:
-		return kopiaFilesystemArgs(params.Location, params.RepoPathPrefix), nil
+		return filesystemArgs(params.Location, params.RepoPathPrefix), nil
 	case LocTypeS3:
-		return kopiaS3Args(params.Location, params.RepoPathPrefix), nil
+		return s3Args(params.Location, params.RepoPathPrefix), nil
 	case LocTypeGCS:
-		return kopiaGCSArgs(params.Location, params.RepoPathPrefix), nil
+		return gcsArgs(params.Location, params.RepoPathPrefix), nil
 	case LocTypeAzure:
-		return kopiaAzureArgs(params.Location, params.RepoPathPrefix), nil
+		return azureArgs(params.Location, params.RepoPathPrefix), nil
 	default:
 		return nil, fmt.Errorf("unsupported type for the location: %s", LocType)
 	}

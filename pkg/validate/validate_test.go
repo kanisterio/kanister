@@ -64,13 +64,13 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "ns1",
 								Kind: param.NamespaceKind,
 							},
 							ConfigMaps: map[string]crv1alpha1.ObjectReference{
-								"testCM": crv1alpha1.ObjectReference{
+								"testCM": {
 									Namespace: "ns2",
 								},
 							},
@@ -85,13 +85,13 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "ns1",
 								Kind: param.NamespaceKind,
 							},
 							ConfigMaps: map[string]crv1alpha1.ObjectReference{
-								"testCM": crv1alpha1.ObjectReference{
+								"testCM": {
 									Namespace: "ns1",
 								},
 							},
@@ -106,13 +106,13 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "ns1",
 								Kind: param.NamespaceKind,
 							},
 							Secrets: map[string]crv1alpha1.ObjectReference{
-								"testSecrets": crv1alpha1.ObjectReference{
+								"testSecrets": {
 									Namespace: "ns2",
 								},
 							},
@@ -127,13 +127,13 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "ns1",
 								Kind: param.NamespaceKind,
 							},
 							Secrets: map[string]crv1alpha1.ObjectReference{
-								"testSecrets": crv1alpha1.ObjectReference{
+								"testSecrets": {
 									Namespace: "ns1",
 								},
 							},
@@ -163,7 +163,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 			as: &crv1alpha1.ActionSet{
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "ns1",
 								Kind: param.NamespaceKind,
@@ -181,7 +181,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 			as: &crv1alpha1.ActionSet{
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "ns1",
 								Kind: param.NamespaceKind,
@@ -192,7 +192,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				Status: &crv1alpha1.ActionSetStatus{
 					State: crv1alpha1.StatePending,
 					Actions: []crv1alpha1.ActionStatus{
-						crv1alpha1.ActionStatus{},
+						{},
 					},
 				},
 			},
@@ -202,7 +202,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 			as: &crv1alpha1.ActionSet{
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "ns1",
 								Kind: param.NamespaceKind,
@@ -213,7 +213,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				Status: &crv1alpha1.ActionSetStatus{
 					State: crv1alpha1.StatePending,
 					Actions: []crv1alpha1.ActionStatus{
-						crv1alpha1.ActionStatus{},
+						{},
 					},
 				},
 			},
@@ -225,7 +225,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "foo",
 								Kind: param.NamespaceKind,
@@ -242,7 +242,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "foo",
 								Kind: param.StatefulSetKind,
@@ -259,7 +259,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "foo",
 								Kind: param.DeploymentKind,
@@ -276,7 +276,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "foo",
 								Kind: param.PVCKind,
@@ -293,7 +293,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name: "foo",
 								Kind: "unknown",
@@ -310,7 +310,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{
+						{
 							Object: crv1alpha1.ObjectReference{
 								Name:       "foo",
 								APIVersion: "v1",
@@ -327,7 +327,7 @@ func (s *ValidateSuite) TestActionSet(c *C) {
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns1"},
 				Spec: &crv1alpha1.ActionSetSpec{
 					Actions: []crv1alpha1.ActionSpec{
-						crv1alpha1.ActionSpec{},
+						{},
 					},
 				},
 			},
@@ -362,7 +362,7 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 			as: &crv1alpha1.ActionSetStatus{
 				State: crv1alpha1.StatePending,
 				Actions: []crv1alpha1.ActionStatus{
-					crv1alpha1.ActionStatus{},
+					{},
 				},
 			},
 			checker: IsNil,
@@ -371,7 +371,7 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 			as: &crv1alpha1.ActionSetStatus{
 				State: crv1alpha1.StatePending,
 				Actions: []crv1alpha1.ActionStatus{
-					crv1alpha1.ActionStatus{},
+					{},
 				},
 			},
 			checker: IsNil,
@@ -380,7 +380,7 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 			as: &crv1alpha1.ActionSetStatus{
 				State: crv1alpha1.StatePending,
 				Actions: []crv1alpha1.ActionStatus{
-					crv1alpha1.ActionStatus{
+					{
 						Phases: []crv1alpha1.Phase{},
 					},
 				},
@@ -391,9 +391,9 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 			as: &crv1alpha1.ActionSetStatus{
 				State: crv1alpha1.StatePending,
 				Actions: []crv1alpha1.ActionStatus{
-					crv1alpha1.ActionStatus{
+					{
 						Phases: []crv1alpha1.Phase{
-							crv1alpha1.Phase{},
+							{},
 						},
 					},
 				},
@@ -404,9 +404,9 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 			as: &crv1alpha1.ActionSetStatus{
 				State: crv1alpha1.StatePending,
 				Actions: []crv1alpha1.ActionStatus{
-					crv1alpha1.ActionStatus{
+					{
 						Phases: []crv1alpha1.Phase{
-							crv1alpha1.Phase{},
+							{},
 						},
 					},
 				},
@@ -417,9 +417,9 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 			as: &crv1alpha1.ActionSetStatus{
 				State: crv1alpha1.StatePending,
 				Actions: []crv1alpha1.ActionStatus{
-					crv1alpha1.ActionStatus{
+					{
 						Phases: []crv1alpha1.Phase{
-							crv1alpha1.Phase{
+							{
 								State: crv1alpha1.StatePending,
 							},
 						},
@@ -432,9 +432,9 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 			as: &crv1alpha1.ActionSetStatus{
 				State: crv1alpha1.StateFailed,
 				Actions: []crv1alpha1.ActionStatus{
-					crv1alpha1.ActionStatus{
+					{
 						Phases: []crv1alpha1.Phase{
-							crv1alpha1.Phase{
+							{
 								State: crv1alpha1.StatePending,
 							},
 						},
@@ -447,9 +447,9 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 			as: &crv1alpha1.ActionSetStatus{
 				State: crv1alpha1.StateComplete,
 				Actions: []crv1alpha1.ActionStatus{
-					crv1alpha1.ActionStatus{
+					{
 						Phases: []crv1alpha1.Phase{
-							crv1alpha1.Phase{
+							{
 								State: crv1alpha1.StatePending,
 							},
 						},
@@ -462,12 +462,12 @@ func (s *ValidateSuite) TestActionSetStatus(c *C) {
 			as: &crv1alpha1.ActionSetStatus{
 				State: crv1alpha1.StateComplete,
 				Actions: []crv1alpha1.ActionStatus{
-					crv1alpha1.ActionStatus{
+					{
 						Phases: []crv1alpha1.Phase{
-							crv1alpha1.Phase{
+							{
 								State: crv1alpha1.StatePending,
 							},
-							crv1alpha1.Phase{
+							{
 								State: crv1alpha1.StateComplete,
 							},
 						},

@@ -40,8 +40,8 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 			Checker: check.IsNil,
 			expectedCmd: fmt.Sprint(
 				s3SubCommand,
-				fmt.Sprintf(" %s=test-bucket", s3BucketFlag),
-				fmt.Sprintf(" %s=test-prefix/dir/subdir/ %s", s3PrefixFlag, s3DisableTLSVerifyFlag),
+				fmt.Sprintf(" %s=test-bucket", bucketFlag),
+				fmt.Sprintf(" %s=test-prefix/dir/subdir/ %s", prefixFlag, s3DisableTLSVerifyFlag),
 				fmt.Sprintf(" %s=test-region", s3RegionFlag),
 			),
 		},
@@ -71,9 +71,9 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 			Checker: check.IsNil,
 			expectedCmd: fmt.Sprint(
 				gcsSubCommand,
-				fmt.Sprintf(" %s=test-bucket", gcsBucketFlag),
+				fmt.Sprintf(" %s=test-bucket", bucketFlag),
 				fmt.Sprintf(" %s=/tmp/creds.txt", credentialsFileFlag),
-				fmt.Sprintf(" %s=test-prefix/dir/subdir/", gcsPrefixFlag),
+				fmt.Sprintf(" %s=test-prefix/dir/subdir/", prefixFlag),
 			),
 		},
 		{
@@ -89,7 +89,7 @@ func (s *StorageUtilsSuite) TestStorageArgsUtil(c *check.C) {
 			expectedCmd: fmt.Sprint(
 				azureSubCommand,
 				fmt.Sprintf(" %s=test-bucket", azureContainerFlag),
-				fmt.Sprintf(" %s=test-prefix/dir/subdir/", azurePrefixFlag),
+				fmt.Sprintf(" %s=test-prefix/dir/subdir/", prefixFlag),
 			),
 		},
 		{
