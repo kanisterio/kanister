@@ -217,7 +217,7 @@ func (s *KubeOpsSuite) TestKubeOps(c *C) {
 		phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			out, err := p.Exec(ctx, nil, nil, bp, action, tp)
+			out, err := p.Exec(ctx, bp, action, tp)
 			c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
 			_, err = s.dynCli.Resource(tc.expResource.gvr).Namespace(tc.expResource.namespace).Get(context.TODO(), tc.name, metav1.GetOptions{})
 			c.Assert(err, IsNil)
@@ -250,7 +250,7 @@ func (s *KubeOpsSuite) TestKubeOpsCreateDeleteWithCoreResource(c *C) {
 	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
-		out, err := p.Exec(ctx, nil, nil, bp, action, tp)
+		out, err := p.Exec(ctx, bp, action, tp)
 		c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
 
 		_, err = s.dynCli.Resource(gvr).Namespace(s.namespace).Get(ctx, serviceName, metav1.GetOptions{})
@@ -287,7 +287,7 @@ func (s *KubeOpsSuite) TestKubeOpsCreateWaitDelete(c *C) {
 	phases, err := kanister.GetPhases(bp, action, kanister.DefaultVersion, tp)
 	c.Assert(err, IsNil)
 	for _, p := range phases {
-		out, err := p.Exec(ctx, nil, nil, bp, action, tp)
+		out, err := p.Exec(ctx, bp, action, tp)
 		c.Assert(err, IsNil, Commentf("Phase %s failed", p.Name()))
 
 		_, err = s.dynCli.Resource(gvr).Namespace(s.namespace).Get(context.TODO(), deployName, metav1.GetOptions{})

@@ -234,7 +234,7 @@ func (s *WaitSuite) TestWait(c *C) {
 		phases, err := kanister.GetPhases(*tc.bp, action, kanister.DefaultVersion, tp)
 		c.Assert(err, IsNil)
 		for _, p := range phases {
-			_, err := p.Exec(context.TODO(), nil, nil, *tc.bp, action, tp)
+			_, err := p.Exec(context.TODO(), *tc.bp, action, tp)
 			c.Assert(err, tc.checker)
 		}
 	}

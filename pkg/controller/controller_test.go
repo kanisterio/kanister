@@ -665,14 +665,16 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
 	c.Assert(err, IsNil)
 
-	onPhases := sets.NewString()
+	// we need set and not string becauce we are continuously getting runningPhase and storing
+	// it, so value would be duplicate, we don't want duplicates
+	runningPhase := sets.NewString()
 	go func() {
 		// get actionset and store the onPhase fields to a set
 		for {
 			a, err := s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
 			c.Assert(err, IsNil)
-			if a.Status.Progress.OnPhase != "" {
-				onPhases.Insert(a.Status.Progress.OnPhase)
+			if a.Status.Progress.RunningPhase != "" {
+				runningPhase.Insert(a.Status.Progress.RunningPhase)
 			}
 		}
 	}()
@@ -688,8 +690,8 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 	// that would confirm that the actionset's status.progress.onPhase was set
 	// to those phases
 	op := sets.NewString()
-	op.Insert("backupPhaseOne").Insert("backupPhaseTwo").Insert("deferPhase") // these phases are from blueprint that we create above
-	c.Assert(onPhases.Equal(op), Equals, true)
+	op.Insert("backupPhaseOne").Insert("backupPhaseTwo").Insert("deferPhase").Insert(string(crv1alpha1.StateComplete)) // these phases are from blueprint that we create above
+	c.Assert(runningPhase.Equal(op), Equals, true)
 
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)

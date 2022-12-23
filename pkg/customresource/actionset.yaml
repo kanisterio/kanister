@@ -174,7 +174,7 @@ spec:
             properties:
               progress:
                 properties:
-                  onPhase:
+                  runningPhase:
                     type: string
                   percentCompleted:
                     type: string
@@ -268,10 +268,10 @@ spec:
       type: string
       description: Progress of completion in percentage
       jsonPath: .status.progress.percentCompleted
-    - name: OnPhase
+    - name: RunningPhase
       type: string
-      description: The phase that is being run, if the actionset is completed this would be last phase of action
-      jsonPath: .status.progress.onPhase
+      description: The phase that is being run, if the actionset is completed it would be set to "complete"
+      jsonPath: .status.progress.runningPhase
     - name: Last Transition Time
       type: string
       format: date-time

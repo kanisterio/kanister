@@ -22,11 +22,9 @@ import (
 	"k8s.io/utils/strings/slices"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/kanisterio/kanister/pkg/reconcile"
 )
 
 // Phase is an atomic unit of execution.
@@ -49,17 +47,7 @@ func (p *Phase) Objects() map[string]crv1alpha1.ObjectReference {
 
 // Exec renders the argument templates in this Phase's Func and executes with
 // those arguments.
-func (p *Phase) Exec(ctx context.Context, cli crclientv1alpha1.CrV1alpha1Interface, as *crv1alpha1.ActionSet, bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) (map[string]interface{}, error) {
-	// Update actionset status with currently running phase
-	if as != nil {
-		if err := reconcile.ActionSet(ctx, cli, as.Namespace, as.Name, func(as *crv1alpha1.ActionSet) error {
-			as.Status.Progress.OnPhase = p.name
-			return nil
-		}); err != nil {
-			return nil, errors.Wrapf(err, "Failed updating actionset status with currently running phase %s", p.name)
-		}
-	}
-
+func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string, tp param.TemplateParams) (map[string]interface{}, error) {
 	if p.args == nil {
 		// Get the action from Blueprint
 		a, ok := bp.Actions[action]
