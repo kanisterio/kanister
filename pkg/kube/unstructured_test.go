@@ -38,7 +38,7 @@ func (s *UnstructuredSuite) TestFetch(c *C) {
 	gvr := schema.GroupVersionResource{
 		Group:    "",
 		Version:  "v1",
-		Resource: "service",
+		Resource: "services",
 	}
 	u, err := FetchUnstructuredObject(ctx, gvr, "default", "kubernetes")
 	c.Assert(err, IsNil)
