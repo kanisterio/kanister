@@ -41,7 +41,7 @@ jobs:
       with:
         cluster-name: "kanister-run-${{ matrix.testSuite }}"
         args: >-
-          --agents 3
+          --agents 4
           --no-lb
           --k3s-arg "--no-deploy=traefik,servicelb,metrics-server@server:*"
     - run: tar -xvf ./src.tar.gz
