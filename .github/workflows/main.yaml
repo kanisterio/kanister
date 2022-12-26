@@ -37,7 +37,7 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: src
-    - uses: AbsaOSS/k3d-action@v2
+    - uses: AbsaOSS/k3d-action@v2.3.0
       with:
         cluster-name: "kanister-run-${{ matrix.testSuite }}"
         args: >-
