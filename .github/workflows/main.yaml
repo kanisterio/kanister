@@ -43,7 +43,7 @@ jobs:
         args: >-
           --agents 3
           --no-lb
-          --k3s-arg "--no-deploy=traefik,--egress-selector-mode=agent,servicelb@server:*"
+          --k3s-arg "--no-deploy=traefik,--egress-selector-mode=disabled,servicelb@server:*"
     - run: tar -xvf ./src.tar.gz
     - run: |
         make install-csi-hostpath-driver
