@@ -45,6 +45,7 @@ jobs:
           --no-lb
           --k3s-arg "--no-deploy=traefik,servicelb@server:*"
     - run: tar -xvf ./src.tar.gz
+    - run: kubectl version
     - run: |
         make install-csi-hostpath-driver
         make install-minio
