@@ -270,7 +270,7 @@ spec:
       jsonPath: .status.progress.percentCompleted
     - name: RunningPhase
       type: string
-      description: The phase that is being run, if the actionset is completed it would be set to "complete"
+      description: The phase that is being run, if the actionset is completed it would be set to ""
       jsonPath: .status.progress.runningPhase
     - name: Last Transition Time
       type: string

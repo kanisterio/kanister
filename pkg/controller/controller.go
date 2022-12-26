@@ -253,7 +253,7 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 		return nil
 	}
 	return reconcile.ActionSet(context.TODO(), c.crClient.CrV1alpha1(), newAS.GetNamespace(), newAS.GetName(), func(ras *crv1alpha1.ActionSet) error {
-		ras.Status.Progress.RunningPhase = string(crv1alpha1.StateComplete)
+		ras.Status.Progress.RunningPhase = ""
 		ras.Status.State = crv1alpha1.StateComplete
 		return nil
 	})
@@ -317,7 +317,7 @@ func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.Act
 	}
 	if err != nil {
 		as.Status.State = crv1alpha1.StateFailed
-		as.Status.Progress.RunningPhase = string(crv1alpha1.StateFailed)
+		as.Status.Progress.RunningPhase = ""
 		as.Status.Error = crv1alpha1.Error{
 			Message: err.Error(),
 		}
@@ -406,7 +406,7 @@ func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1
 	}
 	if err != nil {
 		as.Status.State = crv1alpha1.StateFailed
-		as.Status.Progress.RunningPhase = string(crv1alpha1.StateFailed)
+		as.Status.Progress.RunningPhase = ""
 		as.Status.Error = crv1alpha1.Error{
 			Message: err.Error(),
 		}
@@ -479,7 +479,7 @@ func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1
 			if err != nil {
 				coreErr = err
 				rf = func(ras *crv1alpha1.ActionSet) error {
-					ras.Status.Progress.RunningPhase = string(crv1alpha1.StateFailed)
+					ras.Status.Progress.RunningPhase = ""
 					ras.Status.State = crv1alpha1.StateFailed
 					ras.Status.Error = crv1alpha1.Error{
 						Message: err.Error(),
@@ -557,7 +557,7 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 	var rf func(*crv1alpha1.ActionSet) error
 	if err != nil {
 		rf = func(as *crv1alpha1.ActionSet) error {
-			as.Status.Progress.RunningPhase = string(crv1alpha1.StateFailed)
+			as.Status.Progress.RunningPhase = ""
 			as.Status.State = crv1alpha1.StateFailed
 			as.Status.Error = crv1alpha1.Error{
 				Message: err.Error(),
@@ -607,11 +607,11 @@ func (c *Controller) renderActionsetArtifacts(ctx context.Context,
 	if len(artTpls) == 0 {
 		// No artifacts, set ActionSetStatus to complete
 		if rErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), actionsetNS, actionsetName, func(ras *crv1alpha1.ActionSet) error {
+			// actionset execution is done, set the RunningPhase to empty string
+			ras.Status.Progress.RunningPhase = ""
 			if coreErr == nil && deferErr == nil {
-				ras.Status.Progress.RunningPhase = string(crv1alpha1.StateComplete)
 				ras.Status.State = crv1alpha1.StateComplete
 			} else {
-				ras.Status.Progress.RunningPhase = string(crv1alpha1.StateFailed)
 				ras.Status.State = crv1alpha1.StateFailed
 			}
 
@@ -629,7 +629,7 @@ func (c *Controller) renderActionsetArtifacts(ctx context.Context,
 	if err != nil {
 		af = func(ras *crv1alpha1.ActionSet) error {
 			ras.Status.State = crv1alpha1.StateFailed
-			ras.Status.Progress.RunningPhase = string(crv1alpha1.StateFailed)
+			ras.Status.Progress.RunningPhase = ""
 			ras.Status.Error = crv1alpha1.Error{
 				Message: err.Error(),
 			}
@@ -638,13 +638,13 @@ func (c *Controller) renderActionsetArtifacts(ctx context.Context,
 	} else {
 		af = func(ras *crv1alpha1.ActionSet) error {
 			ras.Status.Actions[aIDX].Artifacts = arts
+			// actionset execution is done and artifacts are rendered, set the RunningPhase to empty string
+			ras.Status.Progress.RunningPhase = ""
 			// make sure that the core phases that were run also didnt return any error
 			// and then set actionset's state to be complete
 			if coreErr == nil && deferErr == nil {
-				ras.Status.Progress.RunningPhase = string(crv1alpha1.StateComplete)
 				ras.Status.State = crv1alpha1.StateComplete
 			} else {
-				ras.Status.Progress.RunningPhase = string(crv1alpha1.StateFailed)
 				ras.Status.State = crv1alpha1.StateFailed
 			}
 			return nil
