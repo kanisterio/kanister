@@ -43,7 +43,7 @@ jobs:
     - run: |
         make install-csi-hostpath-driver
         make install-minio
-      if: matrix.testSuite == 'integration-test' || matrix.testSuite == 'helm-test'
+      if: matrix.testSuite == 'integration-test' || matrix.testSuite == 'helm-test' || matrix.testSuite == 'test'
     - run: make ${{ matrix.testSuite }}
   build:
     runs-on: ubuntu-20.04
