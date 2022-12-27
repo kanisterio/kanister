@@ -42,8 +42,10 @@ jobs:
         cluster-name: "kanister-run-${{ matrix.testSuite }}"
         args: >-
           --agents 3
+          --image docker.io/rancher/k3s:v1.24.7+k3s1
           --no-lb
           --k3s-arg "--no-deploy=traefik,servicelb@server:*"
+    - run: kubectl version
     - run: tar -xvf ./src.tar.gz
     - run: |
         make install-csi-hostpath-driver
