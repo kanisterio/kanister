@@ -37,13 +37,8 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: src
-    - uses: AbsaOSS/k3d-action@v2
-      with:
-        cluster-name: "kanister-run-${{ matrix.testSuite }}"
-        args: >-
-          --agents 3
-          --no-lb
-          --k3s-arg "--no-deploy=traefik,servicelb@server:*"
+    - uses: helm/kind-action@v1.4.0
+    - run: kubectl version
     - run: tar -xvf ./src.tar.gz
     - run: |
         make install-csi-hostpath-driver
