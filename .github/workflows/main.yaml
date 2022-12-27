@@ -38,7 +38,6 @@ jobs:
       with:
         name: src
     - uses: helm/kind-action@v1.4.0
-    - run: kubectl version
     - run: tar -xvf ./src.tar.gz
     - run: |
         make install-csi-hostpath-driver
