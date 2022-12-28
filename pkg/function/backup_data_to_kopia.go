@@ -224,7 +224,6 @@ func backupDataToKopia(
 	}
 	// Parse logs and return snapshot IDs and stats
 	return kopiacmd.ParseSnapshotCreateOutput(stdout, stderr)
-
 }
 
 func getHostAndUserNameFromOptions(options map[string]string) (string, string, error) {
