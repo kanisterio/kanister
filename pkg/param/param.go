@@ -103,6 +103,11 @@ type Profile struct {
 	SkipSSLVerify bool
 }
 
+// KanisterProfile is a wrapper around Kanister `param.Profile` type
+type KanisterProfile struct {
+	*Profile
+}
+
 // CredentialType
 type CredentialType string
 
