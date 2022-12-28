@@ -34,8 +34,7 @@ actions:
           master_username="{{ index .Phases.backupToStore.Secrets.esMasterCredSecret.Data "username" | toString }}"
           master_password="{{ index .Phases.backupToStore.Secrets.esMasterCredSecret.Data "password" | toString }}"
           NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump --bulk=true --input=https://${master_username}:${master_password}@${host_name}:9200 --output=/backup
-          gzip /backup
-          kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" /backup.gz
+          gzip -c /backup | kando location push --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --output-name "kopiaOutput" -
   restore:
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
@@ -65,7 +64,7 @@ actions:
           kopia_snap='{{ .ArtifactsIn.esBackup.KopiaSnapshot }}'
           master_username="{{ index .Phases.restoreFromObjectStore.Secrets.esMasterCredSecret.Data "username" | toString }}"
           master_password="{{ index .Phases.restoreFromObjectStore.Secrets.esMasterCredSecret.Data "password" | toString }}"
-          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | gunzip | NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump --bulk=true --input=$ --output=https://${master_username}:${master_password}@${host_name}:9200
+          kando location pull --profile '{{ toJson .Profile }}' --path "${backup_file_path}" --kopia-snapshot "${kopia_snap}" - | gunzip -c | NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump --bulk=true --input=$ --output=https://${master_username}:${master_password}@${host_name}:9200
   delete:
     inputArtifactNames:
     # The kopia snapshot info created in backup phase can be used here
