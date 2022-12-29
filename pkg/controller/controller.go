@@ -531,7 +531,7 @@ func (c *Controller) updateActionSetRunningPhase(ctx context.Context, as *crv1al
 		return nil
 	})
 	if err != nil {
-		log.Error().WithError(fmt.Errorf("updating actionset with running phase: %s", err.Error()))
+		log.Error().WithError(err).Print("failed to update actionset with running phase")
 	}
 }
 
