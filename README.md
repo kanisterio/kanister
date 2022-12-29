@@ -96,7 +96,7 @@ UTC, where we discuss ongoing interesting features, issues, and pull requests.
 Come join us! Everyone is welcome! 🙌 (Zoom link is pinned on Slack)
 
 If you are currently using Kanister, we would love to hear about it! Feel free
-to add your organization to the [`ADOPTERS.md`](adopters.md) by submitting a
+to add your organization to the [`ADOPTERS.md`](ADOPTERS.md) by submitting a
 pull request.
 
 ## Code of Conduct
