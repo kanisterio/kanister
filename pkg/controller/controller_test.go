@@ -665,8 +665,8 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
 	c.Assert(err, IsNil)
 
-	// we need set and not string becauce we are continuously getting runningPhase and storing
-	// it, so value would be duplicate, we don't want duplicates
+	// we need a set to avoid duplicate values of `runningPhase`
+	// as we are continuously fetching the value from the ActionSet
 	runningPhases := sets.NewString()
 	go func() {
 		// get actionset and store the runningPhase fields to a set
