@@ -78,11 +78,7 @@ type ObjectReference struct {
 
 // ActionSetSpec is the specification for the actionset.
 type ActionSetSpec struct {
-<<<<<<< HEAD
 	// Actions represnets a list of Actions that need to be performed by the ActionSet.
-=======
-	// Represents a list of Actions that need to be performed by the ActionSet.
->>>>>>> 41846e917c0c4288a2f7c4605db3f8207b380c16
 	Actions []ActionSpec `json:"actions,omitempty"`
 }
 
