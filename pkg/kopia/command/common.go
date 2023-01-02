@@ -15,13 +15,15 @@
 package command
 
 import (
+	"strconv"
+
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/logsafe"
 )
 
 type CommandArgs struct {
-	EncryptionKey  string
+	RepoPassword   string
 	ConfigFilePath string
 	LogDirectory   string
 }
@@ -36,26 +38,47 @@ func stringSliceCommand(args logsafe.Cmd) []string {
 	return args.StringSliceCMD()
 }
 
-func commonArgs(password, configFilePath, logDirectory string, requireInfoLevel bool) logsafe.Cmd {
+func commonArgs(cmdArgs *CommandArgs, requireInfoLevel bool) logsafe.Cmd {
 	c := logsafe.NewLoggable(kopiaCommand)
 	if requireInfoLevel {
 		c = c.AppendLoggable(logLevelInfoFlag)
 	} else {
 		c = c.AppendLoggable(logLevelErrorFlag)
 	}
-	if configFilePath != "" {
-		c = c.AppendLoggableKV(configFileFlag, configFilePath)
+	if cmdArgs.ConfigFilePath != "" {
+		c = c.AppendLoggableKV(configFileFlag, cmdArgs.ConfigFilePath)
 	}
-	if logDirectory != "" {
-		c = c.AppendLoggableKV(logDirectoryFlag, logDirectory)
+	if cmdArgs.LogDirectory != "" {
+		c = c.AppendLoggableKV(logDirectoryFlag, cmdArgs.LogDirectory)
 	}
-	if password != "" {
-		c = c.AppendRedactedKV(passwordFlag, password)
+	if cmdArgs.RepoPassword != "" {
+		c = c.AppendRedactedKV(passwordFlag, cmdArgs.RepoPassword)
 	}
 	return c
 }
 
+func addTags(tags []string, args logsafe.Cmd) logsafe.Cmd {
+	// kopia required tags in name:value format, but all checks are performed on kopia side
+	for _, tag := range tags {
+		args = args.AppendLoggable(tagsFlag, tag)
+	}
+	return args
+}
+
 // ExecKopiaArgs returns the basic Argv for executing kopia with the given config file path.
 func ExecKopiaArgs(configFilePath string) []string {
-	return commonArgs("", configFilePath, "", false).StringSliceCMD()
+	return commonArgs(&CommandArgs{ConfigFilePath: configFilePath}, false).StringSliceCMD()
+}
+
+const (
+	cacheDirectoryFlag      = "--cache-directory"
+	contentCacheSizeMBFlag  = "--content-cache-size-mb"
+	metadataCacheSizeMBFlag = "--metadata-cache-size-mb"
+)
+
+func kopiaCacheArgs(args logsafe.Cmd, cacheDirectory string, contentCacheMB, metadataCacheMB int) logsafe.Cmd {
+	args = args.AppendLoggableKV(cacheDirectoryFlag, cacheDirectory)
+	args = args.AppendLoggableKV(contentCacheSizeMBFlag, strconv.Itoa(contentCacheMB))
+	args = args.AppendLoggableKV(metadataCacheSizeMBFlag, strconv.Itoa(metadataCacheMB))
+	return args
 }

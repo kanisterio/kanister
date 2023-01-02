@@ -144,7 +144,7 @@ func (s *ControllerSuite) TestWatch(c *C) {
 	time.Sleep(5 * time.Second)
 }
 
-// nolint:unparam
+//nolint:unparam
 func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
@@ -171,7 +171,7 @@ func (s *ControllerSuite) waitOnActionSetState(c *C, as *crv1alpha1.ActionSet, s
 	return errors.Wrapf(err, "State '%s' never reached", state)
 }
 
-// nolint:unparam
+//nolint:unparam
 func (s *ControllerSuite) waitOnDeferPhaseState(c *C, as *crv1alpha1.ActionSet, state crv1alpha1.State) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
@@ -203,9 +203,9 @@ func newBPWithOutputArtifact() *crv1alpha1.Blueprint {
 			GenerateName: "test-blueprint-",
 		},
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"myAction": &crv1alpha1.BlueprintAction{
+			"myAction": {
 				OutputArtifacts: map[string]crv1alpha1.Artifact{
-					"myArt": crv1alpha1.Artifact{
+					"myArt": {
 						KeyValue: map[string]string{
 							"key": "{{ .Phases.myPhase0.Output.key }}",
 						},
@@ -347,9 +347,9 @@ func newBPWithFakeOutputArtifact() *crv1alpha1.Blueprint {
 			GenerateName: "test-blueprint-",
 		},
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"myAction": &crv1alpha1.BlueprintAction{
+			"myAction": {
 				OutputArtifacts: map[string]crv1alpha1.Artifact{
-					"myArt": crv1alpha1.Artifact{
+					"myArt": {
 						KeyValue: map[string]string{
 							"key": "{{ .Phases.myPhase0.Output.myKey }}",
 						},
@@ -375,7 +375,7 @@ func newBPWithKopiaSnapshotOutputArtifact() *crv1alpha1.Blueprint {
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"myAction": {
 				OutputArtifacts: map[string]crv1alpha1.Artifact{
-					"myArt": crv1alpha1.Artifact{
+					"myArt": {
 						KopiaSnapshot: "{{ .Phases.myPhase0.Output.key }}",
 					},
 				},
@@ -418,7 +418,7 @@ func (s *ControllerSuite) TestSynchronousFailure(c *C) {
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Object: crv1alpha1.ObjectReference{
 						Name: "foo",
 						Kind: param.NamespaceKind,
@@ -542,9 +542,6 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 			as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
 			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
 
-			err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
-			c.Assert(err, IsNil, Commentf("Failed case: %s", tc.name))
-
 			final := crv1alpha1.StateComplete
 			cancel := false
 		Loop:
@@ -561,6 +558,7 @@ func (s *ControllerSuite) TestExecActionSet(c *C) {
 				case testutil.OutputFuncName:
 					c.Assert(testutil.OutputFuncOut(), DeepEquals, map[string]interface{}{"key": "myValue"}, Commentf("Failed case: %s", tc.name))
 				case testutil.CancelFuncName:
+					testutil.CancelFuncStarted()
 					err = s.crCli.ActionSets(s.namespace).Delete(context.TODO(), as.GetName(), metav1.DeleteOptions{})
 					c.Assert(err, IsNil)
 					c.Assert(testutil.CancelFuncOut().Error(), DeepEquals, "context canceled")
@@ -597,7 +595,7 @@ func (s *ControllerSuite) TestRuntimeObjEventLogs(c *C) {
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Blueprint: "NONEXISTANT_BLUEPRINT",
 				},
 			},
@@ -848,7 +846,7 @@ func (s *ControllerSuite) TestActionSetExecWithoutProfile(c *C) {
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Blueprint: bp.GetName(),
 					Name:      "myAction",
 					Object: crv1alpha1.ObjectReference{

@@ -11,9 +11,14 @@ actions:
     phases:
     - func: KubeTask
       name: backupToObjectStore
+      objects:
+        esMasterCredSecret:
+          kind: Secret
+          name: "{{ index .Object.metadata.labels.app }}-credentials"
+          namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.82.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.85.0"
         command:
         - bash
         - -o
@@ -24,7 +29,9 @@ actions:
         - |
           host_name="{{ .Object.spec.serviceName }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
           BACKUP_LOCATION=es_backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/backup.gz
-          elasticdump --bulk=true --input=http://${host_name}:9200 --output=/backup
+          master_username="{{ index .Phases.backupToObjectStore.Secrets.esMasterCredSecret.Data "username" | toString }}"
+          master_password="{{ index .Phases.backupToObjectStore.Secrets.esMasterCredSecret.Data "password" | toString }}"
+          NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump --bulk=true --input=https://${master_username}:${master_password}@${host_name}:9200 --output=/backup
           gzip /backup
           kando location push --profile '{{ toJson .Profile }}'  /backup.gz --path $BACKUP_LOCATION
           kando output backupLocation $BACKUP_LOCATION
@@ -34,9 +41,14 @@ actions:
     phases:
     - func: KubeTask
       name: restoreFromObjectStore
+      objects:
+        esMasterCredSecret:
+          kind: Secret
+          name: "{{ index .Object.metadata.labels.app }}-credentials"
+          namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.82.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.85.0"
         command:
         - bash
         - -o
@@ -46,7 +58,9 @@ actions:
         - -c
         - |
           host_name="{{ .Object.spec.serviceName }}.{{ .StatefulSet.Namespace }}.svc.cluster.local"
-          kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}' - | gunzip | elasticdump --bulk=true --input=$ --output=http://${host_name}:9200
+          master_username="{{ index .Phases.restoreFromObjectStore.Secrets.esMasterCredSecret.Data "username" | toString }}"
+          master_password="{{ index .Phases.restoreFromObjectStore.Secrets.esMasterCredSecret.Data "password" | toString }}"
+          kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}' - | gunzip | NODE_TLS_REJECT_UNAUTHORIZED=0 elasticdump --bulk=true --input=$ --output=https://${master_username}:${master_password}@${host_name}:9200
   delete:
     inputArtifactNames:
     - cloudObject
@@ -55,7 +69,7 @@ actions:
       name: deleteFromObjectStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.82.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.85.0"
         command:
         - bash
         - -o

@@ -34,7 +34,7 @@ func (oc OpenShiftClient) CreateNamespace(ctx context.Context, namespace string)
 }
 
 // NewApp install a new application in the openshift
-// cluster using ``oc new-app`` command
+// cluster using "oc new-app" command
 func (oc OpenShiftClient) NewApp(ctx context.Context, namespace, dpTemplate string, envVar, params map[string]string) (string, error) {
 	var formedVars, formedParams []string
 	for k, v := range envVar {

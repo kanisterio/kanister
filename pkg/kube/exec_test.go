@@ -54,7 +54,7 @@ func (s *ExecSuite) SetUpSuite(c *C) {
 		ObjectMeta: metav1.ObjectMeta{Name: "testpod"},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name:    "testcontainer",
 					Image:   "busybox",
 					Command: []string{"sh", "-c", "tail -f /dev/null"},
@@ -186,7 +186,7 @@ func (s *ExecSuite) TestKopiaCommand(c *C) {
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name:  "kanister-sidecar",
 					Image: "ghcr.io/kanisterio/kanister-tools:0.37.0",
 				},
@@ -195,7 +195,7 @@ func (s *ExecSuite) TestKopiaCommand(c *C) {
 	}
 	p, err := s.cli.CoreV1().Pods(s.namespace).Create(ctx, pod, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	defer s.cli.CoreV1().Pods(s.namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}) // nolint: errcheck
+	defer s.cli.CoreV1().Pods(s.namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}) //nolint: errcheck
 	ctxT, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 	c.Assert(WaitForPodReady(ctxT, s.cli, s.namespace, p.Name), IsNil)

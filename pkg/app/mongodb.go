@@ -41,6 +41,8 @@ type IsMasterOutput struct {
 	Ismaster bool `json:"ismaster"`
 }
 
+var _ HelmApp = &MongoDB{}
+
 type MongoDB struct {
 	cli       kubernetes.Interface
 	namespace string
@@ -50,7 +52,7 @@ type MongoDB struct {
 }
 
 // Last tested working version "9.0.0"
-func NewMongoDB(name string) App {
+func NewMongoDB(name string) HelmApp {
 	return &MongoDB{
 		username: "root",
 		name:     name,
@@ -68,6 +70,14 @@ func NewMongoDB(name string) App {
 			},
 		},
 	}
+}
+
+func (mongo *MongoDB) Chart() *helm.ChartInfo {
+	return &mongo.chart
+}
+
+func (mongo *MongoDB) SetChart(chart helm.ChartInfo) {
+	mongo.chart = chart
 }
 
 func (mongo *MongoDB) Init(ctx context.Context) error {

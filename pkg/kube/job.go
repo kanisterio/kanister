@@ -73,7 +73,7 @@ func NewJob(clientset kubernetes.Interface, jobName string, namespace string, se
 // Create creates the Job in Kubernetes.
 func (job *Job) Create() error {
 	falseVal := false
-	volumeMounts, podVolumes, err := createVolumeSpecs(job.vols)
+	volumeMounts, podVolumes, err := createFilesystemModeVolumeSpecs(job.vols)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create volume spec for job %s", job.name)
 	}
@@ -125,8 +125,8 @@ func (job *Job) Create() error {
 	return nil
 }
 
-func createVolumeSpecs(vols map[string]string) (volumeMounts []v1.VolumeMount, podVolumes []v1.Volume, error error) {
-	// Build volume specs
+func createFilesystemModeVolumeSpecs(vols map[string]string) (volumeMounts []v1.VolumeMount, podVolumes []v1.Volume, error error) {
+	// Build filesystem mode volume specs
 	for pvc, mountPath := range vols {
 		id, err := uuid.NewV1()
 		if err != nil {
@@ -146,6 +146,29 @@ func createVolumeSpecs(vols map[string]string) (volumeMounts []v1.VolumeMount, p
 		)
 	}
 	return volumeMounts, podVolumes, nil
+}
+
+func createBlockModeVolumeSpecs(blockVols map[string]string) (volumeDevices []v1.VolumeDevice, podVolumes []v1.Volume, error error) {
+	// Build block mode volume specs
+	for pvc, devicePath := range blockVols {
+		id, err := uuid.NewV1()
+		if err != nil {
+			return nil, nil, err
+		}
+		podBlockVolName := fmt.Sprintf("block-%s", id.String())
+		volumeDevices = append(volumeDevices, v1.VolumeDevice{Name: podBlockVolName, DevicePath: devicePath})
+		podVolumes = append(podVolumes,
+			v1.Volume{
+				Name: podBlockVolName,
+				VolumeSource: v1.VolumeSource{
+					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						ClaimName: pvc,
+					},
+				},
+			},
+		)
+	}
+	return volumeDevices, podVolumes, nil
 }
 
 // WaitForCompletion waits for the job to run to completion.

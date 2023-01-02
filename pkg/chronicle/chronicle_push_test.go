@@ -16,7 +16,6 @@ package chronicle
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -45,7 +44,7 @@ func (s *ChroniclePushSuite) TestPush(c *C) {
 	c.Assert(err, IsNil)
 
 	a := filepath.Join(c.MkDir(), "artifact")
-	err = ioutil.WriteFile(a, []byte(rand.String(10)), os.ModePerm)
+	err = os.WriteFile(a, []byte(rand.String(10)), os.ModePerm)
 	c.Assert(err, IsNil)
 	p := PushParams{
 		ProfilePath:  pp,

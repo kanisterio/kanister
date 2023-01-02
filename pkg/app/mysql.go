@@ -42,8 +42,10 @@ type MysqlDB struct {
 	chart     helm.ChartInfo
 }
 
+var _ HelmApp = &MysqlDB{}
+
 // Last tested working version "6.14.11"
-func NewMysqlDB(name string) App {
+func NewMysqlDB(name string) HelmApp {
 	return &MysqlDB{
 		name: name,
 		chart: helm.ChartInfo{
@@ -57,6 +59,14 @@ func NewMysqlDB(name string) App {
 			},
 		},
 	}
+}
+
+func (mdb *MysqlDB) Chart() *helm.ChartInfo {
+	return &mdb.chart
+}
+
+func (mdb *MysqlDB) SetChart(chart helm.ChartInfo) {
+	mdb.chart = chart
 }
 
 func (mdb *MysqlDB) Init(ctx context.Context) error {
@@ -219,7 +229,7 @@ func (mdb *MysqlDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 
 func (mdb *MysqlDB) Secrets() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
-		"mysql": crv1alpha1.ObjectReference{
+		"mysql": {
 			Kind:      "Secret",
 			Name:      mdb.chart.Release,
 			Namespace: mdb.namespace,

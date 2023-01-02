@@ -19,7 +19,6 @@ package ibm
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 
 	. "gopkg.in/check.v1"
@@ -47,7 +46,7 @@ func (s *KubeTestIBMClient) SetUpSuite(c *C) {
 	var secData []byte
 	var err error
 	if tomlPath, ok := os.LookupEnv(workAroundEnv); ok {
-		secData, err = ioutil.ReadFile(tomlPath)
+		secData, err = os.ReadFile(tomlPath)
 		c.Assert(err, IsNil)
 	} else {
 		c.Skip(workAroundEnv + " TOML path is not present")
@@ -97,7 +96,7 @@ func (s KubeTestIBMClient) TestIBMOldSecret(c *C) {
 	err := os.Unsetenv(IBMApiKeyEnv)
 	c.Assert(err, IsNil)
 	defer os.Setenv(IBMApiKeyEnv, apiKey)
-	secData, err := ioutil.ReadFile(oldTestTomlPath)
+	secData, err := os.ReadFile(oldTestTomlPath)
 	c.Assert(err, IsNil)
 	secretData := make(map[string][]byte)
 	secretData[IBMK8sSecretData] = secData

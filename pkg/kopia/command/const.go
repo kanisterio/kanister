@@ -48,9 +48,10 @@ const (
 	progressUpdateIntervalFlag = "--progress-update-interval"
 	rawFlag                    = "--raw"
 	showIdenticalFlag          = "--show-identical"
+	tagsFlag                   = "--tags"
 	unsafeIgnoreSourceFlag     = "--unsafe-ignore-source"
 	ownerFlag                  = "--owner"
-	sparseFlag                 = "--sparse"
+	sparseFlag                 = "--write-sparse-files"
 
 	// Server specific
 	addSubCommand             = "add"
@@ -71,4 +72,45 @@ const (
 	tlsGenerateCertFlag       = "--tls-generate-cert"
 	tlsKeyFilePath            = "--tls-key-file"
 	userPasswordFlag          = "--user-password"
+
+	// Repository specific
+	repositorySubCommand      = "repository"
+	connectSubCommand         = "connect"
+	noCheckForUpdatesFlag     = "--no-check-for-updates"
+	overrideHostnameFlag      = "--override-hostname"
+	overrideUsernameFlag      = "--override-username"
+	pointInTimeConnectionFlag = "--point-in-time"
+	urlFlag                   = "--url"
+)
+
+// List of possible modifications to a policy, expressed as the kopia flag that will modify it
+const (
+	// Retention
+	keepLatest  = "--keep-latest"
+	keepHourly  = "--keep-hourly"
+	keepDaily   = "--keep-daily"
+	keepWeekly  = "--keep-weekly"
+	keepMonthly = "--keep-monthly"
+	keepAnnual  = "--keep-annual"
+
+	// Compression
+	compressionAlgorithm = "--compression"
+
+	// Compression Algorithms recognized by Kopia
+	s2DefaultComprAlgo = "s2-default"
+)
+
+// Constants for kopia defaults
+const (
+	// DefaultCacheDirectory is the directory where kopia content cache is created
+	DefaultCacheDirectory = "/tmp/kopia-cache"
+
+	// DefaultConfigFilePath is the file which contains kopia repo config
+	DefaultConfigFilePath = "/tmp/kopia-repository.config"
+
+	// DefaultConfigDirectory is the directory which contains custom kopia repo config
+	DefaultConfigDirectory = "/tmp/kopia-repository"
+
+	// DefaultLogDirectory is the directory where kopia log file is created
+	DefaultLogDirectory = "/tmp/kopia-log"
 )

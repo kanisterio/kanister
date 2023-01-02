@@ -17,7 +17,6 @@ package kanctl
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 
@@ -487,7 +486,7 @@ func getProfileFromFile(ctx context.Context, filename string) (*v1alpha1.Profile
 }
 
 func getServiceKey(ctx context.Context, filename string) (string, error) {
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err
 	}

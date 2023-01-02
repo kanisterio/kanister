@@ -1,15 +1,13 @@
-FROM postgres:9.6-alpine
-
-LABEL maintainer="vkamra@kasten.io"
+FROM postgres:15-bullseye
 
 ENV DEBIAN_FRONTEND noninteractive
 
 USER root
 
-RUN apk -v --update add --no-cache curl python3 py3-pip groff less jq && \
+RUN apt-get update && apt-get -y install curl python3 python3-pip groff less jq && \
     pip3 install --upgrade pip && \
     pip3 install --upgrade awscli && \
-    rm -f /var/cache/apk/*
+    apt-get clean
 
 COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
 ADD kando /usr/local/bin/

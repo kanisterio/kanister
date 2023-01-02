@@ -16,7 +16,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -123,7 +122,7 @@ func (mdep *MysqlDepConfig) GetClusterScopedResources(ctx context.Context) []crv
 func (mdep *MysqlDepConfig) Ping(ctx context.Context) error {
 	log.Print("Pinging the application", field.M{"app": mdep.name})
 
-	pingCMD := []string{"bash", "-c", fmt.Sprintf("mysql -u root -e 'show databases;'")}
+	pingCMD := []string{"bash", "-c", "mysql -u root -e 'show databases;'"}
 	_, stderr, err := mdep.execCommand(ctx, pingCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while Pinging the database %s, %s", stderr, err)
@@ -135,7 +134,7 @@ func (mdep *MysqlDepConfig) Ping(ctx context.Context) error {
 func (mdep *MysqlDepConfig) Insert(ctx context.Context) error {
 	log.Print("Inserting some records in  mysql instance.", field.M{"app": mdep.name})
 
-	insertRecordCMD := []string{"bash", "-c", fmt.Sprintf("mysql -u root -e 'use testdb; INSERT INTO pets VALUES (\"Puffball\",\"Diane\",\"hamster\",\"f\",\"1999-03-30\",NULL); '")}
+	insertRecordCMD := []string{"bash", "-c", "mysql -u root -e 'use testdb; INSERT INTO pets VALUES (\"Puffball\",\"Diane\",\"hamster\",\"f\",\"1999-03-30\",NULL); '"}
 	_, stderr, err := mdep.execCommand(ctx, insertRecordCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while inserting the data into msyql deployment config database: %s", stderr)
@@ -148,7 +147,7 @@ func (mdep *MysqlDepConfig) Insert(ctx context.Context) error {
 func (mdep *MysqlDepConfig) Count(ctx context.Context) (int, error) {
 	log.Print("Counting the records from the mysql instance.", field.M{"app": mdep.name})
 
-	selectRowsCMD := []string{"bash", "-c", fmt.Sprintf("mysql -u root -e 'use testdb; select count(*) from pets; '")}
+	selectRowsCMD := []string{"bash", "-c", "mysql -u root -e 'use testdb; select count(*) from pets; '"}
 	stdout, stderr, err := mdep.execCommand(ctx, selectRowsCMD)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error while counting the data of the database: %s", stderr)
@@ -168,14 +167,14 @@ func (mdep *MysqlDepConfig) Reset(ctx context.Context) error {
 	log.Print("Resetting the mysql instance.", field.M{"app": "mysql"})
 
 	// delete all the data from the table
-	deleteCMD := []string{"bash", "-c", fmt.Sprintf("mysql -u root -e 'DROP DATABASE IF EXISTS testdb'")}
+	deleteCMD := []string{"bash", "-c", "mysql -u root -e 'DROP DATABASE IF EXISTS testdb'"}
 	_, stderr, err := mdep.execCommand(ctx, deleteCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while dropping the mysql table: %s", stderr)
 	}
 
 	// create the database and a pets table
-	createCMD := []string{"bash", "-c", fmt.Sprintf("mysql -u root -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'")}
+	createCMD := []string{"bash", "-c", "mysql -u root -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
 	_, stderr, err = mdep.execCommand(ctx, createCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while creating the mysql table: %s", stderr)

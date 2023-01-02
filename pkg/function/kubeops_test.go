@@ -335,7 +335,7 @@ func getSampleCRD() *extensionsv1.CustomResourceDefinition {
 			},
 			Scope: extensionsv1.ResourceScope("Namespaced"),
 			Versions: []extensionsv1.CustomResourceDefinitionVersion{
-				extensionsv1.CustomResourceDefinitionVersion{
+				{
 					Name:    "v1alpha1",
 					Served:  true,
 					Storage: true,

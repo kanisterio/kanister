@@ -14,6 +14,8 @@
 
 package command
 
+import "strconv"
+
 type PolicySetGlobalCommandArgs struct {
 	*CommandArgs
 	Modifications policyChanges
@@ -21,11 +23,29 @@ type PolicySetGlobalCommandArgs struct {
 
 // PolicySetGlobal returns the kopia command for modifying the global policy
 func PolicySetGlobal(cmdArgs PolicySetGlobalCommandArgs) []string {
-	args := commonArgs(cmdArgs.EncryptionKey, cmdArgs.ConfigFilePath, cmdArgs.LogDirectory, false)
+	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(policySubCommand, setSubCommand, globalFlag)
 	for field, val := range cmdArgs.Modifications {
 		args = args.AppendLoggableKV(field, val)
 	}
 
 	return stringSliceCommand(args)
+}
+
+func GetPolicyModifications() map[string]string {
+	const maxInt32 = 1<<31 - 1
+
+	pc := map[string]string{
+		// Retention changes
+		keepLatest:  strconv.Itoa(maxInt32),
+		keepHourly:  strconv.Itoa(0),
+		keepDaily:   strconv.Itoa(0),
+		keepWeekly:  strconv.Itoa(0),
+		keepMonthly: strconv.Itoa(0),
+		keepAnnual:  strconv.Itoa(0),
+
+		// Compression changes
+		compressionAlgorithm: s2DefaultComprAlgo,
+	}
+	return pc
 }
