@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7-923
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7-1031
 
 LABEL maintainer="Tom Manville<tom@kasten.io>"
 

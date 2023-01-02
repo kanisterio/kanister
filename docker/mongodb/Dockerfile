@@ -1,6 +1,6 @@
-FROM bitnami/mongodb:4.4.13-debian-10-r52
+FROM bitnami/mongodb:5.0.14-debian-11-r0
 
-MAINTAINER "Tom Manville <tom@kasten.io>"
+LABEL maintainer="Tom Manville <tom@kasten.io>"
 
 # Install kando
 ADD kando /usr/local/bin/

@@ -39,7 +39,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7-923
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7-1031
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \
