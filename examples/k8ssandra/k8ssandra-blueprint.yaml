@@ -34,8 +34,8 @@ actions:
         conditions:
           anyOf:
           - condition: |-
-              {{ if .status.finishTime }}
-                {{ if .status.finished }}
+              {{ if "{$.status.finishTime}" }}
+                {{ if "{$.status.finished[]}" }}
                   true
                 {{ end }}
               {{ else }}
@@ -76,8 +76,8 @@ actions:
         conditions:
           anyOf:
           - condition: |-
-              {{ if .status.finishTime }}
-                {{ if .status.restoreKey }}
+              {{ if "{$.status.finishTime}" }}
+                {{ if "{$.status.restoreKey}" }}
                   true
                 {{ end }}
               {{ else }}
