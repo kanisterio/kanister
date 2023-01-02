@@ -334,7 +334,7 @@ type KeyPair struct {
 	// SecretField specifies the corresponding keys in the Secret under which KeyPair
 	// Credentials are stored.
 	SecretField string `json:"secretField"`
-	// Secret represents a Kubernetes Secret object storing the KeyPair credentials..
+	// Secret represents a Kubernetes Secret object storing the KeyPair credentials.
 	Secret ObjectReference `json:"secret"`
 }
 
