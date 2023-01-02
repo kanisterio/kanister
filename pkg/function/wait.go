@@ -17,19 +17,22 @@ package function
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
+	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/dynamic"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/jsonpath"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -66,8 +69,13 @@ func (*waitFunc) Name() string {
 }
 
 func (ktf *waitFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	rendered, err := param.RenderArgs(args, tp)
+	if err != nil {
+		return nil, err
+	}
+
 	var timeout string
-	if err := Arg(args, WaitTimeoutArg, &timeout); err != nil {
+	if err := Arg(rendered, WaitTimeoutArg, &timeout); err != nil {
 		return nil, err
 	}
 
@@ -114,7 +122,7 @@ func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond Wa
 		for _, cond := range waitCond.AnyOf {
 			result, evalErr = evaluateCondition(ctx, dynCli, cond, tp)
 			if evalErr != nil {
-				// TODO: Fail early if the error is due to go-template syntax
+				// TODO: Fail early if the error is due to jsonpath syntax
 				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition", field.M{"result": result})
 				return false, nil
 			}
@@ -125,7 +133,7 @@ func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond Wa
 		for _, cond := range waitCond.AllOf {
 			result, evalErr = evaluateCondition(ctx, dynCli, cond, tp)
 			if evalErr != nil {
-				// TODO: Fail early if the error is due to go-template syntax
+				// TODO: Fail early if the error is due to jsonpath syntax
 				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition", field.M{"result": result})
 				return false, nil
 			}
@@ -158,21 +166,21 @@ func evaluateCondition(ctx context.Context, dynCli dynamic.Interface, cond Condi
 	if err != nil {
 		return false, err
 	}
-	value, err := evaluateGoTemplate(obj, cond.Condition)
+	rcondition, err := resolveJsonpath(obj, cond.Condition)
 	if err != nil {
 		return false, err
 	}
-	return strings.TrimSpace(value) == "true", nil
-}
-
-func evaluateGoTemplate(obj runtime.Object, goTemplateStr string) (string, error) {
-	var buff bytes.Buffer
-	jp, err := printers.NewGoTemplatePrinter([]byte(goTemplateStr))
+	log.Debug().Print(fmt.Sprintf("Resolved jsonpath: %s", rcondition))
+	t, err := template.New("config").Option("missingkey=zero").Funcs(sprig.TxtFuncMap()).Parse(rcondition)
 	if err != nil {
-		return "", nil
+		return false, errors.WithStack(err)
 	}
-	err = jp.PrintObj(obj, &buff)
-	return buff.String(), err
+	buf := bytes.NewBuffer(nil)
+	if err = t.Execute(buf, nil); err != nil {
+		return false, errors.WithStack(err)
+	}
+	log.Debug().Print(fmt.Sprintf("Condition evaluation result: %s", strings.TrimSpace(buf.String())))
+	return strings.TrimSpace(buf.String()) == "true", nil
 }
 
 func fetchObjectFromRef(ctx context.Context, dynCli dynamic.Interface, objRef crv1alpha1.ObjectReference) (runtime.Object, error) {
@@ -181,4 +189,18 @@ func fetchObjectFromRef(ctx context.Context, dynCli dynamic.Interface, objRef cr
 		return dynCli.Resource(gvr).Namespace(objRef.Namespace).Get(ctx, objRef.Name, metav1.GetOptions{})
 	}
 	return dynCli.Resource(gvr).Get(ctx, objRef.Name, metav1.GetOptions{})
+}
+
+// resolveJsonpath resolves jsonpath fields and replaces the occurrences with actual values
+func resolveJsonpath(obj runtime.Object, condStr string) (string, error) {
+	resolvedCondStr := condStr
+	for s, match := range jsonpath.FindJsonpathArgs(condStr) {
+		transCond := fmt.Sprintf("{%s}", strings.TrimSpace(match))
+		value, err := jsonpath.ResolveJsonpathToString(obj, transCond)
+		if err != nil {
+			return "", err
+		}
+		resolvedCondStr = strings.ReplaceAll(resolvedCondStr, s, value)
+	}
+	return resolvedCondStr, nil
 }
