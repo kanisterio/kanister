@@ -51,7 +51,8 @@ var _ runtime.Object = (*ActionSet)(nil)
 type ActionSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	// Spec defines the specification for ActionSet
+	// Spec defines the specification for ActionSet. For example,
+	// which action should be performed with which blueprint, etc. It also has details about the profile and other objects that might be used by the referred blueprint.
 	Spec *ActionSetSpec `json:"spec,omitempty"`
 	// Status refers to the current status of the Kanister actions.
 	Status *ActionSetStatus `json:"status,omitempty"`
@@ -112,9 +113,9 @@ type ActionSpec struct {
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
 type ActionSetStatus struct {
-	// State represents the current state of the ActionSet.
+	// State represents the current state of the ActionSet. Currently there are four State values, which are: "Pending", "Running", "Failed" and "Complete".
 	State State `json:"state"`
-	// Actions represents the latest available observations of an ActionSet's current state.
+	// Actions represents the latest available observations of an ActionSet's  actions' current state.
 	Actions []ActionStatus `json:"actions,omitempty"`
 	// Error contains the detailed error message of an actionset failure.
 	Error Error `json:"error,omitempty"`
@@ -166,7 +167,7 @@ const (
 
 // Error is used to show error messages occured.
 type Error struct {
-	// Message displayed in case if error occurs.
+	// Message is the actual error message that is displayed in case of errors.
 	Message string `json:"message"`
 }
 
@@ -217,9 +218,9 @@ type Blueprint struct {
 
 // BlueprintAction describes the set of phases that constitute an action.
 type BlueprintAction struct {
-	// Name of the action.
+	// Name contains the name of the action.
 	Name string `json:"name"`
-	// Kind field is now deprecated.
+	// Kind contains the resource on which this action has to be performed. Kind field is now deprecated.
 	Kind string `json:"kind"`
 	// ConfigMapNames is used to specify the config map names that can be used later in the Action phases.
 	ConfigMapNames []string `json:"configMapNames,omitempty"`
@@ -241,9 +242,9 @@ type BlueprintAction struct {
 type BlueprintPhase struct {
 	// Func is the name of a registered Kanister function.
 	Func string `json:"func"`
-	// Name of the phase.
+	// Name contains name of the phase.
 	Name string `json:"name"`
-	// ObjectRefs represnets a map of references to the Kubernetes objects on which the action will be performed.
+	// ObjectRefs represnets a map of references to the Kubernetes objects that can later be used in the `Args` of the function.
 	ObjectRefs map[string]ObjectReference `json:"objects,omitempty"`
 	// Args represents a map of named arguments that the controller will pass to the Kanister function.
 	Args map[string]interface{} `json:"args"`
@@ -263,8 +264,8 @@ type BlueprintList struct {
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Profile captures information about a location for data operation artifacts and
-// corresponding credentials that will be made available to a Blueprint.
+// Profile captures information about, a location for data operation artifacts and
+// corresponding credentials, that will be made available to a Blueprint.
 type Profile struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -274,7 +275,7 @@ type Profile struct {
 	Credential Credential `json:"credential"`
 	// SkipSSLVerify is boolean and specifies whether skipping SkipSSLVerify verification
 	// is allowed when operating with the Location.
-	// If omitted from a CR definition it default to false
+	// If omitted from a CR definition it defaults to false
 	SkipSSLVerify bool `json:"skipSSLVerify"`
 }
 
@@ -306,12 +307,9 @@ type Location struct {
 type CredentialType string
 
 const (
-	// CredentialTypeKeyPair represents the Credential being used is of Type key pair.
 	CredentialTypeKeyPair CredentialType = "keyPair"
-	// CredentialTypeSecret represents the Credential being used is of Type Secret.
-	CredentialTypeSecret CredentialType = "secret"
-	// CredentialTypeKopia represents the Credential being used is of Type Kopia.
-	CredentialTypeKopia CredentialType = "kopia"
+	CredentialTypeSecret  CredentialType = "secret"
+	CredentialTypeKopia   CredentialType = "kopia"
 )
 
 // Credential
