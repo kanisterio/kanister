@@ -24,6 +24,7 @@ type RestoreCommandArgs struct {
 func Restore(cmdArgs RestoreCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(restoreSubCommand, cmdArgs.RootID, cmdArgs.TargetPath)
+	args = args.AppendLoggableKV(ignorePermissionsError, "false")
 
 	return stringSliceCommand(args)
 }

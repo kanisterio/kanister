@@ -66,6 +66,7 @@ func SnapshotRestore(cmdArgs SnapshotRestoreCommandArgs) []string {
 	if cmdArgs.SparseRestore {
 		args = args.AppendLoggable(sparseFlag)
 	}
+	args.AppendLoggableKV(ignorePermissionsError, "false")
 
 	return stringSliceCommand(args)
 }
