@@ -28,6 +28,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
+var skipRenderFuncs = map[string]bool{
+	"wait":   true,
+	"waitv2": true,
+}
+
 // Phase is an atomic unit of execution.
 type Phase struct {
 	name    string
@@ -91,8 +96,8 @@ func renderFuncArgs(
 	funcName string,
 	args map[string]interface{},
 	tp param.TemplateParams) (map[string]interface{}, error) {
-	// let wait handle its own go template + jsonpath mixed arguments
-	if strings.ToLower(funcName) == "wait" {
+	// let wait handle its own go template and jsonpath arguments
+	if skipRenderFuncs[strings.ToLower(funcName)] {
 		return args, nil
 	}
 
