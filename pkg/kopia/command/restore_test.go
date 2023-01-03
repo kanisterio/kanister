@@ -42,7 +42,7 @@ func (kRestore *KopiaRestoreTestSuite) TestRestoreCommands(c *C) {
 				}
 				return Restore(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key restore snapshot-id target/path",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key restore snapshot-id target/path --ignore-permission-errors=false",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
