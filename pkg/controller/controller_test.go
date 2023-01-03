@@ -26,6 +26,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
@@ -664,12 +665,35 @@ func (s *ControllerSuite) TestDeferPhase(c *C) {
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
 	c.Assert(err, IsNil)
 
+	// we need a set to avoid duplicate values of `runningPhase`
+	// as we are continuously fetching the value from the ActionSet
+	runningPhases := sets.NewString()
+	go func() {
+		// get actionset and store the runningPhase fields to a set
+		for {
+			a, err := s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
+			c.Assert(err, IsNil)
+			if a.Status.Progress.RunningPhase != "" {
+				runningPhases.Insert(a.Status.Progress.RunningPhase)
+			}
+		}
+	}()
+
 	// make sure deferPhase is also run successfully
 	err = s.waitOnDeferPhaseState(c, as, crv1alpha1.StateComplete)
 	c.Assert(err, IsNil)
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateComplete)
 	c.Assert(err, IsNil)
+
+	// once actionset is completed make sure all the phases are in runningPhases
+	// that would confirm that the actionset's status.progress.runningPhase was set
+	// to those phases
+	op := sets.NewString()
+	// these phases are from blueprint that we create above
+	// and after actionset completion the runningPhase becomes ""
+	op.Insert("backupPhaseOne").Insert("backupPhaseTwo").Insert("deferPhase")
+	c.Assert(runningPhases.Equal(op), Equals, true)
 
 	as, err = s.crCli.ActionSets(s.namespace).Get(ctx, as.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
