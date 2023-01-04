@@ -51,8 +51,9 @@ var _ runtime.Object = (*ActionSet)(nil)
 type ActionSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	// Spec defines the specification for ActionSet. For example,
-	// which action should be performed with which blueprint, etc. It also has details about the profile and other objects that might be used by the referred blueprint.
+	// Spec defines the specification for the actionset.
+	// The specification includes a list of Actions to be performed. Each Action includes details
+	// about the referenced Blueprint and other objects used to perform the defined action.
 	Spec *ActionSetSpec `json:"spec,omitempty"`
 	// Status refers to the current status of the Kanister actions.
 	Status *ActionSetStatus `json:"status,omitempty"`
@@ -79,7 +80,7 @@ type ObjectReference struct {
 
 // ActionSetSpec is the specification for the actionset.
 type ActionSetSpec struct {
-	// Actions represnets a list of Actions that need to be performed by the ActionSet.
+	// Actions represents a list of Actions that need to be performed by the actionset.
 	Actions []ActionSpec `json:"actions,omitempty"`
 }
 
@@ -113,14 +114,16 @@ type ActionSpec struct {
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
 type ActionSetStatus struct {
-	// State represents the current state of the ActionSet. Currently there are four State values, which are: "Pending", "Running", "Failed" and "Complete".
+	// State represents the current state of the actionset.
+	// There are four possible values: "Pending", "Running", "Failed", and "Complete".
 	State State `json:"state"`
-	// Actions represents the latest available observations of an ActionSet's  actions' current state.
+	// Actions list represents the latest available observations of the current state of all the actions.
 	Actions []ActionStatus `json:"actions,omitempty"`
 	// Error contains the detailed error message of an actionset failure.
 	Error Error `json:"error,omitempty"`
-	// Progress provides information on the progress that has been made for an actionset.
-	// For example: Percentage of completion of an actionset and the phase that is currently being run for the actionset.
+	// Progress provides information on the progress of a running actionset.
+	// This includes the percentage of completion of an actionset and the phase that is
+	// currently being executed.
 	Progress ActionProgress `json:"progress,omitempty"`
 }
 
@@ -165,7 +168,7 @@ const (
 	StateComplete State = "complete"
 )
 
-// Error is used to show error messages occured.
+// Error represents an error that occurred when executing an actionset.
 type Error struct {
 	// Message is the actual error message that is displayed in case of errors.
 	Message string `json:"message"`
@@ -173,9 +176,9 @@ type Error struct {
 
 // Phase is subcomponent of an action.
 type Phase struct {
-	// Name represents the  phase name of the Blueprint phase.
+	// Name represents the name of the Blueprint phase.
 	Name string `json:"name"`
-	// State represents the current state of execution of Blueprint phase.
+	// State represents the current state of execution of the Blueprint phase.
 	State State `json:"state"`
 	// Output is the map of output artifacts produced by the Blueprint phase.
 	Output map[string]interface{} `json:"output,omitempty"`
@@ -194,11 +197,11 @@ type Artifact struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ActionSetList is the definition of a list of ActionSets.
+// ActionSetList is the definition of a list of actionsets.
 type ActionSetList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	// Items is the list of ActionSets.
+	// Items is the list of actionsets.
 	Items []*ActionSet `json:"items"`
 }
 
@@ -222,19 +225,19 @@ type BlueprintAction struct {
 	Name string `json:"name"`
 	// Kind contains the resource on which this action has to be performed.
 	Kind string `json:"kind"`
-	// ConfigMapNames is used to specify the config map names that can be used later in the Action phases.
+	// ConfigMapNames is used to specify the config map names that can be used later in the action phases.
 	ConfigMapNames []string `json:"configMapNames,omitempty"`
 	// List of Kubernetes secret names used in action phases.
 	SecretNames []string `json:"secretNames,omitempty"`
 	// InputArtifactNames is the list of Artifact names that were set from previous action and can be consumed in the current action.
 	InputArtifactNames []string `json:"inputArtifactNames,omitempty"`
-	// OutputArtifacts is the map of rendered parameters made available to the next action in the BlueprintAction.
+	// OutputArtifacts is the map of rendered artifacts produced by the BlueprintAction.
 	OutputArtifacts map[string]Artifact `json:"outputArtifacts,omitempty"`
-	// Phases is the list of BlueprintPhases which are invoked in order when executing this Action.
+	// Phases is the list of BlueprintPhases which are invoked in order when executing this action.
 	Phases []BlueprintPhase `json:"phases,omitempty"`
 	// DeferPhase is invoked after the execution of Phases that are defined for an action.
 	// A DeferPhase, is executed regardless of the statuses of the other phases of the action.
-	// A DeferPhase can be used for cleanup operations at the end of an Action.
+	// A DeferPhase can be used for cleanup operations at the end of an action.
 	DeferPhase *BlueprintPhase `json:"deferPhase,omitempty"`
 }
 
