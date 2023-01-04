@@ -14,17 +14,20 @@
 
 package command
 
+import "strconv"
+
 type RestoreCommandArgs struct {
 	*CommandArgs
-	RootID     string
-	TargetPath string
+	RootID                 string
+	TargetPath             string
+	IgnorePermissionErrors bool
 }
 
 // Restore returns the kopia command for restoring root of a snapshot with given root ID
 func Restore(cmdArgs RestoreCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(restoreSubCommand, cmdArgs.RootID, cmdArgs.TargetPath)
-	args = args.AppendLoggableKV(ignorePermissionsError, "false")
+	args = args.AppendLoggableKV(ignorePermissionsError, strconv.FormatBool(cmdArgs.IgnorePermissionErrors))
 
 	return stringSliceCommand(args)
 }

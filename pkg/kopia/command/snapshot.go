@@ -54,19 +54,20 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 
 type SnapshotRestoreCommandArgs struct {
 	*CommandArgs
-	SnapID        string
-	TargetPath    string
-	SparseRestore bool
+	SnapID                 string
+	TargetPath             string
+	SparseRestore          bool
+	IgnorePermissionErrors bool
 }
 
 // SnapshotRestore returns kopia command restoring snapshots with given snap ID
 func SnapshotRestore(cmdArgs SnapshotRestoreCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, cmdArgs.SnapID, cmdArgs.TargetPath)
+	args = args.AppendLoggableKV(ignorePermissionsError, strconv.FormatBool(cmdArgs.IgnorePermissionErrors))
 	if cmdArgs.SparseRestore {
 		args = args.AppendLoggable(sparseFlag)
 	}
-	args = args.AppendLoggableKV(ignorePermissionsError, "false")
 
 	return stringSliceCommand(args)
 }
