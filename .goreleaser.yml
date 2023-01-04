@@ -60,11 +60,6 @@ dockers:
   image_templates:
   - 'ghcr.io/kanisterio/postgres-kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
-- ids:
-  - kando
-  image_templates:
-  - 'ghcr.io/kanisterio/postgres-tools-9.6:{{ .Tag }}'
-  dockerfile: 'docker/postgres-tools-9.6/Dockerfile'
 - image_templates:
   - 'ghcr.io/kanisterio/postgresql:{{ .Tag }}'
   dockerfile: 'docker/postgresql/Dockerfile'
