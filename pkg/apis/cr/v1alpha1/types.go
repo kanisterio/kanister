@@ -220,7 +220,7 @@ type Blueprint struct {
 type BlueprintAction struct {
 	// Name contains the name of the action.
 	Name string `json:"name"`
-	// Kind contains the resource on which this action has to be performed. Kind field is now deprecated.
+	// Kind contains the resource on which this action has to be performed.
 	Kind string `json:"kind"`
 	// ConfigMapNames is used to specify the config map names that can be used later in the Action phases.
 	ConfigMapNames []string `json:"configMapNames,omitempty"`
