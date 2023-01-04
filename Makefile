@@ -188,7 +188,8 @@ codegen:
 DOCS_CMD = "cd docs && make clean &&          \
                 doc8 --max-line-length 90 --ignore D000 . && \
                 make spelling && make html           \
-	   "   
+	   "
+
 docs:
 ifeq ($(DOCKER_BUILD),"true")
 	@echo "running DOCS_CMD in the containerized build environment"
