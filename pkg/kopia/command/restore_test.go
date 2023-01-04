@@ -44,6 +44,22 @@ func (kRestore *KopiaRestoreTestSuite) TestRestoreCommands(c *C) {
 			},
 			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key restore snapshot-id target/path --ignore-permission-errors=false",
 		},
+		{
+			f: func() []string {
+				args := RestoreCommandArgs{
+					CommandArgs: &CommandArgs{
+						RepoPassword:   "encr-key",
+						ConfigFilePath: "path/kopia.config",
+						LogDirectory:   "cache/log",
+					},
+					RootID:                 "snapshot-id",
+					TargetPath:             "target/path",
+					IgnorePermissionErrors: true,
+				}
+				return Restore(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key restore snapshot-id target/path --ignore-permission-errors=true",
+		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
 		c.Check(cmd, Equals, tc.expectedLog)

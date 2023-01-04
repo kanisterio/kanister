@@ -85,6 +85,17 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 		{
 			f: func() []string {
 				args := SnapshotRestoreCommandArgs{
+					CommandArgs: commandArgs,
+					SnapID:      "snapshot-id",
+					TargetPath:  "target/path",
+				}
+				return SnapshotRestore(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --ignore-permission-errors=false",
+		},
+		{
+			f: func() []string {
+				args := SnapshotRestoreCommandArgs{
 					CommandArgs:            commandArgs,
 					SnapID:                 "snapshot-id",
 					TargetPath:             "target/path",
