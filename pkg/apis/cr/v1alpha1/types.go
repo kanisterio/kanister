@@ -305,7 +305,8 @@ type Location struct {
 	Bucket string `json:"bucket"`
 	// Endpoint specifies the endpoint where the object storage is accessible at.
 	Endpoint string `json:"endpoint"`
-	// Prefix is the string that would be prepended into the object path in the bucket where the objects will be uploaded to.
+	// Prefix is the string that would be prepended to the object path in the
+	// bucket where the backup objects are uploaded.
 	Prefix string `json:"prefix"`
 	// Region represents the region where the bucket mentioned above is present in.
 	Region string `json:"region"`
