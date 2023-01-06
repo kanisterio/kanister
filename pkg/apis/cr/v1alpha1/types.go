@@ -347,7 +347,7 @@ type KeyPair struct {
 
 // KopiaServerSecret contains credentials to connect to Kopia server
 type KopiaServerSecret struct {
-	// Username represents the UserName used to connect to the Kopia Server.
+	// Username represents the username used to connect to the Kopia Server.
 	Username string `json:"username,omitempty"`
 	// Hostname rpresents the Hostname used to connect to the Kopia Server.
 	Hostname string `json:"hostname,omitempty"`
