@@ -335,8 +335,7 @@ type Credential struct {
 
 // KeyPair
 type KeyPair struct {
-	// IDField represents the IDs of corresponding keys in the Secret under which KeyPair
-	// Credentials are stored.
+	// IDField specifies the corresponding key in the secret where the AWS Key ID value is stored.
 	IDField string `json:"idField"`
 	// SecretField specifies the corresponding keys in the Secret under which KeyPair
 	// Credentials are stored.
