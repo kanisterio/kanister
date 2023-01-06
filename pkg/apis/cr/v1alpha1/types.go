@@ -270,8 +270,8 @@ type BlueprintList struct {
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Profile captures information about, a location for data operation artifacts and
-// corresponding credentials, that will be made available to a Blueprint.
+// Profile captures information about a storage location for backup artifacts and
+// corresponding credentials, that will be made available to a Blueprint phase.
 type Profile struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
