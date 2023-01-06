@@ -36,7 +36,7 @@ Monitor the logs
 kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
 ```
 
-Create a cluster in test-es1 namespace
+Create an Elastic search cluster in `test-es1` namespace by creating `Elasticsearch` resource
 ```
 kubectl create ns test-es1
 kubectl config set-context --current --namespace test-es1
