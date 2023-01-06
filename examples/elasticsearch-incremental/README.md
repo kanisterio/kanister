@@ -93,7 +93,8 @@ can be shared between Kanister-enabled application instances.
 
 
 ### Create Blueprint
-Create Blueprint in the same namespace as the controller
+
+Create Blueprint in the same namespace as the Kanister controller
 
 ```bash
 $ kubectl create -f elasticsearch-incremental-blueprint.yaml -n kasten-io
