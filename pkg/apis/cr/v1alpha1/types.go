@@ -238,7 +238,7 @@ type BlueprintAction struct {
 	// Phases is the list of BlueprintPhases which are invoked in order when executing this action.
 	Phases []BlueprintPhase `json:"phases,omitempty"`
 	// DeferPhase is invoked after the execution of Phases that are defined for an action.
-	// A DeferPhase, is executed regardless of the statuses of the other phases of the action.
+	// A DeferPhase is executed regardless of the statuses of the other phases of the action.
 	// A DeferPhase can be used for cleanup operations at the end of an action.
 	DeferPhase *BlueprintPhase `json:"deferPhase,omitempty"`
 }
