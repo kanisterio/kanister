@@ -364,7 +364,7 @@ type KopiaServerSecretRef struct {
 	// Key represents the corresponding key in the secret where the required
 	// credential or certificate value is stored.
 	Key string `json:"key"`
-	// Secret is part of K8s secrets that is used to access Kopia Server.
+	// Secret is the K8s secret object where the creds related to the Kopia Server are stored.
 	Secret *ObjectReference `json:"secret"`
 }
 
