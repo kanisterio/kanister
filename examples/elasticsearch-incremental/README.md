@@ -71,7 +71,8 @@ than `quickstart` and namespace other than `test-es1`, you need
 to modify the commands used below to use the correct name and namespace
 
 ### Create Profile
-Create Profile CR if not created already
+
+Create Profile CR, if not created already, using the below command
 
 ```bash
 $ kanctl create profile s3compliant --access-key <aws-access-key-id> \
