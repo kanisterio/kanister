@@ -325,7 +325,7 @@ const (
 type Credential struct {
 	// Type represents the information about how the credentials are provided for the respective object storage.
 	Type CredentialType `json:"type"`
-	// KeyPair represnets the pair of Keys being used for the Credential of Type KeyPair.
+	// KeyPair represents the key-value map used for the Credential of Type KeyPair.
 	KeyPair *KeyPair `json:"keyPair,omitempty"`
 	// Secret represents the Kubernetes Secret Object used for the Credential of Type Secret.
 	Secret *ObjectReference `json:"secret,omitempty"`
