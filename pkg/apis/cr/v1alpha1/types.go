@@ -374,6 +374,6 @@ type KopiaServerSecretRef struct {
 type ProfileList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	// Items represnets a list of Profiles.
+	// Items represents a list of Profiles.
 	Items []*Profile `json:"items"`
 }
