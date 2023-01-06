@@ -308,7 +308,7 @@ type Location struct {
 	// Prefix is the string that would be prepended to the object path in the
 	// bucket where the backup objects are uploaded.
 	Prefix string `json:"prefix"`
-	// Region represents the region where the bucket mentioned above is present in.
+	// Region represents the region of the bucket specified above.
 	Region string `json:"region"`
 }
 
