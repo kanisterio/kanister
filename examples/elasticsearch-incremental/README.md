@@ -130,7 +130,7 @@ curl -k -u "elastic:$PASSWORD" -X GET "${ES_URL}/my-index-000002/_doc/1?pretty"
 
 You can now take a backup of the elasticsearch data 
 using an ActionSet defining backup for this application. 
-Create an ActionSet in the same namespace as the controller.
+Create an ActionSet in the same namespace as the Kanister controller.
 
 ```bash
 $ kubectl get profile -n test-es1
