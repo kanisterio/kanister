@@ -1,8 +1,14 @@
 # Elasticsearch
 
-[Elasticsearch](https://www.elastic.co/) Elasticsearch is a search engine based on the Lucene library. It provides a distributed, multitenant-capable full-text search engine with an HTTP web interface and schema-free JSON documents.
+[Elasticsearch](https://www.elastic.co/) Elasticsearch is a search engine based 
+on the Lucene library. It provides a distributed, multitenant-capable full-text
+ search engine with an HTTP web interface and schema-free JSON documents.
 
-This blueprint use the [elasticsearch snapshot api](https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshot-restore.html) to protect your cluster. This snapshot is incremental and the blueprint works only for [s3 compatible repository](https://www.elastic.co/guide/en/elasticsearch/reference/current/repository-s3.html).
+This blueprint use the 
+[elasticsearch snapshot api](https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshot-restore.html) 
+to protect your cluster. This snapshot is incremental and the blueprint works 
+only for 
+[s3 compatible repository](https://www.elastic.co/guide/en/elasticsearch/reference/current/repository-s3.html).
 
 ## Prerequisites
 
@@ -13,7 +19,9 @@ This blueprint use the [elasticsearch snapshot api](https://www.elastic.co/guide
 
 ## Operator Details
 
-We will be using the [elasticsearch operator](https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html) to deploy the elasticsearch cluster.
+We will be using the 
+[elasticsearch operator](https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html) 
+to deploy the elasticsearch cluster.
 
 ## Installing the Operator and the cluster
 
@@ -58,7 +66,9 @@ EOF
 
 ## Integrating with Kanister
 
-If you have deployed the elasticsearch cluster with other name than `quickstart` and namespace other than `test-es1`, you need to modify the commands used below to use the correct name and namespace
+If you have deployed the elasticsearch cluster with other name 
+than `quickstart` and namespace other than `test-es1`, you need
+to modify the commands used below to use the correct name and namespace
 
 ### Create Profile
 Create Profile CR if not created already
@@ -72,7 +82,13 @@ $ kanctl create profile s3compliant --access-key <aws-access-key-id> \
 
 **NOTE:**
 
-The command will configure a location where artifacts resulting from Kanister data operations such as backup should go. This is stored as a profiles.cr.kanister.io CustomResource (CR) which is then referenced in Kanister ActionSets. Every ActionSet requires a Profile reference to complete the action. This CR (profiles.cr.kanister.io) can be shared between Kanister-enabled application instances.
+The command will configure a location where artifacts 
+resulting from Kanister data operations such as backup 
+should go. This is stored as a profiles.cr.kanister.io 
+CustomResource (CR) which is then referenced in Kanister 
+ActionSets. Every ActionSet requires a Profile reference
+to complete the action. This CR (profiles.cr.kanister.io) 
+can be shared between Kanister-enabled application instances.
 
 
 ### Create Blueprint
@@ -86,7 +102,8 @@ Once Elasticsearch is running, you can populate it with some data.
 
 Create a curl pod client : 
 ```
-PASSWORD=$(kubectl get -n test-es1 secret quickstart-es-elastic-user -o go-template='{{.data.elastic | base64decode}}')
+PASSWORD=$(kubectl get -n test-es1 secret 
+quickstart-es-elastic-user -o go-template='{{.data.elastic | base64decode}}')
 ES_URL="https://quickstart-es-http:9200"
 kubectl run -n test-es1 curl -it --restart=Never --rm --image ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0 --env="PASSWORD=$PASSWORD" --env="ES_URL=$ES_URL" --command bash 
 ```
@@ -115,7 +132,9 @@ curl -k -u "elastic:$PASSWORD" -X GET "${ES_URL}/my-index-000002/_doc/1?pretty"
 
 ## Protect the Application
 
-You can now take a backup of the elasticsearch data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
+You can now take a backup of the elasticsearch data 
+using an ActionSet defining backup for this application. 
+Create an ActionSet in the same namespace as the controller.
 
 ```bash
 $ kubectl get profile -n test-es1
@@ -123,7 +142,7 @@ NAME               AGE
 s3-profile-sph7s   2h
 
 $ kanctl create actionset --action backup --namespace kasten-io \
-    --blueprint elasticsearch-incremental-blueprint \
+  --blueprint elasticsearch-incremental-blueprint \
 	--objects elasticsearch.k8s.elastic.co/v1/elasticsearches/test-es1/quickstart \
 	--profile test-es1/s3-profile-sph7s
 actionset backup-llfb8 created
@@ -151,7 +170,10 @@ curl -k -u "elastic:$PASSWORD" -X GET "${ES_URL}/my-index-000002/_doc/1?pretty"
 
 ### Restore the Application
 
-To restore the missing data, you should use the backup that you created before. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
+To restore the missing data, you should use the backup that you 
+created before. An easy way to do this is to leverage `kanctl`, 
+a command-line tool that helps create ActionSets that depend 
+on other ActionSets:
 
 
 ```bash
@@ -170,7 +192,8 @@ curl -k -u "elastic:$PASSWORD" -X GET "${ES_URL}/my-index-000002/_doc/1?pretty"
 
 ### Delete the Artifacts
 
-The artifacts created by the backup action can be cleaned up using the following command:
+The artifacts created by the backup action can be cleaned up using the 
+following command:
 
 ```bash
 $ kanctl --namespace kasten-io create actionset --action delete --from "backup-llfb8"
@@ -182,7 +205,8 @@ $ kubectl --namespace kasten-io describe actionset delete-backup-llfb8-k9ncm
 
 ### Troubleshooting
 
-If you run into any issues with the above commands, you can check the logs of the controller using:
+If you run into any issues with the above commands, you can check 
+the logs of the controller using:
 
 ```bash
 $ kubectl --namespace kasten-io logs -l app=kanister-operator
@@ -202,7 +226,9 @@ To uninstall/delete the `quickstart` cluster:
 $ kubectl delete elasticsearch quickstart -n test-es1
 ```
 
-The command removes all the Kubernetes components associated with the elasticsearch cluster quickstart and deletes the quickestart object itself.
+The command removes all the Kubernetes components associated
+ with the elasticsearch cluster quickstart and deletes the 
+ quickstart object itself.
 
 Delete Blueprint and Profile CR
 
