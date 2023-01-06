@@ -158,7 +158,7 @@ $ kubectl --namespace kasten-io describe actionset backup-llfb8
 
 ### Disaster strikes!
 
-Let's say someone with fat fingers accidentally deleted all the indices you created 
+Let's say someone accidentally deleted all the indices you created 
 ```bash
 curl -k -u "elastic:$PASSWORD" -X DELETE "${ES_URL}/my-index-000001?pretty"
 curl -k -u "elastic:$PASSWORD" -X DELETE "${ES_URL}/my-index-000002?pretty"
