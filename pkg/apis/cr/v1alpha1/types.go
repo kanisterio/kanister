@@ -279,9 +279,9 @@ type Profile struct {
 	Location Location `json:"location"`
 	// Credential represents the credentials associated with the Location.
 	Credential Credential `json:"credential"`
-	// SkipSSLVerify is boolean and specifies whether skipping SkipSSLVerify verification
+	// SkipSSLVerify is a boolean that specifies whether skipping SSL verification
 	// is allowed when operating with the Location.
-	// If omitted from a CR definition it defaults to false
+	// If omitted from the CR definition, it defaults to false
 	SkipSSLVerify bool `json:"skipSSLVerify"`
 }
 
