@@ -301,7 +301,7 @@ type Location struct {
 	// backup objects. Currently supported values are: "GCS", "S3Compliant",
 	// and "Azure".
 	Type LocationType `json:"type"`
-	// Bucket represents the bucket on the object storage where the backup would be uploaded to.
+	// Bucket represents the bucket on the object storage where the backup is uploaded.
 	Bucket string `json:"bucket"`
 	// Endpoint specifies the endpoint where the object storage is accessible at.
 	Endpoint string `json:"endpoint"`
