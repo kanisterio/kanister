@@ -4,7 +4,7 @@
 on the Lucene library. It provides a distributed, multitenant-capable full-text
  search engine with an HTTP web interface and schema-free JSON documents.
 
-This blueprint use the 
+This blueprint in this example uses the 
 [elasticsearch snapshot api](https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshot-restore.html) 
 to protect your cluster. This snapshot is incremental and the blueprint works 
 only for 
