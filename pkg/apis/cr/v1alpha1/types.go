@@ -297,7 +297,9 @@ const (
 
 // Location
 type Location struct {
-	// Type specifies the kind of object storage that would be used to upload the backup objects. Currently supported values are: "GCS", "S3Compliant", "Azure" and "Kopia".
+	// Type specifies the kind of object storage that would be used to upload the
+	// backup objects. Currently supported values are: "GCS", "S3Compliant",
+	// and "Azure".
 	Type LocationType `json:"type"`
 	// Bucket represents the bucket on the object storage where the backup would be uploaded to.
 	Bucket string `json:"bucket"`
