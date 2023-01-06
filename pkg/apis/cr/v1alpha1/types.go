@@ -249,7 +249,8 @@ type BlueprintPhase struct {
 	Func string `json:"func"`
 	// Name contains name of the phase.
 	Name string `json:"name"`
-	// ObjectRefs represnets a map of references to the Kubernetes objects that can later be used in the `Args` of the function.
+	// ObjectRefs represents a map of references to the Kubernetes objects that
+	// can later be used in the `Args` of the function.
 	ObjectRefs map[string]ObjectReference `json:"objects,omitempty"`
 	// Args represents a map of named arguments that the controller will pass to the Kanister function.
 	Args map[string]interface{} `json:"args"`
