@@ -54,9 +54,9 @@ COPY --from=builder /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
 
 ADD kando /usr/local/bin/
-RUN microdnf update && microdnf install shadow-utils gzip && \
+RUN microdnf -y update && microdnf -y install shadow-utils gzip && \
   adduser -U kanister -u 1000 && \
-  microdnf remove shadow-utils && \
+  microdnf -y remove shadow-utils && \
   microdnf clean all
 
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]

@@ -2,7 +2,7 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal:9.1.0-1656.1669627757
 
 LABEL maintainer="Tom Manville<tom@kasten.io>"
 
-RUN microdnf update openssl-libs
+RUN microdnf -y update openssl-libs
 
 ADD controller /controller
 ENTRYPOINT ["/controller"]
