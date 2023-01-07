@@ -436,10 +436,10 @@ func newBPForProgressRunningPhase() *crv1alpha1.Blueprint {
 				// set output artifacts from main phases as well as deferPhase
 				OutputArtifacts: map[string]crv1alpha1.Artifact{},
 				Phases: []crv1alpha1.BlueprintPhase{
-					*phaseWithNameAndCMD("backupPhaseOne", []string{"sleep", "8"}),
-					*phaseWithNameAndCMD("backupPhaseTwo", []string{"sleep", "5"}),
+					*phaseWithNameAndCMD("backupPhaseOne", []string{"sleep", "10"}),
+					*phaseWithNameAndCMD("backupPhaseTwo", []string{"sleep", "8"}),
 				},
-				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"sleep", "5"}),
+				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"sleep", "8"}),
 			},
 		},
 	}
