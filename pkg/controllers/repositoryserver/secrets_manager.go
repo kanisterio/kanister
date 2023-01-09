@@ -58,7 +58,7 @@ func (h *RepoServerHandler) getSecretsFromCR() error {
 	if err != nil {
 		return err
 	}
-	serverUserAccess, err := h.fetchSecret(h.Ctx, repositoryServer.Spec.Server.UserAccessSecretRef)
+	serverUserAccess, err := h.fetchSecret(h.Ctx, repositoryServer.Spec.Server.UserAccess.UserAccessSecretRef)
 	if err != nil {
 		return err
 	}

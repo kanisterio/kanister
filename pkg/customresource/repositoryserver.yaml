@@ -78,7 +78,6 @@ spec:
                           secret name must be unique.
                         type: string
                     type: object
-
                   tlsSecretRef:
                     description: SecretReference represents a Secret Reference. It
                       has enough information to retrieve secret in any namespace
@@ -92,23 +91,32 @@ spec:
                           secret name must be unique.
                         type: string
                     type: object
-                  userAccessSecretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                  userAccess:
                     properties:
-                      name:
-                        description: name is unique within a namespace to reference
-                          a secret resource.
+                      userAccessSecretRef:
+                        description: SecretReference represents a Secret Reference.
+                          It has enough information to retrieve secret in any namespace
+                        properties:
+                          name:
+                            description: name is unique within a namespace to reference
+                              a secret resource.
+                            type: string
+                          namespace:
+                            description: namespace defines the space within which
+                              the secret name must be unique.
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      username:
                         type: string
-                      namespace:
-                        description: namespace defines the space within which the
-                          secret name must be unique.
-                        type: string
+                    required:
+                    - userAccessSecretRef
+                    - username
                     type: object
                 required:
                 - adminSecretRef
                 - tlsSecretRef
-                - userAccessSecretRef
+                - userAccess
                 type: object
               storage:
                 description: Storage references the backend store where a repository

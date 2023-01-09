@@ -46,6 +46,7 @@ const (
 	repoServerServiceProtocol = "TCP"
 	repoServerServicePort     = 51515
 	repoServerAddressFormat   = "https://%s:%d"
+	repoServerUsernameFormat  = "%s@%s"
 
 	repoServerPodContainerName    = "repo-server-container"
 	googleCloudCredsDirPath       = "/mnt/secrets/creds/gcloud"

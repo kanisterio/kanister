@@ -3,6 +3,7 @@ package repositoryserver
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/kanisterio/kanister/pkg/format"
@@ -135,10 +136,11 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 	}
 
 	userAccess := h.RepositoryServerSecrets.serverUserAccess.Data
-	for username, password := range userAccess {
-		if existingUserHostList.Has(username) {
-
-			h.Logger.Info("User already exists, updating passphrase", "username", username)
+	serverAccessUsername := h.RepositoryServer.Spec.Server.UserAccess.Username
+	for hostname, password := range userAccess {
+		serverUsername := fmt.Sprintf(repoServerUsernameFormat, serverAccessUsername, hostname)
+		if existingUserHostList.Has(serverUsername) {
+			h.Logger.Info("User already exists, updating passphrase", "username", serverUsername)
 			// Update password for the existing user
 			cmd := command.ServerSetUser(
 				command.ServerSetUserCommandArgs{
@@ -147,7 +149,7 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 						ConfigFilePath: command.DefaultConfigFilePath,
 						LogDirectory:   command.DefaultLogDirectory,
 					},
-					NewUsername:  username,
+					NewUsername:  serverUsername,
 					UserPassword: string(password),
 				})
 			stdout, stderr, err := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
@@ -165,7 +167,7 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 					ConfigFilePath: command.DefaultConfigFilePath,
 					LogDirectory:   command.DefaultLogDirectory,
 				},
-				NewUsername:  username,
+				NewUsername:  serverUsername,
 				UserPassword: string(password),
 			})
 		stdout, stderr, err := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
