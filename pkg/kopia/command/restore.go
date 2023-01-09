@@ -25,7 +25,11 @@ type RestoreCommandArgs struct {
 func Restore(cmdArgs RestoreCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(restoreSubCommand, cmdArgs.RootID, cmdArgs.TargetPath)
-	args = args.AppendLoggableBool(ignorePermissionsError, cmdArgs.IgnorePermissionErrors)
+	if cmdArgs.IgnorePermissionErrors {
+		args = args.AppendLoggable(ignorePermissionsError)
+	} else {
+		args = args.AppendLoggable(noIgnorePermissionsError)
+	}
 
 	return stringSliceCommand(args)
 }

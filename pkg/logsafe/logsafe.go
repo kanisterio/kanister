@@ -18,7 +18,6 @@
 package logsafe
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -70,18 +69,6 @@ func (c Cmd) AppendLoggable(vl ...string) Cmd {
 		c = append(c, arg{value: v, plainText: true})
 	}
 
-	return c
-}
-
-// AppendLoggableBool appends a boolean value in a "--value\--no-value" format.
-// In case of "true" value it will append "--key".
-// In case of "false" value it will append "--no-key"
-func (c Cmd) AppendLoggableBool(k string, v bool) Cmd {
-	if v {
-		c = append(c, arg{key: k})
-	} else {
-		c = append(c, arg{key: fmt.Sprintf("%s%s", noboolpref, k[2:])})
-	}
 	return c
 }
 
