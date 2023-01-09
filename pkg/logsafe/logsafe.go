@@ -18,10 +18,14 @@
 package logsafe
 
 import (
+	"fmt"
 	"strings"
 )
 
-const argRedacted = "<****>"
+const (
+	argRedacted = "<****>"
+	noboolpref  = "--no-"
+)
 
 // Cmd is a way of building a command, token by token, such that
 // it can be safely logged with redacted fields. The methods provided
@@ -66,6 +70,18 @@ func (c Cmd) AppendLoggable(vl ...string) Cmd {
 		c = append(c, arg{value: v, plainText: true})
 	}
 
+	return c
+}
+
+// AppendLoggableBool appends a boolean value in a "value\no-value" format.
+// In case of "true" value it will append "key".
+// In case of "false" value it will append "no-key"
+func (c Cmd) AppendLoggableBool(k string, v bool) Cmd {
+	if v {
+		c = append(c, arg{key: k})
+	} else {
+		c = append(c, arg{key: fmt.Sprintf("%s%s", noboolpref, k[2:])})
+	}
 	return c
 }
 
@@ -149,6 +165,8 @@ func (a arg) String() string {
 func combineKeyValue(k, v string) string {
 	if k == "" {
 		return v
+	} else if k != "" && v == "" {
+		return k
 	}
 	return k + "=" + v
 }

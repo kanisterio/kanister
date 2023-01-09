@@ -14,8 +14,6 @@
 
 package command
 
-import "strconv"
-
 type RestoreCommandArgs struct {
 	*CommandArgs
 	RootID                 string
@@ -27,7 +25,7 @@ type RestoreCommandArgs struct {
 func Restore(cmdArgs RestoreCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(restoreSubCommand, cmdArgs.RootID, cmdArgs.TargetPath)
-	args = args.AppendLoggableKV(ignorePermissionsError, strconv.FormatBool(cmdArgs.IgnorePermissionErrors))
+	args = args.AppendLoggableBool(ignorePermissionsError, cmdArgs.IgnorePermissionErrors)
 
 	return stringSliceCommand(args)
 }
