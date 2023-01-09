@@ -21,10 +21,7 @@ import (
 	"strings"
 )
 
-const (
-	argRedacted = "<****>"
-	noboolpref  = "--no-"
-)
+const argRedacted = "<****>"
 
 // Cmd is a way of building a command, token by token, such that
 // it can be safely logged with redacted fields. The methods provided
@@ -152,8 +149,6 @@ func (a arg) String() string {
 func combineKeyValue(k, v string) string {
 	if k == "" {
 		return v
-	} else if k != "" && v == "" {
-		return k
 	}
 	return k + "=" + v
 }
