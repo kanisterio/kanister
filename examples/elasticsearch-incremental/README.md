@@ -104,6 +104,12 @@ Once Elasticsearch is running, you can populate it with some data.
 
 Create a client pod that has `curl` utility in it: 
 
+```
+PASSWORD=$(kubectl get -n test-es1 secret quickstart-es-elastic-user -o go-template='{{.data.elastic | base64decode}}')
+ES_URL="https://quickstart-es-http:9200"
+kubectl run -n test-es1 curl -it --restart=Never --rm --image ghcr.io/kanisterio/kanister-kubectl-1.18:0.81.0 --env="PASSWORD=$PASSWORD" --env="ES_URL=$ES_URL" --command bash 
+```
+
 In the curl pod shell
 ```
 curl -u "elastic:$PASSWORD" -k "${ES_URL}"

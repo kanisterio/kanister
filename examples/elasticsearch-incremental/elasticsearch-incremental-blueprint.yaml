@@ -7,13 +7,13 @@ actions:
     outputArtifacts:
       s3Snap:
         keyValue:
-          repoPath: '{{ .Phases.setupPhase.Output.repoPath }}'
-          snapshotName: '{{ .Phases.setupPhase.Output.snapshotName }}'
-          esClusterName: '{{ .Phases.setupPhase.Output.esClusterName }}'
+          repoPath: '{{ .Phases.setupNodeKeyStore.Output.repoPath }}'
+          snapshotName: '{{ .Phases.setupNodeKeyStore.Output.snapshotName }}'
+          esClusterName: '{{ .Phases.setupNodeKeyStore.Output.esClusterName }}'
           esClusterNamespace: '{{ .Object.metadata.namespace }}'
     phases:   
     - func: KubeTask
-      name: setupPhase
+      name: setupNodeKeyStore
       objects:
         elasticSecret:
           kind: Secret
@@ -31,11 +31,14 @@ actions:
         - -c
         - |
           debug=0
-          function dbg
+          function bp_dbg
           {
+              # use 
+              # kubectl logs -n kasten-io -l component=kanister --tail=10000 -f | ggrep -o -P '(?<=Elasticbps3echobegin).*(?=Elasticbps3echoend)' 
+              # to grab the logs in kanisters
               if [[ $debug -eq 1 ]]
               then 
-                echo "$(date "+%Y-%m-%d %H:%M:%S.%3N") - $0 - $*" >> /tmp/k10_debug.log
+                echo "Elasticbps3echobegin backup-action: $* Elasticbps3echoend"
               fi
           }
           function bp_echo
@@ -48,8 +51,8 @@ actions:
           PROFILE_TYPE="{{ .Profile.Location.Type }}"
           if [[ $PROFILE_TYPE != "s3Compliant" ]]
           then 
-            dbg "Only s3Compliant profile are supported, exiting"
-            exit 1
+            bp_echo "Only s3Compliant profile are supported, exiting"
+            exit 3
           fi
           CLUSTER_UID=$(kubectl get ns default -o jsonpath='{.metadata.uid}')
           NS_UID=$(kubectl get ns {{ .Object.metadata.namespace }} -o jsonpath='{.metadata.uid}')
@@ -73,7 +76,7 @@ actions:
           NODE_SET_COUNT={{ len .Object.spec.nodeSets }}
           if [[ $NODE_SET_COUNT -gt 1 ]]
           then 
-              dbg "No Support for more than one node set for the moment"
+              bp_echo "error, no Support for more than one node set for the moment, exiting"
               exit 3
           fi
           NODE_SET_0_COUNT={{ (index .Object.spec.nodeSets 0).count }}
@@ -101,11 +104,14 @@ actions:
         - -c
         - |
           debug=0
-          function dbg
+          function bp_dbg
           {
+              # use 
+              # kubectl logs -n kasten-io -l component=kanister --tail=10000 -f | ggrep -o -P '(?<=Elasticbps3echobegin).*(?=Elasticbps3echoend)' 
+              # to grab the logs in kanisters
               if [[ $debug -eq 1 ]]
               then 
-                echo "$(date "+%Y-%m-%d %H:%M:%S.%3N") - $0 - $*" >> /tmp/k10_debug.log
+                echo "Elasticbps3echobegin backup-action: $* Elasticbps3echoend"
               fi
           }
           function bp_echo
@@ -116,7 +122,7 @@ actions:
             echo "Elasticbps3echobegin backup-action: $* Elasticbps3echoend"
           }                      
           ES_URL="https://{{ .Object.metadata.name }}-es-http:9200"
-          PASSWORD="{{ index .Phases.setupPhase.Secrets.elasticSecret.Data "elastic" | toString }}"
+          PASSWORD="{{ index .Phases.setupNodeKeyStore.Secrets.elasticSecret.Data "elastic" | toString }}"
           REGION="{{ .Profile.Location.Region }}"
           BUCKET="{{ .Profile.Location.Bucket }}"
           ENDPOINT="{{ .Profile.Location.Endpoint }}"
@@ -124,15 +130,15 @@ actions:
           then 
              ENDPOINT="s3.amazonaws.com"
           fi
-          REPO_PATH="{{ .Phases.setupPhase.Output.repoPath }}"
-          SNAPSHOT_NAME="{{ .Phases.setupPhase.Output.snapshotName }}"
-          dbg "REGION=$REGION"
-          dbg "BUCKET=$BUCKET"
-          dbg "ENDPOINT=$ENDPOINT"
-          dbg "PASSWORD=$PASSWORD"
-          dbg "PROFILE_TYPE=$PROFILE_TYPE"
-          dbg "REPO_PATH=$REPO_PATH"
-          dbg "SNAPSHOT_NAME=$SNAPSHOT_NAME"
+          REPO_PATH="{{ .Phases.setupNodeKeyStore.Output.repoPath }}"
+          SNAPSHOT_NAME="{{ .Phases.setupNodeKeyStore.Output.snapshotName }}"
+          bp_dbg "REGION=$REGION"
+          bp_dbg "BUCKET=$BUCKET"
+          bp_dbg "ENDPOINT=$ENDPOINT"
+          bp_dbg "PASSWORD=$PASSWORD"
+          bp_dbg "PROFILE_TYPE=$PROFILE_TYPE"
+          bp_dbg "REPO_PATH=$REPO_PATH"
+          bp_dbg "SNAPSHOT_NAME=$SNAPSHOT_NAME"
           # reload the secure settings to access the S3 profile
           curl -k -u "elastic:$PASSWORD" -X POST "${ES_URL}/_nodes/reload_secure_settings?pretty" -H 'Content-Type: application/json' -d'
           {}
@@ -194,7 +200,7 @@ actions:
         name: "{{ .Object.metadata.name }}-es-{{ (index .Object.spec.nodeSets 0).name }}"
         replicas: "{{ (index .Object.spec.nodeSets 0).count }}"  
     - func: KubeTask
-      name: setupPhase
+      name: setupNodeKeyStore
       objects:
         elasticSecret:
           kind: Secret
@@ -212,11 +218,14 @@ actions:
         - -c
         - |
           debug=0
-          function dbg
+          function bp_dbg
           {
+              # use 
+              # kubectl logs -n kasten-io -l component=kanister --tail=10000 -f | ggrep -o -P '(?<=Elasticbps3echobegin).*(?=Elasticbps3echoend)' 
+              # to grab the logs in kanisters
               if [[ $debug -eq 1 ]]
               then 
-                echo "$(date "+%Y-%m-%d %H:%M:%S.%3N") - $0 - $*" >> /tmp/k10_debug.log
+                echo "Elasticbps3echobegin backup-action: $* Elasticbps3echoend"
               fi
           }
           function bp_echo
@@ -229,8 +238,8 @@ actions:
           PROFILE_TYPE="{{ .Profile.Location.Type }}"
           if [[ $PROFILE_TYPE != "s3Compliant" ]]
           then 
-            dbg "Only s3Compliant profile are supported, exiting"
-            exit 1
+            bp_echo "Only s3Compliant profile are supported, exiting"
+            exit 3
           fi          
           # setup the credentials on the keystore setting of each nodes 
           {{- if .Profile.Credential.KeyPair }}
@@ -244,8 +253,8 @@ actions:
           NODE_SET_COUNT={{ len .Object.spec.nodeSets }}
           if [[ $NODE_SET_COUNT -gt 1 ]]
           then 
-              dbg "No Support for more than one node set for the moment"
-              exit 3
+              bp_echo "error, no Support for more than one node set for the moment, exiting"
+              exit 4
           fi
           NODE_SET_0_COUNT={{ (index .Object.spec.nodeSets 0).count }}
           NODE_SET_0_COUNT=$((NODE_SET_0_COUNT-1))
@@ -272,11 +281,14 @@ actions:
         - -c
         - |
           debug=0
-          function dbg
+          function bp_dbg
           {
+              # use 
+              # kubectl logs -n kasten-io -l component=kanister --tail=10000 -f | ggrep -o -P '(?<=Elasticbps3echobegin).*(?=Elasticbps3echoend)' 
+              # to grab the logs in kanisters
               if [[ $debug -eq 1 ]]
               then 
-                echo "$(date "+%Y-%m-%d %H:%M:%S.%3N") - $0 - $*" >> /tmp/k10_debug.log
+                echo "Elasticbps3echobegin backup-action: $* Elasticbps3echoend"
               fi
           }
           function bp_echo
@@ -287,7 +299,7 @@ actions:
             echo "Elasticbps3echobegin restore-action: $* Elasticbps3echoend"
           }                      
           ES_URL="https://{{ .Object.metadata.name }}-es-http:9200"
-          PASSWORD="{{ index .Phases.setupPhase.Secrets.elasticSecret.Data "elastic" | toString }}"
+          PASSWORD="{{ index .Phases.setupNodeKeyStore.Secrets.elasticSecret.Data "elastic" | toString }}"
           REGION="{{ .Profile.Location.Region }}"
           BUCKET="{{ .Profile.Location.Bucket }}"
           ENDPOINT="{{ .Profile.Location.Endpoint }}"
@@ -297,13 +309,13 @@ actions:
           fi
           REPO_PATH="{{ .ArtifactsIn.s3Snap.KeyValue.repoPath }}"
           SNAPSHOT_NAME="{{ .ArtifactsIn.s3Snap.KeyValue.snapshotName }}"
-          dbg "REGION=$REGION"
-          dbg "BUCKET=$BUCKET"
-          dbg "ENDPOINT=$ENDPOINT"
-          dbg "PASSWORD=$PASSWORD"
-          dbg "PROFILE_TYPE=$PROFILE_TYPE"
-          dbg "REPO_PATH=$REPO_PATH"
-          dbg "SNAPSHOT_NAME=$SNAPSHOT_NAME"
+          bp_dbg "REGION=$REGION"
+          bp_dbg "BUCKET=$BUCKET"
+          bp_dbg "ENDPOINT=$ENDPOINT"
+          bp_dbg "PASSWORD=$PASSWORD"
+          bp_dbg "PROFILE_TYPE=$PROFILE_TYPE"
+          bp_dbg "REPO_PATH=$REPO_PATH"
+          bp_dbg "SNAPSHOT_NAME=$SNAPSHOT_NAME"
           
           # reload the secure settings to access the S3 profile
           curl -k -u "elastic:$PASSWORD" -X POST "${ES_URL}/_nodes/reload_secure_settings?pretty" -H 'Content-Type: application/json' -d'
@@ -398,7 +410,7 @@ actions:
     - s3Snap  
     phases:         
     - func: KubeTask
-      name: setupPhase
+      name: setupNodeKeyStore
       objects:
         elasticSecret:
           kind: Secret
@@ -416,13 +428,16 @@ actions:
         - -c
         - |
           debug=0
-          function dbg
+          function bp_dbg
           {
+              # use 
+              # kubectl logs -n kasten-io -l component=kanister --tail=10000 -f | ggrep -o -P '(?<=Elasticbps3echobegin).*(?=Elasticbps3echoend)' 
+              # to grab the logs in kanisters
               if [[ $debug -eq 1 ]]
               then 
-                echo "$(date "+%Y-%m-%d %H:%M:%S.%3N") - $0 - $*" >> /tmp/k10_debug.log
+                echo "Elasticbps3echobegin backup-action: $* Elasticbps3echoend"
               fi
-          } 
+          }
           function bp_echo
           {
             # use 
@@ -433,8 +448,8 @@ actions:
           PROFILE_TYPE="{{ .Profile.Location.Type }}"
           if [[ $PROFILE_TYPE != "s3Compliant" ]]
           then 
-            dbg "Only s3Compliant profile are supported, exiting"
-            exit 1
+            bp_echo "Only s3Compliant profile are supported, exiting"
+            exit 3
           fi          
           # setup the credentials on the keystore setting of each nodes 
           {{- if .Profile.Credential.KeyPair }}
@@ -451,9 +466,8 @@ actions:
           then 
             bp_echo "we have an es cluster $ES_CLUSTER_NAME in ns $NAMESPACE"
           else
-            bp_echo "we don't have an es cluster $ES_CLUSTER_NAME in ns $NAMESPACE"
-            sleep 4
-            exit 1
+            bp_echo "error, we don't have an es cluster $ES_CLUSTER_NAME in ns $NAMESPACE"
+            exit 5
           fi
           NODE_SET_0_COUNT=$(kubectl get elasticsearch $ES_CLUSTER_NAME -n $NAMESPACE -o jsonpath='{.spec.nodeSets[0].count}')
           NODE_SET_0_COUNT=$((NODE_SET_0_COUNT-1))
@@ -480,11 +494,14 @@ actions:
         - -c
         - |
           debug=0
-          function dbg
+          function bp_dbg
           {
+              # use 
+              # kubectl logs -n kasten-io -l component=kanister --tail=10000 -f | ggrep -o -P '(?<=Elasticbps3echobegin).*(?=Elasticbps3echoend)' 
+              # to grab the logs in kanisters
               if [[ $debug -eq 1 ]]
               then 
-                echo "$(date "+%Y-%m-%d %H:%M:%S.%3N") - $0 - $*" >> /tmp/k10_debug.log
+                echo "Elasticbps3echobegin backup-action: $* Elasticbps3echoend"
               fi
           }
           function bp_echo
@@ -495,7 +512,7 @@ actions:
             echo "Elasticbps3echobegin delete-action: $* Elasticbps3echoend"
           }                      
           ES_URL="https://{{ .ArtifactsIn.s3Snap.KeyValue.esClusterName }}-es-http:9200"
-          PASSWORD="{{ index .Phases.setupPhase.Secrets.elasticSecret.Data "elastic" | toString }}"
+          PASSWORD="{{ index .Phases.setupNodeKeyStore.Secrets.elasticSecret.Data "elastic" | toString }}"
           REGION="{{ .Profile.Location.Region }}"
           BUCKET="{{ .Profile.Location.Bucket }}"
           ENDPOINT="{{ .Profile.Location.Endpoint }}"
@@ -505,13 +522,13 @@ actions:
           fi
           REPO_PATH="{{ .ArtifactsIn.s3Snap.KeyValue.repoPath }}"
           SNAPSHOT_NAME="{{ .ArtifactsIn.s3Snap.KeyValue.snapshotName }}"
-          dbg "REGION=$REGION"
-          dbg "BUCKET=$BUCKET"
-          dbg "ENDPOINT=$ENDPOINT"
-          dbg "PASSWORD=$PASSWORD"
-          dbg "PROFILE_TYPE=$PROFILE_TYPE"
-          dbg "REPO_PATH=$REPO_PATH"
-          dbg "SNAPSHOT_NAME=$SNAPSHOT_NAME"
+          bp_dbg "REGION=$REGION"
+          bp_dbg "BUCKET=$BUCKET"
+          bp_dbg "ENDPOINT=$ENDPOINT"
+          bp_dbg "PASSWORD=$PASSWORD"
+          bp_dbg "PROFILE_TYPE=$PROFILE_TYPE"
+          bp_dbg "REPO_PATH=$REPO_PATH"
+          bp_dbg "SNAPSHOT_NAME=$SNAPSHOT_NAME"
           
           # reload the secure settings to access the S3 profile
           curl -k -u "elastic:$PASSWORD" -X POST "${ES_URL}/_nodes/reload_secure_settings?pretty" -H 'Content-Type: application/json' -d'
