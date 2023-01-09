@@ -2,7 +2,6 @@ package function
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -14,6 +13,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 	kopiarepo "github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -170,9 +170,7 @@ func backupDataToKopia(
 
 	contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
 
-	profile, _ := json.Marshal(&param.KanisterProfile{Profile: tp.Profile})
-	var location map[string][]byte
-	err = json.Unmarshal(profile, &location)
+	location, err := FetchLocationValuesForKanisterProfile(&param.KanisterProfile{Profile: tp.Profile})
 	if err != nil {
 		return nil, err
 	}
@@ -236,4 +234,23 @@ func getHostAndUserNameFromOptions(options map[string]string) (string, string, e
 		return hostname, username, errors.New("Failed to find username option")
 	}
 	return hostname, username, nil
+}
+
+func FetchLocationValuesForKanisterProfile(
+	profile *param.KanisterProfile,
+) (map[string][]byte, error) {
+	loc := profile.Location
+	skipSSLVerify := "false"
+	if profile.SkipSSLVerify {
+		skipSSLVerify = "true"
+	}
+	locationMap := storage.GetMapForLocationValues(
+		storage.LocType(loc.Type),
+		loc.Prefix,
+		loc.Region,
+		loc.Bucket,
+		loc.Endpoint,
+		skipSSLVerify,
+	)
+	return locationMap, nil
 }
