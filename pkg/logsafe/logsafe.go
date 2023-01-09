@@ -73,9 +73,9 @@ func (c Cmd) AppendLoggable(vl ...string) Cmd {
 	return c
 }
 
-// AppendLoggableBool appends a boolean value in a "value\no-value" format.
-// In case of "true" value it will append "key".
-// In case of "false" value it will append "no-key"
+// AppendLoggableBool appends a boolean value in a "--value\--no-value" format.
+// In case of "true" value it will append "--key".
+// In case of "false" value it will append "--no-key"
 func (c Cmd) AppendLoggableBool(k string, v bool) Cmd {
 	if v {
 		c = append(c, arg{key: k})
