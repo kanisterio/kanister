@@ -64,7 +64,11 @@ type SnapshotRestoreCommandArgs struct {
 func SnapshotRestore(cmdArgs SnapshotRestoreCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, cmdArgs.SnapID, cmdArgs.TargetPath)
-	args = args.AppendLoggableKV(ignorePermissionsError, strconv.FormatBool(cmdArgs.IgnorePermissionErrors))
+	if cmdArgs.IgnorePermissionErrors {
+		args = args.AppendLoggable(ignorePermissionsError)
+	} else {
+		args = args.AppendLoggable(noIgnorePermissionsError)
+	}
 	if cmdArgs.SparseRestore {
 		args = args.AppendLoggable(sparseFlag)
 	}

@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"time"
 
 	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
@@ -134,13 +135,13 @@ func waitDeployPhase(namespace, deploy string) crv1alpha1.BlueprintPhase {
 			WaitConditionsArg: map[string]interface{}{
 				"anyOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if and (eq {$.spec.replicas} {$.status.availableReplicas} )
-									(and (eq "{$.status.conditions[?(@.type == "Available")].type}" "Available")
-									(eq "{$.status.conditions[?(@.type == "Available")].status}" "True"))}}
-									true
-								{{ else }}
-									false
-								{{ end }}`,
+						"condition": `{{ if and (eq "{$.spec.replicas}" "{$.status.availableReplicas}" )
+							(eq "{$.status.conditions[?(@.type == 'Available')].type}" "Available")
+							(eq "{$.status.conditions[?(@.type == 'Available')].status}" "True") }}
+							true
+							{{ else }}
+							false
+							{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"group":      "apps",
@@ -164,7 +165,7 @@ func waitStatefulSetPhase(namespace, sts string) crv1alpha1.BlueprintPhase {
 			WaitConditionsArg: map[string]interface{}{
 				"allOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if (eq {$.spec.replicas} {$.status.availableReplicas})}}
+						"condition": `{{ if (eq "{$.spec.replicas}" "{$.status.availableReplicas}" )}}
 									true
 								{{ else }}
 									false
@@ -178,7 +179,7 @@ func waitStatefulSetPhase(namespace, sts string) crv1alpha1.BlueprintPhase {
 						},
 					},
 					map[string]interface{}{
-						"condition": `{{ if (eq {$.spec.replicas} {$.status.readyReplicas})}}
+						"condition": `{{ if (eq "{$.spec.replicas}" "{$.status.readyReplicas}" )}}
 									true
 								{{ else }}
 									false
@@ -208,7 +209,9 @@ func newWaitBlueprint(phases ...crv1alpha1.BlueprintPhase) *crv1alpha1.Blueprint
 }
 
 func (s *WaitSuite) TestWait(c *C) {
-	tp := param.TemplateParams{}
+	tp := param.TemplateParams{
+		Time: time.Now().String(),
+	}
 	action := "test"
 	for _, tc := range []struct {
 		bp      *crv1alpha1.Blueprint
