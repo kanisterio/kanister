@@ -1266,7 +1266,7 @@ Arguments:
 
 The Go template conditions can be validated using kubectl commands with
 ``-o go-template`` flag.
-E.g To check if the Deployment is ready, the following Go template syntax
+E.g. To check if the Deployment is ready, the following Go template syntax
 can be used with kubectl command
 
 
