@@ -1276,7 +1276,7 @@ can be used with kubectl command
       -o go-template='{{ $available := false }}{{ range $condition := $.status.conditions }}{{ if and (eq .type "Available") (eq .status "True")  }}{{ $available = true }}{{ end }}{{ end }}{{ $available }}'
 
 
-The same Go template can be used as condition to in the WaitV2 function.
+The same Go template can be used as a condition in the WaitV2 function.
 
 Example:
 
