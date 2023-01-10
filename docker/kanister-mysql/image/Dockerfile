@@ -1,5 +1,5 @@
 ARG TOOLS_IMAGE
-FROM registry.access.redhat.com/ubi8/ubi:8.1 as builder
+FROM registry.access.redhat.com/ubi9/ubi:9.1.0-1646.1669627755 as builder
 
 RUN dnf clean all && rm -rf /var/cache/dnf
 RUN dnf -y upgrade
@@ -16,7 +16,7 @@ RUN dnf install -y mysql-community-client
 
 FROM $TOOLS_IMAGE
 
-RUN microdnf update && microdnf install tar gzip && \
+RUN microdnf -y update && microdnf -y install tar gzip && \
     microdnf clean all
 
 COPY --from=builder /usr/lib64/mysql /usr/lib64/
