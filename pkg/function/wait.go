@@ -94,7 +94,7 @@ func (ktf *waitFunc) Exec(ctx context.Context, tp param.TemplateParams, args map
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to parse timeout")
 	}
-	err = waitForCondition(ctx, dynCli, conditions, timeoutDur, tp)
+	err = waitForCondition(ctx, dynCli, conditions, timeoutDur, tp, evaluateWaitCondition)
 	return nil, err
 }
 
@@ -113,16 +113,23 @@ func (*waitFunc) Arguments() []string {
 }
 
 // waitForCondition wait till the condition satisfies within the timeout duration
-func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond WaitConditions, timeout time.Duration, tp param.TemplateParams) error {
+func waitForCondition(
+	ctx context.Context,
+	dynCli dynamic.Interface,
+	waitCond WaitConditions,
+	timeout time.Duration,
+	tp param.TemplateParams,
+	eval func(context.Context, dynamic.Interface, Condition, param.TemplateParams) (bool, error),
+) error {
 	ctxTimeout, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	var evalErr error
 	result := false
 	err := poll.Wait(ctxTimeout, func(ctx context.Context) (bool, error) {
 		for _, cond := range waitCond.AnyOf {
-			result, evalErr = evaluateCondition(ctx, dynCli, cond, tp)
+			result, evalErr = eval(ctx, dynCli, cond, tp)
 			if evalErr != nil {
-				// TODO: Fail early if the error is due to jsonpath syntax
+				// TODO: Fail early if the error is due to invalid syntax
 				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition", field.M{"result": result})
 				return false, nil
 			}
@@ -131,9 +138,9 @@ func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond Wa
 			}
 		}
 		for _, cond := range waitCond.AllOf {
-			result, evalErr = evaluateCondition(ctx, dynCli, cond, tp)
+			result, evalErr = eval(ctx, dynCli, cond, tp)
 			if evalErr != nil {
-				// TODO: Fail early if the error is due to jsonpath syntax
+				// TODO: Fail early if the error is due to invalid syntax
 				log.Debug().WithError(evalErr).Print("Failed to evaluate the condition", field.M{"result": result})
 				return false, nil
 			}
@@ -151,16 +158,12 @@ func waitForCondition(ctx context.Context, dynCli dynamic.Interface, waitCond Wa
 	return err
 }
 
-// evaluateCondition evaluate the go template condition
-func evaluateCondition(ctx context.Context, dynCli dynamic.Interface, cond Condition, tp param.TemplateParams) (bool, error) {
-	objRefRaw := map[string]crv1alpha1.ObjectReference{
-		"objRef": cond.ObjectReference,
-	}
-	rendered, err := param.RenderObjectRefs(objRefRaw, tp)
+// evaluateWaitCondition evaluate the go template condition
+func evaluateWaitCondition(ctx context.Context, dynCli dynamic.Interface, cond Condition, tp param.TemplateParams) (bool, error) {
+	objRef, err := resolveWaitConditionObjRefs(cond, tp)
 	if err != nil {
 		return false, err
 	}
-	objRef := rendered["objRef"]
 
 	obj, err := fetchObjectFromRef(ctx, dynCli, objRef)
 	if err != nil {
@@ -181,6 +184,17 @@ func evaluateCondition(ctx context.Context, dynCli dynamic.Interface, cond Condi
 	}
 	log.Debug().Print(fmt.Sprintf("Condition evaluation result: %s", strings.TrimSpace(buf.String())))
 	return strings.TrimSpace(buf.String()) == "true", nil
+}
+
+func resolveWaitConditionObjRefs(cond Condition, tp param.TemplateParams) (crv1alpha1.ObjectReference, error) {
+	objRefRaw := map[string]crv1alpha1.ObjectReference{
+		"objRef": cond.ObjectReference,
+	}
+	rendered, err := param.RenderObjectRefs(objRefRaw, tp)
+	if err != nil {
+		return crv1alpha1.ObjectReference{}, err
+	}
+	return rendered["objRef"], nil
 }
 
 func fetchObjectFromRef(ctx context.Context, dynCli dynamic.Interface, objRef crv1alpha1.ObjectReference) (runtime.Object, error) {
