@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
@@ -40,6 +41,7 @@ func CreateKopiaRepository(
 	container string,
 	cmdArgs command.RepositoryCommandArgs,
 ) error {
+	log.Print("\nLocation Profile--------->\n", field.M{"Command Args ": cmdArgs})
 	cmd, err := command.RepositoryCreateCommand(cmdArgs)
 	if err != nil {
 		return errors.Wrap(err, "Failed to generate repository create command")
