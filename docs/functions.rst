@@ -1240,7 +1240,7 @@ WaitV2
 ------
 
 This function is used to wait on a Kubernetes resource
-until a desired state is reached. The wait condition defined
+until a desired state is reached. The wait condition is defined
 in a Go template syntax.
 
 Arguments:
