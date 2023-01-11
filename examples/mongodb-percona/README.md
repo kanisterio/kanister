@@ -53,9 +53,12 @@ consistent with your s3 target. The following may be changed:
 - the prefix 
 - ...
 
-Also define the env variable `AWS_S3_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` according to your setting.
+Also, define the ENV variables for `AWS_S3_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY` according to requirements.
 
-Those values can't be obtained from a kanister profile because they need to be defined in the PerconaServerMongoDB object itself before any kanister action (see Limitations)
+These values can't be obtained from a Kanister profile as they need to be
+defined in the `PerconaServerMongoDB` object itself before running any Kanister
+actions (see Limitations).
 
 ```
 kubectl create namespace mongodb
