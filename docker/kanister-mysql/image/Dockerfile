@@ -3,10 +3,7 @@ FROM registry.access.redhat.com/ubi8/ubi:8.1 as builder
 
 RUN dnf clean all && rm -rf /var/cache/dnf
 RUN dnf -y upgrade
-# Download the RPM file to avoid timeouts during install
-RUN curl -LO https://dev.mysql.com/get/mysql80-community-release-el8-1.noarch.rpm
-# Install from the local file
-RUN dnf install -y mysql80-community-release-el8-1.noarch.rpm
+RUN dnf install -y https://dev.mysql.com/get/mysql80-community-release-el8-1.noarch.rpm
 
 # GPG keys for MySQL have expired. Importing the new key below.
 # Please refer bug https://bugs.mysql.com/bug.php?id=106188 for more details
