@@ -40,7 +40,8 @@ defines the `AWS_ACCESS_KEY_ID` and the `AWS_SECRET_ACCESS_KEY` keys:
           insecureSkipTLSVerify: false
 ```
 
-Those values need to be defined (this section and the s3-secret) before you execute the blueprint.
+Those values need to be defined (this section and the s3-secret) before
+executing the blueprint.
 
 ## Install the Operator and Create a Cluster
 
