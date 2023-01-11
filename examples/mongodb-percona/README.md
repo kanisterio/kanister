@@ -68,7 +68,7 @@ kubectl create secret generic s3-secret --from-literal AWS_ACCESS_KEY_ID=$AWS_S3
 kubectl apply -f cr.yaml
 ```
 
-check the status of the mongodb cluster
+Check the status of the mongodb cluster
 ```
 kubectl get psmdb
 ```
