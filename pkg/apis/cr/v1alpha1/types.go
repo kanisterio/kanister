@@ -423,9 +423,14 @@ type Repository struct {
 
 // Server details required for starting the repository proxy server and initializing the repository client users
 type Server struct {
+	UserAccess     UserAccess             `json:"userAccess"`
+	AdminSecretRef corev1.SecretReference `json:"adminSecretRef"`
+	TLSSecretRef   corev1.SecretReference `json:"tlsSecretRef"`
+}
+
+type UserAccess struct {
 	UserAccessSecretRef corev1.SecretReference `json:"userAccessSecretRef"`
-	AdminSecretRef      corev1.SecretReference `json:"adminSecretRef"`
-	TLSSecretRef        corev1.SecretReference `json:"tlsSecretRef"`
+	Username            string                 `json:"username"`
 }
 
 // RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller
