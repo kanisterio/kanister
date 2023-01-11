@@ -54,3 +54,12 @@ const (
 
 	ManifestTypeSnapshotFilter = "type:snapshot"
 )
+
+const (
+	KopiaAPIServerAddressArg       = "serverAddress"
+	KopiaTLSCertSecretKey          = "certs"
+	KopiaTLSCertSecretDataArg      = "certData"
+	KopiaServerPassphraseArg       = "serverPassphrase"
+	KopiaServerPassphraseSecretKey = "serverPassphraseKey"
+	KopiaUserPassphraseArg         = "userPassphrase"
+)
