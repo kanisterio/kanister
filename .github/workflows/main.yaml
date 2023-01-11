@@ -9,7 +9,7 @@ jobs:
   gomod:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: make gomod
     - run: make go-mod-download
     - run: tar -cvf ./src.tar.gz ./ # preserve file permissions
@@ -37,18 +37,18 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: src
-    - uses: AbsaOSS/k3d-action@v2
-      with:
-        cluster-name: "kanister-run-${{ matrix.testSuite }}"
-        args: >-
-          --agents 3
-          --no-lb
-          --k3s-arg "--no-deploy=traefik,servicelb@server:*"
+    - uses: helm/kind-action@v1.4.0
     - run: tar -xvf ./src.tar.gz
     - run: |
         make install-csi-hostpath-driver
         make install-minio
       if: matrix.testSuite == 'integration-test' || matrix.testSuite == 'helm-test'
+    # A test (CRDSuite) that runs as part of `make test` requies atleast one CRD to
+    # be present on the cluster. That's why we are only installing csi-hostpath-driver
+    # before running `make test`, to create some CRDs on the cluster.
+    - run: |
+        make install-csi-hostpath-driver
+      if: matrix.testSuite == 'test'
     - run: make ${{ matrix.testSuite }}
   build:
     runs-on: ubuntu-20.04
@@ -81,7 +81,7 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: src
-    - uses: docker/login-action@v1
+    - uses: docker/login-action@v2
       with:
         registry: ghcr.io
         username: ${{ github.actor }}

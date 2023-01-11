@@ -1236,8 +1236,70 @@ Example:
         namespace: "{{ .Phases.createDeploy.Output.namespace }}"
 
 
-Wait
-----
+WaitV2
+------
+
+This function is used to wait on a Kubernetes resource
+until a desired state is reached. The wait condition is defined
+in a Go template syntax.
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `timeout`, Yes, `string`, wait timeout
+   `conditions`, Yes, `map[string]interface{}`, keys should be ``allOf`` and/or ``anyOf`` with value as ``[]Condition``
+
+``Condition`` struct:
+
+.. code-block:: yaml
+
+  condition: "Go template condition that returns true or false"
+  objectReference:
+    apiVersion: "Kubernetes resource API version"
+    resource: "Type of resource to wait for"
+    name: "Name of the resource"
+
+
+The Go template conditions can be validated using kubectl commands with
+``-o go-template`` flag.
+E.g. To check if the Deployment is ready, the following Go template syntax
+can be used with kubectl command
+
+
+.. code-block:: bash
+
+    kubectl get deploy -n $NAMESPACE $DEPLOY_NAME \
+      -o go-template='{{ $available := false }}{{ range $condition := $.status.conditions }}{{ if and (eq .type "Available") (eq .status "True")  }}{{ $available = true }}{{ end }}{{ end }}{{ $available }}'
+
+
+The same Go template can be used as a condition in the WaitV2 function.
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+    - func: WaitV2
+      name: waitForDeploymentReady
+      args:
+        timeout: 5m
+        conditions:
+          anyOf:
+          - condition: '{{ $available := false }}{{ range $condition := $.status.conditions }}{{ if and (eq .type "Available") (eq .status "True") }}{{ $available = true }}{{ end }}{{ end }}{{ $available }}'
+            objectReference:
+              apiVersion: "v1"
+              group: "apps"
+              name: "{{ .Object.metadata.name }}"
+              namespace: "{{ .Object.metadata.namespace }}"
+              resource: "deployments"
+
+
+Wait (deprecated)
+-----------------
 
 This function is used to wait on a Kubernetes resource
 until a desired state is reached.

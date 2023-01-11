@@ -39,7 +39,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.7-923
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.1.0-1656.1669627757
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \
@@ -54,9 +54,9 @@ COPY --from=builder /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
 
 ADD kando /usr/local/bin/
-RUN microdnf update && microdnf install shadow-utils gzip && \
+RUN microdnf -y update && microdnf -y install shadow-utils gzip && \
   adduser -U kanister -u 1000 && \
-  microdnf remove shadow-utils && \
+  microdnf -y remove shadow-utils && \
   microdnf clean all
 
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]

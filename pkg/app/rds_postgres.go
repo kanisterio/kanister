@@ -95,7 +95,7 @@ func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
 	if pdb.region == "" {
 		pdb.region, ok = os.LookupEnv(aws.Region)
 		if !ok {
-			return fmt.Errorf("Env var %s is not set", aws.Region)
+			return fmt.Errorf("env var %s is not set", aws.Region)
 		}
 	}
 
@@ -107,11 +107,11 @@ func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
 
 	pdb.accessID, ok = os.LookupEnv(aws.AccessKeyID)
 	if !ok {
-		return fmt.Errorf("Env var %s is not set", aws.AccessKeyID)
+		return fmt.Errorf("env var %s is not set", aws.AccessKeyID)
 	}
 	pdb.secretKey, ok = os.LookupEnv(aws.SecretAccessKey)
 	if !ok {
-		return fmt.Errorf("Env var %s is not set", aws.SecretAccessKey)
+		return fmt.Errorf("env var %s is not set", aws.SecretAccessKey)
 	}
 	return nil
 }
@@ -318,7 +318,7 @@ func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 
 func (pdb RDSPostgresDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
-		"dbconfig": crv1alpha1.ObjectReference{
+		"dbconfig": {
 			Kind:      "configmap",
 			Name:      pdb.configMapName,
 			Namespace: pdb.namespace,
@@ -328,7 +328,7 @@ func (pdb RDSPostgresDB) ConfigMaps() map[string]crv1alpha1.ObjectReference {
 
 func (pdb RDSPostgresDB) Secrets() map[string]crv1alpha1.ObjectReference {
 	return map[string]crv1alpha1.ObjectReference{
-		"dbsecret": crv1alpha1.ObjectReference{
+		"dbsecret": {
 			Kind:      "secret",
 			Name:      pdb.secretName,
 			Namespace: pdb.namespace,

@@ -65,7 +65,7 @@ func (s *PollSuite) TestWaitWithBackoff(c *C) {
 			f: mockPollFunc{
 				c: c,
 				res: []pollFuncResult{
-					pollFuncResult{ok: true, err: nil},
+					{ok: true, err: nil},
 				},
 			},
 			checker: IsNil,
@@ -74,7 +74,7 @@ func (s *PollSuite) TestWaitWithBackoff(c *C) {
 			f: mockPollFunc{
 				c: c,
 				res: []pollFuncResult{
-					pollFuncResult{ok: false, err: errFake},
+					{ok: false, err: errFake},
 				},
 			},
 			checker: NotNil,
@@ -83,7 +83,7 @@ func (s *PollSuite) TestWaitWithBackoff(c *C) {
 			f: mockPollFunc{
 				c: c,
 				res: []pollFuncResult{
-					pollFuncResult{ok: true, err: errFake},
+					{ok: true, err: errFake},
 				},
 			},
 			checker: NotNil,
@@ -92,8 +92,8 @@ func (s *PollSuite) TestWaitWithBackoff(c *C) {
 			f: mockPollFunc{
 				c: c,
 				res: []pollFuncResult{
-					pollFuncResult{ok: false, err: nil},
-					pollFuncResult{ok: true, err: nil},
+					{ok: false, err: nil},
+					{ok: true, err: nil},
 				},
 			},
 			checker: IsNil,
@@ -102,8 +102,8 @@ func (s *PollSuite) TestWaitWithBackoff(c *C) {
 			f: mockPollFunc{
 				c: c,
 				res: []pollFuncResult{
-					pollFuncResult{ok: false, err: nil},
-					pollFuncResult{ok: true, err: errFake},
+					{ok: false, err: nil},
+					{ok: true, err: errFake},
 				},
 			},
 			checker: NotNil,

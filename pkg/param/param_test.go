@@ -150,7 +150,7 @@ func (s *ParamsSuite) TestFetchStatefulSetParams(c *C) {
 		Pods:       []string{name + "-0"},
 		Containers: [][]string{{"test-container"}},
 		PersistentVolumeClaims: map[string]map[string]string{
-			name + "-0": map[string]string{
+			name + "-0": {
 				s.pvc + "-" + name + "-0": "/mnt/data/" + name,
 			},
 		},
@@ -202,7 +202,7 @@ func (s *ParamsSuite) TestFetchDeploymentParams(c *C) {
 	c.Assert(dp.Pods, HasLen, 1)
 	c.Assert(dp.Containers, DeepEquals, [][]string{{"test-container"}})
 	c.Assert(dp.PersistentVolumeClaims, DeepEquals, map[string]map[string]string{
-		dp.Pods[0]: map[string]string{
+		dp.Pods[0]: {
 			s.pvc: "/mnt/data/" + name,
 		},
 	})
@@ -407,7 +407,7 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 	as := crv1alpha1.ActionSpec{
 		Object: object,
 		ConfigMaps: map[string]crv1alpha1.ObjectReference{
-			"myCM": crv1alpha1.ObjectReference{
+			"myCM": {
 				Name:      object.Name + "-cm",
 				Namespace: s.namespace,
 			},
@@ -436,13 +436,13 @@ func (s *ParamsSuite) testNewTemplateParams(ctx context.Context, c *C, dynCli dy
 	}
 
 	artsTpl := map[string]crv1alpha1.Artifact{
-		"my-art": crv1alpha1.Artifact{KeyValue: map[string]string{
+		"my-art": {KeyValue: map[string]string{
 			"my-key": "{{ .ConfigMaps.myCM.Data.someKey }}"},
 		},
-		"my-time": crv1alpha1.Artifact{KeyValue: map[string]string{
+		"my-time": {KeyValue: map[string]string{
 			"my-time": "{{ .Time }}"},
 		},
-		"kindArtifact": crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": template}},
+		"kindArtifact": {KeyValue: map[string]string{"my-key": template}},
 	}
 	artsTpl["kindArtifact"] = crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": template}}
 	artsTpl["objectNameArtifact"] = crv1alpha1.Artifact{KeyValue: map[string]string{"my-key": unstructuredTemplate}}
@@ -565,7 +565,7 @@ func (s *ParamsSuite) TestProfile(c *C) {
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Object: crv1alpha1.ObjectReference{
 						Kind:      "StatefulSet",
 						Name:      "ssName",
@@ -640,7 +640,7 @@ func (s *ParamsSuite) TestParamsWithoutProfile(c *C) {
 			Kind:      PVCKind,
 		},
 		Secrets: map[string]crv1alpha1.ObjectReference{
-			"actionSetSecret": crv1alpha1.ObjectReference{
+			"actionSetSecret": {
 				Name:      secret.Name,
 				Namespace: secret.Namespace,
 			},
@@ -710,7 +710,7 @@ func (s *ParamsSuite) TestPhaseParams(c *C) {
 			Namespace: s.namespace,
 		},
 		Secrets: map[string]crv1alpha1.ObjectReference{
-			"actionSetSecret": crv1alpha1.ObjectReference{
+			"actionSetSecret": {
 				Name:      secret.Name,
 				Namespace: secret.Namespace,
 			},
@@ -745,7 +745,7 @@ func (s *ParamsSuite) TestRenderingPhaseParams(c *C) {
 	}
 	cli := fake.NewSimpleClientset(secret)
 	secretRef := map[string]crv1alpha1.ObjectReference{
-		"authSecret": crv1alpha1.ObjectReference{
+		"authSecret": {
 			Kind:      SecretKind,
 			Name:      secret.Name,
 			Namespace: secret.Namespace,
@@ -799,7 +799,7 @@ func newDeploymentConfig() *osapps.DeploymentConfig {
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
-						v1.Container{
+						{
 							Image:   "alpine",
 							Name:    "container",
 							Command: []string{"tail", "-f", "/dev/null"},

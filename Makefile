@@ -43,7 +43,7 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 vm-driver ?= "kvm"
 
 # Default OCP version in which the OpenShift apps are going to run
-ocp_version ?= "4.10"
+ocp_version ?= "4.11"
 ###
 ### These variables should not need tweaking.
 ###
@@ -259,7 +259,7 @@ gorelease:
 	@$(MAKE) run CMD='-c "./build/gorelease.sh"'
 
 release-snapshot:
-	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot"'
+	@$(MAKE) run CMD='-c "GORELEASER_CURRENT_TAG=v9.99.9-dev goreleaser --debug release --rm-dist --snapshot --timeout=60m0s"'
 
 go-mod-download:
 	@$(MAKE) run CMD='-c "go mod download"'

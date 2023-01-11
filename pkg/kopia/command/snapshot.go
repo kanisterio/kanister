@@ -23,10 +23,6 @@ import (
 )
 
 const (
-	// kube.Exec might timeout after 4h if there is no output from the command
-	// Setting it to 1h instead of 1000000h so that kopia logs progress once every hour
-	longUpdateInterval = "1h"
-
 	requireLogLevelInfo = true
 )
 
@@ -38,13 +34,11 @@ type SnapshotCreateCommandArgs struct {
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
-// TODO: Have better mechanism to apply global flags
 func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(kopia.DataStoreParallelUploadVarName, kopia.DefaultDataStoreParallelUpload))
 	args := commonArgs(cmdArgs.CommandArgs, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
-	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
 	args = addTags(cmdArgs.Tags, args)
 
 	// kube.Exec might timeout after 4h if there is no output from the command
@@ -60,15 +54,21 @@ func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 
 type SnapshotRestoreCommandArgs struct {
 	*CommandArgs
-	SnapID        string
-	TargetPath    string
-	SparseRestore bool
+	SnapID                 string
+	TargetPath             string
+	SparseRestore          bool
+	IgnorePermissionErrors bool
 }
 
 // SnapshotRestore returns kopia command restoring snapshots with given snap ID
 func SnapshotRestore(cmdArgs SnapshotRestoreCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, cmdArgs.SnapID, cmdArgs.TargetPath)
+	if cmdArgs.IgnorePermissionErrors {
+		args = args.AppendLoggable(ignorePermissionsError)
+	} else {
+		args = args.AppendLoggable(noIgnorePermissionsError)
+	}
 	if cmdArgs.SparseRestore {
 		args = args.AppendLoggable(sparseFlag)
 	}

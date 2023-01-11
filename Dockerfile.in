@@ -1,4 +1,4 @@
-ARG base_image=registry.access.redhat.com/ubi8/ubi-minimal:8.7-923
+ARG base_image=registry.access.redhat.com/ubi9/ubi-minimal:9.1.0-1656.1669627757
 FROM ${base_image}
 ARG kanister_version
 
@@ -10,9 +10,8 @@ LABEL name=ARG_BIN \
       maintainer="Tom Manville<tom@kasten.io>" \
       description="Frameworks and utilities for application-specific data management, has updated openssl-libs."
 
-RUN microdnf update openssl-libs && \
-    microdnf update cyrus-sasl-lib && \
-    microdnf install git && \
+RUN microdnf -y update openssl-libs cyrus-sasl-lib && \
+    microdnf -y install git && \
     microdnf clean all
 
 COPY licenses /licenses/licenses

@@ -100,7 +100,7 @@ func newTestPodTemplateSpec() v1.PodTemplateSpec {
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name:    "test-container",
 					Image:   consts.LatestKanisterToolsImage,
 					Command: []string{"tail"},
@@ -303,7 +303,7 @@ func NewTestBlueprint(poKind string, phaseFuncs ...string) *crv1alpha1.Blueprint
 			GenerateName: "test-blueprint-",
 		},
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			actionName: &crv1alpha1.BlueprintAction{
+			actionName: {
 				Kind:   "StatefulSet",
 				Phases: make([]crv1alpha1.BlueprintPhase, 0, len(phaseFuncs)),
 			},
@@ -323,7 +323,7 @@ func NewTestBlueprint(poKind string, phaseFuncs ...string) *crv1alpha1.Blueprint
 // ActionSetWithConfigMap function returns a pointer to a new ActionSet test object with CongigMap
 func ActionSetWithConfigMap(as *crv1alpha1.ActionSet, name string) *crv1alpha1.ActionSet {
 	as.Spec.Actions[0].ConfigMaps = map[string]crv1alpha1.ObjectReference{
-		"myCM": crv1alpha1.ObjectReference{
+		"myCM": {
 			Name:      name,
 			Namespace: as.GetNamespace(),
 		},
