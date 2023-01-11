@@ -31,6 +31,8 @@ spec:
     tlsSecretRef:
       name: repository-server-tls-cert
       namespace: kanister
-    userAccessSecretRef:
-      name: repository-server-user-access
-      namespace: kanister
+    userAccess:
+      userAccessSecretRef:
+        name: repository-server-user-access
+        namespace: kanister
+      username: kanisteruser
