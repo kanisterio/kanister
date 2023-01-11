@@ -11,7 +11,9 @@
 
 ## Operator Details
 
-We will be using [percona operator for Mongodb](https://docs.percona.com/percona-operator-for-mongodb/index.html), the blueprint follow backup and restore workflow as described in the [backup/restore documentation](https://docs.percona.com/percona-operator-for-mongodb/backups.html) of the operator. 
+We will be using [percona operator for Mongodb](https://docs.percona.com/percona-operator-for-mongodb/index.html).
+The blueprint follows backup and restore workflows as described in the
+[backup/restore documentation](https://docs.percona.com/percona-operator-for-mongodb/backups.html) of the operator.
 
 ## Limitations 
 
