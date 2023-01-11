@@ -39,7 +39,8 @@ spec:
                   hostname:
                     type: string
                   passwordSecretRef:
-                    description: The secret stores password to connect to a kopia repository
+                    description: SecretReference represents a Secret Reference. It
+                      has enough information to retrieve secret in any namespace
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -65,8 +66,8 @@ spec:
                   server and initializing the repository client users
                 properties:
                   adminSecretRef:
-                    description: This secret stores admin credentials to connect
-                      to repository server
+                    description: SecretReference represents a Secret Reference. It
+                      has enough information to retrieve secret in any namespace
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -77,10 +78,9 @@ spec:
                           secret name must be unique.
                         type: string
                     type: object
-
                   tlsSecretRef:
-                    description: This secrets stores TLS certificate required for secure communication
-                      between the Kopia client and server
+                    description: SecretReference represents a Secret Reference. It
+                      has enough information to retrieve secret in any namespace
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -91,23 +91,32 @@ spec:
                           secret name must be unique.
                         type: string
                     type: object
-                  userAccessSecretRef:
-                    description: This secret has a list of user credentials that a kopia client
-                      needs to connect to kopia server
+                  userAccess:
                     properties:
-                      name:
-                        description: name is unique within a namespace to reference
-                          a secret resource.
+                      userAccessSecretRef:
+                        description: SecretReference represents a Secret Reference.
+                          It has enough information to retrieve secret in any namespace
+                        properties:
+                          name:
+                            description: name is unique within a namespace to reference
+                              a secret resource.
+                            type: string
+                          namespace:
+                            description: namespace defines the space within which
+                              the secret name must be unique.
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      username:
                         type: string
-                      namespace:
-                        description: namespace defines the space within which the
-                          secret name must be unique.
-                        type: string
+                    required:
+                    - userAccessSecretRef
+                    - username
                     type: object
                 required:
                 - adminSecretRef
                 - tlsSecretRef
-                - userAccessSecretRef
+                - userAccess
                 type: object
               storage:
                 description: Storage references the backend store where a repository
@@ -115,8 +124,8 @@ spec:
                   store
                 properties:
                   credentialSecretRef:
-                    description: This secret stores credentials to connect to storage
-                      location
+                    description: SecretReference represents a Secret Reference. It
+                      has enough information to retrieve secret in any namespace
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -128,7 +137,8 @@ spec:
                         type: string
                     type: object
                   secretRef:
-                    description: This secret stores storage location information
+                    description: SecretReference represents a Secret Reference. It
+                      has enough information to retrieve secret in any namespace
                     properties:
                       name:
                         description: name is unique within a namespace to reference
