@@ -104,7 +104,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 	}
 	volumeDevices, blockVolumes, err := createBlockModeVolumeSpecs(opts.BlockVolumes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create raw block volume spec")
+		return nil, "", errors.Wrapf(err, "Failed to create raw block volume spec")
 	}
 	podVolumes = append(podVolumes, blockVolumes...)
 	defaultSpecs := v1.PodSpec{
@@ -182,32 +182,17 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		pod.ObjectMeta.Labels[key] = value
 	}
 
-<<<<<<< HEAD
-	pod.Namespace = ns
-
-	return pod, nil
-=======
 	return pod, ns, nil
->>>>>>> 906a452d (Populate pod object using podOptions in a function separate from CreatePod)
 }
 
 // CreatePod creates a pod with a single container based on the specified image
 func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
-<<<<<<< HEAD
-	pod, err := GetPodObjectFromPodOptions(cli, opts)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
-	}
-
-	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
-=======
 	pod, ns, err := GetPodObjectFromPodOptions(cli, opts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", ns, opts.GenerateName)
 	}
 
 	pod, err = cli.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
->>>>>>> 906a452d (Populate pod object using podOptions in a function separate from CreatePod)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", pod.Namespace, opts.GenerateName)
 	}
