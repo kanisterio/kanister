@@ -2,7 +2,12 @@ package function
 
 import (
 	"context"
+	"strings"
+
 	"github.com/dustin/go-humanize"
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
+
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/consts"
 	"github.com/kanisterio/kanister/pkg/field"
@@ -12,9 +17,6 @@ import (
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
-	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
-	"strings"
 )
 
 const (
