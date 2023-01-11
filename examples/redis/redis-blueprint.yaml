@@ -1,23 +1,23 @@
 apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:
-  name: mysql-blueprint
+  name: redis-blueprint
 actions:
   backup:
     outputArtifacts:
-      mysqlCloudDump:
+      redisCloudDump:
         keyValue:
           s3path: "{{ .Phases.dumpToObjectStore.Output.s3path }}"
     phases:
     - func: KubeTask
       name: dumpToObjectStore
       objects:
-        mysqlSecret:
+        redisSecret:
           kind: Secret
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.85.0
+        image: <registry>/<account_name>/redis-tools:<tag_name>
         namespace: "{{ .StatefulSet.Namespace }}"
         command:
         - bash
@@ -27,23 +27,23 @@ actions:
         - pipefail
         - -c
         - |
-          s3_path="/mysql-backups/{{ .StatefulSet.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
-          root_password="{{ index .Phases.dumpToObjectStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-          mysqldump --column-statistics=0 -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }} --single-transaction --all-databases | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
+          s3_path="/redis-backups/{{ .StatefulSet.Namespace }}/{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/dump.sql.gz"
+          root_password="{{ index .Phases.dumpToObjectStore.Secrets.redisSecret.Data "redis-password" | toString }}"
+          redis-dump -a ${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-{{ index .Object.metadata.labels "app.kubernetes.io/component" }} | gzip - | kando location push --profile '{{ toJson .Profile }}' --path ${s3_path} -
           kando output s3path ${s3_path}
   restore:
     inputArtifactNames:
-    - mysqlCloudDump
+    - redisCloudDump
     phases:
     - func: KubeTask
       name: restoreFromBlobStore
       objects:
-        mysqlSecret:
+        redisSecret:
           kind: Secret
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.85.0
+        image: <registry>/<account_name>/redis-tools:<tag_name>
         namespace: "{{ .StatefulSet.Namespace }}"
         command:
         - bash
@@ -53,17 +53,17 @@ actions:
         - pipefail
         - -c
         - |
-          s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
-          root_password="{{ index .Phases.restoreFromBlobStore.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
-          kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | mysql -u root --password=${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}
+          s3_path="{{ .ArtifactsIn.redisCloudDump.KeyValue.s3path }}"
+          root_password="{{ index .Phases.restoreFromBlobStore.Secrets.redisSecret.Data "redis-password" | toString }}"
+          kando location pull --profile '{{ toJson .Profile }}' --path ${s3_path} - | gunzip | redis-cli -a ${root_password} -h {{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-{{ index .Object.metadata.labels "app.kubernetes.io/component" }}
   delete:
     inputArtifactNames:
-    - mysqlCloudDump
+    - redisCloudDump
     phases:
     - func: KubeTask
       name: deleteFromBlobStore
       args:
-        image: ghcr.io/kanisterio/mysql-sidecar:0.85.0
+        image: <registry>/<account_name>/redis-tools:<tag_name>
         namespace: "{{ .Namespace.Name }}"
         command:
         - bash
@@ -73,5 +73,5 @@ actions:
         - pipefail
         - -c
         - |
-          s3_path="{{ .ArtifactsIn.mysqlCloudDump.KeyValue.s3path }}"
+          s3_path="{{ .ArtifactsIn.redisCloudDump.KeyValue.s3path }}"
           kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}

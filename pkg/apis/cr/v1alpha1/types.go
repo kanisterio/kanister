@@ -52,8 +52,12 @@ var _ runtime.Object = (*ActionSet)(nil)
 type ActionSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	Spec              *ActionSetSpec   `json:"spec,omitempty"`
-	Status            *ActionSetStatus `json:"status,omitempty"`
+	// Spec defines the specification for the actionset.
+	// The specification includes a list of Actions to be performed. Each Action includes details
+	// about the referenced Blueprint and other objects used to perform the defined action.
+	Spec *ActionSetSpec `json:"spec,omitempty"`
+	// Status refers to the current status of the Kanister actions.
+	Status *ActionSetStatus `json:"status,omitempty"`
 }
 
 // ObjectReference refers to a kubernetes object.
@@ -77,6 +81,7 @@ type ObjectReference struct {
 
 // ActionSetSpec is the specification for the actionset.
 type ActionSetSpec struct {
+	// Actions represents a list of Actions that need to be performed by the actionset.
 	Actions []ActionSpec `json:"actions,omitempty"`
 }
 
@@ -112,9 +117,16 @@ type ActionSpec struct {
 
 // ActionSetStatus is the status for the actionset. This should only be updated by the controller.
 type ActionSetStatus struct {
-	State    State          `json:"state"`
-	Actions  []ActionStatus `json:"actions,omitempty"`
-	Error    Error          `json:"error,omitempty"`
+	// State represents the current state of the actionset.
+	// There are four possible values: "Pending", "Running", "Failed", and "Complete".
+	State State `json:"state"`
+	// Actions list represents the latest available observations of the current state of all the actions.
+	Actions []ActionStatus `json:"actions,omitempty"`
+	// Error contains the detailed error message of an actionset failure.
+	Error Error `json:"error,omitempty"`
+	// Progress provides information on the progress of a running actionset.
+	// This includes the percentage of completion of an actionset and the phase that is
+	// currently being executed.
 	Progress ActionProgress `json:"progress,omitempty"`
 }
 
@@ -137,6 +149,8 @@ type ActionStatus struct {
 
 // ActionProgress provides information on the progress of an action.
 type ActionProgress struct {
+	// RunningPhase represents which phase of the action is being run
+	RunningPhase string `json:"runningPhase,omitempty"`
 	// PercentCompleted is computed by assessing the number of completed phases
 	// against the the total number of phases.
 	PercentCompleted string `json:"percentCompleted,omitempty"`
@@ -159,16 +173,19 @@ const (
 	StateComplete State = "complete"
 )
 
+// Error represents an error that occurred when executing an actionset.
 type Error struct {
+	// Message is the actual error message that is displayed in case of errors.
 	Message string `json:"message"`
 }
 
 // Phase is subcomponent of an action.
 type Phase struct {
-	Name  string `json:"name"`
-	State State  `json:"state"`
-	// +kubebuilder:pruning:PreserveUnknownFields
-	// +kubebuilder:validation:Schemaless
+	// Name represents the name of the Blueprint phase.
+	Name string `json:"name"`
+	// State represents the current state of execution of the Blueprint phase.
+	State State `json:"state"`
+	// Output is the map of output artifacts produced by the Blueprint phase.
 	Output map[string]interface{} `json:"output,omitempty"`
 }
 
@@ -176,6 +193,7 @@ type Phase struct {
 
 // Artifact tracks objects produced by an action.
 type Artifact struct {
+	// KeyValue represents key-value pair artifacts produced by the action.
 	KeyValue map[string]string `json:"keyValue,omitempty"`
 	// KopiaSnapshot captures the kopia snapshot information
 	// produced as a JSON string by kando command in phases of an action.
@@ -184,11 +202,12 @@ type Artifact struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ActionSetList is the definition of a list of ActionSets
+// ActionSetList is the definition of a list of actionsets.
 type ActionSetList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	Items           []*ActionSet `json:"items"`
+	// Items is the list of actionsets.
+	Items []*ActionSet `json:"items"`
 }
 
 var _ runtime.Object = (*Blueprint)(nil)
@@ -201,28 +220,47 @@ var _ runtime.Object = (*Blueprint)(nil)
 type Blueprint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	Actions           map[string]*BlueprintAction `json:"actions,omitempty"`
+	// Actions is the list of actions constructing the Blueprint.
+	Actions map[string]*BlueprintAction `json:"actions,omitempty"`
 }
 
 // BlueprintAction describes the set of phases that constitute an action.
 type BlueprintAction struct {
-	Name               string              `json:"name"`
-	Kind               string              `json:"kind"`
-	ConfigMapNames     []string            `json:"configMapNames,omitempty"`
-	SecretNames        []string            `json:"secretNames,omitempty"`
-	InputArtifactNames []string            `json:"inputArtifactNames,omitempty"`
-	OutputArtifacts    map[string]Artifact `json:"outputArtifacts,omitempty"`
-	Phases             []BlueprintPhase    `json:"phases,omitempty"`
-	DeferPhase         *BlueprintPhase     `json:"deferPhase,omitempty"`
+	// Name contains the name of the action.
+	Name string `json:"name"`
+	// Kind contains the resource on which this action has to be performed.
+	Kind string `json:"kind"`
+	// ConfigMapNames is used to specify the config map names that can be used later in the action phases.
+	ConfigMapNames []string `json:"configMapNames,omitempty"`
+	// List of Kubernetes secret names used in action phases.
+	SecretNames []string `json:"secretNames,omitempty"`
+	// InputArtifactNames is the list of Artifact names that were set from previous action and can be consumed in the current action.
+	InputArtifactNames []string `json:"inputArtifactNames,omitempty"`
+	// OutputArtifacts is the map of rendered artifacts produced by the BlueprintAction.
+	OutputArtifacts map[string]Artifact `json:"outputArtifacts,omitempty"`
+	// Phases is the list of BlueprintPhases which are invoked in order when executing this action.
+	Phases []BlueprintPhase `json:"phases,omitempty"`
+	// DeferPhase is invoked after the execution of Phases that are defined for an action.
+	// A DeferPhase is executed regardless of the statuses of the other phases of the action.
+	// A DeferPhase can be used for cleanup operations at the end of an action.
+	DeferPhase *BlueprintPhase `json:"deferPhase,omitempty"`
 }
 
 // BlueprintPhase is a an individual unit of execution.
 type BlueprintPhase struct {
-	Func       string                     `json:"func"`
-	Name       string                     `json:"name"`
+	// Func is the name of a registered Kanister function.
+	Func string `json:"func"`
+	// Name contains name of the phase.
+	Name string `json:"name"`
+	// ObjectRefs represents a map of references to the Kubernetes objects that
+	// can later be used in the `Args` of the function.
 	ObjectRefs map[string]ObjectReference `json:"objects,omitempty"`
+<<<<<<< HEAD
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Schemaless
+=======
+	// Args represents a map of named arguments that the controller will pass to the Kanister function.
+>>>>>>> master
 	Args map[string]interface{} `json:"args"`
 }
 
@@ -232,20 +270,27 @@ type BlueprintPhase struct {
 type BlueprintList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	Items           []*Blueprint `json:"items"`
+	// Items is the list of Blueprints.
+	Items []*Blueprint `json:"items"`
 }
 
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Profile
+// Profile captures information about a storage location for backup artifacts and
+// corresponding credentials, that will be made available to a Blueprint phase.
 type Profile struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	Location          Location   `json:"location"`
-	Credential        Credential `json:"credential"`
-	SkipSSLVerify     bool       `json:"skipSSLVerify"`
+	// Location provides the information about the object storage that is going to be used by Kanister to upload the backup objects.
+	Location Location `json:"location"`
+	// Credential represents the credentials associated with the Location.
+	Credential Credential `json:"credential"`
+	// SkipSSLVerify is a boolean that specifies whether skipping SSL verification
+	// is allowed when operating with the Location.
+	// If omitted from the CR definition, it defaults to false
+	SkipSSLVerify bool `json:"skipSSLVerify"`
 }
 
 // LocationType
@@ -260,11 +305,19 @@ const (
 
 // Location
 type Location struct {
-	Type     LocationType `json:"type"`
-	Bucket   string       `json:"bucket"`
-	Endpoint string       `json:"endpoint"`
-	Prefix   string       `json:"prefix"`
-	Region   string       `json:"region"`
+	// Type specifies the kind of object storage that would be used to upload the
+	// backup objects. Currently supported values are: "GCS", "S3Compliant",
+	// and "Azure".
+	Type LocationType `json:"type"`
+	// Bucket represents the bucket on the object storage where the backup is uploaded.
+	Bucket string `json:"bucket"`
+	// Endpoint specifies the endpoint where the object storage is accessible at.
+	Endpoint string `json:"endpoint"`
+	// Prefix is the string that would be prepended to the object path in the
+	// bucket where the backup objects are uploaded.
+	Prefix string `json:"prefix"`
+	// Region represents the region of the bucket specified above.
+	Region string `json:"region"`
 }
 
 // CredentialType
@@ -278,31 +331,46 @@ const (
 
 // Credential
 type Credential struct {
-	Type              CredentialType     `json:"type"`
-	KeyPair           *KeyPair           `json:"keyPair,omitempty"`
-	Secret            *ObjectReference   `json:"secret,omitempty"`
+	// Type represents the information about how the credentials are provided for the respective object storage.
+	Type CredentialType `json:"type"`
+	// KeyPair represents the key-value map used for the Credential of Type KeyPair.
+	KeyPair *KeyPair `json:"keyPair,omitempty"`
+	// Secret represents the Kubernetes Secret Object used for the Credential of Type Secret.
+	Secret *ObjectReference `json:"secret,omitempty"`
+	// KopiaServerSecret represents the secret being used by Credential of Type Kopia.
 	KopiaServerSecret *KopiaServerSecret `json:"kopiaServerSecret,omitempty"`
 }
 
 // KeyPair
 type KeyPair struct {
-	IDField     string          `json:"idField"`
-	SecretField string          `json:"secretField"`
-	Secret      ObjectReference `json:"secret"`
+	// IDField specifies the corresponding key in the secret where the AWS Key ID value is stored.
+	IDField string `json:"idField"`
+	// SecretField specifies the corresponding key in the secret where the AWS Secret Key value is stored.
+	SecretField string `json:"secretField"`
+	// Secret represents a Kubernetes Secret object storing the KeyPair credentials.
+	Secret ObjectReference `json:"secret"`
 }
 
 // KopiaServerSecret contains credentials to connect to Kopia server
 type KopiaServerSecret struct {
-	Username       string                `json:"username,omitempty"`
-	Hostname       string                `json:"hostname,omitempty"`
+	// Username represents the username used to connect to the Kopia Server.
+	Username string `json:"username,omitempty"`
+	// Hostname represents the hostname used to connect to the Kopia Server.
+	Hostname string `json:"hostname,omitempty"`
+	// UserPassphrase is the user password used to connect to the Kopia Server.
 	UserPassphrase *KopiaServerSecretRef `json:"userPassphrase,omitempty"`
-	TLSCert        *KopiaServerSecretRef `json:"tlsCert,omitempty"`
-	ConnectOptions map[string]int        `json:"connectOptions,omitempty"`
+	// TLSCert is the certificate used to connect to the Kopia Server.
+	TLSCert *KopiaServerSecretRef `json:"tlsCert,omitempty"`
+	// ConnectOptions represents a map of options which can be used to connect to the Kopia Server.
+	ConnectOptions map[string]int `json:"connectOptions,omitempty"`
 }
 
 // KopiaServerSecretRef refers to K8s secrets containing Kopia creds
 type KopiaServerSecretRef struct {
-	Key    string           `json:"key"`
+	// Key represents the corresponding key in the secret where the required
+	// credential or certificate value is stored.
+	Key string `json:"key"`
+	// Secret is the K8s secret object where the creds related to the Kopia Server are stored.
 	Secret *ObjectReference `json:"secret"`
 }
 
@@ -312,7 +380,8 @@ type KopiaServerSecretRef struct {
 type ProfileList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	Items           []*Profile `json:"items"`
+	// Items represents a list of Profiles.
+	Items []*Profile `json:"items"`
 }
 
 // +genclient
