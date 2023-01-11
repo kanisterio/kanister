@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* Kubernetes 1.9+
+* Kubernetes 1.20+
 * PV support on the underlying infrastructure
 * Kanister controller version 0.84.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
