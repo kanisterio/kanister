@@ -75,9 +75,9 @@ kubectl get psmdb
 
 **NOTE:**
 
-We also enable point in time restore (pitr) for this cluster
+We can also enable point-in-time restore (PITR) for this cluster
 
-```
+```yaml
     pitr:
       enabled: true
       compressionType: gzip
@@ -86,7 +86,9 @@ We also enable point in time restore (pitr) for this cluster
 
 ## Integrating with Kanister
 
-If you have deployed the operator with other name than `my-cluster-name` and namespace other than `mongodb`, you need to modify the commands used below to use the correct name and namespace
+If the operator is deployed with a name other than `my-cluster-name`, and a
+namespace other than `mongodb`, modify the commands used below to use the
+correct name and namespace:
 
 ### Create Profile
 Create Profile CR if not created already
@@ -114,7 +116,8 @@ Create Blueprint in the same namespace as the controller
 $ kubectl create -f psmdb-bp.yaml -n kasten-io
 ```
 
-Once MongoDB is running, you can populate it with some data. Let's add a collection called "ticker":
+Once MongoDB is running, populate it with some data. Let's add a collection
+called "ticker":
 
 ```bash
 MONGODB_DATABASE_ADMIN_PASSWORD=$(kubectl get secret my-cluster-name-secrets -ojsonpath='{.data.MONGODB_DATABASE_ADMIN_PASSWORD}'|base64 -d)
@@ -129,7 +132,7 @@ mongo "mongodb://$MONGODB_DATABASE_ADMIN_USER:$MONGODB_DATABASE_ADMIN_PASSWORD@m
 ```
 
 Insert some data 
-```
+```bash
 db.createCollection("ticker")
 db.ticker.insert(  {createdAt: new Date(), randomdata: "qstygshgqsfxxtqsfgqfhjqhsj"} )
 db.ticker.insert(  {createdAt: new Date(), randomdata: "qstygshgqsfxxtqsfgqfhjqhsj"} )
@@ -138,9 +141,10 @@ db.ticker.insert(  {createdAt: new Date(), randomdata: "qstygshgqsfxxtqsfgqfhjqh
 db.ticker.find({}).sort({createdAt:-1}).limit(1)
 ```
 
-In order to test Point In Time Restore (PITR) create a ticker pod that add new entry every seconds.
+In order to test Point-In-Time Restore (PITR), create a ticker pod that adds
+a new entry every second.
 
-```
+```bash
 MONGODB_DATABASE_ADMIN_PASSWORD=$(kubectl get secret my-cluster-name-secrets -ojsonpath='{.data.MONGODB_DATABASE_ADMIN_PASSWORD}'|base64 -d)
 MONGODB_DATABASE_ADMIN_USER=$(kubectl get secret my-cluster-name-secrets -ojsonpath='{.data.MONGODB_DATABASE_ADMIN_USER}'|base64 -d)
 kubectl run percona-ticker \
@@ -150,18 +154,21 @@ kubectl run percona-ticker \
     -- bash -c "while true; do mongo \"mongodb://$MONGODB_DATABASE_ADMIN_USER:$MONGODB_DATABASE_ADMIN_PASSWORD@my-cluster-name-mongos.mongodb.svc.cluster.local/admin?ssl=false\" --eval 'db.ticker.insert(  {createdAt: new Date(), randomdata: \"qstygshgqsfxxtqsfgqfhjqhsj\"} )'; sleep 1; done"
 ```
 
-Reuse the percona-client to check you have a new entry every second, execute this command multiple times.
-```
+Reuse the percona-client to check if a new entry is created every second.
+Execute this command multiple times.
+```bash
 db.ticker.find({}).sort({createdAt:-1}).limit(1)
 ```
 
 **NOTE:**
 
-If you change the storage name for something else than `my-s3-storage` in the cr.yaml file you need to change this name in the blueprint accordingly.
+If the storage name is changed to something other than `my-s3-storage` in the
+`cr.yaml` file, change this name in the blueprint accordingly.
 
 ## Protect the Application
 
-You can now take a backup of the MongoDB data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
+The MongoDB data can be backed up using an ActionSet defining backup for this
+application. Create an ActionSet in the same namespace as the controller.
 
 ```bash
 $ kubectl get profiles.cr.kanister.io  -n mongodb
@@ -182,26 +189,26 @@ backup-vvskw         2h
 $ kubectl --namespace kasten-io describe actionset backup-vvskw
 ```
 
-### Disaster strikes!
+### Disaster Strikes!
 
-Let's say someone with fat fingers accidentally deleted the mongo cluster and all the pvcs:
+Let's say someone accidentally deleted the mongo cluster and all the PVCs:
 ```bash
 kubectl delete psmdb my-cluster-name
 kubectl delete po percona-ticker
 kubectl delete pvc --all
 ```
 
-All pods and pvc are now gone. Recreate the cluster 
-```
+All the pods and PVCs are now gone. Recreate the cluster
+```bash
 kubectl apply -f cr.yaml
 ```
 
-Check the cluster is now ready 
-```
+Check if the cluster is now ready 
+```bash
 kubectl get psmdb
 ```
 
-If you try to access this data in the database, you should see that it is no longer there:
+The data in the database is no longer there:
 ```bash
 MONGODB_DATABASE_ADMIN_PASSWORD=$(kubectl get secret my-cluster-name-secrets -ojsonpath='{.data.MONGODB_DATABASE_ADMIN_PASSWORD}'|base64 -d)
 MONGODB_DATABASE_ADMIN_USER=$(kubectl get secret my-cluster-name-secrets -ojsonpath='{.data.MONGODB_DATABASE_ADMIN_USER}'|base64 -d)
@@ -214,15 +221,17 @@ kubectl run -i --rm --tty percona-client \
 mongo "mongodb://$MONGODB_DATABASE_ADMIN_USER:$MONGODB_DATABASE_ADMIN_PASSWORD@my-cluster-name-mongos.mongodb.svc.cluster.local/admin?ssl=false"
 ```
 
-You should have no output when trying to query the ticker collections
-```
+There should be no output when trying to query the ticker collections
+```bash
 db.ticker.find({}).sort({createdAt:-1}).limit(1)
 ```
 
 
 ### Restore the Application
 
-To restore the missing data, you should use the backup that you created before. An easy way to do this is to leverage `kanctl`, a command-line tool that helps create ActionSets that depend on other ActionSets:
+To restore the missing data, use the backup created earlier. An easy way to do
+this is to leverage `kanctl`, a command-line tool that helps create ActionSets
+that depend on other ActionSets:
 
 
 ```bash
@@ -233,24 +242,26 @@ actionset restore-backup-vvskw-sfpm6 created
 kubectl --namespace kasten-io describe actionset restore-backup-vvskw-sfpm6
 ```
 
-You should now see that the data has been successfully restored to MongoDB!
+The data should now be successfully restored to MongoDB!
 
 ```bash
 db.ticker.find({}).sort({createdAt:-1}).limit(1)
 { "_id" : ObjectId("637372caf98744ac5a6e4aae"), "createdAt" : ISODate("2022-11-15T11:06:50.296Z"), "randomdata" : "qstygshgqsfxxtqsfgqfhjqhsj" }
 ```
 
-#### Point In Time Restore 
+#### Point-In-Time Restore 
 
-Let's say the backup was at 15th Nov 2022 at 15:11 and we want to restore at a specific point in time after the backup at 15:13:10 the same day
+Let's say the backup was at 15th Nov 2022 at 15:11 and we want to restore at a
+specific point in time after the backup at 15:13:10 the same day
 
-```
+```bash
 kanctl --namespace kasten-io create actionset --action restore --from "backup-vvskw" --options pitr="2022-11-15 15:13:10"
 ```
 
 ### Delete the Artifacts
 
-The artifacts created by the backup action can be cleaned up using the following command:
+The artifacts created by the backup action can be cleaned up using the
+following command:
 
 ```bash
 $ kanctl --namespace kasten-io create actionset --action delete --from "backup-vvskw"
@@ -262,23 +273,24 @@ $ kubectl --namespace kasten-io describe actionset delete-backup-vvskw-xh29t
 
 **NOTE:**
 
-To have the delete action working  we need the operator up and running.
+To have the delete action working, we need the operator up and running.
 
 ### Troubleshooting
 
-If you run into any issues with the above commands, you can check the logs of the controller using:
+In case of issues with the above commands, check the logs of the controller
+using:
 
 ```bash
 $ kubectl --namespace kasten-io logs -l app=kanister-operator
 ```
 
-you can also check events of the actionset
+Check events of the ActionSet
 
 ```bash
 $ kubectl describe actionset restore-backup-vvskw-sfpm6 -n kasten-io
 ```
 
-## Uninstalling the operator and the blueprint
+## Uninstalling the Operator and the Blueprint
 
 To uninstall/delete the mongodb cluster and the operator:
 
@@ -290,7 +302,8 @@ kubectl delete -f https://raw.githubusercontent.com/percona/percona-server-mongo
 kubectl delete ns mongodb
 ```
 
-The command removes all the Kubernetes components associated with the operator and deletes the mongodb namespace.
+The command removes all the Kubernetes components associated with the operator
+and deletes the `mongodb` namespace.
 
 Delete Blueprint and Profile CR
 
