@@ -58,7 +58,7 @@ func (s *RDSFunctionsTest) TestPrepareCommand(c *C) {
 			command: []string{"bash", "-o", "errexit", "-o", "pipefail", "-c",
 				fmt.Sprintf(`
 		export PGHOST=%s
-		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | sed 's/LOCALE/LC_COLLATE/' | psql -q -U "${PGUSER}" %s
+		kando location pull --profile '%s' --path "%s" - | gunzip -c -f | sed 's/"LOCALE"/"LC_COLLATE"/' | psql -q -U "${PGUSER}" %s
 		`, "db-endpoint", "null", fmt.Sprintf("%s/%s", "/backup/postgres-backup", "backup-id"), []string{"template1"}[0]),
 			},
 		},

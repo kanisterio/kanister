@@ -1,4 +1,4 @@
-// Copyright 2021 The Kanister Authors.
+// Copyright 2023 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,16 +30,16 @@ import (
 	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
-var _ = Suite(&WaitSuite{})
+var _ = Suite(&WaitV2Suite{})
 
-type WaitSuite struct {
+type WaitV2Suite struct {
 	cli         kubernetes.Interface
 	namespace   string
 	deploy      string
 	statefulset string
 }
 
-func (s *WaitSuite) SetUpSuite(c *C) {
+func (s *WaitV2Suite) SetUpSuite(c *C) {
 	cli, err := kube.NewClient()
 	c.Assert(err, IsNil)
 	s.cli = cli
@@ -60,22 +60,22 @@ func (s *WaitSuite) SetUpSuite(c *C) {
 	s.statefulset = sts.Name
 }
 
-func (s *WaitSuite) TearDownSuite(c *C) {
+func (s *WaitV2Suite) TearDownSuite(c *C) {
 	if s.namespace != "" {
 		_ = s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.namespace, metav1.DeleteOptions{})
 	}
 }
 
-func waitNsPhase(namespace string) crv1alpha1.BlueprintPhase {
+func waitV2NsPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
-		Name: "waitNsReady",
-		Func: WaitFuncName,
+		Name: "waitV2NsReady",
+		Func: WaitV2FuncName,
 		Args: map[string]interface{}{
-			WaitTimeoutArg: "1m",
-			WaitConditionsArg: map[string]interface{}{
+			WaitV2TimeoutArg: "1m",
+			WaitV2ConditionsArg: map[string]interface{}{
 				"anyOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if (eq "{ $.status.phase }" "Invalid")}}true{{ else }}false{{ end }}`,
+						"condition": `{{ if (eq .status.phase "Invalid")}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"resource":   "namespaces",
@@ -83,7 +83,7 @@ func waitNsPhase(namespace string) crv1alpha1.BlueprintPhase {
 						},
 					},
 					map[string]interface{}{
-						"condition": `{{ if (eq "{ $.status.phase }" "Active")}}true{{ else }}false{{ end }}`,
+						"condition": `{{ if (eq .status.phase "Active")}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"resource":   "namespaces",
@@ -96,16 +96,16 @@ func waitNsPhase(namespace string) crv1alpha1.BlueprintPhase {
 	}
 }
 
-func waitNsTimeoutPhase(namespace string) crv1alpha1.BlueprintPhase {
+func waitV2NsTimeoutPhase(namespace string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
-		Name: "waitNsReady",
-		Func: WaitFuncName,
+		Name: "waitV2NsReady",
+		Func: WaitV2FuncName,
 		Args: map[string]interface{}{
-			WaitTimeoutArg: "10s",
-			WaitConditionsArg: map[string]interface{}{
+			WaitV2TimeoutArg: "10s",
+			WaitV2ConditionsArg: map[string]interface{}{
 				"allOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if (eq "{$.status.phase}" "Inactive")}}true{{ else }}false{{ end }}`,
+						"condition": `{{ if (eq .status.phase "Inactive")}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"resource":   "namespaces",
@@ -113,7 +113,7 @@ func waitNsTimeoutPhase(namespace string) crv1alpha1.BlueprintPhase {
 						},
 					},
 					map[string]interface{}{
-						"condition": `{{ if (eq "{$.status.phase}" "Invalid")}}true{{ else }}false{{ end }}`,
+						"condition": `{{ if (eq .status.phase "Invalid")}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"resource":   "namespaces",
@@ -126,22 +126,16 @@ func waitNsTimeoutPhase(namespace string) crv1alpha1.BlueprintPhase {
 	}
 }
 
-func waitDeployPhase(namespace, deploy string) crv1alpha1.BlueprintPhase {
+func waitV2DeployPhase(namespace, deploy string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
-		Name: "waitDeployReady",
-		Func: WaitFuncName,
+		Name: "waitV2DeployReady",
+		Func: WaitV2FuncName,
 		Args: map[string]interface{}{
-			WaitTimeoutArg: "5m",
-			WaitConditionsArg: map[string]interface{}{
+			WaitV2TimeoutArg: "5m",
+			WaitV2ConditionsArg: map[string]interface{}{
 				"anyOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if and (eq "{$.spec.replicas}" "{$.status.availableReplicas}" )
-							(eq "{$.status.conditions[?(@.type == 'Available')].type}" "Available")
-							(eq "{$.status.conditions[?(@.type == 'Available')].status}" "True") }}
-							true
-							{{ else }}
-							false
-							{{ end }}`,
+						"condition": `{{ $available := false }}{{ range $condition := $.status.conditions }}{{ if and (eq .type "Available") (eq .status "True") }}{{ $available = true }}{{ end }}{{ end }}{{ $available }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"group":      "apps",
@@ -156,20 +150,16 @@ func waitDeployPhase(namespace, deploy string) crv1alpha1.BlueprintPhase {
 	}
 }
 
-func waitStatefulSetPhase(namespace, sts string) crv1alpha1.BlueprintPhase {
+func waitV2StatefulSetPhase(namespace, sts string) crv1alpha1.BlueprintPhase {
 	return crv1alpha1.BlueprintPhase{
-		Name: "waitStsReady",
-		Func: WaitFuncName,
+		Name: "waitV2StsReady",
+		Func: WaitV2FuncName,
 		Args: map[string]interface{}{
-			WaitTimeoutArg: "1m",
-			WaitConditionsArg: map[string]interface{}{
+			WaitV2TimeoutArg: "1m",
+			WaitV2ConditionsArg: map[string]interface{}{
 				"allOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if (eq "{$.spec.replicas}" "{$.status.availableReplicas}" )}}
-									true
-								{{ else }}
-									false
-								{{ end }}`,
+						"condition": `{{ if (eq .spec.replicas .status.availableReplicas )}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"group":      "apps",
@@ -179,11 +169,7 @@ func waitStatefulSetPhase(namespace, sts string) crv1alpha1.BlueprintPhase {
 						},
 					},
 					map[string]interface{}{
-						"condition": `{{ if (eq "{$.spec.replicas}" "{$.status.readyReplicas}" )}}
-									true
-								{{ else }}
-									false
-								{{ end }}`,
+						"condition": `{{ if (eq .spec.replicas .status.readyReplicas )}}true{{ else }}false{{ end }}`,
 						"objectReference": map[string]interface{}{
 							"apiVersion": "v1",
 							"group":      "apps",
@@ -198,7 +184,7 @@ func waitStatefulSetPhase(namespace, sts string) crv1alpha1.BlueprintPhase {
 	}
 }
 
-func newWaitBlueprint(phases ...crv1alpha1.BlueprintPhase) *crv1alpha1.Blueprint {
+func newWaitV2Blueprint(phases ...crv1alpha1.BlueprintPhase) *crv1alpha1.Blueprint {
 	return &crv1alpha1.Blueprint{
 		Actions: map[string]*crv1alpha1.BlueprintAction{
 			"test": {
@@ -208,7 +194,7 @@ func newWaitBlueprint(phases ...crv1alpha1.BlueprintPhase) *crv1alpha1.Blueprint
 	}
 }
 
-func (s *WaitSuite) TestWait(c *C) {
+func (s *WaitV2Suite) TestWaitV2(c *C) {
 	tp := param.TemplateParams{
 		Time: time.Now().String(),
 	}
@@ -218,19 +204,19 @@ func (s *WaitSuite) TestWait(c *C) {
 		checker Checker
 	}{
 		{
-			bp:      newWaitBlueprint(waitDeployPhase(s.namespace, s.deploy)),
+			bp:      newWaitV2Blueprint(waitV2DeployPhase(s.namespace, s.deploy)),
 			checker: IsNil,
 		},
 		{
-			bp:      newWaitBlueprint(waitStatefulSetPhase(s.namespace, s.statefulset)),
+			bp:      newWaitV2Blueprint(waitV2StatefulSetPhase(s.namespace, s.statefulset)),
 			checker: IsNil,
 		},
 		{
-			bp:      newWaitBlueprint(waitNsPhase(s.namespace)),
+			bp:      newWaitV2Blueprint(waitV2NsPhase(s.namespace)),
 			checker: IsNil,
 		},
 		{
-			bp:      newWaitBlueprint(waitNsTimeoutPhase(s.namespace)),
+			bp:      newWaitV2Blueprint(waitV2NsTimeoutPhase(s.namespace)),
 			checker: NotNil,
 		},
 	} {

@@ -16,6 +16,7 @@ package kanister
 
 import (
 	"context"
+	"strings"
 
 	"github.com/Masterminds/semver"
 	"github.com/pkg/errors"
@@ -26,6 +27,11 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 )
+
+var skipRenderFuncs = map[string]bool{
+	"wait":   true,
+	"waitv2": true,
+}
 
 // Phase is an atomic unit of execution.
 type Phase struct {
@@ -65,10 +71,12 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 			if ap.Name != p.name {
 				continue
 			}
-			args, err := param.RenderArgs(ap.Args, tp)
+
+			args, err := renderFuncArgs(ap.Func, ap.Args, tp)
 			if err != nil {
 				return nil, err
 			}
+
 			if err = checkRequiredArgs(p.f.RequiredArgs(), args); err != nil {
 				return nil, errors.Wrapf(err, "Required args missing for function %s", p.f.Name())
 			}
@@ -82,6 +90,18 @@ func (p *Phase) Exec(ctx context.Context, bp crv1alpha1.Blueprint, action string
 	}
 	// Execute the function
 	return p.f.Exec(ctx, tp, p.args)
+}
+
+func renderFuncArgs(
+	funcName string,
+	args map[string]interface{},
+	tp param.TemplateParams) (map[string]interface{}, error) {
+	// let wait handle its own go template and jsonpath arguments
+	if skipRenderFuncs[strings.ToLower(funcName)] {
+		return args, nil
+	}
+
+	return param.RenderArgs(args, tp)
 }
 
 func checkSupportedArgs(supportedArgs []string, args map[string]interface{}) error {

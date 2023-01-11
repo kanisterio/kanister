@@ -168,6 +168,10 @@ look at the updated status of the ActionSet and tail the controller logs.
   # check the controller log
   $ kubectl --namespace kanister get pod -l app=kanister-operator
 
+ActionSet's ``Status.Progress.RunningPhase`` field can be used to figure out
+the phase being run currently, for a particular action. Once the ActionSet has
+completed, this value is set to ``""``.
+
 During execution, Kanister controller emits events to the respective ActionSets.
 The execution transitions of an ActionSet can be seen by using the following command:
 
