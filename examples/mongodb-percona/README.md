@@ -45,7 +45,8 @@ executing the blueprint.
 
 ## Install the Operator and Create a Cluster
 
-Edit cr.yaml and ensure the backup/storages section (line 443) is consistent with your s3 target, you may change : 
+Edit the `cr.yaml` to ensure the backup/storages section (line 443) is
+consistent with your s3 target. The following may be changed: 
 - the region
 - the bucket name
 - the endpoint
