@@ -60,7 +60,7 @@ These values can't be obtained from a Kanister profile as they need to be
 defined in the `PerconaServerMongoDB` object itself before running any Kanister
 actions (see Limitations).
 
-```
+```bash
 kubectl create namespace mongodb
 kubectl config set-context --current --namespace=mongodb
 kubectl apply -f https://raw.githubusercontent.com/percona/percona-server-mongodb-operator/v1.13.0/deploy/bundle.yaml
