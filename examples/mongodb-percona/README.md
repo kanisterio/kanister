@@ -21,7 +21,10 @@ The blueprint follows backup and restore workflows as described in the
 
 ## Limitations 
 
-For simplicity we did not patch the PerconaServerMongoDB object with the profiles.cr.kanister.io to define the backup target, you have to define it and the secret reference a secret that must define the AWS_ACCESS_KEY_ID and in the AWS_SECRET_ACCESS_KEY keys: 
+For simplicity, we did not patch the `PerconaServerMongoDB` object with the
+`profiles.cr.kanister.io` to define the backup target. Instead, we can use the
+`storages` section to define it along with a secret reference to a secret that
+defines the `AWS_ACCESS_KEY_ID` and the `AWS_SECRET_ACCESS_KEY` keys:
 ```
     storages:
       my-s3-storage:
