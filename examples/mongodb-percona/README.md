@@ -69,7 +69,7 @@ kubectl apply -f cr.yaml
 ```
 
 Check the status of the mongodb cluster
-```
+```bash
 kubectl get psmdb
 ```
 
