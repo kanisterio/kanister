@@ -39,7 +39,7 @@ For simplicity we did not patch the PerconaServerMongoDB object with the profile
 
 Those values need to be defined (this section and the s3-secret) before you execute the blueprint.
 
-## Install the operator and create a cluster
+## Install the Operator and Create a Cluster
 
 Edit cr.yaml and ensure the backup/storages section (line 443) is consistent with your s3 target, you may change : 
 - the region
