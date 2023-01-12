@@ -23,7 +23,7 @@ import (
 
 const (
 	requireLogLevelInfo        = true
-	ManifestTypeSnapshotFilter = "type:snapshot"
+	manifestTypeSnapshotFilter = "type:snapshot"
 )
 
 type SnapshotCreateCommandArgs struct {
@@ -146,7 +146,7 @@ type SnapListAllWithSnapIDsCommandArgs struct {
 func SnapListAllWithSnapIDs(cmdArgs SnapListAllWithSnapIDsCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
-	args = args.AppendLoggableKV(filterFlag, ManifestTypeSnapshotFilter)
+	args = args.AppendLoggableKV(filterFlag, manifestTypeSnapshotFilter)
 
 	return stringSliceCommand(args)
 }

@@ -20,26 +20,26 @@ import (
 )
 
 const (
-	// DataStoreGeneralContentCacheSizeMBVarName is the name of the environment variable that controls
+	// dataStoreGeneralContentCacheSizeMBVarName is the name of the environment variable that controls
 	// kopia content cache size for general command workloads
-	DataStoreGeneralContentCacheSizeMBVarName = "DATA_STORE_GENERAL_CONTENT_CACHE_SIZE_MB"
-	// DefaultDataStoreGeneralMetadataCacheSizeMB is the default metadata cache size for general command workloads
-	DefaultDataStoreGeneralMetadataCacheSizeMB = 500
-	// DataStoreGeneralMetadataCacheSizeMBVarName is the name of the environment variable that controls
+	dataStoreGeneralContentCacheSizeMBVarName = "DATA_STORE_GENERAL_CONTENT_CACHE_SIZE_MB"
+	// defaultDataStoreGeneralMetadataCacheSizeMB is the default metadata cache size for general command workloads
+	defaultDataStoreGeneralMetadataCacheSizeMB = 500
+	// dataStoreGeneralMetadataCacheSizeMBVarName is the name of the environment variable that controls
 	// kopia metadata cache size for general command workloads
-	DataStoreGeneralMetadataCacheSizeMBVarName = "DATA_STORE_GENERAL_METADATA_CACHE_SIZE_MB"
-	// DefaultDataStoreRestoreContentCacheSizeMB is the default content cache size for restore workloads
-	DefaultDataStoreRestoreContentCacheSizeMB = 500
-	// DefaultDataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
-	DefaultDataStoreGeneralContentCacheSizeMB = 0
-	// DataStoreRestoreContentCacheSizeMBVarName is the name of the environment variable that controls
+	dataStoreGeneralMetadataCacheSizeMBVarName = "DATA_STORE_GENERAL_METADATA_CACHE_SIZE_MB"
+	// defaultDataStoreRestoreContentCacheSizeMB is the default content cache size for restore workloads
+	defaultDataStoreRestoreContentCacheSizeMB = 500
+	// defaultDataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
+	defaultDataStoreGeneralContentCacheSizeMB = 0
+	// dataStoreRestoreContentCacheSizeMBVarName is the name of the environment variable that controls
 	// kopia content cache size for restore workloads
-	DataStoreRestoreContentCacheSizeMBVarName = "DATA_STORE_RESTORE_CONTENT_CACHE_SIZE_MB"
-	// DefaultDataStoreRestoreMetadataCacheSizeMB is the default metadata cache size for restore workloads
-	DefaultDataStoreRestoreMetadataCacheSizeMB = 500
-	// DataStoreRestoreMetadataCacheSizeMBVarName is the name of the environment variable that controls
+	dataStoreRestoreContentCacheSizeMBVarName = "DATA_STORE_RESTORE_CONTENT_CACHE_SIZE_MB"
+	// defaultDataStoreRestoreMetadataCacheSizeMB is the default metadata cache size for restore workloads
+	defaultDataStoreRestoreMetadataCacheSizeMB = 500
+	// dataStoreRestoreMetadataCacheSizeMBVarName is the name of the environment variable that controls
 	// kopia metadata cache size for restore workloads
-	DataStoreRestoreMetadataCacheSizeMBVarName = "DATA_STORE_RESTORE_METADATA_CACHE_SIZE_MB"
+	dataStoreRestoreMetadataCacheSizeMBVarName = "DATA_STORE_RESTORE_METADATA_CACHE_SIZE_MB"
 )
 
 type policyChanges map[string]string
@@ -48,15 +48,15 @@ type policyChanges map[string]string
 // for initializing repositories that will be performing general command workloads that benefit from
 // cacheing metadata only.
 func GetCacheSizeSettingsForSnapshot() (contentCacheMB, metadataCacheMB int) {
-	return utils.GetEnvAsIntOrDefault(DataStoreGeneralContentCacheSizeMBVarName, DefaultDataStoreGeneralContentCacheSizeMB),
-		utils.GetEnvAsIntOrDefault(DataStoreGeneralMetadataCacheSizeMBVarName, DefaultDataStoreGeneralMetadataCacheSizeMB)
+	return utils.GetEnvAsIntOrDefault(dataStoreGeneralContentCacheSizeMBVarName, defaultDataStoreGeneralContentCacheSizeMB),
+		utils.GetEnvAsIntOrDefault(dataStoreGeneralMetadataCacheSizeMBVarName, defaultDataStoreGeneralMetadataCacheSizeMB)
 }
 
 // GetCacheSizeSettingsForRestore returns the feature setting cache size values to be used
 // for initializing repositories that will be performing restore workloads
 func GetCacheSizeSettingsForRestore() (contentCacheMB, metadataCacheMB int) {
-	return utils.GetEnvAsIntOrDefault(DataStoreRestoreContentCacheSizeMBVarName, DefaultDataStoreRestoreContentCacheSizeMB),
-		utils.GetEnvAsIntOrDefault(DataStoreRestoreMetadataCacheSizeMBVarName, DefaultDataStoreRestoreMetadataCacheSizeMB)
+	return utils.GetEnvAsIntOrDefault(dataStoreRestoreContentCacheSizeMBVarName, defaultDataStoreRestoreContentCacheSizeMB),
+		utils.GetEnvAsIntOrDefault(dataStoreRestoreMetadataCacheSizeMBVarName, defaultDataStoreRestoreMetadataCacheSizeMB)
 }
 
 type GeneralCommandArgs struct {
