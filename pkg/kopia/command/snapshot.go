@@ -18,12 +18,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
-	requireLogLevelInfo = true
+	requireLogLevelInfo        = true
+	ManifestTypeSnapshotFilter = "type:snapshot"
 )
 
 type SnapshotCreateCommandArgs struct {
@@ -31,11 +31,12 @@ type SnapshotCreateCommandArgs struct {
 	PathToBackup           string
 	Tags                   []string
 	ProgressUpdateInterval time.Duration
+	Parallelism            int
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
 func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
-	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(kopia.DataStoreParallelUploadVarName, kopia.DefaultDataStoreParallelUpload))
+	parallelismStr := strconv.Itoa(cmdArgs.Parallelism)
 	args := commonArgs(cmdArgs.CommandArgs, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
@@ -145,7 +146,7 @@ type SnapListAllWithSnapIDsCommandArgs struct {
 func SnapListAllWithSnapIDs(cmdArgs SnapListAllWithSnapIDsCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
-	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
+	args = args.AppendLoggableKV(filterFlag, ManifestTypeSnapshotFilter)
 
 	return stringSliceCommand(args)
 }

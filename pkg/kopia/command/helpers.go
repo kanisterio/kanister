@@ -15,9 +15,31 @@
 package command
 
 import (
-	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/logsafe"
 	"github.com/kanisterio/kanister/pkg/utils"
+)
+
+const (
+	// DataStoreGeneralContentCacheSizeMBVarName is the name of the environment variable that controls
+	// kopia content cache size for general command workloads
+	DataStoreGeneralContentCacheSizeMBVarName = "DATA_STORE_GENERAL_CONTENT_CACHE_SIZE_MB"
+	// DefaultDataStoreGeneralMetadataCacheSizeMB is the default metadata cache size for general command workloads
+	DefaultDataStoreGeneralMetadataCacheSizeMB = 500
+	// DataStoreGeneralMetadataCacheSizeMBVarName is the name of the environment variable that controls
+	// kopia metadata cache size for general command workloads
+	DataStoreGeneralMetadataCacheSizeMBVarName = "DATA_STORE_GENERAL_METADATA_CACHE_SIZE_MB"
+	// DefaultDataStoreRestoreContentCacheSizeMB is the default content cache size for restore workloads
+	DefaultDataStoreRestoreContentCacheSizeMB = 500
+	// DefaultDataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
+	DefaultDataStoreGeneralContentCacheSizeMB = 0
+	// DataStoreRestoreContentCacheSizeMBVarName is the name of the environment variable that controls
+	// kopia content cache size for restore workloads
+	DataStoreRestoreContentCacheSizeMBVarName = "DATA_STORE_RESTORE_CONTENT_CACHE_SIZE_MB"
+	// DefaultDataStoreRestoreMetadataCacheSizeMB is the default metadata cache size for restore workloads
+	DefaultDataStoreRestoreMetadataCacheSizeMB = 500
+	// DataStoreRestoreMetadataCacheSizeMBVarName is the name of the environment variable that controls
+	// kopia metadata cache size for restore workloads
+	DataStoreRestoreMetadataCacheSizeMBVarName = "DATA_STORE_RESTORE_METADATA_CACHE_SIZE_MB"
 )
 
 type policyChanges map[string]string
@@ -26,15 +48,15 @@ type policyChanges map[string]string
 // for initializing repositories that will be performing general command workloads that benefit from
 // cacheing metadata only.
 func GetCacheSizeSettingsForSnapshot() (contentCacheMB, metadataCacheMB int) {
-	return utils.GetEnvAsIntOrDefault(kopia.DataStoreGeneralContentCacheSizeMBVarName, kopia.DefaultDataStoreGeneralContentCacheSizeMB),
-		utils.GetEnvAsIntOrDefault(kopia.DataStoreGeneralMetadataCacheSizeMBVarName, kopia.DefaultDataStoreGeneralMetadataCacheSizeMB)
+	return utils.GetEnvAsIntOrDefault(DataStoreGeneralContentCacheSizeMBVarName, DefaultDataStoreGeneralContentCacheSizeMB),
+		utils.GetEnvAsIntOrDefault(DataStoreGeneralMetadataCacheSizeMBVarName, DefaultDataStoreGeneralMetadataCacheSizeMB)
 }
 
 // GetCacheSizeSettingsForRestore returns the feature setting cache size values to be used
 // for initializing repositories that will be performing restore workloads
 func GetCacheSizeSettingsForRestore() (contentCacheMB, metadataCacheMB int) {
-	return utils.GetEnvAsIntOrDefault(kopia.DataStoreRestoreContentCacheSizeMBVarName, kopia.DefaultDataStoreRestoreContentCacheSizeMB),
-		utils.GetEnvAsIntOrDefault(kopia.DataStoreRestoreMetadataCacheSizeMBVarName, kopia.DefaultDataStoreRestoreMetadataCacheSizeMB)
+	return utils.GetEnvAsIntOrDefault(DataStoreRestoreContentCacheSizeMBVarName, DefaultDataStoreRestoreContentCacheSizeMB),
+		utils.GetEnvAsIntOrDefault(DataStoreRestoreMetadataCacheSizeMBVarName, DefaultDataStoreRestoreMetadataCacheSizeMB)
 }
 
 type GeneralCommandArgs struct {
