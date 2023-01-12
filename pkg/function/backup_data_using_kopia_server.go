@@ -170,7 +170,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		FunctionOutputVersion:              KopiaFuncVersion,
 	}
 	return output, nil
-
 }
 
 func backupDataUsingKopiaServer(
