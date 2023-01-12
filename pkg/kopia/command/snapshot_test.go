@@ -42,6 +42,7 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 					CommandArgs:            commandArgs,
 					PathToBackup:           "path/to/backup",
 					ProgressUpdateInterval: 0,
+					Parallelism:            8,
 				}
 				return SnapshotCreate(args)
 			},
@@ -53,6 +54,7 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 					CommandArgs:            commandArgs,
 					PathToBackup:           "path/to/backup",
 					ProgressUpdateInterval: 1*time.Minute + 35*time.Second,
+					Parallelism:            8,
 				}
 				return SnapshotCreate(args)
 			},
