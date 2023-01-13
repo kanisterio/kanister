@@ -151,7 +151,7 @@ actions:
       - func: KubeTask
         name: deleteFromS3Store
         args:
-          image: ghcr.io/kanisterio/kanister-tools:0.86.0
+          image: ghcr.io/kanisterio/kanister-tools:0.87.0
           namespace: "{{ .Namespace.Name }}"
           command:
             - bash
