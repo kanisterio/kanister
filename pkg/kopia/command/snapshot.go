@@ -15,9 +15,11 @@
 package command
 
 import (
+	"log"
 	"strconv"
 	"time"
 
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
@@ -37,6 +39,7 @@ type SnapshotCreateCommandArgs struct {
 // SnapshotCreate returns the kopia command for creation of a snapshot
 func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
 	parallelismStr := strconv.Itoa(cmdArgs.Parallelism)
+	log.Print("Parallelism", field.M{"Parallelism ----------> ": parallelismStr})
 	args := commonArgs(cmdArgs.CommandArgs, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
