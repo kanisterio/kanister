@@ -48,7 +48,7 @@ type Manager interface {
 	IngressPath(ctx context.Context, ns, releaseName string) (string, error)
 	// Create accepts an ingress in as runtime.Object and creates on the cluster
 	Create(ctx context.Context, ingress *unstructured.Unstructured, opts metav1.CreateOptions) (runtime.Object, error)
-	// Update accepts an ingress in as runtime.Object and updates it on the cluster
+	// Update accepts an ingress as a runtime.Object and updates it on the cluster
 	Update(ctx context.Context, ingress *unstructured.Unstructured, opts metav1.UpdateOptions) (runtime.Object, error)
 }
 
