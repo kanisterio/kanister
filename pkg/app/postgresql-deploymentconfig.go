@@ -46,6 +46,7 @@ type PostgreSQLDepConfig struct {
 	namespace      string
 	opeshiftClient openshift.OSClient
 	envVar         map[string]string
+	params         map[string]string
 	storageType    storage
 	// dbTemplateVersion will most probably match with the OCP version
 	dbTemplateVersion DBTemplate
@@ -57,6 +58,10 @@ func NewPostgreSQLDepConfig(name string, templateVersion DBTemplate, storageType
 		opeshiftClient: openshift.NewOpenShiftClient(),
 		envVar: map[string]string{
 			"POSTGRESQL_ADMIN_PASSWORD": "secretpassword",
+		},
+		params: map[string]string{
+			"POSTGRESQL_VERSION":  "13-el8",
+			"POSTGRESQL_DATABASE": "postgres",
 		},
 		storageType:       storageType,
 		dbTemplateVersion: templateVersion,
@@ -83,7 +88,7 @@ func (pgres *PostgreSQLDepConfig) Install(ctx context.Context, namespace string)
 
 	dbTemplate := getOpenShiftDBTemplate(postgresDepConfigName, pgres.dbTemplateVersion, pgres.storageType)
 
-	_, err := pgres.opeshiftClient.NewApp(ctx, pgres.namespace, dbTemplate, pgres.envVar, nil)
+	_, err := pgres.opeshiftClient.NewApp(ctx, pgres.namespace, dbTemplate, pgres.envVar, pgres.params)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing application %s on openshift cluster", pgres.name)
 	}
@@ -155,7 +160,7 @@ func (pgres *PostgreSQLDepConfig) Ping(ctx context.Context) error {
 }
 
 func (pgres *PostgreSQLDepConfig) Insert(ctx context.Context) error {
-	cmd := fmt.Sprintf("psql -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\"")
+	cmd := "psql -d test -c \"INSERT INTO COMPANY (NAME,AGE,CREATED_AT) VALUES ('foo', 32, now());\""
 	_, stderr, err := pgres.execCommand(ctx, []string{"bash", "-c", cmd})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create db in postgresql deployment config. %s", stderr)
@@ -173,7 +178,7 @@ func (pgres *PostgreSQLDepConfig) Count(ctx context.Context) (int, error) {
 
 	out := strings.Fields(stdout)
 	if len(out) < 4 {
-		return 0, fmt.Errorf("Unknown response for count query")
+		return 0, fmt.Errorf("unknown response for count query")
 	}
 	count, err := strconv.Atoi(out[2])
 	if err != nil {

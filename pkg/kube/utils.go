@@ -32,6 +32,12 @@ const (
 	FDRegionLabelName = "failure-domain.beta.kubernetes.io/region"
 	// TopologyRegionLabelName is a known k8s label. used to specify volume region for kubernetes 1.17 onwards
 	TopologyRegionLabelName = "topology.kubernetes.io/region"
+
+	// LocationSecretVolumeMountName is the name of location secret volume mount
+	LocationSecretVolumeMountName = "location-secret"
+	// LocationSecretMountPath is the path where location secret would be mounted
+	LocationSecretMountPath = "/mnt/secrets/location"
+	locationSecretNameKey   = "location"
 )
 
 // GetPodContainerFromDeployment returns a pod and container running the deployment

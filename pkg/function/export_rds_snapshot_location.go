@@ -60,7 +60,7 @@ const (
 	BackupAction  RDSAction = "backup"
 	RestoreAction RDSAction = "restore"
 
-	postgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.81.0"
+	postgresToolsImage = "ghcr.io/kanisterio/postgres-kanister-tools:0.87.0"
 )
 
 type exportRDSSnapshotToLocationFunc struct{}
@@ -288,7 +288,7 @@ func prepareCommand(ctx context.Context, dbEngine RDSDBEngine, action RDSAction,
 	return nil, "", errors.New("Invalid RDSDBEngine or RDSAction")
 }
 
-// nolint:unparam
+//nolint:unparam
 func postgresBackupCommand(dbEndpoint, username, password string, dbList []string, backupPrefix, backupID string, profile []byte) ([]string, error) {
 	if len(dbList) == 0 {
 		return nil, errors.New("No database found to backup")

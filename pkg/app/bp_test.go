@@ -36,15 +36,15 @@ var _ = Suite(&BlueprintSuite{})
 func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
 	for _, bp := range []*crv1alpha1.Blueprint{
 		// BP with no phase with image arg
-		&crv1alpha1.Blueprint{
+		{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "test-blueprint-",
 			},
 			Actions: map[string]*crv1alpha1.BlueprintAction{
-				"test": &crv1alpha1.BlueprintAction{
+				"test": {
 					Kind: "Deployment",
 					Phases: []crv1alpha1.BlueprintPhase{
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.KubeExecFuncName,
 							Name: "test-kube-exec",
 							Args: map[string]interface{}{
@@ -60,24 +60,24 @@ func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
 		},
 
 		// BP with multiple phases with image arg
-		&crv1alpha1.Blueprint{
+		{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "test-blueprint-",
 			},
 			Actions: map[string]*crv1alpha1.BlueprintAction{
-				"test": &crv1alpha1.BlueprintAction{
+				"test": {
 					Kind: "Deployment",
 					Phases: []crv1alpha1.BlueprintPhase{
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.KubeTaskFuncName,
 							Name: "test-kube-task",
 							Args: map[string]interface{}{
 								"namespace": "{{ .Deployment.Namespace }}",
-								"image":     "ghcr.io/image:v0.50.0",
+								"image":     "ghcr.io/kanisterio/image:v0.50.0",
 								"command":   []string{"echo", "hello"},
 							},
 						},
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.KubeTaskFuncName,
 							Name: "test-kube-task2",
 							Args: map[string]interface{}{
@@ -91,24 +91,24 @@ func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
 		},
 
 		// BP with multiple actions
-		&crv1alpha1.Blueprint{
+		{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "test-blueprint-",
 			},
 			Actions: map[string]*crv1alpha1.BlueprintAction{
-				"test": &crv1alpha1.BlueprintAction{
+				"test": {
 					Kind: "Deployment",
 					Phases: []crv1alpha1.BlueprintPhase{
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.KubeTaskFuncName,
 							Name: "test-kube-task",
 							Args: map[string]interface{}{
 								"namespace": "{{ .Deployment.Namespace }}",
-								"image":     "ghcr.io/image:v0.50.0",
+								"image":     "ghcr.io/kanisterio/image:v0.50.0",
 								"command":   []string{"echo", "hello"},
 							},
 						},
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.KubeTaskFuncName,
 							Name: "test-kube-task2",
 							Args: map[string]interface{}{
@@ -118,9 +118,9 @@ func (bs *BlueprintSuite) TestUpdateImageTags(c *C) {
 						},
 					},
 				},
-				"test2": &crv1alpha1.BlueprintAction{
+				"test2": {
 					Phases: []crv1alpha1.BlueprintPhase{
-						crv1alpha1.BlueprintPhase{
+						{
 							Func: function.PrepareDataFuncName,
 							Name: "test-prepare-data",
 							Args: map[string]interface{}{
@@ -153,9 +153,11 @@ func validateImageTags(c *C, bp *crv1alpha1.Blueprint) {
 			if !ok {
 				continue
 			}
-			// Verify if the tag is "v9.99.9-dev"
+			// Verify if image with prefix "ghcr.io/kanisterio" is tagged "v9.99.9-dev"
 			c.Log(fmt.Sprintf("phase:%s, image:%s", phase.Name, image.(string)))
-			c.Assert(strings.Split(image.(string), ":")[1], Equals, "v9.99.9-dev")
+			if strings.HasPrefix(image.(string), imagePrefix) {
+				c.Assert(strings.Split(image.(string), ":")[1], Equals, "v9.99.9-dev")
+			}
 			c.Assert(phase.Args["podOverride"], DeepEquals, podOverride)
 		}
 	}

@@ -109,10 +109,10 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 			GenerateName: "test-blueprint-",
 		},
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"test": &crv1alpha1.BlueprintAction{
+			"test": {
 				Kind: "Deployment",
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Func: function.KubeExecFuncName,
 						Name: "test-kube-exec",
 						Args: map[string]interface{}{
@@ -136,7 +136,7 @@ func (s *E2ESuite) TestKubeExec(c *C) {
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Name: "test",
 					Object: crv1alpha1.ObjectReference{
 						Kind:      "Deployment",
@@ -221,14 +221,14 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 			GenerateName: "test-blueprint-",
 		},
 		Actions: map[string]*crv1alpha1.BlueprintAction{
-			"test": &crv1alpha1.BlueprintAction{
+			"test": {
 				Kind: "Deployment",
 				Phases: []crv1alpha1.BlueprintPhase{
-					crv1alpha1.BlueprintPhase{
+					{
 						Func: function.KubeTaskFuncName,
 						Name: "test-kube-task",
 						Args: map[string]interface{}{
-							"image":     "ghcr.io/kanisterio/kanister-tools:0.81.0",
+							"image":     "ghcr.io/kanisterio/kanister-tools:0.87.0",
 							"namespace": "{{ .Deployment.Namespace }}",
 							"command":   []string{"echo", "default specs"},
 							"podOverride": map[string]interface{}{
@@ -256,7 +256,7 @@ func (s *E2ESuite) TestKubeTask(c *C) {
 		},
 		Spec: &crv1alpha1.ActionSetSpec{
 			Actions: []crv1alpha1.ActionSpec{
-				crv1alpha1.ActionSpec{
+				{
 					Name: "test",
 					Object: crv1alpha1.ObjectReference{
 						Kind:      "Deployment",

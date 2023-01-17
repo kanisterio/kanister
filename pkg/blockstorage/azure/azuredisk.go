@@ -1,3 +1,7 @@
+// TODO: Switch to using the latest azure sdk and remove nolint.
+// Related Ticket- https://github.com/kanisterio/kanister/issues/1684
+//
+//nolint:staticcheck
 package azure
 
 import (
@@ -335,7 +339,7 @@ const (
 var diskIDRe = regexp.MustCompile(diskIDRegEx)
 var snapIDRe = regexp.MustCompile(snapshotIDRegEx)
 
-// nolint:unparam
+//nolint:unparam
 func parseDiskID(id string) (subscription string, resourceGroup string, name string, err error) {
 	comps := diskIDRe.FindStringSubmatch(id)
 	if len(comps) != 4 {
@@ -344,7 +348,7 @@ func parseDiskID(id string) (subscription string, resourceGroup string, name str
 	return comps[1], comps[2], comps[3], nil
 }
 
-// nolint:unparam
+//nolint:unparam
 func parseSnapshotID(id string) (subscription string, resourceGroup string, name string, err error) {
 	comps := snapIDRe.FindStringSubmatch(id)
 	if len(comps) != 4 {

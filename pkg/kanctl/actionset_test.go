@@ -76,3 +76,32 @@ func (k *KanctlTestSuite) TestParseGenericObjectReference(c *C) {
 		c.Assert(a, DeepEquals, tc.expected)
 	}
 }
+
+func (k *KanctlTestSuite) TestGenerateActionSetName(c *C) {
+	var testCases = []struct {
+		actionName    string
+		actionSetName string
+		parentName    string
+		expected      string
+		expectedErr   error
+	}{
+		{actionName: "", actionSetName: "", parentName: "", expected: "", expectedErr: errMissingFieldActionName},
+		{actionName: "my-action", actionSetName: "", parentName: "", expected: "my-action-"},
+		{actionName: "my-action", actionSetName: "", parentName: "parent", expected: "my-action-parent-"},
+		{actionName: "", actionSetName: "", parentName: "parent", expected: "parent-"},
+		{actionName: "my-action", actionSetName: "my-override", parentName: "parent", expected: "my-override-"},
+		{actionName: "", actionSetName: "my-override", parentName: "", expected: "my-override-"},
+	}
+
+	for _, tc := range testCases {
+		params := &PerformParams{
+			ActionName:    tc.actionName,
+			ActionSetName: tc.actionSetName,
+			ParentName:    tc.parentName,
+		}
+
+		actual, err := generateActionSetName(params)
+		c.Assert(err, DeepEquals, tc.expectedErr)
+		c.Assert(actual, DeepEquals, tc.expected)
+	}
+}

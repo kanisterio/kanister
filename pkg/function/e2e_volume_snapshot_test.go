@@ -16,7 +16,6 @@ package function
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -358,7 +357,7 @@ func (s *VolumeSnapshotTestSuite) getCreds(c *C, ctx context.Context, cli kubern
 
 func getServiceKey(c *C) (string, error) {
 	filename := GetEnvOrSkip(c, blockstorage.GoogleCloudCreds)
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err
 	}

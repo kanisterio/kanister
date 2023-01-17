@@ -70,6 +70,7 @@ can use to define data operations for:
 - [MySQL on OpenShift using DeploymentConfig](./examples/mysql-deploymentconfig)
 - [PostgreSQL](./examples/postgresql)
 - [PostgreSQL on OpenShift using DeploymentConfig](./examples/postgresql-deploymentconfig)
+- [Redis](./examples/redis)
 
 The Kanister architecture is documented
 [here](https://docs.kanister.io/architecture.html).
@@ -78,6 +79,12 @@ The Kanister architecture is documented
 
 If you have any questions or run into issues, feel free to reach out to us on
 [Slack](https://kanisterio.slack.com).
+
+GitHub issues or pull requests that have been inactive for more than 60 days
+will be labeled as stale. If they remained inactive for another 30 days, they
+will be automatically closed. To be exempted from the issue lifecycle, discuss
+with a maintainer the reasons behind the exemption, and add the `frozen` label
+to the issue or pull request.
 
 If you discovered any security issues, refer to our [`SECURITY.md`](SECURITY.md)
 documentation for our security policy, including steps on how to report
@@ -90,7 +97,7 @@ UTC, where we discuss ongoing interesting features, issues, and pull requests.
 Come join us! Everyone is welcome! 🙌 (Zoom link is pinned on Slack)
 
 If you are currently using Kanister, we would love to hear about it! Feel free
-to add your organization to the [`ADOPTERS.md`](adopters.md) by submitting a
+to add your organization to the [`ADOPTERS.md`](ADOPTERS.md) by submitting a
 pull request.
 
 ## Code of Conduct
@@ -100,6 +107,7 @@ minutes to review our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Resources
 
+- [CNCF - Enhancing data protection workflows with Kanister and Argo workflows](https://youtu.be/nqfP1e9jeU4)
 - [CNCF - Kanister: Application-Level Data Protection on Kubneretes](https://youtu.be/GSgFwAHLziA)
 - [CNCF - Integrating Backup Into Your GitOps CI/CD Pipeline](https://www.youtube.com/watch?v=2zik5jDjVvM)
 - [DoK - Kanister & Kopia: An Open-Source Data Protection Match Made in Heaven](https://www.youtube.com/watch?v=hN8sn3A_oEs)

@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: Switch to using the latest azure sdk and remove nolint.
+// Related Ticket- https://github.com/kanisterio/kanister/issues/168
+//
+//nolint:staticcheck
 package azure
 
 import (
@@ -96,17 +100,39 @@ func NewClient(ctx context.Context, config map[string]string) (*Client, error) {
 	}, nil
 }
 
-// nolint:unparam
+//nolint:unparam
 func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
+	if isClientCredsAvailable(config) {
+		return getClientCredsAuthorizer(env, config)
+	} else if isMSICredsAvailable(config) {
+		return getMSIsAuthorizer(config)
+	}
+	return nil, errors.New("Missing credentials, or credential type not supported")
+}
+
+func getClientCredsAuthorizer(env azure.Environment, config map[string]string) (*autorest.BearerAuthorizer, error) {
 	credConfig, err := getCredConfig(env, config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get Azure ClientCredentialsConfig")
+		return nil, errors.Wrap(err, "Failed to get Azure Client Credentials Config")
 	}
 	a, err := credConfig.Authorizer()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get Azure authorizer")
+		return nil, errors.Wrap(err, "Failed to get Azure Client Credentials authorizer")
 	}
+	ba, ok := a.(*autorest.BearerAuthorizer)
+	if !ok {
+		return nil, errors.New("Failed to get Azure authorizer")
+	}
+	return ba, nil
+}
 
+func getMSIsAuthorizer(config map[string]string) (*autorest.BearerAuthorizer, error) {
+	msiConfig := auth.NewMSIConfig()
+	msiConfig.ClientID = config[blockstorage.AzureClientID]
+	a, err := msiConfig.Authorizer()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get Azure MSI authorizer")
+	}
 	ba, ok := a.(*autorest.BearerAuthorizer)
 	if !ok {
 		return nil, errors.New("Failed to get Azure authorizer")
@@ -115,22 +141,11 @@ func getAuthorizer(env azure.Environment, config map[string]string) (*autorest.B
 }
 
 func getCredConfig(env azure.Environment, config map[string]string) (auth.ClientCredentialsConfig, error) {
-	tenantID, ok := config[blockstorage.AzureTenantID]
-	if !ok {
-		return auth.ClientCredentialsConfig{}, errors.New("Cannot get tenantID from config")
+	credConfig, err := getCredConfigForAuth(config)
+	if err != nil {
+		return auth.ClientCredentialsConfig{}, err
 	}
-
-	clientID, ok := config[blockstorage.AzureCientID]
-	if !ok {
-		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientID from config")
-	}
-
-	clientSecret, ok := config[blockstorage.AzureClentSecret]
-	if !ok {
-		return auth.ClientCredentialsConfig{}, errors.New("Cannot get clientSecret from config")
-	}
-
-	credConfig := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
+	var ok bool
 	if credConfig.AADEndpoint, ok = config[blockstorage.AzureActiveDirEndpoint]; !ok || credConfig.AADEndpoint == "" {
 		credConfig.AADEndpoint = env.ActiveDirectoryEndpoint
 		config[blockstorage.AzureActiveDirEndpoint] = credConfig.AADEndpoint

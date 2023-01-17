@@ -41,6 +41,8 @@ type IsMasterOutput struct {
 	Ismaster bool `json:"ismaster"`
 }
 
+var _ HelmApp = &MongoDB{}
+
 type MongoDB struct {
 	cli       kubernetes.Interface
 	namespace string
@@ -50,7 +52,7 @@ type MongoDB struct {
 }
 
 // Last tested working version "9.0.0"
-func NewMongoDB(name string) App {
+func NewMongoDB(name string) HelmApp {
 	return &MongoDB{
 		username: "root",
 		name:     name,
@@ -61,13 +63,18 @@ func NewMongoDB(name string) App {
 			Chart:    "mongodb",
 			Values: map[string]string{
 				"architecture":     "replicaset",
-				"image.registry":   "ghcr.io",
-				"image.repository": "kanisterio/mongodb",
-				"image.tag":        "v9.99.9-dev",
 				"image.pullPolicy": "Always",
 			},
 		},
 	}
+}
+
+func (mongo *MongoDB) Chart() *helm.ChartInfo {
+	return &mongo.chart
+}
+
+func (mongo *MongoDB) SetChart(chart helm.ChartInfo) {
+	mongo.chart = chart
 }
 
 func (mongo *MongoDB) Init(ctx context.Context) error {
@@ -94,7 +101,7 @@ func (mongo *MongoDB) Install(ctx context.Context, namespace string) error {
 	}
 
 	log.Print("Installing application using helm.", field.M{"app": mongo.name})
-	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.chart.Release, mongo.namespace, mongo.chart.Values)
+	err = cli.Install(ctx, fmt.Sprintf("%s/%s", mongo.chart.RepoName, mongo.chart.Chart), mongo.chart.Version, mongo.chart.Release, mongo.namespace, mongo.chart.Values, true)
 	if err != nil {
 		return err
 	}
@@ -143,7 +150,7 @@ func (mongo *MongoDB) GetClusterScopedResources(ctx context.Context) []crv1alpha
 
 func (mongo *MongoDB) Ping(ctx context.Context) error {
 	log.Print("Pinging the application.", field.M{"app": mongo.name})
-	pingCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.secondaryOk(); db\"", mongo.username)}
+	pingCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db\"", mongo.username)}
 	_, stderr, err := mongo.execCommand(ctx, pingCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while pinging the mongodb application %s", stderr)
@@ -151,7 +158,7 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 
 	// even after ping is successful, it takes some time for primary pod to becomd the master
 	// we will have to wait for that so that the write subsequent write requests wont fail.
-	isMasterCMD := []string{"sh", "-c", fmt.Sprintf(" mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"JSON.stringify(db.isMaster())\"", mongo.username)}
+	isMasterCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"JSON.stringify(db.isMaster())\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, isMasterCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s checking if the pod is master.", stderr)
@@ -173,7 +180,7 @@ func (mongo *MongoDB) Ping(ctx context.Context) error {
 
 func (mongo *MongoDB) Insert(ctx context.Context) error {
 	log.Print("Inserting documents into collection.", field.M{"app": mongo.name})
-	insertCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.insert({'_id': '%s','name' : 'Tom', 'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.username, uuid.New())}
+	insertCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.insertOne({'_id': '%s','name' : 'Tom', 'cuisine' : 'Hawaiian', 'id' : '8675309'})\"", mongo.username, uuid.New())}
 	_, stderr, err := mongo.execCommand(ctx, insertCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error %s while inserting data data into mongodb collection.", stderr)
@@ -182,9 +189,10 @@ func (mongo *MongoDB) Insert(ctx context.Context) error {
 	log.Print("Insertion of documents into collection was successful.", field.M{"app": mongo.name})
 	return nil
 }
+
 func (mongo *MongoDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting documents of collection.", field.M{"app": mongo.name})
-	countCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"rs.secondaryOk(); db.restaurants.count()\"", mongo.username)}
+	countCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.countDocuments()\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, countCMD)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error %s while counting the data in mongodb collection.", stderr)
@@ -203,7 +211,7 @@ func (mongo *MongoDB) Reset(ctx context.Context) error {
 	// delete all the entries from the restaurants collection
 	// we are not deleting the database because we are dealing with admin database here
 	// and deletion admin database is prohibited
-	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongo admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.drop()\"", mongo.username)}
+	deleteDBCMD := []string{"sh", "-c", fmt.Sprintf("mongosh admin --authenticationDatabase admin -u %s -p $MONGODB_ROOT_PASSWORD --quiet --eval \"db.restaurants.drop()\"", mongo.username)}
 	stdout, stderr, err := mongo.execCommand(ctx, deleteDBCMD)
 	return errors.Wrapf(err, "Error %s, resetting the mongodb application. stdout is %s", stderr, stdout)
 }

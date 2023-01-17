@@ -27,7 +27,7 @@ import (
 	"strings"
 	"sync"
 
-	customresource "github.com/kanisterio/kanister/pkg/customresource"
+	"github.com/kanisterio/kanister/pkg/customresource"
 	"github.com/pkg/errors"
 	"gopkg.in/tomb.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -146,9 +146,14 @@ func (c *Controller) onAdd(obj interface{}) {
 	o = o.DeepCopyObject()
 	switch v := o.(type) {
 	case *crv1alpha1.ActionSet:
-		if err := c.onAddActionSet(v); err != nil {
-			log.Error().WithError(err).Print("Callback onAddActionSet() failed")
-		}
+		t, ctx := c.LoadOrStoreTomb(context.Background(), v.Name)
+		t.Go(func() error {
+			if err := c.onAddActionSet(ctx, t, v); err != nil {
+				log.Error().WithError(err).Print("Callback onAddActionSet() failed")
+			}
+			return nil
+		})
+
 	case *crv1alpha1.Blueprint:
 		c.onAddBlueprint(v)
 	default:
@@ -191,32 +196,28 @@ func (c *Controller) onDelete(obj interface{}) {
 	}
 }
 
-func (c *Controller) onAddActionSet(as *crv1alpha1.ActionSet) error {
-	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), v1.GetOptions{})
-	if err != nil {
-		return errors.WithStack(err)
-	}
+func (c *Controller) onAddActionSet(ctx context.Context, t *tomb.Tomb, as *crv1alpha1.ActionSet) error {
 	if err := validate.ActionSet(as); err != nil {
 		return err
 	}
 	if as.Status == nil {
-		c.initActionSetStatus(as)
+		c.initActionSetStatus(ctx, as)
 	}
-	as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(context.TODO(), as.GetName(), v1.GetOptions{})
+	as, err := c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), v1.GetOptions{})
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	if err := validate.ActionSet(as); err != nil {
+	if err = validate.ActionSet(as); err != nil {
 		return err
 	}
-	return c.handleActionSet(as)
+	return c.handleActionSet(ctx, t, as)
 }
 
 func (c *Controller) onAddBlueprint(bp *crv1alpha1.Blueprint) {
 	c.logAndSuccessEvent(context.TODO(), fmt.Sprintf("Added blueprint %s", bp.GetName()), "Added", bp)
 }
 
-// nolint:unparam
+//nolint:unparam
 func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error {
 	ctx := field.Context(context.Background(), consts.ActionsetNameKey, newAS.GetName())
 	// adding labels with prefix "kanister.io/" in the context as field for better logging
@@ -252,17 +253,18 @@ func (c *Controller) onUpdateActionSet(oldAS, newAS *crv1alpha1.ActionSet) error
 		return nil
 	}
 	return reconcile.ActionSet(context.TODO(), c.crClient.CrV1alpha1(), newAS.GetNamespace(), newAS.GetName(), func(ras *crv1alpha1.ActionSet) error {
+		ras.Status.Progress.RunningPhase = ""
 		ras.Status.State = crv1alpha1.StateComplete
 		return nil
 	})
 }
 
-// nolint:unparam
+//nolint:unparam
 func (c *Controller) onUpdateBlueprint(oldBP, newBP *crv1alpha1.Blueprint) {
 	log.Print("Updated Blueprint", field.M{"BlueprintName": newBP.Name})
 }
 
-// nolint:unparam
+//nolint:unparam
 func (c *Controller) onDeleteActionSet(as *crv1alpha1.ActionSet) error {
 	asName := as.GetName()
 	log.Print("Deleted ActionSet", field.M{"ActionSetName": asName})
@@ -283,8 +285,7 @@ func (c *Controller) onDeleteBlueprint(bp *crv1alpha1.Blueprint) {
 	log.Print("Deleted Blueprint ", field.M{"BlueprintName": bp.GetName()})
 }
 
-func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
-	ctx := context.Background()
+func (c *Controller) initActionSetStatus(ctx context.Context, as *crv1alpha1.ActionSet) {
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	if as.Spec == nil {
 		log.Error().WithContext(ctx).Print("Cannot initialize an ActionSet without a spec.")
@@ -294,10 +295,20 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 	actions := make([]crv1alpha1.ActionStatus, 0, len(as.Spec.Actions))
 	var err error
 	for _, a := range as.Spec.Actions {
+		if a.Blueprint == "" {
+			// TODO: If no blueprint is specified, we should consider a default.
+			err = errors.New("Blueprint is not specified for action")
+			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Blueprint not specified", err, as)
+			break
+		}
+		var bp *crv1alpha1.Blueprint
+		if bp, err = c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, v1.GetOptions{}); err != nil {
+			err = errors.Wrap(err, "Failed to query blueprint")
+			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Error", err, as)
+			break
+		}
 		var actionStatus *crv1alpha1.ActionStatus
-		actionStatus, err = c.initialActionStatus(as.GetNamespace(), a)
-		if err != nil {
-			bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, v1.GetOptions{})
+		if actionStatus, err = c.initialActionStatus(a, bp); err != nil {
 			reason := fmt.Sprintf("ActionSetFailed Action: %s", a.Name)
 			c.logAndErrorEvent(ctx, "Could not get initial action:", reason, err, as, bp)
 			break
@@ -306,6 +317,7 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 	}
 	if err != nil {
 		as.Status.State = crv1alpha1.StateFailed
+		as.Status.Progress.RunningPhase = ""
 		as.Status.Error = crv1alpha1.Error{
 			Message: err.Error(),
 		}
@@ -318,15 +330,7 @@ func (c *Controller) initActionSetStatus(as *crv1alpha1.ActionSet) {
 	}
 }
 
-func (c *Controller) initialActionStatus(namespace string, a crv1alpha1.ActionSpec) (*crv1alpha1.ActionStatus, error) {
-	if a.Blueprint == "" {
-		// TODO: If no blueprint is specified, we should consider a default.
-		return nil, errors.New("Blueprint not specified")
-	}
-	bp, err := c.crClient.CrV1alpha1().Blueprints(namespace).Get(context.TODO(), a.Blueprint, v1.GetOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to query blueprint")
-	}
+func (c *Controller) initialActionStatus(a crv1alpha1.ActionSpec, bp *crv1alpha1.Blueprint) (*crv1alpha1.ActionStatus, error) {
 	bpa, ok := bp.Actions[a.Name]
 	if !ok {
 		return nil, errors.Errorf("Action %s for object kind %s not found in blueprint %s", a.Name, a.Object.Kind, a.Blueprint)
@@ -357,7 +361,7 @@ func (c *Controller) initialActionStatus(namespace string, a crv1alpha1.ActionSp
 	return actionStatus, nil
 }
 
-func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
+func (c *Controller) handleActionSet(ctx context.Context, t *tomb.Tomb, as *crv1alpha1.ActionSet) (err error) {
 	if as.Status == nil {
 		return errors.New("ActionSet was not initialized")
 	}
@@ -365,10 +369,9 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 		return nil
 	}
 	as.Status.State = crv1alpha1.StateRunning
-	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(context.TODO(), as, v1.UpdateOptions{}); err != nil {
+	if as, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{}); err != nil {
 		return errors.WithStack(err)
 	}
-	ctx := context.Background()
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	// adding labels with prefix "kanister.io/" in the context as field for better logging
 	for key, value := range as.GetLabels() {
@@ -385,36 +388,50 @@ func (c *Controller) handleActionSet(as *crv1alpha1.ActionSet) (err error) {
 		}
 	}()
 
-	for i := range as.Status.Actions {
-		if err = c.runAction(ctx, as, i); err != nil {
+	for i, a := range as.Status.Actions {
+		var bp *crv1alpha1.Blueprint
+		if bp, err = c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, a.Blueprint, v1.GetOptions{}); err != nil {
+			err = errors.Wrap(err, "Failed to query blueprint")
+			c.logAndErrorEvent(ctx, "Could not get blueprint:", "Error", err, as)
+			break
+		}
+		if err = c.runAction(ctx, t, as, i, bp); err != nil {
 			// If runAction returns an error, it is a failure in the synchronous
 			// part of running the action.
-			bpName := as.Spec.Actions[i].Blueprint
-			bp, _ := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, bpName, v1.GetOptions{})
-			reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Status.Actions[i].Name)
+			reason := fmt.Sprintf("ActionSetFailed Action: %s", a.Name)
 			c.logAndErrorEvent(ctx, fmt.Sprintf("Failed to launch Action %s:", as.GetName()), reason, err, as, bp)
-			as.Status.State = crv1alpha1.StateFailed
-			as.Status.Error = crv1alpha1.Error{
-				Message: err.Error(),
-			}
-			as.Status.Actions[i].Phases[0].State = crv1alpha1.StateFailed
-			_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{})
-			return errors.WithStack(err)
+			a.Phases[0].State = crv1alpha1.StateFailed
+			break
 		}
+	}
+	if err != nil {
+		as.Status.State = crv1alpha1.StateFailed
+		as.Status.Progress.RunningPhase = ""
+		as.Status.Error = crv1alpha1.Error{
+			Message: err.Error(),
+		}
+		_, err = c.crClient.CrV1alpha1().ActionSets(as.GetNamespace()).Update(ctx, as, v1.UpdateOptions{})
+		return errors.WithStack(err)
 	}
 	log.WithContext(ctx).Print("Created actionset and started executing actions", field.M{"NewActionSetName": as.GetName()})
 	return nil
 }
 
-// nolint:gocognit
-func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aIDX int) error {
+func (c *Controller) LoadOrStoreTomb(ctx context.Context, asName string) (*tomb.Tomb, context.Context) {
+	var t *tomb.Tomb
+	if v, ok := c.actionSetTombMap.Load(asName); ok {
+		t = v.(*tomb.Tomb)
+		return t, ctx
+	}
+	t, ctx = tomb.WithContext(ctx)
+	c.actionSetTombMap.Store(asName, t)
+	return t, ctx
+}
+
+//nolint:gocognit
+func (c *Controller) runAction(ctx context.Context, t *tomb.Tomb, as *crv1alpha1.ActionSet, aIDX int, bp *crv1alpha1.Blueprint) error {
 	action := as.Spec.Actions[aIDX]
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing action %s", action.Name), "Started Action", as)
-	bpName := as.Spec.Actions[aIDX].Blueprint
-	bp, err := c.crClient.CrV1alpha1().Blueprints(as.GetNamespace()).Get(ctx, bpName, v1.GetOptions{})
-	if err != nil {
-		return errors.WithStack(err)
-	}
 	tp, err := param.New(ctx, c.clientset, c.dynClient, c.crClient, c.osClient, action)
 	if err != nil {
 		return err
@@ -431,21 +448,18 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 		return err
 	}
 
-	ns, name := as.GetNamespace(), as.GetName()
-	var t *tomb.Tomb
-	t, ctx = tomb.WithContext(ctx)
-	c.actionSetTombMap.Store(as.Name, t)
 	ctx = field.Context(ctx, consts.ActionsetNameKey, as.GetName())
 	t.Go(func() error {
 		var coreErr error
 		defer func() {
 			var deferErr error
 			if deferPhase != nil {
+				c.updateActionSetRunningPhase(ctx, as, deferPhase.Name())
 				deferErr = c.executeDeferPhase(ctx, deferPhase, tp, bp, action.Name, aIDX, as)
 			}
 			// render artifacts only if all the phases are run successfully
 			if deferErr == nil && coreErr == nil {
-				c.renderActionsetArtifacts(ctx, as, aIDX, ns, name, action.Name, bp, tp, coreErr, deferErr)
+				c.renderActionsetArtifacts(ctx, as, aIDX, as.Namespace, as.Name, action.Name, bp, tp, coreErr, deferErr)
 			}
 		}()
 
@@ -456,6 +470,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			var output map[string]interface{}
 			var msg string
 			if err == nil {
+				c.updateActionSetRunningPhase(ctx, as, p.Name())
 				output, err = p.Exec(ctx, *bp, action.Name, *tp)
 			} else {
 				msg = fmt.Sprintf("Failed to init phase params: %#v:", as.Status.Actions[aIDX].Phases[i])
@@ -464,6 +479,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 			if err != nil {
 				coreErr = err
 				rf = func(ras *crv1alpha1.ActionSet) error {
+					ras.Status.Progress.RunningPhase = ""
 					ras.Status.State = crv1alpha1.StateFailed
 					ras.Status.Error = crv1alpha1.Error{
 						Message: err.Error(),
@@ -481,7 +497,7 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 				}
 			}
 
-			if rErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), ns, name, rf); rErr != nil {
+			if rErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), as.Namespace, as.Name, rf); rErr != nil {
 				reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
 				msg := fmt.Sprintf("Failed to update phase: %#v:", as.Status.Actions[aIDX].Phases[i])
 				c.logAndErrorEvent(ctx, msg, reason, rErr, as, bp)
@@ -506,6 +522,19 @@ func (c *Controller) runAction(ctx context.Context, as *crv1alpha1.ActionSet, aI
 	return nil
 }
 
+// updateActionSetRunningPhase updates the actionset's `status.Progress.RunningPhase` with the phase name
+// that is being run currently. It doesn't fail if there was a problem updating the actionset. It just logs
+// the failure.
+func (c *Controller) updateActionSetRunningPhase(ctx context.Context, as *crv1alpha1.ActionSet, phase string) {
+	err := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), as.Namespace, as.Name, func(as *crv1alpha1.ActionSet) error {
+		as.Status.Progress.RunningPhase = phase
+		return nil
+	})
+	if err != nil {
+		log.Error().WithError(err).Print("Failed to update actionset with running phase")
+	}
+}
+
 // executeDeferPhase executes the phase provided as a deferPhase in the blueprint action.
 // deferPhase, if provided, must be run at the end of the blueprint action, irrespective of the
 // statuses of the other phases. ActionSet `status.state` is going to be `complete` IFF all the
@@ -524,10 +553,11 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 	ctx = field.Context(ctx, consts.PhaseNameKey, as.Status.Actions[aIDX].DeferPhase.Name)
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Executing deferPhase %s", as.Status.Actions[aIDX].DeferPhase.Name), "Started deferPhase", as)
 
-	output, err := deferPhase.Exec(context.Background(), *bp, actionName, *tp)
+	output, err := deferPhase.Exec(ctx, *bp, actionName, *tp)
 	var rf func(*crv1alpha1.ActionSet) error
 	if err != nil {
 		rf = func(as *crv1alpha1.ActionSet) error {
+			as.Status.Progress.RunningPhase = ""
 			as.Status.State = crv1alpha1.StateFailed
 			as.Status.Error = crv1alpha1.Error{
 				Message: err.Error(),
@@ -543,7 +573,7 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 		}
 	}
 	var msg string
-	if rErr := reconcile.ActionSet(context.Background(), c.crClient.CrV1alpha1(), actionsetNS, actionsetName, rf); rErr != nil {
+	if rErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), actionsetNS, actionsetName, rf); rErr != nil {
 		reason := fmt.Sprintf("ActionSetFailed Action: %s", as.Spec.Actions[aIDX].Name)
 		msg := fmt.Sprintf("Failed to update defer phase: %#v:", as.Status.Actions[aIDX].DeferPhase)
 		c.logAndErrorEvent(ctx, msg, reason, rErr, as, bp)
@@ -560,7 +590,7 @@ func (c *Controller) executeDeferPhase(ctx context.Context,
 	}
 
 	c.logAndSuccessEvent(ctx, fmt.Sprintf("Completed deferPhase %s", as.Status.Actions[aIDX].DeferPhase.Name), "Ended deferPhase", as)
-	param.UpdateDeferPhaseParams(context.Background(), tp, output)
+	param.UpdateDeferPhaseParams(ctx, tp, output)
 	return nil
 }
 
@@ -577,6 +607,8 @@ func (c *Controller) renderActionsetArtifacts(ctx context.Context,
 	if len(artTpls) == 0 {
 		// No artifacts, set ActionSetStatus to complete
 		if rErr := reconcile.ActionSet(ctx, c.crClient.CrV1alpha1(), actionsetNS, actionsetName, func(ras *crv1alpha1.ActionSet) error {
+			// actionset execution is done, set the RunningPhase to empty string
+			ras.Status.Progress.RunningPhase = ""
 			if coreErr == nil && deferErr == nil {
 				ras.Status.State = crv1alpha1.StateComplete
 			} else {
@@ -597,6 +629,7 @@ func (c *Controller) renderActionsetArtifacts(ctx context.Context,
 	if err != nil {
 		af = func(ras *crv1alpha1.ActionSet) error {
 			ras.Status.State = crv1alpha1.StateFailed
+			ras.Status.Progress.RunningPhase = ""
 			ras.Status.Error = crv1alpha1.Error{
 				Message: err.Error(),
 			}
@@ -605,6 +638,8 @@ func (c *Controller) renderActionsetArtifacts(ctx context.Context,
 	} else {
 		af = func(ras *crv1alpha1.ActionSet) error {
 			ras.Status.Actions[aIDX].Artifacts = arts
+			// actionset execution is done and artifacts are rendered, set the RunningPhase to empty string
+			ras.Status.Progress.RunningPhase = ""
 			// make sure that the core phases that were run also didnt return any error
 			// and then set actionset's state to be complete
 			if coreErr == nil && deferErr == nil {
