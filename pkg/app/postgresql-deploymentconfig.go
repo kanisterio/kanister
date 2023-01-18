@@ -46,6 +46,7 @@ type PostgreSQLDepConfig struct {
 	namespace      string
 	opeshiftClient openshift.OSClient
 	envVar         map[string]string
+	params         map[string]string
 	storageType    storage
 	// dbTemplateVersion will most probably match with the OCP version
 	dbTemplateVersion DBTemplate
@@ -57,6 +58,10 @@ func NewPostgreSQLDepConfig(name string, templateVersion DBTemplate, storageType
 		opeshiftClient: openshift.NewOpenShiftClient(),
 		envVar: map[string]string{
 			"POSTGRESQL_ADMIN_PASSWORD": "secretpassword",
+		},
+		params: map[string]string{
+			"POSTGRESQL_VERSION":  "13-el8",
+			"POSTGRESQL_DATABASE": "postgres",
 		},
 		storageType:       storageType,
 		dbTemplateVersion: templateVersion,
@@ -83,7 +88,7 @@ func (pgres *PostgreSQLDepConfig) Install(ctx context.Context, namespace string)
 
 	dbTemplate := getOpenShiftDBTemplate(postgresDepConfigName, pgres.dbTemplateVersion, pgres.storageType)
 
-	_, err := pgres.opeshiftClient.NewApp(ctx, pgres.namespace, dbTemplate, pgres.envVar, nil)
+	_, err := pgres.opeshiftClient.NewApp(ctx, pgres.namespace, dbTemplate, pgres.envVar, pgres.params)
 	if err != nil {
 		return errors.Wrapf(err, "Error installing application %s on openshift cluster", pgres.name)
 	}
