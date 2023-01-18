@@ -34,7 +34,7 @@ jobs:
         project: Kanister
         column: To Be Triaged
   pull-requests:
-    if: github.repository == 'kanisterio/kanister' && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
+    if: github.repository == 'kanisterio/kanister' && github.event_name == 'pull_request'
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
