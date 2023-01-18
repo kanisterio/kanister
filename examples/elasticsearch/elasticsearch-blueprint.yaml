@@ -18,7 +18,7 @@ actions:
           namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.85.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.87.0"
         command:
         - bash
         - -o
@@ -48,7 +48,7 @@ actions:
           namespace: "{{ .StatefulSet.Namespace }}"
       args:
         namespace: "{{ .StatefulSet.Namespace }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.85.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.87.0"
         command:
         - bash
         - -o
@@ -69,7 +69,7 @@ actions:
       name: deleteFromObjectStore
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: "ghcr.io/kanisterio/es-sidecar:0.85.0"
+        image: "ghcr.io/kanisterio/es-sidecar:0.87.0"
         command:
         - bash
         - -o
