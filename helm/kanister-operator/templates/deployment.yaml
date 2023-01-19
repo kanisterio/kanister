@@ -39,3 +39,10 @@ spec:
         resources:
 {{ toYaml .Values.resources | indent 12 }}
 {{- end }}
+      - name: {{ template "repository-server-controller.name" . }}
+        image: {{ .Values.repositoryServerImage.repository }}:{{ .Values.repositoryServerImage.tag }}
+        imagePullPolicy: {{ .Values.repositoryServerImage.pullPolicy }}
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 12 }}
+{{- end }}

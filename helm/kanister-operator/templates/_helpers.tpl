@@ -24,6 +24,16 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 {{- end -}}
 
+{{/*Create a default repository server controller name
+*/}}
+{{- define "repository-server-controller.name" -}}
+{{- if .Values.repoServerControllerName -}}
+{{- .Values.repoServerControllerName | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default "repository-server-controller"}}
+{{- end -}}
+{{- end -}}
+
 {{/*
 Create chart name and version as used by the chart label.
 */}}
