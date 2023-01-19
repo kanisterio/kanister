@@ -24,8 +24,8 @@ func (h *RepoServerHandler) createOrConnectKopiaRepository() error {
 		CacheDirectory: defaultCacheDirectory,
 		Hostname:       h.RepositoryServer.Spec.Repository.Hostname,
 		// TODO(Amruta) : check what should be contentCacheMB,metadataCacheMB
-		ContentCacheMB:  kopia.DefaultDataStoreGeneralContentCacheSizeMB,
-		MetadataCacheMB: kopia.DefaultDataStoreGeneralMetadataCacheSizeMB,
+		ContentCacheMB:  kopia.GetDataStoreGeneralContentCacheSize(nil),
+		MetadataCacheMB: kopia.GetDataStoreGeneralMetadataCacheSize(nil),
 		Username:        h.RepositoryServer.Spec.Repository.Username,
 		// TODO(Amruta): Generate path for respository
 		RepoPathPrefix: h.RepositoryServer.Spec.Repository.RootPath,
