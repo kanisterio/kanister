@@ -33,32 +33,32 @@ type repositoryServerSecrets struct {
 }
 
 // getSecretsFromCR fetches all the secrets in the RepositoryServer CR
-func (h *RepoServerHandler) getSecretsFromCR() error {
+func (h *RepoServerHandler) getSecretsFromCR(ctx context.Context) error {
 	// TODO: For now, users should make sure all the secrets and the RepositoryServer CR are present in the
 	//  same namespace. This namespace field can be overriden when we start creating secrets using 'kanctl' utility
 	repositoryServer := h.RepositoryServer
 	h.Logger.Info("Fetching secrets from all the secretReferences in the CR")
-	storage, err := h.fetchSecret(h.Ctx, repositoryServer.Spec.Storage.SecretRef)
+	storage, err := h.fetchSecret(ctx, repositoryServer.Spec.Storage.SecretRef)
 	if err != nil {
 		return err
 	}
-	storageCredentials, err := h.fetchSecret(h.Ctx, repositoryServer.Spec.Storage.CredentialSecretRef)
+	storageCredentials, err := h.fetchSecret(ctx, repositoryServer.Spec.Storage.CredentialSecretRef)
 	if err != nil {
 		return err
 	}
-	repositoryPassword, err := h.fetchSecret(h.Ctx, repositoryServer.Spec.Repository.PasswordSecretRef)
+	repositoryPassword, err := h.fetchSecret(ctx, repositoryServer.Spec.Repository.PasswordSecretRef)
 	if err != nil {
 		return err
 	}
-	serverAdmin, err := h.fetchSecret(h.Ctx, repositoryServer.Spec.Server.AdminSecretRef)
+	serverAdmin, err := h.fetchSecret(ctx, repositoryServer.Spec.Server.AdminSecretRef)
 	if err != nil {
 		return err
 	}
-	serverTLS, err := h.fetchSecret(h.Ctx, repositoryServer.Spec.Server.TLSSecretRef)
+	serverTLS, err := h.fetchSecret(ctx, repositoryServer.Spec.Server.TLSSecretRef)
 	if err != nil {
 		return err
 	}
-	serverUserAccess, err := h.fetchSecret(h.Ctx, repositoryServer.Spec.Server.UserAccess.UserAccessSecretRef)
+	serverUserAccess, err := h.fetchSecret(ctx, repositoryServer.Spec.Server.UserAccess.UserAccessSecretRef)
 	if err != nil {
 		return err
 	}

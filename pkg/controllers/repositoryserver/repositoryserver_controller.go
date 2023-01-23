@@ -58,8 +58,6 @@ type RepositoryServerReconciler struct {
 func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	// TODO(user): your logic here
-
 	cnf, err := ctrl.GetConfig()
 	if err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "Failed to get k8s config")
@@ -85,7 +83,7 @@ func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
 		return ctrl.Result{}, err
 	}
-	if err := repoServerHandler.CreateOrUpdateOwnedResources(); err != nil {
+	if err := repoServerHandler.CreateOrUpdateOwnedResources(ctx); err != nil {
 		logger.Info("Setting the CR status as 'ServerStopped' since an error occurred in create/update event")
 		repoServerHandler.RepositoryServer.Status.Progress = crkanisteriov1alpha1.ServerStopped
 		if err = r.Status().Update(ctx, repoServerHandler.RepositoryServer); err != nil {
@@ -110,7 +108,6 @@ func newRepositoryServerHandler(
 	kubeCli kubernetes.Interface,
 	repositoryServer *crkanisteriov1alpha1.RepositoryServer) RepoServerHandler {
 	return RepoServerHandler{
-		Ctx:              ctx,
 		Req:              req,
 		Logger:           logger,
 		Reconciler:       reconciler,
