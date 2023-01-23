@@ -437,4 +437,3 @@ actions:
           curl -k -u "elastic:$PASSWORD" -X DELETE "${ES_URL}/_snapshot/k10_repo/$SNAPSHOT_NAME?pretty"
           echo "Deletion of $SNAPSHOT_NAME was successful"
   
-
