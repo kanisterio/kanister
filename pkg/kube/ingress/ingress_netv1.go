@@ -58,6 +58,16 @@ func (i *NetworkingV1) Create(ctx context.Context, ingress *unstructured.Unstruc
 	return i.kubeCli.NetworkingV1().Ingresses(ing.Namespace).Create(ctx, &ing, opts)
 }
 
+// Update can be used to update an ingress resource in networking v1 apiVersion
+func (i *NetworkingV1) Update(ctx context.Context, ingress *unstructured.Unstructured, opts metav1.UpdateOptions) (runtime.Object, error) {
+	var ing netv1.Ingress
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(ingress.UnstructuredContent(), &ing)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed converting runtime.Object to networking/v1 ingress")
+	}
+	return i.kubeCli.NetworkingV1().Ingresses(ing.Namespace).Update(ctx, &ing, opts)
+}
+
 // IngressPath can be used to get the backend path that is specified in the
 // ingress resource in `ns` namespace and name `releaseName-ingress`
 func (i *NetworkingV1) IngressPath(ctx context.Context, ns, releaseName string) (string, error) {
