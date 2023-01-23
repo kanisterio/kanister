@@ -220,6 +220,10 @@ you can also check events of the actionset
 $ kubectl describe actionset restore-backup-llfb8-64gqm -n kasten-io
 ```
 
+If you want to get only the logs created by the Kubetask function you can 
+- Temporary replace `- +x` bash option by `- -x` in the blueprint
+- Use this command to get only the output of the kubetask pod `kubectl logs -n kasten-io -l component=kanister --tail=10000 -f | ggrep '"LogKind":"datapath"' | ggrep -o -P '(?<="Pod_Out":").*?(?=",)'`
+
 ## Uninstalling the elasticsearch cluster
 
 To uninstall/delete the `quickstart` cluster:
