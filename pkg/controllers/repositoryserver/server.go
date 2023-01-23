@@ -19,7 +19,7 @@ const (
 	serverAdminUserNameKey = "username"
 	serverAdminPasswordKey = "password"
 	// DefaultServerStartTimeout is default time to create context for Kopia API Server Status Command
-	DefaultServerStartTimeout = 120 * time.Second
+	DefaultServerStartTimeout = 600 * time.Second
 )
 
 func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error) {
