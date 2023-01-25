@@ -15,6 +15,7 @@
     - [Client-side Setup](#client-side-setup)
     - [Server Access Users Management](#server-access-users-management)
   - [Secrets Management](#secrets-management)
+    - [Validation of Secrets](#secrets-validation)
 <!-- /toc -->
 
 This document proposes all the high-level changes required within Kanister to
@@ -599,3 +600,40 @@ credentials. This model ensures Kanister remains free from a hard dependency on
 any crypto packages, and vault-like functionalities.
 
 If misplaced, Kanister will not be able to recover these credentials.
+
+#### secrets-validation
+Approaches:
+
+1. Use `kanctl` to validate the secrets before they are created
+`kanctl` has a utility to validate resources. A new resource under `kanctl validate` command for secrets will be added. The command will also have a flag to validate what secret we need to validate.
+eg: `kanctl validate --name secret -v <secret-name>`
+The `metadata.type` in the secret will be used by `kanctl` cmd to decide which schema to use for validating secrets. For example,
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+   name: repository-monitoring-server-admin
+   namespace: kanister
+   labels:
+      repo.kanister.io/target-namespace: monitoring
+type: secrets.kanister.io/kopia-repository/password
+data:
+   username: <redacted>
+   password: <redacted>
+```
+
+The validating schema will be of following types:
+- `secrets.kanister.io/kopia-repository/password`
+- `secrets.kanister.io/kopia-repository/serveradmin`
+- `secrets.kanister.io/kopia-repository/serveruser`
+- `secrets.kanister.io/azure-location`
+- `secrets.kanister.io/gcp-location`
+- `secrets.kanister.io/aws-location`
+- `kubernetes.io/tls`
+- `secrets.kanister.io/aws`
+- `secrets.kanister.io/azure`
+- `secrets.kanister.io/gcp`
+
+2. Use admission controller to validate the secrets
+    We already have a validation webhook configured to validate the blueprint. We can add another endpoint which validates the secret. We will differentiate the repository server secrets with other secrets by using a kubernetes label
