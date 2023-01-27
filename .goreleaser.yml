@@ -50,6 +50,9 @@ dockers:
   dockerfile: 'docker/tools/Dockerfile'
   build_flag_templates:
   - "--build-arg=kan_tools_version={{ .Tag }}"
+# Refers to https://github.com/kopia/kopia/commit/f8be8f6a5698edba055291b138c117ec6eaae125
+  - "--build-arg=kopiaBuildCommit=f8be8f6"
+  - "--build-arg=kopiaRepoOrg=kopia"
   extra_files:
   - 'LICENSE'
 - ids:
@@ -57,11 +60,6 @@ dockers:
   image_templates:
   - 'ghcr.io/kanisterio/postgres-kanister-tools:{{ .Tag }}'
   dockerfile: 'docker/postgres-kanister-tools/Dockerfile'
-- ids:
-  - kando
-  image_templates:
-  - 'ghcr.io/kanisterio/postgres-tools-9.6:{{ .Tag }}'
-  dockerfile: 'docker/postgres-tools-9.6/Dockerfile'
 - image_templates:
   - 'ghcr.io/kanisterio/postgresql:{{ .Tag }}'
   dockerfile: 'docker/postgresql/Dockerfile'

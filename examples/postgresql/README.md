@@ -10,10 +10,10 @@ Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment
 
 ## Prerequisites
 
-- Kubernetes 1.10+
+- Kubernetes 1.20+
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.83.0 installed in your cluster
-- Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
+- Kanister controller version 0.88.0 installed in your cluster
+- Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## Installing the Chart
 To install the chart with the release name `my-release`:
@@ -34,7 +34,7 @@ In case, if you don't have `Kanister` installed already, you can use following c
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
-$ helm install kanister --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=0.83.0
+$ helm install kanister --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=0.88.0
 ```
 
 ## Integrating with Kanister
@@ -141,8 +141,8 @@ $ kanctl create actionset --action backup --namespace kanister --blueprint postg
 actionset backup-llfb8 created
 
 $ kubectl --namespace kanister get actionsets.cr.kanister.io
-NAME           AGE
-backup-glptq   38s
+NAME           PROGRESS   LAST TRANSITION TIME   STATE
+backup-glptq   100.00     2022-12-08T18:14:09Z   complete
 
 # View the status of the actionset
 $ kubectl --namespace kanister describe actionset backup-glptq
@@ -197,12 +197,22 @@ $ kanctl --namespace kanister create actionset --action restore --from backup-gl
 actionset restore-backup-glptq-6jzt4 created
 
 ## Check status
-$ kubectl --namespace kanister describe actionset restore-backup-glptq-6jzt4
+$ kubectl --namespace kanister get actionset restore-backup-glptq-6jzt4
+NAME                         PROGRESS   LAST TRANSITION TIME   STATE
+restore-backup-glptq-6jzt4   100.00     2022-12-08T18:16:50Z   complete
 ```
 
 Once the ActionSet status is set to "complete", you can see that the data has been successfully restored to PostgreSQL
 
 ```bash
+## Log in into postgresql container and get shell access
+$ kubectl exec -ti my-release-postgresql-0 -n postgres-test -- bash
+
+## use psql cli to add entries in postgresql database
+$ PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres
+psql (11.5)
+Type "help" for help.
+
 postgres=# \l
                                   List of databases
    Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges
@@ -231,11 +241,13 @@ test=# select * from company;
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kanister create actionset --action delete --from backup-glptq
+$ kanctl --namespace kanister create actionset --action delete --from backup-glptq --namespacetargets kanister
 actionset delete-backup-glptq-cq6bw created
 
 # View the status of the ActionSet
-$ kubectl --namespace kanister describe actionset delete-backup-glptq-cq6bw
+$ kubectl --namespace kanister get actionset delete-backup-glptq-cq6bw
+NAME                         PROGRESS   LAST TRANSITION TIME   STATE
+delete-backup-glptq-cq6bw    100.00     2022-12-08T18:16:50Z   complete
 ```
 
 ## Troubleshooting
@@ -264,7 +276,7 @@ $ helm delete my-release -n postgres-test
 ```
 
 ### Delete CRs
-Remove Blueprint and Profile CR
+Remove Blueprint, Profile CR and ActionSet
 
 ```bash
 $ kubectl delete blueprints.cr.kanister.io postgres-bp -n kanister
@@ -272,5 +284,8 @@ $ kubectl delete blueprints.cr.kanister.io postgres-bp -n kanister
 $ kubectl get profiles.cr.kanister.io -n postgres-test
 NAME               AGE
 s3-profile-7d6wt   17m
+
 $ kubectl delete profiles.cr.kanister.io ss3-profile-7d6w -n postgres-test
+
+$ kubectl delete actionset backup-glptq restore-backup-glptq-6jzt4 delete-backup-glptq-cq6bw -n kanister
 ```
