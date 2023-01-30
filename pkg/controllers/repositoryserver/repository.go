@@ -13,7 +13,7 @@ const (
 	defaultCacheDirectory     = "/tmp/cache.dir"
 )
 
-func (h *RepoServerHandler) createOrConnectKopiaRepository() error {
+func (h *RepoServerHandler) connectToKopiaRepository() error {
 
 	args := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
@@ -32,6 +32,6 @@ func (h *RepoServerHandler) createOrConnectKopiaRepository() error {
 		Location:       h.RepositoryServerSecrets.storage.Data,
 	}
 
-	return repository.ConnectToOrCreateKopiaRepository(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, args)
+	return repository.ConnectToKopiaRepository(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, args)
 
 }
