@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/kanisterio/kanister/pkg/format"
@@ -99,7 +100,11 @@ func (h *RepoServerHandler) checkServerStatus(ctx context.Context, serverAddress
 			Fingerprint:    fingerprint,
 		})
 
-	ctx, cancel := context.WithTimeout(ctx, DefaultServerStartTimeout)
+	serverStartTimeOut, err := h.getRepositoryServerStartTimeout()
+	if err != nil {
+
+	}
+	ctx, cancel := context.WithTimeout(ctx, serverStartTimeOut)
 	defer cancel()
 	return WaitTillCommandSucceed(ctx, h.KubeCli, cmd, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName)
 }
@@ -215,4 +220,17 @@ func (h *RepoServerHandler) refreshServer(ctx context.Context, serverAddress, us
 		errors.Wrap(err, "Failed to refresh Kopia API server")
 	}
 	return nil
+}
+
+func (h *RepoServerHandler) getRepositoryServerStartTimeout() (time.Duration, error) {
+	serverStartTimeoutEnv := os.Getenv("KOPIA_SERVER_START_TIMEOUT")
+	if serverStartTimeoutEnv != "" {
+		serverStartTimeout, err := time.ParseDuration(serverStartTimeoutEnv)
+		if err != nil {
+			h.Logger.Info("Error parsing env variable", err)
+			return DefaultServerStartTimeout, nil
+		}
+		return serverStartTimeout * time.Second, nil
+	}
+	return DefaultServerStartTimeout, nil
 }
