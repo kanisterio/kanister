@@ -209,7 +209,7 @@ API_DOCS_CMD = "gen-crd-api-reference-docs		\
 			-api-dir ./pkg/apis/cr/v1alpha1	\
 			-template-dir /usr/local/bin/template \
 			-out-file API.md				\
-	   			"
+	   	"
 
 crd_docs:
 ifeq ($(DOCKER_BUILD),"true")
