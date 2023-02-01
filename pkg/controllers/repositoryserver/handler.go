@@ -62,7 +62,7 @@ func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) er
 	if err := h.waitForPodReady(ctx, pod); err != nil {
 		return err
 	}
-	if err := h.ConnectKopiaRepository(); err != nil {
+	if err := h.connectToKopiaRepository(); err != nil {
 		return err
 	}
 

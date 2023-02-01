@@ -13,7 +13,7 @@ const (
 	defaultCacheDirectory     = "/tmp/cache.dir"
 )
 
-func (h *RepoServerHandler) ConnectKopiaRepository() error {
+func (h *RepoServerHandler) connectToKopiaRepository() error {
 
 	args := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
