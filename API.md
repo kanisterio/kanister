@@ -5,9 +5,9 @@
 </li>
 </ul>
 <h2 id="cr/v1alpha1">cr/v1alpha1</h2>
-<div>
+<p>
 <p>Package v1alpha1 is the v1alpha1 version of the API.</p>
-</div>
+</p>
 Resource Types:
 <ul><li>
 <a href="#cr/v1alpha1.ActionSet">ActionSet</a>
@@ -18,9 +18,9 @@ Resource Types:
 </li></ul>
 <h3 id="cr/v1alpha1.ActionSet">ActionSet
 </h3>
-<div>
+<p>
 <p>ActionSet describes kanister actions.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -50,7 +50,7 @@ string
 <td>
 <code>metadata</code><br/>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#objectmeta-v1-meta">
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#objectmeta-v1-meta">
 Kubernetes meta/v1.ObjectMeta
 </a>
 </em>
@@ -70,6 +70,9 @@ ActionSetSpec
 </em>
 </td>
 <td>
+<p>Spec defines the specification for the actionset.
+The specification includes a list of Actions to be performed. Each Action includes details
+about the referenced Blueprint and other objects used to perform the defined action.</p>
 <br/>
 <br/>
 <table>
@@ -86,15 +89,16 @@ ActionSetStatus
 </em>
 </td>
 <td>
+<p>Status refers to the current status of the Kanister actions.</p>
 </td>
 </tr>
 </tbody>
 </table>
 <h3 id="cr/v1alpha1.Blueprint">Blueprint
 </h3>
-<div>
+<p>
 <p>Blueprint describes kanister actions.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -124,7 +128,7 @@ string
 <td>
 <code>metadata</code><br/>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#objectmeta-v1-meta">
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#objectmeta-v1-meta">
 Kubernetes meta/v1.ObjectMeta
 </a>
 </em>
@@ -138,21 +142,23 @@ Refer to the Kubernetes API documentation for the fields of the
 <td>
 <code>actions</code><br/>
 <em>
-<a href="#cr/v1alpha1.BlueprintAction">
-map[string]*github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1.BlueprintAction
+<a href="#cr/v1alpha1.*./pkg/apis/cr/v1alpha1.BlueprintAction">
+map[string]*./pkg/apis/cr/v1alpha1.BlueprintAction
 </a>
 </em>
 </td>
 <td>
+<p>Actions is the list of actions constructing the Blueprint.</p>
 </td>
 </tr>
 </tbody>
 </table>
 <h3 id="cr/v1alpha1.Profile">Profile
 </h3>
-<div>
-<p>Profile</p>
-</div>
+<p>
+<p>Profile captures information about a storage location for backup artifacts and
+corresponding credentials, that will be made available to a Blueprint phase.</p>
+</p>
 <table>
 <thead>
 <tr>
@@ -182,7 +188,7 @@ string
 <td>
 <code>metadata</code><br/>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#objectmeta-v1-meta">
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#objectmeta-v1-meta">
 Kubernetes meta/v1.ObjectMeta
 </a>
 </em>
@@ -202,6 +208,7 @@ Location
 </em>
 </td>
 <td>
+<p>Location provides the information about the object storage that is going to be used by Kanister to upload the backup objects.</p>
 </td>
 </tr>
 <tr>
@@ -214,6 +221,7 @@ Credential
 </em>
 </td>
 <td>
+<p>Credential represents the credentials associated with the Location.</p>
 </td>
 </tr>
 <tr>
@@ -224,6 +232,9 @@ bool
 </em>
 </td>
 <td>
+<p>SkipSSLVerify is a boolean that specifies whether skipping SSL verification
+is allowed when operating with the Location.
+If omitted from the CR definition, it defaults to false</p>
 </td>
 </tr>
 </tbody>
@@ -231,11 +242,12 @@ bool
 <h3 id="cr/v1alpha1.ActionProgress">ActionProgress
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.ActionSetStatus">ActionSetStatus</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.ActionSetStatus">ActionSetStatus</a>)
 </p>
-<div>
+<p>
 <p>ActionProgress provides information on the progress of an action.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -244,6 +256,17 @@ bool
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<code>runningPhase</code><br/>
+<em>
+string
+</em>
+</td>
+<td>
+<p>RunningPhase represents which phase of the action is being run</p>
+</td>
+</tr>
 <tr>
 <td>
 <code>percentCompleted</code><br/>
@@ -260,7 +283,7 @@ against the the total number of phases.</p>
 <td>
 <code>lastTransitionTime</code><br/>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#time-v1-meta">
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#time-v1-meta">
 Kubernetes meta/v1.Time
 </a>
 </em>
@@ -275,11 +298,12 @@ was received.</p>
 <h3 id="cr/v1alpha1.ActionSetSpec">ActionSetSpec
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.ActionSet">ActionSet</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.ActionSet">ActionSet</a>)
 </p>
-<div>
+<p>
 <p>ActionSetSpec is the specification for the actionset.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -298,6 +322,7 @@ was received.</p>
 </em>
 </td>
 <td>
+<p>Actions represents a list of Actions that need to be performed by the actionset.</p>
 </td>
 </tr>
 </tbody>
@@ -305,11 +330,12 @@ was received.</p>
 <h3 id="cr/v1alpha1.ActionSetStatus">ActionSetStatus
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.ActionSet">ActionSet</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.ActionSet">ActionSet</a>)
 </p>
-<div>
+<p>
 <p>ActionSetStatus is the status for the actionset. This should only be updated by the controller.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -328,6 +354,8 @@ State
 </em>
 </td>
 <td>
+<p>State represents the current state of the actionset.
+There are four possible values: &ldquo;Pending&rdquo;, &ldquo;Running&rdquo;, &ldquo;Failed&rdquo;, and &ldquo;Complete&rdquo;.</p>
 </td>
 </tr>
 <tr>
@@ -340,6 +368,7 @@ State
 </em>
 </td>
 <td>
+<p>Actions list represents the latest available observations of the current state of all the actions.</p>
 </td>
 </tr>
 <tr>
@@ -352,6 +381,7 @@ Error
 </em>
 </td>
 <td>
+<p>Error contains the detailed error message of an actionset failure.</p>
 </td>
 </tr>
 <tr>
@@ -364,6 +394,9 @@ ActionProgress
 </em>
 </td>
 <td>
+<p>Progress provides information on the progress of a running actionset.
+This includes the percentage of completion of an actionset and the phase that is
+currently being executed.</p>
 </td>
 </tr>
 </tbody>
@@ -371,11 +404,12 @@ ActionProgress
 <h3 id="cr/v1alpha1.ActionSpec">ActionSpec
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.ActionSetSpec">ActionSetSpec</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.ActionSetSpec">ActionSetSpec</a>)
 </p>
-<div>
+<p>
 <p>ActionSpec is the specification for a single Action.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -424,7 +458,7 @@ string
 <code>artifacts</code><br/>
 <em>
 <a href="#cr/v1alpha1.Artifact">
-map[string]github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1.Artifact
+map[string]./pkg/apis/cr/v1alpha1.Artifact
 </a>
 </em>
 </td>
@@ -437,7 +471,7 @@ map[string]github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1.Artifact
 <code>configMaps</code><br/>
 <em>
 <a href="#cr/v1alpha1.ObjectReference">
-map[string]github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1.ObjectReference
+map[string]./pkg/apis/cr/v1alpha1.ObjectReference
 </a>
 </em>
 </td>
@@ -450,7 +484,7 @@ map[string]github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1.ObjectReference
 <code>secrets</code><br/>
 <em>
 <a href="#cr/v1alpha1.ObjectReference">
-map[string]github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1.ObjectReference
+map[string]./pkg/apis/cr/v1alpha1.ObjectReference
 </a>
 </em>
 </td>
@@ -515,11 +549,12 @@ to be executed for this action</p>
 <h3 id="cr/v1alpha1.ActionStatus">ActionStatus
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.ActionSetStatus">ActionSetStatus</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.ActionSetStatus">ActionSetStatus</a>)
 </p>
-<div>
+<p>
 <p>ActionStatus is updated as we execute phases.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -581,7 +616,7 @@ string
 <code>artifacts</code><br/>
 <em>
 <a href="#cr/v1alpha1.Artifact">
-map[string]github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1.Artifact
+map[string]./pkg/apis/cr/v1alpha1.Artifact
 </a>
 </em>
 </td>
@@ -608,11 +643,14 @@ irrespective of the status of other phases in the action</p>
 <h3 id="cr/v1alpha1.Artifact">Artifact
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.ActionSpec">ActionSpec</a>, <a href="#cr/v1alpha1.ActionStatus">ActionStatus</a>, <a href="#cr/v1alpha1.BlueprintAction">BlueprintAction</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.ActionSpec">ActionSpec</a>, 
+<a href="#cr/v1alpha1.ActionStatus">ActionStatus</a>, 
+<a href="#cr/v1alpha1.BlueprintAction">BlueprintAction</a>)
 </p>
-<div>
+<p>
 <p>Artifact tracks objects produced by an action.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -629,6 +667,7 @@ map[string]string
 </em>
 </td>
 <td>
+<p>KeyValue represents key-value pair artifacts produced by the action.</p>
 </td>
 </tr>
 <tr>
@@ -648,11 +687,8 @@ produced as a JSON string by kando command in phases of an action.</p>
 <h3 id="cr/v1alpha1.BlueprintAction">BlueprintAction
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.Blueprint">Blueprint</a>)
-</p>
-<div>
 <p>BlueprintAction describes the set of phases that constitute an action.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -669,6 +705,7 @@ string
 </em>
 </td>
 <td>
+<p>Name contains the name of the action.</p>
 </td>
 </tr>
 <tr>
@@ -679,6 +716,7 @@ string
 </em>
 </td>
 <td>
+<p>Kind contains the resource on which this action has to be performed.</p>
 </td>
 </tr>
 <tr>
@@ -689,6 +727,7 @@ string
 </em>
 </td>
 <td>
+<p>ConfigMapNames is used to specify the config map names that can be used later in the action phases.</p>
 </td>
 </tr>
 <tr>
@@ -699,6 +738,7 @@ string
 </em>
 </td>
 <td>
+<p>List of Kubernetes secret names used in action phases.</p>
 </td>
 </tr>
 <tr>
@@ -709,6 +749,7 @@ string
 </em>
 </td>
 <td>
+<p>InputArtifactNames is the list of Artifact names that were set from previous action and can be consumed in the current action.</p>
 </td>
 </tr>
 <tr>
@@ -716,11 +757,12 @@ string
 <code>outputArtifacts</code><br/>
 <em>
 <a href="#cr/v1alpha1.Artifact">
-map[string]github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1.Artifact
+map[string]./pkg/apis/cr/v1alpha1.Artifact
 </a>
 </em>
 </td>
 <td>
+<p>OutputArtifacts is the map of rendered artifacts produced by the BlueprintAction.</p>
 </td>
 </tr>
 <tr>
@@ -733,6 +775,7 @@ map[string]github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1.Artifact
 </em>
 </td>
 <td>
+<p>Phases is the list of BlueprintPhases which are invoked in order when executing this action.</p>
 </td>
 </tr>
 <tr>
@@ -745,6 +788,9 @@ BlueprintPhase
 </em>
 </td>
 <td>
+<p>DeferPhase is invoked after the execution of Phases that are defined for an action.
+A DeferPhase is executed regardless of the statuses of the other phases of the action.
+A DeferPhase can be used for cleanup operations at the end of an action.</p>
 </td>
 </tr>
 </tbody>
@@ -752,11 +798,12 @@ BlueprintPhase
 <h3 id="cr/v1alpha1.BlueprintPhase">BlueprintPhase
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.BlueprintAction">BlueprintAction</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.BlueprintAction">BlueprintAction</a>)
 </p>
-<div>
+<p>
 <p>BlueprintPhase is a an individual unit of execution.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -773,6 +820,7 @@ string
 </em>
 </td>
 <td>
+<p>Func is the name of a registered Kanister function.</p>
 </td>
 </tr>
 <tr>
@@ -783,6 +831,7 @@ string
 </em>
 </td>
 <td>
+<p>Name contains name of the phase.</p>
 </td>
 </tr>
 <tr>
@@ -790,11 +839,13 @@ string
 <code>objects</code><br/>
 <em>
 <a href="#cr/v1alpha1.ObjectReference">
-map[string]github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1.ObjectReference
+map[string]./pkg/apis/cr/v1alpha1.ObjectReference
 </a>
 </em>
 </td>
 <td>
+<p>ObjectRefs represents a map of references to the Kubernetes objects that
+can later be used in the <code>Args</code> of the function.</p>
 </td>
 </tr>
 <tr>
@@ -805,6 +856,7 @@ map[string]interface{}
 </em>
 </td>
 <td>
+<p>Args represents a map of named arguments that the controller will pass to the Kanister function.</p>
 </td>
 </tr>
 </tbody>
@@ -812,11 +864,12 @@ map[string]interface{}
 <h3 id="cr/v1alpha1.Credential">Credential
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.Profile">Profile</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.Profile">Profile</a>)
 </p>
-<div>
+<p>
 <p>Credential</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -835,6 +888,7 @@ CredentialType
 </em>
 </td>
 <td>
+<p>Type represents the information about how the credentials are provided for the respective object storage.</p>
 </td>
 </tr>
 <tr>
@@ -847,6 +901,7 @@ KeyPair
 </em>
 </td>
 <td>
+<p>KeyPair represents the key-value map used for the Credential of Type KeyPair.</p>
 </td>
 </tr>
 <tr>
@@ -859,6 +914,7 @@ ObjectReference
 </em>
 </td>
 <td>
+<p>Secret represents the Kubernetes Secret Object used for the Credential of Type Secret.</p>
 </td>
 </tr>
 <tr>
@@ -871,18 +927,20 @@ KopiaServerSecret
 </em>
 </td>
 <td>
+<p>KopiaServerSecret represents the secret being used by Credential of Type Kopia.</p>
 </td>
 </tr>
 </tbody>
 </table>
 <h3 id="cr/v1alpha1.CredentialType">CredentialType
-(<code>string</code> alias)</h3>
+(<code>string</code> alias)</p></h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.Credential">Credential</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.Credential">Credential</a>)
 </p>
-<div>
+<p>
 <p>CredentialType</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -901,10 +959,12 @@ KopiaServerSecret
 <h3 id="cr/v1alpha1.Error">Error
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.ActionSetStatus">ActionSetStatus</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.ActionSetStatus">ActionSetStatus</a>)
 </p>
-<div>
-</div>
+<p>
+<p>Error represents an error that occurred when executing an actionset.</p>
+</p>
 <table>
 <thead>
 <tr>
@@ -921,26 +981,29 @@ string
 </em>
 </td>
 <td>
+<p>Message is the actual error message that is displayed in case of errors.</p>
 </td>
 </tr>
 </tbody>
 </table>
 <h3 id="cr/v1alpha1.JSONMap">JSONMap
-(<code>map[string]interface{}</code> alias)</h3>
+(<code>map[string]interface{}</code> alias)</p></h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.ActionSpec">ActionSpec</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.ActionSpec">ActionSpec</a>)
 </p>
-<div>
+<p>
 <p>JSONMap contains PodOverride specs.</p>
-</div>
+</p>
 <h3 id="cr/v1alpha1.KeyPair">KeyPair
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.Credential">Credential</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.Credential">Credential</a>)
 </p>
-<div>
+<p>
 <p>KeyPair</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -957,6 +1020,7 @@ string
 </em>
 </td>
 <td>
+<p>IDField specifies the corresponding key in the secret where the AWS Key ID value is stored.</p>
 </td>
 </tr>
 <tr>
@@ -967,6 +1031,7 @@ string
 </em>
 </td>
 <td>
+<p>SecretField specifies the corresponding key in the secret where the AWS Secret Key value is stored.</p>
 </td>
 </tr>
 <tr>
@@ -979,6 +1044,7 @@ ObjectReference
 </em>
 </td>
 <td>
+<p>Secret represents a Kubernetes Secret object storing the KeyPair credentials.</p>
 </td>
 </tr>
 </tbody>
@@ -986,11 +1052,12 @@ ObjectReference
 <h3 id="cr/v1alpha1.KopiaServerSecret">KopiaServerSecret
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.Credential">Credential</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.Credential">Credential</a>)
 </p>
-<div>
+<p>
 <p>KopiaServerSecret contains credentials to connect to Kopia server</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -1007,6 +1074,7 @@ string
 </em>
 </td>
 <td>
+<p>Username represents the username used to connect to the Kopia Server.</p>
 </td>
 </tr>
 <tr>
@@ -1017,6 +1085,7 @@ string
 </em>
 </td>
 <td>
+<p>Hostname represents the hostname used to connect to the Kopia Server.</p>
 </td>
 </tr>
 <tr>
@@ -1029,6 +1098,7 @@ KopiaServerSecretRef
 </em>
 </td>
 <td>
+<p>UserPassphrase is the user password used to connect to the Kopia Server.</p>
 </td>
 </tr>
 <tr>
@@ -1041,6 +1111,7 @@ KopiaServerSecretRef
 </em>
 </td>
 <td>
+<p>TLSCert is the certificate used to connect to the Kopia Server.</p>
 </td>
 </tr>
 <tr>
@@ -1051,6 +1122,7 @@ map[string]int
 </em>
 </td>
 <td>
+<p>ConnectOptions represents a map of options which can be used to connect to the Kopia Server.</p>
 </td>
 </tr>
 </tbody>
@@ -1058,11 +1130,12 @@ map[string]int
 <h3 id="cr/v1alpha1.KopiaServerSecretRef">KopiaServerSecretRef
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.KopiaServerSecret">KopiaServerSecret</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.KopiaServerSecret">KopiaServerSecret</a>)
 </p>
-<div>
+<p>
 <p>KopiaServerSecretRef refers to K8s secrets containing Kopia creds</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -1079,6 +1152,8 @@ string
 </em>
 </td>
 <td>
+<p>Key represents the corresponding key in the secret where the required
+credential or certificate value is stored.</p>
 </td>
 </tr>
 <tr>
@@ -1091,6 +1166,7 @@ ObjectReference
 </em>
 </td>
 <td>
+<p>Secret is the K8s secret object where the creds related to the Kopia Server are stored.</p>
 </td>
 </tr>
 </tbody>
@@ -1098,11 +1174,12 @@ ObjectReference
 <h3 id="cr/v1alpha1.Location">Location
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.Profile">Profile</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.Profile">Profile</a>)
 </p>
-<div>
+<p>
 <p>Location</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -1121,6 +1198,9 @@ LocationType
 </em>
 </td>
 <td>
+<p>Type specifies the kind of object storage that would be used to upload the
+backup objects. Currently supported values are: &ldquo;GCS&rdquo;, &ldquo;S3Compliant&rdquo;,
+and &ldquo;Azure&rdquo;.</p>
 </td>
 </tr>
 <tr>
@@ -1131,6 +1211,7 @@ string
 </em>
 </td>
 <td>
+<p>Bucket represents the bucket on the object storage where the backup is uploaded.</p>
 </td>
 </tr>
 <tr>
@@ -1141,6 +1222,7 @@ string
 </em>
 </td>
 <td>
+<p>Endpoint specifies the endpoint where the object storage is accessible at.</p>
 </td>
 </tr>
 <tr>
@@ -1151,6 +1233,8 @@ string
 </em>
 </td>
 <td>
+<p>Prefix is the string that would be prepended to the object path in the
+bucket where the backup objects are uploaded.</p>
 </td>
 </tr>
 <tr>
@@ -1161,18 +1245,20 @@ string
 </em>
 </td>
 <td>
+<p>Region represents the region of the bucket specified above.</p>
 </td>
 </tr>
 </tbody>
 </table>
 <h3 id="cr/v1alpha1.LocationType">LocationType
-(<code>string</code> alias)</h3>
+(<code>string</code> alias)</p></h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.Location">Location</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.Location">Location</a>)
 </p>
-<div>
+<p>
 <p>LocationType</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -1193,11 +1279,17 @@ string
 <h3 id="cr/v1alpha1.ObjectReference">ObjectReference
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.ActionSpec">ActionSpec</a>, <a href="#cr/v1alpha1.ActionStatus">ActionStatus</a>, <a href="#cr/v1alpha1.BlueprintPhase">BlueprintPhase</a>, <a href="#cr/v1alpha1.Credential">Credential</a>, <a href="#cr/v1alpha1.KeyPair">KeyPair</a>, <a href="#cr/v1alpha1.KopiaServerSecretRef">KopiaServerSecretRef</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.ActionSpec">ActionSpec</a>, 
+<a href="#cr/v1alpha1.ActionStatus">ActionStatus</a>, 
+<a href="#cr/v1alpha1.BlueprintPhase">BlueprintPhase</a>, 
+<a href="#cr/v1alpha1.Credential">Credential</a>, 
+<a href="#cr/v1alpha1.KeyPair">KeyPair</a>, 
+<a href="#cr/v1alpha1.KopiaServerSecretRef">KopiaServerSecretRef</a>)
 </p>
-<div>
+<p>
 <p>ObjectReference refers to a kubernetes object.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -1280,11 +1372,12 @@ More info: <a href="http://kubernetes.io/docs/user-guide/namespaces">http://kube
 <h3 id="cr/v1alpha1.Phase">Phase
 </h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.ActionStatus">ActionStatus</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.ActionStatus">ActionStatus</a>)
 </p>
-<div>
+<p>
 <p>Phase is subcomponent of an action.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -1301,6 +1394,7 @@ string
 </em>
 </td>
 <td>
+<p>Name represents the name of the Blueprint phase.</p>
 </td>
 </tr>
 <tr>
@@ -1313,6 +1407,7 @@ State
 </em>
 </td>
 <td>
+<p>State represents the current state of execution of the Blueprint phase.</p>
 </td>
 </tr>
 <tr>
@@ -1323,18 +1418,21 @@ map[string]interface{}
 </em>
 </td>
 <td>
+<p>Output is the map of output artifacts produced by the Blueprint phase.</p>
 </td>
 </tr>
 </tbody>
 </table>
 <h3 id="cr/v1alpha1.State">State
-(<code>string</code> alias)</h3>
+(<code>string</code> alias)</p></h3>
 <p>
-(<em>Appears on:</em><a href="#cr/v1alpha1.ActionSetStatus">ActionSetStatus</a>, <a href="#cr/v1alpha1.Phase">Phase</a>)
+(<em>Appears on:</em>
+<a href="#cr/v1alpha1.ActionSetStatus">ActionSetStatus</a>, 
+<a href="#cr/v1alpha1.Phase">Phase</a>)
 </p>
-<div>
+<p>
 <p>State is the current state of a phase of execution.</p>
-</div>
+</p>
 <table>
 <thead>
 <tr>
@@ -1359,5 +1457,5 @@ map[string]interface{}
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>31c09856</code>.
+.
 </em></p>

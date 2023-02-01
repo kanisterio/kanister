@@ -30,7 +30,7 @@ RUN wget -O gen-crd-api-reference-docs_linux_amd64.tar.gz https://github.com/ahm
     && cd crd_documentation \
     && go build \
     && cp -r * /usr/local/bin/
-    
+
 ENV CGO_ENABLED=0 \
     GO111MODULE="on" \
     GOROOT="/usr/local/go" \
