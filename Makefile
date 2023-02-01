@@ -204,12 +204,12 @@ else
 	@/bin/bash -c $(DOCS_CMD)
 endif
 
-API_DOCS_CMD = "gen-crd-api-reference-docs		\
-			-config /usr/local/bin/example-config.json		\
-			-api-dir ./pkg/apis/cr/v1alpha1	\
-			-template-dir /usr/local/bin/template \
-			-out-file API.md				\
-	   	"
+API_DOCS_CMD = "gen-crd-api-reference-docs 			\
+		-config docs/api_docs/config.json 	\
+		-api-dir ./pkg/apis/cr/v1alpha1 	\
+		-template-dir docs/api_docs/template 		\
+		-out-file API.md 	\
+"
 
 crd_docs:
 ifeq ($(DOCKER_BUILD),"true")
