@@ -23,3 +23,5 @@ type ActionSetExpansion interface{}
 type BlueprintExpansion interface{}
 
 type ProfileExpansion interface{}
+
+type RepositoryServerExpansion interface{}
