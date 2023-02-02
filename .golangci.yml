@@ -7,3 +7,17 @@ linters:
                                         # 5. staticcheck
                                         # 6. typecheck
                                         # 7. unused
+  enable:
+    - gofmt
+
+run:
+  timeout: 10m                          # golangci-lint run's timeout.
+
+  build-tags:                           # All linters will run with below mentioned build tags.
+    - "integration"
+
+issues:
+  exclude-rules:
+    - path: '_test.go'
+      linters:
+        - errcheck                      # Errors may be ignored in tests

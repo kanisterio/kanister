@@ -23,17 +23,10 @@ CONFIG_FILE=".golangci.yml"
 
 echo "Running golangci-lint..."
 
-golangci-lint run --timeout ${TIMEOUT} --disable-all --skip-dirs ${SKIP_DIR_REGEX} -E maligned,whitespace,gocognit,unparam -e '`ctx` is unused'
-
-# gofmt should run everywhere, including
-#   1. Skipped directories in previous step
-#   2. Build exempted files using build tags
-#      Note: Future build tags should be included.
-echo "Running gofmt..."
-golangci-lint run --timeout ${TIMEOUT} --disable-all --enable gofmt --build-tags integration
+golangci-lint run --timeout ${TIMEOUT} --no-config --disable-all --skip-dirs ${SKIP_DIR_REGEX} -E maligned,whitespace,gocognit,unparam -e '`ctx` is unused'
 
 echo "Running golangci-lint from config file: ${CONFIG_FILE}"
-golangci-lint run --timeout ${TIMEOUT} --config=${CONFIG_FILE}
+golangci-lint run --config=${CONFIG_FILE}
 
 echo "PASS"
 echo
