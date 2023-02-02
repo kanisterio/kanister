@@ -1,0 +1,9 @@
+linters:
+  disable-all: false                    # This enabled 7 default linters as of golangci-lint@v1.50.0:
+                                        # 1. errcheck
+                                        # 2. gosimple
+                                        # 3. govet
+                                        # 4. ineffassign
+                                        # 5. staticcheck
+                                        # 6. typecheck
+                                        # 7. unused
