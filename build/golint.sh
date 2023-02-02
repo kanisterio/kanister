@@ -17,13 +17,7 @@
 set -o errexit
 set -o nounset
 
-SKIP_DIR_REGEX="pkg/client"
-TIMEOUT="10m"
 CONFIG_FILE=".golangci.yml"
-
-echo "Running golangci-lint..."
-
-golangci-lint run --timeout ${TIMEOUT} --no-config --disable-all --skip-dirs ${SKIP_DIR_REGEX} -E maligned,whitespace,gocognit,unparam -e '`ctx` is unused'
 
 echo "Running golangci-lint from config file: ${CONFIG_FILE}"
 golangci-lint run --config=${CONFIG_FILE}
