@@ -9,7 +9,6 @@ linters:
                                         #   7. unused
   enable:
     - gofmt
-    - maligned
     - whitespace
     - gocognit
     - unparam
