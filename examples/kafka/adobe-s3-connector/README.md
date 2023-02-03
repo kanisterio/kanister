@@ -102,34 +102,37 @@ $ kanctl create profile s3compliant --access-key <aws-access-key> \
 $ kubectl create -f ./kafka-blueprint.yaml -n kanister
 ```
 
-## Perform Backup
-To perform backup to S3, an ActionSet is created to run `kafka-connect`.
-```bash
-# Create an actionset
-$ kanctl create actionset --action backup --namespace kanister --blueprint kafka-blueprint --profile kafka-test/s3-profile-fn64h --objects v1/configmaps/kafka-test/s3config
-```
-## Verify the backup
-We can verify the backup operation by adding some data to the topic configured earlier
+## Insert Data in Topic
+* Create a topic `blogs` on Kafka server. The `blogs` topic is configured as source and sink topics in `s3config` configmap
 
-* List all topics in Kafka server
-```bash
-$ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --bootstrap-server=my-cluster-kafka-bootstrap:9092 --list
-```
-* Create a topic on Kafka server
 ```bash
 $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --create --topic blogpost --bootstrap-server my-cluster-kafka-bootstrap:9092
 ```
-* Create a producer to push data to blogpost topic
+* Create a producer to push data to `blogs` topic
 ```bash
-$ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-bootstrap:9092 --topic blogpost
+$ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-bootstrap:9092 --topic blogs
 
 >{"title":"The Matrix","year":1999,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
 >{"title":"ABCD3","year":2000,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
 >{"title":"Student of the year","year":2001,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
 >{"title":"ABCD","year":2002,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
 ```
-* Check S3 bucket for the topic
 
+## Perform Backup
+To perform backup to S3, an ActionSet is created to run `kafka-connect`.
+```bash
+# Create an actionset
+$ kanctl create actionset --action backup --namespace kanister --blueprint kafka-blueprint --profile kafka-test/s3-profile-fn64h --objects v1/configmaps/kafka-test/s3config
+```
+
+### Disaster strikes!
+
+Let's say someone accidentally removed the events from `blogs` topic in the Kafka cluster:
+```bash
+# No events from `blogs` topic.
+$ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic blogs --from-beginning
+
+```
 ## Perform Restore
 To perform restore, a pre-hook restore operation is performed which will purge all events from the topics in the Kafka cluster whose backups were performed previously.
 ```bash
@@ -142,13 +145,31 @@ $ kanctl create actionset --action restore --from "backup-rslmb" --namespace kan
 * Before running pre-hook operation, confirm that no other consumer is consuming data from that topic
 
 ## Verify restore
-Create a consumer for topics
+Create a consumer for topic
 ```bash
 # Creating a consumer on a different terminal
-$ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic blogpost --from-beginning
+$ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic blogs --from-beginning
+
+>{"title":"The Matrix","year":1999,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
+>{"title":"ABCD3","year":2000,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
+>{"title":"Student of the year","year":2001,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
+>{"title":"ABCD","year":2002,"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss","Hugo Weaving","Joe Pantoliano"],"genres":["Science Fiction"]}
 ```
 All the messages restored can be viewed.
 
+## Delete the Artifacts
+
+The artifacts created by the backup action can be cleaned up using the following command:
+
+```bash
+$ kanctl --namespace kanister create actionset --action delete --from backup-rslmb --namespacetargets kanister
+actionset delete-backup-rslmb-cq6bw created
+
+# View the status of the ActionSet
+$ kubectl --namespace kanister get actionsets.cr.kanister.io delete-backup-rslmb-cq6bw
+NAME                        PROGRESS   LAST TRANSITION TIME   STATE
+delete-backup-rslmb-cq6bw   100.00     2022-12-15T10:05:38Z   complete
+```
 ## Delete Blueprint and Profile CR
 
 ```bash
@@ -162,7 +183,7 @@ s3-profile-fn64h   2h
 $ kubectl delete profiles.cr.kanister.io s3-profile-fn64h -n kafka-test
 ```
 
-### Troubleshooting
+## Troubleshooting
 
 The following debug commands can be used to troubleshoot issues during the backup and restore processes:
 
