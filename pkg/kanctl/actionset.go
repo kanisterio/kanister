@@ -17,8 +17,6 @@ package kanctl
 import (
 	"context"
 	"fmt"
-	"github.com/kanisterio/kanister/pkg/field"
-	"github.com/kanisterio/kanister/pkg/log"
 	"regexp"
 	"strings"
 	"sync"
@@ -641,7 +639,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
-	wg.Add(5)
+	wg.Add(6)
 
 	// Blueprint
 	go func() {
@@ -669,8 +667,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		if p.RepositoryServer != nil {
-			rs, err := crCli.CrV1alpha1().RepositoryServers(p.RepositoryServer.Namespace).Get(ctx, p.RepositoryServer.Name, metav1.GetOptions{})
-			log.Print("----- Repo Server CR Details ----\n\n", field.M{"Name": rs.Name, "Namespace": rs.Namespace, "Spec": rs.Spec})
+			_, err := crCli.CrV1alpha1().RepositoryServers(p.RepositoryServer.Namespace).Get(ctx, p.RepositoryServer.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "repository-server", p.RepositoryServer.Name, p.RepositoryServer.Namespace)
 			}
