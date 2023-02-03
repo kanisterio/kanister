@@ -40,7 +40,7 @@ spec:
 {{ toYaml .Values.resources | indent 12 }}
 {{- end }}
       - name: {{ template "repository-server-controller.name" . }}
-        image: {{ .Values.repositoryServerImage.repository }}:{{ .Values.repositoryServerImage.tag }}
+        image: {{ .Values.repositoryServerImage.registry }}/{{ .Values.repositoryServerImage.name }}:{{ .Values.repositoryServerImage.tag }}
         imagePullPolicy: {{ .Values.repositoryServerImage.pullPolicy }}
         env:
         - name: KOPIA_SERVER_START_TIMEOUT
