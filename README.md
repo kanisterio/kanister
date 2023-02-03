@@ -70,6 +70,7 @@ can use to define data operations for:
 - [MySQL on OpenShift using DeploymentConfig](./examples/mysql-deploymentconfig)
 - [PostgreSQL](./examples/postgresql)
 - [PostgreSQL on OpenShift using DeploymentConfig](./examples/postgresql-deploymentconfig)
+- [Redis](./examples/redis)
 
 The Kanister architecture is documented
 [here](https://docs.kanister.io/architecture.html).
