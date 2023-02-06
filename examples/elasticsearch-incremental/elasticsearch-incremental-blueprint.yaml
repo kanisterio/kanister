@@ -326,8 +326,6 @@ actions:
   # if you don't have that then just create it and proceed the deletions of the restorepoint
   delete:
     inputArtifactNames: 
-    # use it with  for instance {{ .ArtifactsIn.s3Snap.KeyValue.repoPath }} {{ .ArtifactsIn.s3Snap.KeyValue.snapshotName }} 
-    #                           {{ .ArtifactsIn.s3Snap.KeyValue.esClusterName }} {{ .ArtifactsIn.s3Snap.KeyValue.esClusterNamespace  }}
     - s3Snap  
     phases:         
     - func: KubeTask
