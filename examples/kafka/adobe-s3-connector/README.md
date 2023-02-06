@@ -30,6 +30,7 @@ $ helm install kafka-release strimzi/strimzi-kafka-operator --namespace kafka-te
 
 ```
 ## Setup Kafka
+
 ```bash
 # Provision the Apache Kafka and zookeeper.
 $ kubectl create -f ./kafka-cluster.yaml -n kafka-test
@@ -45,7 +46,9 @@ kubectl port-forward kafdrop 7000:9000 -n kafka-test
 ```
 
 ## Validate producer and consumer
+
 Create Producer and Consumer using Kafka image provided by strimzi.
+
 ```bash
 # create a producer and push data to it
 $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-bootstrap:9092 --topic blogpost
@@ -87,7 +90,9 @@ These additional configs apply to the kafka-connect:
 | plugin.path | Connector jar location |
 
 ## Setup Blueprint, ConfigMap and S3 Location profile
+
 Before setting up the Blueprint, a Kanister Profile is created with S3 details along with a ConfigMap with the configuration details. `timeinSeconds` denotes the time after which sink connector needs to stop running.
+
 ```bash
 # Create ConfigMap with the properties file, S3 properties and kafkaConfiguration.properties
 $ kubectl create configmap s3config --from-file=adobe-s3-sink.properties=./adobe-s3-sink.properties --from-file=adobe-kafkaConfiguration.properties=./adobe-kafkaConfiguration.properties --from-file=adobe-s3-source.properties=./adobe-s3-source.properties --from-literal=timeinSeconds=1800 -n kafka-test
@@ -103,12 +108,15 @@ $ kubectl create -f ./kafka-blueprint.yaml -n kanister
 ```
 
 ## Insert Data in Topic
-* Create a topic `blogs` on Kafka server. The `blogs` topic is configured as source and sink topics in `s3config` configmap
+
+* Create a topic `blogs` on the Kafka server. The `blogs` topic is configured as source and sink topic in `s3config` configmap
 
 ```bash
 $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-topics.sh --create --topic blogpost --bootstrap-server my-cluster-kafka-bootstrap:9092
 ```
+
 * Create a producer to push data to `blogs` topic
+
 ```bash
 $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --broker-list my-cluster-kafka-bootstrap:9092 --topic blogs
 
@@ -119,7 +127,9 @@ $ kubectl -n kafka-test run kafka-producer -ti --image=strimzi/kafka:0.20.0-kafk
 ```
 
 ## Perform Backup
-To perform backup to S3, an ActionSet is created to run `kafka-connect`.
+
+To perform backup to S3, an ActionSet is created which runs `kafka-connect`.
+
 ```bash
 # Create an actionset
 $ kanctl create actionset --action backup --namespace kanister --blueprint kafka-blueprint --profile kafka-test/s3-profile-fn64h --objects v1/configmaps/kafka-test/s3config
@@ -127,16 +137,18 @@ $ kanctl create actionset --action backup --namespace kanister --blueprint kafka
 
 ### Disaster strikes!
 
-Let's say someone accidentally removed the events from `blogs` topic in the Kafka cluster:
+Let's say someone accidentally removed the events from the `blogs` topic in the Kafka cluster:
+
 ```bash
 # No events from `blogs` topic.
 $ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic blogs --from-beginning
 
 ```
 ## Perform Restore
-To perform restore, a pre-hook restore operation is performed which will purge all events from the topics in the Kafka cluster whose backups were performed previously.
-```bash
 
+To perform restore, a pre-hook restore operation is performed which will purge all events from the topics in the Kafka cluster whose backups were performed previously.
+
+```bash
 $ kanctl create actionset --action restore --from "backup-rslmb" --namespace kanister --blueprint kafka-blueprint --profile kafka-test/s3-profile-fn64h --objects v1/configmaps/kafka-test/s3config
 
 ```
@@ -145,7 +157,9 @@ $ kanctl create actionset --action restore --from "backup-rslmb" --namespace kan
 * Before running pre-hook operation, confirm that no other consumer is consuming data from that topic
 
 ## Verify restore
-Create a consumer for topic
+
+Create a consumer for topics
+
 ```bash
 # Creating a consumer on a different terminal
 $ kubectl -n kafka-test run kafka-consumer -ti --image=strimzi/kafka:0.20.0-kafka-2.6.0 --rm=true --restart=Never -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic blogs --from-beginning
@@ -188,14 +202,17 @@ $ kubectl delete profiles.cr.kanister.io s3-profile-fn64h -n kafka-test
 The following debug commands can be used to troubleshoot issues during the backup and restore processes:
 
 Check Kanister controller logs:
+
 ```bash
 $ kubectl --namespace kanister logs -l run=kanister-svc -f
 ```
 Check events of the ActionSet:
+
 ```bash
 $ kubectl describe actionset <actionset-name> -n kanister
 ```
 Check the logs of the Kanister job
+
 ```bash
 # Get the Kanister job pod name
 $ kubectl get pod -n kafka-test
