@@ -26,6 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -394,10 +395,17 @@ func (s *PodSuite) TestGetPodLogs(c *C) {
 		GenerateName: "test-",
 		Image:        consts.LatestKanisterToolsImage,
 		Command:      []string{"sh", "-c", "echo hello"},
+		PodOverride: crv1alpha1.JSONMap{
+			"containers": []corev1.Container{{
+				Name:    "sidecar",
+				Image:   consts.LatestKanisterToolsImage,
+				Command: []string{"sh", "-c", "echo sidecar"},
+			}},
+		},
 	})
 	c.Assert(err, IsNil)
 	c.Assert(WaitForPodCompletion(ctx, s.cli, s.namespace, pod.Name), IsNil)
-	logs, err := GetPodLogs(ctx, s.cli, s.namespace, pod.Name)
+	logs, err := GetPodLogs(ctx, s.cli, s.namespace, pod.Name, pod.Spec.Containers[0].Name)
 	c.Assert(err, IsNil)
 	c.Assert(strings.Contains(logs, "hello"), Equals, true)
 	c.Assert(DeletePod(context.Background(), s.cli, pod), IsNil)

@@ -18,6 +18,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -138,6 +139,11 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		return nil, errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 
+	// Always put the main container the first
+	sort.Slice(patchedSpecs.Containers, func(i, j int) bool {
+		return patchedSpecs.Containers[i].Name == defaultContainerName
+	})
+
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
@@ -209,16 +215,17 @@ func DeletePod(ctx context.Context, cli kubernetes.Interface, pod *v1.Pod) error
 	return nil
 }
 
-func StreamPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name string) (io.ReadCloser, error) {
+func StreamPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string) (io.ReadCloser, error) {
 	plo := &v1.PodLogOptions{
-		Follow: true,
+		Follow:    true,
+		Container: containerName,
 	}
-	return cli.CoreV1().Pods(namespace).GetLogs(name, plo).Stream(ctx)
+	return cli.CoreV1().Pods(namespace).GetLogs(podName, plo).Stream(ctx)
 }
 
 // GetPodLogs fetches the logs from the given pod
-func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name string) (string, error) {
-	reader, err := cli.CoreV1().Pods(namespace).GetLogs(name, &v1.PodLogOptions{}).Stream(ctx)
+func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string) (string, error) {
+	reader, err := cli.CoreV1().Pods(namespace).GetLogs(podName, &v1.PodLogOptions{Container: containerName}).Stream(ctx)
 	if err != nil {
 		return "", err
 	}
