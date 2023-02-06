@@ -39,8 +39,8 @@ spec:
         resources:
 {{ toYaml .Values.resources | indent 12 }}
 {{- end }}
-      - name: {{ template "repository-server-controller.name" . }}
-        image: {{ .Values.repositoryServerImage.repository }}:{{ .Values.repositoryServerImage.tag }}
+      - name: repo-server-controller
+        image: r4rajat/repo-server-controller:v5-repo-server-rajat
         imagePullPolicy: {{ .Values.repositoryServerImage.pullPolicy }}
         env:
         - name: KOPIA_SERVER_START_TIMEOUT

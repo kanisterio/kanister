@@ -266,7 +266,9 @@ func fetchRepositoryServer(ctx context.Context, crCli versioned.Interface, ref *
 		log.Debug().Print("Executing the action without a profile")
 		return nil, nil
 	}
+	log.Print("---- Repo Server ----", field.M{"Name": ref.Name, "Namespace": ref.Namespace})
 	r, err := crCli.CrV1alpha1().RepositoryServers(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
+	log.Print("---- Repo Server ----", field.M{"Repo Server Object": r})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
