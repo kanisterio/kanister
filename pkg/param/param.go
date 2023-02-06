@@ -177,6 +177,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 	if err != nil {
 		return nil, err
 	}
+	log.Print("---- Repo Server Object ----", field.M{"Repo Server Object": repoServer})
 	now := time.Now().UTC()
 	tp := TemplateParams{
 		ArtifactsIn:      as.Artifacts,
