@@ -29,6 +29,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/secrets"
@@ -49,6 +50,7 @@ type TemplateParams struct {
 	Secrets          map[string]v1.Secret
 	Time             string
 	Profile          *Profile
+	RepositoryServer *RepositoryServer
 	Options          map[string]string
 	Object           map[string]interface{}
 	Phases           map[string]*Phase
@@ -101,6 +103,13 @@ type Profile struct {
 	Location      crv1alpha1.Location
 	Credential    Credential
 	SkipSSLVerify bool
+}
+
+// RepositoryServer contains where to store Repository Server CR Artifacts
+type RepositoryServer struct {
+	Storage    crv1alpha1.Storage
+	Repository crv1alpha1.Repository
+	Server     crv1alpha1.Server
 }
 
 // CredentialType
@@ -164,15 +173,20 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 	if err != nil {
 		return nil, err
 	}
+	repoServer, err := fetchRepositoryServer(ctx, crCli, as.RepositoryServer)
+	if err != nil {
+		return nil, err
+	}
 	now := time.Now().UTC()
 	tp := TemplateParams{
-		ArtifactsIn: as.Artifacts,
-		ConfigMaps:  cms,
-		Secrets:     secrets,
-		Profile:     prof,
-		Time:        now.Format(timeFormat),
-		Options:     as.Options,
-		PodOverride: as.PodOverride,
+		ArtifactsIn:      as.Artifacts,
+		ConfigMaps:       cms,
+		Secrets:          secrets,
+		Profile:          prof,
+		RepositoryServer: repoServer,
+		Time:             now.Format(timeFormat),
+		Options:          as.Options,
+		PodOverride:      as.PodOverride,
 	}
 	var gvr schema.GroupVersionResource
 	namespace := as.Object.Namespace
@@ -239,10 +253,28 @@ func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	log.Print("----Profile----", field.M{"Location": p.Location, "Credentials": *cred, "SkipTLS": p.SkipSSLVerify})
 	return &Profile{
 		Location:      p.Location,
 		Credential:    *cred,
 		SkipSSLVerify: p.SkipSSLVerify,
+	}, nil
+}
+
+func fetchRepositoryServer(ctx context.Context, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*RepositoryServer, error) {
+	if ref == nil {
+		log.Debug().Print("Executing the action without a profile")
+		return nil, nil
+	}
+	r, err := crCli.CrV1alpha1().RepositoryServers(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	log.Print("---- Repo Server ----", field.M{"Storage": r.Spec.Storage, "Repository": r.Spec.Repository, "Server": r.Spec.Repository})
+	return &RepositoryServer{
+		Storage:    r.Spec.Storage,
+		Repository: r.Spec.Repository,
+		Server:     r.Spec.Server,
 	}, nil
 }
 
