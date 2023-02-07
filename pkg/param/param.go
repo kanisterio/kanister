@@ -161,6 +161,7 @@ const (
 
 // New function fetches and returns the desired params
 func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface, crCli versioned.Interface, osCli osversioned.Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
+	log.Print("---- Actionset Object ----", field.M{"Actionset Object": as})
 	secrets, err := fetchSecrets(ctx, cli, as.Secrets)
 	if err != nil {
 		return nil, err
@@ -189,6 +190,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 		Options:          as.Options,
 		PodOverride:      as.PodOverride,
 	}
+	log.Print("---- Template Params ----", field.M{"template params": tp})
 	var gvr schema.GroupVersionResource
 	namespace := as.Object.Namespace
 	switch strings.ToLower(as.Object.Kind) {
@@ -264,7 +266,7 @@ func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned
 
 func fetchRepositoryServer(ctx context.Context, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*RepositoryServer, error) {
 	if ref == nil {
-		log.Debug().Print("Executing the action without a profile")
+		log.Debug().Print("Executing the action without a repository-server")
 		return nil, nil
 	}
 	log.Print("---- Repo Server ----", field.M{"Name": ref.Name, "Namespace": ref.Namespace})
