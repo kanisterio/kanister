@@ -852,3 +852,26 @@ func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
 	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
 	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
 }
+
+func (s *PodSuite) TestSetLifecycleHook(c *C) {
+
+	lch := &v1.Lifecycle{
+		PostStart: &v1.LifecycleHandler{
+			Exec: &v1.ExecAction{
+				Command: []string{"/bin/bash", "-c", "echo 1"},
+			},
+		},
+	}
+
+	po := &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		Lifecycle:    lch,
+	}
+
+	pod, err := CreatePod(context.Background(), s.cli, po)
+	c.Assert(err, IsNil)
+	c.Assert(pod.Spec.Containers[0].Lifecycle, DeepEquals, lch)
+}
