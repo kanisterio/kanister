@@ -141,6 +141,35 @@ spec:
                           description: Resource name of the referent.
                           type: string
                       type: object
+                    repositoryServer:
+                      description: RepositoryServer is used to specify the CR reference
+                        of the kopia repository server
+                      properties:
+                        apiVersion:
+                          description: API version of the referent.
+                          type: string
+                        group:
+                          description: API Group of the referent.
+                          type: string
+                        kind:
+                          description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                          type: string
+                        name:
+                          description: 'Name of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
+                          type: string
+                        namespace:
+                          description: 'Namespace of the referent. More info: http://kubernetes.io/docs/user-guide/namespaces'
+                          type: string
+                        resource:
+                          description: Resource name of the referent.
+                          type: string
+                      required:
+                        - apiVersion
+                        - group
+                        - kind
+                        - name
+                        - resource
+                      type: object
                     secrets:
                       additionalProperties:
                         properties:
