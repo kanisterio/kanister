@@ -27,10 +27,10 @@ If release name contains chart name it will be used as a full name.
 {{/*Create a default repository server controller name
 */}}
 {{- define "repository-server-controller.name" -}}
-{{- if .Values.repoServerControllerName -}}
-{{- .Values.repoServerControllerName | trunc 63 | trimSuffix "-" -}}
+{{- if .Values.repositoryServer.container.name -}}
+{{- .Values.repositoryServer.container.name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- $name := default "repository-server-controller"}}
+{{- default "repository-server-controller"}}
 {{- end -}}
 {{- end -}}
 
