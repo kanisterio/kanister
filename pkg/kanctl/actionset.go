@@ -31,9 +31,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
@@ -260,7 +258,6 @@ func createActionSet(ctx context.Context, crCli versioned.Interface, namespace s
 	if err == nil {
 		fmt.Printf("actionset %s created\n", as.Name)
 	}
-	log.Print("---- Created Actionset ----", field.M{"Actionset": as})
 	return err
 }
 
@@ -670,8 +667,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		if p.RepositoryServer != nil {
-			rs, err := crCli.CrV1alpha1().RepositoryServers(p.RepositoryServer.Namespace).Get(ctx, p.RepositoryServer.Name, metav1.GetOptions{})
-			log.Print("--- Repo Server ---", field.M{"Repo Server CR": rs})
+			_, err := crCli.CrV1alpha1().RepositoryServers(p.RepositoryServer.Namespace).Get(ctx, p.RepositoryServer.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "repository-server", p.RepositoryServer.Name, p.RepositoryServer.Namespace)
 			}
