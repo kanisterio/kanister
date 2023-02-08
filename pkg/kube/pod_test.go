@@ -854,7 +854,6 @@ func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
 }
 
 func (s *PodSuite) TestSetLifecycleHook(c *C) {
-
 	lch := &v1.Lifecycle{
 		PostStart: &v1.LifecycleHandler{
 			Exec: &v1.ExecAction{
