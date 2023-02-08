@@ -95,7 +95,7 @@ func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
 	if pdb.region == "" {
 		pdb.region, ok = os.LookupEnv(aws.Region)
 		if !ok {
-			return fmt.Errorf("Env var %s is not set", aws.Region)
+			return fmt.Errorf("env var %s is not set", aws.Region)
 		}
 	}
 
@@ -107,11 +107,11 @@ func (pdb *RDSPostgresDB) Init(ctx context.Context) error {
 
 	pdb.accessID, ok = os.LookupEnv(aws.AccessKeyID)
 	if !ok {
-		return fmt.Errorf("Env var %s is not set", aws.AccessKeyID)
+		return fmt.Errorf("env var %s is not set", aws.AccessKeyID)
 	}
 	pdb.secretKey, ok = os.LookupEnv(aws.SecretAccessKey)
 	if !ok {
-		return fmt.Errorf("Env var %s is not set", aws.SecretAccessKey)
+		return fmt.Errorf("env var %s is not set", aws.SecretAccessKey)
 	}
 	return nil
 }

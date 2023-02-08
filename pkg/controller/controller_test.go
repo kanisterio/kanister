@@ -26,6 +26,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 
@@ -195,6 +196,40 @@ func (s *ControllerSuite) waitOnDeferPhaseState(c *C, as *crv1alpha1.ActionSet, 
 		return nil
 	}
 	return errors.Wrapf(err, "State '%s' never reached", state)
+}
+
+//nolint:unparam
+func (s *ControllerSuite) waitOnActionSetCompleteWithRunningPhases(as *crv1alpha1.ActionSet, rp *sets.String) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+	err := poll.Wait(ctx, func(context.Context) (bool, error) {
+		as, err := s.crCli.ActionSets(as.GetNamespace()).Get(ctx, as.GetName(), metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		if as.Status == nil {
+			return false, nil
+		}
+		if as.Status.State == crv1alpha1.StateComplete {
+			return true, nil
+		}
+		// These are non-terminal states.
+		if as.Status.State == crv1alpha1.StatePending {
+			return false, nil
+		}
+		if as.Status.State == crv1alpha1.StateRunning {
+			// Delete running phases
+			if rp.Has(as.Status.Progress.RunningPhase) {
+				rp.Delete(as.Status.Progress.RunningPhase)
+			}
+			return false, nil
+		}
+		return false, errors.New(fmt.Sprintf("Unexpected state: %s", as.Status.State))
+	})
+	if err == nil {
+		return nil
+	}
+	return errors.Wrapf(err, "ActionSet did not reach '%s' state", crv1alpha1.StateComplete)
 }
 
 func newBPWithOutputArtifact() *crv1alpha1.Blueprint {
@@ -386,6 +421,25 @@ func newBPWithKopiaSnapshotOutputArtifact() *crv1alpha1.Blueprint {
 						Func: testutil.OutputFuncName,
 					},
 				},
+			},
+		},
+	}
+}
+
+func newBPForProgressRunningPhase() *crv1alpha1.Blueprint {
+	return &crv1alpha1.Blueprint{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-bp-running-phase-",
+		},
+		Actions: map[string]*crv1alpha1.BlueprintAction{
+			"backup": {
+				// set output artifacts from main phases as well as deferPhase
+				OutputArtifacts: map[string]crv1alpha1.Artifact{},
+				Phases: []crv1alpha1.BlueprintPhase{
+					*phaseWithNameAndCMD("backupPhaseOne", []string{"sleep", "10"}),
+					*phaseWithNameAndCMD("backupPhaseTwo", []string{"sleep", "8"}),
+				},
+				DeferPhase: phaseWithNameAndCMD("deferPhase", []string{"sleep", "8"}),
 			},
 		},
 	}
@@ -901,4 +955,27 @@ func (s *ControllerSuite) TestRenderArtifactsFailure(c *C) {
 
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateFailed)
 	c.Assert(err, IsNil)
+}
+
+func (s *ControllerSuite) TestProgressRunningPhase(c *C) {
+	os.Setenv(kube.PodNSEnvVar, "test")
+	ctx := context.Background()
+
+	bp := newBPForProgressRunningPhase()
+	bp, err := s.crCli.Blueprints(s.namespace).Create(ctx, bp, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// create actionset and wait for it to reach Running state
+	as := testutil.NewTestActionSet(s.namespace, bp.GetName(), "Deployment", s.deployment.GetName(), s.namespace, kanister.DefaultVersion, "backup")
+	as, err = s.crCli.ActionSets(s.namespace).Create(ctx, as, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
+	c.Assert(err, IsNil)
+
+	runningPhases := sets.NewString()
+	runningPhases.Insert("backupPhaseOne").Insert("backupPhaseTwo").Insert("deferPhase")
+
+	err = s.waitOnActionSetCompleteWithRunningPhases(as, &runningPhases)
+	c.Assert(err, IsNil)
+	c.Assert(runningPhases, HasLen, 0)
 }

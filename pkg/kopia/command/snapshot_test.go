@@ -42,6 +42,7 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 					CommandArgs:            commandArgs,
 					PathToBackup:           "path/to/backup",
 					ProgressUpdateInterval: 0,
+					Parallelism:            8,
 				}
 				return SnapshotCreate(args)
 			},
@@ -53,6 +54,7 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 					CommandArgs:            commandArgs,
 					PathToBackup:           "path/to/backup",
 					ProgressUpdateInterval: 1*time.Minute + 35*time.Second,
+					Parallelism:            8,
 				}
 				return SnapshotCreate(args)
 			},
@@ -72,26 +74,39 @@ func (kSnapshot *KopiaSnapshotTestSuite) TestSnapshotCommands(c *C) {
 		{
 			f: func() []string {
 				args := SnapshotRestoreCommandArgs{
-					CommandArgs:   commandArgs,
-					SnapID:        "snapshot-id",
-					TargetPath:    "target/path",
-					SparseRestore: false,
+					CommandArgs:            commandArgs,
+					SnapID:                 "snapshot-id",
+					TargetPath:             "target/path",
+					SparseRestore:          false,
+					IgnorePermissionErrors: false,
 				}
 				return SnapshotRestore(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --no-ignore-permission-errors",
 		},
 		{
 			f: func() []string {
 				args := SnapshotRestoreCommandArgs{
-					CommandArgs:   commandArgs,
-					SnapID:        "snapshot-id",
-					TargetPath:    "target/path",
-					SparseRestore: true,
+					CommandArgs: commandArgs,
+					SnapID:      "snapshot-id",
+					TargetPath:  "target/path",
 				}
 				return SnapshotRestore(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --write-sparse-files",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --no-ignore-permission-errors",
+		},
+		{
+			f: func() []string {
+				args := SnapshotRestoreCommandArgs{
+					CommandArgs:            commandArgs,
+					SnapID:                 "snapshot-id",
+					TargetPath:             "target/path",
+					SparseRestore:          true,
+					IgnorePermissionErrors: true,
+				}
+				return SnapshotRestore(args)
+			},
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key snapshot restore snapshot-id target/path --ignore-permission-errors --write-sparse-files",
 		},
 		{
 			f: func() []string {
