@@ -8,9 +8,9 @@ This chart bootstraps a single node MySQL deployment on a [Kubernetes](http://ku
 
 ## Prerequisites
 
-- Kubernetes 1.16+ with Beta APIs enabled
+- Kubernetes 1.20+
 - PV provisioner support in the underlying infrastructure
-- Kanister controller version 0.85.0 installed in your cluster, let's assume in Namespace `kanister`
+- Kanister controller version 0.88.0 installed in your cluster, let's assume in Namespace `kanister`
 - Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## Installing the Chart
@@ -27,8 +27,7 @@ $ helm repo update
 # Install the MySQL database
 $ kubectl create namespace mysql-test
 $ helm install mysql-release bitnami/mysql --namespace mysql-test \
-    --set auth.rootPassword='asd#45@mysqlEXAMPLE' 
-
+    --set auth.rootPassword='<mysql-root-password>'
 ```
 
 The command deploys a MySQL instance in the `mysql-test` namespace.
@@ -124,13 +123,10 @@ s3-profile-drnw9   2m
 $ kanctl create actionset --action backup --namespace kanister --blueprint mysql-blueprint --statefulset mysql-test/mysql-release --profile mysql-test/s3-profile-drnw9 --secrets mysql=mysql-test/mysql-release
 actionset backup-rslmb created
 
-$ kubectl --namespace kanister get actionsets.cr.kanister.io
-NAME                 AGE
-backup-rslmb         1m
-
 # View the status of the actionset
-# Please make sure the name of the actionset here matches with name of the name of actionset that we have created already
-$ kubectl --namespace kanister describe actionset backup-rslmb
+$ kubectl --namespace kanister get actionsets.cr.kanister.io backup-rslmb
+NAME           PROGRESS   LAST TRANSITION TIME   STATE
+backup-rslmb   100.00     2022-12-15T09:56:49Z   complete
 ```
 
 ### Disaster strikes!
@@ -140,7 +136,7 @@ Let's say someone accidentally deleted the test database using the following com
 # Connect to MySQL by running a shell inside MySQL's pod
 $ kubectl exec -ti $(kubectl get pods -n mysql-test --selector=app.kubernetes.io/instance=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql-test -- bash
 
-$ mysql --user=root --password=asd#45@mysqlEXAMPLE
+$ mysql --user=root --password=<mysql-root-password>
 
 # Drop the test database
 $ mysql> SHOW DATABASES;
@@ -178,16 +174,22 @@ To restore the missing data, you should use the backup that you created before. 
 ```bash
 # Make sure to use correct backup actionset name here
 $ kanctl --namespace kanister create actionset --action restore --from "backup-rslmb"
-actionset restore-backup-62vxm-2hdsz created
+actionset restore-backup-rslmb-2hdsz created
 
 # View the status of the ActionSet
-# Make sure to use correct restore actionset name here
-$ kubectl --namespace kanister describe actionset restore-backup-62vxm-2hdsz
+$ kubectl --namespace kanister get actionsets.cr.kanister.io restore-backup-rslmb-2hdsz
+NAME                         PROGRESS   LAST TRANSITION TIME   STATE
+restore-backup-rslmb-2hdsz   100.00     2022-12-15T10:00:05Z   complete
 ```
 
 Once the ActionSet status is set to "complete", you can see that the data has been successfully restored to MySQL
 
 ```bash
+# Connect to MySQL by running a shell inside MySQL's pod
+$ kubectl exec -ti $(kubectl get pods -n mysql-test --selector=app.kubernetes.io/instance=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql-test -- bash
+
+mysql --user=root --password=<mysql-root-password>
+
 mysql> SHOW DATABASES;
 +--------------------+
 | Database           |
@@ -220,7 +222,6 @@ mysql> SELECT * FROM pets;
 | Puffball | Diane | hamster | f    | 1999-03-30 | NULL  |
 +----------+-------+---------+------+------------+-------+
 1 row in set (0.00 sec)
-
 ```
 
 ### Delete the Artifacts
@@ -229,10 +230,12 @@ The artifacts created by the backup action can be cleaned up using the following
 
 ```bash
 $ kanctl --namespace kanister create actionset --action delete --from backup-rslmb --namespacetargets kanister
-actionset delete-backup-glptq-cq6bw created
+actionset delete-backup-rslmb-cq6bw created
 
 # View the status of the ActionSet
-$ kubectl --namespace kanister describe actionset delete-backup-glptq-cq6bw
+$ kubectl --namespace kanister get actionsets.cr.kanister.io delete-backup-rslmb-cq6bw
+NAME                        PROGRESS   LAST TRANSITION TIME   STATE
+delete-backup-rslmb-cq6bw   100.00     2022-12-15T10:05:38Z   complete
 ```
 
 
@@ -247,7 +250,7 @@ $ kubectl --namespace kanister logs -l app=kanister-operator
 you can also check events of the actionset
 
 ```bash
-$ kubectl describe actionset restore-backup-62vxm-2hdsz -n kanister
+$ kubectl describe actionset restore-backup-rslmb-2hdsz -n kanister
 ```
 
 
@@ -265,7 +268,7 @@ $ helm delete mysql-release -n mysql-test
 The command removes all the Kubernetes components associated with the chart and deletes the release.
 
 ### Delete CRs
-Remove Blueprint and Profile CR
+Remove Blueprint, Profile CR and ActionSets
 
 ```bash
 $ kubectl delete blueprints.cr.kanister.io mysql-blueprint -n kanister
@@ -275,4 +278,6 @@ NAME               AGE
 s3-profile-drnw9   122m
 
 $ kubectl delete profiles.cr.kanister.io s3-profile-drnw9 -n mysql-test
+
+$ kubectl --namespace kanister delete actionsets.cr.kanister.io backup-rslmb restore-backup-rslmb-2hdsz delete-backup-rslmb-cq6bw
 ```

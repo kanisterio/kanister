@@ -52,6 +52,8 @@ const (
 	unsafeIgnoreSourceFlag     = "--unsafe-ignore-source"
 	ownerFlag                  = "--owner"
 	sparseFlag                 = "--write-sparse-files"
+	ignorePermissionsError     = "--ignore-permission-errors"
+	noIgnorePermissionsError   = "--no-ignore-permission-errors"
 
 	// Server specific
 	addSubCommand             = "add"

@@ -17,8 +17,9 @@ package kube
 import (
 	"bytes"
 	"context"
-	. "gopkg.in/check.v1"
 	"text/template"
+
+	. "gopkg.in/check.v1"
 
 	"github.com/Masterminds/sprig"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,9 +38,9 @@ func (s *UnstructuredSuite) TestFetch(c *C) {
 	gvr := schema.GroupVersionResource{
 		Group:    "",
 		Version:  "v1",
-		Resource: "serviceaccounts",
+		Resource: "services",
 	}
-	u, err := FetchUnstructuredObject(ctx, gvr, "default", "default")
+	u, err := FetchUnstructuredObject(ctx, gvr, "default", "kubernetes")
 	c.Assert(err, IsNil)
 
 	buf := bytes.NewBuffer(nil)
@@ -49,7 +50,7 @@ func (s *UnstructuredSuite) TestFetch(c *C) {
 		arg string
 	}{
 		{"{{ .Unstructured.metadata.name }}"},
-		{"{{ index .Unstructured.secrets 0 }}"},
+		{"{{ .Unstructured.spec.clusterIP }}"},
 	} {
 		t, err := template.New("config").Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Parse(tc.arg)
 		c.Assert(err, IsNil)
