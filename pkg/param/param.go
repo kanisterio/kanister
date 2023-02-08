@@ -109,6 +109,7 @@ type RepositoryServer struct {
 	Storage    crv1alpha1.Storage
 	Repository crv1alpha1.Repository
 	Server     crv1alpha1.Server
+	ServerInfo crv1alpha1.ServerInfo
 }
 
 // CredentialType
@@ -272,6 +273,7 @@ func fetchRepositoryServer(ctx context.Context, crCli versioned.Interface, ref *
 		Storage:    r.Spec.Storage,
 		Repository: r.Spec.Repository,
 		Server:     r.Spec.Server,
+		ServerInfo: r.Status.ServerInfo,
 	}, nil
 }
 
