@@ -29,7 +29,6 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/secrets"
@@ -161,7 +160,6 @@ const (
 
 // New function fetches and returns the desired params
 func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface, crCli versioned.Interface, osCli osversioned.Interface, as crv1alpha1.ActionSpec) (*TemplateParams, error) {
-	log.Print("---- Actionset Object ----", field.M{"Actionset Object": as})
 	secrets, err := fetchSecrets(ctx, cli, as.Secrets)
 	if err != nil {
 		return nil, err
@@ -178,7 +176,6 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 	if err != nil {
 		return nil, err
 	}
-	log.Print("---- Repo Server Object ----", field.M{"Repo Server Object": repoServer})
 	now := time.Now().UTC()
 	tp := TemplateParams{
 		ArtifactsIn:      as.Artifacts,
@@ -190,7 +187,6 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 		Options:          as.Options,
 		PodOverride:      as.PodOverride,
 	}
-	log.Print("---- Template Params ----", field.M{"template params": tp})
 	var gvr schema.GroupVersionResource
 	namespace := as.Object.Namespace
 	switch strings.ToLower(as.Object.Kind) {
@@ -256,7 +252,6 @@ func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	log.Print("----Profile----", field.M{"Location": p.Location, "Credentials": *cred, "SkipTLS": p.SkipSSLVerify})
 	return &Profile{
 		Location:      p.Location,
 		Credential:    *cred,
@@ -269,13 +264,10 @@ func fetchRepositoryServer(ctx context.Context, crCli versioned.Interface, ref *
 		log.Debug().Print("Executing the action without a repository-server")
 		return nil, nil
 	}
-	log.Print("---- Repo Server ----", field.M{"Name": ref.Name, "Namespace": ref.Namespace})
 	r, err := crCli.CrV1alpha1().RepositoryServers(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
-	log.Print("---- Repo Server ----", field.M{"Repo Server Object": r})
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	log.Print("---- Repo Server ----", field.M{"Storage": r.Spec.Storage, "Repository": r.Spec.Repository, "Server": r.Spec.Repository})
 	return &RepositoryServer{
 		Storage:    r.Spec.Storage,
 		Repository: r.Spec.Repository,
