@@ -50,28 +50,28 @@ type RepoServerHandler struct {
 func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) error {
 	svc, err := h.reconcileService(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to reconcile service")
 	}
 	if err = h.getSecretsFromCR(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "failed to get repository server secrets")
 	}
 	pod, err := h.reconcilePod(ctx, svc)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to reconcile repository server pod")
 	}
 	if err := h.waitForPodReady(ctx, pod); err != nil {
-		return err
+		return errors.Wrap(err, "repository server pod not in ready state")
 	}
 	if err := h.connectToKopiaRepository(); err != nil {
-		return err
+		return errors.Wrap(err, "failed to connect to kopia repository")
 	}
 
 	if err := h.startRepoProxyServer(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "failed to start kopia repository servver")
 	}
 
 	if err := h.createOrUpdateClientUsers(ctx); err != nil {
-		return err
+		return errors.Wrap(err, "failed to create/update kopia server access users")
 	}
 	return nil
 }
@@ -234,7 +234,7 @@ func (h *RepoServerHandler) setCredDataFromSecretInPod(ctx context.Context, podO
 	h.Logger.Info("Setting credentials data from secret as either env variables or files in pod")
 	namespace := h.RepositoryServer.Namespace
 	storageCredSecret := h.RepositoryServerSecrets.storageCredentials
-	envVars, err := storage.GenerateEnvSpecFromCredentialSecret(&storageCredSecret, time.Duration(time.Now().Second()))
+	envVars, err := storage.GenerateEnvSpecFromCredentialSecret(storageCredSecret, time.Duration(time.Now().Second()))
 	if err != nil {
 		return nil, err
 	}
