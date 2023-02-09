@@ -2,7 +2,7 @@
 
 Kanister actions are triggered by creating ActionSet resource. The status field in ActionSet CR represents the status of Kanister operation. The action completion percentage is set by calculating the weights given on phases ([https://github.com/kanisterio/kanister/blob/master/design/progress-tracking.md](https://github.com/kanisterio/kanister/blob/master/design/progress-tracking.md) ).
 
-This goal of this proposal is
+The goal of this proposal is
 
 - Have progress tracking per phase
 - Improve action progress tracking mechanism by removing hard coded weights
