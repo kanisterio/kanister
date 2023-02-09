@@ -58,6 +58,7 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass,
 		Engine:               &engine,
 		MasterUsername:       &username,
 		MasterUserPassword:   &password,
+		PubliclyAccessible:   aws.Bool(false),
 	}
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
