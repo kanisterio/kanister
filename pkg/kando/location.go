@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	pathFlagName    = "path"
-	profileFlagName = "profile"
+	pathFlagName             = "path"
+	profileFlagName          = "profile"
+	repositoryServerFlagName = "repository-server"
 )
 
 func newLocationCommand() *cobra.Command {
@@ -37,8 +38,13 @@ func newLocationCommand() *cobra.Command {
 	cmd.AddCommand(newLocationPullCommand())
 	cmd.AddCommand(newLocationDeleteCommand())
 	cmd.PersistentFlags().StringP(pathFlagName, "s", "", "Specify a path suffix (optional)")
-	cmd.PersistentFlags().StringP(profileFlagName, "p", "", "Pass a Profile as a JSON string (required)")
-	_ = cmd.MarkFlagRequired(profileFlagName)
+	cmd.PersistentFlags().StringP(profileFlagName, "p", "", "Pass a Profile as a JSON string (required in v1 blueprints)")
+	cmd.PersistentFlags().StringP(repositoryServerFlagName, "r", "", "Pass a RepositoryServer CR Reference as a JSON String (required in v2 blueprints)")
+	profileJSON := cmd.Flag(profileFlagName).Value.String()
+	repositoryServerJSON := cmd.Flag(repositoryServerFlagName).Value.String()
+	if profileJSON == "" && repositoryServerJSON == "" {
+		_ = errors.New("Provide either --profile or --repository-server flag to continue")
+	}
 	return cmd
 }
 
@@ -51,4 +57,11 @@ func unmarshalProfileFlag(cmd *cobra.Command) (*param.Profile, error) {
 	p := &param.Profile{}
 	err := json.Unmarshal([]byte(profileJSON), p)
 	return p, errors.Wrap(err, "failed to unmarshal profile")
+}
+
+func unmarshalRepositoryServerFlag(cmd *cobra.Command) (*param.RepositoryServer, error) {
+	repositoryServerJSON := cmd.Flag(repositoryServerFlagName).Value.String()
+	rs := &param.RepositoryServer{}
+	err := json.Unmarshal([]byte(repositoryServerJSON), rs)
+	return rs, errors.Wrap(err, "failed to unmarshal repository server CR")
 }

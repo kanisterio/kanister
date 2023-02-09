@@ -35,11 +35,11 @@ import (
 )
 
 const (
-	// defaultDataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
-	defaultDataStoreGeneralContentCacheSizeMB = 0
+	// DefaultDataStoreGeneralContentCacheSizeMB is the default content cache size for general command workloads
+	DefaultDataStoreGeneralContentCacheSizeMB = 0
 
-	// defaultDataStoreGeneralMetadataCacheSizeMB is the default metadata cache size for general command workloads
-	defaultDataStoreGeneralMetadataCacheSizeMB = 500
+	// DefaultDataStoreGeneralMetadataCacheSizeMB is the default metadata cache size for general command workloads
+	DefaultDataStoreGeneralMetadataCacheSizeMB = 500
 
 	// TLSCertificateKey represents the key used to fetch the certificate
 	// from the secret.
@@ -166,21 +166,21 @@ func GetStreamingFileObjectIDFromSnapshot(ctx context.Context, rep repo.Reposito
 // GetDataStoreGeneralContentCacheSize finds and return content cache size from the options
 func GetDataStoreGeneralContentCacheSize(opt map[string]int) int {
 	if opt == nil {
-		return defaultDataStoreGeneralContentCacheSizeMB
+		return DefaultDataStoreGeneralContentCacheSizeMB
 	}
 	if contentCacheSize, ok := opt[DataStoreGeneralContentCacheSizeMBKey]; ok {
 		return contentCacheSize
 	}
-	return defaultDataStoreGeneralContentCacheSizeMB
+	return DefaultDataStoreGeneralContentCacheSizeMB
 }
 
 // GetDataStoreGeneralMetadataCacheSize finds and return metadata cache size from the options
 func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
 	if opt == nil {
-		return defaultDataStoreGeneralMetadataCacheSizeMB
+		return DefaultDataStoreGeneralMetadataCacheSizeMB
 	}
 	if metadataCacheSize, ok := opt[DataStoreGeneralContentCacheSizeMBKey]; ok {
 		return metadataCacheSize
 	}
-	return defaultDataStoreGeneralMetadataCacheSizeMB
+	return DefaultDataStoreGeneralMetadataCacheSizeMB
 }

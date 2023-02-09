@@ -110,6 +110,7 @@ type RepositoryServer struct {
 	Repository crv1alpha1.Repository
 	Server     crv1alpha1.Server
 	ServerInfo crv1alpha1.ServerInfo
+	Credential Credential
 }
 
 // CredentialType
@@ -173,7 +174,7 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 	if err != nil {
 		return nil, err
 	}
-	repoServer, err := fetchRepositoryServer(ctx, crCli, as.RepositoryServer)
+	repoServer, err := fetchRepositoryServer(ctx, cli, crCli, as.RepositoryServer)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +261,7 @@ func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned
 	}, nil
 }
 
-func fetchRepositoryServer(ctx context.Context, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*RepositoryServer, error) {
+func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*RepositoryServer, error) {
 	if ref == nil {
 		log.Debug().Print("Executing the action without a repository-server")
 		return nil, nil
@@ -269,12 +270,21 @@ func fetchRepositoryServer(ctx context.Context, crCli versioned.Interface, ref *
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	cred, err := fetchRepositoryServerCredentials(ctx, cli, crCli, r)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 	return &RepositoryServer{
 		Storage:    r.Spec.Storage,
 		Repository: r.Spec.Repository,
 		Server:     r.Spec.Server,
 		ServerInfo: r.Status.ServerInfo,
+		Credential: *cred,
 	}, nil
+}
+
+func fetchRepositoryServerCredentials(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.RepositoryServer) (*Credential, error) {
+
 }
 
 func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1.Credential) (*Credential, error) {
