@@ -37,6 +37,7 @@ func newLocationCommand() *cobra.Command {
 	cmd.AddCommand(newLocationPushCommand())
 	cmd.AddCommand(newLocationPullCommand())
 	cmd.AddCommand(newLocationDeleteCommand())
+	cmd.AddCommand(newLocationPushUsingRepositoryServerCommand())
 	cmd.PersistentFlags().StringP(pathFlagName, "s", "", "Specify a path suffix (optional)")
 	cmd.PersistentFlags().StringP(profileFlagName, "p", "", "Pass a Profile as a JSON string (required in v1 blueprints)")
 	cmd.PersistentFlags().StringP(repositoryServerFlagName, "r", "", "Pass a RepositoryServer CR Reference as a JSON String (required in v2 blueprints)")

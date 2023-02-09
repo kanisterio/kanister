@@ -140,6 +140,7 @@ type KopiaServerCreds struct {
 // RepositoryServer contains where to store Repository Server CR Artifacts
 type RepositoryServer struct {
 	ServerInfo  crv1alpha1.ServerInfo
+	Username    string
 	Credentials RepositoryServerCredentials
 }
 
@@ -287,6 +288,7 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	}
 	return &RepositoryServer{
 		ServerInfo:  r.Status.ServerInfo,
+		Username:    r.Spec.Server.UserAccess.Username,
 		Credentials: secrets,
 	}, nil
 }
