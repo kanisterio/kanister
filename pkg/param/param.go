@@ -16,6 +16,7 @@ package param
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -104,14 +105,6 @@ type Profile struct {
 	SkipSSLVerify bool
 }
 
-// RepositoryServer contains where to store Repository Server CR Artifacts
-type RepositoryServer struct {
-	Storage    crv1alpha1.Storage
-	Repository crv1alpha1.Repository
-	Server     crv1alpha1.Server
-	ServerInfo crv1alpha1.ServerInfo
-}
-
 // CredentialType
 type CredentialType string
 
@@ -142,6 +135,21 @@ type KopiaServerCreds struct {
 	Password       string
 	Cert           string
 	ConnectOptions map[string]int
+}
+
+// RepositoryServer contains where to store Repository Server CR Artifacts
+type RepositoryServer struct {
+	ServerInfo  crv1alpha1.ServerInfo
+	Credentials RepositoryServerCredentials
+}
+
+type RepositoryServerCredentials struct {
+	Storage            v1.Secret
+	StorageCredentials v1.Secret
+	RepositoryPassword v1.Secret
+	ServerAdmin        v1.Secret
+	ServerTLS          v1.Secret
+	ServerUserAccess   v1.Secret
 }
 
 // Phase represents a Blueprint phase and contains the phase output
@@ -272,11 +280,41 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	storage, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Storage.SecretRef)
+	if err != nil {
+		return nil, err
+	}
+	storageCredentials, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Storage.CredentialSecretRef)
+	if err != nil {
+		return nil, err
+	}
+	repositoryPassword, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Repository.PasswordSecretRef)
+	if err != nil {
+		return nil, err
+	}
+	serverAdmin, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Server.AdminSecretRef)
+	if err != nil {
+		return nil, err
+	}
+	serverTLS, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Server.TLSSecretRef)
+	if err != nil {
+		return nil, err
+	}
+	serverUserAccess, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Server.UserAccess.UserAccessSecretRef)
+	if err != nil {
+		return nil, err
+	}
+	secrets := RepositoryServerCredentials{
+		Storage:            *storage,
+		StorageCredentials: *storageCredentials,
+		RepositoryPassword: *repositoryPassword,
+		ServerAdmin:        *serverAdmin,
+		ServerTLS:          *serverTLS,
+		ServerUserAccess:   *serverUserAccess,
+	}
 	return &RepositoryServer{
-		Storage:    r.Spec.Storage,
-		Repository: r.Spec.Repository,
-		Server:     r.Spec.Server,
-		ServerInfo: r.Status.ServerInfo,
+		ServerInfo:  r.Status.ServerInfo,
+		Credentials: secrets,
 	}, nil
 }
 
@@ -331,6 +369,14 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 		Type:   CredentialTypeSecret,
 		Secret: s,
 	}, nil
+}
+
+func fetchSecretFromSecretRef(ctx context.Context, cli kubernetes.Interface, ref v1.SecretReference) (*v1.Secret, error) {
+	secret, err := cli.CoreV1().Secrets(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("Error fetching secret %s from namespace %s", ref.Name, ref.Namespace))
+	}
+	return secret, nil
 }
 
 func filterByKind(refs map[string]crv1alpha1.ObjectReference, kind string) map[string]crv1alpha1.ObjectReference {
