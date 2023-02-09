@@ -141,7 +141,30 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Add ingress rule
 	log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
-	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, pdb.securityGroupName, "0.0.0.0/0", "tcp", 5432)
+
+	// Describe the security group
+	desc, err := ec2Cli.DescribeSecurityGroup(ctx, pdb.securityGroupName)
+	if err != nil {
+		fmt.Println("Error describing security group:", err)
+		return err
+	}
+
+	// Get the VPC ID
+	vpcID := *desc.SecurityGroups[0].VpcId
+
+	fmt.Println("VPC ID:", vpcID)
+
+	descvpc, err := ec2Cli.DescribeVpc(ctx, vpcID)
+	if err != nil {
+		fmt.Println("Error describing VPC:", err)
+		return err
+	}
+
+	// Get the CIDR block
+	cidrBlock := *descvpc.Vpcs[0].CidrBlock
+
+	fmt.Println("cidrBlock:", cidrBlock)
+	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, pdb.securityGroupName, cidrBlock, "tcp", 5432)
 	if err != nil {
 		return err
 	}
