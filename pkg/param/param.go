@@ -144,12 +144,8 @@ type RepositoryServer struct {
 }
 
 type RepositoryServerCredentials struct {
-	Storage            v1.Secret
-	StorageCredentials v1.Secret
-	RepositoryPassword v1.Secret
-	ServerAdmin        v1.Secret
-	ServerTLS          v1.Secret
-	ServerUserAccess   v1.Secret
+	ServerTLS        v1.Secret
+	ServerUserAccess v1.Secret
 }
 
 // Phase represents a Blueprint phase and contains the phase output
@@ -277,25 +273,6 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	storage, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Storage.SecretRef)
-	if err != nil {
-		return nil, err
-	}
-	storageCredentials, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Storage.CredentialSecretRef)
-	if err != nil {
-		return nil, err
-	}
-	repositoryPassword, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Repository.PasswordSecretRef)
-	if err != nil {
-		return nil, err
-	}
-	serverAdmin, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Server.AdminSecretRef)
-	if err != nil {
-		return nil, err
-	}
 	serverTLS, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Server.TLSSecretRef)
 	if err != nil {
 		return nil, err
@@ -305,12 +282,8 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 		return nil, err
 	}
 	secrets := RepositoryServerCredentials{
-		Storage:            *storage,
-		StorageCredentials: *storageCredentials,
-		RepositoryPassword: *repositoryPassword,
-		ServerAdmin:        *serverAdmin,
-		ServerTLS:          *serverTLS,
-		ServerUserAccess:   *serverUserAccess,
+		ServerTLS:        *serverTLS,
+		ServerUserAccess: *serverUserAccess,
 	}
 	return &RepositoryServer{
 		ServerInfo:  r.Status.ServerInfo,
