@@ -16,6 +16,7 @@ package function
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -103,10 +104,14 @@ func (ktf *kubeTaskFunc) Exec(ctx context.Context, tp param.TemplateParams, args
 	if err = OptArg(args, KubeTaskNamespaceArg, &namespace, ""); err != nil {
 		return nil, err
 	}
+
+	fmt.Println("podOverrider that we got from actionset:", tp.PodOverride)
 	podOverride, err := GetPodSpecOverride(tp, args, KubeTaskPodOverrideArg)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("podOverride after merge:", podOverride)
 
 	cli, err := kube.NewClient()
 	if err != nil {
