@@ -52,7 +52,6 @@ LABEL name="kanister-tools" \
 COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
 COPY --from=builder /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
-RUN setcap cap_setfcap+i /usr/sbin/setcap
 
 ADD kando /usr/local/bin/
 RUN microdnf -y update && microdnf -y install shadow-utils gzip && \
