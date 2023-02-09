@@ -110,7 +110,6 @@ type RepositoryServer struct {
 	Repository crv1alpha1.Repository
 	Server     crv1alpha1.Server
 	ServerInfo crv1alpha1.ServerInfo
-	Credential Credential
 }
 
 // CredentialType
@@ -270,7 +269,6 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	cred, err := fetchRepositoryServerCredentials(ctx, cli, crCli, r)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -279,12 +277,7 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 		Repository: r.Spec.Repository,
 		Server:     r.Spec.Server,
 		ServerInfo: r.Status.ServerInfo,
-		Credential: *cred,
 	}, nil
-}
-
-func fetchRepositoryServerCredentials(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.RepositoryServer) (*Credential, error) {
-
 }
 
 func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1.Credential) (*Credential, error) {
