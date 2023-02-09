@@ -161,11 +161,11 @@ func waitStatefulSetPhase(namespace, sts string) crv1alpha1.BlueprintPhase {
 		Name: "waitStsReady",
 		Func: WaitFuncName,
 		Args: map[string]interface{}{
-			WaitTimeoutArg: "1m",
+			WaitTimeoutArg: "5m",
 			WaitConditionsArg: map[string]interface{}{
 				"allOf": []interface{}{
 					map[string]interface{}{
-						"condition": `{{ if (eq "{$.spec.replicas}" "{$.status.availableReplicas}" )}}
+						"condition": `{{ if (eq "{$.spec.replicas}" "{$.status.currentReplicas}" )}}
 									true
 								{{ else }}
 									false

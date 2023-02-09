@@ -408,7 +408,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 		Containers: []v1.Container{
 			{
 				Name:            "container",
-				Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+				Image:           "ghcr.io/kanisterio/kanister-tools:0.88.0",
 				Command:         []string{"sh", "-c", "echo in default specs"},
 				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 				VolumeMounts: []v1.VolumeMount{
@@ -454,7 +454,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.88.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 						VolumeMounts: []v1.VolumeMount{
@@ -494,7 +494,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.88.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 						VolumeMounts: []v1.VolumeMount{
@@ -548,7 +548,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.88.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 						VolumeMounts: []v1.VolumeMount{
@@ -609,7 +609,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.88.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 						VolumeMounts: []v1.VolumeMount{
@@ -672,7 +672,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.88.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 						VolumeMounts: []v1.VolumeMount{
@@ -712,7 +712,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.88.0",
 						Command:         []string{"echo", "override command"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 						VolumeMounts: []v1.VolumeMount{
@@ -755,7 +755,7 @@ func (s *PodSuite) TestPatchDefaultPodSpecs(c *C) {
 				Containers: []v1.Container{
 					{
 						Name:            "container",
-						Image:           "ghcr.io/kanisterio/kanister-tools:0.87.0",
+						Image:           "ghcr.io/kanisterio/kanister-tools:0.88.0",
 						Command:         []string{"sh", "-c", "echo in default specs"},
 						ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 						VolumeMounts: []v1.VolumeMount{
@@ -851,4 +851,26 @@ func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
 	var uidAndGidExpected int64 = 1000
 	c.Assert(*pod.Spec.SecurityContext.RunAsUser, DeepEquals, uidAndGidExpected)
 	c.Assert(*pod.Spec.SecurityContext.RunAsGroup, DeepEquals, uidAndGidExpected)
+}
+
+func (s *PodSuite) TestSetLifecycleHook(c *C) {
+	lch := &v1.Lifecycle{
+		PostStart: &v1.LifecycleHandler{
+			Exec: &v1.ExecAction{
+				Command: []string{"/bin/bash", "-c", "echo 1"},
+			},
+		},
+	}
+
+	po := &PodOptions{
+		Namespace:    s.namespace,
+		GenerateName: "test-",
+		Image:        consts.LatestKanisterToolsImage,
+		Command:      []string{"sh", "-c", "tail -f /dev/null"},
+		Lifecycle:    lch,
+	}
+
+	pod, err := CreatePod(context.Background(), s.cli, po)
+	c.Assert(err, IsNil)
+	c.Assert(pod.Spec.Containers[0].Lifecycle, DeepEquals, lch)
 }
