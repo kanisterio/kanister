@@ -75,11 +75,12 @@ func (e EC2) DescribeDefaultVpc(ctx context.Context) (*ec2.DescribeVpcsOutput, e
 	return e.DescribeVpcsWithContext(ctx, vpci)
 }
 
-func (e EC2) CreateSecurityGroup(ctx context.Context, groupName, description string) (*ec2.CreateSecurityGroupOutput, error) {
+func (e EC2) CreateSecurityGroup(ctx context.Context, groupName, description, vpcId string) (*ec2.CreateSecurityGroupOutput, error) {
 	sgi := &ec2.CreateSecurityGroupInput{
 		DryRun:      &e.DryRun,
 		Description: &description,
 		GroupName:   &groupName,
+		VpcId:       &vpcId,
 	}
 	return e.CreateSecurityGroupWithContext(ctx, sgi)
 }
