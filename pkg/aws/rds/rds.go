@@ -49,7 +49,7 @@ func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS,
 }
 
 // CreateDBInstanceWithContext
-func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, username, password string, sgIDs []string) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, username, password string, sgIDs []string, publicAccess bool) (*rds.CreateDBInstanceOutput, error) {
 	dbi := &rds.CreateDBInstanceInput{
 		AllocatedStorage:     &storage,
 		DBInstanceIdentifier: &instanceID,
@@ -58,12 +58,12 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass,
 		Engine:               &engine,
 		MasterUsername:       &username,
 		MasterUserPassword:   &password,
-		PubliclyAccessible:   aws.Bool(false),
+		PubliclyAccessible:   aws.Bool(publicAccess),
 	}
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
-func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, engine, dbName, username, password string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
+func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, engine, dbName, username, password string, sgIDs []string, publicAccess bool) (*rds.CreateDBClusterOutput, error) {
 	dbi := &rds.CreateDBClusterInput{
 		DBClusterIdentifier: &instanceID,
 		DatabaseName:        &dbName,
@@ -71,18 +71,18 @@ func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, 
 		MasterUsername:      &username,
 		MasterUserPassword:  &password,
 		VpcSecurityGroupIds: convertSGIDs(sgIDs),
+		PubliclyAccessible:  aws.Bool(publicAccess),
 	}
 	return r.CreateDBClusterWithContext(ctx, dbi)
 }
 
-func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine string) (*rds.CreateDBInstanceOutput, error) {
-	pa := true
+func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine string, publicAccess bool) (*rds.CreateDBInstanceOutput, error) {
 	dbi := &rds.CreateDBInstanceInput{
 		DBClusterIdentifier:  &restoredClusterID,
 		DBInstanceClass:      &instanceClass,
 		DBInstanceIdentifier: &instanceID,
 		Engine:               &dbEngine,
-		PubliclyAccessible:   &pa,
+		PubliclyAccessible:   aws.Bool(publicAccess),
 	}
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
