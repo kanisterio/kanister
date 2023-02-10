@@ -62,6 +62,8 @@ type RDSAuroraMySQLDB struct {
 	sessionToken      string
 	securityGroupID   string
 	securityGroupName string
+	VpcID             string
+	PublicAccess      bool
 }
 
 func NewRDSAuroraMySQLDB(name, region string) App {
@@ -127,16 +129,38 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return err
 	}
 
+	// VPCId is not provided, use Default VPC
+	if a.VpcID == "" {
+		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
+		if err != nil {
+			return err
+		}
+		if len(defaultVpc.Vpcs) == 0 {
+			return fmt.Errorf("No default VPC found")
+		}
+		a.VpcID = *defaultVpc.Vpcs[0].VpcId
+		fmt.Println(a.VpcID)
+	}
+
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": a.name, "name": a.securityGroupName})
-	sg, err := ec2Cli.CreateSecurityGroup(ctx, a.securityGroupName, "To allow ingress to Aurora DB cluster")
+	sg, err := ec2Cli.CreateSecurityGroup(ctx, a.securityGroupName, "To allow ingress to Aurora DB cluster", a.VpcID)
 	if err != nil {
 		return errors.Wrap(err, "Error creating security group")
 	}
 	a.securityGroupID = *sg.GroupId
 
 	// Add ingress rule
-	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupName, "0.0.0.0/0", "tcp", 3306)
+	log.Info().Print("Adding ingress rule to security group.", field.M{"app": a.name})
+	descvpc, err := ec2Cli.DescribeVpc(ctx, a.VpcID)
+	if err != nil {
+		return errors.Wrapf(err, "Error Describing VPC", a.VpcID)
+	}
+
+	// Get the CIDR block
+	cidrBlock := *descvpc.Vpcs[0].CidrBlock
+
+	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupName, cidrBlock, "tcp", 3306)
 	if err != nil {
 		return errors.Wrap(err, "Error authorizing security group")
 	}
@@ -148,7 +172,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS Aurora DB cluster.", field.M{"app": a.name, "id": a.id})
-	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, []string{a.securityGroupID})
+	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, []string{a.securityGroupID}, a.PublicAccess)
 	if err != nil {
 		return errors.Wrap(err, "Error creating DB cluster")
 	}
@@ -159,7 +183,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	}
 
 	// create db instance in the cluster
-	_, err = rdsCli.CreateDBInstanceInCluster(ctx, a.id, fmt.Sprintf("%s-instance-1", a.id), AuroraDBInstanceClass, string(function.DBEngineAuroraMySQL))
+	_, err = rdsCli.CreateDBInstanceInCluster(ctx, a.id, fmt.Sprintf("%s-instance-1", a.id), AuroraDBInstanceClass, string(function.DBEngineAuroraMySQL), a.PublicAccess)
 	if err != nil {
 		return errors.Wrap(err, "Error creating an instance in Aurora DB cluster")
 	}
