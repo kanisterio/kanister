@@ -59,6 +59,22 @@ func (e EC2) DescribeVpc(ctx context.Context, vpcID string) (*ec2.DescribeVpcsOu
 	return e.DescribeVpcsWithContext(ctx, vpci)
 }
 
+func (e EC2) DescribeDefaultVpc(ctx context.Context) (*ec2.DescribeVpcsOutput, error) {
+
+	vpci := &ec2.DescribeVpcsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name: aws.String("isDefault"),
+				Values: []*string{
+					aws.String("true"),
+				},
+			},
+		},
+	}
+
+	return e.DescribeVpcsWithContext(ctx, vpci)
+}
+
 func (e EC2) CreateSecurityGroup(ctx context.Context, groupName, description string) (*ec2.CreateSecurityGroupOutput, error) {
 	sgi := &ec2.CreateSecurityGroupInput{
 		DryRun:      &e.DryRun,
