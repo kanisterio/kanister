@@ -60,6 +60,8 @@ type RDSPostgresDB struct {
 	sqlDB             *sql.DB
 	configMapName     string
 	secretName        string
+	VpcID             string
+	PublicAccess      bool
 }
 
 const (
@@ -131,9 +133,22 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 
+	// VPCId is not provided, use Default VPC
+	if pdb.VpcID == "" {
+		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
+		if err != nil {
+			return err
+		}
+		if len(defaultVpc.Vpcs) == 0 {
+			return fmt.Errorf("No default VPC found")
+		}
+		pdb.VpcID = *defaultVpc.Vpcs[0].VpcId
+		fmt.Println(pdb.VpcID)
+	}
+
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
-	sg, err := ec2Cli.CreateSecurityGroup(ctx, pdb.securityGroupName, "kanister-test-security-group")
+	sg, err := ec2Cli.CreateSecurityGroup(ctx, pdb.securityGroupName, "kanister-test-security-group", pdb.VpcID)
 	if err != nil {
 		return err
 	}
@@ -141,23 +156,9 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Add ingress rule
 	log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
-
-	// Describe the security group
-	desc, err := ec2Cli.DescribeSecurityGroup(ctx, pdb.securityGroupName)
+	descvpc, err := ec2Cli.DescribeVpc(ctx, pdb.VpcID)
 	if err != nil {
-		fmt.Println("Error describing security group:", err)
-		return err
-	}
-
-	// Get the VPC ID
-	vpcID := *desc.SecurityGroups[0].VpcId
-
-	fmt.Println("VPC ID:", vpcID)
-
-	descvpc, err := ec2Cli.DescribeVpc(ctx, vpcID)
-	if err != nil {
-		fmt.Println("Error describing VPC:", err)
-		return err
+		return errors.Wrapf(err, "Error Describing VPC", pdb.VpcID)
 	}
 
 	// Get the CIDR block
@@ -177,7 +178,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID})
+	_, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID}, pdb.PublicAccess)
 	if err != nil {
 		return err
 	}
