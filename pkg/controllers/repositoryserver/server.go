@@ -60,24 +60,24 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 
 	err = h.checkServerStatus(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
 	if err != nil {
-		return errors.Wrap(err, "Failed to start Kopia API server")
+		return errors.Wrap(err, "Failed to check Kopia API server status")
 	}
 
 	return nil
 }
 
 func (h *RepoServerHandler) getServerDetails(ctx context.Context) (string, string, string, error) {
-	repoServerAddress, err := GetPodAddress(ctx, h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName)
+	repoServerAddress, err := getPodAddress(ctx, h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName)
 	if err != nil {
 		return "", "", "", err
 	}
 	var serverAdminUsername, serverAdminPassword []byte
 	var ok bool
 	if serverAdminUsername, ok = h.RepositoryServerSecrets.serverAdmin.Data[serverAdminUserNameKey]; !ok {
-		return "", "", "", errors.New("server admin username is incorrect")
+		return "", "", "", errors.New("server admin username is not specified")
 	}
 	if serverAdminPassword, ok = h.RepositoryServerSecrets.serverAdmin.Data[serverAdminPasswordKey]; !ok {
-		return "", "", "", errors.New("server admin password is incorrect")
+		return "", "", "", errors.New("server admin password is not specified")
 	}
 	return repoServerAddress, string(serverAdminUsername), string(serverAdminPassword), nil
 }
@@ -102,7 +102,7 @@ func (h *RepoServerHandler) checkServerStatus(ctx context.Context, serverAddress
 
 	serverStartTimeOut, err := h.getRepositoryServerStartTimeout()
 	if err != nil {
-
+		return errors.Wrap(err, "failed to get repository server timeout")
 	}
 	ctx, cancel := context.WithTimeout(ctx, serverStartTimeOut)
 	defer cancel()

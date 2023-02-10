@@ -71,6 +71,7 @@ type PodOptions struct {
 	RestartPolicy            v1.RestartPolicy
 	OwnerReferences          []metav1.OwnerReference
 	EnvironmentVariables     []v1.EnvVar
+	Lifecycle                *v1.Lifecycle
 }
 
 func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
@@ -176,6 +177,10 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 
 	if opts.ContainerSecurityContext != nil {
 		pod.Spec.Containers[0].SecurityContext = opts.ContainerSecurityContext
+	}
+
+	if opts.Lifecycle != nil {
+		pod.Spec.Containers[0].Lifecycle = opts.Lifecycle
 	}
 
 	for key, value := range opts.Labels {
