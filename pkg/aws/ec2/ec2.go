@@ -60,7 +60,6 @@ func (e EC2) DescribeVpc(ctx context.Context, vpcID string) (*ec2.DescribeVpcsOu
 }
 
 func (e EC2) DescribeDefaultVpc(ctx context.Context) (*ec2.DescribeVpcsOutput, error) {
-
 	vpci := &ec2.DescribeVpcsInput{
 		Filters: []*ec2.Filter{
 			{
@@ -71,7 +70,6 @@ func (e EC2) DescribeDefaultVpc(ctx context.Context) (*ec2.DescribeVpcsOutput, e
 			},
 		},
 	}
-
 	return e.DescribeVpcsWithContext(ctx, vpci)
 }
 
