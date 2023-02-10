@@ -158,7 +158,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
 	descvpc, err := ec2Cli.DescribeVpc(ctx, pdb.VpcID)
 	if err != nil {
-		return errors.Wrapf(err, "Error Describing VPC", pdb.VpcID)
+		return errors.Wrapf(err, "Error Describing VPC %s", pdb.VpcID)
 	}
 
 	// Get the CIDR block

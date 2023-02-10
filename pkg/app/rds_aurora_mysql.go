@@ -154,7 +154,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	log.Info().Print("Adding ingress rule to security group.", field.M{"app": a.name})
 	descvpc, err := ec2Cli.DescribeVpc(ctx, a.VpcID)
 	if err != nil {
-		return errors.Wrapf(err, "Error Describing VPC", a.VpcID)
+		return errors.Wrapf(err, "Error Describing VPC %s", a.VpcID)
 	}
 
 	// Get the CIDR block
