@@ -302,7 +302,7 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 
 	log.WithContext(ctx).Print("Creating DB instance in the cluster")
 	// After Aurora cluster is created, we will have to explictly create the DB instance
-	dbInsOp, err := rdsCli.CreateDBInstanceInCluster(ctx, *op.DBCluster.DBClusterIdentifier, fmt.Sprintf("%s-%s", *op.DBCluster.DBClusterIdentifier, restoredAuroraInstanceSuffix), defaultAuroraInstanceClass, dbEngine)
+	dbInsOp, err := rdsCli.CreateDBInstanceInCluster(ctx, *op.DBCluster.DBClusterIdentifier, fmt.Sprintf("%s-%s", *op.DBCluster.DBClusterIdentifier, restoredAuroraInstanceSuffix), defaultAuroraInstanceClass, dbEngine, false)
 	if err != nil {
 		return errors.Wrap(err, "Error while creating Aurora DB instance in the cluster.")
 	}
