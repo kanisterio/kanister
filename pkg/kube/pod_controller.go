@@ -168,6 +168,27 @@ func (p *podController) StopPod(ctx context.Context) error {
 	return nil
 }
 
+func (p *podController) GetFileWriter() (PodFileWriter, error) {
+	if p.podName == "" {
+		return nil, ErrPodControllerNotStarted
+	}
+
+	if !p.podReady {
+		return nil, ErrPodControllerNotReady
+	}
+
+	pfw := &podFileWriter{
+		cli:           p.cli,
+		namespace:     p.podOptions.Namespace,
+		podName:       p.podName,
+		containerName: p.podOptions.ContainerName,
+	}
+
+	pfw.pfwp = pfw
+
+	return pfw, nil
+}
+
 // This is wrapped for unit testing.
 func (p *podController) createPod(ctx context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error) {
 	return CreatePod(ctx, cli, options)
