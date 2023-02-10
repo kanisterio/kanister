@@ -168,6 +168,27 @@ func (p *podController) StopPod(ctx context.Context) error {
 	return nil
 }
 
+func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
+	if p.podName == "" {
+		return nil, ErrPodControllerNotStarted
+	}
+
+	if !p.podReady {
+		return nil, ErrPodControllerNotReady
+	}
+
+	pce := &podCommandExecutor{
+		cli:           p.cli,
+		namespace:     p.podOptions.Namespace,
+		podName:       p.podName,
+		containerName: p.podOptions.ContainerName,
+	}
+
+	pce.pcep = pce
+
+	return pce, nil
+}
+
 func (p *podController) GetFileWriter() (PodFileWriter, error) {
 	if p.podName == "" {
 		return nil, ErrPodControllerPodNotStarted
