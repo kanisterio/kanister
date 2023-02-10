@@ -24,12 +24,12 @@ import (
 )
 
 type repositoryServerSecrets struct {
-	storage            corev1.Secret
-	storageCredentials corev1.Secret
-	repositoryPassword corev1.Secret
-	serverAdmin        corev1.Secret
-	serverTLS          corev1.Secret
-	serverUserAccess   corev1.Secret
+	storage            *corev1.Secret
+	storageCredentials *corev1.Secret
+	repositoryPassword *corev1.Secret
+	serverAdmin        *corev1.Secret
+	serverTLS          *corev1.Secret
+	serverUserAccess   *corev1.Secret
 }
 
 // getSecretsFromCR fetches all the secrets in the RepositoryServer CR
@@ -63,12 +63,12 @@ func (h *RepoServerHandler) getSecretsFromCR(ctx context.Context) error {
 		return err
 	}
 	secrets := repositoryServerSecrets{
-		storage:            *storage,
-		storageCredentials: *storageCredentials,
-		repositoryPassword: *repositoryPassword,
-		serverAdmin:        *serverAdmin,
-		serverTLS:          *serverTLS,
-		serverUserAccess:   *serverUserAccess,
+		storage:            storage,
+		storageCredentials: storageCredentials,
+		repositoryPassword: repositoryPassword,
+		serverAdmin:        serverAdmin,
+		serverTLS:          serverTLS,
+		serverUserAccess:   serverUserAccess,
 	}
 	h.RepositoryServerSecrets = secrets
 	return nil

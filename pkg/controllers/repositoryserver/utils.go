@@ -233,7 +233,7 @@ func getPodOptions(namespace string, podOverride map[string]interface{}, svc *co
 	return &kube.PodOptions{
 		Namespace:     namespace,
 		GenerateName:  fmt.Sprintf("%s-", repoServerPod),
-		Image:         consts.LatestKanisterToolsImage,
+		Image:         consts.KanisterToolsImage,
 		ContainerName: repoServerPodContainerName,
 		Command:       []string{"bash", "-c", "tail -f /dev/null"},
 		PodOverride:   podOverride,
@@ -241,7 +241,7 @@ func getPodOptions(namespace string, podOverride map[string]interface{}, svc *co
 	}
 }
 
-func GetPodAddress(ctx context.Context, cli kubernetes.Interface, namespace, podName string) (string, error) {
+func getPodAddress(ctx context.Context, cli kubernetes.Interface, namespace, podName string) (string, error) {
 	p, err := cli.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrap(err, "Failed to get pod")

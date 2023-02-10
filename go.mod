@@ -15,7 +15,7 @@ require (
 	github.com/Azure/azure-sdk-for-go v67.1.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/adal v0.9.21
-	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
+	github.com/Azure/go-autorest/autorest/azure/auth v0.5.12
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/BurntSushi/toml v1.2.1
 	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
@@ -24,7 +24,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.184
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/strfmt v0.21.3
-	github.com/go-sql-driver/mysql v1.6.0
+	github.com/go-sql-driver/mysql v1.7.0
 	github.com/gofrs/uuid v4.3.1+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
@@ -44,7 +44,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sirupsen/logrus v1.9.0
-	github.com/spf13/cobra v1.5.0
+	github.com/spf13/cobra v1.6.1
 	github.com/vmware/govmomi v0.29.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
@@ -102,7 +102,7 @@ require (
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/edsrzf/mmap-go v1.1.0 // indirect
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
-	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
+	github.com/emicklei/go-restful v2.16.0+incompatible // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/structs v1.1.0 // indirect
