@@ -116,20 +116,3 @@ func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 		metadataCacheSize,
 	)
 }
-
-// connectToKopiaRepositoryServer connects to the kopia repository server with given repository server cr
-func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositoryServer) error {
-	contentCacheSize := kopia.DefaultDataStoreGeneralContentCacheSizeMB
-	metadataCacheSize := kopia.DefaultDataStoreGeneralMetadataCacheSizeMB
-	return repository.ConnectToAPIServer(
-		ctx,
-		string(rs.Credentials.ServerTLS.Data["tls.crt"]),
-		string(rs.Credentials.ServerUserAccess.Data["password"]),
-		string(rs.Credentials.ServerUserAccess.Data["hostname"]),
-		rs.ServerInfo.ServiceName,
-		rs.Username,
-		contentCacheSize,
-		metadataCacheSize,
-	)
-
-}

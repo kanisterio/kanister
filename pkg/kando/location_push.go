@@ -114,32 +114,3 @@ func kopiaLocationPush(ctx context.Context, path, outputName, sourcePath, passwo
 
 	return output.PrintOutput(outputName, snapInfoJSON)
 }
-
-func newLocationPushUsingRepositoryServerCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "push <source>",
-		Short: "Push a source file or stdin stream to s3-compliant object storage",
-		Args:  cobra.ExactArgs(1),
-		// TODO: Example invocations
-		RunE: func(c *cobra.Command, args []string) error {
-			return runLocationPushRepositoryServer(c, args)
-		},
-	}
-	cmd.Flags().StringP(outputNameFlagName, "o", defaultKandoOutputKey, "Specify a name to be used for the output produced by kando. Set to `kandoOutput` by default")
-	return cmd
-}
-
-func runLocationPushRepositoryServer(cmd *cobra.Command, args []string) error {
-	rs, err := unmarshalRepositoryServerFlag(cmd)
-	if err != nil {
-		return err
-	}
-	s := pathFlag(cmd)
-	ctx := context.Background()
-
-	outputName := outputNameFlag(cmd)
-	if err = connectToKopiaRepositoryServer(ctx, rs); err != nil {
-		return err
-	}
-	return kopiaLocationPush(ctx, s, outputName, args[0], string(rs.Credentials.ServerUserAccess.Data["password"]))
-}
