@@ -22,7 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -52,11 +52,11 @@ type fakePodControllerProcessor struct {
 
 	inCreatePodCli     kubernetes.Interface
 	inCreatePodOptions *PodOptions
-	createPodRet       *v1.Pod
+	createPodRet       *corev1.Pod
 	createPodErr       error
 }
 
-func (fprp *fakePodControllerProcessor) createPod(_ context.Context, cli kubernetes.Interface, options *PodOptions) (*v1.Pod, error) {
+func (fprp *fakePodControllerProcessor) createPod(_ context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error) {
 	fprp.inCreatePodCli = cli
 	fprp.inCreatePodOptions = options
 	return fprp.createPodRet, fprp.createPodErr
@@ -94,7 +94,7 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
 			})
 		},
 		"Pod successfully started": func(prp *fakePodControllerProcessor, pr PodController) {
-			prp.createPodRet = &v1.Pod{
+			prp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
 				},
@@ -104,7 +104,7 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
 			c.Assert(pr.PodName(), Equals, podControllerPodName)
 		},
 		"Pod already created": func(prp *fakePodControllerProcessor, pr PodController) {
-			prp.createPodRet = &v1.Pod{
+			prp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
 				},
@@ -156,7 +156,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 			c.Assert(pcp.inCreatePodCli, IsNil)
 		},
 		"Waiting failed due to timeout": func(pcp *fakePodControllerProcessor, pc PodController) {
-			pcp.createPodRet = &v1.Pod{
+			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
 				},
@@ -177,7 +177,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 			c.Assert(pcp.inDeletePodOptions, DeepEquals, metav1.DeleteOptions{GracePeriodSeconds: &gracePeriodSeconds})
 		},
 		"Waiting failure returned even if pod deletion failed too": func(pcp *fakePodControllerProcessor, pc PodController) { // TODO(e-sumin): Both errors should be returned
-			pcp.createPodRet = &v1.Pod{
+			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
 				},
@@ -199,7 +199,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 			c.Assert(pcp.inDeletePodOptions, DeepEquals, metav1.DeleteOptions{GracePeriodSeconds: &gracePeriodSeconds})
 		},
 		"Waiting succeeded": func(pcp *fakePodControllerProcessor, pc PodController) {
-			pcp.createPodRet = &v1.Pod{
+			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
 				},
@@ -241,7 +241,7 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *C) {
 			c.Assert(pcp.inDeletePodNamespace, Equals, untouchedStr)
 		},
 		"Pod deletion error": func(pcp *fakePodControllerProcessor, pc PodController) {
-			pcp.createPodRet = &v1.Pod{
+			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
 				},
@@ -255,7 +255,7 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *C) {
 			c.Assert(errors.Is(err, simulatedError), Equals, true)
 		},
 		"Pod successfully deleted": func(pcp *fakePodControllerProcessor, pc PodController) {
-			pcp.createPodRet = &v1.Pod{
+			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
 				},
@@ -307,7 +307,7 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 			c.Assert(errors.Is(err, ErrPodControllerNotStarted), Equals, true)
 		},
 		"Pod not ready yet": func(pcp *fakePodControllerProcessor, pc PodController) {
-			pcp.createPodRet = &v1.Pod{
+			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
 				},
@@ -326,7 +326,7 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 			c.Assert(errors.Is(err, ErrPodControllerNotReady), Equals, true)
 		},
 		"CommandExecutor successfully returned": func(pcp *fakePodControllerProcessor, pc PodController) {
-			pcp.createPodRet = &v1.Pod{
+			pcp.createPodRet = &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
 				},
