@@ -283,7 +283,7 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *C) {
 
 		pc := NewPodController(cli, &PodOptions{
 			Namespace: podControllerNS,
-			Name:      podName,
+			Name:      podControllerPodName,
 		}, WithPodControllerProcessor(pcp))
 
 		tc(pcp, pc)
