@@ -137,6 +137,9 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 
+	pdb.vpcID = os.Getenv("VPC_ID")
+	log.Info().Print(pdb.vpcID)
+
 	// VPCId is not provided, use Default VPC
 	if pdb.vpcID == "" {
 		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
