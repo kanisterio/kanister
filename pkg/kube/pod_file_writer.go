@@ -61,13 +61,13 @@ type podFileWriter struct {
 	namespace     string
 	containerName string
 
-	pfwp podFileWriterProcessor
+	fileWriterProcessor podFileWriterProcessor
 }
 
 // WriteFileToPod writes specified file content to a file in the pod and returns an interface
 // with which the file can be removed.
 func (p *podFileWriter) Write(ctx context.Context, filePath string, content io.Reader) (PodFileRemover, error) {
-	pw := p.pfwp.newPodWriter(p.cli, filePath, content)
+	pw := p.fileWriterProcessor.newPodWriter(p.cli, filePath, content)
 	if err := pw.Write(ctx, p.namespace, p.podName, p.containerName); err != nil {
 		return nil, errors.Wrap(err, "Write file to pod failed")
 	}

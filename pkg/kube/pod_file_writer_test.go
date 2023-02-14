@@ -142,11 +142,11 @@ func (s *PodFileWriterTestSuite) TestPodRunnerWriteFile(c *C) {
 		pfwp := &fakePodFileWriterProcessor{}
 
 		pr := &podFileWriter{
-			cli:           cli,
-			podName:       podFileWriterPodName,
-			namespace:     podFileWriterNS,
-			containerName: podFileWriterContainerName,
-			pfwp:          pfwp,
+			cli:                 cli,
+			podName:             podFileWriterPodName,
+			namespace:           podFileWriterNS,
+			containerName:       podFileWriterContainerName,
+			fileWriterProcessor: pfwp,
 		}
 
 		tc(pfwp, pr)

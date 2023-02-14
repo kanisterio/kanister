@@ -184,7 +184,7 @@ func (p *podController) GetFileWriter() (PodFileWriter, error) {
 		containerName: p.podOptions.ContainerName,
 	}
 
-	pfw.pfwp = pfw
+	pfw.fileWriterProcessor = pfw
 
 	return pfw, nil
 }
