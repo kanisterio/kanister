@@ -138,7 +138,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	}
 
 	pdb.vpcID = os.Getenv("VPC_ID")
-	log.Info().Print(pdb.vpcID)
+	log.Info().Print("VPC_ID from kanister", field.M{"VPC ID": pdb.vpcID})
 
 	// VPCId is not provided, use Default VPC
 	if pdb.vpcID == "" {
@@ -154,7 +154,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	}
 
 	// Create security group
-	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
+	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": pdb.securityGroupName, "vpcID": pdb.vpcID})
 	sg, err := ec2Cli.CreateSecurityGroup(ctx, pdb.securityGroupName, "kanister-test-security-group", pdb.vpcID)
 	if err != nil {
 		return err
@@ -171,7 +171,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	// Get the CIDR block
 	cidrBlock := *descvpc.Vpcs[0].CidrBlock
 
-	fmt.Println("cidrBlock:", cidrBlock)
+	log.Info().Print("cidrBlock:", field.M{"cidrBlock": cidrBlock})
 	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, pdb.securityGroupName, cidrBlock, "tcp", 5432)
 	if err != nil {
 		return err
