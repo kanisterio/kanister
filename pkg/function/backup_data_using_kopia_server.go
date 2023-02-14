@@ -2,6 +2,9 @@ package function
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"github.com/kanisterio/kanister/pkg/log"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -52,7 +55,7 @@ func (*backupDataUsingKopiaServerFunc) RequiredArgs() []string {
 		BackupDataIncludePathArg,
 		BackupDataNamespaceArg,
 		BackupDataPodArg,
-		kankopia.KopiaAPIServerAddressArg,
+		//kankopia.KopiaAPIServerAddressArg,
 		//kankopia.KopiaServerPassphraseArg,
 		kankopia.KopiaUserPassphraseArg,
 		kankopia.KopiaTLSCertSecretDataArg,
@@ -65,7 +68,7 @@ func (*backupDataUsingKopiaServerFunc) Arguments() []string {
 		BackupDataIncludePathArg,
 		BackupDataNamespaceArg,
 		BackupDataPodArg,
-		kankopia.KopiaAPIServerAddressArg,
+		//kankopia.KopiaAPIServerAddressArg,
 		//kankopia.KopiaServerPassphraseArg,
 		kankopia.KopiaUserPassphraseArg,
 		kankopia.KopiaTLSCertSecretDataArg,
@@ -76,12 +79,12 @@ func (*backupDataUsingKopiaServerFunc) Arguments() []string {
 func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
 	//TODO implement me
 	var (
-		container     string
-		err           error
-		includePath   string
-		namespace     string
-		pod           string
-		serverAddress string
+		container   string
+		err         error
+		includePath string
+		namespace   string
+		pod         string
+		//serverAddress string
 		//serverPassphrase string
 		userPassphrase string
 		cert           string
@@ -99,9 +102,9 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	if err = Arg(args, BackupDataPodArg, &pod); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, kankopia.KopiaAPIServerAddressArg, &serverAddress); err != nil {
-		return nil, err
-	}
+	//if err = Arg(args, kankopia.KopiaAPIServerAddressArg, &serverAddress); err != nil {
+	//	return nil, err
+	//}
 	//if err = Arg(args, kankopia.KopiaServerPassphraseArg, &serverPassphrase); err != nil {
 	//	return nil, err
 	//}
@@ -125,10 +128,16 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from blueprint")
 	}
 
-	hostname, username, err := getHostAndUserNameFromOptions(tp.Options)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get hostname/username from Options")
-	}
+	username := tp.RepositoryServer.Username
+	hostname, userAccessPassphrase, err := getHostNameAndUserPassPhraseFromRepoServer(userPassphrase)
+	serverAddress := tp.RepositoryServer.ServerInfo.ServiceName + ".kanister.svc.cluster.local:51515"
+
+	log.Print("<--- User, Passphrase, Host and Server Address ---->", field.M{
+		"Username":         username,
+		"User Pass Phrase": userAccessPassphrase,
+		"Hostname":         hostname,
+		"Server Address":   serverAddress,
+	})
 
 	cli, err := kube.NewClient()
 	if err != nil {
@@ -149,7 +158,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		fingerprint,
 		//serverPassphrase,
 		username,
-		userPassphrase,
+		userAccessPassphrase,
 		tags,
 	)
 	if err != nil {
@@ -256,14 +265,20 @@ func backupDataUsingKopiaServer(
 	return kopiacmd.ParseSnapshotCreateOutput(stdout, stderr)
 }
 
-func getHostAndUserNameFromOptions(options map[string]string) (string, string, error) {
-	var hostname, username string
-	var ok bool
-	if hostname, ok = options[HostNameOption]; !ok {
-		return hostname, username, errors.New("Failed to find hostname option")
+func getHostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, error) {
+	var userAccessMap map[string]string
+	if err := json.Unmarshal([]byte(userCreds), &userAccessMap); err != nil {
+		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
 	}
-	if username, ok = options[UserNameOption]; !ok {
-		return hostname, username, errors.New("Failed to find username option")
+
+	var userPassPhrase string
+	var hostName string
+	for key, val := range userAccessMap {
+		hostName = key
+		userPassPhrase = val
 	}
-	return hostname, username, nil
+
+	decodedUserPassPhrase, _ := base64.StdEncoding.DecodeString(userPassPhrase)
+	return hostName, string(decodedUserPassPhrase), nil
+
 }

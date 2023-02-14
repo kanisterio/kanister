@@ -30,6 +30,6 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 		Location:       h.RepositoryServerSecrets.storage.Data,
 	}
 
-	return repository.ConnectToKopiaRepository(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, args)
+	return repository.ConnectToOrCreateKopiaRepository(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, args)
 
 }
