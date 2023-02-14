@@ -54,7 +54,7 @@ dockers:
   - repo-server-controller
   image_templates:
   - 'ghcr.io/kanisterio/repo-server-controller:{{ .Tag }}'
-  dockerfile: 'docker/repositoryserver-controller/Dockerfile'
+  dockerfile: 'docker/repo-server-controller/Dockerfile'
 - ids:
   - kando
   image_templates:
