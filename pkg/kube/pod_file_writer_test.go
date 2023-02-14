@@ -44,8 +44,8 @@ type fakePodFileWriterProcessor struct {
 	podWriter *fakePodWriter
 }
 
-func (fprp *fakePodFileWriterProcessor) newPodWriter(cli kubernetes.Interface, filepath string, content io.Reader) PodWriter {
-	return fprp.podWriter
+func (p *fakePodFileWriterProcessor) newPodWriter(cli kubernetes.Interface, filepath string, content io.Reader) PodWriter {
+	return p.podWriter
 }
 
 type fakePodWriter struct {
@@ -60,17 +60,17 @@ type fakePodWriter struct {
 	removeErr             error
 }
 
-func (fpw *fakePodWriter) Write(ctx context.Context, namespace, podName, containerName string) error {
-	fpw.inWriteNamespace = namespace
-	fpw.inWritePodName = podName
-	fpw.inWriteContainerName = containerName
-	return fpw.writeErr
+func (w *fakePodWriter) Write(ctx context.Context, namespace, podName, containerName string) error {
+	w.inWriteNamespace = namespace
+	w.inWritePodName = podName
+	w.inWriteContainerName = containerName
+	return w.writeErr
 }
-func (fpw *fakePodWriter) Remove(ctx context.Context, namespace, podName, containerName string) error {
-	fpw.inRemoveNamespace = namespace
-	fpw.inRemovePodName = podName
-	fpw.inRemoveContainerName = containerName
-	return fpw.removeErr
+func (w *fakePodWriter) Remove(ctx context.Context, namespace, podName, containerName string) error {
+	w.inRemoveNamespace = namespace
+	w.inRemovePodName = podName
+	w.inRemoveContainerName = containerName
+	return w.removeErr
 }
 
 var _ PodWriter = (*fakePodWriter)(nil)
