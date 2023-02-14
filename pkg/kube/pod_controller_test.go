@@ -56,23 +56,23 @@ type fakePodControllerProcessor struct {
 	createPodErr       error
 }
 
-func (fprp *fakePodControllerProcessor) createPod(_ context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error) {
-	fprp.inCreatePodCli = cli
-	fprp.inCreatePodOptions = options
-	return fprp.createPodRet, fprp.createPodErr
+func (f *fakePodControllerProcessor) createPod(_ context.Context, cli kubernetes.Interface, options *PodOptions) (*corev1.Pod, error) {
+	f.inCreatePodCli = cli
+	f.inCreatePodOptions = options
+	return f.createPodRet, f.createPodErr
 }
 
-func (fprp *fakePodControllerProcessor) waitForPodReady(_ context.Context, podName string) error {
-	fprp.inWaitForPodReadyPodName = podName
-	return fprp.waitForPodReadyErr
+func (f *fakePodControllerProcessor) waitForPodReady(_ context.Context, podName string) error {
+	f.inWaitForPodReadyPodName = podName
+	return f.waitForPodReadyErr
 }
 
-func (fprp *fakePodControllerProcessor) deletePod(_ context.Context, namespace string, podName string, opts metav1.DeleteOptions) error {
-	fprp.inDeletePodNamespace = namespace
-	fprp.inDeletePodPodName = podName
-	fprp.inDeletePodOptions = opts
+func (f *fakePodControllerProcessor) deletePod(_ context.Context, namespace string, podName string, opts metav1.DeleteOptions) error {
+	f.inDeletePodNamespace = namespace
+	f.inDeletePodPodName = podName
+	f.inDeletePodOptions = opts
 
-	return fprp.deletePodErr
+	return f.deletePodErr
 }
 
 func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
