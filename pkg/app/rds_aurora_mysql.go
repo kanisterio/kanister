@@ -160,7 +160,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	// Get the CIDR block
 	cidrBlock := *descvpc.Vpcs[0].CidrBlock
 
-	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupName, cidrBlock, "tcp", 3306)
+	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupName, a.securityGroupID, cidrBlock, "tcp", 3306)
 	if err != nil {
 		return errors.Wrap(err, "Error authorizing security group")
 	}

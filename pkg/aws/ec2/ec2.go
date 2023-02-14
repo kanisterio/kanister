@@ -83,10 +83,11 @@ func (e EC2) CreateSecurityGroup(ctx context.Context, groupName, description, vp
 	return e.CreateSecurityGroupWithContext(ctx, sgi)
 }
 
-func (e EC2) AuthorizeSecurityGroupIngress(ctx context.Context, groupName, cidr, protocol string, port int64) (*ec2.AuthorizeSecurityGroupIngressOutput, error) {
+func (e EC2) AuthorizeSecurityGroupIngress(ctx context.Context, groupName, groupId, cidr, protocol string, port int64) (*ec2.AuthorizeSecurityGroupIngressOutput, error) {
 	sgi := &ec2.AuthorizeSecurityGroupIngressInput{
 		DryRun:     &e.DryRun,
 		GroupName:  &groupName,
+		GroupId:    &groupId,
 		CidrIp:     &cidr,
 		IpProtocol: &protocol,
 		ToPort:     &port,

@@ -172,7 +172,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	cidrBlock := *descvpc.Vpcs[0].CidrBlock
 
 	log.Info().Print("cidrBlock:", field.M{"cidrBlock": cidrBlock})
-	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, pdb.securityGroupName, cidrBlock, "tcp", 5432)
+	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, pdb.securityGroupName, pdb.securityGroupID, cidrBlock, "tcp", 5432)
 	if err != nil {
 		return err
 	}
