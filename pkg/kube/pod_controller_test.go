@@ -121,7 +121,7 @@ func (s *PodControllerTestSuite) TestPodControllerStartPod(c *C) {
 
 			err = pr.StartPod(ctx, 30*time.Second)
 			c.Assert(err, Not(IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerAlreadyStarted), Equals, true)
+			c.Assert(errors.Is(err, ErrPodControllerPodAlreadyStarted), Equals, true)
 			c.Assert(prp.inCreatePodCli, IsNil)
 			c.Assert(prp.inCreatePodOptions, IsNil)
 		},
@@ -151,7 +151,7 @@ func (s *PodControllerTestSuite) TestPodControllerWaitPod(c *C) {
 		"Waiting failed because pod not started yet": func(pcp *fakePodControllerProcessor, pc PodController) {
 			err := pc.WaitForPodReady(ctx)
 			c.Assert(err, Not(IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerNotStarted), Equals, true)
+			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), Equals, true)
 			c.Assert(pcp.inCreatePodOptions, IsNil)
 			c.Assert(pcp.inCreatePodCli, IsNil)
 		},
@@ -236,7 +236,7 @@ func (s *PodControllerTestSuite) TestPodControllerStopPod(c *C) {
 		"Pod not started yet": func(pcp *fakePodControllerProcessor, pc PodController) {
 			err := pc.StopPod(ctx)
 			c.Assert(err, Not(IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerNotStarted), Equals, true)
+			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), Equals, true)
 			c.Assert(pcp.inDeletePodPodName, Equals, untouchedStr)
 			c.Assert(pcp.inDeletePodNamespace, Equals, untouchedStr)
 		},
@@ -299,12 +299,12 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 			pce, err := pc.GetCommandExecutor()
 			c.Assert(pce, IsNil)
 			c.Assert(err, Not(IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerNotStarted), Equals, true)
+			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), Equals, true)
 
 			pfw, err := pc.GetFileWriter()
 			c.Assert(pfw, IsNil)
 			c.Assert(err, Not(IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerNotStarted), Equals, true)
+			c.Assert(errors.Is(err, ErrPodControllerPodNotStarted), Equals, true)
 		},
 		"Pod not ready yet": func(pcp *fakePodControllerProcessor, pc PodController) {
 			pcp.createPodRet = &corev1.Pod{
@@ -318,12 +318,12 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 			pce, err := pc.GetCommandExecutor()
 			c.Assert(pce, IsNil)
 			c.Assert(err, Not(IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerNotReady), Equals, true)
+			c.Assert(errors.Is(err, ErrPodControllerPodNotReady), Equals, true)
 
 			pfw, err := pc.GetFileWriter()
 			c.Assert(pfw, IsNil)
 			c.Assert(err, Not(IsNil))
-			c.Assert(errors.Is(err, ErrPodControllerNotReady), Equals, true)
+			c.Assert(errors.Is(err, ErrPodControllerPodNotReady), Equals, true)
 		},
 		"CommandExecutor successfully returned": func(pcp *fakePodControllerProcessor, pc PodController) {
 			pcp.createPodRet = &corev1.Pod{

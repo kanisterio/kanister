@@ -28,12 +28,12 @@ import (
 )
 
 var (
-	ErrPodControllerNotInitialized = errors.New("pod has not been initialized")
-	ErrPodControllerAlreadyStarted = errors.New("pod has already been started")
-	ErrPodControllerNotReady       = errors.New("pod not ready yet")
-	ErrPodControllerNotStarted     = errors.New("pod not yet started")
-	PodControllerDefaultStopTime   = 30 * time.Second
-	PodControllerInfiniteStopTime  = 0 * time.Second
+	ErrPodControllerNotInitialized    = errors.New("pod has not been initialized")
+	ErrPodControllerPodAlreadyStarted = errors.New("pod has already been started")
+	ErrPodControllerPodNotReady       = errors.New("pod is not yet ready")
+	ErrPodControllerPodNotStarted     = errors.New("pod is not yet started")
+	PodControllerDefaultStopTime      = 30 * time.Second
+	PodControllerInfiniteStopTime     = 0 * time.Second
 )
 
 // PodController specifies interface needed for starting, stopping pod and operations with it
@@ -104,7 +104,7 @@ func (p *podController) Pod() *corev1.Pod {
 // stopTimeout is also stored and will be used when StopPod will be called
 func (p *podController) StartPod(ctx context.Context, stopTimeout time.Duration) error {
 	if p.podName != "" {
-		return errors.Wrap(ErrPodControllerAlreadyStarted, "Failed to create pod")
+		return errors.Wrap(ErrPodControllerPodAlreadyStarted, "Failed to create pod")
 	}
 
 	if p.cli == nil || p.podOptions == nil {
@@ -127,7 +127,7 @@ func (p *podController) StartPod(ctx context.Context, stopTimeout time.Duration)
 // WaitForPod waits for POD readiness.
 func (p *podController) WaitForPodReady(ctx context.Context) error {
 	if p.podName == "" {
-		return errors.Wrap(ErrPodControllerNotStarted, "Pod failed to become ready in time")
+		return errors.Wrap(ErrPodControllerPodNotStarted, "Pod failed to become ready in time")
 	}
 
 	if err := p.pcp.waitForPodReady(ctx, p.podName); err != nil {
@@ -141,11 +141,11 @@ func (p *podController) WaitForPodReady(ctx context.Context) error {
 	return nil
 }
 
-// StopPod stops the pod which was previously started, otherwise it will return ErrPodControllerNotStarted error.
+// StopPod stops the pod which was previously started, otherwise it will return ErrPodControllerPodNotStarted error.
 // stopTimeout passed to Start will be used
 func (p *podController) StopPod(ctx context.Context) error {
 	if p.podName == "" {
-		return ErrPodControllerNotStarted
+		return ErrPodControllerPodNotStarted
 	}
 
 	if p.stopTimeout != PodControllerInfiniteStopTime {
