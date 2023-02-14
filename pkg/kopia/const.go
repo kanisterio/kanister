@@ -21,3 +21,12 @@ const (
 	// DefaultClientCacheDirectory is the directory where kopia content cache is created
 	DefaultClientCacheDirectory = "/tmp/kopia-cache"
 )
+
+const (
+	KopiaAPIServerAddressArg       = "serverAddress"
+	KopiaTLSCertSecretKey          = "certs"
+	KopiaTLSCertSecretDataArg      = "certData"
+	KopiaServerPassphraseArg       = "serverPassphrase"
+	KopiaServerPassphraseSecretKey = "serverPassphraseKey"
+	KopiaUserPassphraseArg         = "userPassphrase"
+)

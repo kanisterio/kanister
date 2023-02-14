@@ -22,8 +22,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"path/filepath"
+	"strings"
+	"time"
 
+	"github.com/jpillora/backoff"
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/repo/manifest"
 	"github.com/kopia/kopia/repo/object"
@@ -32,6 +36,11 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/format"
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
@@ -56,6 +65,11 @@ const (
 	DataStoreGeneralContentCacheSizeMBKey = "dataStoreGeneralContentCacheSize"
 	// DataStoreGeneralMetadataCacheSizeMBKey is the key to pass metadata cache size for general command workloads
 	DataStoreGeneralMetadataCacheSizeMBKey = "dataStoreGeneralMetadataCacheSize"
+	// ServerUsernameFormat is used to construct server username for Kopia API Server Status Command
+	ServerUsernameFormat = "%s@%s"
+	// KanisterAdminUsername is the username for the user with Admin privileges
+	KanisterAdminUsername = "kanister-admin"
+	defaultServerHostname = "data-mover-server-pod"
 )
 
 // ExtractFingerprintFromCertSecret extracts the fingerprint from the given certificate secret
@@ -183,4 +197,36 @@ func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
 		return metadataCacheSize
 	}
 	return DefaultDataStoreGeneralMetadataCacheSizeMB
+}
+
+// GetCustomConfigFileAndLogDirectory returns a config file path and log directory based on the hostname
+func GetCustomConfigFileAndLogDirectory(hostname string) (string, string) {
+	hostname = strings.ReplaceAll(hostname, ".", "-")
+	configFile := filepath.Join(kopiacmd.DefaultConfigDirectory, hostname+".config")
+	logDir := filepath.Join(kopiacmd.DefaultLogDirectory, hostname)
+	return configFile, logDir
+}
+
+// WaitTillCommandSucceed returns error if the Command fails to pass without error before default timeout
+func WaitTillCommandSucceed(ctx context.Context, cli kubernetes.Interface, cmd []string, namespace, podName, container string) error {
+	err := poll.WaitWithBackoff(ctx, backoff.Backoff{
+		Factor: 2,
+		Jitter: false,
+		Min:    100 * time.Millisecond,
+		Max:    180 * time.Second,
+	}, func(context.Context) (bool, error) {
+		stdout, stderr, exErr := kube.Exec(cli, namespace, podName, container, cmd, nil)
+		format.Log(podName, container, stdout)
+		format.Log(podName, container, stderr)
+		if exErr != nil {
+			return false, nil
+		}
+		return true, nil
+	})
+	return errors.Wrap(err, "Failed while waiting for Kopia API server to start")
+}
+
+// GetDefaultServerUsername returns the default server username used to run Kopia API Server commands
+func GetDefaultServerUsername() string {
+	return fmt.Sprintf(ServerUsernameFormat, KanisterAdminUsername, defaultServerHostname)
 }
