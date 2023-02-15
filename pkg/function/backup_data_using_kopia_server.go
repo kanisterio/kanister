@@ -124,7 +124,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 
-	repositoryServerService, err := cli.CoreV1().Services(tp.RepositoryServer.Namespace).Get(ctx, tp.RepositoryServer.Name, metav1.GetOptions{})
+	repositoryServerService, err := cli.CoreV1().Services(tp.RepositoryServer.Namespace).Get(context.Background(), tp.RepositoryServer.ServerInfo.ServiceName, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.New("Unable to find Service Details for Repository Server")
 	}
