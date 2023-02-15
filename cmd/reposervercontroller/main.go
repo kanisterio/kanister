@@ -22,6 +22,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"go.uber.org/zap/zapcore"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,12 +34,14 @@ import (
 
 	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/controllers/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/log"
 	//+kubebuilder:scaffold:imports
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme          = runtime.NewScheme()
+	setupLog        = ctrl.Log.WithName("setup")
+	defaultLogLevel = zapcore.ErrorLevel
 )
 
 func init() {
@@ -52,16 +55,18 @@ func main() {
 	var metricsAddr string
 	var probeAddr string
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	logLevel := getLogLevel()
+
 	opts := zap.Options{
-		Development: true,
+		Level: logLevel,
 	}
+
 	// Disable metrics server
 	metricsAddr = "0"
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
-
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-
+	logger := zap.New(zap.UseFlagOptions(&opts))
+	ctrl.SetLogger(logger)
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -97,4 +102,16 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func getLogLevel() zapcore.Level {
+	logLevel := os.Getenv(log.LevelEnvName)
+	if logLevel == "" {
+		return defaultLogLevel
+	}
+	level, err := zapcore.ParseLevel(logLevel)
+	if err != nil {
+		return defaultLogLevel
+	}
+	return level
 }
