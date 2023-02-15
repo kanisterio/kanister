@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -127,7 +128,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	if err != nil {
 		return nil, errors.New("Unable to find Service Details for Repository Server")
 	}
-	repositoryServerServicePort := string(repositoryServerService.Spec.Ports[0].Port)
+	repositoryServerServicePort := strconv.Itoa(int(repositoryServerService.Spec.Ports[0].Port))
 	serverAddress := "https://" + tp.RepositoryServer.ServerInfo.ServiceName + "." + tp.RepositoryServer.Namespace + ".svc.cluster.local:" + repositoryServerServicePort
 
 	snapInfo, err := backupDataUsingKopiaServer(
