@@ -89,7 +89,6 @@ func (e EC2) AuthorizeSecurityGroupIngress(ctx context.Context, groupName, group
 	log.Info().Print("Security Group ID", field.M{"groupID": groupId}, field.M{"groupName": groupName})
 	sgi := &ec2.AuthorizeSecurityGroupIngressInput{
 		DryRun:     &e.DryRun,
-		GroupName:  &groupName,
 		GroupId:    &groupId,
 		CidrIp:     &cidr,
 		IpProtocol: &protocol,
