@@ -20,6 +20,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/pkg/errors"
 )
 
@@ -84,6 +86,7 @@ func (e EC2) CreateSecurityGroup(ctx context.Context, groupName, description, vp
 }
 
 func (e EC2) AuthorizeSecurityGroupIngress(ctx context.Context, groupName, groupId, cidr, protocol string, port int64) (*ec2.AuthorizeSecurityGroupIngressOutput, error) {
+	log.Info().Print("Security Group ID", field.M{"groupID": groupId}, field.M{"groupName": groupName})
 	sgi := &ec2.AuthorizeSecurityGroupIngressInput{
 		DryRun:     &e.DryRun,
 		GroupName:  &groupName,
