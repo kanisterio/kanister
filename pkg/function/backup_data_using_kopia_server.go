@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/kanisterio/kanister/pkg/log"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -20,7 +19,9 @@ import (
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
