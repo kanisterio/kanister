@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/kanisterio/kanister/pkg/log"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -114,14 +115,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 
 	username := tp.RepositoryServer.Username
 	hostname, userAccessPassphrase, err := getHostNameAndUserPassPhraseFromRepoServer(userPassphrase)
-	serverAddress := "https://" + tp.RepositoryServer.ServerInfo.ServiceName + ".kanister.svc.cluster.local:51515"
-
-	log.Print("<--- User, Passphrase, Host and Server Address ---->", field.M{
-		"Username":         username,
-		"User Pass Phrase": userAccessPassphrase,
-		"Hostname":         hostname,
-		"Server Address":   serverAddress,
-	})
 
 	cli, err := kube.NewClient()
 	if err != nil {
@@ -130,6 +123,21 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
+
+	repositoryServerService, err := cli.CoreV1().Services(tp.RepositoryServer.Namespace).Get(ctx, tp.RepositoryServer.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.New("Unable to find Service Details for Repository Server")
+	}
+	repositoryServerServicePort := string(repositoryServerService.Spec.Ports[0].Port)
+	serverAddress := "https://" + tp.RepositoryServer.ServerInfo.ServiceName + "." + tp.RepositoryServer.Namespace + ".svc.cluster.local:" + repositoryServerServicePort
+
+	log.Print("<--- User, Passphrase, Host and Server Address ---->", field.M{
+		"Username":         username,
+		"User Pass Phrase": userAccessPassphrase,
+		"Hostname":         hostname,
+		"Server Address":   serverAddress,
+	})
+
 	snapInfo, err := backupDataUsingKopiaServer(
 		cli,
 		container,
