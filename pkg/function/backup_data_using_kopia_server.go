@@ -18,7 +18,6 @@ import (
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/param"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -130,13 +129,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	}
 	repositoryServerServicePort := string(repositoryServerService.Spec.Ports[0].Port)
 	serverAddress := "https://" + tp.RepositoryServer.ServerInfo.ServiceName + "." + tp.RepositoryServer.Namespace + ".svc.cluster.local:" + repositoryServerServicePort
-
-	log.Print("<--- User, Passphrase, Host and Server Address ---->", field.M{
-		"Username":         username,
-		"User Pass Phrase": userAccessPassphrase,
-		"Hostname":         hostname,
-		"Server Address":   serverAddress,
-	})
 
 	snapInfo, err := backupDataUsingKopiaServer(
 		cli,
