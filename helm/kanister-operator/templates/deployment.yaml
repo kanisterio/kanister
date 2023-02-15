@@ -44,7 +44,7 @@ spec:
         imagePullPolicy: {{ .Values.repositoryServerImage.pullPolicy }}
         env:
         - name: KOPIA_SERVER_START_TIMEOUT
-          value: {{ .Values.repositoryServer.startTimeout | quote }}
+          value: {{ .Values.repositoryServerController.serverStartTimeout | quote }}
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}
