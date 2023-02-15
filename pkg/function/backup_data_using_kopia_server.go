@@ -24,10 +24,6 @@ import (
 
 const (
 	BackupDataUsingKopiaServerFuncName = "BackupDataUsingKopiaServer"
-	// HostNameOption is the key for passing in hostname through Options map
-	HostNameOption = "hostName"
-	// UserNameOption is the key for passing in username through Options map
-	UserNameOption = "userName"
 	// KopiaFuncVersion is the version used by Kopia based Kanister functions for registration
 	KopiaFuncVersion = "v1.0.0-alpha"
 	// BackupDataTagsKeyArg is the key used for returning snapshot tags
@@ -55,8 +51,6 @@ func (*backupDataUsingKopiaServerFunc) RequiredArgs() []string {
 		BackupDataIncludePathArg,
 		BackupDataNamespaceArg,
 		BackupDataPodArg,
-		//kankopia.KopiaAPIServerAddressArg,
-		//kankopia.KopiaServerPassphraseArg,
 		kankopia.KopiaUserPassphraseArg,
 		kankopia.KopiaTLSCertSecretDataArg,
 	}
@@ -68,8 +62,6 @@ func (*backupDataUsingKopiaServerFunc) Arguments() []string {
 		BackupDataIncludePathArg,
 		BackupDataNamespaceArg,
 		BackupDataPodArg,
-		//kankopia.KopiaAPIServerAddressArg,
-		//kankopia.KopiaServerPassphraseArg,
 		kankopia.KopiaUserPassphraseArg,
 		kankopia.KopiaTLSCertSecretDataArg,
 		BackupDataTagsKeyArg,
@@ -79,13 +71,11 @@ func (*backupDataUsingKopiaServerFunc) Arguments() []string {
 func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
 	//TODO implement me
 	var (
-		container   string
-		err         error
-		includePath string
-		namespace   string
-		pod         string
-		//serverAddress string
-		//serverPassphrase string
+		container      string
+		err            error
+		includePath    string
+		namespace      string
+		pod            string
 		userPassphrase string
 		cert           string
 		tagsStr        string
@@ -102,12 +92,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	if err = Arg(args, BackupDataPodArg, &pod); err != nil {
 		return nil, err
 	}
-	//if err = Arg(args, kankopia.KopiaAPIServerAddressArg, &serverAddress); err != nil {
-	//	return nil, err
-	//}
-	//if err = Arg(args, kankopia.KopiaServerPassphraseArg, &serverPassphrase); err != nil {
-	//	return nil, err
-	//}
 	if err = Arg(args, kankopia.KopiaUserPassphraseArg, &userPassphrase); err != nil {
 		return nil, err
 	}
@@ -147,7 +131,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 	snapInfo, err := backupDataUsingKopiaServer(
-		ctx,
 		cli,
 		container,
 		hostname,
@@ -156,7 +139,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		pod,
 		serverAddress,
 		fingerprint,
-		//serverPassphrase,
 		username,
 		userAccessPassphrase,
 		tags,
@@ -182,7 +164,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 }
 
 func backupDataUsingKopiaServer(
-	ctx context.Context,
 	cli kubernetes.Interface,
 	container,
 	hostname,
@@ -191,30 +172,12 @@ func backupDataUsingKopiaServer(
 	pod,
 	serverAddress,
 	fingerprint,
-	//serverPassphrase,
 	username,
 	userPassphrase string,
 	tags []string,
 ) (info *kopiacmd.SnapshotCreateInfo, err error) {
 	contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
 	configFile, logDirectory := kankopia.GetCustomConfigFileAndLogDirectory(hostname)
-
-	// Check the status of Kopia API Server before connecting
-	//cmd := kopiacmd.ServerStatus(
-	//	kopiacmd.ServerStatusCommandArgs{
-	//		CommandArgs: &kopiacmd.CommandArgs{
-	//			RepoPassword:   "",
-	//			ConfigFilePath: kopiacmd.DefaultConfigFilePath,
-	//			LogDirectory:   kopiacmd.DefaultLogDirectory,
-	//		},
-	//		ServerAddress:  serverAddress,
-	//		ServerUsername: kankopia.GetDefaultServerUsername(),
-	//		ServerPassword: serverPassphrase,
-	//		Fingerprint:    fingerprint,
-	//	})
-	//if err = kankopia.WaitTillCommandSucceed(ctx, cli, cmd, namespace, pod, container); err != nil {
-	//	return nil, errors.Wrap(err, "Failed to establish connection to Kopia API server")
-	//}
 
 	cmd := kopiacmd.RepositoryConnectServerCommand(kopiacmd.RepositoryServerCommandArgs{
 		UserPassword:    userPassphrase,
