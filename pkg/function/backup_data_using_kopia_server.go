@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-
 	"strings"
 
 	"github.com/dustin/go-humanize"
