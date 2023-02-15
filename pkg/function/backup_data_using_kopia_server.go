@@ -130,7 +130,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 
 	username := tp.RepositoryServer.Username
 	hostname, userAccessPassphrase, err := getHostNameAndUserPassPhraseFromRepoServer(userPassphrase)
-	serverAddress := tp.RepositoryServer.ServerInfo.ServiceName + ".kanister.svc.cluster.local:51515"
+	serverAddress := "https://" + tp.RepositoryServer.ServerInfo.ServiceName + ".kanister.svc.cluster.local:51515"
 
 	log.Print("<--- User, Passphrase, Host and Server Address ---->", field.M{
 		"Username":         username,
