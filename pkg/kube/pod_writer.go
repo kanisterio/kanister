@@ -25,7 +25,7 @@ import (
 	"github.com/kanisterio/kanister/pkg/format"
 )
 
-// PodWriter specifies interface needed for manipulating with file in pod
+// PodWriter specifies interface needed for manipulating files in a pod
 type PodWriter interface {
 	// Write will create a new file(if not present) and write the provided content to the file
 	Write(ctx context.Context, namespace, podName, containerName string) error

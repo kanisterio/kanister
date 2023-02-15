@@ -19,7 +19,7 @@ import (
 	"io"
 )
 
-// PodCommandExecutor allows us to execute command within POD
+// PodCommandExecutor allows us to execute command within the pod
 type PodCommandExecutor interface {
 	Exec(ctx context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error
 }

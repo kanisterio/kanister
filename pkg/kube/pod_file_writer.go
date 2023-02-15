@@ -25,7 +25,7 @@ type PodFileRemover interface {
 	Path() string
 }
 
-// PodFileWriter allows us to write file to POD.
+// PodFileWriter allows us to write file to the pod.
 type PodFileWriter interface {
 	Write(ctx context.Context, filePath string, content io.Reader) (PodFileRemover, error)
 }
