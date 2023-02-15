@@ -127,7 +127,7 @@ func (p *podController) StartPod(ctx context.Context, stopTimeout time.Duration)
 // WaitForPod waits for pod readiness.
 func (p *podController) WaitForPodReady(ctx context.Context) error {
 	if p.podName == "" {
-		return errors.Wrap(ErrPodControllerPodNotStarted, "Pod failed to become ready in time")
+		return ErrPodControllerPodNotStarted
 	}
 
 	if err := p.pcp.waitForPodReady(ctx, p.podName); err != nil {
