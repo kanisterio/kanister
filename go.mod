@@ -63,7 +63,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.12.3
 )
 
-require github.com/dustin/go-humanize v1.0.0
+require github.com/dustin/go-humanize v1.0.1
 
 require (
 	cloud.google.com/go v0.105.0 // indirect
