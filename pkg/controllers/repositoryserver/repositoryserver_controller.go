@@ -26,8 +26,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
@@ -121,7 +123,7 @@ func (r *RepositoryServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// The 'Owns' function allows the controller to set owner refs on
 	// child resources and run the same reconcile loop for all events on child resources
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&crkanisteriov1alpha1.RepositoryServer{}).
+		For(&crkanisteriov1alpha1.RepositoryServer{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&corev1.Service{}).
 		Owns(&networkingv1.NetworkPolicy{}).
 		Owns(&corev1.Pod{}).

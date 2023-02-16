@@ -127,14 +127,7 @@ func getPodOverride(ctx context.Context, reconciler *RepositoryServerReconciler,
 	if err != nil {
 		return nil, err
 	}
-	uidguid := int64(0)
-	nonRootBool := false
-	podOverride := map[string]interface{}{
-		"securityContext": corev1.PodSecurityContext{
-			RunAsUser:    &uidguid,
-			RunAsNonRoot: &nonRootBool,
-		},
-	}
+	podOverride := make(map[string]interface{})
 	if pod.Spec.NodeSelector != nil {
 		podOverride["nodeSelector"] = pod.Spec.NodeSelector
 	}
@@ -230,6 +223,8 @@ func addTLSCertConfigurationInPodOverride(podOverride *map[string]interface{}, t
 }
 
 func getPodOptions(namespace string, podOverride map[string]interface{}, svc *corev1.Service) *kube.PodOptions {
+	uidguid := int64(0)
+	nonRootBool := false
 	return &kube.PodOptions{
 		Namespace:     namespace,
 		GenerateName:  fmt.Sprintf("%s-", repoServerPod),
@@ -238,6 +233,10 @@ func getPodOptions(namespace string, podOverride map[string]interface{}, svc *co
 		Command:       []string{"bash", "-c", "tail -f /dev/null"},
 		PodOverride:   podOverride,
 		Labels:        map[string]string{repoServerServiceNameKey: svc.Name},
+		PodSecurityContext: &corev1.PodSecurityContext{
+			RunAsUser:    &uidguid,
+			RunAsNonRoot: &nonRootBool,
+		},
 	}
 }
 
