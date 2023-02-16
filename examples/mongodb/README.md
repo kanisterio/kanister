@@ -4,11 +4,11 @@
 
 ## Prerequisites
 
-* Kubernetes 1.9+
+* Kubernetes 1.20+
 * Kubernetes beta APIs enabled only if `podDisruptionBudget` is enabled
 * PV support on the underlying infrastructure
-* Kanister controller version 0.82.0 installed in your cluster
-* Kanctl CLI installed (https://docs.kanister.io/tooling.html#kanctl)
+* Kanister controller version 0.89.0 installed in your cluster
+* Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
 
 ## Chart Details
 
@@ -45,7 +45,7 @@ $ kanctl create profile s3compliant --access-key <aws-access-key-id> \
 
 **NOTE:**
 
-The command will configure a location where artifacts resulting from Kanister data operations such as backup should go. This is stored as a profiles.cr.kanister.io CustomResource (CR) which is then referenced in Kanister ActionSets. Every ActionSet requires a Profile reference to complete the action. This CR (profiles.cr.kanister.io) can be shared between Kanister-enabled application instances.
+The command will configure a location where artifacts resulting from Kanister data operations such as backup should go. This is stored as a `profiles.cr.kanister.io` CustomResource (CR) which is then referenced in Kanister ActionSets. Every ActionSet requires a Profile reference to complete the action. This CR (profiles.cr.kanister.io) can be shared between Kanister-enabled application instances.
 
 **NOTE:**
 
@@ -58,7 +58,7 @@ actions.restore.phases[0].objects.mongosecret.name: <mongo-secret-name>
 Create Blueprint in the same namespace as the controller
 
 ```bash
-$ kubectl create -f ./mongo-blueprint.yaml -n kasten-io
+$ kubectl create -f ./mongo-blueprint.yaml -n kanister
 ```
 
 Once MongoDB is running, you can populate it with some data. Let's add a collection called "restaurants" to a test database:
@@ -68,12 +68,22 @@ Once MongoDB is running, you can populate it with some data. Let's add a collect
 $ kubectl exec -ti my-release-mongodb-0 -n mongo-test -- bash
 
 # From inside the shell, use the mongo CLI to insert some data into the test database
-$ mongo admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.insert({'name' : 'Roys', 'cuisine' : 'Hawaiian', 'id' : '8675309'})"
-WriteResult({ "nInserted" : 1 })
+$ mongosh admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.insertOne({'name' : 'Roys', 'cuisine' : 'Hawaiian', 'id' : '8675309'})"
+{
+  acknowledged: true,
+  insertedId: ObjectId("6393065091e5c8cd94289f16")
+}
 
 # View the restaurants data in the test database
-$ mongo admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.find()"
-{ "_id" : ObjectId("5d778d49bd622241df3bc133"), "name" : "Roys", "cuisine" : "Hawaiian", "id" : "8675309" }
+$ mongosh admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.find()"
+[
+  {
+    _id: ObjectId("6393059b7844b3c1445e9d14"),
+    name: 'Roys',
+    cuisine: 'Hawaiian',
+    id: '8675309'
+  }
+]
 ```
 
 
@@ -86,29 +96,30 @@ $ kubectl get profile -n mongo-test
 NAME               AGE
 s3-profile-sph7s   2h
 
-$ kanctl create actionset --action backup --namespace kasten-io --blueprint mongodb-blueprint --statefulset mongo-test/my-release-mongodb --profile mongo-test/s3-profile-sph7s
+$ kanctl create actionset --action backup --namespace kanister --blueprint mongodb-blueprint --statefulset mongo-test/my-release-mongodb --profile mongo-test/s3-profile-sph7s
 actionset backup-llfb8 created
 
-$ kubectl --namespace kasten-io get actionsets.cr.kanister.io
-NAME                 AGE
-backup-llfb8         2h
-
 # View the status of the actionset
-$ kubectl --namespace kasten-io describe actionset backup-llfb8
+$ kubectl --namespace kanister get actionsets.cr.kanister.io
+NAME           PROGRESS   LAST TRANSITION TIME   STATE
+backup-thkll   100.00     2022-12-09T10:01:42Z   complete
 ```
 
 ### Disaster strikes!
 
 Let's say someone with fat fingers accidentally deleted the restaurants collection using the following command in mongodb primary pod:
 ```bash
+# Connect to MongoDB primary pod
+$ kubectl exec -ti my-release-mongodb-0 -n mongo-test -- bash
+
 # Drop the restaurants collection
-$ mongo admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.drop()"
+$ mongosh admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.drop()"
 true
 ```
 
 If you try to access this data in the database, you should see that it is no longer there:
 ```bash
-$ mongo admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.find()"
+$ mongosh admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.find()"
 # No entries should be found in the restaurants collection
 ```
 
@@ -121,18 +132,30 @@ To restore the missing data, you should use the backup that you created before. 
 As a part of restore operation in MongoDB ReplicaSet, we are deleting data from the Secondary replicas to allow MongoDB to use `Initial Sync` for updating Secondaries as documented [here](https://docs.mongodb.com/manual/tutorial/restore-replica-set-from-backup/#update-secondaries-using-initial-sync)
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action restore --from "backup-llfb8"
+$ kanctl --namespace kanister create actionset --action restore --from "backup-llfb8"
 actionset restore-backup-llfb8-64gqm created
 
 # View the status of the ActionSet
-kubectl --namespace kasten-io describe actionset restore-backup-llfb8-64gqm
+kubectl --namespace kanister get actionset restore-backup-llfb8-64gqm
+NAME                         PROGRESS   LAST TRANSITION TIME   STATE
+restore-backup-llfb8-64gqm   100.00     2022-12-09T10:06:39Z   complete
 ```
 
 You should now see that the data has been successfully restored to MongoDB!
 
 ```bash
-$ mongo admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.find()"
-{ "_id" : ObjectId("5d778f987799be09da2f8ade"), "name" : "Roys", "cuisine" : "Hawaiian", "id" : "8675309" }
+# Connect to MongoDB primary pod
+$ kubectl exec -ti my-release-mongodb-0 -n mongo-test -- bash
+
+$ mongosh admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD --quiet --eval "db.restaurants.find()"
+[
+  {
+    _id: ObjectId("6393059b7844b3c1445e9d14"),
+    name: 'Roys',
+    cuisine: 'Hawaiian',
+    id: '8675309'
+  }
+]
 ```
 
 ### Delete the Artifacts
@@ -140,11 +163,13 @@ $ mongo admin --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD -
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kasten-io create actionset --action delete --from "backup-llfb8"
+$ kanctl --namespace kanister create actionset --action delete --from "backup-llfb8" --namespacetargets kanister
 actionset "delete-backup-llfb8-k9ncm" created
 
 # View the status of the ActionSet
-$ kubectl --namespace kasten-io describe actionset delete-backup-llfb8-k9ncm
+$ kubectl --namespace kanister get actionset delete-backup-llfb8-k9ncm
+NAME                         PROGRESS   LAST TRANSITION TIME   STATE
+delete-backup-llfb8-k9ncm    100.00     2022-12-09T10:08:20Z   complete
 ```
 
 ### Troubleshooting
@@ -152,13 +177,13 @@ $ kubectl --namespace kasten-io describe actionset delete-backup-llfb8-k9ncm
 If you run into any issues with the above commands, you can check the logs of the controller using:
 
 ```bash
-$ kubectl --namespace kasten-io logs -l app=kanister-operator
+$ kubectl --namespace kanister logs -l app=kanister-operator
 ```
 
 you can also check events of the actionset
 
 ```bash
-$ kubectl describe actionset restore-backup-llfb8-64gqm -n kasten-io
+$ kubectl describe actionset restore-backup-llfb8-64gqm -n kanister
 ```
 
 ## Uninstalling the Chart
@@ -166,20 +191,22 @@ $ kubectl describe actionset restore-backup-llfb8-64gqm -n kasten-io
 To uninstall/delete the `my-release` deployment:
 
 ```bash
-$ helm delete my-release
+$ helm delete my-release -n mongo-test
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
 To completely remove the release include the `--purge` flag.
 
-Delete Blueprint and Profile CR
+Delete Blueprint, Profile CR and ActionSet
 
 ```bash
-$ kubectl delete blueprints.cr.kanister.io mongodb-blueprint -n kasten-io
+$ kubectl delete blueprints.cr.kanister.io mongodb-blueprint -n kanister
 
 $ kubectl get profiles.cr.kanister.io -n mongo-test
 NAME               AGE
 s3-profile-sph7s   2h
 
 $ kubectl delete profiles.cr.kanister.io s3-profile-sph7s -n mongo-test
+
+$ kubectl delete actionset backup-llfb8 restore-backup-llfb8-64gqm delete-backup-llfb8-k9ncm -n kanister
 ```

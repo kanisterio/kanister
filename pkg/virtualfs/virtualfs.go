@@ -29,7 +29,7 @@ func NewDirectory(rootName string) (*Directory, error) {
 	return &Directory{
 		dirEntry: dirEntry{
 			name: rootName,
-			mode: 0777 | os.ModeDir, // nolint:gomnd
+			mode: 0777 | os.ModeDir, //nolint:gomnd
 		},
 	}, nil
 }

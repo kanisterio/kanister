@@ -16,48 +16,60 @@ package command
 
 import (
 	"strconv"
+	"time"
 
-	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/utils"
 )
 
 const (
-	// kube.Exec might timeout after 4h if there is no output from the command
-	// Setting it to 1h instead of 1000000h so that kopia logs progress once every hour
-	longUpdateInterval = "1h"
-
-	requireLogLevelInfo = true
+	requireLogLevelInfo        = true
+	manifestTypeSnapshotFilter = "type:snapshot"
 )
 
 type SnapshotCreateCommandArgs struct {
 	*CommandArgs
-	PathToBackup string
-	Tags         []string
+	PathToBackup           string
+	Tags                   []string
+	ProgressUpdateInterval time.Duration
+	Parallelism            int
 }
 
 // SnapshotCreate returns the kopia command for creation of a snapshot
-// TODO: Have better mechanism to apply global flags
 func SnapshotCreate(cmdArgs SnapshotCreateCommandArgs) []string {
-	parallelismStr := strconv.Itoa(utils.GetEnvAsIntOrDefault(kopia.DataStoreParallelUploadVarName, kopia.DefaultDataStoreParallelUpload))
+	parallelismStr := strconv.Itoa(cmdArgs.Parallelism)
 	args := commonArgs(cmdArgs.CommandArgs, requireLogLevelInfo)
 	args = args.AppendLoggable(snapshotSubCommand, createSubCommand, cmdArgs.PathToBackup, jsonFlag)
 	args = args.AppendLoggableKV(parallelFlag, parallelismStr)
-	args = args.AppendLoggableKV(progressUpdateIntervalFlag, longUpdateInterval)
 	args = addTags(cmdArgs.Tags, args)
+
+	// kube.Exec might timeout after 4h if there is no output from the command
+	// Setting it to 1h by default, instead of 1000000h so that kopia logs progress once every hour
+	// In some cases, the update interval is set by the caller
+	duration := "1h"
+	if cmdArgs.ProgressUpdateInterval > 0 {
+		duration = utils.DurationToString(utils.RoundUpDuration(cmdArgs.ProgressUpdateInterval))
+	}
+	args = args.AppendLoggableKV(progressUpdateIntervalFlag, duration)
 	return stringSliceCommand(args)
 }
 
 type SnapshotRestoreCommandArgs struct {
 	*CommandArgs
-	SnapID        string
-	TargetPath    string
-	SparseRestore bool
+	SnapID                 string
+	TargetPath             string
+	SparseRestore          bool
+	IgnorePermissionErrors bool
 }
 
 // SnapshotRestore returns kopia command restoring snapshots with given snap ID
 func SnapshotRestore(cmdArgs SnapshotRestoreCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(snapshotSubCommand, restoreSubCommand, cmdArgs.SnapID, cmdArgs.TargetPath)
+	if cmdArgs.IgnorePermissionErrors {
+		args = args.AppendLoggable(ignorePermissionsError)
+	} else {
+		args = args.AppendLoggable(noIgnorePermissionsError)
+	}
 	if cmdArgs.SparseRestore {
 		args = args.AppendLoggable(sparseFlag)
 	}
@@ -134,7 +146,7 @@ type SnapListAllWithSnapIDsCommandArgs struct {
 func SnapListAllWithSnapIDs(cmdArgs SnapListAllWithSnapIDsCommandArgs) []string {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(manifestSubCommand, listSubCommand, jsonFlag)
-	args = args.AppendLoggableKV(filterFlag, kopia.ManifestTypeSnapshotFilter)
+	args = args.AppendLoggableKV(filterFlag, manifestTypeSnapshotFilter)
 
 	return stringSliceCommand(args)
 }

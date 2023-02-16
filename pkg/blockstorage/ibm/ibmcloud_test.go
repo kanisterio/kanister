@@ -132,7 +132,7 @@ func (s TestIBMCloud) TestVolRestore(c *C) {
 	c.Assert(err, IsNil)
 	snapTTags := map[string]string{"ibmblock_unit_test_snap": fmt.Sprintf("test-snap-%d", time.Now().Unix())}
 	bsSnap, err := s.provider.SnapshotCreate(context.Background(), *bsVol, snapTTags)
-	defer s.provider.SnapshotDelete(context.Background(), bsSnap) // nolint: errcheck
+	defer s.provider.SnapshotDelete(context.Background(), bsSnap) //nolint: errcheck
 	c.Assert(err, IsNil)
 	tTags := map[string]string{"ibmblock_unit_test_restore_vol": fmt.Sprintf("test-vol-%d", time.Now().Unix())}
 	resVol, err := s.provider.VolumeCreateFromSnapshot(context.Background(), *bsSnap, tTags)

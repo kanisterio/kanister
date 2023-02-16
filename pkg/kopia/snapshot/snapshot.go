@@ -123,7 +123,7 @@ func Delete(ctx context.Context, backupID, path, password string) error {
 
 // findPreviousSnapshotManifest returns the list of previous snapshots for a given source,
 // including last complete snapshot
-func findPreviousSnapshotManifest(ctx context.Context, rep repo.Repository, sourceInfo snapshot.SourceInfo, noLaterThan *time.Time) ([]*snapshot.Manifest, error) {
+func findPreviousSnapshotManifest(ctx context.Context, rep repo.Repository, sourceInfo snapshot.SourceInfo, noLaterThan *fs.UTCTimestamp) ([]*snapshot.Manifest, error) {
 	man, err := snapshot.ListSnapshots(ctx, rep, sourceInfo)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to list previous kopia snapshots")

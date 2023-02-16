@@ -17,7 +17,6 @@ package kube
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -52,20 +51,30 @@ type PodOptions struct {
 	Annotations        map[string]string
 	Command            []string
 	ContainerName      string
+	Name               string
 	GenerateName       string
 	Image              string
 	Labels             map[string]string
 	Namespace          string
 	ServiceAccountName string
 	Volumes            map[string]string
-	PodOverride        crv1alpha1.JSONMap
-	Resources          v1.ResourceRequirements
-	RestartPolicy      v1.RestartPolicy
-	OwnerReferences    []metav1.OwnerReference
+	BlockVolumes       map[string]string
+	// PodSecurityContext and ContainerSecurityContext can be used to set the security context
+	// at the pod level and container level respectively.
+	// You can still use podOverride to set the pod security context, but these fields will take precedence.
+	// We chose these fields to specify security context instead of just using podOverride because
+	// the merge behaviour of the pods spec is confusing in case of podOverride, and this is more readable.
+	PodSecurityContext       *v1.PodSecurityContext
+	ContainerSecurityContext *v1.SecurityContext
+	PodOverride              crv1alpha1.JSONMap
+	Resources                v1.ResourceRequirements
+	RestartPolicy            v1.RestartPolicy
+	OwnerReferences          []metav1.OwnerReference
+	EnvironmentVariables     []v1.EnvVar
+	Lifecycle                *v1.Lifecycle
 }
 
-// CreatePod creates a pod with a single container based on the specified image
-func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
 	// If Namespace is not specified, use the controller Namespace.
 	cns, err := GetControllerNamespace()
 	if err != nil {
@@ -90,10 +99,15 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		opts.RestartPolicy = v1.RestartPolicyNever
 	}
 
-	volumeMounts, podVolumes, err := createVolumeSpecs(opts.Volumes)
+	volumeMounts, podVolumes, err := createFilesystemModeVolumeSpecs(opts.Volumes)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create volume spec")
 	}
+	volumeDevices, blockVolumes, err := createBlockModeVolumeSpecs(opts.BlockVolumes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create raw block volume spec")
+	}
+	podVolumes = append(podVolumes, blockVolumes...)
 	defaultSpecs := v1.PodSpec{
 		Containers: []v1.Container{
 			{
@@ -102,6 +116,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 				Command:         opts.Command,
 				ImagePullPolicy: v1.PullPolicy(v1.PullIfNotPresent),
 				VolumeMounts:    volumeMounts,
+				VolumeDevices:   volumeDevices,
 				Resources:       opts.Resources,
 			},
 		},
@@ -112,6 +127,10 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		RestartPolicy:      opts.RestartPolicy,
 		Volumes:            podVolumes,
 		ServiceAccountName: sa,
+	}
+
+	if opts.EnvironmentVariables != nil && len(opts.EnvironmentVariables) > 0 {
+		defaultSpecs.Containers[0].Env = opts.EnvironmentVariables
 	}
 
 	// Patch default Pod Specs if needed
@@ -128,6 +147,11 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 			},
 		},
 		Spec: patchedSpecs,
+	}
+
+	// Override `GenerateName` if `Name` option is provided
+	if opts.Name != "" {
+		pod.Name = opts.Name
 	}
 
 	// Override default container name if applicable
@@ -147,13 +171,37 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 		pod.SetOwnerReferences(opts.OwnerReferences)
 	}
 
+	if opts.PodSecurityContext != nil {
+		pod.Spec.SecurityContext = opts.PodSecurityContext
+	}
+
+	if opts.ContainerSecurityContext != nil {
+		pod.Spec.Containers[0].SecurityContext = opts.ContainerSecurityContext
+	}
+
+	if opts.Lifecycle != nil {
+		pod.Spec.Containers[0].Lifecycle = opts.Lifecycle
+	}
+
 	for key, value := range opts.Labels {
 		pod.ObjectMeta.Labels[key] = value
 	}
 
-	pod, err = cli.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
+	pod.Namespace = ns
+
+	return pod, nil
+}
+
+// CreatePod creates a pod with a single container based on the specified image
+func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
+	pod, err := GetPodObjectFromPodOptions(cli, opts)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", ns, opts.GenerateName)
+		return nil, errors.Wrapf(err, "Failed to get pod from podOptions. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
+	}
+
+	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 	return pod, nil
 }
@@ -180,7 +228,7 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 		return "", err
 	}
 	defer reader.Close()
-	bytes, err := ioutil.ReadAll(reader)
+	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}
@@ -235,9 +283,9 @@ func checkNodesStatus(p *v1.Pod, cli kubernetes.Interface) error {
 }
 
 // checkPVCAndPVStatus does the following:
-// 1. if PVC is present then check the status of PVC
-// 	1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
-// 2. if PVC not present then wait for timeout
+//   - if PVC is present then check the status of PVC
+//   - if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
+//   - if PVC not present then wait for timeout
 func getVolStatus(ctx context.Context, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 	for _, vol := range p.Spec.Volumes {
 		if err := checkPVCAndPVStatus(ctx, vol, p, cli, namespace); err != nil {
@@ -248,9 +296,9 @@ func getVolStatus(ctx context.Context, p *v1.Pod, cli kubernetes.Interface, name
 }
 
 // checkPVCAndPVStatus does the following:
-// 1. if PVC is present then check the status of PVC
-// 	1.1 if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
-// 2. if PVC not present then wait for timeout
+//   - if PVC is present then check the status of PVC
+//   - if PVC is pending then check if the PV status is VolumeFailed return error if so. if not then wait for timeout.
+//   - if PVC not present then wait for timeout
 func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kubernetes.Interface, namespace string) error {
 	if vol.VolumeSource.PersistentVolumeClaim == nil {
 		// wait for timeout

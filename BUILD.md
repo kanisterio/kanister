@@ -58,7 +58,22 @@ make release-controller \
   IMAGE=<your_registry>/<your_controller_image> \
   VERSION=<your_image_tag>
 ```
-If `VERSION` is not specified, the Makefile will auto-generate one for you.
+
+Update the `IMAGE` variable to reference the image registry you'd like to push
+your image to. You must have write permissions on the registry. If `IMAGE` is
+not specified, the Makefile will use the default of `kanisterio/controller`.
+
+The `VERSION` variable is useful for versioning your image with a custom tag.
+If `VERSION` is not specified, the Makefile will auto-generate one for your
+image.
+
+For example, the following command will build and push your image to the
+registry at `ghcr.io/myregistry/kanister`, with the tag `20221003`:
+```sh
+make release-controller \
+  IMAGE=ghcr.io/myregistry/kanister \
+  VERSION=20221003
+```
 
 You can test your Kanister controller locally by using Helm to deploy the local
 Helm chart:

@@ -102,9 +102,6 @@ func SnapshotInfoFromSnapshotCreateOutput(output string) (string, string, error)
 		if err != nil {
 			continue
 		}
-		if snapManifest == nil {
-			continue
-		}
 		snapID = string(snapManifest.ID)
 		if snapManifest.RootEntry != nil {
 			rootID = snapManifest.RootEntry.ObjectID.String()
@@ -126,7 +123,7 @@ func SnapSizeStatsFromSnapListAll(output string) (totalSizeB int64, numSnapshots
 		return 0, 0, errors.New("Received empty output")
 	}
 
-	snapList, err := parseSnapshotManifestList(output)
+	snapList, err := ParseSnapshotManifestList(output)
 	if err != nil {
 		return 0, 0, errors.Wrap(err, "Parsing snapshot list output as snapshot manifest list")
 	}
@@ -156,7 +153,7 @@ func sumSnapshotSizes(snapList []*snapshot.Manifest) (sum int64) {
 	return sum
 }
 
-func parseSnapshotManifestList(output string) ([]*snapshot.Manifest, error) {
+func ParseSnapshotManifestList(output string) ([]*snapshot.Manifest, error) {
 	snapInfoList := []*snapshot.Manifest{}
 
 	if err := json.Unmarshal([]byte(output), &snapInfoList); err != nil {
@@ -371,4 +368,17 @@ func RepoSizeStatsFromBlobStatsRaw(blobStats string) (phySizeTotal int64, blobCo
 	}
 
 	return int64(sizeValBytes), countVal, nil
+}
+
+func IsEqualSnapshotCreateStats(a, b *SnapshotCreateStats) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.FilesHashed == b.FilesHashed &&
+		a.SizeHashedB == b.SizeHashedB &&
+		a.FilesCached == b.FilesCached &&
+		a.SizeCachedB == b.SizeCachedB &&
+		a.SizeUploadedB == b.SizeUploadedB &&
+		a.SizeEstimatedB == b.SizeEstimatedB &&
+		a.ProgressPercent == b.ProgressPercent
 }
