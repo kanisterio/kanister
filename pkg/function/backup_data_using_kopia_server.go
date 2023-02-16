@@ -2,6 +2,9 @@ package function
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"strconv"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -17,16 +20,11 @@ import (
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	BackupDataUsingKopiaServerFuncName = "BackupDataUsingKopiaServer"
-	// HostNameOption is the key for passing in hostname through Options map
-	HostNameOption = "hostName"
-	// UserNameOption is the key for passing in username through Options map
-	UserNameOption = "userName"
-	// KopiaFuncVersion is the version used by Kopia based Kanister functions for registration
-	KopiaFuncVersion = "v1.0.0-alpha"
 	// BackupDataTagsKeyArg is the key used for returning snapshot tags
 	BackupDataTagsKeyArg = "snapshotTags"
 )
@@ -34,7 +32,7 @@ const (
 type backupDataUsingKopiaServerFunc struct{}
 
 func init() {
-	err := kanister.RegisterVersion(&backupDataUsingKopiaServerFunc{}, KopiaFuncVersion)
+	err := kanister.Register(&backupDataUsingKopiaServerFunc{})
 	if err != nil {
 		return
 	}
@@ -52,8 +50,6 @@ func (*backupDataUsingKopiaServerFunc) RequiredArgs() []string {
 		BackupDataIncludePathArg,
 		BackupDataNamespaceArg,
 		BackupDataPodArg,
-		kankopia.KopiaAPIServerAddressArg,
-		kankopia.KopiaServerPassphraseArg,
 		kankopia.KopiaUserPassphraseArg,
 		kankopia.KopiaTLSCertSecretDataArg,
 	}
@@ -65,8 +61,6 @@ func (*backupDataUsingKopiaServerFunc) Arguments() []string {
 		BackupDataIncludePathArg,
 		BackupDataNamespaceArg,
 		BackupDataPodArg,
-		kankopia.KopiaAPIServerAddressArg,
-		kankopia.KopiaServerPassphraseArg,
 		kankopia.KopiaUserPassphraseArg,
 		kankopia.KopiaTLSCertSecretDataArg,
 		BackupDataTagsKeyArg,
@@ -76,16 +70,14 @@ func (*backupDataUsingKopiaServerFunc) Arguments() []string {
 func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
 	//TODO implement me
 	var (
-		container        string
-		err              error
-		includePath      string
-		namespace        string
-		pod              string
-		serverAddress    string
-		serverPassphrase string
-		userPassphrase   string
-		cert             string
-		tagsStr          string
+		container      string
+		err            error
+		includePath    string
+		namespace      string
+		pod            string
+		userPassphrase string
+		cert           string
+		tagsStr        string
 	)
 	if err = Arg(args, BackupDataContainerArg, &container); err != nil {
 		return nil, err
@@ -97,12 +89,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		return nil, err
 	}
 	if err = Arg(args, BackupDataPodArg, &pod); err != nil {
-		return nil, err
-	}
-	if err = Arg(args, kankopia.KopiaAPIServerAddressArg, &serverAddress); err != nil {
-		return nil, err
-	}
-	if err = Arg(args, kankopia.KopiaServerPassphraseArg, &serverPassphrase); err != nil {
 		return nil, err
 	}
 	if err = Arg(args, kankopia.KopiaUserPassphraseArg, &userPassphrase); err != nil {
@@ -125,10 +111,8 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from blueprint")
 	}
 
-	hostname, username, err := getHostAndUserNameFromOptions(tp.Options)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get hostname/username from Options")
-	}
+	username := tp.RepositoryServer.Username
+	hostname, userAccessPassphrase, err := getHostNameAndUserPassPhraseFromRepoServer(userPassphrase)
 
 	cli, err := kube.NewClient()
 	if err != nil {
@@ -137,8 +121,15 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
+
+	repositoryServerService, err := cli.CoreV1().Services(tp.RepositoryServer.Namespace).Get(context.Background(), tp.RepositoryServer.ServerInfo.ServiceName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.New("Unable to find Service Details for Repository Server")
+	}
+	repositoryServerServicePort := strconv.Itoa(int(repositoryServerService.Spec.Ports[0].Port))
+	serverAddress := "https://" + tp.RepositoryServer.ServerInfo.ServiceName + "." + tp.RepositoryServer.Namespace + ".svc.cluster.local:" + repositoryServerServicePort
+
 	snapInfo, err := backupDataUsingKopiaServer(
-		ctx,
 		cli,
 		container,
 		hostname,
@@ -147,9 +138,8 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		pod,
 		serverAddress,
 		fingerprint,
-		serverPassphrase,
 		username,
-		userPassphrase,
+		userAccessPassphrase,
 		tags,
 	)
 	if err != nil {
@@ -167,13 +157,11 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		BackupDataOutputBackupID:           snapInfo.SnapshotID,
 		BackupDataOutputBackupSize:         humanize.Bytes(uint64(logSize)),
 		BackupDataOutputBackupPhysicalSize: humanize.Bytes(uint64(phySize)),
-		FunctionOutputVersion:              KopiaFuncVersion,
 	}
 	return output, nil
 }
 
 func backupDataUsingKopiaServer(
-	ctx context.Context,
 	cli kubernetes.Interface,
 	container,
 	hostname,
@@ -182,7 +170,6 @@ func backupDataUsingKopiaServer(
 	pod,
 	serverAddress,
 	fingerprint,
-	serverPassphrase,
 	username,
 	userPassphrase string,
 	tags []string,
@@ -190,24 +177,7 @@ func backupDataUsingKopiaServer(
 	contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
 	configFile, logDirectory := kankopia.GetCustomConfigFileAndLogDirectory(hostname)
 
-	// Check the status of Kopia API Server before connecting
-	cmd := kopiacmd.ServerStatus(
-		kopiacmd.ServerStatusCommandArgs{
-			CommandArgs: &kopiacmd.CommandArgs{
-				RepoPassword:   "",
-				ConfigFilePath: kopiacmd.DefaultConfigFilePath,
-				LogDirectory:   kopiacmd.DefaultLogDirectory,
-			},
-			ServerAddress:  serverAddress,
-			ServerUsername: kankopia.GetDefaultServerUsername(),
-			ServerPassword: serverPassphrase,
-			Fingerprint:    fingerprint,
-		})
-	if err = kankopia.WaitTillCommandSucceed(ctx, cli, cmd, namespace, pod, container); err != nil {
-		return nil, errors.Wrap(err, "Failed to establish connection to Kopia API server")
-	}
-
-	cmd = kopiacmd.RepositoryConnectServerCommand(kopiacmd.RepositoryServerCommandArgs{
+	cmd := kopiacmd.RepositoryConnectServerCommand(kopiacmd.RepositoryServerCommandArgs{
 		UserPassword:    userPassphrase,
 		ConfigFilePath:  configFile,
 		LogDirectory:    logDirectory,
@@ -256,14 +226,20 @@ func backupDataUsingKopiaServer(
 	return kopiacmd.ParseSnapshotCreateOutput(stdout, stderr)
 }
 
-func getHostAndUserNameFromOptions(options map[string]string) (string, string, error) {
-	var hostname, username string
-	var ok bool
-	if hostname, ok = options[HostNameOption]; !ok {
-		return hostname, username, errors.New("Failed to find hostname option")
+func getHostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, error) {
+	var userAccessMap map[string]string
+	if err := json.Unmarshal([]byte(userCreds), &userAccessMap); err != nil {
+		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
 	}
-	if username, ok = options[UserNameOption]; !ok {
-		return hostname, username, errors.New("Failed to find username option")
+
+	var userPassPhrase string
+	var hostName string
+	for key, val := range userAccessMap {
+		hostName = key
+		userPassPhrase = val
 	}
-	return hostname, username, nil
+
+	decodedUserPassPhrase, _ := base64.StdEncoding.DecodeString(userPassPhrase)
+	return hostName, string(decodedUserPassPhrase), nil
+
 }
