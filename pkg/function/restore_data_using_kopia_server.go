@@ -3,6 +3,8 @@ package function
 import (
 	"context"
 	"fmt"
+	"github.com/kanisterio/kanister/pkg/field"
+	"github.com/kanisterio/kanister/pkg/log"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -132,6 +134,16 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 	serverAddress := "https://" + tp.RepositoryServer.ServerInfo.ServiceName + "." + tp.RepositoryServer.Namespace + ".svc.cluster.local:" + repositoryServerServicePort
 
 	_, sparseRestore := tp.Options[SparseRestoreOption]
+
+	log.Print("<---- Template Params Value ---->", field.M{
+		"Username":        username,
+		"User Passphrase": userPassphrase,
+		"Hostname":        hostname,
+		"Server Address":  serverAddress,
+		"Fingerprint":     fingerprint,
+		"Restore Path":    restorePath,
+		"Snapshot ID":     snapID,
+	})
 
 	return restoreDataFromServer(
 		ctx,
