@@ -12,7 +12,7 @@ replace (
 
 // Direct and indirect dependencies are grouped together
 require (
-	github.com/Azure/azure-sdk-for-go v67.1.0+incompatible
+	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/adal v0.9.21
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.12
@@ -63,7 +63,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.12.3
 )
 
-require github.com/dustin/go-humanize v1.0.0
+require github.com/dustin/go-humanize v1.0.1
 
 require (
 	cloud.google.com/go v0.105.0 // indirect
