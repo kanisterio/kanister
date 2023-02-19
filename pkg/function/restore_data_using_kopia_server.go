@@ -143,6 +143,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		"Fingerprint":     fingerprint,
 		"Restore Path":    restorePath,
 		"Snapshot ID":     snapID,
+		"Volumes":         vols,
 	})
 
 	return restoreDataFromServer(
@@ -233,7 +234,6 @@ func restoreDataFromServerPodFunc(
 
 		contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
 		configFile, logDirectory := kankopia.GetCustomConfigFileAndLogDirectory(hostname)
-
 		cmd := kopiacmd.RepositoryConnectServerCommand(
 			kopiacmd.RepositoryServerCommandArgs{
 				UserPassword:    userPassphrase,
