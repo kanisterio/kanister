@@ -137,7 +137,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 
 	log.Print("<---- Template Params Value ---->", field.M{
 		"Username":        username,
-		"User Passphrase": userPassphrase,
+		"User Passphrase": userAccessPassphrase,
 		"Hostname":        hostname,
 		"Server Address":  serverAddress,
 		"Fingerprint":     fingerprint,
@@ -198,6 +198,8 @@ func restoreDataFromServer(
 	kankopia.SetLabelsToPodOptionsIfRequired(options)
 	kankopia.SetAnnotationsToPodOptionsIfRequired(options)
 	kankopia.SetResourceRequirementsToPodOptionsIfRequired(options)
+	log.Print("<---- Options ---->", field.M{"Options": options})
+
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataFromServerPodFunc(
 		cli,
