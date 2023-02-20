@@ -46,7 +46,8 @@ const (
 	// RestoreRDSSnapshotNamespace for namespace arg
 	RestoreRDSSnapshotNamespace = "namespace"
 	// RestoreRDSSnapshotInstanceID is ID of the target instance
-	RestoreRDSSnapshotInstanceID = "instanceID"
+	RestoreRDSSnapshotInstanceID  = "instanceID"
+	RestoreRDSSnapshotSubnetGroup = "dbSubnetGroupName"
 	// RestoreRDSSnapshotBackupArtifactPrefix stores the prefix of backup in object storage
 	RestoreRDSSnapshotBackupArtifactPrefix = "backupArtifactPrefix"
 	// RestoreRDSSnapshotBackupID stores the ID of backup in object storage
@@ -86,6 +87,7 @@ func (*restoreRDSSnapshotFunc) Arguments() []string {
 		RestoreRDSSnapshotInstanceID,
 		RestoreRDSSnapshotSnapshotID,
 		RestoreRDSSnapshotDBEngine,
+		RestoreRDSSnapshotSubnetGroup,
 		RestoreRDSSnapshotBackupArtifactPrefix,
 		RestoreRDSSnapshotBackupID,
 		RestoreRDSSnapshotUsername,
@@ -96,7 +98,7 @@ func (*restoreRDSSnapshotFunc) Arguments() []string {
 }
 
 func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
-	var namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string
+	var namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password string
 	var dbEngine RDSDBEngine
 
 	if err := Arg(args, RestoreRDSSnapshotInstanceID, &instanceID); err != nil {
@@ -108,6 +110,9 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	}
 
 	if err := OptArg(args, RestoreRDSSnapshotDBEngine, &dbEngine, ""); err != nil {
+		return nil, err
+	}
+	if err := OptArg(args, RestoreRDSSnapshotSubnetGroup, &subnetGroup, ""); err != nil {
 		return nil, err
 	}
 	// Find security groups
@@ -136,10 +141,10 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 		}
 	}
 
-	return restoreRDSSnapshot(ctx, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, sgIDs, tp.Profile)
+	return restoreRDSSnapshot(ctx, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password, dbEngine, sgIDs, tp.Profile)
 }
 
-func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
+func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, subnetGroup, snapshotID, backupArtifactPrefix, backupID, username, password string, dbEngine RDSDBEngine, sgIDs []string, profile *param.Profile) (map[string]interface{}, error) {
 	// Validate profile
 	if err := ValidateProfile(profile); err != nil {
 		return nil, errors.Wrap(err, "Error validating profile")
@@ -171,7 +176,7 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, snapshotID, 
 			}
 		}
 		if !isAuroraCluster(string(dbEngine)) {
-			return nil, restoreFromSnapshot(ctx, rdsCli, instanceID, snapshotID, sgIDs)
+			return nil, restoreFromSnapshot(ctx, rdsCli, instanceID, subnetGroup, snapshotID, sgIDs)
 		}
 		return nil, restoreAuroraFromSnapshot(ctx, rdsCli, instanceID, snapshotID, string(dbEngine), sgIDs)
 	}
@@ -235,7 +240,7 @@ func postgresRestoreCommand(pgHost, username, password string, dbList []string, 
 	}, nil
 }
 
-func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID string, securityGrpIDs []string) error {
+func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, dbSubnetGroupName, snapshotID string, securityGrpIDs []string) error {
 	log.WithContext(ctx).Print("Deleting existing RDS DB instance.", field.M{"instanceID": instanceID})
 	if _, err := rdsCli.DeleteDBInstance(ctx, instanceID); err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -254,7 +259,7 @@ func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snaps
 
 	log.WithContext(ctx).Print("Restoring RDS DB instance from snapshot.", field.M{"instanceID": instanceID, "snapshotID": snapshotID})
 	// Restore from snapshot
-	if _, err := rdsCli.RestoreDBInstanceFromDBSnapshot(ctx, instanceID, snapshotID, securityGrpIDs); err != nil {
+	if _, err := rdsCli.RestoreDBInstanceFromDBSnapshot(ctx, instanceID, dbSubnetGroupName, snapshotID, securityGrpIDs); err != nil {
 		return errors.Wrapf(err, "Error restoring RDS DB instance from snapshot")
 	}
 

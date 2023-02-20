@@ -61,6 +61,18 @@ func (e EC2) DescribeVpc(ctx context.Context, vpcID string) (*ec2.DescribeVpcsOu
 	return e.DescribeVpcsWithContext(ctx, vpci)
 }
 
+func (e EC2) DescribeSubnets(ctx context.Context, vpcId string) (*ec2.DescribeSubnetsOutput, error) {
+	paramsEC2 := &ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("vpc-id"),
+				Values: []*string{aws.String(vpcId)},
+			},
+		},
+	}
+	return e.DescribeSubnetsWithContext(ctx, paramsEC2)
+}
+
 func (e EC2) DescribeDefaultVpc(ctx context.Context) (*ec2.DescribeVpcsOutput, error) {
 	vpci := &ec2.DescribeVpcsInput{
 		Filters: []*ec2.Filter{
