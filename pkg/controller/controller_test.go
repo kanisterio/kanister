@@ -103,11 +103,15 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	ss, err = s.cli.AppsV1().StatefulSets(s.namespace).Create(ctx, ss, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.ss = ss
+	err = kube.WaitOnStatefulSetReady(ctx, s.cli, s.namespace, s.ss.Name)
+	c.Assert(err, IsNil)
 
 	d := testutil.NewTestDeployment(1)
 	d, err = s.cli.AppsV1().Deployments(s.namespace).Create(ctx, d, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s.deployment = d
+	err = kube.WaitOnDeploymentReady(ctx, s.cli, s.namespace, s.deployment.Name)
+	c.Assert(err, IsNil)
 
 	cm := testutil.NewTestConfigMap()
 	cm, err = s.cli.CoreV1().ConfigMaps(s.namespace).Create(ctx, cm, metav1.CreateOptions{})
