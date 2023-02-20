@@ -25,6 +25,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,7 +38,8 @@ import (
 // RepositoryServerReconciler reconciles a RepositoryServer object
 type RepositoryServerReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=cr.kanister.io,resources=repositoryservers,verbs=get;list;watch;create;update;patch;delete
@@ -122,6 +124,7 @@ func newRepositoryServerHandler(
 func (r *RepositoryServerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// The 'Owns' function allows the controller to set owner refs on
 	// child resources and run the same reconcile loop for all events on child resources
+	r.Recorder = mgr.GetEventRecorderFor("RepositoryServer")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&crkanisteriov1alpha1.RepositoryServer{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&corev1.Service{}).
