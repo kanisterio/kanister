@@ -36,6 +36,18 @@ spec:
                 description: Repository details for the purpose of establishing a
                   connection
                 properties:
+                  cacheSizeSettings:
+                    description: CacheSettings are the metadata/content cache size
+                      details that can be used while initializing kopia repository
+                    properties:
+                      content:
+                        type: string
+                      metadata:
+                        type: string
+                    required:
+                    - content
+                    - metadata
+                    type: object
                   hostname:
                     type: string
                   passwordSecretRef:
