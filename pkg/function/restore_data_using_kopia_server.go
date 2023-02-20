@@ -246,8 +246,8 @@ func restoreDataFromServerPodFunc(
 			kopiacmd.SnapshotRestoreCommandArgs{
 				CommandArgs: &kopiacmd.CommandArgs{
 					RepoPassword:   "",
-					ConfigFilePath: kopiacmd.DefaultConfigFilePath,
-					LogDirectory:   kopiacmd.DefaultLogDirectory,
+					ConfigFilePath: configFile,
+					LogDirectory:   logDirectory,
 				},
 				SnapID:                 snapID,
 				TargetPath:             restorePath,
