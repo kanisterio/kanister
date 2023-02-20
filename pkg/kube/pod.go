@@ -72,6 +72,7 @@ type PodOptions struct {
 	RestartPolicy            v1.RestartPolicy
 	OwnerReferences          []metav1.OwnerReference
 	EnvironmentVariables     []v1.EnvVar
+	Lifecycle                *v1.Lifecycle
 }
 
 func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
@@ -184,6 +185,10 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		pod.Spec.Containers[0].SecurityContext = opts.ContainerSecurityContext
 	}
 
+	if opts.Lifecycle != nil {
+		pod.Spec.Containers[0].Lifecycle = opts.Lifecycle
+	}
+
 	for key, value := range opts.Labels {
 		pod.ObjectMeta.Labels[key] = value
 	}
@@ -202,7 +207,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 
 	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", pod.Namespace, opts.GenerateName)
+		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 	return pod, nil
 }
