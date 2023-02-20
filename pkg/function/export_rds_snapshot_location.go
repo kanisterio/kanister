@@ -105,7 +105,7 @@ func exportRDSSnapshotToLoc(ctx context.Context, namespace, instanceID, snapshot
 
 	log.WithContext(ctx).Print("Spin up temporary RDS instance from the snapshot.", field.M{"SnapshotID": snapshotID, "InstanceID": tmpInstanceID})
 	// Create tmp instance from snapshot
-	if err := restoreFromSnapshot(ctx, rdsCli, tmpInstanceID, snapshotID, sgIDs); err != nil {
+	if err := restoreFromSnapshot(ctx, rdsCli, tmpInstanceID, "", snapshotID, sgIDs); err != nil {
 		return nil, errors.Wrapf(err, "Failed to restore snapshot. SnapshotID=%s", snapshotID)
 	}
 	defer func() {
