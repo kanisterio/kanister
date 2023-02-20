@@ -90,6 +90,46 @@ type Func interface {
 
 The PhaseProgress.ProgressPercent would be the of progress the functions it consists of.
 
+The following is the example ActionSet status of BP action consists of 3 phases. Out of which first phase is completed and second one is running
+
+```
+status:
+    actions:
+    - artifacts:
+        mysqlCloudDump:
+          keyValue:
+            s3path: '{{ .Phases.dumpToObjectStore.Output.s3path }}'
+      blueprint: mysql-blueprint
+      name: backup
+      object:
+        kind: statefulset
+        name: mysql
+        namespace: mysql
+      phases:
+      - name: updatePermissions
+        state: completed
+        progress:
+          progressPercent: "100.00"
+          lastTransitionTime:  "2023-02-20T12:448:55Z"
+      - name: dumpToObjectStore
+        state: running
+        progress:
+          progressPercent: "30.00"
+          lastTransitionTime:  "2023-02-20T12:49:55Z"
+          sizeUploaded: "50000"
+          estimatedTimeSeconds: "120"
+          estimatedUploadSize: "100000000"
+      - name: cleanup
+        state: pending
+    error:
+      message: ""
+    progress:
+      lastTransitionTime: "2023-02-20T12:49:55Z"
+      percentCompleted: "43.33"
+      runningPhase: dumpToObjectStore
+    state: running
+```
+
 ### Kanister functions progress tracking
 
 On high level we can divide the Kanister functions into two groups
@@ -140,4 +180,4 @@ Implement Progress() function on Phase type to return Progress of the Kanister f
 +}
 ```
 
-Once we have information about Progress of current function, the Phase ProgressPercent and Action ProgressPercent in the ActionSet status can be updated by taking out the average.
+Once we have information about Progress of current function, the Phase ProgressPercent and Action ProgressPercent in the ActionSet status can be updated by computing the average.
