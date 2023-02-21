@@ -249,7 +249,7 @@ func isAuroraCluster(engine string) bool {
 	return false
 }
 
-func GetRDSDbSubnetGroupName(ctx context.Context, rdsCli *rds.RDS, instanceID string) (*string, error) {
+func GetRDSDbSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID string) (*string, error) {
 	result, err := rdsCli.DescribeDBInstances(ctx, instanceID)
 	if err != nil {
 		return nil, err

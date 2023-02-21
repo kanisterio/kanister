@@ -52,7 +52,7 @@ const (
 	// Allocated Storage Amount
 	CreateRDSSnapshotAllocatedStorage = "allocatedStorage"
 	// DB Subnet Group Name
-	CreateRDSDbSubnetGroupName = "dbSubnetGroupName"
+	CreateRDSDbSubnetGroup = "dbSubnetGroup"
 	// DBEngineAurora has db engine aurora for MySQL 5.6-compatible
 	DBEngineAurora RDSDBEngine = "aurora"
 	// DBEngineAuroraMySQL has db engine for MySQL 5.7-compatible Aurora
@@ -117,7 +117,7 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 
 	// Find security group ids
 	var sgIDs []string
-	var dbSubnetGroupName *string
+	var dbSubnetGroup *string
 	var e error
 	if !isAuroraCluster(string(dbEngine)) {
 		sgIDs, e = findSecurityGroups(ctx, rdsCli, instanceID)
@@ -129,7 +129,7 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 	}
 
 	if !isAuroraCluster(string(dbEngine)) {
-		dbSubnetGroupName, e = GetRDSDbSubnetGroupName(ctx, rdsCli, instanceID)
+		dbSubnetGroup, e = GetRDSDbSubnetGroup(ctx, rdsCli, instanceID)
 	}
 
 	// Convert to yaml format
@@ -143,7 +143,7 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		CreateRDSSnapshotInstanceIDArg:    instanceID,
 		CreateRDSSnapshotSecurityGroupID:  string(sgIDYaml),
 		CreateRDSSnapshotAllocatedStorage: strconv.FormatInt(allocatedStorage, 10) + "GiB",
-		CreateRDSDbSubnetGroupName:        &dbSubnetGroupName,
+		CreateRDSDbSubnetGroup:            &dbSubnetGroup,
 	}
 	return output, nil
 }

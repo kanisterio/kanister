@@ -112,7 +112,7 @@ func (*restoreRDSSnapshotFunc) Exec(ctx context.Context, tp param.TemplateParams
 	if err := OptArg(args, RestoreRDSSnapshotDBEngine, &dbEngine, ""); err != nil {
 		return nil, err
 	}
-	if err := OptArg(args, RestoreRDSSnapshotSubnetGroup, &subnetGroup, ""); err != nil {
+	if err := OptArg(args, RestoreRDSSnapshotSubnetGroup, &subnetGroup, "default"); err != nil {
 		return nil, err
 	}
 	// Find security groups
@@ -240,7 +240,7 @@ func postgresRestoreCommand(pgHost, username, password string, dbList []string, 
 	}, nil
 }
 
-func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, dbSubnetGroupName, snapshotID string, securityGrpIDs []string) error {
+func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, dbSubnetGroup, snapshotID string, securityGrpIDs []string) error {
 	log.WithContext(ctx).Print("Deleting existing RDS DB instance.", field.M{"instanceID": instanceID})
 	if _, err := rdsCli.DeleteDBInstance(ctx, instanceID); err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -259,7 +259,7 @@ func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, dbSub
 
 	log.WithContext(ctx).Print("Restoring RDS DB instance from snapshot.", field.M{"instanceID": instanceID, "snapshotID": snapshotID})
 	// Restore from snapshot
-	if _, err := rdsCli.RestoreDBInstanceFromDBSnapshot(ctx, instanceID, dbSubnetGroupName, snapshotID, securityGrpIDs); err != nil {
+	if _, err := rdsCli.RestoreDBInstanceFromDBSnapshot(ctx, instanceID, dbSubnetGroup, snapshotID, securityGrpIDs); err != nil {
 		return errors.Wrapf(err, "Error restoring RDS DB instance from snapshot")
 	}
 
