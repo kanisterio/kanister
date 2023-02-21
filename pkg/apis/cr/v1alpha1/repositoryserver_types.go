@@ -64,6 +64,8 @@ type Server struct {
 	TLSSecretRef   corev1.SecretReference `json:"tlsSecretRef"`
 }
 
+// UserAccess has the details of the user credentials required by client to connect to kopia
+// repository server
 type UserAccess struct {
 	UserAccessSecretRef corev1.SecretReference `json:"userAccessSecretRef"`
 	Username            string                 `json:"username"`
