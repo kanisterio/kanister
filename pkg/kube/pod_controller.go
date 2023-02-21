@@ -170,11 +170,11 @@ func (p *podController) StopPod(ctx context.Context) error {
 
 func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 	if p.podName == "" {
-		return nil, ErrPodControllerNotStarted
+		return nil, ErrPodControllerPodNotStarted
 	}
 
 	if !p.podReady {
-		return nil, ErrPodControllerNotReady
+		return nil, ErrPodControllerPodNotReady
 	}
 
 	pce := &podCommandExecutor{
