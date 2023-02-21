@@ -47,7 +47,7 @@ const (
 	RestoreRDSSnapshotNamespace = "namespace"
 	// RestoreRDSSnapshotInstanceID is ID of the target instance
 	RestoreRDSSnapshotInstanceID  = "instanceID"
-	RestoreRDSSnapshotSubnetGroup = "dbSubnetGroupName"
+	RestoreRDSSnapshotSubnetGroup = "dbSubnetGroup"
 	// RestoreRDSSnapshotBackupArtifactPrefix stores the prefix of backup in object storage
 	RestoreRDSSnapshotBackupArtifactPrefix = "backupArtifactPrefix"
 	// RestoreRDSSnapshotBackupID stores the ID of backup in object storage
