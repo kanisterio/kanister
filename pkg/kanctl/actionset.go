@@ -637,6 +637,7 @@ func parseName(k string, r string) (namespace, name string, err error) {
 
 func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface) error {
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
+	const notReadyTmpl = "Please make sure that Repository Server CR '%s' is in Ready State"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
 	wg.Add(6)
@@ -667,9 +668,13 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	go func() {
 		defer wg.Done()
 		if p.RepositoryServer != nil {
-			_, err := crCli.CrV1alpha1().RepositoryServers(p.RepositoryServer.Namespace).Get(ctx, p.RepositoryServer.Name, metav1.GetOptions{})
+			rs, err := crCli.CrV1alpha1().RepositoryServers(p.RepositoryServer.Namespace).Get(ctx, p.RepositoryServer.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "repository-server", p.RepositoryServer.Name, p.RepositoryServer.Namespace)
+			}
+			if rs.Status.Progress != "ServerReady" {
+				err = errors.New("Repository Server Not Ready")
+				msgs <- errors.Wrapf(err, notReadyTmpl, p.RepositoryServer.Name)
 			}
 		}
 	}()
