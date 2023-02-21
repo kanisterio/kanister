@@ -21,6 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// PodController specifies interface needed for starting, stopping pod and operations with it
 type PodController interface {
 	PodName() string
 	Pod() *corev1.Pod
