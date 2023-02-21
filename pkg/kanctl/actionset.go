@@ -44,6 +44,7 @@ const (
 	deploymentFlagName       = "deployment"
 	optionsFlagName          = "options"
 	profileFlagName          = "profile"
+	repositoryServerFlagName = "repository-server"
 	pvcFlagName              = "pvc"
 	secretsFlagName          = "secrets"
 	statefulSetFlagName      = "statefulset"
@@ -61,17 +62,18 @@ var (
 )
 
 type PerformParams struct {
-	Namespace     string
-	ActionName    string
-	ActionSetName string
-	ParentName    string
-	Blueprint     string
-	DryRun        bool
-	Objects       []crv1alpha1.ObjectReference
-	Options       map[string]string
-	Profile       *crv1alpha1.ObjectReference
-	Secrets       map[string]crv1alpha1.ObjectReference
-	ConfigMaps    map[string]crv1alpha1.ObjectReference
+	Namespace        string
+	ActionName       string
+	ActionSetName    string
+	ParentName       string
+	Blueprint        string
+	DryRun           bool
+	Objects          []crv1alpha1.ObjectReference
+	Options          map[string]string
+	Profile          *crv1alpha1.ObjectReference
+	RepositoryServer *crv1alpha1.ObjectReference
+	Secrets          map[string]crv1alpha1.ObjectReference
+	ConfigMaps       map[string]crv1alpha1.ObjectReference
 }
 
 func newActionSetCmd() *cobra.Command {
@@ -92,6 +94,7 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().StringSliceP(deploymentFlagName, "d", []string{}, "deployment for the action set, comma separated namespace/name pairs (eg: --deployment namespace1/name1,namespace2/name2)")
 	cmd.Flags().StringSliceP(optionsFlagName, "o", []string{}, "specify options for the action set, comma separated key=value pairs (eg: --options key1=value1,key2=value2)")
 	cmd.Flags().StringP(profileFlagName, "p", "", "profile for the action set")
+	cmd.Flags().StringP(repositoryServerFlagName, "r", "", "kopia repository server custom reference")
 	cmd.Flags().StringSliceP(pvcFlagName, "v", []string{}, "pvc for the action set, comma separated namespace/name pairs (eg: --pvc namespace1/name1,namespace2/name2)")
 	cmd.Flags().StringSliceP(secretsFlagName, "s", []string{}, "secrets for the action set, comma separated ref=namespace/name pairs (eg: --secrets ref1=namespace1/name1,ref2=namespace2/name2)")
 	cmd.Flags().StringSliceP(statefulSetFlagName, "t", []string{}, "statefulset for the action set, comma separated namespace/name pairs (eg: --statefulset namespace1/name1,namespace2/name2)")
@@ -160,13 +163,14 @@ func newActionSet(params *PerformParams) (*crv1alpha1.ActionSet, error) {
 	actions := make([]crv1alpha1.ActionSpec, 0, len(params.Objects))
 	for _, obj := range params.Objects {
 		actions = append(actions, crv1alpha1.ActionSpec{
-			Name:       params.ActionName,
-			Blueprint:  params.Blueprint,
-			Object:     obj,
-			Secrets:    params.Secrets,
-			ConfigMaps: params.ConfigMaps,
-			Profile:    params.Profile,
-			Options:    params.Options,
+			Name:             params.ActionName,
+			Blueprint:        params.Blueprint,
+			Object:           obj,
+			Secrets:          params.Secrets,
+			ConfigMaps:       params.ConfigMaps,
+			Profile:          params.Profile,
+			RepositoryServer: params.RepositoryServer,
+			Options:          params.Options,
 		})
 	}
 
@@ -193,14 +197,15 @@ func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1a
 	actions := make([]crv1alpha1.ActionSpec, 0, len(parent.Status.Actions)*max(1, len(params.Objects)))
 	for aidx, pa := range parent.Status.Actions {
 		as := crv1alpha1.ActionSpec{
-			Name:       parent.Spec.Actions[aidx].Name,
-			Blueprint:  pa.Blueprint,
-			Object:     pa.Object,
-			Artifacts:  pa.Artifacts,
-			Secrets:    parent.Spec.Actions[aidx].Secrets,
-			ConfigMaps: parent.Spec.Actions[aidx].ConfigMaps,
-			Profile:    parent.Spec.Actions[aidx].Profile,
-			Options:    mergeOptions(params.Options, parent.Spec.Actions[aidx].Options),
+			Name:             parent.Spec.Actions[aidx].Name,
+			Blueprint:        pa.Blueprint,
+			Object:           pa.Object,
+			Artifacts:        pa.Artifacts,
+			Secrets:          parent.Spec.Actions[aidx].Secrets,
+			ConfigMaps:       parent.Spec.Actions[aidx].ConfigMaps,
+			Profile:          parent.Spec.Actions[aidx].Profile,
+			RepositoryServer: parent.Spec.Actions[aidx].RepositoryServer,
+			Options:          mergeOptions(params.Options, parent.Spec.Actions[aidx].Options),
 		}
 		// Apply overrides
 		if params.ActionName != "" {
@@ -217,6 +222,9 @@ func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1a
 		}
 		if params.Profile != nil {
 			as.Profile = params.Profile
+		}
+		if params.RepositoryServer != nil {
+			as.RepositoryServer = params.RepositoryServer
 		}
 		if len(params.Objects) > 0 {
 			for _, obj := range params.Objects {
@@ -283,6 +291,10 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	if err != nil {
 		return nil, err
 	}
+	repositoryServer, err := parseRepositoryServer(cmd, ns)
+	if err != nil {
+		return nil, err
+	}
 	cms, err := parseConfigMaps(cmd)
 	if err != nil {
 		return nil, err
@@ -300,17 +312,18 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 		return nil, err
 	}
 	return &PerformParams{
-		Namespace:     ns,
-		ActionName:    actionName,
-		ActionSetName: actionSetName,
-		ParentName:    parentName,
-		Blueprint:     blueprint,
-		DryRun:        dryRun,
-		Objects:       objects,
-		Options:       options,
-		Secrets:       secrets,
-		ConfigMaps:    cms,
-		Profile:       profile,
+		Namespace:        ns,
+		ActionName:       actionName,
+		ActionSetName:    actionSetName,
+		ParentName:       parentName,
+		Blueprint:        blueprint,
+		DryRun:           dryRun,
+		Objects:          objects,
+		Options:          options,
+		Secrets:          secrets,
+		ConfigMaps:       cms,
+		Profile:          profile,
+		RepositoryServer: repositoryServer,
 	}, nil
 }
 
@@ -338,6 +351,25 @@ func parseProfile(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectReference, e
 	}
 	return &crv1alpha1.ObjectReference{
 		Name:      profileName,
+		Namespace: ns,
+	}, nil
+}
+
+func parseRepositoryServer(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectReference, error) {
+	repositoryServerName, _ := cmd.Flags().GetString(repositoryServerFlagName)
+	if repositoryServerName == "" {
+		return nil, nil
+	}
+	if strings.Contains(repositoryServerName, "/") {
+		temp := strings.Split(repositoryServerName, "/")
+		if len(temp) != 2 {
+			return nil, errors.Errorf("Invalid repository server name %s, should be of the form ( --repository-server namespace/name OR --repository-server name)", repositoryServerName)
+		}
+		ns = temp[0]
+		repositoryServerName = temp[1]
+	}
+	return &crv1alpha1.ObjectReference{
+		Name:      repositoryServerName,
 		Namespace: ns,
 	}, nil
 }
@@ -607,7 +639,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
-	wg.Add(5)
+	wg.Add(6)
 
 	// Blueprint
 	go func() {
@@ -627,6 +659,17 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 			_, err := crCli.CrV1alpha1().Profiles(p.Profile.Namespace).Get(ctx, p.Profile.Name, metav1.GetOptions{})
 			if err != nil {
 				msgs <- errors.Wrapf(err, notFoundTmpl, "profile", p.Profile.Name, p.Profile.Namespace)
+			}
+		}
+	}()
+
+	// RepositoryServer
+	go func() {
+		defer wg.Done()
+		if p.RepositoryServer != nil {
+			_, err := crCli.CrV1alpha1().RepositoryServers(p.RepositoryServer.Namespace).Get(ctx, p.RepositoryServer.Name, metav1.GetOptions{})
+			if err != nil {
+				msgs <- errors.Wrapf(err, notFoundTmpl, "repository-server", p.RepositoryServer.Name, p.RepositoryServer.Namespace)
 			}
 		}
 	}()
