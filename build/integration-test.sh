@@ -25,7 +25,8 @@ TEST_TIMEOUT="30m"
 # Set default options
 TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # Regex to match apps to run in short mode
-SHORT_APPS="^PostgreSQL$|^MySQL$|Elasticsearch|^MongoDB$|Maria|^MSSQL$"
+# Temporary disable ES test. Issue to track https://github.com/kanisterio/kanister/issues/1920
+SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|Maria|^MSSQL$"
 # OCAPPS has all the apps that are to be tested against openshift cluster
 OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
 OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"
