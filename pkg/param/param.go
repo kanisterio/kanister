@@ -16,6 +16,7 @@ package param
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -49,6 +50,7 @@ type TemplateParams struct {
 	Secrets          map[string]v1.Secret
 	Time             string
 	Profile          *Profile
+	RepositoryServer *RepositoryServer
 	Options          map[string]string
 	Object           map[string]interface{}
 	Phases           map[string]*Phase
@@ -135,6 +137,20 @@ type KopiaServerCreds struct {
 	ConnectOptions map[string]int
 }
 
+// RepositoryServer contains where to store Repository Server CR Artifacts
+type RepositoryServer struct {
+	Name        string
+	Namespace   string
+	ServerInfo  crv1alpha1.ServerInfo
+	Username    string
+	Credentials RepositoryServerCredentials
+}
+
+type RepositoryServerCredentials struct {
+	ServerTLS        v1.Secret
+	ServerUserAccess v1.Secret
+}
+
 // Phase represents a Blueprint phase and contains the phase output
 type Phase struct {
 	Secrets map[string]v1.Secret
@@ -164,15 +180,20 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 	if err != nil {
 		return nil, err
 	}
+	repoServer, err := fetchRepositoryServer(ctx, cli, crCli, as.RepositoryServer)
+	if err != nil {
+		return nil, err
+	}
 	now := time.Now().UTC()
 	tp := TemplateParams{
-		ArtifactsIn: as.Artifacts,
-		ConfigMaps:  cms,
-		Secrets:     secrets,
-		Profile:     prof,
-		Time:        now.Format(timeFormat),
-		Options:     as.Options,
-		PodOverride: as.PodOverride,
+		ArtifactsIn:      as.Artifacts,
+		ConfigMaps:       cms,
+		Secrets:          secrets,
+		Profile:          prof,
+		RepositoryServer: repoServer,
+		Time:             now.Format(timeFormat),
+		Options:          as.Options,
+		PodOverride:      as.PodOverride,
 	}
 	var gvr schema.GroupVersionResource
 	namespace := as.Object.Namespace
@@ -246,6 +267,36 @@ func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned
 	}, nil
 }
 
+func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*RepositoryServer, error) {
+	if ref == nil {
+		log.Debug().Print("Executing the action without a repository-server")
+		return nil, nil
+	}
+	r, err := crCli.CrV1alpha1().RepositoryServers(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	serverTLS, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Server.TLSSecretRef)
+	if err != nil {
+		return nil, err
+	}
+	serverUserAccess, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Server.UserAccess.UserAccessSecretRef)
+	if err != nil {
+		return nil, err
+	}
+	secrets := RepositoryServerCredentials{
+		ServerTLS:        *serverTLS,
+		ServerUserAccess: *serverUserAccess,
+	}
+	return &RepositoryServer{
+		Name:        r.Name,
+		Namespace:   r.Namespace,
+		ServerInfo:  r.Status.ServerInfo,
+		Username:    r.Spec.Server.UserAccess.Username,
+		Credentials: secrets,
+	}, nil
+}
+
 func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1.Credential) (*Credential, error) {
 	switch c.Type {
 	case crv1alpha1.CredentialTypeKeyPair:
@@ -297,6 +348,14 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 		Type:   CredentialTypeSecret,
 		Secret: s,
 	}, nil
+}
+
+func fetchSecretFromSecretRef(ctx context.Context, cli kubernetes.Interface, ref v1.SecretReference) (*v1.Secret, error) {
+	secret, err := cli.CoreV1().Secrets(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("Error fetching secret %s from namespace %s", ref.Name, ref.Namespace))
+	}
+	return secret, nil
 }
 
 func filterByKind(refs map[string]crv1alpha1.ObjectReference, kind string) map[string]crv1alpha1.ObjectReference {
