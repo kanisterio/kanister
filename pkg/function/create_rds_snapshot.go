@@ -128,8 +128,9 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		return nil, errors.Wrapf(e, "Failed to fetch security group ids. InstanceID=%s", instanceID)
 	}
 
-	if !isAuroraCluster(string(dbEngine)) {
-		dbSubnetGroup, e = GetRDSDbSubnetGroup(ctx, rdsCli, instanceID)
+	dbSubnetGroup, e = GetRDSDbSubnetGroup(ctx, rdsCli, instanceID)
+	if e != nil {
+		return nil, errors.Wrapf(e, "Failed to get dbSubnetGroup ids. InstanceID=%s", instanceID)
 	}
 
 	// Convert to yaml format

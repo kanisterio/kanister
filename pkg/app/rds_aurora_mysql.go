@@ -169,10 +169,10 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	if err != nil {
 		return err
 	}
-
+	dbSubnetGroup := ""
 	// Create RDS instance
 	log.Info().Print("Creating RDS Aurora DB cluster.", field.M{"app": a.name, "id": a.id})
-	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, []string{a.securityGroupID}, a.PublicAccess)
+	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, dbSubnetGroup, []string{a.securityGroupID}, a.PublicAccess)
 	if err != nil {
 		return errors.Wrap(err, "Error creating DB cluster")
 	}
@@ -183,7 +183,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	}
 
 	// create db instance in the cluster
-	_, err = rdsCli.CreateDBInstanceInCluster(ctx, a.id, fmt.Sprintf("%s-instance-1", a.id), AuroraDBInstanceClass, string(function.DBEngineAuroraMySQL), a.PublicAccess)
+	_, err = rdsCli.CreateDBInstanceInCluster(ctx, a.id, fmt.Sprintf("%s-instance-1", a.id), AuroraDBInstanceClass, string(function.DBEngineAuroraMySQL), dbSubnetGroup, a.PublicAccess)
 	if err != nil {
 		return errors.Wrap(err, "Error creating an instance in Aurora DB cluster")
 	}
