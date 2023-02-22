@@ -192,6 +192,15 @@ func (s *PodSuite) TestPod(c *C) {
 				},
 			},
 		},
+		{
+			Namespace:    s.namespace,
+			GenerateName: "test-",
+			Image:        consts.LatestKanisterToolsImage,
+			Command:      []string{"sh", "-c", "tail -f /dev/null"},
+			ImagePullSecrets: []v1.LocalObjectReference{
+				{Name: "test-secret"},
+			},
+		},
 	}
 
 	for _, po := range podOptions {
@@ -233,6 +242,9 @@ func (s *PodSuite) TestPod(c *C) {
 		if po.Resources.Requests != nil {
 			c.Assert(pod.Spec.Containers[0].Resources.Requests, NotNil)
 			c.Assert(pod.Spec.Containers[0].Resources.Requests, DeepEquals, po.Resources.Requests)
+		}
+		if po.ImagePullSecrets != nil {
+			c.Assert(pod.Spec.ImagePullSecrets, DeepEquals, po.ImagePullSecrets)
 		}
 
 		switch {

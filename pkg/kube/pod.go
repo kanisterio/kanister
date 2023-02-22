@@ -72,6 +72,7 @@ type PodOptions struct {
 	OwnerReferences          []metav1.OwnerReference
 	EnvironmentVariables     []v1.EnvVar
 	Lifecycle                *v1.Lifecycle
+	ImagePullSecrets         []v1.LocalObjectReference
 }
 
 func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
@@ -127,6 +128,7 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		RestartPolicy:      opts.RestartPolicy,
 		Volumes:            podVolumes,
 		ServiceAccountName: sa,
+		ImagePullSecrets:   opts.ImagePullSecrets,
 	}
 
 	if opts.EnvironmentVariables != nil && len(opts.EnvironmentVariables) > 0 {
