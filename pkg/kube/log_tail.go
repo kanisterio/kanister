@@ -22,8 +22,8 @@ import (
 
 // LogTail interface allows to store last N lines of log written to it
 type LogTail interface {
-	Write(p []byte) (int, error) // Write log line(s) to circular buffer
-	ToString() string            // Join stored log lines to one string separated by newline
+	Write(p []byte) (int, error)
+	ToString() string
 }
 
 type logTail struct {
@@ -40,6 +40,7 @@ func NewLogTail(len int) LogTail {
 	}
 }
 
+// Write implements io.Writer interface. It writes log line(s) to circular buffer
 func (lt *logTail) Write(p []byte) (int, error) {
 	s := bufio.NewScanner(bytes.NewReader(p))
 	for s.Scan() { // Scan log lines one by one.
@@ -55,7 +56,7 @@ func (lt *logTail) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// ToString returns collected lines joined with newline
+// ToString returns collected lines joined with a newline
 func (lt *logTail) ToString() string {
 	var result string
 
