@@ -48,4 +48,18 @@ func (s *LogTailTestSuite) TestLogsTail(c *C) {
 		r := lt.ToString()
 		c.Check(r, Equals, tc.expected, fc)
 	}
+
+	lt := NewLogTail(3)
+	c.Check(lt.ToString(), Equals, "") // If there were no writes at all, output should be empty line
+
+	lt.Write([]byte("line1"))
+	lt.Write([]byte("line2"))
+	c.Check(lt.ToString(), Equals, "line1\r\nline2")
+	c.Check(lt.ToString(), Equals, "line1\r\nline2") // Second invocation should get the same result
+
+	// Check that buffer is still working after ToString is called
+	lt.Write([]byte("line3"))
+	c.Check(lt.ToString(), Equals, "line1\r\nline2\r\nline3")
+	lt.Write([]byte("line4"))
+	c.Check(lt.ToString(), Equals, "line2\r\nline3\r\nline4")
 }
