@@ -152,7 +152,7 @@ The command output can be parsed to get the progress metadata.
 
 Non-datamover Kanister functions like `KubeTask`, `KubeExec`, `KubeOps`, `ScaleWorkload`, etc allow users to perform operations like executing scripts on a Pod or managing K8s resources. The duration it takes to execute these functions depends on different factors like the type of operations, function arguments, and types of commands listed in BP in the case of KubeExec or KubeTask functions. We can roughly divide these function execution into 3 steps.
 
-- Prerequisites - which include preparing Pod specs, creating the pod and waiting for it to be ready.
+- Prerequisites - which include steps to perform before running actual operations like setting up env, preparing Pod specs, creating the K8s resources and waiting for them to be ready.
 - Execution - This is the step where the function performs operations.
 - Cleanup - Operations like deleting pods or cleaning up resources
 
