@@ -94,7 +94,7 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().StringSliceP(deploymentFlagName, "d", []string{}, "deployment for the action set, comma separated namespace/name pairs (eg: --deployment namespace1/name1,namespace2/name2)")
 	cmd.Flags().StringSliceP(optionsFlagName, "o", []string{}, "specify options for the action set, comma separated key=value pairs (eg: --options key1=value1,key2=value2)")
 	cmd.Flags().StringP(profileFlagName, "p", "", "profile for the action set")
-	cmd.Flags().StringP(repositoryServerFlagName, "r", "", "kopia repository server custom resource reference")
+	cmd.Flags().StringP(repositoryServerFlagName, "r", "", "kopia repository server custom resource reference (eg: --repository-server namespace1/name1)")
 	cmd.Flags().StringSliceP(pvcFlagName, "v", []string{}, "pvc for the action set, comma separated namespace/name pairs (eg: --pvc namespace1/name1,namespace2/name2)")
 	cmd.Flags().StringSliceP(secretsFlagName, "s", []string{}, "secrets for the action set, comma separated ref=namespace/name pairs (eg: --secrets ref1=namespace1/name1,ref2=namespace2/name2)")
 	cmd.Flags().StringSliceP(statefulSetFlagName, "t", []string{}, "statefulset for the action set, comma separated namespace/name pairs (eg: --statefulset namespace1/name1,namespace2/name2)")
@@ -355,6 +355,8 @@ func parseProfile(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectReference, e
 	}, nil
 }
 
+// parseRepositoryServer returns the object reference
+// for the passed Repository Server
 func parseRepositoryServer(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectReference, error) {
 	repositoryServerName, _ := cmd.Flags().GetString(repositoryServerFlagName)
 	if repositoryServerName == "" {
@@ -363,7 +365,7 @@ func parseRepositoryServer(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectRef
 	if strings.Contains(repositoryServerName, "/") {
 		temp := strings.Split(repositoryServerName, "/")
 		if len(temp) != 2 {
-			return nil, errors.Errorf("Invalid repository server name %s, should be of the form ( --repository-server namespace/name OR --repository-server name)", repositoryServerName)
+			return nil, errors.Errorf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name or --repository-server name)", repositoryServerName)
 		}
 		ns = temp[0]
 		repositoryServerName = temp[1]

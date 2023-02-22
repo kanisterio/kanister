@@ -276,11 +276,11 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	serverTLS, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Server.TLSSecretRef)
+	serverTLS, err := secretFromSecretRef(ctx, cli, r.Spec.Server.TLSSecretRef)
 	if err != nil {
 		return nil, err
 	}
-	serverUserAccess, err := fetchSecretFromSecretRef(ctx, cli, r.Spec.Server.UserAccess.UserAccessSecretRef)
+	serverUserAccess, err := secretFromSecretRef(ctx, cli, r.Spec.Server.UserAccess.UserAccessSecretRef)
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +350,7 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 	}, nil
 }
 
-func fetchSecretFromSecretRef(ctx context.Context, cli kubernetes.Interface, ref v1.SecretReference) (*v1.Secret, error) {
+func secretFromSecretRef(ctx context.Context, cli kubernetes.Interface, ref v1.SecretReference) (*v1.Secret, error) {
 	secret, err := cli.CoreV1().Secrets(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("Error fetching secret %s from namespace %s", ref.Name, ref.Namespace))
