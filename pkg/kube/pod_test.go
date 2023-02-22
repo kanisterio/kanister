@@ -80,6 +80,7 @@ func (s *PodSuite) TearDownSuite(c *C) {
 	}
 }
 
+//nolint:gocognit
 func (s *PodSuite) TestPod(c *C) {
 	// get controllers's namespace
 	cns, err := GetControllerNamespace()
