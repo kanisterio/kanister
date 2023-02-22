@@ -150,7 +150,15 @@ The command output can be parsed to get the progress metadata.
 
 ### Non-datamover Kanister functions
 
-TBD
+Non-datamover Kanister functions like `KubeTask`, `KubeExec`, `KubeOps`, `ScaleWorkload`, etc allow users to perform operations like executing scripts on a Pod or managing K8s resources. The duration it takes to execute these functions depends on different factors like the type of operations, function arguments, and types of commands listed in BP in the case of KubeExec or KubeTask functions. We can roughly divide these function execution into 3 steps.
+
+- Prerequisites - which include preparing Pod specs, creating the pod and waiting for it to be ready.
+- Execution - This is the step where the function performs operations.
+- Cleanup - Operations like deleting pods or cleaning up resources
+
+Since there is no standard way to check the progress of these functions, we can divide the progress equally into 3 giving each step equal weightage i.e 33.33%. E.g once the prerequisite step is completed, the progress can be set to 33.33%. And 66.66% once the specified operations are completed.
+
+A few functions like `ScaleWorkload` may not have any prerequisite step. In that case, the progress can be set to 0 till the operation completes.
 
 ### Updating actionset status
 
