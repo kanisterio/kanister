@@ -32,7 +32,7 @@ type logTail struct {
 	len   int
 }
 
-// NewLogTail creates logTail struct containing circular buffer for storing `len` last lines of written through Write method
+// NewLogTail creates logTail struct containing circular buffer for storing `len` last lines of log written through Write method
 func NewLogTail(len int) LogTail {
 	return &logTail{
 		lines: make([]string, len),
