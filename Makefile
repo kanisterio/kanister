@@ -204,6 +204,27 @@ else
 	@/bin/bash -c $(DOCS_CMD)
 endif
 
+API_DOCS_CMD = "gen-crd-api-reference-docs 			\
+		-config docs/api_docs/config.json 	\
+		-api-dir ./pkg/apis/cr/v1alpha1 	\
+		-template-dir docs/api_docs/template 		\
+		-out-file API.md 	\
+"
+
+crd_docs:
+ifeq ($(DOCKER_BUILD),"true")
+	@echo "running API_DOCS_CMD in the containerized build environment"
+	@docker run             \
+		--entrypoint ''     \
+		--rm                \
+		-v "$(PWD):/repo"   \
+		-w /repo            \
+		$(BUILD_IMAGE) \
+		/bin/bash -c $(API_DOCS_CMD)
+else
+	@/bin/bash -c $(API_DOCS_CMD)
+endif
+
 build-dirs:
 	@mkdir -p bin/$(ARCH)
 	@mkdir -p .go/src/$(PKG) .go/pkg .go/bin .go/std/$(ARCH)
