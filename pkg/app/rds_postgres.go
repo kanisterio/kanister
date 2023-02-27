@@ -171,6 +171,8 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		// Extract subnet IDs from the response
 		var subnetIDs []string
 		for _, subnet := range resp.Subnets {
+			log.Info().Print("subnet")
+			log.Info().Print(*subnet.SubnetId)
 			subnetIDs = append(subnetIDs, *subnet.SubnetId)
 		}
 		subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", pdb.name), "kanister-test-subnet-group", subnetIDs)
