@@ -236,8 +236,8 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 	return string(bytes), nil
 }
 
-// getErrorWithLogs fetches logs from pod and constructs error containing last ten lines of log and specified error message
-func getErrorWithLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName string, err error, errorMessage string) error {
+// getErrorFromLogs fetches logs from pod and constructs error containing last ten lines of log and specified error message
+func getErrorFromLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName string, err error, errorMessage string) error {
 	r, logErr := StreamPodLogs(ctx, cli, namespace, podName)
 	if logErr != nil {
 		return errors.Wrapf(logErr, "Failed to fetch logs from the pod")
@@ -294,7 +294,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 
 	errorMessage := fmt.Sprintf("Pod did not transition into running state. Timeout:%v  Namespace:%s, Name:%s", GetPodReadyWaitTimeout(), namespace, name)
 	if attachLog {
-		return getErrorWithLogs(ctx, cli, namespace, name, err, errorMessage)
+		return getErrorFromLogs(ctx, cli, namespace, name, err, errorMessage)
 	}
 
 	return errors.Wrap(err, errorMessage)
@@ -391,7 +391,7 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 
 	errorMessage := "Pod failed or did not transition into complete state"
 	if attachLog {
-		return getErrorWithLogs(ctx, cli, namespace, name, err, errorMessage)
+		return getErrorFromLogs(ctx, cli, namespace, name, err, errorMessage)
 	}
 	return errors.Wrap(err, errorMessage)
 }
