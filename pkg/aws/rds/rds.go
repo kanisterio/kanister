@@ -23,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
+	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
 )
@@ -49,10 +50,16 @@ func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS,
 
 // CreateDBSubnetGroupWithContext
 func (r RDS) CreateDBSubnetGroup(ctx context.Context, dbSubnetGroupName, dbSubnetGroupDescription string, subnetIDs []string) (*rds.CreateDBSubnetGroupOutput, error) {
+	var subnetIds []*string
+	for _, ID := range subnetIDs {
+		log.Info().Print("from createDBsubnetGroup")
+		log.Info().Print(ID)
+		subnetIds = append(subnetIds, aws.String(ID))
+	}
 	dbsgi := &rds.CreateDBSubnetGroupInput{
 		DBSubnetGroupName:        aws.String(dbSubnetGroupName),
 		DBSubnetGroupDescription: aws.String(dbSubnetGroupDescription),
-		SubnetIds:                convertSGIDs(subnetIDs),
+		SubnetIds:                subnetIds,
 	}
 
 	return r.CreateDBSubnetGroupWithContext(ctx, dbsgi)
