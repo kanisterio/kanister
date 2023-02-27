@@ -38,8 +38,8 @@ type RepositoryServer struct {
 
 // RepositoryServerSpec is the specification for the RepositoryServer
 type RepositoryServerSpec struct {
-	// Storage contains the details of the object storage details
-	// where the kopia repository server would backup the data
+	// Storage references the backend store where a repository already exists
+	// and the credential necessary to connect to the backend store
 	Storage Storage `json:"storage"`
 	// Repository has the details required by the repository server
 	// to connect to kopia repository
@@ -60,7 +60,7 @@ type Storage struct {
 	CredentialSecretRef corev1.SecretReference `json:"credentialSecretRef"`
 }
 
-// Repository details for the purpose of establishing a connection
+// Repository has the details required by the repository server to connect to kopia repository
 type Repository struct {
 	// Path for the repository,it will be relative sub path
 	// within the path prefix specified in the location
