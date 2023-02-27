@@ -22,6 +22,9 @@ COPY --from=golangci/golangci-lint:v1.50 /usr/bin/golangci-lint /usr/local/bin/
 RUN wget -O /usr/local/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.11.1/kind-linux-amd64 \
     && chmod +x /usr/local/bin/kind
 
+# Adding CRD documentation generation tool.
+RUN GOBIN=/usr/local/bin go install github.com/ahmetb/gen-crd-api-reference-docs@v0.3.0
+
 ENV CGO_ENABLED=0 \
     GO111MODULE="on" \
     GOROOT="/usr/local/go" \
