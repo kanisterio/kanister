@@ -58,7 +58,7 @@ func (r RDS) CreateDBSubnetGroup(ctx context.Context, dbSubnetGroupName, dbSubne
 	return r.CreateDBSubnetGroupWithContext(ctx, dbsgi)
 }
 
-//DeleteSubnetGroupWithContext
+// DeleteSubnetGroupWithContext
 func (r RDS) DeleteDBSubnetGroup(ctx context.Context, dbSubnetGroupName string) (*rds.DeleteDBSubnetGroupOutput, error) {
 	dbsgi := &rds.DeleteDBSubnetGroupInput{
 		DBSubnetGroupName: aws.String(dbSubnetGroupName),
