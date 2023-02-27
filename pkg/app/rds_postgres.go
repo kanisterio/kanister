@@ -61,6 +61,7 @@ type RDSPostgresDB struct {
 	configMapName     string
 	secretName        string
 	vpcID             string
+	subnetGroup       string
 	publicAccess      bool
 }
 
@@ -137,11 +138,18 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 
+	// Create rds client
+	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
+	if err != nil {
+		return err
+	}
+
 	pdb.vpcID = os.Getenv("VPC_ID")
 	log.Info().Print("VPC_ID from kanister", field.M{"VPC ID": pdb.vpcID})
 
-	// VPCId is not provided, use Default VPC
+	// VPCId is not provided, use Default VPC and subnet group
 	if pdb.vpcID == "" {
+		pdb.publicAccess = true
 		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
 		if err != nil {
 			return err
@@ -151,6 +159,26 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		}
 		pdb.vpcID = *defaultVpc.Vpcs[0].VpcId
 		fmt.Println(pdb.vpcID)
+		pdb.subnetGroup = "default"
+	} else {
+		// create a subnetgroup in the VPCID
+		resp, err := ec2Cli.DescribeSubnets(ctx, pdb.vpcID)
+		if err != nil {
+			fmt.Println("Failed to describe subnets", err)
+			return err
+		}
+
+		// Extract subnet IDs from the response
+		var subnetIDs []string
+		for _, subnet := range resp.Subnets {
+			subnetIDs = append(subnetIDs, *subnet.SubnetId)
+		}
+		subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", pdb.name), "kanister-test-subnet-group", subnetIDs)
+		if err != nil {
+			fmt.Println("Failed to create subnet group", err)
+			return err
+		}
+		pdb.subnetGroup = *subnetGroup.DBSubnetGroup.DBSubnetGroupName
 	}
 
 	// Create security group
@@ -163,29 +191,15 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Add ingress rule
 	log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
-	descvpc, err := ec2Cli.DescribeVpc(ctx, pdb.vpcID)
-	if err != nil {
-		return errors.Wrapf(err, "Error Describing VPC %s", pdb.vpcID)
-	}
-
-	// Get the CIDR block
-	cidrBlock := *descvpc.Vpcs[0].CidrBlock
-
-	log.Info().Print("cidrBlock:", field.M{"cidrBlock": cidrBlock})
-	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, pdb.securityGroupName, pdb.securityGroupID, cidrBlock, "tcp", 5432)
-	if err != nil {
-		return err
-	}
-
-	// Create rds client
-	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
+	log.Info().Print("Security Group ID", field.M{"groupID": pdb.securityGroupID}, field.M{"groupName": pdb.securityGroupName})
+	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, pdb.securityGroupID, "0.0.0.0/0", "tcp", 5432)
 	if err != nil {
 		return err
 	}
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", "", pdb.username, pdb.password, []string{pdb.securityGroupID}, pdb.publicAccess)
+	_, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", pdb.subnetGroup, pdb.username, pdb.password, []string{pdb.securityGroupID}, pdb.publicAccess)
 	if err != nil {
 		return err
 	}
@@ -418,6 +432,24 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 				log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
 			default:
 				return errors.Wrapf(err, "Failed to delete security group. You may need to delete it manually. app=rds-postgresql name=%s", pdb.securityGroupName)
+			}
+		}
+	}
+
+	// Delete subnetGroup
+	log.Info().Print("Deleting db subnet group.", field.M{"app": pdb.name})
+	if pdb.subnetGroup != "default" {
+		log.Info().Print("subnet group is not default deleting it")
+		_, err = rdsCli.DeleteDBSubnetGroup(ctx, pdb.subnetGroup)
+		if err != nil {
+			// If the subnet group does not exist, ignore the error and return
+			if err, ok := err.(awserr.Error); ok {
+				switch err.Code() {
+				case awsrds.ErrCodeDBSubnetGroupNotFoundFault:
+					log.Info().Print("Subnet Group Does not exist: ErrCodeDBSubnetGroupNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
+				default:
+					return errors.Wrapf(err, "Failed to delete subnet group. You may need to delete it manually. app=rds-postgresql id=%s", pdb.id)
+				}
 			}
 		}
 	}

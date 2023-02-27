@@ -183,6 +183,7 @@ func findAuroraSecurityGroups(ctx context.Context, rdsCli *rds.RDS, instanceID s
 			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
 				return nil, err
 			}
+			log.Info().Print("the instance is deleted")
 			return nil, nil
 		}
 	}
@@ -257,4 +258,18 @@ func GetRDSDbSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID string
 
 	// Extract the dbSubnetGroup from the response
 	return result.DBInstances[0].DBSubnetGroup.DBSubnetGroupName, nil
+}
+
+func GetRDSAuroraDbSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID string) (*string, error) {
+	desc, err := rdsCli.DescribeDBClusters(ctx, instanceID)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
+				return nil, err
+			}
+			return nil, nil
+		}
+	}
+	// Extract the dbSubnetGroup from the response
+	return desc.DBClusters[0].DBSubnetGroup, nil
 }

@@ -22,6 +22,7 @@ import (
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -62,8 +63,9 @@ type RDSAuroraMySQLDB struct {
 	sessionToken      string
 	securityGroupID   string
 	securityGroupName string
-	VpcID             string
-	PublicAccess      bool
+	vpcID             string
+	publicAccess      bool
+	subnetGroup       string
 }
 
 func NewRDSAuroraMySQLDB(name, region string) App {
@@ -129,22 +131,51 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return err
 	}
 
-	// VPCId is not provided, use Default VPC
-	if a.VpcID == "" {
+	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
+	if err != nil {
+		return err
+	}
+
+	a.vpcID = os.Getenv("VPC_ID")
+	log.Info().Print("VPC_ID from kanister", field.M{"VPC ID": a.vpcID})
+
+	// VPCId is not provided, use Default VPC and subnet group
+	if a.vpcID == "" {
+		a.publicAccess = true
 		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
 		if err != nil {
 			return err
 		}
 		if len(defaultVpc.Vpcs) == 0 {
-			return fmt.Errorf("No default VPC found")
+			return fmt.Errorf("no default VPC found")
 		}
-		a.VpcID = *defaultVpc.Vpcs[0].VpcId
-		fmt.Println(a.VpcID)
+		a.vpcID = *defaultVpc.Vpcs[0].VpcId
+		fmt.Println(a.vpcID)
+		a.subnetGroup = "default"
+	} else {
+		// create a subnetgroup in the VPCID
+		resp, err := ec2Cli.DescribeSubnets(ctx, a.vpcID)
+		if err != nil {
+			fmt.Println("Failed to describe subnets", err)
+			return err
+		}
+
+		// Extract subnet IDs from the response
+		var subnetIDs []string
+		for _, subnet := range resp.Subnets {
+			subnetIDs = append(subnetIDs, *subnet.SubnetId)
+		}
+		subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", a.name), "kanister-test-subnet-group", subnetIDs)
+		if err != nil {
+			fmt.Println("Failed to create subnet group", err)
+			return err
+		}
+		a.subnetGroup = *subnetGroup.DBSubnetGroup.DBSubnetGroupName
 	}
 
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": a.name, "name": a.securityGroupName})
-	sg, err := ec2Cli.CreateSecurityGroup(ctx, a.securityGroupName, "To allow ingress to Aurora DB cluster", a.VpcID)
+	sg, err := ec2Cli.CreateSecurityGroup(ctx, a.securityGroupName, "To allow ingress to Aurora DB cluster", a.vpcID)
 	if err != nil {
 		return errors.Wrap(err, "Error creating security group")
 	}
@@ -152,27 +183,14 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 
 	// Add ingress rule
 	log.Info().Print("Adding ingress rule to security group.", field.M{"app": a.name})
-	descvpc, err := ec2Cli.DescribeVpc(ctx, a.VpcID)
-	if err != nil {
-		return errors.Wrapf(err, "Error Describing VPC %s", a.VpcID)
-	}
-
-	// Get the CIDR block
-	cidrBlock := *descvpc.Vpcs[0].CidrBlock
-
-	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupName, a.securityGroupID, cidrBlock, "tcp", 3306)
+	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupID, "0.0.0.0/0", "tcp", 3306)
 	if err != nil {
 		return errors.Wrap(err, "Error authorizing security group")
 	}
 
-	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
-	if err != nil {
-		return err
-	}
-	dbSubnetGroup := ""
 	// Create RDS instance
 	log.Info().Print("Creating RDS Aurora DB cluster.", field.M{"app": a.name, "id": a.id})
-	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, dbSubnetGroup, []string{a.securityGroupID}, a.PublicAccess)
+	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, a.subnetGroup, []string{a.securityGroupID})
 	if err != nil {
 		return errors.Wrap(err, "Error creating DB cluster")
 	}
@@ -183,7 +201,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	}
 
 	// create db instance in the cluster
-	_, err = rdsCli.CreateDBInstanceInCluster(ctx, a.id, fmt.Sprintf("%s-instance-1", a.id), AuroraDBInstanceClass, string(function.DBEngineAuroraMySQL), dbSubnetGroup, a.PublicAccess)
+	_, err = rdsCli.CreateDBInstanceInCluster(ctx, a.id, fmt.Sprintf("%s-instance-1", a.id), AuroraDBInstanceClass, string(function.DBEngineAuroraMySQL), a.subnetGroup, a.publicAccess)
 	if err != nil {
 		return errors.Wrap(err, "Error creating an instance in Aurora DB cluster")
 	}
@@ -430,6 +448,24 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 				log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": a.name, "name": a.securityGroupName})
 			default:
 				return errors.Wrapf(err, "Failed to delete security group. You may need to delete it manually. app=rds-postgresql name=%s", a.securityGroupName)
+			}
+		}
+	}
+
+	// Delete subnetGroup
+	log.Info().Print("Deleting db subnet group.", field.M{"app": a.name})
+	if a.subnetGroup != "default" {
+		log.Info().Print("subnet group is not default deleting it")
+		_, err = rdsCli.DeleteDBSubnetGroup(ctx, a.subnetGroup)
+		if err != nil {
+			// If the subnet group does not exist, ignore the error and return
+			if err, ok := err.(awserr.Error); ok {
+				switch err.Code() {
+				case awsrds.ErrCodeDBSubnetGroupNotFoundFault:
+					log.Info().Print("Subnet Group Does not exist: ErrCodeDBSubnetGroupNotFoundFault.", field.M{"app": a.name, "id": a.id})
+				default:
+					return errors.Wrapf(err, "Failed to delete subnet group. You may need to delete it manually. app=rds-postgresql id=%s", a.id)
+				}
 			}
 		}
 	}

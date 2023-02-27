@@ -23,7 +23,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
-	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
 )
@@ -49,17 +48,41 @@ func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS,
 }
 
 // CreateDBSubnetGroupWithContext
-func (r RDS) CreateDBSubnetGroup(ctx context.Context, storage int64, dbSubnetGroupName, dbSubnetGroupDescription string, subnetIDs []string) (*rds.CreateDBSubnetGroupOutput, error) {
+func (r RDS) CreateDBSubnetGroup(ctx context.Context, dbSubnetGroupName, dbSubnetGroupDescription string, subnetIDs []string) (*rds.CreateDBSubnetGroupOutput, error) {
 	dbsgi := &rds.CreateDBSubnetGroupInput{
 		DBSubnetGroupName:        aws.String(dbSubnetGroupName),
 		DBSubnetGroupDescription: aws.String(dbSubnetGroupDescription),
 		SubnetIds:                convertSGIDs(subnetIDs),
 	}
+
 	return r.CreateDBSubnetGroupWithContext(ctx, dbsgi)
 }
 
+//DeleteSubnetGroupWithContext
+func (r RDS) DeleteDBSubnetGroup(ctx context.Context, dbSubnetGroupName string) (*rds.DeleteDBSubnetGroupOutput, error) {
+	dbsgi := &rds.DeleteDBSubnetGroupInput{
+		DBSubnetGroupName: aws.String(dbSubnetGroupName),
+	}
+	return r.DeleteDBSubnetGroupWithContext(ctx, dbsgi)
+}
+
+func (r RDS) DescribeDefaultDBSubnetGroup(ctx context.Context, vpcId string) (*rds.DescribeDBSubnetGroupsOutput, error) {
+	dbsgi := &rds.DescribeDBSubnetGroupsInput{
+		DBSubnetGroupName: aws.String("default"),
+		Filters: []*rds.Filter{
+			{
+				Name: aws.String("vpc-id"),
+				Values: []*string{
+					aws.String(vpcId),
+				},
+			},
+		},
+	}
+	return r.DescribeDBSubnetGroupsWithContext(ctx, dbsgi)
+}
+
 // CreateDBInstanceWithContext
-func (r RDS) CreateDBInstance(ctx context.Context, storage int64, dbSubnetGroupName, instanceClass, instanceID, engine, username, password string, sgIDs []string, publicAccess bool) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, dbSubnetGroupName, username, password string, sgIDs []string, publicAccess bool) (*rds.CreateDBInstanceOutput, error) {
 	dbi := &rds.CreateDBInstanceInput{
 		AllocatedStorage:     &storage,
 		DBInstanceIdentifier: &instanceID,
@@ -74,7 +97,7 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage int64, dbSubnetGroupN
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
-func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, engine, dbName, username, password, dbSubnetGroup string, sgIDs []string, publicAccess bool) (*rds.CreateDBClusterOutput, error) {
+func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, engine, dbName, username, password, dbSubnetGroup string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
 	dbi := &rds.CreateDBClusterInput{
 		DBClusterIdentifier: &instanceID,
 		DatabaseName:        &dbName,
@@ -82,7 +105,6 @@ func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, 
 		MasterUsername:      &username,
 		MasterUserPassword:  &password,
 		VpcSecurityGroupIds: convertSGIDs(sgIDs),
-		PubliclyAccessible:  aws.Bool(publicAccess),
 		DBSubnetGroupName:   &dbSubnetGroup,
 	}
 	return r.CreateDBClusterWithContext(ctx, dbi)
@@ -144,7 +166,7 @@ func (r RDS) WaitUntilDBClusterDeleted(ctx context.Context, dbClusterID string) 
 		}
 		if _, err := r.DescribeDBClustersWithContext(ctx, dci); err != nil {
 			if aerr, ok := err.(awserr.Error); ok {
-				if aerr.Code() == rdserr.ErrCodeDBClusterNotFoundFault {
+				if aerr.Code() == rds.ErrCodeDBClusterNotFoundFault {
 					return true, nil
 				}
 				return false, nil

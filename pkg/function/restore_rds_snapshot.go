@@ -178,7 +178,7 @@ func restoreRDSSnapshot(ctx context.Context, namespace, instanceID, subnetGroup,
 		if !isAuroraCluster(string(dbEngine)) {
 			return nil, restoreFromSnapshot(ctx, rdsCli, instanceID, subnetGroup, snapshotID, sgIDs)
 		}
-		return nil, restoreAuroraFromSnapshot(ctx, rdsCli, instanceID, snapshotID, string(dbEngine), sgIDs)
+		return nil, restoreAuroraFromSnapshot(ctx, rdsCli, instanceID, snapshotID, string(dbEngine), subnetGroup, sgIDs)
 	}
 
 	// Restore from dump
@@ -269,7 +269,7 @@ func restoreFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, dbSub
 	return errors.Wrap(err, "Error while waiting for new rds instance to be ready.")
 }
 
-func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID, dbEngine string, securityGroupIDs []string) error {
+func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID, snapshotID, dbEngine, dbSubnetGroup string, securityGroupIDs []string) error {
 	// To delete an Aurora RDS instance we will have to delete all the instance that are running through it
 	// Once all those instances are deleted, Aurora cluster will be deleted automatically
 	descOp, err := rdsCli.DescribeDBClusters(ctx, instanceID)
@@ -293,7 +293,7 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 	}
 
 	log.WithContext(ctx).Print("Restoring RDS Aurora DB Cluster from snapshot.", field.M{"instanceID": instanceID, "snapshotID": snapshotID})
-	op, err := rdsCli.RestoreDBClusterFromDBSnapshot(ctx, instanceID, snapshotID, dbEngine, version, securityGroupIDs)
+	op, err := rdsCli.RestoreDBClusterFromDBSnapshot(ctx, instanceID, snapshotID, dbEngine, version, dbSubnetGroup, securityGroupIDs)
 	if err != nil {
 		return errors.Wrap(err, "Error restorig aurora db cluster from snapshot")
 	}
@@ -307,7 +307,7 @@ func restoreAuroraFromSnapshot(ctx context.Context, rdsCli *rds.RDS, instanceID,
 
 	log.WithContext(ctx).Print("Creating DB instance in the cluster")
 	// After Aurora cluster is created, we will have to explictly create the DB instance
-	dbInsOp, err := rdsCli.CreateDBInstanceInCluster(ctx, *op.DBCluster.DBClusterIdentifier, fmt.Sprintf("%s-%s", *op.DBCluster.DBClusterIdentifier, restoredAuroraInstanceSuffix), defaultAuroraInstanceClass, dbEngine, false)
+	dbInsOp, err := rdsCli.CreateDBInstanceInCluster(ctx, *op.DBCluster.DBClusterIdentifier, fmt.Sprintf("%s-%s", *op.DBCluster.DBClusterIdentifier, restoredAuroraInstanceSuffix), defaultAuroraInstanceClass, dbEngine, dbSubnetGroup, false)
 	if err != nil {
 		return errors.Wrap(err, "Error while creating Aurora DB instance in the cluster.")
 	}
