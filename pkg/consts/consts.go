@@ -25,4 +25,4 @@ const (
 )
 
 const LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
-const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.88.0"
+const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.89.0"
