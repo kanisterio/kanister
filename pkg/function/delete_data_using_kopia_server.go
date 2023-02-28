@@ -82,12 +82,11 @@ func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 
 	fingerprint, err := kankopia.ExtractFingerprintFromCertificateJSON(cert)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from blueprint")
+		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
 	}
 
 	username := tp.RepositoryServer.Username
 	hostname, userAccessPassphrase, err := getHostNameAndUserPassPhraseFromRepoServer(userPassphrase)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get hostname/user passphrase from Options")
 	}
@@ -167,7 +166,6 @@ func deleteDataFromServerPodFunc(
 	userPassphrase string,
 ) func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
 	return func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
-		// Wait for pod to reach running state
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrap(err, "Failed while waiting for Pod: "+pod.Name+" to be ready")
 		}
@@ -191,7 +189,7 @@ func deleteDataFromServerPodFunc(
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stdout)
 		format.Log(pod.Name, pod.Spec.Containers[0].Name, stderr)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to connect to Kopia API server")
+			return nil, errors.Wrap(err, "Failed to connect to Kopia Repository server")
 		}
 
 		cmd = kopiacmd.SnapshotDelete(
