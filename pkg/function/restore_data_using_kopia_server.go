@@ -104,7 +104,6 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 	}
 
 	if len(vols) == 0 {
-		// Fetch Volumes
 		vols, err = FetchPodVolumes(pod, tp)
 		if err != nil {
 			return nil, err
@@ -113,7 +112,6 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 
 	username := tp.RepositoryServer.Username
 	hostname, userAccessPassphrase, err := getHostNameAndUserPassPhraseFromRepoServer(userPassphrase)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get hostname/user passphrase from Options")
 	}
