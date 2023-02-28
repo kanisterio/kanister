@@ -22,12 +22,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
-	"path/filepath"
-	"strings"
-	"time"
-
-	"github.com/jpillora/backoff"
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/repo/manifest"
 	"github.com/kopia/kopia/repo/object"
@@ -36,11 +30,10 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"path/filepath"
+	"strings"
 
-	"github.com/kanisterio/kanister/pkg/format"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
-	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/poll"
 )
 
 const (
@@ -205,28 +198,4 @@ func GetCustomConfigFileAndLogDirectory(hostname string) (string, string) {
 	configFile := filepath.Join(kopiacmd.DefaultConfigDirectory, hostname+".config")
 	logDir := filepath.Join(kopiacmd.DefaultLogDirectory, hostname)
 	return configFile, logDir
-}
-
-// WaitTillCommandSucceed returns error if the Command fails to pass without error before default timeout
-func WaitTillCommandSucceed(ctx context.Context, cli kubernetes.Interface, cmd []string, namespace, podName, container string) error {
-	err := poll.WaitWithBackoff(ctx, backoff.Backoff{
-		Factor: 2,
-		Jitter: false,
-		Min:    100 * time.Millisecond,
-		Max:    180 * time.Second,
-	}, func(context.Context) (bool, error) {
-		stdout, stderr, exErr := kube.Exec(cli, namespace, podName, container, cmd, nil)
-		format.Log(podName, container, stdout)
-		format.Log(podName, container, stderr)
-		if exErr != nil {
-			return false, nil
-		}
-		return true, nil
-	})
-	return errors.Wrap(err, "Failed while waiting for Kopia API server to start")
-}
-
-// GetDefaultServerUsername returns the default server username used to run Kopia API Server commands
-func GetDefaultServerUsername() string {
-	return fmt.Sprintf(ServerUsernameFormat, KanisterAdminUsername, defaultServerHostname)
 }
