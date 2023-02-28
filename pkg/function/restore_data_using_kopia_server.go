@@ -3,7 +3,6 @@ package function
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -124,12 +123,10 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		return nil, errors.Wrap(err, "Failed to create Kubernetes client")
 	}
 
-	repositoryServerService, err := cli.CoreV1().Services(tp.RepositoryServer.Namespace).Get(context.Background(), tp.RepositoryServer.ServerInfo.ServiceName, metav1.GetOptions{})
+	serverAddress, err := getRepositoryServerAddress(cli, *tp.RepositoryServer)
 	if err != nil {
-		return nil, errors.New("Unable to find Service Details for Repository Server")
+		return nil, errors.Wrap(err, "Failed to get the Kopia Repository Server Address")
 	}
-	repositoryServerServicePort := strconv.Itoa(int(repositoryServerService.Spec.Ports[0].Port))
-	serverAddress := "https://" + tp.RepositoryServer.ServerInfo.ServiceName + "." + tp.RepositoryServer.Namespace + ".svc.cluster.local:" + repositoryServerServicePort
 
 	_, sparseRestore := tp.Options[SparseRestoreOption]
 
