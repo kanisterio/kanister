@@ -109,11 +109,14 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 
 	fingerprint, err := kankopia.ExtractFingerprintFromCertificateJSON(cert)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from blueprint")
+		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
 	}
 
 	username := tp.RepositoryServer.Username
 	hostname, userAccessPassphrase, err := getHostNameAndUserPassPhraseFromRepoServer(userPassphrase)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch Hostname/User Passphrase from Secret")
+	}
 
 	cli, err := kube.NewClient()
 	if err != nil {
