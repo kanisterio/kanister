@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -122,12 +123,10 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 
-	repositoryServerService, err := cli.CoreV1().Services(tp.RepositoryServer.Namespace).Get(context.Background(), tp.RepositoryServer.ServerInfo.ServiceName, metav1.GetOptions{})
+	serverAddress, err := getRepositoryServerAddress(cli, *tp.RepositoryServer)
 	if err != nil {
-		return nil, errors.New("Unable to find Service Details for Repository Server")
+		return nil, errors.Wrap(err, "Failed to get the Kopia Repository Server Address")
 	}
-	repositoryServerServicePort := strconv.Itoa(int(repositoryServerService.Spec.Ports[0].Port))
-	serverAddress := "https://" + tp.RepositoryServer.ServerInfo.ServiceName + "." + tp.RepositoryServer.Namespace + ".svc.cluster.local:" + repositoryServerServicePort
 
 	snapInfo, err := backupDataUsingKopiaServer(
 		cli,
@@ -143,7 +142,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		tags,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to backup data to Kopia API server")
+		return nil, errors.Wrap(err, "Failed to backup data using Kopia Repository Server")
 	}
 
 	var logSize, phySize int64
@@ -194,7 +193,7 @@ func backupDataUsingKopiaServer(
 	format.Log(pod, container, stdout)
 	format.Log(pod, container, stderr)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to connect to Kopia API server")
+		return nil, errors.Wrap(err, "Failed to connect to Kopia Repository Server")
 	}
 
 	cmd = kopiacmd.SnapshotCreate(
@@ -239,7 +238,21 @@ func getHostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, strin
 		userPassPhrase = val
 	}
 
-	decodedUserPassPhrase, _ := base64.StdEncoding.DecodeString(userPassPhrase)
+	decodedUserPassPhrase, err := base64.StdEncoding.DecodeString(userPassPhrase)
+	if err != nil {
+		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
+	}
 	return hostName, string(decodedUserPassPhrase), nil
 
+}
+
+func getRepositoryServerAddress(cli kubernetes.Interface, rs param.RepositoryServer) (string, error) {
+	repositoryServerService, err := cli.CoreV1().Services(rs.Namespace).Get(context.Background(), rs.ServerInfo.ServiceName, metav1.GetOptions{})
+	if err != nil {
+		return "", errors.New("Unable to find Service Details for Repository Server")
+	}
+	repositoryServerServicePort := strconv.Itoa(int(repositoryServerService.Spec.Ports[0].Port))
+	serverAddress := fmt.Sprintf("https://%s.%s.svc.cluster.local:%s", rs.ServerInfo.ServiceName, rs.Namespace, repositoryServerServicePort)
+
+	return serverAddress, nil
 }
