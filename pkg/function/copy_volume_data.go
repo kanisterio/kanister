@@ -135,9 +135,11 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 }
 
 func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	fmt.Println("Starting execution of CopyVolumeData func")
+	log.Info().Print("Starting execution of CopyVolumeData func")
 	start := time.Now()
-
 	defer func() {
+		log.Info().Print("Exec of CopyVolumeData took", map[string]interface{}{"time": time.Now().Sub(start)})
 		fmt.Println("Exec of CopyVolumeData took ", time.Now().Sub(start))
 	}()
 
