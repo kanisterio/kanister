@@ -1572,6 +1572,65 @@ Example:
         args:
           name: "test-snapshot-content-content-dfc8fa67-8b11-4fdf-bf94-928589c2eed8"
 
+BackupDataUsingKopiaServer
+--------------------------
+
+This function backs up data from a container into any object store
+supported by Kanister using Kopia Repository Server as Data-mover.
+
+.. note::
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that capture path on a volume and store it on the object store.
+
+   Additionally, in order to use this function, a RepositoryServer CR is required
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `pod`, Yes, `string`, pod in which to execute
+   `container`, Yes, `string`, container in which to execute
+   `includePath`, Yes, `string`, path of the data to be backed up
+   `userPassphrase`, Yes, `string`, user access credentials for kopia repository server
+   `certData`, Yes, `string`, certificate data for kopia repository server
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `backupID`,`string`, unique snapshot id generated during backup
+   `size`,`string`, size of the backup
+   `phySize`,`string`, physical size of the backup
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+  backup:
+    outputArtifacts:
+      backupIdentifier:
+        keyValue:
+          id: "{{ .Phases.backupToS3.Output.backupID }}"
+    phases:
+    - func: BackupDataUsingKopiaServer
+      name: backupToS3
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: kanister-tools
+        includePath: /mnt/data
+        userPassphrase: "{{ toJson .RepositoryServer.Credentials.ServerUserAccess.Data }}"
+        certData: "{{ toJson .RepositoryServer.Credentials.ServerTLS.Data }}"
 
 Registering Functions
 ---------------------
