@@ -1594,7 +1594,7 @@ Arguments:
    :align: left
    :widths: 5,5,5,15
 
-   `namespace`, Yes, `string`, namespace in which to execute
+   `namespace`, Yes, `string`, namespace in which to execute (application/deployment namespace)
    `pod`, Yes, `string`, pod in which to execute
    `container`, Yes, `string`, container in which to execute
    `includePath`, Yes, `string`, path of the data to be backed up
