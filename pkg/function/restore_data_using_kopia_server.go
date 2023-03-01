@@ -59,6 +59,7 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 		kankopia.KopiaTLSCertSecretDataArg,
 		RestoreDataPodArg,
 		RestoreDataVolsArg,
+		RestoreDataPodOverrideArg,
 	}
 }
 
