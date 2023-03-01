@@ -16,6 +16,7 @@ package kube
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -235,37 +236,68 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 	return string(bytes), nil
 }
 
+// getErrorFromLogs fetches logs from pod and constructs error containing last ten lines of log and specified error message
+func getErrorFromLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName string, err error, errorMessage string) error {
+	r, logErr := StreamPodLogs(ctx, cli, namespace, podName)
+	if logErr != nil {
+		return errors.Wrapf(logErr, "Failed to fetch logs from the pod")
+	}
+	defer r.Close()
+
+	// Grab last log lines and put them to an error
+	lt := NewLogTail(10)
+	// We are not interested in log extraction error
+	io.Copy(lt, r) // nolint: errcheck
+
+	return errors.Wrap(errors.Wrap(err, lt.ToString()), errorMessage)
+}
+
 // WaitForPodReady waits for a pod to exit the pending state
 func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
 	timeoutCtx, waitCancel := context.WithTimeout(ctx, GetPodReadyWaitTimeout())
 	defer waitCancel()
+	attachLog := true
 	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		p, err := cli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
+			attachLog = false
 			return false, err
 		}
 
 		// check if nodes are up and available
 		err = checkNodesStatus(p, cli)
 		if err != nil && !strings.Contains(err.Error(), errAccessingNode) {
+			attachLog = false
 			return false, err
 		}
 
 		// check for memory or resource issues
 		if p.Status.Phase == v1.PodPending {
 			if p.Status.Reason == "OutOfmemory" || p.Status.Reason == "OutOfcpu" {
+				attachLog = false
 				return false, errors.Errorf("Pod stuck in pending state, reason: %s", p.Status.Reason)
 			}
 		}
 
 		// check if pvc and pv are up and ready to mount
 		if err := getVolStatus(timeoutCtx, p, cli, namespace); err != nil {
+			attachLog = false
 			return false, err
 		}
 
 		return p.Status.Phase != v1.PodPending && p.Status.Phase != "", nil
 	})
-	return errors.Wrapf(err, "Pod did not transition into running state. Timeout:%v  Namespace:%s, Name:%s", GetPodReadyWaitTimeout(), namespace, name)
+
+	if err == nil {
+		return nil
+	}
+
+	errorMessage := fmt.Sprintf("Pod did not transition into running state. Timeout:%v  Namespace:%s, Name:%s", GetPodReadyWaitTimeout(), namespace, name)
+	if attachLog {
+		return getErrorFromLogs(ctx, cli, namespace, name, err, errorMessage)
+	}
+
+	return errors.Wrap(err, errorMessage)
 }
 
 func checkNodesStatus(p *v1.Pod, cli kubernetes.Interface) error {
@@ -343,9 +375,11 @@ func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kube
 
 // WaitForPodCompletion waits for a pod to reach a terminal state, or timeout
 func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
+	attachLog := true
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		p, err := cli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
+			attachLog = false
 			return true, err
 		}
 		switch p.Status.Phase {
@@ -354,7 +388,12 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 		}
 		return p.Status.Phase == v1.PodSucceeded, nil
 	})
-	return errors.Wrap(err, "Pod failed or did not transition into complete state")
+
+	errorMessage := "Pod failed or did not transition into complete state"
+	if attachLog {
+		return getErrorFromLogs(ctx, cli, namespace, name, err, errorMessage)
+	}
+	return errors.Wrap(err, errorMessage)
 }
 
 // use Strategic Merge to patch default pod specs with the passed specs
