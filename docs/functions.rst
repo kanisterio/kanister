@@ -1595,7 +1595,7 @@ and restores data to the specified path.
    :align: left
    :widths: 5,5,5,15
 
-   `namespace`, Yes, `string`, namespace in which to execute
+   `namespace`, Yes, `string`, namespace in which to execute (application/deployment namespace)
    `image`, Yes, `string`, image to be used for running restore
    `backupIdentifier`, Yes, `string`, (required if backupTag not provided) unique snapshot id generated during backup
    `restorePath`, Yes, `string`, path where data is restored
