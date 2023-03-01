@@ -17,6 +17,7 @@ package function
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -134,6 +135,12 @@ func copyVolumeDataPodFunc(cli kubernetes.Interface, tp param.TemplateParams, na
 }
 
 func (*copyVolumeDataFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]interface{}) (map[string]interface{}, error) {
+	start := time.Now()
+
+	defer func() {
+		fmt.Println("Exec of CopyVolumeData took ", time.Now().Sub(start))
+	}()
+
 	var namespace, vol, targetPath, encryptionKey string
 	var err error
 	if err = Arg(args, CopyVolumeDataNamespaceArg, &namespace); err != nil {
