@@ -244,8 +244,8 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podNam
 }
 
 // getErrorFromLogs fetches logs from pod and constructs error containing last ten lines of log and specified error message
-func getErrorFromLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName string, err error, errorMessage string) error {
-	r, logErr := StreamPodLogs(ctx, cli, namespace, podName)
+func getErrorFromLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string, err error, errorMessage string) error {
+	r, logErr := StreamPodLogs(ctx, cli, namespace, podName, containerName)
 	if logErr != nil {
 		return errors.Wrapf(logErr, "Failed to fetch logs from the pod")
 	}
@@ -264,12 +264,14 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 	timeoutCtx, waitCancel := context.WithTimeout(ctx, GetPodReadyWaitTimeout())
 	defer waitCancel()
 	attachLog := true
+	containerForLogs := ""
 	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		p, err := cli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			attachLog = false
 			return false, err
 		}
+		containerForLogs = p.Spec.Containers[0].Name
 
 		// check if nodes are up and available
 		err = checkNodesStatus(p, cli)
@@ -301,7 +303,7 @@ func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, n
 
 	errorMessage := fmt.Sprintf("Pod did not transition into running state. Timeout:%v  Namespace:%s, Name:%s", GetPodReadyWaitTimeout(), namespace, name)
 	if attachLog {
-		return getErrorFromLogs(ctx, cli, namespace, name, err, errorMessage)
+		return getErrorFromLogs(ctx, cli, namespace, name, containerForLogs, err, errorMessage)
 	}
 
 	return errors.Wrap(err, errorMessage)
@@ -383,12 +385,14 @@ func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kube
 // WaitForPodCompletion waits for a pod to reach a terminal state, or timeout
 func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
 	attachLog := true
+	containerForLogs := ""
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		p, err := cli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			attachLog = false
 			return true, err
 		}
+		containerForLogs = p.Spec.Containers[0].Name
 		switch p.Status.Phase {
 		case v1.PodFailed:
 			return false, errors.Errorf("Pod %s failed. Pod status: %s", name, p.Status.String())
@@ -398,7 +402,7 @@ func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespa
 
 	errorMessage := "Pod failed or did not transition into complete state"
 	if attachLog {
-		return getErrorFromLogs(ctx, cli, namespace, name, err, errorMessage)
+		return getErrorFromLogs(ctx, cli, namespace, name, containerForLogs, err, errorMessage)
 	}
 	return errors.Wrap(err, errorMessage)
 }
