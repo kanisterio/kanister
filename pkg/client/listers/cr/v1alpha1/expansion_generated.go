@@ -41,3 +41,11 @@ type ProfileListerExpansion interface{}
 // ProfileNamespaceListerExpansion allows custom methods to be added to
 // ProfileNamespaceLister.
 type ProfileNamespaceListerExpansion interface{}
+
+// RepositoryServerListerExpansion allows custom methods to be added to
+// RepositoryServerLister.
+type RepositoryServerListerExpansion interface{}
+
+// RepositoryServerNamespaceListerExpansion allows custom methods to be added to
+// RepositoryServerNamespaceLister.
+type RepositoryServerNamespaceListerExpansion interface{}
