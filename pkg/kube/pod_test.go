@@ -861,9 +861,9 @@ func (s *PodSuite) TestSetPodSecurityContextOverridesPodOverride(c *C) {
 }
 
 func (s *PodSuite) TestSetLifecycleHook(c *C) {
-	lch := &v1.Lifecycle{
-		PostStart: &v1.LifecycleHandler{
-			Exec: &v1.ExecAction{
+	lch := &corev1.Lifecycle{
+		PostStart: &corev1.LifecycleHandler{
+			Exec: &corev1.ExecAction{
 				Command: []string{"/bin/bash", "-c", "echo 1"},
 			},
 		},
