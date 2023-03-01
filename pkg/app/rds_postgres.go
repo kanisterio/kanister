@@ -282,17 +282,20 @@ func (pdb *RDSPostgresDB) Object() crv1alpha1.ObjectReference {
 // Ping makes and tests DB connection
 func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 	// Get connection info from configmap
+
+	log.Info().Print("Pinging")
+
 	dbconfig, err := pdb.cli.CoreV1().ConfigMaps(pdb.namespace).Get(ctx, pdb.configMapName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-
+	log.Info().Print("dbconfig")
 	// Get secret creds
 	dbsecret, err := pdb.cli.CoreV1().Secrets(pdb.namespace).Get(ctx, pdb.secretName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-
+	log.Info().Print("get secret")
 	// Parse databases from config data
 	var databases []string
 	if err := yaml.Unmarshal([]byte(dbconfig.Data["postgres.databases"]), &databases); err != nil {
@@ -303,7 +306,7 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 	}
 
 	var connectionString string = fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], dbsecret.Data["password"], databases[0])
-
+	log.Info().Print(connectionString)
 	// Initialize connection object.
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
