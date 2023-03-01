@@ -1577,7 +1577,7 @@ Example:
 RestoreDataUsingKopiaServer
 ---------------------------
 
-This function restores data backed up by the BackupDataUsingKopiaServer function.
+This function restores data backed up by the ``BackupDataUsingKopiaServer`` function.
 It creates a new Pod that mounts the PVCs referenced by the specified Pod
 and restores data to the specified path.
 
