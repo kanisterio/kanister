@@ -271,6 +271,10 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		Image:     "postgres",
 		Command:   []string{"sleep", "infinity"},
 	})
+	if err != nil {
+		return errors.Wrapf(err, "Failed while creating for Pod %s to be ready", pod.Name)
+	}
+
 	if err := kube.WaitForPodReady(ctx, pdb.cli, pod.Namespace, pod.Name); err != nil {
 		return errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
 	}
