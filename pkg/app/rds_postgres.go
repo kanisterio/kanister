@@ -263,6 +263,18 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	if err != nil {
 		return err
 	}
+
+	// create test-pod with
+	pod, err := kube.CreatePod(ctx, pdb.cli, &kube.PodOptions{
+		Namespace: pdb.namespace,
+		Name:      "test-pod",
+		Image:     "postgres",
+		Command:   []string{"sleep", "infinity"},
+	})
+	if err := kube.WaitForPodReady(ctx, pdb.cli, pod.Namespace, pod.Name); err != nil {
+		return errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+	}
+
 	return nil
 }
 
@@ -291,7 +303,7 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 	}
 	log.Info().Print("dbconfig")
 	// Get secret creds
-	dbsecret, err := pdb.cli.CoreV1().Secrets(pdb.namespace).Get(ctx, pdb.secretName, metav1.GetOptions{})
+	_, err = pdb.cli.CoreV1().Secrets(pdb.namespace).Get(ctx, pdb.secretName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -305,21 +317,17 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 		return errors.New("Databases are missing from configmap")
 	}
 
-	var connectionString string = fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], dbsecret.Data["password"], databases[0])
-	log.Info().Print(connectionString)
-	// Initialize connection object.
-	db, err := sql.Open("postgres", connectionString)
-	if err != nil {
-		return err
-	}
+	log.Print("Pinging rds postgres database", field.M{"app": pdb.name})
+	isReadyCommand := fmt.Sprintf("psql -h %s -p 5432 -U %s -d %s -c 'SELECT version();'", dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], databases[0])
 
-	err = db.Ping()
-	if err != nil {
-		return err
-	}
+	pingCommand := []string{"sh", "-c", isReadyCommand}
 
-	pdb.sqlDB = db
-	log.Info().Print("Connected to database.", field.M{"app": pdb.name})
+	log.Print("pinging command ", field.M{"isReadyCommad": isReadyCommand}, field.M{"pingCommand": pingCommand})
+	_, stderr, err := pdb.execCommand(ctx, "test-pod", pingCommand)
+	if err != nil {
+		return errors.Wrapf(err, "Error while Pinging the database: %s", stderr)
+	}
+	log.Print("Ping to the application was success.", field.M{"app": pdb.name})
 	return nil
 }
 
@@ -480,4 +488,12 @@ func makeYamlList(dbs []string) string {
 		dbsYaml += fmt.Sprintf("- %s\n", db)
 	}
 	return dbsYaml
+}
+
+func (pdb RDSPostgresDB) execCommand(ctx context.Context, podName string, command []string) (string, string, error) {
+	pod, err := pdb.cli.CoreV1().Pods(pdb.namespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		return "", "", errors.Wrapf(err, "Error getting pod and container name for app %s.", pdb.name)
+	}
+	return kube.Exec(pdb.cli, pdb.namespace, podName, pod.Spec.Containers[0].Name, command, nil)
 }
