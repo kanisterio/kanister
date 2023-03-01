@@ -1573,6 +1573,41 @@ Example:
           name: "test-snapshot-content-content-dfc8fa67-8b11-4fdf-bf94-928589c2eed8"
 
 
+DeleteDataUsingKopiaServer
+----------
+
+This function deletes the snapshot data backed up by the BackupDataUsingKopiaServer function.
+It creates a new Pod that runs delete snapshot job created using Kopia Repository Server
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute
+   `image`, Yes, `string`, image to be used for running delete
+   `backupID`, Yes, `string`, unique snapshot id generated during backup
+   `userPassphrase`, Yes, `string`, user access credentials for kopia repository server
+   `certData`, Yes, `string`, certificate data for kopia repository server
+Example:
+
+Consider a scenario where you wish to delete the data backed up by the
+:ref:`backupdatausingkopiaserver` function.
+For this phase, we will use the ``backupID`` Artifact provided by backup function.
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: DeleteDataUsingKopiaServer
+    name: DeleteFromObjectStore
+    args:
+      namespace: "{{ .Namespace.Name }}"
+      image: ghcr.io/kanisterio/kanister-tools:0.89.0
+      backupID: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
+      userPassphrase: "{{ toJson .RepositoryServer.Credentials.ServerUserAccess.Data }}"
+      certData: "{{ toJson .RepositoryServer.Credentials.ServerTLS.Data }}"
+
+
 Registering Functions
 ---------------------
 
