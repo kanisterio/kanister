@@ -1577,7 +1577,7 @@ DeleteDataUsingKopiaServer
 ----------
 
 This function deletes the snapshot data backed up by the ``BackupDataUsingKopiaServer`` function.
-It creates a new Pod that runs delete snapshot job created using Kopia Repository Server
+It creates a new Pod that runs ``delete snapshot`` job created using Kopia Repository Server
 
 .. csv-table::
    :header: "Argument", "Required", "Type", "Description"
