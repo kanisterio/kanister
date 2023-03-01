@@ -74,7 +74,7 @@ install Kanister with the ``--set controller.updateCRDs=false`` option:
 
 This option lets Helm manage the CRD resources.
 
-Using custom certificates for the Admission Webhook Server
+Using custom certificates with the Validating Webhook Controller for Blueprints
 ==========================================================
 
 By default the Helm chart is configured to automatically generate a
