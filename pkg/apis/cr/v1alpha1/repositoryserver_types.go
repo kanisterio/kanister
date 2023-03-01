@@ -101,9 +101,7 @@ type UserAccess struct {
 
 // RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller
 type RepositoryServerStatus struct {
-	Conditions []Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
-	// ServerInfo has the details of kopia repository server
-	// service name and pod
+	Conditions []Condition              `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 	ServerInfo ServerInfo               `json:"serverInfo,omitempty"`
 	Progress   RepositoryServerProgress `json:"progress"`
 }
