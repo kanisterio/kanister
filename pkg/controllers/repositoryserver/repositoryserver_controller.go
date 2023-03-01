@@ -59,7 +59,9 @@ type RepositoryServerReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
 func (r *RepositoryServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-
+	// logging the messages at debug level by default by
+	// specifying the verbosity of logger to 1
+	logger = logger.V(1)
 	cnf, err := ctrl.GetConfig()
 	if err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "Failed to get k8s config")
