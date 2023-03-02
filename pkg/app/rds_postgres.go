@@ -144,67 +144,69 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 
-	pdb.vpcID = os.Getenv("VPC_ID")
-	log.Info().Print("VPC_ID from kanister", field.M{"VPC ID": pdb.vpcID})
+	// pdb.vpcID = os.Getenv("VPC_ID")
+	// log.Info().Print("VPC_ID from kanister", field.M{"VPC ID": pdb.vpcID})
 
-	// VPCId is not provided, use Default VPC and subnet group
-	if pdb.vpcID == "" {
-		pdb.publicAccess = true
-		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
-		if err != nil {
-			return err
-		}
-		if len(defaultVpc.Vpcs) == 0 {
-			return fmt.Errorf("No default VPC found")
-		}
-		pdb.vpcID = *defaultVpc.Vpcs[0].VpcId
-		fmt.Println(pdb.vpcID)
-		pdb.subnetGroup = "default"
-	} else {
-		// create a subnetgroup in the VPCID
-		resp, err := ec2Cli.DescribeSubnets(ctx, pdb.vpcID)
-		if err != nil {
-			fmt.Println("Failed to describe subnets", err)
-			return err
-		}
+	// // VPCId is not provided, use Default VPC and subnet group
+	// if pdb.vpcID == "" {
+	// 	pdb.publicAccess = true
+	// 	defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	if len(defaultVpc.Vpcs) == 0 {
+	// 		return fmt.Errorf("No default VPC found")
+	// 	}
+	// 	pdb.vpcID = *defaultVpc.Vpcs[0].VpcId
+	// 	fmt.Println(pdb.vpcID)
+	// 	pdb.subnetGroup = "default"
+	// } else {
+	// 	// create a subnetgroup in the VPCID
+	// 	resp, err := ec2Cli.DescribeSubnets(ctx, pdb.vpcID)
+	// 	if err != nil {
+	// 		fmt.Println("Failed to describe subnets", err)
+	// 		return err
+	// 	}
 
-		// Extract subnet IDs from the response
-		var subnetIDs []string
-		for _, subnet := range resp.Subnets {
-			log.Info().Print("subnet")
-			log.Info().Print(*subnet.SubnetId)
-			subnetIDs = append(subnetIDs, *subnet.SubnetId)
-		}
-		subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", pdb.name), "kanister-test-subnet-group", subnetIDs)
-		if err != nil {
-			fmt.Println("Failed to create subnet group", err)
-			return err
-		}
-		pdb.subnetGroup = *subnetGroup.DBSubnetGroup.DBSubnetGroupName
-	}
+	// 	// Extract subnet IDs from the response
+	// 	var subnetIDs []string
+	// 	for _, subnet := range resp.Subnets {
+	// 		log.Info().Print("subnet")
+	// 		log.Info().Print(*subnet.SubnetId)
+	// 		subnetIDs = append(subnetIDs, *subnet.SubnetId)
+	// 	}
+	// 	subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", pdb.name), "kanister-test-subnet-group", subnetIDs)
+	// 	if err != nil {
+	// 		fmt.Println("Failed to create subnet group", err)
+	// 		return err
+	// 	}
+	// 	pdb.subnetGroup = *subnetGroup.DBSubnetGroup.DBSubnetGroupName
+	// }
 
+	pdb.subnetGroup = "rds-postgres-snap-subnetgroup"
 	// Create security group
-	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": pdb.securityGroupName, "vpcID": pdb.vpcID})
-	sg, err := ec2Cli.CreateSecurityGroup(ctx, pdb.securityGroupName, "kanister-test-security-group", pdb.vpcID)
-	if err != nil {
-		return err
-	}
-	pdb.securityGroupID = *sg.GroupId
+	// log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": pdb.securityGroupName, "vpcID": pdb.vpcID})
+	// sg, err := ec2Cli.CreateSecurityGroup(ctx, pdb.securityGroupName, "kanister-test-security-group", pdb.vpcID)
+	// if err != nil {
+	// 	return err
+	// }
+	// pdb.securityGroupID = *sg.GroupId
 
+	pdb.securityGroupID = "rds-postgres-snap-sg"
 	// Add ingress rule
-	log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
-	log.Info().Print("Security Group ID", field.M{"groupID": pdb.securityGroupID}, field.M{"groupName": pdb.securityGroupName})
-	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, pdb.securityGroupID, "0.0.0.0/0", "tcp", 5432)
-	if err != nil {
-		return err
-	}
+	// log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
+	// log.Info().Print("Security Group ID", field.M{"groupID": pdb.securityGroupID}, field.M{"groupName": pdb.securityGroupName})
+	// _, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, pdb.securityGroupID, "0.0.0.0/0", "tcp", 5432)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Create RDS instance
-	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", pdb.subnetGroup, pdb.username, pdb.password, []string{pdb.securityGroupID}, pdb.publicAccess)
-	if err != nil {
-		return err
-	}
+	// log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
+	// _, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", pdb.subnetGroup, pdb.username, pdb.password, []string{pdb.securityGroupID}, pdb.publicAccess)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Wait for DB to be ready
 	log.Info().Print("Waiting for rds to be ready.", field.M{"app": pdb.name})
@@ -272,7 +274,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		Command:   []string{"sleep", "infinity"},
 	})
 	if err != nil {
-		return errors.Wrapf(err, "Failed while creating for Pod %s to be created")
+		return errors.Wrapf(err, "Failed while creating for Pod to be created")
 	}
 
 	if err := kube.WaitForPodReady(ctx, pdb.cli, pod.Namespace, pod.Name); err != nil {
