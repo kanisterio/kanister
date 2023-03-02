@@ -133,10 +133,10 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return errors.Wrapf(err, "app=%s", pdb.name)
 	}
 	// Create ec2 client
-	ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
-	if err != nil {
-		return err
-	}
+	// ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
