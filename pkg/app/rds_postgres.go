@@ -351,7 +351,7 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 	log.Info().Print("Insert")
 	now := time.Now().Format(time.RFC3339Nano)
 	insert := fmt.Sprintf(connectionString+
-		"\"INSERT INTO inventory (name) VALUES (\"%s\");\"", pdb.password, pdb.host, pdb.username, pdb.databases[0], now)
+		"\"INSERT INTO inventory (name) VALUES ('%s');\"", pdb.password, pdb.host, pdb.username, pdb.databases[0], now)
 
 	log.Info().Print(insert)
 	insertQuery := []string{"sh", "-c", insert}
@@ -365,7 +365,7 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting entries from database", field.M{"app": pdb.name})
 	count := fmt.Sprintf(connectionString+
-		"\"SELECT COUNT(*) FROM Inventory\" -h -1", pdb.password, pdb.host, pdb.username, pdb.databases[0])
+		"\"SELECT COUNT(*) FROM inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
 
 	countQuery := []string{"sh", "-c", count}
 	stdout, stderr, err := pdb.execCommand(ctx, "test-pod", countQuery)
