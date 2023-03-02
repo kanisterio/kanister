@@ -351,7 +351,7 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 	log.Info().Print("Insert")
 	now := time.Now().Format(time.RFC3339Nano)
 	insert := fmt.Sprintf(connectionString+
-		"\"INSERT INTO inventory (name) VALUES (%s);\"", pdb.password, pdb.host, pdb.username, pdb.databases[0], now)
+		"\"INSERT INTO inventory (name) VALUES (\"%s\");\"", pdb.password, pdb.host, pdb.username, pdb.databases[0], now)
 
 	log.Info().Print(insert)
 	insertQuery := []string{"sh", "-c", insert}
