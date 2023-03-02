@@ -399,7 +399,8 @@ func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 	// Create table.
 	log.Print("Initializing database", field.M{"app": pdb.name})
 	createTable := fmt.Sprintf(connectionString+"\"CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50));\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
-
+	log.Info().Print("create Table command")
+	log.Info().Print(createTable)
 	execQuery := []string{"sh", "-c", createTable}
 	_, stderr, err := pdb.execCommand(ctx, "test-pod", execQuery)
 	if err != nil {
