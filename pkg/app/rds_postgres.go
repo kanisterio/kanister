@@ -19,7 +19,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"time"
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -66,7 +65,8 @@ type RDSPostgresDB struct {
 }
 
 const (
-	dbInstanceType = "db.t3.micro"
+	dbInstanceType   = "db.t3.micro"
+	connectionString = "PGPASSWORD=%s psql -h %s -p 5432 -U %s -d %s -c"
 )
 
 func NewRDSPostgresDB(name string, customRegion string) App {
@@ -267,7 +267,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	}
 
 	testPodyaml := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "testpod"},
+		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
@@ -315,7 +315,7 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 	}
 	log.Info().Print("dbconfig")
 	// Get secret creds
-	_, err = pdb.cli.CoreV1().Secrets(pdb.namespace).Get(ctx, pdb.secretName, metav1.GetOptions{})
+	dbsecret, err := pdb.cli.CoreV1().Secrets(pdb.namespace).Get(ctx, pdb.secretName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -330,7 +330,7 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 	}
 
 	log.Print("Pinging rds postgres database", field.M{"app": pdb.name})
-	isReadyCommand := fmt.Sprintf("psql -h %s -p 5432 -U %s -d %s -c 'SELECT version();'", dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], databases[0])
+	isReadyCommand := fmt.Sprintf(connectionString+"'SELECT version();'", dbsecret.Data["password"], dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], databases[0])
 
 	pingCommand := []string{"sh", "-c", isReadyCommand}
 
@@ -344,13 +344,37 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 }
 
 func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
-	now := time.Now().Format(time.RFC3339Nano)
-	stmt := "INSERT INTO inventory (name) VALUES ($1);"
-	_, err := pdb.sqlDB.Exec(stmt, now)
+	log.Print("Adding entry to database", field.M{"app": pdb.name})
+	log.Info().Print("Insert")
+
+	dbconfig, err := pdb.cli.CoreV1().ConfigMaps(pdb.namespace).Get(ctx, pdb.configMapName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
+	log.Info().Print("dbconfig")
+	// Get secret creds
+	dbsecret, err := pdb.cli.CoreV1().Secrets(pdb.namespace).Get(ctx, pdb.secretName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	log.Info().Print("dbSecret")
+	// Parse databases from config data
+	var databases []string
+	if err := yaml.Unmarshal([]byte(dbconfig.Data["postgres.databases"]), &databases); err != nil {
+		return err
+	}
+	if databases == nil {
+		return errors.New("Databases are missing from configmap")
+	}
+
+	insert := fmt.Sprintf(connectionString+
+		"\"INSERT INTO Inventory VALUES (1)\"", dbsecret.Data["password"], dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], databases[0])
+
+	insertQuery := []string{"sh", "-c", insert}
+	_, stderr, err := pdb.execCommand(ctx, "test-pod", insertQuery)
+	if err != nil {
+		return errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
+	}
 	return nil
 }
 
