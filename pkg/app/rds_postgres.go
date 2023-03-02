@@ -19,6 +19,9 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -346,30 +349,11 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 	log.Print("Adding entry to database", field.M{"app": pdb.name})
 	log.Info().Print("Insert")
-
-	dbconfig, err := pdb.cli.CoreV1().ConfigMaps(pdb.namespace).Get(ctx, pdb.configMapName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	log.Info().Print("dbconfig")
-	// Get secret creds
-	dbsecret, err := pdb.cli.CoreV1().Secrets(pdb.namespace).Get(ctx, pdb.secretName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	log.Info().Print("dbSecret")
-	// Parse databases from config data
-	var databases []string
-	if err := yaml.Unmarshal([]byte(dbconfig.Data["postgres.databases"]), &databases); err != nil {
-		return err
-	}
-	if databases == nil {
-		return errors.New("Databases are missing from configmap")
-	}
-
+	now := time.Now().Format(time.RFC3339Nano)
 	insert := fmt.Sprintf(connectionString+
-		"\"INSERT INTO Inventory VALUES (1)\"", dbsecret.Data["password"], dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], databases[0])
+		"\"INSERT INTO inventory (name) VALUES (%s);\"", pdb.password, pdb.host, pdb.username, pdb.databases[0], now)
 
+	log.Info().Print(insert)
 	insertQuery := []string{"sh", "-c", insert}
 	_, stderr, err := pdb.execCommand(ctx, "test-pod", insertQuery)
 	if err != nil {
@@ -379,23 +363,33 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 }
 
 func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
-	stmt := "SELECT COUNT(*) FROM inventory;"
-	row := pdb.sqlDB.QueryRow(stmt)
-	var count int
-	err := row.Scan(&count)
+	log.Print("Counting entries from database", field.M{"app": pdb.name})
+	count := fmt.Sprintf(connectionString+
+		"\"SELECT COUNT(*) FROM Inventory\" -h -1", pdb.password, pdb.host, pdb.username, pdb.databases[0])
+
+	countQuery := []string{"sh", "-c", count}
+	stdout, stderr, err := pdb.execCommand(ctx, "test-pod", countQuery)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "Error while counting data into table: %s", stderr)
 	}
-	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": count})
-	return count, nil
+	log.Info().Print("count result")
+	log.Info().Print(stdout)
+	rowsReturned, err := strconv.Atoi(strings.TrimSpace(strings.Split(stdout, "\n")[1]))
+	if err != nil {
+		return 0, errors.Wrapf(err, "Error while converting response of count query: %s", stderr)
+	}
+	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": rowsReturned})
+	return rowsReturned, nil
 }
 
 func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
-	_, err := pdb.sqlDB.Exec("DROP TABLE IF EXISTS inventory;")
+	log.Print("Reseting database", field.M{"app": pdb.name})
+	delete := fmt.Sprintf(connectionString+"\"DROP TABLE IF EXISTS inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
+	deleteQuery := []string{"sh", "-c", delete}
+	_, stderr, err := pdb.execCommand(ctx, "test-pod", deleteQuery)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error while deleting data into table: %s", stderr)
 	}
-
 	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
 	return nil
 }
@@ -403,9 +397,13 @@ func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
 // Initialize is used to initialize the database or create schema
 func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 	// Create table.
-	_, err := pdb.sqlDB.Exec("CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50));")
+	log.Print("Initializing database", field.M{"app": pdb.name})
+	createTable := fmt.Sprintf(connectionString+"\"CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50));\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
+
+	execQuery := []string{"sh", "-c", createTable}
+	_, stderr, err := pdb.execCommand(ctx, "test-pod", execQuery)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error while creating the database: %s", stderr)
 	}
 	return nil
 }
