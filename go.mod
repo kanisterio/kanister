@@ -10,7 +10,8 @@ replace (
 	gopkg.in/check.v1 => github.com/kastenhq/check v0.0.0-20180626002341-0264cfcea734
 )
 
-// Mitigate https://github.com/kanisterio/kanister/security/dependabot/9
+// Mitigate CVE-2020-26160
+// TODO: Remove this when github.com/IBM/ibmcloud-storage-volume-lib is ready to be upgraded
 replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompatible
 
 // Direct and indirect dependencies are grouped together
