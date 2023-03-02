@@ -266,13 +266,19 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 
-	// create test-pod with
-	pod, err := kube.CreatePod(ctx, pdb.cli, &kube.PodOptions{
-		Namespace: pdb.namespace,
-		Name:      "test-pod",
-		Image:     "postgres",
-		Command:   []string{"sleep", "infinity"},
-	})
+	testPodyaml := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "testpod"},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:    "postgres",
+					Image:   "postgres",
+					Command: []string{"sleep", "infinity"},
+				},
+			},
+		},
+	}
+	pod, err := pdb.cli.CoreV1().Pods(pdb.namespace).Create(context.Background(), testPodyaml, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed while creating for Pod to be created")
 	}
