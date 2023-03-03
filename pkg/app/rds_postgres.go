@@ -16,7 +16,6 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"strconv"
@@ -28,6 +27,7 @@ import (
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -59,7 +59,6 @@ type RDSPostgresDB struct {
 	sessionToken      string
 	securityGroupID   string
 	securityGroupName string
-	sqlDB             *sql.DB
 	configMapName     string
 	secretName        string
 	vpcID             string
@@ -145,6 +144,41 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
 		return err
+	}
+
+	testDeploymentyaml := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "postgres",
+			Namespace: pdb.name,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "postgres"}},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "postgres",
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:    "postgres",
+							Image:   "postgres",
+							Command: []string{"sleep", "infinity"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	deployment, err := pdb.cli.AppsV1().Deployments(pdb.namespace).Create(context.Background(), testDeploymentyaml, metav1.CreateOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Failed while creating for Pod to be created")
+	}
+
+	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, deployment.Namespace, deployment.Name); err != nil {
+		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready", deployment.Name)
 	}
 
 	pdb.vpcID = os.Getenv("VPC_ID")
@@ -267,27 +301,6 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 
-	testPodyaml := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Name:    "postgres",
-					Image:   "postgres",
-					Command: []string{"sleep", "infinity"},
-				},
-			},
-		},
-	}
-	pod, err := pdb.cli.CoreV1().Pods(pdb.namespace).Create(context.Background(), testPodyaml, metav1.CreateOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "Failed while creating for Pod to be created")
-	}
-
-	if err := kube.WaitForPodReady(ctx, pdb.cli, pod.Namespace, pod.Name); err != nil {
-		return errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
-	}
-
 	return nil
 }
 
@@ -336,7 +349,7 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 	pingCommand := []string{"sh", "-c", isReadyCommand}
 
 	log.Print("pinging command ", field.M{"isReadyCommad": isReadyCommand}, field.M{"pingCommand": pingCommand})
-	_, stderr, err := pdb.execCommand(ctx, "test-pod", pingCommand)
+	_, stderr, err := pdb.execCommand(ctx, pingCommand)
 	if err != nil {
 		return errors.Wrapf(err, "Error while Pinging the database: %s", stderr)
 	}
@@ -353,7 +366,7 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 
 	log.Info().Print(insert)
 	insertQuery := []string{"sh", "-c", insert}
-	_, stderr, err := pdb.execCommand(ctx, "test-pod", insertQuery)
+	_, stderr, err := pdb.execCommand(ctx, insertQuery)
 	if err != nil {
 		return errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
 	}
@@ -366,7 +379,7 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 		"\"SELECT COUNT(*) FROM inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
 
 	countQuery := []string{"sh", "-c", count}
-	stdout, stderr, err := pdb.execCommand(ctx, "test-pod", countQuery)
+	stdout, stderr, err := pdb.execCommand(ctx, countQuery)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error while counting data into table: %s", stderr)
 	}
@@ -384,7 +397,7 @@ func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
 	log.Print("Reseting database", field.M{"app": pdb.name})
 	delete := fmt.Sprintf(connectionString+"\"DROP TABLE IF EXISTS inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
 	deleteQuery := []string{"sh", "-c", delete}
-	_, stderr, err := pdb.execCommand(ctx, "test-pod", deleteQuery)
+	_, stderr, err := pdb.execCommand(ctx, deleteQuery)
 	if err != nil {
 		return errors.Wrapf(err, "Error while deleting data into table: %s", stderr)
 	}
@@ -400,7 +413,7 @@ func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 	log.Info().Print("create Table command")
 	log.Info().Print(createTable)
 	execQuery := []string{"sh", "-c", createTable}
-	_, stderr, err := pdb.execCommand(ctx, "test-pod", execQuery)
+	_, stderr, err := pdb.execCommand(ctx, execQuery)
 	if err != nil {
 		return errors.Wrapf(err, "Error while creating the database: %s", stderr)
 	}
@@ -523,10 +536,10 @@ func makeYamlList(dbs []string) string {
 	return dbsYaml
 }
 
-func (pdb RDSPostgresDB) execCommand(ctx context.Context, podName string, command []string) (string, string, error) {
-	pod, err := pdb.cli.CoreV1().Pods(pdb.namespace).Get(ctx, podName, metav1.GetOptions{})
-	if err != nil {
-		return "", "", errors.Wrapf(err, "Error getting pod and container name for app %s.", pdb.name)
+func (pdb RDSPostgresDB) execCommand(ctx context.Context, command []string) (string, string, error) {
+	podName, containerName, err := kube.GetPodContainerFromDeployment(ctx, pdb.cli, pdb.namespace, "postgres")
+	if err != nil || podName == "" {
+		return "", "", err
 	}
-	return kube.Exec(pdb.cli, pdb.namespace, podName, pod.Spec.Containers[0].Name, command, nil)
+	return kube.Exec(pdb.cli, pdb.namespace, podName, containerName, command, nil)
 }
