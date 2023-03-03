@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/ghodss/yaml"
-	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +31,7 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
