@@ -375,8 +375,8 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 
 func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting entries from database", field.M{"app": pdb.name})
-	count := fmt.Sprintf(connectionString+
-		"-t \"SELECT COUNT(*) FROM inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
+	count := fmt.Sprintf("PGPASSWORD=%s psql -h %s -p 5432 -U %s -d %s -t -c"+
+		"\"SELECT COUNT(*) FROM inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
 
 	countQuery := []string{"sh", "-c", count}
 	stdout, stderr, err := pdb.execCommand(ctx, countQuery)
