@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -253,8 +252,6 @@ func getRepositoryServerAddress(cli kubernetes.Interface, rs param.RepositorySer
 	if err != nil {
 		return "", errors.New("Unable to find Service Details for Repository Server")
 	}
-	repositoryServerServicePort := strconv.Itoa(int(repositoryServerService.Spec.Ports[0].Port))
-	serverAddress := fmt.Sprintf("https://%s.%s.svc.cluster.local:%s", rs.ServerInfo.ServiceName, rs.Namespace, repositoryServerServicePort)
-
+	serverAddress := fmt.Sprintf("https://%s.%s.svc.cluster.local:%d", rs.ServerInfo.ServiceName, rs.Namespace, repositoryServerService.Spec.Ports[0].Port)
 	return serverAddress, nil
 }
