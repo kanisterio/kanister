@@ -187,6 +187,7 @@ func updateActionSet(
 		actionProgress := 0
 		for i := 0; i < len(actionSet.Status.Actions[0].Phases); i++ {
 			if actionSet.Status.Actions[0].Phases[i].Name == phaseName {
+				actionSet.Status.Actions[0].Phases[i].State = crv1alpha1.StateRunning
 				actionSet.Status.Actions[0].Phases[i].Progress.ProgressPercent = phaseProgress.ProgressPercent
 			}
 			actionProgress += (actionSet.Status.Actions[0].Phases[i].Progress.ProgressPercent / len(actionSet.Status.Actions[0].Phases))
