@@ -149,7 +149,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	testDeploymentyaml := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "postgres",
-			Namespace: pdb.name,
+			Namespace: pdb.namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "postgres"}},
