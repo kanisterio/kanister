@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/ghodss/yaml"
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,7 +32,6 @@ import (
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
-	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
@@ -639,7 +639,6 @@ func parseName(k string, r string) (namespace, name string, err error) {
 
 func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interface, crCli versioned.Interface, osCli osversioned.Interface) error {
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
-	const notReadyTmpl = "Please make sure that Repository Server CR '%s' is in Ready State"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
 	wg.Add(6)
@@ -669,46 +668,18 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	// RepositoryServer
 	go func() {
 		defer wg.Done()
-		if p.RepositoryServer != nil {
-			rs, err := crCli.CrV1alpha1().RepositoryServers(p.RepositoryServer.Namespace).Get(ctx, p.RepositoryServer.Name, metav1.GetOptions{})
-			if err != nil {
-				msgs <- errors.Wrapf(err, notFoundTmpl, "repository-server", p.RepositoryServer.Name, p.RepositoryServer.Namespace)
-			}
-			if rs.Status.Progress != "ServerReady" {
-				err = errors.New("Repository Server Not Ready")
-				msgs <- errors.Wrapf(err, notReadyTmpl, p.RepositoryServer.Name)
-			}
+		err := verifyRepositoryServerParams(p.RepositoryServer, crCli, ctx)
+		if err != nil {
+			msgs <- err
 		}
 	}()
 
 	// Objects
 	go func() {
 		defer wg.Done()
-		var err error
-		for _, obj := range p.Objects {
-			switch obj.Kind {
-			case param.DeploymentKind:
-				_, err = cli.AppsV1().Deployments(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
-			case param.StatefulSetKind:
-				_, err = cli.AppsV1().StatefulSets(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
-			case param.DeploymentConfigKind:
-				// use open shift client to get the deployment config resource
-				_, err = osCli.AppsV1().DeploymentConfigs(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
-			case param.PVCKind:
-				_, err = cli.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
-			case param.NamespaceKind:
-				_, err = cli.CoreV1().Namespaces().Get(ctx, obj.Name, metav1.GetOptions{})
-			default:
-				gvr := schema.GroupVersionResource{
-					Group:    obj.Group,
-					Version:  obj.APIVersion,
-					Resource: obj.Resource,
-				}
-				_, err = kube.FetchUnstructuredObject(ctx, gvr, obj.Namespace, obj.Name)
-			}
-			if err != nil {
-				msgs <- errors.Wrapf(err, notFoundTmpl, obj.Kind, obj.Name, obj.Namespace)
-			}
+		err := verifyObjectParams(p, cli, osCli, ctx)
+		if err != nil {
+			msgs <- err
 		}
 	}()
 
@@ -776,4 +747,48 @@ func generateActionSetName(p *PerformParams) (string, error) {
 	}
 
 	return "", errMissingFieldActionName
+}
+
+func verifyRepositoryServerParams(repoServer *crv1alpha1.ObjectReference, crCli versioned.Interface, ctx context.Context) error {
+	if repoServer != nil {
+		rs, err := crCli.CrV1alpha1().RepositoryServers(repoServer.Namespace).Get(ctx, repoServer.Name, metav1.GetOptions{})
+		if err != nil {
+			return errors.Wrapf(err, "Please make sure '%s' with name '%s' exists in namespace '%s'", "repository-server", repoServer.Name, repoServer.Namespace)
+		}
+		if rs.Status.Progress != "ServerReady" {
+			err = errors.New("Repository Server Not Ready")
+			return errors.Wrapf(err, "Please make sure that Repository Server CR '%s' is in Ready State", repoServer.Name)
+		}
+	}
+	return nil
+}
+
+func verifyObjectParams(p *PerformParams, cli kubernetes.Interface, osCli osversioned.Interface, ctx context.Context) error {
+	var err error
+	for _, obj := range p.Objects {
+		switch obj.Kind {
+		case param.DeploymentKind:
+			_, err = cli.AppsV1().Deployments(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+		case param.StatefulSetKind:
+			_, err = cli.AppsV1().StatefulSets(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+		case param.DeploymentConfigKind:
+			// use open shift client to get the deployment config resource
+			_, err = osCli.AppsV1().DeploymentConfigs(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+		case param.PVCKind:
+			_, err = cli.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+		case param.NamespaceKind:
+			_, err = cli.CoreV1().Namespaces().Get(ctx, obj.Name, metav1.GetOptions{})
+		default:
+			gvr := schema.GroupVersionResource{
+				Group:    obj.Group,
+				Version:  obj.APIVersion,
+				Resource: obj.Resource,
+			}
+			_, err = kube.FetchUnstructuredObject(ctx, gvr, obj.Namespace, obj.Name)
+		}
+		if err != nil {
+			return errors.Wrapf(err, "Please make sure '%s' with name '%s' exists in namespace '%s'", obj.Kind, obj.Name, obj.Namespace)
+		}
+	}
+	return nil
 }
