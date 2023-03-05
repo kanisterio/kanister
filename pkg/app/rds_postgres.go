@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
@@ -68,7 +67,7 @@ type RDSPostgresDB struct {
 
 const (
 	dbInstanceType   = "db.t3.micro"
-	connectionString = "PGPASSWORD=%s psql -h %s -p 5432 -U %s -d %s -c"
+	connectionString = "PGPASSWORD=%s psql -h %s -p 5432 -U %s -d %s -t -c"
 )
 
 func NewRDSPostgresDB(name string, customRegion string) App {
@@ -375,7 +374,7 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 
 func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting entries from database", field.M{"app": pdb.name})
-	count := fmt.Sprintf("PGPASSWORD=%s psql -h %s -p 5432 -U %s -d %s -t -c"+
+	count := fmt.Sprintf(connectionString+
 		"\"SELECT COUNT(*) FROM inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
 
 	countQuery := []string{"sh", "-c", count}
@@ -385,7 +384,7 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	}
 	log.Info().Print("count result")
 	log.Info().Print(stdout)
-	rowsReturned, err := strconv.Atoi(strings.TrimSpace(strings.Split(stdout, "\n")[1]))
+	rowsReturned, err := strconv.Atoi(stdout)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error while converting response of count query: %s", stderr)
 	}
