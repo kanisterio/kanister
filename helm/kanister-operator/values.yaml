@@ -22,7 +22,7 @@ controller:
   # false : CRDs would be created by helm
   # true : CRDs would be created by kanister controller
   updateCRDs: true
-  parallelism: 8
+  parallelism:
 bpValidatingWebhook:
   enabled: true
 resources:
