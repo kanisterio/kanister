@@ -20,6 +20,7 @@ import (
 	kerrors "github.com/kanisterio/kanister/pkg/kopia/errors"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/kanisterio/kanister/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -207,6 +208,7 @@ func backupDataUsingKopiaServer(
 			},
 			Tags:                   tags,
 			ProgressUpdateInterval: 0,
+			Parallelism:            utils.GetEnvAsIntOrDefault(kankopia.DataStoreParallelUploadName, kankopia.DefaultDataStoreParallelUpload),
 		})
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to construct snapshot create command")

@@ -20,6 +20,12 @@ const (
 
 	// DefaultClientCacheDirectory is the directory where kopia content cache is created
 	DefaultClientCacheDirectory = "/tmp/kopia-cache"
+
+	// DataStoreParallelUploadName is the Environmental Variable set in Kanister
+	// For Parallelism
+	DataStoreParallelUploadName = "DATA_STORE_PARALLEL_UPLOAD"
+	// DefaultDataStoreParallelUpload is the Default Value of Parallelism
+	DefaultDataStoreParallelUpload = 8
 )
 
 const (
