@@ -16,15 +16,16 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
+	"strconv"
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -37,7 +38,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/kanisterio/kanister/pkg/poll"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -46,6 +46,7 @@ const (
 	AuroraDBInstanceClass = "db.r5.large"
 	AuroraDBStorage       = 20
 	DetailsCMName         = "dbconfig"
+	mysqlConnectionString = "mysql -h %s -u %s -p%s %s -N -e"
 )
 
 type RDSAuroraMySQLDB struct {
@@ -138,6 +139,41 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 
 	a.vpcID = os.Getenv("VPC_ID")
 	log.Info().Print("VPC_ID from kanister", field.M{"VPC ID": a.vpcID})
+
+	testDeploymentyaml := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mysql",
+			Namespace: a.namespace,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "mysql"}},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "mysql",
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:    "mysql",
+							Image:   "mysql",
+							Command: []string{"sleep", "infinity"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	deployment, err := a.cli.AppsV1().Deployments(a.namespace).Create(context.Background(), testDeploymentyaml, metav1.CreateOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Failed while creating for Pod to be created")
+	}
+
+	if err := kube.WaitOnDeploymentReady(ctx, a.cli, deployment.Namespace, deployment.Name); err != nil {
+		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready", deployment.Name)
+	}
 
 	// VPCId is not provided, use Default VPC and subnet group
 	if a.vpcID == "" {
@@ -243,156 +279,80 @@ func (a *RDSAuroraMySQLDB) IsReady(context.Context) (bool, error) {
 	return true, nil
 }
 
-func (a *RDSAuroraMySQLDB) Ping(context.Context) error {
-	db, err := a.openDBConnection()
-	if err != nil {
-		return errors.Wrap(err, "Error opening database connection")
-	}
-	defer func() {
-		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error closing DB connection", field.M{"app": a.name})
-		}
-	}()
+func (a *RDSAuroraMySQLDB) Ping(ctx context.Context) error {
 
-	pingQuery := "select 1"
-	_, err = db.Query(pingQuery)
-	return err
+	log.Print("Pinging rds postgres database", field.M{"app": a.name})
+	isReadyCommand := fmt.Sprintf(connectionString+"'SELECT 1;'", a.host, a.username, a.password, a.dbName)
+
+	pingCommand := []string{"sh", "-c", isReadyCommand}
+
+	log.Print("pinging command ", field.M{"isReadyCommad": isReadyCommand}, field.M{"pingCommand": pingCommand})
+	_, stderr, err := a.execCommand(ctx, pingCommand)
+	if err != nil {
+		return errors.Wrapf(err, "Error while Pinging the database: %s", stderr)
+	}
+	log.Print("Ping to the application was success.", field.M{"app": a.name})
+	return nil
 }
 
 func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
-	db, err := a.openDBConnection()
+	log.Print("Adding entry to database", field.M{"app": a.name})
+	log.Info().Print("Insert")
+	insert := fmt.Sprintf(mysqlConnectionString+
+		"\"INSERT INTO pets VALUES ('Puffball', 'Diane', 'hamster', 'f', '1999-03-30', 'NULL');\"", a.host, a.username, a.password, a.dbName)
+
+	log.Info().Print(insert)
+	insertQuery := []string{"sh", "-c", insert}
+	_, stderr, err := a.execCommand(ctx, insertQuery)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
 	}
-	defer func() {
-		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error closing DB connection", field.M{"app": a.name})
-		}
-	}()
-
-	query, err := db.Prepare("INSERT INTO pets VALUES (?,?,?,?,?,?);")
-	if err != nil {
-		return errors.Wrap(err, "Error preparing query")
-	}
-
-	// start a transaction
-	tx, err := db.Begin()
-	if err != nil {
-		return errors.Wrap(err, "Error beginning transaction")
-	}
-
-	_, err = tx.Stmt(query).Exec("Puffball", "Diane", "hamster", "f", "1999-03-30", "NULL")
-	if err != nil {
-		return errors.Wrap(err, "Error inserting data into Aurora DB cluster")
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "Error committing data into Aurora DB database")
-	}
-
 	return nil
 }
 
-func (a *RDSAuroraMySQLDB) Count(context.Context) (int, error) {
-	db, err := a.openDBConnection()
-	if err != nil {
-		return 0, err
-	}
-	defer func() {
-		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error closing DB connection", field.M{"app": a.name})
-		}
-	}()
+func (a *RDSAuroraMySQLDB) Count(ctx context.Context) (int, error) {
+	log.Print("Counting entries from database", field.M{"app": a.name})
+	count := fmt.Sprintf(connectionString+
+		"\"SELECT COUNT(*) FROM pets;\"", a.host, a.username, a.password, a.dbName)
 
-	rows, err := db.Query("select * from pets;")
+	countQuery := []string{"sh", "-c", count}
+	stdout, stderr, err := a.execCommand(ctx, countQuery)
 	if err != nil {
-		return 0, errors.Wrap(err, "Error preparing count query")
+		return 0, errors.Wrapf(err, "Error while counting data into table: %s", stderr)
 	}
-	count := 0
-	for rows.Next() {
-		count++
+	log.Info().Print("count result")
+	log.Info().Print(stdout)
+	rowsReturned, err := strconv.Atoi(stdout)
+	if err != nil {
+		return 0, errors.Wrapf(err, "Error while converting response of count query: %s", stderr)
 	}
-
-	return count, nil
+	log.Info().Print("Counting rows in test db.", field.M{"app": a.name, "count": rowsReturned})
+	return rowsReturned, nil
 }
 
 func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
-	timeoutCtx, waitCancel := context.WithTimeout(ctx, mysqlWaitTimeout)
-	defer waitCancel()
-	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
-		err := a.Ping(ctx)
-		return err == nil, nil
-	})
-
-	if err != nil {
-		return errors.Wrapf(err, "Error waiting for application %s to be ready to reset it", a.name)
-	}
-
 	log.Print("Resetting the mysql instance.", field.M{"app": a.name})
 
-	db, err := a.openDBConnection()
+	delete := fmt.Sprintf(mysqlConnectionString+"\"DROP TABLE IF EXISTS pets;\"", a.host, a.username, a.password, a.dbName)
+	deleteQuery := []string{"sh", "-c", delete}
+	_, stderr, err := a.execCommand(ctx, deleteQuery)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error while deleting data into table: %s", stderr)
 	}
-	defer func() {
-		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error closing DB connection", field.M{"app": a.name})
-		}
-	}()
-
-	query, err := db.Prepare("DROP TABLE IF EXISTS pets;")
-	if err != nil {
-		return errors.Wrap(err, "Error preparing reset query")
-	}
-
-	// start a transaction
-	tx, err := db.Begin()
-	if err != nil {
-		return errors.Wrap(err, "Error beginning transaction")
-	}
-
-	_, err = tx.Stmt(query).Exec()
-	if err != nil {
-		return errors.Wrap(err, "Error resetting Aurora database")
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "Error committing DB reset transaction")
-	}
-
+	log.Info().Print("Database reset successful!", field.M{"app": a.name})
 	return nil
 }
 
-func (a *RDSAuroraMySQLDB) Initialize(context.Context) error {
-	db, err := a.openDBConnection()
+func (a *RDSAuroraMySQLDB) Initialize(ctx context.Context) error {
+	// Create table.
+	log.Print("Initializing database", field.M{"app": a.name})
+	createTable := fmt.Sprintf(mysqlConnectionString+"\"CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);\"", a.host, a.username, a.password, a.dbName)
+	log.Info().Print("create Table command")
+	log.Info().Print(createTable)
+	execQuery := []string{"sh", "-c", createTable}
+	_, stderr, err := a.execCommand(ctx, execQuery)
 	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error closing DB connection", field.M{"app": a.name})
-		}
-	}()
-
-	query, err := db.Prepare("CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);")
-	if err != nil {
-		return errors.Wrap(err, "Error preparing query")
-	}
-
-	// start a transaction
-	tx, err := db.Begin()
-	if err != nil {
-		return errors.Wrap(err, "Error begining transaction")
-	}
-
-	_, err = tx.Stmt(query).Exec()
-	if err != nil {
-		return errors.Wrap(err, "Error creating table into Aurora database")
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "Error committing table creation")
+		return errors.Wrapf(err, "Error while creating the database: %s", stderr)
 	}
 	return nil
 }
@@ -486,10 +446,10 @@ func (a *RDSAuroraMySQLDB) getAWSConfig(ctx context.Context) (*awssdk.Config, st
 	return aws.GetConfig(ctx, config)
 }
 
-func (a *RDSAuroraMySQLDB) openDBConnection() (*sql.DB, error) {
-	return sql.Open("mysql", fmt.Sprintf("%s:%s@(%s)/%s", a.username, a.password, a.host, a.dbName))
-}
-
-func (a RDSAuroraMySQLDB) closeDBConnection(db *sql.DB) error {
-	return db.Close()
+func (a RDSAuroraMySQLDB) execCommand(ctx context.Context, command []string) (string, string, error) {
+	podName, containerName, err := kube.GetPodContainerFromDeployment(ctx, a.cli, a.namespace, "mysql")
+	if err != nil || podName == "" {
+		return "", "", err
+	}
+	return kube.Exec(a.cli, a.namespace, podName, containerName, command, nil)
 }
