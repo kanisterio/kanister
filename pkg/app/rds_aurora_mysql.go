@@ -282,7 +282,7 @@ func (a *RDSAuroraMySQLDB) IsReady(context.Context) (bool, error) {
 func (a *RDSAuroraMySQLDB) Ping(ctx context.Context) error {
 
 	log.Print("Pinging rds postgres database", field.M{"app": a.name})
-	isReadyCommand := fmt.Sprintf(connectionString+"'SELECT 1;'", a.host, a.username, a.password, a.dbName)
+	isReadyCommand := fmt.Sprintf(mysqlConnectionString+"'SELECT 1;'", a.host, a.username, a.password, a.dbName)
 
 	pingCommand := []string{"sh", "-c", isReadyCommand}
 
@@ -312,7 +312,7 @@ func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
 
 func (a *RDSAuroraMySQLDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting entries from database", field.M{"app": a.name})
-	count := fmt.Sprintf(connectionString+
+	count := fmt.Sprintf(mysqlConnectionString+
 		"\"SELECT COUNT(*) FROM pets;\"", a.host, a.username, a.password, a.dbName)
 
 	countQuery := []string{"sh", "-c", count}
