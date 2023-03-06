@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,7 +89,6 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 	if err = Arg(args, kankopia.KopiaUserPassphraseArg, &userPassphrase); err != nil {
 		return nil, err
 	}
-
 	if err = Arg(args, kankopia.KopiaTLSCertSecretDataArg, &cert); err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 	}
 
 	// Validate and get optional arguments
-	pod, vols, err := validateAndGetOptArgsForRestore(args)
+	pod, vols, podOverride, err := validateAndGetOptArgsForRestore(tp, args)
 	if err != nil {
 		return nil, err
 	}
@@ -144,6 +144,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		userAccessPassphrase,
 		sparseRestore,
 		vols,
+		podOverride,
 	)
 }
 
@@ -162,6 +163,7 @@ func restoreDataFromServer(
 	userPassphrase string,
 	sparseRestore bool,
 	vols map[string]string,
+	podOverride crv1alpha1.JSONMap,
 ) (map[string]any, error) {
 	// Validate volumes
 	for pvc := range vols {
@@ -176,6 +178,7 @@ func restoreDataFromServer(
 		Image:        image,
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
 		Volumes:      vols,
+		PodOverride:  podOverride,
 	}
 
 	kankopia.SetLabelsToPodOptionsIfRequired(options)
@@ -257,15 +260,19 @@ func restoreDataFromServerPodFunc(
 	}
 }
 
-func validateAndGetOptArgsForRestore(args map[string]any) (pod string, vols map[string]string, err error) {
+func validateAndGetOptArgsForRestore(tp param.TemplateParams, args map[string]any) (pod string, vols map[string]string, podOverride crv1alpha1.JSONMap, err error) {
 	if err = OptArg(args, RestoreDataPodArg, &pod, ""); err != nil {
-		return pod, vols, err
+		return pod, vols, podOverride, err
 	}
 	if err = OptArg(args, RestoreDataVolsArg, &vols, nil); err != nil {
-		return pod, vols, err
+		return pod, vols, podOverride, err
 	}
 	if (pod != "") == (len(vols) > 0) {
-		return pod, vols, errors.New(fmt.Sprintf("Require exactly one of %s or %s", RestoreDataPodArg, RestoreDataVolsArg))
+		return pod, vols, podOverride, errors.New(fmt.Sprintf("Require exactly one of %s or %s", RestoreDataPodArg, RestoreDataVolsArg))
 	}
-	return pod, vols, nil
+	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataPodOverrideArg)
+	if err != nil {
+		return pod, vols, podOverride, errors.Wrap(err, "Failed to get Pod Override Specs")
+	}
+	return pod, vols, podOverride, nil
 }
