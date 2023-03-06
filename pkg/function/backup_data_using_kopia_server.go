@@ -209,7 +209,7 @@ func backupDataUsingKopiaServer(
 			ProgressUpdateInterval: 0,
 		})
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to generate snapshot create command")
+		return nil, errors.Wrap(err, "Failed to construct snapshot create command")
 	}
 	stdout, stderr, err = kube.Exec(cli, namespace, pod, container, cmd, nil)
 	format.Log(pod, container, stdout)
