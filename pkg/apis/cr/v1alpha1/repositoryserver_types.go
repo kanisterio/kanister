@@ -59,7 +59,7 @@ type Repository struct {
 }
 
 // CacheSettings are the metadata/content cache size details
-// that can be used while initializing kopia repository
+// that can be used while establishing connection to the kopia repository
 type CacheSizeSettings struct {
 	Metadata string `json:"metadata"`
 	Content  string `json:"content"`

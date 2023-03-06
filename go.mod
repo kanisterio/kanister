@@ -63,13 +63,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.12.3
 )
 
-require (
-	github.com/dustin/go-humanize v1.0.1
-	github.com/go-logr/logr v1.2.0
-	github.com/onsi/ginkgo/v2 v2.0.0
-	github.com/onsi/gomega v1.18.1
-	sigs.k8s.io/kustomize/kyaml v0.13.6
-)
+require github.com/dustin/go-humanize v1.0.1
 
 require (
 	cloud.google.com/go v0.105.0 // indirect
