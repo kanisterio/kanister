@@ -1,8 +1,6 @@
 #!/bin/bash
 
-# Copyright 2019 The Kanister Authors.
-#
-# Copyright 2016 The Rook Authors. All rights reserved.
+# Copyright 2023 The Kanister Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,4 +29,3 @@ CONTROLLER_TOOLS_VERSION=${1}
 
 test -s ${CONTROLLER_GEN} || GOBIN=${LOCALBIN} go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
 ${CONTROLLER_GEN} crd webhook paths="github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1" output:crd:artifacts:config=pkg/customresource
-
