@@ -280,8 +280,7 @@ func (a *RDSAuroraMySQLDB) IsReady(context.Context) (bool, error) {
 }
 
 func (a *RDSAuroraMySQLDB) Ping(ctx context.Context) error {
-
-	log.Print("Pinging rds postgres database", field.M{"app": a.name})
+	log.Print("Pinging rds aurora database", field.M{"app": a.name})
 	isReadyCommand := fmt.Sprintf(mysqlConnectionString+"'SELECT 1;'", a.host, a.username, a.password, a.dbName)
 
 	pingCommand := []string{"sh", "-c", isReadyCommand}

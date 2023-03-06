@@ -28,6 +28,7 @@ actions:
         instanceID:  "{{ .ArtifactsIn.backupInfo.KeyValue.instanceID }}"
         snapshotID:  "{{ .ArtifactsIn.backupInfo.KeyValue.snapshotID }}"
         securityGroupID:  "{{ .ArtifactsIn.backupInfo.KeyValue.securityGroupID }}"
+        dbSubnetGroup: "{{ .ArtifactsIn.backupInfo.KeyValue.dbSubnetGroup }}"
         dbEngine: "aurora-mysql"
   delete:
     inputArtifactNames:
