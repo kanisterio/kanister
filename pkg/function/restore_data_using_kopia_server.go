@@ -165,7 +165,6 @@ func restoreDataFromServer(
 	vols map[string]string,
 	podOverride crv1alpha1.JSONMap,
 ) (map[string]any, error) {
-	// Validate volumes
 	for pvc := range vols {
 		if _, err := cli.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, pvc, metav1.GetOptions{}); err != nil {
 			return nil, errors.Wrap(err, "Failed to retrieve PVC from namespace: "+namespace+" name: "+pvc)
