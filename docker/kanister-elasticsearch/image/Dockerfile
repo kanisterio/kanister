@@ -4,6 +4,7 @@ FROM ${TOOLS_IMAGE} AS TOOLS_IMAGE
 FROM debian:bullseye
 COPY --from=TOOLS_IMAGE /usr/local/bin/restic /usr/local/bin/restic
 COPY --from=TOOLS_IMAGE /usr/local/bin/kopia /usr/local/bin/kopia
+RUN setcap cap_chown,cap_fowner,cap_dac_override+iep /usr/local/bin/kopia
 ADD kando /usr/local/bin/
 
 RUN apt update
