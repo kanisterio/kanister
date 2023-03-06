@@ -213,7 +213,6 @@ func restoreDataFromServerPodFunc(
 	sparseRestore bool,
 ) func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
 	return func(ctx context.Context, pod *corev1.Pod) (map[string]any, error) {
-		// Wait for pod to reach running state
 		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
 			return nil, errors.Wrap(err, "Failed while waiting for Pod: "+pod.Name+" to be ready")
 		}
