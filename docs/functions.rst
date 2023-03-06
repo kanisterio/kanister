@@ -1612,7 +1612,7 @@ and restores data to the specified path.
    Between the ``pod`` and ``volumes`` arguments, exactly one argument
    must be specified.
 
-   Additionally, in order to use this function, a RepositoryServer CR is required
+   Additionally, in order to use this function, a RepositoryServer CR is required.
 
 Example:
 
