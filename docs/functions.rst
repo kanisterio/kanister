@@ -1595,15 +1595,14 @@ and restores data to the specified path.
    :align: left
    :widths: 5,5,5,15
 
-   `namespace`, Yes, `string`, namespace in which to execute (application/deployment namespace)
-   `image`, Yes, `string`, image to be used for running restore
-   `backupIdentifier`, Yes, `string`, (required if backupTag not provided) unique snapshot id generated during backup
-   `restorePath`, Yes, `string`, path where data is restored
+   `namespace`, Yes, `string`, namespace of the application that you want to backup the data of
+   `image`, Yes, `string`, image to be used for running restore job (should contain kopia binary)
+   `backupIdentifier`, Yes, `string`, unique snapshot id generated during backup
+   `restorePath`, Yes, `string`, path where data to be restored
    `userPassphrase`, Yes, `string`, user access credentials for kopia repository server
    `certData`, Yes, `string`, certificate data for kopia repository server
    `pod`, No, `string`, pod to which the volumes are attached
    `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
-   `encryptionKey`, No, `string`, encryption key to be used during backups
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
