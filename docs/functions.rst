@@ -1584,8 +1584,8 @@ It creates a new Pod that runs ``delete snapshot`` job created using Kopia Repos
    :align: left
    :widths: 5,5,5,15
 
-   `namespace`, Yes, `string`, namespace in which to execute (application/deployment namespace)
-   `image`, Yes, `string`, image to be used for running delete
+   `namespace`, Yes, `string`, namespace in which to execute the delete job
+   `image`, Yes, `string`, image to be used for running delete job (should contain kopia binary)
    `backupID`, Yes, `string`, unique snapshot id generated during backup
    `userPassphrase`, Yes, `string`, user access credentials for kopia repository server
    `certData`, Yes, `string`, certificate data for kopia repository server
@@ -1593,7 +1593,7 @@ Example:
 
 Consider a scenario where you wish to delete the data backed up by the
 :ref:`backupdatausingkopiaserver` function.
-For this phase, we will use the ``backupID`` Artifact provided by backup function.
+For this phase, we will use the ``backupIdentifier`` Artifact provided by backup function.
 
 .. code-block:: yaml
   :linenos:
