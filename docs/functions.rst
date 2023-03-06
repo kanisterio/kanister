@@ -1595,7 +1595,7 @@ and restores data to the specified path.
    :align: left
    :widths: 5,5,5,15
 
-   `namespace`, Yes, `string`, namespace of the application that you want to backup the data of
+   `namespace`, Yes, `string`, namespace of the application that you want to restore the data in
    `image`, Yes, `string`, image to be used for running restore job (should contain kopia binary)
    `backupIdentifier`, Yes, `string`, unique snapshot id generated during backup
    `restorePath`, Yes, `string`, path where data to be restored
