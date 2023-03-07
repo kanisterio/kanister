@@ -74,14 +74,17 @@ install Kanister with the ``--set controller.updateCRDs=false`` option:
 
 This option lets Helm manage the CRD resources.
 
-Using custom certificates with the Validating Webhook Controller for Blueprints
-==========================================================
+Using custom certificates with the Validating Webhook Controller
+================================================================
+
+Kanister installation also create a validating admission webhook server
+that is invoked each time a new Blueprint is created.
 
 By default the Helm chart is configured to automatically generate a
 self-signed certificates for Admission Webhook Server.
 If your setup requires custom certificates to be configured, you will have
 to install kanister with ``--set bpValidatingWebhook.tls.mode=custom``
-option along with other certificate details
+option along with other certificate details.
 
 
 Create a Secret that stores the TLS key and certificate for webhook admission server
@@ -90,8 +93,8 @@ Create a Secret that stores the TLS key and certificate for webhook admission se
 
   kubectl create secret tls my-tls-secret --cert /path/to/tls.crt --key /path/to/tls.key -n kansiter
 
-Install the kanister helm chart. Use --set commands to pass a PEM-encoded CA bundle
-and the `tls` secret name:
+Install Kanister, providing the PEM-encoded CA bundle and the `tls` secret name
+like below:
 
 .. substitution-code-block:: bash
 
