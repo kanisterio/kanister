@@ -16,8 +16,10 @@ package kube
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -71,6 +73,7 @@ type PodOptions struct {
 	RestartPolicy            v1.RestartPolicy
 	OwnerReferences          []metav1.OwnerReference
 	EnvironmentVariables     []v1.EnvVar
+	Lifecycle                *v1.Lifecycle
 }
 
 func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1.Pod, error) {
@@ -138,6 +141,11 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		return nil, errors.Wrapf(err, "Failed to create pod. Failed to override pod specs. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 
+	// Always put the main container the first
+	sort.Slice(patchedSpecs.Containers, func(i, j int) bool {
+		return patchedSpecs.Containers[i].Name == defaultContainerName
+	})
+
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: opts.GenerateName,
@@ -178,6 +186,10 @@ func GetPodObjectFromPodOptions(cli kubernetes.Interface, opts *PodOptions) (*v1
 		pod.Spec.Containers[0].SecurityContext = opts.ContainerSecurityContext
 	}
 
+	if opts.Lifecycle != nil {
+		pod.Spec.Containers[0].Lifecycle = opts.Lifecycle
+	}
+
 	for key, value := range opts.Labels {
 		pod.ObjectMeta.Labels[key] = value
 	}
@@ -196,7 +208,7 @@ func CreatePod(ctx context.Context, cli kubernetes.Interface, opts *PodOptions) 
 
 	pod, err = cli.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", pod.Namespace, opts.GenerateName)
+		return nil, errors.Wrapf(err, "Failed to create pod. Namespace: %s, NameFmt: %s", opts.Namespace, opts.GenerateName)
 	}
 	return pod, nil
 }
@@ -209,16 +221,17 @@ func DeletePod(ctx context.Context, cli kubernetes.Interface, pod *v1.Pod) error
 	return nil
 }
 
-func StreamPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name string) (io.ReadCloser, error) {
+func StreamPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string) (io.ReadCloser, error) {
 	plo := &v1.PodLogOptions{
-		Follow: true,
+		Follow:    true,
+		Container: containerName,
 	}
-	return cli.CoreV1().Pods(namespace).GetLogs(name, plo).Stream(ctx)
+	return cli.CoreV1().Pods(namespace).GetLogs(podName, plo).Stream(ctx)
 }
 
 // GetPodLogs fetches the logs from the given pod
-func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name string) (string, error) {
-	reader, err := cli.CoreV1().Pods(namespace).GetLogs(name, &v1.PodLogOptions{}).Stream(ctx)
+func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string) (string, error) {
+	reader, err := cli.CoreV1().Pods(namespace).GetLogs(podName, &v1.PodLogOptions{Container: containerName}).Stream(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -230,37 +243,70 @@ func GetPodLogs(ctx context.Context, cli kubernetes.Interface, namespace, name s
 	return string(bytes), nil
 }
 
+// getErrorFromLogs fetches logs from pod and constructs error containing last ten lines of log and specified error message
+func getErrorFromLogs(ctx context.Context, cli kubernetes.Interface, namespace, podName, containerName string, err error, errorMessage string) error {
+	r, logErr := StreamPodLogs(ctx, cli, namespace, podName, containerName)
+	if logErr != nil {
+		return errors.Wrapf(logErr, "Failed to fetch logs from the pod")
+	}
+	defer r.Close()
+
+	// Grab last log lines and put them to an error
+	lt := NewLogTail(10)
+	// We are not interested in log extraction error
+	io.Copy(lt, r) // nolint: errcheck
+
+	return errors.Wrap(errors.Wrap(err, lt.ToString()), errorMessage)
+}
+
 // WaitForPodReady waits for a pod to exit the pending state
 func WaitForPodReady(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
 	timeoutCtx, waitCancel := context.WithTimeout(ctx, GetPodReadyWaitTimeout())
 	defer waitCancel()
+	attachLog := true
+	containerForLogs := ""
 	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		p, err := cli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
+			attachLog = false
 			return false, err
 		}
+		containerForLogs = p.Spec.Containers[0].Name
 
 		// check if nodes are up and available
 		err = checkNodesStatus(p, cli)
 		if err != nil && !strings.Contains(err.Error(), errAccessingNode) {
+			attachLog = false
 			return false, err
 		}
 
 		// check for memory or resource issues
 		if p.Status.Phase == v1.PodPending {
 			if p.Status.Reason == "OutOfmemory" || p.Status.Reason == "OutOfcpu" {
+				attachLog = false
 				return false, errors.Errorf("Pod stuck in pending state, reason: %s", p.Status.Reason)
 			}
 		}
 
 		// check if pvc and pv are up and ready to mount
 		if err := getVolStatus(timeoutCtx, p, cli, namespace); err != nil {
+			attachLog = false
 			return false, err
 		}
 
 		return p.Status.Phase != v1.PodPending && p.Status.Phase != "", nil
 	})
-	return errors.Wrapf(err, "Pod did not transition into running state. Timeout:%v  Namespace:%s, Name:%s", GetPodReadyWaitTimeout(), namespace, name)
+
+	if err == nil {
+		return nil
+	}
+
+	errorMessage := fmt.Sprintf("Pod did not transition into running state. Timeout:%v  Namespace:%s, Name:%s", GetPodReadyWaitTimeout(), namespace, name)
+	if attachLog {
+		return getErrorFromLogs(ctx, cli, namespace, name, containerForLogs, err, errorMessage)
+	}
+
+	return errors.Wrap(err, errorMessage)
 }
 
 func checkNodesStatus(p *v1.Pod, cli kubernetes.Interface) error {
@@ -338,18 +384,27 @@ func checkPVCAndPVStatus(ctx context.Context, vol v1.Volume, p *v1.Pod, cli kube
 
 // WaitForPodCompletion waits for a pod to reach a terminal state, or timeout
 func WaitForPodCompletion(ctx context.Context, cli kubernetes.Interface, namespace, name string) error {
+	attachLog := true
+	containerForLogs := ""
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		p, err := cli.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
+			attachLog = false
 			return true, err
 		}
+		containerForLogs = p.Spec.Containers[0].Name
 		switch p.Status.Phase {
 		case v1.PodFailed:
 			return false, errors.Errorf("Pod %s failed. Pod status: %s", name, p.Status.String())
 		}
 		return p.Status.Phase == v1.PodSucceeded, nil
 	})
-	return errors.Wrap(err, "Pod failed or did not transition into complete state")
+
+	errorMessage := "Pod failed or did not transition into complete state"
+	if attachLog {
+		return getErrorFromLogs(ctx, cli, namespace, name, containerForLogs, err, errorMessage)
+	}
+	return errors.Wrap(err, errorMessage)
 }
 
 // use Strategic Merge to patch default pod specs with the passed specs
