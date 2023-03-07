@@ -77,7 +77,7 @@ This option lets Helm manage the CRD resources.
 Using custom certificates with the Validating Webhook Controller
 ================================================================
 
-Kanister installation also create a validating admission webhook server
+Kanister installation also creates a validating admission webhook server
 that is invoked each time a new Blueprint is created.
 
 By default the Helm chart is configured to automatically generate a
@@ -87,7 +87,7 @@ to install kanister with ``--set bpValidatingWebhook.tls.mode=custom``
 option along with other certificate details.
 
 
-Create a Secret that stores the TLS key and certificate for webhook admission server
+Create a Secret that stores the TLS key and certificate for webhook admission server:
 
 .. substitution-code-block:: bash
 
