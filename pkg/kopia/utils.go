@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"path/filepath"
+	"strings"
 
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/repo/manifest"
@@ -32,6 +33,8 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 )
 
 const (
@@ -56,6 +59,11 @@ const (
 	DataStoreGeneralContentCacheSizeMBKey = "dataStoreGeneralContentCacheSize"
 	// DataStoreGeneralMetadataCacheSizeMBKey is the key to pass metadata cache size for general command workloads
 	DataStoreGeneralMetadataCacheSizeMBKey = "dataStoreGeneralMetadataCacheSize"
+	// ServerUsernameFormat is used to construct server username for Kopia API Server Status Command
+	ServerUsernameFormat = "%s@%s"
+	// KanisterAdminUsername is the username for the user with Admin privileges
+	KanisterAdminUsername = "kanister-admin"
+	defaultServerHostname = "data-mover-server-pod"
 )
 
 // ExtractFingerprintFromCertSecret extracts the fingerprint from the given certificate secret
@@ -183,4 +191,12 @@ func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
 		return metadataCacheSize
 	}
 	return defaultDataStoreGeneralMetadataCacheSizeMB
+}
+
+// GetCustomConfigFileAndLogDirectory returns a config file path and log directory based on the hostname
+func GetCustomConfigFileAndLogDirectory(hostname string) (string, string) {
+	hostname = strings.ReplaceAll(hostname, ".", "-")
+	configFile := filepath.Join(kopiacmd.DefaultConfigDirectory, hostname+".config")
+	logDir := filepath.Join(kopiacmd.DefaultLogDirectory, hostname)
+	return configFile, logDir
 }
