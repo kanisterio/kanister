@@ -22,10 +22,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
-	"github.com/kanisterio/kanister/pkg/kube"
-	"github.com/kanisterio/kanister/pkg/log"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"os"
 	"path/filepath"
 
@@ -35,8 +31,13 @@ import (
 	"github.com/kopia/kopia/snapshot"
 	"github.com/kopia/kopia/snapshot/snapshotfs"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
