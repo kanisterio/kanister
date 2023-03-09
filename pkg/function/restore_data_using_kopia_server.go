@@ -45,8 +45,6 @@ func (*restoreDataUsingKopiaServerFunc) RequiredArgs() []string {
 		RestoreDataImageArg,
 		RestoreDataNamespaceArg,
 		RestoreDataRestorePathArg,
-		kankopia.KopiaUserPassphraseArg,
-		kankopia.KopiaTLSCertSecretDataArg,
 	}
 }
 
@@ -56,8 +54,6 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 		RestoreDataImageArg,
 		RestoreDataNamespaceArg,
 		RestoreDataRestorePathArg,
-		kankopia.KopiaUserPassphraseArg,
-		kankopia.KopiaTLSCertSecretDataArg,
 		RestoreDataPodArg,
 		RestoreDataVolsArg,
 		RestoreDataPodOverrideArg,
@@ -66,13 +62,11 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 
 func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
 	var (
-		err            error
-		image          string
-		namespace      string
-		restorePath    string
-		snapID         string
-		userPassphrase string
-		cert           string
+		err         error
+		image       string
+		namespace   string
+		restorePath string
+		snapID      string
 	)
 	if err = Arg(args, RestoreDataBackupIdentifierArg, &snapID); err != nil {
 		return nil, err
@@ -86,11 +80,10 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 	if err = Arg(args, RestoreDataRestorePathArg, &restorePath); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, kankopia.KopiaUserPassphraseArg, &userPassphrase); err != nil {
-		return nil, err
-	}
-	if err = Arg(args, kankopia.KopiaTLSCertSecretDataArg, &cert); err != nil {
-		return nil, err
+
+	userPassphrase, cert, err := userCredentialsAndServerTLS(&tp)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch User Credentials / Certificate Data from Template Params")
 	}
 
 	fingerprint, err := kankopia.ExtractFingerprintFromCertificateJSON(cert)
@@ -112,7 +105,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 	}
 
 	username := tp.RepositoryServer.Username
-	hostname, userAccessPassphrase, err := getHostNameAndUserPassPhraseFromRepoServer(userPassphrase)
+	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get hostname/user passphrase from Options")
 	}
@@ -122,7 +115,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		return nil, errors.Wrap(err, "Failed to create Kubernetes client")
 	}
 
-	serverAddress, err := getRepositoryServerAddress(cli, *tp.RepositoryServer)
+	serverAddress, err := repositoryServerAddress(cli, *tp.RepositoryServer)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get the Kopia Repository Server Address")
 	}
@@ -217,7 +210,7 @@ func restoreDataFromServerPodFunc(
 		}
 
 		contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
-		configFile, logDirectory := kankopia.GetCustomConfigFileAndLogDirectory(hostname)
+		configFile, logDirectory := kankopia.CustomConfigFileAndLogDirectory(hostname)
 
 		cmd := kopiacmd.RepositoryConnectServerCommand(
 			kopiacmd.RepositoryServerCommandArgs{
