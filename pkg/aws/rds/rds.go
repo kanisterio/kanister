@@ -23,7 +23,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
-	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
 )
@@ -130,7 +129,7 @@ func (r RDS) WaitUntilDBClusterDeleted(ctx context.Context, dbClusterID string) 
 		}
 		if _, err := r.DescribeDBClustersWithContext(ctx, dci); err != nil {
 			if aerr, ok := err.(awserr.Error); ok {
-				if aerr.Code() == rdserr.ErrCodeDBClusterNotFoundFault {
+				if aerr.Code() == rds.ErrCodeDBClusterNotFoundFault {
 					return true, nil
 				}
 				return false, nil
