@@ -1594,8 +1594,8 @@ Arguments:
    :align: left
    :widths: 5,5,5,15
 
-   `namespace`, Yes, `string`, namespace of the application that you want to backup the data of
-   `pod`, Yes, `string`, pod of the application that you want to backup the data of
+   `namespace`, Yes, `string`, namespace of the container that you want to backup the data of
+   `pod`, Yes, `string`, pod name of the container that you want to backup the data of
    `container`, Yes, `string`, name of the kanister sidecar container
    `includePath`, Yes, `string`, path of the data to be backed up
    `userPassphrase`, Yes, `string`, user access credentials for kopia repository server
