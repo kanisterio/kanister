@@ -1583,7 +1583,7 @@ supported by Kanister using Kopia Repository Server as a data mover.
 .. note::
    It is important that the application includes a ``kanister-tools``
    sidecar container. This sidecar is necessary to run the
-   tools that capture path on a volume and store it on the object store.
+   tools that back up the volume and store it on the object store.
 
    Additionally, in order to use this function, a RepositoryServer CR is required
 
