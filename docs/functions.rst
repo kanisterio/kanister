@@ -1634,6 +1634,85 @@ Example:
         userPassphrase: "{{ toJson .RepositoryServer.Credentials.ServerUserAccess.Data }}"
         certData: "{{ toJson .RepositoryServer.Credentials.ServerTLS.Data }}"
 
+
+.. _restoredatausingkopiaserver:
+
+RestoreDataUsingKopiaServer
+---------------------------
+
+This function restores data backed up by the ``BackupDataUsingKopiaServer`` function.
+It creates a new Pod that mounts the PVCs referenced by the specified Pod
+and restores data to the specified path.
+
+.. note::
+   It is extremely important that, the PVCs are not be currently
+   in use by an active application container, as they are required
+   to be mounted to the new Pod (ensure by using
+   ``ScaleWorkload`` with replicas=0 first).
+   For advanced use cases, it is possible to have concurrent access but
+   the PV needs to have ``RWX`` mode enabled and the volume needs to use a
+   clustered file system that supports concurrent access.
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace of the application that you want to restore the data in
+   `image`, Yes, `string`, image to be used for running restore job (should contain kopia binary)
+   `backupIdentifier`, Yes, `string`, unique snapshot id generated during backup
+   `restorePath`, Yes, `string`, path where data to be restored
+   `userPassphrase`, Yes, `string`, user access credentials for kopia repository server
+   `certData`, Yes, `string`, certificate data for kopia repository server
+   `pod`, No, `string`, pod to which the volumes are attached
+   `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
+
+.. note::
+   The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
+   image since it includes the required tools to restore data from
+   the object store.
+   Between the ``pod`` and ``volumes`` arguments, exactly one argument
+   must be specified.
+
+   Additionally, in order to use this function, a RepositoryServer CR is required.
+
+Example:
+
+Consider a scenario where you wish to restore the data backed up by the
+:ref:`backupdatausingkopiaserver` function. We will first scale down the application,
+restore the data and then scale it back up.
+For this phase, we will use the ``backupIdentifier`` Artifact provided by
+backup function.
+
+.. substitution-code-block:: yaml
+  :linenos:
+
+  - func: ScaleWorkload
+    name: shutdownPod
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
+      kind: Deployment
+      replicas: 0
+  - func: RestoreDataUsingKopiaServer
+    name: restoreFromS3
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      pod: "{{ index .Deployment.Pods 0 }}"
+      image: ghcr.io/kanisterio/kanister-tools:0.89.0
+      backupIdentifier: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
+      restorePath: /mnt/data
+      userPassphrase: "{{ toJson .RepositoryServer.Credentials.ServerUserAccess.Data }}"
+      certData: "{{ toJson .RepositoryServer.Credentials.ServerTLS.Data }}"
+  - func: ScaleWorkload
+    name: bringupPod
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
+      kind: Deployment
+      replicas: 1
+
 Registering Functions
 ---------------------
 

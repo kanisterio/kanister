@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -33,8 +34,12 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/log"
 )
 
 const (
@@ -64,6 +69,19 @@ const (
 	// KanisterAdminUsername is the username for the user with Admin privileges
 	KanisterAdminUsername = "kanister-admin"
 	defaultServerHostname = "data-mover-server-pod"
+	// KanisterPodCustomLabelsEnv is the env var to get kanister pod custom labels
+	KanisterPodCustomLabelsEnv = "KANISTER_POD_CUSTOM_LABELS"
+	// KanisterPodCustomAnnotationsEnv is the env var to get kanister pod custom annotations
+	KanisterPodCustomAnnotationsEnv = "KANISTER_POD_CUSTOM_ANNOTATIONS"
+
+	// KanisterToolsMemoryRequestsEnv is the env var to get kanister sidecar or gvs restore data pod memory requests
+	KanisterToolsMemoryRequestsEnv = "KANISTER_TOOLS_MEMORY_REQUESTS"
+	// KanisterToolsCPURequestEnvs is the env var to get kanister sidecar or gvs restore data CPU requests
+	KanisterToolsCPURequestsEnv = "KANISTER_TOOLS_CPU_REQUESTS"
+	// KanisterToolsMemoryLimitsEnv is the env var to get kanister sidecar or gvs restore data memory limits
+	KanisterToolsMemoryLimitsEnv = "KANISTER_TOOLS_MEMORY_LIMITS"
+	// KanisterToolsCPULimitsEnv is the env var to get kanister sidecar or gvs restore data CPU limits
+	KanisterToolsCPULimitsEnv = "KANISTER_TOOLS_CPU_LIMITS"
 )
 
 // ExtractFingerprintFromCertSecret extracts the fingerprint from the given certificate secret
@@ -199,4 +217,96 @@ func GetCustomConfigFileAndLogDirectory(hostname string) (string, string) {
 	configFile := filepath.Join(kopiacmd.DefaultConfigDirectory, hostname+".config")
 	logDir := filepath.Join(kopiacmd.DefaultLogDirectory, hostname)
 	return configFile, logDir
+}
+
+// SetLabelsToPodOptionsIfRequired sets labels to PodOptions
+func SetLabelsToPodOptionsIfRequired(options *kube.PodOptions) {
+	updateNeeded, labels := getKanisterPodLabels()
+	if updateNeeded {
+		if options.Labels == nil {
+			options.Labels = make(map[string]string)
+		}
+		for k, v := range *labels {
+			options.Labels[k] = v
+		}
+	}
+}
+
+func getKanisterPodLabels() (bool, *map[string]string) {
+	return parseToLabelSelector(KanisterPodCustomLabelsEnv)
+}
+
+func parseToLabelSelector(envKey string) (bool, *map[string]string) {
+	val, ok := os.LookupEnv(envKey)
+	if !ok || val == "" {
+		return false, nil
+	}
+	ls, err := metav1.ParseToLabelSelector(val)
+	if err != nil {
+		return false, nil
+	}
+	return true, &ls.MatchLabels
+}
+
+// SetAnnotationsToPodOptionsIfRequired sets annotations to PodOptions
+func SetAnnotationsToPodOptionsIfRequired(options *kube.PodOptions) {
+	updateNeeded, annotations := getKanisterPodAnnotations()
+	if updateNeeded {
+		if options.Annotations == nil {
+			options.Annotations = make(map[string]string)
+		}
+		for k, v := range *annotations {
+			options.Annotations[k] = v
+		}
+	}
+}
+
+func getKanisterPodAnnotations() (bool, *map[string]string) {
+	return parseToLabelSelector(KanisterPodCustomAnnotationsEnv)
+}
+
+// SetResourceRequirementsToPodOptionsIfRequired sets resource requirements to PodOptions
+func SetResourceRequirementsToPodOptionsIfRequired(options *kube.PodOptions) {
+	updateNeeded, res := GetResourceRequirementsForKanisterPods()
+	if updateNeeded {
+		options.Resources = *res
+	}
+}
+
+// GetResourceRequirementsForKanisterPods returns resource requirements if set in configmap
+func GetResourceRequirementsForKanisterPods() (bool, *corev1.ResourceRequirements) {
+	res := corev1.ResourceRequirements{
+		Limits:   corev1.ResourceList{},
+		Requests: corev1.ResourceList{},
+	}
+	updateNeeded := false
+	resourceKeyValues := []string{
+		KanisterToolsMemoryRequestsEnv,
+		KanisterToolsCPURequestsEnv,
+		KanisterToolsMemoryLimitsEnv,
+		KanisterToolsCPULimitsEnv,
+	}
+	for _, key := range resourceKeyValues {
+		val, ok := os.LookupEnv(key)
+		if !ok || val == "" {
+			continue
+		}
+		qty, err := resource.ParseQuantity(val)
+		if err != nil {
+			log.WithError(err)
+			return false, nil
+		}
+		switch key {
+		case KanisterToolsMemoryRequestsEnv:
+			res.Requests[corev1.ResourceMemory] = qty
+		case KanisterToolsCPURequestsEnv:
+			res.Requests[corev1.ResourceCPU] = qty
+		case KanisterToolsMemoryLimitsEnv:
+			res.Limits[corev1.ResourceMemory] = qty
+		case KanisterToolsCPULimitsEnv:
+			res.Limits[corev1.ResourceCPU] = qty
+		}
+		updateNeeded = true
+	}
+	return updateNeeded, &res
 }
