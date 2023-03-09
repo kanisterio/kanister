@@ -265,12 +265,14 @@ func getRepositoryServerAddress(cli kubernetes.Interface, rs param.RepositorySer
 func userCredentialsAndServerTLS(tp *param.TemplateParams) {
 	userCredSecret := tp.RepositoryServer.Credentials.ServerUserAccess.Data
 	certSecret := tp.RepositoryServer.Credentials.ServerTLS.Data
+	userCredJSON, _ := json.Marshal(userCredSecret)
+	certJSON, _ := json.Marshal(certSecret)
 	log.Print("---- User Cred Secret Data ----", field.M{
-		"Data": userCredSecret,
-		"Type": reflect.TypeOf(userCredSecret),
+		"Data": userCredJSON,
+		"Type": reflect.TypeOf(userCredJSON),
 	})
 	log.Print("---- Cert Secret Data ----", field.M{
-		"Data": certSecret,
-		"Type": reflect.TypeOf(certSecret),
+		"Data": certJSON,
+		"Type": reflect.TypeOf(certJSON),
 	})
 }
