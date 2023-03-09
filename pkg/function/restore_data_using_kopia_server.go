@@ -42,7 +42,6 @@ func (*restoreDataUsingKopiaServerFunc) Name() string {
 func (*restoreDataUsingKopiaServerFunc) RequiredArgs() []string {
 	return []string{
 		RestoreDataBackupIdentifierArg,
-		RestoreDataImageArg,
 		RestoreDataNamespaceArg,
 		RestoreDataRestorePathArg,
 	}
@@ -51,7 +50,6 @@ func (*restoreDataUsingKopiaServerFunc) RequiredArgs() []string {
 func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 	return []string{
 		RestoreDataBackupIdentifierArg,
-		RestoreDataImageArg,
 		RestoreDataNamespaceArg,
 		RestoreDataRestorePathArg,
 		RestoreDataPodArg,
@@ -63,15 +61,11 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
 	var (
 		err         error
-		image       string
 		namespace   string
 		restorePath string
 		snapID      string
 	)
 	if err = Arg(args, RestoreDataBackupIdentifierArg, &snapID); err != nil {
-		return nil, err
-	}
-	if err = Arg(args, RestoreDataImageArg, &image); err != nil {
 		return nil, err
 	}
 	if err = Arg(args, RestoreDataNamespaceArg, &namespace); err != nil {
@@ -126,7 +120,6 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		ctx,
 		cli,
 		hostname,
-		image,
 		restoreDataJobPrefix,
 		namespace,
 		restorePath,
@@ -145,7 +138,6 @@ func restoreDataFromServer(
 	ctx context.Context,
 	cli kubernetes.Interface,
 	hostname,
-	image,
 	jobPrefix,
 	namespace,
 	restorePath,
@@ -167,7 +159,7 @@ func restoreDataFromServer(
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
-		Image:        image,
+		Image:        getKanisterToolsImage(),
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
 		Volumes:      vols,
 		PodOverride:  podOverride,
