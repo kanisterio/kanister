@@ -51,8 +51,6 @@ func (*backupDataUsingKopiaServerFunc) RequiredArgs() []string {
 		BackupDataIncludePathArg,
 		BackupDataNamespaceArg,
 		BackupDataPodArg,
-		kankopia.KopiaUserPassphraseArg,
-		kankopia.KopiaTLSCertSecretDataArg,
 	}
 }
 
@@ -62,22 +60,18 @@ func (*backupDataUsingKopiaServerFunc) Arguments() []string {
 		BackupDataIncludePathArg,
 		BackupDataNamespaceArg,
 		BackupDataPodArg,
-		kankopia.KopiaUserPassphraseArg,
-		kankopia.KopiaTLSCertSecretDataArg,
 		BackupDataTagsKeyArg,
 	}
 }
 
 func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
 	var (
-		container      string
-		err            error
-		includePath    string
-		namespace      string
-		pod            string
-		userPassphrase string
-		cert           string
-		tagsStr        string
+		container   string
+		err         error
+		includePath string
+		namespace   string
+		pod         string
+		tagsStr     string
 	)
 	if err = Arg(args, BackupDataContainerArg, &container); err != nil {
 		return nil, err
@@ -91,12 +85,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	if err = Arg(args, BackupDataPodArg, &pod); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, kankopia.KopiaUserPassphraseArg, &userPassphrase); err != nil {
-		return nil, err
-	}
-	if err = Arg(args, kankopia.KopiaTLSCertSecretDataArg, &cert); err != nil {
-		return nil, err
-	}
 	if err = OptArg(args, BackupDataTagsKeyArg, &tagsStr, ""); err != nil {
 		return nil, err
 	}
@@ -106,13 +94,18 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		tags = strings.Split(tagsStr, ",")
 	}
 
+	userPassphrase, cert, err := userCredentialsAndServerTLS(&tp)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch User Credentials / Certificate Data from Template Params")
+	}
+
 	fingerprint, err := kankopia.ExtractFingerprintFromCertificateJSON(cert)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
 	}
 
 	username := tp.RepositoryServer.Username
-	hostname, userAccessPassphrase, err := getHostNameAndUserPassPhraseFromRepoServer(userPassphrase)
+	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch Hostname/User Passphrase from Secret")
 	}
@@ -125,7 +118,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 
-	serverAddress, err := getRepositoryServerAddress(cli, *tp.RepositoryServer)
+	serverAddress, err := repositoryServerAddress(cli, *tp.RepositoryServer)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get the Kopia Repository Server Address")
 	}
@@ -176,7 +169,7 @@ func backupDataUsingKopiaServer(
 	tags []string,
 ) (info *kopiacmd.SnapshotCreateInfo, err error) {
 	contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
-	configFile, logDirectory := kankopia.GetCustomConfigFileAndLogDirectory(hostname)
+	configFile, logDirectory := kankopia.CustomConfigFileAndLogDirectory(hostname)
 
 	cmd := kopiacmd.RepositoryConnectServerCommand(kopiacmd.RepositoryServerCommandArgs{
 		UserPassword:    userPassphrase,
@@ -228,7 +221,7 @@ func backupDataUsingKopiaServer(
 	return kopiacmd.ParseSnapshotCreateOutput(stdout, stderr)
 }
 
-func getHostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, error) {
+func hostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, error) {
 	var userAccessMap map[string]string
 	if err := json.Unmarshal([]byte(userCreds), &userAccessMap); err != nil {
 		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
@@ -249,11 +242,23 @@ func getHostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, strin
 
 }
 
-func getRepositoryServerAddress(cli kubernetes.Interface, rs param.RepositoryServer) (string, error) {
+func repositoryServerAddress(cli kubernetes.Interface, rs param.RepositoryServer) (string, error) {
 	repositoryServerService, err := cli.CoreV1().Services(rs.Namespace).Get(context.Background(), rs.ServerInfo.ServiceName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.New("Unable to find Service Details for Repository Server")
 	}
 	serverAddress := fmt.Sprintf("https://%s.%s.svc.cluster.local:%d", rs.ServerInfo.ServiceName, rs.Namespace, repositoryServerService.Spec.Ports[0].Port)
 	return serverAddress, nil
+}
+
+func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, error) {
+	userCredJSON, err := json.Marshal(tp.RepositoryServer.Credentials.ServerUserAccess.Data)
+	if err != nil {
+		return "", "", errors.Wrap(err, "Error Unmarshalling User Credentials Data")
+	}
+	certJSON, err := json.Marshal(tp.RepositoryServer.Credentials.ServerTLS.Data)
+	if err != nil {
+		return "", "", errors.Wrap(err, "Error Unmarshalling Certificate Data")
+	}
+	return string(userCredJSON), string(certJSON), nil
 }

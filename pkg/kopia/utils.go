@@ -193,8 +193,8 @@ func GetDataStoreGeneralMetadataCacheSize(opt map[string]int) int {
 	return defaultDataStoreGeneralMetadataCacheSizeMB
 }
 
-// GetCustomConfigFileAndLogDirectory returns a config file path and log directory based on the hostname
-func GetCustomConfigFileAndLogDirectory(hostname string) (string, string) {
+// CustomConfigFileAndLogDirectory returns a config file path and log directory based on the hostname
+func CustomConfigFileAndLogDirectory(hostname string) (string, string) {
 	hostname = strings.ReplaceAll(hostname, ".", "-")
 	configFile := filepath.Join(kopiacmd.DefaultConfigDirectory, hostname+".config")
 	logDir := filepath.Join(kopiacmd.DefaultLogDirectory, hostname)
