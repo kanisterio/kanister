@@ -1707,6 +1707,10 @@ DeleteDataUsingKopiaServer
 This function deletes the snapshot data backed up by the ``BackupDataUsingKopiaServer``
 function. It creates a new Pod that runs ``delete snapshot`` job.
 
+.. note::
+
+   Additionally, in order to use this function, a RepositoryServer CR is required
+
 .. csv-table::
    :header: "Argument", "Required", "Type", "Description"
    :align: left
