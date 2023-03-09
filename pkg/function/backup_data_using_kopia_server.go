@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
+	"reflect"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -105,6 +107,8 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	if tagsStr != "" {
 		tags = strings.Split(tagsStr, ",")
 	}
+
+	userCredentialsAndServerTLS(&tp)
 
 	fingerprint, err := kankopia.ExtractFingerprintFromCertificateJSON(cert)
 	if err != nil {
@@ -256,4 +260,17 @@ func getRepositoryServerAddress(cli kubernetes.Interface, rs param.RepositorySer
 	}
 	serverAddress := fmt.Sprintf("https://%s.%s.svc.cluster.local:%d", rs.ServerInfo.ServiceName, rs.Namespace, repositoryServerService.Spec.Ports[0].Port)
 	return serverAddress, nil
+}
+
+func userCredentialsAndServerTLS(tp *param.TemplateParams) {
+	userCredSecret := tp.RepositoryServer.Credentials.ServerUserAccess.Data
+	certSecret := tp.RepositoryServer.Credentials.ServerTLS.Data
+	log.Print("---- User Cred Secret Data ----", field.M{
+		"Data": userCredSecret,
+		"Type": reflect.TypeOf(userCredSecret),
+	})
+	log.Print("---- Cert Secret Data ----", field.M{
+		"Data": certSecret,
+		"Type": reflect.TypeOf(certSecret),
+	})
 }
