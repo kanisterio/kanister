@@ -1599,6 +1599,7 @@ Arguments:
    `container`, Yes, `string`, name of the kanister sidecar container
    `includePath`, Yes, `string`, path of the data to be backed up
    `snapshotTags`, No, `string`, custom tags to be provided for the kopia snapshots
+
 Outputs:
 
 .. csv-table::
