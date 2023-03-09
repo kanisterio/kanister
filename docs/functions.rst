@@ -1585,10 +1585,8 @@ It creates a new Pod that runs ``delete snapshot`` job created using Kopia Repos
    :widths: 5,5,5,15
 
    `namespace`, Yes, `string`, namespace in which to execute the delete job
-   `image`, Yes, `string`, image to be used for running delete job (should contain kopia binary)
    `backupID`, Yes, `string`, unique snapshot id generated during backup
-   `userPassphrase`, Yes, `string`, user access credentials for kopia repository server
-   `certData`, Yes, `string`, certificate data for kopia repository server
+
 Example:
 
 Consider a scenario where you wish to delete the data backed up by the
@@ -1602,11 +1600,7 @@ For this phase, we will use the ``backupIdentifier`` Artifact provided by backup
     name: DeleteFromObjectStore
     args:
       namespace: "{{ .Deployment.Namespace }}"
-      image: ghcr.io/kanisterio/kanister-tools:0.89.0
       backupID: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
-      userPassphrase: "{{ toJson .RepositoryServer.Credentials.ServerUserAccess.Data }}"
-      certData: "{{ toJson .RepositoryServer.Credentials.ServerTLS.Data }}"
-
 
 Registering Functions
 ---------------------
