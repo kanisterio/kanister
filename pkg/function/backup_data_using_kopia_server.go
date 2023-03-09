@@ -106,7 +106,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	}
 
 	username := tp.RepositoryServer.Username
-	hostname, userAccessPassphrase, err := getHostNameAndUserPassPhraseFromRepoServer(userPassphrase)
+	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch Hostname/User Passphrase from Secret")
 	}
@@ -126,7 +126,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 
-	serverAddress, err := getRepositoryServerAddress(cli, *tp.RepositoryServer)
+	serverAddress, err := repositoryServerAddress(cli, *tp.RepositoryServer)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get the Kopia Repository Server Address")
 	}
@@ -177,7 +177,7 @@ func backupDataUsingKopiaServer(
 	tags []string,
 ) (info *kopiacmd.SnapshotCreateInfo, err error) {
 	contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
-	configFile, logDirectory := kankopia.GetCustomConfigFileAndLogDirectory(hostname)
+	configFile, logDirectory := kankopia.CustomConfigFileAndLogDirectory(hostname)
 
 	cmd := kopiacmd.RepositoryConnectServerCommand(kopiacmd.RepositoryServerCommandArgs{
 		UserPassword:    userPassphrase,
@@ -229,7 +229,7 @@ func backupDataUsingKopiaServer(
 	return kopiacmd.ParseSnapshotCreateOutput(stdout, stderr)
 }
 
-func getHostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, error) {
+func hostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, error) {
 	var userAccessMap map[string]string
 	if err := json.Unmarshal([]byte(userCreds), &userAccessMap); err != nil {
 		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
@@ -250,7 +250,7 @@ func getHostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, strin
 
 }
 
-func getRepositoryServerAddress(cli kubernetes.Interface, rs param.RepositoryServer) (string, error) {
+func repositoryServerAddress(cli kubernetes.Interface, rs param.RepositoryServer) (string, error) {
 	repositoryServerService, err := cli.CoreV1().Services(rs.Namespace).Get(context.Background(), rs.ServerInfo.ServiceName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.New("Unable to find Service Details for Repository Server")
