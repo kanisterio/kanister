@@ -311,7 +311,6 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 
 	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": rowsReturned})
 	return rowsReturned, nil
-
 }
 
 func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
