@@ -22,6 +22,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"path/filepath"
+	"strings"
+
 	"github.com/kopia/kopia/repo"
 	"github.com/kopia/kopia/repo/manifest"
 	"github.com/kopia/kopia/repo/object"
@@ -30,8 +33,6 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"path/filepath"
-	"strings"
 
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 )
