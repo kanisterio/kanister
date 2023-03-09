@@ -1603,9 +1603,6 @@ and restores data to the specified path.
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
-   The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
-   image since it includes the required tools to restore data from
-   the object store.
    Between the ``pod`` and ``volumes`` arguments, exactly one argument
    must be specified.
 
