@@ -131,8 +131,9 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 
-	testDeployment := testWorkload(ctx, pdb.testWorkloadName, "postgres", pdb.namespace)
+	pdb.testWorkloadName = fmt.Sprintf("%s-workload", pdb.name)
 
+	testDeployment := testWorkload(ctx, pdb.testWorkloadName, "postgres", pdb.namespace)
 	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(context.Background(), testDeployment, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed while creating for test deployment to be created")
