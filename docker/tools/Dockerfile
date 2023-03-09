@@ -59,4 +59,6 @@ RUN microdnf -y update && microdnf -y install shadow-utils gzip && \
   microdnf -y remove shadow-utils && \
   microdnf clean all
 
+RUN setcap cap_chown,cap_fowner,cap_dac_override+iep /usr/local/bin/kopia
+
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]
