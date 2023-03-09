@@ -1655,19 +1655,13 @@ and restores data to the specified path.
    :widths: 5,5,5,15
 
    `namespace`, Yes, `string`, namespace of the application that you want to restore the data in
-   `image`, Yes, `string`, image to be used for running restore job (should contain kopia binary)
    `backupIdentifier`, Yes, `string`, unique snapshot id generated during backup
    `restorePath`, Yes, `string`, path where data to be restored
-   `userPassphrase`, Yes, `string`, user access credentials for kopia repository server
-   `certData`, Yes, `string`, certificate data for kopia repository server
    `pod`, No, `string`, pod to which the volumes are attached
    `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
-   The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
-   image since it includes the required tools to restore data from
-   the object store.
    Between the ``pod`` and ``volumes`` arguments, exactly one argument
    must be specified.
 
@@ -1696,11 +1690,8 @@ backup function.
     args:
       namespace: "{{ .Deployment.Namespace }}"
       pod: "{{ index .Deployment.Pods 0 }}"
-      image: ghcr.io/kanisterio/kanister-tools:0.89.0
       backupIdentifier: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
       restorePath: /mnt/data
-      userPassphrase: "{{ toJson .RepositoryServer.Credentials.ServerUserAccess.Data }}"
-      certData: "{{ toJson .RepositoryServer.Credentials.ServerTLS.Data }}"
   - func: ScaleWorkload
     name: bringupPod
     args:
