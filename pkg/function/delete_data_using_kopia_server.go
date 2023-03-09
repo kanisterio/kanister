@@ -78,7 +78,7 @@ func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	}
 
 	username := tp.RepositoryServer.Username
-	hostname, userAccessPassphrase, err := getHostNameAndUserPassPhraseFromRepoServer(userPassphrase)
+	hostname, userAccessPassphrase, err := hostNameAndUserPassPhraseFromRepoServer(userPassphrase)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get hostname/user passphrase from Options")
 	}
@@ -88,7 +88,7 @@ func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		return nil, errors.Wrap(err, "Failed to create Kubernetes client")
 	}
 
-	serverAddress, err := getRepositoryServerAddress(cli, *tp.RepositoryServer)
+	serverAddress, err := repositoryServerAddress(cli, *tp.RepositoryServer)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to get the Kopia Repository Server Address")
 	}
@@ -163,7 +163,7 @@ func deleteDataFromServerPodFunc(
 		}
 
 		contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
-		configFile, logDirectory := kankopia.GetCustomConfigFileAndLogDirectory(hostname)
+		configFile, logDirectory := kankopia.CustomConfigFileAndLogDirectory(hostname)
 		cmd := kopiacmd.RepositoryConnectServerCommand(
 			kopiacmd.RepositoryServerCommandArgs{
 				UserPassword:    userPassphrase,
