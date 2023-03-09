@@ -1598,8 +1598,6 @@ Arguments:
    `pod`, Yes, `string`, pod name of the container that you want to backup the data of
    `container`, Yes, `string`, name of the kanister sidecar container
    `includePath`, Yes, `string`, path of the data to be backed up
-   `userPassphrase`, Yes, `string`, user access credentials for kopia repository server
-   `certData`, Yes, `string`, certificate data for kopia repository server
    `snapshotTags`, No, `string`, custom tags to be provided for the kopia snapshots
 Outputs:
 
@@ -1631,8 +1629,6 @@ Example:
         pod: "{{ index .Deployment.Pods 0 }}"
         container: kanister-tools
         includePath: /mnt/data
-        userPassphrase: "{{ toJson .RepositoryServer.Credentials.ServerUserAccess.Data }}"
-        certData: "{{ toJson .RepositoryServer.Credentials.ServerTLS.Data }}"
 
 
 .. _restoredatausingkopiaserver:
