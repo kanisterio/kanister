@@ -37,7 +37,6 @@ func (*deleteDataUsingKopiaServerFunc) Name() string {
 func (*deleteDataUsingKopiaServerFunc) RequiredArgs() []string {
 	return []string{
 		DeleteDataBackupIdentifierArg,
-		RestoreDataImageArg,
 		DeleteDataNamespaceArg,
 	}
 }
@@ -45,7 +44,6 @@ func (*deleteDataUsingKopiaServerFunc) RequiredArgs() []string {
 func (*deleteDataUsingKopiaServerFunc) Arguments() []string {
 	return []string{
 		DeleteDataBackupIdentifierArg,
-		RestoreDataImageArg,
 		DeleteDataNamespaceArg,
 	}
 }
@@ -53,14 +51,10 @@ func (*deleteDataUsingKopiaServerFunc) Arguments() []string {
 func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
 	var (
 		err       error
-		image     string
 		namespace string
 		snapID    string
 	)
 	if err = Arg(args, DeleteDataBackupIdentifierArg, &snapID); err != nil {
-		return nil, err
-	}
-	if err = Arg(args, RestoreDataImageArg, &image); err != nil {
 		return nil, err
 	}
 	if err = Arg(args, DeleteDataNamespaceArg, &namespace); err != nil {
@@ -97,7 +91,6 @@ func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		ctx,
 		cli,
 		hostname,
-		image,
 		deleteDataJobPrefix,
 		namespace,
 		serverAddress,
@@ -112,7 +105,6 @@ func deleteDataFromServer(
 	ctx context.Context,
 	cli kubernetes.Interface,
 	hostname,
-	image,
 	jobPrefix,
 	namespace,
 	serverAddress,
@@ -125,7 +117,7 @@ func deleteDataFromServer(
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
-		Image:        image,
+		Image:        getKanisterToolsImage(),
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
 	}
 
