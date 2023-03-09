@@ -41,7 +41,16 @@ func newLocationPushCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
-			return runLocationPush(c, args)
+			var datamover string
+			profile := c.Flag(profileFlagName).Value.String()
+			repositoryServer := c.Flag(repositoryServerFlagName).Value.String()
+			if profile == "" {
+				datamover = profileFlagName
+			}
+			if repositoryServer == "" {
+				datamover = repositoryServerFlagName
+			}
+			return runLocationPush(c, args, datamover)
 		},
 	}
 	cmd.Flags().StringP(outputNameFlagName, "o", defaultKandoOutputKey, "Specify a name to be used for the output produced by kando. Set to `kandoOutput` by default")
@@ -52,25 +61,44 @@ func outputNameFlag(cmd *cobra.Command) string {
 	return cmd.Flag(outputNameFlagName).Value.String()
 }
 
-func runLocationPush(cmd *cobra.Command, args []string) error {
-	p, err := unmarshalProfileFlag(cmd)
-	if err != nil {
-		return err
-	}
-	s := pathFlag(cmd)
-	ctx := context.Background()
-	if p.Location.Type == crv1alpha1.LocationTypeKopia {
-		outputName := outputNameFlag(cmd)
-		if err = connectToKopiaServer(ctx, p); err != nil {
+func runLocationPush(cmd *cobra.Command, args []string, datamover string) error {
+	switch datamover {
+	case repositoryServerFlagName:
+		rs, err := unmarshalRepositoryServerFlag(cmd)
+		if err != nil {
 			return err
 		}
-		return kopiaLocationPush(ctx, s, outputName, args[0], p.Credential.KopiaServerSecret.Password)
+		path := pathFlag(cmd)
+		ctx := context.Background()
+		if err != nil {
+			return err
+		}
+		outputName := outputNameFlag(cmd)
+		if err = connectToKopiaRepositoryServer(ctx, rs); err != nil {
+			return err
+		}
+		return kopiaLocationPush(ctx, path, outputName, args[0], "")
+	case profileFlagName:
+		p, err := unmarshalProfileFlag(cmd)
+		if err != nil {
+			return err
+		}
+		s := pathFlag(cmd)
+		ctx := context.Background()
+		if p.Location.Type == crv1alpha1.LocationTypeKopia {
+			outputName := outputNameFlag(cmd)
+			if err = connectToKopiaServer(ctx, p); err != nil {
+				return err
+			}
+			return kopiaLocationPush(ctx, s, outputName, args[0], p.Credential.KopiaServerSecret.Password)
+		}
+		source, err := sourceReader(args[0])
+		if err != nil {
+			return err
+		}
+		return locationPush(ctx, p, s, source)
 	}
-	source, err := sourceReader(args[0])
-	if err != nil {
-		return err
-	}
-	return locationPush(ctx, p, s, source)
+	return nil
 }
 
 const usePipeParam = `-`

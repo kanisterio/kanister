@@ -16,6 +16,9 @@ package kando
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 	"io"
 	"os"
 
@@ -115,4 +118,51 @@ func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 		contentCacheSize,
 		metadataCacheSize,
 	)
+}
+
+func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositoryServer) error {
+	contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
+	hostname, userPassphrase, certData, err := secretsFromRepositoryServerCR(rs)
+	if err != nil {
+		return errors.Wrap(err, "Error Retrieving Connection Data from Repository Server")
+	}
+	return repository.ConnectToAPIServer(
+		ctx,
+		certData,
+		userPassphrase,
+		hostname,
+		rs.Address,
+		rs.Username,
+		contentCacheMB,
+		metadataCacheMB,
+	)
+}
+
+func secretsFromRepositoryServerCR(rs *param.RepositoryServer) (hostname, userPassphrase, certData string, err error) {
+	userCredJSON, err := json.Marshal(rs.Credentials.ServerUserAccess.Data)
+
+	certJSON, err := json.Marshal(rs.Credentials.ServerTLS.Data)
+	hostname, userPassphrase, err = hostNameAndUserPassPhraseFromRepoServer(string(userCredJSON))
+	return hostname, userPassphrase, string(certJSON), err
+}
+
+func hostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, error) {
+	var userAccessMap map[string]string
+	if err := json.Unmarshal([]byte(userCreds), &userAccessMap); err != nil {
+		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
+	}
+
+	var userPassPhrase string
+	var hostName string
+	for key, val := range userAccessMap {
+		hostName = key
+		userPassPhrase = val
+	}
+
+	decodedUserPassPhrase, err := base64.StdEncoding.DecodeString(userPassPhrase)
+	if err != nil {
+		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
+	}
+	return hostName, string(decodedUserPassPhrase), nil
+
 }
