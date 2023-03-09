@@ -398,7 +398,7 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 
 	// delete security group
 	log.Info().Print("Deleting security group.", field.M{"app": a.name})
-	_, err = ec2Cli.DeleteSecurityGroup(ctx, a.securityGroupName)
+	_, err = ec2Cli.DeleteSecurityGroup(ctx, a.securityGroupID)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {

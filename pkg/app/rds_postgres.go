@@ -379,7 +379,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 
 	// Delete security group
 	log.Info().Print("Deleting security group.", field.M{"app": pdb.name})
-	_, err = ec2Cli.DeleteSecurityGroup(ctx, pdb.securityGroupName)
+	_, err = ec2Cli.DeleteSecurityGroup(ctx, pdb.securityGroupID)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {

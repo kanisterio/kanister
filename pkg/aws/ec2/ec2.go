@@ -71,10 +71,10 @@ func (e EC2) AuthorizeSecurityGroupIngress(ctx context.Context, groupName, cidr,
 	return e.AuthorizeSecurityGroupIngressWithContext(ctx, sgi)
 }
 
-func (e EC2) DeleteSecurityGroup(ctx context.Context, groupName string) (*ec2.DeleteSecurityGroupOutput, error) {
+func (e EC2) DeleteSecurityGroup(ctx context.Context, groupId string) (*ec2.DeleteSecurityGroupOutput, error) {
 	sgi := &ec2.DeleteSecurityGroupInput{
-		DryRun:    &e.DryRun,
-		GroupName: &groupName,
+		DryRun:  &e.DryRun,
+		GroupId: aws.String(groupId),
 	}
 	return e.DeleteSecurityGroupWithContext(ctx, sgi)
 }
