@@ -39,8 +39,6 @@ func (*deleteDataUsingKopiaServerFunc) RequiredArgs() []string {
 		DeleteDataBackupIdentifierArg,
 		RestoreDataImageArg,
 		DeleteDataNamespaceArg,
-		kankopia.KopiaUserPassphraseArg,
-		kankopia.KopiaTLSCertSecretDataArg,
 	}
 }
 
@@ -49,19 +47,15 @@ func (*deleteDataUsingKopiaServerFunc) Arguments() []string {
 		DeleteDataBackupIdentifierArg,
 		RestoreDataImageArg,
 		DeleteDataNamespaceArg,
-		kankopia.KopiaUserPassphraseArg,
-		kankopia.KopiaTLSCertSecretDataArg,
 	}
 }
 
 func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
 	var (
-		err            error
-		image          string
-		namespace      string
-		snapID         string
-		userPassphrase string
-		cert           string
+		err       error
+		image     string
+		namespace string
+		snapID    string
 	)
 	if err = Arg(args, DeleteDataBackupIdentifierArg, &snapID); err != nil {
 		return nil, err
@@ -72,12 +66,10 @@ func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	if err = Arg(args, DeleteDataNamespaceArg, &namespace); err != nil {
 		return nil, err
 	}
-	if err = Arg(args, kankopia.KopiaUserPassphraseArg, &userPassphrase); err != nil {
-		return nil, err
-	}
 
-	if err = Arg(args, kankopia.KopiaTLSCertSecretDataArg, &cert); err != nil {
-		return nil, err
+	userPassphrase, cert, err := userCredentialsAndServerTLS(&tp)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch User Credentials / Certificate Data from Template Params")
 	}
 
 	fingerprint, err := kankopia.ExtractFingerprintFromCertificateJSON(cert)
