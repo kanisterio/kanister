@@ -267,12 +267,23 @@ func userCredentialsAndServerTLS(tp *param.TemplateParams) {
 	certSecret := tp.RepositoryServer.Credentials.ServerTLS.Data
 	userCredJSON, _ := json.Marshal(userCredSecret)
 	certJSON, _ := json.Marshal(certSecret)
+	var userCredStr, certStr string
+	err := json.Unmarshal(userCredJSON, &userCredStr)
+	if err != nil {
+		log.Print("Error Unmarshalling User Creds")
+		return
+	}
+	err = json.Unmarshal(certJSON, &certStr)
+	if err != nil {
+		log.Print("Error Unmarshalling Cert Data")
+		return
+	}
 	log.Print("---- User Cred Secret Data ----", field.M{
-		"Data": userCredJSON,
-		"Type": reflect.TypeOf(userCredJSON),
+		"Data": userCredStr,
+		"Type": reflect.TypeOf(userCredStr),
 	})
 	log.Print("---- Cert Secret Data ----", field.M{
-		"Data": certJSON,
-		"Type": reflect.TypeOf(certJSON),
+		"Data": certStr,
+		"Type": reflect.TypeOf(certStr),
 	})
 }
