@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"reflect"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -108,8 +107,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		tags = strings.Split(tagsStr, ",")
 	}
 
-	userCredentialsAndServerTLS(&tp)
-
 	fingerprint, err := kankopia.ExtractFingerprintFromCertificateJSON(cert)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch Kopia API Server Certificate Secret Data from Certificate")
@@ -120,6 +117,13 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch Hostname/User Passphrase from Secret")
 	}
+
+	log.Print("---- Cert and User Before ----", field.M{
+		"User": userPassphrase,
+		"Cert": cert,
+	})
+
+	userCredentialsAndServerTLS(&tp)
 
 	cli, err := kube.NewClient()
 	if err != nil {
@@ -267,23 +271,10 @@ func userCredentialsAndServerTLS(tp *param.TemplateParams) {
 	certSecret := tp.RepositoryServer.Credentials.ServerTLS.Data
 	userCredJSON, _ := json.Marshal(userCredSecret)
 	certJSON, _ := json.Marshal(certSecret)
-	var userCredStr, certStr string
-	err := json.Unmarshal(userCredJSON, &userCredStr)
-	if err != nil {
-		log.Print("Error Unmarshalling User Creds")
-		return
-	}
-	err = json.Unmarshal(certJSON, &certStr)
-	if err != nil {
-		log.Print("Error Unmarshalling Cert Data")
-		return
-	}
-	log.Print("---- User Cred Secret Data ----", field.M{
-		"Data": userCredStr,
-		"Type": reflect.TypeOf(userCredStr),
-	})
-	log.Print("---- Cert Secret Data ----", field.M{
-		"Data": certStr,
-		"Type": reflect.TypeOf(certStr),
+	userCred := string(userCredJSON)
+	cert := string(certJSON)
+	log.Print("---- User and Cert ----", field.M{
+		"User Creds": userCred,
+		"Cert":       cert,
 	})
 }
