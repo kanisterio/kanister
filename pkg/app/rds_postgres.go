@@ -47,6 +47,7 @@ type RDSPostgresDB struct {
 	id                       string
 	host                     string
 	databases                []string
+	dbSubnetGroup            string
 	username                 string
 	password                 string
 	accessID                 string
@@ -55,7 +56,6 @@ type RDSPostgresDB struct {
 	sessionToken             string
 	securityGroupID          string
 	securityGroupName        string
-	dbSubnetGroup            string
 	configMapName            string
 	secretName               string
 	bastionDebugWorkloadName string
