@@ -62,18 +62,15 @@ func outputNameFlag(cmd *cobra.Command) string {
 }
 
 func runLocationPush(cmd *cobra.Command, args []string, datamover string) error {
+	path := pathFlag(cmd)
+	ctx := context.Background()
+	outputName := outputNameFlag(cmd)
 	switch datamover {
 	case repositoryServerFlagName:
 		rs, err := unmarshalRepositoryServerFlag(cmd)
 		if err != nil {
 			return err
 		}
-		path := pathFlag(cmd)
-		ctx := context.Background()
-		if err != nil {
-			return err
-		}
-		outputName := outputNameFlag(cmd)
 		if err = connectToKopiaRepositoryServer(ctx, rs); err != nil {
 			return err
 		}
@@ -83,20 +80,17 @@ func runLocationPush(cmd *cobra.Command, args []string, datamover string) error 
 		if err != nil {
 			return err
 		}
-		s := pathFlag(cmd)
-		ctx := context.Background()
 		if p.Location.Type == crv1alpha1.LocationTypeKopia {
-			outputName := outputNameFlag(cmd)
 			if err = connectToKopiaServer(ctx, p); err != nil {
 				return err
 			}
-			return kopiaLocationPush(ctx, s, outputName, args[0], p.Credential.KopiaServerSecret.Password)
+			return kopiaLocationPush(ctx, path, outputName, args[0], p.Credential.KopiaServerSecret.Password)
 		}
 		source, err := sourceReader(args[0])
 		if err != nil {
 			return err
 		}
-		return locationPush(ctx, p, s, source)
+		return locationPush(ctx, p, path, source)
 	}
 	return nil
 }
