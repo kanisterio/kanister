@@ -16,7 +16,6 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"strconv"
@@ -362,14 +361,6 @@ func (a *RDSAuroraMySQLDB) getAWSConfig(ctx context.Context) (*awssdk.Config, st
 	config[aws.SecretAccessKey] = a.secretKey
 	config[aws.SessionToken] = a.sessionToken
 	return aws.GetConfig(ctx, config)
-}
-
-func (a *RDSAuroraMySQLDB) openDBConnection() (*sql.DB, error) {
-	return sql.Open("mysql", fmt.Sprintf("%s:%s@(%s)/%s", a.username, a.password, a.host, a.dbName))
-}
-
-func (a RDSAuroraMySQLDB) closeDBConnection(db *sql.DB) error {
-	return db.Close()
 }
 
 func (a RDSAuroraMySQLDB) execCommand(ctx context.Context, command []string) (string, string, error) {
