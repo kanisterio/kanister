@@ -26,7 +26,6 @@ import (
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -133,7 +132,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	pdb.testWorkloadName = fmt.Sprintf("%s-workload", pdb.name)
 
-	testDeployment := testWorkload(ctx, pdb.testWorkloadName, "postgres", pdb.namespace)
+	testDeployment := BastionWorkload(ctx, pdb.testWorkloadName, "postgres", pdb.namespace)
 	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(context.Background(), testDeployment, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed while creating for test deployment to be created")
@@ -449,33 +448,4 @@ func (pdb RDSPostgresDB) execCommand(ctx context.Context, command []string) (str
 		return "", "", err
 	}
 	return kube.Exec(pdb.cli, pdb.namespace, podName, containerName, command, nil)
-}
-
-// testWorkload creates Deployment Resource Manifest from which postgres command can be executed
-func testWorkload(ctx context.Context, name string, image string, namespace string) *appsv1.Deployment {
-	return &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": name}},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": name,
-					},
-				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{
-						{
-							Name:    name,
-							Image:   image,
-							Command: []string{"sleep", "infinity"},
-						},
-					},
-				},
-			},
-		},
-	}
 }
