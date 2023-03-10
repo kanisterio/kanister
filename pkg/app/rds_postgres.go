@@ -133,13 +133,13 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	pdb.testWorkloadName = fmt.Sprintf("%s-workload", pdb.name)
 
 	testDeployment := bastionWorkload(ctx, pdb.testWorkloadName, "postgres", pdb.namespace)
-	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(context.Background(), testDeployment, metav1.CreateOptions{})
+	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, testDeployment, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create test deployment %s", pdb.testWorkloadName)
+		return errors.Wrapf(err, "Failed to create test deployment %s , app: %s", pdb.testWorkloadName, pdb.name)
 	}
 
 	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, pdb.namespace, pdb.testWorkloadName); err != nil {
-		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready", pdb.testWorkloadName)
+		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app: %s", pdb.testWorkloadName, pdb.name)
 	}
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
@@ -272,7 +272,7 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 
 	_, stderr, err := pdb.execCommand(ctx, pingCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database: %s", stderr)
+		return errors.Wrapf(err, "Error while Pinging the database: %s, app: %s", stderr, pdb.name)
 	}
 	log.Print("Ping to the application was successful.", field.M{"app": pdb.name})
 	return nil
@@ -287,7 +287,7 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 	insertQuery := []string{"sh", "-c", insert}
 	_, stderr, err := pdb.execCommand(ctx, insertQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
+		return errors.Wrapf(err, "Error while inserting data into table: %s, app: %s", stderr, pdb.name)
 	}
 	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
 	return nil
@@ -306,7 +306,7 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 
 	rowsReturned, err := strconv.Atoi(stdout)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting response of count query: %s", stderr)
+		return 0, errors.Wrapf(err, "Error while converting response of count query: %s, app: %s", stderr, pdb.name)
 	}
 
 	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": rowsReturned})
@@ -319,7 +319,7 @@ func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
 	deleteQuery := []string{"sh", "-c", delete}
 	_, stderr, err := pdb.execCommand(ctx, deleteQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while deleting data from table: %s", stderr)
+		return errors.Wrapf(err, "Error while deleting data from table: %s, app: %s", stderr, pdb.name)
 	}
 	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
 	return nil
@@ -333,7 +333,7 @@ func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 	execQuery := []string{"sh", "-c", createTable}
 	_, stderr, err := pdb.execCommand(ctx, execQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while initializing the database: %s", stderr)
+		return errors.Wrapf(err, "Error while initializing the database: %s, app: %s", stderr, pdb.name)
 	}
 	return nil
 }
@@ -415,7 +415,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	// Remove workload object created for executing commands
 	err = pdb.cli.AppsV1().Deployments(pdb.namespace).Delete(ctx, pdb.testWorkloadName, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Error deleting Workload %s", pdb.testWorkloadName)
+		return errors.Wrapf(err, "Error deleting Workload name=%s app=%s", pdb.testWorkloadName, pdb.name)
 	}
 
 	return nil
