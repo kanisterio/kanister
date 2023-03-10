@@ -55,9 +55,11 @@ type RDSPostgresDB struct {
 	sessionToken             string
 	securityGroupID          string
 	securityGroupName        string
+	dbSubnetGroup            string
 	configMapName            string
 	secretName               string
 	bastionDebugWorkloadName string
+	vpcID                    string
 }
 
 const (
@@ -130,6 +132,12 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 
+	// Create rds client
+	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
+	if err != nil {
+		return err
+	}
+
 	pdb.bastionDebugWorkloadName = fmt.Sprintf("%s-workload", pdb.name)
 
 	testDeployment := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
@@ -141,6 +149,39 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, pdb.namespace, pdb.bastionDebugWorkloadName); err != nil {
 		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
+
+	pdb.vpcID = os.Getenv("VPC_ID")
+
+	// VPCId is not provided, use Default VPC
+	if pdb.vpcID == "" {
+		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
+		if err != nil {
+			return err
+		}
+		if len(defaultVpc.Vpcs) == 0 {
+			return fmt.Errorf("No default VPC found")
+		}
+		pdb.vpcID = *defaultVpc.Vpcs[0].VpcId
+	}
+
+	// describe subnets in the VPC
+	resp, err := ec2Cli.DescribeSubnets(ctx, pdb.vpcID)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to describe subnets")
+	}
+
+	// Extract subnet IDs from the response
+	var subnetIDs []string
+	for _, subnet := range resp.Subnets {
+		subnetIDs = append(subnetIDs, *subnet.SubnetId)
+	}
+	// create a subnetgroup with subnets in the VPC
+	subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", pdb.name), "kanister-test-subnet-group", subnetIDs)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create subnet group")
+	}
+	pdb.dbSubnetGroup = *subnetGroup.DBSubnetGroup.DBSubnetGroupName
+
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
 	sg, err := ec2Cli.CreateSecurityGroup(ctx, pdb.securityGroupName, "kanister-test-security-group")
@@ -152,12 +193,6 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	// Add ingress rule
 	log.Info().Print("Adding ingress rule to security group.", field.M{"app": pdb.name})
 	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, pdb.securityGroupName, "0.0.0.0/0", "tcp", 5432)
-	if err != nil {
-		return err
-	}
-
-	// Create rds client
-	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
 		return err
 	}
@@ -397,6 +432,21 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 	ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
 	if err != nil {
 		return errors.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
+	}
+
+	// Delete dbSubnetGroup
+	log.Info().Print("Deleting db subnet group.", field.M{"app": pdb.name})
+	_, err = rdsCli.DeleteDBSubnetGroup(ctx, pdb.dbSubnetGroup)
+	if err != nil {
+		// If the subnet group does not exist, ignore the error and return
+		if err, ok := err.(awserr.Error); ok {
+			switch err.Code() {
+			case awsrds.ErrCodeDBSubnetGroupNotFoundFault:
+				log.Info().Print("Subnet Group Does not exist: ErrCodeDBSubnetGroupNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
+			default:
+				return errors.Wrapf(err, "Failed to delete subnet group. You may need to delete it manually. app=rds-postgresql id=%s", pdb.id)
+			}
+		}
 	}
 
 	// Delete security group
