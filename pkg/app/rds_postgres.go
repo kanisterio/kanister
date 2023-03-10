@@ -41,23 +41,23 @@ import (
 )
 
 type RDSPostgresDB struct {
-	name              string
-	cli               kubernetes.Interface
-	namespace         string
-	id                string
-	host              string
-	databases         []string
-	username          string
-	password          string
-	accessID          string
-	secretKey         string
-	region            string
-	sessionToken      string
-	securityGroupID   string
-	securityGroupName string
-	configMapName     string
-	secretName        string
-	testWorkloadName  string
+	name                     string
+	cli                      kubernetes.Interface
+	namespace                string
+	id                       string
+	host                     string
+	databases                []string
+	username                 string
+	password                 string
+	accessID                 string
+	secretKey                string
+	region                   string
+	sessionToken             string
+	securityGroupID          string
+	securityGroupName        string
+	configMapName            string
+	secretName               string
+	bastionDebugWorkloadName string
 }
 
 const (
@@ -130,16 +130,16 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 
-	pdb.testWorkloadName = fmt.Sprintf("%s-workload", pdb.name)
+	pdb.bastionDebugWorkloadName = fmt.Sprintf("%s-workload", pdb.name)
 
-	testDeployment := bastionDebugWorkloadSpec(ctx, pdb.testWorkloadName, "postgres", pdb.namespace)
+	testDeployment := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
 	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, testDeployment, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create test deployment %s , app: %s", pdb.testWorkloadName, pdb.name)
+		return errors.Wrapf(err, "Failed to create test deployment %s , app: %s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
 
-	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, pdb.namespace, pdb.testWorkloadName); err != nil {
-		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app: %s", pdb.testWorkloadName, pdb.name)
+	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, pdb.namespace, pdb.bastionDebugWorkloadName); err != nil {
+		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
@@ -413,9 +413,9 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 		}
 	}
 	// Remove workload object created for executing commands
-	err = pdb.cli.AppsV1().Deployments(pdb.namespace).Delete(ctx, pdb.testWorkloadName, metav1.DeleteOptions{})
+	err = pdb.cli.AppsV1().Deployments(pdb.namespace).Delete(ctx, pdb.bastionDebugWorkloadName, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Error deleting Workload name=%s app=%s", pdb.testWorkloadName, pdb.name)
+		return errors.Wrapf(err, "Error deleting Workload name=%s app=%s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
 
 	return nil
@@ -443,7 +443,7 @@ func makeYamlList(dbs []string) string {
 }
 
 func (pdb RDSPostgresDB) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podName, containerName, err := kube.GetPodContainerFromDeployment(ctx, pdb.cli, pdb.namespace, pdb.testWorkloadName)
+	podName, containerName, err := kube.GetPodContainerFromDeployment(ctx, pdb.cli, pdb.namespace, pdb.bastionDebugWorkloadName)
 	if err != nil || podName == "" {
 		return "", "", err
 	}
