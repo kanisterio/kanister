@@ -23,7 +23,6 @@ import (
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
-	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -346,7 +345,7 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	descOp, err := rdsCli.DescribeDBClusters(ctx, a.id)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
+			if aerr.Code() != awsrds.ErrCodeDBClusterNotFoundFault {
 				return err
 			}
 			log.Print("Aurora DB cluster is not found")
