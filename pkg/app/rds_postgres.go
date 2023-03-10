@@ -132,7 +132,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	pdb.testWorkloadName = fmt.Sprintf("%s-workload", pdb.name)
 
-	testDeployment := bastionWorkload(ctx, pdb.testWorkloadName, "postgres", pdb.namespace)
+	testDeployment := bastionDebugWorkloadSpec(ctx, pdb.testWorkloadName, "postgres", pdb.namespace)
 	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, testDeployment, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create test deployment %s , app: %s", pdb.testWorkloadName, pdb.name)
@@ -301,7 +301,7 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	countQuery := []string{"sh", "-c", count}
 	stdout, stderr, err := pdb.execCommand(ctx, countQuery)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting data into table: %s", stderr)
+		return 0, errors.Wrapf(err, "Error while counting data into table: %s, app: %s", stderr, pdb.name)
 	}
 
 	rowsReturned, err := strconv.Atoi(stdout)
@@ -314,7 +314,7 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 }
 
 func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
-	log.Print("Reseting database", field.M{"app": pdb.name})
+	log.Print("Resetting database", field.M{"app": pdb.name})
 	delete := fmt.Sprintf(postgresConnectionString+"\"DROP TABLE IF EXISTS inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
 	deleteQuery := []string{"sh", "-c", delete}
 	_, stderr, err := pdb.execCommand(ctx, deleteQuery)

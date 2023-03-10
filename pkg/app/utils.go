@@ -66,8 +66,8 @@ func getLabelOfApp(appName string, storageType storage) string {
 	return fmt.Sprintf("app=%s-%s", appName, storageType)
 }
 
-// bastionWorkload creates Deployment Resource Manifest from which RDS database queries can be executed
-func bastionWorkload(ctx context.Context, name string, image string, namespace string) *appsv1.Deployment {
+// bastionDebugWorkloadSpec creates Deployment Resource Manifest from which RDS database queries can be executed
+func bastionDebugWorkloadSpec(ctx context.Context, name string, image string, namespace string) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
