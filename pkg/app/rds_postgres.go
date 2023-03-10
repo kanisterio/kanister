@@ -135,7 +135,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	testDeployment := BastionWorkload(ctx, pdb.testWorkloadName, "postgres", pdb.namespace)
 	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(context.Background(), testDeployment, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed while creating for test deployment to be created")
+		return errors.Wrapf(err, "Failed to create test deployment %s", pdb.testWorkloadName)
 	}
 
 	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, pdb.namespace, pdb.testWorkloadName); err != nil {
@@ -413,9 +413,9 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 		}
 	}
 	// Remove workload object created for executing commands
-	err = pdb.cli.AppsV1().Deployments(pdb.namespace).Delete(ctx, "postgres", metav1.DeleteOptions{})
+	err = pdb.cli.AppsV1().Deployments(pdb.namespace).Delete(ctx, pdb.testWorkloadName, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Error deleting Workload %s", "postgres")
+		return errors.Wrapf(err, "Error deleting Workload %s", pdb.testWorkloadName)
 	}
 
 	return nil
