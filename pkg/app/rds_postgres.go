@@ -444,7 +444,7 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 			case awsrds.ErrCodeDBSubnetGroupNotFoundFault:
 				log.Info().Print("Subnet Group Does not exist: ErrCodeDBSubnetGroupNotFoundFault.", field.M{"app": pdb.name, "id": pdb.id})
 			default:
-				return errors.Wrapf(err, "Failed to delete subnet group. You may need to delete it manually. app=rds-postgresql id=%s", pdb.id)
+				return errors.Wrapf(err, "Failed to delete db subnet group. You may need to delete it manually. app=rds-postgresql name=%s", pdb.dbSubnetGroup)
 			}
 		}
 	}
