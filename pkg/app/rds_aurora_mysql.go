@@ -47,21 +47,21 @@ const (
 )
 
 type RDSAuroraMySQLDB struct {
-	name              string
-	cli               kubernetes.Interface
-	namespace         string
-	id                string
-	host              string
-	dbName            string
-	username          string
-	password          string
-	accessID          string
-	secretKey         string
-	region            string
-	sessionToken      string
-	securityGroupID   string
-	securityGroupName string
-	testWorkloadName  string
+	name                     string
+	cli                      kubernetes.Interface
+	namespace                string
+	id                       string
+	host                     string
+	dbName                   string
+	username                 string
+	password                 string
+	accessID                 string
+	secretKey                string
+	region                   string
+	sessionToken             string
+	securityGroupID          string
+	securityGroupName        string
+	bastionDebugWorkloadName string
 }
 
 func NewRDSAuroraMySQLDB(name, region string) App {
@@ -127,16 +127,16 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return err
 	}
 
-	a.testWorkloadName = fmt.Sprintf("%s-workload", a.name)
+	a.bastionDebugWorkloadName = fmt.Sprintf("%s-workload", a.name)
 
-	testDeployment := bastionDebugWorkloadSpec(ctx, a.testWorkloadName, "mysql", a.namespace)
+	testDeployment := bastionDebugWorkloadSpec(ctx, a.bastionDebugWorkloadName, "mysql", a.namespace)
 	_, err = a.cli.AppsV1().Deployments(a.namespace).Create(ctx, testDeployment, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create test deployment %s, app=%s", a.testWorkloadName, a.name)
+		return errors.Wrapf(err, "Failed to create test deployment %s, app=%s", a.bastionDebugWorkloadName, a.name)
 	}
 
-	if err := kube.WaitOnDeploymentReady(ctx, a.cli, a.namespace, a.testWorkloadName); err != nil {
-		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app=%s", a.testWorkloadName, a.name)
+	if err := kube.WaitOnDeploymentReady(ctx, a.cli, a.namespace, a.bastionDebugWorkloadName); err != nil {
+		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app=%s", a.bastionDebugWorkloadName, a.name)
 	}
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": a.name, "name": a.securityGroupName})
@@ -343,9 +343,9 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	}
 
 	// Remove workload object created for executing commands
-	err = a.cli.AppsV1().Deployments(a.namespace).Delete(ctx, a.testWorkloadName, metav1.DeleteOptions{})
+	err = a.cli.AppsV1().Deployments(a.namespace).Delete(ctx, a.bastionDebugWorkloadName, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Error deleting Workload %s, app=%s", a.testWorkloadName, a.name)
+		return errors.Wrapf(err, "Error deleting Workload %s, app=%s", a.bastionDebugWorkloadName, a.name)
 	}
 	return nil
 }
@@ -364,7 +364,7 @@ func (a *RDSAuroraMySQLDB) getAWSConfig(ctx context.Context) (*awssdk.Config, st
 }
 
 func (a RDSAuroraMySQLDB) execCommand(ctx context.Context, command []string) (string, string, error) {
-	podName, containerName, err := kube.GetPodContainerFromDeployment(ctx, a.cli, a.namespace, a.testWorkloadName)
+	podName, containerName, err := kube.GetPodContainerFromDeployment(ctx, a.cli, a.namespace, a.bastionDebugWorkloadName)
 	if err != nil || podName == "" {
 		return "", "", err
 	}
