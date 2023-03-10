@@ -129,14 +129,14 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 
 	a.testWorkloadName = fmt.Sprintf("%s-workload", a.name)
 
-	testDeployment := bastionWorkload(ctx, a.testWorkloadName, "mysql", a.namespace)
-	_, err = a.cli.AppsV1().Deployments(a.namespace).Create(context.Background(), testDeployment, metav1.CreateOptions{})
+	testDeployment := bastionDebugWorkloadSpec(ctx, a.testWorkloadName, "mysql", a.namespace)
+	_, err = a.cli.AppsV1().Deployments(a.namespace).Create(ctx, testDeployment, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create test deployment %s", a.testWorkloadName)
+		return errors.Wrapf(err, "Failed to create test deployment %s, app=%s", a.testWorkloadName, a.name)
 	}
 
 	if err := kube.WaitOnDeploymentReady(ctx, a.cli, a.namespace, a.testWorkloadName); err != nil {
-		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready", a.testWorkloadName)
+		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app=%s", a.testWorkloadName, a.name)
 	}
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": a.name, "name": a.securityGroupName})
@@ -220,7 +220,7 @@ func (a *RDSAuroraMySQLDB) Ping(ctx context.Context) error {
 
 	_, stderr, err := a.execCommand(ctx, pingCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while Pinging the database: %s", stderr)
+		return errors.Wrapf(err, "Error while Pinging the database: %s, app: %s", stderr, a.name)
 	}
 
 	log.Print("Ping to the application was success.", field.M{"app": a.name})
@@ -235,7 +235,7 @@ func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
 	insertQuery := []string{"sh", "-c", insert}
 	_, stderr, err := a.execCommand(ctx, insertQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting data into table: %s", stderr)
+		return errors.Wrapf(err, "Error while inserting data into table: %s, app: %s", stderr, a.name)
 	}
 	log.Info().Print("Inserted a row in test db.", field.M{"app": a.name})
 	return nil
@@ -249,12 +249,12 @@ func (a *RDSAuroraMySQLDB) Count(ctx context.Context) (int, error) {
 	countQuery := []string{"sh", "-c", count}
 	stdout, stderr, err := a.execCommand(ctx, countQuery)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting data into table: %s", stderr)
+		return 0, errors.Wrapf(err, "Error while counting data into table: %s, app: %s", stderr, a.name)
 	}
 
 	rowsReturned, err := strconv.Atoi(stdout)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting response of count query: %s", stderr)
+		return 0, errors.Wrapf(err, "Error while converting response of count query: %s, app: %s", stderr, a.name)
 	}
 
 	log.Info().Print("Counting rows in test db.", field.M{"app": a.name, "count": rowsReturned})
@@ -268,7 +268,7 @@ func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
 	deleteQuery := []string{"sh", "-c", delete}
 	_, stderr, err := a.execCommand(ctx, deleteQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while deleting data into table: %s", stderr)
+		return errors.Wrapf(err, "Error while deleting data into table: %s, app: %s", stderr, a.name)
 	}
 
 	log.Info().Print("Database reset successful!", field.M{"app": a.name})
@@ -282,7 +282,7 @@ func (a *RDSAuroraMySQLDB) Initialize(ctx context.Context) error {
 	createQuery := []string{"sh", "-c", createTable}
 	_, stderr, err := a.execCommand(ctx, createQuery)
 	if err != nil {
-		return errors.Wrapf(err, "Error while creating the database: %s", stderr)
+		return errors.Wrapf(err, "Error while creating the database: %s, app: %s", stderr, a.name)
 	}
 	return nil
 }
@@ -345,7 +345,7 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	// Remove workload object created for executing commands
 	err = a.cli.AppsV1().Deployments(a.namespace).Delete(ctx, a.testWorkloadName, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		return errors.Wrapf(err, "Error deleting Workload %s", a.testWorkloadName)
+		return errors.Wrapf(err, "Error deleting Workload %s, app=%s", a.testWorkloadName, a.name)
 	}
 	return nil
 }
