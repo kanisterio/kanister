@@ -22,6 +22,7 @@ import (
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -53,6 +54,7 @@ type RDSAuroraMySQLDB struct {
 	id                string
 	host              string
 	dbName            string
+	dbSubnetGroup     string
 	username          string
 	password          string
 	accessID          string
@@ -62,6 +64,7 @@ type RDSAuroraMySQLDB struct {
 	securityGroupID   string
 	securityGroupName string
 	testWorkloadName  string
+	vpcID             string
 }
 
 func NewRDSAuroraMySQLDB(name, region string) App {
@@ -138,6 +141,44 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	if err := kube.WaitOnDeploymentReady(ctx, a.cli, a.namespace, a.testWorkloadName); err != nil {
 		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app=%s", a.testWorkloadName, a.name)
 	}
+
+	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
+	if err != nil {
+		return err
+	}
+
+	a.vpcID = os.Getenv("VPC_ID")
+
+	// VPCId is not provided, use Default VPC
+	if a.vpcID == "" {
+		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
+		if err != nil {
+			return err
+		}
+		if len(defaultVpc.Vpcs) == 0 {
+			return fmt.Errorf("No default VPC found")
+		}
+		a.vpcID = *defaultVpc.Vpcs[0].VpcId
+	}
+
+	// describe subnets in the VPC
+	resp, err := ec2Cli.DescribeSubnets(ctx, a.vpcID)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to describe subnets")
+	}
+
+	// Extract subnet IDs from the response
+	var subnetIDs []string
+	for _, subnet := range resp.Subnets {
+		subnetIDs = append(subnetIDs, *subnet.SubnetId)
+	}
+	// create a subnetgroup with subnets in the VPC
+	subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", a.name), "kanister-test-subnet-group", subnetIDs)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create subnet group")
+	}
+	a.dbSubnetGroup = *subnetGroup.DBSubnetGroup.DBSubnetGroupName
+
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": a.name, "name": a.securityGroupName})
 	sg, err := ec2Cli.CreateSecurityGroup(ctx, a.securityGroupName, "To allow ingress to Aurora DB cluster")
@@ -150,11 +191,6 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupName, "0.0.0.0/0", "tcp", 3306)
 	if err != nil {
 		return errors.Wrap(err, "Error authorizing security group")
-	}
-
-	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
-	if err != nil {
-		return err
 	}
 
 	// Create RDS instance
@@ -328,6 +364,21 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "Failed to create ec2 client.")
 	}
 
+	// Delete dbSubnetGroup
+	log.Info().Print("Deleting db subnet group.", field.M{"app": a.name})
+	_, err = rdsCli.DeleteDBSubnetGroup(ctx, a.dbSubnetGroup)
+	if err != nil {
+		// If the subnet group does not exist, ignore the error and return
+		if err, ok := err.(awserr.Error); ok {
+			switch err.Code() {
+			case awsrds.ErrCodeDBSubnetGroupNotFoundFault:
+				log.Info().Print("Subnet Group Does not exist: ErrCodeDBSubnetGroupNotFoundFault.", field.M{"app": a.name, "name": a.dbSubnetGroup})
+			default:
+				return errors.Wrapf(err, "Failed to delete subnet group. You may need to delete it manually. app=%s name=%s", a.name, a.dbSubnetGroup)
+			}
+		}
+	}
+
 	// delete security group
 	log.Info().Print("Deleting security group.", field.M{"app": a.name})
 	_, err = ec2Cli.DeleteSecurityGroup(ctx, a.securityGroupID)
@@ -337,7 +388,7 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 			case "InvalidGroup.NotFound":
 				log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": a.name, "name": a.securityGroupName})
 			default:
-				return errors.Wrapf(err, "Failed to delete security group. You may need to delete it manually. app=rds-postgresql name=%s", a.securityGroupName)
+				return errors.Wrapf(err, "Failed to delete security group. You may need to delete it manually. app=%s name=%s", a.name, a.securityGroupName)
 			}
 		}
 	}
