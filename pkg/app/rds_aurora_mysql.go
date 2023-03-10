@@ -63,7 +63,7 @@ type RDSAuroraMySQLDB struct {
 	securityGroupID          string
 	securityGroupName        string
 	bastionDebugWorkloadName string
-	VpcID                    string
+	vpcID                    string
 }
 
 func NewRDSAuroraMySQLDB(name, region string) App {
