@@ -50,6 +50,9 @@ func newLocationPushCommand() *cobra.Command {
 			if repositoryServer != "" {
 				datamover = repositoryServerFlagName
 			}
+			if profile != "" && repositoryServer != "" {
+				return errors.New("Please Provide either --profile / --kopia-repo-server")
+			}
 			return runLocationPush(c, args, datamover)
 		},
 	}
@@ -65,6 +68,7 @@ func runLocationPush(cmd *cobra.Command, args []string, datamover string) error 
 	path := pathFlag(cmd)
 	ctx := context.Background()
 	outputName := outputNameFlag(cmd)
+
 	switch datamover {
 	case repositoryServerFlagName:
 		rs, err := unmarshalRepositoryServerFlag(cmd)
@@ -76,6 +80,7 @@ func runLocationPush(cmd *cobra.Command, args []string, datamover string) error 
 			return err
 		}
 		return kopiaLocationPush(ctx, path, outputName, args[0], password)
+
 	case profileFlagName:
 		p, err := unmarshalProfileFlag(cmd)
 		if err != nil {
