@@ -120,11 +120,11 @@ func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 	)
 }
 
-func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositoryServer) error {
+func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositoryServer) (error, string) {
 	contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
 	hostname, userPassphrase, certData, err := secretsFromRepositoryServerCR(rs)
 	if err != nil {
-		return errors.Wrap(err, "Error Retrieving Connection Data from Repository Server")
+		return errors.Wrap(err, "Error Retrieving Connection Data from Repository Server"), ""
 	}
 	return repository.ConnectToAPIServer(
 		ctx,
@@ -135,7 +135,7 @@ func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositorySer
 		rs.Username,
 		contentCacheMB,
 		metadataCacheMB,
-	)
+	), userPassphrase
 }
 
 func secretsFromRepositoryServerCR(rs *param.RepositoryServer) (hostname, userPassphrase, certData string, err error) {

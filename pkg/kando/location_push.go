@@ -71,10 +71,11 @@ func runLocationPush(cmd *cobra.Command, args []string, datamover string) error 
 		if err != nil {
 			return err
 		}
-		if err = connectToKopiaRepositoryServer(ctx, rs); err != nil {
+		err, password := connectToKopiaRepositoryServer(ctx, rs)
+		if err != nil {
 			return err
 		}
-		return kopiaLocationPush(ctx, path, outputName, args[0], "")
+		return kopiaLocationPush(ctx, path, outputName, args[0], password)
 	case profileFlagName:
 		p, err := unmarshalProfileFlag(cmd)
 		if err != nil {
