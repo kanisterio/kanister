@@ -44,10 +44,10 @@ func newLocationPushCommand() *cobra.Command {
 			var datamover string
 			profile := c.Flag(profileFlagName).Value.String()
 			repositoryServer := c.Flag(repositoryServerFlagName).Value.String()
-			if profile == "" {
+			if profile != "" {
 				datamover = profileFlagName
 			}
-			if repositoryServer == "" {
+			if repositoryServer != "" {
 				datamover = repositoryServerFlagName
 			}
 			return runLocationPush(c, args, datamover)

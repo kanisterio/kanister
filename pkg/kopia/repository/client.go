@@ -50,7 +50,10 @@ func ConnectToAPIServer(
 	// Extra fingerprint from the TLS Certificate secret
 	fingerprint, err := kopia.ExtractFingerprintFromCertificate(tlsCert)
 	if err != nil {
-		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API Server Certificate Secret")
+		fingerprint, err = kopia.ExtractFingerprintFromCertificateJSON(tlsCert)
+		if err != nil {
+			return errors.Wrap(err, "Failed to extract fingerprint from Kopia API Server Certificate Secret")
+		}
 	}
 
 	serverInfo := &repo.APIServerInfo{
