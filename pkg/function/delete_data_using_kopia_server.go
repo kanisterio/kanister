@@ -82,18 +82,13 @@ func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		return nil, errors.Wrap(err, "Failed to create Kubernetes client")
 	}
 
-	serverAddress, err := repositoryServerAddress(cli, *tp.RepositoryServer)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get the Kopia Repository Server Address")
-	}
-
 	return deleteDataFromServer(
 		ctx,
 		cli,
 		hostname,
 		deleteDataJobPrefix,
 		namespace,
-		serverAddress,
+		tp.RepositoryServer.Address,
 		fingerprint,
 		snapID,
 		username,
