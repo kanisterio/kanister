@@ -140,8 +140,8 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	pdb.bastionDebugWorkloadName = fmt.Sprintf("%s-workload", pdb.name)
 
-	testDeployment := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
-	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, testDeployment, metav1.CreateOptions{})
+	deploymentSpec := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
+	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create test deployment %s , app: %s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
@@ -301,9 +301,9 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 		return errors.New("Databases are missing from configmap")
 	}
 
-	isReadyCommand := fmt.Sprintf(postgresConnectionString+"'SELECT version();'", dbsecret.Data["password"], dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], databases[0])
+	isReadyQuery := fmt.Sprintf(postgresConnectionString+"'SELECT version();'", dbsecret.Data["password"], dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], databases[0])
 
-	pingCommand := []string{"sh", "-c", isReadyCommand}
+	pingCommand := []string{"sh", "-c", isReadyQuery}
 
 	_, stderr, err := pdb.execCommand(ctx, pingCommand)
 	if err != nil {
@@ -316,11 +316,11 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 	log.Print("Adding entry to database", field.M{"app": pdb.name})
 	now := time.Now().Format(time.RFC3339Nano)
-	insert := fmt.Sprintf(postgresConnectionString+
+	insertQuery := fmt.Sprintf(postgresConnectionString+
 		"\"INSERT INTO inventory (name) VALUES ('%s');\"", pdb.password, pdb.host, pdb.username, pdb.databases[0], now)
 
-	insertQuery := []string{"sh", "-c", insert}
-	_, stderr, err := pdb.execCommand(ctx, insertQuery)
+	insertCommand := []string{"sh", "-c", insertQuery}
+	_, stderr, err := pdb.execCommand(ctx, insertCommand)
 	if err != nil {
 		return errors.Wrapf(err, "Error while inserting data into table: %s, app: %s", stderr, pdb.name)
 	}
@@ -330,11 +330,11 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 
 func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting entries from database", field.M{"app": pdb.name})
-	count := fmt.Sprintf(postgresConnectionString+
+	countQuery := fmt.Sprintf(postgresConnectionString+
 		"\"SELECT COUNT(*) FROM inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
 
-	countQuery := []string{"sh", "-c", count}
-	stdout, stderr, err := pdb.execCommand(ctx, countQuery)
+	countCommand := []string{"sh", "-c", countQuery}
+	stdout, stderr, err := pdb.execCommand(ctx, countCommand)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error while counting data into table: %s, app: %s", stderr, pdb.name)
 	}
@@ -350,9 +350,9 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 
 func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
 	log.Print("Resetting database", field.M{"app": pdb.name})
-	delete := fmt.Sprintf(postgresConnectionString+"\"DROP TABLE IF EXISTS inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
-	deleteQuery := []string{"sh", "-c", delete}
-	_, stderr, err := pdb.execCommand(ctx, deleteQuery)
+	deleteQuery := fmt.Sprintf(postgresConnectionString+"\"DROP TABLE IF EXISTS inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
+	deleteCommand := []string{"sh", "-c", deleteQuery}
+	_, stderr, err := pdb.execCommand(ctx, deleteCommand)
 	if err != nil {
 		return errors.Wrapf(err, "Error while deleting data from table: %s, app: %s", stderr, pdb.name)
 	}
@@ -364,9 +364,9 @@ func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
 func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 	// Create table.
 	log.Print("Initializing database", field.M{"app": pdb.name})
-	createTable := fmt.Sprintf(postgresConnectionString+"\"CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50));\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
-	execQuery := []string{"sh", "-c", createTable}
-	_, stderr, err := pdb.execCommand(ctx, execQuery)
+	createQuery := fmt.Sprintf(postgresConnectionString+"\"CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50));\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
+	createCommand := []string{"sh", "-c", createQuery}
+	_, stderr, err := pdb.execCommand(ctx, createCommand)
 	if err != nil {
 		return errors.Wrapf(err, "Error while initializing the database: %s, app: %s", stderr, pdb.name)
 	}

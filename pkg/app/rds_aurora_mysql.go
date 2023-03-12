@@ -131,8 +131,9 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 
 	a.bastionDebugWorkloadName = fmt.Sprintf("%s-workload", a.name)
 
-	testDeployment := bastionDebugWorkloadSpec(ctx, a.bastionDebugWorkloadName, "mysql", a.namespace)
-	_, err = a.cli.AppsV1().Deployments(a.namespace).Create(ctx, testDeployment, metav1.CreateOptions{})
+
+	deploymentSpec := bastionDebugWorkloadSpec(ctx, a.bastionDebugWorkloadName, "mysql", a.namespace)
+	_, err = a.cli.AppsV1().Deployments(a.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create test deployment %s, app=%s", a.bastionDebugWorkloadName, a.name)
 	}
@@ -249,9 +250,9 @@ func (a *RDSAuroraMySQLDB) IsReady(context.Context) (bool, error) {
 
 func (a *RDSAuroraMySQLDB) Ping(ctx context.Context) error {
 	log.Print("Pinging rds aurora database", field.M{"app": a.name})
-	isReadyCommand := fmt.Sprintf(mysqlConnectionString+"'SELECT 1;'", a.host, a.username, a.password, a.dbName)
+	isReadyQuery := fmt.Sprintf(mysqlConnectionString+"'SELECT 1;'", a.host, a.username, a.password, a.dbName)
 
-	pingCommand := []string{"sh", "-c", isReadyCommand}
+	pingCommand := []string{"sh", "-c", isReadyQuery}
 
 	_, stderr, err := a.execCommand(ctx, pingCommand)
 	if err != nil {
@@ -264,11 +265,11 @@ func (a *RDSAuroraMySQLDB) Ping(ctx context.Context) error {
 
 func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
 	log.Print("Adding entry to database", field.M{"app": a.name})
-	insert := fmt.Sprintf(mysqlConnectionString+
+	insertQuery := fmt.Sprintf(mysqlConnectionString+
 		"\"INSERT INTO pets VALUES ('Puffball', 'Diane', 'hamster', 'f', '1999-03-30', 'NULL');\"", a.host, a.username, a.password, a.dbName)
 
-	insertQuery := []string{"sh", "-c", insert}
-	_, stderr, err := a.execCommand(ctx, insertQuery)
+	insertCommand := []string{"sh", "-c", insertQuery}
+	_, stderr, err := a.execCommand(ctx, insertCommand)
 	if err != nil {
 		return errors.Wrapf(err, "Error while inserting data into table: %s, app: %s", stderr, a.name)
 	}
@@ -278,11 +279,11 @@ func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
 
 func (a *RDSAuroraMySQLDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting entries from database", field.M{"app": a.name})
-	count := fmt.Sprintf(mysqlConnectionString+
+	countQuery := fmt.Sprintf(mysqlConnectionString+
 		"\"SELECT COUNT(*) FROM pets;\"", a.host, a.username, a.password, a.dbName)
 
-	countQuery := []string{"sh", "-c", count}
-	stdout, stderr, err := a.execCommand(ctx, countQuery)
+	countCommand := []string{"sh", "-c", countQuery}
+	stdout, stderr, err := a.execCommand(ctx, countCommand)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error while counting data into table: %s, app: %s", stderr, a.name)
 	}
@@ -299,9 +300,9 @@ func (a *RDSAuroraMySQLDB) Count(ctx context.Context) (int, error) {
 func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
 	log.Print("Resetting the mysql instance.", field.M{"app": a.name})
 
-	delete := fmt.Sprintf(mysqlConnectionString+"\"DROP TABLE IF EXISTS pets;\"", a.host, a.username, a.password, a.dbName)
-	deleteQuery := []string{"sh", "-c", delete}
-	_, stderr, err := a.execCommand(ctx, deleteQuery)
+	deleteQuery := fmt.Sprintf(mysqlConnectionString+"\"DROP TABLE IF EXISTS pets;\"", a.host, a.username, a.password, a.dbName)
+	deleteCommand := []string{"sh", "-c", deleteQuery}
+	_, stderr, err := a.execCommand(ctx, deleteCommand)
 	if err != nil {
 		return errors.Wrapf(err, "Error while deleting data into table: %s, app: %s", stderr, a.name)
 	}
@@ -313,9 +314,9 @@ func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
 func (a *RDSAuroraMySQLDB) Initialize(ctx context.Context) error {
 	// Create table.
 	log.Print("Initializing database", field.M{"app": a.name})
-	createTable := fmt.Sprintf(mysqlConnectionString+"\"CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);\"", a.host, a.username, a.password, a.dbName)
-	createQuery := []string{"sh", "-c", createTable}
-	_, stderr, err := a.execCommand(ctx, createQuery)
+	createQuery := fmt.Sprintf(mysqlConnectionString+"\"CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);\"", a.host, a.username, a.password, a.dbName)
+	createCommand := []string{"sh", "-c", createQuery}
+	_, stderr, err := a.execCommand(ctx, createCommand)
 	if err != nil {
 		return errors.Wrapf(err, "Error while creating the database: %s, app: %s", stderr, a.name)
 	}
