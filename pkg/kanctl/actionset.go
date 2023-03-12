@@ -753,7 +753,10 @@ func verifyRepositoryServerParams(repoServer *crv1alpha1.ObjectReference, crCli 
 	if repoServer != nil {
 		rs, err := crCli.CrV1alpha1().RepositoryServers(repoServer.Namespace).Get(ctx, repoServer.Name, metav1.GetOptions{})
 		if err != nil {
+		 if apierrors.IsNotFound(err){
 			return errors.Wrapf(err, "Please make sure '%s' with name '%s' exists in namespace '%s'", "repository-server", repoServer.Name, repoServer.Namespace)
+			}
+			return "there was an error getting repo server"
 		}
 		if rs.Status.Progress != "ServerReady" {
 			err = errors.New("Repository Server Not Ready")
