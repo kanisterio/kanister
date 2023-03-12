@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +34,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/secrets"
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const timeFormat = time.RFC3339Nano
@@ -144,6 +144,7 @@ type RepositoryServer struct {
 	ServerInfo  crv1alpha1.ServerInfo
 	Username    string
 	Credentials RepositoryServerCredentials
+	Address     string
 }
 
 type RepositoryServerCredentials struct {
@@ -284,16 +285,22 @@ func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli 
 	if err != nil {
 		return nil, err
 	}
-	secrets := RepositoryServerCredentials{
+	repoServerSecrets := RepositoryServerCredentials{
 		ServerTLS:        *serverTLS,
 		ServerUserAccess: *serverUserAccess,
 	}
+	repositoryServerService, err := cli.CoreV1().Services(r.Namespace).Get(ctx, r.Status.ServerInfo.ServiceName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "Error Fetching Repository Server Service")
+	}
+	repositoryServerAddress := fmt.Sprintf("https://%s.%s.svc.cluster.local:%d", repositoryServerService.Name, repositoryServerService.Namespace, repositoryServerService.Spec.Ports[0].Port)
 	return &RepositoryServer{
 		Name:        r.Name,
 		Namespace:   r.Namespace,
 		ServerInfo:  r.Status.ServerInfo,
 		Username:    r.Spec.Server.UserAccess.Username,
-		Credentials: secrets,
+		Credentials: repoServerSecrets,
+		Address:     repositoryServerAddress,
 	}, nil
 }
 
