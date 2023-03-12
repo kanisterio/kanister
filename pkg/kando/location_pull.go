@@ -16,6 +16,8 @@ package kando
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"io"
 	"os"
 
@@ -41,7 +43,19 @@ func newLocationPullCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
-			return runLocationPull(c, args)
+			var datamover string
+			profile := c.Flag(profileFlagName).Value.String()
+			repositoryServer := c.Flag(repositoryServerFlagName).Value.String()
+			if profile != "" {
+				datamover = profileFlagName
+			}
+			if repositoryServer != "" {
+				datamover = repositoryServerFlagName
+			}
+			if profile != "" && repositoryServer != "" {
+				return errors.New("Please Provide either --profile / --kopia-repo-server")
+			}
+			return runLocationPull(c, args, datamover)
 		},
 	}
 	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")
@@ -52,14 +66,16 @@ func kopiaSnapshotFlag(cmd *cobra.Command) string {
 	return cmd.Flag(kopiaSnapshotFlagName).Value.String()
 }
 
-func runLocationPull(cmd *cobra.Command, args []string) error {
-	p, err := unmarshalProfileFlag(cmd)
-	if err != nil {
-		return err
-	}
-	s := pathFlag(cmd)
+func runLocationPull(cmd *cobra.Command, args []string, datamover string) error {
+	path := pathFlag(cmd)
 	ctx := context.Background()
-	if p.Location.Type == crv1alpha1.LocationTypeKopia {
+
+	switch datamover {
+	case repositoryServerFlagName:
+		rs, err := unmarshalRepositoryServerFlag(cmd)
+		if err != nil {
+			return err
+		}
 		snapJSON := kopiaSnapshotFlag(cmd)
 		if snapJSON == "" {
 			return errors.New("kopia snapshot information is required to pull data using kopia")
@@ -68,16 +84,38 @@ func runLocationPull(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		if err = connectToKopiaServer(ctx, p); err != nil {
+		err, password := connectToKopiaRepositoryServer(ctx, rs)
+		if err != nil {
 			return err
 		}
-		return kopiaLocationPull(ctx, kopiaSnap.ID, s, args[0], p.Credential.KopiaServerSecret.Password)
+		return kopiaLocationPull(ctx, kopiaSnap.ID, path, args[0], password)
+
+	case profileFlagName:
+		p, err := unmarshalProfileFlag(cmd)
+		if err != nil {
+			return err
+		}
+		if p.Location.Type == crv1alpha1.LocationTypeKopia {
+			snapJSON := kopiaSnapshotFlag(cmd)
+			if snapJSON == "" {
+				return errors.New("kopia snapshot information is required to pull data using kopia")
+			}
+			kopiaSnap, err := snapshot.UnmarshalKopiaSnapshot(snapJSON)
+			if err != nil {
+				return err
+			}
+			if err = connectToKopiaServer(ctx, p); err != nil {
+				return err
+			}
+			return kopiaLocationPull(ctx, kopiaSnap.ID, path, args[0], p.Credential.KopiaServerSecret.Password)
+		}
+		target, err := targetWriter(args[0])
+		if err != nil {
+			return err
+		}
+		return locationPull(ctx, p, path, target)
 	}
-	target, err := targetWriter(args[0])
-	if err != nil {
-		return err
-	}
-	return locationPull(ctx, p, s, target)
+	return nil
 }
 
 func targetWriter(target string) (io.Writer, error) {
@@ -115,4 +153,52 @@ func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 		contentCacheSize,
 		metadataCacheSize,
 	)
+}
+
+// connectToKopiaRepositoryServer connects to the kopia server with given repository server CR
+func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositoryServer) (error, string) {
+	contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
+	hostname, userPassphrase, certData, err := secretsFromRepositoryServerCR(rs)
+	if err != nil {
+		return errors.Wrap(err, "Error Retrieving Connection Data from Repository Server"), ""
+	}
+	return repository.ConnectToAPIServer(
+		ctx,
+		certData,
+		userPassphrase,
+		hostname,
+		rs.Address,
+		rs.Username,
+		contentCacheMB,
+		metadataCacheMB,
+	), userPassphrase
+}
+
+func secretsFromRepositoryServerCR(rs *param.RepositoryServer) (hostname, userPassphrase, certData string, err error) {
+	userCredJSON, err := json.Marshal(rs.Credentials.ServerUserAccess.Data)
+
+	certJSON, err := json.Marshal(rs.Credentials.ServerTLS.Data)
+	hostname, userPassphrase, err = hostNameAndUserPassPhraseFromRepoServer(string(userCredJSON))
+	return hostname, userPassphrase, string(certJSON), err
+}
+
+func hostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, error) {
+	var userAccessMap map[string]string
+	if err := json.Unmarshal([]byte(userCreds), &userAccessMap); err != nil {
+		return "", "", errors.Wrap(err, "Failed to unmarshal User Credentials Data")
+	}
+
+	var userPassPhrase string
+	var hostName string
+	for key, val := range userAccessMap {
+		hostName = key
+		userPassPhrase = val
+	}
+
+	decodedUserPassPhrase, err := base64.StdEncoding.DecodeString(userPassPhrase)
+	if err != nil {
+		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
+	}
+	return hostName, string(decodedUserPassPhrase), nil
+
 }

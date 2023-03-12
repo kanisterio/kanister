@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	pathFlagName    = "path"
-	profileFlagName = "profile"
+	pathFlagName             = "path"
+	profileFlagName          = "profile"
+	repositoryServerFlagName = "repository-server"
 )
 
 func newLocationCommand() *cobra.Command {
@@ -38,7 +39,7 @@ func newLocationCommand() *cobra.Command {
 	cmd.AddCommand(newLocationDeleteCommand())
 	cmd.PersistentFlags().StringP(pathFlagName, "s", "", "Specify a path suffix (optional)")
 	cmd.PersistentFlags().StringP(profileFlagName, "p", "", "Pass a Profile as a JSON string (required)")
-	_ = cmd.MarkFlagRequired(profileFlagName)
+	cmd.PersistentFlags().StringP(repositoryServerFlagName, "r", "", "Pass a Repository Server CR as a JSON string (required for kopia based blueprints)")
 	return cmd
 }
 
@@ -51,4 +52,11 @@ func unmarshalProfileFlag(cmd *cobra.Command) (*param.Profile, error) {
 	p := &param.Profile{}
 	err := json.Unmarshal([]byte(profileJSON), p)
 	return p, errors.Wrap(err, "failed to unmarshal profile")
+}
+
+func unmarshalRepositoryServerFlag(cmd *cobra.Command) (*param.RepositoryServer, error) {
+	repositoryServerJSON := cmd.Flag(repositoryServerFlagName).Value.String()
+	rs := &param.RepositoryServer{}
+	err := json.Unmarshal([]byte(repositoryServerJSON), rs)
+	return rs, errors.Wrap(err, "failed to unmarshal kopia repository server CR")
 }
