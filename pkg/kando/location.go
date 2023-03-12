@@ -26,7 +26,7 @@ import (
 const (
 	pathFlagName             = "path"
 	profileFlagName          = "profile"
-	repositoryServerFlagName = "kopia-repo-server"
+	repositoryServerFlagName = "repository-server"
 )
 
 func newLocationCommand() *cobra.Command {

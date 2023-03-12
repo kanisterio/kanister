@@ -156,6 +156,7 @@ func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 	)
 }
 
+// connectToKopiaRepositoryServer connects to the kopia server with given repository server CR
 func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositoryServer) (error, string) {
 	contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
 	hostname, userPassphrase, certData, err := secretsFromRepositoryServerCR(rs)
