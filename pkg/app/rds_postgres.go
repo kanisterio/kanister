@@ -132,8 +132,8 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	pdb.bastionDebugWorkloadName = fmt.Sprintf("%s-workload", pdb.name)
 
-	testDeployment := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
-	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, testDeployment, metav1.CreateOptions{})
+	deploymentSpec := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
+	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create test deployment %s , app: %s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
