@@ -24,6 +24,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -753,10 +754,10 @@ func verifyRepositoryServerParams(repoServer *crv1alpha1.ObjectReference, crCli 
 	if repoServer != nil {
 		rs, err := crCli.CrV1alpha1().RepositoryServers(repoServer.Namespace).Get(ctx, repoServer.Name, metav1.GetOptions{})
 		if err != nil {
-		 if apierrors.IsNotFound(err){
-			return errors.Wrapf(err, "Please make sure '%s' with name '%s' exists in namespace '%s'", "repository-server", repoServer.Name, repoServer.Namespace)
+			if apierrors.IsNotFound(err) {
+				return errors.Wrapf(err, "Please make sure '%s' with name '%s' exists in namespace '%s'", "repository-server", repoServer.Name, repoServer.Namespace)
 			}
-			return "there was an error getting repo server"
+			return errors.New("there was an error getting repo server")
 		}
 		if rs.Status.Progress != "ServerReady" {
 			err = errors.New("Repository Server Not Ready")
