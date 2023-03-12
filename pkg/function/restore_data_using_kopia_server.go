@@ -109,11 +109,6 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		return nil, errors.Wrap(err, "Failed to create Kubernetes client")
 	}
 
-	serverAddress, err := repositoryServerAddress(cli, *tp.RepositoryServer)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get the Kopia Repository Server Address")
-	}
-
 	_, sparseRestore := tp.Options[SparseRestoreOption]
 
 	return restoreDataFromServer(
@@ -123,7 +118,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		restoreDataJobPrefix,
 		namespace,
 		restorePath,
-		serverAddress,
+		tp.RepositoryServer.Address,
 		fingerprint,
 		snapID,
 		username,
