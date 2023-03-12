@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/dustin/go-humanize"
@@ -21,7 +20,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/param"
 	"github.com/kanisterio/kanister/pkg/utils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -118,11 +116,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	ctx = field.Context(ctx, consts.PodNameKey, pod)
 	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 
-	serverAddress, err := repositoryServerAddress(cli, *tp.RepositoryServer)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get the Kopia Repository Server Address")
-	}
-
 	snapInfo, err := backupDataUsingKopiaServer(
 		cli,
 		container,
@@ -130,7 +123,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 		includePath,
 		namespace,
 		pod,
-		serverAddress,
+		tp.RepositoryServer.Address,
 		fingerprint,
 		username,
 		userAccessPassphrase,
@@ -240,15 +233,6 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, 
 	}
 	return hostName, string(decodedUserPassPhrase), nil
 
-}
-
-func repositoryServerAddress(cli kubernetes.Interface, rs param.RepositoryServer) (string, error) {
-	repositoryServerService, err := cli.CoreV1().Services(rs.Namespace).Get(context.Background(), rs.ServerInfo.ServiceName, metav1.GetOptions{})
-	if err != nil {
-		return "", errors.New("Unable to find Service Details for Repository Server")
-	}
-	serverAddress := fmt.Sprintf("https://%s.%s.svc.cluster.local:%d", rs.ServerInfo.ServiceName, rs.Namespace, repositoryServerService.Spec.Ports[0].Port)
-	return serverAddress, nil
 }
 
 func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, error) {
