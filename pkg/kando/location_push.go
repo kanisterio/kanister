@@ -22,7 +22,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/output"
@@ -41,19 +40,12 @@ func newLocationPushCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
-			var datamover string
-			profile := c.Flag(profileFlagName).Value.String()
-			repositoryServer := c.Flag(repositoryServerFlagName).Value.String()
-			if profile != "" {
-				datamover = profileFlagName
+			var loc Location
+			loc = &Command{
+				Subcommand: c,
+				Arguments:  args,
 			}
-			if repositoryServer != "" {
-				datamover = repositoryServerFlagName
-			}
-			if profile != "" && repositoryServer != "" {
-				return errors.New("Please Provide either --profile / --kopia-repo-server")
-			}
-			return runLocationPush(c, args, datamover)
+			return loc.Push()
 		},
 	}
 	cmd.Flags().StringP(outputNameFlagName, "o", defaultKandoOutputKey, "Specify a name to be used for the output produced by kando. Set to `kandoOutput` by default")
@@ -62,43 +54,6 @@ func newLocationPushCommand() *cobra.Command {
 
 func outputNameFlag(cmd *cobra.Command) string {
 	return cmd.Flag(outputNameFlagName).Value.String()
-}
-
-func runLocationPush(cmd *cobra.Command, args []string, datamover string) error {
-	path := pathFlag(cmd)
-	ctx := context.Background()
-	outputName := outputNameFlag(cmd)
-
-	switch datamover {
-	case repositoryServerFlagName:
-		rs, err := unmarshalRepositoryServerFlag(cmd)
-		if err != nil {
-			return err
-		}
-		err, password := connectToKopiaRepositoryServer(ctx, rs)
-		if err != nil {
-			return err
-		}
-		return kopiaLocationPush(ctx, path, outputName, args[0], password)
-
-	case profileFlagName:
-		p, err := unmarshalProfileFlag(cmd)
-		if err != nil {
-			return err
-		}
-		if p.Location.Type == crv1alpha1.LocationTypeKopia {
-			if err = connectToKopiaServer(ctx, p); err != nil {
-				return err
-			}
-			return kopiaLocationPush(ctx, path, outputName, args[0], p.Credential.KopiaServerSecret.Password)
-		}
-		source, err := sourceReader(args[0])
-		if err != nil {
-			return err
-		}
-		return locationPush(ctx, p, path, source)
-	}
-	return nil
 }
 
 const usePipeParam = `-`
