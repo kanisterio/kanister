@@ -24,6 +24,7 @@ DOP="3"
 TEST_TIMEOUT="30m"
 # Set default options
 TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
+KOPIA_TEST_OPTIONS="-tags=kopia -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # Regex to match apps to run in short mode
 # Temporary disable ES test. Issue to track https://github.com/kanisterio/kanister/issues/1920
 SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|Maria|^MSSQL$"
@@ -109,4 +110,5 @@ check_dependencies
 echo "Running integration tests:"
 pushd ${INTEGRATION_TEST_DIR}
 go test -v ${TEST_OPTIONS} -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
+go test -v ${KOPIA_TEST_OPTIONS} -check.f KopiaCmdSuite
 popd
