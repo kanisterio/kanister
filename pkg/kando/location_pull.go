@@ -21,15 +21,16 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kopia"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
 )
 
 const (
