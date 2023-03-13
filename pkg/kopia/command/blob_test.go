@@ -30,7 +30,6 @@ var _ = Suite(&KopiaBlobTestSuite{})
 
 func (kBlob *KopiaBlobTestSuite) TestBlobCommands(c *C) {
 	commandArgs := &CommandArgs{
-		RepoPassword:   "encr-key",
 		ConfigFilePath: "path/kopia.config",
 		LogDirectory:   "cache/log",
 	}
@@ -46,7 +45,7 @@ func (kBlob *KopiaBlobTestSuite) TestBlobCommands(c *C) {
 				}
 				return BlobList(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key blob list",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log blob list",
 		},
 		{
 			f: func() []string {
@@ -55,7 +54,7 @@ func (kBlob *KopiaBlobTestSuite) TestBlobCommands(c *C) {
 				}
 				return BlobStats(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key blob stats --raw",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log blob stats --raw",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")

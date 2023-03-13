@@ -39,10 +39,10 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 		{
 			cmdArg: RepositoryCommandArgs{
 				CommandArgs: &CommandArgs{
-					RepoPassword:   "pass123",
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
+				RepoPassword:    "pass123",
 				CacheDirectory:  "/tmp/cache.dir",
 				Hostname:        "test-hostname",
 				ContentCacheMB:  0,
@@ -57,10 +57,10 @@ func (s *RepositoryUtilsSuite) TestRepositoryCreateUtil(c *check.C) {
 		{
 			cmdArg: RepositoryCommandArgs{
 				CommandArgs: &CommandArgs{
-					RepoPassword:   "pass123",
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
+				RepoPassword:    "pass123",
 				CacheDirectory:  "/tmp/cache.dir",
 				Hostname:        "test-hostname",
 				ContentCacheMB:  0,
@@ -112,10 +112,10 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 		{
 			cmdArg: RepositoryCommandArgs{
 				CommandArgs: &CommandArgs{
-					RepoPassword:   "pass123",
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
+				RepoPassword:    "pass123",
 				CacheDirectory:  "/tmp/cache.dir",
 				Hostname:        "test-hostname",
 				ContentCacheMB:  0,
@@ -130,10 +130,10 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 		{
 			cmdArg: RepositoryCommandArgs{
 				CommandArgs: &CommandArgs{
-					RepoPassword:   "pass123",
 					ConfigFilePath: "/tmp/config.file",
 					LogDirectory:   "/tmp/log.dir",
 				},
+				RepoPassword:    "pass123",
 				CacheDirectory:  "/tmp/cache.dir",
 				ContentCacheMB:  0,
 				MetadataCacheMB: 0,
@@ -174,9 +174,11 @@ func (s *RepositoryUtilsSuite) TestRepositoryConnectUtil(c *check.C) {
 
 func (s *RepositoryUtilsSuite) TestRepositoryConnectServerUtil(c *check.C) {
 	cmd := RepositoryConnectServerCommand(RepositoryServerCommandArgs{
+		CommandArgs: &CommandArgs{
+			ConfigFilePath: "/tmp/config.file",
+			LogDirectory:   "/tmp/log.dir",
+		},
 		UserPassword:    "testpass123",
-		ConfigFilePath:  "/tmp/config.file",
-		LogDirectory:    "/tmp/log.dir",
 		CacheDirectory:  "/tmp/cache.dir",
 		Hostname:        "test-hostname",
 		Username:        "test-username",

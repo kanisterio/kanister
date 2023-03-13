@@ -26,7 +26,6 @@ var _ = Suite(&KopiaMaintenanceTestSuite{})
 
 func (kMaintenance *KopiaMaintenanceTestSuite) TestMaintenanceCommands(c *C) {
 	commandArgs := &CommandArgs{
-		RepoPassword:   "encr-key",
 		ConfigFilePath: "path/kopia.config",
 		LogDirectory:   "cache/log",
 	}
@@ -43,7 +42,7 @@ func (kMaintenance *KopiaMaintenanceTestSuite) TestMaintenanceCommands(c *C) {
 				}
 				return MaintenanceInfo(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key maintenance info",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log maintenance info",
 		},
 		{
 			f: func() []string {
@@ -53,7 +52,7 @@ func (kMaintenance *KopiaMaintenanceTestSuite) TestMaintenanceCommands(c *C) {
 				}
 				return MaintenanceInfo(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key maintenance info --json",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log maintenance info --json",
 		},
 		{
 			f: func() []string {
@@ -63,7 +62,7 @@ func (kMaintenance *KopiaMaintenanceTestSuite) TestMaintenanceCommands(c *C) {
 				}
 				return MaintenanceSetOwner(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key maintenance set --owner=username@hostname",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log maintenance set --owner=username@hostname",
 		},
 		{
 			f: func() []string {
@@ -72,7 +71,7 @@ func (kMaintenance *KopiaMaintenanceTestSuite) TestMaintenanceCommands(c *C) {
 				}
 				return MaintenanceRunCommand(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key maintenance run",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log maintenance run",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")

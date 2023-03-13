@@ -27,6 +27,7 @@ import (
 // creating or connecting to a Kopia repository
 type RepositoryCommandArgs struct {
 	*CommandArgs
+	RepoPassword    string
 	CacheDirectory  string
 	Hostname        string
 	ContentCacheMB  int
@@ -41,6 +42,7 @@ type RepositoryCommandArgs struct {
 // RepositoryConnectCommand returns the kopia command for connecting to an existing repo
 func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 	args := commonArgs(cmdArgs.CommandArgs, false)
+	args = args.AppendRedactedKV(passwordFlag, cmdArgs.RepoPassword)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, noCheckForUpdatesFlag)
 
 	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
@@ -71,6 +73,7 @@ func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 // RepositoryCreateCommand returns the kopia command for creation of a repo
 func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 	args := commonArgs(cmdArgs.CommandArgs, false)
+	args = args.AppendRedactedKV(passwordFlag, cmdArgs.RepoPassword)
 	args = args.AppendLoggable(repositorySubCommand, createSubCommand, noCheckForUpdatesFlag)
 
 	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
@@ -97,9 +100,8 @@ func RepositoryCreateCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 // RepositoryServerCommandArgs contains fields required for connecting
 // to Kopia Repository API server
 type RepositoryServerCommandArgs struct {
+	*CommandArgs
 	UserPassword    string
-	ConfigFilePath  string
-	LogDirectory    string
 	CacheDirectory  string
 	Hostname        string
 	ServerURL       string
@@ -113,10 +115,10 @@ type RepositoryServerCommandArgs struct {
 // repository on Kopia Repository API server
 func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []string {
 	args := commonArgs(&CommandArgs{
-		RepoPassword:   cmdArgs.UserPassword,
 		ConfigFilePath: cmdArgs.ConfigFilePath,
 		LogDirectory:   cmdArgs.LogDirectory,
 	}, false)
+	args = args.AppendRedactedKV(passwordFlag, cmdArgs.UserPassword)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, serverSubCommand, noCheckForUpdatesFlag, noGrpcFlag)
 
 	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)

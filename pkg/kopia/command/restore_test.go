@@ -33,7 +33,6 @@ func (kRestore *KopiaRestoreTestSuite) TestRestoreCommands(c *C) {
 			f: func() []string {
 				args := RestoreCommandArgs{
 					CommandArgs: &CommandArgs{
-						RepoPassword:   "encr-key",
 						ConfigFilePath: "path/kopia.config",
 						LogDirectory:   "cache/log",
 					},
@@ -42,13 +41,12 @@ func (kRestore *KopiaRestoreTestSuite) TestRestoreCommands(c *C) {
 				}
 				return Restore(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key restore snapshot-id target/path --no-ignore-permission-errors",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log restore snapshot-id target/path --no-ignore-permission-errors",
 		},
 		{
 			f: func() []string {
 				args := RestoreCommandArgs{
 					CommandArgs: &CommandArgs{
-						RepoPassword:   "encr-key",
 						ConfigFilePath: "path/kopia.config",
 						LogDirectory:   "cache/log",
 					},
@@ -58,7 +56,7 @@ func (kRestore *KopiaRestoreTestSuite) TestRestoreCommands(c *C) {
 				}
 				return Restore(args)
 			},
-			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log --password=encr-key restore snapshot-id target/path --ignore-permission-errors",
+			expectedLog: "kopia --log-level=error --config-file=path/kopia.config --log-dir=cache/log restore snapshot-id target/path --ignore-permission-errors",
 		},
 	} {
 		cmd := strings.Join(tc.f(), " ")
