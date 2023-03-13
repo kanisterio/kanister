@@ -48,6 +48,9 @@ check_or_get_dependencies() {
     done
 }
 
+# This function is not used to create Kubernetes cluster in CI anymore. We are
+# using `helm/kind-action@v1.4.0` instead in our github actions source file
+# `.github/workflows/main.yaml` to create the cluster
 start_localkube() {
     if ! command -v kind
     then

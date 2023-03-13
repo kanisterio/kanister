@@ -39,7 +39,7 @@ RUN apt-get update && apt-get -y install ca-certificates && \
 USER kopia:kopia
 
 # Build tools image
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.1.0-1760
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.1.0-1793
 ARG kan_tools_version="test-version"
 LABEL name="kanister-tools" \
     vendor="Kanister" \
@@ -52,12 +52,13 @@ LABEL name="kanister-tools" \
 COPY --from=restic/restic:0.11.0 /usr/bin/restic /usr/local/bin/restic
 COPY --from=builder /kopia/kopia /usr/local/bin/kopia
 COPY LICENSE /licenses/LICENSE
-RUN setcap cap_setfcap+i /usr/sbin/setcap
 
 ADD kando /usr/local/bin/
 RUN microdnf -y update && microdnf -y install shadow-utils gzip && \
   adduser -U kanister -u 1000 && \
   microdnf -y remove shadow-utils && \
   microdnf clean all
+
+RUN setcap cap_chown,cap_fowner,cap_dac_override+iep /usr/local/bin/kopia
 
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]
