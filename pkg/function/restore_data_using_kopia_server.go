@@ -61,6 +61,7 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.TemplateParams, args map[string]any) (map[string]any, error) {
 	var (
 		err         error
+		image       string
 		namespace   string
 		restorePath string
 		snapID      string
@@ -72,6 +73,9 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		return nil, err
 	}
 	if err = Arg(args, RestoreDataRestorePathArg, &restorePath); err != nil {
+		return nil, err
+	}
+	if err = Arg(args, RestoreDataImageArg, &image); err != nil {
 		return nil, err
 	}
 
@@ -115,6 +119,7 @@ func (*restoreDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templ
 		ctx,
 		cli,
 		hostname,
+		image,
 		restoreDataJobPrefix,
 		namespace,
 		restorePath,
@@ -133,6 +138,7 @@ func restoreDataFromServer(
 	ctx context.Context,
 	cli kubernetes.Interface,
 	hostname,
+	image,
 	jobPrefix,
 	namespace,
 	restorePath,
@@ -154,7 +160,7 @@ func restoreDataFromServer(
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
-		Image:        getKanisterToolsImage(),
+		Image:        image,
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
 		Volumes:      vols,
 		PodOverride:  podOverride,
