@@ -40,12 +40,25 @@ func newLocationPushCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
-			var loc Location
-			loc = &Command{
-				Subcommand: c,
-				Arguments:  args,
+			var datamover DataMover
+			profile, repositoryServer := profileAndRepositoryServerFlagFromCommand(c)
+			if profile != "" {
+				datamover = &Profile{
+					Command:   c,
+					Arguments: args,
+				}
 			}
-			return loc.Push()
+			if repositoryServer != "" {
+				datamover = &RepositoryServer{
+					Command:   c,
+					Arguments: args,
+				}
+			}
+			if profile != "" && repositoryServer != "" {
+				return errors.New("Provide either --profile/--repository-server")
+			}
+
+			return datamover.Push()
 		},
 	}
 	cmd.Flags().StringP(outputNameFlagName, "o", defaultKandoOutputKey, "Specify a name to be used for the output produced by kando. Set to `kandoOutput` by default")

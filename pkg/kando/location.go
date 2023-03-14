@@ -60,3 +60,13 @@ func unmarshalRepositoryServerFlag(cmd *cobra.Command) (*param.RepositoryServer,
 	err := json.Unmarshal([]byte(repositoryServerJSON), rs)
 	return rs, errors.Wrap(err, "failed to unmarshal kopia repository server CR")
 }
+
+func profileAndRepositoryServerFlagFromCommand(c *cobra.Command) (string, string) {
+	return c.Flag(profileFlagName).Value.String(), c.Flag(repositoryServerFlagName).Value.String()
+}
+
+type DataMover interface {
+	Push() error
+	Pull() error
+	Delete() error
+}
