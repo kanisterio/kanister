@@ -94,7 +94,7 @@ build: bin/$(ARCH)/$(BIN)
 build-controller:
 	@$(MAKE) run CMD='-c " \
 	goreleaser build --id $(BIN) --rm-dist --debug --snapshot \
-	&& cp dist/$(BIN)_linux_$(ARCH)/$(BIN) bin/$(ARCH)/$(BIN) \
+	&& cp dist/$(BIN)_linux_$(ARCH)_*/$(BIN) bin/$(ARCH)/$(BIN) \
 	"'
 
 bin/$(ARCH)/$(BIN):
@@ -202,6 +202,27 @@ ifeq ($(DOCKER_BUILD),"true")
 		/bin/bash -c $(DOCS_CMD)
 else
 	@/bin/bash -c $(DOCS_CMD)
+endif
+
+API_DOCS_CMD = "gen-crd-api-reference-docs 			\
+		-config docs/api_docs/config.json 	\
+		-api-dir ./pkg/apis/cr/v1alpha1 	\
+		-template-dir docs/api_docs/template 		\
+		-out-file API.md 	\
+"
+
+crd_docs:
+ifeq ($(DOCKER_BUILD),"true")
+	@echo "running API_DOCS_CMD in the containerized build environment"
+	@docker run             \
+		--entrypoint ''     \
+		--rm                \
+		-v "$(PWD):/repo"   \
+		-w /repo            \
+		$(BUILD_IMAGE) \
+		/bin/bash -c $(API_DOCS_CMD)
+else
+	@/bin/bash -c $(API_DOCS_CMD)
 endif
 
 build-dirs:
