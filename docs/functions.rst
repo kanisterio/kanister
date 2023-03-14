@@ -1580,6 +1580,9 @@ This function deletes the snapshot data backed up by the ``BackupDataUsingKopiaS
 function. It creates a new Pod that runs ``delete snapshot`` job.
 
 .. note::
+   The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
+   image since it includes the required tools to delete snapshot in
+   the object store.
 
    Additionally, in order to use this function, a RepositoryServer CR is required
 
@@ -1590,6 +1593,7 @@ function. It creates a new Pod that runs ``delete snapshot`` job.
 
    `namespace`, Yes, `string`, namespace in which to execute the delete job
    `backupID`, Yes, `string`, unique snapshot id generated during backup
+   `image`, Yes, `string`, image to be used for running delete job (should contain kopia binary)
 
 Example:
 
@@ -1605,7 +1609,7 @@ For this phase, we will use the ``backupIdentifier`` Artifact provided by backup
     args:
       namespace: "{{ .Deployment.Namespace }}"
       backupID: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
-
+      image: ghcr.io/kanisterio/kanister-tools:0.89.0
 Registering Functions
 ---------------------
 
