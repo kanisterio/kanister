@@ -22,7 +22,7 @@ TIMEOUT="10m"
 
 echo "Running golangci-lint..."
 
-golangci-lint run --timeout ${TIMEOUT} --skip-dirs ${SKIP_DIR_REGEX} -E maligned,whitespace,gocognit,unparam -e '`ctx` is unused'
+golangci-lint run --timeout ${TIMEOUT} --skip-dirs ${SKIP_DIR_REGEX} -E govet,whitespace,gocognit,unparam -e '`ctx` is unused'
 
 # gofmt should run everywhere, including
 #   1. Skipped directories in previous step
