@@ -1608,8 +1608,7 @@ and restores data to the specified path.
    image since it includes the required tools to restore data from
    the object store.
 
-   Between the ``pod`` and ``volumes`` arguments, exactly one argument
-   must be specified.
+   Either ``pod`` or the ``volumes`` arguments must be specified to this function based on the function that was used to backup the data. For `BackupData` we should specify `pod` and for `CopyVolumeData`, `Volumes` should be specified.
 
    Additionally, in order to use this function, a RepositoryServer CR is required.
 
