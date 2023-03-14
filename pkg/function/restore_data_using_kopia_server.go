@@ -44,6 +44,7 @@ func (*restoreDataUsingKopiaServerFunc) RequiredArgs() []string {
 		RestoreDataBackupIdentifierArg,
 		RestoreDataNamespaceArg,
 		RestoreDataRestorePathArg,
+		RestoreDataImageArg,
 	}
 }
 
@@ -55,6 +56,7 @@ func (*restoreDataUsingKopiaServerFunc) Arguments() []string {
 		RestoreDataPodArg,
 		RestoreDataVolsArg,
 		RestoreDataPodOverrideArg,
+		RestoreDataImageArg,
 	}
 }
 
