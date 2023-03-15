@@ -48,11 +48,12 @@ func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS,
 }
 
 // CreateDBInstanceWithContext
-func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, username, password string, sgIDs []string, publicAccess bool) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, dbSubnetGroup, engine, username, password string, sgIDs []string, publicAccess bool) (*rds.CreateDBInstanceOutput, error) {
 	dbi := &rds.CreateDBInstanceInput{
 		AllocatedStorage:     &storage,
 		DBInstanceIdentifier: &instanceID,
 		VpcSecurityGroupIds:  convertSGIDs(sgIDs),
+		DBSubnetGroupName:    aws.String(dbSubnetGroup),
 		DBInstanceClass:      &instanceClass,
 		Engine:               &engine,
 		MasterUsername:       &username,
@@ -62,10 +63,11 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass,
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
-func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, engine, dbName, username, password string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
+func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, dbSubnetGroup, engine, dbName, username, password string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
 	dbi := &rds.CreateDBClusterInput{
 		DBClusterIdentifier: &instanceID,
 		DatabaseName:        &dbName,
+		DBSubnetGroupName:   aws.String(dbSubnetGroup),
 		Engine:              &engine,
 		MasterUsername:      &username,
 		MasterUserPassword:  &password,
