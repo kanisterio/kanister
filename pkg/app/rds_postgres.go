@@ -287,7 +287,7 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 	insertCommand := []string{"sh", "-c", insertQuery}
 	_, stderr, err := pdb.execCommand(ctx, insertCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting data of table: %s, app: %s", stderr, pdb.name)
+		return errors.Wrapf(err, "Error while inserting data into table: %s, app: %s", stderr, pdb.name)
 	}
 	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
 	return nil
@@ -301,7 +301,7 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	countCommand := []string{"sh", "-c", countQuery}
 	stdout, stderr, err := pdb.execCommand(ctx, countCommand)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting data into table: %s, app: %s", stderr, pdb.name)
+		return 0, errors.Wrapf(err, "Error while counting data of table: %s, app: %s", stderr, pdb.name)
 	}
 
 	rowsReturned, err := strconv.Atoi(stdout)
