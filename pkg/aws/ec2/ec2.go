@@ -50,11 +50,12 @@ func (e EC2) DescribeSecurityGroup(ctx context.Context, groupName string) (*ec2.
 	return e.DescribeSecurityGroupsWithContext(ctx, sgi)
 }
 
-func (e EC2) CreateSecurityGroup(ctx context.Context, groupName, description string) (*ec2.CreateSecurityGroupOutput, error) {
+func (e EC2) CreateSecurityGroup(ctx context.Context, groupName, description, vpcId string) (*ec2.CreateSecurityGroupOutput, error) {
 	sgi := &ec2.CreateSecurityGroupInput{
 		DryRun:      &e.DryRun,
 		Description: &description,
 		GroupName:   &groupName,
+		VpcId:       aws.String(vpcId),
 	}
 	return e.CreateSecurityGroupWithContext(ctx, sgi)
 }
