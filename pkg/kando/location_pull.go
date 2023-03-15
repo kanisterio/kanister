@@ -37,6 +37,10 @@ func newLocationPullCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
+			err := validateCommandArgs(c)
+			if err != nil {
+				return err
+			}
 			dataMover := datamover.NewDataMover(c)
 			destinationPath := pathFlag(c)
 			sourcePath := args[0]

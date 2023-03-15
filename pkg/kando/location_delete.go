@@ -30,6 +30,10 @@ func newLocationDeleteCommand() *cobra.Command {
 		Short: "Delete artifacts from s3-compliant object storage",
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
+			err := validateCommandArgs(c)
+			if err != nil {
+				return err
+			}
 			dataMover := datamover.NewDataMover(c)
 			destinationPath := pathFlag(c)
 			return dataMover.Delete(destinationPath)

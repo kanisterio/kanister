@@ -15,6 +15,7 @@
 package kando
 
 import (
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -40,4 +41,18 @@ func newLocationCommand() *cobra.Command {
 
 func pathFlag(cmd *cobra.Command) string {
 	return cmd.Flag(pathFlagName).Value.String()
+}
+
+// validateCommandArgs makes sure that we are getting exactly
+// one of --profile or --repository-server flags
+func validateCommandArgs(cmd *cobra.Command) error {
+	profile := cmd.Flags().Lookup(profileFlagName)
+	repositoryServer := cmd.Flags().Lookup(repositoryServerFlagName)
+	if profile != nil && repositoryServer != nil {
+		return errors.New("Either Provide --profile or --repository-server")
+	}
+	if profile == nil && repositoryServer == nil {
+		return errors.New("Please Provide either --profile or --repository-server as per the datamover you want to use")
+	}
+	return nil
 }
