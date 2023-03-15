@@ -135,7 +135,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	deploymentSpec := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
 	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create test deployment %s , app: %s", pdb.bastionDebugWorkloadName, pdb.name)
+		return errors.Wrapf(err, "Failed to create deployment %s, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
 
 	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, pdb.namespace, pdb.bastionDebugWorkloadName); err != nil {
@@ -287,7 +287,7 @@ func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
 	insertCommand := []string{"sh", "-c", insertQuery}
 	_, stderr, err := pdb.execCommand(ctx, insertCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting data into table: %s, app: %s", stderr, pdb.name)
+		return errors.Wrapf(err, "Error while inserting data of table: %s, app: %s", stderr, pdb.name)
 	}
 	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
 	return nil
