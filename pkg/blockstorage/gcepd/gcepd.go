@@ -632,7 +632,7 @@ func isMultiZone(az string) bool {
 
 func getRegionFromZones(az string) (string, error) {
 	zones := splitZones(az)
-	regions := sets.String{}
+	regions := sets.Set[string]{}
 	if len(zones) < 1 {
 		return "", errors.Errorf("no zones specified, zone: %s", az)
 	}
