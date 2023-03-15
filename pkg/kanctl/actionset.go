@@ -364,12 +364,12 @@ func parseRepositoryServer(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectRef
 		return nil, nil
 	}
 	if strings.Contains(repositoryServerName, "/") {
-		temp := strings.Split(repositoryServerName, "/")
-		if len(temp) != 2 {
+		nsName := strings.Split(repositoryServerName, "/")
+		if len(nsName) != 2 {
 			return nil, errors.Errorf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name or --repository-server name)", repositoryServerName)
 		}
-		ns = temp[0]
-		repositoryServerName = temp[1]
+		ns = nsName[0]
+		repositoryServerName = nsName[1]
 	}
 	return &crv1alpha1.ObjectReference{
 		Name:      repositoryServerName,
