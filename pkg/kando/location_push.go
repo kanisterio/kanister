@@ -17,14 +17,11 @@ package kando
 import (
 	"context"
 	"io"
-	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
+	"github.com/kanisterio/kanister/pkg/datamover"
 	"github.com/kanisterio/kanister/pkg/location"
-	"github.com/kanisterio/kanister/pkg/output"
 	"github.com/kanisterio/kanister/pkg/param"
 )
 
@@ -40,73 +37,18 @@ func newLocationPushCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
-			var datamover DataMover
-			profile, repositoryServer := profileAndRepositoryServerFlagFromCommand(c)
-			if profile != "" {
-				datamover = &Profile{
-					Command:   c,
-					Arguments: args,
-				}
-			}
-			if repositoryServer != "" {
-				datamover = &RepositoryServer{
-					Command:   c,
-					Arguments: args,
-				}
-			}
-			if profile != "" && repositoryServer != "" {
-				return errors.New("Provide either --profile/--repository-server")
-			}
-
-			return datamover.Push()
+			dataMover := datamover.NewDataMover(c)
+			destinationPath := pathFlag(c)
+			sourcePath := args[0]
+			return dataMover.Push(sourcePath, destinationPath)
 		},
 	}
 	cmd.Flags().StringP(outputNameFlagName, "o", defaultKandoOutputKey, "Specify a name to be used for the output produced by kando. Set to `kandoOutput` by default")
 	return cmd
 }
 
-func outputNameFlag(cmd *cobra.Command) string {
-	return cmd.Flag(outputNameFlagName).Value.String()
-}
-
 const usePipeParam = `-`
-
-func sourceReader(source string) (io.Reader, error) {
-	if source != usePipeParam {
-		return os.Open(source)
-	}
-	fi, err := os.Stdin.Stat()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to Stat stdin")
-	}
-	if fi.Mode()&os.ModeNamedPipe == 0 {
-		return nil, errors.New("Stdin must be piped when the source parameter is \"-\"")
-	}
-	return os.Stdin, nil
-}
 
 func locationPush(ctx context.Context, p *param.Profile, path string, source io.Reader) error {
 	return location.Write(ctx, source, *p, path)
-}
-
-// kopiaLocationPush pushes the data from the source using a kopia snapshot
-func kopiaLocationPush(ctx context.Context, path, outputName, sourcePath, password string) error {
-	var snapInfo *snapshot.SnapshotInfo
-	var err error
-	switch sourcePath {
-	case usePipeParam:
-		snapInfo, err = snapshot.Write(ctx, os.Stdin, path, password)
-	default:
-		snapInfo, err = snapshot.WriteFile(ctx, path, sourcePath, password)
-	}
-	if err != nil {
-		return errors.Wrap(err, "Failed to push data using kopia")
-	}
-
-	snapInfoJSON, err := snapshot.MarshalKopiaSnapshot(snapInfo)
-	if err != nil {
-		return err
-	}
-
-	return output.PrintOutput(outputName, snapInfoJSON)
 }

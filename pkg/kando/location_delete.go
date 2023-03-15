@@ -19,7 +19,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
+	"github.com/kanisterio/kanister/pkg/datamover"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -30,21 +30,13 @@ func newLocationDeleteCommand() *cobra.Command {
 		Short: "Delete artifacts from s3-compliant object storage",
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
-			var loc Location
-			loc = &Command{
-				Subcommand: c,
-				Arguments:  args,
-			}
-			return loc.Delete()
+			dataMover := datamover.NewDataMover(c)
+			destinationPath := pathFlag(c)
+			return dataMover.Delete(destinationPath)
 		},
 	}
 	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")
 	return cmd
-}
-
-// kopiaLocationDelete deletes the kopia snapshot with given backupID
-func kopiaLocationDelete(ctx context.Context, backupID, path, password string) error {
-	return snapshot.Delete(ctx, backupID, path, password)
 }
 
 func locationDelete(ctx context.Context, p *param.Profile, path string) error {
