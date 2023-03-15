@@ -188,7 +188,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	a.securityGroupID = *sg.GroupId
 
 	// Add ingress rule
-	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupName, "0.0.0.0/0", "tcp", 3306)
+	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupID, "0.0.0.0/0", "tcp", 3306)
 	if err != nil {
 		return errors.Wrap(err, "Error authorizing security group")
 	}
