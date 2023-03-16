@@ -19,7 +19,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kanisterio/kanister/pkg/datamover"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -34,7 +33,7 @@ func newLocationDeleteCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			dataMover := datamover.NewDataMover(c)
+			dataMover := NewDataMover(checkDataMover(c), "", kopiaSnapshotFlag(c))
 			destinationPath := pathFlag(c)
 			return dataMover.Delete(destinationPath)
 		},

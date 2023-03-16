@@ -1,9 +1,5 @@
 package datamover
 
-import (
-	"github.com/spf13/cobra"
-)
-
 type DataMover interface {
 	// Pull is used to restore the data from object storage
 	// using the preferred data-mover
@@ -14,36 +10,4 @@ type DataMover interface {
 	// Delete is used to delete the data from object storage
 	// using the preferred data-mover
 	Delete(destinationPath string) error
-}
-
-// NewDataMover creates an instance of DataMover Interface and returns
-// the preferred DataMover as per the arguments passed in kando command
-func NewDataMover(c *cobra.Command) DataMover {
-	datamover := checkDataMover(c)
-	outputName := outputNameFlag(c)
-	snapJSON := kopiaSnapshotFlag(c)
-	switch datamover {
-	case profileFlagName:
-		profileRef, err := unmarshalProfileFlag(c)
-		if err != nil {
-			return nil
-		}
-		return &Profile{
-			OutputName: outputName,
-			Profile:    profileRef,
-			SnapJSON:   snapJSON,
-		}
-	case repositoryServerFlagName:
-		repositoryServerRef, err := unmarshalRepositoryServerFlag(c)
-		if err != nil {
-			return nil
-		}
-		return &RepositoryServer{
-			OutputName:       outputName,
-			RepositoryServer: repositoryServerRef,
-			SnapJSON:         snapJSON,
-		}
-	default:
-		return nil
-	}
 }

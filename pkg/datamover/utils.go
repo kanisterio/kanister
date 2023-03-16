@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kopia"
@@ -22,11 +21,7 @@ import (
 )
 
 const (
-	usePipeParam             = `-`
-	profileFlagName          = "profile"
-	repositoryServerFlagName = "repository-server"
-	outputNameFlagName       = "output-name"
-	kopiaSnapshotFlagName    = "kopia-snapshot"
+	usePipeParam = `-`
 )
 
 func targetWriter(target string) (io.Writer, error) {
@@ -175,32 +170,4 @@ func kopiaLocationDelete(ctx context.Context, backupID, path, password string) e
 
 func locationDelete(ctx context.Context, p *param.Profile, path string) error {
 	return location.Delete(ctx, *p, path)
-}
-
-func checkDataMover(cmd *cobra.Command) string {
-	profile := cmd.Flags().Lookup(profileFlagName)
-	if profile != nil {
-		return profileFlagName
-	}
-	repositoryServer := cmd.Flags().Lookup(repositoryServerFlagName)
-	if repositoryServer != nil {
-		return repositoryServerFlagName
-	}
-	return ""
-}
-
-func outputNameFlag(cmd *cobra.Command) string {
-	outputName := cmd.Flags().Lookup(outputNameFlagName)
-	if outputName != nil {
-		return cmd.Flag(outputNameFlagName).Value.String()
-	}
-	return ""
-}
-
-func kopiaSnapshotFlag(cmd *cobra.Command) string {
-	kopiaSnapshot := cmd.Flags().Lookup(kopiaSnapshotFlagName)
-	if kopiaSnapshot != nil {
-		return cmd.Flag(kopiaSnapshotFlagName).Value.String()
-	}
-	return ""
 }

@@ -21,7 +21,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kanisterio/kanister/pkg/datamover"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -41,7 +40,7 @@ func newLocationPullCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			dataMover := datamover.NewDataMover(c)
+			dataMover := NewDataMover(checkDataMover(c), "", kopiaSnapshotFlag(c))
 			destinationPath := pathFlag(c)
 			sourcePath := args[0]
 			return dataMover.Pull(sourcePath, destinationPath)
@@ -60,4 +59,8 @@ func targetWriter(target string) (io.Writer, error) {
 
 func locationPull(ctx context.Context, p *param.Profile, path string, target io.Writer) error {
 	return location.Read(ctx, target, *p, path)
+}
+
+func kopiaSnapshotFlag(cmd *cobra.Command) string {
+	return cmd.Flags().Lookup(kopiaSnapshotFlagName).Value.String()
 }

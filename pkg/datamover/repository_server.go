@@ -2,10 +2,8 @@ package datamover
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 
 	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -56,11 +54,4 @@ func (rs *RepositoryServer) Delete(destinationPath string) error {
 		return err
 	}
 	return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, password)
-}
-
-func unmarshalRepositoryServerFlag(cmd *cobra.Command) (*param.RepositoryServer, error) {
-	repositoryServerJSON := cmd.Flag(repositoryServerFlagName).Value.String()
-	rs := &param.RepositoryServer{}
-	err := json.Unmarshal([]byte(repositoryServerJSON), rs)
-	return rs, errors.Wrap(err, "failed to unmarshal kopia repository server CR")
 }

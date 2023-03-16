@@ -2,11 +2,9 @@ package datamover
 
 import (
 	"context"
-	"encoding/json"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 
 	"github.com/kanisterio/kanister/pkg/kopia/snapshot"
 	"github.com/kanisterio/kanister/pkg/param"
@@ -71,11 +69,4 @@ func (p *Profile) Delete(destinationPath string) error {
 		return kopiaLocationDelete(ctx, kopiaSnap.ID, destinationPath, p.Profile.Credential.KopiaServerSecret.Password)
 	}
 	return locationDelete(ctx, p.Profile, destinationPath)
-}
-
-func unmarshalProfileFlag(cmd *cobra.Command) (*param.Profile, error) {
-	profileJSON := cmd.Flag(profileFlagName).Value.String()
-	p := &param.Profile{}
-	err := json.Unmarshal([]byte(profileJSON), p)
-	return p, errors.Wrap(err, "failed to unmarshal profile")
 }

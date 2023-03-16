@@ -20,7 +20,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/kanisterio/kanister/pkg/datamover"
 	"github.com/kanisterio/kanister/pkg/location"
 	"github.com/kanisterio/kanister/pkg/param"
 )
@@ -41,13 +40,14 @@ func newLocationPushCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			dataMover := datamover.NewDataMover(c)
+			dataMover := NewDataMover(checkDataMover(c), outputNameFlag(c), "")
 			destinationPath := pathFlag(c)
 			sourcePath := args[0]
 			return dataMover.Push(sourcePath, destinationPath)
 		},
 	}
 	cmd.Flags().StringP(outputNameFlagName, "o", defaultKandoOutputKey, "Specify a name to be used for the output produced by kando. Set to `kandoOutput` by default")
+
 	return cmd
 }
 
@@ -55,4 +55,8 @@ const usePipeParam = `-`
 
 func locationPush(ctx context.Context, p *param.Profile, path string, source io.Reader) error {
 	return location.Write(ctx, source, *p, path)
+}
+
+func outputNameFlag(cmd *cobra.Command) string {
+	return cmd.Flags().Lookup(outputNameFlagName).Value.String()
 }
