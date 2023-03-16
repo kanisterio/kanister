@@ -150,18 +150,9 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
 
-	pdb.vpcID = os.Getenv("VPC_ID")
-
-	// VPCId is not provided, use Default VPC
-	if pdb.vpcID == "" {
-		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
-		if err != nil {
-			return err
-		}
-		if len(defaultVpc.Vpcs) == 0 {
-			return fmt.Errorf("No default VPC found")
-		}
-		pdb.vpcID = *defaultVpc.Vpcs[0].VpcId
+	pdb.vpcID, err = getVpcIdForRDSInstance(ctx, ec2Cli)
+	if err != nil {
+		return err
 	}
 
 	// describe subnets in the VPC
@@ -434,7 +425,6 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
 	}
 
-	// Delete dbSubnetGroup
 	log.Info().Print("Deleting db subnet group.", field.M{"app": pdb.name})
 	_, err = rdsCli.DeleteDBSubnetGroup(ctx, pdb.dbSubnetGroup)
 	if err != nil {

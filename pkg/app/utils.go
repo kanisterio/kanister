@@ -17,7 +17,9 @@ package app
 import (
 	"context"
 	"fmt"
+	"os"
 
+	"github.com/kanisterio/kanister/pkg/aws/ec2"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -93,4 +95,22 @@ func bastionDebugWorkloadSpec(ctx context.Context, name string, image string, na
 			},
 		},
 	}
+}
+
+// getVpcIdForRDSInstance gets the VPC_ID from env if set or from the default VPC
+func getVpcIdForRDSInstance(ctx context.Context, ec2Cli *ec2.EC2) (string, error) {
+	vpcID := os.Getenv("VPC_ID")
+
+	// VPCId is not provided, use Default VPC
+	if vpcID == "" {
+		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
+		if err != nil {
+			return "", err
+		}
+		if len(defaultVpc.Vpcs) == 0 {
+			return "", fmt.Errorf("No default VPC found")
+		}
+		return *defaultVpc.Vpcs[0].VpcId, nil
+	}
+	return vpcID, nil
 }

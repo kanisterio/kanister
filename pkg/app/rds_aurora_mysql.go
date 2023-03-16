@@ -146,18 +146,9 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return err
 	}
 
-	a.vpcID = os.Getenv("VPC_ID")
-
-	// VPCId is not provided, use Default VPC
-	if a.vpcID == "" {
-		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
-		if err != nil {
-			return err
-		}
-		if len(defaultVpc.Vpcs) == 0 {
-			return fmt.Errorf("No default VPC found")
-		}
-		a.vpcID = *defaultVpc.Vpcs[0].VpcId
+	a.vpcID, err = getVpcIdForRDSInstance(ctx, ec2Cli)
+	if err != nil {
+		return err
 	}
 
 	// describe subnets in the VPC
