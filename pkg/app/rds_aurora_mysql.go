@@ -354,7 +354,6 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "Failed to create ec2 client.")
 	}
 
-	// Delete dbSubnetGroup
 	log.Info().Print("Deleting db subnet group.", field.M{"app": a.name})
 	_, err = rdsCli.DeleteDBSubnetGroup(ctx, a.dbSubnetGroup)
 	if err != nil {
