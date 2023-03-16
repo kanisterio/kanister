@@ -67,13 +67,13 @@ func connectToKopiaServer(ctx context.Context, kp *param.Profile) error {
 }
 
 // connectToKopiaRepositoryServer connects to the kopia server with given repository server CR
-func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositoryServer) (error, string) {
+func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositoryServer) (string, error) {
 	contentCacheMB, metadataCacheMB := kopiacmd.GetCacheSizeSettingsForSnapshot()
 	hostname, userPassphrase, certData, err := secretsFromRepositoryServerCR(rs)
 	if err != nil {
-		return errors.Wrap(err, "Error Retrieving Connection Data from Repository Server"), ""
+		return "", errors.Wrap(err, "Error Retrieving Connection Data from Repository Server")
 	}
-	return repository.ConnectToAPIServer(
+	return userPassphrase, repository.ConnectToAPIServer(
 		ctx,
 		certData,
 		userPassphrase,
@@ -82,7 +82,7 @@ func connectToKopiaRepositoryServer(ctx context.Context, rs *param.RepositorySer
 		rs.Username,
 		contentCacheMB,
 		metadataCacheMB,
-	), userPassphrase
+	)
 }
 
 func secretsFromRepositoryServerCR(rs *param.RepositoryServer) (string, string, string, error) {

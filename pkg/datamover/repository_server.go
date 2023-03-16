@@ -26,7 +26,7 @@ func (rs *RepositoryServer) Pull(sourcePath, destinationPath string) error {
 	if err != nil {
 		return err
 	}
-	err, password := connectToKopiaRepositoryServer(ctx, rs.RepositoryServer)
+	password, err := connectToKopiaRepositoryServer(ctx, rs.RepositoryServer)
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func (rs *RepositoryServer) Pull(sourcePath, destinationPath string) error {
 
 func (rs *RepositoryServer) Push(sourcePath, destinationPath string) error {
 	ctx := context.Background()
-	err, password := connectToKopiaRepositoryServer(ctx, rs.RepositoryServer)
+	password, err := connectToKopiaRepositoryServer(ctx, rs.RepositoryServer)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func (rs *RepositoryServer) Delete(destinationPath string) error {
 	if err != nil {
 		return err
 	}
-	err, password := connectToKopiaRepositoryServer(ctx, rs.RepositoryServer)
+	password, err := connectToKopiaRepositoryServer(ctx, rs.RepositoryServer)
 	if err != nil {
 		return err
 	}
