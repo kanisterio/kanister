@@ -135,7 +135,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	deploymentSpec := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
 	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create test deployment %s , app: %s", pdb.bastionDebugWorkloadName, pdb.name)
+		return errors.Wrapf(err, "Failed to create deployment %s, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
 
 	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, pdb.namespace, pdb.bastionDebugWorkloadName); err != nil {
@@ -301,7 +301,7 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	countCommand := []string{"sh", "-c", countQuery}
 	stdout, stderr, err := pdb.execCommand(ctx, countCommand)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting data into table: %s, app: %s", stderr, pdb.name)
+		return 0, errors.Wrapf(err, "Error while counting data of table: %s, app: %s", stderr, pdb.name)
 	}
 
 	rowsReturned, err := strconv.Atoi(stdout)
