@@ -292,7 +292,7 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	if err != nil {
 		return nil, err
 	}
-	repositoryServer, err := parseRepositoryServer(cmd, ns)
+	repositoryServer, err := parseRepositoryServer(cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -358,23 +358,26 @@ func parseProfile(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectReference, e
 
 // parseRepositoryServer returns the object reference
 // for the passed Repository Server
-func parseRepositoryServer(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectReference, error) {
+func parseRepositoryServer(cmd *cobra.Command) (*crv1alpha1.ObjectReference, error) {
 	repositoryServerName, _ := cmd.Flags().GetString(repositoryServerFlagName)
+	var ns string
 	if repositoryServerName == "" {
 		return nil, nil
 	}
 	if strings.Contains(repositoryServerName, "/") {
 		nsName := strings.Split(repositoryServerName, "/")
 		if len(nsName) != 2 {
-			return nil, errors.Errorf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name or --repository-server name)", repositoryServerName)
+			return nil, errors.Errorf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name )", repositoryServerName)
 		}
 		ns = nsName[0]
 		repositoryServerName = nsName[1]
+
+		return &crv1alpha1.ObjectReference{
+			Name:      repositoryServerName,
+			Namespace: ns,
+		}, nil
 	}
-	return &crv1alpha1.ObjectReference{
-		Name:      repositoryServerName,
-		Namespace: ns,
-	}, nil
+	return nil, errors.Errorf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name )", repositoryServerName)
 }
 
 func parseSecrets(cmd *cobra.Command) (map[string]crv1alpha1.ObjectReference, error) {
