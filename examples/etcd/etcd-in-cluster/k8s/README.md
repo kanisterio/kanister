@@ -1,6 +1,11 @@
 This document is going to show you how you can backup the ETCD cluster that is running as part of your Kubernetes control plane. The
 commands are run into a cluster that is setup using [Kubeadm](https://github.com/kubernetes/kubeadm) but it should work on any other single or multi node ETCD cluster.
 
+**Note**
+
+This blueprint will only work if the etcd pod has `tar` binary available as `kubectl cp` command
+in the blueprint, requires `tar` binary to be present on source.
+
 The cluster this example is perfomed on is two node kubeadm cluster.
 
 ## Prerequisites Details
