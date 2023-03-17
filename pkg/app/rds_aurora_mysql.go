@@ -132,7 +132,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	deploymentSpec := bastionDebugWorkloadSpec(ctx, a.bastionDebugWorkloadName, "mysql", a.namespace)
 	_, err = a.cli.AppsV1().Deployments(a.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create test deployment %s, app=%s", a.bastionDebugWorkloadName, a.name)
+		return errors.Wrapf(err, "Failed to create deployment %s, app=%s", a.bastionDebugWorkloadName, a.name)
 	}
 
 	if err := kube.WaitOnDeploymentReady(ctx, a.cli, a.namespace, a.bastionDebugWorkloadName); err != nil {
