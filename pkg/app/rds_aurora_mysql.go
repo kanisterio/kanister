@@ -146,28 +146,16 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return err
 	}
 
-	a.vpcID, err = getVpcIdForRDSInstance(ctx, ec2Cli)
+	a.vpcID, err = getVPCIDForRDSInstance(ctx, ec2Cli)
 	if err != nil {
 		return err
 	}
 
-	// describe subnets in the VPC
-	resp, err := ec2Cli.DescribeSubnets(ctx, a.vpcID)
+	dbSubnetGroup, err := getDBSubnetGroup(ctx, ec2Cli, rdsCli, a.vpcID, a.name, subnetGroupDescription)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to describe subnets")
+		return err
 	}
-
-	// Extract subnet IDs from the response
-	var subnetIDs []string
-	for _, subnet := range resp.Subnets {
-		subnetIDs = append(subnetIDs, *subnet.SubnetId)
-	}
-	// create a subnetgroup with subnets in the VPC
-	subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", a.name), "kanister-test-subnet-group", subnetIDs)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to create subnet group")
-	}
-	a.dbSubnetGroup = *subnetGroup.DBSubnetGroup.DBSubnetGroupName
+	a.dbSubnetGroup = dbSubnetGroup
 
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": a.name, "name": a.securityGroupName})
