@@ -360,7 +360,6 @@ func parseProfile(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectReference, e
 // for the passed Repository Server
 func parseRepositoryServer(cmd *cobra.Command) (*crv1alpha1.ObjectReference, error) {
 	repositoryServerName, _ := cmd.Flags().GetString(repositoryServerFlagName)
-	var ns string
 	if repositoryServerName == "" {
 		return nil, nil
 	}
@@ -369,9 +368,8 @@ func parseRepositoryServer(cmd *cobra.Command) (*crv1alpha1.ObjectReference, err
 		if len(nsName) != 2 {
 			return nil, errors.Errorf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name )", repositoryServerName)
 		}
-		ns = nsName[0]
+		ns := nsName[0]
 		repositoryServerName = nsName[1]
-
 		return &crv1alpha1.ObjectReference{
 			Name:      repositoryServerName,
 			Namespace: ns,
