@@ -88,7 +88,7 @@ func bastionDebugWorkloadSpec(ctx context.Context, name string, image string, na
 						{
 							Name:    name,
 							Image:   image,
-							Command: []string{"sleep", "infinity"},
+							Command: []string{"sh", "-c", "tail -f /dev/null"},
 						},
 					},
 				},
