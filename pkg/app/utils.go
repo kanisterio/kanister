@@ -15,8 +15,12 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 )
 
@@ -60,4 +64,33 @@ func getOpenShiftDBTemplate(appName string, templateVersion DBTemplate, storageT
 // used to delete all the resources that were created while deploying this application
 func getLabelOfApp(appName string, storageType storage) string {
 	return fmt.Sprintf("app=%s-%s", appName, storageType)
+}
+
+// bastionDebugWorkloadSpec creates Deployment Resource Manifest from which RDS database queries can be executed
+func bastionDebugWorkloadSpec(ctx context.Context, name string, image string, namespace string) *appsv1.Deployment {
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": name}},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": name,
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:    name,
+							Image:   image,
+							Command: []string{"sh", "-c", "tail -f /dev/null"},
+						},
+					},
+				},
+			},
+		},
+	}
 }
