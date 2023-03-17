@@ -36,14 +36,11 @@ func newLocationPushCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
-			err := validateCommandArgs(c)
-			if err != nil {
+			if err := validateCommandArgs(c); err != nil {
 				return err
 			}
 			dataMover := NewDataMover(checkDataMover(c), outputNameFlag(c), "")
-			destinationPath := pathFlag(c)
-			sourcePath := args[0]
-			return dataMover.Push(sourcePath, destinationPath)
+			return dataMover.Push(args[0], pathFlag(c))
 		},
 	}
 	cmd.Flags().StringP(outputNameFlagName, "o", defaultKandoOutputKey, "Specify a name to be used for the output produced by kando. Set to `kandoOutput` by default")

@@ -29,13 +29,11 @@ func newLocationDeleteCommand() *cobra.Command {
 		Short: "Delete artifacts from s3-compliant object storage",
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
-			err := validateCommandArgs(c)
-			if err != nil {
+			if err := validateCommandArgs(c); err != nil {
 				return err
 			}
 			dataMover := NewDataMover(checkDataMover(c), "", kopiaSnapshotFlag(c))
-			destinationPath := pathFlag(c)
-			return dataMover.Delete(destinationPath)
+			return dataMover.Delete(pathFlag(c))
 		},
 	}
 	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")

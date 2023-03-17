@@ -36,14 +36,11 @@ func newLocationPullCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		// TODO: Example invocations
 		RunE: func(c *cobra.Command, args []string) error {
-			err := validateCommandArgs(c)
-			if err != nil {
+			if err := validateCommandArgs(c); err != nil {
 				return err
 			}
 			dataMover := NewDataMover(checkDataMover(c), "", kopiaSnapshotFlag(c))
-			destinationPath := pathFlag(c)
-			sourcePath := args[0]
-			return dataMover.Pull(sourcePath, destinationPath)
+			return dataMover.Pull(args[0], pathFlag(c))
 		},
 	}
 	cmd.Flags().StringP(kopiaSnapshotFlagName, "k", "", "Pass the kopia snapshot information from the location push command (optional)")
