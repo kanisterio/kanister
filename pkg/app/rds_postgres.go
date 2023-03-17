@@ -150,7 +150,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
 
-	pdb.vpcID, err = getVPCIDForRDSInstance(ctx, ec2Cli)
+	pdb.vpcID, err = vpcIDForRDSInstance(ctx, ec2Cli)
 	if err != nil {
 		return err
 	}

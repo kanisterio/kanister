@@ -99,8 +99,8 @@ func bastionDebugWorkloadSpec(ctx context.Context, name string, image string, na
 	}
 }
 
-// getVpcIdForRDSInstance gets the VPC_ID from env if set or from the default VPC
-func getVPCIDForRDSInstance(ctx context.Context, ec2Cli *ec2.EC2) (string, error) {
+// vpcIdForRDSInstance gets the VPC ID from env var `VPC_ID` if set, or from the default VPC
+func vpcIDForRDSInstance(ctx context.Context, ec2Cli *ec2.EC2) (string, error) {
 	vpcID := os.Getenv("VPC_ID")
 
 	// VPCId is not provided, use Default VPC

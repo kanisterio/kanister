@@ -146,7 +146,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return err
 	}
 
-	a.vpcID, err = getVPCIDForRDSInstance(ctx, ec2Cli)
+	a.vpcID, err = vpcIDForRDSInstance(ctx, ec2Cli)
 	if err != nil {
 		return err
 	}
