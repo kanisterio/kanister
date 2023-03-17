@@ -151,7 +151,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return err
 	}
 
-	dbSubnetGroup, err := getDBSubnetGroup(ctx, ec2Cli, rdsCli, a.vpcID, a.name, subnetGroupDescription)
+	dbSubnetGroup, err := dbSubnetGroup(ctx, ec2Cli, rdsCli, a.vpcID, a.name, subnetGroupDescription)
 	if err != nil {
 		return err
 	}

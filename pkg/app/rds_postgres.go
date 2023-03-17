@@ -155,7 +155,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 
-	dbSubnetGroup, err := getDBSubnetGroup(ctx, ec2Cli, rdsCli, pdb.vpcID, pdb.name, subnetGroupDescription)
+	dbSubnetGroup, err := dbSubnetGroup(ctx, ec2Cli, rdsCli, pdb.vpcID, pdb.name, subnetGroupDescription)
 	if err != nil {
 		return err
 	}
