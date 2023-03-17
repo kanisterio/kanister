@@ -117,7 +117,7 @@ func vpcIDForRDSInstance(ctx context.Context, ec2Cli *ec2.EC2) (string, error) {
 	return *defaultVpc.Vpcs[0].VpcId, nil
 }
 
-// dbSubnetGroup gets the DBSubnetGroup based on VPCID
+// dbSubnetGroup gets the DBSubnetGroup based on VPC ID
 func dbSubnetGroup(ctx context.Context, ec2Cli *ec2.EC2, rdsCli *rds.RDS, vpcID, name, subnetGroupDescription string) (string, error) {
 	// describe subnets in the VPC
 	resp, err := ec2Cli.DescribeSubnets(ctx, vpcID)
