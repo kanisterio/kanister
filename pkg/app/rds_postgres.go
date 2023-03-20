@@ -65,6 +65,7 @@ type RDSPostgresDB struct {
 const (
 	dbInstanceType           = "db.t3.micro"
 	postgresConnectionString = "PGPASSWORD=%s psql -h %s -p 5432 -U %s -d %s -t -c"
+	subnetGroupDescription   = "kanister-test-subnet-group"
 )
 
 func NewRDSPostgresDB(name string, customRegion string) App {
@@ -126,13 +127,12 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	if err != nil {
 		return errors.Wrapf(err, "app=%s", pdb.name)
 	}
-	// Create ec2 client
+
 	ec2Cli, err := ec2.NewClient(ctx, awsConfig, region)
 	if err != nil {
 		return err
 	}
 
-	// Create rds client
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
 	if err != nil {
 		return err
@@ -143,44 +143,23 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 	deploymentSpec := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
 	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create test deployment %s , app: %s", pdb.bastionDebugWorkloadName, pdb.name)
+		return errors.Wrapf(err, "Failed to create deployment %s, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
 
 	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, pdb.namespace, pdb.bastionDebugWorkloadName); err != nil {
 		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
 	}
 
-	pdb.vpcID = os.Getenv("VPC_ID")
-
-	// VPCId is not provided, use Default VPC
-	if pdb.vpcID == "" {
-		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
-		if err != nil {
-			return err
-		}
-		if len(defaultVpc.Vpcs) == 0 {
-			return fmt.Errorf("No default VPC found")
-		}
-		pdb.vpcID = *defaultVpc.Vpcs[0].VpcId
-	}
-
-	// describe subnets in the VPC
-	resp, err := ec2Cli.DescribeSubnets(ctx, pdb.vpcID)
+	pdb.vpcID, err = vpcIDForRDSInstance(ctx, ec2Cli)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to describe subnets")
+		return err
 	}
 
-	// Extract subnet IDs from the response
-	var subnetIDs []string
-	for _, subnet := range resp.Subnets {
-		subnetIDs = append(subnetIDs, *subnet.SubnetId)
-	}
-	// create a subnetgroup with subnets in the VPC
-	subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", pdb.name), "kanister-test-subnet-group", subnetIDs)
+	dbSubnetGroup, err := dbSubnetGroup(ctx, ec2Cli, rdsCli, pdb.vpcID, pdb.name, subnetGroupDescription)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create subnet group")
+		return err
 	}
-	pdb.dbSubnetGroup = *subnetGroup.DBSubnetGroup.DBSubnetGroupName
+	pdb.dbSubnetGroup = dbSubnetGroup
 
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
@@ -336,7 +315,7 @@ func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
 	countCommand := []string{"sh", "-c", countQuery}
 	stdout, stderr, err := pdb.execCommand(ctx, countCommand)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting data into table: %s, app: %s", stderr, pdb.name)
+		return 0, errors.Wrapf(err, "Error while counting data of table: %s, app: %s", stderr, pdb.name)
 	}
 
 	rowsReturned, err := strconv.Atoi(stdout)
@@ -434,7 +413,6 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "Failed to ec2 client. You may need to delete EC2 resources manually. app=rds-postgresql")
 	}
 
-	// Delete dbSubnetGroup
 	log.Info().Print("Deleting db subnet group.", field.M{"app": pdb.name})
 	_, err = rdsCli.DeleteDBSubnetGroup(ctx, pdb.dbSubnetGroup)
 	if err != nil {

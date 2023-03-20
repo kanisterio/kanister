@@ -143,6 +143,17 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		return nil, errors.Wrapf(e, "Failed to get dbSubnetGroup ids. InstanceID=%s", instanceID)
 	}
 
+	var dbSubnetGroup *string
+	switch {
+	case isAuroraCluster(string(dbEngine)):
+		dbSubnetGroup, e = GetRDSAuroraDbSubnetGroup(ctx, rdsCli, instanceID)
+	default:
+		dbSubnetGroup, e = GetRDSDbSubnetGroup(ctx, rdsCli, instanceID)
+	}
+	if e != nil {
+		return nil, errors.Wrapf(e, "Failed to get dbSubnetGroup ids. InstanceID=%s", instanceID)
+	}
+
 	output := map[string]interface{}{
 		CreateRDSSnapshotSnapshotID:       snapshotID,
 		CreateRDSSnapshotInstanceIDArg:    instanceID,
