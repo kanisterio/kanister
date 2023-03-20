@@ -134,7 +134,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	deploymentSpec := bastionDebugWorkloadSpec(ctx, a.bastionDebugWorkloadName, "mysql", a.namespace)
 	_, err = a.cli.AppsV1().Deployments(a.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create test deployment %s, app=%s", a.bastionDebugWorkloadName, a.name)
+		return errors.Wrapf(err, "Failed to create deployment %s, app=%s", a.bastionDebugWorkloadName, a.name)
 	}
 
 	if err := kube.WaitOnDeploymentReady(ctx, a.cli, a.namespace, a.bastionDebugWorkloadName); err != nil {
@@ -146,48 +146,27 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return err
 	}
 
-	a.vpcID = os.Getenv("VPC_ID")
-
-	// VPCId is not provided, use Default VPC
-	if a.vpcID == "" {
-		defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
-		if err != nil {
-			return err
-		}
-		if len(defaultVpc.Vpcs) == 0 {
-			return fmt.Errorf("No default VPC found")
-		}
-		a.vpcID = *defaultVpc.Vpcs[0].VpcId
-	}
-
-	// describe subnets in the VPC
-	resp, err := ec2Cli.DescribeSubnets(ctx, a.vpcID)
+	a.vpcID, err = vpcIDForRDSInstance(ctx, ec2Cli)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to describe subnets")
+		return err
 	}
 
-	// Extract subnet IDs from the response
-	var subnetIDs []string
-	for _, subnet := range resp.Subnets {
-		subnetIDs = append(subnetIDs, *subnet.SubnetId)
-	}
-	// create a subnetgroup with subnets in the VPC
-	subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", a.name), "kanister-test-subnet-group", subnetIDs)
+	dbSubnetGroup, err := dbSubnetGroup(ctx, ec2Cli, rdsCli, a.vpcID, a.name, subnetGroupDescription)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create subnet group")
+		return err
 	}
-	a.dbSubnetGroup = *subnetGroup.DBSubnetGroup.DBSubnetGroupName
+	a.dbSubnetGroup = dbSubnetGroup
 
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": a.name, "name": a.securityGroupName})
-	sg, err := ec2Cli.CreateSecurityGroup(ctx, a.securityGroupName, "To allow ingress to Aurora DB cluster")
+	sg, err := ec2Cli.CreateSecurityGroup(ctx, a.securityGroupName, "To allow ingress to Aurora DB cluster", a.vpcID)
 	if err != nil {
 		return errors.Wrap(err, "Error creating security group")
 	}
 	a.securityGroupID = *sg.GroupId
 
 	// Add ingress rule
-	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupName, "0.0.0.0/0", "tcp", 3306)
+	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupID, "0.0.0.0/0", "tcp", 3306)
 	if err != nil {
 		return errors.Wrap(err, "Error authorizing security group")
 	}
@@ -249,9 +228,9 @@ func (a *RDSAuroraMySQLDB) IsReady(context.Context) (bool, error) {
 
 func (a *RDSAuroraMySQLDB) Ping(ctx context.Context) error {
 	log.Print("Pinging rds aurora database", field.M{"app": a.name})
-	isReadyQuery := fmt.Sprintf(mysqlConnectionString+"'SELECT 1;'", a.host, a.username, a.password, a.dbName)
+	pingQuery := fmt.Sprintf(mysqlConnectionString+"'SELECT 1;'", a.host, a.username, a.password, a.dbName)
 
-	pingCommand := []string{"sh", "-c", isReadyQuery}
+	pingCommand := []string{"sh", "-c", pingQuery}
 
 	_, stderr, err := a.execCommand(ctx, pingCommand)
 	if err != nil {
@@ -284,15 +263,15 @@ func (a *RDSAuroraMySQLDB) Count(ctx context.Context) (int, error) {
 	countCommand := []string{"sh", "-c", countQuery}
 	stdout, stderr, err := a.execCommand(ctx, countCommand)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while counting data into table: %s, app: %s", stderr, a.name)
+		return 0, errors.Wrapf(err, "Error while counting data of table: %s, app: %s", stderr, a.name)
 	}
 
 	rowsReturned, err := strconv.Atoi(stdout)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error while converting response of count query: %s, app: %s", stderr, a.name)
+		return 0, errors.Wrapf(err, "Error while converting response of count query to int: %s, app: %s", stderr, a.name)
 	}
 
-	log.Info().Print("Counting rows in test db.", field.M{"app": a.name, "count": rowsReturned})
+	log.Info().Print("Number of rows in test DB.", field.M{"app": a.name, "count": rowsReturned})
 	return rowsReturned, nil
 }
 
@@ -303,15 +282,14 @@ func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
 	deleteCommand := []string{"sh", "-c", deleteQuery}
 	_, stderr, err := a.execCommand(ctx, deleteCommand)
 	if err != nil {
-		return errors.Wrapf(err, "Error while deleting data into table: %s, app: %s", stderr, a.name)
+		return errors.Wrapf(err, "Error while deleting data from table: %s, app: %s", stderr, a.name)
 	}
 
-	log.Info().Print("Database reset successful!", field.M{"app": a.name})
+	log.Info().Print("Database reset was successful!", field.M{"app": a.name})
 	return nil
 }
 
 func (a *RDSAuroraMySQLDB) Initialize(ctx context.Context) error {
-	// Create table.
 	log.Print("Initializing database", field.M{"app": a.name})
 	createQuery := fmt.Sprintf(mysqlConnectionString+"\"CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);\"", a.host, a.username, a.password, a.dbName)
 	createCommand := []string{"sh", "-c", createQuery}
@@ -363,7 +341,6 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "Failed to create ec2 client.")
 	}
 
-	// Delete dbSubnetGroup
 	log.Info().Print("Deleting db subnet group.", field.M{"app": a.name})
 	_, err = rdsCli.DeleteDBSubnetGroup(ctx, a.dbSubnetGroup)
 	if err != nil {

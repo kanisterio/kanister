@@ -255,7 +255,9 @@ func GetRDSDbSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID string
 		return nil, err
 	}
 
-	// Extract the dbSubnetGroup from the response
+	if len(result.DBInstances) == 0 {
+		return nil, errors.Errorf("Could not get DBInstance with the instanceID %s", instanceID)
+	}
 	return result.DBInstances[0].DBSubnetGroup.DBSubnetGroupName, nil
 }
 
@@ -269,6 +271,8 @@ func GetRDSAuroraDbSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID 
 			return nil, nil
 		}
 	}
-	// Extract the dbSubnetGroup from the response
+	if len(desc.DBClusters) == 0 {
+		return nil, errors.Errorf("Could not get DBCluster with the instanceID %s", instanceID)
+	}
 	return desc.DBClusters[0].DBSubnetGroup, nil
 }
