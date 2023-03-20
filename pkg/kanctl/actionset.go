@@ -758,7 +758,7 @@ func verifyRepositoryServerParams(repoServer *crv1alpha1.ObjectReference, crCli 
 			if apierrors.IsNotFound(err) {
 				return errors.Wrapf(err, "Please make sure '%s' with name '%s' exists in namespace '%s'", "repository-server", repoServer.Name, repoServer.Namespace)
 			}
-			return errors.New("there was an error getting repo server")
+			return errors.New("error while fetching repo server")
 		}
 		if rs.Status.Progress != "ServerReady" {
 			err = errors.New("Repository Server Not Ready")
