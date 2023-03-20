@@ -54,6 +54,7 @@ schemas
 stateful
 stdout
 subcommand
+Subnet
 templating
 Walkthrough
 walkthrough
