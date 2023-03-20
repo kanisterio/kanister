@@ -126,6 +126,10 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
+	err = warnDataMoverFlag(cmd)
+	if err != nil {
+		fmt.Printf("Warning: %s\n", err.Error())
+	}
 	return perform(ctx, crCli, params)
 }
 
@@ -794,6 +798,15 @@ func verifyObjectParams(p *PerformParams, cli kubernetes.Interface, osCli osvers
 		if err != nil {
 			return errors.Wrapf(err, "Please make sure '%s' with name '%s' exists in namespace '%s'", obj.Kind, obj.Name, obj.Namespace)
 		}
+	}
+	return nil
+}
+
+func warnDataMoverFlag(cmd *cobra.Command) error {
+	profile := cmd.Flags().Lookup(profileFlagName).Value.String()
+	repositoryServer := cmd.Flags().Lookup(repositoryServerFlagName).Value.String()
+	if profile == "" && repositoryServer == "" {
+		return errors.New("Neither --profile or --repository-server flag is specified.\nAction might fail if blueprint is using these resources")
 	}
 	return nil
 }
