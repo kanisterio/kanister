@@ -393,13 +393,13 @@ func parseObjects(cmd *cobra.Command, cli kubernetes.Interface, osCli osversione
 
 	deployments, _ := cmd.Flags().GetStringSlice(deploymentFlagName)
 	statefulSets, _ := cmd.Flags().GetStringSlice(statefulSetFlagName)
-	deploymetConfig, _ := cmd.Flags().GetStringSlice(deploymentConfigFlagName)
+	deploymentConfig, _ := cmd.Flags().GetStringSlice(deploymentConfigFlagName)
 	pvcs, _ := cmd.Flags().GetStringSlice(pvcFlagName)
 	namespaces, _ := cmd.Flags().GetStringSlice(namespaceTargetsFlagName)
 
 	objs[param.DeploymentKind] = deployments
 	objs[param.StatefulSetKind] = statefulSets
-	objs[param.DeploymentConfigKind] = deploymetConfig
+	objs[param.DeploymentConfigKind] = deploymentConfig
 	objs[param.PVCKind] = pvcs
 	objs[param.NamespaceKind] = namespaces
 
