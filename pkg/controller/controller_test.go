@@ -203,7 +203,7 @@ func (s *ControllerSuite) waitOnDeferPhaseState(c *C, as *crv1alpha1.ActionSet, 
 }
 
 //nolint:unparam
-func (s *ControllerSuite) waitOnActionSetCompleteWithRunningPhases(as *crv1alpha1.ActionSet, rp *sets.String) error {
+func (s *ControllerSuite) waitOnActionSetCompleteWithRunningPhases(as *crv1alpha1.ActionSet, rp *sets.Set[string]) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 	err := poll.Wait(ctx, func(context.Context) (bool, error) {
@@ -976,7 +976,7 @@ func (s *ControllerSuite) TestProgressRunningPhase(c *C) {
 	err = s.waitOnActionSetState(c, as, crv1alpha1.StateRunning)
 	c.Assert(err, IsNil)
 
-	runningPhases := sets.NewString()
+	runningPhases := sets.Set[string]{}
 	runningPhases.Insert("backupPhaseOne").Insert("backupPhaseTwo").Insert("deferPhase")
 
 	err = s.waitOnActionSetCompleteWithRunningPhases(as, &runningPhases)
