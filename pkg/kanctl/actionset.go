@@ -126,7 +126,7 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
-	err = warnDataMoverFlag(cmd)
+	err = isDataMoverProvided(cmd)
 	if err != nil {
 		fmt.Printf("Warning: %s\n", err.Error())
 	}
@@ -802,11 +802,11 @@ func verifyObjectParams(p *PerformParams, cli kubernetes.Interface, osCli osvers
 	return nil
 }
 
-func warnDataMoverFlag(cmd *cobra.Command) error {
+func isDataMoverProvided(cmd *cobra.Command) error {
 	profile := cmd.Flags().Lookup(profileFlagName).Value.String()
 	repositoryServer := cmd.Flags().Lookup(repositoryServerFlagName).Value.String()
 	if profile == "" && repositoryServer == "" {
-		return errors.New("Neither --profile or --repository-server flag is specified.\nAction might fail if blueprint is using these resources")
+		return errors.New("Neither --profile nor --repository-server flag is provided.\nAction might fail if blueprint is using these resources.")
 	}
 	return nil
 }
