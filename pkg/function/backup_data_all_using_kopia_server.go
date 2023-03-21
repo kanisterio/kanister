@@ -37,7 +37,6 @@ func (*backupDataAllUsingKopiaServerFunc) RequiredArgs() []string {
 		BackupDataAllNamespaceArg,
 		BackupDataAllContainerArg,
 		BackupDataAllIncludePathArg,
-		BackupDataAllBackupArtifactPrefixArg,
 	}
 }
 
