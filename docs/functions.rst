@@ -1585,7 +1585,8 @@ supported by Kanister using Kopia Repository Server as a data mover.
    sidecar container. This sidecar is necessary to run the
    tools that back up the volume and store it on the object store.
 
-   Additionally, in order to use this function, a RepositoryServer CR is required
+   Additionally, in order to use this function, a RepositoryServer CR is
+   needed while creating the :ref:`actionsets`
 
 Arguments:
 
@@ -1598,7 +1599,7 @@ Arguments:
    `pod`, Yes, `string`, pod name of the container that you want to backup the data of
    `container`, Yes, `string`, name of the kanister sidecar container
    `includePath`, Yes, `string`, path of the data to be backed up
-   `snapshotTags`, No, `string`, custom tags to be provided for the kopia snapshots
+   `snapshotTags`, No, `string`, custom tags to be provided to the kopia snapshots
 
 Outputs:
 

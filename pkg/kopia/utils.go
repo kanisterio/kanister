@@ -59,7 +59,7 @@ const (
 	DataStoreGeneralContentCacheSizeMBKey = "dataStoreGeneralContentCacheSize"
 	// DataStoreGeneralMetadataCacheSizeMBKey is the key to pass metadata cache size for general command workloads
 	DataStoreGeneralMetadataCacheSizeMBKey = "dataStoreGeneralMetadataCacheSize"
-	// ServerUsernameFormat is used to construct server username for Kopia API Server Status Command
+	// ServerUsernameFormat is used to construct server username for Kopia Repository Server Status Command
 	ServerUsernameFormat = "%s@%s"
 	// KanisterAdminUsername is the username for the user with Admin privileges
 	KanisterAdminUsername = "kanister-admin"
