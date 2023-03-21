@@ -137,7 +137,7 @@ type KopiaServerCreds struct {
 	ConnectOptions map[string]int
 }
 
-// RepositoryServer contains where to store Repository Server CR Artifacts
+// RepositoryServer contains fields from Repository server CR that will be used to resolve go templates for repository server in blueprint
 type RepositoryServer struct {
 	Name        string
 	Namespace   string
