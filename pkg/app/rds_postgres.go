@@ -16,19 +16,20 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/yaml"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	aws "github.com/kanisterio/kanister/pkg/aws"
@@ -37,33 +38,31 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
-
-	// Initialize pq driver
-	_ "github.com/lib/pq"
 )
 
 type RDSPostgresDB struct {
-	name              string
-	cli               kubernetes.Interface
-	namespace         string
-	id                string
-	host              string
-	databases         []string
-	username          string
-	password          string
-	accessID          string
-	secretKey         string
-	region            string
-	sessionToken      string
-	securityGroupID   string
-	securityGroupName string
-	sqlDB             *sql.DB
-	configMapName     string
-	secretName        string
+	name                     string
+	cli                      kubernetes.Interface
+	namespace                string
+	id                       string
+	host                     string
+	databases                []string
+	username                 string
+	password                 string
+	accessID                 string
+	secretKey                string
+	region                   string
+	sessionToken             string
+	securityGroupID          string
+	securityGroupName        string
+	configMapName            string
+	secretName               string
+	bastionDebugWorkloadName string
 }
 
 const (
-	dbInstanceType = "db.t3.micro"
+	dbInstanceType           = "db.t3.micro"
+	postgresConnectionString = "PGPASSWORD=%s psql -h %s -p 5432 -U %s -d %s -t -c"
 )
 
 func NewRDSPostgresDB(name string, customRegion string) App {
@@ -131,6 +130,17 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 		return err
 	}
 
+	pdb.bastionDebugWorkloadName = fmt.Sprintf("%s-workload", pdb.name)
+
+	deploymentSpec := bastionDebugWorkloadSpec(ctx, pdb.bastionDebugWorkloadName, "postgres", pdb.namespace)
+	_, err = pdb.cli.AppsV1().Deployments(pdb.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create deployment %s, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
+	}
+
+	if err := kube.WaitOnDeploymentReady(ctx, pdb.cli, pdb.namespace, pdb.bastionDebugWorkloadName); err != nil {
+		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app: %s", pdb.bastionDebugWorkloadName, pdb.name)
+	}
 	// Create security group
 	log.Info().Print("Creating security group.", field.M{"app": pdb.name, "name": pdb.securityGroupName})
 	sg, err := ec2Cli.CreateSecurityGroup(ctx, pdb.securityGroupName, "kanister-test-security-group")
@@ -234,6 +244,7 @@ func (pdb *RDSPostgresDB) Object() crv1alpha1.ObjectReference {
 
 // Ping makes and tests DB connection
 func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
+	log.Print("Pinging rds postgres database", field.M{"app": pdb.name})
 	// Get connection info from configmap
 	dbconfig, err := pdb.cli.CoreV1().ConfigMaps(pdb.namespace).Get(ctx, pdb.configMapName, metav1.GetOptions{})
 	if err != nil {
@@ -255,53 +266,61 @@ func (pdb *RDSPostgresDB) Ping(ctx context.Context) error {
 		return errors.New("Databases are missing from configmap")
 	}
 
-	var connectionString string = fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], dbsecret.Data["password"], databases[0])
+	isReadyQuery := fmt.Sprintf(postgresConnectionString+"'SELECT version();'", dbsecret.Data["password"], dbconfig.Data["postgres.host"], dbconfig.Data["postgres.user"], databases[0])
 
-	// Initialize connection object.
-	db, err := sql.Open("postgres", connectionString)
+	pingCommand := []string{"sh", "-c", isReadyQuery}
+
+	_, stderr, err := pdb.execCommand(ctx, pingCommand)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error while Pinging the database: %s, app: %s", stderr, pdb.name)
 	}
-
-	err = db.Ping()
-	if err != nil {
-		return err
-	}
-
-	pdb.sqlDB = db
-	log.Info().Print("Connected to database.", field.M{"app": pdb.name})
+	log.Print("Ping to the application was successful.", field.M{"app": pdb.name})
 	return nil
 }
 
 func (pdb RDSPostgresDB) Insert(ctx context.Context) error {
+	log.Print("Adding entry to database", field.M{"app": pdb.name})
 	now := time.Now().Format(time.RFC3339Nano)
-	stmt := "INSERT INTO inventory (name) VALUES ($1);"
-	_, err := pdb.sqlDB.Exec(stmt, now)
+	insertQuery := fmt.Sprintf(postgresConnectionString+
+		"\"INSERT INTO inventory (name) VALUES ('%s');\"", pdb.password, pdb.host, pdb.username, pdb.databases[0], now)
+
+	insertCommand := []string{"sh", "-c", insertQuery}
+	_, stderr, err := pdb.execCommand(ctx, insertCommand)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error while inserting data into table: %s, app: %s", stderr, pdb.name)
 	}
 	log.Info().Print("Inserted a row in test db.", field.M{"app": pdb.name})
 	return nil
 }
 
 func (pdb RDSPostgresDB) Count(ctx context.Context) (int, error) {
-	stmt := "SELECT COUNT(*) FROM inventory;"
-	row := pdb.sqlDB.QueryRow(stmt)
-	var count int
-	err := row.Scan(&count)
+	log.Print("Counting entries from database", field.M{"app": pdb.name})
+	countQuery := fmt.Sprintf(postgresConnectionString+
+		"\"SELECT COUNT(*) FROM inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
+
+	countCommand := []string{"sh", "-c", countQuery}
+	stdout, stderr, err := pdb.execCommand(ctx, countCommand)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "Error while counting data of table: %s, app: %s", stderr, pdb.name)
 	}
-	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": count})
-	return count, nil
+
+	rowsReturned, err := strconv.Atoi(stdout)
+	if err != nil {
+		return 0, errors.Wrapf(err, "Error while converting response of count query: %s, app: %s", stderr, pdb.name)
+	}
+
+	log.Info().Print("Counting rows in test db.", field.M{"app": pdb.name, "count": rowsReturned})
+	return rowsReturned, nil
 }
 
 func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
-	_, err := pdb.sqlDB.Exec("DROP TABLE IF EXISTS inventory;")
+	log.Print("Resetting database", field.M{"app": pdb.name})
+	deleteQuery := fmt.Sprintf(postgresConnectionString+"\"DROP TABLE IF EXISTS inventory;\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
+	deleteCommand := []string{"sh", "-c", deleteQuery}
+	_, stderr, err := pdb.execCommand(ctx, deleteCommand)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error while deleting data from table: %s, app: %s", stderr, pdb.name)
 	}
-
 	log.Info().Print("Database reset successful!", field.M{"app": pdb.name})
 	return nil
 }
@@ -309,9 +328,12 @@ func (pdb RDSPostgresDB) Reset(ctx context.Context) error {
 // Initialize is used to initialize the database or create schema
 func (pdb RDSPostgresDB) Initialize(ctx context.Context) error {
 	// Create table.
-	_, err := pdb.sqlDB.Exec("CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50));")
+	log.Print("Initializing database", field.M{"app": pdb.name})
+	createQuery := fmt.Sprintf(postgresConnectionString+"\"CREATE TABLE inventory (id serial PRIMARY KEY, name VARCHAR(50));\"", pdb.password, pdb.host, pdb.username, pdb.databases[0])
+	createCommand := []string{"sh", "-c", createQuery}
+	_, stderr, err := pdb.execCommand(ctx, createCommand)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error while initializing the database: %s, app: %s", stderr, pdb.name)
 	}
 	return nil
 }
@@ -390,6 +412,12 @@ func (pdb RDSPostgresDB) Uninstall(ctx context.Context) error {
 			}
 		}
 	}
+	// Remove workload object created for executing commands
+	err = pdb.cli.AppsV1().Deployments(pdb.namespace).Delete(ctx, pdb.bastionDebugWorkloadName, metav1.DeleteOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return errors.Wrapf(err, "Error deleting Workload name=%s app=%s", pdb.bastionDebugWorkloadName, pdb.name)
+	}
+
 	return nil
 }
 
@@ -412,4 +440,12 @@ func makeYamlList(dbs []string) string {
 		dbsYaml += fmt.Sprintf("- %s\n", db)
 	}
 	return dbsYaml
+}
+
+func (pdb RDSPostgresDB) execCommand(ctx context.Context, command []string) (string, string, error) {
+	podName, containerName, err := kube.GetPodContainerFromDeployment(ctx, pdb.cli, pdb.namespace, pdb.bastionDebugWorkloadName)
+	if err != nil || podName == "" {
+		return "", "", err
+	}
+	return kube.Exec(pdb.cli, pdb.namespace, podName, containerName, command, nil)
 }
