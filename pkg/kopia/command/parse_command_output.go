@@ -382,3 +382,26 @@ func IsEqualSnapshotCreateStats(a, b *SnapshotCreateStats) bool {
 		a.SizeEstimatedB == b.SizeEstimatedB &&
 		a.ProgressPercent == b.ProgressPercent
 }
+
+var ANSIEscapeCode = regexp.MustCompile(`\x1b[^m]*?m`)
+var kopiaErrorPattern = regexp.MustCompile(`ERROR\s+(.*)`)
+
+// ErrorFromOutput parses the output of a kopia and returns an error, if found
+func ErrorsFromOutput(output string) []error {
+	if output == "" {
+		return nil
+	}
+
+	var err []error
+
+	lines := regexp.MustCompile("[\r\n]").Split(output, -1)
+	for _, l := range lines {
+		clean := ANSIEscapeCode.ReplaceAllString(l, "") // Strip all ANSI escape codes from line
+		match := kopiaErrorPattern.FindAllStringSubmatch(clean, 1)
+		if len(match) > 0 {
+			err = append(err, errors.New(match[0][1]))
+		}
+	}
+
+	return err
+}

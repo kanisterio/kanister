@@ -563,6 +563,31 @@ func (kParse *KopiaParseUtilsTestSuite) TestIsEqualSnapshotCreateStats(c *C) {
 	}
 }
 
+func (kParse *KopiaParseUtilsTestSuite) TestErrorsFromOutput(c *C) {
+	for caseIdx, tc := range []struct {
+		log            string
+		expectedErrors []string
+	}{
+		// Some real error case
+		{"ERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/"}},
+		// The same as previous but with coloured ERROR word
+		{string([]byte{27, 91, 51, 49, 109, 69, 82, 82, 79, 82, 27, 91, 48, 109, 32, 111, 112, 101, 110, 32, 114, 101, 112, 111, 115, 105, 116, 111, 114, 121, 58, 32, 114, 101, 112, 111, 115, 105, 116, 111, 114, 121, 32, 105, 115, 32, 110, 111, 116, 32, 99, 111, 110, 110, 101, 99, 116, 101, 100, 46}), []string{"open repository: repository is not connected."}},
+		// Multiple error lines (seems not possible in real life, but just to cover this possibility)
+		{"ERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/\r\nERROR another error", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/", "another error"}},
+		// Error surrounded by other output
+		{"some text\r\nERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/\r\nanother text line", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/"}},
+		// No error in output
+		{"some text\r\nanother text line", []string{}},
+	} {
+		errs := ErrorsFromOutput(tc.log)
+		fc := Commentf("Failed for case #%v. Log: %s", caseIdx, tc.log)
+		c.Check(len(errs), Equals, len(tc.expectedErrors), fc)
+		for i, e := range errs {
+			c.Check(e.Error(), Equals, tc.expectedErrors[i], fc)
+		}
+	}
+}
+
 func marshalManifestList(c *C, manifestList []*snapshot.Manifest) string {
 	c.Assert(manifestList, NotNil)
 
