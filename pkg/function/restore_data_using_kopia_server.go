@@ -253,7 +253,7 @@ func validateAndGetOptArgsForRestore(tp param.TemplateParams, args map[string]an
 	if err = OptArg(args, RestoreDataVolsArg, &vols, nil); err != nil {
 		return pod, vols, podOverride, err
 	}
-	if (pod != "") == (len(vols) > 0) {
+	if (pod != "") && (len(vols) > 0) {
 		return pod, vols, podOverride, errors.New(fmt.Sprintf("Require exactly one of %s or %s", RestoreDataPodArg, RestoreDataVolsArg))
 	}
 	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataPodOverrideArg)
