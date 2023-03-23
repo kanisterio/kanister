@@ -22,7 +22,7 @@ const (
 	DefaultClientCacheDirectory = "/tmp/kopia-cache"
 
 	// DataStoreParallelUploadName is the Environmental Variable set in Kanister
-	// For Parallelism
+	// For Parallelism to be used by Kopia for backup action
 	DataStoreParallelUploadName = "DATA_STORE_PARALLEL_UPLOAD"
 	// DefaultDataStoreParallelUpload is the Default Value of Parallelism
 	DefaultDataStoreParallelUpload = 8
