@@ -1578,8 +1578,8 @@ RestoreDataUsingKopiaServer
 ---------------------------
 
 This function restores data backed up by the ``BackupDataUsingKopiaServer`` function.
-It creates a new Pod that mounts the PVCs referenced by the specified Pod
-and restores data to the specified path.
+It creates a new Pod that mounts the PVCs referenced by the Pod specified in the
+function argument and restores data to the specified path.
 
 .. note::
    It is extremely important that, the PVCs are not currently
