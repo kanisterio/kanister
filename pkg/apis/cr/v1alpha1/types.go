@@ -195,10 +195,10 @@ type Phase struct {
 }
 
 type PhaseProgress struct {
-	ProgressPercent      int
-	SizeUploadedB        int64
-	EstimatedTimeSeconds int64
-	EstimatedUploadSizeB int64
+	ProgressPercent      int   `json:"progressPercent,omitempty"`
+	SizeUploadedB        int64 `json:"sizeUploadedB,omitempty"`
+	EstimatedTimeSeconds int64 `json:"estinatedTimeSeconds,omitempty"`
+	EstimatedUploadSizeB int64 `json:"estinatedUploadSizeB,omitempty"`
 }
 
 // k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

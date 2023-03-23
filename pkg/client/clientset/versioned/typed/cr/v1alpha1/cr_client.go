@@ -34,7 +34,7 @@ type CrV1alpha1Interface interface {
 	RepositoryServersGetter
 }
 
-// CrV1alpha1Client is used to interact with features provided by the cr.kanister.io group.
+// CrV1alpha1Client is used to interact with features provided by the cr group.
 type CrV1alpha1Client struct {
 	restClient rest.Interface
 }
