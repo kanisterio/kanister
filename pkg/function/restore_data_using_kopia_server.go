@@ -168,9 +168,6 @@ func restoreDataFromServer(
 		PodOverride:  podOverride,
 	}
 
-	kankopia.SetLabelsToPodOptionsIfRequired(options)
-	kankopia.SetAnnotationsToPodOptionsIfRequired(options)
-	kankopia.SetResourceRequirementsToPodOptionsIfRequired(options)
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := restoreDataFromServerPodFunc(
 		cli,
