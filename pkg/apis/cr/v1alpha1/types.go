@@ -159,8 +159,8 @@ type ActionProgress struct {
 	// was received.
 	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
 	// Inform about how many phases are completed out of total
-	TotalPhases     int
-	CompletedPhases int
+	TotalPhases     int `json:"totalPhases,omitempty"`
+	CompletedPhases int `json:"completedPhases,omitempty"`
 }
 
 // State is the current state of a phase of execution.

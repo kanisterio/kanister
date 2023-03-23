@@ -259,26 +259,18 @@ spec:
                             type: string
                         type: object
                       deferPhase:
-                        properties:
-                          name:
-                            type: string
-                          output:
-                            x-kubernetes-preserve-unknown-fields: true
-                            type: object
-                          state:
-                            type: string
-                          progress:
-                            properties:
-                              progressPercent:
-                                type: integer
-                              sizeUploadedB:
-                                type: integer
-                              estimatedTimeSeconds:
-                                type: integer
-                              estimatedUploadSizeB:
-                                type: integer
-                            type: object
-                        type: object
+                        progress:
+                          properties:
+                            progressPercent:
+                              type: integer
+                            sizeUploadedB:
+                              type: integer
+                            estimatedTimeSeconds:
+                              type: integer
+                            estimatedUploadSizeB:
+                              type: integer
+                          type: object
+                      type: object
                       phases:
                         description: Phases are sub-actions an are executed sequentially.
                         items:
@@ -290,6 +282,17 @@ spec:
                               type: object
                             state:
                               type: string
+                            progress:
+                              properties:
+                                progressPercent:
+                                  type: integer
+                                sizeUploadedB:
+                                  type: integer
+                                estimatedTimeSeconds:
+                                  type: integer
+                                estimatedUploadSizeB:
+                                  type: integer
+                              type: object
                           type: object
                         type: array
                     type: object
