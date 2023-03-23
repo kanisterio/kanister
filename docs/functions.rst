@@ -1572,19 +1572,19 @@ Example:
         args:
           name: "test-snapshot-content-content-dfc8fa67-8b11-4fdf-bf94-928589c2eed8"
 
-
+.. _deletedatausingkopiaserver:
 DeleteDataUsingKopiaServer
 --------------------------
 
 This function deletes the snapshot data backed up by the ``BackupDataUsingKopiaServer``
-function. It creates a new Pod that runs ``delete snapshot`` job.
+function. It creates a new Pod that runs ``delete data`` job.
 
 .. note::
    The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
-   image since it includes the required tools to delete snapshot in
+   image since it includes the required tools to delete snapshot from
    the object store.
 
-   Additionally, in order to use this function, a RepositoryServer CR is required
+   Additionally, in order to use this function, a RepositoryServer CR is required.
 
 .. csv-table::
    :header: "Argument", "Required", "Type", "Description"
@@ -1610,6 +1610,7 @@ For this phase, we will use the ``backupIdentifier`` Artifact provided by backup
       namespace: "{{ .Deployment.Namespace }}"
       backupID: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
       image: ghcr.io/kanisterio/kanister-tools:0.89.0
+
 Registering Functions
 ---------------------
 

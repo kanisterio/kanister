@@ -69,7 +69,7 @@ func (*deleteDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 
 	userPassphrase, cert, err := userCredentialsAndServerTLS(&tp)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch User Credentials / Certificate Data from Template Params")
+		return nil, errors.Wrap(err, "Failed to fetch User Credentials/Certificate Data from Template Params")
 	}
 
 	fingerprint, err := kankopia.ExtractFingerprintFromCertificateJSON(cert)
