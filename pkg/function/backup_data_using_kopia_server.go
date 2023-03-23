@@ -24,8 +24,8 @@ import (
 
 const (
 	BackupDataUsingKopiaServerFuncName = "BackupDataUsingKopiaServer"
-	// BackupDataTagsKeyArg is the key used for returning snapshot tags
-	BackupDataTagsKeyArg = "snapshotTags"
+	// BackupDataUsingKopiaServerSnapshotTagsArg is the key used for returning snapshot tags
+	BackupDataUsingKopiaServerSnapshotTagsArg = "snapshotTags"
 )
 
 type backupDataUsingKopiaServerFunc struct{}
