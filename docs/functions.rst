@@ -1610,7 +1610,7 @@ and restores data to the specified path.
 
    Either ``pod`` or the ``volumes`` arguments must be specified to this function
    based on the function that was used to backup the data.
-   For `BackupDataUsingKopiaServer` we should specify `pod` and for
+   Is `BackupDataUsingKopiaServer` is used to backup the data we should specify `pod` and for
    `CopyVolumeDataUsingKopiaServer`, `Volumes` should be specified.
 
    Additionally, in order to use this function, a RepositoryServer CR is required.
