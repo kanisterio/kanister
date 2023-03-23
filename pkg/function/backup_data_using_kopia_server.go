@@ -38,8 +38,8 @@ import (
 
 const (
 	BackupDataUsingKopiaServerFuncName = "BackupDataUsingKopiaServer"
-	// BackupDataTagsKeyArg is the key used for returning snapshot tags
-	BackupDataTagsKeyArg = "snapshotTags"
+	// BackupDataUsingKopiaServerSnapshotTagsArg is the key used for returning snapshot tags
+	BackupDataUsingKopiaServerSnapshotTagsArg = "snapshotTags"
 )
 
 type backupDataUsingKopiaServerFunc struct{}
@@ -252,11 +252,11 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, 
 func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, error) {
 	userCredJSON, err := json.Marshal(tp.RepositoryServer.Credentials.ServerUserAccess.Data)
 	if err != nil {
-		return "", "", errors.Wrap(err, "Error Unmarshalling User Credentials Data")
+		return "", "", errors.Wrap(err, "Error marshalling User Credentials Data")
 	}
 	certJSON, err := json.Marshal(tp.RepositoryServer.Credentials.ServerTLS.Data)
 	if err != nil {
-		return "", "", errors.Wrap(err, "Error Unmarshalling Certificate Data")
+		return "", "", errors.Wrap(err, "Error marshalling Certificate Data")
 	}
 	return string(userCredJSON), string(certJSON), nil
 }
