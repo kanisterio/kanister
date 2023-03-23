@@ -1578,7 +1578,7 @@ BackupDataUsingKopiaServer
 --------------------------
 
 This function backs up data from a container into any object store
-supported by Kanister using Kopia Repository Server as a data mover.
+supported by Kanister using Kopia Repository Server as data mover.
 
 .. note::
    It is important that the application includes a ``kanister-tools``
