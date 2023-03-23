@@ -252,14 +252,14 @@ func getKanisterPodAnnotations() (bool, *map[string]string) {
 
 // SetResourceRequirementsToPodOptionsIfRequired sets resource requirements to PodOptions
 func SetResourceRequirementsToPodOptionsIfRequired(options *kube.PodOptions) {
-	updateNeeded, res := GetResourceRequirementsForKanisterPods()
+	updateNeeded, res := ResourceRequirementsForKanisterPods()
 	if updateNeeded {
 		options.Resources = *res
 	}
 }
 
-// GetResourceRequirementsForKanisterPods returns resource requirements if set in configmap
-func GetResourceRequirementsForKanisterPods() (bool, *corev1.ResourceRequirements) {
+// ResourceRequirementsForKanisterPods returns resource requirements if set in configmap
+func ResourceRequirementsForKanisterPods() (bool, *corev1.ResourceRequirements) {
 	res := corev1.ResourceRequirements{
 		Limits:   corev1.ResourceList{},
 		Requests: corev1.ResourceList{},
