@@ -1582,12 +1582,12 @@ It creates a new Pod that mounts the PVCs referenced by the specified Pod
 and restores data to the specified path.
 
 .. note::
-   It is extremely important that, the PVCs are not be currently
+   It is extremely important that, the PVCs are not currently
    in use by an active application container, as they are required
    to be mounted to the new Pod (ensure by using
    ``ScaleWorkload`` with replicas=0 first).
    For advanced use cases, it is possible to have concurrent access but
-   the PV needs to have ``RWX`` mode enabled and the volume needs to use a
+   the PV needs to have ``RWX`` access mode  and the volume needs to use a
    clustered file system that supports concurrent access.
 
 .. csv-table::
