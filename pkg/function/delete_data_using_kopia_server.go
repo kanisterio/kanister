@@ -123,11 +123,6 @@ func deleteDataFromServer(
 		Image:        image,
 		Command:      []string{"bash", "-c", "tail -f /dev/null"},
 	}
-
-	kankopia.SetLabelsToPodOptionsIfRequired(options)
-	kankopia.SetAnnotationsToPodOptionsIfRequired(options)
-	kankopia.SetResourceRequirementsToPodOptionsIfRequired(options)
-
 	pr := kube.NewPodRunner(cli, options)
 	podFunc := deleteDataFromServerPodFunc(
 		cli,
