@@ -242,7 +242,7 @@ func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, erro
 	}
 	certJSON, err := json.Marshal(tp.RepositoryServer.Credentials.ServerTLS.Data)
 	if err != nil {
-		return "", "", errors.Wrap(err, "Error Unmarshalling Certificate Data")
+		return "", "", errors.Wrap(err, "Error marshalling Certificate Data")
 	}
 	return string(userCredJSON), string(certJSON), nil
 }
