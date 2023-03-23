@@ -56,19 +56,6 @@ const (
 	DataStoreGeneralContentCacheSizeMBKey = "dataStoreGeneralContentCacheSize"
 	// DataStoreGeneralMetadataCacheSizeMBKey is the key to pass metadata cache size for general command workloads
 	DataStoreGeneralMetadataCacheSizeMBKey = "dataStoreGeneralMetadataCacheSize"
-	// KanisterPodCustomLabelsEnv is the env var to get kanister pod custom labels
-	KanisterPodCustomLabelsEnv = "KANISTER_POD_CUSTOM_LABELS"
-	// KanisterPodCustomAnnotationsEnv is the env var to get kanister pod custom annotations
-	KanisterPodCustomAnnotationsEnv = "KANISTER_POD_CUSTOM_ANNOTATIONS"
-
-	// KanisterToolsMemoryRequestsEnv is the env var to get kanister sidecar or gvs restore data pod memory requests
-	KanisterToolsMemoryRequestsEnv = "KANISTER_TOOLS_MEMORY_REQUESTS"
-	// KanisterToolsCPURequestEnvs is the env var to get kanister sidecar or gvs restore data CPU requests
-	KanisterToolsCPURequestsEnv = "KANISTER_TOOLS_CPU_REQUESTS"
-	// KanisterToolsMemoryLimitsEnv is the env var to get kanister sidecar or gvs restore data memory limits
-	KanisterToolsMemoryLimitsEnv = "KANISTER_TOOLS_MEMORY_LIMITS"
-	// KanisterToolsCPULimitsEnv is the env var to get kanister sidecar or gvs restore data CPU limits
-	KanisterToolsCPULimitsEnv = "KANISTER_TOOLS_CPU_LIMITS"
 )
 
 // ExtractFingerprintFromCertSecret extracts the fingerprint from the given certificate secret
