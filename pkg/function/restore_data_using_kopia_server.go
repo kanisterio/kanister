@@ -18,13 +18,13 @@ import (
 	"context"
 	"fmt"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/format"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
@@ -41,10 +41,7 @@ const (
 type restoreDataUsingKopiaServerFunc struct{}
 
 func init() {
-	err := kanister.Register(&restoreDataUsingKopiaServerFunc{})
-	if err != nil {
-		return
-	}
+	_ = kanister.Register(&restoreDataUsingKopiaServerFunc{})
 }
 
 var _ kanister.Func = (*restoreDataUsingKopiaServerFunc)(nil)
