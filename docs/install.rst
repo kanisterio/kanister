@@ -91,7 +91,7 @@ Create a Secret that stores the TLS key and certificate for webhook admission se
 
 .. substitution-code-block:: bash
 
-  kubectl create secret tls my-tls-secret --cert /path/to/tls.crt --key /path/to/tls.key -n kansiter
+  kubectl create secret tls my-tls-secret --cert /path/to/tls.crt --key /path/to/tls.key -n kanister
 
 Install Kanister, providing the PEM-encoded CA bundle and the `tls` secret name
 like below:
