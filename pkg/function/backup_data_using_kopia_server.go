@@ -72,7 +72,7 @@ func (*backupDataUsingKopiaServerFunc) Arguments() []string {
 		BackupDataIncludePathArg,
 		BackupDataNamespaceArg,
 		BackupDataPodArg,
-		BackupDataTagsKeyArg,
+		BackupDataUsingKopiaServerSnapshotTagsArg,
 	}
 }
 
@@ -97,7 +97,7 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	if err = Arg(args, BackupDataPodArg, &pod); err != nil {
 		return nil, err
 	}
-	if err = OptArg(args, BackupDataTagsKeyArg, &tagsStr, ""); err != nil {
+	if err = OptArg(args, BackupDataUsingKopiaServerSnapshotTagsArg, &tagsStr, ""); err != nil {
 		return nil, err
 	}
 
