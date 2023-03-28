@@ -76,6 +76,7 @@ func NewRDSAuroraMySQLDB(name, region string) App {
 		username:          "admin",
 		password:          "secret99",
 		dbName:            "testdb",
+		publicAccess:      false,
 	}
 }
 

@@ -79,6 +79,7 @@ func NewRDSPostgresDB(name string, customRegion string) App {
 		region:            customRegion,
 		configMapName:     fmt.Sprintf("%s-config", name),
 		secretName:        fmt.Sprintf("%s-secret", name),
+		publicAccess:      false,
 	}
 }
 
