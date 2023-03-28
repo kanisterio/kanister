@@ -188,6 +188,33 @@ func (r RDS) DeleteDBCluster(ctx context.Context, instanceID string) (*rds.Delet
 	return r.DeleteDBClusterWithContext(ctx, ddbc)
 }
 
+func (r RDS) CreateDBSubnetGroup(ctx context.Context, dbSubnetGroupName, dbSubnetGroupDescription string, subnetIDs []string) (*rds.CreateDBSubnetGroupOutput, error) {
+	var subnetIds []*string
+	for _, ID := range subnetIDs {
+		subnetIds = append(subnetIds, aws.String(ID))
+	}
+	dbsgi := &rds.CreateDBSubnetGroupInput{
+		DBSubnetGroupName:        aws.String(dbSubnetGroupName),
+		DBSubnetGroupDescription: aws.String(dbSubnetGroupDescription),
+		SubnetIds:                subnetIds,
+	}
+	return r.CreateDBSubnetGroupWithContext(ctx, dbsgi)
+}
+
+func (r RDS) DeleteDBSubnetGroup(ctx context.Context, dbSubnetGroupName string) (*rds.DeleteDBSubnetGroupOutput, error) {
+	dbsgi := &rds.DeleteDBSubnetGroupInput{
+		DBSubnetGroupName: aws.String(dbSubnetGroupName),
+	}
+	return r.DeleteDBSubnetGroupWithContext(ctx, dbsgi)
+}
+
+func (r RDS) DescribeDBSnapshot(ctx context.Context, snapshotID string) (*rds.DescribeDBSnapshotsOutput, error) {
+	dsi := &rds.DescribeDBSnapshotsInput{
+		DBSnapshotIdentifier: &snapshotID,
+	}
+	return r.DescribeDBSnapshotsWithContext(ctx, dsi)
+}
+
 func (r RDS) CreateDBSnapshot(ctx context.Context, instanceID, snapshotID string) (*rds.CreateDBSnapshotOutput, error) {
 	sni := &rds.CreateDBSnapshotInput{
 		DBInstanceIdentifier: &instanceID,
