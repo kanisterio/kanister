@@ -25,8 +25,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
-	"github.com/kanisterio/kanister/pkg/consts"
-	"github.com/kanisterio/kanister/pkg/field"
 	"github.com/kanisterio/kanister/pkg/format"
 	kankopia "github.com/kanisterio/kanister/pkg/kopia"
 	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
@@ -126,9 +124,6 @@ func (*backupDataUsingKopiaServerFunc) Exec(ctx context.Context, tp param.Templa
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create Kubernetes client")
 	}
-
-	ctx = field.Context(ctx, consts.PodNameKey, pod)
-	ctx = field.Context(ctx, consts.ContainerNameKey, container)
 
 	snapInfo, err := backupDataUsingKopiaServer(
 		cli,
@@ -246,7 +241,6 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, 
 		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
 	}
 	return hostName, string(decodedUserPassPhrase), nil
-
 }
 
 func userCredentialsAndServerTLS(tp *param.TemplateParams) (string, string, error) {
