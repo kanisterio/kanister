@@ -23,7 +23,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/rds"
-	rdserr "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/pkg/errors"
 )
@@ -74,12 +73,13 @@ func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, 
 	return r.CreateDBClusterWithContext(ctx, dbi)
 }
 
-func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine string) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine, dbSubnetGroup string) (*rds.CreateDBInstanceOutput, error) {
 	pa := true
 	dbi := &rds.CreateDBInstanceInput{
 		DBClusterIdentifier:  &restoredClusterID,
 		DBInstanceClass:      &instanceClass,
 		DBInstanceIdentifier: &instanceID,
+		DBSubnetGroupName:    &dbSubnetGroup,
 		Engine:               &dbEngine,
 		PubliclyAccessible:   &pa,
 	}
@@ -130,7 +130,7 @@ func (r RDS) WaitUntilDBClusterDeleted(ctx context.Context, dbClusterID string) 
 		}
 		if _, err := r.DescribeDBClustersWithContext(ctx, dci); err != nil {
 			if aerr, ok := err.(awserr.Error); ok {
-				if aerr.Code() == rdserr.ErrCodeDBClusterNotFoundFault {
+				if aerr.Code() == rds.ErrCodeDBClusterNotFoundFault {
 					return true, nil
 				}
 				return false, nil
@@ -187,6 +187,33 @@ func (r RDS) DeleteDBCluster(ctx context.Context, instanceID string) (*rds.Delet
 		SkipFinalSnapshot:   &skipSnapshot,
 	}
 	return r.DeleteDBClusterWithContext(ctx, ddbc)
+}
+
+func (r RDS) CreateDBSubnetGroup(ctx context.Context, dbSubnetGroupName, dbSubnetGroupDescription string, subnetIDs []string) (*rds.CreateDBSubnetGroupOutput, error) {
+	var subnetIds []*string
+	for _, ID := range subnetIDs {
+		subnetIds = append(subnetIds, aws.String(ID))
+	}
+	dbsgi := &rds.CreateDBSubnetGroupInput{
+		DBSubnetGroupName:        aws.String(dbSubnetGroupName),
+		DBSubnetGroupDescription: aws.String(dbSubnetGroupDescription),
+		SubnetIds:                subnetIds,
+	}
+	return r.CreateDBSubnetGroupWithContext(ctx, dbsgi)
+}
+
+func (r RDS) DeleteDBSubnetGroup(ctx context.Context, dbSubnetGroupName string) (*rds.DeleteDBSubnetGroupOutput, error) {
+	dbsgi := &rds.DeleteDBSubnetGroupInput{
+		DBSubnetGroupName: aws.String(dbSubnetGroupName),
+	}
+	return r.DeleteDBSubnetGroupWithContext(ctx, dbsgi)
+}
+
+func (r RDS) DescribeDBSnapshot(ctx context.Context, snapshotID string) (*rds.DescribeDBSnapshotsOutput, error) {
+	dsi := &rds.DescribeDBSnapshotsInput{
+		DBSnapshotIdentifier: &snapshotID,
+	}
+	return r.DescribeDBSnapshotsWithContext(ctx, dsi)
 }
 
 func (r RDS) CreateDBSnapshot(ctx context.Context, instanceID, snapshotID string) (*rds.CreateDBSnapshotOutput, error) {
@@ -255,16 +282,17 @@ func (r RDS) WaitUntilDBClusterSnapshotDeleted(ctx context.Context, snapshotID s
 	return r.WaitUntilDBClusterSnapshotDeletedWithContext(ctx, sdi)
 }
 
-func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, snapshotID string, sgIDs []string) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
+func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, subnetGroupName, snapshotID string, sgIDs []string) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
 	rdbi := &rds.RestoreDBInstanceFromDBSnapshotInput{
 		DBInstanceIdentifier: &instanceID,
 		DBSnapshotIdentifier: &snapshotID,
+		DBSubnetGroupName:    &subnetGroupName,
 		VpcSecurityGroupIds:  convertSGIDs(sgIDs),
 	}
 	return r.RestoreDBInstanceFromDBSnapshotWithContext(ctx, rdbi)
 }
 
-func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, snapshotID, dbEngine, version string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
+func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, dbSubnetGroup, snapshotID, dbEngine, version string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
 	var rdi *rds.RestoreDBClusterFromSnapshotInput
 	if sgIDs == nil {
 		rdi = &rds.RestoreDBClusterFromSnapshotInput{
@@ -272,6 +300,7 @@ func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, sna
 			EngineVersion:       &version,
 			DBClusterIdentifier: &instanceID,
 			SnapshotIdentifier:  &snapshotID,
+			DBSubnetGroupName:   &dbSubnetGroup,
 		}
 	} else {
 		rdi = &rds.RestoreDBClusterFromSnapshotInput{
@@ -280,6 +309,7 @@ func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, sna
 			DBClusterIdentifier: &instanceID,
 			SnapshotIdentifier:  &snapshotID,
 			VpcSecurityGroupIds: convertSGIDs(sgIDs),
+			DBSubnetGroupName:   &dbSubnetGroup,
 		}
 	}
 	return r.RestoreDBClusterFromSnapshotWithContext(ctx, rdi)

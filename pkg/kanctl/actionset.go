@@ -21,13 +21,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/yaml"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/client/clientset/versioned"
@@ -44,6 +45,7 @@ const (
 	deploymentFlagName       = "deployment"
 	optionsFlagName          = "options"
 	profileFlagName          = "profile"
+	repositoryServerFlagName = "repository-server"
 	pvcFlagName              = "pvc"
 	secretsFlagName          = "secrets"
 	statefulSetFlagName      = "statefulset"
@@ -61,17 +63,18 @@ var (
 )
 
 type PerformParams struct {
-	Namespace     string
-	ActionName    string
-	ActionSetName string
-	ParentName    string
-	Blueprint     string
-	DryRun        bool
-	Objects       []crv1alpha1.ObjectReference
-	Options       map[string]string
-	Profile       *crv1alpha1.ObjectReference
-	Secrets       map[string]crv1alpha1.ObjectReference
-	ConfigMaps    map[string]crv1alpha1.ObjectReference
+	Namespace        string
+	ActionName       string
+	ActionSetName    string
+	ParentName       string
+	Blueprint        string
+	DryRun           bool
+	Objects          []crv1alpha1.ObjectReference
+	Options          map[string]string
+	Profile          *crv1alpha1.ObjectReference
+	RepositoryServer *crv1alpha1.ObjectReference
+	Secrets          map[string]crv1alpha1.ObjectReference
+	ConfigMaps       map[string]crv1alpha1.ObjectReference
 }
 
 func newActionSetCmd() *cobra.Command {
@@ -92,6 +95,7 @@ func newActionSetCmd() *cobra.Command {
 	cmd.Flags().StringSliceP(deploymentFlagName, "d", []string{}, "deployment for the action set, comma separated namespace/name pairs (eg: --deployment namespace1/name1,namespace2/name2)")
 	cmd.Flags().StringSliceP(optionsFlagName, "o", []string{}, "specify options for the action set, comma separated key=value pairs (eg: --options key1=value1,key2=value2)")
 	cmd.Flags().StringP(profileFlagName, "p", "", "profile for the action set")
+	cmd.Flags().StringP(repositoryServerFlagName, "r", "", "kopia repository server custom resource reference (eg: --repository-server namespace/name)")
 	cmd.Flags().StringSliceP(pvcFlagName, "v", []string{}, "pvc for the action set, comma separated namespace/name pairs (eg: --pvc namespace1/name1,namespace2/name2)")
 	cmd.Flags().StringSliceP(secretsFlagName, "s", []string{}, "secrets for the action set, comma separated ref=namespace/name pairs (eg: --secrets ref1=namespace1/name1,ref2=namespace2/name2)")
 	cmd.Flags().StringSliceP(statefulSetFlagName, "t", []string{}, "statefulset for the action set, comma separated namespace/name pairs (eg: --statefulset namespace1/name1,namespace2/name2)")
@@ -121,6 +125,10 @@ func initializeAndPerform(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+	}
+	err = isDataMoverProvided(cmd)
+	if err != nil {
+		fmt.Printf("Warning: %s\n", err.Error())
 	}
 	return perform(ctx, crCli, params)
 }
@@ -160,13 +168,14 @@ func newActionSet(params *PerformParams) (*crv1alpha1.ActionSet, error) {
 	actions := make([]crv1alpha1.ActionSpec, 0, len(params.Objects))
 	for _, obj := range params.Objects {
 		actions = append(actions, crv1alpha1.ActionSpec{
-			Name:       params.ActionName,
-			Blueprint:  params.Blueprint,
-			Object:     obj,
-			Secrets:    params.Secrets,
-			ConfigMaps: params.ConfigMaps,
-			Profile:    params.Profile,
-			Options:    params.Options,
+			Name:             params.ActionName,
+			Blueprint:        params.Blueprint,
+			Object:           obj,
+			Secrets:          params.Secrets,
+			ConfigMaps:       params.ConfigMaps,
+			Profile:          params.Profile,
+			RepositoryServer: params.RepositoryServer,
+			Options:          params.Options,
 		})
 	}
 
@@ -193,14 +202,15 @@ func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1a
 	actions := make([]crv1alpha1.ActionSpec, 0, len(parent.Status.Actions)*max(1, len(params.Objects)))
 	for aidx, pa := range parent.Status.Actions {
 		as := crv1alpha1.ActionSpec{
-			Name:       parent.Spec.Actions[aidx].Name,
-			Blueprint:  pa.Blueprint,
-			Object:     pa.Object,
-			Artifacts:  pa.Artifacts,
-			Secrets:    parent.Spec.Actions[aidx].Secrets,
-			ConfigMaps: parent.Spec.Actions[aidx].ConfigMaps,
-			Profile:    parent.Spec.Actions[aidx].Profile,
-			Options:    mergeOptions(params.Options, parent.Spec.Actions[aidx].Options),
+			Name:             parent.Spec.Actions[aidx].Name,
+			Blueprint:        pa.Blueprint,
+			Object:           pa.Object,
+			Artifacts:        pa.Artifacts,
+			Secrets:          parent.Spec.Actions[aidx].Secrets,
+			ConfigMaps:       parent.Spec.Actions[aidx].ConfigMaps,
+			Profile:          parent.Spec.Actions[aidx].Profile,
+			RepositoryServer: parent.Spec.Actions[aidx].RepositoryServer,
+			Options:          mergeOptions(params.Options, parent.Spec.Actions[aidx].Options),
 		}
 		// Apply overrides
 		if params.ActionName != "" {
@@ -217,6 +227,9 @@ func ChildActionSet(parent *crv1alpha1.ActionSet, params *PerformParams) (*crv1a
 		}
 		if params.Profile != nil {
 			as.Profile = params.Profile
+		}
+		if params.RepositoryServer != nil {
+			as.RepositoryServer = params.RepositoryServer
 		}
 		if len(params.Objects) > 0 {
 			for _, obj := range params.Objects {
@@ -283,6 +296,10 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 	if err != nil {
 		return nil, err
 	}
+	repositoryServer, err := parseRepositoryServer(cmd)
+	if err != nil {
+		return nil, err
+	}
 	cms, err := parseConfigMaps(cmd)
 	if err != nil {
 		return nil, err
@@ -300,17 +317,18 @@ func extractPerformParams(cmd *cobra.Command, args []string, cli kubernetes.Inte
 		return nil, err
 	}
 	return &PerformParams{
-		Namespace:     ns,
-		ActionName:    actionName,
-		ActionSetName: actionSetName,
-		ParentName:    parentName,
-		Blueprint:     blueprint,
-		DryRun:        dryRun,
-		Objects:       objects,
-		Options:       options,
-		Secrets:       secrets,
-		ConfigMaps:    cms,
-		Profile:       profile,
+		Namespace:        ns,
+		ActionName:       actionName,
+		ActionSetName:    actionSetName,
+		ParentName:       parentName,
+		Blueprint:        blueprint,
+		DryRun:           dryRun,
+		Objects:          objects,
+		Options:          options,
+		Secrets:          secrets,
+		ConfigMaps:       cms,
+		Profile:          profile,
+		RepositoryServer: repositoryServer,
 	}, nil
 }
 
@@ -342,6 +360,28 @@ func parseProfile(cmd *cobra.Command, ns string) (*crv1alpha1.ObjectReference, e
 	}, nil
 }
 
+// parseRepositoryServer returns the object reference
+// for the passed Repository Server
+func parseRepositoryServer(cmd *cobra.Command) (*crv1alpha1.ObjectReference, error) {
+	repositoryServerName, _ := cmd.Flags().GetString(repositoryServerFlagName)
+	if repositoryServerName == "" {
+		return nil, nil
+	}
+	if strings.Contains(repositoryServerName, "/") {
+		nsName := strings.Split(repositoryServerName, "/")
+		if len(nsName) != 2 {
+			return nil, errors.Errorf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name )", repositoryServerName)
+		}
+		ns := nsName[0]
+		repositoryServerName = nsName[1]
+		return &crv1alpha1.ObjectReference{
+			Name:      repositoryServerName,
+			Namespace: ns,
+		}, nil
+	}
+	return nil, errors.Errorf("Invalid repository server name %s, it should be of the form ( --repository-server namespace/name )", repositoryServerName)
+}
+
 func parseSecrets(cmd *cobra.Command) (map[string]crv1alpha1.ObjectReference, error) {
 	secretsFromCmd, _ := cmd.Flags().GetStringSlice(secretsFlagName)
 	secrets, err := parseReferences(secretsFromCmd)
@@ -357,13 +397,13 @@ func parseObjects(cmd *cobra.Command, cli kubernetes.Interface, osCli osversione
 
 	deployments, _ := cmd.Flags().GetStringSlice(deploymentFlagName)
 	statefulSets, _ := cmd.Flags().GetStringSlice(statefulSetFlagName)
-	deploymetConfig, _ := cmd.Flags().GetStringSlice(deploymentConfigFlagName)
+	deploymentConfig, _ := cmd.Flags().GetStringSlice(deploymentConfigFlagName)
 	pvcs, _ := cmd.Flags().GetStringSlice(pvcFlagName)
 	namespaces, _ := cmd.Flags().GetStringSlice(namespaceTargetsFlagName)
 
 	objs[param.DeploymentKind] = deployments
 	objs[param.StatefulSetKind] = statefulSets
-	objs[param.DeploymentConfigKind] = deploymetConfig
+	objs[param.DeploymentConfigKind] = deploymentConfig
 	objs[param.PVCKind] = pvcs
 	objs[param.NamespaceKind] = namespaces
 
@@ -607,7 +647,7 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 	const notFoundTmpl = "Please make sure '%s' with name '%s' exists in namespace '%s'"
 	msgs := make(chan error)
 	wg := sync.WaitGroup{}
-	wg.Add(5)
+	wg.Add(6)
 
 	// Blueprint
 	go func() {
@@ -631,34 +671,21 @@ func verifyParams(ctx context.Context, p *PerformParams, cli kubernetes.Interfac
 		}
 	}()
 
+	// RepositoryServer
+	go func() {
+		defer wg.Done()
+		err := verifyRepositoryServerParams(p.RepositoryServer, crCli, ctx)
+		if err != nil {
+			msgs <- err
+		}
+	}()
+
 	// Objects
 	go func() {
 		defer wg.Done()
-		var err error
-		for _, obj := range p.Objects {
-			switch obj.Kind {
-			case param.DeploymentKind:
-				_, err = cli.AppsV1().Deployments(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
-			case param.StatefulSetKind:
-				_, err = cli.AppsV1().StatefulSets(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
-			case param.DeploymentConfigKind:
-				// use open shift client to get the deployment config resource
-				_, err = osCli.AppsV1().DeploymentConfigs(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
-			case param.PVCKind:
-				_, err = cli.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
-			case param.NamespaceKind:
-				_, err = cli.CoreV1().Namespaces().Get(ctx, obj.Name, metav1.GetOptions{})
-			default:
-				gvr := schema.GroupVersionResource{
-					Group:    obj.Group,
-					Version:  obj.APIVersion,
-					Resource: obj.Resource,
-				}
-				_, err = kube.FetchUnstructuredObject(ctx, gvr, obj.Namespace, obj.Name)
-			}
-			if err != nil {
-				msgs <- errors.Wrapf(err, notFoundTmpl, obj.Kind, obj.Name, obj.Namespace)
-			}
+		err := verifyObjectParams(p, cli, osCli, ctx)
+		if err != nil {
+			msgs <- err
 		}
 	}()
 
@@ -726,4 +753,60 @@ func generateActionSetName(p *PerformParams) (string, error) {
 	}
 
 	return "", errMissingFieldActionName
+}
+
+func verifyRepositoryServerParams(repoServer *crv1alpha1.ObjectReference, crCli versioned.Interface, ctx context.Context) error {
+	if repoServer != nil {
+		rs, err := crCli.CrV1alpha1().RepositoryServers(repoServer.Namespace).Get(ctx, repoServer.Name, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return errors.Wrapf(err, "Please make sure '%s' with name '%s' exists in namespace '%s'", "repository-server", repoServer.Name, repoServer.Namespace)
+			}
+			return errors.New("error while fetching repo server")
+		}
+		if rs.Status.Progress != "ServerReady" {
+			err = errors.New("Repository Server Not Ready")
+			return errors.Wrapf(err, "Please make sure that Repository Server CR '%s' is in Ready State", repoServer.Name)
+		}
+	}
+	return nil
+}
+
+func verifyObjectParams(p *PerformParams, cli kubernetes.Interface, osCli osversioned.Interface, ctx context.Context) error {
+	var err error
+	for _, obj := range p.Objects {
+		switch obj.Kind {
+		case param.DeploymentKind:
+			_, err = cli.AppsV1().Deployments(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+		case param.StatefulSetKind:
+			_, err = cli.AppsV1().StatefulSets(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+		case param.DeploymentConfigKind:
+			// use open shift client to get the deployment config resource
+			_, err = osCli.AppsV1().DeploymentConfigs(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+		case param.PVCKind:
+			_, err = cli.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(ctx, obj.Name, metav1.GetOptions{})
+		case param.NamespaceKind:
+			_, err = cli.CoreV1().Namespaces().Get(ctx, obj.Name, metav1.GetOptions{})
+		default:
+			gvr := schema.GroupVersionResource{
+				Group:    obj.Group,
+				Version:  obj.APIVersion,
+				Resource: obj.Resource,
+			}
+			_, err = kube.FetchUnstructuredObject(ctx, gvr, obj.Namespace, obj.Name)
+		}
+		if err != nil {
+			return errors.Wrapf(err, "Please make sure '%s' with name '%s' exists in namespace '%s'", obj.Kind, obj.Name, obj.Namespace)
+		}
+	}
+	return nil
+}
+
+func isDataMoverProvided(cmd *cobra.Command) error {
+	profile := cmd.Flags().Lookup(profileFlagName).Value.String()
+	repositoryServer := cmd.Flags().Lookup(repositoryServerFlagName).Value.String()
+	if profile == "" && repositoryServer == "" {
+		return errors.New("Neither --profile nor --repository-server flag is provided.\nAction might fail if blueprint is using these resources.")
+	}
+	return nil
 }

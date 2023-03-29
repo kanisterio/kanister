@@ -15,8 +15,16 @@
 package app
 
 import (
+	"context"
 	"fmt"
+	"os"
 
+	"github.com/kanisterio/kanister/pkg/aws/ec2"
+	"github.com/kanisterio/kanister/pkg/aws/rds"
+	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 )
 
@@ -60,4 +68,74 @@ func getOpenShiftDBTemplate(appName string, templateVersion DBTemplate, storageT
 // used to delete all the resources that were created while deploying this application
 func getLabelOfApp(appName string, storageType storage) string {
 	return fmt.Sprintf("app=%s-%s", appName, storageType)
+}
+
+// bastionDebugWorkloadSpec creates Deployment Resource Manifest from which RDS database queries can be executed
+func bastionDebugWorkloadSpec(ctx context.Context, name string, image string, namespace string) *appsv1.Deployment {
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": name}},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": name,
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:    name,
+							Image:   image,
+							Command: []string{"sh", "-c", "tail -f /dev/null"},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// vpcIdForRDSInstance gets the VPC ID from env var `VPC_ID` if set, or from the default VPC
+func vpcIDForRDSInstance(ctx context.Context, ec2Cli *ec2.EC2) (string, error) {
+	vpcID := os.Getenv("VPC_ID")
+
+	// VPCId is not provided, use Default VPC
+	if vpcID != "" {
+		return vpcID, nil
+	}
+	defaultVpc, err := ec2Cli.DescribeDefaultVpc(ctx)
+	if err != nil {
+		return "", err
+	}
+	if len(defaultVpc.Vpcs) == 0 {
+		return "", fmt.Errorf("No default VPC found")
+	}
+	return *defaultVpc.Vpcs[0].VpcId, nil
+}
+
+// dbSubnetGroup gets the DBSubnetGroup based on VPC ID
+func dbSubnetGroup(ctx context.Context, ec2Cli *ec2.EC2, rdsCli *rds.RDS, vpcID, name, subnetGroupDescription string) (string, error) {
+	// describe subnets in the VPC
+	resp, err := ec2Cli.DescribeSubnets(ctx, vpcID)
+	if err != nil {
+		return "", errors.Wrapf(err, "Failed to describe subnets")
+	}
+
+	// Extract subnet IDs from the response
+	var subnetIDs []string
+	for _, subnet := range resp.Subnets {
+		subnetIDs = append(subnetIDs, *subnet.SubnetId)
+	}
+
+	// create a subnetgroup with subnets in the VPC
+	subnetGroup, err := rdsCli.CreateDBSubnetGroup(ctx, fmt.Sprintf("%s-subnetgroup", name), subnetGroupDescription, subnetIDs)
+	if err != nil {
+		return "", errors.Wrapf(err, "Failed to create subnet group")
+	}
+
+	return *subnetGroup.DBSubnetGroup.DBSubnetGroupName, nil
 }
