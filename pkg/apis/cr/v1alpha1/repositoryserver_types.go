@@ -1,8 +1,6 @@
 /*
 Copyright 2023 The Kanister Authors.
 
-Copyright 2017 The Kubernetes Authors.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -31,29 +29,52 @@ import (
 type RepositoryServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              RepositoryServerSpec   `json:"spec"`
-	Status            RepositoryServerStatus `json:"status"`
+	// Spec defines the spec of repository server.
+	// It has all the details required to start the kopia repository server
+	Spec RepositoryServerSpec `json:"spec"`
+	// Status refers to the current status of the repository server.
+	Status RepositoryServerStatus `json:"status"`
 }
 
 // RepositoryServerSpec is the specification for the RepositoryServer
 type RepositoryServerSpec struct {
-	Storage    Storage    `json:"storage"`
+	// Storage references the backend store where a repository already exists
+	// and the credential necessary to connect to the backend store
+	Storage Storage `json:"storage"`
+	// Repository has the details required by the repository server
+	// to connect to kopia repository
 	Repository Repository `json:"repository"`
-	Server     Server     `json:"server"`
+	// Server has the details of all the secrets required to start
+	// the kopia repository server
+	Server Server `json:"server"`
 }
 
 // Storage references the backend store where a repository already exists
 // and the credential necessary to connect to the backend store
 type Storage struct {
-	SecretRef           corev1.SecretReference `json:"secretRef"`
+	// SecretRef has the details of the object storage (location)
+	// where the kopia would backup the data
+	SecretRef corev1.SecretReference `json:"secretRef"`
+	// CredentialSecretRef stores the credentials required
+	// to connect to the object storage specified in `SecretRef` field
 	CredentialSecretRef corev1.SecretReference `json:"credentialSecretRef"`
 }
 
-// Repository details for the purpose of establishing a connection
+// Repository has the details required by the repository server to connect to kopia repository
 type Repository struct {
-	RootPath          string                 `json:"rootPath"`
-	Username          string                 `json:"username"`
-	Hostname          string                 `json:"hostname"`
+	// Path for the repository,it will be relative sub path
+	// within the path prefix specified in the location
+	// More info: https://kopia.io/docs/reference/command-line/common/#commands-to-manipulate-repository
+	RootPath string `json:"rootPath"`
+	// If specified, these values will be used by the controller to
+	// override default username when connecting to the
+	// repository from the server.
+	Username string `json:"username"`
+	// If specified, these values will be used by the controller to
+	// override default hostname when connecting to the
+	// repository from the server.
+	Hostname string `json:"hostname"`
+	// PasswordSecretRef has the password required to connect to kopia repository
 	PasswordSecretRef corev1.SecretReference `json:"passwordSecretRef"`
 	CacheSizeSettings CacheSizeSettings      `json:"cacheSizeSettings"`
 }
@@ -67,14 +88,23 @@ type CacheSizeSettings struct {
 
 // Server details required for starting the repository proxy server and initializing the repository client users
 type Server struct {
-	UserAccess     UserAccess             `json:"userAccess"`
+	UserAccess UserAccess `json:"userAccess"`
+	// AdminSecretRef has the username and password required to start the
+	// kopia repository server
 	AdminSecretRef corev1.SecretReference `json:"adminSecretRef"`
-	TLSSecretRef   corev1.SecretReference `json:"tlsSecretRef"`
+	// TLSSecretRef has the certificates required for kopia repository
+	// client server connection
+	TLSSecretRef corev1.SecretReference `json:"tlsSecretRef"`
 }
 
+// UserAccess has the details of the user credentials required by client to connect to kopia
+// repository server
 type UserAccess struct {
+	// UserAccessSecretRef stores the list of hostname and passwords used by kopia clients
+	// to connect to kopia repository server
 	UserAccessSecretRef corev1.SecretReference `json:"userAccessSecretRef"`
-	Username            string                 `json:"username"`
+	// Username is the user required by client to connect to kopia repository server
+	Username string `json:"username"`
 }
 
 // RepositoryServerStatus is the status for the RepositoryServer. This should only be updated by the controller

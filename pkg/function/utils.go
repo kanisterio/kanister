@@ -28,7 +28,7 @@ import (
 const (
 	// FunctionOutputVersion returns version
 	FunctionOutputVersion     = "version"
-	kanisterToolsImage        = "ghcr.io/kanisterio/kanister-tools:0.89.0"
+	kanisterToolsImage        = "ghcr.io/kanisterio/kanister-tools:0.90.0"
 	kanisterToolsImageEnvName = "KANISTER_TOOLS"
 )
 
@@ -100,7 +100,7 @@ func ValidateProfile(profile *param.Profile) error {
 }
 
 // GetPodWriter creates a file with Google credentials if the given profile points to a GCS location
-func GetPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podName, containerName string, profile *param.Profile) (*kube.PodWriter, error) {
+func GetPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podName, containerName string, profile *param.Profile) (kube.PodWriter, error) {
 	if profile.Location.Type == crv1alpha1.LocationTypeGCS {
 		pw := kube.NewPodWriter(cli, consts.GoogleCloudCredsFilePath, bytes.NewBufferString(profile.Credential.KeyPair.Secret))
 		if err := pw.Write(ctx, namespace, podName, containerName); err != nil {
@@ -112,7 +112,7 @@ func GetPodWriter(cli kubernetes.Interface, ctx context.Context, namespace, podN
 }
 
 // CleanUpCredsFile is used to remove the file created by the given PodWriter
-func CleanUpCredsFile(ctx context.Context, pw *kube.PodWriter, namespace, podName, containerName string) {
+func CleanUpCredsFile(ctx context.Context, pw kube.PodWriter, namespace, podName, containerName string) {
 	if pw != nil {
 		if err := pw.Remove(ctx, namespace, podName, containerName); err != nil {
 			log.Error().WithContext(ctx).Print("Could not delete the temp file")
@@ -247,4 +247,31 @@ func isAuroraCluster(engine string) bool {
 		}
 	}
 	return false
+}
+
+func GetRDSDBSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID string) (*string, error) {
+	result, err := rdsCli.DescribeDBInstances(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	if len(result.DBInstances) == 0 {
+		return nil, errors.Errorf("Could not get DBInstance with the instanceID %s", instanceID)
+	}
+	return result.DBInstances[0].DBSubnetGroup.DBSubnetGroupName, nil
+}
+
+func GetRDSAuroraDBSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID string) (*string, error) {
+	desc, err := rdsCli.DescribeDBClusters(ctx, instanceID)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
+				return nil, err
+			}
+			return nil, nil
+		}
+	}
+	if len(desc.DBClusters) == 0 {
+		return nil, errors.Errorf("Could not get DBCluster with the instanceID %s", instanceID)
+	}
+	return desc.DBClusters[0].DBSubnetGroup, nil
 }

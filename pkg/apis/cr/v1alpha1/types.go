@@ -101,6 +101,9 @@ type ActionSpec struct {
 	// Profile is use to specify the location where store artifacts and the
 	// credentials authorized to access them.
 	Profile *ObjectReference `json:"profile,omitempty"`
+	// RepositoryServer is used to specify the CR reference
+	// of the kopia repository server
+	RepositoryServer *ObjectReference `json:"repositoryServer,omitempty"`
 	// PodOverride is used to specify pod specs that will override the
 	// default pod specs
 	PodOverride JSONMap `json:"podOverride,omitempty"`

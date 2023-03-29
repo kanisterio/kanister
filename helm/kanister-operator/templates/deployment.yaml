@@ -19,7 +19,11 @@ spec:
       volumes:
         - name: webhook-certs
           secret:
+            {{- if eq (.Values.bpValidatingWebhook.tls.mode) "custom" }}
+            secretName: {{ .Values.bpValidatingWebhook.tls.secretName | required "Missing required TLS secretName containing cert details, Make sure to set `bpValidatingWebhook.tls.secretName`" }}
+            {{- else if eq (.Values.bpValidatingWebhook.tls.mode) "auto" }}
             secretName: kanister-webhook-certs
+            {{- end }}
 {{- end }}
       containers:
       - name: {{ template "kanister-operator.fullname" . }}

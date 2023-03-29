@@ -31,6 +31,7 @@ var _ = Suite(&PodRunnerTestSuite{})
 
 const (
 	podRunnerNS = "pod-runner-test"
+	podName     = "test-pod"
 )
 
 func (s *PodRunnerTestSuite) SetUpSuite(c *C) {
@@ -59,6 +60,7 @@ func (s *PodRunnerTestSuite) TestPodRunnerContextCanceled(c *C) {
 	})
 	pr := NewPodRunner(cli, &PodOptions{
 		Namespace: podRunnerNS,
+		Name:      podName,
 	})
 	returned := make(chan struct{})
 	go func() {

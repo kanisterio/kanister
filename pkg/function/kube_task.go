@@ -74,7 +74,7 @@ func kubeTaskPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1
 		ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
 		ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 		// Fetch logs from the pod
-		r, err := kube.StreamPodLogs(ctx, cli, pod.Namespace, pod.Name)
+		r, err := kube.StreamPodLogs(ctx, cli, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
 		}

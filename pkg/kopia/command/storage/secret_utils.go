@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
@@ -183,6 +184,9 @@ func GetMapForLocationValues(
 	}
 	if locType != "" {
 		m[typeKey] = []byte(locType)
+		if locType == LocType(v1alpha1.LocationTypeS3Compliant) {
+			m[typeKey] = []byte(LocTypeS3)
+		}
 	}
 	return m
 }
