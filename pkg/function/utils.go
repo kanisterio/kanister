@@ -28,7 +28,7 @@ import (
 const (
 	// FunctionOutputVersion returns version
 	FunctionOutputVersion     = "version"
-	kanisterToolsImage        = "ghcr.io/kanisterio/kanister-tools:0.89.0"
+	kanisterToolsImage        = "ghcr.io/kanisterio/kanister-tools:0.90.0"
 	kanisterToolsImageEnvName = "KANISTER_TOOLS"
 )
 
@@ -254,7 +254,6 @@ func GetRDSDBSubnetGroup(ctx context.Context, rdsCli *rds.RDS, instanceID string
 	if err != nil {
 		return nil, err
 	}
-
 	if len(result.DBInstances) == 0 {
 		return nil, errors.Errorf("Could not get DBInstance with the instanceID %s", instanceID)
 	}
