@@ -24,7 +24,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 
 	// Initialize pq driver
 	_ "github.com/lib/pq"

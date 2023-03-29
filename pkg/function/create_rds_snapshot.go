@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"sigs.k8s.io/yaml"
 
 	kanister "github.com/kanisterio/kanister/pkg"
 	"github.com/kanisterio/kanister/pkg/aws/rds"
@@ -138,6 +138,17 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 		dbSubnetGroup, e = GetRDSDbSubnetGroup(ctx, rdsCli, instanceID)
 	} else {
 		dbSubnetGroup, e = GetRDSAuroraDbSubnetGroup(ctx, rdsCli, instanceID)
+	}
+	if e != nil {
+		return nil, errors.Wrapf(e, "Failed to get dbSubnetGroup ids. InstanceID=%s", instanceID)
+	}
+
+	var dbSubnetGroup *string
+	switch {
+	case isAuroraCluster(string(dbEngine)):
+		dbSubnetGroup, e = GetRDSAuroraDBSubnetGroup(ctx, rdsCli, instanceID)
+	default:
+		dbSubnetGroup, e = GetRDSDBSubnetGroup(ctx, rdsCli, instanceID)
 	}
 	if e != nil {
 		return nil, errors.Wrapf(e, "Failed to get dbSubnetGroup ids. InstanceID=%s", instanceID)
