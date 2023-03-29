@@ -39,7 +39,7 @@ spec:
                 properties:
                   cacheSizeSettings:
                     description: CacheSettings are the metadata/content cache size
-                      details that can be used establishing connection to the kopia repository
+                      details that can be used for establishing connection to the kopia repository
                     properties:
                       content:
                         type: string
