@@ -16,10 +16,12 @@ package param
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +34,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/secrets"
-	osversioned "github.com/openshift/client-go/apps/clientset/versioned"
 )
 
 const timeFormat = time.RFC3339Nano
@@ -49,6 +50,7 @@ type TemplateParams struct {
 	Secrets          map[string]v1.Secret
 	Time             string
 	Profile          *Profile
+	RepositoryServer *RepositoryServer
 	Options          map[string]string
 	Object           map[string]interface{}
 	Phases           map[string]*Phase
@@ -135,6 +137,21 @@ type KopiaServerCreds struct {
 	ConnectOptions map[string]int
 }
 
+// RepositoryServer contains fields from Repository server CR that will be used to resolve go templates for repository server in blueprint
+type RepositoryServer struct {
+	Name        string
+	Namespace   string
+	ServerInfo  crv1alpha1.ServerInfo
+	Username    string
+	Credentials RepositoryServerCredentials
+	Address     string
+}
+
+type RepositoryServerCredentials struct {
+	ServerTLS        v1.Secret
+	ServerUserAccess v1.Secret
+}
+
 // Phase represents a Blueprint phase and contains the phase output
 type Phase struct {
 	Secrets map[string]v1.Secret
@@ -164,15 +181,20 @@ func New(ctx context.Context, cli kubernetes.Interface, dynCli dynamic.Interface
 	if err != nil {
 		return nil, err
 	}
+	repoServer, err := fetchRepositoryServer(ctx, cli, crCli, as.RepositoryServer)
+	if err != nil {
+		return nil, err
+	}
 	now := time.Now().UTC()
 	tp := TemplateParams{
-		ArtifactsIn: as.Artifacts,
-		ConfigMaps:  cms,
-		Secrets:     secrets,
-		Profile:     prof,
-		Time:        now.Format(timeFormat),
-		Options:     as.Options,
-		PodOverride: as.PodOverride,
+		ArtifactsIn:      as.Artifacts,
+		ConfigMaps:       cms,
+		Secrets:          secrets,
+		Profile:          prof,
+		RepositoryServer: repoServer,
+		Time:             now.Format(timeFormat),
+		Options:          as.Options,
+		PodOverride:      as.PodOverride,
 	}
 	var gvr schema.GroupVersionResource
 	namespace := as.Object.Namespace
@@ -246,6 +268,42 @@ func fetchProfile(ctx context.Context, cli kubernetes.Interface, crCli versioned
 	}, nil
 }
 
+func fetchRepositoryServer(ctx context.Context, cli kubernetes.Interface, crCli versioned.Interface, ref *crv1alpha1.ObjectReference) (*RepositoryServer, error) {
+	if ref == nil {
+		log.Debug().Print("Executing the action without a repository-server")
+		return nil, nil
+	}
+	r, err := crCli.CrV1alpha1().RepositoryServers(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	serverTLS, err := secretFromSecretRef(ctx, cli, r.Spec.Server.TLSSecretRef)
+	if err != nil {
+		return nil, err
+	}
+	serverUserAccess, err := secretFromSecretRef(ctx, cli, r.Spec.Server.UserAccess.UserAccessSecretRef)
+	if err != nil {
+		return nil, err
+	}
+	repoServerSecrets := RepositoryServerCredentials{
+		ServerTLS:        *serverTLS,
+		ServerUserAccess: *serverUserAccess,
+	}
+	repositoryServerService, err := cli.CoreV1().Services(r.Namespace).Get(ctx, r.Status.ServerInfo.ServiceName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "Error Fetching Repository Server Service")
+	}
+	repositoryServerAddress := fmt.Sprintf("https://%s.%s.svc.cluster.local:%d", repositoryServerService.Name, repositoryServerService.Namespace, repositoryServerService.Spec.Ports[0].Port)
+	return &RepositoryServer{
+		Name:        r.Name,
+		Namespace:   r.Namespace,
+		ServerInfo:  r.Status.ServerInfo,
+		Username:    r.Spec.Server.UserAccess.Username,
+		Credentials: repoServerSecrets,
+		Address:     repositoryServerAddress,
+	}, nil
+}
+
 func fetchCredential(ctx context.Context, cli kubernetes.Interface, c crv1alpha1.Credential) (*Credential, error) {
 	switch c.Type {
 	case crv1alpha1.CredentialTypeKeyPair:
@@ -297,6 +355,14 @@ func fetchSecretCredential(ctx context.Context, cli kubernetes.Interface, sr *cr
 		Type:   CredentialTypeSecret,
 		Secret: s,
 	}, nil
+}
+
+func secretFromSecretRef(ctx context.Context, cli kubernetes.Interface, ref v1.SecretReference) (*v1.Secret, error) {
+	secret, err := cli.CoreV1().Secrets(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("Error fetching secret %s from namespace %s", ref.Name, ref.Namespace))
+	}
+	return secret, nil
 }
 
 func filterByKind(refs map[string]crv1alpha1.ObjectReference, kind string) map[string]crv1alpha1.ObjectReference {
