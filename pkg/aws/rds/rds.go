@@ -73,12 +73,13 @@ func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, 
 	return r.CreateDBClusterWithContext(ctx, dbi)
 }
 
-func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine string) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine, dbSubnetGroup string) (*rds.CreateDBInstanceOutput, error) {
 	pa := true
 	dbi := &rds.CreateDBInstanceInput{
 		DBClusterIdentifier:  &restoredClusterID,
 		DBInstanceClass:      &instanceClass,
 		DBInstanceIdentifier: &instanceID,
+		DBSubnetGroupName:    &dbSubnetGroup,
 		Engine:               &dbEngine,
 		PubliclyAccessible:   &pa,
 	}
@@ -281,16 +282,17 @@ func (r RDS) WaitUntilDBClusterSnapshotDeleted(ctx context.Context, snapshotID s
 	return r.WaitUntilDBClusterSnapshotDeletedWithContext(ctx, sdi)
 }
 
-func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, snapshotID string, sgIDs []string) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
+func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, subnetGroupName, snapshotID string, sgIDs []string) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
 	rdbi := &rds.RestoreDBInstanceFromDBSnapshotInput{
 		DBInstanceIdentifier: &instanceID,
 		DBSnapshotIdentifier: &snapshotID,
+		DBSubnetGroupName:    &subnetGroupName,
 		VpcSecurityGroupIds:  convertSGIDs(sgIDs),
 	}
 	return r.RestoreDBInstanceFromDBSnapshotWithContext(ctx, rdbi)
 }
 
-func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, snapshotID, dbEngine, version string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
+func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, dbSubnetGroup, snapshotID, dbEngine, version string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
 	var rdi *rds.RestoreDBClusterFromSnapshotInput
 	if sgIDs == nil {
 		rdi = &rds.RestoreDBClusterFromSnapshotInput{
@@ -298,6 +300,7 @@ func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, sna
 			EngineVersion:       &version,
 			DBClusterIdentifier: &instanceID,
 			SnapshotIdentifier:  &snapshotID,
+			DBSubnetGroupName:   &dbSubnetGroup,
 		}
 	} else {
 		rdi = &rds.RestoreDBClusterFromSnapshotInput{
@@ -306,6 +309,7 @@ func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, sna
 			DBClusterIdentifier: &instanceID,
 			SnapshotIdentifier:  &snapshotID,
 			VpcSecurityGroupIds: convertSGIDs(sgIDs),
+			DBSubnetGroupName:   &dbSubnetGroup,
 		}
 	}
 	return r.RestoreDBClusterFromSnapshotWithContext(ctx, rdi)
