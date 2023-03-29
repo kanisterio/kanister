@@ -49,39 +49,28 @@ func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS,
 
 // CreateDBInstanceWithContext
 func (r RDS) CreateDBInstance(ctx context.Context, storage *int64, instanceClass, instanceID, engine, username, password string, sgIDs []string, publicAccess *bool, restoredClusterID *string, dbSubnetGroup string) (*rds.CreateDBInstanceOutput, error) {
-	var dbi *rds.CreateDBInstanceInput
+	dbi := &rds.CreateDBInstanceInput{
+		DBInstanceClass:      &instanceClass,
+		DBInstanceIdentifier: &instanceID,
+		Engine:               &engine,
+	}
 
 	// check if the instance is being restored from an existing cluster
 	switch {
 	case restoredClusterID != nil && publicAccess != nil:
-		dbi = &rds.CreateDBInstanceInput{
-			DBClusterIdentifier:  restoredClusterID,
-			DBInstanceClass:      &instanceClass,
-			DBInstanceIdentifier: &instanceID,
-			DBSubnetGroupName:    &dbSubnetGroup,
-			Engine:               &engine,
-			PubliclyAccessible:   publicAccess,
-		}
+		dbi.DBClusterIdentifier = restoredClusterID
+		dbi.DBSubnetGroupName = aws.String(dbSubnetGroup)
+		dbi.PubliclyAccessible = publicAccess
 	case restoredClusterID != nil && publicAccess == nil:
-		dbi = &rds.CreateDBInstanceInput{
-			DBClusterIdentifier:  restoredClusterID,
-			DBInstanceClass:      &instanceClass,
-			DBInstanceIdentifier: &instanceID,
-			DBSubnetGroupName:    &dbSubnetGroup,
-			Engine:               &engine,
-		}
+		dbi.DBClusterIdentifier = restoredClusterID
+		dbi.DBSubnetGroupName = aws.String(dbSubnetGroup)
 	default:
 		// if not restoring from an existing cluster, create a new instance input
-		dbi = &rds.CreateDBInstanceInput{
-			AllocatedStorage:     storage,
-			DBInstanceIdentifier: &instanceID,
-			VpcSecurityGroupIds:  convertSGIDs(sgIDs),
-			DBInstanceClass:      &instanceClass,
-			Engine:               &engine,
-			MasterUsername:       &username,
-			MasterUserPassword:   &password,
-			PubliclyAccessible:   publicAccess,
-		}
+		dbi.AllocatedStorage = storage
+		dbi.VpcSecurityGroupIds = convertSGIDs(sgIDs)
+		dbi.MasterUsername = aws.String(username)
+		dbi.MasterUserPassword = aws.String(password)
+		dbi.PubliclyAccessible = publicAccess
 	}
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
