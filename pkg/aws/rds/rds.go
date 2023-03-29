@@ -75,6 +75,7 @@ func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, 
 }
 
 func (r RDS) CreateDBInstanceInClusterForTest(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine, dbSubnetGroup string, publicAccess bool) (*rds.CreateDBInstanceOutput, error) {
+
 	dbi := &rds.CreateDBInstanceInput{
 		DBClusterIdentifier:  &restoredClusterID,
 		DBInstanceClass:      &instanceClass,
