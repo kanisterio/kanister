@@ -186,7 +186,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	}
 
 	// create db instance in the cluster
-	_, err = rdsCli.CreateDBInstanceInClusterForTest(ctx, a.id, fmt.Sprintf("%s-instance-1", a.id), AuroraDBInstanceClass, string(function.DBEngineAuroraMySQL), a.dbSubnetGroup, a.publicAccess)
+	_, err = rdsCli.CreateDBInstance(ctx, nil, AuroraDBInstanceClass, fmt.Sprintf("%s-instance-1", a.id), string(function.DBEngineAuroraMySQL), "", "", nil, awssdk.Bool(a.publicAccess), awssdk.String(a.id), a.dbSubnetGroup)
 	if err != nil {
 		return errors.Wrap(err, "Error creating an instance in Aurora DB cluster")
 	}

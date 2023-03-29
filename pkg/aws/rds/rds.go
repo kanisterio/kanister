@@ -48,16 +48,40 @@ func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS,
 }
 
 // CreateDBInstanceWithContext
-func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, username, password string, sgIDs []string, publicAccess bool) (*rds.CreateDBInstanceOutput, error) {
-	dbi := &rds.CreateDBInstanceInput{
-		AllocatedStorage:     &storage,
-		DBInstanceIdentifier: &instanceID,
-		VpcSecurityGroupIds:  convertSGIDs(sgIDs),
-		DBInstanceClass:      &instanceClass,
-		Engine:               &engine,
-		MasterUsername:       &username,
-		MasterUserPassword:   &password,
-		PubliclyAccessible:   aws.Bool(publicAccess),
+func (r RDS) CreateDBInstance(ctx context.Context, storage *int64, instanceClass, instanceID, engine, username, password string, sgIDs []string, publicAccess *bool, restoredClusterID *string, dbSubnetGroup string) (*rds.CreateDBInstanceOutput, error) {
+	var dbi *rds.CreateDBInstanceInput
+
+	// check if the instance is being restored from an existing cluster
+	switch {
+	case restoredClusterID != nil && publicAccess != nil:
+		dbi = &rds.CreateDBInstanceInput{
+			DBClusterIdentifier:  restoredClusterID,
+			DBInstanceClass:      &instanceClass,
+			DBInstanceIdentifier: &instanceID,
+			DBSubnetGroupName:    &dbSubnetGroup,
+			Engine:               &engine,
+			PubliclyAccessible:   publicAccess,
+		}
+	case restoredClusterID != nil && publicAccess == nil:
+		dbi = &rds.CreateDBInstanceInput{
+			DBClusterIdentifier:  restoredClusterID,
+			DBInstanceClass:      &instanceClass,
+			DBInstanceIdentifier: &instanceID,
+			DBSubnetGroupName:    &dbSubnetGroup,
+			Engine:               &engine,
+		}
+	default:
+		// if not restoring from an existing cluster, create a new instance input
+		dbi = &rds.CreateDBInstanceInput{
+			AllocatedStorage:     storage,
+			DBInstanceIdentifier: &instanceID,
+			VpcSecurityGroupIds:  convertSGIDs(sgIDs),
+			DBInstanceClass:      &instanceClass,
+			Engine:               &engine,
+			MasterUsername:       &username,
+			MasterUserPassword:   &password,
+			PubliclyAccessible:   publicAccess,
+		}
 	}
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
@@ -72,30 +96,6 @@ func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, 
 		VpcSecurityGroupIds: convertSGIDs(sgIDs),
 	}
 	return r.CreateDBClusterWithContext(ctx, dbi)
-}
-
-func (r RDS) CreateDBInstanceInClusterForTest(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine, dbSubnetGroup string, publicAccess bool) (*rds.CreateDBInstanceOutput, error) {
-
-	dbi := &rds.CreateDBInstanceInput{
-		DBClusterIdentifier:  &restoredClusterID,
-		DBInstanceClass:      &instanceClass,
-		DBInstanceIdentifier: &instanceID,
-		DBSubnetGroupName:    &dbSubnetGroup,
-		Engine:               &dbEngine,
-		PubliclyAccessible:   aws.Bool(publicAccess),
-	}
-	return r.CreateDBInstanceWithContext(ctx, dbi)
-}
-
-func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine, dbSubnetGroup string) (*rds.CreateDBInstanceOutput, error) {
-	dbi := &rds.CreateDBInstanceInput{
-		DBClusterIdentifier:  &restoredClusterID,
-		DBInstanceClass:      &instanceClass,
-		DBInstanceIdentifier: &instanceID,
-		DBSubnetGroupName:    &dbSubnetGroup,
-		Engine:               &dbEngine,
-	}
-	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
 func (r RDS) WaitUntilDBInstanceAvailable(ctx context.Context, instanceID string) error {
