@@ -136,6 +136,7 @@ func (h *RepoServerHandler) createService(ctx context.Context, repoServerNamespa
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create RepositoryServer service")
 	}
+
 	err = poll.WaitWithBackoff(ctx, backoff.Backoff{
 		Factor: 2,
 		Jitter: false,
@@ -152,7 +153,7 @@ func (h *RepoServerHandler) createService(ctx context.Context, repoServerNamespa
 		}
 		return true, nil
 	})
-	return &svc, nil
+	return &svc, err
 }
 
 func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Service) (*corev1.Pod, error) {
@@ -184,10 +185,7 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 }
 
 func (h *RepoServerHandler) updatePod(ctx context.Context, pod *corev1.Pod, svc *corev1.Service) (*corev1.Pod, error) {
-	pod, err := h.updateServiceNameInPodLabels(pod, svc)
-	if err != nil {
-		return nil, err
-	}
+	pod = h.updateServiceNameInPodLabels(pod, svc)
 	// TODO: Override the updated pod spec with expected pod spec here
 	//  using the data from all Secrets in CR as either EnvVars or Volume Mounts
 	// 	before updating it below
@@ -197,16 +195,16 @@ func (h *RepoServerHandler) updatePod(ctx context.Context, pod *corev1.Pod, svc 
 	return pod, nil
 }
 
-func (h *RepoServerHandler) updateServiceNameInPodLabels(pod *corev1.Pod, svc *corev1.Service) (*corev1.Pod, error) {
+func (h *RepoServerHandler) updateServiceNameInPodLabels(pod *corev1.Pod, svc *corev1.Service) *corev1.Pod {
 	h.Logger.Info("Check if current service name matches in pod labels")
 	if pod.ObjectMeta.Labels[repoServerServiceNameKey] == svc.Name {
 		h.Logger.Info("Skipping pod label update. Current service name matches with the pod labels")
-		return pod, nil
+		return pod
 	}
 	h.Logger.Info("Current service name does not match pod labels. Update pod with new service name")
 	currentLabel := map[string]string{repoServerServiceNameKey: svc.Name}
 	pod.ObjectMeta.Labels = currentLabel
-	return pod, nil
+	return pod
 }
 
 func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace string, svc *corev1.Service) (*corev1.Pod, error) {
@@ -248,6 +246,9 @@ func (h *RepoServerHandler) setCredDataFromSecretInPod(ctx context.Context, podO
 	if envVars == nil {
 		if val, ok := storageCredSecret.Data[googleCloudServiceAccFileName]; ok {
 			val, err = base64.StdEncoding.DecodeString(string(val))
+			if err != nil {
+				return nil, err
+			}
 			gcloudCredsFilePath := fmt.Sprintf("%s/%s", googleCloudCredsDirPath, googleCloudServiceAccFileName)
 			pw := kube.NewPodWriter(h.KubeCli, gcloudCredsFilePath, bytes.NewBufferString(string(val)))
 			if err := pw.Write(ctx, namespace, pod.Name, repoServerPodContainerName); err != nil {
