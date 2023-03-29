@@ -262,7 +262,7 @@ func validateAndGetOptArgsForRestore(tp param.TemplateParams, args map[string]an
 		return pod, vols, podOverride, err
 	}
 	if (pod != "") && (len(vols) > 0) {
-		return pod, vols, podOverride, errors.New(fmt.Sprintf("Exactly one of the %s or %s" arguments are required, but both are provided, RestoreDataPodArg, RestoreDataVolsArg))
+		return pod, vols, podOverride, errors.New(fmt.Sprintf("Exactly one of the %s or %s arguments are required, but both are provided", RestoreDataPodArg, RestoreDataVolsArg))
 	}
 	podOverride, err = GetPodSpecOverride(tp, args, RestoreDataPodOverrideArg)
 	if err != nil {
