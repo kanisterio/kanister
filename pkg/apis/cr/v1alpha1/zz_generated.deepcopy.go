@@ -196,6 +196,11 @@ func (in *ActionSpec) DeepCopyInto(out *ActionSpec) {
 		*out = new(ObjectReference)
 		**out = **in
 	}
+	if in.RepositoryServer != nil {
+		in, out := &in.RepositoryServer, &out.RepositoryServer
+		*out = new(ObjectReference)
+		**out = **in
+	}
 	out.PodOverride = in.PodOverride.DeepCopy()
 	if in.Options != nil {
 		in, out := &in.Options, &out.Options
