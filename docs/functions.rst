@@ -1573,6 +1573,7 @@ Example:
           name: "test-snapshot-content-content-dfc8fa67-8b11-4fdf-bf94-928589c2eed8"
 
 .. _deletedatausingkopiaserver:
+
 DeleteDataUsingKopiaServer
 --------------------------
 
