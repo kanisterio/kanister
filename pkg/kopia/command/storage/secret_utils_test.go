@@ -22,6 +22,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/aws"
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
@@ -254,6 +255,22 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 		},
 		{
 			locType:       LocTypeS3,
+			prefix:        prefixValue,
+			region:        regionValue,
+			bucket:        bucketValue,
+			endpoint:      endpointValue,
+			skipSSLVerify: skipSSLVerifyValue,
+			expectedOutput: map[string][]byte{
+				typeKey:          []byte(LocTypeS3),
+				prefixKey:        []byte(prefixValue),
+				regionKey:        []byte(regionValue),
+				bucketKey:        []byte(bucketValue),
+				endpointKey:      []byte(endpointValue),
+				skipSSLVerifyKey: []byte(skipSSLVerifyValue),
+			},
+		},
+		{
+			locType:       LocType(v1alpha1.LocationTypeS3Compliant),
 			prefix:        prefixValue,
 			region:        regionValue,
 			bucket:        bucketValue,

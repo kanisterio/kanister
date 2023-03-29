@@ -1,4 +1,4 @@
-// Copyright 2022 The Kanister Authors.
+// Copyright 2023 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ func (h *RepoServerHandler) getSecretsFromCR(ctx context.Context) error {
 	// TODO: For now, users should make sure all the secrets and the RepositoryServer CR are present in the
 	//  same namespace. This namespace field can be overriden when we start creating secrets using 'kanctl' utility
 	repositoryServer := h.RepositoryServer
-	h.Logger.Info("Fetching secrets from all the secretReferences in the CR")
+	h.Logger.Info("Fetching secrets from all the secret references in the CR")
 	storage, err := h.fetchSecret(ctx, repositoryServer.Spec.Storage.SecretRef)
 	if err != nil {
 		return err

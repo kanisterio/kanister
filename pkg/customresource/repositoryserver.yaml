@@ -30,17 +30,21 @@ spec:
           metadata:
             type: object
           spec:
-            description: RepositoryServerSpec is the specification for the RepositoryServer
+            description: Spec defines the spec of repository server. It has all the
+              details required to start the kopia repository server
             properties:
               repository:
-                description: Repository details for the purpose of establishing a
-                  connection
+                description: Repository has the details required by the repository
+                  server to connect to kopia repository
                 properties:
                   hostname:
+                    description: If specified, these values will be used by the controller
+                      to override default hostname when connecting to the repository
+                      from the server.
                     type: string
                   passwordSecretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                    description: PasswordSecretRef has the password required to connect
+                      to kopia repository
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -52,22 +56,26 @@ spec:
                         type: string
                     type: object
                   rootPath:
+                    description: 'Path for the repository,it will be relative sub
+                      path within the path prefix specified in the location More info:
+                      https://kopia.io/docs/reference/command-line/common/#commands-to-manipulate-repository'
                     type: string
                   username:
+                    description: If specified, these values will be used by the controller
+                      to override default username when connecting to the repository
+                      from the server.
                     type: string
                 required:
-                - hostname
                 - passwordSecretRef
                 - rootPath
-                - username
                 type: object
               server:
-                description: Server details required for starting the repository proxy
-                  server and initializing the repository client users
+                description: Server has the details of all the secrets required to
+                  start the kopia repository server
                 properties:
                   adminSecretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                    description: AdminSecretRef has the username and password required
+                      to start the kopia repository server
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -79,8 +87,8 @@ spec:
                         type: string
                     type: object
                   tlsSecretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                    description: TLSSecretRef has the certificates required for kopia
+                      repository client server connection
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -92,10 +100,13 @@ spec:
                         type: string
                     type: object
                   userAccess:
+                    description: UserAccess has the details of the user credentials
+                      required by client to connect to kopia repository server
                     properties:
                       userAccessSecretRef:
-                        description: SecretReference represents a Secret Reference.
-                          It has enough information to retrieve secret in any namespace
+                        description: UserAccessSecretRef stores the list of hostname
+                          and passwords used by kopia clients to connect to kopia
+                          repository server
                         properties:
                           name:
                             description: name is unique within a namespace to reference
@@ -106,8 +117,9 @@ spec:
                               the secret name must be unique.
                             type: string
                         type: object
-                        x-kubernetes-map-type: atomic
                       username:
+                        description: Username is the user required by client to connect
+                          to kopia repository server
                         type: string
                     required:
                     - userAccessSecretRef
@@ -124,8 +136,8 @@ spec:
                   store
                 properties:
                   credentialSecretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                    description: CredentialSecretRef stores the credentials required
+                      to connect to the object storage specified in `SecretRef` field
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -137,8 +149,8 @@ spec:
                         type: string
                     type: object
                   secretRef:
-                    description: SecretReference represents a Secret Reference. It
-                      has enough information to retrieve secret in any namespace
+                    description: SecretRef has the details of the object storage (location)
+                      where the kopia would backup the data
                     properties:
                       name:
                         description: name is unique within a namespace to reference
@@ -159,8 +171,7 @@ spec:
             - storage
             type: object
           status:
-            description: RepositoryServerStatus is the status for the RepositoryServer.
-              This should only be updated by the controller
+            description: Status refers to the current status of the repository server.
             properties:
               conditions:
                 items:
@@ -174,14 +185,13 @@ spec:
                       description: "Condition contains details for one aspect of the
                         current state of this API Resource. --- This struct is intended
                         for direct use as an array at the field path .status.conditions.
-                        \ For example, \n \ttype FooStatus struct{ \t    // Represents
-                        the observations of a foo's current state. \t    // Known
-                        .status.conditions.type are: \"Available\", \"Progressing\",
-                        and \"Degraded\" \t    // +patchMergeKey=type \t    // +patchStrategy=merge
-                        \t    // +listType=map \t    // +listMapKey=type \t    Conditions
-                        []metav1.Condition `json:\"conditions,omitempty\" patchStrategy:\"merge\"
-                        patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`
-                        \n \t    // other fields \t}"
+                        \ For example, type FooStatus struct{ // Represents the observations
+                        of a foo's current state. // Known .status.conditions.type
+                        are: \"Available\", \"Progressing\", and \"Degraded\" // +patchMergeKey=type
+                        // +patchStrategy=merge // +listType=map // +listMapKey=type
+                        Conditions []metav1.Condition `json:\"conditions,omitempty\"
+                        patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`
+                        \n // other fields }"
                       properties:
                         lastTransitionTime:
                           description: lastTransitionTime is the last time the condition
@@ -252,10 +262,12 @@ spec:
                   type: object
                 type: array
               progress:
+                description: RepositoryServerProgress is the field users would check
+                  to know the state of RepositoryServer
                 type: string
               serverInfo:
-                description: ServerInfo describes all the information required by
-                  the client users to connect to the repository server
+                description: ServerInfo describes all the information required
+                  by the client users to connect to the repository server
                 properties:
                   podName:
                     type: string

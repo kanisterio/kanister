@@ -1,3 +1,17 @@
+// Copyright 2023 The Kanister Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package repositoryserver
 
 import (
@@ -19,7 +33,7 @@ import (
 const (
 	serverAdminUserNameKey = "username"
 	serverAdminPasswordKey = "password"
-	// DefaultServerStartTimeout is default time to create context for Kopia API Server Status Command
+	// DefaultServerStartTimeout is default time to create context for Kopia API server Status Command
 	DefaultServerStartTimeout = 600 * time.Second
 )
 
@@ -31,7 +45,7 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 
 	err = h.checkServerStatus(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
 	if err == nil {
-		h.Logger.Info("Repository server already started")
+		h.Logger.Info("Kopia API server already started")
 		return nil
 	}
 
@@ -74,10 +88,10 @@ func (h *RepoServerHandler) getServerDetails(ctx context.Context) (string, strin
 	var serverAdminUsername, serverAdminPassword []byte
 	var ok bool
 	if serverAdminUsername, ok = h.RepositoryServerSecrets.serverAdmin.Data[serverAdminUserNameKey]; !ok {
-		return "", "", "", errors.New("server admin username is not specified")
+		return "", "", "", errors.New("Server admin username is not specified")
 	}
 	if serverAdminPassword, ok = h.RepositoryServerSecrets.serverAdmin.Data[serverAdminPasswordKey]; !ok {
-		return "", "", "", errors.New("server admin password is not specified")
+		return "", "", "", errors.New("Server admin password is not specified")
 	}
 	return repoServerAddress, string(serverAdminUsername), string(serverAdminPassword), nil
 }
@@ -85,7 +99,7 @@ func (h *RepoServerHandler) getServerDetails(ctx context.Context) (string, strin
 func (h *RepoServerHandler) checkServerStatus(ctx context.Context, serverAddress, username, password string) error {
 	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
 	if err != nil {
-		return errors.Wrap(err, "Failed to extract fingerprint Kopia API Server Certificate Secret Data")
+		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")
 	}
 	cmd := command.ServerStatus(
 		command.ServerStatusCommandArgs{
@@ -102,7 +116,7 @@ func (h *RepoServerHandler) checkServerStatus(ctx context.Context, serverAddress
 
 	serverStartTimeOut, err := h.getRepositoryServerStartTimeout()
 	if err != nil {
-		return errors.Wrap(err, "failed to get repository server timeout")
+		return errors.Wrap(err, "Failed to get Kopia API server timeout")
 	}
 	ctx, cancel := context.WithTimeout(ctx, serverStartTimeOut)
 	defer cancel()
@@ -189,7 +203,7 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 	}
 	err = h.refreshServer(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
 	if err != nil {
-		return errors.Wrap(err, "Failed to refresh repository server")
+		return errors.Wrap(err, "Failed to refresh Kopia API server")
 	}
 	return nil
 }
@@ -198,7 +212,7 @@ func (h *RepoServerHandler) refreshServer(ctx context.Context, serverAddress, us
 	repoPassword := string(h.RepositoryServerSecrets.repositoryPassword.Data[repoPasswordKey])
 	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
 	if err != nil {
-		return errors.Wrap(err, "Failed to extract fingerprint Kopia API Server Certificate Secret Data")
+		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")
 	}
 
 	cmd := command.ServerRefresh(

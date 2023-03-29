@@ -1,4 +1,4 @@
-// Copyright 2022 The Kanister Authors.
+// Copyright 2023 The Kanister Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/jpillora/backoff"
+	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -30,8 +31,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/kube"
@@ -50,28 +49,28 @@ type RepoServerHandler struct {
 func (h *RepoServerHandler) CreateOrUpdateOwnedResources(ctx context.Context) error {
 	svc, err := h.reconcileService(ctx)
 	if err != nil {
-		return errors.Wrap(err, "failed to reconcile service")
+		return errors.Wrap(err, "Failed to reconcile service")
 	}
 	if err = h.getSecretsFromCR(ctx); err != nil {
-		return errors.Wrap(err, "failed to get repository server secrets")
+		return errors.Wrap(err, "Failed to get Kopia API server secrets")
 	}
 	pod, err := h.reconcilePod(ctx, svc)
 	if err != nil {
-		return errors.Wrap(err, "failed to reconcile repository server pod")
+		return errors.Wrap(err, "Failed to reconcile Kopia API server pod")
 	}
 	if err := h.waitForPodReady(ctx, pod); err != nil {
-		return errors.Wrap(err, "repository server pod not in ready state")
+		return errors.Wrap(err, "Kopia API server pod not in ready state")
 	}
 	if err := h.connectToKopiaRepository(); err != nil {
-		return errors.Wrap(err, "failed to connect to kopia repository")
+		return errors.Wrap(err, "Failed to connect to Kopia repository")
 	}
 
 	if err := h.startRepoProxyServer(ctx); err != nil {
-		return errors.Wrap(err, "failed to start kopia repository servver")
+		return errors.Wrap(err, "Failed to start Kopia API server")
 	}
 
 	if err := h.createOrUpdateClientUsers(ctx); err != nil {
-		return errors.Wrap(err, "failed to create/update kopia server access users")
+		return errors.Wrap(err, "Failed to create/update kopia API server access users")
 	}
 	return nil
 }
@@ -80,7 +79,7 @@ func (h *RepoServerHandler) reconcileService(ctx context.Context) (*corev1.Servi
 	repoServerNamespace := h.RepositoryServer.Namespace
 	serviceName := h.RepositoryServer.Status.ServerInfo.ServiceName
 	svc := &corev1.Service{}
-	h.Logger.Info("Check if Service resource exists. If exists, reconcile with CR spec")
+	h.Logger.Info("Check if the service resource exists. If exists, reconcile with CR spec")
 	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: repoServerNamespace}, svc)
 	if err == nil {
 		return h.updateService(ctx, svc)
@@ -93,26 +92,26 @@ func (h *RepoServerHandler) reconcileService(ctx context.Context) (*corev1.Servi
 	if err != nil {
 		return nil, err
 	}
-	h.Logger.Info("Update serviceName in RepositoryServer /status")
+	h.Logger.Info("Update service name in RepositoryServer /status")
 	serverInfo := crv1alpha1.ServerInfo{
 		PodName:     h.RepositoryServer.Status.ServerInfo.PodName,
 		ServiceName: svc.Name,
 	}
 	if err := h.updateServerInfoInCRStatus(ctx, serverInfo); err != nil {
-		return nil, errors.Wrap(err, "Failed to update ServiceName in RepositoryServer /status")
+		return nil, errors.Wrap(err, "Failed to update service name in RepositoryServer /status")
 	}
 	return svc, err
 }
 
 func (h *RepoServerHandler) updateService(ctx context.Context, svc *corev1.Service) (*corev1.Service, error) {
-	svc = h.updateServiceSpecInService(svc)
+	svc = h.updateServiceSpec(svc)
 	if err := h.Reconciler.Update(ctx, svc); err != nil {
 		return nil, err
 	}
 	return svc, nil
 }
 
-func (h *RepoServerHandler) updateServiceSpecInService(svc *corev1.Service) *corev1.Service {
+func (h *RepoServerHandler) updateServiceSpec(svc *corev1.Service) *corev1.Service {
 	serviceSpec := corev1.ServiceSpec{
 		Ports: []corev1.ServicePort{
 			{
@@ -129,7 +128,7 @@ func (h *RepoServerHandler) updateServiceSpecInService(svc *corev1.Service) *cor
 
 func (h *RepoServerHandler) createService(ctx context.Context, repoServerNamespace string) (*corev1.Service, error) {
 	svc := getRepoServerService(repoServerNamespace)
-	h.Logger.Info("Set controller reference on Service to allow reconciliation using this controller")
+	h.Logger.Info("Set controller reference on the service to allow reconciliation using this controller")
 	if err := controllerutil.SetControllerReference(h.RepositoryServer, &svc, h.Reconciler.Scheme); err != nil {
 		return nil, err
 	}
@@ -160,7 +159,7 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 	repoServerNamespace := h.RepositoryServer.Namespace
 	podName := h.RepositoryServer.Status.ServerInfo.PodName
 	pod := &corev1.Pod{}
-	h.Logger.Info("Check if Pod resource exists. If exists, reconcile with CR spec")
+	h.Logger.Info("Check if the pod resource exists. If exists, reconcile with CR spec")
 	err := h.Reconciler.Get(ctx, types.NamespacedName{Name: podName, Namespace: repoServerNamespace}, pod)
 	if err == nil {
 		return h.updatePod(ctx, pod, svc)
@@ -168,18 +167,18 @@ func (h *RepoServerHandler) reconcilePod(ctx context.Context, svc *corev1.Servic
 	if !apierrors.IsNotFound(err) {
 		return nil, err
 	}
-	h.Logger.Info("Pod resource not found. Creating new Pod")
+	h.Logger.Info("Pod resource not found. Creating new pod")
 	pod, err = h.createPod(ctx, repoServerNamespace, svc)
 	if err != nil {
 		return nil, err
 	}
-	h.Logger.Info("Update podName in RepositoryServer /status")
+	h.Logger.Info("Update pod name in RepositoryServer /status")
 	serverInfo := crv1alpha1.ServerInfo{
 		PodName:     pod.Name,
 		ServiceName: h.RepositoryServer.Status.ServerInfo.ServiceName,
 	}
 	if err := h.updateServerInfoInCRStatus(ctx, serverInfo); err != nil {
-		return nil, errors.Wrap(err, "Failed to update podName in RepositoryServer /status")
+		return nil, errors.Wrap(err, "Failed to update pod name in RepositoryServer /status")
 	}
 	return pod, nil
 }
@@ -199,12 +198,12 @@ func (h *RepoServerHandler) updatePod(ctx context.Context, pod *corev1.Pod, svc 
 }
 
 func (h *RepoServerHandler) updateServiceNameInPodLabels(pod *corev1.Pod, svc *corev1.Service) (*corev1.Pod, error) {
-	h.Logger.Info("Check if current svcName matches in Pod labels")
+	h.Logger.Info("Check if current service name matches in pod labels")
 	if pod.ObjectMeta.Labels[repoServerServiceNameKey] == svc.Name {
-		h.Logger.Info("Skipping Pod Label update. Current svcName matches with Pod labels")
+		h.Logger.Info("Skipping pod label update. Current service name matches with the pod labels")
 		return pod, nil
 	}
-	h.Logger.Info("Current svcName does not match in Pod labels. Update Pod with new svcName")
+	h.Logger.Info("Current service name does not match pod labels. Update pod with new service name")
 	currentLabel := map[string]string{repoServerServiceNameKey: svc.Name}
 	pod.ObjectMeta.Labels = currentLabel
 	return pod, nil
@@ -220,7 +219,7 @@ func (h *RepoServerHandler) createPod(ctx context.Context, repoServerNamespace s
 	if err != nil {
 		return nil, err
 	}
-	h.Logger.Info("Set controller reference on Pod to allow reconciliation using this controller")
+	h.Logger.Info("Set controller reference on the pod to allow reconciliation using this controller")
 	if err := controllerutil.SetControllerReference(h.RepositoryServer, pod, h.Reconciler.Scheme); err != nil {
 		return nil, err
 	}
@@ -273,7 +272,7 @@ func (h *RepoServerHandler) preparePodOverride(ctx context.Context) (map[string]
 }
 
 func (h *RepoServerHandler) updateServerInfoInCRStatus(ctx context.Context, info crv1alpha1.ServerInfo) error {
-	h.Logger.Info("Fetch latest version of RepositoryServer to update the ServerInfo in it's status")
+	h.Logger.Info("Fetch latest version of RepositoryServer to update the ServerInfo in its status")
 	repoServerName := h.RepositoryServer.Name
 	repoServerNamespace := h.RepositoryServer.Namespace
 	rs := crv1alpha1.RepositoryServer{}
@@ -294,7 +293,7 @@ func (h *RepoServerHandler) updateServerInfoInCRStatus(ctx context.Context, info
 
 func (h *RepoServerHandler) waitForPodReady(ctx context.Context, pod *corev1.Pod) error {
 	if err := kube.WaitForPodReady(ctx, h.KubeCli, pod.Namespace, pod.Name); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Failed while waiting for Pod %s to be ready", pod.Name))
+		return errors.Wrap(err, fmt.Sprintf("Failed while waiting for pod %s to be ready", pod.Name))
 	}
 	return nil
 }
