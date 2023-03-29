@@ -59,6 +59,7 @@ type RDSPostgresDB struct {
 	configMapName            string
 	secretName               string
 	bastionDebugWorkloadName string
+	publicAccess             bool
 	vpcID                    string
 }
 
@@ -79,6 +80,7 @@ func NewRDSPostgresDB(name string, customRegion string) App {
 		region:            customRegion,
 		configMapName:     fmt.Sprintf("%s-config", name),
 		secretName:        fmt.Sprintf("%s-secret", name),
+		publicAccess:      false,
 	}
 }
 
@@ -178,7 +180,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID})
+	_, err = rdsCli.CreateDBInstance(ctx, awssdk.Int64(20), dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID}, awssdk.Bool(pdb.publicAccess), nil, "")
 	if err != nil {
 		return err
 	}

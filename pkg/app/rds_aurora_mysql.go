@@ -63,6 +63,7 @@ type RDSAuroraMySQLDB struct {
 	securityGroupID          string
 	securityGroupName        string
 	bastionDebugWorkloadName string
+	publicAccess             bool
 	vpcID                    string
 }
 
@@ -75,6 +76,7 @@ func NewRDSAuroraMySQLDB(name, region string) App {
 		username:          "admin",
 		password:          "secret99",
 		dbName:            "testdb",
+		publicAccess:      false,
 	}
 }
 
@@ -184,7 +186,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 	}
 
 	// create db instance in the cluster
-	_, err = rdsCli.CreateDBInstanceInCluster(ctx, a.id, fmt.Sprintf("%s-instance-1", a.id), AuroraDBInstanceClass, string(function.DBEngineAuroraMySQL), a.dbSubnetGroup)
+	_, err = rdsCli.CreateDBInstance(ctx, nil, AuroraDBInstanceClass, fmt.Sprintf("%s-instance-1", a.id), string(function.DBEngineAuroraMySQL), "", "", nil, awssdk.Bool(a.publicAccess), awssdk.String(a.id), a.dbSubnetGroup)
 	if err != nil {
 		return errors.Wrap(err, "Error creating an instance in Aurora DB cluster")
 	}
