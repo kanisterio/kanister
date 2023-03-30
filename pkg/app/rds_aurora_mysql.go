@@ -185,7 +185,6 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return errors.Wrap(err, "Error waiting for DB cluster to be available")
 	}
 
-	// create db instance in the cluster
 	_, err = rdsCli.CreateDBInstance(ctx, nil, AuroraDBInstanceClass, fmt.Sprintf("%s-instance-1", a.id), string(function.DBEngineAuroraMySQL), "", "", nil, awssdk.Bool(a.publicAccess), awssdk.String(a.id), a.dbSubnetGroup)
 	if err != nil {
 		return errors.Wrap(err, "Error creating an instance in Aurora DB cluster")
