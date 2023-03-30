@@ -180,7 +180,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rdsCli.CreateDBInstance(ctx, awssdk.Int64(20), dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID}, awssdk.Bool(pdb.publicAccess), nil, "")
+	_, err = rdsCli.CreateDBInstance(ctx, awssdk.Int64(20), dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID}, awssdk.Bool(pdb.publicAccess), nil, pdb.dbSubnetGroup)
 	if err != nil {
 		return err
 	}

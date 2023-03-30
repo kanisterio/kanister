@@ -53,17 +53,16 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage *int64, instanceClass
 		DBInstanceClass:      &instanceClass,
 		DBInstanceIdentifier: &instanceID,
 		Engine:               &engine,
+		DBSubnetGroupName:    aws.String(dbSubnetGroup),
 	}
 
 	// check if the instance is being restored from an existing cluster
 	switch {
 	case restoredClusterID != nil && publicAccess != nil:
 		dbi.DBClusterIdentifier = restoredClusterID
-		dbi.DBSubnetGroupName = aws.String(dbSubnetGroup)
 		dbi.PubliclyAccessible = publicAccess
 	case restoredClusterID != nil && publicAccess == nil:
 		dbi.DBClusterIdentifier = restoredClusterID
-		dbi.DBSubnetGroupName = aws.String(dbSubnetGroup)
 	default:
 		// if not restoring from an existing cluster, create a new instance input
 		dbi.AllocatedStorage = storage
@@ -75,10 +74,11 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage *int64, instanceClass
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
-func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, engine, dbName, username, password string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
+func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, dbSubnetGroup, engine, dbName, username, password string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
 	dbi := &rds.CreateDBClusterInput{
 		DBClusterIdentifier: &instanceID,
 		DatabaseName:        &dbName,
+		DBSubnetGroupName:   aws.String(dbSubnetGroup),
 		Engine:              &engine,
 		MasterUsername:      &username,
 		MasterUserPassword:  &password,

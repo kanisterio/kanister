@@ -175,7 +175,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS Aurora DB cluster.", field.M{"app": a.name, "id": a.id})
-	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, []string{a.securityGroupID})
+	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, a.dbSubnetGroup, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, []string{a.securityGroupID})
 	if err != nil {
 		return errors.Wrap(err, "Error creating DB cluster")
 	}
