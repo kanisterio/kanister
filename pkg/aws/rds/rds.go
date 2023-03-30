@@ -53,7 +53,7 @@ func (r RDS) CreateDBInstance(ctx context.Context, storage *int64, instanceClass
 		DBInstanceClass:      &instanceClass,
 		DBInstanceIdentifier: &instanceID,
 		Engine:               &engine,
-    DBSubnetGroupName:    aws.String(dbSubnetGroup)
+		DBSubnetGroupName:    aws.String(dbSubnetGroup),
 	}
 
 	// check if the instance is being restored from an existing cluster

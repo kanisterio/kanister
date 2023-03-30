@@ -132,16 +132,6 @@ func createRDSSnapshot(ctx context.Context, instanceID string, dbEngine RDSDBEng
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create securityGroupID artifact. InstanceID=%s", instanceID)
 	}
-	// Find dbSubnetGroup
-	var dbSubnetGroup *string
-	if !isAuroraCluster(string(dbEngine)) {
-		dbSubnetGroup, e = GetRDSDbSubnetGroup(ctx, rdsCli, instanceID)
-	} else {
-		dbSubnetGroup, e = GetRDSAuroraDbSubnetGroup(ctx, rdsCli, instanceID)
-	}
-	if e != nil {
-		return nil, errors.Wrapf(e, "Failed to get dbSubnetGroup ids. InstanceID=%s", instanceID)
-	}
 
 	var dbSubnetGroup *string
 	switch {
