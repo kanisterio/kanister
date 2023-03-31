@@ -1,0 +1,80 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: mysql-blueprint
+actions:
+  backup:
+    outputArtifacts:
+      backupIdentifier:
+        keyValue:
+          id: "{{ .Phases.backupToS3.Output.backupID }}"
+          dataDir: "{{ .Phases.checkDataDir.Output.dataDir }}"
+    phases:
+      - func: KubeExec
+        name: checkDataDir
+        objects:
+          mysqlSecret:
+            kind: Secret
+            name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}'
+            namespace: '{{ .StatefulSet.Namespace }}'
+        args:
+          namespace: "{{ .StatefulSet.Namespace }}"
+          pod: "{{ index .StatefulSet.Pods 0 }}"
+          container: mysql
+          command:
+            - bash
+            - -o
+            - errexit
+            - -o
+            - pipefail
+            - -c
+            - |
+              root_password="{{ index .Phases.checkDataDir.Secrets.mysqlSecret.Data "mysql-root-password" | toString }}"
+              cmd="SELECT @@datadir;"
+              datadir="$(mysql -uroot -p"${root_password}" -e "${cmd}" | grep /)"
+              kando output dataDir "${datadir}"
+      - func: BackupDataUsingKopiaServer
+        name: backupToS3
+        args:
+          namespace: "{{ .StatefulSet.Namespace }}"
+          pod: "{{ index .StatefulSet.Pods 0 }}"
+          container: mysql
+          includePath: "{{ .Phases.checkDataDir.Output.dataDir }}"
+
+  restore:
+    inputArtifactNames:
+      - backupIdentifier
+    phases:
+      - func: ScaleWorkload
+        name: shutdownPod
+        args:
+          namespace: "{{ .StatefulSet.Namespace }}"
+          name: "{{ .StatefulSet.Name }}"
+          kind: StatefulSet
+          replicas: 0
+      - func: RestoreDataUsingKopiaServer
+        name: restoreFromS3
+        args:
+          namespace: "{{ .StatefulSet.Namespace }}"
+          pod: "{{ index .StatefulSet.Pods 0 }}"
+          image: ghcr.io/kanisterio/kanister-tools:0.90.0
+          backupIdentifier: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
+          restorePath: "{{ .ArtifactsIn.backupIdentifier.KeyValue.dataDir }}"
+      - func: ScaleWorkload
+        name: bringupPod
+        args:
+          namespace: "{{ .StatefulSet.Namespace }}"
+          name: "{{ .StatefulSet.Name }}"
+          kind: StatefulSet
+          replicas: 1
+
+  delete:
+    inputArtifactNames:
+      - backupIdentifier
+    phases:
+      - func: DeleteDataUsingKopiaServer
+        name: deleteFromS3
+        args:
+          namespace: "{{ .StatefulSet.Namespace }}"
+          image: ghcr.io/kanisterio/kanister-tools:0.90.0
+          backupID: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
