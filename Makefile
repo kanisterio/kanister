@@ -43,7 +43,7 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 vm-driver ?= "kvm"
 
 # Default OCP version in which the OpenShift apps are going to run
-ocp_version ?= "4.11"
+ocp_version ?= "4.12"
 ###
 ### These variables should not need tweaking.
 ###
