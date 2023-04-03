@@ -7,12 +7,17 @@ import (
 )
 
 const (
-	// AWSLocationSecretType represents the storage location secret type for AWS
-	AWSLocationSecretType string = "secrets.kanister.io/aws-location"
-	// AWSLocationSecretType represents the storage location secret type for Azure
-	AzureLocationSecretType string = "secrets.kanister.io/azure-location"
-	// GCPLocationSecretType represents the storage location secret type for AWS
-	GCPLocationSecretType string = "secrets.kanister.io/gcp-location"
+	// AWSLocationSecretType represents the storage location type for AWS
+	AWSLocationSecretType string = "s3"
+	// AWSLocationSecretType represents the storage location type for Azure
+	AzureLocationSecretType string = "azure"
+	// GCPLocationSecretType represents the storage location type for AWS
+	GCPLocationSecretType string = "gcs"
+	// LocationSecretType represents the storage location secret type for kopia repository server
+	LocationSecretType string = "secrets.kanister.io/storage-location"
+	// LocationTypeKey represents the key used to define the location type in
+	// the kopia repository server location secret
+	LocationTypeKey string = "type"
 	// RepositoryPasswordSecretType represents the kopia repository passowrd secret type
 	RepositoryPasswordSecretType string = "secrets.kanister.io/kopia-repository/password"
 	// RepositoryServerAdminCredentialsSecretType represents the kopia server admin credentials secret type
@@ -36,13 +41,37 @@ func ValidateCredentials(secret *v1.Secret) error {
 	}
 }
 
+func getLocationType(secret *v1.Secret) (repositoryserver.RepositoryServerSecrets, error) {
+	var locationType []byte
+	var ok bool
+	if secret == nil {
+		return nil, errors.New("Secret is Nil")
+	}
+
+	if locationType, ok = (secret.Data[LocationTypeKey]); !ok {
+		return nil, errors.Errorf("secret '%s:%s' does not have required field %s", secret.Namespace, secret.Name, LocationTypeKey)
+	}
+
+	switch string(locationType) {
+	case AWSLocationSecretType:
+		return repositoryserver.NewAWSLocation(secret), nil
+	case AzureLocationSecretType:
+		return repositoryserver.NewAzureLocation(secret), nil
+	default:
+		return nil, errors.Errorf("Unsupported location type '%s' for secret '%s:%s'", locationType, secret.Namespace, secret.Name)
+	}
+}
+
 func ValidateRepositoryServerSecret(repositoryServerSecret *v1.Secret) error {
 	var secret repositoryserver.RepositoryServerSecrets
+	var err error
+
 	switch string(repositoryServerSecret.Type) {
-	case AWSLocationSecretType:
-		secret = repositoryserver.NewAWSLocation(repositoryServerSecret)
-	case AzureLocationSecretType:
-		secret = repositoryserver.NewAzureLocation(repositoryServerSecret)
+	case LocationSecretType:
+		secret, err = getLocationType(repositoryServerSecret)
+		if err != nil {
+			return err
+		}
 	case RepositoryPasswordSecretType:
 		secret = repositoryserver.NewRepoPassword(repositoryServerSecret)
 	case RepositoryServerAdminCredentialsSecretType:

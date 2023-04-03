@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
+	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +22,7 @@ func performRepoServerSecretsValidation(p *validateParams) error {
 	if err != nil {
 		return err
 	}
-	return repositoryserver.ValidateSecret(secret)
+	return secrets.ValidateRepositoryServerSecret(secret)
 }
 
 func getSecretFromCmd(ctx context.Context, cli kubernetes.Interface, p *validateParams) (*corev1.Secret, error) {
