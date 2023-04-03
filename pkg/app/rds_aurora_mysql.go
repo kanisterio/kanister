@@ -16,15 +16,16 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
+	"strconv"
 
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	rdserr "github.com/aws/aws-sdk-go/service/rds"
+	awsrds "github.com/aws/aws-sdk-go/service/rds"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -36,32 +37,34 @@ import (
 	"github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
-	"github.com/kanisterio/kanister/pkg/poll"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
 	AuroraDBInstanceClass = "db.r5.large"
 	AuroraDBStorage       = 20
 	DetailsCMName         = "dbconfig"
+	mysqlConnectionString = "mysql -h %s -u %s -p%s %s -N -e"
 )
 
 type RDSAuroraMySQLDB struct {
-	name              string
-	cli               kubernetes.Interface
-	namespace         string
-	id                string
-	host              string
-	dbName            string
-	username          string
-	password          string
-	accessID          string
-	secretKey         string
-	region            string
-	sessionToken      string
-	securityGroupID   string
-	securityGroupName string
+	name                     string
+	cli                      kubernetes.Interface
+	namespace                string
+	id                       string
+	host                     string
+	dbName                   string
+	dbSubnetGroup            string
+	username                 string
+	password                 string
+	accessID                 string
+	secretKey                string
+	region                   string
+	sessionToken             string
+	securityGroupID          string
+	securityGroupName        string
+	bastionDebugWorkloadName string
+	publicAccess             bool
+	vpcID                    string
 }
 
 func NewRDSAuroraMySQLDB(name, region string) App {
@@ -73,6 +76,7 @@ func NewRDSAuroraMySQLDB(name, region string) App {
 		username:          "admin",
 		password:          "secret99",
 		dbName:            "testdb",
+		publicAccess:      false,
 	}
 }
 
@@ -127,18 +131,16 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return err
 	}
 
-	// Create security group
-	log.Info().Print("Creating security group.", field.M{"app": a.name, "name": a.securityGroupName})
-	sg, err := ec2Cli.CreateSecurityGroup(ctx, a.securityGroupName, "To allow ingress to Aurora DB cluster")
-	if err != nil {
-		return errors.Wrap(err, "Error creating security group")
-	}
-	a.securityGroupID = *sg.GroupId
+	a.bastionDebugWorkloadName = fmt.Sprintf("%s-workload", a.name)
 
-	// Add ingress rule
-	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupName, "0.0.0.0/0", "tcp", 3306)
+	deploymentSpec := bastionDebugWorkloadSpec(ctx, a.bastionDebugWorkloadName, "mysql", a.namespace)
+	_, err = a.cli.AppsV1().Deployments(a.namespace).Create(ctx, deploymentSpec, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrap(err, "Error authorizing security group")
+		return errors.Wrapf(err, "Failed to create deployment %s, app=%s", a.bastionDebugWorkloadName, a.name)
+	}
+
+	if err := kube.WaitOnDeploymentReady(ctx, a.cli, a.namespace, a.bastionDebugWorkloadName); err != nil {
+		return errors.Wrapf(err, "Failed while waiting for deployment %s to be ready, app=%s", a.bastionDebugWorkloadName, a.name)
 	}
 
 	rdsCli, err := rds.NewClient(ctx, awsConfig, region)
@@ -146,9 +148,34 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return err
 	}
 
+	a.vpcID, err = vpcIDForRDSInstance(ctx, ec2Cli)
+	if err != nil {
+		return err
+	}
+
+	dbSubnetGroup, err := dbSubnetGroup(ctx, ec2Cli, rdsCli, a.vpcID, a.name, subnetGroupDescription)
+	if err != nil {
+		return err
+	}
+	a.dbSubnetGroup = dbSubnetGroup
+
+	// Create security group
+	log.Info().Print("Creating security group.", field.M{"app": a.name, "name": a.securityGroupName})
+	sg, err := ec2Cli.CreateSecurityGroup(ctx, a.securityGroupName, "To allow ingress to Aurora DB cluster", a.vpcID)
+	if err != nil {
+		return errors.Wrap(err, "Error creating security group")
+	}
+	a.securityGroupID = *sg.GroupId
+
+	// Add ingress rule
+	_, err = ec2Cli.AuthorizeSecurityGroupIngress(ctx, a.securityGroupID, "0.0.0.0/0", "tcp", 3306)
+	if err != nil {
+		return errors.Wrap(err, "Error authorizing security group")
+	}
+
 	// Create RDS instance
 	log.Info().Print("Creating RDS Aurora DB cluster.", field.M{"app": a.name, "id": a.id})
-	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, []string{a.securityGroupID})
+	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, a.dbSubnetGroup, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, []string{a.securityGroupID})
 	if err != nil {
 		return errors.Wrap(err, "Error creating DB cluster")
 	}
@@ -158,8 +185,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return errors.Wrap(err, "Error waiting for DB cluster to be available")
 	}
 
-	// create db instance in the cluster
-	_, err = rdsCli.CreateDBInstanceInCluster(ctx, a.id, fmt.Sprintf("%s-instance-1", a.id), AuroraDBInstanceClass, string(function.DBEngineAuroraMySQL))
+	_, err = rdsCli.CreateDBInstance(ctx, nil, AuroraDBInstanceClass, fmt.Sprintf("%s-instance-1", a.id), string(function.DBEngineAuroraMySQL), "", "", nil, awssdk.Bool(a.publicAccess), awssdk.String(a.id), a.dbSubnetGroup)
 	if err != nil {
 		return errors.Wrap(err, "Error creating an instance in Aurora DB cluster")
 	}
@@ -201,156 +227,76 @@ func (a *RDSAuroraMySQLDB) IsReady(context.Context) (bool, error) {
 	return true, nil
 }
 
-func (a *RDSAuroraMySQLDB) Ping(context.Context) error {
-	db, err := a.openDBConnection()
-	if err != nil {
-		return errors.Wrap(err, "Error opening database connection")
-	}
-	defer func() {
-		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error closing DB connection", field.M{"app": a.name})
-		}
-	}()
+func (a *RDSAuroraMySQLDB) Ping(ctx context.Context) error {
+	log.Print("Pinging rds aurora database", field.M{"app": a.name})
+	pingQuery := fmt.Sprintf(mysqlConnectionString+"'SELECT 1;'", a.host, a.username, a.password, a.dbName)
 
-	pingQuery := "select 1"
-	_, err = db.Query(pingQuery)
-	return err
+	pingCommand := []string{"sh", "-c", pingQuery}
+
+	_, stderr, err := a.execCommand(ctx, pingCommand)
+	if err != nil {
+		return errors.Wrapf(err, "Error while Pinging the database: %s, app: %s", stderr, a.name)
+	}
+
+	log.Print("Ping to the application was success.", field.M{"app": a.name})
+	return nil
 }
 
 func (a *RDSAuroraMySQLDB) Insert(ctx context.Context) error {
-	db, err := a.openDBConnection()
+	log.Print("Adding entry to database", field.M{"app": a.name})
+	insertQuery := fmt.Sprintf(mysqlConnectionString+
+		"\"INSERT INTO pets VALUES ('Puffball', 'Diane', 'hamster', 'f', '1999-03-30', 'NULL');\"", a.host, a.username, a.password, a.dbName)
+
+	insertCommand := []string{"sh", "-c", insertQuery}
+	_, stderr, err := a.execCommand(ctx, insertCommand)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error while inserting data into table: %s, app: %s", stderr, a.name)
 	}
-	defer func() {
-		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error closing DB connection", field.M{"app": a.name})
-		}
-	}()
-
-	query, err := db.Prepare("INSERT INTO pets VALUES (?,?,?,?,?,?);")
-	if err != nil {
-		return errors.Wrap(err, "Error preparing query")
-	}
-
-	// start a transaction
-	tx, err := db.Begin()
-	if err != nil {
-		return errors.Wrap(err, "Error beginning transaction")
-	}
-
-	_, err = tx.Stmt(query).Exec("Puffball", "Diane", "hamster", "f", "1999-03-30", "NULL")
-	if err != nil {
-		return errors.Wrap(err, "Error inserting data into Aurora DB cluster")
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "Error committing data into Aurora DB database")
-	}
-
+	log.Info().Print("Inserted a row in test db.", field.M{"app": a.name})
 	return nil
 }
 
-func (a *RDSAuroraMySQLDB) Count(context.Context) (int, error) {
-	db, err := a.openDBConnection()
-	if err != nil {
-		return 0, err
-	}
-	defer func() {
-		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error closing DB connection", field.M{"app": a.name})
-		}
-	}()
+func (a *RDSAuroraMySQLDB) Count(ctx context.Context) (int, error) {
+	log.Print("Counting entries from database", field.M{"app": a.name})
+	countQuery := fmt.Sprintf(mysqlConnectionString+
+		"\"SELECT COUNT(*) FROM pets;\"", a.host, a.username, a.password, a.dbName)
 
-	rows, err := db.Query("select * from pets;")
+	countCommand := []string{"sh", "-c", countQuery}
+	stdout, stderr, err := a.execCommand(ctx, countCommand)
 	if err != nil {
-		return 0, errors.Wrap(err, "Error preparing count query")
-	}
-	count := 0
-	for rows.Next() {
-		count++
+		return 0, errors.Wrapf(err, "Error while counting data of table: %s, app: %s", stderr, a.name)
 	}
 
-	return count, nil
+	rowsReturned, err := strconv.Atoi(stdout)
+	if err != nil {
+		return 0, errors.Wrapf(err, "Error while converting response of count query to int: %s, app: %s", stderr, a.name)
+	}
+
+	log.Info().Print("Number of rows in test DB.", field.M{"app": a.name, "count": rowsReturned})
+	return rowsReturned, nil
 }
 
 func (a *RDSAuroraMySQLDB) Reset(ctx context.Context) error {
-	timeoutCtx, waitCancel := context.WithTimeout(ctx, mysqlWaitTimeout)
-	defer waitCancel()
-	err := poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
-		err := a.Ping(ctx)
-		return err == nil, nil
-	})
-
-	if err != nil {
-		return errors.Wrapf(err, "Error waiting for application %s to be ready to reset it", a.name)
-	}
-
 	log.Print("Resetting the mysql instance.", field.M{"app": a.name})
 
-	db, err := a.openDBConnection()
+	deleteQuery := fmt.Sprintf(mysqlConnectionString+"\"DROP TABLE IF EXISTS pets;\"", a.host, a.username, a.password, a.dbName)
+	deleteCommand := []string{"sh", "-c", deleteQuery}
+	_, stderr, err := a.execCommand(ctx, deleteCommand)
 	if err != nil {
-		return err
-	}
-	defer func() {
-		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error closing DB connection", field.M{"app": a.name})
-		}
-	}()
-
-	query, err := db.Prepare("DROP TABLE IF EXISTS pets;")
-	if err != nil {
-		return errors.Wrap(err, "Error preparing reset query")
+		return errors.Wrapf(err, "Error while deleting data from table: %s, app: %s", stderr, a.name)
 	}
 
-	// start a transaction
-	tx, err := db.Begin()
-	if err != nil {
-		return errors.Wrap(err, "Error beginning transaction")
-	}
-
-	_, err = tx.Stmt(query).Exec()
-	if err != nil {
-		return errors.Wrap(err, "Error resetting Aurora database")
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "Error committing DB reset transaction")
-	}
-
+	log.Info().Print("Database reset was successful!", field.M{"app": a.name})
 	return nil
 }
 
-func (a *RDSAuroraMySQLDB) Initialize(context.Context) error {
-	db, err := a.openDBConnection()
+func (a *RDSAuroraMySQLDB) Initialize(ctx context.Context) error {
+	log.Print("Initializing database", field.M{"app": a.name})
+	createQuery := fmt.Sprintf(mysqlConnectionString+"\"CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);\"", a.host, a.username, a.password, a.dbName)
+	createCommand := []string{"sh", "-c", createQuery}
+	_, stderr, err := a.execCommand(ctx, createCommand)
 	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if err = a.closeDBConnection(db); err != nil {
-			log.Print("Error closing DB connection", field.M{"app": a.name})
-		}
-	}()
-
-	query, err := db.Prepare("CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);")
-	if err != nil {
-		return errors.Wrap(err, "Error preparing query")
-	}
-
-	// start a transaction
-	tx, err := db.Begin()
-	if err != nil {
-		return errors.Wrap(err, "Error begining transaction")
-	}
-
-	_, err = tx.Stmt(query).Exec()
-	if err != nil {
-		return errors.Wrap(err, "Error creating table into Aurora database")
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "Error committing table creation")
+		return errors.Wrapf(err, "Error while creating the database: %s, app: %s", stderr, a.name)
 	}
 	return nil
 }
@@ -378,7 +324,7 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 	descOp, err := rdsCli.DescribeDBClusters(ctx, a.id)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
-			if aerr.Code() != rdserr.ErrCodeDBClusterNotFoundFault {
+			if aerr.Code() != awsrds.ErrCodeDBClusterNotFoundFault {
 				return err
 			}
 			log.Print("Aurora DB cluster is not found")
@@ -396,20 +342,39 @@ func (a *RDSAuroraMySQLDB) Uninstall(ctx context.Context) error {
 		return errors.Wrap(err, "Failed to create ec2 client.")
 	}
 
+	log.Info().Print("Deleting db subnet group.", field.M{"app": a.name})
+	_, err = rdsCli.DeleteDBSubnetGroup(ctx, a.dbSubnetGroup)
+	if err != nil {
+		// If the subnet group does not exist, ignore the error and return
+		if err, ok := err.(awserr.Error); ok {
+			switch err.Code() {
+			case awsrds.ErrCodeDBSubnetGroupNotFoundFault:
+				log.Info().Print("Subnet Group Does not exist: ErrCodeDBSubnetGroupNotFoundFault.", field.M{"app": a.name, "name": a.dbSubnetGroup})
+			default:
+				return errors.Wrapf(err, "Failed to delete subnet group. You may need to delete it manually. app=%s name=%s", a.name, a.dbSubnetGroup)
+			}
+		}
+	}
+
 	// delete security group
 	log.Info().Print("Deleting security group.", field.M{"app": a.name})
-	_, err = ec2Cli.DeleteSecurityGroup(ctx, a.securityGroupName)
+	_, err = ec2Cli.DeleteSecurityGroup(ctx, a.securityGroupID)
 	if err != nil {
 		if err, ok := err.(awserr.Error); ok {
 			switch err.Code() {
 			case "InvalidGroup.NotFound":
 				log.Error().Print("Security group already deleted: InvalidGroup.NotFound.", field.M{"app": a.name, "name": a.securityGroupName})
 			default:
-				return errors.Wrapf(err, "Failed to delete security group. You may need to delete it manually. app=rds-postgresql name=%s", a.securityGroupName)
+				return errors.Wrapf(err, "Failed to delete security group. You may need to delete it manually. app=%s name=%s", a.name, a.securityGroupName)
 			}
 		}
 	}
 
+	// Remove workload object created for executing commands
+	err = a.cli.AppsV1().Deployments(a.namespace).Delete(ctx, a.bastionDebugWorkloadName, metav1.DeleteOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return errors.Wrapf(err, "Error deleting Workload %s, app=%s", a.bastionDebugWorkloadName, a.name)
+	}
 	return nil
 }
 
@@ -426,10 +391,10 @@ func (a *RDSAuroraMySQLDB) getAWSConfig(ctx context.Context) (*awssdk.Config, st
 	return aws.GetConfig(ctx, config)
 }
 
-func (a *RDSAuroraMySQLDB) openDBConnection() (*sql.DB, error) {
-	return sql.Open("mysql", fmt.Sprintf("%s:%s@(%s)/%s", a.username, a.password, a.host, a.dbName))
-}
-
-func (a RDSAuroraMySQLDB) closeDBConnection(db *sql.DB) error {
-	return db.Close()
+func (a RDSAuroraMySQLDB) execCommand(ctx context.Context, command []string) (string, string, error) {
+	podName, containerName, err := kube.GetPodContainerFromDeployment(ctx, a.cli, a.namespace, a.bastionDebugWorkloadName)
+	if err != nil || podName == "" {
+		return "", "", err
+	}
+	return kube.Exec(a.cli, a.namespace, podName, containerName, command, nil)
 }
