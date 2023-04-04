@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	kanister "github.com/kanisterio/kanister/pkg"
@@ -62,19 +61,18 @@ func kubeTask(ctx context.Context, cli kubernetes.Interface, namespace, image st
 	}
 
 	pr := kube.NewPodRunner(cli, options)
-	podFunc := kubeTaskPodFunc(cli)
-	return pr.Run(ctx, podFunc)
+	podFunc := kubeTaskPodFunc()
+	return pr.RunEx(ctx, podFunc)
 }
 
-func kubeTaskPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-	return func(ctx context.Context, pod *v1.Pod) (map[string]interface{}, error) {
-		if err := kube.WaitForPodReady(ctx, cli, pod.Namespace, pod.Name); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pod.Name)
+func kubeTaskPodFunc() kube.PodRunnerFunc {
+	return func(ctx context.Context, pc kube.PodController) (kube.PodOutputMap, error) {
+		if err := pc.WaitForPodReady(ctx); err != nil {
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to be ready", pc.PodName())
 		}
-		ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
 		ctx = field.Context(ctx, consts.LogKindKey, consts.LogKindDatapath)
 		// Fetch logs from the pod
-		r, err := kube.StreamPodLogs(ctx, cli, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name)
+		r, err := pc.StreamPodLogs(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to fetch logs from the pod")
 		}
@@ -83,8 +81,8 @@ func kubeTaskPodFunc(cli kubernetes.Interface) func(ctx context.Context, pod *v1
 			return nil, err
 		}
 		// Wait for pod completion
-		if err := kube.WaitForPodCompletion(ctx, cli, pod.Namespace, pod.Name); err != nil {
-			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pod.Name)
+		if err := pc.WaitForPodCompletion(ctx); err != nil {
+			return nil, errors.Wrapf(err, "Failed while waiting for Pod %s to complete", pc.PodName())
 		}
 		return out, err
 	}
