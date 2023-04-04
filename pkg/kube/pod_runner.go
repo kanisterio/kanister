@@ -26,9 +26,14 @@ import (
 	"github.com/kanisterio/kanister/pkg/log"
 )
 
+type PodOutputMap map[string]interface{}
+
+type PodRunnerFunc func(context.Context, PodController) (PodOutputMap, error)
+
 // PodRunner allows us to start / stop pod, write file to pod and execute command within it
 type PodRunner interface {
 	Run(ctx context.Context, fn func(context.Context, *v1.Pod) (map[string]interface{}, error)) (map[string]interface{}, error)
+	RunEx(ctx context.Context, fn PodRunnerFunc) (PodOutputMap, error)
 }
 
 // PodRunner specifies Kubernetes Client and PodOptions needed for creating Pod
@@ -65,4 +70,27 @@ func (p *podRunner) Run(ctx context.Context, fn func(context.Context, *v1.Pod) (
 		}
 	}()
 	return fn(ctx, pod)
+}
+
+// RunEx will create a new Pod based on PodRunner contents and execute the given function
+func (p *podRunner) RunEx(ctx context.Context, fn PodRunnerFunc) (PodOutputMap, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	err := p.pc.StartPod(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create pod")
+	}
+
+	pod := p.pc.Pod()
+	ctx = field.Context(ctx, consts.PodNameKey, pod.Name)
+	ctx = field.Context(ctx, consts.ContainerNameKey, pod.Spec.Containers[0].Name)
+	go func() {
+		<-ctx.Done()
+		err := p.pc.StopPod(context.Background(), PodControllerInfiniteStopTime, int64(0))
+		if err != nil {
+			log.WithError(err).Print("Failed to delete pod", field.M{"PodName": pod.Name})
+		}
+	}()
+	return fn(ctx, p.pc)
 }
