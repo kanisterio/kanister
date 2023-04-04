@@ -169,7 +169,7 @@ func newSecretProfile() *secretProfile {
 
 func (s *IntegrationSuite) SetUpSuite(c *C) {
 	ctx := context.Background()
-	ctx, s.cancel = context.WithCancel(ctx)
+	_, s.cancel = context.WithCancel(ctx)
 
 	// Instantiate Client SDKs
 	cfg, err := kube.LoadConfig()

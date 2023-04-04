@@ -11,6 +11,7 @@ actions:
           instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
           securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
           backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
+          dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
     phases:
     - func: CreateRDSSnapshot
       name: createSnapshot
@@ -33,6 +34,7 @@ actions:
         databases: '{{ index .Object.data "postgres.databases" }}'
         snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
         backupArtifactPrefix: test-postgresql-instance/postgres
+        dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
     - func: DeleteRDSSnapshot
       name: deleteSnapshot
       args:
@@ -57,14 +59,14 @@ actions:
         username: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "username" | toString }}'
         password: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "password" | toString }}'
         dbEngine: "PostgreSQL"
-
+        dbSubnetGroup: "{{ .ArtifactsIn.backupInfo.KeyValue.dbSubnetGroup }}"
   delete:
     phases:
     - func: KubeTask
       name: deleteBackup
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: ghcr.io/kanisterio/kanister-tools:0.88.0
+        image: ghcr.io/kanisterio/kanister-tools:0.90.0
         command:
           - bash
           - -o

@@ -85,6 +85,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&BlueprintList{},
 		&Profile{},
 		&ProfileList{},
+		&RepositoryServer{},
+		&RepositoryServerList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
