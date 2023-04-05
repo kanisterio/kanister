@@ -48,41 +48,43 @@ func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS,
 }
 
 // CreateDBInstanceWithContext
-func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, username, password string, sgIDs []string) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstance(ctx context.Context, storage *int64, instanceClass, instanceID, engine, username, password string, sgIDs []string, publicAccess *bool, restoredClusterID *string, dbSubnetGroup string) (*rds.CreateDBInstanceOutput, error) {
 	dbi := &rds.CreateDBInstanceInput{
-		AllocatedStorage:     &storage,
-		DBInstanceIdentifier: &instanceID,
-		VpcSecurityGroupIds:  convertSGIDs(sgIDs),
 		DBInstanceClass:      &instanceClass,
+		DBInstanceIdentifier: &instanceID,
 		Engine:               &engine,
-		MasterUsername:       &username,
-		MasterUserPassword:   &password,
+		DBSubnetGroupName:    aws.String(dbSubnetGroup),
+	}
+
+	// check if the instance is being restored from an existing cluster
+	switch {
+	case restoredClusterID != nil && publicAccess != nil:
+		dbi.DBClusterIdentifier = restoredClusterID
+		dbi.PubliclyAccessible = publicAccess
+	case restoredClusterID != nil && publicAccess == nil:
+		dbi.DBClusterIdentifier = restoredClusterID
+	default:
+		// if not restoring from an existing cluster, create a new instance input
+		dbi.AllocatedStorage = storage
+		dbi.VpcSecurityGroupIds = convertSGIDs(sgIDs)
+		dbi.MasterUsername = aws.String(username)
+		dbi.MasterUserPassword = aws.String(password)
+		dbi.PubliclyAccessible = publicAccess
 	}
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
-func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, engine, dbName, username, password string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
+func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, dbSubnetGroup, engine, dbName, username, password string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
 	dbi := &rds.CreateDBClusterInput{
 		DBClusterIdentifier: &instanceID,
 		DatabaseName:        &dbName,
+		DBSubnetGroupName:   aws.String(dbSubnetGroup),
 		Engine:              &engine,
 		MasterUsername:      &username,
 		MasterUserPassword:  &password,
 		VpcSecurityGroupIds: convertSGIDs(sgIDs),
 	}
 	return r.CreateDBClusterWithContext(ctx, dbi)
-}
-
-func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine string) (*rds.CreateDBInstanceOutput, error) {
-	pa := true
-	dbi := &rds.CreateDBInstanceInput{
-		DBClusterIdentifier:  &restoredClusterID,
-		DBInstanceClass:      &instanceClass,
-		DBInstanceIdentifier: &instanceID,
-		Engine:               &dbEngine,
-		PubliclyAccessible:   &pa,
-	}
-	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
 func (r RDS) WaitUntilDBInstanceAvailable(ctx context.Context, instanceID string) error {
@@ -281,16 +283,17 @@ func (r RDS) WaitUntilDBClusterSnapshotDeleted(ctx context.Context, snapshotID s
 	return r.WaitUntilDBClusterSnapshotDeletedWithContext(ctx, sdi)
 }
 
-func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, snapshotID string, sgIDs []string) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
+func (r RDS) RestoreDBInstanceFromDBSnapshot(ctx context.Context, instanceID, subnetGroupName, snapshotID string, sgIDs []string) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
 	rdbi := &rds.RestoreDBInstanceFromDBSnapshotInput{
 		DBInstanceIdentifier: &instanceID,
 		DBSnapshotIdentifier: &snapshotID,
+		DBSubnetGroupName:    &subnetGroupName,
 		VpcSecurityGroupIds:  convertSGIDs(sgIDs),
 	}
 	return r.RestoreDBInstanceFromDBSnapshotWithContext(ctx, rdbi)
 }
 
-func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, snapshotID, dbEngine, version string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
+func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, dbSubnetGroup, snapshotID, dbEngine, version string, sgIDs []string) (*rds.RestoreDBClusterFromSnapshotOutput, error) {
 	var rdi *rds.RestoreDBClusterFromSnapshotInput
 	if sgIDs == nil {
 		rdi = &rds.RestoreDBClusterFromSnapshotInput{
@@ -298,6 +301,7 @@ func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, sna
 			EngineVersion:       &version,
 			DBClusterIdentifier: &instanceID,
 			SnapshotIdentifier:  &snapshotID,
+			DBSubnetGroupName:   &dbSubnetGroup,
 		}
 	} else {
 		rdi = &rds.RestoreDBClusterFromSnapshotInput{
@@ -306,6 +310,7 @@ func (r RDS) RestoreDBClusterFromDBSnapshot(ctx context.Context, instanceID, sna
 			DBClusterIdentifier: &instanceID,
 			SnapshotIdentifier:  &snapshotID,
 			VpcSecurityGroupIds: convertSGIDs(sgIDs),
+			DBSubnetGroupName:   &dbSubnetGroup,
 		}
 	}
 	return r.RestoreDBClusterFromSnapshotWithContext(ctx, rdi)

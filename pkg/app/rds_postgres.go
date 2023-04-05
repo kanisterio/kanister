@@ -24,12 +24,12 @@ import (
 	awssdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	awsrds "github.com/aws/aws-sdk-go/service/rds"
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/yaml"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	aws "github.com/kanisterio/kanister/pkg/aws"
@@ -59,6 +59,7 @@ type RDSPostgresDB struct {
 	configMapName            string
 	secretName               string
 	bastionDebugWorkloadName string
+	publicAccess             bool
 	vpcID                    string
 }
 
@@ -79,6 +80,7 @@ func NewRDSPostgresDB(name string, customRegion string) App {
 		region:            customRegion,
 		configMapName:     fmt.Sprintf("%s-config", name),
 		secretName:        fmt.Sprintf("%s-secret", name),
+		publicAccess:      false,
 	}
 }
 
@@ -178,7 +180,7 @@ func (pdb *RDSPostgresDB) Install(ctx context.Context, ns string) error {
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS instance.", field.M{"app": pdb.name, "id": pdb.id})
-	_, err = rdsCli.CreateDBInstance(ctx, 20, dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID})
+	_, err = rdsCli.CreateDBInstance(ctx, awssdk.Int64(20), dbInstanceType, pdb.id, "postgres", pdb.username, pdb.password, []string{pdb.securityGroupID}, awssdk.Bool(pdb.publicAccess), nil, pdb.dbSubnetGroup)
 	if err != nil {
 		return err
 	}
