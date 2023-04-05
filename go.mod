@@ -40,7 +40,7 @@ require (
 	github.com/onsi/gomega v1.24.1
 
 	//pinned openshift to release-4.5 branch
-	github.com/openshift/api v0.0.0-20200526144822-34f54f12813a
+	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v0.0.0-20200521150516-05eb9880269c
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
