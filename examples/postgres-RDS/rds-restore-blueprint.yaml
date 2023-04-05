@@ -75,7 +75,7 @@ actions:
               --output text)
 
           BACKUP_LOCATION={{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}
-          kando location pull --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" - | gunzip -c -f | sed 's/LOCALE/LC_COLLATE/' | psql -q -U "${PGUSER}"         
+          kando location pull --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" - | gunzip -c -f | sed 's/LOCALE_PROVIDER = libc//' | sed 's/LOCALE/LC_COLLATE/' | psql -q -U "${PGUSER}" -d template1        
   delete:
     inputArtifactNames:
       - cloudObject
