@@ -47,7 +47,7 @@ aws rds create-db-instance \
     --allocated-storage 20 --db-instance-class db.t3.micro \
     --db-instance-identifier <instance-name> \
     --engine postgres \
-    --engine-version 14.5
+    --engine-version 15.2
     --master-username <master-username> \
     --vpc-security-group-ids <security-group-id> \ # Sec group with TCP 5432 inbound rule
     --master-user-password <db-password>
