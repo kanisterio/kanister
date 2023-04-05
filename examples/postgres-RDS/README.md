@@ -108,7 +108,7 @@ In case, if you don't have `Kanister` installed already, you can use the followi
 Add Kanister Helm repository and install Kanister operator
 ```bash
 $ helm repo add kanister https://charts.kanister.io
-$ helm install kanister --namespace kanister --create-namespace kanister/kanister-operator --set image.tag=0.85.0
+$ helm install kanister --namespace kanister --create-namespace kanister/kanister-operator
 ```
 
 ## Integrating with Kanister
@@ -154,15 +154,13 @@ $ kubectl create -f ./rds-restore-blueprint.yaml -n kanister
 
 Once Postgres is running, you can populate it with some data. Let's add a table called "company" to a "test" database:
 ```
-## Login to PostgreSQL container and get shell access
-$ kubectl exec -ti my-release-postgresql-0 -n postgres-test -- bash
+$ export POSTGRES_PASSWORD=$(kubectl get secret --namespace postgres-test my-release-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
 
-## use psql CLI to add entries in the PostgreSQL database
-$ PGPASSWORD=${POSTGRES_PASSWORD} psql -U postgres
-psql (14.0)
-Type "help" for help.
+$ kubectl run my-release-postgresql-client --rm --tty -i --restart='Never' --namespace postgres-test --image docker.io/bitnami/postgresql:15.1.0-debian-11-r31 --env="PGPASSWORD=$POSTGRES_PASSWORD" \
+      --command -- psql --host my-release-postgresql -U postgres -d postgres -p 5432
+If you don't see a command prompt, try pressing enter.
 
-## Create DATABASE
+postgres=# 
 postgres=# CREATE DATABASE test;
 CREATE DATABASE
 postgres=# \l
@@ -222,7 +220,7 @@ $ kubectl get profile -n postgres-test
 NAME               AGE
 s3-profile-7d6wt   7m25s
 
-$ kanctl create actionset --action backup --namespace kanister --blueprint postgres-bp --statefulset postgres-test/my-release-postgresql --profile postgres-test/s3-profile-7d6wt
+$ kanctl create actionset --action backup --namespace kanister --blueprint rds-postgres-bp --statefulset postgres-test/my-release-postgresql --profile postgres-test/s3-profile-7d6wt
 actionset backup-llfb8 created
 
 $ kubectl --namespace kanister get actionsets.cr.kanister.io
@@ -247,22 +245,29 @@ $ kubectl --namespace kanister describe actionset restore-backup-glptq-6jzt4
 
 Once the ActionSet status is set to "complete", you can see that the data has been successfully restored to the RDS PostgreSQL database instance
 
-To verify, Connect to the RDS PostgreSQL database instance using `psql`
-
-PGPASSWORD="<db-password>" psql --host <instance-name> -U <master-username> -d postgres -p 5432
+To verify, Connect to the RDS PostgreSQL database instance 
 
 ```bash
-postgres=# \l
-                                  List of databases
-   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges
------------+----------+----------+-------------+-------------+-----------------------
- postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
- template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
-           |          |          |             |             | postgres=CTc/postgres
- template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
-           |          |          |             |             | postgres=CTc/postgres
- test      | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
-(4 rows)
+$ kubectl run my-release-postgresql-client --rm --tty -i --restart='Never' --namespace postgres-test --image docker.io/bitnami/postgresql:15.1.0-debian-11-r31 --env="PGPASSWORD=<db-password>" --command -- psql --host <instance-name> -U <master-username> -d template1 -p 5432                   
+
+If you don't see a command prompt, try pressing enter.
+psql (15.1, server 15.2)
+SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, compression: off)
+Type "help" for help.
+
+postgres=> \l
+                                                 List of databases
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    | ICU Locale | Locale Provider |   Access privileges   
+-----------+----------+----------+-------------+-------------+------------+-----------------+-----------------------
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            | 
+ rdsadmin  | rdsadmin | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            | rdsadmin=CTc/rdsadmin+
+           |          |          |             |             |            |                 | rdstopmgr=Tc/rdsadmin
+ template0 | rdsadmin | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            | =c/rdsadmin          +
+           |          |          |             |             |            |                 | rdsadmin=CTc/rdsadmin
+ template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            | postgres=CTc/postgres+
+           |          |          |             |             |            |                 | =c/postgres
+ test      | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            | 
+(5 rows)
 
 postgres=# \c test;
 You are now connected to database "test" as user "postgres".
@@ -280,7 +285,7 @@ test=# select * from company;
 The artifacts created by the backup action can be cleaned up using the following command:
 
 ```bash
-$ kanctl --namespace kanister create actionset --action delete --from backup-glptq
+$ kanctl --namespace kanister create actionset --action delete --from backup-glptq --namespacetargets kanister
 actionset delete-backup-glptq-cq6bw created
 
 # View the status of the ActionSet
