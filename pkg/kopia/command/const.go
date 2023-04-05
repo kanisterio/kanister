@@ -19,7 +19,6 @@ const (
 	createSubCommand      = "create"
 	deleteSubCommand      = "delete"
 	expireSubCommand      = "expire"
-	gcSubCommand          = "gc"
 	infoSubCommand        = "info"
 	kopiaCommand          = "kopia"
 	listSubCommand        = "list"

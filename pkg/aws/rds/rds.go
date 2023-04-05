@@ -48,42 +48,43 @@ func NewClient(ctx context.Context, awsConfig *aws.Config, region string) (*RDS,
 }
 
 // CreateDBInstanceWithContext
-func (r RDS) CreateDBInstance(ctx context.Context, storage int64, instanceClass, instanceID, engine, username, password string, sgIDs []string) (*rds.CreateDBInstanceOutput, error) {
+func (r RDS) CreateDBInstance(ctx context.Context, storage *int64, instanceClass, instanceID, engine, username, password string, sgIDs []string, publicAccess *bool, restoredClusterID *string, dbSubnetGroup string) (*rds.CreateDBInstanceOutput, error) {
 	dbi := &rds.CreateDBInstanceInput{
-		AllocatedStorage:     &storage,
-		DBInstanceIdentifier: &instanceID,
-		VpcSecurityGroupIds:  convertSGIDs(sgIDs),
 		DBInstanceClass:      &instanceClass,
+		DBInstanceIdentifier: &instanceID,
 		Engine:               &engine,
-		MasterUsername:       &username,
-		MasterUserPassword:   &password,
+		DBSubnetGroupName:    aws.String(dbSubnetGroup),
+	}
+
+	// check if the instance is being restored from an existing cluster
+	switch {
+	case restoredClusterID != nil && publicAccess != nil:
+		dbi.DBClusterIdentifier = restoredClusterID
+		dbi.PubliclyAccessible = publicAccess
+	case restoredClusterID != nil && publicAccess == nil:
+		dbi.DBClusterIdentifier = restoredClusterID
+	default:
+		// if not restoring from an existing cluster, create a new instance input
+		dbi.AllocatedStorage = storage
+		dbi.VpcSecurityGroupIds = convertSGIDs(sgIDs)
+		dbi.MasterUsername = aws.String(username)
+		dbi.MasterUserPassword = aws.String(password)
+		dbi.PubliclyAccessible = publicAccess
 	}
 	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
-func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, engine, dbName, username, password string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
+func (r RDS) CreateDBCluster(ctx context.Context, storage int64, instanceClass, instanceID, dbSubnetGroup, engine, dbName, username, password string, sgIDs []string) (*rds.CreateDBClusterOutput, error) {
 	dbi := &rds.CreateDBClusterInput{
 		DBClusterIdentifier: &instanceID,
 		DatabaseName:        &dbName,
+		DBSubnetGroupName:   aws.String(dbSubnetGroup),
 		Engine:              &engine,
 		MasterUsername:      &username,
 		MasterUserPassword:  &password,
 		VpcSecurityGroupIds: convertSGIDs(sgIDs),
 	}
 	return r.CreateDBClusterWithContext(ctx, dbi)
-}
-
-func (r RDS) CreateDBInstanceInCluster(ctx context.Context, restoredClusterID, instanceID, instanceClass, dbEngine, dbSubnetGroup string) (*rds.CreateDBInstanceOutput, error) {
-	pa := true
-	dbi := &rds.CreateDBInstanceInput{
-		DBClusterIdentifier:  &restoredClusterID,
-		DBInstanceClass:      &instanceClass,
-		DBInstanceIdentifier: &instanceID,
-		DBSubnetGroupName:    &dbSubnetGroup,
-		Engine:               &dbEngine,
-		PubliclyAccessible:   &pa,
-	}
-	return r.CreateDBInstanceWithContext(ctx, dbi)
 }
 
 func (r RDS) WaitUntilDBInstanceAvailable(ctx context.Context, instanceID string) error {
