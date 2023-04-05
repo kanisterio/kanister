@@ -35,8 +35,8 @@ aws ec2 authorize-security-group-ingress --group-name <security-group-name> --pr
 ```
 
 Fetch the Security Group ID
-```
-aws ec2 describe-security-groups --filters "Name=group-name,Values=<security-group-name>" --query "SecurityGroups[*].GroupId"
+``` bash
+$ aws ec2 describe-security-groups --filters "Name=group-name,Values=<security-group-name>" --query "SecurityGroups[*].GroupId"
 ```
 
 Now create an RDS instance with the PostgreSQL engine
@@ -153,12 +153,12 @@ $ kubectl create -f ./rds-restore-blueprint.yaml -n kanister
 ```
 
 Once Postgres is running, you can populate it with some data. Let's add a table called "company" to a "test" database:
-```
+
+```bash
 $ export POSTGRES_PASSWORD=$(kubectl get secret --namespace postgres-test my-release-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
 
 $ kubectl run my-release-postgresql-client --rm --tty -i --restart='Never' --namespace postgres-test --image docker.io/bitnami/postgresql:15.1.0-debian-11-r31 --env="PGPASSWORD=$POSTGRES_PASSWORD" \
       --command -- psql --host my-release-postgresql -U postgres -d postgres -p 5432
-If you don't see a command prompt, try pressing enter.
 
 postgres=# 
 postgres=# CREATE DATABASE test;
@@ -250,7 +250,6 @@ To verify, Connect to the RDS PostgreSQL database instance
 ```bash
 $ kubectl run my-release-postgresql-client --rm --tty -i --restart='Never' --namespace postgres-test --image docker.io/bitnami/postgresql:15.1.0-debian-11-r31 --env="PGPASSWORD=<db-password>" --command -- psql --host <instance-name> -U <master-username> -d template1 -p 5432                   
 
-If you don't see a command prompt, try pressing enter.
 psql (15.1, server 15.2)
 SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, compression: off)
 Type "help" for help.
