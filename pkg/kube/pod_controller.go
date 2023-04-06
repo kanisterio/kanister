@@ -206,11 +206,16 @@ func (p *podController) GetCommandExecutor() (PodCommandExecutor, error) {
 		return nil, ErrPodControllerPodNotReady
 	}
 
+	containerName := p.podOptions.ContainerName
+	if containerName == "" {
+		containerName = p.pod.Spec.Containers[0].Name
+	}
+
 	pce := &podCommandExecutor{
 		cli:           p.cli,
 		namespace:     p.podOptions.Namespace,
 		podName:       p.podName,
-		containerName: p.podOptions.ContainerName,
+		containerName: containerName,
 	}
 
 	pce.pcep = pce

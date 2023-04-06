@@ -318,6 +318,11 @@ func (s *PodControllerTestSuite) TestPodControllerGetCommandExecutorAndFileWrite
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podControllerPodName,
 				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "some-test-pod"},
+					},
+				},
 			}
 			err := pc.StartPod(ctx)
 			c.Assert(err, IsNil)
