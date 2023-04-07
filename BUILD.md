@@ -135,9 +135,10 @@ configuration information and examples to show off your new function.
 
 ## Build Kanister image
 
-Kanister build image [workflow](.github/workflows/kanister-image-build.yaml) is
-used to build and push new Kanister build image. It is on-demand workflow and
-you need to run it manually.
-This workflow expects `image tag` value as an input which gets used while
-building and pushing the image.
-To make the new tag persistent, you need to set it [here](https://github.com/kanisterio/kanister/blob/bf570c75cfaa28a0c9038c8c2a611e4a8a2e517a/Makefile#L61) and raise a PR.
+The Kanister build image [workflow](.github/workflows/kanister-image-build.yaml)
+is used to build and push a new Kanister build image (`ghcr.io/kanisterio/build`).
+It is an on-demand workflow and needs to be run manually. This workflow expects
+`image tag` value as an input.
+
+The author updating the build image tag must raise a separate PR to update this
+value for it to be used in the build process. It should be set it [here](https://github.com/kanisterio/kanister/blob/master/Makefile#L61).
