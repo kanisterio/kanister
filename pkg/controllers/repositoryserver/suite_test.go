@@ -17,10 +17,10 @@ package repositoryserver
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	. "gopkg.in/check.v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
@@ -55,6 +55,28 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	c.Assert(err, IsNil)
 	c.Assert(k8sClient, NotNil)
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme: scheme.Scheme,
+	})
+	c.Assert(err, IsNil)
+
+	err = (&RepositoryServerReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr)
+	c.Assert(err, IsNil)
+
+	err = mgr.Start(ctrl.SetupSignalHandler())
+	c.Assert(err, IsNil)
+}
+
+func (s *ControllerSuite) SetupTest(c *C) {
+
+}
+
+func (s *ControllerSuite) TestCreationOfOwnedResources(c *C) {
+
 }
 
 func (s *ControllerSuite) TearDownSuite(c *C) {
@@ -63,10 +85,4 @@ func (s *ControllerSuite) TearDownSuite(c *C) {
 		err := s.testEnv.Stop()
 		c.Assert(err, IsNil)
 	}
-}
-
-func (s *ControllerSuite) TestWatch(c *C) {
-	// We give it a few seconds complete it's scan. This isn't required for the
-	// test, but is a more realistic startup scenario.
-	time.Sleep(5 * time.Second)
 }
