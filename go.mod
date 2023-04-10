@@ -36,8 +36,6 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/onsi/ginkgo/v2 v2.6.0
-	github.com/onsi/gomega v1.24.1
 
 	//pinned openshift to release-4.5 branch
 	github.com/openshift/api v0.0.0-20200526144822-34f54f12813a
