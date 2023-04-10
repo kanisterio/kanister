@@ -24,10 +24,8 @@ import (
 	"github.com/jpillora/backoff"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 
@@ -77,45 +75,6 @@ func getRepoServerService(namespace string) corev1.Service {
 				},
 			},
 			Selector: map[string]string{repoServerServiceNameKey: name},
-		},
-	}
-}
-
-// RepoServerNetworkPolicy returns a network policy with appropriate pod selector
-func getRepoServerNetworkPolicy(
-	namespace string,
-	svc *corev1.Service,
-	podSelector *metav1.LabelSelector,
-	namespaceSelector *metav1.LabelSelector,
-) *networkingv1.NetworkPolicy {
-	protocolTCP := corev1.ProtocolTCP
-	port := intstr.FromInt(repoServerServicePort)
-	return &networkingv1.NetworkPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", repoServerNP),
-			Namespace:    namespace,
-			Labels:       map[string]string{repoServerServiceNameKey: svc.Name},
-		},
-		Spec: networkingv1.NetworkPolicySpec{
-			PodSelector: metav1.LabelSelector{
-				MatchLabels: map[string]string{repoServerServiceNameKey: svc.Name},
-			},
-			Ingress: []networkingv1.NetworkPolicyIngressRule{
-				{
-					From: []networkingv1.NetworkPolicyPeer{
-						{
-							PodSelector:       podSelector,
-							NamespaceSelector: namespaceSelector,
-						},
-					},
-					Ports: []networkingv1.NetworkPolicyPort{
-						{
-							Protocol: &protocolTCP,
-							Port:     &port,
-						},
-					},
-				},
-			},
 		},
 	}
 }

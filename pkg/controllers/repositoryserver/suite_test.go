@@ -17,62 +17,56 @@ package repositoryserver
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
+	. "gopkg.in/check.v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	//+kubebuilder:scaffold:imports
 )
 
-// These tests use Ginkgo (BDD-style Go testing framework). Refer to
-// http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
+// Hook up gocheck into the "go test" runner.
+func Test(t *testing.T) { TestingT(t) }
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
-
-func TestAPIs(t *testing.T) {
-	RegisterFailHandler(Fail)
-
-	RunSpecs(t, "Controller Suite")
+type ControllerSuite struct {
+	testEnv *envtest.Environment
 }
 
-var _ = BeforeSuite(func() {
-	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
+var _ = Suite(&ControllerSuite{})
 
-	By("bootstrapping test environment")
-	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "pkg", "customresource")},
+func (s *ControllerSuite) SetUpSuite(c *C) {
+	c.Log("Bootstrapping test environment with Kanister CRDs")
+	useExistingCluster := true
+	s.testEnv = &envtest.Environment{
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "customresource")},
 		ErrorIfCRDPathMissing: true,
+		UseExistingCluster:    &useExistingCluster,
 	}
 
-	var err error
-	// cfg is defined in this file globally.
-	cfg, err = testEnv.Start()
-	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
+	cfg, err := s.testEnv.Start()
+	c.Assert(err, IsNil)
+	c.Assert(cfg, NotNil)
 
 	err = crkanisteriov1alpha1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
+	c.Assert(err, IsNil)
 
-	//+kubebuilder:scaffold:scheme
+	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	c.Assert(err, IsNil)
+	c.Assert(k8sClient, NotNil)
+}
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+func (s *ControllerSuite) TearDownSuite(c *C) {
+	if s.testEnv != nil {
+		c.Log("Tearing down the test environment")
+		err := s.testEnv.Stop()
+		c.Assert(err, IsNil)
+	}
+}
 
-})
-
-var _ = AfterSuite(func() {
-	By("tearing down the test environment")
-	err := testEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
-})
+func (s *ControllerSuite) TestWatch(c *C) {
+	// We give it a few seconds complete it's scan. This isn't required for the
+	// test, but is a more realistic startup scenario.
+	time.Sleep(5 * time.Second)
+}
