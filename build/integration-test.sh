@@ -24,9 +24,11 @@ DOP="3"
 TEST_TIMEOUT="30m"
 # Set default options
 TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
+KOPIA_REPOSITORY_SERVER_TEST_OPTIONS="-tags=kopia-repository-server -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # Regex to match apps to run in short mode
 # Temporary disable ES test. Issue to track https://github.com/kanisterio/kanister/issues/1920
 SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|Maria|^MSSQL$"
+KOPIA_REPOSITORY_SERVER_APPS="^Kopia$"
 # OCAPPS has all the apps that are to be tested against openshift cluster
 OC_APPS3_11="MysqlDBDepConfig$|MongoDBDepConfig$|PostgreSQLDepConfig$"
 OC_APPS4_4="MysqlDBDepConfig4_4|MongoDBDepConfig4_4|PostgreSQLDepConfig4_4"
@@ -73,6 +75,10 @@ case "${1}" in
         # Run only part of apps
         TEST_APPS=${SHORT_APPS}
         ;;
+    kopia)
+        # Run only part of apps
+        TEST_APPS=${KOPIA_REPOSITORY_SERVER_APPS}
+        ;;
     openshift)
         # TODO:// make sure the argument is named ocp_version
         if [[ ${#@} == 1 ]]; then
@@ -108,5 +114,6 @@ esac
 check_dependencies
 echo "Running integration tests:"
 pushd ${INTEGRATION_TEST_DIR}
-go test -v ${TEST_OPTIONS} -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
+go test -v "${TEST_OPTIONS}" -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
+go test -v "${KOPIA_REPOSITORY_SERVER_TEST_OPTIONS}" -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
 popd

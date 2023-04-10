@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+////go:build integration
+//// +build integration
 
 // Copyright 2019 The Kanister Authors.
 //
@@ -143,16 +143,27 @@ type secretProfile struct {
 	profile *crv1alpha1.Profile
 }
 
+type secretRepositoryServer struct {
+	s3Location         *v1.Secret
+	s3Creds            *v1.Secret
+	repositoryPassword *v1.Secret
+	serverAdminUser    *v1.Secret
+	tls                *v1.Secret
+	userAccess         *v1.Secret
+	repositoryServer   *crv1alpha1.RepositoryServer
+}
+
 type IntegrationSuite struct {
-	name      string
-	cli       kubernetes.Interface
-	crCli     crclient.CrV1alpha1Interface
-	app       app.App
-	bp        app.Blueprinter
-	profile   *secretProfile
-	namespace string
-	skip      bool
-	cancel    context.CancelFunc
+	name             string
+	cli              kubernetes.Interface
+	crCli            crclient.CrV1alpha1Interface
+	app              app.App
+	bp               app.Blueprinter
+	profile          *secretProfile
+	repositoryServer *secretRepositoryServer
+	namespace        string
+	skip             bool
+	cancel           context.CancelFunc
 }
 
 func newSecretProfile() *secretProfile {
@@ -164,6 +175,18 @@ func newSecretProfile() *secretProfile {
 	return &secretProfile{
 		secret:  secret,
 		profile: profile,
+	}
+}
+
+func newSecretRepositoryServer() *secretRepositoryServer {
+	s3Creds, s3Location := testutil.S3CredsLocationSecret()
+	return &secretRepositoryServer{
+		s3Creds:            s3Creds,
+		s3Location:         s3Location,
+		repositoryPassword: testutil.KopiaRepositoryPassword(),
+		serverAdminUser:    testutil.KopiaRepositoryServerAdminUser(),
+		userAccess:         testutil.KopiaRepositoryServerUserAccess(),
+		repositoryServer:   testutil.NewKopiaRepositoryServer(),
 	}
 }
 
@@ -351,6 +374,53 @@ func (s *IntegrationSuite) createProfile(c *C, ctx context.Context) string {
 	c.Assert(err, IsNil)
 
 	return profile.GetName()
+}
+
+func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) string {
+	// Create Secrets required for setting up RepositoryServer
+	s3Location, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.s3Location, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	s3Creds, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.s3Creds, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	repositoryPassword, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.repositoryPassword, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	serverAdminUser, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.serverAdminUser, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	tls, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.tls, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	userAccess, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.userAccess, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// Setting Up the SecretRefs in RepositoryServer
+	s.repositoryServer.repositoryServer.Spec.Storage.SecretRef = v1.SecretReference{
+		Name:      s3Location.GetName(),
+		Namespace: s3Location.GetNamespace(),
+	}
+	s.repositoryServer.repositoryServer.Spec.Storage.CredentialSecretRef = v1.SecretReference{
+		Name:      s3Creds.GetName(),
+		Namespace: s3Creds.GetNamespace(),
+	}
+	s.repositoryServer.repositoryServer.Spec.Repository.PasswordSecretRef = v1.SecretReference{
+		Name:      repositoryPassword.GetName(),
+		Namespace: repositoryPassword.GetNamespace(),
+	}
+	s.repositoryServer.repositoryServer.Spec.Server.UserAccess.UserAccessSecretRef = v1.SecretReference{
+		Name:      userAccess.GetName(),
+		Namespace: userAccess.GetNamespace(),
+	}
+	s.repositoryServer.repositoryServer.Spec.Server.AdminSecretRef = v1.SecretReference{
+		Name:      serverAdminUser.GetName(),
+		Namespace: serverAdminUser.GetNamespace(),
+	}
+	s.repositoryServer.repositoryServer.Spec.Server.TLSSecretRef = v1.SecretReference{
+		Name:      tls.GetName(),
+		Namespace: tls.GetNamespace(),
+	}
+
+	// Create RepositoryServer CR
+	repositoryServer, err := s.crCli.RepositoryServers(kontroller.namespace).Create(ctx, s.repositoryServer.repositoryServer, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	return repositoryServer.GetName()
 }
 
 func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[string]crv1alpha1.ObjectReference) {

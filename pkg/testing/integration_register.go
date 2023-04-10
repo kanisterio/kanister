@@ -490,3 +490,18 @@ var _ = Suite(&PostgreSQLDepConfig4_11{
 		profile:   newSecretProfile(),
 	},
 })
+
+// Kopia Repository Server MySQL app
+type KopiaRepositoryServerMySQL struct {
+	IntegrationSuite
+}
+
+var _ = Suite(&KopiaRepositoryServerMySQL{
+	IntegrationSuite{
+		name:             "kopia-repository-server-mysql",
+		namespace:        "kopia-mysql-test",
+		app:              app.NewKopiaRepositoryServerMysqlDB("kopia-repository-server-mysql"),
+		bp:               app.NewBlueprint("kopia-repository-server-mysql", "", false),
+		repositoryServer: newSecretRepositoryServer(),
+	},
+})
