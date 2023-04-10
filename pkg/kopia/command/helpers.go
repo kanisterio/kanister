@@ -59,6 +59,14 @@ func GetCacheSizeSettingsForRestore() (contentCacheMB, metadataCacheMB int) {
 		utils.GetEnvAsIntOrDefault(dataStoreRestoreMetadataCacheSizeMBVarName, defaultDataStoreRestoreMetadataCacheSizeMB)
 }
 
+// GetGeneralCacheSizeSettings returns the feature setting cache size values to be used
+// for initializing repositories that will be performing general command workloads that benefit from
+// cacheing metadata only.
+func GetGeneralCacheSizeSettings() (contentCacheMB, metadataCacheMB int) {
+	return utils.GetEnvAsIntOrDefault(dataStoreGeneralContentCacheSizeMBVarName, defaultDataStoreGeneralContentCacheSizeMB),
+		utils.GetEnvAsIntOrDefault(dataStoreGeneralMetadataCacheSizeMBVarName, defaultDataStoreGeneralMetadataCacheSizeMB)
+}
+
 type GeneralCommandArgs struct {
 	*CommandArgs
 	SubCommands      []string

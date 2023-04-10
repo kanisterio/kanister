@@ -968,6 +968,7 @@ Outputs:
    `instanceID`, `string`, ID of the RDS instance
    `securityGroupID`, `[]string`, AWS Security Group IDs associated with the RDS instance
    `allocatedStorage`, `string`, Specifies the allocated storage size in gibibytes (GiB)
+   `dbSubnetGroup`, `string`, Specifies the DB Subnet group associated with the RDS instance
 
 Example:
 
@@ -983,7 +984,7 @@ Example:
             instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
             securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
             allocatedStorage: "{{ .Phases.createSnapshot.Output.allocatedStorage }}"
-            backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
+            dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
       configMapNames:
       - dbconfig
       phases:
@@ -1015,11 +1016,13 @@ Arguments:
    `backupArtifactPrefix`, No, `string`, path to store the backup on the object store
    `databases`, No, `[]string`, list of databases to take backup of
    `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to temporary RDS instance. ()
+   `dbSubnetGroup`, No, `string`, DB Subnet Group to be passed to temporary RDS instance
 
 .. note::
    - If ``databases`` argument is not set, backup of all the databases will be taken.
    - If ``securityGroupID`` argument is not set, ``ExportRDSSnapshotToLocation`` will find out Security Group IDs associated with instance with ``instanceID`` and will pass the same.
    - If ``backupArtifactPrefix`` argument is not set, ``instanceID`` will be used as `backupArtifactPrefix`.
+   - If ``dbSubnetGroup`` argument is not set, ``default`` DB Subnet group will be used.
 
 Outputs:
 
@@ -1047,6 +1050,7 @@ Example:
             instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
             securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
             backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
+            dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
       configMapNames:
       - dbconfig
       phases:
@@ -1073,6 +1077,7 @@ Example:
           databases: '{{ index .ConfigMaps.dbconfig.Data "postgres.databases" }}'
           snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
           backupArtifactPrefix: test-postgresql-instance/postgres
+          dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
 
 
 RestoreRDSSnapshot
@@ -1098,13 +1103,15 @@ Arguments:
    `password`, No, `string`, password of the RDS database instance
    `backupArtifactPrefix`, No, `string`, path to store the backup on the object store
    `backupID`, No, `string`, unique backup id generated during storing data into object storage
-   `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to temporary RDS instance
+   `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to restored RDS instance
    `namespace`, No, `string`, namespace in which to execute. Required if ``snapshotID`` is nil
    `dbEngine`, No, `string`, one of the RDS db engines. Supported engines: ``PostgreSQL`` ``aurora`` ``aurora-mysql`` and ``aurora-postgresql``. Required if ``snapshotID`` is nil or Aurora is run in RDS instance
+   `dbSubnetGroup`, No, `string`, DB Subnet Group to be passed to restored RDS instance
 
 .. note::
    - If ``snapshotID`` is not set, restore will be done from data dump. In that case ``backupID`` `arg` is required.
    - If ``securityGroupID`` argument is not set, ``RestoreRDSSnapshot`` will find out Security Group IDs associated with instance with ``instanceID`` and will pass the same.
+   - If ``dbSubnetGroup`` argument is not set, ``default`` DB Subnet group will be used.
 
 Outputs:
 
@@ -1141,7 +1148,7 @@ Example:
         username: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "username" | toString }}'
         password: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "password" | toString }}'
         dbEngine: "PostgreSQL"
-
+        dbSubnetGroup: "{{ .ArtifactsIn.backupInfo.KeyValue.dbSubnetGroup }}"
 
 DeleteRDSSnapshot
 -----------------
