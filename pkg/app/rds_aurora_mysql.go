@@ -63,6 +63,7 @@ type RDSAuroraMySQLDB struct {
 	securityGroupID          string
 	securityGroupName        string
 	bastionDebugWorkloadName string
+	publicAccess             bool
 	vpcID                    string
 }
 
@@ -75,6 +76,7 @@ func NewRDSAuroraMySQLDB(name, region string) App {
 		username:          "admin",
 		password:          "secret99",
 		dbName:            "testdb",
+		publicAccess:      false,
 	}
 }
 
@@ -173,7 +175,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 
 	// Create RDS instance
 	log.Info().Print("Creating RDS Aurora DB cluster.", field.M{"app": a.name, "id": a.id})
-	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, []string{a.securityGroupID})
+	_, err = rdsCli.CreateDBCluster(ctx, AuroraDBStorage, AuroraDBInstanceClass, a.id, a.dbSubnetGroup, string(function.DBEngineAuroraMySQL), a.dbName, a.username, a.password, []string{a.securityGroupID})
 	if err != nil {
 		return errors.Wrap(err, "Error creating DB cluster")
 	}
@@ -183,8 +185,7 @@ func (a *RDSAuroraMySQLDB) Install(ctx context.Context, namespace string) error 
 		return errors.Wrap(err, "Error waiting for DB cluster to be available")
 	}
 
-	// create db instance in the cluster
-	_, err = rdsCli.CreateDBInstanceInCluster(ctx, a.id, fmt.Sprintf("%s-instance-1", a.id), AuroraDBInstanceClass, string(function.DBEngineAuroraMySQL))
+	_, err = rdsCli.CreateDBInstance(ctx, nil, AuroraDBInstanceClass, fmt.Sprintf("%s-instance-1", a.id), string(function.DBEngineAuroraMySQL), "", "", nil, awssdk.Bool(a.publicAccess), awssdk.String(a.id), a.dbSubnetGroup)
 	if err != nil {
 		return errors.Wrap(err, "Error creating an instance in Aurora DB cluster")
 	}
