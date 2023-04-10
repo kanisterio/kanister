@@ -1716,6 +1716,47 @@ backup function.
       kind: Deployment
       replicas: 1
 
+
+.. _deletedatausingkopiaserver:
+
+DeleteDataUsingKopiaServer
+--------------------------
+
+This function deletes the snapshot data backed up by the ``BackupDataUsingKopiaServer``
+function. It creates a new Pod that runs ``delete data`` job.
+
+.. note::
+   The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
+   image since it includes the required tools to delete snapshot from
+   the object store.
+
+   Additionally, in order to use this function, a RepositoryServer CR is required.
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute the delete job
+   `backupID`, Yes, `string`, unique snapshot id generated during backup
+   `image`, Yes, `string`, image to be used for running delete job (should contain kopia binary)
+
+Example:
+
+Consider a scenario where you wish to delete the data backed up by the
+:ref:`backupdatausingkopiaserver` function.
+For this phase, we will use the ``backupIdentifier`` Artifact provided by backup function.
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: DeleteDataUsingKopiaServer
+    name: DeleteFromObjectStore
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      backupID: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
+      image: ghcr.io/kanisterio/kanister-tools:0.89.0
+
 Registering Functions
 ---------------------
 
