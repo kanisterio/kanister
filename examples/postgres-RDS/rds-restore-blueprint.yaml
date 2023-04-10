@@ -17,7 +17,7 @@ actions:
           name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
           namespace: '{{ .StatefulSet.Namespace }}'
       args:
-        image: akankshakumari393/kanister:abcd ## THIS NEED TO BE UPDATED WITH THE CUSTOM DOCKER IMAGE
+        image: <image-registry>/<image-repo>:<tag>
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -40,7 +40,7 @@ actions:
     - func: KubeTask
       name: pgRestore
       args:
-        image: akankshakumari393/kanister:abcd ## THIS NEED TO BE UPDATED WITH THE CUSTOM DOCKER IMAGE
+        image: <image-registry>/<image-repo>:<tag>
         namespace: '{{ .StatefulSet.Namespace }}'
         command:
         - bash
@@ -83,7 +83,7 @@ actions:
     - func: KubeTask
       name: deleteDump
       args:
-        image: akankshakumari393/kanister:abcd ## THIS NEED TO BE UPDATED WITH THE CUSTOM DOCKER IMAGE
+        image: <image-registry>/<image-repo>:<tag>
         namespace: "{{ .Namespace.Name }}"
         command:
           - bash

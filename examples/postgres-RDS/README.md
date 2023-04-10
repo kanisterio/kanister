@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This example is to demonstrate how Kanister can be used to provision AWS RDS Instance and import data into it from On-prem Postgres using Kanister functions
+This example demonstrates how to provision an AWS RDS Instance, and use Kanister to backup data from an on-prem Postgres installation and restore that data into the provisioned AWS RDS instance.
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ You can create a security group and add rules to the default VPC using the follo
 
 **NOTE**
 
-This is highly insecure. Its good only for testing and should not be use in a production environment.
+This is highly insecure. Its good only for testing and should not be used in a production environment.
 For production, make sure to restrict the source (CIDR or otherwise) to only the elements that need to access the DB.
 
 ```bash
@@ -88,10 +88,11 @@ stringData:
 
 **NOTE**
 
-The AWS credentials must have proper permissions to perform operations on RDS
+The AWS credentials must have proper permissions to perform operations on RDS.
 
 ## Installing the PostgreSQL Chart
-To install the chart with the release name `my-release`:
+
+To install the PostgreSQL chart with the release name `my-release` and default configuration, run the following commands:
 
 ```bash
 $ helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -100,16 +101,8 @@ $ helm repo update
 $ helm install my-release --create-namespace --namespace postgres-test bitnami/postgresql
 ```
 
-The command deploys PostgreSQL on the Kubernetes cluster in the default configuration.
-
 > **Tip**: List all releases using `helm list`
 
-In case, if you don't have `Kanister` installed already, you can use the following commands to do that.
-Add Kanister Helm repository and install Kanister operator
-```bash
-$ helm repo add kanister https://charts.kanister.io
-$ helm install kanister --namespace kanister --create-namespace kanister/kanister-operator
-```
 
 ## Integrating with Kanister
 
@@ -135,7 +128,7 @@ requires a Profile reference to complete the action. This CR (`profiles.cr.kanis
 can be shared between Kanister-enabled application instances.
 
 ## Create Docker Image to be used in the Blueprint
-Create the docker image which include awscli, postgresclient and kando (https://docs.kanister.io/tooling.html#kando) . We would provide the image to the blueprint.
+Create the docker image which includes awscli, psql and kando (https://docs.kanister.io/tooling.html#kando) . This image will be provided in the Kanister blueprint that we are going to create later.
 
 ```bash
 $ docker build -t <image-registry>/<image-repo>:<tag> .
@@ -213,7 +206,7 @@ test=# select * from company;
 
 ## Protect the Application
 
-You can now take a backup of the PostgresDB data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
+You can now take a backup of the PostgresDB data by creating backup ActionSet for this application. Create an ActionSet in the same namespace as the controller.
 
 ```bash
 $ kubectl get profile -n postgres-test
