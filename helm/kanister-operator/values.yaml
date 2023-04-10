@@ -5,6 +5,11 @@ image:
   repository: ghcr.io/kanisterio/controller
   tag: 0.90.0
   pullPolicy: IfNotPresent
+repositoryServerControllerImage:
+  registry: ghcr.io/kanisterio
+  name: repo-server-controller
+  tag: 0.88.0
+  pullPolicy: IfNotPresent
 rbac:
   create: true
 serviceAccount:
@@ -29,6 +34,12 @@ bpValidatingWebhook:
     mode: auto # If set to `custom` then secretName and caBundle should be provided
     secretName: '' # An already created Secret in kanister controller namespace having tls cert details
     caBundle: '' # A valid, CA bundle which is a PEM-encoded CA bundle for validating the webhook's server certificate
+repositoryServerController:
+  # startTimeout is used to specify the time in seconds to wait for starting the kopia repository server
+  # Default timeout is 600 seconds
+  serverStartTimeout:
+  container:
+    name:
 resources:
 # We usually recommend not to specify default resources and to leave this as a conscious
 # choice for the user. This also increases chances charts run on environments with little
