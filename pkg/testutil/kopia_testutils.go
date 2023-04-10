@@ -15,11 +15,21 @@
 package testutil
 
 import (
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	awsconfig "github.com/kanisterio/kanister/pkg/aws"
+	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
+	"os"
+	"time"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
+
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
 )
 
 const (
@@ -89,6 +99,62 @@ func KopiaRepositoryServerUserAccess() *v1.Secret {
 			DefaultRepositoryServerHost: []byte(DefaultRepositoryPassword),
 		},
 	}
+}
+
+func KopiaTLSCertificate() (*v1.Secret, error) {
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(2019),
+		Subject: pkix.Name{
+			Organization:  []string{"Test Organization"},
+			Country:       []string{"Test Country"},
+			Province:      []string{"Test Province"},
+			Locality:      []string{"Test Locality"},
+			StreetAddress: []string{"Test Street"},
+			PostalCode:    []string{"123456"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(0, 0, 1),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		return nil, err
+	}
+	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
+	if err != nil {
+		return nil, err
+	}
+
+	caPEM := new(bytes.Buffer)
+	err = pem.Encode(caPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: caBytes,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	caPrivKeyPEM := new(bytes.Buffer)
+	err = pem.Encode(caPrivKeyPEM, &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "repository-server-tls-cert-",
+		},
+		Data: map[string][]byte{
+			"tls.crt": caPEM.Bytes(),
+			"tls.key": caPrivKeyPEM.Bytes(),
+		},
+	}, nil
 }
 
 func NewKopiaRepositoryServer() *crv1alpha1.RepositoryServer {

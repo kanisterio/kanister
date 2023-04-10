@@ -180,12 +180,17 @@ func newSecretProfile() *secretProfile {
 
 func newSecretRepositoryServer() *secretRepositoryServer {
 	s3Creds, s3Location := testutil.S3CredsLocationSecret()
+	tls, err := testutil.KopiaTLSCertificate()
+	if err != nil {
+		return nil
+	}
 	return &secretRepositoryServer{
 		s3Creds:            s3Creds,
 		s3Location:         s3Location,
 		repositoryPassword: testutil.KopiaRepositoryPassword(),
 		serverAdminUser:    testutil.KopiaRepositoryServerAdminUser(),
 		userAccess:         testutil.KopiaRepositoryServerUserAccess(),
+		tls:                tls,
 		repositoryServer:   testutil.NewKopiaRepositoryServer(),
 	}
 }
