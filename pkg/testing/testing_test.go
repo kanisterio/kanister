@@ -1,5 +1,5 @@
-////go:build !integration
-//// +build !integration
+//go:build !integration
+// +build !integration
 
 // Copyright 2019 The Kanister Authors.
 //
