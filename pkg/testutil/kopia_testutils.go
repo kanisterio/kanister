@@ -58,10 +58,11 @@ func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
 			GenerateName: "test-s3-location-",
 		},
 		Data: map[string][]byte{
-			"type":   []byte(crv1alpha1.LocationTypeS3Compliant),
-			"bucket": []byte(TestS3BucketName),
-			"path":   []byte(DefaultRepositoryPath),
-			"region": []byte(TestS3Region),
+			"type":     []byte("s3"),
+			"bucket":   []byte(TestS3BucketName),
+			"path":     []byte(DefaultRepositoryPath),
+			"region":   []byte(TestS3Region),
+			"endpoint": []byte(os.Getenv("LOCATION_ENDPOINT")),
 		},
 	}
 	return s3Creds, s3Location

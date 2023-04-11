@@ -287,14 +287,20 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	validateBlueprint(c, *bp, configMaps, secrets)
 
 	var as *crv1alpha1.ActionSet
+	log.Print("--------- ENV [KOPIA_INTEGRATION_TEST]-----------")
+	log.Print(os.Getenv("KOPIA_INTEGRATION_TEST"))
 	if os.Getenv("KOPIA_INTEGRATION_TEST") != "" {
 		if s.repositoryServer == nil {
 			log.Info().Print("Skipping integration test. Could not create repository server. Please check if required credentials are set.", field.M{"app": s.name})
 			s.skip = true
 			c.Skip("Could not create a RepositoryServer")
 		}
+		log.Info().Print("----- Creating Repository Server ----")
 		repositoryServerName := s.createRepositoryServer(c, ctx)
-		as = newActionSetWithRepoServer(bp.GetName(), repositoryServerName, kontroller.namespace, s.app.Object(), configMaps, secrets)
+		as = newActionSetWithRepoServer(bp.GetName(), repositoryServerName, "kanister", s.app.Object(), configMaps, secrets)
+		log.Print("----- ActionSet -----", field.M{
+			"Actionset": as,
+		})
 	} else {
 		if s.profile == nil {
 			log.Info().Print("Skipping integration test. Could not create profile. Please check if required credentials are set.", field.M{"app": s.name})
@@ -420,6 +426,7 @@ func (s *IntegrationSuite) createProfile(c *C, ctx context.Context) string {
 
 func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) string {
 	// Create Secrets required for setting up RepositoryServer
+	log.Info().Print("----- Create Secrets required for setting up RepositoryServer -----")
 	s3Location, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.s3Location, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s3Creds, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.s3Creds, metav1.CreateOptions{})
@@ -460,9 +467,17 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	}
 
 	// Create RepositoryServer CR
-	repositoryServer, err := s.crCli.RepositoryServers(kontroller.namespace).Create(ctx, s.repositoryServer.repositoryServer, metav1.CreateOptions{})
+	log.Info().Print("----- Create Repository Server CR -----")
+	log.Print("---- Repository Server ----", field.M{
+		"": s.repositoryServer.repositoryServer,
+	})
+	repositoryServer, err := s.crCli.RepositoryServers("kanister").Create(ctx, s.repositoryServer.repositoryServer, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-
+	log.Print("---- Repo Server Pod Name ----", field.M{
+		"Repo Server":     repositoryServer,
+		"Repo Server Pod": repositoryServer.Status.ServerInfo.PodName,
+	})
+	time.Sleep(5 * time.Minute)
 	// Create Kopia Repository
 	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
 	commandArgs := kopiacmd.RepositoryCommandArgs{
@@ -479,16 +494,19 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		RepoPathPrefix:  testutil.DefaultRepositoryPath,
 		Location:        s3Location.Data,
 	}
+	log.Info().Print("----- Creating Kopia Repository ----")
 	err = repository.ConnectToOrCreateKopiaRepository(
 		s.cli,
-		kontroller.namespace,
-		repositoryServer.Status.ServerInfo.PodName,
+		"kanister",
+		repositoryServer.Name,
 		"repo-server-container",
 		commandArgs,
 	)
 	if err != nil {
+		log.Print(err.Error())
 		return ""
 	}
+	log.Info().Print("----- Leaving Function ----")
 	return repositoryServer.GetName()
 }
 
