@@ -1,5 +1,5 @@
-////go:build integration
-//// +build integration
+//go:build integration
+// +build integration
 
 // Copyright 2019 The Kanister Authors.
 //
@@ -19,6 +19,8 @@ package testing
 
 import (
 	context "context"
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"os"
 	test "testing"
 	"time"
@@ -217,6 +219,7 @@ func (s *IntegrationSuite) SetUpSuite(c *C) {
 // 6. Restore data from backup
 // 7. Uninstall DB app
 func (s *IntegrationSuite) TestRun(c *C) {
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -234,14 +237,6 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Create namespace
 	err = createNamespace(s.cli, s.namespace)
 	c.Assert(err, IsNil)
-
-	// Create profile
-	if s.profile == nil {
-		log.Info().Print("Skipping integration test. Could not create profile. Please check if required credentials are set.", field.M{"app": s.name})
-		s.skip = true
-		c.Skip("Could not create a Profile")
-	}
-	profileName := s.createProfile(c, ctx)
 
 	// Install db
 	err = s.app.Install(ctx, s.namespace)
@@ -291,8 +286,27 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Validate Blueprint
 	validateBlueprint(c, *bp, configMaps, secrets)
 
-	// Create ActionSet specs
-	as := newActionSet(bp.GetName(), profileName, kontroller.namespace, s.app.Object(), configMaps, secrets)
+	var as *crv1alpha1.ActionSet
+	if os.Getenv("KOPIA_INTEGRATION_TEST") != "" {
+		if s.repositoryServer == nil {
+			log.Info().Print("Skipping integration test. Could not create repository server. Please check if required credentials are set.", field.M{"app": s.name})
+			s.skip = true
+			c.Skip("Could not create a RepositoryServer")
+		}
+		repositoryServerName := s.createRepositoryServer(c, ctx)
+		as = newActionSetWithRepoServer(bp.GetName(), repositoryServerName, kontroller.namespace, s.app.Object(), configMaps, secrets)
+	} else {
+		if s.profile == nil {
+			log.Info().Print("Skipping integration test. Could not create profile. Please check if required credentials are set.", field.M{"app": s.name})
+			s.skip = true
+			c.Skip("Could not create a Profile")
+		}
+		// Create profile
+		profileName := s.createProfile(c, ctx)
+		// Create ActionSet specs
+		as = newActionSet(bp.GetName(), profileName, kontroller.namespace, s.app.Object(), configMaps, secrets)
+	}
+
 	// Take backup
 	backup := s.createActionset(ctx, c, as, "backup", nil)
 	c.Assert(len(backup), Not(Equals), 0)
@@ -366,6 +380,29 @@ func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectRef
 	}
 }
 
+func newActionSetWithRepoServer(bpName, repositoryServer, repositoryServerNs string, object crv1alpha1.ObjectReference, configMaps, secrets map[string]crv1alpha1.ObjectReference) *crv1alpha1.ActionSet {
+	return &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-actionset-",
+		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				{
+					Name:      "backup",
+					Object:    object,
+					Blueprint: bpName,
+					RepositoryServer: &crv1alpha1.ObjectReference{
+						Name:      repositoryServer,
+						Namespace: repositoryServerNs,
+					},
+					ConfigMaps: configMaps,
+					Secrets:    secrets,
+				},
+			},
+		},
+	}
+}
+
 func (s *IntegrationSuite) createProfile(c *C, ctx context.Context) string {
 	secret, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.profile.secret, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
@@ -425,6 +462,33 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	// Create RepositoryServer CR
 	repositoryServer, err := s.crCli.RepositoryServers(kontroller.namespace).Create(ctx, s.repositoryServer.repositoryServer, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
+
+	// Create Kopia Repository
+	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
+	commandArgs := kopiacmd.RepositoryCommandArgs{
+		CommandArgs: &kopiacmd.CommandArgs{
+			RepoPassword:   testutil.DefaultRepositoryPassword,
+			ConfigFilePath: kopiacmd.DefaultConfigFilePath,
+			LogDirectory:   kopiacmd.DefaultLogDirectory,
+		},
+		CacheDirectory:  kopiacmd.DefaultCacheDirectory,
+		Hostname:        testutil.DefaultRepositoryServerHost,
+		ContentCacheMB:  contentCacheMB,
+		MetadataCacheMB: metadataCacheMB,
+		Username:        testutil.DefaultKanisterAdminUser,
+		RepoPathPrefix:  testutil.DefaultRepositoryPath,
+		Location:        s3Location.Data,
+	}
+	err = repository.ConnectToOrCreateKopiaRepository(
+		s.cli,
+		kontroller.namespace,
+		repositoryServer.Status.ServerInfo.PodName,
+		"repo-server-container",
+		commandArgs,
+	)
+	if err != nil {
+		return ""
+	}
 	return repositoryServer.GetName()
 }
 

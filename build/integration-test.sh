@@ -24,7 +24,6 @@ DOP="3"
 TEST_TIMEOUT="30m"
 # Set default options
 TEST_OPTIONS="-tags=integration -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
-KOPIA_REPOSITORY_SERVER_TEST_OPTIONS="-tags=kopia-repository-server -timeout ${TEST_TIMEOUT} -check.suitep ${DOP}"
 # Regex to match apps to run in short mode
 # Temporary disable ES test. Issue to track https://github.com/kanisterio/kanister/issues/1920
 SHORT_APPS="^PostgreSQL$|^MySQL$|^MongoDB$|Maria|^MSSQL$"
@@ -78,6 +77,7 @@ case "${1}" in
     kopia)
         # Run only part of apps
         TEST_APPS=${KOPIA_REPOSITORY_SERVER_APPS}
+        export KOPIA_INTEGRATION_TEST=true
         ;;
     openshift)
         # TODO:// make sure the argument is named ocp_version
@@ -115,5 +115,4 @@ check_dependencies
 echo "Running integration tests:"
 pushd ${INTEGRATION_TEST_DIR}
 go test -v "${TEST_OPTIONS}" -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
-go test -v "${KOPIA_REPOSITORY_SERVER_TEST_OPTIONS}" -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
 popd
