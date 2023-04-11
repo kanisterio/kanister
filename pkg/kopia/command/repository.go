@@ -33,6 +33,7 @@ type RepositoryCommandArgs struct {
 	MetadataCacheMB int
 	Username        string
 	RepoPathPrefix  string
+	ReadOnly        bool
 	// PITFlag is only effective if set while repository connect
 	PITFlag  strfmt.DateTime
 	Location map[string][]byte
@@ -42,6 +43,10 @@ type RepositoryCommandArgs struct {
 func RepositoryConnectCommand(cmdArgs RepositoryCommandArgs) ([]string, error) {
 	args := commonArgs(cmdArgs.CommandArgs, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, noCheckForUpdatesFlag)
+
+	if cmdArgs.ReadOnly {
+		args = args.AppendLoggable(readOnlyFlag)
+	}
 
 	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
 
@@ -105,6 +110,7 @@ type RepositoryServerCommandArgs struct {
 	ServerURL       string
 	Fingerprint     string
 	Username        string
+	ReadOnly        bool
 	ContentCacheMB  int
 	MetadataCacheMB int
 }
@@ -118,6 +124,10 @@ func RepositoryConnectServerCommand(cmdArgs RepositoryServerCommandArgs) []strin
 		LogDirectory:   cmdArgs.LogDirectory,
 	}, false)
 	args = args.AppendLoggable(repositorySubCommand, connectSubCommand, serverSubCommand, noCheckForUpdatesFlag, noGrpcFlag)
+
+	if cmdArgs.ReadOnly {
+		args = args.AppendLoggable(readOnlyFlag)
+	}
 
 	args = kopiaCacheArgs(args, cmdArgs.CacheDirectory, cmdArgs.ContentCacheMB, cmdArgs.MetadataCacheMB)
 
