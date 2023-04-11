@@ -39,6 +39,7 @@ const (
 	DefaultRepositoryPassword        = "test1234"
 	DefaultKanisterAdminUser         = "kanisterAdmin"
 	DefaultKanisterUser              = "kanisteruser"
+	DefaultKanisterNamespace         = "kanister"
 )
 
 func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {

@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+////go:build integration
+//// +build integration
 
 // Copyright 2019 The Kanister Authors.
 //
@@ -427,17 +427,17 @@ func (s *IntegrationSuite) createProfile(c *C, ctx context.Context) string {
 func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) string {
 	// Create Secrets required for setting up RepositoryServer
 	log.Info().Print("----- Create Secrets required for setting up RepositoryServer -----")
-	s3Location, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.s3Location, metav1.CreateOptions{})
+	s3Location, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.s3Location, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	s3Creds, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.s3Creds, metav1.CreateOptions{})
+	s3Creds, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.s3Creds, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	repositoryPassword, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.repositoryPassword, metav1.CreateOptions{})
+	repositoryPassword, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.repositoryPassword, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	serverAdminUser, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.serverAdminUser, metav1.CreateOptions{})
+	serverAdminUser, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.serverAdminUser, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	tls, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.tls, metav1.CreateOptions{})
+	tls, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.tls, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	userAccess, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.repositoryServer.userAccess, metav1.CreateOptions{})
+	userAccess, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.userAccess, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Setting Up the SecretRefs in RepositoryServer
@@ -471,7 +471,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	log.Print("---- Repository Server ----", field.M{
 		"": s.repositoryServer.repositoryServer,
 	})
-	repositoryServer, err := s.crCli.RepositoryServers("kanister").Create(ctx, s.repositoryServer.repositoryServer, metav1.CreateOptions{})
+	repositoryServer, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.repositoryServer, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	log.Print("---- Repo Server Pod Name ----", field.M{
 		"Repo Server":     repositoryServer,
@@ -497,7 +497,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	log.Info().Print("----- Creating Kopia Repository ----")
 	err = repository.ConnectToOrCreateKopiaRepository(
 		s.cli,
-		"kanister",
+		testutil.DefaultKanisterNamespace,
 		repositoryServer.Name,
 		"repo-server-container",
 		commandArgs,
