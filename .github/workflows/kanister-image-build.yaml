@@ -49,7 +49,7 @@ jobs:
           type=ref,event=branch
           type=sha
           {{date 'YYYY.MM.DD-HHmm'}}
-          {{ inputs.tag }}
+          ${{ inputs.tag }}
     - name: Login to GHCR
       uses: docker/login-action@v2
       with:
