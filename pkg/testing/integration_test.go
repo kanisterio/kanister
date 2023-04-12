@@ -38,6 +38,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kanctl"
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
+	repository "github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
