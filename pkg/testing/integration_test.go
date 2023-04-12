@@ -19,8 +19,6 @@ package testing
 
 import (
 	context "context"
-	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
-	"github.com/kanisterio/kanister/pkg/kopia/repository"
 	"os"
 	test "testing"
 	"time"
@@ -287,7 +285,6 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	validateBlueprint(c, *bp, configMaps, secrets)
 
 	var as *crv1alpha1.ActionSet
-	log.Print(os.Getenv("KOPIA_INTEGRATION_TEST"))
 	if os.Getenv("KOPIA_INTEGRATION_TEST") != "" {
 		log.Print("--------- ENV [KOPIA_INTEGRATION_TEST]-----------")
 		if s.repositoryServer == nil {
@@ -470,44 +467,42 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	log.Info().Print("----- Create Repository Server CR -----")
 	repositoryServer, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.repositoryServer, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	time.Sleep(30 * time.Second)
-	repositoryServer, err = s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
-	c.Assert(err, IsNil)
-	log.Print("---- Repo Server Pod Name ----", field.M{
-		"Repo Server":     repositoryServer,
-		"Repo Server Pod": repositoryServer.Status.ServerInfo.PodName,
+
+	// Wait for controller to set pod name field
+	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		repositoryServer, err = s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
+		if err != nil && repositoryServer.Status.ServerInfo.PodName != "" {
+			// Create Kopia Repository
+			contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
+			commandArgs := kopiacmd.RepositoryCommandArgs{
+				CommandArgs: &kopiacmd.CommandArgs{
+					RepoPassword:   testutil.DefaultRepositoryPassword,
+					ConfigFilePath: kopiacmd.DefaultConfigFilePath,
+					LogDirectory:   kopiacmd.DefaultLogDirectory,
+				},
+				CacheDirectory:  kopiacmd.DefaultCacheDirectory,
+				Hostname:        testutil.DefaultRepositoryServerHost,
+				ContentCacheMB:  contentCacheMB,
+				MetadataCacheMB: metadataCacheMB,
+				Username:        testutil.DefaultKanisterAdminUser,
+				RepoPathPrefix:  testutil.DefaultRepositoryPath,
+				Location:        s3Location.Data,
+			}
+			log.Info().Print("----- Creating Kopia Repository ----")
+			err = repository.ConnectToOrCreateKopiaRepository(
+				s.cli,
+				testutil.DefaultKanisterNamespace,
+				repositoryServer.Status.ServerInfo.PodName,
+				testutil.DefaultKopiaRepositoryServerContainer,
+				commandArgs,
+			)
+			return true, nil
+		}
+		return false, err
 	})
-	time.Sleep(30 * time.Second)
-	// Create Kopia Repository
-	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
-	commandArgs := kopiacmd.RepositoryCommandArgs{
-		CommandArgs: &kopiacmd.CommandArgs{
-			RepoPassword:   testutil.DefaultRepositoryPassword,
-			ConfigFilePath: kopiacmd.DefaultConfigFilePath,
-			LogDirectory:   kopiacmd.DefaultLogDirectory,
-		},
-		CacheDirectory:  kopiacmd.DefaultCacheDirectory,
-		Hostname:        testutil.DefaultRepositoryServerHost,
-		ContentCacheMB:  contentCacheMB,
-		MetadataCacheMB: metadataCacheMB,
-		Username:        testutil.DefaultKanisterAdminUser,
-		RepoPathPrefix:  testutil.DefaultRepositoryPath,
-		Location:        s3Location.Data,
-	}
-	log.Info().Print("----- Creating Kopia Repository ----")
-	err = repository.ConnectToOrCreateKopiaRepository(
-		s.cli,
-		testutil.DefaultKanisterNamespace,
-		repositoryServer.Status.ServerInfo.PodName,
-		testutil.DefaultKopiaRepositoryServerContainer,
-		commandArgs,
-	)
-	if err != nil {
-		log.Print(err.Error())
-		return ""
-	}
+
 	log.Info().Print("----- Leaving Function ----")
-	// Wait for the ActionSet to complete.
+	// Wait for the Repository Server to Be in Ready Stage.
 	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
 		repositoryServer, err = s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
 		if err != nil && repositoryServer.Status.Progress == "ServerReady" {
