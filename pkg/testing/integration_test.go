@@ -471,10 +471,17 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	c.Assert(err, IsNil)
 
 	// Wait for controller to set pod name field
-	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		repositoryServer, err = s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
-		if err != nil && repositoryServer.Status.ServerInfo.PodName != "" {
-			// Create Kopia Repository
+	log.Info().Print("---- Wait for controller to set pod name field ----")
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, appWaitTimeout)
+	defer waitCancel()
+	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		rs, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+		switch {
+		case rs.Status.ServerInfo.PodName != "":
+			log.Info().Print("---- Creating Kopia Repository ----")
 			contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
 			commandArgs := kopiacmd.RepositoryCommandArgs{
 				CommandArgs: &kopiacmd.CommandArgs{
@@ -490,28 +497,41 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 				RepoPathPrefix:  testutil.DefaultRepositoryPath,
 				Location:        s3Location.Data,
 			}
-			log.Info().Print("----- Creating Kopia Repository ----")
 			err = repository.ConnectToOrCreateKopiaRepository(
 				s.cli,
 				testutil.DefaultKanisterNamespace,
-				repositoryServer.Status.ServerInfo.PodName,
+				rs.Status.ServerInfo.PodName,
 				testutil.DefaultKopiaRepositoryServerContainer,
 				commandArgs,
 			)
+			if err != nil {
+				return false, nil
+			}
 			return true, nil
 		}
-		return false, err
+		return false, nil
 	})
 
-	log.Info().Print("----- Leaving Function ----")
+	log.Info().Print("----- Wait for the Repository Server to Be in Ready Stage ----")
 	// Wait for the Repository Server to Be in Ready Stage.
-	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		repositoryServer, err = s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
-		if err != nil && repositoryServer.Status.Progress == "ServerReady" {
-			return true, nil
+	timeoutCtx, waitCancel = context.WithTimeout(ctx, appWaitTimeout)
+	defer waitCancel()
+	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		rs, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
+		if err != nil {
+			return false, nil
 		}
-		return false, err
+		switch {
+		case rs.Status.Progress == "ServerReady":
+			return true, nil
+		case rs.Status.Progress == "ServerStopped":
+			return true, errors.New("Repository Server Stopped")
+		}
+		return false, nil
 	})
+
+	log.Info().Print("---- Leaving Function ----")
+
 	return repositoryServer.GetName()
 }
 
