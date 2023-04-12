@@ -6,9 +6,9 @@ image:
   tag: 0.90.0
   pullPolicy: IfNotPresent
 repositoryServerControllerImage:
-  registry: ghcr.io/kanisterio
+  registry: amrutakale
   name: repo-server-controller
-  tag: 0.88.0
+  tag: 0.90.4
   pullPolicy: IfNotPresent
 rbac:
   create: true
@@ -37,8 +37,9 @@ repositoryServerController:
   # startTimeout is used to specify the time in seconds to wait for starting the kopia repository server
   # Default timeout is 600 seconds
   serverStartTimeout:
+  logLevel: ''
   container:
-    name:
+    name: ''
 resources:
 # We usually recommend not to specify default resources and to leave this as a conscious
 # choice for the user. This also increases chances charts run on environments with little
