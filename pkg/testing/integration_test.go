@@ -499,7 +499,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		s.cli,
 		testutil.DefaultKanisterNamespace,
 		repositoryServer.Status.ServerInfo.PodName,
-		"repo-server-container",
+		testutil.DefaultKopiaRepositoryServerContainer,
 		commandArgs,
 	)
 	if err != nil {

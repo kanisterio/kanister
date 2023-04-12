@@ -33,13 +33,14 @@ import (
 )
 
 const (
-	DefaultRepositoryPath            = "kopia-repo-controller-test"
-	DefaultRepositoryServerAdminUser = "admin@test"
-	DefaultRepositoryServerHost      = "localhost"
-	DefaultRepositoryPassword        = "test1234"
-	DefaultKanisterAdminUser         = "kanisterAdmin"
-	DefaultKanisterUser              = "kanisteruser"
-	DefaultKanisterNamespace         = "kanister"
+	DefaultRepositoryPath                 = "kopia-repo-controller-test"
+	DefaultRepositoryServerAdminUser      = "admin@test"
+	DefaultRepositoryServerHost           = "localhost"
+	DefaultRepositoryPassword             = "test1234"
+	DefaultKanisterAdminUser              = "kanisterAdmin"
+	DefaultKanisterUser                   = "kanisteruser"
+	DefaultKanisterNamespace              = "kanister"
+	DefaultKopiaRepositoryServerContainer = "repo-server-container"
 )
 
 func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
