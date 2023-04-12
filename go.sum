@@ -79,8 +79,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 h1:KeNholpO2xKjgaaSyd+DyQRrsQjhbSeS7qe4nEw8aQw=
 github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.3.0 h1:gVDpgO5vjgBdr+dSCvHf13WCC2vLsfQM+iyWsn7MjkQ=
 github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.3.0/go.mod h1:RiUvKuHKTBmBApDMUQzBL14pQUGKcx/IioKQPIcRQjs=
-github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af h1:1L8wyNvXB1hzvgb8qfJXX/Y9DhFcUGHGhvdw9c30/lY=
-github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af/go.mod h1:xFXCpJFg3Nj3HDgP79Uq/t+DTVFH/9lKxia5e6t49pg=
+github.com/IBM/ibmcloud-storage-volume-lib v2.0.7-testonly+incompatible h1:JyZsZPeF1ZQsjL8HNb2YDXSBvz5h3isJdUlR1eLjgiM=
+github.com/IBM/ibmcloud-storage-volume-lib v2.0.7-testonly+incompatible/go.mod h1:xFXCpJFg3Nj3HDgP79Uq/t+DTVFH/9lKxia5e6t49pg=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
