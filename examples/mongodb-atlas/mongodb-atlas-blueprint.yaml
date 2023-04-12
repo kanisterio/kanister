@@ -1,0 +1,111 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: mongodb-atlas-blueprint
+actions:
+  backup:
+    outputArtifacts:
+      cloudObject:
+        keyValue:
+          path: '/mongodb-atlas-backups/mongodb-atlas/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/mongo_backup.gz'
+          snapshotId: "{{ .Phases.takeBackup.Output.snapshotId }}"
+    secretNames:
+      - mongoatlassecret
+    phases:
+    - func: KubeTask
+      name: takeBackup
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        image: docker.io/pratikrshah/mongo-atlas:0.90.0
+        podOverride:
+          containers:
+            - name: container
+              imagePullPolicy: Always
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            cat >/root/.config/atlascli/config.toml <<EOL
+            [default]
+            org_id = '{{ .Secrets.mongoatlassecret.Data.orgid | toString }}'
+            output = 'json'
+            private_api_key = '{{ .Secrets.mongoatlassecret.Data.privatekey | toString }}'
+            project_id = '{{ .Secrets.mongoatlassecret.Data.projectid | toString }}'
+            public_api_key = '{{ .Secrets.mongoatlassecret.Data.publickey | toString }}'
+            service = 'cloud'
+            EOL
+            cluster_name='{{ .Secrets.mongoatlassecret.Data.clustername | toString }}'
+            backup_location='/mongodb-atlas-backups/mongodb-atlas/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time  | date "2006-01-02T15-04-05" }}/mongo_backup.gz'
+            atlas backups snapshots create ${cluster_name} --desc "MongoDB Atlas snapshot" --output json > output.json \
+            | gzip -c output.json | kando location push --profile '{{ toJson .Profile }}' --path ${backup_location} -
+            snapshot_id=$(jq -r ".id" output.json)
+            bash poll.sh ${cluster_name} ${snapshot_id} "backup"
+            kando output snapshotId ${snapshot_id}
+  restore:
+    inputArtifactNames:
+      - cloudObject
+    secretNames:
+      - mongoatlassecret
+    phases:
+    - func: KubeTask
+      name: pullFromBlobStore
+      args:
+        namespace: "{{ .Object.metadata.namespace }}"
+        image: docker.io/pratikrshah/mongo-atlas:0.90.0
+        podOverride:
+          containers:
+            - name: container
+              imagePullPolicy: Always
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            cat >/root/.config/atlascli/config.toml <<EOL
+            [default]
+            org_id = '{{ .Secrets.mongoatlassecret.Data.orgid | toString }}'
+            output = 'json'
+            private_api_key = '{{ .Secrets.mongoatlassecret.Data.privatekey | toString }}'
+            project_id = '{{ .Secrets.mongoatlassecret.Data.projectid | toString }}'
+            public_api_key = '{{ .Secrets.mongoatlassecret.Data.publickey | toString }}'
+            service = 'cloud'
+            EOL
+            cluster_name='{{ .Secrets.mongoatlassecret.Data.clustername | toString }}'
+            snapshot_id='{{ .ArtifactsIn.cloudObject.KeyValue.snapshotId }}'
+            target_cluster_name=${cluster_name}
+            target_project_id={{ .Secrets.mongoatlassecret.Data.projectid | toString }}
+            kando location pull --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.path }}' - \
+            | atlas backup restore start automated --clusterName ${cluster_name} --snapshotId ${snapshot_id} \
+            --targetClusterName ${target_cluster_name} --targetProjectId ${target_project_id} -o json > output.json
+            restore_id=$(jq -r ".id" output.json)
+            bash poll.sh ${cluster_name} ${restore_id} "restore"
+  delete:
+    inputArtifactNames:
+      - cloudObject
+    phases:
+    - func: KubeTask
+      name: deleteFromBlobStore
+      args:
+        namespace: "{{ .Namespace.Name }}"
+        image: docker.io/pratikrshah/mongo-atlas:0.90.0
+        podOverride:
+          containers:
+            - name: container
+              imagePullPolicy: Always
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            s3_path="{{ .ArtifactsIn.cloudObject.KeyValue.path }}"
+            kando location delete --profile '{{ toJson .Profile }}' --path ${s3_path}
