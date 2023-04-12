@@ -43,6 +43,8 @@ func KopiaStorageArgs(params *StorageCommandParams) (logsafe.Cmd, error) {
 		return gcsArgs(params.Location, params.RepoPathPrefix), nil
 	case LocTypeAzure:
 		return azureArgs(params.Location, params.RepoPathPrefix), nil
+	case LocTypeS3Compliant:
+		return s3Args(params.Location, params.RepoPathPrefix), nil
 	default:
 		return nil, fmt.Errorf("unsupported type for the location: %s", LocType)
 	}

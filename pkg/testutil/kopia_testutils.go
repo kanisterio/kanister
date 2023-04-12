@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	DefaultRepositoryPath            = "/kopia-repo-controller-test/"
+	DefaultRepositoryPath            = "kopia-repo-controller-test"
 	DefaultRepositoryServerAdminUser = "admin@test"
 	DefaultRepositoryServerHost      = "localhost"
 	DefaultRepositoryPassword        = "test1234"
@@ -48,7 +48,11 @@ func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
 	s3Creds := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-s3-creds-",
+			Labels: map[string]string{
+				"repo.kanister.io/target-namespace": "monitoring",
+			},
 		},
+		Type: "secrets.kanister.io/aws",
 		Data: map[string][]byte{
 			"aws_access_key_id":     []byte(key),
 			"aws_secret_access_key": []byte(val),
@@ -57,9 +61,12 @@ func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
 	s3Location := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-s3-location-",
+			Labels: map[string]string{
+				"repo.kanister.io/target-namespace": "monitoring",
+			},
 		},
 		Data: map[string][]byte{
-			"type":     []byte("s3"),
+			"type":     []byte(crv1alpha1.LocationTypeS3Compliant),
 			"bucket":   []byte(TestS3BucketName),
 			"path":     []byte(DefaultRepositoryPath),
 			"region":   []byte(TestS3Region),
@@ -152,6 +159,7 @@ func KopiaTLSCertificate() (*v1.Secret, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "repository-server-tls-cert-",
 		},
+		Type: "kubernetes.io/tls",
 		Data: map[string][]byte{
 			"tls.crt": caPEM.Bytes(),
 			"tls.key": caPrivKeyPEM.Bytes(),

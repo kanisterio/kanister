@@ -1,5 +1,4 @@
-////go:build !integration
-//// +build !integration
+//go:build !integration
 
 // Copyright 2019 The Kanister Authors.
 //
@@ -17,7 +16,13 @@
 
 package testing
 
-//// Hook up gocheck into the "go test" runner (non-integration builds)
-//func Test(t *test.T) {
-//	TestingT(t)
-//}
+import (
+	test "testing"
+
+	. "gopkg.in/check.v1"
+)
+
+// Hook up gocheck into the "go test" runner (non-integration builds)
+func Test(t *test.T) {
+	TestingT(t)
+}

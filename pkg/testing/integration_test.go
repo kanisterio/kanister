@@ -1,5 +1,5 @@
-////go:build integration
-//// +build integration
+//go:build integration
+// +build integration
 
 // Copyright 2019 The Kanister Authors.
 //
@@ -468,16 +468,16 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 
 	// Create RepositoryServer CR
 	log.Info().Print("----- Create Repository Server CR -----")
-	log.Print("---- Repository Server ----", field.M{
-		"": s.repositoryServer.repositoryServer,
-	})
 	repositoryServer, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.repositoryServer, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	time.Sleep(30 * time.Second)
+	repositoryServer, err = s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
 	c.Assert(err, IsNil)
 	log.Print("---- Repo Server Pod Name ----", field.M{
 		"Repo Server":     repositoryServer,
 		"Repo Server Pod": repositoryServer.Status.ServerInfo.PodName,
 	})
-	time.Sleep(5 * time.Minute)
+	time.Sleep(30 * time.Second)
 	// Create Kopia Repository
 	contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
 	commandArgs := kopiacmd.RepositoryCommandArgs{
@@ -498,7 +498,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	err = repository.ConnectToOrCreateKopiaRepository(
 		s.cli,
 		testutil.DefaultKanisterNamespace,
-		repositoryServer.Name,
+		repositoryServer.Status.ServerInfo.PodName,
 		"repo-server-container",
 		commandArgs,
 	)
@@ -507,6 +507,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		return ""
 	}
 	log.Info().Print("----- Leaving Function ----")
+	time.Sleep(20 * time.Minute)
 	return repositoryServer.GetName()
 }
 
