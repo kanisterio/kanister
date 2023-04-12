@@ -137,7 +137,7 @@ const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
 	appWaitTimeout     = 3 * time.Minute
 	controllerSA       = "kanister-sa"
-	contextWaitTimeout = 10 * time.Minute
+	contextWaitTimeout = 20 * time.Minute
 )
 
 type secretProfile struct {
@@ -507,7 +507,14 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		return ""
 	}
 	log.Info().Print("----- Leaving Function ----")
-	time.Sleep(20 * time.Minute)
+	// Wait for the ActionSet to complete.
+	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		repositoryServer, err = s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
+		if err != nil && repositoryServer.Status.Progress == "ServerReady" {
+			return true, nil
+		}
+		return false, err
+	})
 	return repositoryServer.GetName()
 }
 

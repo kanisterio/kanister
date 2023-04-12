@@ -83,7 +83,7 @@ func KopiaRepositoryPassword() *v1.Secret {
 			GenerateName: "test-repo-pass-",
 		},
 		Data: map[string][]byte{
-			"repo-pass": []byte(DefaultRepositoryPassword),
+			"repo-password": []byte(DefaultRepositoryPassword),
 		},
 	}
 }
