@@ -287,9 +287,9 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	validateBlueprint(c, *bp, configMaps, secrets)
 
 	var as *crv1alpha1.ActionSet
-	log.Print("--------- ENV [KOPIA_INTEGRATION_TEST]-----------")
 	log.Print(os.Getenv("KOPIA_INTEGRATION_TEST"))
 	if os.Getenv("KOPIA_INTEGRATION_TEST") != "" {
+		log.Print("--------- ENV [KOPIA_INTEGRATION_TEST]-----------")
 		if s.repositoryServer == nil {
 			log.Info().Print("Skipping integration test. Could not create repository server. Please check if required credentials are set.", field.M{"app": s.name})
 			s.skip = true

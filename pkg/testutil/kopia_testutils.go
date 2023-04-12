@@ -79,7 +79,7 @@ func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
 func KopiaRepositoryPassword() *v1.Secret {
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "repo-pass-",
+			GenerateName: "test-repo-pass-",
 		},
 		Data: map[string][]byte{
 			"repo-pass": []byte(DefaultRepositoryPassword),
@@ -90,7 +90,7 @@ func KopiaRepositoryPassword() *v1.Secret {
 func KopiaRepositoryServerAdminUser() *v1.Secret {
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "repository-admin-user-",
+			GenerateName: "test-repository-admin-user-",
 		},
 		Data: map[string][]byte{
 			"username": []byte(DefaultRepositoryServerAdminUser),
@@ -102,7 +102,7 @@ func KopiaRepositoryServerAdminUser() *v1.Secret {
 func KopiaRepositoryServerUserAccess() *v1.Secret {
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "repository-server-user-access-",
+			GenerateName: "test-repository-server-user-access-",
 		},
 		Data: map[string][]byte{
 			DefaultRepositoryServerHost: []byte(DefaultRepositoryPassword),
@@ -157,7 +157,7 @@ func KopiaTLSCertificate() (*v1.Secret, error) {
 
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "repository-server-tls-cert-",
+			GenerateName: "test-repository-server-tls-cert-",
 		},
 		Type: "kubernetes.io/tls",
 		Data: map[string][]byte{
