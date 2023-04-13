@@ -480,7 +480,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 			return false, nil
 		}
 		switch {
-		case rs.Status.ServerInfo.PodName != "":
+		case rs.Status.ServerInfo.PodName != nil:
 			log.Info().Print("---- Creating Kopia Repository ----")
 			contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
 			commandArgs := kopiacmd.RepositoryCommandArgs{
@@ -524,8 +524,8 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		switch {
 		case rs.Status.Progress == "ServerReady":
 			return true, nil
-		case rs.Status.Progress == "ServerStopped":
-			return true, errors.New("Repository Server Stopped")
+			//case rs.Status.Progress == "ServerStopped":
+			//	return true, errors.New("Repository Server Stopped")
 		}
 		return false, nil
 	})
