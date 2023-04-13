@@ -1,0 +1,177 @@
+# MongoDB Atlas
+
+[MongoDB Atlas](https://www.mongodb.com/atlas) is an integrated suite of cloud
+database and data services to accelerate and simplify how you build with data.
+It deploys and scales a MongoDB cluster in the cloud. MongoDB Atlas can be
+primarily classified under "MongoDB Hosting".
+
+## Prerequisites
+
+* Kubernetes 1.20+
+* Kanister controller version 0.90.0 installed in your cluster
+* Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
+* MongoDB Atlas account registered with organization, project and cluster
+
+## Integrating with Kanister
+
+In case, if you don't have `Kanister` installed already, use following commands
+to install.
+```bash
+$ helm repo add kanister https://charts.kanister.io
+$ helm install kanister --namespace kanister --create-namespace \
+    kanister/kanister-operator --set image.tag=0.90.0
+```
+
+### Create Blueprint
+Create Blueprint in the same namespace as the controller
+
+```bash
+$ kubectl create -f ./mongo-blueprint.yaml -n kanister
+```
+
+### Create Secret
+Create a Secret which contains Atlas account details.
+
+```bash
+$ kubectl create namespace mongodb-atlas-test
+namespace/mongodb-atlas-test created
+
+$ kubectl create secret generic mongoatlassecret \
+    --from-literal=Public_Key="<public key from Atlas account>" \
+    --from-literal=Private_Key="<private key from Atlas account>" \
+    --from-literal=Org_Id="<organization ID from Atlas account>" \
+    --from-literal=Project_Id="<project ID from Atlas account>" \
+    --from-literal=Cluster_Name="<cluster name from Atlas account>" \
+    -n mongodb-atlas-test
+secret/mongoatlassecret created
+```
+
+### Populate data in database
+```bash
+# Create a collection in database
+$ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
+    --username <username for Atlas account> -p <password for Atlas account> \
+    --quiet --eval "db.people.insertOne({'name': {'first': 'Alan', last: 'Turing'}})"
+{
+  acknowledged: true,
+  insertedId: ObjectId("643812344c2ce812b7aeaccf")
+}
+
+# View the people data in the database
+$ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
+    --username <username for Atlas account> -p <password for Atlas account> \
+    --quiet --eval "db.people.find()"
+[
+  {
+    _id: ObjectId("643812344c2ce812b7aeaccf"),
+    name: { first: 'Alan', last: 'Turing' }
+  }
+]
+```
+
+
+## Protect the Application
+
+You can now take a backup of the MongoDB data using an ActionSet defining
+backup for this application. Create an ActionSet in the same namespace as the
+controller.
+
+```bash
+$ kanctl create actionset --action backup --namespace kanister \
+    --blueprint mongodb-atlas-blueprint \
+    --objects v1/secrets/mongodb-atlas-test/mongoatlassecret
+actionset backup-tfjps created
+
+# View the status of the actionset
+$ kubectl --namespace kanister get actionsets.cr.kanister.io backup-tfjps
+NAME           PROGRESS   RUNNING PHASE             LAST TRANSITION TIME   STATE
+backup-tfjps   100.00                               2023-04-13T14:40:24Z   complete
+```
+
+### Disaster strikes!
+
+Let's say someone accidentally deleted the people collection:
+```bash
+# Drop the people collection
+$ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
+    --username <username for Atlas account> -p <password for Atlas account> \
+    --quiet --eval "db.people.drop()"
+true
+
+# Try to access this data in the database
+$ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
+    --username <username for Atlas account> -p <password for Atlas account> \
+    --quiet --eval "db.people.find()"
+# No entries found
+```
+
+### Restore the Application
+
+To restore the missing data, use the backup that was created.
+
+```bash
+$ kanctl create actionset --action restore --from backup-tfjps --namespace kanister
+actionset restore-backup-tfjps-bhv5j created
+
+# View the status of the ActionSet
+$ kubectl --namespace kanister get actionsets.cr.kanister.io restore-backup-tfjps-bhv5j
+NAME                         PROGRESS   RUNNING PHASE              LAST TRANSITION TIME   STATE
+restore-backup-tfjps-bhv5j   100.00                                2023-04-13T15:07:10Z   complete
+```
+
+Now the lost data should be visible in the database.
+
+```bash
+# Try to access this data in the database
+$ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
+    --username <username for Atlas account> -p <password for Atlas account> \
+    --quiet --eval "db.people.find()"
+[
+  {
+    _id: ObjectId("643812344c2ce812b7aeaccf"),
+    name: { first: 'Alan', last: 'Turing' }
+  }
+]
+```
+
+### Delete the Artifacts
+
+The artifacts created by the backup action can be cleaned up using following command.
+
+```bash
+$ kanctl --namespace kanister create actionset --action delete --from backup-tfjps
+actionset delete-backup-tfjps-gcjb2 created
+
+# View the status of the ActionSet
+$ kubectl --namespace kanister get actionsets.cr.kanister.io delete-backup-tfjps-gcjb2
+NAME                        PROGRESS   RUNNING PHASE   LAST TRANSITION TIME   STATE
+delete-backup-tfjps-gcjb2   100.00                     2023-04-13T15:11:24Z   complete
+```
+
+### Troubleshooting
+
+If you run into any issues with the above commands, you can check the logs of the controller using:
+
+```bash
+$ kubectl --namespace kanister logs -l app=kanister-operator
+```
+
+you can also check events of the actionset
+
+```bash
+$ kubectl describe actionset <actionset name> -n kanister
+```
+
+## Cleanup
+
+Delete Blueprint and ActionSet
+
+```bash
+$ kubectl delete blueprints.cr.kanister.io mongodb-atlas-blueprint -n kanister
+blueprint.cr.kanister.io "mongodb-atlas-blueprint" deleted
+
+$ kubectl delete actionset backup-tfjps restore-backup-tfjps-bhv5j delete-backup-tfjps-gcjb2 -n kanister
+actionset.cr.kanister.io "backup-tfjps" deleted
+actionset.cr.kanister.io "restore-backup-tfjps-bhv5j" deleted
+actionset.cr.kanister.io "delete-backup-tfjps-gcjb2" deleted
+```
