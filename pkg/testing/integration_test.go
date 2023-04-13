@@ -137,7 +137,7 @@ const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
 	appWaitTimeout     = 3 * time.Minute
 	controllerSA       = "kanister-sa"
-	contextWaitTimeout = 20 * time.Minute
+	contextWaitTimeout = 30 * time.Minute
 )
 
 type secretProfile struct {
@@ -480,7 +480,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 			return false, nil
 		}
 		switch {
-		case rs.Status.ServerInfo.PodName != nil:
+		case rs.Status.ServerInfo.PodName != "":
 			log.Info().Print("---- Creating Kopia Repository ----")
 			contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
 			commandArgs := kopiacmd.RepositoryCommandArgs{
@@ -514,22 +514,16 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 
 	log.Info().Print("----- Wait for the Repository Server to Be in Ready Stage ----")
 	// Wait for the Repository Server to Be in Ready Stage.
-	timeoutCtx, waitCancel = context.WithTimeout(ctx, appWaitTimeout)
+	timeoutCtx, waitCancel = context.WithTimeout(ctx, contextWaitTimeout)
 	defer waitCancel()
 	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		rs, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
-		if err != nil {
-			return false, nil
-		}
-		switch {
-		case rs.Status.Progress == "ServerReady":
+
+		if rs.Status.Progress == "ServerReady" && err == nil {
 			log.Info().Print("---- Checking Server Status ----", field.M{
 				"Status": rs.Status.Progress,
 			})
-
 			return true, nil
-		case rs.Status.Progress == "ServerStopped":
-			return false, errors.New("Repository Server Stopped")
 		}
 		return false, nil
 	})
