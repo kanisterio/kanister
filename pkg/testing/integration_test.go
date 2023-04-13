@@ -296,7 +296,8 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		}
 		log.Info().Print("----- Creating Repository Server ----")
 		repositoryServerName := s.createRepositoryServer(c, ctx)
-		as = newActionSetWithRepoServer(bp.GetName(), repositoryServerName, "kanister", s.app.Object(), configMaps, secrets)
+		//repositoryServerName := "test-kopia-repo-server-6rwtq"
+		as = newActionSetWithRepoServer(bp.GetName(), repositoryServerName, testutil.DefaultKanisterNamespace, s.app.Object(), configMaps, secrets)
 		log.Print("----- ActionSet -----", field.M{
 			"Actionset": as,
 		})
@@ -516,15 +517,20 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	// Wait for the Repository Server to Be in Ready Stage.
 	timeoutCtx, waitCancel = context.WithTimeout(ctx, contextWaitTimeout)
 	defer waitCancel()
-	err = poll.Wait(timeoutCtx, func(ctx context.Context) bool {
+	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		log.Info().Print("----- Inside Wait ----")
 		rs, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
+		log.Info().Print("", field.M{
+			"Name":   rs.Name,
+			"Status": rs.Status.Progress,
+		})
 		if rs.Status.Progress == "ServerReady" && err == nil {
 			log.Info().Print("---- Checking Server Status ----", field.M{
 				"Status": rs.Status.Progress,
 			})
-			return true
+			return true, nil
 		}
-		return false
+		return false, nil
 	})
 
 	log.Info().Print("---- Leaving Function ----")
