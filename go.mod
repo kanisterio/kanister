@@ -38,8 +38,8 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 
 	//pinned openshift to release-4.5 branch
-	github.com/openshift/api v0.0.0-20230406152840-ce21e3fe5da2
-	github.com/openshift/client-go v0.0.0-20230324103026-3f1513df25e0
+	github.com/openshift/api v0.0.0-20200526144822-34f54f12813a
+	github.com/openshift/client-go v0.0.0-20200521150516-05eb9880269c
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sirupsen/logrus v1.9.0
