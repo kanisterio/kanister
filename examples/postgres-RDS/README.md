@@ -240,6 +240,8 @@ Once the ActionSet status is set to "complete", you can see that the data has be
 
 To verify, Connect to the RDS PostgreSQL database instance 
 
+In the command below `<instance-name>`, `<db-password>`, and `<master-username>` are the details of the RDS instance that we have already created as part of [setup](#create-rds-instance-on-aws)
+
 ```bash
 $ kubectl run my-release-postgresql-client --rm --tty -i --restart='Never' --namespace postgres-test --image docker.io/bitnami/postgresql:15.1.0-debian-11-r31 --env="PGPASSWORD=<db-password>" --command -- psql --host <instance-name> -U <master-username> -d template1 -p 5432                   
 
