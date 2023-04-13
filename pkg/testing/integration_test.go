@@ -472,7 +472,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 
 	// Wait for controller to set pod name field
 	log.Info().Print("---- Wait for controller to set pod name field ----")
-	timeoutCtx, waitCancel := context.WithTimeout(ctx, appWaitTimeout)
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, contextWaitTimeout)
 	defer waitCancel()
 	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		rs, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
@@ -516,16 +516,15 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	// Wait for the Repository Server to Be in Ready Stage.
 	timeoutCtx, waitCancel = context.WithTimeout(ctx, contextWaitTimeout)
 	defer waitCancel()
-	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+	err = poll.Wait(timeoutCtx, func(ctx context.Context) bool {
 		rs, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
-
 		if rs.Status.Progress == "ServerReady" && err == nil {
 			log.Info().Print("---- Checking Server Status ----", field.M{
 				"Status": rs.Status.Progress,
 			})
-			return true, nil
+			return true
 		}
-		return false, nil
+		return false
 	})
 
 	log.Info().Print("---- Leaving Function ----")
