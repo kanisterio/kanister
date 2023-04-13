@@ -15,6 +15,7 @@
 package repositoryserver
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -30,13 +31,14 @@ import (
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
 
-type ControllerSuite struct {
+type RepoServerControllerSuite struct {
 	testEnv *envtest.Environment
 }
 
-var _ = Suite(&ControllerSuite{})
+var _ = Suite(&RepoServerControllerSuite{})
 
-func (s *ControllerSuite) SetUpSuite(c *C) {
+func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
+	fmt.Println("testing")
 	c.Log("Bootstrapping test environment with Kanister CRDs")
 	useExistingCluster := true
 	s.testEnv = &envtest.Environment{
@@ -46,40 +48,49 @@ func (s *ControllerSuite) SetUpSuite(c *C) {
 	}
 
 	cfg, err := s.testEnv.Start()
+	fmt.Println(err)
 	c.Assert(err, IsNil)
 	c.Assert(cfg, NotNil)
 
 	err = crkanisteriov1alpha1.AddToScheme(scheme.Scheme)
 	c.Assert(err, IsNil)
+	fmt.Println(err)
 
 	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	c.Assert(err, IsNil)
 	c.Assert(k8sClient, NotNil)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme: scheme.Scheme,
+		Scheme:             scheme.Scheme,
+		Port:               9443,
+		MetricsBindAddress: "0",
 	})
+	fmt.Println(err)
 	c.Assert(err, IsNil)
 
 	err = (&RepositoryServerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr)
+	fmt.Println(err)
 	c.Assert(err, IsNil)
+	fmt.Println(err)
 
-	err = mgr.Start(ctrl.SetupSignalHandler())
-	c.Assert(err, IsNil)
+	go func() {
+		err = mgr.Start(ctrl.SetupSignalHandler())
+		c.Assert(err, IsNil)
+	}()
 }
 
-func (s *ControllerSuite) SetupTest(c *C) {
-
+func (s *RepoServerControllerSuite) SetupTest(c *C) {
+	fmt.Println("setup test")
 }
 
-func (s *ControllerSuite) TestCreationOfOwnedResources(c *C) {
-
+func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
+	fmt.Println("in test")
 }
 
-func (s *ControllerSuite) TearDownSuite(c *C) {
+func (s *RepoServerControllerSuite) TearDownSuite(c *C) {
 	if s.testEnv != nil {
 		c.Log("Tearing down the test environment")
 		err := s.testEnv.Stop()

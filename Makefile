@@ -35,7 +35,7 @@ VERSION := $(shell git describe --tags --always --dirty)
 PWD := $$(pwd)
 
 # Whether to build inside a containerized build environment
-DOCKER_BUILD ?= "true"
+DOCKER_BUILD ?= "false"
 
 DOCKER_CONFIG ?= "$(HOME)/.docker"
 
@@ -48,7 +48,7 @@ ocp_version ?= "4.11"
 ### These variables should not need tweaking.
 ###
 
-SRC_DIRS := cmd pkg # directories which hold app source (not vendored)
+SRC_DIRS := pkg/controllers/repositoryserver # directories which hold app source (not vendored)
 
 ALL_ARCH := amd64 arm arm64 ppc64le
 
