@@ -523,9 +523,13 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		}
 		switch {
 		case rs.Status.Progress == "ServerReady":
+			log.Info().Print("---- Checking Server Status ----", field.M{
+				"Status": rs.Status.Progress,
+			})
+
 			return true, nil
-			//case rs.Status.Progress == "ServerStopped":
-			//	return true, errors.New("Repository Server Stopped")
+		case rs.Status.Progress == "ServerStopped":
+			return false, errors.New("Repository Server Stopped")
 		}
 		return false, nil
 	})
