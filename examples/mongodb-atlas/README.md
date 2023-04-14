@@ -25,8 +25,12 @@ $ helm install kanister --namespace kanister --create-namespace \
 ### Create Blueprint
 Create Blueprint in the same namespace as the controller
 
+**NOTE:**
+
+Replace `<registry>`, `<account_name>` and `<tag_name>` for the image value in `./mongodb-atlas-blueprint.yaml` before running following command.
+
 ```bash
-$ kubectl create -f ./mongo-blueprint.yaml -n kanister
+$ kubectl create -f ./mongodb-atlas-blueprint.yaml -n kanister
 ```
 
 ### Create Secret
@@ -68,7 +72,6 @@ $ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
   }
 ]
 ```
-
 
 ## Protect the Application
 

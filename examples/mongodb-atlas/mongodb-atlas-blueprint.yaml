@@ -13,7 +13,7 @@ actions:
       name: mongoBackup
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: docker.io/pratikrshah/mongo-atlas:0.90.0-test1
+        image: <registry>/<account_name>/mongodb-atlas:<tag_name>
         command:
           - bash
           - -o
@@ -22,20 +22,16 @@ actions:
           - pipefail
           - -c
           - |
-            org_id=$(echo '{{ .Object.data.orgid | toString }}' | base64 --decode)
-            private_key=$(echo '{{ .Object.data.privatekey | toString }}' | base64 --decode)
-            project_id=$(echo '{{ .Object.data.projectid | toString }}' | base64 --decode)
-            public_key=$(echo '{{ .Object.data.publickey | toString }}' | base64 --decode)
-            cluster_name=$(echo '{{ .Object.data.clustername | toString }}' | base64 --decode)
             cat >/root/.config/atlascli/config.toml <<EOL
             [default]
-            org_id = "${org_id}"
+            org_id = '{{ .Object.data.orgid | toString | b64dec }}'
             output = 'json'
-            private_api_key = "${private_key}"
-            project_id = "${project_id}"
-            public_api_key = "${public_key}"
+            private_api_key = '{{ .Object.data.privatekey | toString | b64dec }}'
+            project_id = '{{ .Object.data.projectid | toString | b64dec }}'
+            public_api_key = '{{ .Object.data.publickey | toString | b64dec }}'
             service = 'cloud'
             EOL
+            cluster_name='{{ .Object.data.clustername | toString | b64dec }}'
             atlas backups snapshots create ${cluster_name} --desc "MongoDB Atlas snapshot" -o json > output.json
             snapshot_id=$(jq -r ".id" output.json)
             kando output snapshotId ${snapshot_id}
@@ -44,7 +40,7 @@ actions:
       name: WaitForBackupToComplete
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: docker.io/pratikrshah/mongo-atlas:0.90.0-test1
+        image: <registry>/<account_name>/mongodb-atlas:<tag_name>
         command:
           - bash
           - -o
@@ -53,20 +49,16 @@ actions:
           - pipefail
           - -c
           - |
-            org_id=$(echo '{{ .Object.data.orgid | toString }}' | base64 --decode)
-            private_key=$(echo '{{ .Object.data.privatekey | toString }}' | base64 --decode)
-            project_id=$(echo '{{ .Object.data.projectid | toString }}' | base64 --decode)
-            public_key=$(echo '{{ .Object.data.publickey | toString }}' | base64 --decode)
-            cluster_name=$(echo '{{ .Object.data.clustername | toString }}' | base64 --decode)
             cat >/root/.config/atlascli/config.toml <<EOL
             [default]
-            org_id = "${org_id}"
+            org_id = '{{ .Object.data.orgid | toString | b64dec }}'
             output = 'json'
-            private_api_key = "${private_key}"
-            project_id = "${project_id}"
-            public_api_key = "${public_key}"
+            private_api_key = '{{ .Object.data.privatekey | toString | b64dec }}'
+            project_id = '{{ .Object.data.projectid | toString | b64dec }}'
+            public_api_key = '{{ .Object.data.publickey | toString | b64dec }}'
             service = 'cloud'
             EOL
+            cluster_name='{{ .Object.data.clustername | toString | b64dec }}'
             isCreated=false
             isFailed=false
             while [[ $isCreated != true && $isFailed == false ]];
@@ -95,7 +87,7 @@ actions:
       name: mongoRestore
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: docker.io/pratikrshah/mongo-atlas:0.90.0-test1
+        image: <registry>/<account_name>/mongodb-atlas:<tag_name>
         command:
           - bash
           - -o
@@ -104,23 +96,19 @@ actions:
           - pipefail
           - -c
           - |
-            org_id=$(echo '{{ .Object.data.orgid | toString }}' | base64 --decode)
-            private_key=$(echo '{{ .Object.data.privatekey | toString }}' | base64 --decode)
-            project_id=$(echo '{{ .Object.data.projectid | toString }}' | base64 --decode)
-            public_key=$(echo '{{ .Object.data.publickey | toString }}' | base64 --decode)
-            cluster_name=$(echo '{{ .Object.data.clustername | toString }}' | base64 --decode)
             cat >/root/.config/atlascli/config.toml <<EOL
             [default]
-            org_id = "${org_id}"
+            org_id = '{{ .Object.data.orgid | toString | b64dec }}'
             output = 'json'
-            private_api_key = "${private_key}"
-            project_id = "${project_id}"
-            public_api_key = "${public_key}"
+            private_api_key = '{{ .Object.data.privatekey | toString | b64dec }}'
+            project_id = '{{ .Object.data.projectid | toString | b64dec }}'
+            public_api_key = '{{ .Object.data.publickey | toString | b64dec }}'
             service = 'cloud'
             EOL
+            cluster_name='{{ .Object.data.clustername | toString | b64dec }}'
             snapshot_id='{{ .ArtifactsIn.backupOutput.KeyValue.snapshotId }}'
             target_cluster_name=${cluster_name}
-            target_project_id=${project_id}
+            target_project_id='{{ .Object.data.projectid | toString | b64dec }}'
             atlas backup restore start automated --clusterName ${cluster_name} --snapshotId ${snapshot_id} \
             --targetClusterName ${target_cluster_name} --targetProjectId ${target_project_id} -o json > output.json
             restore_id=$(jq -r ".id" output.json)
@@ -130,7 +118,7 @@ actions:
       name: WaitForRestoreToComplete
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: docker.io/pratikrshah/mongo-atlas:0.90.0-test1
+        image: <registry>/<account_name>/mongodb-atlas:<tag_name>
         command:
           - bash
           - -o
@@ -139,20 +127,16 @@ actions:
           - pipefail
           - -c
           - |
-            org_id=$(echo '{{ .Object.data.orgid | toString }}' | base64 --decode)
-            private_key=$(echo '{{ .Object.data.privatekey | toString }}' | base64 --decode)
-            project_id=$(echo '{{ .Object.data.projectid | toString }}' | base64 --decode)
-            public_key=$(echo '{{ .Object.data.publickey | toString }}' | base64 --decode)
-            cluster_name=$(echo '{{ .Object.data.clustername | toString }}' | base64 --decode)
             cat >/root/.config/atlascli/config.toml <<EOL
             [default]
-            org_id = "${org_id}"
+            org_id = '{{ .Object.data.orgid | toString | b64dec }}'
             output = 'json'
-            private_api_key = "${private_key}"
-            project_id = "${project_id}"
-            public_api_key = "${public_key}"
+            private_api_key = '{{ .Object.data.privatekey | toString | b64dec }}'
+            project_id = '{{ .Object.data.projectid | toString | b64dec }}'
+            public_api_key = '{{ .Object.data.publickey | toString | b64dec }}'
             service = 'cloud'
             EOL
+            cluster_name='{{ .Object.data.clustername | toString | b64dec }}'
             isCreated=false
             isFailed=false
             while [[ $isCreated != true && $isFailed == false ]];
@@ -178,7 +162,7 @@ actions:
       name: deleteMongoBackup
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: docker.io/pratikrshah/mongo-atlas:0.90.0-test1
+        image: <registry>/<account_name>/mongodb-atlas:<tag_name>
         command:
           - bash
           - -o
@@ -187,19 +171,15 @@ actions:
           - pipefail
           - -c
           - |
-            org_id=$(echo '{{ .Object.data.orgid | toString }}' | base64 --decode)
-            private_key=$(echo '{{ .Object.data.privatekey | toString }}' | base64 --decode)
-            project_id=$(echo '{{ .Object.data.projectid | toString }}' | base64 --decode)
-            public_key=$(echo '{{ .Object.data.publickey | toString }}' | base64 --decode)
-            cluster_name=$(echo '{{ .Object.data.clustername | toString }}' | base64 --decode)
             cat >/root/.config/atlascli/config.toml <<EOL
             [default]
-            org_id = "${org_id}"
+            org_id = '{{ .Object.data.orgid | toString | b64dec }}'
             output = 'json'
-            private_api_key = "${private_key}"
-            project_id = "${project_id}"
-            public_api_key = "${public_key}"
+            private_api_key = '{{ .Object.data.privatekey | toString | b64dec }}'
+            project_id = '{{ .Object.data.projectid | toString | b64dec }}'
+            public_api_key = '{{ .Object.data.publickey | toString | b64dec }}'
             service = 'cloud'
             EOL
+            cluster_name='{{ .Object.data.clustername | toString | b64dec }}'
             atlas backups snapshots delete {{ .ArtifactsIn.backupOutput.KeyValue.snapshotId }} \
             --clusterName ${cluster_name} --force
