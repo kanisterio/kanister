@@ -26,8 +26,8 @@ $ helm install kanister --namespace kanister --create-namespace \
 To build docker image for MongoDB Atlas, execute following steps.
 ```bash
 $ cd ~/kanister/docker/mongodb-atlas
-$ docker build -t <registry_name>/<account_name>/mongodb-atlas:<tag_name> .
-$ docker push <registry_name>/<account_name>/mongodb-atlas:<tag_name>
+$ docker build -t <registry>/<account_name>/mongodb-atlas:<tag_name> .
+$ docker push <registry>/<account_name>/mongodb-atlas:<tag_name>
 ```
 
 ### Create Blueprint
@@ -35,7 +35,9 @@ Create Blueprint in the same namespace as the controller
 
 **NOTE:**
 
-Replace `<registry>`, `<account_name>` and `<tag_name>` for the image value in `./mongodb-atlas-blueprint.yaml` before running following command.
+Replace `<registry>`, `<account_name>` and `<tag_name>` for the image with the
+values provided while building MongoDB Atlas docker image in
+./mongodb-atlas-blueprint.yaml before running following command.
 
 ```bash
 $ kubectl create -f ./mongodb-atlas-blueprint.yaml -n kanister
