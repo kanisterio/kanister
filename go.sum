@@ -347,8 +347,8 @@ github.com/klauspost/pgzip v1.2.5/go.mod h1:Ch1tH69qFZu15pkjo5kYi6mth2Zzwzt50oCQ
 github.com/klauspost/reedsolomon v1.11.7 h1:9uaHU0slncktTEEg4+7Vl7q7XUNMBUOK4R9gnKhMjAU=
 github.com/klauspost/reedsolomon v1.11.7/go.mod h1:4bXRN+cVzMdml6ti7qLouuYi32KHJ5MGv0Qd8a47h6A=
 github.com/kopia/htmluibuild v0.0.0-20230326183719-f482ef17e2c9 h1:s5Wa89s8RlPjuwqd8K8kuf+T9Kz4+NsbKwR/pJ3PAT0=
-github.com/kopia/kopia v0.13.0-rc1.0.20230412010350-7b12ec94e941 h1:n5n/+7/pizWHte5LUwpDG44CRc8GCBIgtwS5qAEu6+A=
-github.com/kopia/kopia v0.13.0-rc1.0.20230412010350-7b12ec94e941/go.mod h1:FdcHQxbWUXNHig+XaS79ZC0Zbu8/S4eHq/5EYJ8Y5co=
+github.com/kopia/kopia v0.13.0-rc2 h1:EcV3wCgp3vIytg8h5vvstlFIRWNE8DeAdAbu9quoC/c=
+github.com/kopia/kopia v0.13.0-rc2/go.mod h1:eTgZSDaU2pDzVGC7QRubbKOeohvHzzbRXvhZMH+AGHA=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.2.0/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
