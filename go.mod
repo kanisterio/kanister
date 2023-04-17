@@ -92,7 +92,6 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/edsrzf/mmap-go v1.1.0 // indirect
-	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
@@ -155,7 +154,6 @@ require (
 	github.com/prometheus/common v0.40.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/renier/xmlrpc v0.0.0-20170708154548-ce4a1a486c03 // indirect
-	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/rs/xid v1.4.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/softlayer/softlayer-go v0.0.0-20190615201252-ba6e7f295217 // indirect
@@ -189,7 +187,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/component-base v0.26.3 // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20230109183929-3758b55a6596 // indirect
+	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect

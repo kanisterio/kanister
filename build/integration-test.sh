@@ -118,5 +118,5 @@ esac
 check_dependencies
 echo "Running integration tests:"
 pushd ${INTEGRATION_TEST_DIR}
-go test -v "${TEST_OPTIONS}" -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
+go test -v ${TEST_OPTIONS} -check.f "${TEST_APPS}" -installsuffix "static" . -check.v
 popd
