@@ -294,13 +294,9 @@ func (s *IntegrationSuite) TestRun(c *C) {
 			s.skip = true
 			c.Skip("Could not create a RepositoryServer")
 		}
-		log.Info().Print("----- Creating Repository Server ----")
 		repositoryServerName := s.createRepositoryServer(c, ctx)
-		//repositoryServerName := "test-kopia-repo-server-6rwtq"
+		//repositoryServerName := "test-kopia-repo-server-kbxbm"
 		as = newActionSetWithRepoServer(bp.GetName(), repositoryServerName, testutil.DefaultKanisterNamespace, s.app.Object(), configMaps, secrets)
-		log.Print("----- ActionSet -----", field.M{
-			"Actionset": as,
-		})
 	} else {
 		if s.profile == nil {
 			log.Info().Print("Skipping integration test. Could not create profile. Please check if required credentials are set.", field.M{"app": s.name})
@@ -359,8 +355,14 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		c.Assert(count, Equals, testEntries)
 	}
 
-	// Delete snapshots
-	s.createActionset(ctx, c, pas, "delete", nil)
+	if os.Getenv("KOPIA_INTEGRATION_TEST") != "" {
+		// Delete snapshots for repository server based blueprints
+		s.createDeleteActionsetForRepositoryServer(ctx, c, pas, "delete", nil)
+	} else {
+		// Delete snapshots for profile based blueprints
+		s.createActionset(ctx, c, pas, "delete", nil)
+	}
+
 }
 
 func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectReference, configMaps, secrets map[string]crv1alpha1.ObjectReference) *crv1alpha1.ActionSet {
@@ -426,7 +428,6 @@ func (s *IntegrationSuite) createProfile(c *C, ctx context.Context) string {
 
 func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) string {
 	// Create Secrets required for setting up RepositoryServer
-	log.Info().Print("----- Create Secrets required for setting up RepositoryServer -----")
 	s3Location, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.s3Location, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 	s3Creds, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.s3Creds, metav1.CreateOptions{})
@@ -467,12 +468,10 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	}
 
 	// Create RepositoryServer CR
-	log.Info().Print("----- Create Repository Server CR -----")
 	repositoryServer, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.repositoryServer, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Wait for controller to set pod name field
-	log.Info().Print("---- Wait for controller to set pod name field ----")
 	timeoutCtx, waitCancel := context.WithTimeout(ctx, contextWaitTimeout)
 	defer waitCancel()
 	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
@@ -482,7 +481,6 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		}
 		switch {
 		case rs.Status.ServerInfo.PodName != "":
-			log.Info().Print("---- Creating Kopia Repository ----")
 			contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
 			commandArgs := kopiacmd.RepositoryCommandArgs{
 				CommandArgs: &kopiacmd.CommandArgs{
@@ -513,27 +511,16 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		return false, nil
 	})
 
-	log.Info().Print("----- Wait for the Repository Server to Be in Ready Stage ----")
 	// Wait for the Repository Server to Be in Ready Stage.
 	timeoutCtx, waitCancel = context.WithTimeout(ctx, contextWaitTimeout)
 	defer waitCancel()
 	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
-		log.Info().Print("----- Inside Wait ----")
 		rs, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
-		log.Info().Print("", field.M{
-			"Name":   rs.Name,
-			"Status": rs.Status.Progress,
-		})
 		if rs.Status.Progress == "ServerReady" && err == nil {
-			log.Info().Print("---- Checking Server Status ----", field.M{
-				"Status": rs.Status.Progress,
-			})
 			return true, nil
 		}
 		return false, nil
 	})
-
-	log.Info().Print("---- Leaving Function ----")
 
 	return repositoryServer.GetName()
 }
@@ -586,6 +573,38 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 				Namespace:  "",
 			}
 		}
+		as, err = s.crCli.ActionSets(kontroller.namespace).Create(ctx, as, metav1.CreateOptions{})
+		c.Assert(err, IsNil)
+	default:
+		c.Errorf("Invalid action %s while creating ActionSet", action)
+	}
+
+	// Wait for the ActionSet to complete.
+	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		as, err = s.crCli.ActionSets(kontroller.namespace).Get(ctx, as.GetName(), metav1.GetOptions{})
+		switch {
+		case err != nil, as.Status == nil:
+			return false, err
+		case as.Status.State == crv1alpha1.StateFailed:
+			return true, errors.Errorf("Actionset failed: %#v", as.Status)
+		case as.Status.State == crv1alpha1.StateComplete:
+			return true, nil
+		}
+		return false, nil
+	})
+	c.Assert(err, IsNil)
+	return as.GetName()
+}
+
+// createDeleteActionsetForRepositoryServer creates delete actionset and wait for actionset to complete
+func (s *IntegrationSuite) createDeleteActionsetForRepositoryServer(ctx context.Context, c *C, as *crv1alpha1.ActionSet, action string, options map[string]string) string {
+	var err error
+	switch action {
+
+	case "delete":
+		as, err = restoreActionSetSpecs(as, action)
+		c.Assert(err, IsNil)
+		as.Spec.Actions[0].Options = options
 		as, err = s.crCli.ActionSets(kontroller.namespace).Create(ctx, as, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 	default:
