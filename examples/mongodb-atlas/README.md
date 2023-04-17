@@ -22,6 +22,14 @@ $ helm install kanister --namespace kanister --create-namespace \
     kanister/kanister-operator --set image.tag=0.90.0
 ```
 
+### Build docker image for MongoDB Atlas
+To build docker image for MongoDB Atlas, execute following steps.
+```bash
+$ cd ~/kanister/docker/mongodb-atlas
+$ docker build -t <registry_name>/<account_name>/mongodb-atlas:<tag_name> .
+$ docker push <registry_name>/<account_name>/mongodb-atlas:<tag_name>
+```
+
 ### Create Blueprint
 Create Blueprint in the same namespace as the controller
 

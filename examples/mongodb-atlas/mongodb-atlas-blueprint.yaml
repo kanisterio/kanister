@@ -61,6 +61,7 @@ actions:
             cluster_name='{{ .Object.data.clustername | toString | b64dec }}'
             isCreated=false
             isFailed=false
+            timeout=1200
             while [[ $isCreated != true && $isFailed == false ]];
             do
               atlas backups snapshots describe {{ .Phases.mongoBackup.Output.snapshotId }}\
@@ -73,6 +74,11 @@ actions:
                 exit 0
               fi
               sleep 30
+              if [[ $timeout -le 0 ]]; then
+                echo "Timed out waiting for backup completion."
+                exit 1
+              fi
+              timeout=$((timeout-30))
             done
 
   restore:
@@ -139,6 +145,7 @@ actions:
             cluster_name='{{ .Object.data.clustername | toString | b64dec }}'
             isCreated=false
             isFailed=false
+            timeout=1200
             while [[ $isCreated != true && $isFailed == false ]];
             do
               atlas backups restores describe {{ .Phases.mongoRestore.Output.restoreId }}\
@@ -152,6 +159,11 @@ actions:
                 exit 0
               fi
               sleep 30
+              if [[ $timeout -le 0 ]]; then
+                echo "Timed out waiting for restore completion."
+                exit 1
+              fi
+              timeout=$((timeout-30))
             done
 
   delete:
