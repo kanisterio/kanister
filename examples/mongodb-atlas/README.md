@@ -23,7 +23,13 @@ $ helm install kanister --namespace kanister --create-namespace \
 ```
 
 ### Build docker image for MongoDB Atlas
-To build docker image for MongoDB Atlas, execute following steps.
+
+To build docker image for MongoDB Atlas, execute following steps. Image build is
+needed as connection process to MongoDB Atlas is using `mongosh` command. Also,
+it installs `atlas` CLI which is used for performing backup and restore
+operations. These gets installed in the image along with some other required
+packages in blueprint.
+
 ```bash
 $ cd ~/kanister/docker/mongodb-atlas
 $ docker build -t <registry>/<account_name>/mongodb-atlas:<tag_name> .
@@ -31,6 +37,7 @@ $ docker push <registry>/<account_name>/mongodb-atlas:<tag_name>
 ```
 
 ### Create Blueprint
+
 Create Blueprint in the same namespace as the controller
 
 **NOTE:**
@@ -44,6 +51,7 @@ $ kubectl create -f ./mongodb-atlas-blueprint.yaml -n kanister
 ```
 
 ### Create Secret
+
 Create a Secret which contains Atlas account details.
 
 ```bash
@@ -61,6 +69,7 @@ secret/mongoatlassecret created
 ```
 
 ### Populate data in database
+
 ```bash
 # Create a collection in database
 $ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
