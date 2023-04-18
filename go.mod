@@ -47,7 +47,7 @@ require (
 	github.com/vmware/govmomi v0.30.4
 	go.uber.org/zap v1.24.0
 	golang.org/x/oauth2 v0.7.0
-	google.golang.org/api v0.117.0
+	google.golang.org/api v0.118.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 
