@@ -13,7 +13,7 @@ actions:
       name: mongoBackup
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: <registry>/<account_name>/mongodb-atlas:<tag_name>
+        image: <registry>/<repository>/mongodb-atlas:<tag_name>
         command:
           - bash
           - -o
@@ -40,7 +40,7 @@ actions:
       name: WaitForBackupToComplete
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: <registry>/<account_name>/mongodb-atlas:<tag_name>
+        image: <registry>/<repository>/mongodb-atlas:<tag_name>
         command:
           - bash
           - -o
@@ -93,7 +93,7 @@ actions:
       name: mongoRestore
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: <registry>/<account_name>/mongodb-atlas:<tag_name>
+        image: <registry>/<repository>/mongodb-atlas:<tag_name>
         command:
           - bash
           - -o
@@ -124,7 +124,7 @@ actions:
       name: WaitForRestoreToComplete
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: <registry>/<account_name>/mongodb-atlas:<tag_name>
+        image: <registry>/<repository>/mongodb-atlas:<tag_name>
         command:
           - bash
           - -o
@@ -174,7 +174,7 @@ actions:
       name: deleteMongoBackup
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: <registry>/<account_name>/mongodb-atlas:<tag_name>
+        image: <registry>/<repository>/mongodb-atlas:<tag_name>
         command:
           - bash
           - -o

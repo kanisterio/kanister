@@ -2,8 +2,7 @@
 
 [MongoDB Atlas](https://www.mongodb.com/atlas) is an integrated suite of cloud
 database and data services to accelerate and simplify how you build with data.
-It deploys and scales a MongoDB cluster in the cloud. MongoDB Atlas can be
-primarily classified under "MongoDB Hosting".
+It deploys and scales a MongoDB cluster in the cloud.
 
 ## Prerequisites
 
@@ -22,29 +21,30 @@ $ helm install kanister --namespace kanister --create-namespace \
     kanister/kanister-operator --set image.tag=0.90.0
 ```
 
-### Build docker image for MongoDB Atlas
+### Build a tools image to interact with MongoDB Atlas
 
-To build docker image for MongoDB Atlas, execute following steps. Image build is
-needed as connection process to MongoDB Atlas is using `mongosh` command. Also,
-it installs `atlas` CLI which is used for performing backup and restore
-operations. These gets installed in the image along with some other required
-packages in blueprint.
+We need to build a tools image that contains `mongosh`, `atlas` and other
+related utilities so that it can be used to interact with the MondoDB Atlas
+database to add data to it.
+This image will also be used in the Blueprint to run the `atlas` backup and
+restore related commands against the MongoDB Atlas database. Please execute the
+commands below to build and push the image.
 
 ```bash
 $ cd ~/kanister/docker/mongodb-atlas
-$ docker build -t <registry>/<account_name>/mongodb-atlas:<tag_name> .
-$ docker push <registry>/<account_name>/mongodb-atlas:<tag_name>
+$ docker build -t <registry>/<repository>/mongodb-atlas:<tag_name> .
+$ docker push <registry>/<repository>/mongodb-atlas:<tag_name>
 ```
 
 ### Create Blueprint
 
-Create Blueprint in the same namespace as the controller
+Create Blueprint in the same namespace as the Kanister controller.
 
 **NOTE:**
 
-Replace `<registry>`, `<account_name>` and `<tag_name>` for the image with the
-values provided while building MongoDB Atlas docker image in
-./mongodb-atlas-blueprint.yaml before running following command.
+Please make sure that the `<registry>`, `<repository>` and `<tag_name>` in the
+blueprint (`mongodb-atlas-blueprint.yaml`) are replaced with correct values of
+the tools image that we built above.
 
 ```bash
 $ kubectl create -f ./mongodb-atlas-blueprint.yaml -n kanister
@@ -52,27 +52,40 @@ $ kubectl create -f ./mongodb-atlas-blueprint.yaml -n kanister
 
 ### Create Secret
 
-Create a Secret which contains Atlas account details.
+To create a Secret, you need to specify your Atlas account details -
+
+Public_Key: Public key included in Organization level API Key (you'll find it in Organizations > Access Manager > API Keys)
+
+Private_Key: Private key included in Organization level API Key (you'll find it in Organizations > Access Manager > API Keys)
+
+Org_Id: A unique 24 characters Organization ID (you'll find it in Organizations > Settings)
+
+Project_Id: A unique 24 character Project ID (you'll find it in Organizations > Project > Settings)
+
+Cluster_Name: Cluster name in project (you'll find it in Organizations > Project > Database)
 
 ```bash
 $ kubectl create namespace mongodb-atlas-test
 namespace/mongodb-atlas-test created
 
 $ kubectl create secret generic mongoatlassecret \
-    --from-literal=Public_Key="<public key from Atlas account>" \
-    --from-literal=Private_Key="<private key from Atlas account>" \
-    --from-literal=Org_Id="<organization ID from Atlas account>" \
-    --from-literal=Project_Id="<project ID from Atlas account>" \
-    --from-literal=Cluster_Name="<cluster name from Atlas account>" \
+    --from-literal=Public_Key="<Public_Key>" \
+    --from-literal=Private_Key="<Private_Key>" \
+    --from-literal=Org_Id="<Org_Id>" \
+    --from-literal=Project_Id="<Project_Id>" \
+    --from-literal=Cluster_Name="<Cluster_Name>" \
     -n mongodb-atlas-test
 secret/mongoatlassecret created
 ```
 
 ### Populate data in database
 
+To insert data into database, you need to provide `connection string`.  You can
+find this `connection string` using steps mentioned [here](https://www.mongodb.com/docs/atlas/tutorial/connect-to-your-cluster/#connect-to-your-atlas-cluster)
+
 ```bash
 # Create a collection in database
-$ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
+$ mongosh "<connection string>" --apiVersion 1 \
     --username <username for Atlas account> -p <password for Atlas account> \
     --quiet --eval "db.people.insertOne({'name': {'first': 'Alan', last: 'Turing'}})"
 {
@@ -81,7 +94,7 @@ $ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
 }
 
 # View the people data in the database
-$ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
+$ mongosh "<connection string>" --apiVersion 1 \
     --username <username for Atlas account> -p <password for Atlas account> \
     --quiet --eval "db.people.find()"
 [
@@ -113,15 +126,16 @@ backup-tfjps   100.00                               2023-04-13T14:40:24Z   compl
 ### Disaster strikes!
 
 Let's say someone accidentally deleted the people collection:
+
 ```bash
 # Drop the people collection
-$ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
+$ mongosh "<connection string>" --apiVersion 1 \
     --username <username for Atlas account> -p <password for Atlas account> \
     --quiet --eval "db.people.drop()"
 true
 
 # Try to access this data in the database
-$ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
+$ mongosh "<connection string>" --apiVersion 1 \
     --username <username for Atlas account> -p <password for Atlas account> \
     --quiet --eval "db.people.find()"
 # No entries found
@@ -145,7 +159,7 @@ Now the lost data should be visible in the database.
 
 ```bash
 # Try to access this data in the database
-$ mongosh "mongodb+srv://<cluster name>.<host>/<database name>" --apiVersion 1 \
+$ mongosh "<connection string>" --apiVersion 1 \
     --username <username for Atlas account> -p <password for Atlas account> \
     --quiet --eval "db.people.find()"
 [
