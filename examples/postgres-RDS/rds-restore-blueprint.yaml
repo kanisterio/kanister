@@ -1,3 +1,4 @@
+# In this blueprint backup action is being run against a database that is deployed on Kubernetes cluster and the backed up data is being restored in RDS instance by restore action.
 apiVersion: cr.kanister.io/v1alpha1
 kind: Blueprint
 metadata:

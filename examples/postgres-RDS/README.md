@@ -137,7 +137,7 @@ $ docker push <image-registry>/<image-repo>:<tag>
 
 ### Create Blueprint
 
-Modify the `rds-restore-blueprint.yaml` file and update the `image` field of the `Phases` to use the docker image build from the previous step.  
+Modify the `rds-restore-blueprint.yaml` file and update the `image` field of the `Phases` to use the docker image built in the previous step.  
 
 Create a Blueprint in the same namespace as the controller. 
 
