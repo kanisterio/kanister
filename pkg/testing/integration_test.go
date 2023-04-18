@@ -38,6 +38,8 @@ import (
 	"github.com/kanisterio/kanister/pkg/field"
 	_ "github.com/kanisterio/kanister/pkg/function"
 	"github.com/kanisterio/kanister/pkg/kanctl"
+	kopiacmd "github.com/kanisterio/kanister/pkg/kopia/command"
+	repository "github.com/kanisterio/kanister/pkg/kopia/repository"
 	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/log"
 	"github.com/kanisterio/kanister/pkg/poll"
@@ -135,7 +137,7 @@ const (
 	// appWaitTimeout decides the time we are going to wait for app to be ready
 	appWaitTimeout     = 3 * time.Minute
 	controllerSA       = "kanister-sa"
-	contextWaitTimeout = 10 * time.Minute
+	contextWaitTimeout = 30 * time.Minute
 )
 
 type secretProfile struct {
@@ -143,16 +145,27 @@ type secretProfile struct {
 	profile *crv1alpha1.Profile
 }
 
+type secretRepositoryServer struct {
+	s3Location         *v1.Secret
+	s3Creds            *v1.Secret
+	repositoryPassword *v1.Secret
+	serverAdminUser    *v1.Secret
+	tls                *v1.Secret
+	userAccess         *v1.Secret
+	repositoryServer   *crv1alpha1.RepositoryServer
+}
+
 type IntegrationSuite struct {
-	name      string
-	cli       kubernetes.Interface
-	crCli     crclient.CrV1alpha1Interface
-	app       app.App
-	bp        app.Blueprinter
-	profile   *secretProfile
-	namespace string
-	skip      bool
-	cancel    context.CancelFunc
+	name       		 string
+	cli       		 kubernetes.Interface
+	crCli     		 crclient.CrV1alpha1Interface
+	app       		 app.App
+	bp        		 app.Blueprinter
+	profile   		 *secretProfile
+	repositoryServer *secretRepositoryServer
+	namespace 		 string
+	skip      		 bool
+	cancel    		 context.CancelFunc
 }
 
 func newSecretProfile() *secretProfile {
@@ -164,6 +177,23 @@ func newSecretProfile() *secretProfile {
 	return &secretProfile{
 		secret:  secret,
 		profile: profile,
+	}
+}
+
+func newSecretRepositoryServer() *secretRepositoryServer {
+	s3Creds, s3Location := testutil.S3CredsLocationSecret()
+	tls, err := testutil.KopiaTLSCertificate()
+	if err != nil {
+		return nil
+	}
+	return &secretRepositoryServer{
+		s3Creds:            s3Creds,
+		s3Location:         s3Location,
+		repositoryPassword: testutil.KopiaRepositoryPassword(),
+		serverAdminUser:    testutil.KopiaRepositoryServerAdminUser(),
+		userAccess:         testutil.KopiaRepositoryServerUserAccess(),
+		tls:                tls,
+		repositoryServer:   testutil.NewKopiaRepositoryServer(),
 	}
 }
 
@@ -206,14 +236,6 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Create namespace
 	err = createNamespace(s.cli, s.namespace)
 	c.Assert(err, IsNil)
-
-	// Create profile
-	if s.profile == nil {
-		log.Info().Print("Skipping integration test. Could not create profile. Please check if required credentials are set.", field.M{"app": s.name})
-		s.skip = true
-		c.Skip("Could not create a Profile")
-	}
-	profileName := s.createProfile(c, ctx)
 
 	// Install db
 	err = s.app.Install(ctx, s.namespace)
@@ -263,8 +285,27 @@ func (s *IntegrationSuite) TestRun(c *C) {
 	// Validate Blueprint
 	validateBlueprint(c, *bp, configMaps, secrets)
 
-	// Create ActionSet specs
-	as := newActionSet(bp.GetName(), profileName, kontroller.namespace, s.app.Object(), configMaps, secrets)
+	var as *crv1alpha1.ActionSet
+	if os.Getenv("KOPIA_INTEGRATION_TEST") != "" {
+		if s.repositoryServer == nil {
+			log.Info().Print("Skipping integration test. Could not create repository server. Please check if required credentials are set.", field.M{"app": s.name})
+			s.skip = true
+			c.Skip("Could not create a RepositoryServer")
+		}
+		repositoryServerName := s.createRepositoryServer(c, ctx)
+		as = newActionSetWithRepoServer(bp.GetName(), repositoryServerName, testutil.DefaultKanisterNamespace, s.app.Object(), configMaps, secrets)
+	} else {
+		if s.profile == nil {
+			log.Info().Print("Skipping integration test. Could not create profile. Please check if required credentials are set.", field.M{"app": s.name})
+			s.skip = true
+			c.Skip("Could not create a Profile")
+		}
+		// Create profile
+		profileName := s.createProfile(c, ctx)
+		// Create ActionSet specs
+		as = newActionSet(bp.GetName(), profileName, kontroller.namespace, s.app.Object(), configMaps, secrets)
+	}
+
 	// Take backup
 	backup := s.createActionset(ctx, c, as, "backup", nil)
 	c.Assert(len(backup), Not(Equals), 0)
@@ -311,8 +352,13 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		c.Assert(count, Equals, testEntries)
 	}
 
-	// Delete snapshots
-	s.createActionset(ctx, c, pas, "delete", nil)
+	if os.Getenv("KOPIA_INTEGRATION_TEST") != "" {
+		// Delete snapshots for repository server based blueprints
+		s.createDeleteActionsetForRepositoryServer(ctx, c, pas, "delete", nil)
+	} else {
+		// Delete snapshots for profile based blueprints
+		s.createActionset(ctx, c, pas, "delete", nil)
+	}
 }
 
 func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectReference, configMaps, secrets map[string]crv1alpha1.ObjectReference) *crv1alpha1.ActionSet {
@@ -338,6 +384,29 @@ func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectRef
 	}
 }
 
+func newActionSetWithRepoServer(bpName, repositoryServer, repositoryServerNs string, object crv1alpha1.ObjectReference, configMaps, secrets map[string]crv1alpha1.ObjectReference) *crv1alpha1.ActionSet {
+	return &crv1alpha1.ActionSet{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-actionset-",
+		},
+		Spec: &crv1alpha1.ActionSetSpec{
+			Actions: []crv1alpha1.ActionSpec{
+				{
+					Name:      "backup",
+					Object:    object,
+					Blueprint: bpName,
+					RepositoryServer: &crv1alpha1.ObjectReference{
+						Name:      repositoryServer,
+						Namespace: repositoryServerNs,
+					},
+					ConfigMaps: configMaps,
+					Secrets:    secrets,
+				},
+			},
+		},
+	}
+}
+
 func (s *IntegrationSuite) createProfile(c *C, ctx context.Context) string {
 	secret, err := s.cli.CoreV1().Secrets(kontroller.namespace).Create(ctx, s.profile.secret, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
@@ -351,6 +420,105 @@ func (s *IntegrationSuite) createProfile(c *C, ctx context.Context) string {
 	c.Assert(err, IsNil)
 
 	return profile.GetName()
+}
+
+func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) string {
+	// Create Secrets required for setting up RepositoryServer
+	s3Location, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.s3Location, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	s3Creds, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.s3Creds, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	repositoryPassword, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.repositoryPassword, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	serverAdminUser, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.serverAdminUser, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	tls, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.tls, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	userAccess, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.userAccess, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// Setting Up the SecretRefs in RepositoryServer
+	s.repositoryServer.repositoryServer.Spec.Storage.SecretRef = v1.SecretReference{
+		Name:      s3Location.GetName(),
+		Namespace: s3Location.GetNamespace(),
+	}
+	s.repositoryServer.repositoryServer.Spec.Storage.CredentialSecretRef = v1.SecretReference{
+		Name:      s3Creds.GetName(),
+		Namespace: s3Creds.GetNamespace(),
+	}
+	s.repositoryServer.repositoryServer.Spec.Repository.PasswordSecretRef = v1.SecretReference{
+		Name:      repositoryPassword.GetName(),
+		Namespace: repositoryPassword.GetNamespace(),
+	}
+	s.repositoryServer.repositoryServer.Spec.Server.UserAccess.UserAccessSecretRef = v1.SecretReference{
+		Name:      userAccess.GetName(),
+		Namespace: userAccess.GetNamespace(),
+	}
+	s.repositoryServer.repositoryServer.Spec.Server.AdminSecretRef = v1.SecretReference{
+		Name:      serverAdminUser.GetName(),
+		Namespace: serverAdminUser.GetNamespace(),
+	}
+	s.repositoryServer.repositoryServer.Spec.Server.TLSSecretRef = v1.SecretReference{
+		Name:      tls.GetName(),
+		Namespace: tls.GetNamespace(),
+	}
+
+	// Create RepositoryServer CR
+	repositoryServer, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.repositoryServer, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+
+	// Wait for controller to set pod name field
+	timeoutCtx, waitCancel := context.WithTimeout(ctx, contextWaitTimeout)
+	defer waitCancel()
+	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		rs, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+		switch {
+		case rs.Status.ServerInfo.PodName != "":
+			contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
+			commandArgs := kopiacmd.RepositoryCommandArgs{
+				CommandArgs: &kopiacmd.CommandArgs{
+					RepoPassword:   testutil.DefaultRepositoryPassword,
+					ConfigFilePath: kopiacmd.DefaultConfigFilePath,
+					LogDirectory:   kopiacmd.DefaultLogDirectory,
+				},
+				CacheDirectory:  kopiacmd.DefaultCacheDirectory,
+				Hostname:        testutil.DefaultRepositoryServerHost,
+				ContentCacheMB:  contentCacheMB,
+				MetadataCacheMB: metadataCacheMB,
+				Username:        testutil.DefaultKanisterAdminUser,
+				RepoPathPrefix:  testutil.DefaultRepositoryPath,
+				Location:        s3Location.Data,
+			}
+			err = repository.ConnectToOrCreateKopiaRepository(
+				s.cli,
+				testutil.DefaultKanisterNamespace,
+				rs.Status.ServerInfo.PodName,
+				testutil.DefaultKopiaRepositoryServerContainer,
+				commandArgs,
+			)
+			if err != nil {
+				return false, nil
+			}
+			return true, nil
+		}
+		return false, nil
+	})
+
+	// Wait for the Repository Server to Be in Ready Stage.
+	timeoutCtx, waitCancel = context.WithTimeout(ctx, contextWaitTimeout)
+	defer waitCancel()
+	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
+		rs, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
+		if rs.Status.Progress == "ServerReady" && err == nil {
+			return true, nil
+		}
+		return false, nil
+	})
+
+	return repositoryServer.GetName()
 }
 
 func validateBlueprint(c *C, bp crv1alpha1.Blueprint, configMaps, secrets map[string]crv1alpha1.ObjectReference) {
@@ -401,6 +569,39 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 				Namespace:  "",
 			}
 		}
+		as, err = s.crCli.ActionSets(kontroller.namespace).Create(ctx, as, metav1.CreateOptions{})
+		c.Assert(err, IsNil)
+	default:
+		c.Errorf("Invalid action %s while creating ActionSet", action)
+	}
+
+	// Wait for the ActionSet to complete.
+	err = poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		as, err = s.crCli.ActionSets(kontroller.namespace).Get(ctx, as.GetName(), metav1.GetOptions{})
+		switch {
+		case err != nil, as.Status == nil:
+			return false, err
+		case as.Status.State == crv1alpha1.StateFailed:
+			return true, errors.Errorf("Actionset failed: %#v", as.Status)
+		case as.Status.State == crv1alpha1.StateComplete:
+			return true, nil
+		}
+		return false, nil
+	})
+	c.Assert(err, IsNil)
+	return as.GetName()
+}
+
+// createDeleteActionsetForRepositoryServer creates delete actionset and wait for actionset to complete
+func (s *IntegrationSuite) createDeleteActionsetForRepositoryServer(ctx context.Context, c *C, as *crv1alpha1.ActionSet, action string, options map[string]string) string {
+	var err error
+	switch action {
+
+	case "delete":
+		// object of delete is statefulset of actionset for RepositoryServer based functions.
+		as, err = restoreActionSetSpecs(as, action)
+		c.Assert(err, IsNil)
+		as.Spec.Actions[0].Options = options
 		as, err = s.crCli.ActionSets(kontroller.namespace).Create(ctx, as, metav1.CreateOptions{})
 		c.Assert(err, IsNil)
 	default:
