@@ -1,0 +1,97 @@
+# In this blueprint backup action is being run against a database that is deployed on Kubernetes cluster and the backed up data is being restored in RDS instance by restore action.
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: rds-postgres-bp
+actions:
+  backup:
+    outputArtifacts:
+      cloudObject:
+        keyValue:
+          backupLocation: "{{ .Phases.pgDump.Output.backupLocation }}"
+    phases:
+    - func: KubeTask
+      name: pgDump
+      objects:
+        pgSecret:
+          kind: Secret
+          name: '{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql'
+          namespace: '{{ .StatefulSet.Namespace }}'
+      args:
+        image: <image-registry>/<image-repo>:<tag>
+        namespace: '{{ .StatefulSet.Namespace }}'
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          export PGHOST='{{ index .Object.metadata.labels "app.kubernetes.io/instance" }}-postgresql.{{ .StatefulSet.Namespace }}.svc.cluster.local'
+          export PGUSER='postgres'
+          export PGPASSWORD='{{ index .Phases.pgDump.Secrets.pgSecret.Data "postgres-password" | toString }}'
+          BACKUP_LOCATION=pg_backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05.999999999Z07:00" .Time | date "2006-01-02T15:04:05Z07:00" }}/backup.sql.gz
+          pg_dumpall --clean -U $PGUSER | gzip -c | kando location push --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" -
+          kando output backupLocation "${BACKUP_LOCATION}"
+  restore:
+    inputArtifactNames:
+    - cloudObject
+    phases:
+    - func: KubeTask
+      name: pgRestore
+      args:
+        image: <image-registry>/<image-repo>:<tag>
+        namespace: '{{ .StatefulSet.Namespace }}'
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          export REGION="{{ .ConfigMaps.dbconfig.Data.region | toString }}"
+
+          export INSTANCE_NAME="{{ .ConfigMaps.dbconfig.Data.instance_name | toString }}"
+
+          export accessKeyId="{{ .Secrets.dbsecret.Data.accessKeyId | toString }}"
+          export secretAccessKey='{{ .Secrets.dbsecret.Data.secretAccessKey | toString }}'
+
+          ####Configure AWS
+          aws configure set aws_access_key_id $accessKeyId
+          aws configure set aws_secret_access_key $secretAccessKey
+
+          aws configure set default.region $REGION
+
+          aws configure set default.output json
+          
+          export PGUSER="{{ .Secrets.dbsecret.Data.postgres_username | toString }}"
+          export PGPASSWORD='{{ .Secrets.dbsecret.Data.postgres_password | toString }}'
+
+          export PGHOST=$(aws rds describe-db-instances \
+              --region $REGION \
+              --db-instance-identifier $INSTANCE_NAME \
+              --query "DBInstances[0].Endpoint.Address" \
+              --output text)
+
+          BACKUP_LOCATION={{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}
+          kando location pull --profile '{{ toJson .Profile }}' --path "${BACKUP_LOCATION}" - | gunzip -c -f | sed 's/LOCALE_PROVIDER = libc//' | sed 's/LOCALE/LC_COLLATE/' | psql -q -U "${PGUSER}" -d template1        
+  delete:
+    inputArtifactNames:
+      - cloudObject
+    phases:
+    - func: KubeTask
+      name: deleteDump
+      args:
+        image: <image-registry>/<image-repo>:<tag>
+        namespace: "{{ .Namespace.Name }}"
+        command:
+          - bash
+          - -o
+          - errexit
+          - -o
+          - pipefail
+          - -c
+          - |
+            kando location delete --profile '{{ toJson .Profile }}' --path '{{ .ArtifactsIn.cloudObject.KeyValue.backupLocation }}'
