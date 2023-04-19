@@ -69,11 +69,11 @@ $ kubectl create namespace mongodb-atlas-test
 namespace/mongodb-atlas-test created
 
 $ kubectl create secret generic mongoatlassecret \
-    --from-literal=Public_Key="<Public_Key>" \
-    --from-literal=Private_Key="<Private_Key>" \
-    --from-literal=Org_Id="<Org_Id>" \
-    --from-literal=Project_Id="<Project_Id>" \
-    --from-literal=Cluster_Name="<Cluster_Name>" \
+    --from-literal=publickey="<Public_Key>" \
+    --from-literal=privatekey="<Private_Key>" \
+    --from-literal=orgid="<Org_Id>" \
+    --from-literal=projectid="<Project_Id>" \
+    --from-literal=clustername="<Cluster_Name>" \
     -n mongodb-atlas-test
 secret/mongoatlassecret created
 ```
