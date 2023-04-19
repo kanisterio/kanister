@@ -12,7 +12,6 @@ replace (
 // Direct and indirect dependencies are grouped together
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0 // indirect; pinned
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/adal v0.9.23
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.12
@@ -67,6 +66,7 @@ require (
 )
 
 require (
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0 // indirect; pinned - current kopia build referenced here requires v0.3.0
 	cloud.google.com/go v0.110.0 // indirect
 	cloud.google.com/go/compute v1.19.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
