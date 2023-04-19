@@ -46,7 +46,6 @@ func (e *execError) Stderr() string {
 }
 
 var _ ExecError = (*execError)(nil)
-var _ error = (*execError)(nil)
 
 func NewExecError(err error, stdout, stderr LogTail) ExecError {
 	return &execError{
