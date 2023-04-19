@@ -1,7 +1,7 @@
 // +k8s:deepcopy-gen=package,register
 
 // Package v1alpha1 is the v1alpha1 version of the API.
-// +groupName=cr
+// +groupName=cr.kanister.io
 package v1alpha1
 
 // While generating client files, we need code-generator package to be installed
