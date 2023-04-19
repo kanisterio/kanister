@@ -384,7 +384,7 @@ func IsEqualSnapshotCreateStats(a, b *SnapshotCreateStats) bool {
 }
 
 var ANSIEscapeCode = regexp.MustCompile(`\x1b[^m]*?m`)
-var kopiaErrorPattern = regexp.MustCompile(`ERROR\s+(.*)`)
+var kopiaErrorPattern = regexp.MustCompile(`(?:ERROR\s+|.*\<ERROR\>\s*|error\s+)(.*)`)
 
 // ErrorFromOutput parses the output of a kopia and returns an error, if found
 func ErrorsFromOutput(output string) []error {

@@ -578,6 +578,9 @@ func (kParse *KopiaParseUtilsTestSuite) TestErrorsFromOutput(c *C) {
 		{"some text\r\nERROR open repository: repository is not connected. See https://kopia.io/docs/repositories/\r\nanother text line", []string{"open repository: repository is not connected. See https://kopia.io/docs/repositories/"}},
 		// No error in output
 		{"some text\r\nanother text line", []string{}},
+		{"  2009-11-10 23:00:00 UTC <ERROR> some error\n", []string{"some error"}},
+		{"error setting attributes: could not change owner/group", []string{"setting attributes: could not change owner/group"}},
+		{"error restoring: restore error: error copying: copy file: error creating file:", []string{"restoring: restore error: error copying: copy file: error creating file:"}},
 	} {
 		errs := ErrorsFromOutput(tc.log)
 		fc := Commentf("Failed for case #%v. Log: %s", caseIdx, tc.log)
