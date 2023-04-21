@@ -21,7 +21,7 @@ actions:
           namespace: "{{ .Object.metadata.namespace }}"
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: ghcr.io/kanisterio/couchbase-tools:0.90.0
+        image: ghcr.io/kanisterio/couchbase-tools:0.91.0
         command:
           - bash
           - -o
@@ -58,7 +58,7 @@ actions:
           namespace: "{{ .Object.metadata.namespace }}"
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: ghcr.io/kanisterio/couchbase-tools:0.90.0
+        image: ghcr.io/kanisterio/couchbase-tools:0.91.0
         command:
           - bash
           - -o
@@ -89,7 +89,7 @@ actions:
       name: deleteBackup
       args:
         namespace: "{{ .Namespace.Name }}"
-        image: ghcr.io/kanisterio/couchbase-tools:0.90.0
+        image: ghcr.io/kanisterio/couchbase-tools:0.91.0
         command:
           - bash
           - -o

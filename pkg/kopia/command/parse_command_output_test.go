@@ -16,8 +16,6 @@ package command
 
 import (
 	"encoding/json"
-	"reflect"
-
 	"github.com/kopia/kopia/fs"
 	"github.com/kopia/kopia/snapshot"
 	. "gopkg.in/check.v1"
@@ -364,11 +362,73 @@ func (kParse *KopiaParseUtilsTestSuite) TestSnapshotStatsFromSnapshotCreate(c *C
 				ProgressPercent: 100,
 			},
 		},
+		{
+			name: "Progress 100% and still not ready - set 99%",
+			args: args{
+				snapCreateOutput:  "| 0 hashing, 123 hashed (1234.5 MB), 123 cached (1234 B), uploaded 1234.5 KB, estimated 941.2 KB (100.0%) 0s left",
+				matchOnlyFinished: false,
+			},
+			wantStats: &SnapshotCreateStats{
+				FilesHashed:     123,
+				SizeHashedB:     1234500000,
+				FilesCached:     123,
+				SizeCachedB:     1234,
+				SizeUploadedB:   1234500,
+				SizeEstimatedB:  941200,
+				ProgressPercent: 99,
+			},
+		},
+		{
+			name: "Progress is over 100% and still not ready - set 99%",
+			args: args{
+				snapCreateOutput:  "| 0 hashing, 20 hashed (95.1 MB), 20730 cached (4.4 GB), uploaded 21.5 MB, estimated 1.3 GB (340.0%) 0s left",
+				matchOnlyFinished: false,
+			},
+			wantStats: &SnapshotCreateStats{
+				FilesHashed:     20,
+				SizeHashedB:     95100000,
+				FilesCached:     20730,
+				SizeCachedB:     4400000000,
+				SizeUploadedB:   21500000,
+				SizeEstimatedB:  1300000000,
+				ProgressPercent: 99,
+			},
+		},
+		{
+			name: "Progress is over 100% and finished - set 100%",
+			args: args{
+				snapCreateOutput:  " * 0 hashing, 20 hashed (95.1 MB), 20730 cached (4.4 GB), uploaded 21.5 MB, estimated 1.3 GB (340.0%) 0s left",
+				matchOnlyFinished: false,
+			},
+			wantStats: &SnapshotCreateStats{
+				FilesHashed:     20,
+				SizeHashedB:     95100000,
+				FilesCached:     20730,
+				SizeCachedB:     4400000000,
+				SizeUploadedB:   21500000,
+				SizeEstimatedB:  1300000000,
+				ProgressPercent: 100,
+			},
+		},
+		{
+			name: "Progress is less 100% and finished - set 100%",
+			args: args{
+				snapCreateOutput: " * 0 hashing, 283 hashed (219.5 MB), 0 cached (0 B), uploaded 10.5 MB, estimated 6.01 MB (91.7%) 1s left",
+			},
+			wantStats: &SnapshotCreateStats{
+				FilesHashed:     283,
+				SizeHashedB:     219500000,
+				FilesCached:     0,
+				SizeCachedB:     0,
+				SizeUploadedB:   10500000,
+				SizeEstimatedB:  6010000,
+				ProgressPercent: 100,
+			},
+		},
 	}
 	for _, tt := range tests {
-		if gotStats := SnapshotStatsFromSnapshotCreate(tt.args.snapCreateOutput, tt.args.matchOnlyFinished); !reflect.DeepEqual(gotStats, tt.wantStats) {
-			c.Errorf("SnapshotStatsFromSnapshotCreate() = %v, want %v", gotStats, tt.wantStats)
-		}
+		stats := SnapshotStatsFromSnapshotCreate(tt.args.snapCreateOutput, tt.args.matchOnlyFinished)
+		c.Check(stats, DeepEquals, tt.wantStats, Commentf("Failed for %s", tt.name))
 	}
 }
 
