@@ -18,8 +18,6 @@
 package testing
 
 import (
-	. "gopkg.in/check.v1"
-
 	"github.com/kanisterio/kanister/pkg/app"
 )
 
@@ -491,21 +489,6 @@ var _ = Suite(&PostgreSQLDepConfig4_11{
 	},
 })
 
-// Kopia Repository Server MySQL app
-type KopiaRepositoryServerMySQL struct {
-	IntegrationSuite
-}
-
-var _ = Suite(&KopiaRepositoryServerMySQL{
-	IntegrationSuite{
-		name:             "kopia-repository-server-mysql",
-		namespace:        "kopia-mysql-test",
-		app:              app.NewKopiaRepositoryServerMysqlDB("kopia-repository-server-mysql"),
-		bp:               app.NewBlueprint("kopia-repository-server-mysql", "", false),
-		repositoryServer: newSecretRepositoryServer(),
-	},
-})
-
 // MysqlDBDepConfig4_12 for Mysql Instance that is deployed through DeploymentConfig on OpenShift cluster
 type MysqlDBDepConfig4_12 struct {
 	IntegrationSuite
@@ -535,7 +518,6 @@ var _ = Suite(&PostgreSQLDepConfig4_12{
 		profile:   newSecretProfile(),
 	},
 })
-
 
 // Kopia Repository Server MySQL app
 type KopiaRepositoryServerMySQL struct {
