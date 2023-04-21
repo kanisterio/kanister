@@ -18,8 +18,6 @@
 package testing
 
 import (
-	. "gopkg.in/check.v1"
-
 	"github.com/kanisterio/kanister/pkg/app"
 )
 
@@ -520,7 +518,6 @@ var _ = Suite(&PostgreSQLDepConfig4_12{
 		profile:   newSecretProfile(),
 	},
 })
-
 
 // Kopia Repository Server MySQL app
 type KopiaRepositoryServerMySQL struct {
