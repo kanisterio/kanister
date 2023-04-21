@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	. "gopkg.in/check.v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -156,16 +155,16 @@ type secretRepositoryServer struct {
 }
 
 type IntegrationSuite struct {
-	name       		 string
-	cli       		 kubernetes.Interface
-	crCli     		 crclient.CrV1alpha1Interface
-	app       		 app.App
-	bp        		 app.Blueprinter
-	profile   		 *secretProfile
+	name             string
+	cli              kubernetes.Interface
+	crCli            crclient.CrV1alpha1Interface
+	app              app.App
+	bp               app.Blueprinter
+	profile          *secretProfile
 	repositoryServer *secretRepositoryServer
-	namespace 		 string
-	skip      		 bool
-	cancel    		 context.CancelFunc
+	namespace        string
+	skip             bool
+	cancel           context.CancelFunc
 }
 
 func newSecretProfile() *secretProfile {
@@ -506,6 +505,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		}
 		return false, nil
 	})
+	c.Assert(err, IsNil)
 
 	// Wait for the Repository Server to Be in Ready Stage.
 	timeoutCtx, waitCancel = context.WithTimeout(ctx, contextWaitTimeout)
@@ -517,7 +517,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		}
 		return false, nil
 	})
-
+	c.Assert(err, IsNil)
 	return repositoryServer.GetName()
 }
 
@@ -596,7 +596,6 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 func (s *IntegrationSuite) createDeleteActionsetForRepositoryServer(ctx context.Context, c *C, as *crv1alpha1.ActionSet, action string, options map[string]string) string {
 	var err error
 	switch action {
-
 	case "delete":
 		// object of delete is statefulset of actionset for RepositoryServer based functions.
 		as, err = restoreActionSetSpecs(as, action)
