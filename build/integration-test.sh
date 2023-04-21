@@ -76,7 +76,7 @@ case "${1}" in
         TEST_APPS=${SHORT_APPS}
         ;;
     kopia)
-        # Run only part of apps
+        # Run only kopia repository server enabled apps
         TEST_APPS=${KOPIA_REPOSITORY_SERVER_APPS}
         export KOPIA_INTEGRATION_TEST=true
         ;;

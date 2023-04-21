@@ -219,7 +219,6 @@ func (s *IntegrationSuite) SetUpSuite(c *C) {
 // 6. Restore data from backup
 // 7. Uninstall DB app
 func (s *IntegrationSuite) TestRun(c *C) {
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -288,14 +287,12 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	var as *crv1alpha1.ActionSet
 	if os.Getenv("KOPIA_INTEGRATION_TEST") != "" {
-		log.Print("--------- ENV [KOPIA_INTEGRATION_TEST]-----------")
 		if s.repositoryServer == nil {
 			log.Info().Print("Skipping integration test. Could not create repository server. Please check if required credentials are set.", field.M{"app": s.name})
 			s.skip = true
 			c.Skip("Could not create a RepositoryServer")
 		}
 		repositoryServerName := s.createRepositoryServer(c, ctx)
-		//repositoryServerName := "test-kopia-repo-server-kbxbm"
 		as = newActionSetWithRepoServer(bp.GetName(), repositoryServerName, testutil.DefaultKanisterNamespace, s.app.Object(), configMaps, secrets)
 	} else {
 		if s.profile == nil {
@@ -362,7 +359,6 @@ func (s *IntegrationSuite) TestRun(c *C) {
 		// Delete snapshots for profile based blueprints
 		s.createActionset(ctx, c, pas, "delete", nil)
 	}
-
 }
 
 func newActionSet(bpName, profile, profileNs string, object crv1alpha1.ObjectReference, configMaps, secrets map[string]crv1alpha1.ObjectReference) *crv1alpha1.ActionSet {
@@ -510,6 +506,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		}
 		return false, nil
 	})
+	c.Assert(err, IsNil)
 
 	// Wait for the Repository Server to Be in Ready Stage.
 	timeoutCtx, waitCancel = context.WithTimeout(ctx, contextWaitTimeout)
@@ -521,7 +518,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 		}
 		return false, nil
 	})
-
+	c.Assert(err, IsNil)
 	return repositoryServer.GetName()
 }
 
@@ -600,8 +597,8 @@ func (s *IntegrationSuite) createActionset(ctx context.Context, c *C, as *crv1al
 func (s *IntegrationSuite) createDeleteActionsetForRepositoryServer(ctx context.Context, c *C, as *crv1alpha1.ActionSet, action string, options map[string]string) string {
 	var err error
 	switch action {
-
 	case "delete":
+		// object of delete is statefulset of actionset for RepositoryServer based functions.
 		as, err = restoreActionSetSpecs(as, action)
 		c.Assert(err, IsNil)
 		as.Spec.Actions[0].Options = options

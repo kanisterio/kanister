@@ -16,10 +16,11 @@ package app
 
 import (
 	"context"
-	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
+	"k8s.io/client-go/kubernetes"
 
 	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/field"
