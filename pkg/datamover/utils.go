@@ -127,7 +127,6 @@ func hostNameAndUserPassPhraseFromRepoServer(userCreds string) (string, string, 
 		return "", "", errors.Wrap(err, "Failed to Decode User Passphrase")
 	}
 	return hostName, string(decodedUserPassPhrase), nil
-
 }
 
 // kopiaLocationPush pushes the data from the source using a kopia snapshot
