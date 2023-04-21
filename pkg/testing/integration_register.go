@@ -18,6 +18,8 @@
 package testing
 
 import (
+	. "gopkg.in/check.v1"
+
 	"github.com/kanisterio/kanister/pkg/app"
 )
 
