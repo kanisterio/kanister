@@ -37,7 +37,7 @@ actions:
             kando output snapshotId ${snapshot_id}
 
     - func: KubeTask
-      name: WaitForBackupToComplete
+      name: waitForBackupToComplete
       args:
         namespace: "{{ .Object.metadata.namespace }}"
         image: <registry>/<repository>/mongodb-atlas:<tag_name>
@@ -84,10 +84,6 @@ actions:
   restore:
     inputArtifactNames:
       - backupOutput
-    outputArtifacts:
-      restoreObject:
-        keyValue:
-          restoreId: "{{ .Phases.mongoRestore.Output.restoreId }}"
     phases:
     - func: KubeTask
       name: mongoRestore
@@ -121,7 +117,7 @@ actions:
             kando output restoreId ${restore_id}
 
     - func: KubeTask
-      name: WaitForRestoreToComplete
+      name: waitForRestoreToComplete
       args:
         namespace: "{{ .Object.metadata.namespace }}"
         image: <registry>/<repository>/mongodb-atlas:<tag_name>
