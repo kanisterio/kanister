@@ -9,6 +9,9 @@ actions:
         keyValue:
           id: "{{ .Phases.backupToS3.Output.backupID }}"
           dataDir: "{{ .Phases.checkDataDir.Output.dataDir }}"
+      params:
+        keyValue:
+          replicaCount: "{{ .Phases.checkDataDir.Output.replicaCount }}"
     phases:
       - func: KubeExec
         name: checkDataDir
@@ -33,6 +36,7 @@ actions:
               cmd="SELECT @@datadir;"
               datadir="$(mysql -uroot -p"${root_password}" -e "${cmd}" | grep /)"
               kando output dataDir "${datadir}"
+              kando output replicaCount {{ len .StatefulSet.Pods }}
       - func: BackupDataUsingKopiaServer
         name: backupToS3
         args:
@@ -44,6 +48,7 @@ actions:
   restore:
     inputArtifactNames:
       - backupIdentifier
+      - params
     phases:
       - func: ScaleWorkload
         name: shutdownPod
@@ -66,7 +71,7 @@ actions:
           namespace: "{{ .StatefulSet.Namespace }}"
           name: "{{ .StatefulSet.Name }}"
           kind: StatefulSet
-          replicas: 1
+          replicas: "{{ .ArtifactsIn.params.KeyValue.replicaCount }}"
 
   delete:
     inputArtifactNames:
