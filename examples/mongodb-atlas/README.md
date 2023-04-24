@@ -15,6 +15,7 @@ It deploys and scales a MongoDB cluster in the cloud.
 
 In case, if you don't have `Kanister` installed already, use following commands
 to install.
+
 ```bash
 $ helm repo add kanister https://charts.kanister.io
 $ helm install kanister --namespace kanister --create-namespace \
@@ -24,15 +25,15 @@ $ helm install kanister --namespace kanister --create-namespace \
 ### Build a tools image to interact with MongoDB Atlas
 
 We need to build a tools image that contains `mongosh`, `atlas` and other
-related utilities so that it can be used to interact with the MondoDB Atlas
+related utilities so that it can be used to interact with the MongoDB Atlas
 database to add data to it.
 This image will also be used in the Blueprint to run the `atlas` backup and
 restore related commands against the MongoDB Atlas database. Please execute the
 commands below to build and push the image.
 
 ```bash
-$ cd ~/kanister/docker/mongodb-atlas
-$ docker build -t <registry>/<repository>/mongodb-atlas:<tag_name> .
+$ docker build -t <registry>/<repository>/mongodb-atlas:<tag_name> \
+    PATH_TO_KANISTER/docker/mongodb-atlas
 $ docker push <registry>/<repository>/mongodb-atlas:<tag_name>
 ```
 
@@ -54,28 +55,33 @@ $ kubectl create -f ./mongodb-atlas-blueprint.yaml -n kanister
 
 To create a Secret, you need to specify your Atlas account details -
 
-Public_Key: Public key included in Organization level API Key (you'll find it in Organizations > Access Manager > API Keys)
+`Public_Key`: Public key included in Organization level API Key
+(you'll find it in Organizations > Access Manager > API Keys)
 
-Private_Key: Private key included in Organization level API Key (you'll find it in Organizations > Access Manager > API Keys)
+`Private_Key`: Private key included in Organization level API Key
+(you'll find it in Organizations > Access Manager > API Keys)
 
-Org_Id: A unique 24 characters Organization ID (you'll find it in Organizations > Settings)
+`Org_Id`: A unique 24 characters Organization ID
+(you'll find it in Organizations > Settings)
 
-Project_Id: A unique 24 character Project ID (you'll find it in Organizations > Project > Settings)
+`Project_Id`: A unique 24 character Project ID
+(you'll find it in Organizations > Project > Settings)
 
-Cluster_Name: Cluster name in project (you'll find it in Organizations > Project > Database)
+`Cluster_Name`: Cluster name in project
+(you'll find it in Organizations > Project > Database)
 
 ```bash
 $ kubectl create namespace mongodb-atlas-test
 namespace/mongodb-atlas-test created
 
-$ kubectl create secret generic mongoatlassecret \
+$ kubectl create secret generic mongo-atlas-secret \
     --from-literal=publickey="<Public_Key>" \
     --from-literal=privatekey="<Private_Key>" \
     --from-literal=orgid="<Org_Id>" \
     --from-literal=projectid="<Project_Id>" \
     --from-literal=clustername="<Cluster_Name>" \
     -n mongodb-atlas-test
-secret/mongoatlassecret created
+secret/mongo-atlas-secret created
 ```
 
 ### Populate data in database
@@ -114,7 +120,7 @@ controller.
 ```bash
 $ kanctl create actionset --action backup --namespace kanister \
     --blueprint mongodb-atlas-blueprint \
-    --objects v1/secrets/mongodb-atlas-test/mongoatlassecret
+    --objects v1/secrets/mongodb-atlas-test/mongo-atlas-secret
 actionset backup-tfjps created
 
 # View the status of the actionset
@@ -172,7 +178,8 @@ $ mongosh "<connection string>" --apiVersion 1 \
 
 ### Delete the Artifacts
 
-The artifacts created by the backup action can be cleaned up using following command.
+The artifacts created by the backup action can be cleaned up using the
+following command.
 
 ```bash
 $ kanctl --namespace kanister create actionset --action delete --from backup-tfjps
