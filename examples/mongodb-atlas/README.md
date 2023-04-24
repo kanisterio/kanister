@@ -92,7 +92,7 @@ find this `connection string` using steps mentioned [here](https://www.mongodb.c
 ```bash
 # Create a collection in database
 $ mongosh "<connection string>" --apiVersion 1 \
-    --username <username for Atlas account> -p <password for Atlas account> \
+    --username <database username> -p <database password> \
     --quiet --eval "db.people.insertOne({'name': {'first': 'Alan', last: 'Turing'}})"
 {
   acknowledged: true,
@@ -101,7 +101,7 @@ $ mongosh "<connection string>" --apiVersion 1 \
 
 # View the people data in the database
 $ mongosh "<connection string>" --apiVersion 1 \
-    --username <username for Atlas account> -p <password for Atlas account> \
+    --username <database username> -p <database password> \
     --quiet --eval "db.people.find()"
 [
   {
@@ -136,13 +136,13 @@ Let's say someone accidentally deleted the people collection:
 ```bash
 # Drop the people collection
 $ mongosh "<connection string>" --apiVersion 1 \
-    --username <username for Atlas account> -p <password for Atlas account> \
+    --username <database username> -p <database password> \
     --quiet --eval "db.people.drop()"
 true
 
 # Try to access this data in the database
 $ mongosh "<connection string>" --apiVersion 1 \
-    --username <username for Atlas account> -p <password for Atlas account> \
+    --username <database username> -p <database password> \
     --quiet --eval "db.people.find()"
 # No entries found
 ```
@@ -166,7 +166,7 @@ Now the lost data should be visible in the database.
 ```bash
 # Try to access this data in the database
 $ mongosh "<connection string>" --apiVersion 1 \
-    --username <username for Atlas account> -p <password for Atlas account> \
+    --username <database username> -p <database password> \
     --quiet --eval "db.people.find()"
 [
   {
@@ -182,7 +182,7 @@ The artifacts created by the backup action can be cleaned up using the
 following command.
 
 ```bash
-$ kanctl --namespace kanister create actionset --action delete --from backup-tfjps
+$ kanctl --namespace kanister create actionset --action delete --from backup-tfjps --namespacetargets mongodb-atlas-test
 actionset delete-backup-tfjps-gcjb2 created
 
 # View the status of the ActionSet
