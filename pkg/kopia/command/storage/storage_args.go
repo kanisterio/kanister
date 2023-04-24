@@ -39,8 +39,6 @@ func KopiaStorageArgs(params *StorageCommandParams) (logsafe.Cmd, error) {
 		return filesystemArgs(params.Location, params.RepoPathPrefix), nil
 	case LocTypeS3:
 		return s3Args(params.Location, params.RepoPathPrefix), nil
-	case LocTypeS3Compliant:
-		return s3Args(params.Location, params.RepoPathPrefix), nil
 	case LocTypeGCS:
 		return gcsArgs(params.Location, params.RepoPathPrefix), nil
 	case LocTypeAzure:

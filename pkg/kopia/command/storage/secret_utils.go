@@ -39,11 +39,10 @@ const (
 	typeKey          = "type"
 
 	// Location types
-	LocTypeS3          LocType = "s3"
-	LocTypeGCS         LocType = "gcs"
-	LocTypeAzure       LocType = "azure"
-	LocTypeFilestore   LocType = "filestore"
-	LocTypeS3Compliant LocType = "s3Compliant"
+	LocTypeS3        LocType = "s3"
+	LocTypeGCS       LocType = "gcs"
+	LocTypeAzure     LocType = "azure"
+	LocTypeFilestore LocType = "filestore"
 
 	// Azure location related environment variables
 	azureStorageAccountEnv = "AZURE_STORAGE_ACCOUNT"
