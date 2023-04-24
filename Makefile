@@ -318,3 +318,10 @@ check:
 
 gomod:
 	@$(MAKE) run CMD='-c "./build/gomod.sh"'
+
+
+install-crds: ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	@$(MAKE) run CMD='-c "kubectl apply -f pkg/customresource/"'
+
+uninstall-crds: ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
+	@$(MAKE) run CMD='-c "kubectl delete -f pkg/customresource/"'

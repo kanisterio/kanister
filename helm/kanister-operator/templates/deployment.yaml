@@ -43,6 +43,7 @@ spec:
         resources:
 {{ toYaml .Values.resources | indent 12 }}
 {{- end }}
+{{- if .Values.repositoryServerController.enabled }}
       - name: {{ template "repository-server-controller.name" . }}
         image: {{ .Values.repositoryServerControllerImage.registry }}/{{ .Values.repositoryServerControllerImage.name }}:{{ .Values.repositoryServerControllerImage.tag }}
         imagePullPolicy: {{ .Values.repositoryServerControllerImage.pullPolicy }}
@@ -54,4 +55,5 @@ spec:
 {{- if .Values.resources }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}
+{{- end }}
 {{- end }}

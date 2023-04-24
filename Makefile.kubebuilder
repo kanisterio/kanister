@@ -55,13 +55,3 @@ repo-server-build:  ## Build repository server binary.
 	goreleaser build --id $(REPOSERVER_BIN) --rm-dist --debug --snapshot \
 	&& cp dist/$(REPOSERVER_BIN)_linux_$(ARCH)/$(REPOSERVER_BIN) bin/$(ARCH)/$(REPOSERVER_BIN) \
 	"'
-
-##@ Install
-
-.PHONY: repo-server-install-crd
-repo-server-install-crd: ## Install repository server CRDs into the K8s cluster specified in ~/.kube/config.
-	kubectl apply -f pkg/customresource/repositoryserver.yaml
-
-.PHONY: repo-server-uninstall-crd
-repo-server-uninstall-crd: ## Uninstall repository server CRDs from the K8s cluster specified in ~/.kube/config.
-	kubectl delete -f pkg/customresource/repositoryserver.yaml
