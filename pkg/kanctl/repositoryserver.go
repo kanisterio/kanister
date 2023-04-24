@@ -16,10 +16,10 @@ package kanctl
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/testutil"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +36,24 @@ const (
 	s3LocationCredsSecretFlag      = "s3LocationCreds"
 	s3LocationSecretFlag           = "s3Location"
 )
+
+type repositoryServerParams struct {
+	tls                    string
+	tlsNS                  string
+	repoServerUserAccess   string
+	repoServerUserAccessNS string
+	repoAdminUser          string
+	repoAdminUserNS        string
+	repoPassword           string
+	repoPasswordNS         string
+	repoServerUser         string
+	repoServerAdminUser    string
+	s3Location             string
+	s3LocationNS           string
+	s3LocationCreds        string
+	s3LocationCredsNS      string
+	prefix                 string
+}
 
 func newRepositoryServerCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -56,6 +74,7 @@ func newRepositoryServerCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP(s3LocationCredsSecretFlag, "c", "", "name of the secret containing the credentials for s3")
 	cmd.PersistentFlags().StringP(prefixFlag, "p", "", "prefix to be set in kopia repository")
 	cmd.PersistentFlags().StringP(repoServerAdminUserFlag, "z", "", "kopia repository server admin user name")
+
 	_ = cmd.MarkFlagRequired(tlsSecretFlag)
 	_ = cmd.MarkFlagRequired(repoServerUserFlag)
 	_ = cmd.MarkFlagRequired(repoServerUserAccessSecretFlag)
@@ -73,7 +92,12 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 		return newArgsLengthError("expected 0 args. Got %#v", args)
 	}
 
-	repositoryServer, err := validateAndConstructRepositoryServer(cmd)
+	rsParams, err := generateRepositoryServerParams(cmd)
+	if err != nil {
+		return err
+	}
+
+	repositoryServer, err := validateAndConstructRepositoryServer(rsParams)
 	if err != nil {
 		return err
 	}
@@ -88,7 +112,7 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func validateAndConstructRepositoryServer(cmd *cobra.Command) (*v1alpha1.RepositoryServer, error) {
+func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams, error) {
 	// Fetch values of the flags
 	tls, _ := cmd.Flags().GetString(tlsSecretFlag)
 	repoServerUser, _ := cmd.Flags().GetString(repoServerUserFlag)
@@ -104,7 +128,7 @@ func validateAndConstructRepositoryServer(cmd *cobra.Command) (*v1alpha1.Reposit
 	if strings.Contains(tls, "/") {
 		fullTLS := strings.Split(tls, "/")
 		if len(fullTLS) != 2 {
-			return nil, errors.New("")
+			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", tls)
 		}
 		tlsNS = fullTLS[0]
 		tls = fullTLS[1]
@@ -114,7 +138,7 @@ func validateAndConstructRepositoryServer(cmd *cobra.Command) (*v1alpha1.Reposit
 	if strings.Contains(repoServerUserAccess, "/") {
 		fullRepoServerUserAccess := strings.Split(repoServerUserAccess, "/")
 		if len(fullRepoServerUserAccess) != 2 {
-			return nil, errors.New("")
+			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", repoServerUserAccess)
 		}
 		repoServerUserAccessNS = fullRepoServerUserAccess[0]
 		repoServerUserAccess = fullRepoServerUserAccess[1]
@@ -124,7 +148,7 @@ func validateAndConstructRepositoryServer(cmd *cobra.Command) (*v1alpha1.Reposit
 	if strings.Contains(repoAdminUser, "/") {
 		fullRepoAdminUser := strings.Split(repoAdminUser, "/")
 		if len(fullRepoAdminUser) != 2 {
-			return nil, errors.New("")
+			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", repoAdminUser)
 		}
 		repoAdminUserNS = fullRepoAdminUser[0]
 		repoAdminUser = fullRepoAdminUser[1]
@@ -134,7 +158,7 @@ func validateAndConstructRepositoryServer(cmd *cobra.Command) (*v1alpha1.Reposit
 	if strings.Contains(repoPassword, "/") {
 		fullRepoPassword := strings.Split(repoPassword, "/")
 		if len(fullRepoPassword) != 2 {
-			return nil, errors.New("")
+			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", repoPassword)
 		}
 		repoPasswordNS = fullRepoPassword[0]
 		repoPassword = fullRepoPassword[1]
@@ -144,7 +168,7 @@ func validateAndConstructRepositoryServer(cmd *cobra.Command) (*v1alpha1.Reposit
 	if strings.Contains(s3Location, "/") {
 		fullS3Location := strings.Split(s3Location, "/")
 		if len(fullS3Location) != 2 {
-			return nil, errors.New("")
+			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", s3Location)
 		}
 		s3LocationNS = fullS3Location[0]
 		s3Location = fullS3Location[1]
@@ -154,7 +178,7 @@ func validateAndConstructRepositoryServer(cmd *cobra.Command) (*v1alpha1.Reposit
 	if strings.Contains(s3LocationCreds, "/") {
 		fullS3LocationCreds := strings.Split(s3LocationCreds, "/")
 		if len(fullS3LocationCreds) != 2 {
-			return nil, errors.New("")
+			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", s3LocationCreds)
 		}
 		s3LocationCredsNS = fullS3LocationCreds[0]
 		s3LocationCreds = fullS3LocationCreds[1]
@@ -162,33 +186,53 @@ func validateAndConstructRepositoryServer(cmd *cobra.Command) (*v1alpha1.Reposit
 		s3LocationCredsNS = testutil.DefaultKanisterNamespace
 	}
 
+	return &repositoryServerParams{
+		tls:                    tls,
+		tlsNS:                  tlsNS,
+		repoServerUserAccess:   repoServerUserAccess,
+		repoServerUserAccessNS: repoServerUserAccessNS,
+		repoAdminUser:          repoAdminUser,
+		repoAdminUserNS:        repoAdminUserNS,
+		repoPassword:           repoPassword,
+		repoPasswordNS:         repoPasswordNS,
+		repoServerUser:         repoServerUser,
+		repoServerAdminUser:    repoServerAdminUser,
+		s3Location:             s3Location,
+		s3LocationNS:           s3LocationNS,
+		s3LocationCreds:        s3LocationCreds,
+		s3LocationCredsNS:      s3LocationCredsNS,
+		prefix:                 prefix,
+	}, nil
+}
+
+func validateAndConstructRepositoryServer(rsParams *repositoryServerParams) (*v1alpha1.RepositoryServer, error) {
 	// Fetch and Validate Secrets
 	ctx := context.Background()
 	cli, _, _, err := initializeClients()
 	if err != nil {
 		return nil, err
 	}
-	tlsSecret, err := cli.CoreV1().Secrets(tlsNS).Get(ctx, tls, metav1.GetOptions{})
+	tlsSecret, err := cli.CoreV1().Secrets(rsParams.tlsNS).Get(ctx, rsParams.tls, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	repoServerUserAccessSecret, err := cli.CoreV1().Secrets(repoServerUserAccessNS).Get(ctx, repoServerUserAccess, metav1.GetOptions{})
+	repoServerUserAccessSecret, err := cli.CoreV1().Secrets(rsParams.repoServerUserAccessNS).Get(ctx, rsParams.repoServerUserAccess, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	repoAdminUserSecret, err := cli.CoreV1().Secrets(repoAdminUserNS).Get(ctx, repoAdminUser, metav1.GetOptions{})
+	repoAdminUserSecret, err := cli.CoreV1().Secrets(rsParams.repoAdminUserNS).Get(ctx, rsParams.repoAdminUser, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	repoPasswordSecret, err := cli.CoreV1().Secrets(repoPasswordNS).Get(ctx, repoPassword, metav1.GetOptions{})
+	repoPasswordSecret, err := cli.CoreV1().Secrets(rsParams.repoPasswordNS).Get(ctx, rsParams.repoPassword, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	s3LocationSecret, err := cli.CoreV1().Secrets(s3LocationNS).Get(ctx, s3Location, metav1.GetOptions{})
+	s3LocationSecret, err := cli.CoreV1().Secrets(rsParams.s3LocationNS).Get(ctx, rsParams.s3Location, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	s3LocationCredsSecret, err := cli.CoreV1().Secrets(s3LocationCredsNS).Get(ctx, s3LocationCreds, metav1.GetOptions{})
+	s3LocationCredsSecret, err := cli.CoreV1().Secrets(rsParams.s3LocationCredsNS).Get(ctx, rsParams.s3LocationCreds, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -209,8 +253,8 @@ func validateAndConstructRepositoryServer(cmd *cobra.Command) (*v1alpha1.Reposit
 				},
 			},
 			Repository: v1alpha1.Repository{
-				RootPath: prefix,
-				Username: repoServerAdminUser,
+				RootPath: rsParams.prefix,
+				Username: rsParams.repoServerAdminUser,
 				Hostname: testutil.DefaultRepositoryServerHost,
 				PasswordSecretRef: corev1.SecretReference{
 					Name:      repoPasswordSecret.GetName(),
@@ -223,7 +267,7 @@ func validateAndConstructRepositoryServer(cmd *cobra.Command) (*v1alpha1.Reposit
 						Name:      repoServerUserAccessSecret.GetName(),
 						Namespace: repoServerUserAccessSecret.GetNamespace(),
 					},
-					Username: repoServerUser,
+					Username: rsParams.repoServerUser,
 				},
 				AdminSecretRef: corev1.SecretReference{
 					Name:      repoAdminUserSecret.GetName(),
