@@ -17,6 +17,7 @@ package kanctl
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	"github.com/kanisterio/kanister/pkg/testutil"
 	"github.com/spf13/cobra"
@@ -54,7 +55,7 @@ func newRepositoryServerCommand() *cobra.Command {
 	cmd.PersistentFlags().StringP(s3LocationSecretFlag, "l", "", "name of the secret containing the s3 location details")
 	cmd.PersistentFlags().StringP(s3LocationCredsSecretFlag, "c", "", "name of the secret containing the credentials for s3")
 	cmd.PersistentFlags().StringP(prefixFlag, "p", "", "prefix to be set in kopia repository")
-	cmd.PersistentFlags().StringP(repoServerAdminUserFlag, "n", "", "kopia repository server admin user name")
+	cmd.PersistentFlags().StringP(repoServerAdminUserFlag, "z", "", "kopia repository server admin user name")
 	_ = cmd.MarkFlagRequired(tlsSecretFlag)
 	_ = cmd.MarkFlagRequired(repoServerUserFlag)
 	_ = cmd.MarkFlagRequired(repoServerUserAccessSecretFlag)
@@ -78,9 +79,11 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	}
 	_, crCli, _, _ := initializeClients()
 	ctx := context.Background()
-	_, err = crCli.CrV1alpha1().RepositoryServers(testutil.DefaultKanisterNamespace).Create(ctx, repositoryServer, metav1.CreateOptions{})
+	rs, err := crCli.CrV1alpha1().RepositoryServers(testutil.DefaultKanisterNamespace).Create(ctx, repositoryServer, metav1.CreateOptions{})
 	if err != nil {
 		return err
+	} else {
+		fmt.Printf("repository-server '%s' created\n", rs.GetName())
 	}
 	return nil
 }
@@ -192,7 +195,7 @@ func validateAndConstructRepositoryServer(cmd *cobra.Command) (*v1alpha1.Reposit
 
 	return &v1alpha1.RepositoryServer{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "kopia-repo-server-",
+			GenerateName: `kopia-repo-server-`,
 		},
 		Spec: v1alpha1.RepositoryServerSpec{
 			Storage: v1alpha1.Storage{
