@@ -17,13 +17,14 @@ package kanctl
 import (
 	"context"
 	"fmt"
-	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
-	"github.com/kanisterio/kanister/pkg/testutil"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
+
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 )
 
 const (
@@ -35,6 +36,8 @@ const (
 	repoServerAdminUserFlag        = "repoServerAdminUser"
 	s3LocationCredsSecretFlag      = "s3LocationCreds"
 	s3LocationSecretFlag           = "s3Location"
+	defaultKanisterNamespace       = "kanister"
+	defaultRepositoryServerHost    = "localhost"
 )
 
 type repositoryServerParams struct {
@@ -103,7 +106,7 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 	}
 	_, crCli, _, _ := initializeClients()
 	ctx := context.Background()
-	rs, err := crCli.CrV1alpha1().RepositoryServers(testutil.DefaultKanisterNamespace).Create(ctx, repositoryServer, metav1.CreateOptions{})
+	rs, err := crCli.CrV1alpha1().RepositoryServers(defaultKanisterNamespace).Create(ctx, repositoryServer, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	} else {
@@ -133,7 +136,7 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 		tlsNS = fullTLS[0]
 		tls = fullTLS[1]
 	} else {
-		tlsNS = testutil.DefaultKanisterNamespace
+		tlsNS = defaultKanisterNamespace
 	}
 	if strings.Contains(repoServerUserAccess, "/") {
 		fullRepoServerUserAccess := strings.Split(repoServerUserAccess, "/")
@@ -143,7 +146,7 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 		repoServerUserAccessNS = fullRepoServerUserAccess[0]
 		repoServerUserAccess = fullRepoServerUserAccess[1]
 	} else {
-		repoServerUserAccessNS = testutil.DefaultKanisterNamespace
+		repoServerUserAccessNS = defaultKanisterNamespace
 	}
 	if strings.Contains(repoAdminUser, "/") {
 		fullRepoAdminUser := strings.Split(repoAdminUser, "/")
@@ -153,7 +156,7 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 		repoAdminUserNS = fullRepoAdminUser[0]
 		repoAdminUser = fullRepoAdminUser[1]
 	} else {
-		repoAdminUserNS = testutil.DefaultKanisterNamespace
+		repoAdminUserNS = defaultKanisterNamespace
 	}
 	if strings.Contains(repoPassword, "/") {
 		fullRepoPassword := strings.Split(repoPassword, "/")
@@ -163,7 +166,7 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 		repoPasswordNS = fullRepoPassword[0]
 		repoPassword = fullRepoPassword[1]
 	} else {
-		repoPasswordNS = testutil.DefaultKanisterNamespace
+		repoPasswordNS = defaultKanisterNamespace
 	}
 	if strings.Contains(s3Location, "/") {
 		fullS3Location := strings.Split(s3Location, "/")
@@ -173,7 +176,7 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 		s3LocationNS = fullS3Location[0]
 		s3Location = fullS3Location[1]
 	} else {
-		s3LocationNS = testutil.DefaultKanisterNamespace
+		s3LocationNS = defaultKanisterNamespace
 	}
 	if strings.Contains(s3LocationCreds, "/") {
 		fullS3LocationCreds := strings.Split(s3LocationCreds, "/")
@@ -183,7 +186,7 @@ func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams
 		s3LocationCredsNS = fullS3LocationCreds[0]
 		s3LocationCreds = fullS3LocationCreds[1]
 	} else {
-		s3LocationCredsNS = testutil.DefaultKanisterNamespace
+		s3LocationCredsNS = defaultKanisterNamespace
 	}
 
 	return &repositoryServerParams{
@@ -255,7 +258,7 @@ func validateAndConstructRepositoryServer(rsParams *repositoryServerParams) (*v1
 			Repository: v1alpha1.Repository{
 				RootPath: rsParams.prefix,
 				Username: rsParams.repoServerAdminUser,
-				Hostname: testutil.DefaultRepositoryServerHost,
+				Hostname: defaultRepositoryServerHost,
 				PasswordSecretRef: corev1.SecretReference{
 					Name:      repoPasswordSecret.GetName(),
 					Namespace: repoPasswordSecret.GetNamespace(),
