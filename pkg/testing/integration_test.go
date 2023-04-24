@@ -292,8 +292,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 			s.skip = true
 			c.Skip("Could not create a RepositoryServer")
 		}
-		//repositoryServerName := s.createRepositoryServer(c, ctx)
-		repositoryServerName := "test-kopia-repo-server-8hp85"
+		repositoryServerName := s.createRepositoryServer(c, ctx)
 		as = newActionSetWithRepoServer(bp.GetName(), repositoryServerName, testutil.DefaultKanisterNamespace, s.app.Object(), configMaps, secrets)
 	} else {
 		if s.profile == nil {
