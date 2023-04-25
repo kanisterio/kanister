@@ -95,7 +95,7 @@ func (mdb *KopiaRepositoryServerMysqlDB) Install(ctx context.Context, namespace 
 	log.Print("Installing mysql instance using helm.", field.M{"app": mdb.name})
 	err = cli.Install(ctx, mdb.chart.RepoName+"/"+mdb.chart.Chart, mdb.chart.Version, mdb.chart.Release, mdb.namespace, mdb.chart.Values, true)
 	if err != nil {
-		return errors.Wrapf(err, "Error intalling application %s through helm.", mdb.name)
+		return errors.Wrapf(err, "Error installing application %s through helm.", mdb.name)
 	}
 
 	return nil
@@ -160,7 +160,7 @@ func (mdb *KopiaRepositoryServerMysqlDB) Insert(ctx context.Context) error {
 	insertRecordCMD := []string{"sh", "-c", "echo '[client]\nuser=root\npassword='$MYSQL_ROOT_PASSWORD'\nhost=0.0.0.0' | mysql --defaults-file=/dev/stdin -e 'use testdb; INSERT INTO pets VALUES (\"Puffball\",\"Diane\",\"hamster\",\"f\",\"1999-03-30\",NULL); '"}
 	_, stderr, err := mdb.execCommand(ctx, insertRecordCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting the data into msyql database: %s", stderr)
+		return errors.Wrapf(err, "Error while inserting the data into mysql database: %s", stderr)
 	}
 
 	log.Print("Successfully inserted records in the application.", field.M{"app": mdb.name})
