@@ -95,7 +95,7 @@ func (mdb *KopiaRepositoryServerMysqlDB) Install(ctx context.Context, namespace 
 	log.Print("Installing mysql instance using helm.", field.M{"app": mdb.name})
 	err = cli.Install(ctx, mdb.chart.RepoName+"/"+mdb.chart.Chart, mdb.chart.Version, mdb.chart.Release, mdb.namespace, mdb.chart.Values, true)
 	if err != nil {
-		return errors.Wrapf(err, "Error intalling application %s through helm.", mdb.name)
+		return errors.Wrapf(err, "Error installing application %s through helm.", mdb.name)
 	}
 
 	return nil
@@ -144,7 +144,7 @@ func (mdb *KopiaRepositoryServerMysqlDB) Ping(ctx context.Context) error {
 	log.Print("Pinging the mysql database.", field.M{"app": mdb.name})
 
 	// exec into the pod and create the test database, read password from secret
-	loginMysql := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD"}
+	loginMysql := []string{"sh", "-c", "echo '[client]\nuser=root\npassword='$MYSQL_ROOT_PASSWORD'\nhost=0.0.0.0' | mysql --defaults-file=/dev/stdin"}
 	_, stderr, err := mdb.execCommand(ctx, loginMysql)
 	if err != nil {
 		return errors.Wrapf(err, "Error while Pinging the database %s", stderr)
@@ -157,10 +157,10 @@ func (mdb *KopiaRepositoryServerMysqlDB) Ping(ctx context.Context) error {
 func (mdb *KopiaRepositoryServerMysqlDB) Insert(ctx context.Context) error {
 	log.Print("Inserting some records in  mysql instance.", field.M{"app": mdb.name})
 
-	insertRecordCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'use testdb; INSERT INTO pets VALUES (\"Puffball\",\"Diane\",\"hamster\",\"f\",\"1999-03-30\",NULL); '"}
+	insertRecordCMD := []string{"sh", "-c", "echo '[client]\nuser=root\npassword='$MYSQL_ROOT_PASSWORD'\nhost=0.0.0.0' | mysql --defaults-file=/dev/stdin -e 'use testdb; INSERT INTO pets VALUES (\"Puffball\",\"Diane\",\"hamster\",\"f\",\"1999-03-30\",NULL); '"}
 	_, stderr, err := mdb.execCommand(ctx, insertRecordCMD)
 	if err != nil {
-		return errors.Wrapf(err, "Error while inserting the data into msyql database: %s", stderr)
+		return errors.Wrapf(err, "Error while inserting the data into mysql database: %s", stderr)
 	}
 
 	log.Print("Successfully inserted records in the application.", field.M{"app": mdb.name})
@@ -170,7 +170,7 @@ func (mdb *KopiaRepositoryServerMysqlDB) Insert(ctx context.Context) error {
 func (mdb *KopiaRepositoryServerMysqlDB) Count(ctx context.Context) (int, error) {
 	log.Print("Counting the records from the mysql instance.", field.M{"app": mdb.name})
 
-	selectRowsCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'use testdb; select count(*) from pets; '"}
+	selectRowsCMD := []string{"sh", "-c", "echo '[client]\nuser=root\npassword='$MYSQL_ROOT_PASSWORD'\nhost=0.0.0.0' | mysql --defaults-file=/dev/stdin -e 'use testdb; select count(*) from pets; '"}
 	stdout, stderr, err := mdb.execCommand(ctx, selectRowsCMD)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error while counting the data of the database: %s", stderr)
@@ -199,7 +199,7 @@ func (mdb *KopiaRepositoryServerMysqlDB) Reset(ctx context.Context) error {
 	log.Print("Resetting the mysql instance.", field.M{"app": "mysql"})
 
 	// delete all the data from the table
-	deleteFromTableCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'DROP DATABASE IF EXISTS testdb'"}
+	deleteFromTableCMD := []string{"sh", "-c", "echo '[client]\nuser=root\npassword='$MYSQL_ROOT_PASSWORD'\nhost=0.0.0.0' | mysql --defaults-file=/dev/stdin -e 'DROP DATABASE IF EXISTS testdb'"}
 	_, stderr, err := mdb.execCommand(ctx, deleteFromTableCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while dropping the mysql table: %s", stderr)
@@ -212,7 +212,7 @@ func (mdb *KopiaRepositoryServerMysqlDB) Reset(ctx context.Context) error {
 // Initialize is used to initialize the database or create schema
 func (mdb *KopiaRepositoryServerMysqlDB) Initialize(ctx context.Context) error {
 	// create the database and a pets table
-	createTableCMD := []string{"sh", "-c", "mysql -u root --password=$MYSQL_ROOT_PASSWORD -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
+	createTableCMD := []string{"sh", "-c", "echo '[client]\nuser=root\npassword='$MYSQL_ROOT_PASSWORD'\nhost=0.0.0.0' | mysql --defaults-file=/dev/stdin -e 'create database testdb; use testdb;  CREATE TABLE pets (name VARCHAR(20), owner VARCHAR(20), species VARCHAR(20), sex CHAR(1), birth DATE, death DATE);'"}
 	_, stderr, err := mdb.execCommand(ctx, createTableCMD)
 	if err != nil {
 		return errors.Wrapf(err, "Error while creating the mysql table: %s", stderr)
