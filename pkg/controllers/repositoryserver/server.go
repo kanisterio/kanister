@@ -114,10 +114,7 @@ func (h *RepoServerHandler) checkServerStatus(ctx context.Context, serverAddress
 			Fingerprint:    fingerprint,
 		})
 
-	serverStartTimeOut, err := h.getRepositoryServerStartTimeout()
-	if err != nil {
-		return errors.Wrap(err, "Failed to get Kopia API server timeout")
-	}
+	serverStartTimeOut := h.getRepositoryServerStartTimeout()
 	ctx, cancel := context.WithTimeout(ctx, serverStartTimeOut)
 	defer cancel()
 	return WaitTillCommandSucceed(ctx, h.KubeCli, cmd, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName)
@@ -138,14 +135,14 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
 	if err != nil {
-		errors.Wrap(err, "Failed to list users from the Kopia repository")
+		return errors.Wrap(err, "Failed to list users from the Kopia repository")
 	}
 
 	userProfiles := []maintenance.KopiaUserProfile{}
 
 	err = json.Unmarshal([]byte(stdout), &userProfiles)
 	if err != nil {
-		errors.Wrap(err, "Failed to unmarshal user list")
+		return errors.Wrap(err, "Failed to unmarshal user list")
 	}
 
 	// Get list of usernames from ServerListUserCommand output to update the existing data with updated password
@@ -175,7 +172,7 @@ func (h *RepoServerHandler) createOrUpdateClientUsers(ctx context.Context) error
 			format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
 			format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
 			if err != nil {
-				errors.Wrap(err, "Failed to update existing user passphrase from the Kopia API server")
+				return errors.Wrap(err, "Failed to update existing user passphrase from the Kopia API server")
 			}
 			continue
 		}
@@ -231,20 +228,20 @@ func (h *RepoServerHandler) refreshServer(ctx context.Context, serverAddress, us
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
 	if err != nil {
-		errors.Wrap(err, "Failed to refresh Kopia API server")
+		return errors.Wrap(err, "Failed to refresh Kopia API server")
 	}
 	return nil
 }
 
-func (h *RepoServerHandler) getRepositoryServerStartTimeout() (time.Duration, error) {
+func (h *RepoServerHandler) getRepositoryServerStartTimeout() time.Duration {
 	serverStartTimeoutEnv := os.Getenv("KOPIA_SERVER_START_TIMEOUT")
 	if serverStartTimeoutEnv != "" {
 		serverStartTimeout, err := time.ParseDuration(serverStartTimeoutEnv)
 		if err != nil {
 			h.Logger.Info("Error parsing env variable", err)
-			return DefaultServerStartTimeout, nil
+			return DefaultServerStartTimeout
 		}
-		return serverStartTimeout * time.Second, nil
+		return serverStartTimeout * time.Second
 	}
-	return DefaultServerStartTimeout, nil
+	return DefaultServerStartTimeout
 }

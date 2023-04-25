@@ -13,3 +13,5 @@ updates:
       # starting with kanister and go through additional validation.
       - dependency-name: "k8s.io/*"
       - dependency-name: "sigs.k8s.io/*"
+      # Dependabot opens PRs for older versions of openshift that would downgrade the version in use.
+      - dependency-name: "github.com/openshift/api"

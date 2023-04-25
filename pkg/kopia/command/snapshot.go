@@ -107,18 +107,6 @@ func SnapshotExpire(cmdArgs SnapshotExpireCommandArgs) []string {
 	return stringSliceCommand(args)
 }
 
-type SnapshotGCCommandArgs struct {
-	*CommandArgs
-}
-
-// SnapshotGC returns the kopia command for issuing kopia snapshot gc
-func SnapshotGC(cmdArgs SnapshotGCCommandArgs) []string {
-	args := commonArgs(cmdArgs.CommandArgs, false)
-	args = args.AppendLoggable(snapshotSubCommand, gcSubCommand, deleteFlag)
-
-	return stringSliceCommand(args)
-}
-
 type SnapListAllCommandArgs struct {
 	*CommandArgs
 }
