@@ -67,7 +67,7 @@ func (h *RepoServerHandler) getRepositoryCacheSettings() (contentCacheMB, metada
 		}
 	}
 	if h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata != "" {
-		contentCacheMB, err = strconv.Atoi(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata)
+		metadataCacheMB, err = strconv.Atoi(h.RepositoryServer.Spec.Repository.CacheSizeSettings.Metadata)
 		if err != nil {
 			return
 		}
