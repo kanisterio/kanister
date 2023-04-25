@@ -15,85 +15,129 @@
 package repositoryserver
 
 import (
-	"fmt"
-	"path/filepath"
+	"context"
 	"testing"
 
 	. "gopkg.in/check.v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	crkanisteriov1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
+	"github.com/kanisterio/kanister/pkg/kube"
+	"github.com/kanisterio/kanister/pkg/resource"
 )
 
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) { TestingT(t) }
 
 type RepoServerControllerSuite struct {
-	testEnv *envtest.Environment
+	testEnv                       *envtest.Environment
+	crCli                         crclientv1alpha1.CrV1alpha1Interface
+	cli                           kubernetes.Interface
+	repoServerControllerNamespace string
+	repoServerSecrets             repositoryServerSecrets
 }
 
 var _ = Suite(&RepoServerControllerSuite{})
 
 func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
-	fmt.Println("testing")
-	c.Log("Bootstrapping test environment with Kanister CRDs")
-	useExistingCluster := true
-	s.testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "customresource")},
-		ErrorIfCRDPathMissing: true,
-		UseExistingCluster:    &useExistingCluster,
-	}
-
-	cfg, err := s.testEnv.Start()
-	fmt.Println(err)
+	config, err := kube.LoadConfig()
 	c.Assert(err, IsNil)
-	c.Assert(cfg, NotNil)
-
-	err = crkanisteriov1alpha1.AddToScheme(scheme.Scheme)
+	cli, err := kubernetes.NewForConfig(config)
 	c.Assert(err, IsNil)
-	fmt.Println(err)
-
-	k8sClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	crCli, err := crclientv1alpha1.NewForConfig(config)
 	c.Assert(err, IsNil)
-	c.Assert(k8sClient, NotNil)
+
+	// Make sure the CRD's exist.
+	_ = resource.CreateCustomResources(context.Background(), config)
+
+	s.cli = cli
+	s.crCli = crCli
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme.Scheme,
 		Port:               9443,
 		MetricsBindAddress: "0",
 	})
-	fmt.Println(err)
 	c.Assert(err, IsNil)
 
 	err = (&RepositoryServerReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr)
-	fmt.Println(err)
 	c.Assert(err, IsNil)
-	fmt.Println(err)
 
 	go func() {
 		err = mgr.Start(ctrl.SetupSignalHandler())
 		c.Assert(err, IsNil)
 	}()
+
+	ns := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "repositoryservercontrollertest-",
+		},
+	}
+	ctx := context.Background()
+	cns, err := s.cli.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	c.Assert(err, IsNil)
+	s.repoServerControllerNamespace = cns.Name
+	s.createRepositoryServerSecrets(c)
+
 }
 
-func (s *RepoServerControllerSuite) SetupTest(c *C) {
-	fmt.Println("setup test")
+func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
+	repoServerUserAccessSecretData := map[string][]byte{
+		"localhost": []byte("test1234"),
+	}
+	repoServerAdminSecretData := map[string][]byte{
+		"username": []byte("admin@testpod1"),
+		"password": []byte("test1234"),
+	}
+	repoPasswordSecretData := map[string][]byte{
+		"repo-password": []byte("test1234"),
+	}
+	kopiaTLSSecretData, err := getKopiaTLSSecret()
+	c.Assert(err, IsNil)
+	s.repoServerSecrets = repositoryServerSecrets{}
+	s.repoServerSecrets.serverUserAccess, err = s.createSecret("test-repository-server-user-access-", "", repoServerUserAccessSecretData)
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.serverAdmin, err = s.createSecret("test-repository-server-admin-", "", repoServerAdminSecretData)
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.repositoryPassword, err = s.createSecret("test-repository-password-", "", repoPasswordSecretData)
+	c.Assert(err, IsNil)
+	s.repoServerSecrets.serverTLS, err = s.createSecret("test-tls-", v1.SecretTypeTLS, kopiaTLSSecretData)
+	c.Assert(err, IsNil)
+
+}
+
+func (s *RepoServerControllerSuite) createSecret(name string, secrettype v1.SecretType, data map[string][]byte) (se *v1.Secret, err error) {
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: name,
+		},
+		Data: data,
+	}
+	if secrettype != "" {
+		secret.Type = secrettype
+	}
+
+	se, err = s.cli.CoreV1().Secrets(s.repoServerControllerNamespace).Create(context.Background(), secret, metav1.CreateOptions{})
+	return
+
 }
 
 func (s *RepoServerControllerSuite) TestCreationOfOwnedResources(c *C) {
-	fmt.Println("in test")
+	repoServerCR := getDefaultKopiaRepositoryServerCR(s.repoServerControllerNamespace)
+	setRepositoryServerSecretsInCR(&s.repoServerSecrets, repoServerCR)
 }
 
 func (s *RepoServerControllerSuite) TearDownSuite(c *C) {
-	if s.testEnv != nil {
-		c.Log("Tearing down the test environment")
-		err := s.testEnv.Stop()
+	if s.repoServerControllerNamespace != "" {
+		err := s.cli.CoreV1().Namespaces().Delete(context.TODO(), s.repoServerControllerNamespace, metav1.DeleteOptions{})
 		c.Assert(err, IsNil)
 	}
 }
