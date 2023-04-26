@@ -51,9 +51,10 @@ the tools image that we built above.
 $ kubectl create -f ./mongodb-atlas-blueprint.yaml -n kanister
 ```
 
-### Create Secret
+### Create Secret to store MongoDB Atlas Account details
 
-To create a Secret, you need to specify your Atlas account details -
+Please create a secret to store the MongoDB Atlas account details that are
+going to get used by `atlas` command in the blueprint.
 
 `Public_Key`: Public key included in Organization level API Key
 (you'll find it in Organizations > Access Manager > API Keys)
