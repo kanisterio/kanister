@@ -3,10 +3,9 @@ commands are run into a cluster that is setup using [Kubeadm](https://github.com
 
 **Note**
 
-This blueprint will only work if the etcd pod has `tar` binary available as `kubectl cp` command
-in the blueprint, requires `tar` binary to be present on source.
-
-The cluster this example is perfomed on is two node kubeadm cluster.
+This blueprint will only work if the ETCD pod has `tar` binary available
+because `kubectl cp` command in the blueprint, requires `tar` binary to be
+present on the ETCD pod.
 
 ## Prerequisites Details
 
