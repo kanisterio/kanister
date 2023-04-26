@@ -37,10 +37,10 @@ repositoryServerController:
   enabled: false
   # startTimeout is used to specify the time in seconds to wait for starting the kopia repository server
   # Default timeout is 600 seconds
-  serverStartTimeout:
-  logLevel: ''
+  serverStartTimeout: 600
+  logLevel: 'info'
   container:
-    name: ''
+    name: 'repository-server-controller'
 resources:
 # We usually recommend not to specify default resources and to leave this as a conscious
 # choice for the user. This also increases chances charts run on environments with little
