@@ -6,9 +6,9 @@ image:
   tag: 0.91.0
   pullPolicy: IfNotPresent
 repositoryServerControllerImage:
-  registry: amrutakale
+  registry: ghcr.io/kanisterio
   name: repo-server-controller
-  tag: 0.90.4
+  tag: 0.91.0
   pullPolicy: IfNotPresent
 rbac:
   create: true
