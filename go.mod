@@ -20,7 +20,7 @@ require (
 	github.com/IBM/ibmcloud-storage-volume-lib v1.0.2-beta02.0.20190828145158-1da4543a60af
 	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/aws/aws-sdk-go v1.44.244
+	github.com/aws/aws-sdk-go v1.44.250
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-logr/logr v1.2.4
 	github.com/go-openapi/strfmt v0.21.7
@@ -33,7 +33,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/kopia/kopia v0.13.0-rc2
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
-	github.com/lib/pq v1.10.7
+	github.com/lib/pq v1.10.8
 	github.com/luci/go-render v0.0.0-20160219211803-9a04cc21af0f
 	github.com/mitchellh/mapstructure v1.5.0
 
