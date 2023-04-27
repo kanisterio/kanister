@@ -18,6 +18,7 @@ package awsebs
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -78,6 +79,7 @@ func NewProvider(ctx context.Context, config map[string]string) (blockstorage.Pr
 
 // newEC2Client returns ec2 client struct.
 func newEC2Client(awsRegion string, config *aws.Config) (*EC2, error) {
+	fmt.Println("newEC2Client awsRegion region:", awsRegion)
 	if config == nil {
 		return nil, errors.New("Invalid empty AWS config")
 	}
@@ -273,16 +275,20 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	if to.ID != "" {
 		return nil, errors.Errorf("Snapshot %v destination ID must be empty", to)
 	}
+	fmt.Println("created dst(to) ec2 with region: ", to.Region)
 	// Copy operation must be initiated from the destination region.
 	ec2Cli, err := newEC2Client(to.Region, s.Ec2Cli.Config.Copy())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not get EC2 client")
 	}
+	fmt.Println("result destination of dst(to) e2c: ", *ec2Cli.Config.Region)
 	// Include a presigned URL when the regions are different. Include it
 	// independent of whether or not the snapshot is encrypted.
 	var presignedURL *string
 	if to.Region != from.Region {
+		fmt.Println("created src(from) ec2 with region: ", from.Region)
 		fromCli, err2 := newEC2Client(from.Region, s.Ec2Cli.Config.Copy())
+		fmt.Println("result destination of src(from) e2c: ", *fromCli.Config.Region)
 		if err2 != nil {
 			return nil, errors.Wrap(err2, "Could not create client to presign URL for snapshot copy request")
 		}
@@ -291,6 +297,8 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 			SourceRegion:      aws.String(from.Region),
 			DestinationRegion: ec2Cli.Config.Region,
 		}
+		fmt.Println("source region in snapshot input:", si.SourceRegion)
+		fmt.Println("destination region in snapshot input:", si.DestinationRegion)
 		rq, _ := fromCli.CopySnapshotRequest(&si)
 		su, err2 := rq.Presign(120 * time.Minute)
 		if err2 != nil {
