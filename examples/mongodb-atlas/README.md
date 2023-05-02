@@ -9,7 +9,7 @@ It deploys and scales a MongoDB cluster in the cloud.
 * Kubernetes 1.20+
 * Kanister controller version 0.91.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
-* MongoDB Atlas account registered with organization, project and cluster (https://www.mongodb.com/docs/atlas/getting-started)
+* MongoDB Atlas cluster setup (https://www.mongodb.com/docs/atlas/getting-started)
 
 ## Integrating with Kanister
 
