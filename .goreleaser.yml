@@ -112,6 +112,11 @@ dockers:
 - ids:
   - kando
   image_templates:
+  - 'ghcr.io/kanisterio/mongodb-atlas:{{ .Tag }}'
+  dockerfile: 'docker/mongodb-atlas/Dockerfile'
+- ids:
+  - kando
+  image_templates:
   - 'ghcr.io/kanisterio/cassandra:{{ .Tag }}'
   dockerfile: 'docker/cassandra/Dockerfile'
 - ids:
