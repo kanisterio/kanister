@@ -9,7 +9,7 @@ It deploys and scales a MongoDB cluster in the cloud.
 * Kubernetes 1.20+
 * Kanister controller version 0.91.0 installed in your cluster
 * Kanctl CLI installed (https://docs.kanister.io/tooling.html#install-the-tools)
-* MongoDB Atlas cluster setup (https://www.mongodb.com/docs/atlas/getting-started)
+* Already provisioned MongoDB Atlas cluster (https://www.mongodb.com/docs/atlas/getting-started)
 
 ## Integrating with Kanister
 
@@ -132,7 +132,7 @@ backup-tfjps   100.00                               2023-04-13T14:40:24Z   compl
 
 ### Disaster strikes!
 
-Let's say someone accidentally deleted the people collection:
+Let's say someone accidentally deleted the `people` collection:
 
 ```bash
 # Drop the people collection
