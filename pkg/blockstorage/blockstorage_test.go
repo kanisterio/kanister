@@ -144,8 +144,6 @@ func (s *BlockStorageProviderSuite) TestCreateSnapshot(c *C) {
 }
 
 func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
-	// c.Skip("Sometimes, snapcopy takes over 10 minutes. go test declares failure if tests are that slow.")
-
 	var snap *blockstorage.Snapshot
 	var err error
 	srcSnapshot := s.createSnapshot(c)
