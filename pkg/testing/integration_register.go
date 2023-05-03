@@ -528,10 +528,10 @@ type KopiaRepositoryServerMySQL struct {
 
 var _ = Suite(&KopiaRepositoryServerMySQL{
 	IntegrationSuite{
-		name:             "kopia-repository-server-mysql",
-		namespace:        "kopia-mysql-test",
-		app:              app.NewKopiaRepositoryServerMysqlDB("kopia-repository-server-mysql"),
-		bp:               app.NewBlueprint("kopia-repository-server-mysql", "", false),
-		repositoryServer: newSecretRepositoryServer(),
+		name:                  "kopia-repository-server-mysql",
+		namespace:             "kopia-mysql-test",
+		app:                   app.NewKopiaRepositoryServerMysqlDB("kopia-repository-server-mysql"),
+		bp:                    app.NewBlueprint("kopia-repository-server-mysql", "", false),
+		kopiaRepositoryServer: newSecretRepositoryServer(),
 	},
 })
