@@ -43,11 +43,11 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 		return err
 	}
 
-	err = h.checkServerStatus(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
-	if err == nil {
-		h.Logger.Info("Kopia API server already started")
-		return nil
-	}
+	//err = h.checkServerStatus(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
+	//if err == nil {
+	//	h.Logger.Info("Kopia API server already started")
+	//	return nil
+	//}
 
 	cmd := command.ServerStart(
 		command.ServerStartCommandArgs{
