@@ -156,16 +156,16 @@ type secretRepositoryServer struct {
 }
 
 type IntegrationSuite struct {
-	name             string
-	cli              kubernetes.Interface
-	crCli            crclient.CrV1alpha1Interface
-	app              app.App
-	bp               app.Blueprinter
-	profile          *secretProfile
-	repositoryServer *secretRepositoryServer
-	namespace        string
-	skip             bool
-	cancel           context.CancelFunc
+	name                  string
+	cli                   kubernetes.Interface
+	crCli                 crclient.CrV1alpha1Interface
+	app                   app.App
+	bp                    app.Blueprinter
+	profile               *secretProfile
+	kopiaRepositoryServer *secretRepositoryServer
+	namespace             string
+	skip                  bool
+	cancel                context.CancelFunc
 }
 
 func newSecretProfile() *secretProfile {
@@ -287,7 +287,7 @@ func (s *IntegrationSuite) TestRun(c *C) {
 
 	var as *crv1alpha1.ActionSet
 	if os.Getenv("KOPIA_INTEGRATION_TEST") != "" {
-		if s.repositoryServer == nil {
+		if s.kopiaRepositoryServer == nil {
 			log.Info().Print("Skipping integration test. Could not create repository server. Please check if required credentials are set.", field.M{"app": s.name})
 			s.skip = true
 			c.Skip("Could not create a RepositoryServer")
@@ -424,47 +424,47 @@ func (s *IntegrationSuite) createProfile(c *C, ctx context.Context) string {
 
 func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) string {
 	// Create Secrets required for setting up RepositoryServer
-	s3Location, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.s3Location, metav1.CreateOptions{})
+	s3Location, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.kopiaRepositoryServer.s3Location, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	s3Creds, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.s3Creds, metav1.CreateOptions{})
+	s3Creds, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.kopiaRepositoryServer.s3Creds, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	repositoryPassword, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.repositoryPassword, metav1.CreateOptions{})
+	repositoryPassword, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.kopiaRepositoryServer.repositoryPassword, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	serverAdminUser, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.serverAdminUser, metav1.CreateOptions{})
+	serverAdminUser, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.kopiaRepositoryServer.serverAdminUser, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	tls, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.tls, metav1.CreateOptions{})
+	tls, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.kopiaRepositoryServer.tls, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
-	userAccess, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.userAccess, metav1.CreateOptions{})
+	userAccess, err := s.cli.CoreV1().Secrets(testutil.DefaultKanisterNamespace).Create(ctx, s.kopiaRepositoryServer.userAccess, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Setting Up the SecretRefs in RepositoryServer
-	s.repositoryServer.repositoryServer.Spec.Storage.SecretRef = corev1.SecretReference{
+	s.kopiaRepositoryServer.repositoryServer.Spec.Storage.SecretRef = corev1.SecretReference{
 		Name:      s3Location.GetName(),
 		Namespace: s3Location.GetNamespace(),
 	}
-	s.repositoryServer.repositoryServer.Spec.Storage.CredentialSecretRef = corev1.SecretReference{
+	s.kopiaRepositoryServer.repositoryServer.Spec.Storage.CredentialSecretRef = corev1.SecretReference{
 		Name:      s3Creds.GetName(),
 		Namespace: s3Creds.GetNamespace(),
 	}
-	s.repositoryServer.repositoryServer.Spec.Repository.PasswordSecretRef = corev1.SecretReference{
+	s.kopiaRepositoryServer.repositoryServer.Spec.Repository.PasswordSecretRef = corev1.SecretReference{
 		Name:      repositoryPassword.GetName(),
 		Namespace: repositoryPassword.GetNamespace(),
 	}
-	s.repositoryServer.repositoryServer.Spec.Server.UserAccess.UserAccessSecretRef = corev1.SecretReference{
+	s.kopiaRepositoryServer.repositoryServer.Spec.Server.UserAccess.UserAccessSecretRef = corev1.SecretReference{
 		Name:      userAccess.GetName(),
 		Namespace: userAccess.GetNamespace(),
 	}
-	s.repositoryServer.repositoryServer.Spec.Server.AdminSecretRef = corev1.SecretReference{
+	s.kopiaRepositoryServer.repositoryServer.Spec.Server.AdminSecretRef = corev1.SecretReference{
 		Name:      serverAdminUser.GetName(),
 		Namespace: serverAdminUser.GetNamespace(),
 	}
-	s.repositoryServer.repositoryServer.Spec.Server.TLSSecretRef = corev1.SecretReference{
+	s.kopiaRepositoryServer.repositoryServer.Spec.Server.TLSSecretRef = corev1.SecretReference{
 		Name:      tls.GetName(),
 		Namespace: tls.GetNamespace(),
 	}
 
 	// Create RepositoryServer CR
-	repositoryServer, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Create(ctx, s.repositoryServer.repositoryServer, metav1.CreateOptions{})
+	repositoryServer, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Create(ctx, s.kopiaRepositoryServer.repositoryServer, metav1.CreateOptions{})
 	c.Assert(err, IsNil)
 
 	// Wait for controller to set pod name field
@@ -513,7 +513,7 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	defer waitCancel()
 	err = poll.Wait(timeoutCtx, func(ctx context.Context) (bool, error) {
 		rs, err := s.crCli.RepositoryServers(testutil.DefaultKanisterNamespace).Get(ctx, repositoryServer.Name, metav1.GetOptions{})
-		if rs.Status.Progress == "ServerReady" && err == nil {
+		if rs.Status.Progress == testutil.ServerReady && err == nil {
 			return true, nil
 		}
 		return false, nil
