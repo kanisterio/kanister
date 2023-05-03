@@ -75,7 +75,7 @@ GOBORING ?= ""
 
 ## Tool Versions
 
-CONTROLLER_TOOLS_VERSION ?= "v0.9.2"
+CONTROLLER_TOOLS_VERSION ?= "v0.12.0"
 
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
