@@ -1721,7 +1721,7 @@ DeleteDataUsingKopiaServer
 --------------------------
 
 This function deletes the snapshot data backed up by the ``BackupDataUsingKopiaServer``
-function. It creates a new Pod that runs ``delete data`` job.
+function. It creates a new Pod that runs ``delete snapshot`` command.
 
 .. note::
    The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``

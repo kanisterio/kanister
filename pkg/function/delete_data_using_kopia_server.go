@@ -130,7 +130,6 @@ func deleteDataFromServer(
 	username,
 	userPassphrase string,
 ) (map[string]any, error) {
-
 	options := &kube.PodOptions{
 		Namespace:    namespace,
 		GenerateName: jobPrefix,
