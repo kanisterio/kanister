@@ -1607,7 +1607,7 @@ function argument and restores data to the specified path.
    `backupIdentifier`, Yes, `string`, unique snapshot id generated during backup
    `restorePath`, Yes, `string`, path where data to be restored
    `pod`, No, `string`, pod to which the volumes are attached
-   `volumes`, No, `map[string]string`, Mapping of `pvcName` to `mountPath` under which the volume will be available
+   `volumes`, No, `map[string]string`, mapping of `pvcName` to `mountPath` under which the volume will be available
    `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
 
 .. note::
