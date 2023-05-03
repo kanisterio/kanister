@@ -1594,7 +1594,7 @@ function argument and restores data to the specified path.
    to be mounted to the new Pod (ensure by using
    ``ScaleWorkload`` with replicas=0 first).
    For advanced use cases, it is possible to have concurrent access but
-   the PV needs to have ``RWX`` access mode  and the volume needs to use a
+   the PV needs to have ``RWX`` access mode and the volume needs to use a
    clustered file system that supports concurrent access.
 
 .. csv-table::
