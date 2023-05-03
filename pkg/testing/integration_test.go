@@ -25,7 +25,7 @@ import (
 
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -60,7 +60,7 @@ type kanisterKontroller struct {
 	context            context.Context
 	cancel             context.CancelFunc
 	kubeCli            *kubernetes.Clientset
-	serviceAccount     *v1.ServiceAccount
+	serviceAccount     *corev1.ServiceAccount
 	clusterRole        *rbacv1.ClusterRole
 	clusterRoleBinding *rbacv1.ClusterRoleBinding
 }
@@ -141,17 +141,17 @@ const (
 )
 
 type secretProfile struct {
-	secret  *v1.Secret
+	secret  *corev1.Secret
 	profile *crv1alpha1.Profile
 }
 
 type secretRepositoryServer struct {
-	s3Location         *v1.Secret
-	s3Creds            *v1.Secret
-	repositoryPassword *v1.Secret
-	serverAdminUser    *v1.Secret
-	tls                *v1.Secret
-	userAccess         *v1.Secret
+	s3Location         *corev1.Secret
+	s3Creds            *corev1.Secret
+	repositoryPassword *corev1.Secret
+	serverAdminUser    *corev1.Secret
+	tls                *corev1.Secret
+	userAccess         *corev1.Secret
 	repositoryServer   *crv1alpha1.RepositoryServer
 }
 
@@ -438,27 +438,27 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 	c.Assert(err, IsNil)
 
 	// Setting Up the SecretRefs in RepositoryServer
-	s.repositoryServer.repositoryServer.Spec.Storage.SecretRef = v1.SecretReference{
+	s.repositoryServer.repositoryServer.Spec.Storage.SecretRef = corev1.SecretReference{
 		Name:      s3Location.GetName(),
 		Namespace: s3Location.GetNamespace(),
 	}
-	s.repositoryServer.repositoryServer.Spec.Storage.CredentialSecretRef = v1.SecretReference{
+	s.repositoryServer.repositoryServer.Spec.Storage.CredentialSecretRef = corev1.SecretReference{
 		Name:      s3Creds.GetName(),
 		Namespace: s3Creds.GetNamespace(),
 	}
-	s.repositoryServer.repositoryServer.Spec.Repository.PasswordSecretRef = v1.SecretReference{
+	s.repositoryServer.repositoryServer.Spec.Repository.PasswordSecretRef = corev1.SecretReference{
 		Name:      repositoryPassword.GetName(),
 		Namespace: repositoryPassword.GetNamespace(),
 	}
-	s.repositoryServer.repositoryServer.Spec.Server.UserAccess.UserAccessSecretRef = v1.SecretReference{
+	s.repositoryServer.repositoryServer.Spec.Server.UserAccess.UserAccessSecretRef = corev1.SecretReference{
 		Name:      userAccess.GetName(),
 		Namespace: userAccess.GetNamespace(),
 	}
-	s.repositoryServer.repositoryServer.Spec.Server.AdminSecretRef = v1.SecretReference{
+	s.repositoryServer.repositoryServer.Spec.Server.AdminSecretRef = corev1.SecretReference{
 		Name:      serverAdminUser.GetName(),
 		Namespace: serverAdminUser.GetNamespace(),
 	}
-	s.repositoryServer.repositoryServer.Spec.Server.TLSSecretRef = v1.SecretReference{
+	s.repositoryServer.repositoryServer.Spec.Server.TLSSecretRef = corev1.SecretReference{
 		Name:      tls.GetName(),
 		Namespace: tls.GetNamespace(),
 	}
@@ -636,7 +636,7 @@ func restoreActionSetSpecs(from *crv1alpha1.ActionSet, action string) (*crv1alph
 
 func createNamespace(cli kubernetes.Interface, name string) error {
 	// Create Namespace
-	ns := &v1.Namespace{
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
@@ -674,8 +674,8 @@ func pingAppAndWait(ctx context.Context, a app.DatabaseApp) error {
 	return err
 }
 
-func getServiceAccount(namespace, name string) *v1.ServiceAccount {
-	return &v1.ServiceAccount{
+func getServiceAccount(namespace, name string) *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -702,7 +702,7 @@ func getClusterRole(namespace string) *rbacv1.ClusterRole {
 	}
 }
 
-func getClusterRoleBinding(sa *v1.ServiceAccount, role *rbacv1.ClusterRole) *rbacv1.ClusterRoleBinding {
+func getClusterRoleBinding(sa *corev1.ServiceAccount, role *rbacv1.ClusterRole) *rbacv1.ClusterRoleBinding {
 	return &rbacv1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterRoleBinding",
