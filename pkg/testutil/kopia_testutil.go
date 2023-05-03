@@ -41,6 +41,7 @@ const (
 	DefaultKanisterUser                   = "kanisteruser"
 	DefaultKanisterNamespace              = "kanister"
 	DefaultKopiaRepositoryServerContainer = "repo-server-container"
+	ServerReady                           = "ServerReady"
 )
 
 func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {

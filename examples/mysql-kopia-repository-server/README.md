@@ -26,6 +26,8 @@ $ helm repo update
 
 # Install the MySQL database
 
+> **Note**: The custom image for MySQL is required in order to utilize the Kopia Repository Server based functions.
+
 $ helm install mysql-release bitnami/mysql \
   --namespace mysql \
   --create-namespace \
@@ -49,6 +51,7 @@ You can retrieve your root password by running the following command. Make sure 
 If you have deployed MySQL application with name other than `mysql-release` and namespace other than `mysql`, you need to modify the commands(backup, restore and delete) used below to use the correct release name and namespace
 
 ### Create Repository Server CR
+
 Create Kopia Repository Server CR if not created already
 
 - Create Kopia Repository
@@ -124,14 +127,14 @@ kubectl create secret generic repository-admin-user -n kanister --from-literal=u
 
 kubectl create secret generic repo-pass -n kanister --from-literal=repo-password=<repository_password_set_while_creating_kopia_repository>
 
-kubectl apply -f s3_location_creds.yaml -n kanister
+kubectl create -f s3_location_creds.yaml -n kanister
 
-kubectl apply -f s3_location.yaml -n kanister
+kubectl create -f s3_location.yaml -n kanister
 ```
 
 - Apply Repository Server CRD
 ```bash
-$ kubectl apply -f pkg/customresource/repositoryserver.yaml -n kanister
+$ kubectl create -f pkg/customresource/repositoryserver.yaml -n kanister
 ```
 
 - Create Repository Server CR
