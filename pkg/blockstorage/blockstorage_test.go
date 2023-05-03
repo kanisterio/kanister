@@ -144,6 +144,9 @@ func (s *BlockStorageProviderSuite) TestCreateSnapshot(c *C) {
 }
 
 func (s *BlockStorageProviderSuite) TestSnapshotCopy(c *C) {
+	if s.storageType == blockstorage.TypeGPD {
+		c.Skip("Skip snapshot copy test for GPD provider since the SnapshotCopy is yet to be implemented for GPD ")
+	}
 	var snap *blockstorage.Snapshot
 	var err error
 	srcSnapshot := s.createSnapshot(c)
