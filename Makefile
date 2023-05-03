@@ -73,6 +73,10 @@ GITHUB_TOKEN ?= ""
 
 GOBORING ?= ""
 
+## Tool Versions
+
+CONTROLLER_TOOLS_VERSION ?= "v0.12.0"
+
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
 # If you want to build AND push all containers, see the 'all-push' rule.
@@ -318,3 +322,14 @@ check:
 
 gomod:
 	@$(MAKE) run CMD='-c "./build/gomod.sh"'
+
+
+install-crds: ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	@$(MAKE) run CMD='-c "kubectl apply -f pkg/customresource/"'
+
+uninstall-crds: ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
+	@$(MAKE) run CMD='-c "kubectl delete -f pkg/customresource/"'
+
+manifests: ## Generates CustomResourceDefinition objects.
+	@$(MAKE) run CMD='-c "./build/generate_crds.sh ${CONTROLLER_TOOLS_VERSION}"'
+
