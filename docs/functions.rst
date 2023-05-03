@@ -1579,6 +1579,142 @@ Example:
         args:
           name: "test-snapshot-content-content-dfc8fa67-8b11-4fdf-bf94-928589c2eed8"
 
+.. _backupdatausingkopiaserver:
+
+BackupDataUsingKopiaServer
+--------------------------
+
+This function backs up data from a container into any object store
+supported by Kanister using Kopia Repository Server as data mover.
+
+.. note::
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that back up the volume and store it on the object store.
+
+   Additionally, in order to use this function, a RepositoryServer CR is
+   needed while creating the :ref:`actionsets`
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace of the container that you want to backup the data of
+   `pod`, Yes, `string`, pod name of the container that you want to backup the data of
+   `container`, Yes, `string`, name of the kanister sidecar container
+   `includePath`, Yes, `string`, path of the data to be backed up
+   `snapshotTags`, No, `string`, custom tags to be provided to the kopia snapshots
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `backupID`,`string`, unique snapshot id generated during backup
+   `size`,`string`, size of the backup
+   `phySize`,`string`, physical size of the backup
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+  backup:
+    outputArtifacts:
+      backupIdentifier:
+        keyValue:
+          id: "{{ .Phases.backupToS3.Output.backupID }}"
+    phases:
+    - func: BackupDataUsingKopiaServer
+      name: backupToS3
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: kanister-tools
+        includePath: /mnt/data
+
+.. _restoredatausingkopiaserver:
+
+RestoreDataUsingKopiaServer
+---------------------------
+
+This function restores data backed up by the ``BackupDataUsingKopiaServer`` function.
+It creates a new Pod that mounts the PVCs referenced by the Pod specified in the
+function argument and restores data to the specified path.
+
+.. note::
+   It is extremely important that, the PVCs are not currently
+   in use by an active application container, as they are required
+   to be mounted to the new Pod (ensure by using
+   ``ScaleWorkload`` with replicas=0 first).
+   For advanced use cases, it is possible to have concurrent access but
+   the PV needs to have ``RWX`` access mode and the volume needs to use a
+   clustered file system that supports concurrent access.
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace of the application that you want to restore the data in
+   `image`, Yes, `string`, image to be used for running restore job (should contain kopia binary)
+   `backupIdentifier`, Yes, `string`, unique snapshot id generated during backup
+   `restorePath`, Yes, `string`, path where data to be restored
+   `pod`, No, `string`, pod to which the volumes are attached
+   `volumes`, No, `map[string]string`, mapping of `pvcName` to `mountPath` under which the volume will be available
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
+
+.. note::
+   The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
+   image since it includes the required tools to restore data from
+   the object store.
+
+   Either ``pod`` or the ``volumes`` arguments must be specified to this function
+   based on the function that was used to backup the data.
+   If `BackupDataUsingKopiaServer` is used to backup the data we should specify `pod` and for
+   `CopyVolumeDataUsingKopiaServer`, `Volumes` should be specified.
+
+   Additionally, in order to use this function, a RepositoryServer CR is required.
+
+Example:
+
+Consider a scenario where you wish to restore the data backed up by the
+:ref:`backupdatausingkopiaserver` function. We will first scale down the application,
+restore the data and then scale it back up.
+For this phase, we will use the ``backupIdentifier`` Artifact provided by
+backup function.
+
+.. substitution-code-block:: yaml
+  :linenos:
+
+  - func: ScaleWorkload
+    name: shutdownPod
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
+      kind: Deployment
+      replicas: 0
+  - func: RestoreDataUsingKopiaServer
+    name: restoreFromS3
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      pod: "{{ index .Deployment.Pods 0 }}"
+      backupIdentifier: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
+      restorePath: /mnt/data
+  - func: ScaleWorkload
+    name: bringupPod
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
+      kind: Deployment
+      replicas: 1
+
 .. _deletedatausingkopiaserver:
 
 DeleteDataUsingKopiaServer
