@@ -31,7 +31,7 @@ $ helm repo update
 $ helm install mysql-release bitnami/mysql \
   --namespace mysql \
   --create-namespace \
-  --set image.repository=kanisterio/mysql \
+  --set image.repository=kanisterio/mysql-kopia \
   --set image.tag=0.90.1 \
   --set auth.rootPassword='<mysql-root-password>'
 ```
@@ -249,13 +249,13 @@ mysql> SELECT * FROM pets;
 You can now take a backup of the MySQL data using an ActionSet defining backup for this application. Create an ActionSet in the same namespace as the controller.
 
 ```bash
-# Find profile name
-$ kubectl get profile -n mysql
-NAME               AGE
-s3-profile-drnw9   2m
+# Find Repository name
+$ kubectl get repositoryservers -n kanister
+NAME                  AGE
+kopia-repo-server-1   2m
 
 # Create Actionset
-# Please make sure the value of profile and blueprint matches with the names of profile and blueprint that we have created already
+# Please make sure the value of repository-server and blueprint matches with the names of repository-server and blueprint that we have created already
 kanctl create actionset --action backup --namespace kanister --blueprint mysql-blueprint --statefulset mysql/mysql-release --secrets mysql=mysql/mysql-release --repository-server=kanister/kopia-repo-server-1
 actionset backup-rslmb created
 
@@ -408,16 +408,16 @@ $ helm delete mysql-release -n mysql
 The command removes all the Kubernetes components associated with the chart and deletes the release.
 
 ### Delete CRs
-Remove Blueprint, Profile CR and ActionSets
+Remove Blueprint, RepositoryServer CR and ActionSets
 
 ```bash
 $ kubectl delete blueprints.cr.kanister.io mysql-blueprint -n kanister
 
-$ kubectl get profiles.cr.kanister.io -n mysql
-NAME               AGE
-s3-profile-drnw9   122m
+$ kubectl get repositoryservers -n kanister
+NAME                  AGE
+kopia-repo-server-1   122m
 
-$ kubectl delete profiles.cr.kanister.io s3-profile-drnw9 -n mysql
+$ kubectl delete repositoryservers kopia-repo-server-1 -n kanister
 
 $ kubectl --namespace kanister delete actionsets.cr.kanister.io backup-rslmb restore-backup-rslmb-2hdsz delete-backup-rslmb-cq6bw
 ```
