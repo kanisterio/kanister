@@ -43,11 +43,11 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 		return err
 	}
 
-	//err = h.checkServerStatus(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
-	//if err == nil {
-	//	h.Logger.Info("Kopia API server already started")
-	//	return nil
-	//}
+	err = h.checkServerStatusPre(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
+	if err == nil {
+		h.Logger.Info("Kopia API server already started")
+		return nil
+	}
 
 	cmd := command.ServerStart(
 		command.ServerStartCommandArgs{
@@ -96,6 +96,31 @@ func (h *RepoServerHandler) getServerDetails(ctx context.Context) (string, strin
 	return repoServerAddress, string(serverAdminUsername), string(serverAdminPassword), nil
 }
 
+func (h *RepoServerHandler) checkServerStatusPre(ctx context.Context, serverAddress, username, password string) error {
+	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
+	if err != nil {
+		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")
+	}
+	cmd := command.ServerStatus(
+		command.ServerStatusCommandArgs{
+			CommandArgs: &command.CommandArgs{
+				RepoPassword:   "",
+				ConfigFilePath: command.DefaultConfigFilePath,
+				LogDirectory:   command.DefaultLogDirectory,
+			},
+			ServerAddress:  serverAddress,
+			ServerUsername: username,
+			ServerPassword: password,
+			Fingerprint:    fingerprint,
+		})
+	stdout, stderr, exErr := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
+	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
+	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
+	if exErr != nil {
+		return exErr
+	}
+	return nil
+}
 func (h *RepoServerHandler) checkServerStatus(ctx context.Context, serverAddress, username, password string) error {
 	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
 	if err != nil {
