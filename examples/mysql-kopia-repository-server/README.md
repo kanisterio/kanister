@@ -29,7 +29,7 @@ $ helm repo update
 $ helm install mysql-release bitnami/mysql \
   --namespace mysql \
   --create-namespace \
-  --set image.repository=kanisterio/mysql \
+  --set image.repository=kanisterio/mysql-kopia \
   --set image.tag=0.90.1 \
   --set auth.rootPassword='<mysql-root-password>'
 ```

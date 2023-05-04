@@ -105,7 +105,7 @@ dockers:
 - ids:
   - kando
   image_templates:
-  - 'ghcr.io/kanisterio/mysql:{{ .Tag }}'
+  - 'ghcr.io/kanisterio/mysql-kopia:{{ .Tag }}'
   dockerfile: 'docker/mysql/Dockerfile'
 - ids:
   - kando
