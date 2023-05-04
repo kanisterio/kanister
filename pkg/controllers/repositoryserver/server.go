@@ -43,7 +43,7 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 		return err
 	}
 
-	err = h.preCheckServerStatus(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
+	err = h.checkServerStatus(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
 	if err == nil {
 		h.Logger.Info("Kopia API server already started")
 		return nil
@@ -72,7 +72,7 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 		return errors.Wrap(err, "Failed to start Kopia API server")
 	}
 
-	err = h.checkServerStatus(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
+	err = h.checkServerStatusTillCommandSucceed(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
 	if err != nil {
 		return errors.Wrap(err, "Failed to check Kopia API server status")
 	}
@@ -96,7 +96,7 @@ func (h *RepoServerHandler) getServerDetails(ctx context.Context) (string, strin
 	return repoServerAddress, string(serverAdminUsername), string(serverAdminPassword), nil
 }
 
-func (h *RepoServerHandler) preCheckServerStatus(ctx context.Context, serverAddress, username, password string) error {
+func (h *RepoServerHandler) checkServerStatus(ctx context.Context, serverAddress, username, password string) error {
 	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
 	if err != nil {
 		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")
@@ -122,7 +122,7 @@ func (h *RepoServerHandler) preCheckServerStatus(ctx context.Context, serverAddr
 	return nil
 }
 
-func (h *RepoServerHandler) checkServerStatus(ctx context.Context, serverAddress, username, password string) error {
+func (h *RepoServerHandler) checkServerStatusTillCommandSucceed(ctx context.Context, serverAddress, username, password string) error {
 	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
 	if err != nil {
 		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")
