@@ -72,7 +72,7 @@ func (h *RepoServerHandler) startRepoProxyServer(ctx context.Context) (err error
 		return errors.Wrap(err, "Failed to start Kopia API server")
 	}
 
-	err = h.checkServerStatusTillCommandSucceed(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
+	err = h.waitForServerReady(ctx, repoServerAddress, serverAdminUserName, serverAdminPassword)
 	if err != nil {
 		return errors.Wrap(err, "Failed to check Kopia API server status")
 	}
@@ -116,13 +116,10 @@ func (h *RepoServerHandler) checkServerStatus(ctx context.Context, serverAddress
 	stdout, stderr, exErr := kube.Exec(h.KubeCli, h.RepositoryServer.Namespace, h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, cmd, nil)
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stdout)
 	format.Log(h.RepositoryServer.Status.ServerInfo.PodName, repoServerPodContainerName, stderr)
-	if exErr != nil {
-		return exErr
-	}
-	return nil
+	return exErr
 }
 
-func (h *RepoServerHandler) checkServerStatusTillCommandSucceed(ctx context.Context, serverAddress, username, password string) error {
+func (h *RepoServerHandler) waitForServerReady(ctx context.Context, serverAddress, username, password string) error {
 	fingerprint, err := kopia.ExtractFingerprintFromCertSecret(ctx, h.KubeCli, h.RepositoryServerSecrets.serverTLS.Name, h.RepositoryServer.Namespace)
 	if err != nil {
 		return errors.Wrap(err, "Failed to extract fingerprint from Kopia API server certificate secret data")
