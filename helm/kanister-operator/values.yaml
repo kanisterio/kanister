@@ -6,9 +6,9 @@ image:
   tag: 0.91.0
   pullPolicy: IfNotPresent
 repositoryServerControllerImage:
-  registry: amrutakale
+  registry: ghcr.io/kanisterio
   name: repo-server-controller
-  tag: 0.90.4
+  tag: 0.91.0
   pullPolicy: IfNotPresent
 rbac:
   create: true
@@ -27,6 +27,7 @@ controller:
   # false : CRDs would be created by helm
   # true : CRDs would be created by kanister controller
   updateCRDs: true
+  parallelism: 8
 bpValidatingWebhook:
   enabled: true
   tls:
@@ -37,10 +38,17 @@ repositoryServerController:
   enabled: false
   # startTimeout is used to specify the time in seconds to wait for starting the kopia repository server
   # Default timeout is 600 seconds
+<<<<<<< HEAD
   serverStartTimeout:
   logLevel: ''
   container:
     name: ''
+=======
+  serverStartTimeout: 600
+  logLevel: 'info'
+  container:
+    name: 'repository-server-controller'
+>>>>>>> master
 resources:
 # We usually recommend not to specify default resources and to leave this as a conscious
 # choice for the user. This also increases chances charts run on environments with little

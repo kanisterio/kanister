@@ -282,16 +282,12 @@ func (s *EbsStorage) SnapshotCopy(ctx context.Context, from, to blockstorage.Sna
 	// independent of whether or not the snapshot is encrypted.
 	var presignedURL *string
 	if to.Region != from.Region {
-		fromCli, err2 := newEC2Client(from.Region, s.Ec2Cli.Config.Copy())
-		if err2 != nil {
-			return nil, errors.Wrap(err2, "Could not create client to presign URL for snapshot copy request")
-		}
 		si := ec2.CopySnapshotInput{
 			SourceSnapshotId:  aws.String(from.ID),
 			SourceRegion:      aws.String(from.Region),
 			DestinationRegion: ec2Cli.Config.Region,
 		}
-		rq, _ := fromCli.CopySnapshotRequest(&si)
+		rq, _ := ec2Cli.CopySnapshotRequest(&si)
 		su, err2 := rq.Presign(120 * time.Minute)
 		if err2 != nil {
 			return nil, errors.Wrap(err2, "Could not presign URL for snapshot copy request")
