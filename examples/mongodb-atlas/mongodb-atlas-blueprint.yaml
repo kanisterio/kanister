@@ -15,7 +15,7 @@ actions:
       name: mongoBackup
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: ghcr.io/kanisterio/mongodb-atlas:0.91.0
+        image: ghcr.io/kanisterio/mongodb-atlas:0.0.1
         command:
           - bash
           - -o
@@ -42,7 +42,7 @@ actions:
       name: waitForBackupToComplete
       args:
         namespace: "{{ .Object.metadata.namespace }}"
-        image: ghcr.io/kanisterio/mongodb-atlas:0.91.0
+        image: ghcr.io/kanisterio/mongodb-atlas:0.0.1
         command:
           - bash
           - -o
@@ -95,7 +95,7 @@ actions:
           namespace: '{{ .ArtifactsIn.backupOutput.KeyValue.appNamespace }}'
       args:
         namespace: "{{ .ArtifactsIn.backupOutput.KeyValue.appNamespace }}"
-        image: ghcr.io/kanisterio/mongodb-atlas:0.91.0
+        image: ghcr.io/kanisterio/mongodb-atlas:0.0.1
         command:
           - bash
           - -o
@@ -127,7 +127,7 @@ actions:
       name: waitForRestoreToComplete
       args:
         namespace: "{{ .ArtifactsIn.backupOutput.KeyValue.appNamespace }}"
-        image: ghcr.io/kanisterio/mongodb-atlas:0.91.0
+        image: ghcr.io/kanisterio/mongodb-atlas:0.0.1
         command:
           - bash
           - -o
@@ -182,7 +182,7 @@ actions:
           namespace: '{{ .ArtifactsIn.backupOutput.KeyValue.appNamespace }}'
       args:
         namespace: "{{ .ArtifactsIn.backupOutput.KeyValue.appNamespace }}"
-        image: ghcr.io/kanisterio/mongodb-atlas:0.91.0
+        image: ghcr.io/kanisterio/mongodb-atlas:0.0.1
         command:
           - bash
           - -o
