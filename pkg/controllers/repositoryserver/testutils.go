@@ -8,22 +8,32 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"os"
 	"time"
 
-	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	crv1alpha1 "github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
+	awsconfig "github.com/kanisterio/kanister/pkg/aws"
+	"github.com/kanisterio/kanister/pkg/kopia/command"
+	"github.com/kanisterio/kanister/pkg/kopia/repository"
+	"github.com/kanisterio/kanister/pkg/testutil"
 )
 
 const (
-	DefaultRepositoryPath                 = "kopia-repo-controller-test"
-	DefaultRepositoryServerAdminUser      = "admin@test"
-	DefaultRepositoryServerHost           = "localhost"
-	DefaultRepositoryPassword             = "test1234"
-	DefaultKanisterAdminUser              = "kanisterAdmin"
-	DefaultKanisterUser                   = "kanisteruser"
-	DefaultKanisterNamespace              = "kanister"
-	DefaultKopiaRepositoryServerContainer = "repo-server-container"
+	DefaultKopiaRepositoryPath                 = "kopia-repo-controller-test"
+	DefaulKopiaRepositoryServerAdminUser       = "admin@test"
+	DefaultKopiaRepositoryServerAdminPassword  = "admin1234"
+	DefaultKopiaRepositoryServerHost           = "localhost"
+	DefaultKopiaRepositoryPassword             = "test1234"
+	DefaultKopiaRepositoryUser                 = "repositoryUser"
+	DefaultKopiaRepositoryServerAccessUser     = "kanisterUser"
+	DefaultKopiaRepositoryServerAccessPassword = "test1234"
+	DefaultKanisterNamespace                   = "kanister"
+	DefaultKopiaRepositoryServerContainer      = "repo-server-container"
 )
 
 func getKopiaTLSSecret() (map[string][]byte, error) {
@@ -94,9 +104,9 @@ func getDefaultKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryS
 				},
 			},
 			Repository: crv1alpha1.Repository{
-				RootPath: DefaultRepositoryPath,
-				Username: DefaultKanisterAdminUser,
-				Hostname: DefaultRepositoryServerHost,
+				RootPath: DefaultKopiaRepositoryPath,
+				Username: DefaultKopiaRepositoryUser,
+				Hostname: DefaultKopiaRepositoryServerHost,
 				PasswordSecretRef: v1.SecretReference{
 					Namespace: namespace,
 				},
@@ -106,7 +116,7 @@ func getDefaultKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryS
 					UserAccessSecretRef: v1.SecretReference{
 						Namespace: namespace,
 					},
-					Username: DefaultKanisterUser,
+					Username: DefaultKopiaRepositoryServerAccessUser,
 				},
 				AdminSecretRef: v1.SecretReference{
 					Namespace: namespace,
@@ -118,6 +128,27 @@ func getDefaultKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryS
 		},
 	}
 	return repositoryServer
+}
+
+func getDefaultS3StorageCreds() map[string][]byte {
+	key := os.Getenv(awsconfig.AccessKeyID)
+	val := os.Getenv(awsconfig.SecretAccessKey)
+
+	return map[string][]byte{
+		"aws_access_key_id":     []byte(key),
+		"aws_secret_access_key": []byte(val),
+	}
+
+}
+
+func getDefaultS3StorageLocation() map[string][]byte {
+	return map[string][]byte{
+		"type":     []byte(crv1alpha1.LocationTypeS3Compliant),
+		"bucket":   []byte(testutil.TestS3BucketName),
+		"path":     []byte(DefaultKopiaRepositoryPath),
+		"region":   []byte(testutil.TestS3Region),
+		"endpoint": []byte(os.Getenv("LOCATION_ENDPOINT")),
+	}
 }
 
 func setRepositoryServerSecretsInCR(secrets *repositoryServerSecrets, repoServerCR *crv1alpha1.RepositoryServer) {
@@ -142,4 +173,30 @@ func setRepositoryServerSecretsInCR(secrets *repositoryServerSecrets, repoServer
 			repoServerCR.Spec.Storage.CredentialSecretRef.Name = secrets.storageCredentials.Name
 		}
 	}
+}
+
+func createKopiaRepository(cli kubernetes.Interface, rs *v1alpha1.RepositoryServer, storageLocation map[string][]byte) error {
+	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
+
+	commandArgs := command.RepositoryCommandArgs{
+		CommandArgs: &command.CommandArgs{
+			RepoPassword:   DefaultKopiaRepositoryPassword,
+			ConfigFilePath: defaultRepoConfigFilePath,
+			LogDirectory:   defaultRepoLogDirectory,
+		},
+		CacheDirectory:  command.DefaultCacheDirectory,
+		Hostname:        DefaultKopiaRepositoryServerHost,
+		ContentCacheMB:  contentCacheMB,
+		MetadataCacheMB: metadataCacheMB,
+		Username:        DefaultKopiaRepositoryUser,
+		RepoPathPrefix:  DefaultKopiaRepositoryPath,
+		Location:        storageLocation,
+	}
+	return repository.CreateKopiaRepository(
+		cli,
+		DefaultKanisterNamespace,
+		rs.Status.ServerInfo.PodName,
+		DefaultKopiaRepositoryServerContainer,
+		commandArgs,
+	)
 }
