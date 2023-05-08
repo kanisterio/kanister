@@ -37,15 +37,6 @@ REPOSERVER_IMAGE ?= $(REGISTRY)/$(REPOSITORY_SERVER_IMAGE_NAME)
 repo-server-help: ## Display the help regarding building and deloying kopia repository server.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-<<<<<<< HEAD
-##@ Development
-
-.PHONY: manifests
-manifests: ## Generates CustomResourceDefinition objects.
-	@$(MAKE) run CMD='-c "./build/generate_crds.sh ${CONTROLLER_TOOLS_VERSION}"'
-
-=======
->>>>>>> master
 ##@ Build
 
 .PHONY: repo-server-build
