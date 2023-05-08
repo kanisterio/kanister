@@ -133,6 +133,8 @@ As a reference, below is an example of a BlueprintAction.
             - |
               echo "Example Action"
 
+.. _actionsets:
+
 ActionSets
 ----------
 

@@ -29,4 +29,4 @@ const RepositoryServerResourceName = "respositoryserver"
 const RepositoryServerResourceNamePlural = "respositoryservers"
 
 const LatestKanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:v9.99.9-dev"
-const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.90.0"
+const KanisterToolsImage = "ghcr.io/kanisterio/kanister-tools:0.91.0"
