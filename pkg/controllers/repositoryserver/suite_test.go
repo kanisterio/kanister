@@ -26,7 +26,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/kanisterio/kanister/pkg/apis/cr/v1alpha1"
 	crclientv1alpha1 "github.com/kanisterio/kanister/pkg/client/clientset/versioned/typed/cr/v1alpha1"
@@ -40,7 +39,6 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type RepoServerControllerSuite struct {
-	testEnv                       *envtest.Environment
 	crCli                         crclientv1alpha1.CrV1alpha1Interface
 	cli                           kubernetes.Interface
 	repoServerControllerNamespace string
@@ -91,7 +89,6 @@ func (s *RepoServerControllerSuite) SetUpSuite(c *C) {
 	c.Assert(err, IsNil)
 	s.repoServerControllerNamespace = cns.Name
 	s.createRepositoryServerSecrets(c)
-
 }
 
 func (s *RepoServerControllerSuite) createRepositoryServerSecrets(c *C) {
@@ -135,7 +132,6 @@ func (s *RepoServerControllerSuite) createSecret(name string, secrettype v1.Secr
 
 	se, err = s.cli.CoreV1().Secrets(s.repoServerControllerNamespace).Create(context.Background(), secret, metav1.CreateOptions{})
 	return
-
 }
 
 func (s *RepoServerControllerSuite) TestRepositoryServerReady(c *C) {
@@ -156,7 +152,7 @@ func (s *RepoServerControllerSuite) waitForRepoServerInfoUpdateInCR(rs *v1alpha1
 	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 	defer cancel()
 	err := poll.Wait(ctx, func(ctx context.Context) (bool, error) {
-		if rs.Status.ServerInfo.PodName == "" || rs.Status.ServerInfo.PodName == "" {
+		if rs.Status.ServerInfo.PodName == "" || rs.Status.ServerInfo.ServiceName == "" {
 			return false, errors.New("Repository server CR server not set")
 		}
 		return true, nil

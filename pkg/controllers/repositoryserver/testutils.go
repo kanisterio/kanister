@@ -85,7 +85,6 @@ func getKopiaTLSSecret() (map[string][]byte, error) {
 		"tls.crt": caPEM.Bytes(),
 		"tls.key": caPrivKeyPEM.Bytes(),
 	}, nil
-
 }
 
 func getDefaultKopiaRepositoryServerCR(namespace string) *crv1alpha1.RepositoryServer {
@@ -138,7 +137,6 @@ func getDefaultS3StorageCreds() map[string][]byte {
 		"aws_access_key_id":     []byte(key),
 		"aws_secret_access_key": []byte(val),
 	}
-
 }
 
 func getDefaultS3StorageLocation() map[string][]byte {
