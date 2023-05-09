@@ -968,6 +968,7 @@ Outputs:
    `instanceID`, `string`, ID of the RDS instance
    `securityGroupID`, `[]string`, AWS Security Group IDs associated with the RDS instance
    `allocatedStorage`, `string`, Specifies the allocated storage size in gibibytes (GiB)
+   `dbSubnetGroup`, `string`, Specifies the DB Subnet group associated with the RDS instance
 
 Example:
 
@@ -983,7 +984,7 @@ Example:
             instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
             securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
             allocatedStorage: "{{ .Phases.createSnapshot.Output.allocatedStorage }}"
-            backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
+            dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
       configMapNames:
       - dbconfig
       phases:
@@ -1015,11 +1016,13 @@ Arguments:
    `backupArtifactPrefix`, No, `string`, path to store the backup on the object store
    `databases`, No, `[]string`, list of databases to take backup of
    `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to temporary RDS instance. ()
+   `dbSubnetGroup`, No, `string`, DB Subnet Group to be passed to temporary RDS instance
 
 .. note::
    - If ``databases`` argument is not set, backup of all the databases will be taken.
    - If ``securityGroupID`` argument is not set, ``ExportRDSSnapshotToLocation`` will find out Security Group IDs associated with instance with ``instanceID`` and will pass the same.
    - If ``backupArtifactPrefix`` argument is not set, ``instanceID`` will be used as `backupArtifactPrefix`.
+   - If ``dbSubnetGroup`` argument is not set, ``default`` DB Subnet group will be used.
 
 Outputs:
 
@@ -1047,6 +1050,7 @@ Example:
             instanceID: "{{ .Phases.createSnapshot.Output.instanceID }}"
             securityGroupID: "{{ .Phases.createSnapshot.Output.securityGroupID }}"
             backupID: "{{ .Phases.exportSnapshot.Output.backupID }}"
+            dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
       configMapNames:
       - dbconfig
       phases:
@@ -1073,6 +1077,7 @@ Example:
           databases: '{{ index .ConfigMaps.dbconfig.Data "postgres.databases" }}'
           snapshotID: "{{ .Phases.createSnapshot.Output.snapshotID }}"
           backupArtifactPrefix: test-postgresql-instance/postgres
+          dbSubnetGroup: "{{ .Phases.createSnapshot.Output.dbSubnetGroup }}"
 
 
 RestoreRDSSnapshot
@@ -1098,13 +1103,15 @@ Arguments:
    `password`, No, `string`, password of the RDS database instance
    `backupArtifactPrefix`, No, `string`, path to store the backup on the object store
    `backupID`, No, `string`, unique backup id generated during storing data into object storage
-   `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to temporary RDS instance
+   `securityGroupID`, No, `[]string`, list of ``securityGroupID`` to be passed to restored RDS instance
    `namespace`, No, `string`, namespace in which to execute. Required if ``snapshotID`` is nil
    `dbEngine`, No, `string`, one of the RDS db engines. Supported engines: ``PostgreSQL`` ``aurora`` ``aurora-mysql`` and ``aurora-postgresql``. Required if ``snapshotID`` is nil or Aurora is run in RDS instance
+   `dbSubnetGroup`, No, `string`, DB Subnet Group to be passed to restored RDS instance
 
 .. note::
    - If ``snapshotID`` is not set, restore will be done from data dump. In that case ``backupID`` `arg` is required.
    - If ``securityGroupID`` argument is not set, ``RestoreRDSSnapshot`` will find out Security Group IDs associated with instance with ``instanceID`` and will pass the same.
+   - If ``dbSubnetGroup`` argument is not set, ``default`` DB Subnet group will be used.
 
 Outputs:
 
@@ -1141,7 +1148,7 @@ Example:
         username: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "username" | toString }}'
         password: '{{ index .Phases.restoreSnapshots.Secrets.dbsecret.Data "password" | toString }}'
         dbEngine: "PostgreSQL"
-
+        dbSubnetGroup: "{{ .ArtifactsIn.backupInfo.KeyValue.dbSubnetGroup }}"
 
 DeleteRDSSnapshot
 -----------------
@@ -1572,6 +1579,181 @@ Example:
         args:
           name: "test-snapshot-content-content-dfc8fa67-8b11-4fdf-bf94-928589c2eed8"
 
+.. _backupdatausingkopiaserver:
+
+BackupDataUsingKopiaServer
+--------------------------
+
+This function backs up data from a container into any object store
+supported by Kanister using Kopia Repository Server as data mover.
+
+.. note::
+   It is important that the application includes a ``kanister-tools``
+   sidecar container. This sidecar is necessary to run the
+   tools that back up the volume and store it on the object store.
+
+   Additionally, in order to use this function, a RepositoryServer CR is
+   needed while creating the :ref:`actionsets`
+
+Arguments:
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace of the container that you want to backup the data of
+   `pod`, Yes, `string`, pod name of the container that you want to backup the data of
+   `container`, Yes, `string`, name of the kanister sidecar container
+   `includePath`, Yes, `string`, path of the data to be backed up
+   `snapshotTags`, No, `string`, custom tags to be provided to the kopia snapshots
+
+Outputs:
+
+.. csv-table::
+   :header: "Output", "Type", "Description"
+   :align: left
+   :widths: 5,5,15
+
+   `backupID`,`string`, unique snapshot id generated during backup
+   `size`,`string`, size of the backup
+   `phySize`,`string`, physical size of the backup
+
+Example:
+
+.. code-block:: yaml
+  :linenos:
+
+  actions:
+  backup:
+    outputArtifacts:
+      backupIdentifier:
+        keyValue:
+          id: "{{ .Phases.backupToS3.Output.backupID }}"
+    phases:
+    - func: BackupDataUsingKopiaServer
+      name: backupToS3
+      args:
+        namespace: "{{ .Deployment.Namespace }}"
+        pod: "{{ index .Deployment.Pods 0 }}"
+        container: kanister-tools
+        includePath: /mnt/data
+
+.. _restoredatausingkopiaserver:
+
+RestoreDataUsingKopiaServer
+---------------------------
+
+This function restores data backed up by the ``BackupDataUsingKopiaServer`` function.
+It creates a new Pod that mounts the PVCs referenced by the Pod specified in the
+function argument and restores data to the specified path.
+
+.. note::
+   It is extremely important that, the PVCs are not currently
+   in use by an active application container, as they are required
+   to be mounted to the new Pod (ensure by using
+   ``ScaleWorkload`` with replicas=0 first).
+   For advanced use cases, it is possible to have concurrent access but
+   the PV needs to have ``RWX`` access mode and the volume needs to use a
+   clustered file system that supports concurrent access.
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace of the application that you want to restore the data in
+   `image`, Yes, `string`, image to be used for running restore job (should contain kopia binary)
+   `backupIdentifier`, Yes, `string`, unique snapshot id generated during backup
+   `restorePath`, Yes, `string`, path where data to be restored
+   `pod`, No, `string`, pod to which the volumes are attached
+   `volumes`, No, `map[string]string`, mapping of `pvcName` to `mountPath` under which the volume will be available
+   `podOverride`, No, `map[string]interface{}`, specs to override default pod specs with
+
+.. note::
+   The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
+   image since it includes the required tools to restore data from
+   the object store.
+
+   Either ``pod`` or the ``volumes`` arguments must be specified to this function
+   based on the function that was used to backup the data.
+   If `BackupDataUsingKopiaServer` is used to backup the data we should specify `pod` and for
+   `CopyVolumeDataUsingKopiaServer`, `Volumes` should be specified.
+
+   Additionally, in order to use this function, a RepositoryServer CR is required.
+
+Example:
+
+Consider a scenario where you wish to restore the data backed up by the
+:ref:`backupdatausingkopiaserver` function. We will first scale down the application,
+restore the data and then scale it back up.
+For this phase, we will use the ``backupIdentifier`` Artifact provided by
+backup function.
+
+.. substitution-code-block:: yaml
+  :linenos:
+
+  - func: ScaleWorkload
+    name: shutdownPod
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
+      kind: Deployment
+      replicas: 0
+  - func: RestoreDataUsingKopiaServer
+    name: restoreFromS3
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      pod: "{{ index .Deployment.Pods 0 }}"
+      backupIdentifier: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
+      restorePath: /mnt/data
+  - func: ScaleWorkload
+    name: bringupPod
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      name: "{{ .Deployment.Name }}"
+      kind: Deployment
+      replicas: 1
+
+.. _deletedatausingkopiaserver:
+
+DeleteDataUsingKopiaServer
+--------------------------
+
+This function deletes the snapshot data backed up by the ``BackupDataUsingKopiaServer``
+function. It creates a new Pod that runs ``delete snapshot`` command.
+
+.. note::
+   The ``image`` argument requires the use of ``ghcr.io/kanisterio/kanister-tools``
+   image since it includes the required tools to delete snapshot from
+   the object store.
+
+   Additionally, in order to use this function, a RepositoryServer CR is required.
+
+.. csv-table::
+   :header: "Argument", "Required", "Type", "Description"
+   :align: left
+   :widths: 5,5,5,15
+
+   `namespace`, Yes, `string`, namespace in which to execute the delete job
+   `backupID`, Yes, `string`, unique snapshot id generated during backup
+   `image`, Yes, `string`, image to be used for running delete job (should contain kopia binary)
+
+Example:
+
+Consider a scenario where you wish to delete the data backed up by the
+:ref:`backupdatausingkopiaserver` function.
+For this phase, we will use the ``backupIdentifier`` Artifact provided by backup function.
+
+.. code-block:: yaml
+  :linenos:
+
+  - func: DeleteDataUsingKopiaServer
+    name: DeleteFromObjectStore
+    args:
+      namespace: "{{ .Deployment.Namespace }}"
+      backupID: "{{ .ArtifactsIn.backupIdentifier.KeyValue.id }}"
+      image: ghcr.io/kanisterio/kanister-tools:0.89.0
 
 Registering Functions
 ---------------------

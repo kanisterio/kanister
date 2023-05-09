@@ -54,8 +54,11 @@ schemas
 stateful
 stdout
 subcommand
+Subnet
 templating
 Walkthrough
 walkthrough
 Workflow
 webhook
+Kopia
+kopia

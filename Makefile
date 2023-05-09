@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+# include repository server's makefile
+include Makefile.kubebuilder
+
 # The binary to build (just the basename).
 BIN := controller
 
@@ -43,7 +47,7 @@ DOCKER_CONFIG ?= "$(HOME)/.docker"
 vm-driver ?= "kvm"
 
 # Default OCP version in which the OpenShift apps are going to run
-ocp_version ?= "4.11"
+ocp_version ?= "4.12"
 ###
 ### These variables should not need tweaking.
 ###
@@ -58,7 +62,7 @@ IMAGE_NAME := $(BIN)
 
 IMAGE := $(REGISTRY)/$(IMAGE_NAME)
 
-BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.22
+BUILD_IMAGE ?= ghcr.io/kanisterio/build:v0.0.23
 
 # tag 0.1.0 is, 0.0.1 (latest) + gh + aws + helm binary
 DOCS_BUILD_IMAGE ?= ghcr.io/kanisterio/docker-sphinx:0.2.0
@@ -68,6 +72,10 @@ DOCS_RELEASE_BUCKET ?= s3://docs.kanister.io
 GITHUB_TOKEN ?= ""
 
 GOBORING ?= ""
+
+## Tool Versions
+
+CONTROLLER_TOOLS_VERSION ?= "v0.12.0"
 
 # If you want to build all binaries, see the 'all-build' rule.
 # If you want to build all containers, see the 'all-container' rule.
@@ -314,3 +322,14 @@ check:
 
 gomod:
 	@$(MAKE) run CMD='-c "./build/gomod.sh"'
+
+
+install-crds: ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	@$(MAKE) run CMD='-c "kubectl apply -f pkg/customresource/"'
+
+uninstall-crds: ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
+	@$(MAKE) run CMD='-c "kubectl delete -f pkg/customresource/"'
+
+manifests: ## Generates CustomResourceDefinition objects.
+	@$(MAKE) run CMD='-c "./build/generate_crds.sh ${CONTROLLER_TOOLS_VERSION}"'
+
