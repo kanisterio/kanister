@@ -22,30 +22,9 @@ $ helm install kanister --namespace kanister --create-namespace \
     kanister/kanister-operator --set image.tag=0.91.0
 ```
 
-### Build a tools image to interact with MongoDB Atlas
-
-We need to build a tools image that contains `mongosh`, `atlas` and other
-related utilities so that it can be used to interact with the MongoDB Atlas
-database to add data to it.
-This image will also be used in the Blueprint to run the `atlas` backup and
-restore related commands against the MongoDB Atlas database. Please execute the
-commands below to build and push the image.
-
-```bash
-$ docker build -t <registry>/<repository>/mongodb-atlas:<tag_name> \
-    PATH_TO_KANISTER/docker/mongodb-atlas
-$ docker push <registry>/<repository>/mongodb-atlas:<tag_name>
-```
-
 ### Create Blueprint
 
 Create Blueprint in the same namespace as the Kanister controller.
-
-**NOTE:**
-
-Please make sure that the `<registry>`, `<repository>` and `<tag_name>` in the
-blueprint (`mongodb-atlas-blueprint.yaml`) are replaced with correct values of
-the tools image that we built above.
 
 ```bash
 $ kubectl create -f ./mongodb-atlas-blueprint.yaml -n kanister
