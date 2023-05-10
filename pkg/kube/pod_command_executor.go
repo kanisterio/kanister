@@ -78,8 +78,8 @@ type podCommandExecutor struct {
 // Exec runs the command and logs stdout and stderr.
 func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	var (
-		stderrTail = NewLogTail(LogTailDefaultLength)
-		stdoutTail = NewLogTail(LogTailDefaultLength)
+		stderrTail = NewLogTail(logTailDefaultLength)
+		stdoutTail = NewLogTail(logTailDefaultLength)
 		opts       = ExecOptions{
 			Command:       command,
 			Namespace:     p.namespace,
