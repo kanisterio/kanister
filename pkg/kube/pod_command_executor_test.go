@@ -224,8 +224,8 @@ func (s *PodCommandExecutorTestSuite) TestPodRunnerExec(c *C) {
 			c.Assert(bStdout.String(), Equals, expStdout)
 			c.Assert(bStderr.String(), Equals, expStderr)
 
-			ee, ok := err.(ExecError)
-			c.Assert(ok, Equals, true)
+			var ee *ExecError
+			c.Assert(errors.As(err, &ee), Equals, true)
 			c.Assert(ee.Error(), Equals, "SimulatedError")
 			c.Assert(ee.Stderr(), Equals, expErrorStderr)
 			c.Assert(ee.Stdout(), Equals, expErrorStdout)

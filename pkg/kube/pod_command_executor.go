@@ -21,38 +21,18 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type ExecError interface {
+type ExecError struct {
 	error
-	Stdout() string
-	Stderr() string
-}
-
-type execError struct {
-	cause  error
 	stdout LogTail
 	stderr LogTail
 }
 
-func (e *execError) Error() string {
-	return e.cause.Error()
-}
-
-func (e *execError) Stdout() string {
+func (e *ExecError) Stdout() string {
 	return e.stdout.ToString()
 }
 
-func (e *execError) Stderr() string {
+func (e *ExecError) Stderr() string {
 	return e.stderr.ToString()
-}
-
-var _ ExecError = (*execError)(nil)
-
-func NewExecError(err error, stdout, stderr LogTail) ExecError {
-	return &execError{
-		cause:  err,
-		stdout: stdout,
-		stderr: stderr,
-	}
 }
 
 // PodCommandExecutor allows us to execute command within the pod
@@ -111,7 +91,11 @@ func (p *podCommandExecutor) Exec(ctx context.Context, command []string, stdin i
 		err = ctx.Err()
 	case <-cmdDone:
 		if err != nil {
-			err = NewExecError(err, stdoutTail, stderrTail)
+			err = &ExecError{
+				error:  err,
+				stdout: stdoutTail,
+				stderr: stderrTail,
+			}
 		}
 	}
 
