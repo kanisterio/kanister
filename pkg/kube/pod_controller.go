@@ -40,9 +40,9 @@ var (
 type PodController interface {
 	PodName() string
 	Pod() *corev1.Pod
-	StartPod(ctx context.Context, stopTimeout time.Duration) error
+	StartPod(ctx context.Context) error
 	WaitForPodReady(ctx context.Context) error
-	StopPod(ctx context.Context) error
+	StopPod(ctx context.Context, timeout time.Duration, gracePeriodSeconds int64) error
 	GetCommandExecutor() (PodCommandExecutor, error)
 	GetFileWriter() (PodFileWriter, error)
 }
@@ -59,10 +59,9 @@ type podController struct {
 	cli        kubernetes.Interface
 	podOptions *PodOptions
 
-	pod         *corev1.Pod
-	podReady    bool
-	podName     string
-	stopTimeout time.Duration
+	pod      *corev1.Pod
+	podReady bool
+	podName  string
 
 	pcp podControllerProcessor
 }
@@ -101,8 +100,7 @@ func (p *podController) Pod() *corev1.Pod {
 }
 
 // StartPod creates pod and in case of success, it stores pod name for further use.
-// stopTimeout is also stored and will be used when StopPod will be called
-func (p *podController) StartPod(ctx context.Context, stopTimeout time.Duration) error {
+func (p *podController) StartPod(ctx context.Context) error {
 	if p.podName != "" {
 		return errors.Wrap(ErrPodControllerPodAlreadyStarted, "Failed to create pod")
 	}
@@ -119,7 +117,6 @@ func (p *podController) StartPod(ctx context.Context, stopTimeout time.Duration)
 
 	p.pod = pod
 	p.podName = pod.Name
-	p.stopTimeout = stopTimeout
 
 	return nil
 }
@@ -141,19 +138,18 @@ func (p *podController) WaitForPodReady(ctx context.Context) error {
 }
 
 // StopPod stops the pod which was previously started, otherwise it will return ErrPodControllerPodNotStarted error.
-// stopTimeout passed to Start will be used
-func (p *podController) StopPod(ctx context.Context) error {
+// stopTimeout is used to limit execution time
+// gracePeriodSeconds is used to specify pod deletion grace period. If set to zero, pod should be deleted immediately
+func (p *podController) StopPod(ctx context.Context, stopTimeout time.Duration, gracePeriodSeconds int64) error {
 	if p.podName == "" {
 		return ErrPodControllerPodNotStarted
 	}
 
-	if p.stopTimeout != PodControllerInfiniteStopTime {
+	if stopTimeout != PodControllerInfiniteStopTime {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, p.stopTimeout)
+		ctx, cancel = context.WithTimeout(ctx, stopTimeout)
 		defer cancel()
 	}
-
-	gracePeriodSeconds := int64(0) // force immediate deletion
 
 	if err := p.pcp.deletePod(ctx, p.podOptions.Namespace, p.podName, metav1.DeleteOptions{GracePeriodSeconds: &gracePeriodSeconds}); err != nil {
 		log.WithError(err).Print("Failed to delete pod", field.M{"PodName": p.podName, "Namespace": p.podOptions.Namespace})
