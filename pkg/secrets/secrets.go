@@ -15,18 +15,13 @@
 package secrets
 
 import (
+	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 )
 
 const (
-	// AWSLocationSecretType represents the storage location type for AWS
-	AWSLocationSecretType string = "s3"
-	// AWSLocationSecretType represents the storage location type for Azure
-	AzureLocationSecretType string = "azure"
-	// GCPLocationSecretType represents the storage location type for AWS
-	GCPLocationSecretType string = "gcs"
 	// LocationSecretType represents the storage location secret type for kopia repository server
 	LocationSecretType string = "secrets.kanister.io/storage-location"
 	// LocationTypeKey represents the key used to define the location type in
@@ -55,7 +50,7 @@ func ValidateCredentials(secret *v1.Secret) error {
 	}
 }
 
-func getLocationType(secret *v1.Secret) (repositoryserver.RepositoryServerSecrets, error) {
+func getLocationType(secret *v1.Secret) (repositoryserver.RepositoryServerSecret, error) {
 	var locationType []byte
 	var ok bool
 	if secret == nil {
@@ -67,9 +62,9 @@ func getLocationType(secret *v1.Secret) (repositoryserver.RepositoryServerSecret
 	}
 
 	switch string(locationType) {
-	case AWSLocationSecretType:
+	case storage.LocTypeS3:
 		return repositoryserver.NewAWSLocation(secret), nil
-	case AzureLocationSecretType:
+	case storage.LocTypeAzure:
 		return repositoryserver.NewAzureLocation(secret), nil
 	default:
 		return nil, errors.Errorf("Unsupported location type '%s' for secret '%s:%s'", locationType, secret.Namespace, secret.Name)
@@ -77,7 +72,7 @@ func getLocationType(secret *v1.Secret) (repositoryserver.RepositoryServerSecret
 }
 
 func ValidateRepositoryServerSecret(repositoryServerSecret *v1.Secret) error {
-	var secret repositoryserver.RepositoryServerSecrets
+	var secret repositoryserver.RepositoryServerSecret
 	var err error
 
 	switch string(repositoryServerSecret.Type) {
@@ -93,5 +88,5 @@ func ValidateRepositoryServerSecret(repositoryServerSecret *v1.Secret) error {
 	default:
 		return ValidateCredentials(repositoryServerSecret)
 	}
-	return secret.ValidateSecret()
+	return secret.Validate()
 }

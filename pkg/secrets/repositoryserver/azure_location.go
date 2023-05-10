@@ -26,6 +26,6 @@ func NewAzureLocation(secret *v1.Secret) *Azure {
 	}
 }
 
-func (l *Azure) ValidateSecret() error {
+func (l *Azure) Validate() error {
 	return nil
 }

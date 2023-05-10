@@ -26,6 +26,6 @@ func NewGCPLocation(secret *v1.Secret) *GCP {
 	}
 }
 
-func (l *GCP) ValidateSecret() error {
+func (l *GCP) Validate() error {
 	return nil
 }

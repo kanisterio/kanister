@@ -18,12 +18,13 @@ import (
 	"context"
 	"os"
 
-	"github.com/kanisterio/kanister/pkg/secrets"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sYAML "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 func performRepoServerSecretsValidation(p *validateParams) error {

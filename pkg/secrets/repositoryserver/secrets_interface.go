@@ -14,6 +14,6 @@
 
 package repositoryserver
 
-type RepositoryServerSecrets interface {
-	ValidateSecret() error
+type RepositoryServerSecret interface {
+	Validate() error
 }

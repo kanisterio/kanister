@@ -16,7 +16,6 @@ package repositoryserver
 
 import (
 	"github.com/pkg/errors"
-
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -35,7 +34,7 @@ func NewRepositoryServerAdminCredentials(secret *v1.Secret) *RepositoryServerAdm
 	}
 }
 
-func (r *RepositoryServerAdminCredentials) ValidateSecret() error {
+func (r *RepositoryServerAdminCredentials) Validate() error {
 	var count int
 	if _, ok := r.credentials.Data[RepositoryServerAdminUsernameKey]; !ok {
 		return errors.Wrapf(errValidate, "%s field is required in the kopia repository server admin credentials secret %s", RepositoryServerAdminUsernameKey, r.credentials.Name)

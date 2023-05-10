@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -39,7 +38,7 @@ func NewRepoPassword(secret *v1.Secret) *RepositoryPassword {
 }
 
 // ValidateSecret validates the kopia repository password for required fields as well as unknown fields
-func (r *RepositoryPassword) ValidateSecret() error {
+func (r *RepositoryPassword) Validate() error {
 	var count int
 	if _, ok := r.password.Data[RepoPasswordKey]; !ok {
 		return errors.Wrapf(errValidate, "%s field is required in the kopia repository password secret %s", RepoPasswordKey, r.password.Name)
