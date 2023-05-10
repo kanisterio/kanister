@@ -132,7 +132,6 @@ func (p *podController) WaitForPodReady(ctx context.Context) error {
 
 	if err := p.pcp.waitForPodReady(ctx, p.podName); err != nil {
 		log.WithError(err).Print("Pod failed to become ready in time", field.M{"PodName": p.podName, "Namespace": p.podOptions.Namespace})
-		_ = p.StopPod(ctx) // best-effort
 		return errors.Wrap(err, "Pod failed to become ready in time")
 	}
 
