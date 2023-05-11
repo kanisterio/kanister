@@ -20,10 +20,7 @@ import (
 )
 
 const (
-	repoPasswordKey           = "repo-password"
-	defaultRepoConfigFilePath = "/tmp/config.file"
-	defaultRepoLogDirectory   = "/tmp/log.dir"
-	defaultCacheDirectory     = "/tmp/cache.dir"
+	repoPasswordKey = "repo-password"
 )
 
 func (h *RepoServerHandler) connectToKopiaRepository() error {
@@ -32,9 +29,9 @@ func (h *RepoServerHandler) connectToKopiaRepository() error {
 		CommandArgs: &command.CommandArgs{
 			RepoPassword:   string(h.RepositoryServerSecrets.repositoryPassword.Data[repoPasswordKey]),
 			ConfigFilePath: command.DefaultConfigFilePath,
-			LogDirectory:   command.DefaultCacheDirectory,
+			LogDirectory:   command.DefaultLogDirectory,
 		},
-		CacheDirectory:  defaultCacheDirectory,
+		CacheDirectory:  command.DefaultCacheDirectory,
 		Hostname:        h.RepositoryServer.Spec.Repository.Hostname,
 		ContentCacheMB:  contentCacheMB,
 		MetadataCacheMB: metadataCacheMB,

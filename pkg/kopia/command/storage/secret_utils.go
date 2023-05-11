@@ -27,8 +27,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
-type LocType string
-
 const (
 	// Location secret keys
 	bucketKey        = "bucket"
@@ -37,12 +35,6 @@ const (
 	regionKey        = "region"
 	skipSSLVerifyKey = "skipSSLVerify"
 	typeKey          = "type"
-
-	// Location types
-	LocTypeS3        LocType = "s3"
-	LocTypeGCS       LocType = "gcs"
-	LocTypeAzure     LocType = "azure"
-	LocTypeFilestore LocType = "filestore"
 
 	// Azure location related environment variables
 	azureStorageAccountEnv = "AZURE_STORAGE_ACCOUNT"
@@ -71,8 +63,8 @@ func checkSkipSSLVerifyFromMap(m map[string][]byte) bool {
 	return v == "true"
 }
 
-func locationType(m map[string][]byte) LocType {
-	return LocType(m[typeKey])
+func locationType(m map[string][]byte) secrets.LocType {
+	return secrets.LocType(m[typeKey])
 }
 
 // GenerateEnvSpecFromCredentialSecret parses the secret and returns
@@ -159,7 +151,7 @@ func getEnvVar(varName, value string) v1.EnvVar {
 // GetMapForLocationValues return a map with valid keys
 // for different location values
 func GetMapForLocationValues(
-	locType LocType,
+	locType secrets.LocType,
 	prefix,
 	region,
 	bucket,
@@ -184,8 +176,8 @@ func GetMapForLocationValues(
 	}
 	if locType != "" {
 		m[typeKey] = []byte(locType)
-		if locType == LocType(v1alpha1.LocationTypeS3Compliant) {
-			m[typeKey] = []byte(LocTypeS3)
+		if locType == secrets.LocType(v1alpha1.LocationTypeS3Compliant) {
+			m[typeKey] = []byte(secrets.LocTypeS3)
 		}
 	}
 	return m

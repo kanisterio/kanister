@@ -43,25 +43,25 @@ func (s *StorageUtilsSuite) TestLocationUtils(c *check.C) {
 	}
 	for _, tc := range []struct {
 		LocType                    string
-		expectedLocType            LocType
+		expectedLocType            secrets.LocType
 		skipSSLVerify              string
 		expectedSkipSSLVerifyValue bool
 	}{
 		{
 			LocType:                    "s3",
-			expectedLocType:            LocTypeS3,
+			expectedLocType:            secrets.LocTypeS3,
 			skipSSLVerify:              "true",
 			expectedSkipSSLVerifyValue: true,
 		},
 		{
 			LocType:                    "gcs",
-			expectedLocType:            LocTypeGCS,
+			expectedLocType:            secrets.LocTypeGCS,
 			skipSSLVerify:              "false",
 			expectedSkipSSLVerifyValue: false,
 		},
 		{
 			LocType:                    "azure",
-			expectedLocType:            LocTypeAzure,
+			expectedLocType:            secrets.LocTypeAzure,
 			skipSSLVerify:              "true",
 			expectedSkipSSLVerifyValue: true,
 		},
@@ -195,7 +195,7 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 	endpointValue := "test-endpoint"
 	skipSSLVerifyValue := "true"
 	for _, tc := range []struct {
-		locType        LocType
+		locType        secrets.LocType
 		prefix         string
 		region         string
 		bucket         string
@@ -204,49 +204,49 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 		expectedOutput map[string][]byte
 	}{
 		{
-			locType: LocTypeS3,
+			locType: secrets.LocTypeS3,
 			expectedOutput: map[string][]byte{
-				typeKey: []byte(LocTypeS3),
+				typeKey: []byte(secrets.LocTypeS3),
 			},
 		},
 		{
-			locType: LocTypeS3,
+			locType: secrets.LocTypeS3,
 			prefix:  prefixValue,
 			expectedOutput: map[string][]byte{
-				typeKey:   []byte(LocTypeS3),
+				typeKey:   []byte(secrets.LocTypeS3),
 				prefixKey: []byte(prefixValue),
 			},
 		},
 		{
-			locType: LocTypeS3,
+			locType: secrets.LocTypeS3,
 			prefix:  prefixValue,
 			region:  regionValue,
 			expectedOutput: map[string][]byte{
-				typeKey:   []byte(LocTypeS3),
+				typeKey:   []byte(secrets.LocTypeS3),
 				prefixKey: []byte(prefixValue),
 				regionKey: []byte(regionValue),
 			},
 		},
 		{
-			locType: LocTypeS3,
+			locType: secrets.LocTypeS3,
 			prefix:  prefixValue,
 			region:  regionValue,
 			bucket:  bucketValue,
 			expectedOutput: map[string][]byte{
-				typeKey:   []byte(LocTypeS3),
+				typeKey:   []byte(secrets.LocTypeS3),
 				prefixKey: []byte(prefixValue),
 				regionKey: []byte(regionValue),
 				bucketKey: []byte(bucketValue),
 			},
 		},
 		{
-			locType:  LocTypeS3,
+			locType:  secrets.LocTypeS3,
 			prefix:   prefixValue,
 			region:   regionValue,
 			bucket:   bucketValue,
 			endpoint: endpointValue,
 			expectedOutput: map[string][]byte{
-				typeKey:     []byte(LocTypeS3),
+				typeKey:     []byte(secrets.LocTypeS3),
 				prefixKey:   []byte(prefixValue),
 				regionKey:   []byte(regionValue),
 				bucketKey:   []byte(bucketValue),
@@ -254,14 +254,14 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 			},
 		},
 		{
-			locType:       LocTypeS3,
+			locType:       secrets.LocTypeS3,
 			prefix:        prefixValue,
 			region:        regionValue,
 			bucket:        bucketValue,
 			endpoint:      endpointValue,
 			skipSSLVerify: skipSSLVerifyValue,
 			expectedOutput: map[string][]byte{
-				typeKey:          []byte(LocTypeS3),
+				typeKey:          []byte(secrets.LocTypeS3),
 				prefixKey:        []byte(prefixValue),
 				regionKey:        []byte(regionValue),
 				bucketKey:        []byte(bucketValue),
@@ -270,14 +270,14 @@ func (s *StorageUtilsSuite) TestGetMapForLocationValues(c *check.C) {
 			},
 		},
 		{
-			locType:       LocType(v1alpha1.LocationTypeS3Compliant),
+			locType:       secrets.LocType(v1alpha1.LocationTypeS3Compliant),
 			prefix:        prefixValue,
 			region:        regionValue,
 			bucket:        bucketValue,
 			endpoint:      endpointValue,
 			skipSSLVerify: skipSSLVerifyValue,
 			expectedOutput: map[string][]byte{
-				typeKey:          []byte(LocTypeS3),
+				typeKey:          []byte(secrets.LocTypeS3),
 				prefixKey:        []byte(prefixValue),
 				regionKey:        []byte(regionValue),
 				bucketKey:        []byte(bucketValue),
