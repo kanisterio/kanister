@@ -65,10 +65,13 @@ $ kopia --log-level=error --config-file=/tmp/kopia-repository.config \
 --access-key=<aws_access_key> --secret-access-key=<aws_secret_access_key> --password=<repository_password>
 ```
 
-- Create Certificates and Location Secrets for Kopia Repository Server
+- Generate TLS Certificates for Kopia Repository Server 
 ```bash
 $ openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
 ```
+
+- Create Location Secrets for Kopia Repository Server
+
 ```bash
 $ vi s3_location_creds.yaml
 ```
