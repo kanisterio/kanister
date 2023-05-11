@@ -20,20 +20,29 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sYAML "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kanisterio/kanister/pkg/kube"
 	"github.com/kanisterio/kanister/pkg/secrets"
 )
 
 func performRepoServerSecretsValidation(p *validateParams) error {
 	ctx := context.Background()
-	cli, _, _, err := initializeClients()
+	var cli kubernetes.Interface
+	var secret *v1.Secret
+	config, err := kube.LoadConfig()
 	if err != nil {
-		return errors.Wrap(err, "could not initialize clients for validation")
+		return err
 	}
-	secret, err := getSecretFromCmd(ctx, cli, p)
+	cli, err = kubernetes.NewForConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "could not get the kubernetes client")
+	}
+
+	secret, err = getSecretFromCmd(ctx, cli, p)
 	if err != nil {
 		return err
 	}
