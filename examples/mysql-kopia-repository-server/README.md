@@ -268,6 +268,7 @@ backup-rslmb   100.00     2022-12-15T09:56:49Z   complete
 ### Disaster strikes!
 
 Let's say someone accidentally deleted the test database using the following command:
+
 ```bash
 # Connect to MySQL by running a shell inside MySQL's pod
 $ kubectl exec -ti $(kubectl get pods -n mysql --selector=app.kubernetes.io/instance=mysql-release -o=jsonpath='{.items[0].metadata.name}') -n mysql -- bash
