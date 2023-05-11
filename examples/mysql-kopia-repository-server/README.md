@@ -26,7 +26,7 @@ $ helm repo update
 
 # Install the MySQL database
 
-> **Note**: The custom image for MySQL is required in order to utilize the Kopia Repository Server based functions.
+> **Note**: The custom image for MySQL is required because the Kopia Repository Server based functions (used in Blueprint), require `Kopia` binary to be available on application pod.
 
 $ helm install mysql-release bitnami/mysql \
   --namespace mysql \
