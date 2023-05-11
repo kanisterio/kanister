@@ -17,17 +17,14 @@ package repositoryserver
 import (
 	"github.com/kanisterio/kanister/pkg/kopia/command"
 	"github.com/kanisterio/kanister/pkg/kopia/repository"
-)
-
-const (
-	repoPasswordKey = "repo-password"
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
 func (h *RepoServerHandler) connectToKopiaRepository() error {
 	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
 	args := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
-			RepoPassword:   string(h.RepositoryServerSecrets.repositoryPassword.Data[repoPasswordKey]),
+			RepoPassword:   string(h.RepositoryServerSecrets.repositoryPassword.Data[repositoryserver.RepoPasswordKey]),
 			ConfigFilePath: command.DefaultConfigFilePath,
 			LogDirectory:   command.DefaultLogDirectory,
 		},
