@@ -18,11 +18,8 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
-
-//type SecretType string
 
 const (
 	// LocationSecretType represents the storage location secret type for kopia repository server
@@ -64,10 +61,10 @@ func getLocationType(secret *v1.Secret) (repositoryserver.RepositoryServerSecret
 		return nil, errors.Errorf("secret '%s:%s' does not have required field %s", secret.Namespace, secret.Name, LocationTypeKey)
 	}
 
-	switch string(locationType) {
-	case storage.LocTypeS3:
+	switch LocType(string(locationType)) {
+	case LocTypeS3:
 		return repositoryserver.NewAWSLocation(secret), nil
-	case storage.LocTypeAzure:
+	case LocTypeAzure:
 		return repositoryserver.NewAzureLocation(secret), nil
 	default:
 		return nil, errors.Errorf("Unsupported location type '%s' for secret '%s:%s'", locationType, secret.Namespace, secret.Name)
