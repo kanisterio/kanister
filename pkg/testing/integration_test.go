@@ -184,7 +184,7 @@ func newSecretRepositoryServer() *secretRepositoryServer {
 	s3Creds, s3Location := testutil.S3CredsLocationSecret()
 	tls, err := testutil.KopiaTLSCertificate()
 	if err != nil {
-		return err
+		return nil
 	}
 	return &secretRepositoryServer{
 		s3Creds:            s3Creds,
