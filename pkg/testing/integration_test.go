@@ -480,16 +480,16 @@ func (s *IntegrationSuite) createRepositoryServer(c *C, ctx context.Context) str
 			contentCacheMB, metadataCacheMB := kopiacmd.GetGeneralCacheSizeSettings()
 			commandArgs := kopiacmd.RepositoryCommandArgs{
 				CommandArgs: &kopiacmd.CommandArgs{
-					RepoPassword:   testutil.DefaultRepositoryPassword,
+					RepoPassword:   testutil.DefaultKopiaRepositoryPassword,
 					ConfigFilePath: kopiacmd.DefaultConfigFilePath,
 					LogDirectory:   kopiacmd.DefaultLogDirectory,
 				},
 				CacheDirectory:  kopiacmd.DefaultCacheDirectory,
-				Hostname:        testutil.DefaultRepositoryServerHost,
+				Hostname:        testutil.DefaultKopiaRepositoryServerHost,
 				ContentCacheMB:  contentCacheMB,
 				MetadataCacheMB: metadataCacheMB,
-				Username:        testutil.DefaultKanisterAdminUser,
-				RepoPathPrefix:  testutil.DefaultRepositoryPath,
+				Username:        testutil.DefaultKopiaRepositoryUser,
+				RepoPathPrefix:  testutil.DefaultKopiaRepositoryPath,
 				Location:        s3Location.Data,
 			}
 			err = repository.ConnectToOrCreateKopiaRepository(

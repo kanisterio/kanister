@@ -33,14 +33,16 @@ import (
 )
 
 const (
-	DefaultRepositoryPath                 = "kopia-repo-controller-test"
-	DefaultRepositoryServerAdminUser      = "admin@test"
-	DefaultRepositoryServerHost           = "localhost"
-	DefaultRepositoryPassword             = "test1234"
-	DefaultKanisterAdminUser              = "kanisterAdmin"
-	DefaultKanisterUser                   = "kanisteruser"
-	DefaultKanisterNamespace              = "kanister"
-	DefaultKopiaRepositoryServerContainer = "repo-server-container"
+	DefaultKopiaRepositoryPath                 = "kopia-repo-controller-test"
+	DefaultKopiaRepositoryServerAdminUser      = "admin@test"
+	DefaultKopiaRepositoryServerHost           = "localhost"
+	DefaultKopiaRepositoryPassword             = "test1234"
+	DefaultKopiaRepositoryUser                 = "repositoryUser"
+	DefaultKopiaRepositoryServerAccessUser     = "kanisterUser"
+	DefaultKanisterNamespace                   = "kanister"
+	DefaultKopiaRepositoryServerAccessPassword = "test1234"
+	DefaultKopiaRepositoryServerAdminPassword  = "admin1234"
+	DefaultKopiaRepositoryServerContainer      = "repo-server-container"
 )
 
 func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
@@ -69,7 +71,7 @@ func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
 		Data: map[string][]byte{
 			"type":     []byte(crv1alpha1.LocationTypeS3Compliant),
 			"bucket":   []byte(TestS3BucketName),
-			"path":     []byte(DefaultRepositoryPath),
+			"path":     []byte(DefaultKopiaRepositoryPath),
 			"region":   []byte(TestS3Region),
 			"endpoint": []byte(os.Getenv("LOCATION_ENDPOINT")),
 		},
@@ -83,7 +85,7 @@ func KopiaRepositoryPassword() *v1.Secret {
 			GenerateName: "test-repo-pass-",
 		},
 		Data: map[string][]byte{
-			"repo-password": []byte(DefaultRepositoryPassword),
+			"repo-password": []byte(DefaultKopiaRepositoryPassword),
 		},
 	}
 }
@@ -94,8 +96,8 @@ func KopiaRepositoryServerAdminUser() *v1.Secret {
 			GenerateName: "test-repository-admin-user-",
 		},
 		Data: map[string][]byte{
-			"username": []byte(DefaultRepositoryServerAdminUser),
-			"password": []byte(DefaultRepositoryPassword),
+			"username": []byte(DefaultKopiaRepositoryServerAdminUser),
+			"password": []byte(DefaultKopiaRepositoryServerAdminPassword),
 		},
 	}
 }
@@ -106,7 +108,7 @@ func KopiaRepositoryServerUserAccess() *v1.Secret {
 			GenerateName: "test-repository-server-user-access-",
 		},
 		Data: map[string][]byte{
-			DefaultRepositoryServerHost: []byte(DefaultRepositoryPassword),
+			DefaultKopiaRepositoryServerHost: []byte(DefaultKopiaRepositoryServerAccessPassword),
 		},
 	}
 }
@@ -185,9 +187,9 @@ func NewKopiaRepositoryServer() *crv1alpha1.RepositoryServer {
 				},
 			},
 			Repository: crv1alpha1.Repository{
-				RootPath: DefaultRepositoryPath,
-				Username: DefaultKanisterAdminUser,
-				Hostname: DefaultRepositoryServerHost,
+				RootPath: DefaultKopiaRepositoryPath,
+				Username: DefaultKopiaRepositoryUser,
+				Hostname: DefaultKopiaRepositoryServerHost,
 				PasswordSecretRef: v1.SecretReference{
 					Name:      "",
 					Namespace: "",
@@ -199,7 +201,7 @@ func NewKopiaRepositoryServer() *crv1alpha1.RepositoryServer {
 						Name:      "",
 						Namespace: "",
 					},
-					Username: DefaultKanisterUser,
+					Username: DefaultKopiaRepositoryServerAccessUser,
 				},
 				AdminSecretRef: v1.SecretReference{
 					Name:      "",
