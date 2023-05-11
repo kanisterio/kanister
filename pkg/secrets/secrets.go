@@ -15,22 +15,25 @@
 package secrets
 
 import (
-	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
-	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/kanisterio/kanister/pkg/kopia/command/storage"
+	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
+
+//type SecretType string
 
 const (
 	// LocationSecretType represents the storage location secret type for kopia repository server
-	LocationSecretType string = "secrets.kanister.io/storage-location"
+	Location v1.SecretType = "secrets.kanister.io/storage-location"
 	// LocationTypeKey represents the key used to define the location type in
 	// the kopia repository server location secret
 	LocationTypeKey string = "type"
 	// RepositoryPasswordSecretType represents the kopia repository passowrd secret type
-	RepositoryPasswordSecretType string = "secrets.kanister.io/kopia-repository/password"
+	RepositoryPassword v1.SecretType = "secrets.kanister.io/kopia-repository/password"
 	// RepositoryServerAdminCredentialsSecretType represents the kopia server admin credentials secret type
-	RepositoryServerAdminCredentialsSecretType string = "secrets.kanister.io/kopia-repository/serveradmin"
+	RepositoryServerAdminCredentials v1.SecretType = "secrets.kanister.io/kopia-repository/serveradmin"
 )
 
 // ValidateCredentials returns error if secret is failed at validation.
@@ -75,15 +78,15 @@ func ValidateRepositoryServerSecret(repositoryServerSecret *v1.Secret) error {
 	var secret repositoryserver.RepositoryServerSecret
 	var err error
 
-	switch string(repositoryServerSecret.Type) {
-	case LocationSecretType:
+	switch repositoryServerSecret.Type {
+	case Location:
 		secret, err = getLocationType(repositoryServerSecret)
 		if err != nil {
 			return err
 		}
-	case RepositoryPasswordSecretType:
+	case RepositoryPassword:
 		secret = repositoryserver.NewRepoPassword(repositoryServerSecret)
-	case RepositoryServerAdminCredentialsSecretType:
+	case RepositoryServerAdminCredentials:
 		secret = repositoryserver.NewRepositoryServerAdminCredentials(repositoryServerSecret)
 	default:
 		return ValidateCredentials(repositoryServerSecret)
