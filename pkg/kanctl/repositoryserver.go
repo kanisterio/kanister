@@ -29,13 +29,13 @@ import (
 
 const (
 	tlsSecretFlag                  = "tls"
-	repoServerUserAccessSecretFlag = "repoServerUserAccess"
-	repoAdminUserSecretFlag        = "repoAdminUser"
-	repoPasswordSecretFlag         = "repoPassword"
+	repoServerUserAccessSecretFlag = "repoServerUserAccessSecret"
+	repoAdminUserSecretFlag        = "repoAdminUserSecret"
+	repoPasswordSecretFlag         = "repoPasswordSecret"
 	repoServerUserFlag             = "repoServerUser"
 	repoServerAdminUserFlag        = "repoServerAdminUser"
-	s3LocationCredsSecretFlag      = "s3LocationCreds"
-	s3LocationSecretFlag           = "s3Location"
+	s3LocationCredsSecretFlag      = "s3LocationCredsSecret"
+	s3LocationSecretFlag           = "s3LocationSecret"
 	defaultKanisterNamespace       = "kanister"
 	defaultRepositoryServerHost    = "localhost"
 )
