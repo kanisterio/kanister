@@ -242,16 +242,16 @@ Kopia Repository Server creation using ``kanctl create``
       kanctl create repository-server [flags]
 
     Flags:
-      -h, --help                          help for repository-server
-      -p, --prefix string                 prefix to be set in kopia repository
-      -a, --repoAdminUser string          name of the secret for the repository server admin user details
-      -r, --repoPassword string           name of the secret containing password for the kopia repository
-      -z, --repoServerAdminUser string    kopia repository server admin user name
-      -u, --repoServerUser string         name of the user to be created for the kopia repository server
-      -k, --repoServerUserAccess string   name of the secret having user access password and host
-      -l, --s3Location string             name of the secret containing the s3 location details
-      -c, --s3LocationCreds string        name of the secret containing the credentials for s3
-      -t, --tls string                    name of the tls secret needed for secure client server communication
+      -h, --help                                help for repository-server
+      -p, --prefix string                       prefix to be set in kopia repository
+      -a, --repoAdminUserSecret string          name of the secret for the repository server admin user details
+      -r, --repoPasswordSecret string           name of the secret containing password for the kopia repository
+      -z, --repoServerAdminUser string          kopia repository server admin user name
+      -u, --repoServerUser string               name of the user to be created for the kopia repository server
+      -k, --repoServerUserAccessSecret string   name of the secret having user access password and host
+      -c, --s3LocationCredsSecret string        name of the secret containing the credentials for s3
+      -l, --s3LocationSecret string             name of the secret containing the s3 location details
+      -t, --tls string                          name of the tls secret needed for secure client server communication
 
     Global Flags:
           --dry-run            if set, resource YAML will be printed but not created
