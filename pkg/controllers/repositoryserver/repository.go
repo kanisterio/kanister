@@ -27,7 +27,6 @@ const (
 )
 
 func (h *RepoServerHandler) connectToKopiaRepository() error {
-
 	contentCacheMB, metadataCacheMB := command.GetGeneralCacheSizeSettings()
 	args := command.RepositoryCommandArgs{
 		CommandArgs: &command.CommandArgs{
