@@ -21,18 +21,6 @@ import (
 	"github.com/kanisterio/kanister/pkg/secrets/repositoryserver"
 )
 
-const (
-	// LocationSecretType represents the storage location secret type for kopia repository server
-	Location v1.SecretType = "secrets.kanister.io/storage-location"
-	// LocationTypeKey represents the key used to define the location type in
-	// the kopia repository server location secret
-	LocationTypeKey string = "type"
-	// RepositoryPasswordSecretType represents the kopia repository passowrd secret type
-	RepositoryPassword v1.SecretType = "secrets.kanister.io/kopia-repository/password"
-	// RepositoryServerAdminCredentialsSecretType represents the kopia server admin credentials secret type
-	RepositoryServerAdminCredentials v1.SecretType = "secrets.kanister.io/kopia-repository/serveradmin"
-)
-
 // ValidateCredentials returns error if secret is failed at validation.
 // Currently supports following:
 // - AWS typed secret with required AWS secret fields.
@@ -45,6 +33,8 @@ func ValidateCredentials(secret *v1.Secret) error {
 		return ValidateAWSCredentials(secret)
 	case AzureSecretType:
 		return ValidateAzureCredentials(secret)
+	case GCPSecretType:
+		return ValidateGCPCredentials(secret)
 	default:
 		return errors.Errorf("Unsupported type '%s' for secret '%s:%s'", string(secret.Type), secret.Namespace, secret.Name)
 	}
@@ -66,6 +56,8 @@ func getLocationType(secret *v1.Secret) (repositoryserver.RepositoryServerSecret
 		return repositoryserver.NewAWSLocation(secret), nil
 	case LocTypeAzure:
 		return repositoryserver.NewAzureLocation(secret), nil
+	case LocTypeGCS:
+		return repositoryserver.NewGCPLocation(secret), nil
 	default:
 		return nil, errors.Errorf("Unsupported location type '%s' for secret '%s:%s'", locationType, secret.Namespace, secret.Name)
 	}

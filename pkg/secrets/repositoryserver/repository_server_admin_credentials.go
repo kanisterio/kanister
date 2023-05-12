@@ -37,17 +37,17 @@ func NewRepositoryServerAdminCredentials(secret *v1.Secret) *RepositoryServerAdm
 func (r *RepositoryServerAdminCredentials) Validate() error {
 	var count int
 	if _, ok := r.credentials.Data[RepositoryServerAdminUsernameKey]; !ok {
-		return errors.Wrapf(errValidate, "%s field is required in the kopia repository server admin credentials secret %s", RepositoryServerAdminUsernameKey, r.credentials.Name)
+		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository server admin credentials secret %s", RepositoryServerAdminUsernameKey, r.credentials.Name)
 	}
 	count++
 
 	if _, ok := r.credentials.Data[RepositoryServerAdminPasswordKey]; !ok {
-		return errors.Wrapf(errValidate, "%s field is required in the kopia repository server admin credentials secret %s", RepositoryServerAdminPasswordKey, r.credentials.Name)
+		return errors.Wrapf(ErrValidate, "%s field is required in the kopia repository server admin credentials secret %s", RepositoryServerAdminPasswordKey, r.credentials.Name)
 	}
 	count++
 
 	if len(r.credentials.Data) > count {
-		return errors.Wrapf(errValidate, "kopia repository server admin credentials secret %s has an unknown field", r.credentials.Name)
+		return errors.Wrapf(ErrValidate, "kopia repository server admin credentials secret %s has an unknown field", r.credentials.Name)
 	}
 	return nil
 }
