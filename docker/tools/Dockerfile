@@ -1,8 +1,8 @@
 # Build Kopia binary
 FROM golang:1.19-bullseye AS builder
 
-ARG kopia_build_commit=master
-ARG kopia_repo_org=kopia
+ARG kopia_build_commit=aaron_expriment
+ARG kopia_repo_org=aaron-kasten
 ENV CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GO_EXTLINK_ENABLED=0
 RUN apt-get install git
 
