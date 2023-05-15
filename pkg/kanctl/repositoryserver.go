@@ -63,18 +63,14 @@ func newRepositoryServerCommand() *cobra.Command {
 		Use:   "repository-server",
 		Short: "Create a new RepositoryServer",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return createNewRepositoryServer(cmd, args)
-		},
 	}
 
+	cmd.AddCommand(newS3CompliantRepositoryServerCmd())
 	cmd.PersistentFlags().StringP(tlsSecretFlag, "t", "", "name of the tls secret needed for secure client server communication")
 	cmd.PersistentFlags().StringP(repoServerUserFlag, "u", "", "name of the user to be created for the kopia repository server")
 	cmd.PersistentFlags().StringP(repoServerUserAccessSecretFlag, "k", "", "name of the secret having user access password and host")
 	cmd.PersistentFlags().StringP(repoAdminUserSecretFlag, "a", "", "name of the secret for the repository server admin user details")
 	cmd.PersistentFlags().StringP(repoPasswordSecretFlag, "r", "", "name of the secret containing password for the kopia repository")
-	cmd.PersistentFlags().StringP(s3LocationSecretFlag, "l", "", "name of the secret containing the s3 location details")
-	cmd.PersistentFlags().StringP(s3LocationCredsSecretFlag, "c", "", "name of the secret containing the credentials for s3")
 	cmd.PersistentFlags().StringP(prefixFlag, "p", "", "prefix to be set in kopia repository")
 	cmd.PersistentFlags().StringP(repoServerAdminUserFlag, "z", "", "kopia repository server admin user name")
 
@@ -83,9 +79,25 @@ func newRepositoryServerCommand() *cobra.Command {
 	_ = cmd.MarkFlagRequired(repoServerUserAccessSecretFlag)
 	_ = cmd.MarkFlagRequired(repoAdminUserSecretFlag)
 	_ = cmd.MarkFlagRequired(repoPasswordSecretFlag)
+	_ = cmd.MarkFlagRequired(prefixFlag)
+	return cmd
+}
+
+func newS3CompliantRepositoryServerCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "s3compliant",
+		Short: "Create a new kopia repository server for s3 compliant storage",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return createNewRepositoryServer(cmd, args)
+		},
+	}
+
+	cmd.PersistentFlags().StringP(s3LocationSecretFlag, "l", "", "name of the secret containing the s3 location details")
+	cmd.PersistentFlags().StringP(s3LocationCredsSecretFlag, "c", "", "name of the secret containing the credentials for s3")
+
 	_ = cmd.MarkFlagRequired(s3LocationSecretFlag)
 	_ = cmd.MarkFlagRequired(s3LocationCredsSecretFlag)
-	_ = cmd.MarkFlagRequired(prefixFlag)
 	return cmd
 }
 
