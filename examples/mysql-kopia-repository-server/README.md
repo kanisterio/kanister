@@ -76,7 +76,7 @@ $ kubectl create secret tls repository-server-tls-cert --cert=certificate.pem --
 - Create Location Secrets for Kopia Repository
 
 ```bash
-# The following file s3_location_creds.yaml is a sample file for creating s3 credentials secrets. It contains the credentials for accessing the s3 bucket
+# The following file s3_location_creds.yaml is a sample file for creating s3 credentials secrets. It contains the credentials for accessing the s3 bucket.
 $ vi s3_location_creds.yaml
 
 apiVersion: v1
@@ -134,13 +134,13 @@ $ kubectl create -f s3_location.yaml -n kanister
 - Apply Secrets for Kopia Repository Server User Access, Admin Access and Repository Access
 
 ```bash
-# The following command creates secrets for kopia repository server user access
+# The following command creates secrets for kopia repository server user access.
 kubectl create secret generic repository-server-user-access -n kanister --from-literal=localhost=<suitable_password_for_repository_server_user>
 
-# The following command creates secrets for kopia repository server admin access
+# The following command creates secrets for kopia repository server admin access.
 kubectl create secret generic repository-admin-user -n kanister --from-literal=username=admin@mysql --from-literal=password=<suitable_password_for_repository_server_admin>
 
-# The following command creates secrets for kopia repository access
+# The following command creates secrets for kopia repository access.
 kubectl create secret generic repo-pass -n kanister --from-literal=repo-password=<repository_password_set_while_creating_kopia_repository>
 ```
 
