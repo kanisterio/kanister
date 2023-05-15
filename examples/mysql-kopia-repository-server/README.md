@@ -66,6 +66,7 @@ $ kopia --log-level=error --config-file=/tmp/kopia-repository.config \
 ```
 
 - Generate TLS Certificates and create TLS secret for Kopia Repository Server for secure communication between Kopia Repository Server and Client
+
 ```bash
 $ openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
 
