@@ -27,6 +27,10 @@ type ExecError struct {
 	stderr LogTail
 }
 
+func (e *ExecError) Unwrap() error {
+	return e.error
+}
+
 func (e *ExecError) Stdout() string {
 	return e.stdout.ToString()
 }
