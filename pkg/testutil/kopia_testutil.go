@@ -33,16 +33,26 @@ import (
 )
 
 const (
-	DefaultKopiaRepositoryPath                 = "kopia-repo-controller-test"
-	DefaultKopiaRepositoryServerAdminUser      = "admin@test"
-	DefaultKopiaRepositoryServerHost           = "localhost"
-	DefaultKopiaRepositoryPassword             = "test1234"
-	DefaultKopiaRepositoryUser                 = "repositoryUser"
-	DefaultKopiaRepositoryServerAccessUser     = "kanisterUser"
-	DefaultKanisterNamespace                   = "kanister"
+	// DefaultKopiaRepositoryPath is the default path for the kopia repository where the backups are stored.
+	DefaultKopiaRepositoryPath = "kopia-repo-controller-test"
+	// DefaultKopiaRepositoryServerAdminUser is the default admin user for the kopia repository server.
+	DefaultKopiaRepositoryServerAdminUser = "admin@test"
+	// DefaultKopiaRepositoryServerHost is the default host for the kopia repository server.
+	DefaultKopiaRepositoryServerHost = "localhost"
+	// DefaultKopiaRepositoryPassword is the default password for the kopia repository.
+	DefaultKopiaRepositoryPassword = "test1234"
+	// DefaultKopiaRepositoryUser is the default user for the kopia repository.
+	DefaultKopiaRepositoryUser = "repositoryUser"
+	// DefaultKopiaRepositoryServerAccessUser is the default user for the kopia repository server.
+	DefaultKopiaRepositoryServerAccessUser = "kanisterUser"
+	// DefaultKanisterNamespace is the default namespace for the kanister controller.
+	DefaultKanisterNamespace = "kanister"
+	// DefaultKopiaRepositoryServerAccessPassword is the default password for the kopia repository server.
 	DefaultKopiaRepositoryServerAccessPassword = "test1234"
-	DefaultKopiaRepositoryServerAdminPassword  = "admin1234"
-	DefaultKopiaRepositoryServerContainer      = "repo-server-container"
+	// DefaultKopiaRepositoryServerAdminPassword is the default password for the kopia repository server admin.
+	DefaultKopiaRepositoryServerAdminPassword = "admin1234"
+	// DefaultKopiaRepositoryServerContainer is the default container for the kopia repository server.
+	DefaultKopiaRepositoryServerContainer = "repo-server-container"
 )
 
 func S3CredsLocationSecret() (*v1.Secret, *v1.Secret) {
