@@ -201,7 +201,7 @@ $ kubectl get repositoryservers.cr.kanister.io kopia-repo-server-1 -n kanister -
 **NOTE:**
 
 The above command will configure a kopia repository server, which manages artifacts resulting from Kanister
-data operations such as backup. 
+data operations such as backup should go. 
 This is stored as a `repositoryservers.cr.kanister.io` *CustomResource (CR)* which is then referenced in Kanister ActionSets.
 
 ### Create Blueprint
