@@ -76,7 +76,7 @@ $ kubectl create secret tls repository-server-tls-cert --cert=certificate.pem --
 - Create Location Secrets for Kopia Repository
 
 ```bash
-# The following file s3_location_creds.yaml is a sample file for creating s3 location secrets contains the credentials for the s3 bucket
+# The following file s3_location_creds.yaml is a sample file for creating s3 location secrets. It contains the credentials for the s3 bucket
 $ vi s3_location_creds.yaml
 
 apiVersion: v1
@@ -99,7 +99,7 @@ $ kubectl create -f s3_location_creds.yaml -n kanister
 ```
 
 ```bash
-# The following file s3_location.yaml is a sample file for creating s3 location secrets contains the details of the s3 bucket
+# The following file s3_location.yaml is a sample file for creating s3 location secrets. It contains the details of the s3 bucket
 $ vi s3_location.yaml
 
 apiVersion: v1
