@@ -197,4 +197,36 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
+
+	// aaron_experiment
+	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
+	github.com/alecthomas/kingpin/v2 v2.3.2 // indirect
+	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
+	github.com/alessio/shellescape v1.4.1 // indirect
+	github.com/danieljoos/wincred v1.1.2 // indirect
+	github.com/fatih/color v1.15.0 // indirect
+	github.com/felixge/fgprof v0.9.3 // indirect
+	github.com/foomo/htpasswd v0.0.0-20200116085101-e3a90e78da9c // indirect
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
+	github.com/gofrs/flock v0.8.1 // indirect
+	github.com/golang/glog v1.0.0 // indirect
+	github.com/google/pprof v0.0.0-20211214055906-6f57359322fd // indirect
+	github.com/google/readahead v0.0.0-20161222183148-eaceba169032 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/hanwen/go-fuse/v2 v2.3.0 // indirect
+	github.com/kopia/htmluibuild v0.0.0-20230326183719-f482ef17e2c9 // indirect
+	github.com/kr/fs v0.1.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/pkg/profile v1.7.0 // indirect
+	github.com/pkg/sftp v1.13.5 // indirect
+	github.com/pquerna/ffjson v0.0.0-20190930134022-aa0246cd15f7 // indirect
+	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
+	github.com/studio-b12/gowebdav v0.0.0-20211106090535-29e74efa701f // indirect
+	github.com/tg123/go-htpasswd v1.2.1 // indirect
+	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
+	github.com/zalando/go-keyring v0.2.2 // indirect
+	go.opentelemetry.io/otel/exporters/jaeger v1.14.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.14.0 // indirect
+	gopkg.in/kothar/go-backblaze.v0 v0.0.0-20210124194846-35409b867216 // indirect
 )
