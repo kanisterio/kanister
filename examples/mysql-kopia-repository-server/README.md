@@ -65,17 +65,19 @@ $ kopia --log-level=error --config-file=/tmp/kopia-repository.config \
 --access-key=<aws_access_key> --secret-access-key=<aws_secret_access_key> --password=<repository_password>
 ```
 
-- Generate TLS Certificates for Kopia Repository Server 
+- Generate TLS Certificates and create TLS secret for Kopia Repository Server for secure communication between Kopia Repository Server and Client
 ```bash
 $ openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
+
+$ kubectl create secret tls repository-server-tls-cert --cert=certificate.pem --key=key.pem -n kanister
 ```
 
-- Create Location Secrets for Kopia Repository Server
+- Create Location Secrets for Kopia Repository
 
 ```bash
+# The following file s3_location_creds.yaml is a sample file for creating s3 location secrets contains the credentials for the s3 bucket
 $ vi s3_location_creds.yaml
-```
-```
+
 apiVersion: v1
 kind: Secret
 metadata:
@@ -91,10 +93,14 @@ data:
    aws_secret_access_key: <base64_encoded_aws_secret_access_key>
 ```
 
+```
+$ kubectl create -f s3_location_creds.yaml -n kanister
+```
+
 ```bash
+# The following file s3_location.yaml is a sample file for creating s3 location secrets contains the details of the s3 bucket
 $ vi s3_location.yaml
-```
-```
+
 apiVersion: v1
 kind: Secret
 metadata:
@@ -120,19 +126,21 @@ data:
    #claimName: store-pvc
 ```
 
-- Apply Secrets
-```bash
-$ kubectl create secret tls repository-server-tls-cert --cert=certificate.pem --key=key.pem -n kanister
+```
+$ kubectl create -f s3_location.yaml -n kanister
+```
 
+- Apply Secrets for Kopia Repository Server User Access, Admin Access and Repository Access
+
+```bash
+# The following command creates secrets for kopia repository server user access
 kubectl create secret generic repository-server-user-access -n kanister --from-literal=localhost=<suitable_password_for_repository_server_user>
 
+# The following command creates secrets for kopia repository server admin access
 kubectl create secret generic repository-admin-user -n kanister --from-literal=username=admin@mysql --from-literal=password=<suitable_password_for_repository_server_admin>
 
+# The following command creates secrets for kopia repository access
 kubectl create secret generic repo-pass -n kanister --from-literal=repo-password=<repository_password_set_while_creating_kopia_repository>
-
-kubectl create -f s3_location_creds.yaml -n kanister
-
-kubectl create -f s3_location.yaml -n kanister
 ```
 
 - Apply Repository Server CRD
@@ -198,7 +206,7 @@ $ kubectl get repositoryservers.cr.kanister.io kopia-repo-server-1 -n kanister -
 **NOTE:**
 
 The above command will configure a kopia repository server, which manages artifacts resulting from Kanister
-data operations such as backup should go. 
+data operations such as backup. 
 This is stored as a `repositoryservers.cr.kanister.io` *CustomResource (CR)* which is then referenced in Kanister ActionSets.
 
 ### Create Blueprint
