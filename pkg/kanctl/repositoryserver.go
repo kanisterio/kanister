@@ -28,12 +28,12 @@ import (
 )
 
 const (
-	tlsSecretFlag                  = "tls"
-	repoServerUserAccessSecretFlag = "repoServerUserAccessSecret"
-	repoAdminUserSecretFlag        = "repoAdminUserSecret"
-	repoPasswordSecretFlag         = "repoPasswordSecret"
-	repoServerUserFlag             = "repoServerUser"
-	repoServerAdminUserFlag        = "repoServerAdminUser"
+	tlsSecretFlag                  = "tlsSecret"
+	repoServerUserAccessSecretFlag = "repositoryServerUserAccessSecret"
+	repoAdminUserSecretFlag        = "repositoryAdminUserSecret"
+	repoPasswordSecretFlag         = "repositoryPasswordSecret"
+	repoServerUserFlag             = "repositoryServerUser"
+	repoServerAdminUserFlag        = "repositoryServerAdminUser"
 	locationCredsSecretFlag        = "locationCredsSecret"
 	locationSecretFlag             = "locationSecret"
 	defaultKanisterNamespace       = "kanister"
@@ -41,21 +41,15 @@ const (
 )
 
 type repositoryServerParams struct {
-	tls                    string
-	tlsNS                  string
-	repoServerUserAccess   string
-	repoServerUserAccessNS string
-	repoAdminUser          string
-	repoAdminUserNS        string
-	repoPassword           string
-	repoPasswordNS         string
-	repoServerUser         string
-	repoServerAdminUser    string
-	s3Location             string
-	s3LocationNS           string
-	s3LocationCreds        string
-	s3LocationCredsNS      string
-	prefix                 string
+	tls                             string
+	repositoryServerUser            string
+	repositoryServerUserAccess      string
+	repositoryServerAdminUser       string
+	repositoryServerAdminUserAccess string
+	repositoryPassword              string
+	prefix                          string
+	location                        string
+	locationCreds                   string
 }
 
 func newRepositoryServerCommand() *cobra.Command {
@@ -100,7 +94,7 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	repositoryServer, err := validateAndConstructRepositoryServer(rsParams)
+	repositoryServer, err := validateSecretsAndConstructRepositoryServer(rsParams)
 	if err != nil {
 		return err
 	}
@@ -117,125 +111,76 @@ func createNewRepositoryServer(cmd *cobra.Command, args []string) error {
 
 func generateRepositoryServerParams(cmd *cobra.Command) (*repositoryServerParams, error) {
 	// Fetch values of the flags
-	tls, _ := cmd.Flags().GetString(tlsSecretFlag)
-	repoServerUser, _ := cmd.Flags().GetString(repoServerUserFlag)
-	repoServerUserAccess, _ := cmd.Flags().GetString(repoServerUserAccessSecretFlag)
-	repoAdminUser, _ := cmd.Flags().GetString(repoAdminUserSecretFlag)
-	repoPassword, _ := cmd.Flags().GetString(repoPasswordSecretFlag)
-	s3Location, _ := cmd.Flags().GetString(locationSecretFlag)
-	s3LocationCreds, _ := cmd.Flags().GetString(locationCredsSecretFlag)
+	tlsSecret, _ := cmd.Flags().GetString(tlsSecretFlag)
+	repositoryServerUser, _ := cmd.Flags().GetString(repoServerUserFlag)
+	repositoryServerUserAccessSecret, _ := cmd.Flags().GetString(repoServerUserAccessSecretFlag)
+	repositoryServerAdminUser, _ := cmd.Flags().GetString(repoServerAdminUserFlag)
+	repositoryServerAdminUserAccessSecret, _ := cmd.Flags().GetString(repoAdminUserSecretFlag)
+	repositoryPassword, _ := cmd.Flags().GetString(repoPasswordSecretFlag)
 	prefix, _ := cmd.Flags().GetString(prefixFlag)
-	repoServerAdminUser, _ := cmd.Flags().GetString(repoServerAdminUserFlag)
+	location, _ := cmd.Flags().GetString(locationSecretFlag)
+	locationCreds, _ := cmd.Flags().GetString(locationCredsSecretFlag)
 
-	var tlsNS, repoServerUserAccessNS, repoAdminUserNS, repoPasswordNS, s3LocationNS, s3LocationCredsNS string
-	if strings.Contains(tls, "/") {
-		fullTLS := strings.Split(tls, "/")
-		if len(fullTLS) != 2 {
-			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", tls)
-		}
-		tlsNS = fullTLS[0]
-		tls = fullTLS[1]
-	} else {
-		tlsNS = defaultKanisterNamespace
+	if strings.Contains(tlsSecret, "/") {
+		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", tlsSecret)
 	}
-	if strings.Contains(repoServerUserAccess, "/") {
-		fullRepoServerUserAccess := strings.Split(repoServerUserAccess, "/")
-		if len(fullRepoServerUserAccess) != 2 {
-			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", repoServerUserAccess)
-		}
-		repoServerUserAccessNS = fullRepoServerUserAccess[0]
-		repoServerUserAccess = fullRepoServerUserAccess[1]
-	} else {
-		repoServerUserAccessNS = defaultKanisterNamespace
+	if strings.Contains(repositoryServerUserAccessSecret, "/") {
+		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryServerUserAccessSecret)
 	}
-	if strings.Contains(repoAdminUser, "/") {
-		fullRepoAdminUser := strings.Split(repoAdminUser, "/")
-		if len(fullRepoAdminUser) != 2 {
-			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", repoAdminUser)
-		}
-		repoAdminUserNS = fullRepoAdminUser[0]
-		repoAdminUser = fullRepoAdminUser[1]
-	} else {
-		repoAdminUserNS = defaultKanisterNamespace
+	if strings.Contains(repositoryServerAdminUserAccessSecret, "/") {
+		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryServerAdminUserAccessSecret)
 	}
-	if strings.Contains(repoPassword, "/") {
-		fullRepoPassword := strings.Split(repoPassword, "/")
-		if len(fullRepoPassword) != 2 {
-			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", repoPassword)
-		}
-		repoPasswordNS = fullRepoPassword[0]
-		repoPassword = fullRepoPassword[1]
-	} else {
-		repoPasswordNS = defaultKanisterNamespace
+	if strings.Contains(repositoryPassword, "/") {
+		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", repositoryPassword)
 	}
-	if strings.Contains(s3Location, "/") {
-		fullS3Location := strings.Split(s3Location, "/")
-		if len(fullS3Location) != 2 {
-			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", s3Location)
-		}
-		s3LocationNS = fullS3Location[0]
-		s3Location = fullS3Location[1]
-	} else {
-		s3LocationNS = defaultKanisterNamespace
+	if strings.Contains(location, "/") {
+		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", location)
 	}
-	if strings.Contains(s3LocationCreds, "/") {
-		fullS3LocationCreds := strings.Split(s3LocationCreds, "/")
-		if len(fullS3LocationCreds) != 2 {
-			return nil, errors.Errorf("Invalid secret name %s, it should be of the form namespace/name )", s3LocationCreds)
-		}
-		s3LocationCredsNS = fullS3LocationCreds[0]
-		s3LocationCreds = fullS3LocationCreds[1]
-	} else {
-		s3LocationCredsNS = defaultKanisterNamespace
+	if strings.Contains(locationCreds, "/") {
+		return nil, errors.Errorf("Invalid secret name %s, it should not be of the form namespace/name )", locationCreds)
 	}
 
 	return &repositoryServerParams{
-		tls:                    tls,
-		tlsNS:                  tlsNS,
-		repoServerUserAccess:   repoServerUserAccess,
-		repoServerUserAccessNS: repoServerUserAccessNS,
-		repoAdminUser:          repoAdminUser,
-		repoAdminUserNS:        repoAdminUserNS,
-		repoPassword:           repoPassword,
-		repoPasswordNS:         repoPasswordNS,
-		repoServerUser:         repoServerUser,
-		repoServerAdminUser:    repoServerAdminUser,
-		s3Location:             s3Location,
-		s3LocationNS:           s3LocationNS,
-		s3LocationCreds:        s3LocationCreds,
-		s3LocationCredsNS:      s3LocationCredsNS,
-		prefix:                 prefix,
+		tls:                             tlsSecret,
+		repositoryServerUser:            repositoryServerUser,
+		repositoryServerUserAccess:      repositoryServerUserAccessSecret,
+		repositoryServerAdminUser:       repositoryServerAdminUser,
+		repositoryServerAdminUserAccess: repositoryServerAdminUserAccessSecret,
+		repositoryPassword:              repositoryPassword,
+		prefix:                          prefix,
+		location:                        location,
+		locationCreds:                   locationCreds,
 	}, nil
 }
 
-func validateAndConstructRepositoryServer(rsParams *repositoryServerParams) (*v1alpha1.RepositoryServer, error) {
+func validateSecretsAndConstructRepositoryServer(rsParams *repositoryServerParams) (*v1alpha1.RepositoryServer, error) {
 	// Fetch and Validate Secrets
 	ctx := context.Background()
 	cli, _, _, err := initializeClients()
 	if err != nil {
 		return nil, err
 	}
-	tlsSecret, err := cli.CoreV1().Secrets(rsParams.tlsNS).Get(ctx, rsParams.tls, metav1.GetOptions{})
+	tlsSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.tls, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	repoServerUserAccessSecret, err := cli.CoreV1().Secrets(rsParams.repoServerUserAccessNS).Get(ctx, rsParams.repoServerUserAccess, metav1.GetOptions{})
+	repositoryServerUserAccessSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.repositoryServerUserAccess, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	repoAdminUserSecret, err := cli.CoreV1().Secrets(rsParams.repoAdminUserNS).Get(ctx, rsParams.repoAdminUser, metav1.GetOptions{})
+	repositoryServerAdminUserAccessSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.repositoryServerAdminUserAccess, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	repoPasswordSecret, err := cli.CoreV1().Secrets(rsParams.repoPasswordNS).Get(ctx, rsParams.repoPassword, metav1.GetOptions{})
+	repositoryPasswordSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.repositoryPassword, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	s3LocationSecret, err := cli.CoreV1().Secrets(rsParams.s3LocationNS).Get(ctx, rsParams.s3Location, metav1.GetOptions{})
+	locationSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.location, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	s3LocationCredsSecret, err := cli.CoreV1().Secrets(rsParams.s3LocationCredsNS).Get(ctx, rsParams.s3LocationCreds, metav1.GetOptions{})
+	locationCredsSecret, err := cli.CoreV1().Secrets(defaultKanisterNamespace).Get(ctx, rsParams.locationCreds, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -247,34 +192,34 @@ func validateAndConstructRepositoryServer(rsParams *repositoryServerParams) (*v1
 		Spec: v1alpha1.RepositoryServerSpec{
 			Storage: v1alpha1.Storage{
 				SecretRef: corev1.SecretReference{
-					Name:      s3LocationSecret.GetName(),
-					Namespace: s3LocationSecret.GetNamespace(),
+					Name:      locationSecret.GetName(),
+					Namespace: locationSecret.GetNamespace(),
 				},
 				CredentialSecretRef: corev1.SecretReference{
-					Name:      s3LocationCredsSecret.GetName(),
-					Namespace: s3LocationCredsSecret.GetNamespace(),
+					Name:      locationCredsSecret.GetName(),
+					Namespace: locationCredsSecret.GetNamespace(),
 				},
 			},
 			Repository: v1alpha1.Repository{
 				RootPath: rsParams.prefix,
-				Username: rsParams.repoServerAdminUser,
+				Username: rsParams.repositoryServerAdminUser,
 				Hostname: defaultRepositoryServerHost,
 				PasswordSecretRef: corev1.SecretReference{
-					Name:      repoPasswordSecret.GetName(),
-					Namespace: repoPasswordSecret.GetNamespace(),
+					Name:      repositoryPasswordSecret.GetName(),
+					Namespace: repositoryPasswordSecret.GetNamespace(),
 				},
 			},
 			Server: v1alpha1.Server{
 				UserAccess: v1alpha1.UserAccess{
 					UserAccessSecretRef: corev1.SecretReference{
-						Name:      repoServerUserAccessSecret.GetName(),
-						Namespace: repoServerUserAccessSecret.GetNamespace(),
+						Name:      repositoryServerUserAccessSecret.GetName(),
+						Namespace: repositoryServerUserAccessSecret.GetNamespace(),
 					},
-					Username: rsParams.repoServerUser,
+					Username: rsParams.repositoryServerUser,
 				},
 				AdminSecretRef: corev1.SecretReference{
-					Name:      repoAdminUserSecret.GetName(),
-					Namespace: repoAdminUserSecret.GetNamespace(),
+					Name:      repositoryServerAdminUserAccessSecret.GetName(),
+					Namespace: repositoryServerAdminUserAccessSecret.GetNamespace(),
 				},
 				TLSSecretRef: corev1.SecretReference{
 					Name:      tlsSecret.GetName(),
